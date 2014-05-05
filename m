@@ -1,82 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121AbaEEPei (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 11:34:38 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:50808 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753880AbaEEPeD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 11:34:03 -0400
+	id S1754138AbaEEPfW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 11:35:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45102 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753472AbaEEPfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 11:35:20 -0400
+Date: Mon, 5 May 2014 17:35:19 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jianyu Zhan <nasa4836@gmail.com>, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.com
+Subject: Re: [PATCH 2/2] mm/memcontrol.c: introduce helper
+ mem_cgroup_zoneinfo_zone()
+Message-ID: <20140505153519.GE32598@dhcp22.suse.cz>
+References: <1397862103-31982-1-git-send-email-nasa4836@gmail.com>
+ <20140422095923.GD29311@dhcp22.suse.cz>
+ <20140428150426.GB24807@dhcp22.suse.cz>
+ <20140501125450.GA23420@cmpxchg.org>
+ <20140502150516.d42792bad53d86fb727816bd@linux-foundation.org>
+ <20140502232908.GQ23420@cmpxchg.org>
+ <20140502233138.GR23420@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <13946837.RfnRDPQdge@wuerfel>
-References: <1399097500-4052-1-git-send-email-pankaj.dubey@samsung.com>
-	<13946837.RfnRDPQdge@wuerfel>
-Date: Mon, 5 May 2014 10:34:02 -0500
-Message-ID: <CAL_JsqJXE4uXKA6XU1=3zFjdcEXHyUat2dL6wDKiZBx8S-p+Xg@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Introducing Exynos ChipId driver
-From: Rob Herring <robherring2@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140502233138.GR23420@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 3, 2014 at 10:02 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Saturday 03 May 2014 15:11:36 Pankaj Dubey wrote:
->> This patch series attempts to get rid of soc_is_exynosXXXX macros
->> and eventually with the help of this series we can probably get
->> rid of CONFIG_SOC_EXYNOSXXXX in near future.
->> Each Exynos SoC has ChipID block which can give information about
->> SoC's product Id and revision number. Currently we have single
->> DT binding information for this as "samsung,exynos4210-chipid".
->> But Exynos4 and Exynos5 SoC series have one small difference in
->> chip Id, with resepect to product id bit-masks. So it means we
->> should have separate compatible string for these different series
->> of SoCs. So I have created new binding information for handling
->> this difference. Also currently I can think of putting this driver
->> code under "drivers/misc/" but suggestions are welcome.
->> Also current form of driver is missing platfrom driver and needs
->> init function to be called from machine file (either exynos.c or
->> platsmp.c). I hope lot of suggestions and comments to improve this
->> further.
->>
->> This patch series is based on Kukjin Kim's for-next (3.14_rc1 tag)
->> and prepared on top of following patch series and it's dependent
->> patch series.
->
-> I think putting it into drivers/soc would be most appropriate.
-> We already have a few drivers lined up that we want in there,
-> although the directory currently doesn't exist.
->
-> However, I would ask that you use the infrastructure provided by
-> drivers/base/soc.c when you add this driver, to also make the
-> information available to user space using a standard API.
+On Fri 02-05-14 19:31:38, Johannes Weiner wrote:
+> While in that area, I noticed that the soft limit tree updaters don't
+> actually use the memcg argument anymore...
+> 
+> ---
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Subject: [patch] mm: memcontrol: remove unnecessary memcg argument from soft
+>  limit functions
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Agreed.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-> Ideally this should be done by slightly restructuring the DT
-> source to make all on-chip devices appear below the soc node.
-> We'd have to think a bit about how to best do this while
-> preserving compatibility with existing dts files.
+> ---
+>  mm/memcontrol.c | 34 ++++++++++++++--------------------
+>  1 file changed, 14 insertions(+), 20 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 83cbd5a0e62f..3381f76df084 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -714,11 +714,9 @@ soft_limit_tree_from_page(struct page *page)
+>  	return &soft_limit_tree.rb_tree_per_node[nid]->rb_tree_per_zone[zid];
+>  }
+>  
+> -static void
+> -__mem_cgroup_insert_exceeded(struct mem_cgroup *memcg,
+> -				struct mem_cgroup_per_zone *mz,
+> -				struct mem_cgroup_tree_per_zone *mctz,
+> -				unsigned long long new_usage_in_excess)
+> +static void __mem_cgroup_insert_exceeded(struct mem_cgroup_per_zone *mz,
+> +					 struct mem_cgroup_tree_per_zone *mctz,
+> +					 unsigned long long new_usage_in_excess)
+>  {
+>  	struct rb_node **p = &mctz->rb_root.rb_node;
+>  	struct rb_node *parent = NULL;
+> @@ -748,10 +746,8 @@ __mem_cgroup_insert_exceeded(struct mem_cgroup *memcg,
+>  	mz->on_tree = true;
+>  }
+>  
+> -static void
+> -__mem_cgroup_remove_exceeded(struct mem_cgroup *memcg,
+> -				struct mem_cgroup_per_zone *mz,
+> -				struct mem_cgroup_tree_per_zone *mctz)
+> +static void __mem_cgroup_remove_exceeded(struct mem_cgroup_per_zone *mz,
+> +					 struct mem_cgroup_tree_per_zone *mctz)
+>  {
+>  	if (!mz->on_tree)
+>  		return;
+> @@ -759,13 +755,11 @@ __mem_cgroup_remove_exceeded(struct mem_cgroup *memcg,
+>  	mz->on_tree = false;
+>  }
+>  
+> -static void
+> -mem_cgroup_remove_exceeded(struct mem_cgroup *memcg,
+> -				struct mem_cgroup_per_zone *mz,
+> -				struct mem_cgroup_tree_per_zone *mctz)
+> +static void mem_cgroup_remove_exceeded(struct mem_cgroup_per_zone *mz,
+> +				       struct mem_cgroup_tree_per_zone *mctz)
+>  {
+>  	spin_lock(&mctz->lock);
+> -	__mem_cgroup_remove_exceeded(memcg, mz, mctz);
+> +	__mem_cgroup_remove_exceeded(mz, mctz);
+>  	spin_unlock(&mctz->lock);
+>  }
+>  
+> @@ -792,12 +786,12 @@ static void mem_cgroup_update_tree(struct mem_cgroup *memcg, struct page *page)
+>  			spin_lock(&mctz->lock);
+>  			/* if on-tree, remove it */
+>  			if (mz->on_tree)
+> -				__mem_cgroup_remove_exceeded(memcg, mz, mctz);
+> +				__mem_cgroup_remove_exceeded(mz, mctz);
+>  			/*
+>  			 * Insert again. mz->usage_in_excess will be updated.
+>  			 * If excess is 0, no tree ops.
+>  			 */
+> -			__mem_cgroup_insert_exceeded(memcg, mz, mctz, excess);
+> +			__mem_cgroup_insert_exceeded(mz, mctz, excess);
+>  			spin_unlock(&mctz->lock);
+>  		}
+>  	}
+> @@ -813,7 +807,7 @@ static void mem_cgroup_remove_from_trees(struct mem_cgroup *memcg)
+>  		for (zid = 0; zid < MAX_NR_ZONES; zid++) {
+>  			mz = &memcg->nodeinfo[nid]->zoneinfo[zid];
+>  			mctz = soft_limit_tree_node_zone(nid, zid);
+> -			mem_cgroup_remove_exceeded(memcg, mz, mctz);
+> +			mem_cgroup_remove_exceeded(mz, mctz);
+>  		}
+>  	}
+>  }
+> @@ -836,7 +830,7 @@ retry:
+>  	 * we will to add it back at the end of reclaim to its correct
+>  	 * position in the tree.
+>  	 */
+> -	__mem_cgroup_remove_exceeded(mz->memcg, mz, mctz);
+> +	__mem_cgroup_remove_exceeded(mz, mctz);
+>  	if (!res_counter_soft_limit_excess(&mz->memcg->res) ||
+>  		!css_tryget(&mz->memcg->css))
+>  		goto retry;
+> @@ -4694,7 +4688,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+>  					break;
+>  			} while (1);
+>  		}
+> -		__mem_cgroup_remove_exceeded(mz->memcg, mz, mctz);
+> +		__mem_cgroup_remove_exceeded(mz, mctz);
+>  		excess = res_counter_soft_limit_excess(&mz->memcg->res);
+>  		/*
+>  		 * One school of thought says that we should not add
+> @@ -4705,7 +4699,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+>  		 * term TODO.
+>  		 */
+>  		/* If excess == 0, no tree ops */
+> -		__mem_cgroup_insert_exceeded(mz->memcg, mz, mctz, excess);
+> +		__mem_cgroup_insert_exceeded(mz, mctz, excess);
+>  		spin_unlock(&mctz->lock);
+>  		css_put(&mz->memcg->css);
+>  		loop++;
+> -- 
+> 1.9.2
+> 
 
-I don't agree. How is a block with chip ID info the parent of all the
-other devices?
-
-In doing some work to move default of_platform_populate out of
-platforms, I noticed that most platforms using the soc device are
-making it the parent of platform devices. I think this is either wrong
-or all platforms should have a default soc device. It makes little
-sense for some platforms to have a devices under a soc sysfs directory
-while others do not. Or the location changes when a platform latter
-adds the soc device.
-
-Rob
+-- 
+Michal Hocko
+SUSE Labs
