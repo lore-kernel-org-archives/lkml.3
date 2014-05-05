@@ -1,111 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754AbaEEUMN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:12:13 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:40691 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754405AbaEEUMK (ORCPT
+	id S1754954AbaEEUMW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:12:22 -0400
+Received: from smtprelay0151.hostedemail.com ([216.40.44.151]:38336 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754405AbaEEUMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:12:10 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19+rafnoCwayP/RH6v3J7aQ
-Date: Mon, 5 May 2014 13:12:02 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Sebastian Reichel <sre@kernel.org>, Sebastian Reichel <sre@ring0.de>,
-        linux-input@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 1/5] Input: add common DT binding for touchscreens
-Message-ID: <20140505201202.GH25949@atomide.com>
-References: <1398470179-20880-1-git-send-email-sre@kernel.org>
- <1398470179-20880-2-git-send-email-sre@kernel.org>
- <20140505194125.GD25949@atomide.com>
- <20140505195139.GA26978@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505195139.GA26978@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 5 May 2014 16:12:20 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3866:3867:3868:3871:4605:5007:7652:10004:10128:10400:10848:11026:11658:11914:12043:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: ball69_6b61783b17f48
+X-Filterd-Recvd-Size: 3227
+Message-ID: <1399320736.26330.8.camel@joe-AO725>
+Subject: [PATCH] checkpatch: Improve missing blank line after declarations
+ test
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
+        Seunghun Lee <waydi1@gmail.com>, linux-kernel@vger.kernel.org
+Date: Mon, 05 May 2014 13:12:16 -0700
+In-Reply-To: <1399319468.26330.2.camel@joe-AO725>
+References: <1398790752-8067-1-git-send-email-waydi1@gmail.com>
+	 <20140429173221.GE26890@mwanda> <20140503234326.GA30117@kroah.com>
+	 <20140505095935.GO26890@mwanda> <1399319468.26330.2.camel@joe-AO725>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Dmitry Torokhov <dmitry.torokhov@gmail.com> [140505 12:52]:
-> On Mon, May 05, 2014 at 12:41:26PM -0700, Tony Lindgren wrote:
-> > * Sebastian Reichel <sre@kernel.org> [140425 16:56]:
-> > > Add common DT binding documentation for touchscreen devices and
-> > > implement input_parse_touchscreen_of_params, which parses the common
-> > > properties and configures the input device accordingly.
-> > > 
-> > > The method currently does not interpret the axis inversion properties,
-> > > since there is no matching flag in the generic linux input device.
-> > > 
-> > > Signed-off-by: Sebastian Reichel <sre@kernel.org>
-> > > ---
-> > >  .../bindings/input/touchscreen/touchscreen.txt     | 27 +++++++++++++++++
-> > >  drivers/input/input.c                              | 34 ++++++++++++++++++++++
-> > >  include/linux/input.h                              |  8 +++++
-> > >  3 files changed, 69 insertions(+)
-> > >  create mode 100644 Documentation/devicetree/bindings/input/touchscreen/touchscreen.txt
-> > > 
-> > > diff --git a/Documentation/devicetree/bindings/input/touchscreen/touchscreen.txt b/Documentation/devicetree/bindings/input/touchscreen/touchscreen.txt
-> > > new file mode 100644
-> > > index 0000000..d8e0616
-> > > --- /dev/null
-> > > +++ b/Documentation/devicetree/bindings/input/touchscreen/touchscreen.txt
-> > > @@ -0,0 +1,27 @@
-> > > +General Touchscreen Properties:
-> > > +
-> > > +Optional properties for Touchscreens:
-> > > + - touchscreen-size-x		: horizontal resolution of touchscreen
-> > > +				  (in pixels)
-> > > + - touchscreen-size-y		: vertical resolution of touchscreen
-> > > +				  (in pixels)
-> > > + - touchscreen-max-pressure	: maximum reported pressure (arbitrary range
-> > > +				  dependent on the controller)
-> > > + - touchscreen-fuzz-x		: horizontal noise value of the absolute input
-> > > +				  device (in pixels)
-> > > + - touchscreen-fuzz-y		: vertical noise value of the absolute input
-> > > +				  device (in pixels)
-> > > + - touchscreen-fuzz-pressure	: pressure noise value of the absolute input
-> > > +				  device (arbitrary range dependent on the
-> > > +				  controller)
-> 
-> Fuzz seems like linux-specific property, not generic one.
-> 
-> 
-> > > + - touchscreen-inverted-x	: X axis is inverted (boolean)
-> > > + - touchscreen-inverted-y	: Y axis is inverted (boolean)
-> > 
-> > We probably also need something to swap x and y depending on the
-> > display orientation in addition to the touchscreen-inverted-x and y.
-> > Just swapping x and y is not enough depending if we rotate by 270
-> > degrees instead of 90 degrees.
-> > 
-> > Naturally that part can be added later.
-> 
-> So far we've been relying on upper layers (such as tslib) to perform
-> such transformations rather than re-implementing it in every driver. Are
-> we saying that we need to implement this in input core?
+A couple more modifications to the declarations tests.
 
-We seem to have that already partially implemented at least with
-ti,swap-xy in Documentation/devicetree/bindings/input/ads7846.txt.
+o Declarations can also be bitfields so exclude things with a colon
+o Make sure the current and previous lines are indented the same
+  to avoid matching some macro where a struct type is passed on
+  the previous line like:
 
-But that only works for the 90 degree rotation case as it's missing
-something similar to touchscreen-inverted-x I just noticed few days
-ago while trying to make some legacy code disappear :)
+		next = list_entry(buffer->entry.next,
+				  struct binder_buffer, entry);
+		if (buffer_start_page(next) == buffer_end_page(buffer)) 
 
-No idea where rotation should be specified. But if the panel is
-rotated based on the DT property or kernel cmdline, probably the
-touchscreen should be too? In most cases touchscreens are integrated
-together with the LCD panel, and they are not separate like other
-input devices.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-Regards,
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 89f44f1..f2ef63a 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2275,7 +2275,7 @@ sub process {
+ # check for missing blank lines after declarations
+ 		if ($sline =~ /^\+\s+\S/ &&			#Not at char 1
+ 			# actual declarations
+-		    ($prevline =~ /^\+\s+$Declare\s*$Ident\s*[=,;\[]/ ||
++		    ($prevline =~ /^\+\s+$Declare\s*$Ident\s*[=,;:\[]/ ||
+ 			# foo bar; where foo is some local typedef or #define
+ 		     $prevline =~ /^\+\s+$Ident(?:\s+|\s*\*\s*)$Ident\s*[=,;\[]/ ||
+ 			# known declaration macros
+@@ -2287,7 +2287,7 @@ sub process {
+ 			# not starting a section or a macro "\" extended line
+ 		      $prevline =~ /(?:\{\s*|\\)$/) &&
+ 			# looks like a declaration
+-		    !($sline =~ /^\+\s+$Declare\s*$Ident\s*[=,;\[]/ ||
++		    !($sline =~ /^\+\s+$Declare\s*$Ident\s*[=,;:\[]/ ||
+ 			# foo bar; where foo is some local typedef or #define
+ 		      $sline =~ /^\+\s+$Ident(?:\s+|\s*\*\s*)$Ident\s*[=,;\[]/ ||
+ 			# known declaration macros
+@@ -2299,7 +2299,9 @@ sub process {
+ 			# bitfield continuation
+ 		      $sline =~ /^\+\s+$Ident\s*:\s*\d+\s*[,;]/ ||
+ 			# other possible extensions of declaration lines
+-		      $sline =~ /^\+\s+\(?\s*(?:$Compare|$Assignment|$Operators)/)) {
++		      $sline =~ /^\+\s+\(?\s*(?:$Compare|$Assignment|$Operators)/) &&
++			# indentation of previous and current line are the same
++		    (($prevline =~ /\+(\s+)\S/) && $sline =~ /^\+$1\S/)) {
+ 			WARN("SPACING",
+ 			     "Missing a blank line after declarations\n" . $hereprev);
+ 		}
 
-Tony
+
