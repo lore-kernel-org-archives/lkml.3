@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932397AbaEEN0s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 09:26:48 -0400
-Received: from smarthost.TechFak.Uni-Bielefeld.DE ([129.70.137.17]:59591 "EHLO
-	smarthost.TechFak.Uni-Bielefeld.DE" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932272AbaEEN0r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 09:26:47 -0400
-X-Greylist: delayed 535 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 May 2014 09:26:47 EDT
-From: Robert ABEL <rabel@cit-ec.uni-bielefeld.de>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, Robert ABEL <rabel@cit-ec.uni-bielefeld.de>
-Subject: [PATCH RESEND] sysfs: fix attribute_group bin file path on removal
-Date: Mon,  5 May 2014 15:17:20 +0200
-Message-Id: <1399295840-3714-1-git-send-email-rabel@cit-ec.uni-bielefeld.de>
-X-Mailer: git-send-email 1.9.2
+	id S932443AbaEEN06 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 09:26:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40927 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932272AbaEEN04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 09:26:56 -0400
+Date: Mon, 5 May 2014 08:26:38 -0500
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Seth Jennings <sjenning@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+Message-ID: <20140505132638.GA14432@treble.redhat.com>
+References: <cover.1398958771.git.jpoimboe@redhat.com>
+ <20140505085537.GA32196@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140505085537.GA32196@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cody Schafer already fixed binary file creation for attribute groups, see [1].
-This patch makes the appropriate changes for binary file removal
-of attribute groups.
-[1]: http://lkml.org/lkml/2014/2/27/832
+On Mon, May 05, 2014 at 10:55:37AM +0200, Ingo Molnar wrote:
+> 
+> * Josh Poimboeuf <jpoimboe@redhat.com> wrote:
+> 
+> > [...]
+> > 
+> > kpatch checks the backtraces of all tasks in stop_machine() to 
+> > ensure that no instances of the old function are running when the 
+> > new function is applied.  I think the biggest downside of this 
+> > approach is that stop_machine() has to idle all other CPUs during 
+> > the patching process, so it inserts a small amount of latency (a few 
+> > ms on an idle system).
+> 
+> When live patching the kernel, how about achieving an even 'cleaner' 
+> state for all tasks in the system: to freeze all tasks, as the suspend 
+> and hibernation code (and kexec) does, via freeze_processes()?
+> 
+> That means no tasks in the system have any real kernel execution 
+> state, and there's also no problem with long-sleeping tasks, as 
+> freeze_processes() is supposed to be fast as well.
+> 
+> I.e. go for the most conservative live patching state first, and relax 
+> it only once the initial model is upstream and is working robustly.
 
-Signed-off-by: Robert ABEL <rabel@cit-ec.uni-bielefeld.de>
----
- fs/sysfs/group.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+I had considered doing this before, but the problem I found is that many
+kernel threads are unfreezable.  So we wouldn't be able to check whether
+its safe to replace any functions in use by those kernel threads.
 
-diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
-index aa04068..7d2a860 100644
---- a/fs/sysfs/group.c
-+++ b/fs/sysfs/group.c
-@@ -18,7 +18,7 @@
- #include "sysfs.h"
- 
- 
--static void remove_files(struct kernfs_node *parent, struct kobject *kobj,
-+static void remove_files(struct kernfs_node *parent,
- 			 const struct attribute_group *grp)
- {
- 	struct attribute *const *attr;
-@@ -29,7 +29,7 @@ static void remove_files(struct kernfs_node *parent, struct kobject *kobj,
- 			kernfs_remove_by_name(parent, (*attr)->name);
- 	if (grp->bin_attrs)
- 		for (bin_attr = grp->bin_attrs; *bin_attr; bin_attr++)
--			sysfs_remove_bin_file(kobj, *bin_attr);
-+			kernfs_remove_by_name(parent, (*bin_attr)->attr.name);
- }
- 
- static int create_files(struct kernfs_node *parent, struct kobject *kobj,
-@@ -62,7 +62,7 @@ static int create_files(struct kernfs_node *parent, struct kobject *kobj,
- 				break;
- 		}
- 		if (error) {
--			remove_files(parent, kobj, grp);
-+			remove_files(parent, grp);
- 			goto exit;
- 		}
- 	}
-@@ -79,7 +79,7 @@ static int create_files(struct kernfs_node *parent, struct kobject *kobj,
- 				break;
- 		}
- 		if (error)
--			remove_files(parent, kobj, grp);
-+			remove_files(parent, grp);
- 	}
- exit:
- 	return error;
-@@ -224,7 +224,7 @@ void sysfs_remove_group(struct kobject *kobj,
- 		kernfs_get(kn);
- 	}
- 
--	remove_files(kn, kobj, grp);
-+	remove_files(kn, grp);
- 	if (grp->name)
- 		kernfs_remove(kn);
- 
 -- 
-1.9.2
-
+Josh
