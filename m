@@ -1,48 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638AbaEEPMk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 11:12:40 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57101 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826AbaEEPMi convert rfc822-to-8bit (ORCPT
+	id S1753458AbaEEPNJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 11:13:09 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:7529 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753207AbaEEPNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 11:12:38 -0400
-Date: Mon, 5 May 2014 17:12:28 +0200
-From: Peter Zijlstra <peterz@infradead.org>
+	Mon, 5 May 2014 11:13:07 -0400
+Date: Mon, 5 May 2014 11:13:01 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
 To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
-        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        khilman@linaro.org, tglx@linutronix.de, axboe@fb.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:timers/nohz] nohz: Move full nohz kick to its own IPI
-Message-ID: <20140505151228.GR26782@laptop.programming.kicks-ass.net>
-References: <tip-72aacf0259bb7d53b7a3b5b2f7bf982acaa52b61@git.kernel.org>
- <20140505123706.GP17778@laptop.programming.kicks-ass.net>
- <20140505133113.GD1429@laptop.programming.kicks-ass.net>
- <20140505150356.GB2099@localhost.localdomain>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] tracing: Remove myself as a tracing maintainer
+Message-ID: <20140505111301.65497e33@gandalf.local.home>
+In-Reply-To: <1399131991-13216-1-git-send-email-fweisbec@gmail.com>
+References: <1399131991-13216-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20140505150356.GB2099@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Note the current ordering:
-> 
->     cmpxchg(&qsd->pending, 0, 1)       get ipi
->     csd_lock(qsd->csd)                 xchg(&qsd->pending, 1)
->     send ipi                           csd_unlock(qsd->csd)
-> 
-> 
-> So there shouldn't be racing updaters. Also ipi sender shouldn't
-> race with ipi receiver, the update shouldn't always eventually see
-> the unlock happening.
+On Sat,  3 May 2014 17:46:31 +0200
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-Yeah, I've not spotted how this particular train wreck happens either.
+> It has been a while since I last sent a tracing patch. I always keep an
+> eye on tracing evolutions and contributions in general but given
+> how busy I am with nohz, isolation and more generally core cleanups stuff,
+> I seldom have time left to provide deep reviews of tracing patches nor
+> simply for reviews to begin with.
+> 
+> I've been very lucky to start kernel development on a very young subsystem
+> with tons of low hanging fruits back in 2008. Given that it deals with
+> a lot of tricky stuffs all around (sched, timers, irq, preemption, NMIs,
+> SMP, RCU, ....) I basically learned everything there.
+> 
+> Steve has been doing most of the incredible work these last years.
+> Thanks a lot!
+> 
+> Of course consider me always available to help on tracing if any hard
+> days happen.
 
-The problem is reproduction, it took me 9 hours to confirm I could
-reproduce the problem on my machine. So how long to I run it with this
-patch reverted to show its gone..
+I will reluctantly apply this to my 3.16 queue.
+
+Thanks for all the tracing work! Although, I believe Peter Zijlstra has
+some frozen sharks heading your way. ;-)
+
+-- Steve
+
+> 
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+>  MAINTAINERS | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 6dc67b1..b69be85 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -9041,7 +9041,6 @@ F:	drivers/char/tpm/
+>  
+>  TRACING
+>  M:	Steven Rostedt <rostedt@goodmis.org>
+> -M:	Frederic Weisbecker <fweisbec@gmail.com>
+>  M:	Ingo Molnar <mingo@redhat.com>
+>  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf/core
+>  S:	Maintained
+
