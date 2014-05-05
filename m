@@ -1,62 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032AbaEEUzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:55:51 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:37851 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755132AbaEEUzu (ORCPT
+	id S1756316AbaEEU4Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:56:24 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:50753 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755221AbaEEU4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:55:50 -0400
-Date: Mon, 5 May 2014 13:55:54 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Jimmy Xu <zmxu@marvell.com>, Jisheng Zhang <jszhang@marvell.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 2/2] ARM: multi_v7_defconfig: Select
- CONFIG_MACH_BERLIN_BG2Q
-Message-ID: <20140505205554.GA29112@quad.lixom.net>
-References: <1395430757-8677-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1395430757-8677-2-git-send-email-alexandre.belloni@free-electrons.com>
- <532CB266.6050800@gmail.com>
- <534D8B25.3070103@gmail.com>
+	Mon, 5 May 2014 16:56:22 -0400
+Date: Mon, 5 May 2014 13:56:17 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
+        bigeasy@linutronix.de, tglx@linutronix.de
+Subject: Re: [PATCH] signal: Simplify __lock_task_sighand()
+Message-ID: <20140505205616.GN8754@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140503161133.GA8838@redhat.com>
+ <20140504180145.GC8754@linux.vnet.ibm.com>
+ <20140504191757.GA11319@redhat.com>
+ <20140504223804.GF8754@linux.vnet.ibm.com>
+ <20140505132659.GA17996@redhat.com>
+ <20140505152610.GK8754@linux.vnet.ibm.com>
+ <20140505164719.GA31758@redhat.com>
+ <20140505185308.GA17507@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <534D8B25.3070103@gmail.com>
+In-Reply-To: <20140505185308.GA17507@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050520-1542-0000-0000-00000195056F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 09:40:21PM +0200, Sebastian Hesselbarth wrote:
-> On 03/21/2014 10:43 PM, Sebastian Hesselbarth wrote:
-> > On 03/21/2014 08:39 PM, Alexandre Belloni wrote:
-> >> Now that we support Berlin BG2Q, select CONFIG_MACH_BERLIN_BG2Q so
-> >> that we can
-> >> boot BG2Q based boards like the BG2Q DMP.
-> >>
-> >> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> > 
-> > Applied to berlin/soc, Thanks!
+On Mon, May 05, 2014 at 08:53:08PM +0200, Oleg Nesterov wrote:
+> On 05/05, Oleg Nesterov wrote:
+> >
+> > On 05/05, Paul E. McKenney wrote:
+> > >
+> > > Does the patch below cover it?
+> >
+> > Yes, thanks.
+> >
+> > Acked-by: Oleg Nesterov <oleg@redhat.com>
 > 
-> After talking to Arnd on IRC, I found out it is not my business
-> taking patches for multi_v7_defconfig.
+> Yes, but please consider the cleanup below, on top of your change.
 > 
-> Instead of me taking it, you get my
+> This is subjective of course, but imho the code looks better without
+> the extra unlock/restore inside the loop.
+
+My only concern is that this might degrade real-time latency, but that
+mmight just be my paranoia speaking.  Adding Steven, Sebastian, and
+Thomas on CC for their thoughts.
+
+Other than that possible issue, I do agree that your change makes the
+code simpler.
+
+							Thanx, Paul
+
+> -------------------------------------------------------------------------------
+> Subject: [PATCH] signal: Simplify __lock_task_sighand()
 > 
-> Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> __lock_task_sighand() does local_irq_save() to prevent the potential
+> deadlock, we can use preempt_disable() with the same effect. And in
+> this case we can do preempt_disable/enable + rcu_read_lock/unlock only
+> once outside of the main loop and simplify the code. Also shaves 112
+> bytes from signal.o.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/signal.c |   31 +++++++++++++------------------
+>  1 files changed, 13 insertions(+), 18 deletions(-)
+> 
+> diff --git a/kernel/signal.c b/kernel/signal.c
+> index 4368370..03a0fd4 100644
+> --- a/kernel/signal.c
+> +++ b/kernel/signal.c
+> @@ -1260,30 +1260,25 @@ struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
+>  					   unsigned long *flags)
+>  {
+>  	struct sighand_struct *sighand;
+> -
+> +	/*
+> +	 * We are going to do rcu_read_unlock() under spin_lock_irqsave().
+> +	 * Make sure we can not be preempted after rcu_read_unlock(), see
+> +	 * rcu_read_unlock comment header for details.
+> +	 */
+> +	preempt_disable();
+> +	rcu_read_lock();
+>  	for (;;) {
+> -		/*
+> -		 * Disable interrupts early to avoid deadlocks.
+> -		 * See rcu_read_unlock comment header for details.
+> -		 */
+> -		local_irq_save(*flags);
+> -		rcu_read_lock();
+>  		sighand = rcu_dereference(tsk->sighand);
+> -		if (unlikely(sighand == NULL)) {
+> -			rcu_read_unlock();
+> -			local_irq_restore(*flags);
+> +		if (unlikely(sighand == NULL))
+>  			break;
+> -		}
+> 
+> -		spin_lock(&sighand->siglock);
+> -		if (likely(sighand == tsk->sighand)) {
+> -			rcu_read_unlock();
+> +		spin_lock_irqsave(&sighand->siglock, *flags);
+> +		if (likely(sighand == tsk->sighand))
+>  			break;
+> -		}
+> -		spin_unlock(&sighand->siglock);
+> -		rcu_read_unlock();
+> -		local_irq_restore(*flags);
+> +		spin_unlock_irqrestore(&sighand->siglock, *flags);
+>  	}
+> +	rcu_read_unlock();
+> +	preempt_enable();
+> 
+>  	return sighand;
+>  }
+> -- 
+> 1.5.5.1
+> 
 > 
 
-Applied, but next time please send any patch you want us to apply to
-arm@kernel.org.
-
-FWIW, it's usually how I distinguish between things to review if I have
-time (personal email) and things that will need attention eventually
-(arm@kernel.org). It also has the benefit of going to all current
-maintainers of arm-soc without you having to worry about who it is. :)
-
--Olof
