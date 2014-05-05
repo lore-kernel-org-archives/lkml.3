@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751296AbaEEEGj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 00:06:39 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:50136 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736AbaEEEGh convert rfc822-to-8bit (ORCPT
+	id S1751956AbaEEEKn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 00:10:43 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:51936 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918AbaEEEKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 00:06:37 -0400
+	Mon, 5 May 2014 00:10:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140504155331.13862a85@nehalam.linuxnetplumber.net>
-References: <1399238974-6210-1-git-send-email-jmaxwell@redhat.com>
-	<20140504155331.13862a85@nehalam.linuxnetplumber.net>
-Date: Sun, 4 May 2014 21:06:37 -0700
-Message-ID: <CAADnVQL3OZwZ0q_utwE_JhYYGbKPHwwqwHsBZ9g+0XAS__BpWQ@mail.gmail.com>
-Subject: Re: [PATCH net] bridge: Add port flap detection
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Jon Maxwell <jmaxwell37@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, makita.toshiaki@lab.ntt.co.jp,
-        vyasevic@redhat.com, bridge@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        pirko@redhat.com, jmaxwell@redhat.com
+X-Originating-IP: [60.248.88.209]
+In-Reply-To: <20140502091315.GG4963@mwanda>
+References: <1398857906.6930.59.camel@localhost>
+	<20140502091315.GG4963@mwanda>
+Date: Mon, 5 May 2014 12:10:39 +0800
+Message-ID: <CAKiknE-cJZpkpjMEPiX_cP4iC3e_b5huk2WJBvK2FpkKHecJoQ@mail.gmail.com>
+Subject: Re: [PATCH v1.0 14/16] arcmsr: fix sparse checking error
+From: =?UTF-8?B?6buD5riF6ZqG?= <ching2048@areca.com.tw>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: James Bottomley <jbottomley@parallels.com>,
+        Tomas Henzl <thenzl@redhat.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 4, 2014 at 3:53 PM, Stephen Hemminger
-<stephen@networkplumber.org> wrote:
-> On Mon,  5 May 2014 07:29:34 +1000
-> Jon Maxwell <jmaxwell37@gmail.com> wrote:
->
->> There has been a number incidents recently where customers running KVM have reported that VM hosts on different Hypervisors are unreachable. Based on pcap traces we found that the bridge was broadcasting the ARP request out onto the network. However some NICs have an inbuilt switch which on occasions were broadcasting the VMs ARP request back through the physical NIC on the Hypervisor. This resulted in the bridge flapping ports and incorrectly learning that the VMs mac address was external. As a result the ARP reply was directed back onto the external network and VM never updated it's ARP cache. This patch will detect port flapping and log a message so that this condition can be detected earlier.
->>
->> Signed-off-by: Jon Maxwell <jmaxwell@redhat.com>
->> ---
->>  net/bridge/br_fdb.c | 7 +++++++
->>  1 file changed, 7 insertions(+)
->>
->> diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
->> index 9203d5a..c08607b 100644
->> --- a/net/bridge/br_fdb.c
->> +++ b/net/bridge/br_fdb.c
->> @@ -507,6 +507,13 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
->>                                       source->dev->name);
->>               } else {
->>                       /* fastpath: update of existing entry */
->> +                     if (source->port_no != fdb->dst->port_no &&
->> +                             net_ratelimit())
->> +                             br_warn(br, "Port flapping detected source entry dev = %s mac = %pM, port_no = %d\n existing entry dev = %s mac = %pM, port_no = %d\n",
->> +                                     source->dev->name,
->> +                                     addr, source->port_no,
->> +                                     fdb->dst->dev->name, addr,
->> +                                     fdb->dst->port_no);
->>                       fdb->dst = source;
->>                       fdb->updated = jiffies;
->>                       if (unlikely(added_by_user))
->
-> Ok, but please shorten the message to a single line without excess wordage.
-> Plus flapping to mean means link going up and down. Maybe use same message
-> as BSD?
+Hi Dan,
 
-Isn't this normal mac move? Any message will be confusing.
-VMs can spoof their src macs and trigger this warning.
-I don't think it's worth adding it just to debug the learning on the
-external interface.
+In this patch, there are several replace of call readl() or writel()
+by direct access to memory.
+Because in main memory, we allocated a block of memory for
+post_qbuffer and done_qbuffer.
+These memory are access by both of CPU and IOP, they are not hardware registers.
+This change will not introduce a bug. I have verified it.
+
+Thanks for your comment.
+
+Regards,
+Ching
+
+
+2014-05-02 17:13 GMT+08:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> On Wed, Apr 30, 2014 at 07:38:26PM +0800, ching wrote:
+>> From: Ching<ching2048@areca.com.tw>
+>>
+>> Fix sparse utility checking errors.
+>>
+>
+> I was expecting that this patch would add __iomem annotations throughout
+> but in several places it actually removes calls to readl() and writel()
+> as well.
+>
+>>       case ACB_ADAPTER_TYPE_C:{
+>> -             struct MessageUnit_C *reg = (struct MessageUnit_C *)acb->pmuC;
+>> +             struct MessageUnit_C __iomem *reg = acb->pmuC;
+>>               /* disable all outbound interrupt */
+>>               orig_mask = readl(&reg->host_int_mask); /* disable outbound message0 int */
+>>               writel(orig_mask|ARCMSR_HBCMU_ALL_INTMASKENABLE, &reg->host_int_mask);v
+>> @@ -1085,8 +1085,9 @@ static void arcmsr_done4abort_postqueue(
+>>               /*clear all outbound posted Q*/
+>>               writel(ARCMSR_DOORBELL_INT_CLEAR_PATTERN, reg->iop2drv_doorbell); /* clear doorbell interrupt */
+>>               for (i = 0; i < ARCMSR_MAX_HBB_POSTQUEUE; i++) {
+>> -                     if ((flag_ccb = readl(&reg->done_qbuffer[i])) != 0) {
+>> -                             writel(0, &reg->done_qbuffer[i]);
+>> +                     flag_ccb = reg->done_qbuffer[i];
+>> +                     if (flag_ccb != 0) {
+>> +                             reg->done_qbuffer[i] = 0;
+>>                               pARCMSR_CDB = (struct ARCMSR_CDB *)(acb->vir2phy_offset+(flag_ccb << 5));/*frame must be 32 bytes aligned*/
+>>                               pCCB = container_of(pARCMSR_CDB, struct CommandControlBlock, arcmsr_cdb);
+>>                               error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE0) ? true : false;
+>
+> I don't know the hardware, but it doesn't even seem to make sense to me.
+> if "reg" is an __iomem pointer surely an offset into reg is an iomem
+> pointer as well.
+>
+> I am worried that this introduces a bug.
+>
+> regards,
+> dan carpenter
