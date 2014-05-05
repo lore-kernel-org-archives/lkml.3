@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933067AbaEEOkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 10:40:05 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:59874 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932885AbaEEOkB (ORCPT
+	id S932925AbaEEOne (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 10:43:34 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:48183 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932575AbaEEOnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 10:40:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGo_u6pcEKDiAqvJW66_p7M7D0noFj6o9Rw5_d8Af3NMBhHA=g@mail.gmail.com>
-References: <1399296830-13056-1-git-send-email-nm@ti.com>
-	<1399296830-13056-2-git-send-email-nm@ti.com>
-	<CAKohpomeP3Ftx8mH=x0Hj7HEpw6A9X8O8JEFqvrJbkZYDqDS6Q@mail.gmail.com>
-	<CAGo_u6pcEKDiAqvJW66_p7M7D0noFj6o9Rw5_d8Af3NMBhHA=g@mail.gmail.com>
-Date: Mon, 5 May 2014 20:10:00 +0530
-Message-ID: <CAKohponPGO511A--_sh5LYM6txgv5LTEy+n4RpshC8WH1CyEgw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] PM / OPP: Remove cpufreq wrapper dependency on
- internal data organization
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 5 May 2014 10:43:32 -0400
+From: Dan Streetman <ddstreet@ieee.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Cc: Dan Streetman <ddstreet@ieee.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] plist: replace pr_debug with printk in plist_test()
+Date: Mon,  5 May 2014 10:43:05 -0400
+Message-Id: <1399300985-11137-1-git-send-email-ddstreet@ieee.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <CALZtONB-wT16fPX7GjBVFO_5Bof3=zxviG22p6_9ymbnzA9QAA@mail.gmail.com>
+References: <CALZtONB-wT16fPX7GjBVFO_5Bof3=zxviG22p6_9ymbnzA9QAA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 May 2014 19:55, Nishanth Menon <nm@ti.com> wrote:
-> On Mon, May 5, 2014 at 9:23 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>
->>
->> What if opp is being added for some reason at the same time?
->> I hope we can surely see some awkward results, maybe some
->> NULL pointers invocations as well..
->
-> we wont - rcu operations ensure that.
+Replace pr_debug() in lib/plist.c test function plist_test() with
+printk(KERN_DEBUG ...).
 
-Stupid !!
+Without DEBUG defined, pr_debug() is complied out, but the entire
+plist_test() function is already inside CONFIG_DEBUG_PI_LIST, so
+printk should just be used directly.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+This is a trivial patch so this isn't really "v2", but for completeness
+the "v1" was here:
+https://lkml.org/lkml/2014/5/2/539
+
+That added -DDEBUG to the lib/Makefile, but Steve suggested this
+approach and I agree.
+
+ lib/plist.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/lib/plist.c b/lib/plist.c
+index 1ebc95f..b883a7a 100644
+--- a/lib/plist.c
++++ b/lib/plist.c
+@@ -175,7 +175,7 @@ static int  __init plist_test(void)
+ 	int nr_expect = 0, i, loop;
+ 	unsigned int r = local_clock();
+ 
+-	pr_debug("start plist test\n");
++	printk(KERN_DEBUG "start plist test\n");
+ 	plist_head_init(&test_head);
+ 	for (i = 0; i < ARRAY_SIZE(test_node); i++)
+ 		plist_node_init(test_node + i, 0);
+@@ -203,7 +203,7 @@ static int  __init plist_test(void)
+ 		plist_test_check(nr_expect);
+ 	}
+ 
+-	pr_debug("end plist test\n");
++	printk(KERN_DEBUG "end plist test\n");
+ 	return 0;
+ }
+ 
+-- 
+1.8.3.1
+
