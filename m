@@ -1,133 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751656AbaEESHL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 14:07:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47612 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751585AbaEESHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 14:07:08 -0400
-Date: Mon, 5 May 2014 20:07:06 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Eric Paris <eparis@redhat.com>, Jan Kara <jack@suse.cz>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Heinrich Schuchardt <xypron.glpk@gmx.de>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>
-Subject: Re: fanotify man pages for review
-Message-ID: <20140505180706.GH23927@quack.suse.cz>
-References: <535FAE78.5050404@gmail.com>
+	id S1751766AbaEESHu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 14:07:50 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57031 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbaEESHs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 14:07:48 -0400
+Date: Mon, 5 May 2014 20:08:02 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dave Jones <davej@redhat.com>
+cc: Linux Kernel <linux-kernel@vger.kernel.org>, peterz@infradead.org,
+        davidlohr@hp.com, Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [3.15-rc3] rtmutex-debug assertion.
+In-Reply-To: <20140502045640.GA27264@redhat.com>
+Message-ID: <alpine.DEB.2.02.1405052002360.6261@ionos.tec.linutronix.de>
+References: <20140429151655.GA14277@redhat.com> <20140430001432.GA32142@redhat.com> <alpine.DEB.2.02.1404301113110.6261@ionos.tec.linutronix.de> <20140502045640.GA27264@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535FAE78.5050404@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+B1;3202;0cOn Fri, 2 May 2014, Dave Jones wrote:
+> On Wed, Apr 30, 2014 at 11:13:57AM +0200, Thomas Gleixner wrote:
+>  > On Tue, 29 Apr 2014, Dave Jones wrote:
+>  > > This is trickier to reproduce than it first seemed, as logging slows
+>  > > things down so much.  But after a few hours, it logged that the
+>  > > call that triggered this was..
+>  > > 
+>  > > futex(uaddr=0x7f55ff8c4000, op=0x6, val=0x200000006223800b, utime=0x7f55ff8c4000, uaddr2=0x7f55ff8c4000, val3=-123)
+>  > > 
+>  > > Those addresses come from an mmap we made on startup..
+>  > > 
+>  > > [init] mapping[3]: (zeropage PROT_READ | PROT_WRITE) 0x7f55ff8c4000 (1MB)
+>  > > 
+>  > > op = FUTEX_LOCK_PI
+>  > > 
+>  > > val seems to be garbage.
+>  > > 
+>  > > I'll do another run, just to see if it's always the same set of values,
+>  > > but it's going to probably take an overnight run.
+>  > 
+>  > Do you have the full fuzzing log, so I can see what happened
+>  > before/around that?
+> 
+> This is tough, because it takes a long time to reproduce when the
+> logging is enabled, and that ends up generating a lot of output.
+> I've tried to cut it down some using just 4 threads, but that's
+> still over 30M of logs.
+> http://www.codemonkey.org.uk/junk/futex.tar.xz
+> 
+> In this run, child0 was the pid that faulted.
+> You can see the last line in trinity-child0.log has a similar
+> fingerprint to the trace above.
+> 
+> One thing that does look suspicious, is that all 4 threads were doing
+> op=0x6 right before the kernel went south.
+> 
+> Hope this helps.
 
-  below are some minor comments regarding the manpages.
+I twisted my brain around that for a fricking long time, but I really
+can't see the failure in the code.
 
-> diff --git a/man2/fanotify_mark.2 b/man2/fanotify_mark.2
-> new file mode 100644
-> index 0000000..693eff8
-> --- /dev/null
-> +++ b/man2/fanotify_mark.2
-...
-> +.B FAN_MARK_IGNORED_SURV_MODIFY
-> +The ignore mask shall survive modify events.
-> +If this flag is not set, the ignore mask is cleared when a modify event occurs
-> +for the ignored file or directory.
-  This is correct but maybe we should explicitely stress that the modify
-event doesn't have to be delivered to the fanotify group? I.e. the
-clearing happens even if the mark doesn't have FAN_MODIFY set... But maybe
-it would just unecessarily complicate the explanation. Just a suggestion.
+Neither did I succeed to trigger the issue in a VM (with and without
+function tracing) on Linus latest.
 
-> diff --git a/man7/fanotify.7 b/man7/fanotify.7
-> new file mode 100644
-> index 0000000..083244f
-> --- /dev/null
-> +++ b/man7/fanotify.7
-...
-> +A possible usage of the ignore mask is for a file cache.
-> +Events of interest for a file cache are modification of a file and closing
-> +of the same.
-> +Hence, the cached directory or mount point is to be marked to receive these
-> +events.
-> +After receiving the first event informing that a file has been modified, the
-> +corresponding cache entry will be invalidated.
-> +No further modification events for this file are of interest until the file is
-> +closed.
-> +Hence, the modify event can be added to the ignore mask.
-> +Upon receiving the closed event, the modify event can be removed from the
-                      ^^^^ close
+I grabbed trinity source and did:
 
-> +ignore mask and the file cache entry can be updated.
-> +.PP
-> +The entries in the fanotify notification groups refer to files and directories
-> +via their inode number and to mounts via their mount ID.
-> +If files or directories are renamed or moved, the respective entries survive.
-> +If files or directories are deleted or mounts are unmounted, the corresponding
-> +entries are deleted.
-> +.SS The event queue
-> +As events occur on the filesystem objects monitired by a notification group,
-                                             ^^^ monitored
+# ./trinity -l off -c futex -q
 
-> +the fanotify system generates events that are collected in a queue.
-> +These events can then be read (using
-> +.BR read (2)
-> +or similar)
-> +from the fanotify file descriptor
-> +returned by
-> +.BR fanotify_init (2).
-> +
-> +Two types of events are generated:
-> +notification events and permission events.
-> +Notification events are merely informative
-> +and require no action to be taken by
-> +the receiving application except for closing the file descriptor passed in the
-> +event.
-> +Permission events are requests to the receiving application to decide whether
-> +permission for a file access shall be granted.
-> +For these events, the recipient must write a response which decides whether
-> +access is granted or not.
-> +
-> +Queue entries for notification events are removed when the event has been
-> +read.
-> +Queue entries for permission events are removed when the permission
-> +decision has been taken by writing to the fanotify file descriptor.
-  This is true however it may be slightly misleading - the permission
-events are removed from the queue as soon as they are read. But they are
-destroyed only after the permission response is received. So from
-userspace POV dequeued events are invisible...
+That should be enough, right?
 
-> +A program listening to fanotify events can compare this PID to the PID returned
-> +by
-> +.BR getpid (2),
-> +to determine whether the event is caused by the listener itself, or is due to a
-> +file access by another program.
-> +.PP
-> +The bit mask in
-> +.I mask
-> +signals which events have occurred for a single filesystem object.
-> +Multiple bits may be set in this mask,
-> +if more than one event occurred for the monitored filesystem obect.
-                                                                ^^ object
+All I see in dmesg are occasional ooms which kill random trinity
+childs. 
 
-> +.B ENOENT
-> +The file descriptor
-> +.I fd
-> +in the response structure is not valid.
-> +This might occur because the file was already deleted by another thread or
-> +process.
-  This isn't quite true. Another thread of the same process may have already
-closed the 'fd'. But it has nothing to do with a file being deleted.
-fanotify uses file descriptors exactly so that renames or deletes don't
-make the event invalid.
+I ran that stuff for almost two days now with a total of 629656086
+syscalls. :(
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thanks,
+
+	tglx
