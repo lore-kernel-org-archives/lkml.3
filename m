@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933229AbaEEXd4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 19:33:56 -0400
-Received: from smtprelay0046.hostedemail.com ([216.40.44.46]:59950 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932931AbaEEXdy (ORCPT
+	id S933306AbaEEXen (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 19:34:43 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:35022 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932246AbaEEXem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 19:33:54 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:69:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3872:3874:4321:4837:5007:7652:7903:10004:10400:10848:11026:11232:11473:11658:11914:12043:12291:12296:12517:12519:12683:12740:13069:13255:13311:13357:13868,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fruit94_79297c3765506
-X-Filterd-Recvd-Size: 1753
-Message-ID: <1399332831.27516.6.camel@joe-AO725>
-Subject: Re: [PATCH] printk: Remove separate printk_sched buffers and use
- printk buf instead
-From: Joe Perches <joe@perches.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, pmladek@suse.cz,
-        Jan Kara <jack@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Mon, 05 May 2014 16:33:51 -0700
-In-Reply-To: <20140505191846.35aa6f9b@gandalf.local.home>
-References: <20140505191846.35aa6f9b@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 5 May 2014 19:34:42 -0400
+Date: Tue, 6 May 2014 00:34:41 +0100 (BST)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Alessandro Zummo <a.zummo@towertech.it>
+cc: John Stultz <john.stultz@linaro.org>, Randy Dunlap <rdunlap@infradead.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <greg@kroah.com>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Prarit Bhargava <prarit@redhat.com>
+Subject: Re: X86: Impossible select Enhanced Real Time Clock Support (legacy
+ PC RTC driver)
+In-Reply-To: <20140428202034.782de089@linux.lan.towertech.it>
+Message-ID: <alpine.LFD.2.11.1405060026210.21408@eddie.linux-mips.org>
+References: <1397415946.1555.16.camel@vger.seibold.net>        <53555C56.1040900@infradead.org>        <CALAqxLVVGM2nON71BbhuD-7eXnqbKGomfL63COaT7nePuQQ=zg@mail.gmail.com> <20140428202034.782de089@linux.lan.towertech.it>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-05 at 19:18 -0400, Steven Rostedt wrote:
-> To prevent deadlocks with doing a printk inside the scheduler,
-> printk_sched() was created. The issue is that printk has a console_sem
-> that it can grab and release. The release does a wake up if there's a
-> task pending on the sem, and this wake up grabs the rq locks that is
-> held in the scheduler. This leads to a possible deadlock if the wake up
-> uses the same rq as the one with the rq lock held already.
-[]
->  kernel/printk/printk.c |   87 +++++++++++++++++++++++++++++++------------------
-[]
-> @@ -2440,18 +2470,20 @@
->  #define PRINTK_BUF_SIZE		512
+On Mon, 28 Apr 2014, Alessandro Zummo wrote:
 
-Wouldn't this define be unused and shouldn't it be deleted too?
+> > But it sounds like the driver/char/rtc bit is dead code, and needs a
+> > cleanup? Or is there some use of that code that you need that the
+> > generic RTC layer doesn't have?
+> 
+>  as far as I know, no recent distribution is using the old code anymore 
+>  and the new (well, not so new anymore) framework provides the same 
+>  functionality.
 
+ Well, the handling of update-ended interrupts is still missing, as is 
+some non-x86 stuff I posted a fix for recently (still pending review, can 
+you please look into it sometime?).
 
+  Maciej
