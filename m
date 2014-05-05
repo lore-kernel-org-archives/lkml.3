@@ -1,162 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933364AbaEEWcn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 18:32:43 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58945 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933077AbaEEW0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 18:26:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,992,1389772800"; 
-   d="scan'208";a="506357932"
-From: Andi Kleen <andi@firstfloor.org>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 08/24] net, diet: Make TCP metrics optional
-Date: Mon,  5 May 2014 15:25:57 -0700
-Message-Id: <1399328773-6531-9-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
-References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
+	id S933387AbaEEWdN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 18:33:13 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:51997 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932076AbaEEWdI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 18:33:08 -0400
+Subject: Re: [PATCH 1/2] uprobes: add comment with insn opcodes, mnemonics
+ and why we dont support them
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <1399314247-7368-1-git-send-email-dvlasenk@redhat.com>
+References: <1399314247-7368-1-git-send-email-dvlasenk@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 May 2014 15:32:04 -0700
+Message-ID: <1399329124.4602.22.camel@oc7886638347.ibm.com.usor.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050522-7164-0000-0000-000001893EE3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Mon, 2014-05-05 at 20:24 +0200, Denys Vlasenko wrote:
+> After adding these, it's clear we have some awkward choices there.
+> Some valid instructions are prohibited from uprobing while
+> several invalid ones are allowed.
+> 
+> Hopefully future edits to the good-opcode tables will fix wrong bits
+> or explain why those bits are not wrong.
+> 
+> No actual code changes.
+> 
+> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+> CC: Jim Keniston <jkenisto@us.ibm.com>
+> CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> CC: Ingo Molnar <mingo@kernel.org>
+> CC: Oleg Nesterov <oleg@redhat.com>
 
-This is all the code that saves connection information
-between different sockets. Not really essential for
-small systems.
+All of the following is FYI.
 
-Saves about 5.5k text
+The good-instruction tables date back 2006-2007.  Back then, the
+philosophy was to disallow any questionable opcodes, and add them back
+into the "good" tables only when a need was demonstrated (i.e., somebody
+needed to probe that particular instruction) and we could verify that
+probing that instruction worked.
 
-   text	   data	    bss	    dec	    hex	filename
- 492952	  19571	  13480	 526003	  806b3	net/built-in.o-with-metrics
- 487675	  19275	  13480	 520430	  7f0ee	net/built-in.o-without-metrics
+This was before the instruction decoder, so we tended to allow/disallow
+prefixes as if they were opcodes.  The fs, gs, and (I think) repz and
+repnz prefixes were initially marked "bad," but were later changed and
+verified as good when the need arose to probe instructions with those
+prefixes.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- include/net/tcp.h          | 25 +++++++++++++++++++++++++
- net/ipv4/Kconfig           |  6 ++++++
- net/ipv4/Makefile          |  3 ++-
- net/ipv4/sysctl_net_ipv4.c |  2 ++
- 4 files changed, 35 insertions(+), 1 deletion(-)
+And lacking the instruction decoder, a two-byte opcode was allowed if
+any form of it was legitimate.
 
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index 87d8774..d741d2f 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -419,14 +419,29 @@ int tcp_child_process(struct sock *parent, struct sock *child,
- 		      struct sk_buff *skb);
- void tcp_enter_loss(struct sock *sk, int how);
- void tcp_clear_retrans(struct tcp_sock *tp);
-+#ifdef CONFIG_TCP_METRICS
- void tcp_update_metrics(struct sock *sk);
- void tcp_init_metrics(struct sock *sk);
- void tcp_metrics_init(void);
-+
- bool tcp_peer_is_proven(struct request_sock *req, struct dst_entry *dst,
- 			bool paws_check);
- bool tcp_remember_stamp(struct sock *sk);
- bool tcp_tw_remember_stamp(struct inet_timewait_sock *tw);
- void tcp_fetch_timewait_stamp(struct sock *sk, struct dst_entry *dst);
-+#else
-+static inline void tcp_update_metrics(struct sock *sk) {}
-+static inline void tcp_init_metrics(struct sock *sk) {}
-+static inline void tcp_metrics_init(void) {}
-+static inline bool tcp_peer_is_proven(struct request_sock *req,
-+				      struct dst_entry *dst,
-+				      bool paws_check) { return false; }
-+static inline bool tcp_remember_stamp(struct sock *sk) { return false; }
-+static inline bool
-+tcp_tw_remember_stamp(struct inet_timewait_sock *tw) { return false; }
-+static inline void
-+tcp_fetch_timewait_stamp(struct sock *sk, struct dst_entry *dst) {}
-+#endif
- void tcp_disable_fack(struct tcp_sock *tp);
- void tcp_close(struct sock *sk, long timeout);
- void tcp_init_sock(struct sock *sk);
-@@ -1296,11 +1311,21 @@ int tcp_md5_hash_key(struct tcp_md5sig_pool *hp,
- 		     const struct tcp_md5sig_key *key);
- 
- /* From tcp_fastopen.c */
-+#ifdef CONFIG_TCP_METRICS
- void tcp_fastopen_cache_get(struct sock *sk, u16 *mss,
- 			    struct tcp_fastopen_cookie *cookie, int *syn_loss,
- 			    unsigned long *last_syn_loss);
- void tcp_fastopen_cache_set(struct sock *sk, u16 mss,
- 			    struct tcp_fastopen_cookie *cookie, bool syn_lost);
-+#else
-+static inline void
-+tcp_fastopen_cache_get(struct sock *sk, u16 *mss,
-+		       struct tcp_fastopen_cookie *cookie, int *syn_loss,
-+		       unsigned long *last_syn_loss) {}
-+static inline void
-+tcp_fastopen_cache_set(struct sock *sk, u16 mss,
-+		       struct tcp_fastopen_cookie *cookie, bool syn_lost) {}
-+#endif
- struct tcp_fastopen_request {
- 	/* Fast Open cookie. Size 0 means a cookie request */
- 	struct tcp_fastopen_cookie	cookie;
-diff --git a/net/ipv4/Kconfig b/net/ipv4/Kconfig
-index 6146b1b..db2dada 100644
---- a/net/ipv4/Kconfig
-+++ b/net/ipv4/Kconfig
-@@ -264,6 +264,12 @@ config IP_PIMSM_V2
- 	  gated-5). This routing protocol is not used widely, so say N unless
- 	  you want to play with it.
- 
-+config TCP_METRICS
-+	bool "Report TCP metrics over netlink"
-+	---help---
-+           Enable support in TCP to save host information between different
-+	   connections.
-+
- config SYN_COOKIES
- 	bool "IP: TCP syncookie support"
- 	---help---
-diff --git a/net/ipv4/Makefile b/net/ipv4/Makefile
-index 756855c..8b17b83 100644
---- a/net/ipv4/Makefile
-+++ b/net/ipv4/Makefile
-@@ -7,7 +7,7 @@ obj-y     := route.o inetpeer.o protocol.o \
- 	     ip_output.o ip_sockglue.o inet_hashtables.o \
- 	     inet_timewait_sock.o inet_connection_sock.o \
- 	     tcp.o tcp_input.o tcp_output.o tcp_timer.o tcp_ipv4.o \
--	     tcp_minisocks.o tcp_cong.o tcp_metrics.o tcp_fastopen.o \
-+	     tcp_minisocks.o tcp_cong.o tcp_fastopen.o \
- 	     tcp_offload.o datagram.o raw.o udp.o udplite.o \
- 	     udp_offload.o arp.o icmp.o devinet.o af_inet.o igmp.o \
- 	     fib_frontend.o fib_semantics.o fib_trie.o \
-@@ -17,6 +17,7 @@ obj-$(CONFIG_NET_IP_TUNNEL) += ip_tunnel.o
- obj-$(CONFIG_IP_PING) += ping.o
- obj-$(CONFIG_SYSCTL) += sysctl_net_ipv4.o
- obj-$(CONFIG_PROC_FS) += proc.o
-+obj-$(CONFIG_TCP_METRICS) += tcp_metrics.o
- obj-$(CONFIG_IP_MULTIPLE_TABLES) += fib_rules.o
- obj-$(CONFIG_IP_MROUTE) += ipmr.o
- obj-$(CONFIG_NET_IPIP) += ipip.o
-diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
-index 44eba05..2110d2e 100644
---- a/net/ipv4/sysctl_net_ipv4.c
-+++ b/net/ipv4/sysctl_net_ipv4.c
-@@ -573,6 +573,7 @@ static struct ctl_table ipv4_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
- 	},
-+#ifdef CONFIG_TCP_METRICS
- 	{
- 		.procname	= "tcp_no_metrics_save",
- 		.data		= &sysctl_tcp_nometrics_save,
-@@ -580,6 +581,7 @@ static struct ctl_table ipv4_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec,
- 	},
-+#endif
- 	{
- 		.procname	= "tcp_moderate_rcvbuf",
- 		.data		= &sysctl_tcp_moderate_rcvbuf,
--- 
-1.9.0
+So (1) I acknowledge that the good/bad-opcode decisions could be much
+more precise, and welcome any improvements in that regard; and (2) once
+again I think somebody should erect a statue of Masami for the
+painstaking work he did on the instruction decoder.  Maybe add Masami
+AND Denys to Mt. Rushmore. :-)
+
+Jim
+
+> ---
+>  arch/x86/kernel/uprobes.c | 153 ++++++++++++++++++++++++++++++++++++++++------
+>  1 file changed, 134 insertions(+), 19 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+> index dbbf6cd..4c66a7c 100644
+> --- a/arch/x86/kernel/uprobes.c
+> +++ b/arch/x86/kernel/uprobes.c
+> @@ -63,6 +63,49 @@
+>   * Good-instruction tables for 32-bit apps.  This is non-const and volatile
+>   * to keep gcc from statically optimizing it out, as variable_test_bit makes
+>   * some versions of gcc to think only *(unsigned long*) is used.
+> + *
+> + * Prefixes. Most marked as "bad", but it doesn't matter, since insn decoder
+> + * won't report *prefixes* as OPCODE1(insn).
+> + * 0f - 2-byte opcode prefix
+> + * 26,2e,36,3e - es:/cs:/ss:/ds:
+> + * 64 - fs: (marked as "good", why?)
+> + * 65 - gs: (marked as "good", why?)
+> + * 66 - operand-size prefix
+> + * 67 - address-size prefix
+> + * f0 - lock prefix
+> + * f2 - repnz    (marked as "good", why?)
+> + * f3 - rep/repz (marked as "good", why?)
+> + *
+> + * Opcodes we'll probably never support:
+> + * 6c-6f - ins,outs. SEGVs if used in userspace
+> + * e4-e7 - in,out imm. SEGVs if used in userspace
+> + * ec-ef - in,out acc. SEGVs if used in userspace
+> + * cc - int3. SIGTRAP if used in userspace
+> + * ce - into. Not used in userspace - no kernel support to make it useful. SEGVs
+> + *	(why we support bound (62) then? it's similar, and similarly unused...)
+> + * f1 - int1. SIGTRAP if used in userspace
+> + * f4 - hlt. SEGVs if used in userspace
+> + * fa - cli. SEGVs if used in userspace
+> + * fb - sti. SEGVs if used in userspace
+> + *
+> + * Opcodes which need some work to be supported:
+> + * 07,17,1f - pop es/ss/ds
+> + *	Normally not used in userspace, but would execute if used.
+> + *	Can cause GP or stack exception if tries to load wrong segment descriptor.
+> + *	We hesitate to run them under single step since kernel's handling
+> + *	of userspace single-stepping (TF flag) is fragile.
+> + *	We can easily refuse to support push es/cs/ss/ds (06/0e/16/1e)
+> + *	on the same grounds that they are never used.
+> + * cd - int N.
+> + *	Used by userspace for "int 80" syscall entry. (Other "int N"
+> + *	cause GP -> SEGV since their IDT gates don't allow calls from CPL 3).
+> + *	Not supported since kernel's handling of userspace single-stepping
+> + *	(TF flag) is fragile.
+> + * cf - iret. Normally not used in userspace. Doesn't SEGV unless arguments are bad
+> + *
+> + * Opcodes which can be enabled right away:
+> + * 63 - arpl. This insn has no unusual exceptions (it's basically an arith op).
+> + * d6 - salc. Undocumented "sign-extend carry flag to AL" insn
+>   */
+>  #if defined(CONFIG_X86_32) || defined(CONFIG_IA32_EMULATION)
+>  static volatile u32 good_insns_32[256 / 32] = {
+> @@ -91,7 +134,55 @@ static volatile u32 good_insns_32[256 / 32] = {
+>  #define good_insns_32	NULL
+>  #endif
+> 
+> -/* Good-instruction tables for 64-bit apps */
+> +/* Good-instruction tables for 64-bit apps.
+> + *
+> + * Prefixes. Most marked as "bad", but it doesn't matter, since insn decoder
+> + * won't report *prefixes* as OPCODE1(insn).
+> + * 0f - 2-byte opcode prefix
+> + * 26,2e,36,3e - es:/cs:/ss:/ds:
+> + * 40-4f - rex prefixes
+> + * 64 - fs: (marked as "good", why?)
+> + * 65 - gs: (marked as "good", why?)
+> + * 66 - operand-size prefix
+> + * 67 - address-size prefix
+> + * f0 - lock prefix
+> + * f2 - repnz    (marked as "good", why?)
+> + * f3 - rep/repz (marked as "good", why?)
+> + *
+> + * Genuinely invalid opcodes:
+> + * 06,07 - formerly push/pop es
+> + * 0e - formerly push cs
+> + * 16,17 - formerly push/pop ss
+> + * 1e,1f - formerly push/pop ds
+> + * 27,2f,37,3f - formerly daa/das/aaa/aas
+> + * 60,61 - formerly pusha/popa
+> + * 62 - formerly bound. EVEX prefix for AVX512
+> + * 82 - formerly redundant encoding of Group1
+> + * 9a - formerly call seg:ofs (marked as "supported"???)
+> + * c4,c5 - formerly les/lds. VEX prefixes for AVX
+> + * ce - formerly into
+> + * d4,d5 - formerly aam/aad
+> + * d6 - formerly undocumented salc
+> + * ea - formerly jmp seg:ofs (marked as "supported"???)
+> + *
+> + * Opcodes we'll probably never support:
+> + * 6c-6f - ins,outs. SEGVs if used in userspace
+> + * e4-e7 - in,out imm. SEGVs if used in userspace
+> + * ec-ef - in,out acc. SEGVs if used in userspace
+> + * cc - int3. SIGTRAP if used in userspace
+> + * f1 - int1. SIGTRAP if used in userspace
+> + * f4 - hlt. SEGVs if used in userspace
+> + * fa - cli. SEGVs if used in userspace
+> + * fb - sti. SEGVs if used in userspace
+> + *
+> + * Opcodes which need some work to be supported:
+> + * cd - int N.
+> + *	Used by userspace for "int 80" syscall entry. (Other "int N"
+> + *	cause GP -> SEGV since their IDT gates don't allow calls from CPL 3).
+> + *	Not supported since kernel's handling of userspace single-stepping
+> + *	(TF flag) is fragile.
+> + * cf - iret. Normally not used in userspace. Doesn't SEGV unless arguments are bad
+> + */
+>  #if defined(CONFIG_X86_64)
+>  static volatile u32 good_insns_64[256 / 32] = {
+>  	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
+> @@ -119,7 +210,48 @@ static volatile u32 good_insns_64[256 / 32] = {
+>  #define good_insns_64	NULL
+>  #endif
+> 
+> -/* Using this for both 64-bit and 32-bit apps */
+> +/* Using this for both 64-bit and 32-bit apps.
+> + * Opcodes we don't support:
+> + * 0f 00 - SLDT/STR/LLDT/LTR/VERR/VERW/-/- group. System insns
+> + * 0f 01 - SGDT/SIDT/LGDT/LIDT/SMSW/-/LMSW/INVLPG group.
+> + *	Also encodes tons of other system insns if mod=11.
+> + *	Some are in fact non-system: xend, xtest, rdtscp, maybe more
+> + * 0f 02 - lar (why? should be safe, it throws no exceptipons)
+> + * 0f 03 - lsl (why? should be safe, it throws no exceptipons)
+> + * 0f 04 - undefined
+> + * 0f 05 - syscall
+> + * 0f 06 - clts (CPL0 insn)
+> + * 0f 07 - sysret
+> + * 0f 08 - invd (CPL0 insn)
+> + * 0f 09 - wbinvd (CPL0 insn)
+> + * 0f 0a - undefined
+> + * 0f 0b - ud1
+> + * 0f 0c - undefined
+> + * 0f 0d - prefetchFOO (amd prefetch insns)
+> + * 0f 18 - prefetchBAR (intel prefetch insns)
+> + * 0f 24 - mov from test regs (perhaps entire 20-27 area can be disabled (special reg ops))
+> + * 0f 25 - undefined
+> + * 0f 26 - mov to test regs
+> + * 0f 27 - undefined
+> + * 0f 30 - wrmsr (CPL0 insn)
+> + * 0f 34 - sysenter
+> + * 0f 35 - sysexit
+> + * 0f 36 - undefined
+> + * 0f 37 - getsec
+> + * 0f 38-3f - 3-byte opcodes (why?? all look safe)
+> + * 0f 78 - vmread
+> + * 0f 79 - vmwrite
+> + * 0f 7a - undefined
+> + * 0f 7b - undefined
+> + * 0f 7c - undefined
+> + * 0f 7d - undefined
+> + * 0f a6 - undefined
+> + * 0f a7 - undefined
+> + * 0f b8 - popcnt (why?? it's an ordinary ALU op)
+> + * 0f d0 - undefined
+> + * 0f f0 - lddqu (why?? it's an ordinary vector load op)
+> + * 0f ff - undefined
+> + */
+>  static volatile u32 good_2byte_insns[256 / 32] = {
+>  	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
+>  	/*      ----------------------------------------------         */
+> @@ -145,23 +277,6 @@ static volatile u32 good_2byte_insns[256 / 32] = {
+>  #undef W
+> 
+>  /*
+> - * opcodes we'll probably never support:
+> - *
+> - *  6c-6d, e4-e5, ec-ed - in
+> - *  6e-6f, e6-e7, ee-ef - out
+> - *  cc, cd - int3, int
+> - *  cf - iret
+> - *  d6 - illegal instruction
+> - *  f1 - int1/icebp
+> - *  f4 - hlt
+> - *  fa, fb - cli, sti
+> - *  0f - lar, lsl, syscall, clts, sysret, sysenter, sysexit, invd, wbinvd, ud2
+> - *
+> - * invalid opcodes in 64-bit mode:
+> - *
+> - *  06, 0e, 16, 1e, 27, 2f, 37, 3f, 60-62, 82, c4-c5, d4-d5
+> - *  63 - we support this opcode in x86_64 but not in i386.
+> - *
+>   * opcodes we may need to refine support for:
+>   *
+>   *  0f - 2-byte instructions: For many of these instructions, the validity
+
 
