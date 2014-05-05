@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390AbaEEIxy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 04:53:54 -0400
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:60555 "EHLO smtp2.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755146AbaEEIxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 04:53:52 -0400
-Date: Mon, 5 May 2014 11:53:48 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-cc: rjw@rjwysocki.net, viresh.kumar@linaro.org, ego@linux.vnet.ibm.com,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] cpufreq: Catch double invocations of
- cpufreq_freq_transition_begin/end
-In-Reply-To: <20140505072129.14454.25747.stgit@srivatsabhat.in.ibm.com>
-Message-ID: <alpine.SOC.1.00.1405051152370.17122@math.ut.ee>
-References: <20140505072129.14454.25747.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1755437AbaEEIzo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 04:55:44 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:49209 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419AbaEEIzm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 04:55:42 -0400
+Date: Mon, 5 May 2014 10:55:37 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Josh Poimboeuf <jpoimboe@redhat.com>
+Cc: Seth Jennings <sjenning@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+Message-ID: <20140505085537.GA32196@gmail.com>
+References: <cover.1398958771.git.jpoimboe@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1398958771.git.jpoimboe@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+* Josh Poimboeuf <jpoimboe@redhat.com> wrote:
+
+> [...]
 > 
-> Changes in v3:
-> Expanded the comment in the code to briefly mention why ASYNC_NOTIFICATION
-> drivers are left out from the check, as suggested by Gautham R. Shenoy.
-> No code changes in this version.
-> 
-> v2: https://lkml.org/lkml/2014/4/29/283
-> v1: https://lkml.org/lkml/2014/4/28/469
+> kpatch checks the backtraces of all tasks in stop_machine() to 
+> ensure that no instances of the old function are running when the 
+> new function is applied.  I think the biggest downside of this 
+> approach is that stop_machine() has to idle all other CPUs during 
+> the patching process, so it inserts a small amount of latency (a few 
+> ms on an idle system).
 
-Seems to work on VIA EPIA with 3.15-rc2 (no other cpufreq fixes):
+When live patching the kernel, how about achieving an even 'cleaner' 
+state for all tasks in the system: to freeze all tasks, as the suspend 
+and hibernation code (and kexec) does, via freeze_processes()?
 
-[    8.250959] ------------[ cut here ]------------
-[    8.251179] WARNING: CPU: 0 PID: 116 at drivers/cpufreq/cpufreq.c:367 cpufreq_freq_transition_begin+0xd3/0xd8()
-[    8.251400] Modules linked in: snd_via82xx snd_mpu401_uart longhaul snd_ac97_codec ac97_bus snd_rawmidi snd_seq_device sg snd_pcm snd_timer vt8231 via_rhine uhci_hcd hwmon ehci_hcd tulip i2c_viapro snd evdev soundcore serio_raw sr_mod i2c_core mii usbcore gameport usb_common cdrom parport_pc fan parport via_agp button agpgart processor
-[    8.253465] CPU: 0 PID: 116 Comm: kworker/0:1 Not tainted 3.15.0-rc2-dirty #40
-[    8.253664] Hardware name: VIA TECHNOLOGIES, INC. EPIA/EPIA, BIOS 6.00 PG 11/02/2004
-[    8.253873] Workqueue: events od_dbs_timer
-[    8.254038]  00000000 00000000 cf6afd60 c1283096 cf6afd90 c101ff15 c135a90c 00000000
-[    8.254574]  00000074 c138ccdc 0000016f c11eaaf0 c11eaaf0 cf542000 00061698 cf582c00
-[    8.255118]  cf6afda0 c101ffa8 00000009 00000000 cf6afdd0 c11eaaf0 cf6afdd8 cf6afdf4
-[    8.255661] Call Trace:
-[    8.255815]  [<c1283096>] dump_stack+0x16/0x18
-[    8.255988]  [<c101ff15>] warn_slowpath_common+0x70/0x87
-[    8.256151]  [<c11eaaf0>] ? cpufreq_freq_transition_begin+0xd3/0xd8
-[    8.256316]  [<c11eaaf0>] ? cpufreq_freq_transition_begin+0xd3/0xd8
-[    8.256482]  [<c101ffa8>] warn_slowpath_null+0x1d/0x1f
-[    8.256641]  [<c11eaaf0>] cpufreq_freq_transition_begin+0xd3/0xd8
-[    8.256809]  [<c1036cba>] ? __srcu_notifier_call_chain+0x24/0x93
-[    8.256989]  [<d06c52d5>] longhaul_setstate+0x88/0x2f1 [longhaul]
-[    8.257149]  [<c1036d43>] ? srcu_notifier_call_chain+0x1a/0x1c
-[    8.257315]  [<c11eaad9>] ? cpufreq_freq_transition_begin+0xbc/0xd8
-[    8.257481]  [<d06c55ba>] longhaul_target+0x7c/0x8b [longhaul]
-[    8.257647]  [<c11eaebd>] __cpufreq_driver_target+0xfe/0x148
-[    8.257824]  [<c10540c6>] ? get_cpu_iowait_time_us+0x84/0xa3
-[    8.257981]  [<c11ebe27>] od_check_cpu+0x75/0x79
-[    8.258135]  [<c11ec7a1>] dbs_check_cpu+0xbd/0xc5
-[    8.258286]  [<c11ec813>] ? need_load_eval+0x18/0x79
-[    8.258439]  [<c11ec004>] od_dbs_timer+0x7a/0xd9
-[    8.258612]  [<c102f808>] process_one_work+0x205/0x363
-[    8.258770]  [<c102f7d7>] ? process_one_work+0x1d4/0x363
-[    8.258927]  [<c10300b3>] ? worker_thread+0x27/0x26f
-[    8.259086]  [<c103022c>] worker_thread+0x1a0/0x26f
-[    8.259244]  [<c103008c>] ? rescuer_thread+0x204/0x204
-[    8.259405]  [<c10339e9>] kthread+0xa3/0xa8
-[    8.259567]  [<c1287bc0>] ret_from_kernel_thread+0x20/0x30
-[    8.259726]  [<c1033946>] ? kthread_create_on_node+0x112/0x112
-[    8.259874] ---[ end trace fe16863c964a8bbe ]---
+That means no tasks in the system have any real kernel execution 
+state, and there's also no problem with long-sleeping tasks, as 
+freeze_processes() is supposed to be fast as well.
 
--- 
-Meelis Roos <mroos@linux.ee>
+I.e. go for the most conservative live patching state first, and relax 
+it only once the initial model is upstream and is working robustly.
+
+Thanks,
+
+	Ingo
