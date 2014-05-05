@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558AbaEEP5L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 11:57:11 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:53732 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754719AbaEEP5I (ORCPT
+	id S1755406AbaEEP4q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 11:56:46 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:33851 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754179AbaEEPzC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 11:57:08 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Mon, 5 May 2014 12:00:44 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Vince Weaver <vincent.weaver@maine.edu>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [perf] more perf_fuzzer memory corruption
-In-Reply-To: <20140505093124.GN17778@laptop.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1405051200010.31049@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1405021218350.22556@vincent-weaver-1.umelst.maine.edu> <20140502162234.GX11096@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405021230130.22556@vincent-weaver-1.umelst.maine.edu> <20140502172731.GK30445@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1405021337390.22556@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.02.1405022111540.6261@ionos.tec.linutronix.de> <alpine.DEB.2.10.1405021611540.23984@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.02.1405022243550.6261@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1405022227420.25174@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405022253530.25174@vincent-weaver-1.umelst.maine.edu> <20140505093124.GN17778@laptop.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 5 May 2014 11:55:02 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [PATCH 3/9] ARM: STi: DT: STiH416: Remove unused CLK_S_GMAC0_PHY & CLK_S_ETH1_PHY fixed clocks
+Date: Mon,  5 May 2014 17:53:37 +0200
+Message-Id: <1399305223-18703-4-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399305223-18703-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1399305223-18703-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-05_02:2014-05-05,2014-05-05,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 May 2014, Peter Zijlstra wrote:
+CLK_S_GMAC0_PHY &  CLK_S_ETH1_PH clocks are no longer used.
 
-> Does this one work better? Making sure all __perf_remove_from_context()
-> callers pass the right structure seems to improve things no end. My
-> machine is now happy to reboot again.
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+---
+ arch/arm/boot/dts/stih416-clock.dtsi | 14 --------------
+ 1 file changed, 14 deletions(-)
 
-Yes, I've been fuzzing this for a few hours on both my haswell and core2 
-test systems and it's doing great, also survived a reboot cycle.
-
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-
-(Although often things like to crash the instant my tested-by e-mails 
-clear the lkml list.)
-
-I also want to say thanks for all the work everyone has done in getting 
-this analyzed and fixed.
-
-Vince
-
+diff --git a/arch/arm/boot/dts/stih416-clock.dtsi b/arch/arm/boot/dts/stih416-clock.dtsi
+index 47bbfd4..fdb5654 100644
+--- a/arch/arm/boot/dts/stih416-clock.dtsi
++++ b/arch/arm/boot/dts/stih416-clock.dtsi
+@@ -34,20 +34,6 @@
+ 			clock-frequency = <600000000>;
+ 		};
+ 
+-		CLK_S_GMAC0_PHY: clockgenA1@7 {
+-			#clock-cells = <0>;
+-			compatible = "fixed-clock";
+-			clock-frequency = <25000000>;
+-			clock-output-names = "CLK_S_GMAC0_PHY";
+-		};
+-
+-		CLK_S_ETH1_PHY: clockgenA0@7 {
+-			#clock-cells = <0>;
+-			compatible = "fixed-clock";
+-			clock-frequency = <25000000>;
+-			clock-output-names = "CLK_S_ETH1_PHY";
+-		};
+-
+ 		/*
+ 		 * ClockGenAs on SASG2
+ 		 */
+-- 
+1.9.1
 
