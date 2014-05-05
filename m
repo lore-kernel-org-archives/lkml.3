@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283AbaEEIiY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 04:38:24 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:48060 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754883AbaEEIiW (ORCPT
+	id S1755338AbaEEIjD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 04:39:03 -0400
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:57675 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755120AbaEEIjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 04:38:22 -0400
-Date: Mon, 5 May 2014 10:37:57 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>, Mugunthan V N <mugunthanvnm@ti.com>,
-        Tony Lindgren <tony@atomide.com>, bcousson@baylibre.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Leigh Brown <leigh@solinno.co.uk>, devicetree@vger.kernel.org
-Subject: Re: [PATCH 3.14 012/158] ARM: dts: am33xx: correcting dt node unit
- address for usb
-Message-ID: <20140505083757.GB30739@localhost>
-References: <20140504154029.975081050@linuxfoundation.org>
- <20140504154031.690140742@linuxfoundation.org>
+	Mon, 5 May 2014 04:39:01 -0400
+Date: Mon, 5 May 2014 11:38:56 +0300
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: DaeSeok Youn <daeseok.youn@gmail.com>
+Cc: m.chehab@samsung.com, linux-dev@sensoray.com, hans.verkuil@cisco.com,
+        linux-media@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [media] s2255drv: fix memory leak s2255_probe()
+Message-ID: <20140505083856.GZ8753@valkosipuli.retiisi.org.uk>
+References: <1408657.25U3i1DfG3@daeseok-laptop.cloud.net>
+ <20140415093305.GE8753@valkosipuli.retiisi.org.uk>
+ <CAHb8M2CECG7ydo9L2u5BOcQeq8V3=ydy149kCLkoueo+HbD6fg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140504154031.690140742@linuxfoundation.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <CAHb8M2CECG7ydo9L2u5BOcQeq8V3=ydy149kCLkoueo+HbD6fg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 04, 2014 at 11:38:41AM -0400, Greg Kroah-Hartman wrote:
-> 3.14-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Apr 15, 2014 at 07:54:43PM +0900, DaeSeok Youn wrote:
+> Hi, Sakari
+> 
+> 2014-04-15 18:33 GMT+09:00 Sakari Ailus <sakari.ailus@iki.fi>:
+> > Hi Daeseok,
+> >
+> > On Tue, Apr 15, 2014 at 01:49:34PM +0900, Daeseok Youn wrote:
+> >>
+> >> smatch says:
+> >>  drivers/media/usb/s2255/s2255drv.c:2246 s2255_probe() warn:
+> >> possible memory leak of 'dev'
+> >>
+> >> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> >> ---
+> >>  drivers/media/usb/s2255/s2255drv.c |    1 +
+> >>  1 files changed, 1 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/drivers/media/usb/s2255/s2255drv.c b/drivers/media/usb/s2255/s2255drv.c
+> >> index 1d4ba2b..8aca3ef 100644
+> >> --- a/drivers/media/usb/s2255/s2255drv.c
+> >> +++ b/drivers/media/usb/s2255/s2255drv.c
+> >> @@ -2243,6 +2243,7 @@ static int s2255_probe(struct usb_interface *interface,
+> >>       dev->cmdbuf = kzalloc(S2255_CMDBUF_SIZE, GFP_KERNEL);
+> >>       if (dev->cmdbuf == NULL) {
+> >>               s2255_dev_err(&interface->dev, "out of memory\n");
+> >> +             kfree(dev);
+> >>               return -ENOMEM;
+> >>       }
+> >>
+> >
+> > The rest of the function already uses goto and labels for error handling. I
+> > think it'd take adding one more. dev is correctly released in other error
+> > cases.
+> I am not sure that adding a new label for error handling when
+> allocation for dev->cmdbuf is failed.
+> I think it is ok to me. :-) Because I think it is not good adding a
+> new label and use goto statement for this.
 
-This one should not be backported without commit
+I can ack this if you use the same pattern for error handling that's already
+there.
 
-	a2f8d6b30321 ("ARM: dts: am335x: update USB DT references")
-
-which is in Linus' tree but is not marked for stable (or USB will be
-disabled for the boards relying on the old node addresses).
-
-Thanks,
-Johan
-
-> ------------------
-> 
-> From: Mugunthan V N <mugunthanvnm@ti.com>
-> 
-> commit 8abcdd680d543fb582371e146e62ba9f2af8a816 upstream.
-> 
-> DT node's unit address should be its own register offset address to make it a
-> unique across the system. This patch corrects the incorrect USB entries with
-> correct register offset for unit address.
-> 
-> Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> Acked-by: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
-> Signed-off-by: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
->  arch/arm/boot/dts/am33xx.dtsi |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> --- a/arch/arm/boot/dts/am33xx.dtsi
-> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> @@ -448,7 +448,7 @@
->  			ti,hwmods = "usb_otg_hs";
->  			status = "disabled";
->  
-> -			usb_ctrl_mod: control@44e10000 {
-> +			usb_ctrl_mod: control@44e10620 {
->  				compatible = "ti,am335x-usb-ctrl-module";
->  				reg = <0x44e10620 0x10
->  					0x44e10648 0x4>;
-> @@ -551,7 +551,7 @@
->  					"tx14", "tx15";
->  			};
->  
-> -			cppi41dma: dma-controller@07402000 {
-> +			cppi41dma: dma-controller@47402000 {
->  				compatible = "ti,am3359-cppi41";
->  				reg =  <0x47400000 0x1000
->  					0x47402000 0x1000
+-- 
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
