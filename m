@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173AbaEEUQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:16:56 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:62576 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752330AbaEEUQz (ORCPT
+	id S1754550AbaEEUUK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:20:10 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33302 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328AbaEEUUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:16:55 -0400
-Message-ID: <5367F1B4.2010704@linaro.org>
-Date: Mon, 05 May 2014 13:16:52 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>
-CC: LKML <linux-kernel@vger.kernel.org>, Jiri Bohac <jbohac@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 1/4] printk: Re-add irqsave/restore in printk_sched
-References: <1399068558-2373-1-git-send-email-john.stultz@linaro.org> <1399068558-2373-2-git-send-email-john.stultz@linaro.org> <20140504145847.GA7433@quack.suse.cz> <20140504161312.GL17778@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140504161312.GL17778@laptop.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 5 May 2014 16:20:09 -0400
+Date: Mon, 05 May 2014 16:20:04 -0400 (EDT)
+Message-Id: <20140505.162004.1797345518474659123.davem@davemloft.net>
+To: linux-kernel@vger.kernel.org
+CC: iamjoonsoo.kim@lge.com, sparclinux@vger.kernel.org, hannes@cmpxchg.org,
+        cl@linux.com, penberg@kernel.org, torvalds@linux-foundation.org
+Subject: [PATCH] slab: Fix off by one in object max number tests.
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 05 May 2014 13:20:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2014 09:13 AM, Peter Zijlstra wrote:
-> On Sun, May 04, 2014 at 04:58:47PM +0200, Jan Kara wrote:
->> On Fri 02-05-14 15:09:15, John Stultz wrote:
->>> A commit in akpm's tree (printk: remove separate printk_sched
->>> buffers...), removed the printk_sched irqsave/restore lines
->>> since it was safe for current users. Since we may be expanding
->>> usage of printk_sched(), re-add the irqsave/restore logic
->>> to make the functionality more generally safe.
->>   So I'm just wondering: Do you have anything particular for which you need
->> interrupts disabled? Won't e.g. disabling preemption be enough?
-> Yeah, I think preemption disabled is sufficient.
 
-Ok, will change this and resend.
+If freelist_idx_t is a byte, SLAB_OBJ_MAX_NUM should be 255 not 256,
+and likewise if freelist_idx_t is a short, then it should be 65535 not
+65536.
 
-thanks
--john
+Fixes: a41adfa ("slab: introduce byte sized index for the freelist of a slab")
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+
+This was leading to all kinds of random crashes on sparc64 where PAGE_SIZE
+is 8192.  One problem shown was that if spinlock debugging was enabled,
+we'd get deadlocks in copy_pte_range() or do_wp_page() with the same cpu
+already holding a lock it shouldn't hold, or the lock belonging to a
+completely unrelated process.
+
+diff --git a/mm/slab.c b/mm/slab.c
+index 388cb1a..37de3a7 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -166,7 +166,7 @@ typedef unsigned char freelist_idx_t;
+ typedef unsigned short freelist_idx_t;
+ #endif
+ 
+-#define SLAB_OBJ_MAX_NUM (1 << sizeof(freelist_idx_t) * BITS_PER_BYTE)
++#define SLAB_OBJ_MAX_NUM ((1 << sizeof(freelist_idx_t) * BITS_PER_BYTE) - 1)
+ 
+ /*
+  * true if a page was allocated from pfmemalloc reserves for network-based
