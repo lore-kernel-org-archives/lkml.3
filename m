@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932595AbaEEMzr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 08:55:47 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:40996 "EHLO
+	id S932533AbaEEMzq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 08:55:46 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:40991 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932270AbaEEMne (ORCPT
+	by vger.kernel.org with ESMTP id S932285AbaEEMne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 May 2014 08:43:34 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Emil Goode <emilgoode@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: linux-kernel@vger.kernel.org, Petr Tesarik <ptesarik@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 02/50] brcmsmac: fix deadlock on missing firmware
-Date: Mon,  5 May 2014 14:42:44 +0200
-Message-Id: <de0b7b0dd1b625c8b4730869ae3d651e9189617c.1399292849.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 03/50] /dev/mem: handle out-of-bounds read/write
+Date: Mon,  5 May 2014 14:42:45 +0200
+Message-Id: <3566e03b5bc9c06855b07423ab4c6e2710aa21e4.1399292849.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
 References: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
@@ -24,89 +24,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emil Goode <emilgoode@gmail.com>
+From: Petr Tesarik <ptesarik@suse.cz>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 8fc1e8c240aab968db658b2d8d079b4391207a36 upstream.
+commit 08d2d00b291ed4eb91530050274e67a761c1901d upstream.
 
-When brcm80211 firmware is not installed networking hangs.
-A deadlock happens because we call ieee80211_unregister_hw()
-from the .start callback of struct ieee80211_ops. When .start
-is called we are under rtnl lock and ieee80211_unregister_hw()
-tries to take it again.
+The loff_t type may be wider than phys_addr_t (e.g. on 32-bit systems).
+Consequently, the file offset may be truncated in the assignment.
+Currently, /dev/mem wraps around, which may cause applications to read
+or write incorrect regions of memory by accident.
 
-Function call stack:
+Let's follow POSIX file semantics here and return 0 when reading from
+and -EFBIG when writing to an offset that cannot be represented by a
+phys_addr_t.
 
-dev_change_flags()
-	__dev_change_flags()
-		__dev_open()
-			ASSERT_RTNL() <-- Assert rtnl lock
-			ops->ndo_open()
+Note that the conditional is optimized out by the compiler if loff_t
+has the same size as phys_addr_t.
 
-.ndo_open = ieee80211_open,
-
-ieee80211_open()
-	ieee80211_do_open()
-		drv_start()
-			local->ops->start()
-
-.start = brcms_ops_start,
-
-brcms_ops_start()
-	brcms_remove()
-		ieee80211_unregister_hw()
-			rtnl_lock() <-- Here we deadlock
-
-Introduced by:
-commit 25b5632fb35ca61b8ae3eee235edcdc2883f7a5e
-("brcmsmac: request firmware in .start() callback")
-
-This patch fixes the bug by removing the call to brcms_remove()
-and moves the brcms_request_fw() call to the top of the .start
-callback to not initiate anything unless firmware is installed.
-
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ drivers/char/mem.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c b/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c
-index edc5d105ff98..03a56dfba2db 100644
---- a/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c
-@@ -426,6 +426,12 @@ static int brcms_ops_start(struct ieee80211_hw *hw)
- 	bool blocked;
- 	int err;
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index f895a8c8a244..d1f4675809f8 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -100,6 +100,9 @@ static ssize_t read_mem(struct file *file, char __user *buf,
+ 	ssize_t read, sz;
+ 	char *ptr;
  
-+	if (!wl->ucode.bcm43xx_bomminor) {
-+		err = brcms_request_fw(wl, wl->wlc->hw->d11core);
-+		if (err)
-+			return -ENOENT;
-+	}
++	if (p != *ppos)
++		return 0;
 +
- 	ieee80211_wake_queues(hw);
- 	spin_lock_bh(&wl->lock);
- 	blocked = brcms_rfkill_set_hw_state(wl);
-@@ -433,14 +439,6 @@ static int brcms_ops_start(struct ieee80211_hw *hw)
- 	if (!blocked)
- 		wiphy_rfkill_stop_polling(wl->pub->ieee_hw->wiphy);
+ 	if (!valid_phys_addr_range(p, count))
+ 		return -EFAULT;
+ 	read = 0;
+@@ -158,6 +161,9 @@ static ssize_t write_mem(struct file *file, const char __user *buf,
+ 	unsigned long copied;
+ 	void *ptr;
  
--	if (!wl->ucode.bcm43xx_bomminor) {
--		err = brcms_request_fw(wl, wl->wlc->hw->d11core);
--		if (err) {
--			brcms_remove(wl->wlc->hw->d11core);
--			return -ENOENT;
--		}
--	}
--
- 	spin_lock_bh(&wl->lock);
- 	/* avoid acknowledging frames before a non-monitor device is added */
- 	wl->mute_tx = true;
++	if (p != *ppos)
++		return -EFBIG;
++
+ 	if (!valid_phys_addr_range(p, count))
+ 		return -EFAULT;
+ 
 -- 
 1.9.2
 
