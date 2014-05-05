@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932866AbaEEOAW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 10:00:22 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:55861 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932438AbaEEOAT (ORCPT
+	id S932683AbaEEODZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 10:03:25 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42444 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932438AbaEEODY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 10:00:19 -0400
+	Mon, 5 May 2014 10:03:24 -0400
+Message-ID: <53679A00.70803@ti.com>
+Date: Mon, 5 May 2014 17:02:40 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <536794CB.8060903@linuxfoundation.org>
-References: <CA+55aFz6Sxjy9jdai=TkeB2Rbpu0ydL4-YW4j-S-9oixDu5oZw@mail.gmail.com>
-	<CA+5PVA4Wt19ByW5c__jJWFFz0_0uvnbQeRn13w6S43TMZJt8YA@mail.gmail.com>
-	<536794CB.8060903@linuxfoundation.org>
-Date: Mon, 5 May 2014 10:00:19 -0400
-X-Google-Sender-Auth: 1eQANCS0BxH_vjWxPC4gOJGzehs
-Message-ID: <CA+5PVA7HQ5txe_PTGD1wdrOLA1LEw1B6eXyu3i=riLjB_cevDA@mail.gmail.com>
-Subject: Re: Linux 3.15-rc4
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Konstantin Ryabitsev <konstantin@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Paul Walmsley <paul@pwsan.com>,
+        Illia Smyrnov <illia.smyrnov@globallogic.com>
+CC: =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <grygorii.strashko@ti.com>
+Subject: Re: [PATCH] ARM: OMAP4: hwmod: Fix SOFTRESET logic for OMAP4
+References: <1391612769-27890-1-git-send-email-illia.smyrnov@globallogic.com> <alpine.DEB.2.02.1402191752590.8777@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.02.1402191752590.8777@utopia.booyaka.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 5, 2014 at 9:40 AM, Konstantin Ryabitsev
-<konstantin@linuxfoundation.org> wrote:
-> On 05/05/14 08:38 AM, Josh Boyer wrote:
->> Did the patch-3.15-rc4.xz tarball not get uploaded/created on
->> kernel.org?  The frontpage doesn't seem to have been updated for -rc4,
->> and I can't find it here either:
+Hi Illia,
+
+On 02/19/2014 07:53 PM, Paul Walmsley wrote:
+> On Wed, 5 Feb 2014, Illia Smyrnov wrote:
+> 
+>> Commit 313a76e (ARM: OMAP2+: hwmod: Fix SOFTRESET logic) introduced
+>> softreset bit cleaning right after set one. It is caused L3 error for
+>> OMAP4 ISS because ISS register write occurs when ISS reset process is in
+>> progress. Avoid this situation by cleaning softreset bit later, when reset
+>> process is successfully finished.
 >>
->> https://www.kernel.org/pub/linux/kernel/v3.x/testing/
->
-> Looks like it got placed into /v3.x/ instead of /testing/. I'll move it
-> into /testing/ shortly, which should kick off the site update (the
-> script only looks for -rc kernels in /testing/).
+>> Signed-off-by: Illia Smyrnov <illia.smyrnov@globallogic.com>
+> 
+> Thanks, queued for v3.14-rc with notations from Grygorii and Roger.
+> 
 
-Ah, great.  Thanks for the quick reply.
+This hasn't made it to the stable kernels yet.
 
-josh
+Could you please send commit 01142519ffc0 to stable@vger.kernel.org for
+v3.4+ kernels? Thanks.
+
+cheers,
+-roger
+
