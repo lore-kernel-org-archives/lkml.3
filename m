@@ -1,145 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249AbaEEEXZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 00:23:25 -0400
-Received: from mga03.intel.com ([143.182.124.21]:13608 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750882AbaEEEXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 00:23:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,985,1389772800"; 
-   d="scan'208";a="427544738"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Josh Boyer <jwboyer@fedoraproject.org>, Lv Zheng <zetalog@gmail.com>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Moore, Robert" <robert.moore@intel.com>
-Subject: RE: [PATCH 20/27] ACPICA: Tables: Fix invalid pointer accesses in
- acpi_tb_parse_root_table().
-Thread-Topic: [PATCH 20/27] ACPICA: Tables: Fix invalid pointer accesses in
- acpi_tb_parse_root_table().
-Thread-Index: AQHPZ/iuve4rvQgJnEi8eqtq/mEgq5sxYmJQ
-Date: Mon, 5 May 2014 04:23:02 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E8802559B1C@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1398817612.git.lv.zheng@intel.com>
- <c226eed72699ee1934426074b9d1c902ccfa0b48.1398817612.git.lv.zheng@intel.com>
- <CA+5PVA58OC2dbk5oqTSQjOsCVzYfF+8nfat1Nbd2cCRTxbn5Pg@mail.gmail.com>
- <1717964.6jLQaaky5K@vostro.rjw.lan>
-In-Reply-To: <1717964.6jLQaaky5K@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1754319AbaEEEZJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 00:25:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35423 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751090AbaEEEZH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 00:25:07 -0400
+Date: Sun, 4 May 2014 23:21:47 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: Re: [PATCH] spi: Force the registration of the spidev devices
+Message-ID: <20140505042147.GE11606@lukather>
+References: <1398705774-12361-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20140429183758.GH15125@sirena.org.uk>
+ <20140430180609.GC3000@lukather>
+ <20140501011811.GF3245@sirena.org.uk>
+ <20140501223629.GJ3000@lukather>
+ <20140502174048.GV3245@sirena.org.uk>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BQPnanjtCNWHyqYD"
+Content-Disposition: inline
+In-Reply-To: <20140502174048.GV3245@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s454NUCd032630
 
-Hi, Rafael
 
-> From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Rafael J. Wysocki
-> Sent: Monday, May 05, 2014 8:43 AM
-> 
-> On Saturday, May 03, 2014 08:59:14 AM Josh Boyer wrote:
-> > On Tue, Apr 29, 2014 at 10:05 PM, Lv Zheng <lv.zheng@intel.com> wrote:
-> > > The commit of back porting Linux XSDT validation mechanism has introduced
-> > > a regreession:
-> > >   Commit: 671cc68dc61f029d44b43a681356078e02d8dab8
-> > >   Subject: ACPICA: Back port and refine validation of the XSDT root table.
-> > > There is a pointer still accessed after unmapping.
-> > >
-> > > This patch fixes this issue.  Lv Zheng.
-> > >
-> > > Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=73911
-> > > Buglink: https://bugs.archlinux.org/task/39811
-> > > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> > > Reported-and-tested-by: Bruce Chiarelli <mano155@gmail.com>
-> > > Reported-and-tested-by: Spyros Stathopoulos <spystath@gmail.com>
-> > > Signed-off-by: Bob Moore <robert.moore@intel.com>
-> > > Cc: <stable@vger.kernel.org> # 3.14.x: 671cc68: ACPICA: Back port and refine validation of the XSDT root table.
-> >
-> > This patch should get into 3.15-rcX soon.  It fixes a known regression
-> > that prevents booting on machines with AMI firmware, and that is
-> > present in 3.14 so we need it for stable as well.  Rafael?
-> 
-> Lv, is it safe to take this patch alone into 3.15-rc?
+--BQPnanjtCNWHyqYD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, it's safe to only take this patch to be a regression fix.
-I'm sorry for the regression I made in the bisected commit.
+On Fri, May 02, 2014 at 10:40:48AM -0700, Mark Brown wrote:
+> > i2c-dev works great in these cases, because you always have access to
+> > all the bus, and all the devices, except if the device is already used
+> > by someone. The patch I suggested is an attempt to mimic this.
+>=20
+> It seems better to implement something like this at the device model
+> level, provide a way to have a default UIO driver for anything on a
+> given bus.  I don't see anything bus specific apart from saying what the
+> default driver to use is and it avoids the icky code fiddling about with
+> what devices are bound and the races that might be involved duplicated
+> in individual buses.
 
-Thanks and best regards
--Lv
+Hmmm, yes, that's probably a great long-term way of dealing with this,
+but I don't see it happening soon.
 
-> 
-> Rafael
-> 
-> 
-> > > ---
-> > >  drivers/acpi/acpica/tbutils.c |    7 +++++--
-> > >  1 file changed, 5 insertions(+), 2 deletions(-)
-> > >
-> > > diff --git a/drivers/acpi/acpica/tbutils.c b/drivers/acpi/acpica/tbutils.c
-> > > index 6c31d77..e1638ad 100644
-> > > --- a/drivers/acpi/acpica/tbutils.c
-> > > +++ b/drivers/acpi/acpica/tbutils.c
-> > > @@ -355,6 +355,7 @@ acpi_status __init acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
-> > >         u32 table_count;
-> > >         struct acpi_table_header *table;
-> > >         acpi_physical_address address;
-> > > +       acpi_physical_address rsdt_address;
-> > >         u32 length;
-> > >         u8 *table_entry;
-> > >         acpi_status status;
-> > > @@ -383,11 +384,14 @@ acpi_status __init acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
-> > >                  * as per the ACPI specification.
-> > >                  */
-> > >                 address = (acpi_physical_address) rsdp->xsdt_physical_address;
-> > > +               rsdt_address =
-> > > +                   (acpi_physical_address) rsdp->rsdt_physical_address;
-> > >                 table_entry_size = ACPI_XSDT_ENTRY_SIZE;
-> > >         } else {
-> > >                 /* Root table is an RSDT (32-bit physical addresses) */
-> > >
-> > >                 address = (acpi_physical_address) rsdp->rsdt_physical_address;
-> > > +               rsdt_address = address;
-> > >                 table_entry_size = ACPI_RSDT_ENTRY_SIZE;
-> > >         }
-> > >
-> > > @@ -410,8 +414,7 @@ acpi_status __init acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
-> > >
-> > >                         /* Fall back to the RSDT */
-> > >
-> > > -                       address =
-> > > -                           (acpi_physical_address) rsdp->rsdt_physical_address;
-> > > +                       address = rsdt_address;
-> > >                         table_entry_size = ACPI_RSDT_ENTRY_SIZE;
-> > >                 }
-> > >         }
-> > > --
-> > > 1.7.10
-> > >
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--BQPnanjtCNWHyqYD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTZxHbAAoJEBx+YmzsjxAguHcP/1LgErzSVAuc2Fbo+te3I4ff
+Hmcd2Q0lekO/abNgGJwiFLvB4BZ2RXufh/cQdABkVjV3dNwC0W+XnQuckX6yHWME
+TIJ2gpPGVh2iaQRoU9BHPxRfCNuQuoSaedLAZMGQzhrxXyGGIktbmb+jMqYJ4/58
+ryUF5cMX+3rzI12eZv0zUJUNsNvPZlgC46dc6qAWqy6RMuNFKVZtnuQKUgDsXQHA
+6zKgJaxuNXBiS5YDAJsGdbTffql+HHjW1JvXK4W4cCmqKDEjXbTXs++yiA4ZlzU8
+6FCiKJAGU4uYsrgqWRWSwbLH2u8LBYRA0rX+FEozfeine0DsmZwD+qhMwKzJjAAI
+u+R+VmMSAp/dRTzKOR0gOsxSLCJqiqxiZpzkSsh+L2HXy907Irr8cBpoRzp9S9Lq
+ZuUV5tFtlNllKmvrUe+anmJ891+4y10aOxrK3cta7xaEdtWS1SSBRec28LADVrmL
+sSllZpq7x4ZpC9QMUBlKNWkjsjzVsiWskLsDYMB2hoyX/tX6GaeWrvlA9NJiKWjZ
+UX2l552ZdvFPSKWZTH+Jxz6vmyBPlrOy4u4VvP1sc74hlXsLAuHdA+cBr6kXG7jR
+2zyoUMqDssPbkyocofy6807S8sgkWudAzN5s2fK/Q+i3ca4x1TC/tbsDmycPi6RD
+rrWeC7bcLQQG7qY0E3Ci
+=ovOX
+-----END PGP SIGNATURE-----
+
+--BQPnanjtCNWHyqYD--
