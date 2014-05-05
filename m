@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199AbaEEVSL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 17:18:11 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:40725 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755831AbaEEVSK (ORCPT
+	id S1756494AbaEEVTi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 17:19:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51156 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755089AbaEEVTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 17:18:10 -0400
-Date: Mon, 5 May 2014 14:18:15 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: Re: [GIT PULL] at91: DT for 3.16 #1
-Message-ID: <20140505211815.GC29245@quad.lixom.net>
-References: <1397858579-11619-1-git-send-email-nicolas.ferre@atmel.com>
+	Mon, 5 May 2014 17:19:37 -0400
+Date: Mon, 5 May 2014 14:22:43 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PULL] Staging driver fixes for 3.15-rc5
+Message-ID: <20140505212243.GA3758@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397858579-11619-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 19, 2014 at 12:02:59AM +0200, Nicolas Ferre wrote:
-> Arnd, Olof, Kevin,
-> 
-> Here is the first AT91 DT pull-request for 3.16. Nice enhancements for
-> three different products.
-> 
-> Thanks, best regards,
-> 
-> The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
-> 
->   Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://github.com/at91linux/linux-at91.git tags/at91-dt
-> 
-> for you to fetch changes up to 27a96a0364787d2b41d2a72d08143d95263e1b07:
-> 
->   ARM: at91: sama5d3: clock for ssc from rk pin (2014-04-18 22:43:44 +0200)
+The following changes since commit d1db0eea852497762cab43b905b879dfcd3b8987:
 
-Merged, thanks.
+  Linux 3.15-rc3 (2014-04-27 19:29:27 -0700)
 
--Olof
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.15-rc4
+
+for you to fetch changes up to 86281966c7395aa9a13a20c52e26005f5e142451:
+
+  Merge tag 'iio-fixes-for-3.15b' of git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio into staging-linus (2014-04-30 14:19:23 -0700)
+
+----------------------------------------------------------------
+
+Staging / IIO fixes for 3.15-rc4
+
+Here are some small IIO driver fixes for 3.15-rc4 that resolve some
+reported issues.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Atilla Filiz (1):
+      iio:imu:mpu6050: Fixed segfault in Invensens MPU driver due to null dereference
+
+Doug Anderson (1):
+      iio: adc: Nothing in ADC should be a bool CONFIG
+
+Greg Kroah-Hartman (1):
+      Merge tag 'iio-fixes-for-3.15b' of git://git.kernel.org/.../jic23/iio into staging-linus
+
+Jimmy Li (1):
+      staging:iio:ad2s1200 fix missing parenthesis in a for statment.
+
+Naveen Krishna Ch (1):
+      iio: exynos_adc: use indio_dev->dev structure to handle child nodes
+
+ drivers/iio/adc/Kconfig                    | 4 ++--
+ drivers/iio/adc/exynos_adc.c               | 6 +++---
+ drivers/iio/imu/inv_mpu6050/inv_mpu_core.c | 7 +++++--
+ drivers/staging/iio/resolver/ad2s1200.c    | 3 ++-
+ 4 files changed, 12 insertions(+), 8 deletions(-)
