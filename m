@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610AbaEEGSX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 02:18:23 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:42139 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754473AbaEEGSW (ORCPT
+	id S1754644AbaEEGWx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 02:22:53 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:48381 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754473AbaEEGWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 02:18:22 -0400
-X-AuditID: cbfec7f5-b7fae6d000004d6d-55-53672d2bfa92
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: linux@arm.linux.org.uk
-Cc: nicolas.pitre@linaro.org, will.deacon@arm.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: [PATCH] arm: put_user: fix possible data corruption in put_user
-Date: Mon, 05 May 2014 10:13:58 +0400
-Message-id: <1399270438-26181-1-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLJMWRmVeSWpSXmKPExsVy+t/xy7rauunBBnPfC1ts+/WIzWLT42us
-	Fpd3zWGzuH2Z1+LTs3/sFi8/nmBxYPNYM28No0dLcw+bx51re9g8Ni+p9+jbsorR4/MmuQC2
-	KC6blNSczLLUIn27BK6M1z+msBcc4Kxo2r+auYHxKnsXIyeHhICJxOWFLUwQtpjEhXvr2boY
-	uTiEBJYySjxfuYQVwulhkljRuBqsg01AT+LfrO1sILaIgJTEjJ1L2UGKmAUWM0qseP2EGSQh
-	LOAhceBDG1gDi4CqxNx3h8BsXgE3ifbPk9gg1ilILPuylnkCI/cCRoZVjKKppckFxUnpuUZ6
-	xYm5xaV56XrJ+bmbGCFB8nUH49JjVocYBTgYlXh4PbxTgoVYE8uKK3MPMUpwMCuJ8M5iTA8W
-	4k1JrKxKLcqPLyrNSS0+xMjEwSnVwNg5eb4XQ3TID36JG84nGLz9Sir0Wnbez9N9/Xk2n6rj
-	worMGbWzH6xXt5F0e1bS8XlzdtumaVeu9BeLC4Qce/Bpja9H+MpXx0OcOF6tKLt0S+mH1lyx
-	yR0C+p4rBS2EFYIyNes2h+5YIKaWMX3xrYfrvKMn9WzTfBB58kvXxi1+P5pD3svaeiuxFGck
-	GmoxFxUnAgD+pw0r8AEAAA==
+	Mon, 5 May 2014 02:22:52 -0400
+Date: Mon, 5 May 2014 02:22:33 -0400 (EDT)
+From: Jon Maxwell <jmaxwell@redhat.com>
+To: Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        Stephen Hemminger <stephen@networkplumber.org>
+Cc: Jon Maxwell <jmaxwell37@gmail.com>, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        makita toshiaki <makita.toshiaki@lab.ntt.co.jp>, vyasevic@redhat.com,
+        bridge@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Jiri Pirko <jpirko@redhat.com>
+Message-ID: <2104584205.374814.1399270953940.JavaMail.zimbra@redhat.com>
+In-Reply-To: <CAADnVQL3OZwZ0q_utwE_JhYYGbKPHwwqwHsBZ9g+0XAS__BpWQ@mail.gmail.com>
+References: <1399238974-6210-1-git-send-email-jmaxwell@redhat.com> <20140504155331.13862a85@nehalam.linuxnetplumber.net> <CAADnVQL3OZwZ0q_utwE_JhYYGbKPHwwqwHsBZ9g+0XAS__BpWQ@mail.gmail.com>
+Subject: Re: [PATCH net] bridge: Add port flap detection
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.11]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF24 (Linux)/8.0.6_GA_5922)
+Thread-Topic: bridge: Add port flap detection
+Thread-Index: lmqf1VpzgkM9YTKIMtNjdZKS1DGRwg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to arm procedure call standart r2 register is call-cloberred.
-So after the result of x expression was put into r2 any following
-function call in p may overwrite r2. To fix this, the result of p
-expression must be saved to the temporary variable before the
-assigment x expression to __r2.
+I acknowledge that if a VM was moved or reconfigured with the MAC address of another machine it may generate one message. However in the cases we encountered the MAC address was toggling between the internal and external network constantly as the arp request was erroneously reflected back. We actually provided a kernel with this patch to trouble-shoot the issue. I propose that we change the patch to print the following message instead? That way a single message will be informational but multiple messages will indicate something is wrong.
 
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
----
- arch/arm/include/asm/uaccess.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ br_warn(br, "FDB port changed: source dev = %s mac = %pM, port_no = %d, existing dev = %s mac = %pM, port_no = %d\n",
 
-diff --git a/arch/arm/include/asm/uaccess.h b/arch/arm/include/asm/uaccess.h
-index 12c3a5d..4b584ac 100644
---- a/arch/arm/include/asm/uaccess.h
-+++ b/arch/arm/include/asm/uaccess.h
-@@ -171,8 +171,9 @@ extern int __put_user_8(void *, unsigned long long);
- #define __put_user_check(x,p)							\
- 	({								\
- 		unsigned long __limit = current_thread_info()->addr_limit - 1; \
-+		const typeof(*(p)) __user *tmp_p = (p);			\
- 		register const typeof(*(p)) __r2 asm("r2") = (x);	\
--		register const typeof(*(p)) __user *__p asm("r0") = (p);\
-+		register const typeof(*(p)) __user *__p asm("r0") = tmp_p; \
- 		register unsigned long __l asm("r1") = __limit;		\
- 		register int __e asm("r0");				\
- 		switch (sizeof(*(__p))) {				\
--- 
-1.8.3.2
+----- Original Message -----
+From: "Alexei Starovoitov" <alexei.starovoitov@gmail.com>
+To: "Stephen Hemminger" <stephen@networkplumber.org>
+Cc: "Jon Maxwell" <jmaxwell37@gmail.com>, netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>, "makita toshiaki" <makita.toshiaki@lab.ntt.co.jp>, vyasevic@redhat.com, bridge@lists.linux-foundation.org, linux-kernel@vger.kernel.org, pirko@redhat.com, jmaxwell@redhat.com
+Sent: Monday, May 5, 2014 2:06:37 PM
+Subject: Re: [PATCH net] bridge: Add port flap detection
 
+On Sun, May 4, 2014 at 3:53 PM, Stephen Hemminger
+<stephen@networkplumber.org> wrote:
+> On Mon,  5 May 2014 07:29:34 +1000
+> Jon Maxwell <jmaxwell37@gmail.com> wrote:
+>
+>> There has been a number incidents recently where customers running KVM have reported that VM hosts on different Hypervisors are unreachable. Based on pcap traces we found that the bridge was broadcasting the ARP request out onto the network. However some NICs have an inbuilt switch which on occasions were broadcasting the VMs ARP request back through the physical NIC on the Hypervisor. This resulted in the bridge flapping ports and incorrectly learning that the VMs mac address was external. As a result the ARP reply was directed back onto the external network and VM never updated it's ARP cache. This patch will detect port flapping and log a message so that this condition can be detected earlier.
+>>
+>> Signed-off-by: Jon Maxwell <jmaxwell@redhat.com>
+>> ---
+>>  net/bridge/br_fdb.c | 7 +++++++
+>>  1 file changed, 7 insertions(+)
+>>
+>> diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
+>> index 9203d5a..c08607b 100644
+>> --- a/net/bridge/br_fdb.c
+>> +++ b/net/bridge/br_fdb.c
+>> @@ -507,6 +507,13 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
+>>                                       source->dev->name);
+>>               } else {
+>>                       /* fastpath: update of existing entry */
+>> +                     if (source->port_no != fdb->dst->port_no &&
+>> +                             net_ratelimit())
+>> +                             br_warn(br, "Port flapping detected source entry dev = %s mac = %pM, port_no = %d\n existing entry dev = %s mac = %pM, port_no = %d\n",
+>> +                                     source->dev->name,
+>> +                                     addr, source->port_no,
+>> +                                     fdb->dst->dev->name, addr,
+>> +                                     fdb->dst->port_no);
+>>                       fdb->dst = source;
+>>                       fdb->updated = jiffies;
+>>                       if (unlikely(added_by_user))
+>
+> Ok, but please shorten the message to a single line without excess wordage.
+> Plus flapping to mean means link going up and down. Maybe use same message
+> as BSD?
+
+Isn't this normal mac move? Any message will be confusing.
+VMs can spoof their src macs and trigger this warning.
+I don't think it's worth adding it just to debug the learning on the
+external interface.
