@@ -1,89 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539AbaEEJXO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 05:23:14 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:52546 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755347AbaEEJXM (ORCPT
+	id S1755627AbaEEJXv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 05:23:51 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:39018 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755518AbaEEJXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 05:23:12 -0400
-Message-ID: <5367587B.20801@6wind.com>
-Date: Mon, 05 May 2014 11:23:07 +0200
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reply-To: nicolas.dichtel@6wind.com
-Organization: 6WIND
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Richard Guy Briggs <rgb@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>
-CC: containers@lists.linux-foundation.org, serge.hallyn@ubuntu.com,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        ebiederm@xmission.com
-Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
-References: <cover.1398176489.git.rgb@redhat.com>	<20140501223212.GA25669@mail.hallyn.com> <20140502142851.GC24111@madcap2.tricolour.ca>
-In-Reply-To: <20140502142851.GC24111@madcap2.tricolour.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 5 May 2014 05:23:49 -0400
+Subject: [PATCH v1.1 5/16] arcmsr: bugfix of abort command return status
+From: ching <ching2048@areca.com.tw>
+To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
+        linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 May 2014 17:23:41 +0800
+Message-ID: <1399281821.4398.15.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 02/05/2014 16:28, Richard Guy Briggs a écrit :
-> On 14/05/02, Serge E. Hallyn wrote:
->> Quoting Richard Guy Briggs (rgb@redhat.com):
->>> I saw no replies to my questions when I replied a year after Aris' posting, so
->>> I don't know if it was ignored or got lost in stale threads:
->>>          https://www.redhat.com/archives/linux-audit/2013-March/msg00020.html
->>>          https://www.redhat.com/archives/linux-audit/2013-March/msg00033.html
->>> 	(https://lists.linux-foundation.org/pipermail/containers/2013-March/032063.html)
->>>          https://www.redhat.com/archives/linux-audit/2014-January/msg00180.html
->>>
->>> I've tried to answer a number of questions that were raised in that thread.
->>>
->>> The goal is not quite identical to Aris' patchset.
->>>
->>> The purpose is to track namespaces in use by logged processes from the
->>> perspective of init_*_ns.  The first patch defines a function to list them.
->>> The second patch provides an example of usage for audit_log_task_info() which
->>> is used by syscall audits, among others.  audit_log_task() and
->>> audit_common_recv_message() would be other potential use cases.
->>>
->>> Use a serial number per namespace (unique across one boot of one kernel)
->>> instead of the inode number (which is claimed to have had the right to change
->>> reserved and is not necessarily unique if there is more than one proc fs).  It
->>> could be argued that the inode numbers have now become a defacto interface and
->>> can't change now, but I'm proposing this approach to see if this helps address
->>> some of the objections to the earlier patchset.
->>>
->>> There could also have messages added to track the creation and the destruction
->>> of namespaces, listing the parent for hierarchical namespaces such as pidns,
->>> userns, and listing other ids for non-hierarchical namespaces, as well as other
->>> information to help identify a namespace.
->>>
->>> There has been some progress made for audit in net namespaces and pid
->>> namespaces since this previous thread.  net namespaces are now served as peers
->>> by one auditd in the init_net namespace with processes in a non-init_net
->>> namespace being able to write records if they are in the init_user_ns and have
->>> CAP_AUDIT_WRITE.  Processes in a non-init_pid_ns can now similarly write
->>> records.  As for CAP_AUDIT_READ, I just posted a patchset to check capabilities
->>> of userspace processes that try to join netlink broadcast groups.
->>>
->>>
->>> Questions:
->>> Is there a way to link serial numbers of namespaces involved in migration of a
->>> container to another kernel?  (I had a brief look at CRIU.)  Is there a unique
->>> identifier for each running instance of a kernel?  Or at least some identifier
->>> within the container migration realm?
->>
->> Eric Biederman has always been adamantly opposed to adding new namespaces
->> of namespaces, so the fact that you're asking this question concerns me.
->
-> I have seen that position and I don't fully understand the justification
-> for it other than added complexity.
-Just FYI, have you seen this thread:
-http://thread.gmane.org/gmane.linux.network/286572/
+From: Ching<ching2048@areca.com.tw>
 
-There is some explanations/examples about this topic.
+Fix a bug of return status from calling arcmsr_polling_ccbdone.
+The original code may return a FAILED if abort command is SUCCESS.
+
+Signed-off-by: Ching<ching2048@areca.com.tw>
+---
+
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-02 19:30:08.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-02 19:31:08.000000000 +0800
+@@ -2510,7 +2510,7 @@ static int arcmsr_polling_hba_ccbdone(st
+ 		}
+ 		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset + (flag_ccb << 5));
+ 		ccb = container_of(arcmsr_cdb, struct CommandControlBlock, arcmsr_cdb);
+-		poll_ccb_done = (ccb == poll_ccb) ? 1:0;
++		poll_ccb_done |= (ccb == poll_ccb) ? 1 : 0;
+ 		if ((ccb->acb != acb) || (ccb->startdone != ARCMSR_CCB_START)) {
+ 			if ((ccb->startdone == ARCMSR_CCB_ABORTED) || (ccb == poll_ccb)) {
+ 				printk(KERN_NOTICE "arcmsr%d: scsi id = %d lun = %d ccb = '0x%p'"
+@@ -2574,7 +2574,7 @@ static int arcmsr_polling_hbb_ccbdone(st
+ 		/* check if command done with no error*/
+ 		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset + (flag_ccb << 5));
+ 		ccb = container_of(arcmsr_cdb, struct CommandControlBlock, arcmsr_cdb);
+-		poll_ccb_done = (ccb == poll_ccb) ? 1:0;
++		poll_ccb_done |= (ccb == poll_ccb) ? 1 : 0;
+ 		if ((ccb->acb != acb) || (ccb->startdone != ARCMSR_CCB_START)) {
+ 			if ((ccb->startdone == ARCMSR_CCB_ABORTED) || (ccb == poll_ccb)) {
+ 				printk(KERN_NOTICE "arcmsr%d: scsi id = %d lun = %d ccb = '0x%p'"
+@@ -2630,7 +2630,7 @@ polling_hbc_ccb_retry:
+ 		ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);
+ 		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset + ccb_cdb_phy);/*frame must be 32 bytes aligned*/
+ 		pCCB = container_of(arcmsr_cdb, struct CommandControlBlock, arcmsr_cdb);
+-		poll_ccb_done = (pCCB == poll_ccb) ? 1 : 0;
++		poll_ccb_done |= (pCCB == poll_ccb) ? 1 : 0;
+ 		/* check ifcommand done with no error*/
+ 		if ((pCCB->acb != acb) || (pCCB->startdone != ARCMSR_CCB_START)) {
+ 			if (pCCB->startdone == ARCMSR_CCB_ABORTED) {
+@@ -3232,6 +3232,8 @@ static int arcmsr_abort(struct scsi_cmnd
+ 		(struct AdapterControlBlock *)cmd->device->host->hostdata;
+ 	int i = 0;
+ 	int rtn = FAILED;
++	uint32_t intmask_org;
++
+ 	printk(KERN_NOTICE
+ 		"arcmsr%d: abort device command of scsi id = %d lun = %d \n",
+ 		acb->host->host_no, cmd->device->id, cmd->device->lun);
+@@ -3243,9 +3245,12 @@ static int arcmsr_abort(struct scsi_cmnd
+ 	** we need to handle it as soon as possible and exit
+ 	************************************************
+ 	*/
+-	if (!atomic_read(&acb->ccboutstandingcount))
++	if (!atomic_read(&acb->ccboutstandingcount)) {
++		acb->acb_flags &= ~ACB_F_ABORT;
+ 		return rtn;
++	}
+ 
++	intmask_org = arcmsr_disable_outbound_ints(acb);
+ 	for (i = 0; i < ARCMSR_MAX_FREECCB_NUM; i++) {
+ 		struct CommandControlBlock *ccb = acb->pccb_pool[i];
+ 		if (ccb->startdone == ARCMSR_CCB_START && ccb->pcmd == cmd) {
+@@ -3255,6 +3260,7 @@ static int arcmsr_abort(struct scsi_cmnd
+ 		}
+ 	}
+ 	acb->acb_flags &= ~ACB_F_ABORT;
++	arcmsr_enable_outbound_ints(acb, intmask_org);
+ 	return rtn;
+ }
+ 
 
 
-Regards,
-Nicolas
