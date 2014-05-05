@@ -1,240 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190AbaEELPV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 07:15:21 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:41052 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222AbaEELPU (ORCPT
+	id S1756296AbaEELQZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 07:16:25 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:54738 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753404AbaEELQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 07:15:20 -0400
-Subject: [PATCH v1.1 2/16 update] arcmsr:  Adding code to support MSI-X
- interrupt
-From: ching <ching2048@areca.com.tw>
-To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
-        linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 May 2014 19:15:12 +0800
-Message-ID: <1399288512.4398.79.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	Mon, 5 May 2014 07:16:23 -0400
+X-AuditID: cbfee61a-b7f2b6d000006c4d-2e-53677305bf36
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
+Subject: [PATCH 00/10] thermal: exynos: various cleanups
+Date: Mon, 05 May 2014 13:15:29 +0200
+Message-id: <1399288539-1793-1-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmluLIzCtJLcpLzFFi42I5/e+xgC5rcXqwwdkTFhYNV0MsNs5Yz2qx
+	Zv9PJouzTW/YLS7vmsNm8bn3CKPFjPP7mCzOnL7EavHkYR+bxfoZr1kcuDwW73nJ5LHlajuL
+	R9+WVYwex29sZ/L4vEkugDWKyyYlNSezLLVI3y6BK+P3o7OMBQe5Kyb2LGFrYFzG2cXIySEh
+	YCJx+8FDFghbTOLCvfVsXYxcHEICixglnv+dywThdDFJND7dwQRSxSZgJTGxfRUjiC0ioCdx
+	48UTsCJmgeNMEj9/n2cDSQgLWEhc/nIKzGYRUJU4+OMbM4jNK+AucXVBN9Q6RYnuZxPYJjBy
+	L2BkWMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHETPpHYwrmywOMQowMGoxMObwJweLMSa
+	WFZcmXuIUYKDWUmENzsRKMSbklhZlVqUH19UmpNafIhRmoNFSZz3QKt1oJBAemJJanZqakFq
+	EUyWiYNTqoFx+UQtlfdcuVXP7h5d5R7GbK/wsTZzd7yQdMjSaw5bu3uC9kYH8WvNynOXvCOx
+	6buVeYb5w85QJxWXswunVU7JV5r1ordSbt77NiuxHlvnL98nbDikEHrrnlxTvZxxdsHCHRuu
+	nM3Vso5+8NHtVY+QUG3oBsf9L3bdXGpT8sXxZC3vNlGvyRJKLMUZiYZazEXFiQD5f5+CHgIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching<ching2048@areca.com.tw>
+Hi,
 
-Adding code for supporting MSI-X interrupt.
+This patch series contains various cleanups for EXYNOS thermal
+driver.  Overall it decreases driver's LOC by 13%.  It is based
+on next-20140428 kernel.  It should not cause any functionality
+changes.
 
-This update is for fixing bug of previous [PATCH v1.1 2/16].
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
-Signed-off-by: Ching<ching2048@areca.com.tw>
----
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
---- a/drivers/scsi/arcmsr/arcmsr.h	2014-04-28 16:02:46.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr.h	2014-04-28 16:25:06.000000000 +0800
-@@ -64,6 +64,7 @@ struct device_attribute;
- #define ARCMSR_MAX_HBB_POSTQUEUE						264
- #define ARCMSR_MAX_XFER_LEN							0x26000 /* 152K */
- #define ARCMSR_CDB_SG_PAGE_LENGTH						256 
-+#define ARCMST_NUM_MSIX_VECTORS		4
- #ifndef PCI_DEVICE_ID_ARECA_1880
- #define PCI_DEVICE_ID_ARECA_1880 0x1880
-  #endif
-@@ -508,6 +509,7 @@ struct AdapterControlBlock
- 	struct pci_dev *		pdev;
- 	struct Scsi_Host *		host;
- 	unsigned long			vir2phy_offset;
-+	struct msix_entry	entries[ARCMST_NUM_MSIX_VECTORS];
- 	/* Offset is used in making arc cdb physical to virtual calculations */
- 	uint32_t			outbound_int_enable;
- 	uint32_t			cdb_phyaddr_hi32;
-@@ -544,6 +546,8 @@ struct AdapterControlBlock
- 	/* iop init */
- 	#define ACB_F_ABORT				0x0200
- 	#define ACB_F_FIRMWARE_TRAP           		0x0400
-+	#define ACB_F_MSI_ENABLED		0x1000
-+	#define ACB_F_MSIX_ENABLED		0x2000
- 	struct CommandControlBlock *			pccb_pool[ARCMSR_MAX_FREECCB_NUM];
- 	/* used for memory free */
- 	struct list_head		ccb_free_list;
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-28 15:58:34.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-05 18:57:03.000000000 +0800
-@@ -603,6 +603,79 @@ static void arcmsr_message_isr_bh_fn(str
- 	}
- }
- 
-+static int
-+arcmsr_request_irq(struct pci_dev *pdev, struct AdapterControlBlock *acb)
-+{
-+	int	i, j, r;
-+	struct msix_entry entries[ARCMST_NUM_MSIX_VECTORS];
-+
-+	if (!pci_find_capability(pdev, PCI_CAP_ID_MSIX))
-+		goto msi_int;
-+	for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++)
-+		entries[i].entry = i;
-+	r = pci_enable_msix(pdev, entries, ARCMST_NUM_MSIX_VECTORS);
-+	if (r < 0)
-+		goto msi_int;
-+	if (r == 0) {
-+		for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++) {
-+			if (request_irq(entries[i].vector,
-+				arcmsr_do_interrupt, 0, "arcmsr", acb)) {
-+				pr_warn("arcmsr%d: request_irq =%d failed!\n",
-+					acb->host->host_no, pdev->irq);
-+				for (j = 0 ; j < i ; j++)
-+					free_irq(entries[j].vector, acb);
-+				pci_disable_msix(pdev);
-+				goto msi_int;
-+			}
-+			acb->entries[i] = entries[i];
-+		}
-+		acb->acb_flags |= ACB_F_MSIX_ENABLED;
-+		pr_info("arcmsr%d: msi-x enabled\n", acb->host->host_no);
-+		return ARC_SUCCESS;
-+	} else {
-+		if (pci_enable_msix(pdev, entries, r))
-+			goto msi_int;
-+		for (i = 0; i < r; i++) {
-+			if (request_irq(entries[i].vector,
-+				arcmsr_do_interrupt, 0, "arcmsr", acb)) {
-+				pr_warn("arcmsr%d: request_irq =%d failed!\n",
-+					acb->host->host_no, pdev->irq);
-+				for (j = 0 ; j < i ; j++)
-+					free_irq(entries[j].vector, acb);
-+				pci_disable_msix(pdev);
-+				goto msi_int;
-+			}
-+			acb->entries[i] = entries[i];
-+		}
-+		acb->acb_flags |= ACB_F_MSIX_ENABLED;
-+		pr_info("arcmsr%d: msi-x enabled\n", acb->host->host_no);
-+		return ARC_SUCCESS;
-+	}
-+msi_int:
-+	if (!pci_find_capability(pdev, PCI_CAP_ID_MSI))
-+		goto legacy_int;
-+	if (pci_enable_msi(pdev))
-+		goto legacy_int;
-+	if (request_irq(pdev->irq, arcmsr_do_interrupt,
-+		IRQF_SHARED, "arcmsr", acb)) {
-+		pr_warn("arcmsr%d: request_irq =%d failed!\n",
-+			acb->host->host_no, pdev->irq);
-+		pci_disable_msi(pdev);
-+		goto legacy_int;
-+	}
-+	acb->acb_flags |= ACB_F_MSI_ENABLED;
-+	pr_info("arcmsr%d: msi enabled\n", acb->host->host_no);
-+	return ARC_SUCCESS;
-+legacy_int:
-+	if (request_irq(pdev->irq, arcmsr_do_interrupt,
-+		IRQF_SHARED, "arcmsr", acb)) {
-+		pr_warn("arcmsr%d: request_irq = %d failed!\n",
-+			acb->host->host_no, pdev->irq);
-+		return ARC_FAILURE;
-+	}
-+	return ARC_SUCCESS;
-+}
-+
- static int arcmsr_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- {
- 	struct Scsi_Host *host;
-@@ -667,16 +740,13 @@ static int arcmsr_probe(struct pci_dev *
- 	if(error){
- 		goto free_hbb_mu;
- 	}
--	arcmsr_iop_init(acb);
- 	error = scsi_add_host(host, &pdev->dev);
- 	if(error){
- 		goto RAID_controller_stop;
- 	}
--	error = request_irq(pdev->irq, arcmsr_do_interrupt, IRQF_SHARED, "arcmsr", acb);
--	if(error){
-+	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
- 		goto scsi_host_remove;
--	}
--	host->irq = pdev->irq;
-+	arcmsr_iop_init(acb);
-     	scsi_scan_host(host);
- 	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
- 	atomic_set(&acb->rq_map_token, 16);
-@@ -992,6 +1062,22 @@ static void arcmsr_done4abort_postqueue(
- 	}
- 	}
- }
-+
-+static void arcmsr_free_irq(struct pci_dev *pdev, struct AdapterControlBlock *acb)
-+{
-+	int i;
-+
-+	if (acb->acb_flags & ACB_F_MSI_ENABLED) {
-+		free_irq(pdev->irq, acb);
-+		pci_disable_msi(pdev);
-+	} else if (acb->acb_flags & ACB_F_MSIX_ENABLED) {
-+		for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++)
-+			free_irq(acb->entries[i].vector, acb);
-+		pci_disable_msix(pdev);
-+	} else
-+		free_irq(pdev->irq, acb);
-+}
-+
- static void arcmsr_remove(struct pci_dev *pdev)
- {
- 	struct Scsi_Host *host = pci_get_drvdata(pdev);
-@@ -1029,7 +1115,7 @@ static void arcmsr_remove(struct pci_dev
- 			}
- 		}
- 	}
--	free_irq(pdev->irq, acb);
-+	arcmsr_free_irq(pdev, acb);
- 	arcmsr_free_ccb_pool(acb);
- 	arcmsr_free_hbb_mu(acb);
- 	arcmsr_unmap_pciregion(acb);
-@@ -1045,6 +1131,7 @@ static void arcmsr_shutdown(struct pci_d
- 		(struct AdapterControlBlock *)host->hostdata;
- 	del_timer_sync(&acb->eternal_timer);
- 	arcmsr_disable_outbound_ints(acb);
-+	arcmsr_free_irq(pdev, acb);
- 	flush_work(&acb->arcmsr_do_message_isr_bh);
- 	arcmsr_stop_adapter_bgrb(acb);
- 	arcmsr_flush_adapter_cache(acb);
-@@ -2516,8 +2603,6 @@ static int arcmsr_iop_confirm(struct Ada
- 	case ACB_ADAPTER_TYPE_A: {
- 		if (cdb_phyaddr_hi32 != 0) {
- 			struct MessageUnit_A __iomem *reg = acb->pmuA;
--			uint32_t intmask_org;
--			intmask_org = arcmsr_disable_outbound_ints(acb);
- 			writel(ARCMSR_SIGNATURE_SET_CONFIG, \
- 						&reg->message_rwbuffer[0]);
- 			writel(cdb_phyaddr_hi32, &reg->message_rwbuffer[1]);
-@@ -2529,7 +2614,6 @@ static int arcmsr_iop_confirm(struct Ada
- 				acb->host->host_no);
- 				return 1;
- 			}
--			arcmsr_enable_outbound_ints(acb, intmask_org);
- 		}
- 		}
- 		break;
-@@ -2539,8 +2623,6 @@ static int arcmsr_iop_confirm(struct Ada
- 		uint32_t __iomem *rwbuffer;
- 
- 		struct MessageUnit_B *reg = acb->pmuB;
--		uint32_t intmask_org;
--		intmask_org = arcmsr_disable_outbound_ints(acb);
- 		reg->postq_index = 0;
- 		reg->doneq_index = 0;
- 		writel(ARCMSR_MESSAGE_SET_POST_WINDOW, reg->drv2iop_doorbell);
-@@ -2569,7 +2651,6 @@ static int arcmsr_iop_confirm(struct Ada
- 			return 1;
- 		}
- 		arcmsr_hbb_enable_driver_mode(acb);
--		arcmsr_enable_outbound_ints(acb, intmask_org);
- 		}
- 		break;
- 	case ACB_ADAPTER_TYPE_C: {
+Bartlomiej Zolnierkiewicz (10):
+  thermal: exynos: remove unused struct exynos_tmu_registers entries
+  thermal: exynos: remove unused defines
+  thermal: exynos: remove dead code for HW_MODE calibration
+  thermal: exynos: remove dead code for TYPE_TWO_POINT_TRIMMING
+    calibration
+  thermal: exynos: remove redundant pdata checks from
+    exynos_tmu_initialize()
+  thermal: exynos: remove redundant threshold_code checks from
+    exynos_tmu_initialize()
+  thermal: exynos: simplify temp_to_code() and code_to_temp()
+  thermal: exynos: cache non_hw_trigger_levels in pdata
+  thermal: exynos: remove redundant pdata checks from
+    exynos_tmu_control()
+  thermal: exynos: remove identical values from exynos*_tmu_registers
+    structures
 
+ drivers/thermal/samsung/exynos_thermal_common.h |   1 -
+ drivers/thermal/samsung/exynos_tmu.c            | 181 ++++--------------------
+ drivers/thermal/samsung/exynos_tmu.h            |  86 +----------
+ drivers/thermal/samsung/exynos_tmu_data.c       |  40 +-----
+ drivers/thermal/samsung/exynos_tmu_data.h       |  32 +----
+ 5 files changed, 37 insertions(+), 303 deletions(-)
+
+-- 
+1.8.2.3
 
