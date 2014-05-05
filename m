@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932616AbaEEMr1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 08:47:27 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41052 "EHLO
+	id S932601AbaEEMr0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 08:47:26 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41061 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932328AbaEEMnf (ORCPT
+	by vger.kernel.org with ESMTP id S932335AbaEEMnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 May 2014 08:43:35 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mohit Kumar <mohit.kumar@st.com>,
-        Ajay Khandelwal <ajay.khandelwal@st.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 29/50] PCI: designware: Fix iATU programming for cfg1, io and mem viewport
-Date: Mon,  5 May 2014 14:43:11 +0200
-Message-Id: <7cdf9eb02fea22b615156f5e35ca8974047ee224.1399292849.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>,
+        Kamlakant Patel <kamlakant.patel@broadcom.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 43/50] jffs2: Fix crash due to truncation of csize
+Date: Mon,  5 May 2014 14:43:25 +0200
+Message-Id: <0bf18cba4210dd3ae4a63cc961c8973c54045a62.1399292849.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
 References: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
@@ -24,77 +26,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mohit Kumar <mohit.kumar@st.com>
+From: Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 017fcdc30cdae18c0946eef1ece1f14b4c7897ba upstream.
+commit 41bf1a24c1001f4d0d41a78e1ac575d2f14789d7 upstream.
 
-This patch corrects iATU programming for cfg1, io and mem viewport.  Enable
-ATU only after configuring it.
+mounting JFFS2 partition sometimes crashes with this call trace:
 
-Signed-off-by: Mohit Kumar <mohit.kumar@st.com>
-Signed-off-by: Ajay Khandelwal <ajay.khandelwal@st.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Jingoo Han <jg1.han@samsung.com>
+[ 1322.240000] Kernel bug detected[#1]:
+[ 1322.244000] Cpu 2
+[ 1322.244000] $ 0   : 0000000000000000 0000000000000018 000000003ff00070 0000000000000001
+[ 1322.252000] $ 4   : 0000000000000000 c0000000f3980150 0000000000000000 0000000000010000
+[ 1322.260000] $ 8   : ffffffffc09cd5f8 0000000000000001 0000000000000088 c0000000ed300de8
+[ 1322.268000] $12   : e5e19d9c5f613a45 ffffffffc046d464 0000000000000000 66227ba5ea67b74e
+[ 1322.276000] $16   : c0000000f1769c00 c0000000ed1e0200 c0000000f3980150 0000000000000000
+[ 1322.284000] $20   : c0000000f3a80000 00000000fffffffc c0000000ed2cfbd8 c0000000f39818f0
+[ 1322.292000] $24   : 0000000000000004 0000000000000000
+[ 1322.300000] $28   : c0000000ed2c0000 c0000000ed2cfab8 0000000000010000 ffffffffc039c0b0
+[ 1322.308000] Hi    : 000000000000023c
+[ 1322.312000] Lo    : 000000000003f802
+[ 1322.316000] epc   : ffffffffc039a9f8 check_tn_node+0x88/0x3b0
+[ 1322.320000]     Not tainted
+[ 1322.324000] ra    : ffffffffc039c0b0 jffs2_do_read_inode_internal+0x1250/0x1e48
+[ 1322.332000] Status: 5400f8e3    KX SX UX KERNEL EXL IE
+[ 1322.336000] Cause : 00800034
+[ 1322.340000] PrId  : 000c1004 (Netlogic XLP)
+[ 1322.344000] Modules linked in:
+[ 1322.348000] Process jffs2_gcd_mtd7 (pid: 264, threadinfo=c0000000ed2c0000, task=c0000000f0e68dd8, tls=0000000000000000)
+[ 1322.356000] Stack : c0000000f1769e30 c0000000ed010780 c0000000ed010780 c0000000ed300000
+        c0000000f1769c00 c0000000f3980150 c0000000f3a80000 00000000fffffffc
+        c0000000ed2cfbd8 ffffffffc039c0b0 ffffffffc09c6340 0000000000001000
+        0000000000000dec ffffffffc016c9d8 c0000000f39805a0 c0000000f3980180
+        0000008600000000 0000000000000000 0000000000000000 0000000000000000
+        0001000000000dec c0000000f1769d98 c0000000ed2cfb18 0000000000010000
+        0000000000010000 0000000000000044 c0000000f3a80000 c0000000f1769c00
+        c0000000f3d207a8 c0000000f1769d98 c0000000f1769de0 ffffffffc076f9c0
+        0000000000000009 0000000000000000 0000000000000000 ffffffffc039cf90
+        0000000000000017 ffffffffc013fbdc 0000000000000001 000000010003e61c
+        ...
+[ 1322.424000] Call Trace:
+[ 1322.428000] [<ffffffffc039a9f8>] check_tn_node+0x88/0x3b0
+[ 1322.432000] [<ffffffffc039c0b0>] jffs2_do_read_inode_internal+0x1250/0x1e48
+[ 1322.440000] [<ffffffffc039cf90>] jffs2_do_crccheck_inode+0x70/0xd0
+[ 1322.448000] [<ffffffffc03a1b80>] jffs2_garbage_collect_pass+0x160/0x870
+[ 1322.452000] [<ffffffffc03a392c>] jffs2_garbage_collect_thread+0xdc/0x1f0
+[ 1322.460000] [<ffffffffc01541c8>] kthread+0xb8/0xc0
+[ 1322.464000] [<ffffffffc0106d18>] kernel_thread_helper+0x10/0x18
+[ 1322.472000]
+[ 1322.472000]
+Code: 67bd0050  94a4002c  2c830001 <00038036> de050218  2403fffc  0080a82d  00431824  24630044
+[ 1322.480000] ---[ end trace b052bb90e97dfbf5 ]---
+
+The variable csize in structure jffs2_tmp_dnode_info is of type uint16_t, but it
+is used to hold the compressed data length(csize) which is declared as uint32_t.
+So, when the value of csize exceeds 16bits, it gets truncated when assigned to
+tn->csize. This is causing a kernel BUG.
+Changing the definition of csize in jffs2_tmp_dnode_info to uint32_t fixes the issue.
+
+Signed-off-by: Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>
+Signed-off-by: Kamlakant Patel <kamlakant.patel@broadcom.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/pci/host/pcie-designware.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/jffs2/nodelist.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-index 09eba9f338fe..510994a7eca0 100644
---- a/drivers/pci/host/pcie-designware.c
-+++ b/drivers/pci/host/pcie-designware.c
-@@ -268,13 +268,13 @@ static void dw_pcie_prog_viewport_cfg1(struct pcie_port *pp, u32 busdev)
- 	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1,
- 			  PCIE_ATU_VIEWPORT);
- 	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_CFG1, PCIE_ATU_CR1);
--	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
- 	dw_pcie_writel_rc(pp, pp->cfg1_base, PCIE_ATU_LOWER_BASE);
- 	dw_pcie_writel_rc(pp, (pp->cfg1_base >> 32), PCIE_ATU_UPPER_BASE);
- 	dw_pcie_writel_rc(pp, pp->cfg1_base + pp->config.cfg1_size - 1,
- 			  PCIE_ATU_LIMIT);
- 	dw_pcie_writel_rc(pp, busdev, PCIE_ATU_LOWER_TARGET);
- 	dw_pcie_writel_rc(pp, 0, PCIE_ATU_UPPER_TARGET);
-+	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
- }
+diff --git a/fs/jffs2/nodelist.h b/fs/jffs2/nodelist.h
+index e4619b00f7c5..fa35ff79ab35 100644
+--- a/fs/jffs2/nodelist.h
++++ b/fs/jffs2/nodelist.h
+@@ -231,7 +231,7 @@ struct jffs2_tmp_dnode_info
+ 	uint32_t version;
+ 	uint32_t data_crc;
+ 	uint32_t partial_crc;
+-	uint16_t csize;
++	uint32_t csize;
+ 	uint16_t overlapped;
+ };
  
- static void dw_pcie_prog_viewport_mem_outbound(struct pcie_port *pp)
-@@ -283,7 +283,6 @@ static void dw_pcie_prog_viewport_mem_outbound(struct pcie_port *pp)
- 	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX0,
- 			  PCIE_ATU_VIEWPORT);
- 	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_MEM, PCIE_ATU_CR1);
--	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
- 	dw_pcie_writel_rc(pp, pp->mem_base, PCIE_ATU_LOWER_BASE);
- 	dw_pcie_writel_rc(pp, (pp->mem_base >> 32), PCIE_ATU_UPPER_BASE);
- 	dw_pcie_writel_rc(pp, pp->mem_base + pp->config.mem_size - 1,
-@@ -291,6 +290,7 @@ static void dw_pcie_prog_viewport_mem_outbound(struct pcie_port *pp)
- 	dw_pcie_writel_rc(pp, pp->config.mem_bus_addr, PCIE_ATU_LOWER_TARGET);
- 	dw_pcie_writel_rc(pp, upper_32_bits(pp->config.mem_bus_addr),
- 			  PCIE_ATU_UPPER_TARGET);
-+	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
- }
- 
- static void dw_pcie_prog_viewport_io_outbound(struct pcie_port *pp)
-@@ -299,7 +299,6 @@ static void dw_pcie_prog_viewport_io_outbound(struct pcie_port *pp)
- 	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1,
- 			  PCIE_ATU_VIEWPORT);
- 	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_IO, PCIE_ATU_CR1);
--	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
- 	dw_pcie_writel_rc(pp, pp->io_base, PCIE_ATU_LOWER_BASE);
- 	dw_pcie_writel_rc(pp, (pp->io_base >> 32), PCIE_ATU_UPPER_BASE);
- 	dw_pcie_writel_rc(pp, pp->io_base + pp->config.io_size - 1,
-@@ -307,6 +306,7 @@ static void dw_pcie_prog_viewport_io_outbound(struct pcie_port *pp)
- 	dw_pcie_writel_rc(pp, pp->config.io_bus_addr, PCIE_ATU_LOWER_TARGET);
- 	dw_pcie_writel_rc(pp, upper_32_bits(pp->config.io_bus_addr),
- 			  PCIE_ATU_UPPER_TARGET);
-+	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
- }
- 
- static int dw_pcie_rd_other_conf(struct pcie_port *pp, struct pci_bus *bus,
 -- 
 1.9.2
 
