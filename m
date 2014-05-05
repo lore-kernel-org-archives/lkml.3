@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933309AbaEEW2b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 18:28:31 -0400
+	id S1756926AbaEEW3H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 18:29:07 -0400
 Received: from mga03.intel.com ([143.182.124.21]:48062 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756899AbaEEW23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 18:28:29 -0400
+	id S1756901AbaEEW2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 18:28:30 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,992,1389772800"; 
-   d="scan'208";a="427941323"
+   d="scan'208";a="427941325"
 From: Andi Kleen <andi@firstfloor.org>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 07/24] net, diet: Make ping sockets optional
-Date: Mon,  5 May 2014 15:25:56 -0700
-Message-Id: <1399328773-6531-8-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 14/24] net, diet: Make MIB statistics collections depend on PROC_FS
+Date: Mon,  5 May 2014 15:26:03 -0700
+Message-Id: <1399328773-6531-15-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
 References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
@@ -25,244 +25,352 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-This saves about 6k text/data. ping still works fine using raw
-sockets like it always did.
+When PROC_FS is not compiled in we don't need the statistics
+gathering code, as the only way to see the output is through
+/proc. Saves about 5k text, likely more in dynamic memory.
 
-   text	   data	    bss	    dec	    hex	filename
- 268128	  11555	   7872	 287555	  46343	net/ipv4/built-in.o-noping
- 273610	  11843	   8176	 293629	  47afd	net/ipv4/built-in.o-ping
+   text    data     bss     dec     hex filename
+ 386302    8993   12564  407859   63933 net/built-in.o-with-mib
+ 381542    8933   12564  403039   6265f net/built-in.o-wo-mib
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/net/ping.h      | 15 +++++++++++----
- include/net/transp_v6.h |  2 --
- net/ipv4/Kconfig        |  5 +++++
- net/ipv4/Makefile       |  3 ++-
- net/ipv4/af_inet.c      |  9 ++++-----
- net/ipv4/icmp.c         |  1 +
- net/ipv4/ping.c         |  3 +++
- net/ipv6/Makefile       |  3 ++-
- net/ipv6/af_inet6.c     |  8 ++++++--
- 9 files changed, 34 insertions(+), 15 deletions(-)
+ include/net/ip.h         |  9 ++++++++
+ include/net/ipv6.h       |  8 ++++++-
+ include/net/snmp.h       | 60 ++++++++++++++++++++++++++++++++++++++++--------
+ net/ipv4/af_inet.c       | 12 ++++++++++
+ net/ipv6/addrconf.c      |  9 ++++++++
+ net/ipv6/addrconf_core.c |  2 ++
+ net/ipv6/af_inet6.c      |  5 ++++
+ 7 files changed, 95 insertions(+), 10 deletions(-)
 
-diff --git a/include/net/ping.h b/include/net/ping.h
-index 026479b..ca6b89d 100644
---- a/include/net/ping.h
-+++ b/include/net/ping.h
-@@ -71,7 +71,6 @@ void ping_unhash(struct sock *sk);
- int  ping_init_sock(struct sock *sk);
- void ping_close(struct sock *sk, long timeout);
- int  ping_bind(struct sock *sk, struct sockaddr *uaddr, int addr_len);
--void ping_err(struct sk_buff *skb, int offset, u32 info);
- int  ping_getfrag(void *from, char *to, int offset, int fraglen, int odd,
- 		  struct sk_buff *);
+diff --git a/include/net/ip.h b/include/net/ip.h
+index 3ec2b0f..6764e30 100644
+--- a/include/net/ip.h
++++ b/include/net/ip.h
+@@ -196,6 +196,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
+ #define NET_ADD_STATS_BH(net, field, adnd) SNMP_ADD_STATS_BH((net)->mib.net_statistics, field, adnd)
+ #define NET_ADD_STATS_USER(net, field, adnd) SNMP_ADD_STATS_USER((net)->mib.net_statistics, field, adnd)
  
-@@ -82,7 +81,6 @@ int  ping_common_sendmsg(int family, struct msghdr *msg, size_t len,
- int  ping_v6_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		     size_t len);
- int  ping_queue_rcv_skb(struct sock *sk, struct sk_buff *skb);
--void ping_rcv(struct sk_buff *skb);
++#ifdef CONFIG_PROC_FS
+ unsigned long snmp_fold_field(void __percpu *mib[], int offt);
+ #if BITS_PER_LONG==32
+ u64 snmp_fold_field64(void __percpu *mib[], int offt, size_t sync_off);
+@@ -217,6 +218,12 @@ static inline void snmp_mib_free(void __percpu *ptr[SNMP_ARRAY_SZ])
+ 		ptr[i] = NULL;
+ 	}
+ }
++#else
++#define snmp_mib_init(a,b,c) ({ 0; })
++#define snmp_mib_free(x) do {} while (0)
++#define snmp_fold_field(a, b) ({ 0; })
++#define snmp_fold_field64(a, b, c) ({ 0; })
++#endif
+ 
+ void inet_get_local_port_range(struct net *net, int *low, int *high);
+ 
+@@ -523,6 +530,8 @@ void ip_local_error(struct sock *sk, int err, __be32 daddr, __be16 dport,
  
  #ifdef CONFIG_PROC_FS
- struct ping_seq_afinfo {
-@@ -100,12 +98,21 @@ void ping_seq_stop(struct seq_file *seq, void *v);
- int ping_proc_register(struct net *net, struct ping_seq_afinfo *afinfo);
- void ping_proc_unregister(struct net *net, struct ping_seq_afinfo *afinfo);
- 
--int __init ping_proc_init(void);
--void ping_proc_exit(void);
+ int ip_misc_proc_init(void);
++#else
++static inline int ip_misc_proc_init(void) { return 0; }
  #endif
  
-+#ifdef CONFIG_IP_PING
-+void ping_rcv(struct sk_buff *skb);
-+void ping_err(struct sk_buff *skb, int offset, u32 info);
- void __init ping_init(void);
- int  __init pingv6_init(void);
- void pingv6_exit(void);
+ #endif	/* _IP_H */
+diff --git a/include/net/ipv6.h b/include/net/ipv6.h
+index d640925..3c4c041 100644
+--- a/include/net/ipv6.h
++++ b/include/net/ipv6.h
+@@ -830,11 +830,17 @@ int udp6_proc_init(struct net *net);
+ void udp6_proc_exit(struct net *net);
+ int udplite6_proc_init(void);
+ void udplite6_proc_exit(void);
++#ifdef CONFIG_PROC_FS
+ int ipv6_misc_proc_init(void);
+ void ipv6_misc_proc_exit(void);
+ int snmp6_register_dev(struct inet6_dev *idev);
+ int snmp6_unregister_dev(struct inet6_dev *idev);
+-
 +#else
-+static inline void ping_init(void) {}
-+static inline int pingv6_init(void) { return 0; }
-+static inline void pingv6_exit(void) { }
-+static inline void ping_err(struct sk_buff *skb, int offset, u32 info) {}
-+static inline void ping_rcv(struct sk_buff *skb) {}
++static inline int ipv6_misc_proc_init(void) { return 0; }
++static inline void ipv6_misc_proc_exit(void) {}
++static inline int snmp6_register_dev(struct inet6_dev *idev) { return 0; }
++static inline int snmp6_unregister_dev(struct inet6_dev *idev) { return 0; }
 +#endif
+ #else
+ static inline int ac6_proc_init(struct net *net) { return 0; }
+ static inline void ac6_proc_exit(struct net *net) { }
+diff --git a/include/net/snmp.h b/include/net/snmp.h
+index 7159626..83815f9 100644
+--- a/include/net/snmp.h
++++ b/include/net/snmp.h
+@@ -23,6 +23,8 @@
+ #include <linux/snmp.h>
+ #include <linux/smp.h>
+ 
++#define MIB_SIZE(x) (IS_ENABLED(CONFIG_PROC_FS) ? (x) : (0))
 +
+ /*
+  * Mibs are stored in array of unsigned long.
+  */
+@@ -31,6 +33,7 @@
+  *  - list of entries for particular API (such as /proc/net/snmp)
+  *  - name of entries.
+  */
++#ifdef CONFIG_PROC_FS
+ struct snmp_mib {
+ 	const char *name;
+ 	int entry;
+@@ -45,6 +48,11 @@ struct snmp_mib {
+ 	.name = NULL,		\
+ 	.entry = 0,		\
+ }
++#else
++struct snmp_mib {};
++#define SNMP_MIB_ITEM(_name,_entry) {}
++#define SNMP_MIB_SENTINEL
++#endif
  
- #endif /* _PING_H */
-diff --git a/include/net/transp_v6.h b/include/net/transp_v6.h
-index b927413..7a0e229 100644
---- a/include/net/transp_v6.h
-+++ b/include/net/transp_v6.h
-@@ -19,8 +19,6 @@ int ipv6_frag_init(void);
- void ipv6_frag_exit(void);
+ /*
+  * We use unsigned longs for most mibs but u64 for ipstats.
+@@ -52,7 +60,7 @@ struct snmp_mib {
+ #include <linux/u64_stats_sync.h>
  
- /* transport protocols */
--int pingv6_init(void);
--void pingv6_exit(void);
- int rawv6_init(void);
- void rawv6_exit(void);
- int udpv6_init(void);
-diff --git a/net/ipv4/Kconfig b/net/ipv4/Kconfig
-index 05c57f0..6146b1b 100644
---- a/net/ipv4/Kconfig
-+++ b/net/ipv4/Kconfig
-@@ -52,6 +52,11 @@ config IP_ADVANCED_ROUTER
+ /* IPstats */
+-#define IPSTATS_MIB_MAX	__IPSTATS_MIB_MAX
++#define IPSTATS_MIB_MAX MIB_SIZE(__IPSTATS_MIB_MAX)
+ struct ipstats_mib {
+ 	/* mibs[] must be first field of struct ipstats_mib */
+ 	u64		mibs[IPSTATS_MIB_MAX];
+@@ -60,18 +68,18 @@ struct ipstats_mib {
+ };
  
- 	  If unsure, say N here.
+ /* ICMP */
+-#define ICMP_MIB_MAX	__ICMP_MIB_MAX
++#define ICMP_MIB_MAX	MIB_SIZE(__ICMP_MIB_MAX)
+ struct icmp_mib {
+ 	unsigned long	mibs[ICMP_MIB_MAX];
+ };
  
-+config IP_PING
-+	bool "IP: ping sockets"
-+	---help---
-+	  Enable ping sockets to enable suid-less ping.
+-#define ICMPMSG_MIB_MAX	__ICMPMSG_MIB_MAX
++#define ICMPMSG_MIB_MAX	MIB_SIZE(__ICMPMSG_MIB_MAX)
+ struct icmpmsg_mib {
+ 	atomic_long_t	mibs[ICMPMSG_MIB_MAX];
+ };
+ 
+ /* ICMP6 (IPv6-ICMP) */
+-#define ICMP6_MIB_MAX	__ICMP6_MIB_MAX
++#define ICMP6_MIB_MAX	MIB_SIZE(__ICMP6_MIB_MAX)
+ /* per network ns counters */
+ struct icmpv6_mib {
+ 	unsigned long	mibs[ICMP6_MIB_MAX];
+@@ -81,7 +89,7 @@ struct icmpv6_mib_device {
+ 	atomic_long_t	mibs[ICMP6_MIB_MAX];
+ };
+ 
+-#define ICMP6MSG_MIB_MAX  __ICMP6MSG_MIB_MAX
++#define ICMP6MSG_MIB_MAX  MIB_SIZE(__ICMP6MSG_MIB_MAX)
+ /* per network ns counters */
+ struct icmpv6msg_mib {
+ 	atomic_long_t	mibs[ICMP6MSG_MIB_MAX];
+@@ -93,29 +101,31 @@ struct icmpv6msg_mib_device {
+ 
+ 
+ /* TCP */
+-#define TCP_MIB_MAX	__TCP_MIB_MAX
++#define TCP_MIB_MAX	MIB_SIZE(__TCP_MIB_MAX)
+ struct tcp_mib {
+ 	unsigned long	mibs[TCP_MIB_MAX];
+ };
+ 
+ /* UDP */
+-#define UDP_MIB_MAX	__UDP_MIB_MAX
++#define UDP_MIB_MAX	MIB_SIZE(__UDP_MIB_MAX)
+ struct udp_mib {
+ 	unsigned long	mibs[UDP_MIB_MAX];
+ };
+ 
+ /* Linux */
+-#define LINUX_MIB_MAX	__LINUX_MIB_MAX
++#define LINUX_MIB_MAX	MIB_SIZE(__LINUX_MIB_MAX)
+ struct linux_mib {
+ 	unsigned long	mibs[LINUX_MIB_MAX];
+ };
+ 
+ /* Linux Xfrm */
+-#define LINUX_MIB_XFRMMAX	__LINUX_MIB_XFRMMAX
++#define LINUX_MIB_XFRMMAX	MIB_SIZE(__LINUX_MIB_XFRMMAX)
+ struct linux_xfrm_mib {
+ 	unsigned long	mibs[LINUX_MIB_XFRMMAX];
+ };
+ 
++#ifdef CONFIG_PROC_FS
 +
- config IP_FIB_TRIE_STATS
- 	bool "FIB TRIE statistics"
- 	depends on IP_ADVANCED_ROUTER
-diff --git a/net/ipv4/Makefile b/net/ipv4/Makefile
-index f032688..756855c 100644
---- a/net/ipv4/Makefile
-+++ b/net/ipv4/Makefile
-@@ -11,9 +11,10 @@ obj-y     := route.o inetpeer.o protocol.o \
- 	     tcp_offload.o datagram.o raw.o udp.o udplite.o \
- 	     udp_offload.o arp.o icmp.o devinet.o af_inet.o igmp.o \
- 	     fib_frontend.o fib_semantics.o fib_trie.o \
--	     inet_fragment.o ping.o ip_tunnel_core.o gre_offload.o
-+	     inet_fragment.o ip_tunnel_core.o gre_offload.o
+ #define SNMP_ARRAY_SZ 1
  
- obj-$(CONFIG_NET_IP_TUNNEL) += ip_tunnel.o
-+obj-$(CONFIG_IP_PING) += ping.o
- obj-$(CONFIG_SYSCTL) += sysctl_net_ipv4.o
- obj-$(CONFIG_PROC_FS) += proc.o
- obj-$(CONFIG_IP_MULTIPLE_TABLES) += fib_rules.o
+ #define DEFINE_SNMP_STAT(type, name)	\
+@@ -216,4 +226,36 @@ struct linux_xfrm_mib {
+ #define SNMP_UPD_PO_STATS64_BH(mib, basefield, addend) SNMP_UPD_PO_STATS_BH(mib, basefield, addend)
+ #endif
+ 
++#else
++
++/* Stub out everything */
++
++#define SNMP_ARRAY_SZ 0
++#define DEFINE_SNMP_STAT(type, name) type *name
++#define DEFINE_SNMP_STAT_ATOMIC(type, name) type *name
++#define DECLARE_SNMP_STAT(type, name) extern type *name
++#define SNMP_INC_STATS_BH(mib, field) do { (void)(mib); } while(0)
++#define SNMP_INC_STATS_USER(mib, field) do { (void)(mib); } while(0)
++#define SNMP_INC_STATS_ATOMIC_LONG(mib, field) do { (void)(mib); } while(0)
++#define SNMP_INC_STATS(mib, field) do { (void)(mib); } while(0)
++#define SNMP_DEC_STATS(mib, field) do { (void)(mib); } while(0)
++#define SNMP_ADD_STATS_BH(mib, field, addend) do { (void)(mib); } while(0)
++#define SNMP_ADD_STATS_USER(mib, field, addend)	do { (void)(mib); } while(0)
++#define SNMP_ADD_STATS(mib, field, addend) do { (void)(mib); } while(0)
++#define SNMP_UPD_PO_STATS(mib, basefield, addend) do { (void)(mib); } while(0)
++#define SNMP_UPD_PO_STATS_BH(mib, basefield, addend) \
++	do { (void)(mib); } while(0)
++#define SNMP_ADD_STATS64_BH(mib, field, addend) do { (void)(mib); } while(0)
++#define SNMP_ADD_STATS64_USER(mib, field, addend) do { (void)(mib); } while(0)
++#define SNMP_ADD_STATS64(mib, field, addend) do { (void)(mib); } while(0)
++#define SNMP_INC_STATS64_BH(mib, field) do { (void)(mib); } while(0)
++#define SNMP_INC_STATS64_USER(mib, field) do { (void)(mib); } while(0)
++#define SNMP_INC_STATS64(mib, field) do { (void)(mib); } while(0)
++#define SNMP_UPD_PO_STATS64_BH(mib, basefield, addend) \
++	do { (void)(mib); } while(0)
++#define SNMP_UPD_PO_STATS64(mib, basefield, addend) \
++	do { (void)(mib); } while(0)
++
++#endif /* CONFIG_NET_SNMP */
++
+ #endif
 diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
-index 8c54870..c275ce5 100644
+index e65e750..46b1815 100644
 --- a/net/ipv4/af_inet.c
 +++ b/net/ipv4/af_inet.c
-@@ -1015,7 +1015,7 @@ static struct inet_protosw inetsw_array[] =
- 		.no_check =   UDP_CSUM_DEFAULT,
- 		.flags =      INET_PROTOSW_PERMANENT,
-        },
--
-+#ifdef CONFIG_IP_PING
-        {
- 		.type =       SOCK_DGRAM,
- 		.protocol =   IPPROTO_ICMP,
-@@ -1024,6 +1024,7 @@ static struct inet_protosw inetsw_array[] =
- 		.no_check =   UDP_CSUM_DEFAULT,
- 		.flags =      INET_PROTOSW_REUSE,
-        },
+@@ -1482,6 +1482,8 @@ int inet_ctl_sock_create(struct sock **sk, unsigned short family,
+ }
+ EXPORT_SYMBOL_GPL(inet_ctl_sock_create);
+ 
++#ifdef CONFIG_PROC_FS
++
+ unsigned long snmp_fold_field(void __percpu *mib[], int offt)
+ {
+ 	unsigned long res = 0;
+@@ -1541,6 +1543,8 @@ int snmp_mib_init(void __percpu *ptr[2], size_t mibsize, size_t align)
+ }
+ EXPORT_SYMBOL_GPL(snmp_mib_init);
+ 
 +#endif
++
+ #ifdef CONFIG_IP_MULTICAST
+ static const struct net_protocol igmp_protocol = {
+ 	.handler =	igmp_rcv,
+@@ -1572,6 +1576,7 @@ static const struct net_protocol icmp_protocol = {
+ 	.netns_ok =	1,
+ };
  
-        {
- 	       .type =       SOCK_RAW,
-@@ -1719,7 +1720,9 @@ static int __init inet_init(void)
- 	if (rc)
- 		goto out_unregister_udp_proto;
- 
-+#ifdef CONFIG_IP_PING
- 	rc = proto_register(&ping_prot, 1);
-+#endif
- 	if (rc)
- 		goto out_unregister_raw_proto;
- 
-@@ -1836,15 +1839,11 @@ static int __init ipv4_proc_init(void)
- 		goto out_tcp;
- 	if (udp4_proc_init())
- 		goto out_udp;
--	if (ping_proc_init())
--		goto out_ping;
- 	if (ip_misc_proc_init())
- 		goto out_misc;
- out:
- 	return rc;
- out_misc:
--	ping_proc_exit();
--out_ping:
- 	udp4_proc_exit();
- out_udp:
- 	tcp4_proc_exit();
-diff --git a/net/ipv4/icmp.c b/net/ipv4/icmp.c
-index 0134663..df3872b 100644
---- a/net/ipv4/icmp.c
-+++ b/net/ipv4/icmp.c
-@@ -989,6 +989,7 @@ void icmp_err(struct sk_buff *skb, u32 info)
- 		return;
- 	}
- 
-+	/* RED-PEN dead code? the if above will eat all. */
- 	if (type == ICMP_DEST_UNREACH && code == ICMP_FRAG_NEEDED)
- 		ipv4_update_pmtu(skb, net, info, 0, 0, IPPROTO_ICMP, 0);
- 	else if (type == ICMP_REDIRECT)
-diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
-index 8210964..3f79243 100644
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -1206,6 +1206,9 @@ void ping_proc_exit(void)
- 	unregister_pernet_subsys(&ping_v4_net_ops);
++#ifdef CONFIG_PROC_FS
+ static __net_init int ipv4_mib_init_net(struct net *net)
+ {
+ 	int i;
+@@ -1656,6 +1661,13 @@ static int __init init_ipv4_mibs(void)
+ 	return register_pernet_subsys(&ipv4_mib_ops);
  }
  
-+module_init(ping_proc_init);
-+module_exit(ping_proc_init);
++#else
++static int __init init_ipv4_mibs(void)
++{
++	return 0;
++}
++#endif
 +
- #endif
+ static int ipv4_proc_init(void);
  
- void __init ping_init(void)
-diff --git a/net/ipv6/Makefile b/net/ipv6/Makefile
-index 2fe6836..6ff7cfd 100644
---- a/net/ipv6/Makefile
-+++ b/net/ipv6/Makefile
-@@ -7,13 +7,14 @@ obj-$(CONFIG_IPV6) += ipv6.o
- ipv6-objs :=	af_inet6.o anycast.o ip6_output.o ip6_input.o addrconf.o \
- 		addrlabel.o \
- 		route.o ip6_fib.o ipv6_sockglue.o ndisc.o udp.o udplite.o \
--		raw.o icmp.o mcast.o reassembly.o tcp_ipv6.o ping.o \
-+		raw.o icmp.o mcast.o reassembly.o tcp_ipv6.o \
- 		exthdrs.o datagram.o ip6_flowlabel.o inet6_connection_sock.o
+ #ifdef CONFIG_IP_OFFLOAD
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index 6c7fa08..0d8c820 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -271,6 +271,7 @@ static void addrconf_mod_dad_work(struct inet6_ifaddr *ifp,
+ 	mod_delayed_work(addrconf_wq, &ifp->dad_work, delay);
+ }
  
- ipv6-offload :=	ip6_offload.o tcpv6_offload.o udp_offload.o exthdrs_offload.o
++#ifdef CONFIG_PROC_FS
+ static int snmp6_alloc_dev(struct inet6_dev *idev)
+ {
+ 	int i;
+@@ -309,6 +310,9 @@ err_icmp:
+ err_ip:
+ 	return -ENOMEM;
+ }
++#else
++static int snmp6_alloc_dev(struct inet6_dev *idev) { return 0; }
++#endif
  
- ipv6-$(CONFIG_SYSCTL) = sysctl_net_ipv6.o
- ipv6-$(CONFIG_IPV6_MROUTE) += ip6mr.o
-+ipv6-$(CONFIG_IP_PING) += ping.o
+ static struct inet6_dev *ipv6_add_dev(struct net_device *dev)
+ {
+@@ -4348,6 +4352,7 @@ static inline size_t inet6_if_nlmsg_size(void)
+ 	       + nla_total_size(inet6_ifla6_size()); /* IFLA_PROTINFO */
+ }
  
- ipv6-$(CONFIG_XFRM) += xfrm6_policy.o xfrm6_state.o xfrm6_input.o \
- 	xfrm6_output.o xfrm6_protocol.o
++#ifdef CONFIG_PROC_FS
+ static inline void __snmp6_fill_statsdev(u64 *stats, atomic_long_t *mib,
+ 				      int items, int bytes)
+ {
+@@ -4391,6 +4396,10 @@ static void snmp6_fill_stats(u64 *stats, struct inet6_dev *idev, int attrtype,
+ 		break;
+ 	}
+ }
++#else
++static void snmp6_fill_stats(u64 *stats, struct inet6_dev *idev, int attrtype,
++			     int bytes) {}
++#endif
+ 
+ static int inet6_fill_ifla6_attrs(struct sk_buff *skb, struct inet6_dev *idev)
+ {
+diff --git a/net/ipv6/addrconf_core.c b/net/ipv6/addrconf_core.c
+index 4c11cbc..80ff00e 100644
+--- a/net/ipv6/addrconf_core.c
++++ b/net/ipv6/addrconf_core.c
+@@ -121,9 +121,11 @@ EXPORT_SYMBOL(in6addr_sitelocal_allrouters);
+ 
+ static void snmp6_free_dev(struct inet6_dev *idev)
+ {
++#ifdef CONFIG_PROC_FS
+ 	kfree(idev->stats.icmpv6msgdev);
+ 	kfree(idev->stats.icmpv6dev);
+ 	snmp_mib_free((void __percpu **)idev->stats.ipv6);
++#endif
+ }
+ 
+ /* Nobody refers to this device, we may destroy it. */
 diff --git a/net/ipv6/af_inet6.c b/net/ipv6/af_inet6.c
-index d935889..68ac214 100644
+index 68ac214..9ff80ad 100644
 --- a/net/ipv6/af_inet6.c
 +++ b/net/ipv6/af_inet6.c
-@@ -861,16 +861,18 @@ static int __init inet6_init(void)
- 	if (err)
- 		goto out_unregister_udplite_proto;
+@@ -711,6 +711,7 @@ static void ipv6_packet_cleanup(void)
+ 	dev_remove_pack(&ipv6_packet_type);
+ }
  
-+#ifdef CONFIG_IP_PING
- 	err = proto_register(&pingv6_prot, 1);
- 	if (err)
--		goto out_unregister_ping_proto;
-+		goto out_unregister_raw_proto;
++#ifdef CONFIG_PROC_FS
+ static int __net_init ipv6_init_mibs(struct net *net)
+ {
+ 	int i;
+@@ -768,6 +769,10 @@ static void ipv6_cleanup_mibs(struct net *net)
+ 	snmp_mib_free((void __percpu **)net->mib.icmpv6_statistics);
+ 	kfree(net->mib.icmpv6msg_statistics);
+ }
++#else
++static inline int __net_init ipv6_init_mibs(struct net *net) { return 0; }
++static inline void ipv6_cleanup_mibs(struct net *net) {}
 +#endif
  
- 	/* We MUST register RAW sockets before we create the ICMP6,
- 	 * IGMP6, or NDISC control sockets.
- 	 */
- 	err = rawv6_init();
- 	if (err)
--		goto out_unregister_raw_proto;
-+		goto out_unregister_ping_proto;
- 
- 	/* Register the family here so that the init calls below will
- 	 * be able to create sockets. (?? is this dangerous ??)
-@@ -1022,8 +1024,10 @@ register_pernet_fail:
- out_sock_register_fail:
- 	rawv6_exit();
- out_unregister_ping_proto:
-+#ifdef CONFIG_IP_PING
- 	proto_unregister(&pingv6_prot);
- out_unregister_raw_proto:
-+#endif
- 	proto_unregister(&rawv6_prot);
- out_unregister_udplite_proto:
- 	proto_unregister(&udplitev6_prot);
+ static int __net_init inet6_net_init(struct net *net)
+ {
 -- 
 1.9.0
 
