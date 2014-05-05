@@ -1,314 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933277AbaEEW16 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 18:27:58 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58941 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933165AbaEEW00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 18:26:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,992,1389772800"; 
-   d="scan'208";a="506357937"
-From: Andi Kleen <andi@firstfloor.org>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 16/24] net, diet: Make TCP fastopen optional
-Date: Mon,  5 May 2014 15:26:05 -0700
-Message-Id: <1399328773-6531-17-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
-References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
+	id S933293AbaEEW2H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 18:28:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34740 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933165AbaEEW2F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 18:28:05 -0400
+Date: Mon, 5 May 2014 22:27:58 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Richard Guy Briggs <rgb@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>,
+        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, eparis@redhat.com,
+        sgrubb@redhat.com, ebiederm@xmission.com
+Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
+Message-ID: <20140505222758.GA6508@ubuntumail>
+References: <cover.1398176489.git.rgb@redhat.com>
+ <1399154328.2505.29.camel@dabdike.int.hansenpartnership.com>
+ <20140505034814.GA27548@mail.hallyn.com>
+ <20140505214818.GC6867@madcap2.tricolour.ca>
+ <1399326698.2164.47.camel@dabdike.int.hansenpartnership.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399326698.2164.47.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
+> On Mon, 2014-05-05 at 17:48 -0400, Richard Guy Briggs wrote:
+> > On 14/05/05, Serge E. Hallyn wrote:
+> > > Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
+> > > > On Tue, 2014-04-22 at 14:12 -0400, Richard Guy Briggs wrote:
+> > > > > Questions:
+> > > > > Is there a way to link serial numbers of namespaces involved in migration of a
+> > > > > container to another kernel?  (I had a brief look at CRIU.)  Is there a unique
+> > > > > identifier for each running instance of a kernel?  Or at least some identifier
+> > > > > within the container migration realm?
+> > > > 
+> > > > Are you asking for a way of distinguishing an migrated container from an
+> > > > unmigrated one?  The answer is pretty much "no" because the job of
+> > > > migration is to restore to the same state as much as possible.
+> > > > 
+> > > > Reading between the lines, I think your goal is to correlate audit
+> > > > information across a container migration, right?  Ideally the management
+> > > > system should be able to cough up an audit trail for a container
+> > > > wherever it's running and however many times it's been migrated?
+> > > > 
+> > > > In that case, I think your idea of a numeric serial number in a dense
+> > > > range is wrong.  Because the range is dense you're obviously never going
+> > > > to be able to use the same serial number across a migration.  However,
+> > > 
+> > > Ah, but I was being silly before, we can actually address this pretty
+> > > simply.  If we just (for instance) add
+> > > /proc/self/ns/{ic,mnt,net,pid,user,uts}_seq containing the serial number
+> > > for the relevant ns for the task, then criu can dump this info at
+> > > checkpoint.  Then at restart it can dump an audit message per task and
+> > > ns saying old_serial=%x,new_serial=%x.  That way the audit log reader
+> > > can if it cares keep track.
+> > 
+> > This is the sort of idea I had in mind...
+> 
+> OK, but I don't understand then why you need a serial number.  There are
+> plenty of things we preserve across a migration, like namespace name for
+> instance.  Could you explain what function it performs because I think I
+> might be missing something.
 
-Make TCP fast open a config option. It's not really needed
-on small systems. By itself it saves about 3k text,
-but the main advantage is that CONFIG_INET doesn't
-pull in AES and the crypto subsystem anymore, which
-is worth far more savings.
+We're looking ahead to a time when audit is namespaced, and a container
+can keep its own audit logs (without limiting what the host audits of
+course).  So if a container is auditing suspicious activity by some
+task in a sub-namesapce, then the whole parent container gets migrated,
+after migration we want to continue being able to correlate the namespaces.
 
-   text	   data	    bss	    dec	    hex	filename
-6954762	1404960	 765952	9125674	 8b3f2a	vmlinux-with-fastopen
-6951618	1400608	 765952	9118178	 8b21e2	vmlinux-wo-fastopen
+We're also looking at audit trails on a host that is up for years.  We
+would like every namespace to be uniquely logged there.  That is why
+inode #s on /proc/self/ns/* are not sufficient, unless we add a generation
+# (which would end more complicated, not less, than a serial #).
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- include/linux/tcp.h        | 14 ++++++++++++--
- include/net/request_sock.h |  5 +++++
- include/net/tcp.h          |  9 +++++++++
- net/Kconfig                |  4 ++--
- net/core/request_sock.c    |  2 ++
- net/ipv4/Kconfig           |  4 ++++
- net/ipv4/Makefile          |  3 ++-
- net/ipv4/sysctl_net_ipv4.c |  4 ++++
- net/ipv4/tcp.c             |  4 ++++
- net/ipv4/tcp_ipv4.c        | 18 ++++++++++++++++++
- 10 files changed, 62 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/tcp.h b/include/linux/tcp.h
-index 2399468..e0825e2 100644
---- a/include/linux/tcp.h
-+++ b/include/linux/tcp.h
-@@ -359,6 +359,9 @@ static inline struct tcp_timewait_sock *tcp_twsk(const struct sock *sk)
- 	return (struct tcp_timewait_sock *)sk;
- }
- 
-+extern void tcp_sock_destruct(struct sock *sk);
-+
-+#ifdef CONFIG_TCP_FASTOPEN
- static inline bool tcp_passive_fastopen(const struct sock *sk)
- {
- 	return (sk->sk_state == TCP_SYN_RECV &&
-@@ -370,8 +373,6 @@ static inline bool fastopen_cookie_present(struct tcp_fastopen_cookie *foc)
- 	return foc->len != -1;
- }
- 
--extern void tcp_sock_destruct(struct sock *sk);
--
- static inline int fastopen_init_queue(struct sock *sk, int backlog)
- {
- 	struct request_sock_queue *queue =
-@@ -391,4 +392,13 @@ static inline int fastopen_init_queue(struct sock *sk, int backlog)
- 	return 0;
- }
- 
-+#else
-+static inline bool tcp_passive_fastopen(const struct sock *sk)
-+{ return false; }
-+static inline bool fastopen_cookie_present(struct tcp_fastopen_cookie *foc)
-+{ return false; }
-+static inline int fastopen_init_queue(struct sock *sk, int backlog)
-+{ return 0; }
-+#endif
-+
- #endif	/* _LINUX_TCP_H */
-diff --git a/include/net/request_sock.h b/include/net/request_sock.h
-index 7f830ff..ad1f97a 100644
---- a/include/net/request_sock.h
-+++ b/include/net/request_sock.h
-@@ -168,8 +168,13 @@ int reqsk_queue_alloc(struct request_sock_queue *queue,
- 
- void __reqsk_queue_destroy(struct request_sock_queue *queue);
- void reqsk_queue_destroy(struct request_sock_queue *queue);
-+#ifdef CONFIG_TCP_FASTOPEN
- void reqsk_fastopen_remove(struct sock *sk, struct request_sock *req,
- 			   bool reset);
-+#else
-+static inline void reqsk_fastopen_remove(struct sock *sk, struct request_sock *req,
-+			   bool reset) {}
-+#endif
- 
- static inline struct request_sock *
- 	reqsk_queue_yank_acceptq(struct request_sock_queue *queue)
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index ac9f6bd..1a5e91b 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -251,7 +251,11 @@ extern int sysctl_tcp_retries1;
- extern int sysctl_tcp_retries2;
- extern int sysctl_tcp_orphan_retries;
- extern int sysctl_tcp_syncookies;
-+#ifdef CONFIG_TCP_FASTOPEN
- extern int sysctl_tcp_fastopen;
-+#else
-+#define sysctl_tcp_fastopen 0
-+#endif
- extern int sysctl_tcp_retrans_collapse;
- extern int sysctl_tcp_stdurg;
- extern int sysctl_tcp_rfc1337;
-@@ -1333,7 +1337,12 @@ struct tcp_fastopen_request {
- 	size_t				size;
- 	int				copied;	/* queued in tcp_connect() */
- };
-+
-+#ifdef CONFIG_TCP_FASTOPEN
- void tcp_free_fastopen_req(struct tcp_sock *tp);
-+#else
-+static inline void tcp_free_fastopen_req(struct tcp_sock *tp) {}
-+#endif
- 
- extern struct tcp_fastopen_context __rcu *tcp_fastopen_ctx;
- int tcp_fastopen_reset_cipher(void *key, unsigned int len);
-diff --git a/net/Kconfig b/net/Kconfig
-index f5196ba..fe6e856 100644
---- a/net/Kconfig
-+++ b/net/Kconfig
-@@ -61,8 +61,8 @@ source "net/iucv/Kconfig"
- 
- config INET
- 	bool "TCP/IP networking"
--	select CRYPTO
--	select CRYPTO_AES
-+	select CRYPTO if TCP_FASTOPEN
-+	select CRYPTO_AES if TCP_FASTOPEN
- 	---help---
- 	  These are the protocols used on the Internet and on most local
- 	  Ethernets. It is highly recommended to say Y here (this will enlarge
-diff --git a/net/core/request_sock.c b/net/core/request_sock.c
-index 467f326..80ad1dd 100644
---- a/net/core/request_sock.c
-+++ b/net/core/request_sock.c
-@@ -131,6 +131,7 @@ void reqsk_queue_destroy(struct request_sock_queue *queue)
- 		kfree(lopt);
- }
- 
-+#ifdef CONFIG_TCP_FASTOPEN
- /*
-  * This function is called to set a Fast Open socket's "fastopen_rsk" field
-  * to NULL when a TFO socket no longer needs to access the request_sock.
-@@ -222,3 +223,4 @@ out:
- 	spin_unlock_bh(&fastopenq->lock);
- 	sock_put(lsk);
- }
-+#endif
-diff --git a/net/ipv4/Kconfig b/net/ipv4/Kconfig
-index c1f9899..df5c569 100644
---- a/net/ipv4/Kconfig
-+++ b/net/ipv4/Kconfig
-@@ -320,6 +320,10 @@ config NET_IPVTI
- 	  the notion of a secure tunnel for IPSEC and then use routing protocol
- 	  on top.
- 
-+config TCP_FASTOPEN
-+	bool "Enable TCP fastopen"
-+	default y
-+
- config INET_AH
- 	tristate "IP: AH transformation"
- 	select XFRM_ALGO
-diff --git a/net/ipv4/Makefile b/net/ipv4/Makefile
-index eb129a4..addecef 100644
---- a/net/ipv4/Makefile
-+++ b/net/ipv4/Makefile
-@@ -7,7 +7,7 @@ obj-y     := route.o inetpeer.o protocol.o \
- 	     ip_output.o ip_sockglue.o inet_hashtables.o \
- 	     inet_timewait_sock.o inet_connection_sock.o \
- 	     tcp.o tcp_input.o tcp_output.o tcp_timer.o tcp_ipv4.o \
--	     tcp_minisocks.o tcp_cong.o tcp_fastopen.o \
-+	     tcp_minisocks.o tcp_cong.o \
- 	     datagram.o raw.o udp.o udplite.o \
- 	     arp.o icmp.o devinet.o af_inet.o \
- 	     fib_frontend.o fib_semantics.o fib_trie.o \
-@@ -55,6 +55,7 @@ obj-$(CONFIG_TCP_CONG_SCALABLE) += tcp_scalable.o
- obj-$(CONFIG_TCP_CONG_LP) += tcp_lp.o
- obj-$(CONFIG_TCP_CONG_YEAH) += tcp_yeah.o
- obj-$(CONFIG_TCP_CONG_ILLINOIS) += tcp_illinois.o
-+obj-$(CONFIG_TCP_FASTOPEN) += tcp_fastopen.o
- obj-$(CONFIG_MEMCG_KMEM) += tcp_memcontrol.o
- obj-$(CONFIG_NETLABEL) += cipso_ipv4.o
- 
-diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
-index fe5823a..9a9f96c 100644
---- a/net/ipv4/sysctl_net_ipv4.c
-+++ b/net/ipv4/sysctl_net_ipv4.c
-@@ -200,6 +200,7 @@ static int proc_allowed_congestion_control(struct ctl_table *ctl,
- 	return ret;
- }
- 
-+#ifdef CONFIG_TCP_FASTOPEN
- static int proc_tcp_fastopen_key(struct ctl_table *ctl, int write,
- 				 void __user *buffer, size_t *lenp,
- 				 loff_t *ppos)
-@@ -246,6 +247,7 @@ bad_key:
- 	kfree(tbl.data);
- 	return ret;
- }
-+#endif
- 
- static struct ctl_table ipv4_table[] = {
- 	{
-@@ -388,6 +390,7 @@ static struct ctl_table ipv4_table[] = {
- 		.proc_handler	= proc_dointvec
- 	},
- #endif
-+#ifdef CONFIG_TCP_FASTOPEN
- 	{
- 		.procname	= "tcp_fastopen",
- 		.data		= &sysctl_tcp_fastopen,
-@@ -401,6 +404,7 @@ static struct ctl_table ipv4_table[] = {
- 		.maxlen		= ((TCP_FASTOPEN_KEY_LENGTH * 2) + 10),
- 		.proc_handler	= proc_tcp_fastopen_key,
- 	},
-+#endif
- 	{
- 		.procname	= "tcp_tw_recycle",
- 		.data		= &tcp_death_row.sysctl_tw_recycle,
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 3fd48421..ef14cb6 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1036,6 +1036,7 @@ static inline int select_size(const struct sock *sk, bool sg)
- 	return tmp;
- }
- 
-+#ifdef CONFIG_TCP_FASTOPEN
- void tcp_free_fastopen_req(struct tcp_sock *tp)
- {
- 	if (tp->fastopen_req != NULL) {
-@@ -1069,6 +1070,7 @@ static int tcp_sendmsg_fastopen(struct sock *sk, struct msghdr *msg,
- 	tcp_free_fastopen_req(tp);
- 	return err;
- }
-+#endif
- 
- int tcp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		size_t size)
-@@ -1084,6 +1086,7 @@ int tcp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 	lock_sock(sk);
- 
- 	flags = msg->msg_flags;
-+#ifdef CONFIG_TCP_FASTOPEN
- 	if (flags & MSG_FASTOPEN) {
- 		err = tcp_sendmsg_fastopen(sk, msg, &copied_syn, size);
- 		if (err == -EINPROGRESS && copied_syn > 0)
-@@ -1092,6 +1095,7 @@ int tcp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 			goto out_err;
- 		offset = copied_syn;
- 	}
-+#endif
- 
- 	timeo = sock_sndtimeo(sk, flags & MSG_DONTWAIT);
- 
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 438f3b9..fbddabb 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1260,6 +1260,7 @@ static const struct tcp_request_sock_ops tcp_request_sock_ipv4_ops = {
- };
- #endif
- 
-+#ifdef CONFIG_TCP_FASTOPEN
- static bool tcp_fastopen_check(struct sock *sk, struct sk_buff *skb,
- 			       struct request_sock *req,
- 			       struct tcp_fastopen_cookie *foc,
-@@ -1440,6 +1441,23 @@ static int tcp_v4_conn_req_fastopen(struct sock *sk,
- 	WARN_ON(req->sk == NULL);
- 	return 0;
- }
-+#else
-+static bool tcp_fastopen_check(struct sock *sk, struct sk_buff *skb,
-+			       struct request_sock *req,
-+			       struct tcp_fastopen_cookie *foc,
-+			       struct tcp_fastopen_cookie *valid_foc)
-+{
-+	return false;
-+}
-+
-+static int tcp_v4_conn_req_fastopen(struct sock *sk,
-+				    struct sk_buff *skb,
-+				    struct sk_buff *skb_synack,
-+				    struct request_sock *req)
-+{
-+	return 0;
-+}
-+#endif
- 
- int tcp_v4_conn_request(struct sock *sk, struct sk_buff *skb)
- {
--- 
-1.9.0
-
+-serge
