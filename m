@@ -1,102 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834AbaEEHf0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 03:35:26 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:47768 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754635AbaEEHfZ (ORCPT
+	id S1754866AbaEEHgJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 03:36:09 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:43150 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754635AbaEEHgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 03:35:25 -0400
-Message-ID: <53673E13.6070708@mellanox.com>
-Date: Mon, 5 May 2014 10:30:27 +0300
-From: Amir Vadai <amirv@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, <netdev@vger.kernel.org>
-CC: Eli Cohen <eli@mellanox.com>, <linux-kernel@vger.kernel.org>,
-        <linux-rdma@vger.kernel.org>
-Subject: Re: [PATCH] mellanox: Logging message cleanups
-References: <e029b6ed75d46cfbada06622df91d4d331eeabde.1399259459.git.joe@perches.com>
-In-Reply-To: <e029b6ed75d46cfbada06622df91d4d331eeabde.1399259459.git.joe@perches.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.0.13.1]
+	Mon, 5 May 2014 03:36:08 -0400
+X-AuditID: cbfec7f5-b7fae6d000004d6d-19-53673f652bc5
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: linux@arm.linux.org.uk
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        linux-arm-kernel@lists.infradead.org (moderated list:ARM PORT),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] arm: memset: zero out upper bytes in r1
+Date: Mon, 05 May 2014 11:11:13 +0400
+Message-id: <1399273875-8403-1-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOJMWRmVeSWpSXmKPExsVy+t/xq7qp9unBBmdmmFhs+/WIzWLT42us
+	Fpd3zWGzuH2Z14HFo6W5h81j85J6j74tqxg9Pm+SC2CJ4rJJSc3JLEst0rdL4Mpo/V9XMJe9
+	4t+Kq+wNjHdYuxg5OSQETCRWNF1ggrDFJC7cW8/WxcjFISSwlFHi56p+Rginh0li6ovbYB1s
+	AnoS/2ZtZwOxRQSkJGbsXMoOYjMLzGKUePgpAsQWFrCQOHnmD1gNi4CqxP1905lBbF4BV4kX
+	208zQmxTkFj2ZS3zBEbuBYwMqxhFU0uTC4qT0nON9IoTc4tL89L1kvNzNzFCPP91B+PSY1aH
+	GAU4GJV4eD28U4KFWBPLiitzDzFKcDArifDOYkwPFuJNSaysSi3Kjy8qzUktPsTIxMEp1cC4
+	o893vuZSb5dzZ+btl78gn1F3ouxB3uWK2uy/m+rnWxetOigQs8vQWFBDcPnFyB/izK1fls7x
+	lZ97KqbpcPJHg5fGJhfObDsd3/opXZvXJWfBtCcL93/+dj7VIDPwjhvrg+v7ivj/zNI4tvz5
+	6UOnlnWkbfVSWhcZayG16NqvJYsXJF7c9EJLWYmlOCPRUIu5qDgRANXMZq7aAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/5/2014 6:35 AM, Joe Perches wrote:
-> Use a more current logging style.
->
-> o Coalesce formats
-> o Add missing spaces for coalesced formats
-> o Align arguments for modified formats
-> o Add missing newlines for some logging messages
-> o Use DRV_NAME as part of format instead of %s, DRV_NAME to
->    reduce overall text.
-> o Use ..., ##__VA_ARGS__ instead of args... in macros
-> o Correct a few format typos
-> o Use a single line message where appropriate
->
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->   drivers/net/ethernet/mellanox/mlx4/cmd.c           |  85 ++++---
->   drivers/net/ethernet/mellanox/mlx4/en_cq.c         |   3 +-
->   drivers/net/ethernet/mellanox/mlx4/en_ethtool.c    |   6 +-
->   drivers/net/ethernet/mellanox/mlx4/en_main.c       |   7 +-
->   drivers/net/ethernet/mellanox/mlx4/en_netdev.c     |   8 +-
->   drivers/net/ethernet/mellanox/mlx4/en_rx.c         |  17 +-
->   drivers/net/ethernet/mellanox/mlx4/en_tx.c         |   8 +-
->   drivers/net/ethernet/mellanox/mlx4/eq.c            |  85 +++----
->   drivers/net/ethernet/mellanox/mlx4/fw.c            |  25 +--
->   drivers/net/ethernet/mellanox/mlx4/main.c          | 246 +++++++++------------
->   drivers/net/ethernet/mellanox/mlx4/mcg.c           |  16 +-
->   drivers/net/ethernet/mellanox/mlx4/mlx4.h          |  17 +-
->   drivers/net/ethernet/mellanox/mlx4/mlx4_en.h       |  40 ++--
->   drivers/net/ethernet/mellanox/mlx4/mr.c            |  14 +-
->   drivers/net/ethernet/mellanox/mlx4/port.c          |  12 +-
->   drivers/net/ethernet/mellanox/mlx4/profile.c       |  13 +-
->   drivers/net/ethernet/mellanox/mlx4/qp.c            |   7 +-
->   drivers/net/ethernet/mellanox/mlx4/reset.c         |  24 +-
->   .../net/ethernet/mellanox/mlx4/resource_tracker.c  |  73 +++---
->   drivers/net/ethernet/mellanox/mlx5/core/cmd.c      |   4 +-
->   drivers/net/ethernet/mellanox/mlx5/core/eq.c       |   9 +-
->   drivers/net/ethernet/mellanox/mlx5/core/main.c     |  14 +-
->   .../net/ethernet/mellanox/mlx5/core/mlx5_core.h    |  30 +--
->   drivers/net/ethernet/mellanox/mlx5/core/mr.c       |   8 +-
->   .../net/ethernet/mellanox/mlx5/core/pagealloc.c    |  15 +-
->   drivers/net/ethernet/mellanox/mlx5/core/qp.c       |   4 +-
->   26 files changed, 353 insertions(+), 437 deletions(-)
->
+memset doesn't work right for following example:
 
-[...]
+	signed char c = 0xF0;
+	memset(addr, c, size);
 
->
-> diff --git a/drivers/net/ethernet/mellanox/mlx4/fw.c b/drivers/net/ethernet/mellanox/mlx4/fw.c
-> index d16a4d1..0a87169 100644
-> --- a/drivers/net/ethernet/mellanox/mlx4/fw.c
-> +++ b/drivers/net/ethernet/mellanox/mlx4/fw.c
-> @@ -1,3 +1,4 @@
-> +
-new line
+Variable c is signed, so after typcasting to int the value will be 0xFFFFFFF0.
+This value will be passed through r1 regitster to memset function.
+memset doesn't zero out upper bytes in r1, so memory will be filled
+with 0xFFFFFFF0 instead of expected 0xF0F0F0F0.
 
->   /*
->    * Copyright (c) 2004, 2005 Topspin Communications.  All rights reserved.
->    * Copyright (c) 2005, 2006, 2007, 2008 Mellanox Technologies. All rights reserved.
-> @@ -428,8 +429,7 @@ int mlx4_QUERY_FUNC_CAP(struct mlx4_dev *dev, u32 gen_or_port,
->   	} else if (dev->caps.port_type[gen_or_port] == MLX4_PORT_TYPE_IB) {
->   		MLX4_GET(field, outbox, QUERY_FUNC_CAP_FLAGS0_OFFSET);
->   		if (field & QUERY_FUNC_CAP_FLAGS0_FORCE_PHY_WQE_GID) {
-> -			mlx4_err(dev, "phy_wqe_gid is "
-> -				 "enforced on this ib port\n");
-> +			mlx4_err(dev, "phy_wqe_gid is enforced on this ib port\n");
->   			err = -EPROTONOSUPPORT;
->   			goto out;
->   		}
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+---
+ arch/arm/lib/memset.S | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-[...]
+diff --git a/arch/arm/lib/memset.S b/arch/arm/lib/memset.S
+index 94b0650..a010f76 100644
+--- a/arch/arm/lib/memset.S
++++ b/arch/arm/lib/memset.S
+@@ -22,7 +22,8 @@ ENTRY(memset)
+ /*
+  * we know that the pointer in ip is aligned to a word boundary.
+  */
+-1:	orr	r1, r1, r1, lsl #8
++1:	and	r1, r1, #0xff
++	orr	r1, r1, r1, lsl #8
+ 	orr	r1, r1, r1, lsl #16
+ 	mov	r3, r1
+ 	cmp	r2, #16
+-- 
+1.8.3.2
 
-Acked-By: Amir Vadai <amirv@mellanox.com>
-
-Thanks,
-Amir
