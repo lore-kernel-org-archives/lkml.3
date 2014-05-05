@@ -1,106 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679AbaEESxq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 14:53:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23230 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468AbaEESxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 14:53:45 -0400
-Date: Mon, 5 May 2014 20:53:08 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] signal: Simplify __lock_task_sighand()
-Message-ID: <20140505185308.GA17507@redhat.com>
-References: <20140503161133.GA8838@redhat.com> <20140504180145.GC8754@linux.vnet.ibm.com> <20140504191757.GA11319@redhat.com> <20140504223804.GF8754@linux.vnet.ibm.com> <20140505132659.GA17996@redhat.com> <20140505152610.GK8754@linux.vnet.ibm.com> <20140505164719.GA31758@redhat.com>
+	id S1751808AbaEESyZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 14:54:25 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56665 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751AbaEESyY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 14:54:24 -0400
+Message-ID: <5367DE14.8000907@ti.com>
+Date: Mon, 5 May 2014 21:53:08 +0300
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505164719.GA31758@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+CC: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <santosh.shilimkar@ti.com>, <grant.likely@linaro.org>,
+        <devicetree@vger.kernel.org>, <grygorii.strashko@ti.com>,
+        <linux@arm.linux.org.uk>, <linux-doc@vger.kernel.org>,
+        <w-kwok2@ti.com>, <rdunlap@infradead.org>, <sboyd@codeaurora.org>,
+        <linux-kernel@vger.kernel.org>, <olof@lixom.net>
+Subject: Re: [PATCH v2 2/5] Power: reset: add bindings for keystone reset
+ driver
+References: <1397497283-16391-1-git-send-email-ivan.khoronzhuk@ti.com> <1397497283-16391-3-git-send-email-ivan.khoronzhuk@ti.com> <6937937.4J6iI7VpBO@wuerfel> <534D1719.40701@ti.com>
+In-Reply-To: <534D1719.40701@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05, Oleg Nesterov wrote:
+
+On 04/15/2014 02:25 PM, Ivan Khoronzhuk wrote:
 >
-> On 05/05, Paul E. McKenney wrote:
-> >
-> > Does the patch below cover it?
+> On 04/14/2014 09:44 PM, Arnd Bergmann wrote:
+>> On Monday 14 April 2014 20:41:20 Ivan Khoronzhuk wrote:
+>>> +Optional properties:
+>>> +
+>>> +- ti,soft-reset:       Boolean option indicating soft reset.
+>>> +                       By default hard reset is used.
+>>> +
+>>> +- ti,wdt_list:         WDT list that can cause SoC reset.
+>>> +                       The list in format: <0>, <2>;
+>>> +                       Begins from 0 to 3, as keystone can contain up
+>>> +                       to 4 SoC reset watchdogs.
+>>>
+>> This looks like your binding just describes a subset of the
+>> watchdog timer registers. If so, don't do a standalone reset
 >
-> Yes, thanks.
+> The registers are not a subset of watchdog hardware it's SoC specific 
+> future
+> controlled by SoC specific registers (bootregs and PLL regs).
 >
-> Acked-by: Oleg Nesterov <oleg@redhat.com>
+> For watchog IP setup, the Keystone uses the watchdog driver common 
+> with other
+> SoCs -- davinci_watchdog that is not depend on other SoC settings like 
+> this driver does.
+>
+> The Keystone SoCs have separate registers to tune Keystone2 reset 
+> functionality
+> by configuring Reset multiplexer &  PLL. And it tunes not only 
+> watchdog usage.
+> The keystone SoC can be rebooted in several ways. By external reset 
+> pin, by soft and
+> by watchdogs. This driver allows software reset or reset by one of the 
+> watchdogs
+> (and other settings) independently on watchdog driver settings. This 
+> is job of reset driver.
+>
+>> It's
+>> driver, but instead do a watchdog driver that can also be
+>> used for reset, and have a binding that properly describes
+>> the watchdog hardware.
+>>
+>> It is bad to have overlapping register ranges between logical
+>
+> WDT doesn't overlap with this driver.
+>
+>> devices, and it's also generally wrong to describe devices that
+>> are not actually there: The hardware contains a watchdog, not
+>> a system-reset device, so you should not make one up because
+>> it seems easier given the Linux driver model.
+>>
+>>     Arnd 
 
-Yes, but please consider the cleanup below, on top of your change.
+Hi Arnd,
 
-This is subjective of course, but imho the code looks better without
-the extra unlock/restore inside the loop.
+Could I do smth additional to make bindings explanation more clear?
+Or this is enough?
 
--------------------------------------------------------------------------------
-Subject: [PATCH] signal: Simplify __lock_task_sighand()
+I can write like the following:
+Optional properties:
 
-__lock_task_sighand() does local_irq_save() to prevent the potential
-deadlock, we can use preempt_disable() with the same effect. And in
-this case we can do preempt_disable/enable + rcu_read_lock/unlock only
-once outside of the main loop and simplify the code. Also shaves 112
-bytes from signal.o.
+- ti,soft-reset:       Boolean option indicating soft reset.
+                        By default hard reset is used.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/signal.c |   31 +++++++++++++------------------
- 1 files changed, 13 insertions(+), 18 deletions(-)
+- ti,wdt_list:         WDT list that can cause SoC reset. This is not
+                         related to WDT driver, it's just needed to enable
+                         a SoC related reset that is triggered by one of 
+watchdogs.
+                        The list in format: <0>, <2>;
+                        Begins from 0 to 3, as keystone can contain up
+                        to 4 SoC reset watchdogs. Can be in random order.
 
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 4368370..03a0fd4 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1260,30 +1260,25 @@ struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
- 					   unsigned long *flags)
- {
- 	struct sighand_struct *sighand;
--
-+	/*
-+	 * We are going to do rcu_read_unlock() under spin_lock_irqsave().
-+	 * Make sure we can not be preempted after rcu_read_unlock(), see
-+	 * rcu_read_unlock comment header for details.
-+	 */
-+	preempt_disable();
-+	rcu_read_lock();
- 	for (;;) {
--		/*
--		 * Disable interrupts early to avoid deadlocks.
--		 * See rcu_read_unlock comment header for details.
--		 */
--		local_irq_save(*flags);
--		rcu_read_lock();
- 		sighand = rcu_dereference(tsk->sighand);
--		if (unlikely(sighand == NULL)) {
--			rcu_read_unlock();
--			local_irq_restore(*flags);
-+		if (unlikely(sighand == NULL))
- 			break;
--		}
- 
--		spin_lock(&sighand->siglock);
--		if (likely(sighand == tsk->sighand)) {
--			rcu_read_unlock();
-+		spin_lock_irqsave(&sighand->siglock, *flags);
-+		if (likely(sighand == tsk->sighand))
- 			break;
--		}
--		spin_unlock(&sighand->siglock);
--		rcu_read_unlock();
--		local_irq_restore(*flags);
-+		spin_unlock_irqrestore(&sighand->siglock, *flags);
- 	}
-+	rcu_read_unlock();
-+	preempt_enable();
- 
- 	return sighand;
- }
+That is OK?
+
 -- 
-1.5.5.1
-
+Regards,
+Ivan Khoronzhuk
 
