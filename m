@@ -1,238 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932452AbaEEMtt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 08:49:49 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41005 "EHLO
+	id S932569AbaEEMrW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 08:47:22 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41056 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932288AbaEEMne (ORCPT
+	by vger.kernel.org with ESMTP id S932330AbaEEMnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 08:43:34 -0400
+	Mon, 5 May 2014 08:43:35 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alexei Starovoitov <ast@plumgrid.com>,
-        Jesse Gross <jesse@nicira.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 01/50] openvswitch: fix vport-netdev unregister
-Date: Mon,  5 May 2014 14:42:43 +0200
-Message-Id: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>,
+        Grant Edwards <grant.b.edwards@gmail.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>,
+        Alan Cox <alan@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 33/50] tty: Fix low_latency BUG
+Date: Mon,  5 May 2014 14:43:15 +0200
+Message-Id: <18b258a37ee54cab6d0fc33f70b3c9d0ecf2dfdb.1399292849.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
+In-Reply-To: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
+References: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
 In-Reply-To: <cover.1399292849.git.jslaby@suse.cz>
 References: <cover.1399292849.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexei Starovoitov <ast@plumgrid.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit b07c26511e94ab856f3700c56d582c0da36d5b4d upstream.
+commit a9c3f68f3cd8d55f809fbdb0c138ed061ea1bd25 upstream.
 
-The combination of two commits:
-commit 8e4e1713e4
-("openvswitch: Simplify datapath locking.")
-commit 2537b4dd0a
-("openvswitch:: link upper device for port devices")
+The user-settable knob, low_latency, has been the source of
+several BUG reports which stem from flush_to_ldisc() running
+in interrupt context. Since 3.12, which added several sleeping
+locks (termios_rwsem and buf->lock) to the input processing path,
+the frequency of these BUG reports has increased.
 
-introduced a bug where upper_dev wasn't unlinked upon
-netdev_unregister notification
+Note that changes in 3.12 did not introduce this regression;
+sleeping locks were first added to the input processing path
+with the removal of the BKL from N_TTY in commit
+a88a69c91256418c5907c2f1f8a0ec0a36f9e6cc,
+'n_tty: Fix loss of echoed characters and remove bkl from n_tty'
+and later in commit 38db89799bdf11625a831c5af33938dcb11908b6,
+'tty: throttling race fix'. Since those changes, executing
+flush_to_ldisc() in interrupt_context (ie, low_latency set), is unsafe.
 
-The following steps:
+However, since most devices do not validate if the low_latency
+setting is appropriate for the context (process or interrupt) in
+which they receive data, some reports are due to misconfiguration.
+Further, serial dma devices for which dma fails, resort to
+interrupt receiving as a backup without resetting low_latency.
 
-  modprobe openvswitch
-  ovs-dpctl add-dp test
-  ip tuntap add dev tap1 mode tap
-  ovs-dpctl add-if test tap1
-  ip tuntap del dev tap1 mode tap
+Historically, low_latency was used to force wake-up the reading
+process rather than wait for the next scheduler tick. The
+effect was to trim multiple milliseconds of latency from
+when the process would receive new data.
 
-are causing multiple warnings:
+Recent tests [1] have shown that the reading process now receives
+data with only 10's of microseconds latency without low_latency set.
 
-[   62.747557] gre: GRE over IPv4 demultiplexor driver
-[   62.749579] openvswitch: Open vSwitch switching datapath
-[   62.755087] device test entered promiscuous mode
-[   62.765911] device tap1 entered promiscuous mode
-[   62.766033] IPv6: ADDRCONF(NETDEV_UP): tap1: link is not ready
-[   62.769017] ------------[ cut here ]------------
-[   62.769022] WARNING: CPU: 1 PID: 3267 at net/core/dev.c:5501 rollback_registered_many+0x20f/0x240()
-[   62.769023] Modules linked in: openvswitch gre vxlan ip_tunnel libcrc32c ip6table_filter ip6_tables ebtable_nat ebtables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack xt_CHECKSUM iptable_mangle ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc vhost_net macvtap macvlan vhost kvm_intel kvm dm_crypt iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi hid_generic mxm_wmi eeepc_wmi asus_wmi sparse_keymap dm_multipath psmouse serio_raw usbhid hid parport_pc ppdev firewire_ohci lpc_ich firewire_core e1000e crc_itu_t binfmt_misc igb dca ptp pps_core mac_hid wmi lp parport i2o_config i2o_block video
-[   62.769051] CPU: 1 PID: 3267 Comm: ip Not tainted 3.12.0-rc3+ #60
-[   62.769052] Hardware name: System manufacturer System Product Name/P8Z77 WS, BIOS 3007 07/26/2012
-[   62.769053]  0000000000000009 ffff8807f25cbd28 ffffffff8175e575 0000000000000006
-[   62.769055]  0000000000000000 ffff8807f25cbd68 ffffffff8105314c ffff8807f25cbd58
-[   62.769057]  ffff8807f2634000 ffff8807f25cbdc8 ffff8807f25cbd88 ffff8807f25cbdc8
-[   62.769059] Call Trace:
-[   62.769062]  [<ffffffff8175e575>] dump_stack+0x55/0x76
-[   62.769065]  [<ffffffff8105314c>] warn_slowpath_common+0x8c/0xc0
-[   62.769067]  [<ffffffff8105319a>] warn_slowpath_null+0x1a/0x20
-[   62.769069]  [<ffffffff8162a04f>] rollback_registered_many+0x20f/0x240
-[   62.769071]  [<ffffffff8162a101>] rollback_registered+0x31/0x40
-[   62.769073]  [<ffffffff8162a488>] unregister_netdevice_queue+0x58/0x90
-[   62.769075]  [<ffffffff8154f900>] __tun_detach+0x140/0x340
-[   62.769077]  [<ffffffff8154fb36>] tun_chr_close+0x36/0x60
-[   62.769080]  [<ffffffff811bddaf>] __fput+0xff/0x260
-[   62.769082]  [<ffffffff811bdf5e>] ____fput+0xe/0x10
-[   62.769084]  [<ffffffff8107b515>] task_work_run+0xb5/0xe0
-[   62.769087]  [<ffffffff810029b9>] do_notify_resume+0x59/0x80
-[   62.769089]  [<ffffffff813a41fe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[   62.769091]  [<ffffffff81770f5a>] int_signal+0x12/0x17
-[   62.769093] ---[ end trace 838756c62e156ffb ]---
-[   62.769481] ------------[ cut here ]------------
-[   62.769485] WARNING: CPU: 1 PID: 92 at fs/sysfs/inode.c:325 sysfs_hash_and_remove+0xa9/0xb0()
-[   62.769486] sysfs: can not remove 'master', no directory
-[   62.769486] Modules linked in: openvswitch gre vxlan ip_tunnel libcrc32c ip6table_filter ip6_tables ebtable_nat ebtables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack xt_CHECKSUM iptable_mangle ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc vhost_net macvtap macvlan vhost kvm_intel kvm dm_crypt iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi hid_generic mxm_wmi eeepc_wmi asus_wmi sparse_keymap dm_multipath psmouse serio_raw usbhid hid parport_pc ppdev firewire_ohci lpc_ich firewire_core e1000e crc_itu_t binfmt_misc igb dca ptp pps_core mac_hid wmi lp parport i2o_config i2o_block video
-[   62.769514] CPU: 1 PID: 92 Comm: kworker/1:2 Tainted: G        W    3.12.0-rc3+ #60
-[   62.769515] Hardware name: System manufacturer System Product Name/P8Z77 WS, BIOS 3007 07/26/2012
-[   62.769518] Workqueue: events ovs_dp_notify_wq [openvswitch]
-[   62.769519]  0000000000000009 ffff880807ad3ac8 ffffffff8175e575 0000000000000006
-[   62.769521]  ffff880807ad3b18 ffff880807ad3b08 ffffffff8105314c ffff880807ad3b28
-[   62.769523]  0000000000000000 ffffffff81a87a1f ffff8807f2634000 ffff880037038500
-[   62.769525] Call Trace:
-[   62.769528]  [<ffffffff8175e575>] dump_stack+0x55/0x76
-[   62.769529]  [<ffffffff8105314c>] warn_slowpath_common+0x8c/0xc0
-[   62.769531]  [<ffffffff81053236>] warn_slowpath_fmt+0x46/0x50
-[   62.769533]  [<ffffffff8123e7e9>] sysfs_hash_and_remove+0xa9/0xb0
-[   62.769535]  [<ffffffff81240e96>] sysfs_remove_link+0x26/0x30
-[   62.769538]  [<ffffffff81631ef7>] __netdev_adjacent_dev_remove+0xf7/0x150
-[   62.769540]  [<ffffffff81632037>] __netdev_adjacent_dev_unlink_lists+0x27/0x50
-[   62.769542]  [<ffffffff8163213a>] __netdev_adjacent_dev_unlink_neighbour+0x3a/0x50
-[   62.769544]  [<ffffffff8163218d>] netdev_upper_dev_unlink+0x3d/0x140
-[   62.769548]  [<ffffffffa033c2db>] netdev_destroy+0x4b/0x80 [openvswitch]
-[   62.769550]  [<ffffffffa033b696>] ovs_vport_del+0x46/0x60 [openvswitch]
-[   62.769552]  [<ffffffffa0335314>] ovs_dp_detach_port+0x44/0x60 [openvswitch]
-[   62.769555]  [<ffffffffa0336574>] ovs_dp_notify_wq+0xb4/0x150 [openvswitch]
-[   62.769557]  [<ffffffff81075c28>] process_one_work+0x1d8/0x6a0
-[   62.769559]  [<ffffffff81075bc8>] ? process_one_work+0x178/0x6a0
-[   62.769562]  [<ffffffff8107659b>] worker_thread+0x11b/0x370
-[   62.769564]  [<ffffffff81076480>] ? rescuer_thread+0x350/0x350
-[   62.769566]  [<ffffffff8107f44a>] kthread+0xea/0xf0
-[   62.769568]  [<ffffffff8107f360>] ? flush_kthread_worker+0x150/0x150
-[   62.769570]  [<ffffffff81770bac>] ret_from_fork+0x7c/0xb0
-[   62.769572]  [<ffffffff8107f360>] ? flush_kthread_worker+0x150/0x150
-[   62.769573] ---[ end trace 838756c62e156ffc ]---
-[   62.769574] ------------[ cut here ]------------
-[   62.769576] WARNING: CPU: 1 PID: 92 at fs/sysfs/inode.c:325 sysfs_hash_and_remove+0xa9/0xb0()
-[   62.769577] sysfs: can not remove 'upper_test', no directory
-[   62.769577] Modules linked in: openvswitch gre vxlan ip_tunnel libcrc32c ip6table_filter ip6_tables ebtable_nat ebtables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack xt_CHECKSUM iptable_mangle ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc vhost_net macvtap macvlan vhost kvm_intel kvm dm_crypt iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi hid_generic mxm_wmi eeepc_wmi asus_wmi sparse_keymap dm_multipath psmouse serio_raw usbhid hid parport_pc ppdev firewire_ohci lpc_ich firewire_core e1000e crc_itu_t binfmt_misc igb dca ptp pps_core mac_hid wmi lp parport i2o_config i2o_block video
-[   62.769603] CPU: 1 PID: 92 Comm: kworker/1:2 Tainted: G        W    3.12.0-rc3+ #60
-[   62.769604] Hardware name: System manufacturer System Product Name/P8Z77 WS, BIOS 3007 07/26/2012
-[   62.769606] Workqueue: events ovs_dp_notify_wq [openvswitch]
-[   62.769607]  0000000000000009 ffff880807ad3ac8 ffffffff8175e575 0000000000000006
-[   62.769609]  ffff880807ad3b18 ffff880807ad3b08 ffffffff8105314c ffff880807ad3b58
-[   62.769611]  0000000000000000 ffff880807ad3bd9 ffff8807f2634000 ffff880037038500
-[   62.769613] Call Trace:
-[   62.769615]  [<ffffffff8175e575>] dump_stack+0x55/0x76
-[   62.769617]  [<ffffffff8105314c>] warn_slowpath_common+0x8c/0xc0
-[   62.769619]  [<ffffffff81053236>] warn_slowpath_fmt+0x46/0x50
-[   62.769621]  [<ffffffff8123e7e9>] sysfs_hash_and_remove+0xa9/0xb0
-[   62.769622]  [<ffffffff81240e96>] sysfs_remove_link+0x26/0x30
-[   62.769624]  [<ffffffff81631f22>] __netdev_adjacent_dev_remove+0x122/0x150
-[   62.769627]  [<ffffffff81632037>] __netdev_adjacent_dev_unlink_lists+0x27/0x50
-[   62.769629]  [<ffffffff8163213a>] __netdev_adjacent_dev_unlink_neighbour+0x3a/0x50
-[   62.769631]  [<ffffffff8163218d>] netdev_upper_dev_unlink+0x3d/0x140
-[   62.769633]  [<ffffffffa033c2db>] netdev_destroy+0x4b/0x80 [openvswitch]
-[   62.769636]  [<ffffffffa033b696>] ovs_vport_del+0x46/0x60 [openvswitch]
-[   62.769638]  [<ffffffffa0335314>] ovs_dp_detach_port+0x44/0x60 [openvswitch]
-[   62.769640]  [<ffffffffa0336574>] ovs_dp_notify_wq+0xb4/0x150 [openvswitch]
-[   62.769642]  [<ffffffff81075c28>] process_one_work+0x1d8/0x6a0
-[   62.769644]  [<ffffffff81075bc8>] ? process_one_work+0x178/0x6a0
-[   62.769646]  [<ffffffff8107659b>] worker_thread+0x11b/0x370
-[   62.769648]  [<ffffffff81076480>] ? rescuer_thread+0x350/0x350
-[   62.769650]  [<ffffffff8107f44a>] kthread+0xea/0xf0
-[   62.769652]  [<ffffffff8107f360>] ? flush_kthread_worker+0x150/0x150
-[   62.769654]  [<ffffffff81770bac>] ret_from_fork+0x7c/0xb0
-[   62.769656]  [<ffffffff8107f360>] ? flush_kthread_worker+0x150/0x150
-[   62.769657] ---[ end trace 838756c62e156ffd ]---
-[   62.769724] device tap1 left promiscuous mode
+Remove the low_latency rx steering from tty_flip_buffer_push();
+however, leave the knob as an optional hint to drivers that can
+tune their rx fifos and such like. Cleanup stale code comments
+regarding low_latency.
 
-This patch also affects moving devices between net namespaces.
+[1] https://lkml.org/lkml/2014/2/20/434
 
-OVS used to ignore netns move notifications which caused problems.
-Like:
-  ovs-dpctl add-if test tap1
-  ip link set tap1 netns 3512
-and then removing tap1 inside the namespace will cause hang on missing dev_put.
+"Yay.. thats an annoying historical pain in the butt gone."
+	-- Alan Cox
 
-With this patch OVS will detach dev upon receiving netns move event.
-
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-Signed-off-by: Jesse Gross <jesse@nicira.com>
+Reported-by: Beat Bolli <bbolli@ewanet.ch>
+Reported-by: Pavel Roskin <proski@gnu.org>
+Acked-by: David Sterba <dsterba@suse.cz>
+Cc: Grant Edwards <grant.b.edwards@gmail.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/openvswitch/dp_notify.c    |  7 +++++--
- net/openvswitch/vport-netdev.c | 16 +++++++++++++---
- net/openvswitch/vport-netdev.h |  1 +
- 3 files changed, 19 insertions(+), 5 deletions(-)
+ drivers/tty/ipwireless/tty.c  |  3 ---
+ drivers/tty/tty_buffer.c      | 20 ++++----------------
+ drivers/usb/gadget/u_serial.c |  4 ++--
+ include/linux/tty.h           |  2 +-
+ 4 files changed, 7 insertions(+), 22 deletions(-)
 
-diff --git a/net/openvswitch/dp_notify.c b/net/openvswitch/dp_notify.c
-index c3235675f359..5c2dab276109 100644
---- a/net/openvswitch/dp_notify.c
-+++ b/net/openvswitch/dp_notify.c
-@@ -65,8 +65,7 @@ void ovs_dp_notify_wq(struct work_struct *work)
- 					continue;
+diff --git a/drivers/tty/ipwireless/tty.c b/drivers/tty/ipwireless/tty.c
+index 8fd72ff9436e..d917a34e94bb 100644
+--- a/drivers/tty/ipwireless/tty.c
++++ b/drivers/tty/ipwireless/tty.c
+@@ -177,9 +177,6 @@ void ipwireless_tty_received(struct ipw_tty *tty, unsigned char *data,
+ 				": %d chars not inserted to flip buffer!\n",
+ 				length - work);
  
- 				netdev_vport = netdev_vport_priv(vport);
--				if (netdev_vport->dev->reg_state == NETREG_UNREGISTERED ||
--				    netdev_vport->dev->reg_state == NETREG_UNREGISTERING)
-+				if (!(netdev_vport->dev->priv_flags & IFF_OVS_DATAPATH))
- 					dp_detach_port_notify(vport);
- 			}
- 		}
-@@ -88,6 +87,10 @@ static int dp_device_event(struct notifier_block *unused, unsigned long event,
- 		return NOTIFY_DONE;
- 
- 	if (event == NETDEV_UNREGISTER) {
-+		/* upper_dev_unlink and decrement promisc immediately */
-+		ovs_netdev_detach_dev(vport);
-+
-+		/* schedule vport destroy, dev_put and genl notification */
- 		ovs_net = net_generic(dev_net(dev), ovs_net_id);
- 		queue_work(system_wq, &ovs_net->dp_notify_work);
- 	}
-diff --git a/net/openvswitch/vport-netdev.c b/net/openvswitch/vport-netdev.c
-index 09d93c13cfd6..d21f77d875ba 100644
---- a/net/openvswitch/vport-netdev.c
-+++ b/net/openvswitch/vport-netdev.c
-@@ -150,15 +150,25 @@ static void free_port_rcu(struct rcu_head *rcu)
- 	ovs_vport_free(vport_from_priv(netdev_vport));
+-	/*
+-	 * This may sleep if ->low_latency is set
+-	 */
+ 	if (work)
+ 		tty_flip_buffer_push(&tty->port);
  }
+diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+index c043136fbe51..2b52d807934e 100644
+--- a/drivers/tty/tty_buffer.c
++++ b/drivers/tty/tty_buffer.c
+@@ -332,14 +332,11 @@ EXPORT_SYMBOL(tty_insert_flip_string_flags);
+  *	Takes any pending buffers and transfers their ownership to the
+  *	ldisc side of the queue. It then schedules those characters for
+  *	processing by the line discipline.
+- *	Note that this function can only be used when the low_latency flag
+- *	is unset. Otherwise the workqueue won't be flushed.
+  */
  
--static void netdev_destroy(struct vport *vport)
-+void ovs_netdev_detach_dev(struct vport *vport)
+ void tty_schedule_flip(struct tty_port *port)
  {
- 	struct netdev_vport *netdev_vport = netdev_vport_priv(vport);
+ 	struct tty_bufhead *buf = &port->buf;
+-	WARN_ON(port->low_latency);
  
--	rtnl_lock();
-+	ASSERT_RTNL();
- 	netdev_vport->dev->priv_flags &= ~IFF_OVS_DATAPATH;
- 	netdev_rx_handler_unregister(netdev_vport->dev);
--	netdev_upper_dev_unlink(netdev_vport->dev, get_dpdev(vport->dp));
-+	netdev_upper_dev_unlink(netdev_vport->dev,
-+				netdev_master_upper_dev_get(netdev_vport->dev));
- 	dev_set_promiscuity(netdev_vport->dev, -1);
-+}
-+
-+static void netdev_destroy(struct vport *vport)
-+{
-+	struct netdev_vport *netdev_vport = netdev_vport_priv(vport);
-+
-+	rtnl_lock();
-+	if (netdev_vport->dev->priv_flags & IFF_OVS_DATAPATH)
-+		ovs_netdev_detach_dev(vport);
- 	rtnl_unlock();
- 
- 	call_rcu(&netdev_vport->rcu, free_port_rcu);
-diff --git a/net/openvswitch/vport-netdev.h b/net/openvswitch/vport-netdev.h
-index dd298b5c5cdb..8df01c1127e5 100644
---- a/net/openvswitch/vport-netdev.h
-+++ b/net/openvswitch/vport-netdev.h
-@@ -39,5 +39,6 @@ netdev_vport_priv(const struct vport *vport)
+ 	buf->tail->commit = buf->tail->used;
+ 	schedule_work(&buf->work);
+@@ -487,17 +484,15 @@ static void flush_to_ldisc(struct work_struct *work)
+  */
+ void tty_flush_to_ldisc(struct tty_struct *tty)
+ {
+-	if (!tty->port->low_latency)
+-		flush_work(&tty->port->buf.work);
++	flush_work(&tty->port->buf.work);
  }
  
- const char *ovs_netdev_get_name(const struct vport *);
-+void ovs_netdev_detach_dev(struct vport *);
+ /**
+  *	tty_flip_buffer_push	-	terminal
+  *	@port: tty port to push
+  *
+- *	Queue a push of the terminal flip buffers to the line discipline. This
+- *	function must not be called from IRQ context if port->low_latency is
+- *	set.
++ *	Queue a push of the terminal flip buffers to the line discipline.
++ *	Can be called from IRQ/atomic context.
+  *
+  *	In the event of the queue being busy for flipping the work will be
+  *	held off and retried later.
+@@ -505,14 +500,7 @@ void tty_flush_to_ldisc(struct tty_struct *tty)
  
- #endif /* vport_netdev.h */
+ void tty_flip_buffer_push(struct tty_port *port)
+ {
+-	struct tty_bufhead *buf = &port->buf;
+-
+-	buf->tail->commit = buf->tail->used;
+-
+-	if (port->low_latency)
+-		flush_to_ldisc(&buf->work);
+-	else
+-		schedule_work(&buf->work);
++	tty_schedule_flip(port);
+ }
+ EXPORT_SYMBOL(tty_flip_buffer_push);
+ 
+diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
+index b369292d4b90..ad0aca812002 100644
+--- a/drivers/usb/gadget/u_serial.c
++++ b/drivers/usb/gadget/u_serial.c
+@@ -549,8 +549,8 @@ static void gs_rx_push(unsigned long _port)
+ 		port->read_started--;
+ 	}
+ 
+-	/* Push from tty to ldisc; without low_latency set this is handled by
+-	 * a workqueue, so we won't get callbacks and can hold port_lock
++	/* Push from tty to ldisc; this is handled by a workqueue,
++	 * so we won't get callbacks and can hold port_lock
+ 	 */
+ 	if (do_push)
+ 		tty_flip_buffer_push(&port->port);
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 64f864651d86..96c23247a332 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -203,7 +203,7 @@ struct tty_port {
+ 	wait_queue_head_t	delta_msr_wait;	/* Modem status change */
+ 	unsigned long		flags;		/* TTY flags ASY_*/
+ 	unsigned char		console:1,	/* port is a console */
+-				low_latency:1;	/* direct buffer flush */
++				low_latency:1;	/* optional: tune for latency */
+ 	struct mutex		mutex;		/* Locking */
+ 	struct mutex		buf_mutex;	/* Buffer alloc lock */
+ 	unsigned char		*xmit_buf;	/* Optional buffer */
 -- 
 1.9.2
 
