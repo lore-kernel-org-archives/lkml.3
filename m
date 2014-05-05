@@ -1,119 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001AbaEEATs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 20:19:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:34350 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751704AbaEEATq convert rfc822-to-8bit (ORCPT
+	id S1753996AbaEEA0e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 20:26:34 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50937 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753891AbaEEA0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 20:19:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,984,1389772800"; 
-   d="scan'208";a="534585204"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Sun, 4 May 2014 20:26:32 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Josh Boyer <jwboyer@fedoraproject.org>, Lv Zheng <lv.zheng@intel.com>,
+        Lv Zheng <zetalog@gmail.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
         "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devel@acpica.org" <devel@acpica.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Kees Cook <keescook@chromium.org>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Moore, Robert" <robert.moore@intel.com>,
-        "RobertBMoore@compuserve.com" <RobertBMoore@compuserve.com>,
-        "Box, David E" <david.e.box@intel.com>
-Subject: RE: [patch] lib: check for strcpy() overflows to fixed length
- buffers
-Thread-Topic: [patch] lib: check for strcpy() overflows to fixed length
- buffers
-Thread-Index: AQHPZIZ+iTwDo1X2T0y12KSDgIBV7psqC2iAgAAHS4CABxFgIA==
-Date: Mon, 5 May 2014 00:19:42 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E8802559A8F@SHSMSX101.ccr.corp.intel.com>
-References: <20140430150844.GA10621@mwanda>
- <1507574.Y0KFKOdI6F@vostro.rjw.lan> <20140430201529.GX4963@mwanda>
-In-Reply-To: <20140430201529.GX4963@mwanda>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        Bob Moore <robert.moore@intel.com>
+Subject: Re: [PATCH 20/27] ACPICA: Tables: Fix invalid pointer accesses in acpi_tb_parse_root_table().
+Date: Mon, 05 May 2014 02:43:08 +0200
+Message-ID: <1717964.6jLQaaky5K@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CA+5PVA58OC2dbk5oqTSQjOsCVzYfF+8nfat1Nbd2cCRTxbn5Pg@mail.gmail.com>
+References: <cover.1398817612.git.lv.zheng@intel.com> <c226eed72699ee1934426074b9d1c902ccfa0b48.1398817612.git.lv.zheng@intel.com> <CA+5PVA58OC2dbk5oqTSQjOsCVzYfF+8nfat1Nbd2cCRTxbn5Pg@mail.gmail.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-> From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
-> Sent: Thursday, May 01, 2014 4:15 AM
-> 
-> On Wed, Apr 30, 2014 at 09:49:23PM +0200, Rafael J. Wysocki wrote:
-> > On Wednesday, April 30, 2014 06:08:44 PM Dan Carpenter wrote:
-> > > There are sometimes where we know that we are doing an strcpy() into a
-> > > fixed length buffer.  In those cases, we could verify that the strcpy()
-> > > doesn't overflow.  This patch introduces DEBUG_STRICT_SLOW_STRCPY_CHECKS
-> > > if you want to check for that.  The downside is that it makes strcpy
-> > > slower.
-> > >
-> > > I introduced __compiletime_size() to make this work.  It returns the
-> > > size of the destination buffer or zero if the size isn't known.  The
-> > > __compiletime_object_size() is similar but if you pass it a struct
-> > > member then it returns the size of everything from there to the end of
-> > > the struct.  Another difference is __compiletime_object_size() returns
-> > > -1 for unknown sizes.
-> > >
-> > > If you pass a char pointer to __compiletime_size() then it returns zero.
-> > >
-> > > The strcpy() check ignores buffers with just one byte because people
-> > > often use those for variable length strings at the end of a struct.
-> > >
-> > > I have tested this patch lightly and created some bugs for it to detect
-> > > but I have not detected any real life overflows.
-> > >
-> > > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> > >
-> > > diff --git a/include/acpi/platform/acenv.h b/include/acpi/platform/acenv.h
-> > > index e863dd5..5e0fc2b 100644
-> > > --- a/include/acpi/platform/acenv.h
-> > > +++ b/include/acpi/platform/acenv.h
+On Saturday, May 03, 2014 08:59:14 AM Josh Boyer wrote:
+> On Tue, Apr 29, 2014 at 10:05 PM, Lv Zheng <lv.zheng@intel.com> wrote:
+> > The commit of back porting Linux XSDT validation mechanism has introduced
+> > a regreession:
+> >   Commit: 671cc68dc61f029d44b43a681356078e02d8dab8
+> >   Subject: ACPICA: Back port and refine validation of the XSDT root table.
+> > There is a pointer still accessed after unmapping.
 > >
-> > This is an ACPICA header and changes to it need to be submitted to the ACPICA
-> > maintainers (as per MAINTAINERS).  We only get ACPICA changes from the
-> > upstream project (except for really special situations).
-> 
-> Ok.  I should have added Robert and Lv to the CC list.  My guess is
-> that the (void) is needed to avoid compile warnings but it's needed for
-> us to avoid compile breakage with this change.
-
-In normal ACPICA build environment, I didn't suffer from new build errors after deleting this "void".
-But this might be required by lint users.
-You can split ACPICA changes into a separate patch so that it could be easily reverted if someone complained.
-
-Thanks
--Lv
-
-> 
-> Anyway, I'll wait for a couple days and resend that bit broken out.
-> 
-> regards,
-> dan carpenter
-> 
+> > This patch fixes this issue.  Lv Zheng.
 > >
-> > > @@ -320,7 +320,7 @@
-> > >  #define ACPI_STRSTR(s1,s2)      strstr((s1), (s2))
-> > >  #define ACPI_STRCHR(s1,c)       strchr((s1), (c))
-> > >  #define ACPI_STRLEN(s)          (acpi_size) strlen((s))
-> > > -#define ACPI_STRCPY(d,s)        (void) strcpy((d), (s))
-> > > +#define ACPI_STRCPY(d,s)        strcpy((d), (s))
-> > >  #define ACPI_STRNCPY(d,s,n)     (void) strncpy((d), (s), (acpi_size)(n))
-> > >  #define ACPI_STRNCMP(d,s,n)     strncmp((d), (s), (acpi_size)(n))
-> > >  #define ACPI_STRCMP(d,s)        strcmp((d), (s))
+> > Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=73911
+> > Buglink: https://bugs.archlinux.org/task/39811
+> > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> > Reported-and-tested-by: Bruce Chiarelli <mano155@gmail.com>
+> > Reported-and-tested-by: Spyros Stathopoulos <spystath@gmail.com>
+> > Signed-off-by: Bob Moore <robert.moore@intel.com>
+> > Cc: <stable@vger.kernel.org> # 3.14.x: 671cc68: ACPICA: Back port and refine validation of the XSDT root table.
+> 
+> This patch should get into 3.15-rcX soon.  It fixes a known regression
+> that prevents booting on machines with AMI firmware, and that is
+> present in 3.14 so we need it for stable as well.  Rafael?
+
+Lv, is it safe to take this patch alone into 3.15-rc?
+
+Rafael
+
+
+> > ---
+> >  drivers/acpi/acpica/tbutils.c |    7 +++++--
+> >  1 file changed, 5 insertions(+), 2 deletions(-)
 > >
-> > Thanks!
+> > diff --git a/drivers/acpi/acpica/tbutils.c b/drivers/acpi/acpica/tbutils.c
+> > index 6c31d77..e1638ad 100644
+> > --- a/drivers/acpi/acpica/tbutils.c
+> > +++ b/drivers/acpi/acpica/tbutils.c
+> > @@ -355,6 +355,7 @@ acpi_status __init acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
+> >         u32 table_count;
+> >         struct acpi_table_header *table;
+> >         acpi_physical_address address;
+> > +       acpi_physical_address rsdt_address;
+> >         u32 length;
+> >         u8 *table_entry;
+> >         acpi_status status;
+> > @@ -383,11 +384,14 @@ acpi_status __init acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
+> >                  * as per the ACPI specification.
+> >                  */
+> >                 address = (acpi_physical_address) rsdp->xsdt_physical_address;
+> > +               rsdt_address =
+> > +                   (acpi_physical_address) rsdp->rsdt_physical_address;
+> >                 table_entry_size = ACPI_XSDT_ENTRY_SIZE;
+> >         } else {
+> >                 /* Root table is an RSDT (32-bit physical addresses) */
+> >
+> >                 address = (acpi_physical_address) rsdp->rsdt_physical_address;
+> > +               rsdt_address = address;
+> >                 table_entry_size = ACPI_RSDT_ENTRY_SIZE;
+> >         }
+> >
+> > @@ -410,8 +414,7 @@ acpi_status __init acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
+> >
+> >                         /* Fall back to the RSDT */
+> >
+> > -                       address =
+> > -                           (acpi_physical_address) rsdp->rsdt_physical_address;
+> > +                       address = rsdt_address;
+> >                         table_entry_size = ACPI_RSDT_ENTRY_SIZE;
+> >                 }
+> >         }
+> > --
+> > 1.7.10
 > >
 > > --
-> > I speak only for myself.
-> > Rafael J. Wysocki, Intel Open Source Technology Center.
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
