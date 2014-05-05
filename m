@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932932AbaEEM4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 08:56:38 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:40980 "EHLO
+	id S932679AbaEEM4g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 08:56:36 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:40983 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932219AbaEEMne (ORCPT
+	by vger.kernel.org with ESMTP id S932256AbaEEMne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 May 2014 08:43:34 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 30/50] ACPI / button: Add ACPI Button event via netlink routine
-Date: Mon,  5 May 2014 14:43:12 +0200
-Message-Id: <f437aa6910609ea707815c2af1621d7bd7a2a596.1399292849.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 07/50] usbatm: Fix dynamic_debug / ratelimited atm_dbg and atm_rldbg macros
+Date: Mon,  5 May 2014 14:42:49 +0200
+Message-Id: <1b667c7507f5a34d4f4d2a18c63ebba0139a6d70.1399292849.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
 References: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
@@ -24,44 +24,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Joe Perches <joe@perches.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 0bf6368ee8f25826d0645c0f7a4f17c8845356a4 upstream.
+commit 32e24930fb71c47a1366325b6f139e039cacaca4 upstream.
 
-Commit 1696d9d (ACPI: Remove the old /proc/acpi/event interface)
-removed ACPI Button event which originally was sent to userspace via
-/proc/acpi/event. This caused ACPI shutdown regression on gentoo
-in VirtualBox. Now ACPI events are sent to userspace via netlink,
-so add ACPI Button event back via netlink routine.
+Fix atm_dbg to use normal pr_debug not dynamic_pr_debug
+because dynamic_pr_debug may not be compiled in at all.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=71721
-Reported-and-tested-by: Richard Musil <richard.musil@gmail.com>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Joe Perches <joe@perches.com>
+Tested-by: Krzysztof Mazur <krzysiek@podlesie.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/acpi/button.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/atm/usbatm.h | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/acpi/button.c b/drivers/acpi/button.c
-index a55773801c5f..3aa89eb8dbbd 100644
---- a/drivers/acpi/button.c
-+++ b/drivers/acpi/button.c
-@@ -302,6 +302,10 @@ static void acpi_button_notify(struct acpi_device *device, u32 event)
- 			input_sync(input);
+diff --git a/drivers/usb/atm/usbatm.h b/drivers/usb/atm/usbatm.h
+index 5651231a7437..f3eecd967a8a 100644
+--- a/drivers/usb/atm/usbatm.h
++++ b/drivers/usb/atm/usbatm.h
+@@ -34,6 +34,7 @@
+ #include <linux/stringify.h>
+ #include <linux/usb.h>
+ #include <linux/mutex.h>
++#include <linux/ratelimit.h>
  
- 			pm_wakeup_event(&device->dev, 0);
-+			acpi_bus_generate_netlink_event(
-+					device->pnp.device_class,
-+					dev_name(&device->dev),
-+					event, ++button->pushed);
- 		}
- 		break;
- 	default:
+ /*
+ #define VERBOSE_DEBUG
+@@ -59,13 +60,12 @@
+ 	atm_printk(KERN_INFO, instance , format , ## arg)
+ #define atm_warn(instance, format, arg...)	\
+ 	atm_printk(KERN_WARNING, instance , format , ## arg)
+-#define atm_dbg(instance, format, arg...)		\
+-	dynamic_pr_debug("ATM dev %d: " format ,	\
+-	(instance)->atm_dev->number , ## arg)
+-#define atm_rldbg(instance, format, arg...)		\
+-	if (printk_ratelimit())				\
+-		atm_dbg(instance , format , ## arg)
+-
++#define atm_dbg(instance, format, ...)					\
++	pr_debug("ATM dev %d: " format,					\
++		 (instance)->atm_dev->number, ##__VA_ARGS__)
++#define atm_rldbg(instance, format, ...)				\
++	pr_debug_ratelimited("ATM dev %d: " format,			\
++			     (instance)->atm_dev->number, ##__VA_ARGS__)
+ 
+ /* flags, set by mini-driver in bind() */
+ 
 -- 
 1.9.2
 
