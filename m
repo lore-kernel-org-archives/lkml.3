@@ -1,147 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315AbaEEIvT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 04:51:19 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:59709 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751769AbaEEIvR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 04:51:17 -0400
-Subject: [PATCH v1.1 3/16] arcmsr: adding code to support system hibernation
-From: ching <ching2048@areca.com.tw>
-To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 May 2014 16:51:10 +0800
-Message-ID: <1399279870.18695.31.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	id S1755390AbaEEIxy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 04:53:54 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:60555 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755146AbaEEIxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 04:53:52 -0400
+Date: Mon, 5 May 2014 11:53:48 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+cc: rjw@rjwysocki.net, viresh.kumar@linaro.org, ego@linux.vnet.ibm.com,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] cpufreq: Catch double invocations of
+ cpufreq_freq_transition_begin/end
+In-Reply-To: <20140505072129.14454.25747.stgit@srivatsabhat.in.ibm.com>
+Message-ID: <alpine.SOC.1.00.1405051152370.17122@math.ut.ee>
+References: <20140505072129.14454.25747.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching<ching2048@areca.com.tw>
+> 
+> Changes in v3:
+> Expanded the comment in the code to briefly mention why ASYNC_NOTIFICATION
+> drivers are left out from the check, as suggested by Gautham R. Shenoy.
+> No code changes in this version.
+> 
+> v2: https://lkml.org/lkml/2014/4/29/283
+> v1: https://lkml.org/lkml/2014/4/28/469
 
-Adding code to support system hibernation.
+Seems to work on VIA EPIA with 3.15-rc2 (no other cpufreq fixes):
 
-Signed-off-by: Ching<ching2048@areca.com.tw>
----
+[    8.250959] ------------[ cut here ]------------
+[    8.251179] WARNING: CPU: 0 PID: 116 at drivers/cpufreq/cpufreq.c:367 cpufreq_freq_transition_begin+0xd3/0xd8()
+[    8.251400] Modules linked in: snd_via82xx snd_mpu401_uart longhaul snd_ac97_codec ac97_bus snd_rawmidi snd_seq_device sg snd_pcm snd_timer vt8231 via_rhine uhci_hcd hwmon ehci_hcd tulip i2c_viapro snd evdev soundcore serio_raw sr_mod i2c_core mii usbcore gameport usb_common cdrom parport_pc fan parport via_agp button agpgart processor
+[    8.253465] CPU: 0 PID: 116 Comm: kworker/0:1 Not tainted 3.15.0-rc2-dirty #40
+[    8.253664] Hardware name: VIA TECHNOLOGIES, INC. EPIA/EPIA, BIOS 6.00 PG 11/02/2004
+[    8.253873] Workqueue: events od_dbs_timer
+[    8.254038]  00000000 00000000 cf6afd60 c1283096 cf6afd90 c101ff15 c135a90c 00000000
+[    8.254574]  00000074 c138ccdc 0000016f c11eaaf0 c11eaaf0 cf542000 00061698 cf582c00
+[    8.255118]  cf6afda0 c101ffa8 00000009 00000000 cf6afdd0 c11eaaf0 cf6afdd8 cf6afdf4
+[    8.255661] Call Trace:
+[    8.255815]  [<c1283096>] dump_stack+0x16/0x18
+[    8.255988]  [<c101ff15>] warn_slowpath_common+0x70/0x87
+[    8.256151]  [<c11eaaf0>] ? cpufreq_freq_transition_begin+0xd3/0xd8
+[    8.256316]  [<c11eaaf0>] ? cpufreq_freq_transition_begin+0xd3/0xd8
+[    8.256482]  [<c101ffa8>] warn_slowpath_null+0x1d/0x1f
+[    8.256641]  [<c11eaaf0>] cpufreq_freq_transition_begin+0xd3/0xd8
+[    8.256809]  [<c1036cba>] ? __srcu_notifier_call_chain+0x24/0x93
+[    8.256989]  [<d06c52d5>] longhaul_setstate+0x88/0x2f1 [longhaul]
+[    8.257149]  [<c1036d43>] ? srcu_notifier_call_chain+0x1a/0x1c
+[    8.257315]  [<c11eaad9>] ? cpufreq_freq_transition_begin+0xbc/0xd8
+[    8.257481]  [<d06c55ba>] longhaul_target+0x7c/0x8b [longhaul]
+[    8.257647]  [<c11eaebd>] __cpufreq_driver_target+0xfe/0x148
+[    8.257824]  [<c10540c6>] ? get_cpu_iowait_time_us+0x84/0xa3
+[    8.257981]  [<c11ebe27>] od_check_cpu+0x75/0x79
+[    8.258135]  [<c11ec7a1>] dbs_check_cpu+0xbd/0xc5
+[    8.258286]  [<c11ec813>] ? need_load_eval+0x18/0x79
+[    8.258439]  [<c11ec004>] od_dbs_timer+0x7a/0xd9
+[    8.258612]  [<c102f808>] process_one_work+0x205/0x363
+[    8.258770]  [<c102f7d7>] ? process_one_work+0x1d4/0x363
+[    8.258927]  [<c10300b3>] ? worker_thread+0x27/0x26f
+[    8.259086]  [<c103022c>] worker_thread+0x1a0/0x26f
+[    8.259244]  [<c103008c>] ? rescuer_thread+0x204/0x204
+[    8.259405]  [<c10339e9>] kthread+0xa3/0xa8
+[    8.259567]  [<c1287bc0>] ret_from_kernel_thread+0x20/0x30
+[    8.259726]  [<c1033946>] ? kthread_create_on_node+0x112/0x112
+[    8.259874] ---[ end trace fe16863c964a8bbe ]---
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-02 19:30:34.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-02 19:28:56.000000000 +0800
-@@ -89,11 +89,15 @@ static int arcmsr_bios_param(struct scsi
- static int arcmsr_queue_command(struct Scsi_Host *h, struct scsi_cmnd *cmd);
- static int arcmsr_probe(struct pci_dev *pdev,
- 				const struct pci_device_id *id);
-+static int arcmsr_suspend(struct pci_dev *pdev, pm_message_t state);
-+static int arcmsr_resume(struct pci_dev *pdev);
- static void arcmsr_remove(struct pci_dev *pdev);
- static void arcmsr_shutdown(struct pci_dev *pdev);
- static void arcmsr_iop_init(struct AdapterControlBlock *acb);
- static void arcmsr_free_ccb_pool(struct AdapterControlBlock *acb);
- static u32 arcmsr_disable_outbound_ints(struct AdapterControlBlock *acb);
-+static void arcmsr_enable_outbound_ints(struct AdapterControlBlock *acb,
-+	u32 intmask_org);
- static void arcmsr_stop_adapter_bgrb(struct AdapterControlBlock *acb);
- static void arcmsr_flush_hba_cache(struct AdapterControlBlock *acb);
- static void arcmsr_flush_hbb_cache(struct AdapterControlBlock *acb);
-@@ -167,6 +171,8 @@ static struct pci_driver arcmsr_pci_driv
- 	.id_table			= arcmsr_device_id_table,
- 	.probe			= arcmsr_probe,
- 	.remove			= arcmsr_remove,
-+	.suspend		= arcmsr_suspend,
-+	.resume			= arcmsr_resume,
- 	.shutdown		= arcmsr_shutdown,
- };
- /*
-@@ -780,6 +786,86 @@ pci_disable_dev:
- 	return -ENODEV;
- }
- 
-+static int arcmsr_suspend(struct pci_dev *pdev, pm_message_t state)
-+{
-+	int i;
-+	uint32_t intmask_org;
-+	struct Scsi_Host *host = pci_get_drvdata(pdev);
-+	struct AdapterControlBlock *acb =
-+		(struct AdapterControlBlock *)host->hostdata;
-+
-+	intmask_org = arcmsr_disable_outbound_ints(acb);
-+	if (acb->acb_flags & ACB_F_MSI_ENABLED) {
-+		free_irq(pdev->irq, acb);
-+		pci_disable_msi(pdev);
-+	} else if (acb->acb_flags & ACB_F_MSIX_ENABLED) {
-+		for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++)
-+			free_irq(acb->entries[i].vector, acb);
-+		pci_disable_msix(pdev);
-+	} else
-+		free_irq(pdev->irq, acb);
-+	del_timer_sync(&acb->eternal_timer);
-+	flush_scheduled_work();
-+	arcmsr_stop_adapter_bgrb(acb);
-+	arcmsr_flush_adapter_cache(acb);
-+	arcmsr_enable_outbound_ints(acb, intmask_org);
-+	pci_set_drvdata(pdev, host);
-+	pci_save_state(pdev);
-+	pci_disable_device(pdev);
-+	pci_set_power_state(pdev, pci_choose_state(pdev, state));
-+	return 0;
-+}
-+
-+static int arcmsr_resume(struct pci_dev *pdev)
-+{
-+	int error;
-+	struct Scsi_Host *host = pci_get_drvdata(pdev);
-+	struct AdapterControlBlock *acb =
-+		(struct AdapterControlBlock *)host->hostdata;
-+
-+	pci_set_power_state(pdev, PCI_D0);
-+	pci_enable_wake(pdev, PCI_D0, 0);
-+	pci_restore_state(pdev);
-+	if (pci_enable_device(pdev)) {
-+		pr_warn("%s: pci_enable_device error\n", __func__);
-+		return -ENODEV;
-+	}
-+	error = pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
-+	if (error) {
-+		error = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
-+		if (error) {
-+			pr_warn("scsi%d: No suitable DMA mask available\n",
-+			       host->host_no);
-+			goto controller_unregister;
-+		}
-+	}
-+	pci_set_master(pdev);
-+	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
-+		goto controller_stop;
-+	arcmsr_iop_init(acb);
-+	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
-+	atomic_set(&acb->rq_map_token, 16);
-+	atomic_set(&acb->ante_token_value, 16);
-+	acb->fw_flag = FW_NORMAL;
-+	init_timer(&acb->eternal_timer);
-+	acb->eternal_timer.expires = jiffies + msecs_to_jiffies(6 * HZ);
-+	acb->eternal_timer.data = (unsigned long) acb;
-+	acb->eternal_timer.function = &arcmsr_request_device_map;
-+	add_timer(&acb->eternal_timer);
-+	return 0;
-+controller_stop:
-+	arcmsr_stop_adapter_bgrb(acb);
-+	arcmsr_flush_adapter_cache(acb);
-+controller_unregister:
-+	scsi_remove_host(host);
-+	arcmsr_free_ccb_pool(acb);
-+	arcmsr_unmap_pciregion(acb);
-+	pci_release_regions(pdev);
-+	scsi_host_put(host);
-+	pci_disable_device(pdev);
-+	return -ENODEV;
-+}
-+
- static uint8_t arcmsr_abort_hba_allcmd(struct AdapterControlBlock *acb)
- {
- 	struct MessageUnit_A __iomem *reg = acb->pmuA;
-
-
+-- 
+Meelis Roos <mroos@linux.ee>
