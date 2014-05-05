@@ -1,109 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211AbaEEWCX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 18:02:23 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:38555 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756893AbaEEWCS convert rfc822-to-8bit (ORCPT
+	id S932251AbaEEWGN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 18:06:13 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:53442 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756692AbaEEWGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 18:02:18 -0400
+	Mon, 5 May 2014 18:06:11 -0400
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:b905:44ab:3ee0:cb7a]
-In-Reply-To: <1395505004-22650-2-git-send-email-bigeasy@linutronix.de>
-References: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de>
-	<1395505004-22650-2-git-send-email-bigeasy@linutronix.de>
-Date: Mon, 5 May 2014 15:02:18 -0700
-Message-ID: <CAOesGMi_0fT4UbfGUp9jkrwYMXgfxC5gmXOBviU9PjAutPdHiw@mail.gmail.com>
-Subject: Re: [PATCH 1/7] ARM: dts: socfpga: add gpio pieces
-From: Olof Johansson <olof@lixom.net>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: atull@altera.com, LinusW <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@altera.com>, delicious.quinoa@gmail.com,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+In-Reply-To: <5368068C.3090403@ti.com>
+References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>
+	<1398353407-2345-4-git-send-email-santosh.shilimkar@ti.com>
+	<CAL_JsqKmf-OCf_-J06ztHWS0iRaMHAVxV0bOFGnY4Ci3fPgLow@mail.gmail.com>
+	<5368068C.3090403@ti.com>
+Date: Mon, 5 May 2014 17:06:10 -0500
+Message-ID: <CAL_JsqLdScT5SzHKB_XoDm7o0pZ5WJFAk4hG0yzmET68yjnmzA@mail.gmail.com>
+Subject: Re: [PATCH v3 3/7] of: introduce of_dma_is_coherent() helper
+From: Rob Herring <robherring2@gmail.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, May 5, 2014 at 4:45 PM, Santosh Shilimkar
+<santosh.shilimkar@ti.com> wrote:
+> On Thursday 01 May 2014 08:56 PM, Rob Herring wrote:
+>> On Thu, Apr 24, 2014 at 10:30 AM, Santosh Shilimkar
+>> <santosh.shilimkar@ti.com> wrote:
 
-I saw this patch as it came in through Dinh's pull request, see below:
-
-
-On Sat, Mar 22, 2014 at 9:16 AM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
-> The cycloneV has three gpio controllers, the first two with 29 gpios, the last
-> one with 27. This patch adds the three controller with the gpio driver which is
-> now sitting the gpio tree.
+>>>  drivers/of/platform.c       |   23 +++++++++++++++++++++++
+>>>  include/linux/of_platform.h |    6 ++++++
+>>
+>> I thought I said this already, but this does not belong in these files
+>> as the function does not deal with platform devices. Probably
+>> address.c/of_address.h would be the best place.
+>>
+> Updated patch with functions now moved to of_address.h/address.c
 >
-> Cc: devicetree@vger.kernel.org
-> Acked-by: Alan Tull <atull@altera.com>
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> From 08fb70715afe4adf203d24f1737dba7123c6713b Mon Sep 17 00:00:00 2001
+> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Date: Thu, 24 Apr 2014 11:30:03 -0400
+> Subject: [PATCH v3 3/7] of: introduce of_dma_is_coherent() helper
+>
+> The of_dma_is_coherent() helper parses the given DT device
+> node to see if the "dma-coherent" property is supported and
+> returns true or false accordingly.
+>
+> If the arch is always coherent or always noncoherent, then the default
+> DMA ops has to be specified accordingly.
+>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Olof Johansson <olof@lixom.net>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 > ---
-> v1…v2:
->         - #gpio-cells = <2>
->         - third gpio block has now only 27 gpios
->
->  arch/arm/boot/dts/socfpga.dtsi | 64 ++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 64 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
-> index 537f1a5..2a84e67 100644
-> --- a/arch/arm/boot/dts/socfpga.dtsi
-> +++ b/arch/arm/boot/dts/socfpga.dtsi
-> @@ -463,6 +463,70 @@
->                         status = "disabled";
->                 };
->
-> +               gpio@ff708000 {
-> +                       #address-cells = <1>;
-> +                       #size-cells = <0>;
-> +                       compatible = "snps,dw-apb-gpio";
-> +                       reg = <0xff708000 0x1000>;
-> +                       clocks = <&per_base_clk>;
-> +                       status = "disabled";
-> +
-> +                       gpio0: gpio-controller@0 {
-> +                               compatible = "snps,dw-apb-gpio-port";
-> +                               gpio-controller;
-> +                               #gpio-cells = <2>;
-> +                               snps,nr-gpios = <29>;
-> +                               reg = <0>;
-> +                               interrupt-controller;
-> +                               #interrupt-cells = <2>;
-> +                               interrupts = <0 164 4>;
-> +                       };
-> +               };
+>  drivers/of/address.c       |   23 +++++++++++++++++++++++
+>  include/linux/of_address.h |    6 ++++++
+>  2 files changed, 29 insertions(+)
 
-This is an odd setup. We usually would have it all in one node, since
-the @ff708000 is the GPIO controller, instead of adding a subnode with
-the actual GPIO info.
-
-So I would have expected something more like:
-
-
-gpio0: gpio-controller@ff708000 {
-                       #address-cells = <1>;
-                       #size-cells = <0>;
-                       compatible = "snps,dw-apb-gpio";
-                       reg = <0xff708000 0x1000>;
-                       interrupts = <0 164 4>;
-                      clocks = <&per_base_clk>;
-                       status = "disabled";
-                       gpio-controller;
-                       #gpio-cells = <2>;
-                       snps,nr-gpios = <29>;
-                       interrupt-controller;
-                       #interrupt-cells = <2>;
-               };
-
-
-... or is there some underlying reason for having the two-layer
-approach that isn't obvious from this device tree?
-
-
--Olof
+Reviewed-by: Rob Herring <robh@kernel.org>
