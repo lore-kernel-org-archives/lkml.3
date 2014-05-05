@@ -1,200 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110AbaEEJFu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 05:05:50 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:24391 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755751AbaEEJFs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 05:05:48 -0400
-X-AuditID: cbfee68d-b7f4e6d000004845-9d-5367546aaf1f
-Message-id: <536758AB.2060503@samsung.com>
-Date: Mon, 05 May 2014 18:23:55 +0900
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308
- Thunderbird/17.0.4
-MIME-version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, t.figa@samsung.com,
-        kgene.kim@samsung.com, linux@arm.linux.org.uk
-Subject: Re: [PATCH 0/4] Introducing Exynos ChipId driver
-References: <1399097500-4052-1-git-send-email-pankaj.dubey@samsung.com>
- <13946837.RfnRDPQdge@wuerfel>
-In-reply-to: <13946837.RfnRDPQdge@wuerfel>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDIsWRmVeSWpSXmKPExsVy+t8zA92skPRgg22fxS3+TjrGbtG74Cqb
-	xabH11gtLu+aw2Yx4/w+Jovbl3kt1s94zeLA7tHS3MPm8fvXJEaPzUvqPfq2rGL0+LxJLoA1
-	issmJTUnsyy1SN8ugSuj89gNxoIWvYpr82cwNzC2qnQxcnJICJhIfJn8lx3CFpO4cG89Wxcj
-	F4eQwDJGiedb5rLDFHU//wSVWMQoMXXmRCjnNaPEs9sfmUGqeAW0JE59+wfWwSKgKrH52nSw
-	OJuArsST93PBbFGBMIlN0/tYIeoFJX5MvscCYosIKEpMffGMGWQos8AGRolV258BJTg4hAUs
-	JZb+YAYxhQTSJWZeygYp5wRa1fXyGdgqZgFriZWTtjFC2PISm9e8BRsjIXCKXaK5+zMbxD0C
-	Et8mHwIbKSEgK7HpADPEY5ISB1fcYJnAKDYLyUWzkIydhWTsAkbmVYyiqQXJBcVJ6UWGesWJ
-	ucWleel6yfm5mxghMde7g/H2AetDjMlAKycyS4km5wNjNq8k3tDYzMjC1MTU2Mjc0ow0YSVx
-	3qSHSUFA7yeWpGanphakFsUXleakFh9iZOLglGpgnP9527eVsbUnIu9fX7de9/TSOXceaTKv
-	iQjUfWun89bo3I8v/XGHcvW+GPqfefVkrfZBL5NTqSxJF4xrd/iLHEtYNLU347rOjWcS0+0/
-	Mx5w0Dhv1W8W/o7nc/SC6efOf/4mrVdeWuG+/GhK0+mWT365vb2m7Rf3Hv9rKh7Z/9DY7QOD
-	Q/YMNiWW4oxEQy3mouJEAMTAaBTPAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsVy+t9jAd2skPRggx+XhSz+TjrGbtG74Cqb
-	xabH11gtLu+aw2Yx4/w+Jovbl3kt1s94zeLA7tHS3MPm8fvXJEaPzUvqPfq2rGL0+LxJLoA1
-	qoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwfoCiWF
-	ssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jRuexG4wFLXoV1+bPYG5gbFXp
-	YuTkkBAwkeh+/okNwhaTuHBvPZDNxSEksIhRYurMiVDOa0aJZ7c/MoNU8QpoSZz69o8dxGYR
-	UJXYfG06WJxNQFfiyfu5YLaoQJjEpul9rBD1ghI/Jt9jAbFFBBQlpr54xgwylFlgA6PEqu3P
-	gBIcHMIClhJLfzCDmEIC6RIzL2WDlHMCrep6+QxsFbOAtcTKSdsYIWx5ic1r3jJPYBSYhWTD
-	LCRls5CULWBkXsUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHNHPpHcwrmqwOMQowMGoxMOb
-	wJweLMSaWFZcmXuIUYKDWUmEdxYjUIg3JbGyKrUoP76oNCe1+BBjMjAAJjJLiSbnA5NNXkm8
-	obGJmZGlkZmFkYm5OWnCSuK8B1utA4GeTyxJzU5NLUgtgtnCxMEp1cDou+LuAd3rPiHT0wPv
-	VJ1L3C1+0ul6f5iP7appuhqV+oyxP9eLL5b6fyOu3n9BfIjupTsmRX+WxRwx+++2o+Lvep+1
-	0RYsU5MCbk69eOuLmczyBBd9tSzNFAXzZ8sMPnyPeel7vLBgsbD4gR7vH9vuqqyPZMwsXXs4
-	nd/81ee/1Qz3Lkw8x3xIiaU4I9FQi7moOBEApbgitCwDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1755643AbaEEJFD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 05:05:03 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55671 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755602AbaEEJE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 05:04:59 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <dmitry.torokhov@gmail.com>
+CC: <rydberg@euromail.se>, <balbi@ti.com>, <dmurphy@ti.com>,
+        <mugunthanvnm@ti.com>, <nsekhar@ti.com>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Roger Quadros <rogerq@ti.com>
+Subject: [PATCH v4 4/7] Input: pixcir_i2c_ts: Use Type-B Multi-Touch protocol
+Date: Mon, 5 May 2014 12:04:35 +0300
+Message-ID: <1399280678-23925-5-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1399280678-23925-1-git-send-email-rogerq@ti.com>
+References: <1399280678-23925-1-git-send-email-rogerq@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Switch to using the Type-B Multi-Touch protocol.
 
-Thanks for review and suggestions.
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ drivers/input/touchscreen/pixcir_i2c_ts.c | 125 ++++++++++++++++++++++--------
+ 1 file changed, 94 insertions(+), 31 deletions(-)
 
-On 05/04/2014 12:02 AM, Arnd Bergmann wrote:
-> On Saturday 03 May 2014 15:11:36 Pankaj Dubey wrote:
->> This patch series attempts to get rid of soc_is_exynosXXXX macros
->> and eventually with the help of this series we can probably get
->> rid of CONFIG_SOC_EXYNOSXXXX in near future.
->> Each Exynos SoC has ChipID block which can give information about
->> SoC's product Id and revision number. Currently we have single
->> DT binding information for this as "samsung,exynos4210-chipid".
->> But Exynos4 and Exynos5 SoC series have one small difference in
->> chip Id, with resepect to product id bit-masks. So it means we
->> should have separate compatible string for these different series
->> of SoCs. So I have created new binding information for handling
->> this difference. Also currently I can think of putting this driver
->> code under "drivers/misc/" but suggestions are welcome.
->> Also current form of driver is missing platfrom driver and needs
->> init function to be called from machine file (either exynos.c or
->> platsmp.c). I hope lot of suggestions and comments to improve this
->> further.
->>
->> This patch series is based on Kukjin Kim's for-next (3.14_rc1 tag)
->> and prepared on top of following patch series and it's dependent
->> patch series.
-> I think putting it into drivers/soc would be most appropriate.
-> We already have a few drivers lined up that we want in there,
-> although the directory currently doesn't exist.
-OK. Will move to "drivers/soc". I can see already some patches
-have been posted [1] by Andy Gross for creating directory
-"drivers/soc" I will use those patches for adding samsung folder
-under "drivers/soc".
-
-[1]: https://lkml.org/lkml/2014/4/21/46
-
->
-> However, I would ask that you use the infrastructure provided by
-> drivers/base/soc.c when you add this driver, to also make the
-> information available to user space using a standard API.
-
-OK. Will update in next version.
-
->
-> Ideally this should be done by slightly restructuring the DT
-> source to make all on-chip devices appear below the soc node.
-
-Currently I can't see soc nodes in exynos4 and exynos5 DT files.
-So isn't it should be a separate patch first to modify all exynos4
-exynos5 DT files to move all devices under soc node?
-In that case existing chipid node will be also moved under soc node.
-
-> We'd have to think a bit about how to best do this while
-> preserving compatibility with existing dts files.
-
-Is it necessary in this case?
-As I have mentioned there is difference in bit-mask among exynos4
-and exynos5's chipid. So is this reason not sufficient to keep separate
-compatible for both?
-Also even if we get some way to preserve existing compatibility, I afraid
-in chipid driver that implementation will not look good, at least I am not
-able to think of any good way. Any suggestions?
-
->
-> Regarding patch 4, this is not what I meant when I asked for
-> removing the soc_is_exynos* macros. You basically do a 1:1 replacement
-> using a different interface, but you still have code that does
-> things differently based on a global identification.
-I agree with what you are trying to say. But if you see recently we had some
-patches (cpu_idle.c: [2], pmu.c: [3])  to remove usage of such macros from
-exynos machine files. So only leftover files using these macros are exynos.c
-platsmp.c and pm.c.
-
-For exynos.c I have tried to remove soc_is_exynos4/exynos5 by matching with
-compatible string in patch 1 of this series. Please let me know if that is OK?
-
-Also for platsmp.c and pm.c I can think of following approaches
-1: Keep these macros till we get generic solution?
-2: Allow chipid driver to expose APIs to check SoC id and SoC revisions 
-till we get
-generic solution. So that at least we can remove #ifdef  based macros
-as soc_is_exynosXYZ.
-3: Use of "of_flat_dt_is_compatible" or similar APIs in these machine files 
-till we get
-generic solution. For some cases where we want to know SoC revision let us
-map chipid register and get revision there itself.
-
-Please let me know what approach you think will be good?
-
-[2]: http://thread.gmane.org/gmane.linux.kernel.samsung-soc/29085
-[3]: https://lkml.org/lkml/2014/5/2/612
-> The only user left in device drivers is now the cpufreq driver,
-> which is going to be replaced anyway, so that is ok. Having
-> a global variable that is accessible to random device drivers
-> is probably not a good idea though, it will just lead to
-> bad coding in drivers again.
->
-> To give an example of how I think it should really be restructured,
-> let's look at one function:
->
-> static const struct exynos_wkup_irq exynos4_wkup_irq[] = {
->          { 76, BIT(1) }, /* RTC alarm */
->          { 77, BIT(2) }, /* RTC tick */
->          { /* sentinel */ },
-> };
->
-> static const struct exynos_wkup_irq exynos5250_wkup_irq[] = {
->          { 75, BIT(1) }, /* RTC alarm */
->          { 76, BIT(2) }, /* RTC tick */
->          { /* sentinel */ },
-> };
->
-> static int exynos_irq_set_wake(struct irq_data *data, unsigned int state)
-> {
->          const struct exynos_wkup_irq *wkup_irq;
->
->          if (soc_is_exynos5250())
->                  wkup_irq = exynos5250_wkup_irq;
->          else
->                  wkup_irq = exynos4_wkup_irq;
->
-> 	...
-> }
->
-> There are multiple problems with this code:
->
-> - As mentioned, you depend on a specific SoC identification for
->    something that could be done completely generic.
-> - The knowledge about what is a wakeup source or not doesn't
->    really belong here. We don't have a DT binding for wakeups
->    as far as I'm aware of, but this should probably be handled
->    locally in the RTC device node, possibly in the node that
->    contains the S5P_WAKEUP_MASK register.
->
-> 	Arnd
->
-
-
+diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
+index d0f6989..3123699 100644
+--- a/drivers/input/touchscreen/pixcir_i2c_ts.c
++++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
+@@ -23,9 +23,12 @@
+ #include <linux/slab.h>
+ #include <linux/i2c.h>
+ #include <linux/input.h>
++#include <linux/input/mt.h>
+ #include <linux/input/pixcir_ts.h>
+ #include <linux/gpio.h>
+ 
++#define PIXCIR_MAX_SLOTS       2
++
+ struct pixcir_i2c_ts_data {
+ 	struct i2c_client *client;
+ 	struct input_dev *input;
+@@ -33,12 +36,25 @@ struct pixcir_i2c_ts_data {
+ 	bool exiting;
+ };
+ 
+-static void pixcir_ts_poscheck(struct pixcir_i2c_ts_data *data)
++struct pixcir_touch {
++	int x;
++	int y;
++};
++
++struct pixcir_report_data {
++	int num_touches;
++	struct pixcir_touch touches[PIXCIR_MAX_SLOTS];
++};
++
++static void pixcir_ts_parse(struct pixcir_i2c_ts_data *tsdata,
++			    struct pixcir_report_data *report)
+ {
+-	struct pixcir_i2c_ts_data *tsdata = data;
+ 	u8 rdbuf[10], wrbuf[1] = { 0 };
++	u8 *bufptr;
+ 	u8 touch;
+-	int ret;
++	int ret, i;
++
++	memset(report, 0, sizeof(struct pixcir_report_data));
+ 
+ 	ret = i2c_master_send(tsdata->client, wrbuf, sizeof(wrbuf));
+ 	if (ret != sizeof(wrbuf)) {
+@@ -56,45 +72,85 @@ static void pixcir_ts_poscheck(struct pixcir_i2c_ts_data *data)
+ 		return;
+ 	}
+ 
+-	touch = rdbuf[0];
+-	if (touch) {
+-		u16 posx1 = (rdbuf[3] << 8) | rdbuf[2];
+-		u16 posy1 = (rdbuf[5] << 8) | rdbuf[4];
+-		u16 posx2 = (rdbuf[7] << 8) | rdbuf[6];
+-		u16 posy2 = (rdbuf[9] << 8) | rdbuf[8];
+-
+-		input_report_key(tsdata->input, BTN_TOUCH, 1);
+-		input_report_abs(tsdata->input, ABS_X, posx1);
+-		input_report_abs(tsdata->input, ABS_Y, posy1);
+-
+-		input_report_abs(tsdata->input, ABS_MT_POSITION_X, posx1);
+-		input_report_abs(tsdata->input, ABS_MT_POSITION_Y, posy1);
+-		input_mt_sync(tsdata->input);
+-
+-		if (touch == 2) {
+-			input_report_abs(tsdata->input,
+-					 ABS_MT_POSITION_X, posx2);
+-			input_report_abs(tsdata->input,
+-					 ABS_MT_POSITION_Y, posy2);
+-			input_mt_sync(tsdata->input);
+-		}
+-	} else {
+-		input_report_key(tsdata->input, BTN_TOUCH, 0);
++	touch = rdbuf[0] & 0x7;
++	if (touch > PIXCIR_MAX_SLOTS)
++		touch = PIXCIR_MAX_SLOTS;
++
++	report->num_touches = touch;
++	bufptr = &rdbuf[2];
++
++	for (i = 0; i < touch; i++) {
++		report->touches[i].x = (bufptr[1] << 8) | bufptr[0];
++		report->touches[i].y = (bufptr[3] << 8) | bufptr[2];
++
++		bufptr = &bufptr[4];
+ 	}
++}
++
++static void pixcir_ts_report(struct pixcir_i2c_ts_data *ts,
++			     struct pixcir_report_data *report)
++{
++	struct input_mt_pos pos[PIXCIR_MAX_SLOTS];
++	int slots[PIXCIR_MAX_SLOTS];
++	struct pixcir_touch *touch;
++	int n, i, slot;
++	struct device *dev = &ts->client->dev;
+ 
+-	input_sync(tsdata->input);
++	n = report->num_touches;
++	if (n > PIXCIR_MAX_SLOTS)
++		n = PIXCIR_MAX_SLOTS;
++
++	for (i = 0; i < n; i++) {
++		touch = &report->touches[i];
++		pos[i].x = touch->x;
++		pos[i].y = touch->y;
++	}
++
++	input_mt_assign_slots(ts->input, slots, pos, n);
++
++	for (i = 0; i < n; i++) {
++		touch = &report->touches[i];
++		slot = slots[i];
++
++		input_mt_slot(ts->input, slot);
++		input_mt_report_slot_state(ts->input,
++					   MT_TOOL_FINGER, true);
++
++		input_event(ts->input, EV_ABS, ABS_MT_POSITION_X, touch->x);
++		input_event(ts->input, EV_ABS, ABS_MT_POSITION_Y, touch->y);
++
++		dev_dbg(dev, "%d: slot %d, x %d, y %d\n",
++			i, slot, touch->x, touch->y);
++	}
++
++	input_mt_sync_frame(ts->input);
++	input_sync(ts->input);
+ }
+ 
+ static irqreturn_t pixcir_ts_isr(int irq, void *dev_id)
+ {
+ 	struct pixcir_i2c_ts_data *tsdata = dev_id;
+ 	const struct pixcir_ts_platform_data *pdata = tsdata->chip;
++	struct pixcir_report_data report;
+ 
+ 	while (!tsdata->exiting) {
+-		pixcir_ts_poscheck(tsdata);
+-
+-		if (gpio_get_value(pdata->gpio_attb))
++		/* parse packet */
++		pixcir_ts_parse(tsdata, &report);
++
++		/* report it */
++		pixcir_ts_report(tsdata, &report);
++
++		if (gpio_get_value(pdata->gpio_attb)) {
++			if (report.num_touches) {
++				/*
++				 * Last report with no finger up?
++				 * Do it now then.
++				 */
++				input_mt_sync_frame(tsdata->input);
++				input_sync(tsdata->input);
++			}
+ 			break;
++		}
+ 
+ 		msleep(20);
+ 	}
+@@ -333,6 +389,13 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
+ 	input_set_abs_params(input, ABS_MT_POSITION_X, 0, pdata->x_max, 0, 0);
+ 	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, pdata->y_max, 0, 0);
+ 
++	error = input_mt_init_slots(input, PIXCIR_MAX_SLOTS,
++				    INPUT_MT_DIRECT | INPUT_MT_DROP_UNUSED);
++	if (error) {
++		dev_err(dev, "Error initializing Multi-Touch slots\n");
++		return error;
++	}
++
+ 	input_set_drvdata(input, tsdata);
+ 
+ 	error = devm_gpio_request_one(dev, pdata->gpio_attb,
 -- 
-Best Regards,
-Pankaj Dubey
+1.8.3.2
 
