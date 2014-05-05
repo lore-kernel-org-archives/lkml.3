@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932682AbaEEOKu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 10:10:50 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:33794 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932542AbaEEOKt (ORCPT
+	id S932724AbaEEOOu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 10:14:50 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:41319 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932538AbaEEOOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 10:10:49 -0400
-Date: Mon, 5 May 2014 16:10:44 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Seth Jennings <sjenning@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-Message-ID: <20140505141038.GA27403@localhost.localdomain>
-References: <cover.1398958771.git.jpoimboe@redhat.com>
- <20140505085537.GA32196@gmail.com>
- <20140505132638.GA14432@treble.redhat.com>
+	Mon, 5 May 2014 10:14:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505132638.GA14432@treble.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5367946F.1030407@ti.com>
+References: <000001cf643d$69e5e350$3db1a9f0$@samsung.com>
+	<CAOh2x=m8DzmLOGqL0E_seOZMuzU=O9vQuu-JEp+E5454RmfEXw@mail.gmail.com>
+	<003901cf6664$e4e8d2a0$aeba77e0$@samsung.com>
+	<CAKohpon7W726Hxj5OJ6SnmPz3gYhAeBRr1wS3SCa3F2hSLriLQ@mail.gmail.com>
+	<5367946F.1030407@ti.com>
+Date: Mon, 5 May 2014 19:44:48 +0530
+Message-ID: <CAKohpon-KZpSJK7PxpLjZS7sVPcYraDxb4oJHN6dxSagD+F--Q@mail.gmail.com>
+Subject: Re: [PATCH 1/3] PM / OPP: Add support for descending order for
+ cpufreq table
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 08:26:38AM -0500, Josh Poimboeuf wrote:
-> On Mon, May 05, 2014 at 10:55:37AM +0200, Ingo Molnar wrote:
-> > 
-> > * Josh Poimboeuf <jpoimboe@redhat.com> wrote:
-> > 
-> > > [...]
-> > > 
-> > > kpatch checks the backtraces of all tasks in stop_machine() to 
-> > > ensure that no instances of the old function are running when the 
-> > > new function is applied.  I think the biggest downside of this 
-> > > approach is that stop_machine() has to idle all other CPUs during 
-> > > the patching process, so it inserts a small amount of latency (a few 
-> > > ms on an idle system).
-> > 
-> > When live patching the kernel, how about achieving an even 'cleaner' 
-> > state for all tasks in the system: to freeze all tasks, as the suspend 
-> > and hibernation code (and kexec) does, via freeze_processes()?
-> > 
-> > That means no tasks in the system have any real kernel execution 
-> > state, and there's also no problem with long-sleeping tasks, as 
-> > freeze_processes() is supposed to be fast as well.
-> > 
-> > I.e. go for the most conservative live patching state first, and relax 
-> > it only once the initial model is upstream and is working robustly.
-> 
-> I had considered doing this before, but the problem I found is that many
-> kernel threads are unfreezable.  So we wouldn't be able to check whether
-> its safe to replace any functions in use by those kernel threads.
+On 5 May 2014 19:08, Nishanth Menon <nm@ti.com> wrote:
+> With the brief history of the patch in linux-pm, I am unable to
+> understand why not just use ceil/floor routines to pick up data the
+> way you need it. It should not matter if we use an ordered list, or
+> some other weird organization inside the storage. There are already
+> accessors functions meant to precisely help with the case that is
+> being tried here.
 
-OTOH many kernel threads are parkable. Which achieves kind of similar desired
-behaviour: the kernel threads then aren't running.
+To be precise, for exynos they need the position of a frequency when
+it is arranged in descending order. And they will simply write this position
+in their clock controller later. For example, if frequencies are:
+100 MHz, 200, 300, 400, 500, 600
 
-And in fact we could implement freezing on top of park for kthreads.
-
-But unfortunately there are still quite some of them which don't support parking.
+Then they need to write 1 for 600, 2 for 500, 3 for 400, and so on..
+I am not able to imaging how ceil/floor would help here.
