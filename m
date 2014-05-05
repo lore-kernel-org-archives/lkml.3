@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983AbaEEUZH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:25:07 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:54868 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752150AbaEEUZF (ORCPT
+	id S1755375AbaEEU0X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:26:23 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:36623 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411AbaEEU0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:25:05 -0400
-Message-ID: <5367F39C.1050703@linaro.org>
-Date: Mon, 05 May 2014 13:25:00 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 5 May 2014 16:26:22 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Bohac <jbohac@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 0/4] Convert timekeeping core to use printk_deferred (v2)
-References: <1399068558-2373-1-git-send-email-john.stultz@linaro.org>	<20140502160536.892e6aff76df3398529d09ad@linux-foundation.org> <20140505144231.654d85b0@gandalf.local.home>
-In-Reply-To: <20140505144231.654d85b0@gandalf.local.home>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1399314503.17557.0.camel@x230.lan>
+References: <1398781312-3607-1-git-send-email-patrik.r.jakobsson@gmail.com>
+	<CAMeQTsYA0tGQ1SfhNhMctPW6H_y1NGjGXsM5ZcMSwOqE-bApyg@mail.gmail.com>
+	<1399314503.17557.0.camel@x230.lan>
+Date: Mon, 5 May 2014 22:26:20 +0200
+Message-ID: <CAMeQTsZriJatEY7cd7BsrNfnQ7FhEFN_afbdDFuKjzwk7dxCDw@mail.gmail.com>
+Subject: Re: [PATCH v2] mba6x_bl: Backlight driver for mid 2013 MacBook Air
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "hdegoede@redhat.com" <hdegoede@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2014 11:42 AM, Steven Rostedt wrote:
-> On Fri, 2 May 2014 16:05:36 -0700
-> Andrew Morton <akpm@linux-foundation.org> wrote:
->
->  
->> Would "printk_deferred_once" be more logical than
->> "printk_once_deferred"?  Think so.  It's (((printk(deferred(once))),
->> not (((printk(once(deferred))).
+On Mon, May 5, 2014 at 8:28 PM, Matthew Garrett
+<matthew.garrett@nebula.com> wrote:
+> On Mon, 2014-05-05 at 16:49 +0200, Patrik Jakobsson wrote:
+>> Hi Matthew,
 >>
-> I agree with the above, but other than that you can add my:
+>> This seems to be in good shape. Do you have anything to add?
+>> If not, can you pick this patch up through platform-drivers-x86?
 >
-> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Thanks, will do!
+> I'm a bit reluctant. Do we have any evidence that this is the way OS X
+> behaves? What's the actual difference in state before and after suspend?
 
->
-> also, perhaps this series should include my patch:
->
-> https://lkml.org/lkml/2014/3/25/336
+I cannot see any change in state on either the LP8550 or on the Intel GPU side.
+Both me and Jani have twisted our heads around this but cannot see anything
+wrong. The ACPI methods only trigger the opregion so that's a dead end as well.
+My guess is that OSX is quirking this in the GPU driver which is something that
+doesn't belong in i915.
 
-So this set applies ontop of -mm, which I believe includes your change.
+So unfortunately, this is the best approach I can come up with without probing
+the signal or reversing the OSX GPU driver.
 
-If I try to cherry-pick your patch to include in my set, I think I have
-to cherry-pick Jan's changes as well, so its probably just easier for
-folks to grab -mm. :)
-thanks
--john
+Thanks
+Patrik
+
+> --
+> Matthew Garrett <matthew.garrett@nebula.com>
