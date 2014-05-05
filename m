@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876AbaEESnL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 14:43:11 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:36776 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaEESnJ (ORCPT
+	id S1751922AbaEESny (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 14:43:54 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:34475 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753AbaEESnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 14:43:09 -0400
-Date: Mon, 5 May 2014 20:43:04 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-Message-ID: <20140505184304.GA15137@gmail.com>
-References: <cover.1398958771.git.jpoimboe@redhat.com>
- <20140505085537.GA32196@gmail.com>
- <20140505132638.GA14432@treble.redhat.com>
- <20140505141038.GA27403@localhost.localdomain>
+	Mon, 5 May 2014 14:43:52 -0400
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Mon, 5 May 2014 14:47:32 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+In-Reply-To: <20140505171428.GU26782@laptop.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1405051443260.31072@vincent-weaver-1.umelst.maine.edu>
+References: <20140502172731.GK30445@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405021337390.22556@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.02.1405022111540.6261@ionos.tec.linutronix.de> <alpine.DEB.2.10.1405021611540.23984@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.02.1405022243550.6261@ionos.tec.linutronix.de> <alpine.DEB.2.10.1405022227420.25174@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405022253530.25174@vincent-weaver-1.umelst.maine.edu> <20140505093124.GN17778@laptop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1405051200010.31049@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405051309160.31072@vincent-weaver-1.umelst.maine.edu> <20140505171428.GU26782@laptop.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505141038.GA27403@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 5 May 2014, Peter Zijlstra wrote:
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
-> On Mon, May 05, 2014 at 08:26:38AM -0500, Josh Poimboeuf wrote:
-> > On Mon, May 05, 2014 at 10:55:37AM +0200, Ingo Molnar wrote:
-> > > 
-> > > * Josh Poimboeuf <jpoimboe@redhat.com> wrote:
-> > > 
-> > > > [...]
-> > > > 
-> > > > kpatch checks the backtraces of all tasks in stop_machine() to 
-> > > > ensure that no instances of the old function are running when the 
-> > > > new function is applied.  I think the biggest downside of this 
-> > > > approach is that stop_machine() has to idle all other CPUs during 
-> > > > the patching process, so it inserts a small amount of latency (a few 
-> > > > ms on an idle system).
-> > > 
-> > > When live patching the kernel, how about achieving an even 'cleaner' 
-> > > state for all tasks in the system: to freeze all tasks, as the suspend 
-> > > and hibernation code (and kexec) does, via freeze_processes()?
-> > > 
-> > > That means no tasks in the system have any real kernel execution 
-> > > state, and there's also no problem with long-sleeping tasks, as 
-> > > freeze_processes() is supposed to be fast as well.
-> > > 
-> > > I.e. go for the most conservative live patching state first, and relax 
-> > > it only once the initial model is upstream and is working robustly.
-> > 
-> > I had considered doing this before, but the problem I found is 
-> > that many kernel threads are unfreezable.  So we wouldn't be able 
-> > to check whether its safe to replace any functions in use by those 
-> > kernel threads.
+> Cute.. does the below cure?
 > 
-> OTOH many kernel threads are parkable. Which achieves kind of 
-> similar desired behaviour: the kernel threads then aren't running.
 > 
-> And in fact we could implement freezing on top of park for kthreads.
+> ---
+> Subject: perf: Fix perf_event_init_context()
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Mon May  5 19:12:20 CEST 2014
 > 
-> But unfortunately there are still quite some of them which don't 
-> support parking.
+> perf_pin_task_context() can return NULL but perf_event_init_context()
+> assumes it will not, correct this.
 
-Well, if distros are moving towards live patching (and they are!), 
-then it looks rather necessary to me that something scary as flipping 
-out live kernel instructions with substantially different code should 
-be as safe as possible, and only then fast.
+It makes the oops go away, but it does make the fuzzer become unkillable 
+while using 100% CPU.
 
-If a kernel refuses to patch with certain threads running, that will 
-drive those kernel threads being fixed and such. It's a deterministic, 
-recoverable, reportable bug situation, so fixing it should be fast.
+It looks like it is stuck repeating this forever:
+	perf_fuzzer-5256  [000]   275.943049: kmalloc:              (T.1262+0xe) call_site=ffffffff810d022f ptr=0xffff8800cb028400 bytes_req=216 bytes_alloc=256 gfp_flags=GFP_KERNEL|GFP_ZERO
+	perf_fuzzer-5256  [000]   275.943057: function:             perf_lock_task_context
+	perf_fuzzer-5256  [000]   275.943057: function:             alloc_perf_context
+and memory is slowly leaking away.
 
-We learned these robustness lessons the hard way with kprobes and 
-ftrace dynamic code patching... which are utterly simple compared to 
-live kernel patching!
 
-Thanks,
+Meanwhile the haswell and AMD machines have been fuzzing away without 
+issue, I don't know why the core2 machine is always the trouble maker.
 
-	Ingo
+Vince
+
