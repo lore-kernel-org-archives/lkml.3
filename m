@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932569AbaEEMrW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 08:47:22 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41056 "EHLO
+	id S932385AbaEEMts (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 08:49:48 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41011 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932330AbaEEMnf (ORCPT
+	by vger.kernel.org with ESMTP id S932290AbaEEMne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 08:43:35 -0400
+	Mon, 5 May 2014 08:43:34 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>,
-        Grant Edwards <grant.b.edwards@gmail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>,
-        Alan Cox <alan@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 33/50] tty: Fix low_latency BUG
-Date: Mon,  5 May 2014 14:43:15 +0200
-Message-Id: <18b258a37ee54cab6d0fc33f70b3c9d0ecf2dfdb.1399292849.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Derek Basehore <dbasehore@chromium.org>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 18/50] bdi: avoid oops on device removal
+Date: Mon,  5 May 2014 14:43:00 +0200
+Message-Id: <fa48decc1df0ec789d7bb2ea737f823f649a3cc3.1399292849.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
 References: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
@@ -26,167 +26,156 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Hurley <peter@hurleysoftware.com>
+From: Jan Kara <jack@suse.cz>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit a9c3f68f3cd8d55f809fbdb0c138ed061ea1bd25 upstream.
+commit 5acda9d12dcf1ad0d9a5a2a7c646de3472fa7555 upstream.
 
-The user-settable knob, low_latency, has been the source of
-several BUG reports which stem from flush_to_ldisc() running
-in interrupt context. Since 3.12, which added several sleeping
-locks (termios_rwsem and buf->lock) to the input processing path,
-the frequency of these BUG reports has increased.
+After commit 839a8e8660b6 ("writeback: replace custom worker pool
+implementation with unbound workqueue") when device is removed while we
+are writing to it we crash in bdi_writeback_workfn() ->
+set_worker_desc() because bdi->dev is NULL.
 
-Note that changes in 3.12 did not introduce this regression;
-sleeping locks were first added to the input processing path
-with the removal of the BKL from N_TTY in commit
-a88a69c91256418c5907c2f1f8a0ec0a36f9e6cc,
-'n_tty: Fix loss of echoed characters and remove bkl from n_tty'
-and later in commit 38db89799bdf11625a831c5af33938dcb11908b6,
-'tty: throttling race fix'. Since those changes, executing
-flush_to_ldisc() in interrupt_context (ie, low_latency set), is unsafe.
+This can happen because even though bdi_unregister() cancels all pending
+flushing work, nothing really prevents new ones from being queued from
+balance_dirty_pages() or other places.
 
-However, since most devices do not validate if the low_latency
-setting is appropriate for the context (process or interrupt) in
-which they receive data, some reports are due to misconfiguration.
-Further, serial dma devices for which dma fails, resort to
-interrupt receiving as a backup without resetting low_latency.
+Fix the problem by clearing BDI_registered bit in bdi_unregister() and
+checking it before scheduling of any flushing work.
 
-Historically, low_latency was used to force wake-up the reading
-process rather than wait for the next scheduler tick. The
-effect was to trim multiple milliseconds of latency from
-when the process would receive new data.
+Fixes: 839a8e8660b6777e7fe4e80af1a048aebe2b5977
 
-Recent tests [1] have shown that the reading process now receives
-data with only 10's of microseconds latency without low_latency set.
-
-Remove the low_latency rx steering from tty_flip_buffer_push();
-however, leave the knob as an optional hint to drivers that can
-tune their rx fifos and such like. Cleanup stale code comments
-regarding low_latency.
-
-[1] https://lkml.org/lkml/2014/2/20/434
-
-"Yay.. thats an annoying historical pain in the butt gone."
-	-- Alan Cox
-
-Reported-by: Beat Bolli <bbolli@ewanet.ch>
-Reported-by: Pavel Roskin <proski@gnu.org>
-Acked-by: David Sterba <dsterba@suse.cz>
-Cc: Grant Edwards <grant.b.edwards@gmail.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Derek Basehore <dbasehore@chromium.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/ipwireless/tty.c  |  3 ---
- drivers/tty/tty_buffer.c      | 20 ++++----------------
- drivers/usb/gadget/u_serial.c |  4 ++--
- include/linux/tty.h           |  2 +-
- 4 files changed, 7 insertions(+), 22 deletions(-)
+ fs/fs-writeback.c           | 23 ++++++++++++++++++-----
+ include/linux/backing-dev.h |  2 +-
+ mm/backing-dev.c            | 13 +++++++++----
+ 3 files changed, 28 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/tty/ipwireless/tty.c b/drivers/tty/ipwireless/tty.c
-index 8fd72ff9436e..d917a34e94bb 100644
---- a/drivers/tty/ipwireless/tty.c
-+++ b/drivers/tty/ipwireless/tty.c
-@@ -177,9 +177,6 @@ void ipwireless_tty_received(struct ipw_tty *tty, unsigned char *data,
- 				": %d chars not inserted to flip buffer!\n",
- 				length - work);
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 6abd284754e2..5bbec31440a4 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -88,16 +88,29 @@ static inline struct inode *wb_inode(struct list_head *head)
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/writeback.h>
  
--	/*
--	 * This may sleep if ->low_latency is set
--	 */
- 	if (work)
- 		tty_flip_buffer_push(&tty->port);
- }
-diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index c043136fbe51..2b52d807934e 100644
---- a/drivers/tty/tty_buffer.c
-+++ b/drivers/tty/tty_buffer.c
-@@ -332,14 +332,11 @@ EXPORT_SYMBOL(tty_insert_flip_string_flags);
-  *	Takes any pending buffers and transfers their ownership to the
-  *	ldisc side of the queue. It then schedules those characters for
-  *	processing by the line discipline.
-- *	Note that this function can only be used when the low_latency flag
-- *	is unset. Otherwise the workqueue won't be flushed.
-  */
- 
- void tty_schedule_flip(struct tty_port *port)
++static void bdi_wakeup_thread(struct backing_dev_info *bdi)
++{
++	spin_lock_bh(&bdi->wb_lock);
++	if (test_bit(BDI_registered, &bdi->state))
++		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++	spin_unlock_bh(&bdi->wb_lock);
++}
++
+ static void bdi_queue_work(struct backing_dev_info *bdi,
+ 			   struct wb_writeback_work *work)
  {
- 	struct tty_bufhead *buf = &port->buf;
--	WARN_ON(port->low_latency);
+ 	trace_writeback_queue(bdi, work);
  
- 	buf->tail->commit = buf->tail->used;
- 	schedule_work(&buf->work);
-@@ -487,17 +484,15 @@ static void flush_to_ldisc(struct work_struct *work)
-  */
- void tty_flush_to_ldisc(struct tty_struct *tty)
- {
--	if (!tty->port->low_latency)
--		flush_work(&tty->port->buf.work);
-+	flush_work(&tty->port->buf.work);
- }
- 
- /**
-  *	tty_flip_buffer_push	-	terminal
-  *	@port: tty port to push
-  *
-- *	Queue a push of the terminal flip buffers to the line discipline. This
-- *	function must not be called from IRQ context if port->low_latency is
-- *	set.
-+ *	Queue a push of the terminal flip buffers to the line discipline.
-+ *	Can be called from IRQ/atomic context.
-  *
-  *	In the event of the queue being busy for flipping the work will be
-  *	held off and retried later.
-@@ -505,14 +500,7 @@ void tty_flush_to_ldisc(struct tty_struct *tty)
- 
- void tty_flip_buffer_push(struct tty_port *port)
- {
--	struct tty_bufhead *buf = &port->buf;
+ 	spin_lock_bh(&bdi->wb_lock);
++	if (!test_bit(BDI_registered, &bdi->state)) {
++		if (work->done)
++			complete(work->done);
++		goto out_unlock;
++	}
+ 	list_add_tail(&work->list, &bdi->work_list);
+-	spin_unlock_bh(&bdi->wb_lock);
 -
--	buf->tail->commit = buf->tail->used;
--
--	if (port->low_latency)
--		flush_to_ldisc(&buf->work);
--	else
--		schedule_work(&buf->work);
-+	tty_schedule_flip(port);
+ 	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++out_unlock:
++	spin_unlock_bh(&bdi->wb_lock);
  }
- EXPORT_SYMBOL(tty_flip_buffer_push);
  
-diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
-index b369292d4b90..ad0aca812002 100644
---- a/drivers/usb/gadget/u_serial.c
-+++ b/drivers/usb/gadget/u_serial.c
-@@ -549,8 +549,8 @@ static void gs_rx_push(unsigned long _port)
- 		port->read_started--;
+ static void
+@@ -113,7 +126,7 @@ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+ 	work = kzalloc(sizeof(*work), GFP_ATOMIC);
+ 	if (!work) {
+ 		trace_writeback_nowork(bdi);
+-		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++		bdi_wakeup_thread(bdi);
+ 		return;
  	}
  
--	/* Push from tty to ldisc; without low_latency set this is handled by
--	 * a workqueue, so we won't get callbacks and can hold port_lock
-+	/* Push from tty to ldisc; this is handled by a workqueue,
-+	 * so we won't get callbacks and can hold port_lock
+@@ -160,7 +173,7 @@ void bdi_start_background_writeback(struct backing_dev_info *bdi)
+ 	 * writeback as soon as there is no other work to do.
  	 */
- 	if (do_push)
- 		tty_flip_buffer_push(&port->port);
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 64f864651d86..96c23247a332 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -203,7 +203,7 @@ struct tty_port {
- 	wait_queue_head_t	delta_msr_wait;	/* Modem status change */
- 	unsigned long		flags;		/* TTY flags ASY_*/
- 	unsigned char		console:1,	/* port is a console */
--				low_latency:1;	/* direct buffer flush */
-+				low_latency:1;	/* optional: tune for latency */
- 	struct mutex		mutex;		/* Locking */
- 	struct mutex		buf_mutex;	/* Buffer alloc lock */
- 	unsigned char		*xmit_buf;	/* Optional buffer */
+ 	trace_writeback_wake_background(bdi);
+-	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++	bdi_wakeup_thread(bdi);
+ }
+ 
+ /*
+@@ -1016,7 +1029,7 @@ void bdi_writeback_workfn(struct work_struct *work)
+ 	current->flags |= PF_SWAPWRITE;
+ 
+ 	if (likely(!current_is_workqueue_rescuer() ||
+-		   list_empty(&bdi->bdi_list))) {
++		   !test_bit(BDI_registered, &bdi->state))) {
+ 		/*
+ 		 * The normal path.  Keep writing back @bdi until its
+ 		 * work_list is empty.  Note that this path is also taken
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index 5f66d519a726..a4cf599ecfc8 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -95,7 +95,7 @@ struct backing_dev_info {
+ 	unsigned int max_ratio, max_prop_frac;
+ 
+ 	struct bdi_writeback wb;  /* default writeback info for this bdi */
+-	spinlock_t wb_lock;	  /* protects work_list */
++	spinlock_t wb_lock;	  /* protects work_list & wb.dwork scheduling */
+ 
+ 	struct list_head work_list;
+ 
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index fab8401fc54e..09d9591b7708 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -297,7 +297,10 @@ void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
+ 	unsigned long timeout;
+ 
+ 	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
+-	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
++	spin_lock_bh(&bdi->wb_lock);
++	if (test_bit(BDI_registered, &bdi->state))
++		queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
++	spin_unlock_bh(&bdi->wb_lock);
+ }
+ 
+ /*
+@@ -310,9 +313,6 @@ static void bdi_remove_from_list(struct backing_dev_info *bdi)
+ 	spin_unlock_bh(&bdi_lock);
+ 
+ 	synchronize_rcu_expedited();
+-
+-	/* bdi_list is now unused, clear it to mark @bdi dying */
+-	INIT_LIST_HEAD(&bdi->bdi_list);
+ }
+ 
+ int bdi_register(struct backing_dev_info *bdi, struct device *parent,
+@@ -363,6 +363,11 @@ static void bdi_wb_shutdown(struct backing_dev_info *bdi)
+ 	 */
+ 	bdi_remove_from_list(bdi);
+ 
++	/* Make sure nobody queues further work */
++	spin_lock_bh(&bdi->wb_lock);
++	clear_bit(BDI_registered, &bdi->state);
++	spin_unlock_bh(&bdi->wb_lock);
++
+ 	/*
+ 	 * Drain work list and shutdown the delayed_work.  At this point,
+ 	 * @bdi->bdi_list is empty telling bdi_Writeback_workfn() that @bdi
 -- 
 1.9.2
 
