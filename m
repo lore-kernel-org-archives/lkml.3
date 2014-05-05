@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699AbaEEVLt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 17:11:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51136 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756346AbaEEVLr (ORCPT
+	id S1756726AbaEEVMQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 17:12:16 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33788 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756357AbaEEVMO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 17:11:47 -0400
-Date: Mon, 5 May 2014 14:11:45 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jeff Layton <jlayton@poochiereds.net>
-Cc: Fabian Frederick <fabf@skynet.be>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Steve French <sfrench@samba.org>,
-        linux-cifs <linux-cifs@vger.kernel.org>
-Subject: Re: [PATCH 1/1] FS/CIFS: remove obsolete __constant
-Message-Id: <20140505141145.72863db09016a3399a3c9096@linux-foundation.org>
-In-Reply-To: <20140505065116.24d94535@tlielax.poochiereds.net>
-References: <20140503221539.e4857ef93d6c875bbded5938@skynet.be>
-	<CAOhYWNJ5JRt9KH-Z3K_zBW2axs5c5KJQYXb8_vYLQTEdr=ZeEg@mail.gmail.com>
-	<20140505065301.bbb1fe3e579d27dacd3292c9@skynet.be>
-	<20140505065116.24d94535@tlielax.poochiereds.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Mon, 5 May 2014 17:12:14 -0400
+Date: Mon, 05 May 2014 17:12:12 -0400 (EDT)
+Message-Id: <20140505.171212.1953119275767909182.davem@davemloft.net>
+To: soren.brinkmann@xilinx.com
+Cc: michal.simek@xilinx.com, nicolas.ferre@atmel.com, git@xilinx.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 5/5] net: macb: Fix race between HW and driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <433e19f4-93b3-458e-842e-33c511fdee74@CO9EHSMHS005.ehs.local>
+References: <7c62baab-5f60-4f04-87f7-6b53fecc4746@CH1EHSMHS038.ehs.local>
+	<20140505.170959.2172440110209805460.davem@davemloft.net>
+	<433e19f4-93b3-458e-842e-33c511fdee74@CO9EHSMHS005.ehs.local>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 05 May 2014 14:12:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 May 2014 06:51:16 -0400 Jeff Layton <jlayton@poochiereds.net> wrote:
+From: Sören Brinkmann <soren.brinkmann@xilinx.com>
+Date: Mon, 5 May 2014 14:10:23 -0700
 
-> On Mon, 5 May 2014 06:53:01 +0200
-> Fabian Frederick <fabf@skynet.be> wrote:
+> On Mon, 2014-05-05 at 05:09PM -0400, David Miller wrote:
+>> From: Sören Brinkmann <soren.brinkmann@xilinx.com>
+>> Date: Mon, 5 May 2014 14:05:19 -0700
+>> 
+>> > On Mon, 2014-05-05 at 04:56PM -0400, David Miller wrote:
+>> >> From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>> >> Date: Sun,  4 May 2014 15:43:02 -0700
+>> >> 
+>> >> > Under "heavy" RX load, the driver cannot handle the descriptors fast
+>> >> > enough. In detail, when a descriptor is consumed, its used flag is
+>> >> > cleared and once the RX budget is consumed all descriptors with a
+>> >> > cleared used flag are prepared to receive more data. Under load though,
+>> >> > the HW may constantly receive more data and use those descriptors with a
+>> >> > cleared used flag before they are actually prepared for next usage.
+>> >> > 
+>> >> > The head and tail pointers into the RX-ring should always be valid and
+>> >> > we can omit clearing and checking of the used flag.
+>> >> > 
+>> >> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>> >> 
+>> >> Isn't the RX_USED bit the only thing that controls what RX entries
+>> >> the chip will try to use?
+>> >> 
+>> >> I can't see how you can just remove the RX_USED bit handling
+>> >> altogether.
+>> >> 
+>> >> The problem actually seems to be that in the current code we clear the
+>> >> RX_USED bit before we actually reallocate the buffer and set it up.
+>> >> 
+>> >> It should be a bug to see the RX_USED bit set in gem_rx_refill(), and
+>> >> the only reason why it can happen is exactly because you're clearing it
+>> >> too early in gem_rx().
+>> > 
+>> > I don't follow. The HW uses the descriptor and the driver handles the
+>> > received data. So, in gem_rx_refill we should actually only replace
+>> > descriptor which have the RX_USED _set_, not? Currently the test tests
+>> > for the opposite, since SW clears RX_USED in gem_rx. This patch just
+>> > removes those two parts. The RX_USED is left as is (HW should have set
+>> > it). And in gem_rx_refill we simply rely on the head and tail pointers
+>> > to refill the used descriptors. I didn't see a reason to do the additional
+>> > checking of the RX_USED bit.
+>> > After the refill the RX_USED flags are of course cleared for all
+>> > refilled descriptors.
+>> 
+>> Aha, that makes sense, I didn't notice that RX_USED is cleared as a side
+>> effect of gem_rx_refill()'s work.
+>> 
+>> I'll apply this series, thanks for explaining.
 > 
-> > On Sun, 4 May 2014 18:52:43 -0400
-> > Jeff Layton <jlayton@poochiereds.net> wrote:
-> > 
-> > > On Sat, May 3, 2014 at 4:15 PM, Fabian Frederick <fabf@skynet.be> wrote:
-> > > > Replacing all __constant_foo to foo()
-> > > > except in smb2status.h (1700 lines to update).
-> > > >
-> > > > Cc: linux-cifs@vger.kernel.org
-> > > > Cc: Steve French <sfrench@samba.org>
-> > > > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > > > Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> > > > ---
-> > > >  fs/cifs/cifsacl.c  |  2 +-
-> > > >  fs/cifs/cifssmb.c  | 20 ++++++++++----------
-> > > >  fs/cifs/sess.c     |  2 +-
-> > > >  fs/cifs/smb2misc.c | 38 +++++++++++++++++++-------------------
-> > > >  fs/cifs/smb2ops.c  |  2 +-
-> > > >  fs/cifs/smb2pdu.c  |  2 +-
-> > > >  fs/cifs/smb2pdu.h  | 28 ++++++++++++++--------------
-> > > >  7 files changed, 47 insertions(+), 47 deletions(-)
-> > > >
-> > > > diff --git a/fs/cifs/cifsacl.c b/fs/cifs/cifsacl.c
-> > > > index 7ff866d..54ac0e8 100644
-> > > > --- a/fs/cifs/cifsacl.c
-> > > > +++ b/fs/cifs/cifsacl.c
-> > > > @@ -38,7 +38,7 @@ static const struct cifs_sid sid_everyone = {
-> > > >         1, 1, {0, 0, 0, 0, 0, 1}, {0} };
-> > > >  /* security id for Authenticated Users system group */
-> > > >  static const struct cifs_sid sid_authusers = {
-> > > > -       1, 1, {0, 0, 0, 0, 0, 5}, {__constant_cpu_to_le32(11)} };
-> > > > +       1, 1, {0, 0, 0, 0, 0, 5}, {cpu_to_le32(11)} };
-> > > 
-> > > 
-> > > Does the build still work on BE arches with this? I know at one point
-> > > the above wouldn't compile on those
-> > > arches. See commit 536abdb0802f, for an explanation.
-> > 
-> > Untested on BE but it would mean checkpatch 
-> > "don't use __constant<foo> functions outside of include/uapi/" stuff is wrong ?
-> 
-> I'm not sure. Maybe the macros have been fixed so that it's no longer a
-> problem? I think it would be good to test build this on a BE arch
-> before it's merged to be certain though.
-> 
-> IIRC, I originally saw the problem on s390 builds.
+> Thanks, but we probably wanna wait for Nicolas to test on his platforms
+> using macb?
 
-It compiles OK for me for s390, ia64, sparc64, sh, alpha, powerpc, arm,
-m68k.
-
-I'll toss it in there and see what Fengguang's buildbot has to say.
-
+We can always apply a fixup or revert.
