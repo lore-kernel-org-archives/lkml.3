@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756569AbaEEU57 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:57:59 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33650 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755370AbaEEU56 (ORCPT
+	id S1756647AbaEEU7K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:59:10 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:52278 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755293AbaEEU7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:57:58 -0400
-Date: Mon, 05 May 2014 16:57:56 -0400 (EDT)
-Message-Id: <20140505.165756.1229178386133288960.davem@davemloft.net>
-To: linux-kernel@vger.kernel.org
-Cc: iamjoonsoo.kim@lge.com, sparclinux@vger.kernel.org, hannes@cmpxchg.org,
-        cl@linux.com, penberg@kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH] slab: Fix off by one in object max number tests.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140505.162004.1797345518474659123.davem@davemloft.net>
-References: <20140505.162004.1797345518474659123.davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 05 May 2014 13:57:58 -0700 (PDT)
+	Mon, 5 May 2014 16:59:07 -0400
+X-Sasl-enc: Mzv5powoM0kaIZiqApsiZcomXxrTbdtok8YAq/bVsQtt 1399323546
+Date: Mon, 5 May 2014 14:02:11 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Herring <robh@kernel.org>
+Subject: Re: linux-next: manual merge of the tty tree with Linus' tree
+Message-ID: <20140505210211.GA27503@kroah.com>
+References: <20140505154103.941b62e29706efa62b826354@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140505154103.941b62e29706efa62b826354@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Mon, 05 May 2014 16:20:04 -0400 (EDT)
-
+On Mon, May 05, 2014 at 03:41:03PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> If freelist_idx_t is a byte, SLAB_OBJ_MAX_NUM should be 255 not 256,
-> and likewise if freelist_idx_t is a short, then it should be 65535 not
-> 65536.
+> Today's linux-next merge of the tty tree got a conflict in
+> arch/arm64/kernel/early_printk.c between commit f774b7d10e21 ("arm64:
+> fixmap: fix missing sub-page offset for earlyprintk") from the  tree and
+> commit 8ef0ed95ee04 ("arm64: remove arch specific earlyprintk") from the
+> tty tree.
 > 
-> Fixes: a41adfa ("slab: introduce byte sized index for the freelist of a slab")
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> ---
-> 
-> This was leading to all kinds of random crashes on sparc64 where PAGE_SIZE
-> is 8192.  One problem shown was that if spinlock debugging was enabled,
-> we'd get deadlocks in copy_pte_range() or do_wp_page() with the same cpu
-> already holding a lock it shouldn't hold, or the lock belonging to a
-> completely unrelated process.
+> I fixed it up (I removed the file) and can carry the fix as necessary (no
+> action is required).
 
-It turns out that after some more testing, I'm still getting spinlock
-debugging problems with this fix applied.
+That sounds fine to me, thanks.
 
-The change is still very much correct I think, however.
+greg k-h
