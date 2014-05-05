@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932685AbaEEMsG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 08:48:06 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:43073 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932245AbaEEMsE (ORCPT
+	id S932631AbaEEMr3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 08:47:29 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41049 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932325AbaEEMnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 08:48:04 -0400
-Message-ID: <53678887.1070006@cogentembedded.com>
-Date: Mon, 05 May 2014 16:48:07 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Jon Maxwell <jmaxwell37@gmail.com>, netdev@vger.kernel.org
-CC: stephen@networkplumber.org, davem@davemloft.net,
-        makita.toshiaki@lab.ntt.co.jp, vyasevic@redhat.com,
-        bridge@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pirko@redhat.com, jmaxwell@redhat.com
-Subject: Re: [PATCH net] bridge: Add port flap detection
-References: <1399238974-6210-1-git-send-email-jmaxwell@redhat.com>
-In-Reply-To: <1399238974-6210-1-git-send-email-jmaxwell@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 5 May 2014 08:43:35 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Mohit Kumar <mohit.kumar@st.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Jingoo Han <jg1.han@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 28/50] PCI: designware: Fix RC BAR to be single 64-bit non-prefetchable memory BAR
+Date: Mon,  5 May 2014 14:43:10 +0200
+Message-Id: <47495e3596d95047168e4a831b2a8ccdf7efafaa.1399292849.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
+References: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
+In-Reply-To: <cover.1399292849.git.jslaby@suse.cz>
+References: <cover.1399292849.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+From: Mohit Kumar <mohit.kumar@st.com>
 
-On 05/05/2014 01:29 AM, Jon Maxwell wrote:
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-> There has been a number incidents recently where customers running KVM have reported that VM hosts on different Hypervisors are unreachable. Based on pcap traces we found that the bridge was broadcasting the ARP request out onto the network. However some NICs have an inbuilt switch which on occasions were broadcasting the VMs ARP request back through the physical NIC on the Hypervisor. This resulted in the bridge flapping ports and incorrectly learning that the VMs mac address was external. As a result the ARP reply was directed back onto the external network and VM never updated it's ARP cache. This patch will detect port flapping and log a message so that this condition can be detected earlier.
+===============
 
-    Please wrap your changelog at 80 columns or less.
+commit dbffdd6862e67d60703f2df66c558bf448f81d6e upstream.
 
-> Signed-off-by: Jon Maxwell <jmaxwell@redhat.com>
+The Synopsys PCIe core provides one pair of 32-bit BARs (BAR 0 and BAR 1).
+The BARs can be configured as follows:
 
-    You probably want the same RedHat email in the patch autorhship record, so 
-you need to insert the below line before the changelog:
+  - One 64-bit BAR: BARs 0 and 1 are combined to form a single 64-bit BAR
+  - Two 32-bit BARs: BARs 0 and 1 are two independent 32-bit BARs
 
-From: Jon Maxwell <jmaxwell@redhat.com>
+This patch corrects 64-bit, non-prefetchable memory BAR configuration
+implemented in dw driver.
 
-> ---
->   net/bridge/br_fdb.c | 7 +++++++
->   1 file changed, 7 insertions(+)
->
-> diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
-> index 9203d5a..c08607b 100644
-> --- a/net/bridge/br_fdb.c
-> +++ b/net/bridge/br_fdb.c
-> @@ -507,6 +507,13 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
->   					source->dev->name);
->   		} else {
->   			/* fastpath: update of existing entry */
-> +			if (source->port_no != fdb->dst->port_no &&
-> +				net_ratelimit())
-> +				br_warn(br, "Port flapping detected source entry dev = %s mac = %pM, port_no = %d\n existing entry dev = %s mac = %pM, port_no = %d\n",
-> +					source->dev->name,
-> +					addr, source->port_no,
-> +					fdb->dst->dev->name, addr,
+Signed-off-by: Mohit Kumar <mohit.kumar@st.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Pratyush Anand <pratyush.anand@st.com>
+Cc: Jingoo Han <jg1.han@samsung.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/pci/host/pcie-designware.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-    Why print the same MAC address twice?
-
-> +					fdb->dst->port_no);
->   			fdb->dst = source;
->   			fdb->updated = jiffies;
->   			if (unlikely(added_by_user))
-
-WBR, Sergei
+diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+index c10e9ac9bbbc..09eba9f338fe 100644
+--- a/drivers/pci/host/pcie-designware.c
++++ b/drivers/pci/host/pcie-designware.c
+@@ -532,7 +532,7 @@ void dw_pcie_setup_rc(struct pcie_port *pp)
+ 
+ 	/* setup RC BARs */
+ 	dw_pcie_writel_rc(pp, 0x00000004, PCI_BASE_ADDRESS_0);
+-	dw_pcie_writel_rc(pp, 0x00000004, PCI_BASE_ADDRESS_1);
++	dw_pcie_writel_rc(pp, 0x00000000, PCI_BASE_ADDRESS_1);
+ 
+ 	/* setup interrupt pins */
+ 	dw_pcie_readl_rc(pp, PCI_INTERRUPT_LINE, &val);
+-- 
+1.9.2
 
