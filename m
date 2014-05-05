@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933100AbaEEXM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 19:12:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57887 "EHLO
+	id S933163AbaEEXNK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 19:13:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57892 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756708AbaEEXMz (ORCPT
+	with ESMTP id S933113AbaEEXNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 19:12:55 -0400
-Date: Mon, 5 May 2014 16:12:42 -0700
+	Mon, 5 May 2014 19:13:05 -0400
+Date: Mon, 5 May 2014 16:12:54 -0700
 From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-2605fc216fa492f9e7c488bdc7f687cd6dcc703b@git.kernel.org>
+Message-ID: <tip-722a9f9299ca720a3f14660e7c0dce7b76a9cb42@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         ak@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         ak@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1398984278-29319-3-git-send-email-andi@firstfloor.org>
-References: <1398984278-29319-3-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1398984278-29319-4-git-send-email-andi@firstfloor.org>
+References: <1398984278-29319-4-git-send-email-andi@firstfloor.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] asmlinkage, x86: Add explicit __visible to arch/
- x86/*
-Git-Commit-ID: 2605fc216fa492f9e7c488bdc7f687cd6dcc703b
+Subject: [tip:x86/urgent] asmlinkage: Add explicit __visible to drivers/*,
+  lib/*, kernel/*
+Git-Commit-ID: 722a9f9299ca720a3f14660e7c0dce7b76a9cb42
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,411 +32,212 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2605fc216fa492f9e7c488bdc7f687cd6dcc703b
-Gitweb:     http://git.kernel.org/tip/2605fc216fa492f9e7c488bdc7f687cd6dcc703b
+Commit-ID:  722a9f9299ca720a3f14660e7c0dce7b76a9cb42
+Gitweb:     http://git.kernel.org/tip/722a9f9299ca720a3f14660e7c0dce7b76a9cb42
 Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Fri, 2 May 2014 00:44:37 +0200
+AuthorDate: Fri, 2 May 2014 00:44:38 +0200
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 5 May 2014 16:07:44 -0700
+CommitDate: Mon, 5 May 2014 16:07:46 -0700
 
-asmlinkage, x86: Add explicit __visible to arch/x86/*
+asmlinkage: Add explicit __visible to drivers/*, lib/*, kernel/*
 
 As requested by Linus add explicit __visible to the asmlinkage users.
-This marks all functions visible to assembler.
+This marks functions visible to assembler.
 
-Tree sweep for arch/x86/*
+Tree sweep for rest of tree.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/r/1398984278-29319-3-git-send-email-andi@firstfloor.org
+Link: http://lkml.kernel.org/r/1398984278-29319-4-git-send-email-andi@firstfloor.org
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/boot/compressed/misc.c          |  2 +-
- arch/x86/kernel/acpi/sleep.c             |  2 +-
- arch/x86/kernel/apic/io_apic.c           |  2 +-
- arch/x86/kernel/cpu/mcheck/therm_throt.c |  4 ++--
- arch/x86/kernel/cpu/mcheck/threshold.c   |  4 ++--
- arch/x86/kernel/head32.c                 |  2 +-
- arch/x86/kernel/head64.c                 |  2 +-
- arch/x86/kernel/process_64.c             |  2 +-
- arch/x86/kernel/smp.c                    |  2 +-
- arch/x86/kernel/traps.c                  |  6 +++---
- arch/x86/kernel/vsmp_64.c                |  6 +++---
- arch/x86/kvm/x86.c                       |  2 +-
- arch/x86/lguest/boot.c                   |  4 ++--
- arch/x86/math-emu/errors.c               | 16 ++++++++--------
- arch/x86/platform/olpc/olpc-xo1-pm.c     |  2 +-
- arch/x86/power/hibernate_64.c            |  2 +-
- arch/x86/xen/enlighten.c                 |  2 +-
- arch/x86/xen/irq.c                       |  6 +++---
- 18 files changed, 34 insertions(+), 34 deletions(-)
+ drivers/pnp/pnpbios/bioscalls.c |  2 +-
+ init/main.c                     |  2 +-
+ kernel/context_tracking.c       |  2 +-
+ kernel/locking/lockdep.c        |  2 +-
+ kernel/power/snapshot.c         |  2 +-
+ kernel/printk/printk.c          |  4 ++--
+ kernel/sched/core.c             | 10 +++++-----
+ kernel/softirq.c                |  4 ++--
+ lib/dump_stack.c                |  4 ++--
+ 9 files changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-index 1768461..57ab74d 100644
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -354,7 +354,7 @@ static void parse_elf(void *output)
- 	free(phdrs);
+diff --git a/drivers/pnp/pnpbios/bioscalls.c b/drivers/pnp/pnpbios/bioscalls.c
+index deb7f4b..438d4c7 100644
+--- a/drivers/pnp/pnpbios/bioscalls.c
++++ b/drivers/pnp/pnpbios/bioscalls.c
+@@ -37,7 +37,7 @@ __visible struct {
+  * kernel begins at offset 3GB...
+  */
+ 
+-asmlinkage void pnp_bios_callfunc(void);
++asmlinkage __visible void pnp_bios_callfunc(void);
+ 
+ __asm__(".text			\n"
+ 	__ALIGN_STR "\n"
+diff --git a/init/main.c b/init/main.c
+index 9c7fd4c..48655ce 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -476,7 +476,7 @@ static void __init mm_init(void)
+ 	vmalloc_init();
  }
  
--asmlinkage void *decompress_kernel(void *rmode, memptr heap,
-+asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
- 				  unsigned char *input_data,
- 				  unsigned long input_len,
- 				  unsigned char *output,
-diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index 3a2ae4c..3136820 100644
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -31,7 +31,7 @@ static char temp_stack[4096];
+-asmlinkage void __init start_kernel(void)
++asmlinkage __visible void __init start_kernel(void)
+ {
+ 	char * command_line;
+ 	extern const struct kernel_param __start___param[], __stop___param[];
+diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+index 6cb20d2..019d450 100644
+--- a/kernel/context_tracking.c
++++ b/kernel/context_tracking.c
+@@ -120,7 +120,7 @@ void context_tracking_user_enter(void)
+  * instead of preempt_schedule() to exit user context if needed before
+  * calling the scheduler.
+  */
+-asmlinkage void __sched notrace preempt_schedule_context(void)
++asmlinkage __visible void __sched notrace preempt_schedule_context(void)
+ {
+ 	enum ctx_state prev_ctx;
+ 
+diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
+index b0e9467..d24e433 100644
+--- a/kernel/locking/lockdep.c
++++ b/kernel/locking/lockdep.c
+@@ -4188,7 +4188,7 @@ void debug_show_held_locks(struct task_struct *task)
+ }
+ EXPORT_SYMBOL_GPL(debug_show_held_locks);
+ 
+-asmlinkage void lockdep_sys_exit(void)
++asmlinkage __visible void lockdep_sys_exit(void)
+ {
+ 	struct task_struct *curr = current;
+ 
+diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+index 18fb7a2..1ea328a 100644
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1586,7 +1586,7 @@ swsusp_alloc(struct memory_bitmap *orig_bm, struct memory_bitmap *copy_bm,
+ 	return -ENOMEM;
+ }
+ 
+-asmlinkage int swsusp_save(void)
++asmlinkage __visible int swsusp_save(void)
+ {
+ 	unsigned int nr_pages, nr_highmem;
+ 
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index a45b509..7228258 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1674,7 +1674,7 @@ EXPORT_SYMBOL(printk_emit);
   *
-  * Wrapper around acpi_enter_sleep_state() to be called by assmebly.
+  * See the vsnprintf() documentation for format string extensions over C99.
   */
--acpi_status asmlinkage x86_acpi_enter_sleep_state(u8 state)
-+acpi_status asmlinkage __visible x86_acpi_enter_sleep_state(u8 state)
+-asmlinkage int printk(const char *fmt, ...)
++asmlinkage __visible int printk(const char *fmt, ...)
  {
- 	return acpi_enter_sleep_state(state);
- }
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index d23aa82..992060e 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2189,7 +2189,7 @@ void send_cleanup_vector(struct irq_cfg *cfg)
- 	cfg->move_in_progress = 0;
- }
- 
--asmlinkage void smp_irq_move_cleanup_interrupt(void)
-+asmlinkage __visible void smp_irq_move_cleanup_interrupt(void)
- {
- 	unsigned vector, me;
- 
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index d921b7e..36a1bb6 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -429,14 +429,14 @@ static inline void __smp_thermal_interrupt(void)
- 	smp_thermal_vector();
- }
- 
--asmlinkage void smp_thermal_interrupt(struct pt_regs *regs)
-+asmlinkage __visible void smp_thermal_interrupt(struct pt_regs *regs)
- {
- 	entering_irq();
- 	__smp_thermal_interrupt();
- 	exiting_ack_irq();
- }
- 
--asmlinkage void smp_trace_thermal_interrupt(struct pt_regs *regs)
-+asmlinkage __visible void smp_trace_thermal_interrupt(struct pt_regs *regs)
- {
- 	entering_irq();
- 	trace_thermal_apic_entry(THERMAL_APIC_VECTOR);
-diff --git a/arch/x86/kernel/cpu/mcheck/threshold.c b/arch/x86/kernel/cpu/mcheck/threshold.c
-index fe6b1c8..7245980 100644
---- a/arch/x86/kernel/cpu/mcheck/threshold.c
-+++ b/arch/x86/kernel/cpu/mcheck/threshold.c
-@@ -24,14 +24,14 @@ static inline void __smp_threshold_interrupt(void)
- 	mce_threshold_vector();
- }
- 
--asmlinkage void smp_threshold_interrupt(void)
-+asmlinkage __visible void smp_threshold_interrupt(void)
- {
- 	entering_irq();
- 	__smp_threshold_interrupt();
- 	exiting_ack_irq();
- }
- 
--asmlinkage void smp_trace_threshold_interrupt(void)
-+asmlinkage __visible void smp_trace_threshold_interrupt(void)
- {
- 	entering_irq();
- 	trace_threshold_apic_entry(THRESHOLD_APIC_VECTOR);
-diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
-index c61a14a..d6c1b983 100644
---- a/arch/x86/kernel/head32.c
-+++ b/arch/x86/kernel/head32.c
-@@ -29,7 +29,7 @@ static void __init i386_default_early_setup(void)
- 	reserve_ebda_region();
- }
- 
--asmlinkage void __init i386_start_kernel(void)
-+asmlinkage __visible void __init i386_start_kernel(void)
- {
- 	sanitize_boot_params(&boot_params);
- 
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index 85126cc..068054f 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -137,7 +137,7 @@ static void __init copy_bootdata(char *real_mode_data)
+ 	va_list args;
+ 	int r;
+@@ -1737,7 +1737,7 @@ void early_vprintk(const char *fmt, va_list ap)
  	}
  }
  
--asmlinkage void __init x86_64_start_kernel(char * real_mode_data)
-+asmlinkage __visible void __init x86_64_start_kernel(char * real_mode_data)
+-asmlinkage void early_printk(const char *fmt, ...)
++asmlinkage __visible void early_printk(const char *fmt, ...)
  {
- 	int i;
+ 	va_list ap;
  
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 9c0280f..898d077 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -52,7 +52,7 @@
- 
- asmlinkage extern void ret_from_fork(void);
- 
--asmlinkage DEFINE_PER_CPU(unsigned long, old_rsp);
-+__visible DEFINE_PER_CPU(unsigned long, old_rsp);
- 
- /* Prints also some state that isn't saved in the pt_regs */
- void __show_regs(struct pt_regs *regs, int all)
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index 7c3a5a6..be8e1bd 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -168,7 +168,7 @@ static int smp_stop_nmi_callback(unsigned int val, struct pt_regs *regs)
-  * this function calls the 'stop' function on all other CPUs in the system.
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 268a45e..d9d8ece 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2192,7 +2192,7 @@ static inline void post_schedule(struct rq *rq)
+  * schedule_tail - first thing a freshly forked thread must call.
+  * @prev: the thread we just switched away from.
   */
+-asmlinkage void schedule_tail(struct task_struct *prev)
++asmlinkage __visible void schedule_tail(struct task_struct *prev)
+ 	__releases(rq->lock)
+ {
+ 	struct rq *rq = this_rq();
+@@ -2741,7 +2741,7 @@ static inline void sched_submit_work(struct task_struct *tsk)
+ 		blk_schedule_flush_plug(tsk);
+ }
  
--asmlinkage void smp_reboot_interrupt(void)
-+asmlinkage __visible void smp_reboot_interrupt(void)
+-asmlinkage void __sched schedule(void)
++asmlinkage __visible void __sched schedule(void)
  {
- 	ack_APIC_irq();
- 	irq_enter();
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 57409f6..f73b5d4 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -357,7 +357,7 @@ exit:
-  * for scheduling or signal handling. The actual stack switch is done in
-  * entry.S
+ 	struct task_struct *tsk = current;
+ 
+@@ -2751,7 +2751,7 @@ asmlinkage void __sched schedule(void)
+ EXPORT_SYMBOL(schedule);
+ 
+ #ifdef CONFIG_CONTEXT_TRACKING
+-asmlinkage void __sched schedule_user(void)
++asmlinkage __visible void __sched schedule_user(void)
+ {
+ 	/*
+ 	 * If we come here after a random call to set_need_resched(),
+@@ -2783,7 +2783,7 @@ void __sched schedule_preempt_disabled(void)
+  * off of preempt_enable. Kernel preemptions off return from interrupt
+  * occur there and call schedule directly.
   */
--asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
-+asmlinkage __visible __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
+-asmlinkage void __sched notrace preempt_schedule(void)
++asmlinkage __visible void __sched notrace preempt_schedule(void)
  {
- 	struct pt_regs *regs = eregs;
- 	/* Did already sync */
-@@ -601,11 +601,11 @@ do_spurious_interrupt_bug(struct pt_regs *regs, long error_code)
+ 	/*
+ 	 * If there is a non-zero preempt_count or interrupts are disabled,
+@@ -2813,7 +2813,7 @@ EXPORT_SYMBOL(preempt_schedule);
+  * Note, that this is called and return with irqs disabled. This will
+  * protect us against recursive calling from irq.
+  */
+-asmlinkage void __sched preempt_schedule_irq(void)
++asmlinkage __visible void __sched preempt_schedule_irq(void)
+ {
+ 	enum ctx_state prev_state;
+ 
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 33e4648..92f24f5 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -223,7 +223,7 @@ static inline bool lockdep_softirq_start(void) { return false; }
+ static inline void lockdep_softirq_end(bool in_hardirq) { }
  #endif
+ 
+-asmlinkage void __do_softirq(void)
++asmlinkage __visible void __do_softirq(void)
+ {
+ 	unsigned long end = jiffies + MAX_SOFTIRQ_TIME;
+ 	unsigned long old_flags = current->flags;
+@@ -299,7 +299,7 @@ restart:
+ 	tsk_restore_flags(current, old_flags, PF_MEMALLOC);
  }
  
--asmlinkage void __attribute__((weak)) smp_thermal_interrupt(void)
-+asmlinkage __visible void __attribute__((weak)) smp_thermal_interrupt(void)
+-asmlinkage void do_softirq(void)
++asmlinkage __visible void do_softirq(void)
  {
- }
- 
--asmlinkage void __attribute__((weak)) smp_threshold_interrupt(void)
-+asmlinkage __visible void __attribute__((weak)) smp_threshold_interrupt(void)
- {
- }
- 
-diff --git a/arch/x86/kernel/vsmp_64.c b/arch/x86/kernel/vsmp_64.c
-index 5edc34b..b99b9ad 100644
---- a/arch/x86/kernel/vsmp_64.c
-+++ b/arch/x86/kernel/vsmp_64.c
-@@ -36,7 +36,7 @@ static int irq_routing_comply = 1;
-  * and vice versa.
-  */
- 
--asmlinkage unsigned long vsmp_save_fl(void)
-+asmlinkage __visible unsigned long vsmp_save_fl(void)
- {
- 	unsigned long flags = native_save_fl();
- 
-@@ -56,7 +56,7 @@ __visible void vsmp_restore_fl(unsigned long flags)
- }
- PV_CALLEE_SAVE_REGS_THUNK(vsmp_restore_fl);
- 
--asmlinkage void vsmp_irq_disable(void)
-+asmlinkage __visible void vsmp_irq_disable(void)
- {
- 	unsigned long flags = native_save_fl();
- 
-@@ -64,7 +64,7 @@ asmlinkage void vsmp_irq_disable(void)
- }
- PV_CALLEE_SAVE_REGS_THUNK(vsmp_irq_disable);
- 
--asmlinkage void vsmp_irq_enable(void)
-+asmlinkage __visible void vsmp_irq_enable(void)
- {
- 	unsigned long flags = native_save_fl();
- 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 8b8fc0b..b6c0bac 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -280,7 +280,7 @@ int kvm_set_apic_base(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
- }
- EXPORT_SYMBOL_GPL(kvm_set_apic_base);
- 
--asmlinkage void kvm_spurious_fault(void)
-+asmlinkage __visible void kvm_spurious_fault(void)
- {
- 	/* Fault while not rebooting.  We want the trace. */
- 	BUG();
-diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
-index ad1fb5f..aae9413 100644
---- a/arch/x86/lguest/boot.c
-+++ b/arch/x86/lguest/boot.c
-@@ -233,13 +233,13 @@ static void lguest_end_context_switch(struct task_struct *next)
-  * flags word contains all kind of stuff, but in practice Linux only cares
-  * about the interrupt flag.  Our "save_flags()" just returns that.
-  */
--asmlinkage unsigned long lguest_save_fl(void)
-+asmlinkage __visible unsigned long lguest_save_fl(void)
- {
- 	return lguest_data.irq_enabled;
- }
- 
- /* Interrupts go off... */
--asmlinkage void lguest_irq_disable(void)
-+asmlinkage __visible void lguest_irq_disable(void)
- {
- 	lguest_data.irq_enabled = 0;
- }
-diff --git a/arch/x86/math-emu/errors.c b/arch/x86/math-emu/errors.c
-index a544908..9e6545f 100644
---- a/arch/x86/math-emu/errors.c
-+++ b/arch/x86/math-emu/errors.c
-@@ -302,7 +302,7 @@ static struct {
- 	      0x242  in div_Xsig.S
-  */
- 
--asmlinkage void FPU_exception(int n)
-+asmlinkage __visible void FPU_exception(int n)
- {
- 	int i, int_type;
- 
-@@ -492,7 +492,7 @@ int real_2op_NaN(FPU_REG const *b, u_char tagb,
- 
- /* Invalid arith operation on Valid registers */
- /* Returns < 0 if the exception is unmasked */
--asmlinkage int arith_invalid(int deststnr)
-+asmlinkage __visible int arith_invalid(int deststnr)
- {
- 
- 	EXCEPTION(EX_Invalid);
-@@ -507,7 +507,7 @@ asmlinkage int arith_invalid(int deststnr)
- }
- 
- /* Divide a finite number by zero */
--asmlinkage int FPU_divide_by_zero(int deststnr, u_char sign)
-+asmlinkage __visible int FPU_divide_by_zero(int deststnr, u_char sign)
- {
- 	FPU_REG *dest = &st(deststnr);
- 	int tag = TAG_Valid;
-@@ -539,7 +539,7 @@ int set_precision_flag(int flags)
- }
- 
- /* This may be called often, so keep it lean */
--asmlinkage void set_precision_flag_up(void)
-+asmlinkage __visible void set_precision_flag_up(void)
- {
- 	if (control_word & CW_Precision)
- 		partial_status |= (SW_Precision | SW_C1);	/* The masked response */
-@@ -548,7 +548,7 @@ asmlinkage void set_precision_flag_up(void)
- }
- 
- /* This may be called often, so keep it lean */
--asmlinkage void set_precision_flag_down(void)
-+asmlinkage __visible void set_precision_flag_down(void)
- {
- 	if (control_word & CW_Precision) {	/* The masked response */
- 		partial_status &= ~SW_C1;
-@@ -557,7 +557,7 @@ asmlinkage void set_precision_flag_down(void)
- 		EXCEPTION(EX_Precision);
- }
- 
--asmlinkage int denormal_operand(void)
-+asmlinkage __visible int denormal_operand(void)
- {
- 	if (control_word & CW_Denormal) {	/* The masked response */
- 		partial_status |= SW_Denorm_Op;
-@@ -568,7 +568,7 @@ asmlinkage int denormal_operand(void)
- 	}
- }
- 
--asmlinkage int arith_overflow(FPU_REG *dest)
-+asmlinkage __visible int arith_overflow(FPU_REG *dest)
- {
- 	int tag = TAG_Valid;
- 
-@@ -596,7 +596,7 @@ asmlinkage int arith_overflow(FPU_REG *dest)
- 
- }
- 
--asmlinkage int arith_underflow(FPU_REG *dest)
-+asmlinkage __visible int arith_underflow(FPU_REG *dest)
- {
- 	int tag = TAG_Valid;
- 
-diff --git a/arch/x86/platform/olpc/olpc-xo1-pm.c b/arch/x86/platform/olpc/olpc-xo1-pm.c
-index ff0174d..a9acde7 100644
---- a/arch/x86/platform/olpc/olpc-xo1-pm.c
-+++ b/arch/x86/platform/olpc/olpc-xo1-pm.c
-@@ -75,7 +75,7 @@ static int xo1_power_state_enter(suspend_state_t pm_state)
- 	return 0;
- }
- 
--asmlinkage int xo1_do_sleep(u8 sleep_state)
-+asmlinkage __visible int xo1_do_sleep(u8 sleep_state)
- {
- 	void *pgd_addr = __va(read_cr3());
- 
-diff --git a/arch/x86/power/hibernate_64.c b/arch/x86/power/hibernate_64.c
-index 304fca2..35e2bb6 100644
---- a/arch/x86/power/hibernate_64.c
-+++ b/arch/x86/power/hibernate_64.c
-@@ -23,7 +23,7 @@
- extern __visible const void __nosave_begin, __nosave_end;
- 
- /* Defined in hibernate_asm_64.S */
--extern asmlinkage int restore_image(void);
-+extern asmlinkage __visible int restore_image(void);
- 
- /*
-  * Address to jump to in the last phase of restore in order to get to the image
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 201d09a..c34bfc4 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1515,7 +1515,7 @@ static void __init xen_pvh_early_guest_init(void)
- }
- 
- /* First C function to be called on Xen boot */
--asmlinkage void __init xen_start_kernel(void)
-+asmlinkage __visible void __init xen_start_kernel(void)
- {
- 	struct physdev_set_iopl set_iopl;
- 	int rc;
-diff --git a/arch/x86/xen/irq.c b/arch/x86/xen/irq.c
-index 08f763d..a1207cb 100644
---- a/arch/x86/xen/irq.c
-+++ b/arch/x86/xen/irq.c
-@@ -23,7 +23,7 @@ void xen_force_evtchn_callback(void)
- 	(void)HYPERVISOR_xen_version(0, NULL);
- }
- 
--asmlinkage unsigned long xen_save_fl(void)
-+asmlinkage __visible unsigned long xen_save_fl(void)
- {
- 	struct vcpu_info *vcpu;
+ 	__u32 pending;
  	unsigned long flags;
-@@ -63,7 +63,7 @@ __visible void xen_restore_fl(unsigned long flags)
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_restore_fl);
+diff --git a/lib/dump_stack.c b/lib/dump_stack.c
+index f23b63f..6745c62 100644
+--- a/lib/dump_stack.c
++++ b/lib/dump_stack.c
+@@ -23,7 +23,7 @@ static void __dump_stack(void)
+ #ifdef CONFIG_SMP
+ static atomic_t dump_lock = ATOMIC_INIT(-1);
  
--asmlinkage void xen_irq_disable(void)
-+asmlinkage __visible void xen_irq_disable(void)
+-asmlinkage void dump_stack(void)
++asmlinkage __visible void dump_stack(void)
  {
- 	/* There's a one instruction preempt window here.  We need to
- 	   make sure we're don't switch CPUs between getting the vcpu
-@@ -74,7 +74,7 @@ asmlinkage void xen_irq_disable(void)
+ 	int was_locked;
+ 	int old;
+@@ -55,7 +55,7 @@ retry:
+ 	preempt_enable();
  }
- PV_CALLEE_SAVE_REGS_THUNK(xen_irq_disable);
- 
--asmlinkage void xen_irq_enable(void)
-+asmlinkage __visible void xen_irq_enable(void)
+ #else
+-asmlinkage void dump_stack(void)
++asmlinkage __visible void dump_stack(void)
  {
- 	struct vcpu_info *vcpu;
- 
+ 	__dump_stack();
+ }
