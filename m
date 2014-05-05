@@ -1,47 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801AbaEEHRo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 03:17:44 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38689 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754778AbaEEHRl (ORCPT
+	id S1754747AbaEEHV7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 03:21:59 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60287 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754660AbaEEHV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 03:17:41 -0400
-Message-ID: <1399274253.3871.3.camel@paszta.hi.pengutronix.de>
-Subject: Re: [PATCH 2/3] regulator: ltc3589: Add DT binding documentation
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Date: Mon, 05 May 2014 09:17:33 +0200
-In-Reply-To: <20140501180428.GO3245@sirena.org.uk>
-References: <1398789430-23897-1-git-send-email-p.zabel@pengutronix.de>
-	 <1398789430-23897-2-git-send-email-p.zabel@pengutronix.de>
-	 <20140501180428.GO3245@sirena.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 5 May 2014 03:21:57 -0400
+Date: Mon, 5 May 2014 09:21:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        rostedt@goodmis.org, Oleg Nesterov <oleg@redhat.com>,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, Linux Kernel <linux-kernel@vger.kernel.org>,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        linux-man@vger.kernel.org
+Subject: Re: sched_{set,get}attr() manpage
+Message-ID: <20140505072114.GY11096@twins.programming.kicks-ass.net>
+References: <CAKgNAkgw+U44SH0wd_06ZMXaCC9nCX4NZxZHkMKUdC7E7YxBhQ@mail.gmail.com>
+ <20140214161929.GL27965@twins.programming.kicks-ass.net>
+ <53020C9D.1050208@gmail.com>
+ <20140428081858.GX13658@twins.programming.kicks-ass.net>
+ <535FA467.2070403@gmail.com>
+ <20140429160441.GU11096@twins.programming.kicks-ass.net>
+ <5360D9E5.9080206@gmail.com>
+ <20140430130937.GH30445@twins.programming.kicks-ass.net>
+ <20140503124355.5d927080518051ca507bc381@gmail.com>
+ <536735E0.7020204@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8bBEDOJVaa9YlTAt"
+Content-Disposition: inline
+In-Reply-To: <536735E0.7020204@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 01.05.2014, 11:04 -0700 schrieb Mark Brown:
-> On Tue, Apr 29, 2014 at 06:37:09PM +0200, Philipp Zabel wrote:
-> > This patch adds the device tree binding documentation for Linear
-> > Technology LTC3589, LTC3589-1, and LTC3589-2 8-port regulators.
-> 
-> This is all good apart from the vendor prefix change thing.
 
-Thanks, I'll change that and resubmit.
+--8bBEDOJVaa9YlTAt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-regards
-Philipp
+On Mon, May 05, 2014 at 08:55:28AM +0200, Michael Kerrisk (man-pages) wrote:
+> Hi Peter,
+>=20
+> Looks like a good set of comments from Juri. Could you revise and=20
+> resubmit?
 
+Yeah, I'll try and get it done today, but there's a few icky bugs
+waiting for my attention as well, I'll do me bestest :-)
+
+> By the way, I assume you are just writing this page as raw text.
+> While I'd prefer to get proper man markup source, I'll add that
+> if you if you don't :-/.=20
+
+Well, learning *roff will likely take me more time than writing this
+text + all revisions so far :/ But yeah, I appreciate the grief.
+
+Is there a TeX variant one could use to generate the *roff muck? While
+my TeX isn't entirely fresh its at least something I've done lots of.
+
+> But, in that case, I need to know the
+> copyright and license you want to use. Please see
+> https://www.kernel.org/doc/man-pages/licenses.html
+
+GPLv2 + DOC (not v2+) sounds good.
+
+--8bBEDOJVaa9YlTAt
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTZzvkAAoJEHZH4aRLwOS6dioP/3vnUKo7cZ4mjrphiaN1YzqV
+a/YdxCb3LJ1XbNFr/eTW/XB1MGaXm8lWEI5CwKIM+2QnYJd2NNUa69DY3H1wAWBZ
+YDr5Tg9CH2LN7+bvPLE2UD+TS+MOOvMfS3A3bWZ3HByru99eOouarQwLYA8FXsPf
+wnql/6FcULcpuBen1xeZVusoljMoA8UbhbsrQ8InNYiFSBeoUDThDoNv9vIhSGov
+UksHZeRckZBNOFxTVJVCPf73o5/mXDYoJTZ3D+8WWO99pCeEsDfpo+VTquCxsNo4
+BXi5xCbH0YuAEyQBgkPwcwUWE1sjK35RPQpWXC303FcpM0iNJ4yKycyMEFtcaj2z
+ZMBlHnTNXTnLZFN2qPfXUEqqfeCbV04seJgeDHWUgqTiDDRZABa1e8Y2OamhFnJC
+rCA1SmE1/ejZwh+hj5CFLZlwLiLjN0sxRhMSuOgGTQmoME+SNJBlsG6iLPHDtSlM
+EC7AFKGe9PdGiCfwO3loLQXmE4MfTCp0YPCkrpT/XL+f4WRzm+6G0IQt+X4pGnyR
+s9IpSFujEdvFVVkUy1hwLSkc8dxos7EnRgTOeI/fuJknFIHQZHsdgdum591bgJ+P
+tnTppxET6rZaLwm54LhwM08ZzfhkajVbVwkgidNN3j0aRTJ1zFwYS9lPrXogeVCR
+ijKIGCvoaxkQ8SdqWwem
+=9Rws
+-----END PGP SIGNATURE-----
+
+--8bBEDOJVaa9YlTAt--
