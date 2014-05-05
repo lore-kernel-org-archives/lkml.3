@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933282AbaEEXbZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 19:31:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53627 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756771AbaEEXbY (ORCPT
+	id S933229AbaEEXd4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 19:33:56 -0400
+Received: from smtprelay0046.hostedemail.com ([216.40.44.46]:59950 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932931AbaEEXdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 19:31:24 -0400
-Date: Mon, 5 May 2014 16:31:23 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        torvalds@linux-foundation.org, mgorman@suse.de, hpa@zytor.com,
-        mingo@kernel.org, steven@uplinklabs.net, riel@redhat.com,
-        david.vrabel@citrix.com, peterz@infradead.org, xemul@parallels.com
-Subject: Re: [patch 2/2] mm: pgtable -- Require X86_64 for soft-dirty
- tracker
-Message-Id: <20140505163123.65e6f8853cdf0646f26bd5b4@linux-foundation.org>
-In-Reply-To: <20140425082042.848656782@openvz.org>
-References: <20140425081030.185969086@openvz.org>
-	<20140425082042.848656782@openvz.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Mon, 5 May 2014 19:33:54 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:69:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3872:3874:4321:4837:5007:7652:7903:10004:10400:10848:11026:11232:11473:11658:11914:12043:12291:12296:12517:12519:12683:12740:13069:13255:13311:13357:13868,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fruit94_79297c3765506
+X-Filterd-Recvd-Size: 1753
+Message-ID: <1399332831.27516.6.camel@joe-AO725>
+Subject: Re: [PATCH] printk: Remove separate printk_sched buffers and use
+ printk buf instead
+From: Joe Perches <joe@perches.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, pmladek@suse.cz,
+        Jan Kara <jack@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Mon, 05 May 2014 16:33:51 -0700
+In-Reply-To: <20140505191846.35aa6f9b@gandalf.local.home>
+References: <20140505191846.35aa6f9b@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Apr 2014 12:10:32 +0400 Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+On Mon, 2014-05-05 at 19:18 -0400, Steven Rostedt wrote:
+> To prevent deadlocks with doing a printk inside the scheduler,
+> printk_sched() was created. The issue is that printk has a console_sem
+> that it can grab and release. The release does a wake up if there's a
+> task pending on the sem, and this wake up grabs the rq locks that is
+> held in the scheduler. This leads to a possible deadlock if the wake up
+> uses the same rq as the one with the rq lock held already.
+[]
+>  kernel/printk/printk.c |   87 +++++++++++++++++++++++++++++++------------------
+[]
+> @@ -2440,18 +2470,20 @@
+>  #define PRINTK_BUF_SIZE		512
 
-> Tracking dirty status on 2 level pages requires very ugly macros
-> and taking into account how old the machines who can operate
-> without PAE mode only are, lets drop soft dirty tracker from
-> them for code simplicity (note I can't drop all the macros
-> from 2 level pages by now since _PAGE_BIT_PROTNONE and
-> _PAGE_BIT_FILE are still used even without tracker).
-> 
-> Linus proposed to completely rip off softdirty support on
-> x86-32 (even with PAE) and since for CRIU we're not planning
-> to support native x86-32 mode, lets do that.
-> 
-> (Softdirty tracker is relatively new feature which mostly used
->  by CRIU so I don't expect if such API change would cause problems
->  on userspace).
+Wouldn't this define be unused and shouldn't it be deleted too?
 
-i386 allnoconfig:
-
-In file included from /usr/src/25/arch/x86/include/asm/pgtable.h:886,
-                 from include/linux/mm.h:51,
-                 from include/linux/suspend.h:8,
-                 from arch/x86/kernel/asm-offsets.c:12:
-include/asm-generic/pgtable.h:414: error: redefinition of 'pte_soft_dirty'
-/usr/src/25/arch/x86/include/asm/pgtable.h:300: note: previous definition of 'pte_soft_dirty' was here
-include/asm-generic/pgtable.h:419: error: redefinition of 'pmd_soft_dirty'
-/usr/src/25/arch/x86/include/asm/pgtable.h:305: note: previous definition of 'pmd_soft_dirty' was here
-include/asm-generic/pgtable.h:424: error: redefinition of 'pte_mksoft_dirty'
-/usr/src/25/arch/x86/include/asm/pgtable.h:310: note: previous definition of 'pte_mksoft_dirty' was here
-include/asm-generic/pgtable.h:429: error: redefinition of 'pmd_mksoft_dirty'
-/usr/src/25/arch/x86/include/asm/pgtable.h:315: note: previous definition of 'pmd_mksoft_dirty' was here
-include/asm-generic/pgtable.h:434: error: redefinition of 'pte_swp_mksoft_dirty'
-/usr/src/25/arch/x86/include/asm/pgtable.h:868: note: previous definition of 'pte_swp_mksoft_dirty' was here
-include/asm-generic/pgtable.h:439: error: redefinition of 'pte_swp_soft_dirty'
-/usr/src/25/arch/x86/include/asm/pgtable.h:874: note: previous definition of 'pte_swp_soft_dirty' was here
-include/asm-generic/pgtable.h:444: error: redefinition of 'pte_swp_clear_soft_dirty'
-/usr/src/25/arch/x86/include/asm/pgtable.h:880: note: previous definition of 'pte_swp_clear_soft_dirty' was here
-include/asm-generic/pgtable.h:449: error: redefinition of 'pte_file_clear_soft_dirty'
-/usr/src/25/arch/x86/include/asm/pgtable.h:320: note: previous definition of 'pte_file_clear_soft_dirty' was here
-include/asm-generic/pgtable.h:454: error: redefinition of 'pte_file_mksoft_dirty'
-/usr/src/25/arch/x86/include/asm/pgtable.h:325: note: previous definition of 'pte_file_mksoft_dirty' was here
-include/asm-generic/pgtable.h:459: error: redefinition of 'pte_file_soft_dirty'
-/usr/src/25/arch/x86/include/asm/pgtable.h:330: note: previous definition of 'pte_file_soft_dirty' was here
 
