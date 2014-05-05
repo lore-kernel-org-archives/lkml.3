@@ -1,78 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884AbaEERgv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 13:36:51 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:13496 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751962AbaEERgt (ORCPT
+	id S1755917AbaEERhJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 13:37:09 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:54164 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962AbaEERhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 13:36:49 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AoEJAOLKZ1NbsEtU/2dsb2JhbABZgwarUQcBAgUBmgyBFxd0gmYcIxiBAiQTiEUBzAuFVoh8hEYBA48aihkBknSDNjs
-Date: Mon, 5 May 2014 19:36:47 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] kernel/compat.c: use sizeof() instead of sizeof
-Message-Id: <20140505193647.f593a799e94e87263d18202d@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 5 May 2014 13:37:05 -0400
+Date: Mon, 5 May 2014 13:37:01 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/1] kernel/cgroup.c: replace pr_warning by pr_warn
+Message-ID: <20140505173701.GN11231@htj.dyndns.org>
+References: <20140505193517.e8f4be9e4f9866ffcfa3de28@skynet.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140505193517.e8f4be9e4f9866ffcfa3de28@skynet.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix 4 checkpatch warnings
-WARNING: sizeof *tv should be sizeof(*tv)
+On Mon, May 05, 2014 at 07:35:17PM +0200, Fabian Frederick wrote:
+> This patch also fixes 2 kernel-doc warnings.
 
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- kernel/compat.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+cgroup/for-3.16 already has a patch to convert to pr_warn().  Can you
+please separate out the kdoc fixes?
 
-diff --git a/kernel/compat.c b/kernel/compat.c
-index e40b043..633394f 100644
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -157,7 +157,7 @@ static int __compat_put_timespec(const struct timespec *ts, struct compat_timesp
- int compat_get_timeval(struct timeval *tv, const void __user *utv)
- {
- 	if (COMPAT_USE_64BIT_TIME)
--		return copy_from_user(tv, utv, sizeof *tv) ? -EFAULT : 0;
-+		return copy_from_user(tv, utv, sizeof(*tv)) ? -EFAULT : 0;
- 	else
- 		return __compat_get_timeval(tv, utv);
- }
-@@ -166,7 +166,7 @@ EXPORT_SYMBOL_GPL(compat_get_timeval);
- int compat_put_timeval(const struct timeval *tv, void __user *utv)
- {
- 	if (COMPAT_USE_64BIT_TIME)
--		return copy_to_user(utv, tv, sizeof *tv) ? -EFAULT : 0;
-+		return copy_to_user(utv, tv, sizeof(*tv)) ? -EFAULT : 0;
- 	else
- 		return __compat_put_timeval(tv, utv);
- }
-@@ -175,7 +175,7 @@ EXPORT_SYMBOL_GPL(compat_put_timeval);
- int compat_get_timespec(struct timespec *ts, const void __user *uts)
- {
- 	if (COMPAT_USE_64BIT_TIME)
--		return copy_from_user(ts, uts, sizeof *ts) ? -EFAULT : 0;
-+		return copy_from_user(ts, uts, sizeof(*ts)) ? -EFAULT : 0;
- 	else
- 		return __compat_get_timespec(ts, uts);
- }
-@@ -184,7 +184,7 @@ EXPORT_SYMBOL_GPL(compat_get_timespec);
- int compat_put_timespec(const struct timespec *ts, void __user *uts)
- {
- 	if (COMPAT_USE_64BIT_TIME)
--		return copy_to_user(uts, ts, sizeof *ts) ? -EFAULT : 0;
-+		return copy_to_user(uts, ts, sizeof(*ts)) ? -EFAULT : 0;
- 	else
- 		return __compat_put_timespec(ts, uts);
- }
+Thanks.
+
 -- 
-1.9.1
+tejun
