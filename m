@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672AbaEEHHO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 03:07:14 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:39520 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754473AbaEEHHM (ORCPT
+	id S1754739AbaEEHKq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 03:10:46 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:52718 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754473AbaEEHKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 03:07:12 -0400
+	Mon, 5 May 2014 03:10:44 -0400
 MIME-Version: 1.0
-X-Originating-IP: [178.145.152.36]
-In-Reply-To: <20140502165105.GD20642@arm.com>
-References: <CAFrcx1nfkDWTu9vF+a7UGjd1fzHpXS44pzqKLZS9ej7KJwqkOg@mail.gmail.com>
-	<1398690730-5454-1-git-send-email-jean.pihet@linaro.org>
-	<CAFrcx1kQO5i+kQwDizT1F4asbFNGiDSDWt0ubnpS92fU1PBiHw@mail.gmail.com>
-	<20140502165105.GD20642@arm.com>
-Date: Mon, 5 May 2014 09:07:11 +0200
-Message-ID: <CAORVsuV5qYKLd21YSJhLy7Ovi5s4sXUEgbNot7LJspNnbdBpFw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] perf tests: Introduce perf_regs_load function on ARM64
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Jean Pihet <jean.pihet@linaro.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Steve Capper <steve.capper@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Patch Tracking <patches@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+In-Reply-To: <20140505041721.GD11606@lukather>
+References: <1398705774-12361-1-git-send-email-maxime.ripard@free-electrons.com>
+	<20140429183758.GH15125@sirena.org.uk>
+	<20140430180609.GC3000@lukather>
+	<20140501011811.GF3245@sirena.org.uk>
+	<20140501223629.GJ3000@lukather>
+	<CAMuHMdUWa1_n94sDvv=L_goc+SOnD9CAKi5DzifrY7GWYRdQmw@mail.gmail.com>
+	<20140505041721.GD11606@lukather>
+Date: Mon, 5 May 2014 09:10:43 +0200
+X-Google-Sender-Auth: tcUAwlccfrRS5ijP3akiqxqoYLQ
+Message-ID: <CAMuHMdWZ1rvC+tkT=CbfMwZtppyJ_KpzT7JrLd5k5P2oxzA+8g@mail.gmail.com>
+Subject: Re: [PATCH] spi: Force the registration of the spidev devices
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Mark Brown <broonie@kernel.org>, linux-spi <linux-spi@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+Hi Maxime,
 
-On Fri, May 2, 2014 at 6:51 PM, Will Deacon <will.deacon@arm.com> wrote:
-> On Fri, May 02, 2014 at 10:19:38AM +0100, Jean Pihet wrote:
->> Hi WIll, Mark,
+On Mon, May 5, 2014 at 6:17 AM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> On Fri, May 02, 2014 at 01:28:26AM +0200, Geert Uytterhoeven wrote:
+>> On Fri, May 2, 2014 at 12:36 AM, Maxime Ripard
+>> <maxime.ripard@free-electrons.com> wrote:
+>> > But it actually doesn't work in a case where you can't really predict
+>> > what is on the other side of the bus. Either because, on the board
+>> > you're using the pins are exposed and it's pretty much up to the user
+>> > to know what to put on it. That could be handled by DT overlays
+>> > though.
+>> >
+>> > What never works is where the device on the other side is so generic
+>> > that you really can't tell what it does. Think of a microcontroller
+>> > that would behave as a SPI slave. It's behaviour and what it does is
+>> > pretty much dependant of what we flashed on it, and suddenly the
+>> > compatible string is not the proper reprensentation anymore.
 >>
->> Ping on this series. Can you please check? Is the refreshed patch OK?
+>> So you will (hopefully soon) use overlay DT to change the DTS to match what's
+>> connected?
 >
-> Fine by me, as long as it's not reused outside of this test :)
-Great! Is there some precaution to avoid a mis-reuse?
+> Not really, because you can't declare a spidev device in the DT.
 
-Other than that, which tree are the patches going to?
+Yes you can. I've done it before.
 
-Cheers,
-Jean
+See also "git grep -w spidev -- arch/arm/*/dts/".
 
+>> And then you want spidev to bind to it. Would it help if DT offered a feature
+>> to add a compatible entry to a driver at runtime, cfr.
+>> /sys/bus/pci/drivers/.../new_id on PCI?
 >
-> Will
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> The thing is, in the core SPI bus, devices are only instiated (in the
+> DT case), by parsing the DT. So, to bind a device to a new driver, it
+> has to exist in the first place, and it won't exist, because there
+> won't be any node in the DT for this device. But since DT is
+> unsuitable for such a device, you go back to where we were initially.
+
+So you add a node in the overlay DT? Or what am I missing?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
