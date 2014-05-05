@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932956AbaEEOXj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 10:23:39 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:60518 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932636AbaEEOXh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 10:23:37 -0400
+	id S932986AbaEEOXp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 10:23:45 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40155 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932636AbaEEOXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 10:23:40 -0400
+Message-ID: <53679EA0.3050606@ti.com>
+Date: Mon, 5 May 2014 19:52:24 +0530
+From: Mugunthan V N <mugunthanvnm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <CAKohpon-KZpSJK7PxpLjZS7sVPcYraDxb4oJHN6dxSagD+F--Q@mail.gmail.com>
-References: <000001cf643d$69e5e350$3db1a9f0$@samsung.com>
-	<CAOh2x=m8DzmLOGqL0E_seOZMuzU=O9vQuu-JEp+E5454RmfEXw@mail.gmail.com>
-	<003901cf6664$e4e8d2a0$aeba77e0$@samsung.com>
-	<CAKohpon7W726Hxj5OJ6SnmPz3gYhAeBRr1wS3SCa3F2hSLriLQ@mail.gmail.com>
-	<5367946F.1030407@ti.com>
-	<CAKohpon-KZpSJK7PxpLjZS7sVPcYraDxb4oJHN6dxSagD+F--Q@mail.gmail.com>
-Date: Mon, 5 May 2014 09:23:36 -0500
-X-Google-Sender-Auth: nujfjDj_6fDV-aEDWK7Gxfk3TgI
-Message-ID: <CAGo_u6pUVeMM9mqe5htvM1X_4pkRGEUVOA2ty4ZPfUyLcLZkrw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] PM / OPP: Add support for descending order for
- cpufreq table
-From: Nishanth Menon <nm@ti.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: George Cherian <george.cherian@ti.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>
+CC: <davem@davemloft.net>, <richardcochran@gmail.com>,
+        <jeffrey.t.kirsher@intel.com>, <dborkman@redhat.com>,
+        <ast@plumgrid.com>, <tklauser@distanz.ch>, <mpa@pengutronix.de>,
+        <bhutchings@solarflare.com>, <zonque@gmail.com>, <balbi@ti.com>,
+        <t-kristo@ti.com>, <mturquette@linaro.org>, <linux@arm.linux.org.uk>,
+        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
+        <tony@atomide.com>, <bcousson@baylibre.com>
+Subject: Re: [PATCH v2 0/6] Add CPTS support for AM437x
+References: <1399012324-20737-1-git-send-email-george.cherian@ti.com>
+In-Reply-To: <1399012324-20737-1-git-send-email-george.cherian@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 5, 2014 at 9:14 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+On Friday 02 May 2014 12:01 PM, George Cherian wrote:
+> The series adds CPTS support for AM4372.
 >
-> To be precise, for exynos they need the position of a frequency when
-> it is arranged in descending order. And they will simply write this position
-> in their clock controller later. For example, if frequencies are:
-> 100 MHz, 200, 300, 400, 500, 600
+> Patch 1 - DT changes w.r.t clock changes for AM33xx.
+> Patch 2 - CPTS clock name harcoding in the driver is removed. 
+> 	  Easier to pass the clock name from dt rather than hardcoding in driver.
+> 	  Also in prepration for DRA7x CPTS support.
+> Patch 3 - Enable the CPTS support for both DRA7x and AM4372 in the driver.
+> Patch 4 - Enable the Annexe F for L2 PTP for AM437x and DRA7x.
+> Patch 5 - Change the default clocksource to dpll_core_m5 
+> Patch 6 - DT changes for AM4372.
 >
-> Then they need to write 1 for 600, 2 for 500, 3 for 400, and so on..
-> I am not able to imaging how ceil/floor would help here.
+>
+> v1 -> v2
+> 	Patch 1 and 2 Re-ordering.
+> 	Seperate TS_BITS define for Hw version V2 and V3
+>
+> George Cherian (6):
+>   ARM: dts: am33xx: Add clock names for cpsw and cpts
+>   drivers: net: cpts: Remove hardcoded clock name for CPTS
+>   drivers: net: cpsw: Enable CPTS for DRA7xx and AM4372
+>   drivers: net: cpsw: Enable Annexe F Time sync
+>   ARM: AM43xx: clk: Change the cpts ref clock source to dpll_core_m5 clk
+>   ARM: dts: am4372: Add clock names for cpsw and cpts
+>
+>  arch/arm/boot/dts/am33xx.dtsi  |  2 ++
+>  arch/arm/boot/dts/am4372.dtsi  |  2 ++
+>  drivers/clk/ti/clk-43xx.c      | 16 ++++++++++++
+>  drivers/net/ethernet/ti/cpsw.c | 56 +++++++++++++++++++++++++++++++-----------
+>  drivers/net/ethernet/ti/cpts.c | 11 +++------
+>  5 files changed, 66 insertions(+), 21 deletions(-)
+>
 
-ceil and floor allows us to walk down the opp entries the direction we
-want it to.
-one can convert that data any way one wants it - especially when custom
-mapping such as this is desired.
+Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
 
-Regards,
-Nishanth Menon
+Regards
+Mugunthan V N
