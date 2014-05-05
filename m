@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090AbaEERgi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 13:36:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3673 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755853AbaEERgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 13:36:36 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@suse.de>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 12/12] perf tools: Move ACCESS_ONCE from perf.h header
-Date: Mon,  5 May 2014 19:35:48 +0200
-Message-Id: <1399311348-28152-13-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1399311348-28152-1-git-send-email-jolsa@kernel.org>
-References: <1399311348-28152-1-git-send-email-jolsa@kernel.org>
+	id S1755884AbaEERgv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 13:36:51 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:13496 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751962AbaEERgt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 13:36:49 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoEJAOLKZ1NbsEtU/2dsb2JhbABZgwarUQcBAgUBmgyBFxd0gmYcIxiBAiQTiEUBzAuFVoh8hEYBA48aihkBknSDNjs
+Date: Mon, 5 May 2014 19:36:47 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] kernel/compat.c: use sizeof() instead of sizeof
+Message-Id: <20140505193647.f593a799e94e87263d18202d@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Into tools/include/linux/compiler.h header.
+Fix 4 checkpatch warnings
+WARNING: sizeof *tv should be sizeof(*tv)
 
-Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-9sk90owm370kuq3f0ssjjui2@git.kernel.org
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- tools/include/linux/compiler.h | 2 ++
- tools/perf/perf.h              | 2 --
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/compat.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/tools/include/linux/compiler.h b/tools/include/linux/compiler.h
-index fbc6665..88461f0 100644
---- a/tools/include/linux/compiler.h
-+++ b/tools/include/linux/compiler.h
-@@ -35,4 +35,6 @@
- # define unlikely(x)		__builtin_expect(!!(x), 0)
- #endif
- 
-+#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
-+
- #endif /* _TOOLS_LINUX_COMPILER_H */
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 813571b..510c65f 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -14,8 +14,6 @@ void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
- #define HAVE_ATTR_TEST
- #include "perf-sys.h"
- 
--#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
--
- #ifndef NSEC_PER_SEC
- # define NSEC_PER_SEC			1000000000ULL
- #endif
+diff --git a/kernel/compat.c b/kernel/compat.c
+index e40b043..633394f 100644
+--- a/kernel/compat.c
++++ b/kernel/compat.c
+@@ -157,7 +157,7 @@ static int __compat_put_timespec(const struct timespec *ts, struct compat_timesp
+ int compat_get_timeval(struct timeval *tv, const void __user *utv)
+ {
+ 	if (COMPAT_USE_64BIT_TIME)
+-		return copy_from_user(tv, utv, sizeof *tv) ? -EFAULT : 0;
++		return copy_from_user(tv, utv, sizeof(*tv)) ? -EFAULT : 0;
+ 	else
+ 		return __compat_get_timeval(tv, utv);
+ }
+@@ -166,7 +166,7 @@ EXPORT_SYMBOL_GPL(compat_get_timeval);
+ int compat_put_timeval(const struct timeval *tv, void __user *utv)
+ {
+ 	if (COMPAT_USE_64BIT_TIME)
+-		return copy_to_user(utv, tv, sizeof *tv) ? -EFAULT : 0;
++		return copy_to_user(utv, tv, sizeof(*tv)) ? -EFAULT : 0;
+ 	else
+ 		return __compat_put_timeval(tv, utv);
+ }
+@@ -175,7 +175,7 @@ EXPORT_SYMBOL_GPL(compat_put_timeval);
+ int compat_get_timespec(struct timespec *ts, const void __user *uts)
+ {
+ 	if (COMPAT_USE_64BIT_TIME)
+-		return copy_from_user(ts, uts, sizeof *ts) ? -EFAULT : 0;
++		return copy_from_user(ts, uts, sizeof(*ts)) ? -EFAULT : 0;
+ 	else
+ 		return __compat_get_timespec(ts, uts);
+ }
+@@ -184,7 +184,7 @@ EXPORT_SYMBOL_GPL(compat_get_timespec);
+ int compat_put_timespec(const struct timespec *ts, void __user *uts)
+ {
+ 	if (COMPAT_USE_64BIT_TIME)
+-		return copy_to_user(uts, ts, sizeof *ts) ? -EFAULT : 0;
++		return copy_to_user(uts, ts, sizeof(*ts)) ? -EFAULT : 0;
+ 	else
+ 		return __compat_put_timespec(ts, uts);
+ }
 -- 
-1.8.3.1
-
+1.9.1
