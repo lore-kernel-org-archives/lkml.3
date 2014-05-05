@@ -1,75 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944AbaEES15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 14:27:57 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:40937 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877AbaEES1z (ORCPT
+	id S1751208AbaEESbJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 14:31:09 -0400
+Received: from forward7l.mail.yandex.net ([84.201.143.140]:50687 "EHLO
+	forward7l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbaEESbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 14:27:55 -0400
-Date: Mon, 5 May 2014 20:27:50 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        peter@hurleysoftware.com, jason.low2@hp.com, riel@redhat.com,
-        alex.shi@linaro.org, paulmck@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, tglx@linutronix.de, walken@google.com,
-        davidlohr@hp.com, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [tip:locking/core] rwsem: Add comments to explain the meaning of
- the rwsem's count field
-Message-ID: <20140505182750.GA14826@gmail.com>
-References: <1399060437.2970.146.camel@schen9-DESK>
- <tip-3cf2f34e1a3d4d5ff209d087925cf950e52f4805@git.kernel.org>
- <1399305808.2970.186.camel@schen9-DESK>
- <20140505172611.GA7154@gmail.com>
- <1399314085.2970.205.camel@schen9-DESK>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399314085.2970.205.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 5 May 2014 14:31:07 -0400
+X-Yandex-Uniq: 2aa8a95c-1f86-4dc7-b91f-7716f6730434
+Authentication-Results: smtp11.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <1399314660.6978.3.camel@localhost.localdomain>
+Subject: Re: [RFC] rtmutex: Do not boost fair tasks each other
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>
+Date: Mon, 05 May 2014 22:31:00 +0400
+In-Reply-To: <alpine.DEB.2.02.1405032041460.6261@ionos.tec.linutronix.de>
+References: <5362122B.8060305@yandex.ru>
+	 <alpine.DEB.2.02.1405032041460.6261@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.0-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Tim Chen <tim.c.chen@linux.intel.com> wrote:
-
-> On Mon, 2014-05-05 at 19:26 +0200, Ingo Molnar wrote:
-> > * Tim Chen <tim.c.chen@linux.intel.com> wrote:
+В Сб, 03/05/2014 в 20:54 +0200, Thomas Gleixner пишет:
+> On Thu, 1 May 2014, Kirill Tkhai wrote:
+> > Higher priority does not provide exclusive privilege
+> > of one fair task over the other. In this case priority
+> > boosting looks excess.
 > > 
-> > > On Mon, 2014-05-05 at 01:46 -0700, tip-bot for Tim Chen wrote:
-> > > > Commit-ID:  3cf2f34e1a3d4d5ff209d087925cf950e52f4805
-> > > > Gitweb:     http://git.kernel.org/tip/3cf2f34e1a3d4d5ff209d087925cf950e52f4805
-> > > > Author:     Tim Chen <tim.c.chen@linux.intel.com>
-> > > > AuthorDate: Fri, 2 May 2014 12:53:57 -0700
-> > > > Committer:  Ingo Molnar <mingo@kernel.org>
-> > > > CommitDate: Sun, 4 May 2014 20:34:26 +0200
-> > > > 
-> > > 
-> > > Ingo,
-> > > 
-> > > Can you pick up this version of the patch instead.  I've updated the 
-> > > comments to reflect all cases for which the rwsem's count is less 
-> > > than WAITING_BIAS, as Peter has pointed out.
+> > On RT patch with enabled PREEMPT_RT_FULL I see a lot of
+> > rt_mutex_setprio() actions like
 > > 
-> > Please send a delta patch against the one I applied - and also the 
-> > state diagram suggestion with Peter, once it's clear what form it 
-> > should take. I've yet to see a state diagram that was inferior to 
-> > equivalent textual description - is this case an exception to that?
+> > 	120 -> 118
+> > 	118 -> 120
 > > 
+> > They harm RT tasks.
 > 
-> Ingo,
+> That's not the main problem. The point is that it is useless and
+> therefor harming performace and throughput as well.
+>  
+> > RT patch has lazy preemtion feature, so if idea is we care
+> > about excess preemption inside fair class, we should care
+> > about excess priority inheritance too.
+> > 
+> > In case of vanila kernel the problem is the same, but there
+> > are no so many rt mutexes. Do I skip anything?
 > 
-> The delta patch is included below.  Thinking a bit more,
-> the state diagram approach is not necessarily less verbose
-> because the state is a tuple (count, wait queue state).
-> After enumerating the states, we may wind up with very similar
-> to what I have.
+> Almost a decade ago we decided to do the boosting for everything
+> including SCHED_OTHER due to the very simple reason that exercising
+> that code path more is likely to trigger more bugs.
+>  
+> But yes in a production environment, it's pointless for SCHED_OTHER
+> tasks.
+> 
+> Though exercising that code path as much as we can is not a bad thing
+> either. So I'd like to see that made compile time conditional on one
+> of the lock testing CONFIG items.
+> 
+> And the patch should be made against mainline, where we have the same
+> issue (reduced to PI-futexes).
+> 
 
-Could we at least try with one diagram and see how it goes?
+How about this?
 
-Thanks,
+[PATCH] rtmutex: Do not boost owner's prio if waiter is SCHED_OTHER
 
-	Ingo
+Higher priority does not provide exclusive privilege
+of one fair class task over the other. In this case
+priority boosting is pointless, and it may worsen
+performance.
+
+This patch makes boosting, which is requested by fair
+class waiter, optional. It's disabled by default, but
+it's possible to enable it for debugging purposes to
+have more cases of priority inheritance.
+
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+---
+ kernel/locking/rtmutex.c | 27 ++++++++++++++++++++-------
+ lib/Kconfig.debug        | 11 +++++++++++
+ 2 files changed, 31 insertions(+), 7 deletions(-)
+
+diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
+index aa4dff0..1f3dda1 100644
+--- a/kernel/locking/rtmutex.c
++++ b/kernel/locking/rtmutex.c
+@@ -189,6 +189,12 @@ rt_mutex_dequeue_pi(struct task_struct *task, struct rt_mutex_waiter *waiter)
+ 	RB_CLEAR_NODE(&waiter->pi_tree_entry);
+ }
+ 
++#ifndef CONFIG_RT_MUTEX_BOOST_ALL
++#define heritable_prio(prio)		(rt_prio(prio) || dl_prio(prio))
++#else
++#define heritable_prio(prio)		(1)
++#endif
++
+ /*
+  * Calculate task priority from the waiter tree priority
+  *
+@@ -197,11 +203,14 @@ rt_mutex_dequeue_pi(struct task_struct *task, struct rt_mutex_waiter *waiter)
+  */
+ int rt_mutex_getprio(struct task_struct *task)
+ {
+-	if (likely(!task_has_pi_waiters(task)))
+-		return task->normal_prio;
++	if (unlikely(task_has_pi_waiters(task))) {
++		int prio = task_top_pi_waiter(task)->prio;
++
++		if (heritable_prio(prio))
++			return min(prio, task->normal_prio);
++	}
+ 
+-	return min(task_top_pi_waiter(task)->prio,
+-		   task->normal_prio);
++	return task->normal_prio;
+ }
+ 
+ struct task_struct *rt_mutex_get_top_task(struct task_struct *task)
+@@ -218,10 +227,14 @@ struct task_struct *rt_mutex_get_top_task(struct task_struct *task)
+  */
+ int rt_mutex_check_prio(struct task_struct *task, int newprio)
+ {
+-	if (!task_has_pi_waiters(task))
+-		return 0;
++	if (unlikely(task_has_pi_waiters(task))) {
++		int prio = task_top_pi_waiter(task)->task->prio;
+ 
+-	return task_top_pi_waiter(task)->task->prio <= newprio;
++		if (heritable_prio(prio))
++			return prio <= newprio;
++	}
++
++	return 0;
+ }
+ 
+ /*
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 819ac51..5f845b0 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -834,6 +834,17 @@ config RT_MUTEX_TESTER
+ 	help
+ 	  This option enables a rt-mutex tester.
+ 
++config RT_MUTEX_BOOST_ALL
++	bool "RT Mutex: inherit priority of any scheduler class"
++	depends on DEBUG_KERNEL && RT_MUTEXES
++	help
++	  Normally priority inheritance is pointless for SCHED_OTHER
++	  tasks, because higher prio does not provide exclusive privilege
++	  of one fair_sched_class task over the other.
++
++	  Say Y here if you debug RT mutex code and want to have more
++	  cases of priority boosting.
++
+ config DEBUG_SPINLOCK
+ 	bool "Spinlock and rw-lock debugging: basic checks"
+ 	depends on DEBUG_KERNEL
+
+
