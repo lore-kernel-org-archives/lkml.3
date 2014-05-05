@@ -1,153 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983AbaEEH5E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 03:57:04 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:59646 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754840AbaEEH5C (ORCPT
+	id S1755072AbaEEH5R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 03:57:17 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:44546 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755037AbaEEH5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 03:57:02 -0400
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Cc: michael@ellerman.id.au, mikey@neuling.org, avagin@openvz.org,
-        oleg@redhat.com, roland@redhat.com, palves@redhat.com,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Subject: [PATCH V2 3/3] powerpc, ptrace: Enable support for miscellaneous registers
-Date: Mon,  5 May 2014 13:24:29 +0530
-Message-Id: <1399276469-13541-4-git-send-email-khandual@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1399276469-13541-1-git-send-email-khandual@linux.vnet.ibm.com>
-References: <1399276469-13541-1-git-send-email-khandual@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050507-5816-0000-0000-00000DD720C1
+	Mon, 5 May 2014 03:57:14 -0400
+X-AuditID: cbfec7f4-b7fb36d000006ff7-e5-5367445894bc
+Message-id: <1399276631.15737.1.camel@AMDC1943>
+Subject: Re: [PATCH 3/4] misc: exynos-chipid: Add Exynos Chipid driver support
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Pankaj Dubey <pankaj.dubey@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        linux@arm.linux.org.uk, Arnd Bergmann <arnd@arndb.de>,
+        t.figa@samsung.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Mon, 05 May 2014 09:57:11 +0200
+In-reply-to: <1399097500-4052-4-git-send-email-pankaj.dubey@samsung.com>
+References: <1399097500-4052-1-git-send-email-pankaj.dubey@samsung.com>
+ <1399097500-4052-4-git-send-email-pankaj.dubey@samsung.com>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu1
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t/xq7oRLunBBnueyVn8nXSM3aJ58Xo2
+	i94FV9ksNj2+xmpxedccNosZ5/cxWdy+zGuxaOsXdov1M16zOHB6tDT3sHn8/jWJ0WP/3DXs
+	HpuX1Hv0bVnF6PF5k1wAWxSXTUpqTmZZapG+XQJXxrUNM1gLFrFVbH49namBcQJrFyMHh4SA
+	icTy6wpdjJxAppjEhXvr2boYuTiEBJYySpxsussE4XxmlPh1fRE7SBWvgL7EkV3rmEBsYQE/
+	idOzJoPF2QSMJTYvX8IGYosIaEt0Xr7HCtLMLNDEJHHpzhawBhYBVYm9p1tYQWxOAQ+J088m
+	Q21oZZQ4u/kN2CRmAXWJSfMWMUPcpCwxb/8xJojNghI/Jt9jgaiRl9i85i3zBEaBWUhaZiEp
+	m4WkbAEj8ypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkBj4soNx8TGrQ4wCHIxKPLyBQSnB
+	QqyJZcWVuYcYJTiYlUR4ZzGmBwvxpiRWVqUW5ccXleakFh9iZOLglGpgZDny8zbf7ymbdZiX
+	Cv9NWy8k8/HUgowGdYlHvuYfT7zcMy9h1gzHo1tPVQSeW+g56V3f8svPnN7Lp1mp8exZrNVc
+	foa/xPl5dR7HScO+a/v4zyfkGTul782MsL16vGyuYzD//m7VlNs+Sjl3KlI0dTabyUc9f7rU
+	vGrF76Mf5GNWuhjVTXv4SYmlOCPRUIu5qDgRAGQB0lRfAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables get and set of miscellaneous registers through ptrace
-PTRACE_GETREGSET/PTRACE_SETREGSET interface by implementing new powerpc
-specific register set REGSET_MISC support corresponding to the new ELF
-core note NT_PPC_MISC added previously in this regard.
+On sob, 2014-05-03 at 15:11 +0900, Pankaj Dubey wrote:
+> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+> index 7eb4b69..48c8fb5 100644
+> --- a/drivers/misc/Makefile
+> +++ b/drivers/misc/Makefile
+> @@ -55,3 +55,4 @@ obj-$(CONFIG_SRAM)		+= sram.o
+>  obj-y				+= mic/
+>  obj-$(CONFIG_GENWQE)		+= genwqe/
+>  obj-$(CONFIG_ECHO)		+= echo/
+> +obj-$(CONFIG_EXYNOS_CHIPID)	+= exynos-chipid.o
+> diff --git a/drivers/misc/exynos-chipid.c b/drivers/misc/exynos-chipid.c
+> new file mode 100644
+> index 0000000..eb23339
+> --- /dev/null
+> +++ b/drivers/misc/exynos-chipid.c
+> @@ -0,0 +1,83 @@
+> +/*
+> + * Copyright (c) 2014-2015 Samsung Electronics Co., Ltd.
+> + *	      http://www.samsung.com/
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
- arch/powerpc/kernel/ptrace.c | 81 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 81 insertions(+)
+I wonder why this is copyrighted in the future (2015)?
 
-diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-index 92faded..3332dd8 100644
---- a/arch/powerpc/kernel/ptrace.c
-+++ b/arch/powerpc/kernel/ptrace.c
-@@ -1054,6 +1054,76 @@ static int tm_cvmx_set(struct task_struct *target, const struct user_regset *reg
- #endif	/* CONFIG_PPC_TRANSACTIONAL_MEM */
- 
- /*
-+ * Miscellaneous Registers
-+ *
-+ * struct {
-+ * 	unsigned long dscr;
-+ *	unsigned long ppr;
-+ * 	unsigned long tar;
-+ * };
-+ */
-+static int misc_get(struct task_struct *target, const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   void *kbuf, void __user *ubuf)
-+{
-+	int ret;
-+
-+	/* DSCR register */
-+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+					&target->thread.dscr, 0,
-+					sizeof(unsigned long));
-+
-+	BUILD_BUG_ON(offsetof(struct thread_struct, dscr) + sizeof(unsigned long) +
-+				sizeof(unsigned long) != offsetof(struct thread_struct, ppr));
-+
-+	/* PPR register */
-+	if (!ret)
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+					  &target->thread.ppr, sizeof(unsigned long),
-+					  2 * sizeof(unsigned long));
-+
-+	BUILD_BUG_ON(offsetof(struct thread_struct, ppr) + sizeof(unsigned long)
-+						!= offsetof(struct thread_struct, tar));
-+	/* TAR register */
-+	if (!ret)
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+					  &target->thread.tar, 2 * sizeof(unsigned long),
-+					  3 * sizeof(unsigned long));
-+	return ret;
-+}
-+
-+static int misc_set(struct task_struct *target, const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   const void *kbuf, const void __user *ubuf)
-+{
-+	int ret;
-+
-+	/* DSCR register */
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+					&target->thread.dscr, 0,
-+					sizeof(unsigned long));
-+
-+	BUILD_BUG_ON(offsetof(struct thread_struct, dscr) + sizeof(unsigned long) +
-+			sizeof(unsigned long) != offsetof(struct thread_struct, ppr));
-+
-+	/* PPR register */
-+	if (!ret)
-+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+						&target->thread.ppr, sizeof(unsigned long),
-+						2 * sizeof(unsigned long));
-+
-+	BUILD_BUG_ON(offsetof(struct thread_struct, ppr) + sizeof(unsigned long)
-+						!= offsetof(struct thread_struct, tar));
-+
-+	/* TAR register */
-+	if (!ret)
-+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+						&target->thread.tar, 2 * sizeof(unsigned long),
-+						3 * sizeof(unsigned long));
-+	return ret;
-+}
-+
-+/*
-  * These are our native regset flavors.
-  */
- enum powerpc_regset {
-@@ -1074,6 +1144,7 @@ enum powerpc_regset {
- 	REGSET_TM_CFPR,		/* TM checkpointed FPR */
- 	REGSET_TM_CVMX,		/* TM checkpointed VMX */
- #endif
-+	REGSET_MISC		/* Miscellaneous */
- };
- 
- static const struct user_regset native_regsets[] = {
-@@ -1130,6 +1201,11 @@ static const struct user_regset native_regsets[] = {
- 		.get = tm_cvmx_get, .set = tm_cvmx_set
- 	},
- #endif
-+	[REGSET_MISC] = {
-+		.core_note_type = NT_PPC_MISC, .n = 3,
-+		.size = sizeof(u64), .align = sizeof(u64),
-+		.get = misc_get, .set = misc_set
-+	},
- };
- 
- static const struct user_regset_view user_ppc_native_view = {
-@@ -1459,6 +1535,11 @@ static const struct user_regset compat_regsets[] = {
- 		.get = tm_cvmx_get, .set = tm_cvmx_set
- 	},
- #endif
-+	[REGSET_MISC] = {
-+		.core_note_type = NT_PPC_MISC, .n = 3,
-+		.size = sizeof(u64), .align = sizeof(u64),
-+		.get = misc_get, .set = misc_set
-+	},
- };
- 
- static const struct user_regset_view user_ppc_compat_view = {
--- 
-1.7.11.7
+Best regards,
+Krzysztof
+
 
