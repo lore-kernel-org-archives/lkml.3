@@ -1,90 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152AbaEEMXH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 08:23:07 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54952 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932124AbaEEMXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 08:23:05 -0400
-Message-ID: <53678269.2000306@ti.com>
-Date: Mon, 5 May 2014 15:22:01 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>
-CC: <davem@davemloft.net>, <richardcochran@gmail.com>,
-        <jeffrey.t.kirsher@intel.com>, <dborkman@redhat.com>,
-        <ast@plumgrid.com>, <tklauser@distanz.ch>, <mpa@pengutronix.de>,
-        <bhutchings@solarflare.com>, <zonque@gmail.com>, <balbi@ti.com>,
-        <mugunthanvnm@ti.com>, <mturquette@linaro.org>,
-        <linux@arm.linux.org.uk>, <galak@codeaurora.org>,
-        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
-        <pawel.moll@arm.com>, <robh+dt@kernel.org>, <tony@atomide.com>,
-        <bcousson@baylibre.com>
-Subject: Re: [PATCH v2 5/6] ARM: AM43xx: clk: Change the cpts ref clock source
- to dpll_core_m5 clk
-References: <1399012324-20737-1-git-send-email-george.cherian@ti.com> <1399012324-20737-6-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1399012324-20737-6-git-send-email-george.cherian@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932174AbaEEM2g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 08:28:36 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:40867 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932128AbaEEM2e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 08:28:34 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 00/50] 3.12.19-stable review
+Date: Mon,  5 May 2014 14:28:31 +0200
+Message-Id: <cover.1399292849.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2014 09:32 AM, George Cherian wrote:
-> cpsw_cpts_rft_clk has got the choice of 3 clocksources
->   -dpll_core_m4_ck
->   -dpll_core_m5_ck
->   -dpll_disp_m2_ck
->
-> By default dpll_core_m4_ck is selected, witn this as clock
-> source the CPTS doesnot work properly. It gives clockcheck errors
-> while running PTP.
->
->   clockcheck: clock jumped backward or running slower than expected!
->
-> By selecting dpll_core_m5_ck as the clocksource fixes this issue.
-> In AM335x dpll_core_m5_ck is the default clocksource.
->
-> Signed-off-by: George Cherian <george.cherian@ti.com>
+This is the start of the stable review cycle for the 3.12.19 release.
+There are 50 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-Acked-by: Tero Kristo <t-kristo@ti.com>
+Responses should be made by Wed May  7 12:27:29 2014
+Anything received after that time might be too late.
 
-> ---
->   drivers/clk/ti/clk-43xx.c | 16 ++++++++++++++++
->   1 file changed, 16 insertions(+)
->
-> diff --git a/drivers/clk/ti/clk-43xx.c b/drivers/clk/ti/clk-43xx.c
-> index 67c8de5..b4877e0 100644
-> --- a/drivers/clk/ti/clk-43xx.c
-> +++ b/drivers/clk/ti/clk-43xx.c
-> @@ -110,9 +110,25 @@ static struct ti_dt_clk am43xx_clks[] = {
->
->   int __init am43xx_dt_clk_init(void)
->   {
-> +	struct clk *clk1, *clk2;
-> +
->   	ti_dt_clocks_register(am43xx_clks);
->
->   	omap2_clk_disable_autoidle_all();
->
-> +	/*
-> +	 * cpsw_cpts_rft_clk  has got the choice of 3 clocksources
-> +	 * dpll_core_m4_ck, dpll_core_m5_ck and dpll_disp_m2_ck.
-> +	 * By default dpll_core_m4_ck is selected, witn this as clock
-> +	 * source the CPTS doesnot work properly. It gives clockcheck errors
-> +	 * while running PTP.
-> +	 * clockcheck: clock jumped backward or running slower than expected!
-> +	 * By selecting dpll_core_m5_ck as the clocksource fixes this issue.
-> +	 * In AM335x dpll_core_m5_ck is the default clocksource.
-> +	 */
-> +	clk1 = clk_get_sys(NULL, "cpsw_cpts_rft_clk");
-> +	clk2 = clk_get_sys(NULL, "dpll_core_m5_ck");
-> +	clk_set_parent(clk1, clk2);
-> +
->   	return 0;
->   }
->
+The whole patch series can be found in one patch at:
+	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.19-rc1.xz
+and the diffstat can be found below.
+
+thanks,
+js
+
+===============
+
+
+Ajesh Kunhipurayil Vijayan (1):
+  jffs2: Fix crash due to truncation of csize
+
+Al Viro (1):
+  __dentry_path() fixes
+
+Alexei Starovoitov (1):
+  openvswitch: fix vport-netdev unregister
+
+Aravind Gopalakrishnan (2):
+  x86/quirks: Add workaround for AMD F16h Erratum792
+  amd64_edac: Fix logic to determine channel for F15 M30h processors
+
+Bodo Stroesser (1):
+  ipmi: Fix a race restarting the timer
+
+Chew, Kean ho (1):
+  i2c: i801: enable Intel BayTrail SMBUS
+
+Claudio Takahasi (1):
+  Bluetooth: Fix removing Long Term Key
+
+Dave Kleikamp (1):
+  sparc64: don't treat 64-bit syscall return codes as 32-bit
+
+David Ertman (1):
+  e1000e: Fix no connectivity when driver loaded with cable out
+
+David S. Miller (1):
+  sparc64: Make sure %pil interrupts are enabled during hypervisor
+    yield.
+
+Derek Basehore (1):
+  backing_dev: fix hung task on sync
+
+Emil Goode (1):
+  brcmsmac: fix deadlock on missing firmware
+
+Eric Whitney (3):
+  ext4: fix error return from ext4_ext_handle_uninitialized_extents()
+  ext4: fix partial cluster handling for bigalloc file systems
+  ext4: fix premature freeing of partial clusters split across leaf
+    blocks
+
+Hannes Reinecke (1):
+  tty: Set correct tty name in 'active' sysfs attribute
+
+Helge Deller (1):
+  parisc: fix epoll_pwait syscall on compat kernel
+
+Hidetoshi Seto (1):
+  Btrfs: skip submitting barrier for missing device
+
+Ian Abbott (1):
+  staging: comedi: 8255_pci: initialize MITE data window
+
+Ingo Molnar (1):
+  drivers/net: tulip_remove_one needs to call pci_disable_device()
+
+Jan Kara (1):
+  bdi: avoid oops on device removal
+
+Jay Cornwall (1):
+  iommu/amd: Fix PASID format in INVALIDATE_IOTLB_PAGES command
+
+Joe Perches (2):
+  usbatm: Fix dynamic_debug / ratelimited atm_dbg and atm_rldbg macros
+  printk: pr_debug_ratelimited: check state first to reduce "callbacks
+    suppressed" messages
+
+Josef Bacik (1):
+  Btrfs: fix deadlock with nested trans handles
+
+Kamlakant Patel (1):
+  jffs2: Fix segmentation fault found in stress test
+
+Kieran Clancy (1):
+  ACPI / EC: Process rather than discard events in acpi_ec_clear
+
+LEROY Christophe (1):
+  powerpc/8xx: mfspr SPRN_TBRx in lieu of mftb/mftbu is not supported
+
+Lan Tianyu (1):
+  ACPI / button: Add ACPI Button event via netlink routine
+
+Li Zefan (2):
+  jffs2: avoid soft-lockup in jffs2_reserve_space_gc()
+  jffs2: remove from wait queue after schedule()
+
+Mark Tinguely (1):
+  xfs: fix directory hash ordering bug
+
+Mikulas Patocka (2):
+  dcache: restore error on restart in prepend_path
+  user namespace: fix incorrect memory barriers
+
+Mohit Kumar (2):
+  PCI: designware: Fix RC BAR to be single 64-bit non-prefetchable
+    memory BAR
+  PCI: designware: Fix iATU programming for cfg1, io and mem viewport
+
+Neil Horman (1):
+  x86: Adjust irq remapping quirk for older revisions of 5500/5520
+    chipsets
+
+Oleg Nesterov (3):
+  pid_namespace: pidns_get() should check task_active_pid_ns() != NULL
+  wait: fix reparent_leader() vs EXIT_DEAD->EXIT_ZOMBIE race
+  exit: call disassociate_ctty() before exit_task_namespaces()
+
+Oliver Neukum (1):
+  ACPI / sleep: remove panic in case hardware has changed after S4
+
+Paolo Bonzini (1):
+  KVM: ioapic: fix assignment of ioapic->rtc_status.pending_eoi
+    (CVE-2014-0155)
+
+Paul Gortmaker (1):
+  sparc32: fix build failure for arch_jump_label_transform
+
+Peter Hurley (1):
+  tty: Fix low_latency BUG
+
+Petr Tesarik (1):
+  /dev/mem: handle out-of-bounds read/write
+
+Rusty Russell (1):
+  virtio_balloon: don't softlockup on huge balloon changes.
+
+Sergey Dyasly (1):
+  ARM: 7840/1: LPAE: don't reject mapping /dev/mem above 4GB
+
+Tedd Ho-Jeong An (1):
+  Bluetooth: Add support for Intel Bluetooth device [8087:0a2a]
+
+Wang, Xiaoming (1):
+  net: ipv4: current group_info should be put after using.
+
+ Documentation/i2c/busses/i2c-i801                  |  1 +
+ arch/arm/mm/mmap.c                                 |  6 +--
+ arch/parisc/kernel/syscall_table.S                 |  2 +-
+ arch/powerpc/boot/util.S                           | 14 +++++++
+ arch/powerpc/include/asm/ppc_asm.h                 |  2 +
+ arch/powerpc/include/asm/reg.h                     |  7 ++++
+ arch/powerpc/include/asm/timex.h                   |  8 ++++
+ arch/powerpc/kernel/vdso32/gettimeofday.S          |  6 +++
+ arch/sparc/Kconfig                                 |  2 +-
+ arch/sparc/kernel/process_64.c                     |  4 +-
+ arch/sparc/kernel/syscalls.S                       |  4 +-
+ arch/x86/kernel/early-quirks.c                     | 15 +++----
+ arch/x86/kernel/quirks.c                           | 37 +++++++++++++++++
+ drivers/acpi/button.c                              |  4 ++
+ drivers/acpi/ec.c                                  | 21 +++++-----
+ drivers/acpi/sleep.c                               |  7 +---
+ drivers/bluetooth/btusb.c                          |  1 +
+ drivers/char/ipmi/ipmi_si_intf.c                   | 46 +++++++++++++---------
+ drivers/char/mem.c                                 |  6 +++
+ drivers/edac/amd64_edac.c                          | 14 +++++--
+ drivers/i2c/busses/Kconfig                         |  1 +
+ drivers/i2c/busses/i2c-i801.c                      |  3 ++
+ drivers/iommu/amd_iommu.c                          |  4 +-
+ drivers/net/ethernet/dec/tulip/tulip_core.c        |  1 +
+ drivers/net/ethernet/intel/e1000e/netdev.c         | 20 +++++++---
+ .../net/wireless/brcm80211/brcmsmac/mac80211_if.c  | 14 +++----
+ drivers/pci/host/pcie-designware.c                 |  8 ++--
+ drivers/staging/comedi/drivers/8255_pci.c          | 34 ++++++++++++++++
+ drivers/tty/ipwireless/tty.c                       |  3 --
+ drivers/tty/tty_buffer.c                           | 20 ++--------
+ drivers/tty/tty_io.c                               | 23 ++++++++---
+ drivers/usb/atm/usbatm.h                           | 14 +++----
+ drivers/usb/gadget/u_serial.c                      |  4 +-
+ drivers/virtio/virtio_balloon.c                    |  6 +++
+ fs/btrfs/disk-io.c                                 |  4 ++
+ fs/btrfs/transaction.c                             | 14 ++-----
+ fs/dcache.c                                        | 10 +++--
+ fs/ext4/extents.c                                  | 40 ++++++++++++++++---
+ fs/fs-writeback.c                                  | 31 ++++++++++-----
+ fs/jffs2/compr_rtime.c                             |  4 +-
+ fs/jffs2/nodelist.h                                |  2 +-
+ fs/jffs2/nodemgmt.c                                | 14 +++++--
+ fs/xfs/xfs_da_btree.c                              |  2 +-
+ include/linux/backing-dev.h                        |  2 +-
+ include/linux/printk.h                             | 16 +++++++-
+ include/linux/tty.h                                |  2 +-
+ kernel/exit.c                                      | 21 ++++++----
+ kernel/pid_namespace.c                             |  4 +-
+ kernel/user_namespace.c                            | 11 +++---
+ mm/backing-dev.c                                   | 16 ++++++--
+ net/bluetooth/hci_event.c                          |  8 +++-
+ net/ipv4/ping.c                                    | 15 +++++--
+ net/openvswitch/dp_notify.c                        |  7 +++-
+ net/openvswitch/vport-netdev.c                     | 16 ++++++--
+ net/openvswitch/vport-netdev.h                     |  1 +
+ virt/kvm/ioapic.c                                  |  2 +-
+ 56 files changed, 430 insertions(+), 174 deletions(-)
+
+-- 
+1.9.2
 
