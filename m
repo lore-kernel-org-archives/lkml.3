@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179AbaEEAFs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 20:05:48 -0400
-Received: from smtprelay0100.hostedemail.com ([216.40.44.100]:52563 "EHLO
+	id S1754210AbaEEAGN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 20:06:13 -0400
+Received: from smtprelay0176.hostedemail.com ([216.40.44.176]:52561 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754132AbaEEAFd (ORCPT
+	by vger.kernel.org with ESMTP id S1754016AbaEEAFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 20:05:33 -0400
+	Sun, 4 May 2014 20:05:30 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:69:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1543:1711:1730:1747:1777:1792:2194:2198:2199:2200:2393:2559:2562:3138:3139:3140:3141:3142:3355:3865:3867:3868:3870:3871:3872:4321:4605:5007:6261:7874:8603:9592:10004:10026:10848:11026:11232:11473:11658:11914:12043:12291:12295:12296:12438:12517:12519:12555:12683:13972:14110,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: clam97_3054cf8234a29
-X-Filterd-Recvd-Size: 3968
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:69:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1544:1711:1730:1747:1777:1792:2393:2559:2562:2693:3138:3139:3140:3141:3142:3355:3865:3866:3867:3868:3870:3871:4250:4321:4605:5007:6261:9592:10004:10026:10848:11026:11473:11658:11914:12043:12291:12296:12517:12519:12555:12683:14110,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: sign88_2fee33793a224
+X-Filterd-Recvd-Size: 4867
 From: Joe Perches <joe@perches.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 12/12] cdrom: Remove unnecessary prototype for cdrom_get_disc_info
-Date: Sun,  4 May 2014 17:05:13 -0700
-Message-Id: <632524fb5a972bb8bde7604200b9c60f8d97f64e.1399247745.git.joe@perches.com>
+Subject: [PATCH 10/12] cdrom: Remove cdrom_count_tracks prototype
+Date: Sun,  4 May 2014 17:05:11 -0700
+Message-Id: <ce5b07924d2cafb810adbea91ce6ad9c279b5e63.1399247745.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <51EDAD79.3050707@kernel.dk>
 References: <51EDAD79.3050707@kernel.dk>
@@ -26,109 +26,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the function to the proper spot instead.
+Move function to proper location instead.
+Fix whitespace and embedded if too.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/cdrom/cdrom.c | 71 ++++++++++++++++++++++++++-------------------------
- 1 file changed, 36 insertions(+), 35 deletions(-)
+ drivers/cdrom/cdrom.c | 94 +++++++++++++++++++++++++--------------------------
+ 1 file changed, 47 insertions(+), 47 deletions(-)
 
 diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index c8ca342..49ac566 100644
+index 8888ed3..f614847 100644
 --- a/drivers/cdrom/cdrom.c
 +++ b/drivers/cdrom/cdrom.c
 @@ -338,8 +338,6 @@ do {							\
  
  /* Not-exported routines. */
  
--static int cdrom_get_disc_info(struct cdrom_device_info *cdi, disc_information *di);
+-static void cdrom_count_tracks(struct cdrom_device_info *, tracktype*);
 -
- static void cdrom_sysctl_register(void);
+ static int cdrom_mrw_exit(struct cdrom_device_info *cdi);
  
- static LIST_HEAD(cdrom_list);
-@@ -369,6 +367,42 @@ static int cdrom_flush_cache(struct cdrom_device_info *cdi)
- 	return cdi->ops->generic_packet(cdi, &cgc);
+ static int cdrom_get_disc_info(struct cdrom_device_info *cdi, disc_information *di);
+@@ -948,6 +946,53 @@ static int cdrom_close_write(struct cdrom_device_info *cdi)
+ #endif
  }
  
-+/* requires CD R/RW */
-+static int cdrom_get_disc_info(struct cdrom_device_info *cdi,
-+			       disc_information *di)
++/* badly broken, I know. Is due for a fixup anytime. */
++static void cdrom_count_tracks(struct cdrom_device_info *cdi, tracktype *tracks)
 +{
-+	struct cdrom_device_ops *cdo = cdi->ops;
-+	struct packet_command cgc;
-+	int ret, buflen;
-+
-+	/* set up command and get the disc info */
-+	init_cdrom_command(&cgc, di, sizeof(*di), CGC_DATA_READ);
-+	cgc.cmd[0] = GPCMD_READ_DISC_INFO;
-+	cgc.cmd[8] = cgc.buflen = 2;
-+	cgc.quiet = 1;
-+
-+	ret = cdo->generic_packet(cdi, &cgc);
-+	if (ret)
-+		return ret;
-+
-+	/* not all drives have the same disc_info length, so requeue
-+	 * packet with the length the drive tells us it can supply
-+	 */
-+	buflen = be16_to_cpu(di->disc_information_length) +
-+		sizeof(di->disc_information_length);
-+
-+	if (buflen > sizeof(disc_information))
-+		buflen = sizeof(disc_information);
-+
-+	cgc.cmd[8] = cgc.buflen = buflen;
-+	ret = cdo->generic_packet(cdi, &cgc);
-+	if (ret)
-+		return ret;
-+
-+	/* return actual fill size */
-+	return buflen;
++	struct cdrom_tochdr header;
++	struct cdrom_tocentry entry;
++	int ret, i;
++	tracks->data = 0;
++	tracks->audio = 0;
++	tracks->cdi = 0;
++	tracks->xa = 0;
++	tracks->error = 0;
++	cd_dbg(CD_COUNT_TRACKS, "entering cdrom_count_tracks\n");
++	/* Grab the TOC header so we can see how many tracks there are */
++	ret = cdi->ops->audio_ioctl(cdi, CDROMREADTOCHDR, &header);
++	if (ret) {
++		if (ret == -ENOMEDIUM)
++			tracks->error = CDS_NO_DISC;
++		else
++			tracks->error = CDS_NO_INFO;
++		return;
++	}
++	/* check what type of tracks are on this disc */
++	entry.cdte_format = CDROM_MSF;
++	for (i = header.cdth_trk0; i <= header.cdth_trk1; i++) {
++		entry.cdte_track = i;
++		if (cdi->ops->audio_ioctl(cdi, CDROMREADTOCENTRY, &entry)) {
++			tracks->error = CDS_NO_INFO;
++			return;
++		}
++		if (entry.cdte_ctrl & CDROM_DATA_TRACK) {
++			if (entry.cdte_format == 0x10)
++				tracks->cdi++;
++			else if (entry.cdte_format == 0x20)
++				tracks->xa++;
++			else
++				tracks->data++;
++		} else {
++			tracks->audio++;
++		}
++		cd_dbg(CD_COUNT_TRACKS, "track %d: format=%d, ctrl=%d\n",
++		       i, entry.cdte_format, entry.cdte_ctrl);
++	}
++	cd_dbg(CD_COUNT_TRACKS, "disc has %d tracks: %d=audio %d=data %d=Cd-I %d=XA\n",
++	       header.cdth_trk1, tracks->audio, tracks->data,
++	       tracks->cdi, tracks->xa);
 +}
 +
- /* This macro makes sure we don't have to check on cdrom_device_ops
-  * existence in the run-time routines below. Change_capability is a
-  * hack to have the capability flags defined const, while we can still
-@@ -3360,39 +3394,6 @@ int cdrom_ioctl(struct cdrom_device_info *cdi, struct block_device *bdev,
- 	return -ENOSYS;
+ static
+ int open_for_data(struct cdrom_device_info *cdi)
+ {
+@@ -1457,51 +1502,6 @@ int cdrom_media_changed(struct cdrom_device_info *cdi)
+ 	return media_changed(cdi, 0);
  }
  
--/* requires CD R/RW */
--static int cdrom_get_disc_info(struct cdrom_device_info *cdi, disc_information *di)
+-/* badly broken, I know. Is due for a fixup anytime. */
+-static void cdrom_count_tracks(struct cdrom_device_info *cdi, tracktype* tracks)
 -{
--	struct cdrom_device_ops *cdo = cdi->ops;
--	struct packet_command cgc;
--	int ret, buflen;
+-	struct cdrom_tochdr header;
+-	struct cdrom_tocentry entry;
+-	int ret, i;
+-	tracks->data=0;
+-	tracks->audio=0;
+-	tracks->cdi=0;
+-	tracks->xa=0;
+-	tracks->error=0;
+-	cd_dbg(CD_COUNT_TRACKS, "entering cdrom_count_tracks\n");
+-	/* Grab the TOC header so we can see how many tracks there are */
+-	if ((ret = cdi->ops->audio_ioctl(cdi, CDROMREADTOCHDR, &header))) {
+-		if (ret == -ENOMEDIUM)
+-			tracks->error = CDS_NO_DISC;
+-		else
+-			tracks->error = CDS_NO_INFO;
+-		return;
+-	}	
+-	/* check what type of tracks are on this disc */
+-	entry.cdte_format = CDROM_MSF;
+-	for (i = header.cdth_trk0; i <= header.cdth_trk1; i++) {
+-		entry.cdte_track  = i;
+-		if (cdi->ops->audio_ioctl(cdi, CDROMREADTOCENTRY, &entry)) {
+-			tracks->error=CDS_NO_INFO;
+-			return;
+-		}	
+-		if (entry.cdte_ctrl & CDROM_DATA_TRACK) {
+-		    if (entry.cdte_format == 0x10)
+-			tracks->cdi++;
+-		    else if (entry.cdte_format == 0x20) 
+-			tracks->xa++;
+-		    else
+-			tracks->data++;
+-		} else
+-		    tracks->audio++;
+-		cd_dbg(CD_COUNT_TRACKS, "track %d: format=%d, ctrl=%d\n",
+-		       i, entry.cdte_format, entry.cdte_ctrl);
+-	}	
+-	cd_dbg(CD_COUNT_TRACKS, "disc has %d tracks: %d=audio %d=data %d=Cd-I %d=XA\n",
+-	       header.cdth_trk1, tracks->audio, tracks->data,
+-	       tracks->cdi, tracks->xa);
+-}	
 -
--	/* set up command and get the disc info */
--	init_cdrom_command(&cgc, di, sizeof(*di), CGC_DATA_READ);
--	cgc.cmd[0] = GPCMD_READ_DISC_INFO;
--	cgc.cmd[8] = cgc.buflen = 2;
--	cgc.quiet = 1;
--
--	if ((ret = cdo->generic_packet(cdi, &cgc)))
--		return ret;
--
--	/* not all drives have the same disc_info length, so requeue
--	 * packet with the length the drive tells us it can supply
--	 */
--	buflen = be16_to_cpu(di->disc_information_length) +
--		     sizeof(di->disc_information_length);
--
--	if (buflen > sizeof(disc_information))
--		buflen = sizeof(disc_information);
--
--	cgc.cmd[8] = cgc.buflen = buflen;
--	if ((ret = cdo->generic_packet(cdi, &cgc)))
--		return ret;
--
--	/* return actual fill size */
--	return buflen;
--}
--
- EXPORT_SYMBOL(cdrom_get_last_written);
- EXPORT_SYMBOL(register_cdrom);
- EXPORT_SYMBOL(unregister_cdrom);
+ /* Requests to the low-level drivers will /always/ be done in the
+    following format convention:
+ 
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
