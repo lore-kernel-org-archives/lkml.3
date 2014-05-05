@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937AbaEEUXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:23:23 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40201 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752161AbaEEUXV (ORCPT
+	id S1754983AbaEEUZH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:25:07 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:54868 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752150AbaEEUZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:23:21 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Bryan Evenson <bevenson@melinkcorp.com>
-Cc: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH] rtc: rtc-at91rm9200: fix lost ACKUPD interrupt
-Date: Mon,  5 May 2014 22:23:08 +0200
-Message-Id: <1399321388-15148-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <55cab9fba2ea4eed8f73591b37cc874b@BLUPR05MB037.namprd05.prod.outlook.com>
-References: <55cab9fba2ea4eed8f73591b37cc874b@BLUPR05MB037.namprd05.prod.outlook.com>
+	Mon, 5 May 2014 16:25:05 -0400
+Message-ID: <5367F39C.1050703@linaro.org>
+Date: Mon, 05 May 2014 13:25:00 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Bohac <jbohac@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 0/4] Convert timekeeping core to use printk_deferred (v2)
+References: <1399068558-2373-1-git-send-email-john.stultz@linaro.org>	<20140502160536.892e6aff76df3398529d09ad@linux-foundation.org> <20140505144231.654d85b0@gandalf.local.home>
+In-Reply-To: <20140505144231.654d85b0@gandalf.local.home>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If an alarm interrupt raises just after the CR register is written and
-before the ACKUPD is unmasked the ACKUPD bit might be cleaned up without
-waking up the waiting thread.
+On 05/05/2014 11:42 AM, Steven Rostedt wrote:
+> On Fri, 2 May 2014 16:05:36 -0700
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+>
+>  
+>> Would "printk_deferred_once" be more logical than
+>> "printk_once_deferred"?  Think so.  It's (((printk(deferred(once))),
+>> not (((printk(once(deferred))).
+>>
+> I agree with the above, but other than that you can add my:
+>
+> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Thanks, will do!
 
-Unmask the ACKUPD interrupt before writing the CR register so that the
-ACKUPD cannot be lost.
+>
+> also, perhaps this series should include my patch:
+>
+> https://lkml.org/lkml/2014/3/25/336
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
----
-Hello Bryan,
+So this set applies ontop of -mm, which I believe includes your change.
 
-Could you try to apply this patch and tell me if it fixes your bug ?
-
-Best Regards,
-
-Boris
-
- drivers/rtc/rtc-at91rm9200.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
-index 3281c90..c16c423 100644
---- a/drivers/rtc/rtc-at91rm9200.c
-+++ b/drivers/rtc/rtc-at91rm9200.c
-@@ -163,9 +163,9 @@ static int at91_rtc_settime(struct device *dev, struct rtc_time *tm)
- 
- 	/* Stop Time/Calendar from counting */
- 	cr = at91_rtc_read(AT91_RTC_CR);
-+	at91_rtc_write_ier(AT91_RTC_ACKUPD);
- 	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL | AT91_RTC_UPDTIM);
- 
--	at91_rtc_write_ier(AT91_RTC_ACKUPD);
- 	wait_for_completion(&at91_rtc_updated);	/* wait for ACKUPD interrupt */
- 	at91_rtc_write_idr(AT91_RTC_ACKUPD);
- 
--- 
-1.8.3.2
-
+If I try to cherry-pick your patch to include in my set, I think I have
+to cherry-pick Jan's changes as well, so its probably just easier for
+folks to grab -mm. :)
+thanks
+-john
