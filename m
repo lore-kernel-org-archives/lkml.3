@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389AbaEEThe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 15:37:34 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:32775 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751751AbaEEThd (ORCPT
+	id S1752564AbaEETil (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 15:38:41 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:58200 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751962AbaEETik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 15:37:33 -0400
-Date: Mon, 05 May 2014 15:37:31 -0400 (EDT)
-Message-Id: <20140505.153731.953697715071354770.davem@davemloft.net>
-To: alchark@gmail.com
-Cc: rl@hellgate.ch, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fengguang.wu@intel.com
-Subject: Re: [PATCH] net: via-rhine: Convert #ifdef USE_MMIO to a runtime
- flag
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1399120853-26967-1-git-send-email-alchark@gmail.com>
-References: <20140502.155635.1691085402453175737.davem@davemloft.net>
-	<1399120853-26967-1-git-send-email-alchark@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 5 May 2014 15:38:40 -0400
+Date: Mon, 5 May 2014 15:38:38 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+Cc: "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] ftrace function-graph: print the function name on
+ all } lines
+Message-ID: <20140505153838.4cba1e09@gandalf.local.home>
+In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402956EEB76B@G9W0745.americas.hpqcorp.net>
+References: <94D0CD8314A33A4D9D801C0FE68B402956EE7D16@G9W0745.americas.hpqcorp.net>
+	<20140502153249.1ee6aadd@gandalf.local.home>
+	<94D0CD8314A33A4D9D801C0FE68B402956EEB76B@G9W0745.americas.hpqcorp.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 05 May 2014 12:37:33 -0700 (PDT)
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Charkov <alchark@gmail.com>
-Date: Sat,  3 May 2014 16:40:53 +0400
+On Mon, 5 May 2014 19:21:03 +0000
+"Elliott, Robert (Server Storage)" <Elliott@hp.com> wrote:
 
-> This introduces another flag in 'quirks' to replace the preprocessor
-> define (USE_MMIO) used to indicate whether the device needs a
-> separate enable routine to operate in MMIO mode.
+> > From: Steven Rostedt [mailto:rostedt@goodmis.org]
+> > ...
+> > Yes it is too cluttered. Please make this a tracing option that is
+> > default off.
 > 
-> All of the currently known platform Rhine cores operate in MMIO
-> mode by default, and on PCI it is preferred over PIO for performance
-> reasons. However, a comment in code suggests that some (?) early
-> Rhine cores only work in PIO mode, so they should not be switched
-> to MMIO.
+> The TRACE_GRAPH_PRINT_xx macros exist in two places:
+> * trace.h has one set
+> * trace_functions_graph.c has redefinitions of them and adds 
+>   TRACE_GRAPH_PRINT_IRQS.  
 > 
-> Enabling MMIO on PCI is still triggered by the same Kconfig option
-> to avoid breaking user configs needlessly, but this can be changed
-> going forward towards automatic runtime detection in case a list of
-> PIO-only Rhine revisions can be compiled.
+> The new macro will only be used inside trace_functions_graph.c. 
+> That is true of some of the others like TRACE_GRAPH_PRINT_OVERRUN, 
+> so doesn't seem to be the guiding principle for separate sets.
 > 
-> This also fixes a couple of compiler warnings detected by Fengguang
-> Wu's test bot (!USE_MMIO case):
- ...
-> Signed-off-by: Alexey Charkov <alchark@gmail.com>
+> Should the new one be added to both places, or should the 
+> duplicate definitions in trace_functions_graph.c be removed?
+> 
+> trace_functions_graph.c:
+> #include "trace.h"
+> ...
+> /* Flag options */
+> #define TRACE_GRAPH_PRINT_OVERRUN       0x1
+> #define TRACE_GRAPH_PRINT_CPU           0x2
+> #define TRACE_GRAPH_PRINT_OVERHEAD      0x4
+> #define TRACE_GRAPH_PRINT_PROC          0x8
+> #define TRACE_GRAPH_PRINT_DURATION      0x10
+> #define TRACE_GRAPH_PRINT_ABS_TIME      0x20
+> #define TRACE_GRAPH_PRINT_IRQS          0x40
+> #define TRACE_GRAPH_PRINT_TAIL          0x80 /* <-- new */
+> 
+> trace.h:
+> /* Flag options */
+> #define TRACE_GRAPH_PRINT_OVERRUN       0x1
+> #define TRACE_GRAPH_PRINT_CPU           0x2
+> #define TRACE_GRAPH_PRINT_OVERHEAD      0x4
+> #define TRACE_GRAPH_PRINT_PROC          0x8
+> #define TRACE_GRAPH_PRINT_DURATION      0x10
+> #define TRACE_GRAPH_PRINT_ABS_TIME      0x20
+> #define TRACE_GRAPH_PRINT_FILL_SHIFT    28
+> #define TRACE_GRAPH_PRINT_FILL_MASK     (0x3 << TRACE_GRAPH_PRINT_FILL_SHIFT)
 
-Applied, but in the future please make it clear what tree you are
-targetting by saying "[PATCH net]" or "[PATCH net-next]" in your
-subject line.
+This is a bit sloppy. Looks like some of them were copied over to
+trace.h to be used in other files, but never deleted from their
+original location :-/
 
-Thanks.
+Probably should just move them all to trace.h. I want to change this
+code in the near future anyway.
+
+-- Steve
+
+> 
+> ---
+> Rob Elliott    HP Server Storage
+
