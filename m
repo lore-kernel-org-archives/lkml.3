@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954AbaEEUMW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:12:22 -0400
-Received: from smtprelay0151.hostedemail.com ([216.40.44.151]:38336 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754405AbaEEUMU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:12:20 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3866:3867:3868:3871:4605:5007:7652:10004:10128:10400:10848:11026:11658:11914:12043:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: ball69_6b61783b17f48
-X-Filterd-Recvd-Size: 3227
-Message-ID: <1399320736.26330.8.camel@joe-AO725>
-Subject: [PATCH] checkpatch: Improve missing blank line after declarations
- test
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        Seunghun Lee <waydi1@gmail.com>, linux-kernel@vger.kernel.org
-Date: Mon, 05 May 2014 13:12:16 -0700
-In-Reply-To: <1399319468.26330.2.camel@joe-AO725>
-References: <1398790752-8067-1-git-send-email-waydi1@gmail.com>
-	 <20140429173221.GE26890@mwanda> <20140503234326.GA30117@kroah.com>
-	 <20140505095935.GO26890@mwanda> <1399319468.26330.2.camel@joe-AO725>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1753189AbaEEUOq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:14:46 -0400
+Received: from mout.gmx.net ([212.227.15.15]:59601 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752277AbaEEUOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 16:14:45 -0400
+Date: Mon, 5 May 2014 22:14:36 +0200
+From: Christian Engelmayer <cengelma@gmx.at>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, florian.c.schilhabel@googlemail.com,
+        linux-kernel@vger.kernel.org, Larry.Finger@lwfinger.net,
+        alexandre.f.demers@gmail.com
+Subject: Re: [PATCH] staging: rtl8712: fix potential leaks in
+ r8712_set_key()
+Message-ID: <20140505221436.1522bb3e@spike>
+In-Reply-To: <20140504002735.GA16794@kroah.com>
+References: <20140501235402.48ced880@spike>
+	<20140504002735.GA16794@kroah.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:ofVEgRpqrTpOJHHAqGx7YHyBK897Lm1BcK8RDAAcCZWvEXfhhCb
+ uVPwaNQ5BQcPQswNCVkSBvM9E+7pCE0tEPTVr4+mwioc9ROyHtpq0qZHq8pTX1hPCzOb5eC
+ PL5VgsV+nZn5KQH2CpNRjMFReFufg0ZuMDXsQvJyr0Cp9QedHnKE6ElZvC1JzM/VRUeFQsU
+ AgbbRnTCrpLZk7CtmDTEA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A couple more modifications to the declarations tests.
+On Sat, 3 May 2014 20:27:35 -0400, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Thu, May 01, 2014 at 11:54:02PM +0200, Christian Engelmayer wrote:
+> > Fix potential leaks in the error paths of r8712_set_key(). In case the
+> > algorithm specific checks fail, the function returns without enqueuing
+> > or freeing the already allocated command and parameter structs. Use a
+> > centralized exit path and make sure that all memory is freed correctly.
+> > Detected by Coverity - CID 144370, 144371.
+> > 
+> > Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+> > ---
+> > Compile tested and applies against branch staging-next of tree
+> > git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+> 
+> This doesn't apply either, and neither does one of your other patches,
+> what is going on?
 
-o Declarations can also be bitfields so exclude things with a colon
-o Make sure the current and previous lines are indented the same
-  to avoid matching some macro where a struct type is passed on
-  the previous line like:
+Greg, I am sorry that last weeks set of staging patches had problems. It
+is not my intention to waste Your time.
 
-		next = list_entry(buffer->entry.next,
-				  struct binder_buffer, entry);
-		if (buffer_start_page(next) == buffer_end_page(buffer)) 
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 89f44f1..f2ef63a 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2275,7 +2275,7 @@ sub process {
- # check for missing blank lines after declarations
- 		if ($sline =~ /^\+\s+\S/ &&			#Not at char 1
- 			# actual declarations
--		    ($prevline =~ /^\+\s+$Declare\s*$Ident\s*[=,;\[]/ ||
-+		    ($prevline =~ /^\+\s+$Declare\s*$Ident\s*[=,;:\[]/ ||
- 			# foo bar; where foo is some local typedef or #define
- 		     $prevline =~ /^\+\s+$Ident(?:\s+|\s*\*\s*)$Ident\s*[=,;\[]/ ||
- 			# known declaration macros
-@@ -2287,7 +2287,7 @@ sub process {
- 			# not starting a section or a macro "\" extended line
- 		      $prevline =~ /(?:\{\s*|\\)$/) &&
- 			# looks like a declaration
--		    !($sline =~ /^\+\s+$Declare\s*$Ident\s*[=,;\[]/ ||
-+		    !($sline =~ /^\+\s+$Declare\s*$Ident\s*[=,;:\[]/ ||
- 			# foo bar; where foo is some local typedef or #define
- 		      $sline =~ /^\+\s+$Ident(?:\s+|\s*\*\s*)$Ident\s*[=,;\[]/ ||
- 			# known declaration macros
-@@ -2299,7 +2299,9 @@ sub process {
- 			# bitfield continuation
- 		      $sline =~ /^\+\s+$Ident\s*:\s*\d+\s*[,;]/ ||
- 			# other possible extensions of declaration lines
--		      $sline =~ /^\+\s+\(?\s*(?:$Compare|$Assignment|$Operators)/)) {
-+		      $sline =~ /^\+\s+\(?\s*(?:$Compare|$Assignment|$Operators)/) &&
-+			# indentation of previous and current line are the same
-+		    (($prevline =~ /\+(\s+)\S/) && $sline =~ /^\+$1\S/)) {
- 			WARN("SPACING",
- 			     "Missing a blank line after declarations\n" . $hereprev);
- 		}
+I could reproduce the issue by running git am on my patches as received
+back from the mailing list. Most of the set failed as the mails were split
+incorrectly. I started rebasing the patches to the current staging-next
+and fixed my mail agents settings to generate no multipart, 7bit text/plain
+us-ascii. Thus the same set sent to myself applies now to a fresh clone of
+Your tree.
 
 
+git checkout -b integration-test origin/staging-next 
+Branch integration-test set up to track remote branch staging-next from origin.
+Switched to a new branch 'integration-test'
+
+git am ./staging.mbox
+Applying: staging: binder: fix usage of uninit scalar in binder_transaction()
+Applying: staging: comedi: ii_pci20kc: fix usage of uninit scalar in ii20k_attach()
+Applying: staging: rtl8188eu: fix potential leak in rtw_set_key()
+Applying: staging: rtl8188eu: fix potential leak in rtw_wx_read32()
+Applying: staging: rtl8188eu: fix potential leak in update_bcn_wps_ie()
+Applying: staging: rtl8712: fix potential leaks in r8712_set_key()
+Applying: staging: rtl8723au: Remove unused pointer in rtw_wdev_free()
+Applying: staging: rtl8712: fix potential leak in r871x_wx_set_enc_ext()
+Applying: staging: silicom: Remove needless calls of get_status_port_fn()
+Applying: staging: silicom: Remove unused pointer in bypass_init_module()
+Applying: staging: vt6656: fix potential leak in vt6656_hostap_ioctl()
+Applying: staging: rtl8188eu: fix potential leak in rtw_wx_set_enc_ext()
+Applying: staging: rtl8188eu: fix potential leak in rtw_mp_QueryDrv()
+Applying: staging: rtl8188eu: fix potential leak in rtw_mp_SetRFPath()
+Applying: staging: rtl8188eu: fix potential leak in rtw_mp_pwrtrk()
+
+
+> Can you just refresh all of the outstanding patches you have sent me
+> that I have not applied and resend them?
+
+Of course. In case there are no objections or further hints, I will check
+the refreshed patches later this week when I have got a bit more time and
+will resend them.
+
+Regards,
+Christian
