@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933236AbaEEX3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 19:29:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49520 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756771AbaEEX3R convert rfc822-to-8bit (ORCPT
+	id S933262AbaEEX36 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 19:29:58 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:46416 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932866AbaEEX35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 19:29:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,992,1389772800"; 
-   d="scan'208";a="535139701"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Mathieu Souchaud <mattieu.souchaud@free.fr>, "bp@alien8.de" <bp@alien8.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Subject: RE: [PATCH v2] x86/mce: Improve mcheck_init_device() error handling
-Thread-Topic: [PATCH v2] x86/mce: Improve mcheck_init_device() error handling
-Thread-Index: AQHPZxNH4Zd4vAzK/kmz6SmGz4FilJsyoyww
-Date: Mon, 5 May 2014 23:29:14 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F327F8E9B@ORSMSX114.amr.corp.intel.com>
-References: <1399151031-19905-1-git-send-email-mattieu.souchaud@free.fr>
-In-Reply-To: <1399151031-19905-1-git-send-email-mattieu.souchaud@free.fr>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 5 May 2014 19:29:57 -0400
 MIME-Version: 1.0
+In-Reply-To: <CAPz6YkXsig6XornqoMyn5DtRd9NECyc+qgQo39RQK0sDeat34Q@mail.gmail.com>
+References: <CAPz6YkXsig6XornqoMyn5DtRd9NECyc+qgQo39RQK0sDeat34Q@mail.gmail.com>
+From: Sonny Rao <sonnyrao@chromium.org>
+Date: Mon, 5 May 2014 16:29:36 -0700
+X-Google-Sender-Auth: WXS-Wanvm3nGFOhqlh2lQBNdJA0
+Message-ID: <CAPz6YkV2E2NBY9E8x4JJh2S-3oqdtk2yD=aNSOopYakcc2noLQ@mail.gmail.com>
+Subject: Re: CPU performance counters not working on big.LITTLE switcher
+To: linux-arm-kernel@lists.infradead.org
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Douglas Anderson <dianders@chromium.org>, Olof <olofj@chromium.org>,
+        Stephane Eranian <eranian@google.com>,
+        Bhaskar Janakiraman <bjanakiraman@chromium.org>,
+        nicolas.pitre@linaro.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+err_device_create:
-+	/*
-+	 * mce_device_remove behave properly if mce_device_create was not
-+	 * called on that device.
-+	 */
-+	for_each_possible_cpu(i)
-+		mce_device_remove(i);
+[sorry for HTML spam, resending]
 
-grammar comment "s/behave/behaves/"
+Hi, we have the problem today that cpu based performance counters don't work
+when we're using the big.LITTLE switcher on Exynos 5420, and it doesn't look
+like code exists to deal with this in the switcher.
 
-Though perhaps this is better:
+As it stands right now, if you put an A-15 or A-7 PMU node into your
+device-tree on an bl_switcher system it's very broken.  At the minimum, I
+think it should disable performance counters until there's some kind of
+proper implementation.
 
-	/*
-	 * We didn't keep track of which devices were created above, but
-	 * even if we had, the set of online cpus might have changed.
-	 * Play safe and remove for every possible cpu since mce_device_remove()
-	 * will do the right thing.
-	 */
+I looked into trying to make this work, but it turned out to not be as
+simple as just context switching counters from A-15 to A-7.  The biggest
+problem is that the PMUs are not architecturally compatible.  There are
+different events and differing numbers of counters on these two cores.
+There's also the tangential issue of representing this in the device tree,
+but that's far less important.
 
--Tony
+My guess as to how to fix this is to create an "architectural" PMU which
+contains the intersection of the two performance monitor units with the
+minimum number of counters supported by either core (which in this case
+looks to be 4 on the A7).  However, I don't really have the bandwidth to
+work on this at  the moment.  I was mostly wondering, have other people run
+into this limitation and is there any sort of plan to work on it?
