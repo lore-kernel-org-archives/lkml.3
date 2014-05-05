@@ -1,199 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881AbaEEPuw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 11:50:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45496 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753487AbaEEPuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 11:50:50 -0400
-Message-ID: <5367B356.1030403@suse.cz>
-Date: Mon, 05 May 2014 17:50:46 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
+	id S1754477AbaEEPvM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 11:51:12 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:34029 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754276AbaEEPvK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 11:51:10 -0400
+Message-ID: <5367B365.1070709@oracle.com>
+Date: Mon, 05 May 2014 11:51:01 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>,
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: Hugh Dickins <hughd@google.com>, Christoph Lameter <cl@gentwo.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Yong-Taek Lee <ytk.lee@samsung.com>,
-        Minchan Kim <minchan@kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 2/2] mm/page_alloc: DEBUG_VM checks for free_list placement
- of CMA and RESERVE pages
-References: <533D8015.1000106@suse.cz> <1396539618-31362-1-git-send-email-vbabka@suse.cz> <1396539618-31362-2-git-send-email-vbabka@suse.cz> <53616F39.2070001@oracle.com> <53638ADA.5040200@suse.cz> <5367A1E5.2020903@oracle.com>
-In-Reply-To: <5367A1E5.2020903@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: mm: NULL ptr deref in remove_migration_pte
+References: <534E9ACA.2090008@oracle.com>
+In-Reply-To: <534E9ACA.2090008@oracle.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2014 04:36 PM, Sasha Levin wrote:
-> On 05/02/2014 08:08 AM, Vlastimil Babka wrote:
->> On 04/30/2014 11:46 PM, Sasha Levin wrote:
->>>> On 04/03/2014 11:40 AM, Vlastimil Babka wrote:
->>>>>> For the MIGRATE_RESERVE pages, it is important they do not get misplaced
->>>>>> on free_list of other migratetype, otherwise the whole MIGRATE_RESERVE
->>>>>> pageblock might be changed to other migratetype in try_to_steal_freepages().
->>>>>> For MIGRATE_CMA, the pages also must not go to a different free_list, otherwise
->>>>>> they could get allocated as unmovable and result in CMA failure.
->>>>>>
->>>>>> This is ensured by setting the freepage_migratetype appropriately when placing
->>>>>> pages on pcp lists, and using the information when releasing them back to
->>>>>> free_list. It is also assumed that CMA and RESERVE pageblocks are created only
->>>>>> in the init phase. This patch adds DEBUG_VM checks to catch any regressions
->>>>>> introduced for this invariant.
->>>>>>
->>>>>> Cc: Yong-Taek Lee <ytk.lee@samsung.com>
->>>>>> Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
->>>>>> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->>>>>> Cc: Mel Gorman <mgorman@suse.de>
->>>>>> Cc: Minchan Kim <minchan@kernel.org>
->>>>>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>>>>> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
->>>>>> Cc: Hugh Dickins <hughd@google.com>
->>>>>> Cc: Rik van Riel <riel@redhat.com>
->>>>>> Cc: Michal Nazarewicz <mina86@mina86.com>
->>>>>> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
->>>>
->>>> Two issues with this patch.
->>>>
->>>> First:
->>>>
->>>> [ 3446.320082] kernel BUG at mm/page_alloc.c:1197!
->>>> [ 3446.320082] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->>>> [ 3446.320082] Dumping ftrace buffer:
->>>> [ 3446.320082]    (ftrace buffer empty)
->>>> [ 3446.320082] Modules linked in:
->>>> [ 3446.320082] CPU: 1 PID: 8923 Comm: trinity-c42 Not tainted 3.15.0-rc3-next-20140429-sasha-00015-g7c7e0a7-dirty #427
->>>> [ 3446.320082] task: ffff88053e208000 ti: ffff88053e246000 task.ti: ffff88053e246000
->>>> [ 3446.320082] RIP: get_page_from_freelist (mm/page_alloc.c:1197 mm/page_alloc.c:1548 mm/page_alloc.c:2036)
->>>> [ 3446.320082] RSP: 0018:ffff88053e247778  EFLAGS: 00010002
->>>> [ 3446.320082] RAX: 0000000000000003 RBX: ffffea0000f40000 RCX: 0000000000000008
->>>> [ 3446.320082] RDX: 0000000000000002 RSI: 0000000000000003 RDI: 00000000000000a0
->>>> [ 3446.320082] RBP: ffff88053e247868 R08: 0000000000000007 R09: 0000000000000000
->>>> [ 3446.320082] R10: ffff88006ffcef00 R11: 0000000000000000 R12: 0000000000000014
->>>> [ 3446.335888] R13: ffffea000115ffe0 R14: ffffea000115ffe0 R15: 0000000000000000
->>>> [ 3446.335888] FS:  00007f8c9f059700(0000) GS:ffff88006ec00000(0000) knlGS:0000000000000000
->>>> [ 3446.335888] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->>>> [ 3446.335888] CR2: 0000000002cbc048 CR3: 000000054cdb4000 CR4: 00000000000006a0
->>>> [ 3446.335888] DR0: 00000000006de000 DR1: 00000000006de000 DR2: 0000000000000000
->>>> [ 3446.335888] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000602
->>>> [ 3446.335888] Stack:
->>>> [ 3446.335888]  ffff88053e247798 ffff88006eddc0b8 0000000000000016 0000000000000000
->>>> [ 3446.335888]  ffff88006ffd2068 ffff88006ffdb008 0000000100000000 0000000000000000
->>>> [ 3446.335888]  ffff88006ffdb000 0000000000000000 0000000000000003 0000000000000001
->>>> [ 3446.335888] Call Trace:
->>>> [ 3446.335888] __alloc_pages_nodemask (mm/page_alloc.c:2731)
->>>> [ 3446.335888] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
->>>> [ 3446.335888] alloc_pages_vma (include/linux/mempolicy.h:76 mm/mempolicy.c:1998)
->>>> [ 3446.335888] ? shmem_alloc_page (mm/shmem.c:881)
->>>> [ 3446.335888] ? kvm_clock_read (arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
->>>> [ 3446.335888] shmem_alloc_page (mm/shmem.c:881)
->>>> [ 3446.335888] ? __const_udelay (arch/x86/lib/delay.c:126)
->>>> [ 3446.335888] ? __rcu_read_unlock (kernel/rcu/update.c:97)
->>>> [ 3446.335888] ? find_get_entry (mm/filemap.c:979)
->>>> [ 3446.335888] ? find_get_entry (mm/filemap.c:940)
->>>> [ 3446.335888] ? find_lock_entry (mm/filemap.c:1024)
->>>> [ 3446.335888] shmem_getpage_gfp (mm/shmem.c:1130)
->>>> [ 3446.335888] ? sched_clock_local (kernel/sched/clock.c:214)
->>>> [ 3446.335888] ? do_read_fault.isra.42 (mm/memory.c:3523)
->>>> [ 3446.335888] shmem_fault (mm/shmem.c:1237)
->>>> [ 3446.335888] ? do_read_fault.isra.42 (mm/memory.c:3523)
->>>> [ 3446.335888] __do_fault (mm/memory.c:3344)
->>>> [ 3446.335888] ? _raw_spin_unlock (arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183)
->>>> [ 3446.335888] do_read_fault.isra.42 (mm/memory.c:3524)
->>>> [ 3446.335888] ? get_parent_ip (kernel/sched/core.c:2485)
->>>> [ 3446.335888] ? get_parent_ip (kernel/sched/core.c:2485)
->>>> [ 3446.335888] __handle_mm_fault (mm/memory.c:3662 mm/memory.c:3823 mm/memory.c:3950)
->>>> [ 3446.335888] ? __const_udelay (arch/x86/lib/delay.c:126)
->>>> [ 3446.335888] ? __rcu_read_unlock (kernel/rcu/update.c:97)
->>>> [ 3446.335888] handle_mm_fault (mm/memory.c:3973)
->>>> [ 3446.335888] __get_user_pages (mm/memory.c:1863)
->>>> [ 3446.335888] ? preempt_count_sub (kernel/sched/core.c:2541)
->>>> [ 3446.335888] __mlock_vma_pages_range (mm/mlock.c:255)
->>>> [ 3446.335888] __mm_populate (mm/mlock.c:711)
->>>> [ 3446.335888] vm_mmap_pgoff (include/linux/mm.h:1841 mm/util.c:402)
->>>> [ 3446.335888] SyS_mmap_pgoff (mm/mmap.c:1378)
->>>> [ 3446.335888] ? syscall_trace_enter (include/linux/context_tracking.h:27 arch/x86/kernel/ptrace.c:1461)
->>>> [ 3446.335888] ia32_do_call (arch/x86/ia32/ia32entry.S:430)
->>>> [ 3446.335888] Code: 00 66 0f 1f 44 00 00 ba 02 00 00 00 31 f6 48 89 c7 e8 c1 c3 ff ff 48 8b 53 10 83 f8 03 74 08 83 f8 04 75 13 0f 1f 00 39 d0 74 0c <0f> 0b 66 2e 0f 1f 84 00 00 00 00 00 45 85 ff 75 15 49 8b 55 00
->>>> [ 3446.335888] RIP get_page_from_freelist (mm/page_alloc.c:1197 mm/page_alloc.c:1548 mm/page_alloc.c:2036)
->>>> [ 3446.335888]  RSP <ffff88053e247778>
->> Hey, that's not an issue, that means the patch works as intended :) And
->> I believe it's not a bug introduced by PATCH 1/2.
->>
->> So, according to my decodecode reading, RAX is the results of
->> get_pageblock_migratetype() and it's MIGRATE_RESERVE. RDX is the result
->> of get_freepage_migratetype() and it's MIGRATE_UNMOVABLE. The
->> freepage_migratetype has just been set either by __rmqueue_smallest() or
->> __rmqueue_fallback(), according to the free_list the page has been taken
->> from. So this looks like a page from MIGRATE_RESERVE pageblock found on
->> the !MIGRATE_RESERVE free_list, which is exactly what the patch intends
->> to catch.
->>
->> I think there are two possible explanations.
->>
->> 1) the pageblock is genuinely MIGRATE_RESERVE and it was misplaced by
->> mistake. I think it wasn't in free_pcppages_bulk() as there's the same
->> VM_BUG_ON which would supposedly trigger at the moment of displacing. In
->> theory it's possible that there's a race through __free_pages_ok() ->
->> free_one_page() where the get_pageblock_migratetype() in
->> __free_pages_ok() would race with set_pageblock_migratetype() and result
->> in bogus value. But nobody should be calling set_pageblock_migratetype()
->> on a MIGRATE_RESERVE pageblock.
->>
->> 2) the pageblock was marked as MIGRATE_RESERVE due to a race between
->> set_pageblock_migratetype() and set_pageblock_skip(). The latter is
->> currently not serialized by zone->lock, nor it uses atomic bit set. So
->> it may result in lost updates in a racing set_pageblock_migratetype(). I
->> think a well-placed race when changing pageblock from MIGRATE_MOVABLE to
->> MIGRATE_RECLAIMABLE could result in MIGRATE_RESERVE value. Similar races
->> have been already observed to be a problem where frequent changing
->> to/from MIGRATE_ISOLATE is involved, and I did a patch series to address
->> this, but it was not complete and I postponed it after Mel's changes
->> that remove the racy for-cycles completely. So it might be that his
->> "[PATCH 08/17] mm: page_alloc: Use word-based accesses for get/set
->> pageblock bitmaps" already solves this bug (but maybe only on certain
->> architectures where you don't need atomic operations). You might try
->> that patch if you can reproduce this bug frequently enough?
->
-> I've tried that patch, but still see the same BUG_ON.
+Did anyone have a chance to look at it? I still see it in -next.
 
-Oh damn, I've realized that my assumptions about MIGRATE_RESERVE 
-pageblocks being created only on zone init time were wrong. 
-setup_zone_migrate_reserve() is called also from the handler of 
-min_free_kbytes sysctl... does trinity try to change that while running?
-The function will change MOVABLE pageblocks to RESERVE and try to move 
-all free pages to the RESERVE free_list, but of course pages on pcplists 
-will remain MOVABLE and may trigger the VM_BUG_ON. You triggered the bug 
-with page on MOVABLE free_list (in the first reply I said its UNMOVABLE 
-by mistake) so this might be good explanation if trinity changes 
-min_free_kbytes.
 
-Furthermore, I think there's a problem that setup_zone_migrate_reserve() 
-operates on pageblocks, but as MAX_ODER is higher than pageblock_order, 
-RESERVE pages might be merged with buddies of different migratetype and 
-end up on their free_list. That seems to me like a flaw in the design of 
-reserves, but perhaps others won't think it's serious enough to fix?
+Thanks,
+Sasha
 
-So in the end this VM_DEBUG check probably cannot work anymore for 
-MIGRATE_RESERVE, only for CMA. I'm not sure if it's worth keeping it 
-only for CMA, what are the CMA guys' opinions on that?
-
-Also this means that the 1/2 patch "prevent MIGRATE_RESERVE pages from 
-being misplaced" still won't prevent stealing a MIGRATE_RESERVE 
-pageblock when __rmqueue_fallback() encounters a strayed MIGRATE_RESERVE 
-page on e.g. a MOVABLE freelist. This is fixable by having 
-__rmqueue_fallback() not trusting the migratetype of free_list and 
-checking for pageblock_migratetype. I hate that, but at least it's not 
-on the fast path...
-
+On 04/16/2014 10:59 AM, Sasha Levin wrote:
+> Hi all,
+> 
+> While fuzzing with trinity inside a KVM tools guest running latest -next
+> kernel I've stumbled on the following:
+> 
+> [ 2552.313602] BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+> [ 2552.315878] IP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
+> [ 2552.315878] PGD 465836067 PUD 465837067 PMD 0
+> [ 2552.315878] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [ 2552.315878] Dumping ftrace buffer:
+> [ 2552.315878]    (ftrace buffer empty)
+> [ 2552.315878] Modules linked in:
+> [ 2552.315878] CPU: 6 PID: 16173 Comm: trinity-c364 Tainted: G        W     3.15.0-rc1-next-20140415-sasha-00020-gaa90d09 #398
+> [ 2552.315878] task: ffff88046548b000 ti: ffff88044e532000 task.ti: ffff88044e532000
+> [ 2552.320286] RIP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
+> [ 2552.320286] RSP: 0018:ffff88044e5339c8  EFLAGS: 00010002
+> [ 2552.320286] RAX: 0000000000000082 RBX: ffff88046548b000 RCX: 0000000000000000
+> [ 2552.320286] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000018
+> [ 2552.320286] RBP: ffff88044e533ab8 R08: 0000000000000001 R09: 0000000000000000
+> [ 2552.320286] R10: ffff88046548b000 R11: 0000000000000001 R12: 0000000000000000
+> [ 2552.320286] R13: 0000000000000018 R14: 0000000000000000 R15: 0000000000000000
+> [ 2552.320286] FS:  00007fd286a9a700(0000) GS:ffff88018b000000(0000) knlGS:0000000000000000
+> [ 2552.320286] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 2552.320286] CR2: 0000000000000018 CR3: 0000000442c17000 CR4: 00000000000006a0
+> [ 2552.320286] DR0: 0000000000695000 DR1: 0000000000000000 DR2: 0000000000000000
+> [ 2552.320286] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+> [ 2552.320286] Stack:
+> [ 2552.320286]  ffff88044e5339e8 ffffffff9f56e761 0000000000000000 ffff880315c13000
+> [ 2552.320286]  ffff88044e533a38 ffffffff9c193f0d ffffffff9c193e34 ffff8804654e8000
+> [ 2552.320286]  ffff8804654e8000 0000000000000001 ffff88046548b000 0000000000000007
+> [ 2552.320286] Call Trace:
+> [ 2552.320286] ? _raw_spin_unlock_irq (arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:169 kernel/locking/spinlock.c:199)
+> [ 2552.320286] ? finish_task_switch (include/linux/tick.h:206 kernel/sched/core.c:2163)
+> [ 2552.320286] ? finish_task_switch (arch/x86/include/asm/current.h:14 kernel/sched/sched.h:993 kernel/sched/core.c:2145)
+> [ 2552.320286] ? retint_restore_args (arch/x86/kernel/entry_64.S:1040)
+> [ 2552.320286] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+> [ 2552.320286] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
+> [ 2552.320286] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+> [ 2552.320286] ? remove_migration_pte (mm/migrate.c:137)
+> [ 2552.320286] ? retint_restore_args (arch/x86/kernel/entry_64.S:1040)
+> [ 2552.320286] _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
+> [ 2552.320286] ? remove_migration_pte (mm/migrate.c:137)
+> [ 2552.320286] remove_migration_pte (mm/migrate.c:137)
+> [ 2552.320286] rmap_walk (mm/rmap.c:1628 mm/rmap.c:1699)
+> [ 2552.320286] remove_migration_ptes (mm/migrate.c:224)
+> [ 2552.320286] ? new_page_node (mm/migrate.c:107)
+> [ 2552.320286] ? remove_migration_pte (mm/migrate.c:195)
+> [ 2552.320286] migrate_pages (mm/migrate.c:922 mm/migrate.c:960 mm/migrate.c:1126)
+> [ 2552.320286] ? perf_trace_mm_numa_migrate_ratelimit (mm/migrate.c:1574)
+> [ 2552.320286] migrate_misplaced_page (mm/migrate.c:1733)
+> [ 2552.320286] __handle_mm_fault (mm/memory.c:3762 mm/memory.c:3812 mm/memory.c:3925)
+> [ 2552.320286] ? __const_udelay (arch/x86/lib/delay.c:126)
+> [ 2552.320286] ? __rcu_read_unlock (kernel/rcu/update.c:97)
+> [ 2552.320286] handle_mm_fault (mm/memory.c:3948)
+> [ 2552.320286] __get_user_pages (mm/memory.c:1851)
+> [ 2552.320286] ? preempt_count_sub (kernel/sched/core.c:2527)
+> [ 2552.320286] __mlock_vma_pages_range (mm/mlock.c:255)
+> [ 2552.320286] __mm_populate (mm/mlock.c:711)
+> [ 2552.320286] SyS_mlockall (include/linux/mm.h:1799 mm/mlock.c:817 mm/mlock.c:791)
+> [ 2552.320286] tracesys (arch/x86/kernel/entry_64.S:749)
+> [ 2552.320286] Code: 85 2d 1e 00 00 48 c7 c1 d7 68 6c a0 48 c7 c2 47 11 6c a0 31 c0 be fa 0b 00 00 48 c7 c7 91 68 6c a0 e8 1c 6d f9 ff e9 07 1e 00 00 <49> 81 7d 00 80 31 76 a2 b8 00 00 00 00 44 0f 44 c0 eb 07 0f 1f
+> [ 2552.320286] RIP __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
+> [ 2552.320286]  RSP <ffff88044e5339c8>
+> [ 2552.320286] CR2: 0000000000000018
+> 
+> 
 > Thanks,
 > Sasha
->
+> 
 
