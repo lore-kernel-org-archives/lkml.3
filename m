@@ -1,134 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933054AbaEEOrS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 10:47:18 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:26573 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933028AbaEEOrO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 10:47:14 -0400
-Date: Mon, 5 May 2014 10:47:12 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: tracing: NULL ptr deref in ring_buffer_wait
-Message-ID: <20140505104712.11c63a5d@gandalf.local.home>
-In-Reply-To: <5366DFBF.6090204@oracle.com>
-References: <5366DFBF.6090204@oracle.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S933072AbaEEOsc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 10:48:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44184 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932448AbaEEOsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 10:48:31 -0400
+Message-ID: <5367A4BD.2010209@suse.cz>
+Date: Mon, 05 May 2014 16:48:29 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch v2 4/4] mm, thp: do not perform sync compaction on pagefault
+References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011435210.23898@chino.kir.corp.google.com> <20140502102231.GQ23991@suse.de> <alpine.DEB.2.02.1405020402500.19297@chino.kir.corp.google.com> <20140502115834.GR23991@suse.de> <alpine.DEB.2.02.1405021319350.24195@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1405021319350.24195@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 04 May 2014 20:47:59 -0400
-Sasha Levin <sasha.levin@oracle.com> wrote:
+On 05/02/2014 10:29 PM, David Rientjes wrote:
+> On Fri, 2 May 2014, Mel Gorman wrote:
+>
+>>> The page locks I'm referring to is the lock_page() in __unmap_and_move()
+>>> that gets called for sync compaction after the migrate_pages() iteration
+>>> makes a few passes and unsuccessfully grabs it.  This becomes a forced
+>>> migration since __unmap_and_move() returns -EAGAIN when the trylock fails.
+>>>
+>>
+>> Can that be fixed then instead of disabling it entirely?
+>>
+>
+> We could return -EAGAIN when the trylock_page() fails for
+> MIGRATE_SYNC_LIGHT.  It would become a forced migration but we ignore that
+> currently for MIGRATE_ASYNC, and I could extend it to be ignored for
+> MIGRATE_SYNC_LIGHT as well.
+>
+>>> We have perf profiles from one workload in particular that shows
+>>> contention on i_mmap_mutex (anon isn't interesting since the vast majority
+>>> of memory on this workload [120GB on a 128GB machine] is has a gup pin and
+>>> doesn't get isolated because of 119d6d59dcc0 ("mm, compaction: avoid
+>>> isolating pinned pages")) between cpus all doing memory compaction trying
+>>> to fault thp memory.
+>>>
+>>
+>> Abort SYNC_LIGHT compaction if the mutex is contended.
+>>
+>
+> Yeah, I have patches for that as well but we're waiting to see if they are
+> actually needed when sync compaction is disabled for thp.  If we aren't
+> actually going to disable it entirely, then I can revive those patches if
+> the contention becomes such an issue.
+>
+>>> That's one example that we've seen, but the fact remains that at times
+>>> sync compaction will iterate the entire 128GB machine and not allow an
+>>> order-9 page to be allocated and there's nothing to preempt it like the
+>>> need_resched() or lock contention checks that async compaction has.
+>>
+>> Make compact_control->sync the same enum field and check for contention
+>> on the async/sync_light case but leave it for sync if compacting via the
+>> proc interface?
+>>
+>
+> Ok, that certainly can be done, I wasn't sure you would be happy with such
+> a change.  I'm not sure there's so much of a difference between the new
+> compact_control->sync == MIGRATE_ASYNC and == MIGRATE_SYNC_LIGHT now,
+> though.  Would it make sense to remove MIGRATE_SYNC_LIGHT entirely from
+> the page allocator, i.e. remove sync_migration entirely, and just retry
+> with a second call to compaction before failing instead?
 
-> Hi all,
-> 
-> While fuzzing with trinity inside a KVM tools guest running latest -next
-> kernel I've stumbled on the following:
+Maybe we should step back and rethink the conditions for all sources of 
+compaction to better balance effort vs desired outcome, so distinguish 4 
+modes (just quick thoughts):
 
-Do you have any idea what was going on? CPU hotplug maybe?
+1) kswapd - we don't want to slow it down too much, thus async, uses 
+cached pfns, honors skip bits, but does not give up on order=X blocks of 
+pages just because some page was unable to be isolated/migrated (so 
+gradually it might clean up such block over time).
+
+2) hugepaged - it can afford to wait, so async + sync, use cached pfns, 
+ignore skip bits on sync, also do not give up on order=THP blocks (?)
+
+3) direct compaction on allocation of order X- we want to avoid 
+allocation latencies, so it should skip over order=X blocks of pages as 
+soon as it cannot isolate some page in such block (and put back 
+already-isolated pages instead of migrating them). As for other 
+parameters I'm not sure. Sync should still be possible thanks to the 
+deferred_compaction logic? Maybe somehow transform the yes/no answer of 
+deferred compaction to a number of how many pageblocks it should try 
+before giving up, so there are no latency spikes limited only by the 
+size of the zone?
+
+4) compaction from proc interface - sync, reset cached pfn's, ignore 
+deferring, ignore skip bits...
+
+Vlastimil
 
 
-> 
-> 
-> [ 3589.386869] BUG: unable to handle kernel NULL pointer dereference at 00000000000001f0
-> [ 3589.389326] IP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
-
-Could you tell me what that line is? From what I see with next/master:
-
-3069:	if (!prove_locking || lock->key == &__lockdep_no_validate__)
-3070:		check = 0;
-
-
-I wonder if somehow the ring buffer wait queue lock didn't get
-initialized properly for lockdep. That is, the lock->key is bad? But
-the bad offset is 0x1f0 which is 496 but lock->key is the first thing
-in that structure, which would mean the lock pointer itself is 0x1f0.
-
-
-> [ 3589.390099] PGD 44bf8067 PUD 392d1067 PMD ac4c2067 PTE 0
-> [ 3589.390099] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [ 3589.390099] Dumping ftrace buffer:
-> [ 3589.390099]    (ftrace buffer empty)
-> [ 3589.390099] Modules linked in:
-> [ 3589.395496] CPU: 37 PID: 28180 Comm: trinity-c168 Not tainted 3.15.0-rc3-next-20140502-sasha-00020-g3183c20 #432
-> [ 3589.396585] task: ffff8802c77d3000 ti: ffff88005c9d0000 task.ti: ffff88005c9d0000
-> [ 3589.396585] RIP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
-> [ 3589.396585] RSP: 0018:ffff88005c9d1c18  EFLAGS: 00010002
-> [ 3589.396585] RAX: 0000000000000086 RBX: ffff8802c77d3000 RCX: 0000000000000000
-> [ 3589.396585] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 00000000000001f0
-> [ 3589.396585] RBP: ffff88005c9d1d08 R08: 0000000000000001 R09: 0000000000000001
-> [ 3589.396585] R10: ffff8802c77d3000 R11: 0000000000000001 R12: 0000000000000000
-> [ 3589.396585] R13: 00000000000001f0 R14: 0000000000000000 R15: 0000000000000000
-> [ 3589.396585] FS:  00007f1cfe809700(0000) GS:ffff88017ce00000(0000) knlGS:0000000000000000
-> [ 3589.407670] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [ 3589.407670] CR2: 00000000000001f0 CR3: 000000005cba3000 CR4: 00000000000006a0
-> [ 3589.407670] DR0: 00000000006de000 DR1: 0000000000000000 DR2: 0000000000000000
-> [ 3589.407670] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-> [ 3589.407670] Stack:
-> [ 3589.407670]  0000000000000025 ffff88017cfd8380 00000000001d8380 0000000000000025
-> [ 3589.407670]  ffff88005c9d1c68 ffffffffa81a5df8 0002fa098d2fe980 0000000000000000
-> [ 3589.407670]  0002fa098d2fe980 0000000000000001 ffffffffaf415f20 0000000000015ee0
-> [ 3589.407670] Call Trace:
-> [ 3589.407670] ? sched_clock_cpu (kernel/sched/clock.c:311)
-> [ 3589.407670] ? __lock_acquire (kernel/locking/lockdep.c:3189)
-> [ 3589.407670] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-> [ 3589.407670] ? prepare_to_wait (kernel/sched/wait.c:177)
-
-This is the q->lock, which is the first item in the queue_head. The
-dep_map is a bit further but not 496 bytes.
-
-> [ 3589.407670] ? _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:109 kernel/locking/spinlock.c:159)
-> [ 3589.407670] _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:117 kernel/locking/spinlock.c:159)
-> [ 3589.407670] ? prepare_to_wait (kernel/sched/wait.c:177)
-> [ 3589.407670] ? get_parent_ip (kernel/sched/core.c:2485)
-> [ 3589.407670] ? mutex_unlock (kernel/locking/mutex.c:220)
-> [ 3589.407670] prepare_to_wait (kernel/sched/wait.c:177)
-> [ 3589.407670] ? __mutex_unlock_slowpath (arch/x86/include/asm/paravirt.h:809 kernel/locking/mutex.c:713 kernel/locking/mutex.c:722)
-> [ 3589.407670] ring_buffer_wait (kernel/trace/ring_buffer.c:587)
-
-Now, perhaps buffer was NULL when passed in. This code is mostly
-dealing with offsets and if buffer is NULL it wont bug till it did that
-q->lock grab.
-
-> [ 3589.407670] ? bit_waitqueue (kernel/sched/wait.c:291)
-> [ 3589.407670] wait_on_pipe (kernel/trace/trace.c:1095)
-
-this passes in iter->trace_buffer->buffer.
-
-> [ 3589.407670] tracing_buffers_read (kernel/trace/trace.c:5162)
-
-The iter->trace_buffer is set up in tracing_buffers_open() with:
-
-	info->iter.trace_buffer = &tr->trace_buffer;
-
-I have no idea how trace_buffer->buffer could have been NULL here?
-
-Although, with cpu hotplug, a cpu_buffer may not be allocated until
-that cpu is booted up. But it shouldn't allow you to trace that buffer
-before hand.
-
-Hmm, if a cpu is not up yet, perhaps you can read it. But if this was
-the case, the ring_buffer_read_page() would have failed.
-
-> [ 3589.407670] vfs_read (fs/read_write.c:430)
-> [ 3589.407670] SyS_read (fs/read_write.c:568 fs/read_write.c:560)
-> [ 3589.407670] tracesys (arch/x86/kernel/entry_64.S:746)
-> [ 3589.407670] Code: 85 cd 0c 00 00 48 c7 c1 5c e1 6d ac 48 c7 c2 af 89 6d ac 31 c0 be fa 0b 00 00 48 c7 c7 16 e1 6d ac e8 3c 68 f9 ff e9 a7 0c 00 00 <49> 81 7d 00 80 81 76 ae b8 00 00 00 00 44 0f 44 c0 eb 07 0f 1f
-> [ 3589.407670] RIP __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
-> [ 3589.407670]  RSP <ffff88005c9d1c18>
-> [ 3589.407670] CR2: 00000000000001f0
-
-Is this easily reproducible?
-
-Thanks,
-
--- Steve
