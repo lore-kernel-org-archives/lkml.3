@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849AbaEEQi0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 12:38:26 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:62004 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754750AbaEEQiZ (ORCPT
+	id S1754372AbaEEQor (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 12:44:47 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:21875 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753880AbaEEQop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 12:38:25 -0400
-Date: Mon, 5 May 2014 12:38:21 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: axboe@kernel.dk, Sasha Levin <sasha.levin@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH cgroup/for-3.15-fixes] blkcg: use trylock on
- blkcg_pol_mutex in blkcg_reset_stats()
-Message-ID: <20140505163821.GM11231@htj.dyndns.org>
-References: <5363C04B.4010400@oracle.com>
- <20140505163730.GL11231@htj.dyndns.org>
+	Mon, 5 May 2014 12:44:45 -0400
+Message-ID: <5367BFF2.50803@hp.com>
+Date: Mon, 05 May 2014 09:44:34 -0700
+From: Rick Jones <rick.jones2@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505163730.GL11231@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: V JobNickname <workofv@gmail.com>, linux-kernel@vger.kernel.org
+CC: netdev@vger.kernel.org
+Subject: Re: network performance get regression from 2.6 to 3.10 by each version
+References: <CANHbGWu0SXtSSHDz=m6KCKOL7AESWB8GHbvqYJMUyvJpTZZDKA@mail.gmail.com>
+In-Reply-To: <CANHbGWu0SXtSSHDz=m6KCKOL7AESWB8GHbvqYJMUyvJpTZZDKA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 12:37:30PM -0400, Tejun Heo wrote:
-> During the recent conversion of cgroup to kernfs, cgroup_tree_mutex
-> which nests above both the kernfs s_active protection and cgroup_mutex
-> is added to synchronize cgroup file type operations as cgroup_mutex
-> needed to be grabbed from some file operations and thus can't be put
-> above s_active protection.
+On 05/02/2014 12:40 PM, V JobNickname wrote:
+> I have an ARM platform which works with older 2.6.28 Linux Kernel and
+> the embedded NIC driver
+> I profile the TCP Tx using netperf 2.6 by command "./netperf -H
+> {serverip} -l 300".
 
-Ooh, I verified that the patch removes the lockdep warning and am
-routing it through cgroup/for-3.15-fixes.  If there's any objection,
-please let me know.
+Is your ARM platform a multi-core one?  If so, you may need/want to look 
+into making certain the assignment of NIC interrupts and netperf have 
+remained constant through your tests.  You can bind netperf to a 
+specific CPU via either "taskset" or the global -T option.  You can 
+check the interrupt assignment(s) for the queue(s) from the NIC by 
+looking at /proc/interrupts and perhaps via other means.
 
-Thanks!
+It would also be good to know if the drops in throughput correspond to 
+an increase in service demand (CPU per unit of work).  To that end, 
+adding a global -c option to measure local (netperf side) CPU 
+utilization would be a good idea.
 
--- 
-tejun
+Still, even armed with that information, tracking down the regression or 
+regressions will be no small feat particularly since the timespan is so 
+long.  A very good reason to be trying the newer versions as they 
+appear, even if only briefly, rather than leaving it for so long.
+
+happy benchmarking,
+
+rick jones
