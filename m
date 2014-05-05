@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203AbaEEUqS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:46:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50883 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328AbaEEUqR (ORCPT
+	id S1755697AbaEEUrv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:47:51 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:32952 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754792AbaEEUru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:46:17 -0400
-Date: Mon, 5 May 2014 13:46:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Seth Jennings <sjennings@variantweb.net>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        "'Minchan Kim'" <minchan@kernel.org>,
-        "'Nitin Gupta'" <ngupta@vflare.org>,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Bob Liu'" <bob.liu@oracle.com>,
-        "'Dan Streetman'" <ddstreet@ieee.org>, weijie.yang.kh@gmail.com,
-        heesub.shin@samsung.com,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux-MM'" <linux-mm@kvack.org>
-Subject: Re: [PATCH] zram: remove global tb_lock by using lock-free CAS
-Message-Id: <20140505134615.04cb627bb2784cabcb844655@linux-foundation.org>
-In-Reply-To: <1399312844.2570.28.camel@buesod1.americas.hpqcorp.net>
-References: <000001cf6816$d538c370$7faa4a50$%yang@samsung.com>
-	<20140505152014.GA8551@cerebellum.variantweb.net>
-	<1399312844.2570.28.camel@buesod1.americas.hpqcorp.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 5 May 2014 16:47:50 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Bohac <jbohac@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 0/4] Convert timekeeping core to use printk_deferred (v3)
+Date: Mon,  5 May 2014 13:47:40 -0700
+Message-Id: <1399322864-22861-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 05 May 2014 11:00:44 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+Recently, Jiri pointed out a potential deadlock when calling printk
+while holding the timekeeping seqlock.
 
-> > > @@ -339,12 +338,14 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
-> > >  	unsigned long handle;
-> > >  	u16 size;
-> > >  
-> > > -	read_lock(&meta->tb_lock);
-> > > +	while(atomic_cmpxchg(&meta->table[index].state, IDLE, ACCESS) != IDLE)
-> > > +		cpu_relax();
-> > > +
-> > 
-> > So... this might be dumb question, but this looks like a spinlock
-> > implementation.
-> > 
-> > What advantage does this have over a standard spinlock?
-> 
-> I was wondering the same thing. Furthermore by doing this you'll loose
-> the benefits of sharing the lock... your numbers do indicate that it is
-> for the better. Also, note that hopefully rwlock_t will soon be updated
-> to be fair and perform up to par with spinlocks, something which is long
-> overdue. So you could reduce the critical region by implementing the
-> same granularity, just don't implement your own locking schemes, like
-> this.
+Annoyingly, the seqlock lockdep enablement doesn't catch this, as
+printk disables lockdep.
 
-It sounds like seqlocks will match this access pattern pretty well?
+When looking for possible solutions, one idea was to use a local buffer
+and defer the printk to later. Ends up there is already similar
+functionality in printk_sched() to avoid similar style deadlocks w/
+the scheduler.
+
+Thus this patchset (based on next/akpm) renames printk_sched to
+printk_deferred and then moves the affected timekeeping printks to make
+use of it.
+
+There were some points in the discussion between Jan and Peter that
+made it seem that there may still be problems lurking in the console
+layer, and I'm not sure I fully understand their point, so this solution
+may be incomplete.
+
+Additionally, the same issue likely affects any WARN_ONs as well, but
+I wanted to get some thoughts on this approach before trying to remove
+or convert affected WARN_ONS.
+
+Your thoughts and feedback are greatly appreciated!
+
+thanks
+-john
+
+Changes since v2:
+* Renamed printk_once_deferred() to printk_deferred_once(), per
+  Andrew's suggestion
+* Changed adding irqsave/restore to preempt_disable/enable, per
+  Jan's suggestion
+
+Changes since v1:
+* Rebased on next/akpm, since there are queued prink patches there
+* Re-added irqsave/restore per irc discussion w/ PeterZ 
+
+
+Cc: Jan Kara <jack@suse.cz>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Bohac <jbohac@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+
+
+John Stultz (4):
+  printk: Disable preemption for printk_sched
+  printk: Rename printk_sched to printk_deferred
+  printk: Add printk_deferred_once
+  timekeeping: Use printk_deferred when holding timekeeping seqlock
+
+ include/linux/printk.h    | 17 ++++++++++++++---
+ kernel/printk/printk.c    |  4 +++-
+ kernel/sched/core.c       |  2 +-
+ kernel/sched/deadline.c   |  7 +------
+ kernel/sched/rt.c         |  8 +-------
+ kernel/time/ntp.c         | 15 +++++++++------
+ kernel/time/timekeeping.c |  7 ++++---
+ 7 files changed, 33 insertions(+), 27 deletions(-)
+
+-- 
+1.9.1
+
