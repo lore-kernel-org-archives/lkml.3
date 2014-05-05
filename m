@@ -1,159 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138AbaEEPfW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 11:35:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45102 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753472AbaEEPfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 11:35:20 -0400
-Date: Mon, 5 May 2014 17:35:19 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jianyu Zhan <nasa4836@gmail.com>, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.com
-Subject: Re: [PATCH 2/2] mm/memcontrol.c: introduce helper
- mem_cgroup_zoneinfo_zone()
-Message-ID: <20140505153519.GE32598@dhcp22.suse.cz>
-References: <1397862103-31982-1-git-send-email-nasa4836@gmail.com>
- <20140422095923.GD29311@dhcp22.suse.cz>
- <20140428150426.GB24807@dhcp22.suse.cz>
- <20140501125450.GA23420@cmpxchg.org>
- <20140502150516.d42792bad53d86fb727816bd@linux-foundation.org>
- <20140502232908.GQ23420@cmpxchg.org>
- <20140502233138.GR23420@cmpxchg.org>
+	id S1754041AbaEEPgg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 11:36:36 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:42028 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753640AbaEEPge (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 11:36:34 -0400
+Message-ID: <5367B010.9060506@linaro.org>
+Date: Mon, 05 May 2014 17:36:48 +0200
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140502233138.GR23420@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Borislav Petkov <bp@alien8.de>
+CC: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@suse.de,
+        m.chehab@samsung.com, linux-edac@vger.kernel.org, x86@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH 1/7] apei, mce: Call MCE-specific code only for X86 architecture.
+References: <1397056476-9183-1-git-send-email-tomasz.nowicki@linaro.org> <1397056476-9183-2-git-send-email-tomasz.nowicki@linaro.org> <20140505114445.GB4373@pd.tnic> <5367A181.3060300@linaro.org> <20140505145331.GC4373@pd.tnic> <5367AEF7.40804@linaro.org> <20140505153348.GD4373@pd.tnic>
+In-Reply-To: <20140505153348.GD4373@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 02-05-14 19:31:38, Johannes Weiner wrote:
-> While in that area, I noticed that the soft limit tree updaters don't
-> actually use the memcg argument anymore...
-> 
-> ---
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Subject: [patch] mm: memcontrol: remove unnecessary memcg argument from soft
->  limit functions
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+On 05.05.2014 17:33, Borislav Petkov wrote:
+> On Mon, May 05, 2014 at 05:32:07PM +0200, Tomasz Nowicki wrote:
+>> You are right! I will fix that big misunderstanding from my side in
+>> next patch version.
+>
+> Ok, but pls wait with resubmitting until I take a look at the rest of
+> your patches.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/memcontrol.c | 34 ++++++++++++++--------------------
->  1 file changed, 14 insertions(+), 20 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 83cbd5a0e62f..3381f76df084 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -714,11 +714,9 @@ soft_limit_tree_from_page(struct page *page)
->  	return &soft_limit_tree.rb_tree_per_node[nid]->rb_tree_per_zone[zid];
->  }
->  
-> -static void
-> -__mem_cgroup_insert_exceeded(struct mem_cgroup *memcg,
-> -				struct mem_cgroup_per_zone *mz,
-> -				struct mem_cgroup_tree_per_zone *mctz,
-> -				unsigned long long new_usage_in_excess)
-> +static void __mem_cgroup_insert_exceeded(struct mem_cgroup_per_zone *mz,
-> +					 struct mem_cgroup_tree_per_zone *mctz,
-> +					 unsigned long long new_usage_in_excess)
->  {
->  	struct rb_node **p = &mctz->rb_root.rb_node;
->  	struct rb_node *parent = NULL;
-> @@ -748,10 +746,8 @@ __mem_cgroup_insert_exceeded(struct mem_cgroup *memcg,
->  	mz->on_tree = true;
->  }
->  
-> -static void
-> -__mem_cgroup_remove_exceeded(struct mem_cgroup *memcg,
-> -				struct mem_cgroup_per_zone *mz,
-> -				struct mem_cgroup_tree_per_zone *mctz)
-> +static void __mem_cgroup_remove_exceeded(struct mem_cgroup_per_zone *mz,
-> +					 struct mem_cgroup_tree_per_zone *mctz)
->  {
->  	if (!mz->on_tree)
->  		return;
-> @@ -759,13 +755,11 @@ __mem_cgroup_remove_exceeded(struct mem_cgroup *memcg,
->  	mz->on_tree = false;
->  }
->  
-> -static void
-> -mem_cgroup_remove_exceeded(struct mem_cgroup *memcg,
-> -				struct mem_cgroup_per_zone *mz,
-> -				struct mem_cgroup_tree_per_zone *mctz)
-> +static void mem_cgroup_remove_exceeded(struct mem_cgroup_per_zone *mz,
-> +				       struct mem_cgroup_tree_per_zone *mctz)
->  {
->  	spin_lock(&mctz->lock);
-> -	__mem_cgroup_remove_exceeded(memcg, mz, mctz);
-> +	__mem_cgroup_remove_exceeded(mz, mctz);
->  	spin_unlock(&mctz->lock);
->  }
->  
-> @@ -792,12 +786,12 @@ static void mem_cgroup_update_tree(struct mem_cgroup *memcg, struct page *page)
->  			spin_lock(&mctz->lock);
->  			/* if on-tree, remove it */
->  			if (mz->on_tree)
-> -				__mem_cgroup_remove_exceeded(memcg, mz, mctz);
-> +				__mem_cgroup_remove_exceeded(mz, mctz);
->  			/*
->  			 * Insert again. mz->usage_in_excess will be updated.
->  			 * If excess is 0, no tree ops.
->  			 */
-> -			__mem_cgroup_insert_exceeded(memcg, mz, mctz, excess);
-> +			__mem_cgroup_insert_exceeded(mz, mctz, excess);
->  			spin_unlock(&mctz->lock);
->  		}
->  	}
-> @@ -813,7 +807,7 @@ static void mem_cgroup_remove_from_trees(struct mem_cgroup *memcg)
->  		for (zid = 0; zid < MAX_NR_ZONES; zid++) {
->  			mz = &memcg->nodeinfo[nid]->zoneinfo[zid];
->  			mctz = soft_limit_tree_node_zone(nid, zid);
-> -			mem_cgroup_remove_exceeded(memcg, mz, mctz);
-> +			mem_cgroup_remove_exceeded(mz, mctz);
->  		}
->  	}
->  }
-> @@ -836,7 +830,7 @@ retry:
->  	 * we will to add it back at the end of reclaim to its correct
->  	 * position in the tree.
->  	 */
-> -	__mem_cgroup_remove_exceeded(mz->memcg, mz, mctz);
-> +	__mem_cgroup_remove_exceeded(mz, mctz);
->  	if (!res_counter_soft_limit_excess(&mz->memcg->res) ||
->  		!css_tryget(&mz->memcg->css))
->  		goto retry;
-> @@ -4694,7 +4688,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->  					break;
->  			} while (1);
->  		}
-> -		__mem_cgroup_remove_exceeded(mz->memcg, mz, mctz);
-> +		__mem_cgroup_remove_exceeded(mz, mctz);
->  		excess = res_counter_soft_limit_excess(&mz->memcg->res);
->  		/*
->  		 * One school of thought says that we should not add
-> @@ -4705,7 +4699,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->  		 * term TODO.
->  		 */
->  		/* If excess == 0, no tree ops */
-> -		__mem_cgroup_insert_exceeded(mz->memcg, mz, mctz, excess);
-> +		__mem_cgroup_insert_exceeded(mz, mctz, excess);
->  		spin_unlock(&mctz->lock);
->  		css_put(&mz->memcg->css);
->  		loop++;
-> -- 
-> 1.9.2
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+Sure, I will.
