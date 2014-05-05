@@ -1,109 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102AbaEEIfn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 04:35:43 -0400
-Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:25906
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754854AbaEEIfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 04:35:41 -0400
-Date: Mon, 5 May 2014 10:35:04 +0200
-From: Anders Berg <anders.berg@lsi.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/6] Add platform support for LSI AXM55xx
-Message-ID: <20140505083407.GA3398@swsaberg01>
-References: <cover.1398335771.git.anders.berg@lsi.com>
+	id S1755283AbaEEIiY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 04:38:24 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:48060 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754883AbaEEIiW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 04:38:22 -0400
+Date: Mon, 5 May 2014 10:37:57 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>, Mugunthan V N <mugunthanvnm@ti.com>,
+        Tony Lindgren <tony@atomide.com>, bcousson@baylibre.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Leigh Brown <leigh@solinno.co.uk>, devicetree@vger.kernel.org
+Subject: Re: [PATCH 3.14 012/158] ARM: dts: am33xx: correcting dt node unit
+ address for usb
+Message-ID: <20140505083757.GB30739@localhost>
+References: <20140504154029.975081050@linuxfoundation.org>
+ <20140504154031.690140742@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1398335771.git.anders.berg@lsi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [213.121.150.226]
-X-ClientProxiedBy: CO2PR06CA052.namprd06.prod.outlook.com (10.141.242.52) To
- BLUPR07MB369.namprd07.prod.outlook.com (10.141.26.142)
-X-Forefront-PRVS: 0202D21D2F
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019001)(6009001)(428001)(51704005)(24454002)(97756001)(83322001)(19580395003)(76482001)(83072002)(81542001)(33656001)(50466002)(42186004)(83506001)(101416001)(99396002)(4396001)(64706001)(87976001)(77982001)(74662001)(31966008)(74502001)(80022001)(66066001)(46406003)(92566001)(50986999)(54356999)(92726001)(76176999)(86362001)(23726002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR07MB369;H:swsaberg01;FPR:;MLV:sfv;PTR:InfoNoRecords;LANG:en;
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=Anders.Berg@lsi.com; 
-X-OriginatorOrg: lsi.com
+In-Reply-To: <20140504154031.690140742@linuxfoundation.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anrd,
+On Sun, May 04, 2014 at 11:38:41AM -0400, Greg Kroah-Hartman wrote:
+> 3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Any comments on this updated series?
+This one should not be backported without commit
 
-/Anders
+	a2f8d6b30321 ("ARM: dts: am335x: update USB DT references")
 
-On Thu, Apr 24, 2014 at 12:44:03PM +0200, Anders Berg wrote:
-> Hi,
+which is in Linus' tree but is not marked for stable (or USB will be
+disabled for the boards relying on the old node addresses).
+
+Thanks,
+Johan
+
+> ------------------
 > 
-> Verion 2 of this series to introduces basic platform support for the LSI
-> AXM5516 SoC. When this is in shape, could it be merged into the arm-soc tree?
+> From: Mugunthan V N <mugunthanvnm@ti.com>
 > 
-> Changes:
+> commit 8abcdd680d543fb582371e146e62ba9f2af8a816 upstream.
 > 
-> v2:
->     * Rebased to arm-soc/for-next
->     * Removed redundant HAVE_SMP and ARCH_WANT_OPTIONAL_GPIOLIB from Kconfig
->     * Use CPU_METHOD_OF_DECLARE to register smp_operations
->     * Rework smp operations to avoid holding pen and custom headsmp.S
->     * Clean up board file
->     * Corrected clock properties for arm,sp804 dts node.
->     * Changed machine compatible strings to include full model number.
->     * Break out clk-axxia driver as separate patch
->     * Removed Makefile.boot
+> DT node's unit address should be its own register offset address to make it a
+> unique across the system. This patch corrects the incorrect USB entries with
+> correct register offset for unit address.
 > 
-> Anders Berg (6):
->   ARM: Add platform support for LSI AXM55xx SoC
->   clk: Add clock driver for AXM55xx SoC
->   ARM: dts: Device tree for AXM55xx.
->   ARM: axxia: Adding defconfig for AXM55xx
->   power: reset: Add Axxia system reset driver
->   ARM: dts: axxia: Add reset controller
+> Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Acked-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+> Signed-off-by: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > 
->  Documentation/devicetree/bindings/arm/axxia.txt    |  12 +
->  .../devicetree/bindings/clock/clk-axxia.txt        |  88 ++++++
->  .../bindings/power_supply/axxia-reset.txt          |  20 ++
->  arch/arm/Kconfig                                   |   2 +
->  arch/arm/Makefile                                  |   2 +
->  arch/arm/boot/dts/Makefile                         |   1 +
->  arch/arm/boot/dts/axm5516-amarillo.dts             |  51 ++++
->  arch/arm/boot/dts/axm5516-cpus.dtsi                | 204 ++++++++++++++
->  arch/arm/boot/dts/axm55xx.dtsi                     | 311 +++++++++++++++++++++
->  arch/arm/configs/axm55xx_defconfig                 | 248 ++++++++++++++++
->  arch/arm/mach-axxia/Kconfig                        |  16 ++
->  arch/arm/mach-axxia/Makefile                       |   2 +
->  arch/arm/mach-axxia/axxia.c                        |  28 ++
->  arch/arm/mach-axxia/platsmp.c                      |  89 ++++++
->  drivers/clk/Makefile                               |   1 +
->  drivers/clk/clk-axxia.c                            | 281 +++++++++++++++++++
->  drivers/power/reset/Kconfig                        |   8 +
->  drivers/power/reset/Makefile                       |   1 +
->  drivers/power/reset/axxia-reset.c                  |  97 +++++++
->  19 files changed, 1462 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/axxia.txt
->  create mode 100644 Documentation/devicetree/bindings/clock/clk-axxia.txt
->  create mode 100644 Documentation/devicetree/bindings/power_supply/axxia-reset.txt
->  create mode 100644 arch/arm/boot/dts/axm5516-amarillo.dts
->  create mode 100644 arch/arm/boot/dts/axm5516-cpus.dtsi
->  create mode 100644 arch/arm/boot/dts/axm55xx.dtsi
->  create mode 100644 arch/arm/configs/axm55xx_defconfig
->  create mode 100644 arch/arm/mach-axxia/Kconfig
->  create mode 100644 arch/arm/mach-axxia/Makefile
->  create mode 100644 arch/arm/mach-axxia/axxia.c
->  create mode 100644 arch/arm/mach-axxia/platsmp.c
->  create mode 100644 drivers/clk/clk-axxia.c
->  create mode 100644 drivers/power/reset/axxia-reset.c
+> ---
+>  arch/arm/boot/dts/am33xx.dtsi |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> -- 
-> 1.8.3.2
-> 
+> --- a/arch/arm/boot/dts/am33xx.dtsi
+> +++ b/arch/arm/boot/dts/am33xx.dtsi
+> @@ -448,7 +448,7 @@
+>  			ti,hwmods = "usb_otg_hs";
+>  			status = "disabled";
+>  
+> -			usb_ctrl_mod: control@44e10000 {
+> +			usb_ctrl_mod: control@44e10620 {
+>  				compatible = "ti,am335x-usb-ctrl-module";
+>  				reg = <0x44e10620 0x10
+>  					0x44e10648 0x4>;
+> @@ -551,7 +551,7 @@
+>  					"tx14", "tx15";
+>  			};
+>  
+> -			cppi41dma: dma-controller@07402000 {
+> +			cppi41dma: dma-controller@47402000 {
+>  				compatible = "ti,am3359-cppi41";
+>  				reg =  <0x47400000 0x1000
+>  					0x47402000 0x1000
