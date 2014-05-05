@@ -1,52 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969AbaEESn7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 14:43:59 -0400
-Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:26092
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751753AbaEESn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 14:43:56 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "patrik.r.jakobsson@gmail.com" <patrik.r.jakobsson@gmail.com>
-CC: "hdegoede@redhat.com" <hdegoede@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>
-Subject: Re: [PATCH v2] mba6x_bl: Backlight driver for mid 2013 MacBook Air
-Thread-Topic: [PATCH v2] mba6x_bl: Backlight driver for mid 2013 MacBook Air
-Thread-Index: AQHPY7ZlKonnJSr2kkWANaJkxe8S4ZsyGv4AgAA9LYA=
-Date: Mon, 5 May 2014 18:28:24 +0000
-Message-ID: <1399314503.17557.0.camel@x230.lan>
-References: <1398781312-3607-1-git-send-email-patrik.r.jakobsson@gmail.com>
-	 <CAMeQTsYA0tGQ1SfhNhMctPW6H_y1NGjGXsM5ZcMSwOqE-bApyg@mail.gmail.com>
-In-Reply-To: <CAMeQTsYA0tGQ1SfhNhMctPW6H_y1NGjGXsM5ZcMSwOqE-bApyg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
-x-forefront-prvs: 0202D21D2F
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(377424004)(24454002)(189002)(199002)(74502001)(81542001)(31966008)(99396002)(81342001)(74662001)(80022001)(46102001)(101416001)(4396001)(76482001)(20776003)(36756003)(33646001)(79102001)(77982001)(83072002)(99286001)(86362001)(76176999)(50986999)(54356999)(19580395003)(92566001)(2656002)(87936001)(83322001)(19580405001)(85852003)(92726001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR05MB422;H:BN1PR05MB423.namprd05.prod.outlook.com;FPR:48AB6B6B.EF05CFA9.63E3B1BA.C4E8DE60.200E4;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <54BB4096199C4146AB881DD6EA09B48C@namprd05.prod.outlook.com>
+	id S1751679AbaEESxq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 14:53:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23230 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751468AbaEESxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 14:53:45 -0400
+Date: Mon, 5 May 2014 20:53:08 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] signal: Simplify __lock_task_sighand()
+Message-ID: <20140505185308.GA17507@redhat.com>
+References: <20140503161133.GA8838@redhat.com> <20140504180145.GC8754@linux.vnet.ibm.com> <20140504191757.GA11319@redhat.com> <20140504223804.GF8754@linux.vnet.ibm.com> <20140505132659.GA17996@redhat.com> <20140505152610.GK8754@linux.vnet.ibm.com> <20140505164719.GA31758@redhat.com>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140505164719.GA31758@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s45Ii99O004756
 
-On Mon, 2014-05-05 at 16:49 +0200, Patrik Jakobsson wrote:
-> Hi Matthew,
-> 
-> This seems to be in good shape. Do you have anything to add?
-> If not, can you pick this patch up through platform-drivers-x86?
+On 05/05, Oleg Nesterov wrote:
+>
+> On 05/05, Paul E. McKenney wrote:
+> >
+> > Does the patch below cover it?
+>
+> Yes, thanks.
+>
+> Acked-by: Oleg Nesterov <oleg@redhat.com>
 
-I'm a bit reluctant. Do we have any evidence that this is the way OS X
-behaves? What's the actual difference in state before and after suspend?
+Yes, but please consider the cleanup below, on top of your change.
 
+This is subjective of course, but imho the code looks better without
+the extra unlock/restore inside the loop.
+
+-------------------------------------------------------------------------------
+Subject: [PATCH] signal: Simplify __lock_task_sighand()
+
+__lock_task_sighand() does local_irq_save() to prevent the potential
+deadlock, we can use preempt_disable() with the same effect. And in
+this case we can do preempt_disable/enable + rcu_read_lock/unlock only
+once outside of the main loop and simplify the code. Also shaves 112
+bytes from signal.o.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/signal.c |   31 +++++++++++++------------------
+ 1 files changed, 13 insertions(+), 18 deletions(-)
+
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 4368370..03a0fd4 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1260,30 +1260,25 @@ struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
+ 					   unsigned long *flags)
+ {
+ 	struct sighand_struct *sighand;
+-
++	/*
++	 * We are going to do rcu_read_unlock() under spin_lock_irqsave().
++	 * Make sure we can not be preempted after rcu_read_unlock(), see
++	 * rcu_read_unlock comment header for details.
++	 */
++	preempt_disable();
++	rcu_read_lock();
+ 	for (;;) {
+-		/*
+-		 * Disable interrupts early to avoid deadlocks.
+-		 * See rcu_read_unlock comment header for details.
+-		 */
+-		local_irq_save(*flags);
+-		rcu_read_lock();
+ 		sighand = rcu_dereference(tsk->sighand);
+-		if (unlikely(sighand == NULL)) {
+-			rcu_read_unlock();
+-			local_irq_restore(*flags);
++		if (unlikely(sighand == NULL))
+ 			break;
+-		}
+ 
+-		spin_lock(&sighand->siglock);
+-		if (likely(sighand == tsk->sighand)) {
+-			rcu_read_unlock();
++		spin_lock_irqsave(&sighand->siglock, *flags);
++		if (likely(sighand == tsk->sighand))
+ 			break;
+-		}
+-		spin_unlock(&sighand->siglock);
+-		rcu_read_unlock();
+-		local_irq_restore(*flags);
++		spin_unlock_irqrestore(&sighand->siglock, *flags);
+ 	}
++	rcu_read_unlock();
++	preempt_enable();
+ 
+ 	return sighand;
+ }
 -- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+1.5.5.1
+
+
