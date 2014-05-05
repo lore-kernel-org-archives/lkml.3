@@ -1,82 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756276AbaEEK2z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 06:28:55 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:47644 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756187AbaEEK2y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 06:28:54 -0400
-Date: Mon, 5 May 2014 13:28:30 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: ching <ching2048@areca.com.tw>
-Cc: jbottomley@parallels.com, thenzl@redhat.com, linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1.1 2/16] arcmsr:  Adding code to support MSI-X interrupt
-Message-ID: <20140505102830.GN4963@mwanda>
-References: <1399279631.18695.27.camel@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399279631.18695.27.camel@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1756315AbaEEK35 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 06:29:57 -0400
+Received: from mx02.posteo.de ([89.146.194.165]:49296 "EHLO posteo.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756220AbaEEK34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 06:29:56 -0400
+From: Martin Kepplinger <martink@posteo.de>
+To: gregkh@linuxfoundation.org
+Cc: lidza.louina@gmail.com, driverdev-devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, Martin Kepplinger <martink@posteo.de>
+Subject: [RESEND PATCH] staging: dgnc: use dev_err() instead of printk()
+Date: Mon,  5 May 2014 12:29:39 +0200
+Message-Id: <1399285779-7040-1-git-send-email-martink@posteo.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1398765250-16064-1-git-send-email-martink@posteo.de>
+References: <1398765250-16064-1-git-send-email-martink@posteo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 04:47:11PM +0800, ching wrote:
-> +static int
-> +arcmsr_request_irq(struct pci_dev *pdev, struct AdapterControlBlock *acb)
-> +{
-> +	int	i, j, r;
-> +	struct msix_entry entries[ARCMST_NUM_MSIX_VECTORS];
-> +
-> +	if (!pci_find_capability(pdev, PCI_CAP_ID_MSIX))
-> +		goto msi_int;
-> +	for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++)
-> +		entries[i].entry = i;
-> +	r = pci_enable_msix(pdev, entries, ARCMST_NUM_MSIX_VECTORS);
-> +	if (r < 0)
-> +		goto msi_int;
-> +	if (r == 0) {
-> +		for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++) {
-> +			if (request_irq(entries[i].vector,
-> +				arcmsr_do_interrupt, 0, "arcmsr", acb)) {
-> +				pr_warn("arcmsr%d: request_irq =%d failed!\n",
-> +					acb->host->host_no, pdev->irq);
-> +				for (j = 0 ; j < i ; j++)
-> +					free_irq(entries[i].vector, acb);
+Use dev_err() instead of printk() and remove "dgnc:" from the message.
+This should provide userspace with more useful information and use
+the common kernel coding style.
 
-This is a bug here.  Sorry for not noticing the first time I reviewed
-this patch.  It should be "j" instead of "i" in
-free_irq(entries[i].vector, acb);.
+Signed-off-by: Martin Kepplinger <martink@posteo.de>
+---
+ drivers/staging/dgnc/dgnc_sysfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> +				pci_disable_msix(pdev);
-> +				goto msi_int;
-> +			}
-> +			acb->entries[i] = entries[i];
-> +		}
-> +		acb->acb_flags |= ACB_F_MSIX_ENABLED;
-> +		pr_info("arcmsr%d: msi-x enabled\n", acb->host->host_no);
-> +		return ARC_SUCCESS;
-> +	} else {
-> +		if (pci_enable_msix(pdev, entries, r))
-> +			goto msi_int;
-> +		for (i = 0; i < r; i++) {
-> +			if (request_irq(entries[i].vector,
-> +				arcmsr_do_interrupt, 0, "arcmsr", acb)) {
-> +				pr_warn("arcmsr%d: request_irq =%d failed!\n",
-> +					acb->host->host_no, pdev->irq);
-> +				for (j = 0 ; j < i ; j++)
-> +					free_irq(entries[i].vector, acb);
-
-The same thing here.
-
-But otherwise so far as style goes this function is a lot better in
-this version.  Thanks.  Also the patchset is split up nicely into
-patches which do one thing per patch so that's nice as well.
-
-regards,
-dan carpenter
+diff --git a/drivers/staging/dgnc/dgnc_sysfs.c b/drivers/staging/dgnc/dgnc_sysfs.c
+index 946230c..88a2106 100644
+--- a/drivers/staging/dgnc/dgnc_sysfs.c
++++ b/drivers/staging/dgnc/dgnc_sysfs.c
+@@ -739,7 +739,7 @@ void dgnc_create_tty_sysfs(struct un_t *un, struct device *c)
+ 
+ 	ret = sysfs_create_group(&c->kobj, &dgnc_tty_attribute_group);
+ 	if (ret) {
+-		printk(KERN_ERR "dgnc: failed to create sysfs tty device attributes.\n");
++		dev_err(c, "failed to create sysfs tty device attributes.\n");
+ 		sysfs_remove_group(&c->kobj, &dgnc_tty_attribute_group);
+ 		return;
+ 	}
+-- 
+1.7.10.4
 
