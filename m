@@ -1,103 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933176AbaEEWgn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 18:36:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34793 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756941AbaEEWgl (ORCPT
+	id S932440AbaEEWYz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 18:24:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57334 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932152AbaEEWYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 18:36:41 -0400
-Date: Mon, 5 May 2014 22:36:38 +0000
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        eparis@redhat.com, linux-audit@redhat.com, ebiederm@xmission.com,
-        sgrubb@redhat.com
-Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
-Message-ID: <20140505223638.GB6508@ubuntumail>
-References: <cover.1398176489.git.rgb@redhat.com>
- <1399154328.2505.29.camel@dabdike.int.hansenpartnership.com>
- <20140505034814.GA27548@mail.hallyn.com>
- <20140505214818.GC6867@madcap2.tricolour.ca>
- <1399326698.2164.47.camel@dabdike.int.hansenpartnership.com>
- <20140505222758.GA6508@ubuntumail>
- <1399329001.2164.56.camel@dabdike.int.hansenpartnership.com>
+	Mon, 5 May 2014 18:24:54 -0400
+Date: Mon, 5 May 2014 15:24:31 -0700
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-73159fdcdb9be3eda61b846864352c29371baeb6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <e59a5f4362661f75dd4841fa74e1f2448045e245.1399317206.git.luto@amacapital.net>
+References: <e59a5f4362661f75dd4841fa74e1f2448045e245.1399317206.git.luto@amacapital.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86, mm: Ensure correct alignment of the fixmap
+Git-Commit-ID: 73159fdcdb9be3eda61b846864352c29371baeb6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1399329001.2164.56.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
-> On Mon, 2014-05-05 at 22:27 +0000, Serge Hallyn wrote:
-> > Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
-> > > On Mon, 2014-05-05 at 17:48 -0400, Richard Guy Briggs wrote:
-> > > > On 14/05/05, Serge E. Hallyn wrote:
-> > > > > Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
-> > > > > > On Tue, 2014-04-22 at 14:12 -0400, Richard Guy Briggs wrote:
-> > > > > > > Questions:
-> > > > > > > Is there a way to link serial numbers of namespaces involved in migration of a
-> > > > > > > container to another kernel?  (I had a brief look at CRIU.)  Is there a unique
-> > > > > > > identifier for each running instance of a kernel?  Or at least some identifier
-> > > > > > > within the container migration realm?
-> > > > > > 
-> > > > > > Are you asking for a way of distinguishing an migrated container from an
-> > > > > > unmigrated one?  The answer is pretty much "no" because the job of
-> > > > > > migration is to restore to the same state as much as possible.
-> > > > > > 
-> > > > > > Reading between the lines, I think your goal is to correlate audit
-> > > > > > information across a container migration, right?  Ideally the management
-> > > > > > system should be able to cough up an audit trail for a container
-> > > > > > wherever it's running and however many times it's been migrated?
-> > > > > > 
-> > > > > > In that case, I think your idea of a numeric serial number in a dense
-> > > > > > range is wrong.  Because the range is dense you're obviously never going
-> > > > > > to be able to use the same serial number across a migration.  However,
-> > > > > 
-> > > > > Ah, but I was being silly before, we can actually address this pretty
-> > > > > simply.  If we just (for instance) add
-> > > > > /proc/self/ns/{ic,mnt,net,pid,user,uts}_seq containing the serial number
-> > > > > for the relevant ns for the task, then criu can dump this info at
-> > > > > checkpoint.  Then at restart it can dump an audit message per task and
-> > > > > ns saying old_serial=%x,new_serial=%x.  That way the audit log reader
-> > > > > can if it cares keep track.
-> > > > 
-> > > > This is the sort of idea I had in mind...
-> > > 
-> > > OK, but I don't understand then why you need a serial number.  There are
-> > > plenty of things we preserve across a migration, like namespace name for
-> > > instance.  Could you explain what function it performs because I think I
-> > > might be missing something.
-> > 
-> > We're looking ahead to a time when audit is namespaced, and a container
-> > can keep its own audit logs (without limiting what the host audits of
-> > course).  So if a container is auditing suspicious activity by some
-> > task in a sub-namesapce, then the whole parent container gets migrated,
-> > after migration we want to continue being able to correlate the namespaces.
-> > 
-> > We're also looking at audit trails on a host that is up for years.  We
-> > would like every namespace to be uniquely logged there.  That is why
-> > inode #s on /proc/self/ns/* are not sufficient, unless we add a generation
-> > # (which would end more complicated, not less, than a serial #).
-> 
-> Right, but when the contaner has an audit namespace, that namespace has
-> a name,
+Commit-ID:  73159fdcdb9be3eda61b846864352c29371baeb6
+Gitweb:     http://git.kernel.org/tip/73159fdcdb9be3eda61b846864352c29371baeb6
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Mon, 5 May 2014 12:19:31 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 5 May 2014 13:18:25 -0700
 
-What ns has a name?  The audit ns can be tied to 50 pid namespaces, and we
-want to log which pidns is responsible for something.
+x86, mm: Ensure correct alignment of the fixmap
 
-If you mean the pidns has a name, that's the problem...  it does not, it
-only has a inode # which may later be re-use.
+The early_ioremap code requires that its buffers not span a PMD
+boundary.  The logic for ensuring that only works if the fixmap is
+aligned, so assert that it's aligned correctly.
 
-> which CRIU would migrate, so why not use that name for the
-> log .. no need for numbers (unless you make the name a number, of
-> course)?
-> 
-> James
+To make this work reliably, reserve_top_address needs to be
+adjusted.
 
-Sorry if I'm being dense...
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/e59a5f4362661f75dd4841fa74e1f2448045e245.1399317206.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/mm/ioremap.c | 6 ++++++
+ arch/x86/mm/pgtable.c | 6 +++---
+ 2 files changed, 9 insertions(+), 3 deletions(-)
 
--serge
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 597ac15..6ef98c5 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -355,6 +355,12 @@ void __init early_ioremap_init(void)
+ {
+ 	pmd_t *pmd;
+ 
++#ifdef CONFIG_X86_64
++	BUILD_BUG_ON((fix_to_virt(0) + PAGE_SIZE) & ((1 << PMD_SHIFT) - 1));
++#else
++	WARN_ON((fix_to_virt(0) + PAGE_SIZE) & ((1 << PMD_SHIFT) - 1));
++#endif
++
+ 	early_ioremap_setup();
+ 
+ 	pmd = early_ioremap_pmd(fix_to_virt(FIX_BTMAP_BEGIN));
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index c96314a..5f8bdda 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -449,9 +449,9 @@ void __init reserve_top_address(unsigned long reserve)
+ {
+ #ifdef CONFIG_X86_32
+ 	BUG_ON(fixmaps_set > 0);
+-	printk(KERN_INFO "Reserving virtual address space above 0x%08x\n",
+-	       (int)-reserve);
+-	__FIXADDR_TOP = -reserve - PAGE_SIZE;
++	__FIXADDR_TOP = round_down(-reserve, 1 << PMD_SHIFT) - PAGE_SIZE;
++	printk(KERN_INFO "Reserving virtual address space above 0x%08lx (rounded to 0x%08lx)\n",
++	       -reserve, __FIXADDR_TOP + PAGE_SIZE);
+ #endif
+ }
+ 
