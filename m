@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247AbaEETcZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 15:32:25 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:36721 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802AbaEETcW (ORCPT
+	id S1752114AbaEETgV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 15:36:21 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:40874 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740AbaEETgT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 15:32:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140505180530.GA18465@intel.com>
-References: <20140505180530.GA18465@intel.com>
-Date: Mon, 5 May 2014 12:32:22 -0700
-X-Google-Sender-Auth: zkk7JoLmSVWGsnNw7Ob-gLAzhsk
-Message-ID: <CAODwPW_57G+Lebe2Xarem9P-L6ePtAaZfy5kpNVEtgkWbc0FWw@mail.gmail.com>
-Subject: Re: [regression 3.15-rc3] Resume from s4 broken by 1f81b6d22a5980955b01e08cf27fb745dc9b686f
-From: Julius Werner <jwerner@chromium.org>
-To: =?UTF-8?B?VmlsbGUgU3lyasOkbMOk?= <ville.syrjala@linux.intel.com>
-Cc: Julius Werner <jwerner@chromium.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
+	Mon, 5 May 2014 15:36:19 -0400
+Date: Mon, 5 May 2014 15:36:16 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Devin Heitmueller <dheitmueller@kernellabs.com>
+Cc: Shuah Khan <shuah.kh@samsung.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Mauro Carvalho Chehab <m.chehab@samsung.com>, olebowle@gmx.com,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: Re: [PATCH 1/4] drivers/base: add managed token devres interfaces
+Message-ID: <20140505193616.GR11231@htj.dyndns.org>
+References: <cover.1398797954.git.shuah.kh@samsung.com>
+ <6cb20ce23f540c883e60e6ce71302042b034c4aa.1398797955.git.shuah.kh@samsung.com>
+ <20140501145337.GC31611@htj.dyndns.org>
+ <5367E39E.7090401@samsung.com>
+ <20140505192633.GQ11231@htj.dyndns.org>
+ <CAGoCfiwoFipx79tx6Jkgx5nfU_K9qXdfGe25kzrNb6Jwka0H7A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGoCfiwoFipx79tx6Jkgx5nfU_K9qXdfGe25kzrNb6Jwka0H7A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmmm... very odd. I unfortunately don't have a machine that can easily
-do S4 at hand, but I did test this on an IVB with XHCI_RESET_ON_RESUME
-in S3 (essentially the same code path), and I didn't run into any
-problems.
+On Mon, May 05, 2014 at 03:30:34PM -0400, Devin Heitmueller wrote:
+> On Mon, May 5, 2014 at 3:26 PM, Tejun Heo <tj@kernel.org> wrote:
+> > As such, please consider the patches nacked and try to find someone
+> > who can shepherd the code.  Mauro, can you help out here?
+> 
+> We actually discussed this proposal at length at the media summit last
+> week.  The patches are being pulled pending further internal review
 
-How exactly does your machine fail on resume? Is it a kernel crash or
-just a hang? Can you try getting some debug output (by setting 'echo N
-> /sys/module/printk/parameters/console_suspend' and trying to catch
-the crash on the screen or a serial line, or maybe through pstore)? I
-really don't see much that could go wrong with this patch, so without
-more info it will be hard to understand your problem.
+"being pulled into a tree" or "being pulled for more work"?
 
-Also, I noticed that you have two HID devices plugged in during
-suspend. Does it make a difference if you have different devices (e.g.
-a mass storage stick) or none at all?
+> and after Shuah has exercised some other use cases.
+
+I don't have anything against the use case, FWIW.  I just wanna make
+sure the code itself ends up with an appropriate initial care taker so
+that when something goes wrong it can handled.
+
+Thanks.
+
+-- 
+tejun
