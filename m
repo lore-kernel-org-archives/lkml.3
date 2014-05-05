@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933188AbaEEX22 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 19:28:28 -0400
-Received: from mga03.intel.com ([143.182.124.21]:52182 "EHLO mga03.intel.com"
+	id S933236AbaEEX3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 19:29:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:49520 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756771AbaEEX21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 19:28:27 -0400
+	id S1756771AbaEEX3R convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 19:29:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,992,1389772800"; 
-   d="scan'208";a="427964201"
-Date: Mon, 5 May 2014 16:28:21 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Yuchung Cheng <ycheng@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, netdev <netdev@vger.kernel.org>,
+   d="scan'208";a="535139701"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Mathieu Souchaud <mattieu.souchaud@free.fr>, "bp@alien8.de" <bp@alien8.de>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        tom.zanussi@linux.intel.com
-Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
-Message-ID: <20140505232821.GJ19657@tassilo.jf.intel.com>
-References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
- <1399328773-6531-9-git-send-email-andi@firstfloor.org>
- <CAK6E8=cQ37-O=z6oxwhNZ+rog2VrLZQvjKW4sq+E97Yz-VNorQ@mail.gmail.com>
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Subject: RE: [PATCH v2] x86/mce: Improve mcheck_init_device() error handling
+Thread-Topic: [PATCH v2] x86/mce: Improve mcheck_init_device() error handling
+Thread-Index: AQHPZxNH4Zd4vAzK/kmz6SmGz4FilJsyoyww
+Date: Mon, 5 May 2014 23:29:14 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F327F8E9B@ORSMSX114.amr.corp.intel.com>
+References: <1399151031-19905-1-git-send-email-mattieu.souchaud@free.fr>
+In-Reply-To: <1399151031-19905-1-git-send-email-mattieu.souchaud@free.fr>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK6E8=cQ37-O=z6oxwhNZ+rog2VrLZQvjKW4sq+E97Yz-VNorQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +config TCP_METRICS
-> > +       bool "Report TCP metrics over netlink"
-> > +       ---help---
-> > +           Enable support in TCP to save host information between different
-> > +          connections.
-> Please add that "Certain TCP features such as active TCP Fast Open
-> depends on this."
++err_device_create:
++	/*
++	 * mce_device_remove behave properly if mce_device_create was not
++	 * called on that device.
++	 */
++	for_each_possible_cpu(i)
++		mce_device_remove(i);
 
-I added a select.
+grammar comment "s/behave/behaves/"
 
-Also will fix the inaccurate help line.
+Though perhaps this is better:
 
--Andi
+	/*
+	 * We didn't keep track of which devices were created above, but
+	 * even if we had, the set of online cpus might have changed.
+	 * Play safe and remove for every possible cpu since mce_device_remove()
+	 * will do the right thing.
+	 */
+
+-Tony
