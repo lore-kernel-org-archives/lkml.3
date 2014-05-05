@@ -1,38 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563AbaEENp6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 09:45:58 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56881 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932420AbaEENp5 convert rfc822-to-8bit (ORCPT
+	id S932577AbaEENtq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 09:49:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55532 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932429AbaEENtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 09:45:57 -0400
-Date: Mon, 5 May 2014 15:45:54 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Did you still need asynchronous grace-period detection?
-Message-ID: <20140505134554.GP26782@laptop.programming.kicks-ass.net>
-References: <20140502235355.GA13710@linux.vnet.ibm.com>
+	Mon, 5 May 2014 09:49:45 -0400
+Date: Mon, 5 May 2014 10:49:34 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 00/10] perf tools: perf.h cleanups
+Message-ID: <20140505134934.GA3006@kernel.org>
+References: <1399293219-8732-1-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20140502235355.GA13710@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1399293219-8732-1-git-send-email-jolsa@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 02, 2014 at 04:53:56PM -0700, Paul E. McKenney wrote:
-> Hello, Peter,
+Em Mon, May 05, 2014 at 02:33:29PM +0200, Jiri Olsa escreveu:
+> hi,
+> moving syscall function and arch related defines into
+> new header 'perf-sys.h' as requested by Peter in:
+>   http://lkml.kernel.org/r/20140502115201.GI30445@twins.programming.kicks-ass.net
 > 
-> The following commit seems to have been dropped on the floor.
-> Given that you haven't complained, I feel the need to ask you
-> if you still need it.  ;-)
+> While at it I did some clean ups in perf.h header.
 > 
-> If you do need it, I will push it into 3.16.
+> Hopefully I did not brake anyone's usage of
+> perf.h .. let me know ;-)
 > 
+> Also available in here:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+>   perf/header_1
 
-Yes, I do.. thanks for reminding me, I'll need to go find the patch that
-needs it :-)
+With that ACCESS_ONCE comments made addressed:
+
+Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+- Arnaldo
