@@ -1,72 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757129AbaEFOAa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 10:00:30 -0400
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:61122 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167AbaEFOA2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 10:00:28 -0400
-X-AuditID: cbfec37a-b7fd76d000006048-11-5368eafa32c1
-Message-id: <5368EAF0.5010800@samsung.com>
-Date: Tue, 06 May 2014 08:00:16 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 3.4 00/43] 3.4.89-stable review
-References: <20140504154224.211508175@linuxfoundation.org>
-In-reply-to: <20140504154224.211508175@linuxfoundation.org>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.134.247]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsVy+t9hX91frzKCDfbPMLCYs34Nm0Xz4vVs
-	Fpd3zWGzeLLwDJPF1FMTWCwWbHzEaPGo7y27A7vHzll32T1OzPjN4rF/7hog93sDu8fnTXIB
-	rFFcNimpOZllqUX6dglcGTvefGErOM5WsWzZS6YGxhmsXYycHBICJhLrXx9khLDFJC7cW8/W
-	xcjFISSwjFFi++xVUE4vk8TpjplsIFVCAtsYJc5cKehi5ODgFdCSmL/OHSTMIqAq8f/RE2YQ
-	m01AXeLz6x3sEOVyEk1LVjODlIsKREg8viAEEuYVEJT4MfkeC4gtIhAssfbrQkaQVcwCqxgl
-	rl9eDrZKWMBYonXWLGaIOVYSNxdMZwKxOQWsJT42XQJ7gFnATOJRyzpmCFteYvOat1D1yhJ/
-	Lp9ignhMWWLjnttsExhFZiHZPQtJ+ywk7QsYmVcxipUWJxcUJ6WnVhjqFSfmFpfmpesl5+du
-	YoTEUdUOxjtfbQ4xCnAwKvHwil9PDxZiTSwrrsw9xCjBwawkwit+PyNYiDclsbIqtSg/vqg0
-	J7X4ECMTB6dUA6PVGYaLv9465RysPPd9iQivZfT1672sCcev89f0ypvbKPSWJu59G6r2wGD2
-	kc1Hjq5cNfvGkxOL58dVvlLb3Xh7yqe3xR9nasY+Of7dbet2P+eVAlPZ10bKbo0s4ji8t2qW
-	8uLqObfSSxNWLS1dwfSTW7L8Zf30q9KHXW2rJnrpPPO7suCK1uNQJZbijERDLeai4kQAAVZs
-	LYECAAA=
+	id S1757854AbaEFOAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 10:00:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38486 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757533AbaEFOAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 10:00:35 -0400
+Date: Tue, 6 May 2014 16:00:32 +0200
+From: Jan Kara <jack@suse.cz>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Jan Kara <jack@suse.cz>,
+        "mm-commits@vger.kernel.org" <mm-commits@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "kay@vrfy.org" <kay@vrfy.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: +
+ printk-print-initial-logbuf-contents-before-re-enabling-interrupts.patch
+ added to -mm tree
+Message-ID: <20140506140032.GA22739@quack.suse.cz>
+References: <53640c8c.5++0zeO0pmfqKMwm%akpm@linux-foundation.org>
+ <20140502224651.GG23636@quack.suse.cz>
+ <20140506120648.GA30234@arm.com>
+ <20140506122958.GG9291@quack.suse.cz>
+ <20140506131234.GD30234@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140506131234.GD30234@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2014 09:41 AM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.89 release.
-> There are 43 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Tue May  6 15:42:07 UTC 2014.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.89-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+On Tue 06-05-14 14:12:34, Will Deacon wrote:
+> On Tue, May 06, 2014 at 01:29:58PM +0100, Jan Kara wrote:
+> > On Tue 06-05-14 13:06:48, Will Deacon wrote:
+> > > On Fri, May 02, 2014 at 11:46:51PM +0100, Jan Kara wrote:
+> > > >   I really dislike this patch. It goes completely against my efforts of
+> > > > lowering irq latency caused by printing to console (which are the
+> > > > problems I have observed ;).
+> > > 
+> > > Hmmm, what makes you think that? Interrupts only remain disabled whilst we
+> > > process the backlog, which in the usual case should be pretty small. We also
+> > > hold the logbuf_lock during this time, so we can't get stuck in an unbounded
+> > > loop.
+> > >
+> > > Can you elaborate a bit more on the problems you've observed, please?
+> >   Well, with serial console the backlog can get actually pretty big. During
+> > boot on large machines I've seen CPUs stuck in that very loop in
+> > console_unlock() for tens of seconds. Obviously that causes problems - e.g.
+> > watchdog fires, RCU lockup detector fires, when interrupts are disabled,
+> > some hardware gives up because its interrupts weren't served for too long.
+> > All in all the machine just dies.
+> 
+> Right, so there's the usual compromise here between throughput and latency.
+  I'd see that compromise if enabling & disabling interrupts would be
+taking considerable amount of time. I don't think that was your concern,
+was it? Maybe I just misunderstood you...
 
-Compiled and booted on my test systems. No dmesg regressions.
+> I hoped that pegging the amount of irq-disabled work using console_end_seq
+> would give us the best of both worlds, but you're saying that it can still
+> lead to issues on large machines (in the worst case, the whole buffer fills
+> up while we're printing the last lot, so the irq-disabled work amounts to
+> draining logbuf, right?).
+  Yup.
 
--- Shuah
+> That said, printing one message each time seems to go too far in the
+> opposite direction for my liking, so the best bet is likely to limit the
+> work to some fixed number of messages. Do you have any feeling for such a
+> limit?
+  If you really are concerned about enabling and disabling of interrupts
+taking significant time (and it may be, I just don't know), then printing
+couple of messages without enabling them makes sense. How many is a tricky
+question since it depends on the console speed. I had a similar problem
+when I was deciding in my patch when we should ask another CPU to take over
+printing from the current CPU (to avoid the issues I've described in the
+previous email). I was experimenting with various stuff but in the end I
+restorted to a stupid "after X characters are printed".
 
+> > And the backlog builds up because while one cpu is doing the printing in
+> > console_unlock() all the other cpus are busily adding new messages to the
+> > buffer faster than they can be printed...
+> 
+> Understood, but that's also the situation without this patch (and not one
+> that I think you can fix without hurting latency).
+  Sure. I have a patch which transitions printing to another CPU once in a
+while so single CPU isn't hogged for too long and that solves the issues I
+have observed. But Alan didn't like this solution so the issue is unfixed
+for now.
 
+> > > > My opinion is that when you are printing from each and every interrupt
+> > > > which happens so often, then you have a problem and disabling IRQs in
+> > > > printk so that your interrupt doesn't happen that often seems like a poor
+> > > > solution to me. You could as well just ratelimit your debug messages,
+> > > > couldn't you?
+> > > 
+> > > My use-case was basically using printk as a debug trace during early boot
+> > > when bringing up Linux on a new CPU core. I don't think ratelimiting would
+> > > be the right thing there, since I really did want as many messages to
+> > > reach the console as possible (which is also why I wrote this patch, not
+> > > just the other one in the series).
+> >   OK, I understand. It just seems wrong to me to throttle all interrupts on
+> > the cpu while doing printing just because someone might be doing debug
+> > printing from the interrupt. Sure it's fine as a debug hack but on a
+> > production machine that seems rather counterproductive.
+> 
+> Perhaps, but the one time I *really* want printk to be reliable is when I'm
+> using it to debug a problem.
+  Yes, I understand that. 
+
+								Honza
 -- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
