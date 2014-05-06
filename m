@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904AbaEFVZG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 17:25:06 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:59329 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361AbaEFVZE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 17:25:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFw_Dj7Lx_bE0B3mDxMUNz_K1yc=saziC9dmA_dKSkFWiw@mail.gmail.com>
-References: <e94ab903e725eaf9d98e56f3043878bde7fc1b58.1399408110.git.luto@amacapital.net>
-	<CA+55aFy6NzQOfyne4xLqQQCvuhpi-KSXnJNLjXTRc7+4ChPAnQ@mail.gmail.com>
-	<CA+55aFw_Dj7Lx_bE0B3mDxMUNz_K1yc=saziC9dmA_dKSkFWiw@mail.gmail.com>
-Date: Tue, 6 May 2014 14:25:03 -0700
-X-Google-Sender-Auth: 5O350b7yake7Rusmaqex8owJVU4
-Message-ID: <CA+55aFwix8dSDQ1N1Qu2-9rzGxWeeGAv4fSPVQWGo1YNzJoCoA@mail.gmail.com>
-Subject: Re: [ABOMINATION] x86: Fast interrupt return to userspace
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752502AbaEFV0X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 17:26:23 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:46785 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750867AbaEFV0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 17:26:22 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: David Fries <David@Fries.net>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Evgeniy Polyakov <zbr@ioremap.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH v2] w1: do not unlock unheld list_mutex in __w1_remove_master_device()
+Date: Wed,  7 May 2014 01:26:04 +0400
+Message-Id: <1399411564-16172-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <20140501034759.GG5096@spacedout.fries.net>
+References: <20140501034759.GG5096@spacedout.fries.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 6, 2014 at 2:00 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> I'll do profiles and test the kernel compile too, but the raw timings
-> are certainly promising. The "sysret" hack is pretty disgusting, and
-> it's broken too. sysret doesn't do some things iret does (like TF flag
-> etc), so it's not complete, but it's clearly good enough to run tests
-> on. It will definitely break ptrace() and friends.
+w1_process_callbacks() expects to be called with dev->list_mutex held,
+but it is the fact only in w1_process(). __w1_remove_master_device()
+calls w1_process_callbacks() after it releases list_mutex.
 
-It clearly breaks other things too, and there seems to be bugs in
-there. I got this, for example:
+The patch fixes __w1_remove_master_device() to acquire list_mutex
+for w1_process_callbacks().
 
-WARNING: CPU: 2 PID: 1174 at kernel/smp.c:230
-smp_call_function_single+0x81/0xa0()
-CPU: 2 PID: 1174 Comm: gdbus Tainted: G        W
-3.15.0-rc4-00260-g38583f095c5a-dirty #2
-Call Trace:
-  dump_stack+0x45/0x56
-  warn_slowpath_common+0x73/0x90
-  warn_slowpath_null+0x15/0x20
-  smp_call_function_single+0x81/0xa0
-  smp_call_function_many+0x21c/0x260
-  flush_tlb_page+0x6d/0xb0
-  ptep_clear_flush+0x2c/0x40
-  do_wp_page+0x208/0x6e0
-  handle_mm_fault+0x79c/0x1060
-  __do_page_fault+0x15e/0x510
-  do_page_fault+0xc/0x10
-  page_fault+0x22/0x30
-  retint_swapgs+0x6/0x10
+Found by Linux Driver Verification project (linuxtesting.org).
 
-which is because interrupts are disabled in that
-install_sysret_trampoline() path that touches user space. It's
-possibly sufficient to just move the "cli" to below the call to it. I
-eventually ended up with a hung machine, possibly related to this,
-possibly something else.
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/w1/w1.c     | 2 ++
+ drivers/w1/w1_int.c | 4 ++++
+ 2 files changed, 6 insertions(+)
 
-Whatever. I got enough profile data to say that it seems to have cut
-'iret' overhead by at least two thirds. So it may not *work*, but from
-a "hey look, some random numbers" standpoint it is worth playing with.
+diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
+index ff52618cafbe..5d7341520544 100644
+--- a/drivers/w1/w1.c
++++ b/drivers/w1/w1.c
+@@ -1078,6 +1078,8 @@ static void w1_search_process(struct w1_master *dev, u8 search_type)
+  * w1_process_callbacks() - execute each dev->async_list callback entry
+  * @dev: w1_master device
+  *
++ * The w1 master list_mutex must be held.
++ *
+  * Return: 1 if there were commands to executed 0 otherwise
+  */
+ int w1_process_callbacks(struct w1_master *dev)
+diff --git a/drivers/w1/w1_int.c b/drivers/w1/w1_int.c
+index 9b084db739c7..728039d2efe1 100644
+--- a/drivers/w1/w1_int.c
++++ b/drivers/w1/w1_int.c
+@@ -219,9 +219,13 @@ void __w1_remove_master_device(struct w1_master *dev)
+ 
+ 		if (msleep_interruptible(1000))
+ 			flush_signals(current);
++		mutex_lock(&dev->list_mutex);
+ 		w1_process_callbacks(dev);
++		mutex_unlock(&dev->list_mutex);
+ 	}
++	mutex_lock(&dev->list_mutex);
+ 	w1_process_callbacks(dev);
++	mutex_unlock(&dev->list_mutex);
+ 
+ 	memset(&msg, 0, sizeof(msg));
+ 	msg.id.mst.id = dev->id;
+-- 
+1.8.3.2
 
-             Linus
