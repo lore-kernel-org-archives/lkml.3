@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520AbaEFMmk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 08:42:40 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:31768 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757505AbaEFMmg (ORCPT
+	id S1757279AbaEFMof (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 08:44:35 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:41411 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524AbaEFMod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 08:42:36 -0400
-Date: Tue, 6 May 2014 15:41:57 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, devel@acpica.org,
-        kernel-hardening@lists.openwall.com, Kees Cook <keescook@chromium.org>,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>
-Subject: Re: [patch] lib: check for strcpy() overflows to fixed length buffers
-Message-ID: <20140506124157.GT4963@mwanda>
-References: <20140430150844.GA10621@mwanda>
- <1507574.Y0KFKOdI6F@vostro.rjw.lan>
- <20140430201529.GX4963@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140430201529.GX4963@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 6 May 2014 08:44:33 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, vgoyal@redhat.com,
+        axboe@kernel.dk, hannes@cmpxchg.org, mhocko@suse.cz,
+        arozansk@redhat.com
+Subject: [PATCHSET cgroup/for-3.16] cgroup: implement cftype->write()
+Date: Tue,  6 May 2014 08:44:21 -0400
+Message-Id: <1399380266-3324-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 11:15:29PM +0300, Dan Carpenter wrote:
-> > > diff --git a/include/acpi/platform/acenv.h b/include/acpi/platform/acenv.h
-> > > index e863dd5..5e0fc2b 100644
-> > > --- a/include/acpi/platform/acenv.h
-> > > +++ b/include/acpi/platform/acenv.h
-> > 
-> > This is an ACPICA header and changes to it need to be submitted to the ACPICA
-> > maintainers (as per MAINTAINERS).  We only get ACPICA changes from the
-> > upstream project (except for really special situations).
-> 
-> Ok.  I should have added Robert and Lv to the CC list.  My guess is
-> that the (void) is needed to avoid compile warnings but it's needed for
-> us to avoid compile breakage with this change.
-> 
-> Anyway, I'll wait for a couple days and resend that bit broken out.
-> 
+Hello,
 
-In the end, I won't need to modify the ACPICA headers if I use an
-expression statement ({ ... }) instead of a do { } while (0) statement.
+This patchset implements a new cftype operation ->write() and replace
+->write_string() and ->trigger() with it.  ->write() is similar to
+->write_string() but maps directly to the kernfs write operation and
+has access to all available context information including the
+associated kernfs_open_file, which will make things like implementing
+kernfs active protection manipulation easier.
 
-Thanks, though.  :)
+->write_string() becomes redundant and ->trigger() has always been
+spurious.  This patch replaces all users of the two methods to
+->write() and remove them.
 
-regards,
-dan carpenter
+This patchset contains the following five patches.
+
+ 0001-cgroup-implement-cftype-write.patch
+ 0002-cgroup-replace-cftype-write_string-with-cftype-write.patch
+ 0003-cgroup-replace-cftype-trigger-with-cftype-write.patch
+ 0004-cgroup-convert-tasks-and-cgroup.procs-handle-to-use-.patch
+ 0005-cgroup-remove-cgroup-control_kn.patch
+
+0001 implements cftype->write().
+
+0002-0003 replace cftype->write_string() and ->trigger() with it.
+
+0004 convert "tasks" and "cgroup.procs" handler too.
+
+0005 removes cgroup->control_kn as the kernfs_node is now directly
+accessible from kernfs_open_file.
+
+This patchset is on top of
+
+  cgroup/for-3.16 12d3089c192c ("kernel/cpuset.c: convert printk to pr_foo()")
++ [1] [PATCHSET cgroup/for-3.16] cgroup: post unified hierarchy fixes and updates
+
+and available on the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-post-unified-updates
+
+diffstat follows.
+
+ block/blk-throttle.c      |   32 ++++++++---------
+ block/cfq-iosched.c       |   28 +++++++--------
+ include/linux/cgroup.h    |   40 +++++++++++----------
+ kernel/cgroup.c           |   85 +++++++++++++++++++++++-----------------------
+ kernel/cgroup_freezer.c   |   20 ++++------
+ kernel/cpuset.c           |   16 ++++----
+ mm/hugetlb_cgroup.c       |   33 +++++++++--------
+ mm/memcontrol.c           |   80 +++++++++++++++++++++++--------------------
+ net/ipv4/tcp_memcontrol.c |   31 +++++++++-------
+ security/device_cgroup.c  |   14 +++----
+ 10 files changed, 197 insertions(+), 182 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[1] http://lkml.kernel.org/g/1399377044-29873-1-git-send-email-tj@kernel.org
