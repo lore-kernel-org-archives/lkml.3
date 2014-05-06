@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555AbaEFUXN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 16:23:13 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:54600 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754725AbaEFUXL (ORCPT
+	id S1755738AbaEFUX7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 16:23:59 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46250 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754605AbaEFUX4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 16:23:11 -0400
-Date: Wed, 7 May 2014 00:23:08 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf_fuzzer crash on pentium 4
-Message-ID: <20140506202307.GA1458@moon>
-References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
+	Tue, 6 May 2014 16:23:56 -0400
+Date: Tue, 6 May 2014 22:23:50 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/17] mm: page_alloc: Use jump labels to avoid checking
+ number_of_cpusets
+Message-ID: <20140506202350.GE1429@laptop.programming.kicks-ass.net>
+References: <1398933888-4940-1-git-send-email-mgorman@suse.de>
+ <1398933888-4940-4-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1398933888-4940-4-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 11:42:58AM -0400, Vince Weaver wrote:
+On Thu, May 01, 2014 at 09:44:34AM +0100, Mel Gorman wrote:
+> If cpusets are not in use then we still check a global variable on every
+> page allocation. Use jump labels to avoid the overhead.
 > 
-> So just to be difficult I fired up the perf_fuzzer on a Pentium 4 machine.
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  include/linux/cpuset.h | 31 +++++++++++++++++++++++++++++++
+>  kernel/cpuset.c        |  8 ++++++--
+>  mm/page_alloc.c        |  3 ++-
+>  3 files changed, 39 insertions(+), 3 deletions(-)
 > 
-> It crashes more or less instantly (sorry for the line wrapping, 
-> just got the serial console hooked up and don't have minicom configured 
-> right yet).
-> 
-> this is 3.15-rc4 with the anti-memory corruption patch applied.
-> 
-> [   67.872274] BUG: unable to handle kernel NULL pointer dereference at 00000004
-> [   67.876146] IP: [<ffffffff81013df2>] p4_pmu_schedule_events+0xa5/0x331
+> diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+> index b19d3dc..2b89e07 100644
+> --- a/include/linux/cpuset.h
+> +++ b/include/linux/cpuset.h
+> @@ -17,6 +17,35 @@
+>  
+>  extern int number_of_cpusets;	/* How many cpusets are defined in system? */
+>  
+> +#ifdef HAVE_JUMP_LABEL
+> +extern struct static_key cpusets_enabled_key;
+> +static inline bool cpusets_enabled(void)
+> +{
+> +	return static_key_false(&cpusets_enabled_key);
+> +}
+> +#else
+> +static inline bool cpusets_enabled(void)
+> +{
+> +	return number_of_cpusets > 1;
+> +}
+> +#endif
+> +
+> +static inline void cpuset_inc(void)
+> +{
+> +	number_of_cpusets++;
+> +#ifdef HAVE_JUMP_LABEL
+> +	static_key_slow_inc(&cpusets_enabled_key);
+> +#endif
+> +}
+> +
+> +static inline void cpuset_dec(void)
+> +{
+> +	number_of_cpusets--;
+> +#ifdef HAVE_JUMP_LABEL
+> +	static_key_slow_dec(&cpusets_enabled_key);
+> +#endif
+> +}
 
-This looks like
+Why the HAVE_JUMP_LABEL and number_of_cpusets thing? When
+!HAVE_JUMP_LABEL the static_key thing reverts to an atomic_t and
+static_key_false() becomes:
 
-p4_pmu_schedule_events:
-		...
-		bind = p4_config_get_bind(hwc->config);
-			returned bind = NULL;
-		escr_idx = p4_get_escr_idx(bind->escr_msr[thread]); NULL deref
+ return unlikely(atomic_read(&key->enabled) > 0);
 
-If i'm right (btw it's possible to use addr2line helper?) then hwc->config
-is corrupted and p4_config_get_bind returned nil simply because proper event
-was not found. And I don't understand how it could happen because before
-configuration gets written into hwc->config it's validated once obtained
-from user-space as a raw event. Weird...
