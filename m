@@ -1,158 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086AbaEFTff (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 15:35:35 -0400
-Received: from mail.efficios.com ([78.47.125.74]:37248 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751170AbaEFTfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 15:35:34 -0400
-Date: Tue, 6 May 2014 19:35:32 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Javi Merino <javi.merino@arm.com>, David Howells <dhowells@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>
-Message-ID: <1033323713.12184.1399404932965.JavaMail.zimbra@efficios.com>
-In-Reply-To: <20140506094407.507b6435@gandalf.local.home>
-References: <20140506094407.507b6435@gandalf.local.home>
-Subject: Re: [RFA][PATCH] tracing: Add trace_<tracepoint>_enabled() function
+	id S1754259AbaEFTh4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 15:37:56 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:34055 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783AbaEFThy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 15:37:54 -0400
+Date: Tue, 6 May 2014 12:37:50 -0700
+From: josh@joshtriplett.org
+To: Tom Herbert <therbert@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>, Andi Kleen <andi@firstfloor.org>,
+        Linux Netdev List <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, tom.zanussi@linux.intel.com
+Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
+Message-ID: <20140506193750.GA21332@cloud>
+References: <1399328773-6531-9-git-send-email-andi@firstfloor.org>
+ <20140505.231229.136734008603421707.davem@davemloft.net>
+ <20140506032114.GP2382@two.firstfloor.org>
+ <20140505.232327.578134514220748085.davem@davemloft.net>
+ <20140506155703.GA20391@cloud>
+ <1399394359.15399.20.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140506183216.GM19657@tassilo.jf.intel.com>
+ <CA+mtBx81EdtZeXRG_ubgWMy+8rSOpK3q0S3YktBDDFt-LG2poA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF29 (Linux)/8.0.5_GA_5839)
-Thread-Topic: tracing: Add trace_<tracepoint>_enabled() function
-Thread-Index: JiVKvj24v84uuoSDKib+wwfRED9xHw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+mtBx81EdtZeXRG_ubgWMy+8rSOpK3q0S3YktBDDFt-LG2poA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Steven Rostedt" <rostedt@goodmis.org>
-> To: "LKML" <linux-kernel@vger.kernel.org>
-> Cc: "Andrew Morton" <akpm@linux-foundation.org>, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, "Javi Merino"
-> <javi.merino@arm.com>, "David Howells" <dhowells@redhat.com>, "Ingo Molnar" <mingo@kernel.org>
-> Sent: Tuesday, May 6, 2014 9:44:07 AM
-> Subject: [RFA][PATCH] tracing: Add trace_<tracepoint>_enabled() function
-> 
-> 
-> There are some code paths in the kernel that need to do some preparations
-> before it calls a tracepoint. As that code is worthless overhead when
-> the tracepoint is not enabled, it would be prudent to have that code
-> only run when the tracepoint is active. To accomplish this, all tracepoints
-> now get a static inline function called "trace_<tracepoint-name>_enabled()"
-> which returns true when the tracepoint is enabled and false otherwise.
-> 
-> As an added bonus, that function uses the static_key of the tracepoint
-> such that no branch is needed.
-> 
->   if (trace_mytracepoint_enabled()) {
-> 	arg = process_tp_arg();
-> 	trace_mytracepoint(arg);
->   }
-> 
-> Will keep the "process_tp_arg()" (which may be expensive to run) from
-> being executed when the tracepoint isn't enabled.
-> 
-> It's best to encapsulate the tracepoint itself in the if statement
-> just to keep races. For example, if you had:
-> 
->   if (trace_mytracepoint_enabled())
-> 	arg = process_tp_arg();
->   trace_mytracepoint(arg);
-> 
-> There's a chance that the tracepoint could be enabled just after the
-> if statement, and arg will be undefined when calling the tracepoint.
+On Tue, May 06, 2014 at 11:58:38AM -0700, Tom Herbert wrote:
+> On Tue, May 6, 2014 at 11:32 AM, Andi Kleen <ak@linux.intel.com> wrote:
+> >> We simply can not compete with user space, as a programmer is free to
+> >> keep what he really wants/needs.
+> >
+> > Not true.
+> >
+> > With my patches and LTO Linux can be competive with LWIP+socket layer.
+> > (about 60K more text). And it's easier to use because it's just
+> > the standard interface.
+> >
+> >> I have started using linux on 386/486 pcs which had more than 2MB of
+> >> memory, it makes me sad we want linux-3.16 to run on this kind of
+> >> hardware, and consuming time to save few KB here and here.
+> >
+> > Linux has always been a system from very small to big.
+> > That's been one of its strengths. It is very adaptable.
+> >
+> > Many subsystems are very configurable for this.
+> > For example that is why we have both SLOB and SLUB.
+> > That is why we have NOMMU MM and lots of other tuning
+> > knobs for small systems.
+> >
+> > So if the other subsystems can do this, why should it be
+> > impossible for networking?
+> >
+> Can this at least be done without the combinatorial explosion in
+> number of configurations? As Yuchung pointed out these patches
+> introduce at least one unresolved configuration dependency. CONFIG_SMP
+> works quite well since with a single parameter we can enable/disable a
+> whole bunch of functionality in bulk, and it's quite clear that new
+> development cannot break smp or non-smp configurations. Maybe you want
+> something similar like CONFIG_NETWORK_SMALL?
 
-I'm OK with the intend, however there seems to be two means to achieve
-this, and I'm not sure the proposed solution is safe.
+That seems completely reasonable.  Likewise, for infrastructure that
+scales by CPU, keying off of CONFIG_NR_CPUS might make sense.
 
-As you point out just above, the trace_mytracepoint_enabled() construct
-can easily lead to incorrect code if users are not very careful on how
-they use the condition vs the tracepoint itself.
+I'd suggest inverting it, so that 'n' means "small" and 'y' means fully
+featured.  Here's a rough description for a CONFIG_NETWORK_FULL:
 
-I understand that the reason why we cannot simply put the call
-to "process_tp_arg()" within the parameters passed to trace_mytracepoint()
-is because trace_mytracepoint() is a static inline, and that the
-side-effects of the arguments it receives need to be evaluated whether
-the tracepoint is enabled or not.
+config NETWORK_FULL
+	default y
+	bool "Full-featured networking stack" if EMBEDDED
+	--help--
+	  Leave this option enabled for a full-featured networking
+	  stack, including features used by the vast majority of
+	  systems.  Saying N here results in a minimal embedded
+	  networking stack, suitable only for the most
+	  memory-constrained and storage-constrained systems; the
+	  minimal stack removes many features, and optimizes for code
+	  and data size rather than performance.
 
-To overcome this issue, I have used a layer of macro on top of the
-trace_*() call in lttng-ust, giving something similar to this:
-
-#define tracepoint(name, ...)                                      \
-        do {                                                       \
-                if (static_key_false(&__tracepoint_##name.key)     \
-                        trace_##name(__VA_ARGS__);                 \
-        } while (0)
-
-and the static inline trace_##name declared by __DECLARE_TRACE
-simply contains __DO_TRACE(&__tracepoint_##name,
-                                TP_PROTO(data_proto),
-                                TP_ARGS(data_args),
-                                TP_CONDITION(cond),,);
-
-This allow calling a tracepoint with:
-
-   tracepoint(mytracepoint, process_tp_arg());
-
-making sure that process_tp_arg() will only be evaluated if
-the tracepoint is enabled. It also ensures that it's impossible
-to create a C construct that will open a race window where a
-tracepoint could be called with an unpopulated parameter, such as:
-
-   if (trace_mytracepoint_enabled())
- 	arg = process_tp_arg();
-   trace_mytracepoint(arg);
-
-Thoughts ?
-
-Thanks,
-
-Mathieu
-
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  include/linux/tracepoint.h | 10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-> index 9d30ee4..2e2a5f7 100644
-> --- a/include/linux/tracepoint.h
-> +++ b/include/linux/tracepoint.h
-> @@ -185,6 +185,11 @@ extern void syscall_unregfunc(void);
->  	static inline void						\
->  	check_trace_callback_type_##name(void (*cb)(data_proto))	\
->  	{								\
-> +	}								\
-> +	static inline bool						\
-> +	trace_##name##_enabled(void)					\
-> +	{								\
-> +		return static_key_false(&__tracepoint_##name.key);	\
->  	}
->  
->  /*
-> @@ -230,6 +235,11 @@ extern void syscall_unregfunc(void);
->  	}								\
->  	static inline void check_trace_callback_type_##name(void (*cb)(data_proto))
->  	\
->  	{								\
-> +	}								\
-> +	static inline bool						\
-> +	trace_##name##_enabled(void)					\
-> +	{								\
-> +		return false;						\
->  	}
->  
->  #define DEFINE_TRACE_FN(name, reg, unreg)
-> --
-> 1.8.1.4
-> 
-> 
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+	  If in doubt, say Y here.
