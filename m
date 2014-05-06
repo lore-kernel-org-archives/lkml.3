@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934000AbaEFFVy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 01:21:54 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:40752 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbaEFFVw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 01:21:52 -0400
-Date: Mon, 5 May 2014 22:21:48 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: rydberg@euromail.se, balbi@ti.com, dmurphy@ti.com, mugunthanvnm@ti.com,
-        nsekhar@ti.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v4 6/7] Input: pixcir_i2c_ts: Implement wakeup from
- suspend
-Message-ID: <20140506052148.GB2608@core.coreip.homeip.net>
-References: <1399280678-23925-1-git-send-email-rogerq@ti.com>
- <1399280678-23925-7-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399280678-23925-7-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933977AbaEFF7N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 01:59:13 -0400
+Received: from mx02.posteo.de ([89.146.194.165]:39013 "EHLO posteo.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933851AbaEFF7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 01:59:12 -0400
+From: Martin Kepplinger <martink@posteo.de>
+To: gregkh@linuxfoundation.org
+Cc: forest@alittletooquiet.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Martin Kepplinger <martink@posteo.de>
+Subject: [RESEND PATCH] staging: vt6656: make spin_lock_irq() human readable
+Date: Tue,  6 May 2014 07:58:39 +0200
+Message-Id: <1399355919-26684-1-git-send-email-martink@posteo.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1398877278-2280-1-git-send-email-martink@posteo.de>
+References: <1398877278-2280-1-git-send-email-martink@posteo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 12:04:37PM +0300, Roger Quadros wrote:
-> Improve the suspend and resume handlers to allow the device
-> to wakeup the system from suspend.
-> 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
-> ---
->  drivers/input/touchscreen/pixcir_i2c_ts.c | 53 ++++++++++++++++++++++++++++---
->  1 file changed, 49 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
-> index 927aed1..5f6a27e 100644
-> --- a/drivers/input/touchscreen/pixcir_i2c_ts.c
-> +++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
-> @@ -348,21 +348,66 @@ static void pixcir_input_close(struct input_dev *dev)
->  static int pixcir_i2c_ts_suspend(struct device *dev)
->  {
->  	struct i2c_client *client = to_i2c_client(dev);
-> +	struct pixcir_i2c_ts_data *ts = i2c_get_clientdata(client);
-> +	struct input_dev *input = ts->input;
-> +	int ret = 0;
-> +
-> +	mutex_lock(&input->mutex);
-> +
-> +	if (input->users) {
-> +		ret = pixcir_stop(ts);
-> +		if (ret)
-> +			goto unlock;
-> +	}
-> +
-> +	/*
-> +	 * If wakeup is enabled we need to enable interrupt generation
-> +	 * but don't need to process any reports i.e. ts->exiting must be true.
-> +	 */
-> +	if (device_may_wakeup(&client->dev)) {
-> +		/* enable wakeup interrupt generation */
-> +		ret = pixcir_int_enable(ts, 1);
-> +		if (ret) {
-> +			dev_err(dev, "Failed to enable interrupt generation\n");
-> +			goto unlock;
-> +		}
+Don't require FIRMWAREbDownload() to, first off, unlock a held lock.
+Thus do all locking in main_usb.c and hold it for a insignificantly
+shorter period of time. This makes the affected area significantly more
+readable though.
 
-I am not sure why we need to disable event processing here. Why not do
+Signed-off-by: Martin Kepplinger <martink@posteo.de>
+---
+I resend https://lkml.org/lkml/2014/4/30/453 and add devel@driverdev.osuosl.org
+after waiting a week or so.
 
-	if (device_may_wakeup(&client->dev)) {
-		enable_irq_wake(client->irq); 
-		ret = pixcir_int_enable(ts, true);
-		...
-	} else if (input->users) {
-		ret = pixcir_stop(ts);
-	}
+This fixes a sparse warning too, and uses less spin_lock functions.
+Maybe someone can think it through.
 
-like many of the drivers do?
+ drivers/staging/vt6656/firmware.c |    2 --
+ drivers/staging/vt6656/main_usb.c |    5 ++++-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-Thanks.
-
+diff --git a/drivers/staging/vt6656/firmware.c b/drivers/staging/vt6656/firmware.c
+index cd2ea76..79129ad 100644
+--- a/drivers/staging/vt6656/firmware.c
++++ b/drivers/staging/vt6656/firmware.c
+@@ -54,7 +54,6 @@ int FIRMWAREbDownload(struct vnt_private *pDevice)
+ 	int ii, rc;
+ 
+ 	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"---->Download firmware\n");
+-	spin_unlock_irq(&pDevice->lock);
+ 
+ 	rc = request_firmware(&fw, FIRMWARE_NAME, dev);
+ 	if (rc) {
+@@ -91,7 +90,6 @@ free_fw:
+ out:
+ 	kfree(pBuffer);
+ 
+-	spin_lock_irq(&pDevice->lock);
+ 	return result;
+ }
+ MODULE_FIRMWARE(FIRMWARE_NAME);
+diff --git a/drivers/staging/vt6656/main_usb.c b/drivers/staging/vt6656/main_usb.c
+index 3c93230..1dc02c4 100644
+--- a/drivers/staging/vt6656/main_usb.c
++++ b/drivers/staging/vt6656/main_usb.c
+@@ -319,7 +319,11 @@ static int device_init_registers(struct vnt_private *pDevice)
+ 	memcpy(pDevice->abySNAP_Bridgetunnel, abySNAP_Bridgetunnel, ETH_ALEN);
+ 
+ 	if (!FIRMWAREbCheckVersion(pDevice)) {
++
++		spin_unlock_irq(&pDevice->lock);
+ 		if (FIRMWAREbDownload(pDevice) == true) {
++
++			spin_lock_irq(&pDevice->lock);
+ 			if (FIRMWAREbBrach2Sram(pDevice) == false) {
+ 				DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
+ 					" FIRMWAREbBrach2Sram fail\n");
+@@ -329,7 +333,6 @@ static int device_init_registers(struct vnt_private *pDevice)
+ 		} else {
+ 			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
+ 				" FIRMWAREbDownload fail\n");
+-			spin_unlock_irq(&pDevice->lock);
+ 			return false;
+ 		}
+ 	}
 -- 
-Dmitry
+1.7.10.4
+
