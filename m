@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934216AbaEFHEF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 03:04:05 -0400
+	id S934232AbaEFHEc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 03:04:32 -0400
 Received: from mga11.intel.com ([192.55.52.93]:39650 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934095AbaEFHEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 03:04:00 -0400
+	id S934184AbaEFHD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 03:03:56 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,995,1389772800"; 
-   d="scan'208";a="526662126"
+   d="scan'208";a="526662084"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
         Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
@@ -20,9 +20,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
         dmaengine@vger.kernel.org
-Subject: [Patch Part3 V2 05/21] iommu/vt-d: only dynamically allocate domain id for virtual domains
-Date: Tue,  6 May 2014 15:05:16 +0800
-Message-Id: <1399359932-28972-6-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part3 V2 04/21] iommu/vt-d: introduce helper functions to make code symmetric for readability
+Date: Tue,  6 May 2014 15:05:15 +0800
+Message-Id: <1399359932-28972-5-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1399359932-28972-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1399359932-28972-1-git-send-email-jiang.liu@linux.intel.com>
@@ -30,123 +30,260 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check the same domain id is allocated for si_domain on each IOMMU,
-otherwise the IOTLB flush for si_domain will fail.
-
-Now the rules to allocate and manage domain id are:
-1) For normal and static identity domains, domain id is allocated
-   when creating domain structure. And this id will be written into
-   context entry.
-2) For virtual machine domain, a virtual id is allocated when creating
-   domain. And when binding virtual machine domain to an iommu, a real
-   domain id is allocated on demand and this domain id will be written
-   into context entry. So domain->id for virtual machine domain may be
-   different from the domain id written into context entry(used by
-   hardware).
+Introduce domain_attach_iommu()/domain_detach_iommu() and refine
+iommu_attach_domain()/iommu_detach_domain() to make code symmetric
+and improve readability.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/iommu/intel-iommu.c |   46 ++++++++++++++++++++++++-------------------
- 1 file changed, 26 insertions(+), 20 deletions(-)
+ drivers/iommu/intel-iommu.c |  146 ++++++++++++++++++++++++-------------------
+ 1 file changed, 80 insertions(+), 66 deletions(-)
 
 diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 29f613e7eea3..0ab0cd236b16 100644
+index 63f351a39c63..29f613e7eea3 100644
 --- a/drivers/iommu/intel-iommu.c
 +++ b/drivers/iommu/intel-iommu.c
-@@ -1551,15 +1551,27 @@ static int iommu_attach_domain(struct dmar_domain *domain,
- 
- 	spin_lock_irqsave(&iommu->lock, flags);
- 	num = __iommu_attach_domain(domain, iommu);
-+	spin_unlock_irqrestore(&iommu->lock, flags);
- 	if (num < 0)
- 		pr_err("IOMMU: no free domain ids\n");
--	else
--		domain->id = num;
--	spin_unlock_irqrestore(&iommu->lock, flags);
- 
- 	return num;
+@@ -1525,32 +1525,39 @@ static struct dmar_domain *alloc_domain(int flags)
+ 	return domain;
  }
  
-+static int iommu_attach_vm_domain(struct dmar_domain *domain,
-+				  struct intel_iommu *iommu)
-+{
-+	int num;
-+	unsigned long ndomains;
-+
-+	ndomains = cap_ndoms(iommu->cap);
-+	for_each_set_bit(num, iommu->domain_ids, ndomains)
-+		if (iommu->domains[num] == domain)
-+			return num;
-+
-+	return __iommu_attach_domain(domain, iommu);
+-static int iommu_attach_domain(struct dmar_domain *domain,
+-			       struct intel_iommu *iommu)
++static int __iommu_attach_domain(struct dmar_domain *domain,
++				 struct intel_iommu *iommu)
+ {
+ 	int num;
+ 	unsigned long ndomains;
+-	unsigned long flags;
+ 
+ 	ndomains = cap_ndoms(iommu->cap);
+-
+-	spin_lock_irqsave(&iommu->lock, flags);
+-
+ 	num = find_first_zero_bit(iommu->domain_ids, ndomains);
+-	if (num >= ndomains) {
+-		spin_unlock_irqrestore(&iommu->lock, flags);
+-		printk(KERN_ERR "IOMMU: no free domain ids\n");
+-		return -ENOMEM;
++	if (num < ndomains) {
++		set_bit(num, iommu->domain_ids);
++		iommu->domains[num] = domain;
++	} else {
++		num = -ENOSPC;
+ 	}
+ 
+-	domain->id = num;
+-	domain->iommu_count++;
+-	set_bit(num, iommu->domain_ids);
+-	set_bit(iommu->seq_id, domain->iommu_bmp);
+-	iommu->domains[num] = domain;
++	return num;
 +}
 +
- static void iommu_detach_domain(struct dmar_domain *domain,
- 				struct intel_iommu *iommu)
- {
-@@ -1766,8 +1778,6 @@ static int domain_context_mapping_one(struct dmar_domain *domain,
- 	struct context_entry *context;
- 	unsigned long flags;
- 	struct dma_pte *pgd;
--	unsigned long num;
--	unsigned long ndomains;
- 	int id;
- 	int agaw;
- 	struct device_domain_info *info = NULL;
-@@ -1792,20 +1802,8 @@ static int domain_context_mapping_one(struct dmar_domain *domain,
- 	pgd = domain->pgd;
++static int iommu_attach_domain(struct dmar_domain *domain,
++			       struct intel_iommu *iommu)
++{
++	int num;
++	unsigned long flags;
++
++	spin_lock_irqsave(&iommu->lock, flags);
++	num = __iommu_attach_domain(domain, iommu);
++	if (num < 0)
++		pr_err("IOMMU: no free domain ids\n");
++	else
++		domain->id = num;
+ 	spin_unlock_irqrestore(&iommu->lock, flags);
  
- 	if (domain_type_is_vm_or_si(domain)) {
--		int found = 0;
--
--		/* find an available domain id for this device in iommu */
--		ndomains = cap_ndoms(iommu->cap);
--		for_each_set_bit(num, iommu->domain_ids, ndomains) {
--			if (iommu->domains[num] == domain) {
--				id = num;
--				found = 1;
--				break;
--			}
--		}
--
--		if (found == 0) {
--			id = __iommu_attach_domain(domain, iommu);
-+		if (domain_type_is_vm(domain)) {
-+			id = iommu_attach_vm_domain(domain, iommu);
- 			if (id < 0) {
+-	return 0;
++	return num;
+ }
+ 
+ static void iommu_detach_domain(struct dmar_domain *domain,
+@@ -1560,17 +1567,53 @@ static void iommu_detach_domain(struct dmar_domain *domain,
+ 	int num, ndomains;
+ 
+ 	spin_lock_irqsave(&iommu->lock, flags);
+-	ndomains = cap_ndoms(iommu->cap);
+-	for_each_set_bit(num, iommu->domain_ids, ndomains) {
+-		if (iommu->domains[num] == domain) {
+-			clear_bit(num, iommu->domain_ids);
+-			iommu->domains[num] = NULL;
+-			break;
++	if (domain_type_is_vm_or_si(domain)) {
++		ndomains = cap_ndoms(iommu->cap);
++		for_each_set_bit(num, iommu->domain_ids, ndomains) {
++			if (iommu->domains[num] == domain) {
++				clear_bit(num, iommu->domain_ids);
++				iommu->domains[num] = NULL;
++				break;
++			}
+ 		}
++	} else {
++		clear_bit(domain->id, iommu->domain_ids);
++		iommu->domains[domain->id] = NULL;
+ 	}
+ 	spin_unlock_irqrestore(&iommu->lock, flags);
+ }
+ 
++static void domain_attach_iommu(struct dmar_domain *domain,
++			       struct intel_iommu *iommu)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&domain->iommu_lock, flags);
++	if (!test_and_set_bit(iommu->seq_id, domain->iommu_bmp)) {
++		domain->iommu_count++;
++		if (domain->iommu_count == 1)
++			domain->nid = iommu->node;
++		domain_update_iommu_cap(domain);
++	}
++	spin_unlock_irqrestore(&domain->iommu_lock, flags);
++}
++
++static int domain_detach_iommu(struct dmar_domain *domain,
++			       struct intel_iommu *iommu)
++{
++	unsigned long flags;
++	int count = INT_MAX;
++
++	spin_lock_irqsave(&domain->iommu_lock, flags);
++	if (test_and_clear_bit(iommu->seq_id, domain->iommu_bmp)) {
++		count = --domain->iommu_count;
++		domain_update_iommu_cap(domain);
++	}
++	spin_unlock_irqrestore(&domain->iommu_lock, flags);
++
++	return count;
++}
++
+ static struct iova_domain reserved_iova_list;
+ static struct lock_class_key reserved_rbtree_key;
+ 
+@@ -1708,9 +1751,7 @@ static void domain_exit(struct dmar_domain *domain)
+ 	/* clear attached or cached domains */
+ 	rcu_read_lock();
+ 	for_each_active_iommu(iommu, drhd)
+-		if (domain_type_is_vm(domain) ||
+-		    test_bit(iommu->seq_id, domain->iommu_bmp))
+-			iommu_detach_domain(domain, iommu);
++		iommu_detach_domain(domain, iommu);
+ 	rcu_read_unlock();
+ 
+ 	dma_free_pagelist(freelist);
+@@ -1764,16 +1805,12 @@ static int domain_context_mapping_one(struct dmar_domain *domain,
+ 		}
+ 
+ 		if (found == 0) {
+-			num = find_first_zero_bit(iommu->domain_ids, ndomains);
+-			if (num >= ndomains) {
++			id = __iommu_attach_domain(domain, iommu);
++			if (id < 0) {
  				spin_unlock_irqrestore(&iommu->lock, flags);
- 				pr_err("IOMMU: no free domain ids\n");
-@@ -2281,7 +2279,8 @@ static struct dmar_domain *get_domain_for_dev(struct device *dev, int gaw)
+-				printk(KERN_ERR "IOMMU: no free domain ids\n");
++				pr_err("IOMMU: no free domain ids\n");
+ 				return -EFAULT;
+ 			}
+-
+-			set_bit(num, iommu->domain_ids);
+-			iommu->domains[num] = domain;
+-			id = num;
+ 		}
+ 
+ 		/* Skip top levels of page tables for
+@@ -1832,14 +1869,8 @@ static int domain_context_mapping_one(struct dmar_domain *domain,
+ 	iommu_enable_dev_iotlb(info);
+ 	spin_unlock_irqrestore(&iommu->lock, flags);
+ 
+-	spin_lock_irqsave(&domain->iommu_lock, flags);
+-	if (!test_and_set_bit(iommu->seq_id, domain->iommu_bmp)) {
+-		domain->iommu_count++;
+-		if (domain->iommu_count == 1)
+-			domain->nid = iommu->node;
+-		domain_update_iommu_cap(domain);
+-	}
+-	spin_unlock_irqrestore(&domain->iommu_lock, flags);
++	domain_attach_iommu(domain, iommu);
++
+ 	return 0;
+ }
+ 
+@@ -2104,7 +2135,7 @@ static inline void unlink_domain_info(struct device_domain_info *info)
+ static void domain_remove_dev_info(struct dmar_domain *domain)
+ {
+ 	struct device_domain_info *info;
+-	unsigned long flags, flags2;
++	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&device_domain_lock, flags);
+ 	while (!list_empty(&domain->devices)) {
+@@ -2118,16 +2149,7 @@ static void domain_remove_dev_info(struct dmar_domain *domain)
+ 
+ 		if (domain_type_is_vm(domain)) {
+ 			iommu_detach_dependent_devices(info->iommu, info->dev);
+-			/* clear this iommu in iommu_bmp, update iommu count
+-			 * and capabilities
+-			 */
+-			spin_lock_irqsave(&domain->iommu_lock, flags2);
+-			if (test_and_clear_bit(info->iommu->seq_id,
+-					       domain->iommu_bmp)) {
+-				domain->iommu_count--;
+-				domain_update_iommu_cap(domain);
+-			}
+-			spin_unlock_irqrestore(&domain->iommu_lock, flags2);
++			domain_detach_iommu(domain, info->iommu);
+ 		}
+ 
+ 		free_devinfo_mem(info);
+@@ -2259,11 +2281,12 @@ static struct dmar_domain *get_domain_for_dev(struct device *dev, int gaw)
  	domain = alloc_domain(0);
  	if (!domain)
  		goto error;
--	if (iommu_attach_domain(domain, iommu) < 0) {
-+	domain->id = iommu_attach_domain(domain, iommu);
-+	if (domain->id < 0) {
+-	if (iommu_attach_domain(domain, iommu)) {
++	if (iommu_attach_domain(domain, iommu) < 0) {
  		free_domain_mem(domain);
  		domain = NULL;
  		goto error;
-@@ -2442,6 +2441,7 @@ static int __init si_domain_init(int hw)
- 	struct dmar_drhd_unit *drhd;
- 	struct intel_iommu *iommu;
- 	int nid, ret = 0;
-+	bool first = true;
+ 	}
++	domain_attach_iommu(domain, iommu);
+ 	free = domain;
+ 	if (domain_init(domain, gaw))
+ 		goto error;
+@@ -2426,10 +2449,11 @@ static int __init si_domain_init(int hw)
  
- 	si_domain = alloc_domain(DOMAIN_FLAG_STATIC_IDENTITY);
- 	if (!si_domain)
-@@ -2452,6 +2452,12 @@ static int __init si_domain_init(int hw)
- 		if (ret < 0) {
+ 	for_each_active_iommu(iommu, drhd) {
+ 		ret = iommu_attach_domain(si_domain, iommu);
+-		if (ret) {
++		if (ret < 0) {
  			domain_exit(si_domain);
  			return -EFAULT;
-+		} else if (first) {
-+			si_domain->id = ret;
-+			first = false;
-+		} else if (si_domain->id != ret) {
-+			domain_exit(si_domain);
-+			return -EFAULT;
  		}
- 		domain_attach_iommu(si_domain, iommu);
++		domain_attach_iommu(si_domain, iommu);
  	}
+ 
+ 	if (md_domain_init(si_domain, DEFAULT_DOMAIN_ADDRESS_WIDTH)) {
+@@ -4099,19 +4123,9 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
+ 	spin_unlock_irqrestore(&device_domain_lock, flags);
+ 
+ 	if (found == 0) {
+-		unsigned long tmp_flags;
+-		spin_lock_irqsave(&domain->iommu_lock, tmp_flags);
+-		clear_bit(iommu->seq_id, domain->iommu_bmp);
+-		domain->iommu_count--;
+-		domain_update_iommu_cap(domain);
+-		spin_unlock_irqrestore(&domain->iommu_lock, tmp_flags);
+-
+-		if (!domain_type_is_vm_or_si(domain)) {
+-			spin_lock_irqsave(&iommu->lock, tmp_flags);
+-			clear_bit(domain->id, iommu->domain_ids);
+-			iommu->domains[domain->id] = NULL;
+-			spin_unlock_irqrestore(&iommu->lock, tmp_flags);
+-		}
++		domain_detach_iommu(domain, iommu);
++		if (!domain_type_is_vm_or_si(domain))
++			iommu_detach_domain(domain, iommu);
+ 	}
+ }
+ 
 -- 
 1.7.10.4
 
