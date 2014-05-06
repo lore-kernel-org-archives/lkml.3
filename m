@@ -1,88 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837AbaEFPBJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 11:01:09 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40292 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750948AbaEFPBH (ORCPT
+	id S1756611AbaEFPBQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 11:01:16 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:54118 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228AbaEFPBM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 11:01:07 -0400
-Date: Tue, 6 May 2014 16:00:37 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Jan Kara <jack@suse.cz>
-Cc: "mm-commits@vger.kernel.org" <mm-commits@vger.kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "kay@vrfy.org" <kay@vrfy.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: +
- printk-print-initial-logbuf-contents-before-re-enabling-interrupts.patch
- added to -mm tree
-Message-ID: <20140506150036.GJ30234@arm.com>
-References: <53640c8c.5++0zeO0pmfqKMwm%akpm@linux-foundation.org>
- <20140502224651.GG23636@quack.suse.cz>
- <20140506120648.GA30234@arm.com>
- <20140506122958.GG9291@quack.suse.cz>
- <20140506131234.GD30234@arm.com>
- <20140506140032.GA22739@quack.suse.cz>
+	Tue, 6 May 2014 11:01:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140506140032.GA22739@quack.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAOesGMi_0fT4UbfGUp9jkrwYMXgfxC5gmXOBviU9PjAutPdHiw@mail.gmail.com>
+References: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de>
+	<1395505004-22650-2-git-send-email-bigeasy@linutronix.de>
+	<CAOesGMi_0fT4UbfGUp9jkrwYMXgfxC5gmXOBviU9PjAutPdHiw@mail.gmail.com>
+Date: Tue, 6 May 2014 10:01:11 -0500
+Message-ID: <CANk1AXQXWrsgbypTFENFf+X9yhE2t967icK0=3WAvxCPwsXFYA@mail.gmail.com>
+Subject: Re: [PATCH 1/7] ARM: dts: socfpga: add gpio pieces
+From: Alan Tull <delicious.quinoa@gmail.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Alan Tull <atull@altera.com>, LinusW <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 03:00:32PM +0100, Jan Kara wrote:
-> On Tue 06-05-14 14:12:34, Will Deacon wrote:
-> > On Tue, May 06, 2014 at 01:29:58PM +0100, Jan Kara wrote:
-> > >   Well, with serial console the backlog can get actually pretty big. During
-> > > boot on large machines I've seen CPUs stuck in that very loop in
-> > > console_unlock() for tens of seconds. Obviously that causes problems - e.g.
-> > > watchdog fires, RCU lockup detector fires, when interrupts are disabled,
-> > > some hardware gives up because its interrupts weren't served for too long.
-> > > All in all the machine just dies.
-> > 
-> > Right, so there's the usual compromise here between throughput and latency.
->   I'd see that compromise if enabling & disabling interrupts would be
-> taking considerable amount of time. I don't think that was your concern,
-> was it? Maybe I just misunderstood you...
+On Mon, May 5, 2014 at 5:02 PM, Olof Johansson <olof@lixom.net> wrote:
+> Hi,
+>
+> I saw this patch as it came in through Dinh's pull request, see below:
+>
+>
+> On Sat, Mar 22, 2014 at 9:16 AM, Sebastian Andrzej Siewior
+> <bigeasy@linutronix.de> wrote:
+>> The cycloneV has three gpio controllers, the first two with 29 gpios, the last
+>> one with 27. This patch adds the three controller with the gpio driver which is
+>> now sitting the gpio tree.
+>>
+>> Cc: devicetree@vger.kernel.org
+>> Acked-by: Alan Tull <atull@altera.com>
+>> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+>> ---
+>> v1…v2:
+>>         - #gpio-cells = <2>
+>>         - third gpio block has now only 27 gpios
+>>
+>>  arch/arm/boot/dts/socfpga.dtsi | 64 ++++++++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 64 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+>> index 537f1a5..2a84e67 100644
+>> --- a/arch/arm/boot/dts/socfpga.dtsi
+>> +++ b/arch/arm/boot/dts/socfpga.dtsi
+>> @@ -463,6 +463,70 @@
+>>                         status = "disabled";
+>>                 };
+>>
+>> +               gpio@ff708000 {
+>> +                       #address-cells = <1>;
+>> +                       #size-cells = <0>;
+>> +                       compatible = "snps,dw-apb-gpio";
+>> +                       reg = <0xff708000 0x1000>;
+>> +                       clocks = <&per_base_clk>;
+>> +                       status = "disabled";
+>> +
+>> +                       gpio0: gpio-controller@0 {
+>> +                               compatible = "snps,dw-apb-gpio-port";
+>> +                               gpio-controller;
+>> +                               #gpio-cells = <2>;
+>> +                               snps,nr-gpios = <29>;
+>> +                               reg = <0>;
+>> +                               interrupt-controller;
+>> +                               #interrupt-cells = <2>;
+>> +                               interrupts = <0 164 4>;
+>> +                       };
+>> +               };
+>
+> This is an odd setup. We usually would have it all in one node, since
+> the @ff708000 is the GPIO controller, instead of adding a subnode with
+> the actual GPIO info.
+>
+> So I would have expected something more like:
+>
+>
+> gpio0: gpio-controller@ff708000 {
+>                        #address-cells = <1>;
+>                        #size-cells = <0>;
+>                        compatible = "snps,dw-apb-gpio";
+>                        reg = <0xff708000 0x1000>;
+>                        interrupts = <0 164 4>;
+>                       clocks = <&per_base_clk>;
+>                        status = "disabled";
+>                        gpio-controller;
+>                        #gpio-cells = <2>;
+>                        snps,nr-gpios = <29>;
+>                        interrupt-controller;
+>                        #interrupt-cells = <2>;
+>                };
+>
+>
+> ... or is there some underlying reason for having the two-layer
+> approach that isn't obvious from this device tree?
+>
+>
+> -Olof
 
-Well, that isn't the quickest operation on ARM (since it's
-self-synchronising), but I was actually referring to the ability to drain
-the log buffer (with interrupts disabled) vs the ability to service
-interrupts quickly. The moment we re-enable interrupts, we can start adding
-more messages to the buffer from the IRQ path (I didn't attempt to solve the
-multi-CPU case, as I mentioned before).
+The synopsys gpio ip can have 1, 2, or 3 gpio ports of varying widths
+per IP block.  The simpler bindings assume one gpio port per IP block.
 
-> > That said, printing one message each time seems to go too far in the
-> > opposite direction for my liking, so the best bet is likely to limit the
-> > work to some fixed number of messages. Do you have any feeling for such a
-> > limit?
->   If you really are concerned about enabling and disabling of interrupts
-> taking significant time (and it may be, I just don't know), then printing
-> couple of messages without enabling them makes sense. How many is a tricky
-> question since it depends on the console speed. I had a similar problem
-> when I was deciding in my patch when we should ask another CPU to take over
-> printing from the current CPU (to avoid the issues I've described in the
-> previous email). I was experimenting with various stuff but in the end I
-> restorted to a stupid "after X characters are printed".
-
-Yeah, so you also end up with the same problem of tuning your heuristics.
-Peter's suggestion of X == 42 is as good as any arbitrary constant I can
-suggest, hence my snapshotting of log_next_seq originally.
-
-> > > And the backlog builds up because while one cpu is doing the printing in
-> > > console_unlock() all the other cpus are busily adding new messages to the
-> > > buffer faster than they can be printed...
-> > 
-> > Understood, but that's also the situation without this patch (and not one
-> > that I think you can fix without hurting latency).
->   Sure. I have a patch which transitions printing to another CPU once in a
-> while so single CPU isn't hogged for too long and that solves the issues I
-> have observed. But Alan didn't like this solution so the issue is unfixed
-> for now.
-
-Interesting. Do you have a pointer to the thread?
-
-Will
+Alan Tull
+aka
+delicious quinoa
