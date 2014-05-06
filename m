@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933805AbaEFCwt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 22:52:49 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:38643 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933630AbaEFCws (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 22:52:48 -0400
-Date: Mon, 5 May 2014 22:52:45 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Sonny Rao <sonnyrao@chromium.org>
-cc: linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Douglas Anderson <dianders@chromium.org>, Olof <olofj@chromium.org>,
-        Stephane Eranian <eranian@google.com>,
-        Bhaskar Janakiraman <bjanakiraman@chromium.org>
-Subject: Re: CPU performance counters not working on big.LITTLE switcher
-In-Reply-To: <CAPz6YkXsig6XornqoMyn5DtRd9NECyc+qgQo39RQK0sDeat34Q@mail.gmail.com>
-Message-ID: <alpine.LFD.2.11.1405052238230.980@knanqh.ubzr>
-References: <CAPz6YkXsig6XornqoMyn5DtRd9NECyc+qgQo39RQK0sDeat34Q@mail.gmail.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S933822AbaEFDBX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 23:01:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55585 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933739AbaEFDBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 23:01:21 -0400
+Date: Mon, 5 May 2014 22:00:39 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+CC: Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 05/20] usb: host: xhci-plat: Add clocks support
+Message-ID: <20140506030039.GA15336@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com>
+ <1399335255-589-6-git-send-email-gregory.clement@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/04w6evG8XlLl3ft"
+Content-Disposition: inline
+In-Reply-To: <1399335255-589-6-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 May 2014, Sonny Rao wrote:
+--/04w6evG8XlLl3ft
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Hi, we have the problem today that cpu based performance counters don't
-> work when we're using the big.LITTLE switcher on Exynos 5420, and it
-> doesn't look like code exists to deal with this in the switcher.
-> 
-> As it stands right now, if you put an A-15 or A-7 PMU node into your
-> device-tree on an bl_switcher system it's very broken.  At the minimum, I
-> think it should disable performance counters until there's some kind of
-> proper implementation.
-> 
-> I looked into trying to make this work, but it turned out to not be as
-> simple as just context switching counters from A-15 to A-7.  The biggest
-> problem is that the PMUs are not architecturally compatible.  There are
-> different events and differing numbers of counters on these two cores.
->  There's also the tangential issue of representing this in the device tree,
-> but that's far less important.
-> 
-> My guess as to how to fix this is to create an "architectural" PMU which
-> contains the intersection of the two performance monitor units with the
-> minimum number of counters supported by either core (which in this case
-> looks to be 4 on the A7).  However, I don't really have the bandwidth to
-> work on this at  the moment.  I was mostly wondering, have other people run
-> into this limitation and is there any sort of plan to work on it?
+On Tue, May 06, 2014 at 02:14:00AM +0200, Gregory CLEMENT wrote:
+> @@ -118,7 +158,7 @@ static int xhci_plat_probe(struct platform_device *pd=
+ev)
+> =20
+>  	hcd =3D usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
+>  	if (!hcd)
+> -		return -ENOMEM;
+> +		ret =3D -ENOMEM;
 
-The Linaro kernel release from a year ago or so contained a hack to make 
-PMUs available and cope with the switcher.
+regression
 
-However, the ultimate solution is to add multi-PMU support in a generic 
-way to the kernel and let user space see both A15 and A7 counters.  It 
-is then up to the analysis tools to consolidate (some of) them if 
-wanted.  And this would work whether the switcher is used, or even when 
-the scheduler has learned to do proper task placement for b.L systems 
-where tasks may migrate across clusters.
+--=20
+balbi
 
-Someone at ARM indicated they'd be working on the multi-PMU support if I 
-remember correctly.  For that reason, Linaro stopped maintaining the 
-initial hack since it was a lot of work to keep it working on top of 
-later kernels and a better solution was coming anyway.  I don't know 
-what the status of that work is though.
+--/04w6evG8XlLl3ft
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Nicolas
+iQIcBAEBAgAGBQJTaFBXAAoJEIaOsuA1yqRE9dUQAK1ujVgf0xDp21zyWDxh3FpQ
+PISVIEvfLYiXp4Fxcr5mpslzuwRlQmudBOvXSPnmxDhzCD1f+zxT6fc32uoBZYKL
+7RUDuyAdsSAmL+Hfm/EjMwvgFxKarU0+CzKgoj7xw9853UTgJghbrpBIK+6Sb+sC
+liVY/sNVjg6KLY28kwKd1WLxuCxhaVk+gncRa7hzKo5vUab4r9lk5kYqgLFiNN8O
+Omn3dNwmzHz55BXcMSoKi3XVoAZ2dud+MbYqpW8uPLTWYlThdURRk55tWtzZZQzj
++W2fWees/4D8PR6xTymUBpetAH4BvofkQ0XuF5E5XvGTmJxBXPzqvc2J25cDzQCH
+sDS3OOe5HNowKisvT3GtKI8JB9AnfU/PE8vABl22Af7aSGefgS8+bk/0HhPZMQn7
+YilgqJ3Tx+lf9Z9dzWopYZwLdguFWLsqJyAoYDZhLHuC7fXi6Gb266PhuYFSzFfJ
+SqZv8fYY4ukkNMZxsayAdIK3EoV4ftV5UslmN0hBY3qW0BIAdOeSJT431Aix7kSp
+TlSQBYiMFzdTj1gX39I2XGFt8NueKHfULRQmD/XxkxTvG2A5k0DMFK7HspxEOcDp
+oEnZ9XuObgdi1Fp1PBwC5wVS9YF0WGKcCuNfKO14PdoN5W88icJUFZqbIHHQZUxh
+FpReMh+lZtMWbh2ZLuiN
+=wKS4
+-----END PGP SIGNATURE-----
+
+--/04w6evG8XlLl3ft--
