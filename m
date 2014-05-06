@@ -1,124 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757938AbaEFPV3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 11:21:29 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60461 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752511AbaEFPV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 11:21:27 -0400
-Date: Tue, 6 May 2014 11:21:12 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH 1/4] memcg, mm: introduce lowlimit reclaim
-Message-ID: <20140506152112.GG19914@cmpxchg.org>
-References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
- <1398688005-26207-2-git-send-email-mhocko@suse.cz>
- <20140430225550.GD26041@cmpxchg.org>
- <20140502093628.GC3446@dhcp22.suse.cz>
- <20140502155805.GO23420@cmpxchg.org>
- <20140502164930.GP3446@dhcp22.suse.cz>
- <20140502220056.GP23420@cmpxchg.org>
- <20140506132932.GF19914@cmpxchg.org>
- <20140506143242.GB19672@dhcp22.suse.cz>
+	id S1757774AbaEFPYt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 11:24:49 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:51958 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752046AbaEFPYr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 11:24:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140506143242.GB19672@dhcp22.suse.cz>
+In-Reply-To: <1621123.rMC9JtD3Mo@vostro.rjw.lan>
+References: <535AC247.3070907@semaphore.gr>
+	<CAKohpok-74uK5k-adxjmEy71=vF8V7MaBwdCD1Vb2ats7FHi_A@mail.gmail.com>
+	<535FCDBD.6080500@semaphore.gr>
+	<1621123.rMC9JtD3Mo@vostro.rjw.lan>
+Date: Tue, 6 May 2014 17:24:46 +0200
+X-Google-Sender-Auth: Xzpbc9Wj362FOohxv50u1wx7wGo
+Message-ID: <CAMuHMdU6eKQbmqvDj8Ra3MjuqhvFQ6WxoTsiJ4mojqXY4XOtaw@mail.gmail.com>
+Subject: Re: [PATCH v5 0/8] Introduce new cpufreq helper macros
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Stratos Karafotis <stratosk@semaphore.gr>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Simon Horman <horms@verge.net.au>, Sekhar Nori <nsekhar@ti.com>,
+        Samuel Ortiz <samuel@sortiz.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 04:32:42PM +0200, Michal Hocko wrote:
-> On Tue 06-05-14 09:29:32, Johannes Weiner wrote:
-> > On Fri, May 02, 2014 at 06:00:56PM -0400, Johannes Weiner wrote:
-> > > On Fri, May 02, 2014 at 06:49:30PM +0200, Michal Hocko wrote:
-> > > > On Fri 02-05-14 11:58:05, Johannes Weiner wrote:
-> > > > > This is not even guarantees anymore, but rather another reclaim
-> > > > > prioritization scheme with best-effort semantics.  That went over
-> > > > > horribly with soft limits, and I don't want to repeat this.
-> > > > > 
-> > > > > Overcommitting on guarantees makes no sense, and you even agree you
-> > > > > are not interested in it.  We also agree that we can always add a knob
-> > > > > later on to change semantics when an actual usecase presents itself,
-> > > > > so why not start with the clear and simple semantics, and the simpler
-> > > > > implementation?
-> > > > 
-> > > > So you are really preferring an OOM instead? That was the original
-> > > > implementation posted at the end of last year and some people
-> > > > had concerns about it. This is the primary reason I came up with a
-> > > > weaker version which fallbacks rather than OOM.
-> > > 
-> > > I'll dig through the archives on this then, thanks.
-> > 
-> > The most recent discussion on this I could find was between you and
-> > Greg, where the final outcome was (excerpt):
-> > 
-> > ---
-> > 
-> > From: Greg Thelen <gthelen@google.com>
-> > To: Michal Hocko <mhocko@suse.cz>
-> > Cc: linux-mm@kvack.org,  Johannes Weiner <hannes@cmpxchg.org>,  Andrew Morton <akpm@linux-foundation.org>,  KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,  LKML <linux-kernel@vger.kernel.org>,  Ying Han <yinghan@google.com>,  Hugh Dickins <hughd@google.com>,  Michel Lespinasse <walken@google.com>,  KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,  Tejun Heo <tj@kernel.org>
-> > Subject: Re: [RFC 0/4] memcg: Low-limit reclaim
-> > References: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
-> > 	<xr93sis6obb5.fsf@gthelen.mtv.corp.google.com>
-> > 	<20140130123044.GB13509@dhcp22.suse.cz>
-> > 	<xr931tzphu50.fsf@gthelen.mtv.corp.google.com>
-> > 	<20140203144341.GI2495@dhcp22.suse.cz>
-> > Date: Mon, 03 Feb 2014 17:33:13 -0800
-> > Message-ID: <xr93zjm7br1i.fsf@gthelen.mtv.corp.google.com>
-> > List-ID: <linux-mm.kvack.org>
-> > 
-> > On Mon, Feb 03 2014, Michal Hocko wrote:
-> > 
-> > > On Thu 30-01-14 16:28:27, Greg Thelen wrote:
-> > >> But this soft_limit,priority extension can be added later.
-> > >
-> > > Yes, I would like to have the strong semantic first and then deal with a
-> > > weaker form. Either by a new limit or a flag.
-> > 
-> > Sounds good.
-> > 
-> > ---
-> > 
-> > So I think everybody involved in the discussions so far are preferring
-> > a hard guarantee, and then later, if needed, to either add a knob to
-> > make it a soft guarantee or to actually implement a usable soft limit.
-> 
-> I am afraid the most of that discussion happened off-list :( Sadly not
-> much of a discussion happened on the list.
+Hi Stratos,
 
-Time to do it now, then :)
+On Wed, Apr 30, 2014 at 12:26 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Tuesday, April 29, 2014 07:05:17 PM Stratos Karafotis wrote:
+>> On 29/04/2014 07:17 πμ, Viresh Kumar wrote:
+>> > On 26 April 2014 01:45, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+>> >> This patch set introduces two freq_table helper macros which
+>> >> can be used for iteration over cpufreq_frequency_table and
+>> >> makes the necessary changes to cpufreq core and drivers that
+>> >> use such an iteration procedure.
+>> >>
+>> >> The motivation was a usage of common procedure to iterate over
+>> >> cpufreq_frequency_table across all drivers and cpufreq core.
+>> >>
+>> >> This was tested on a x86_64 platform.
+>> >> Most files compiled successfully but unfortunately I was not
+>> >> able to compile sh_sir.c pasemi_cpufreq.c and ppc_cbe_cpufreq.c
+>> >> due to lack of cross compiler.
+>> >>
+>> >> Changelog
+>> >>
+>> >> v4 -> v5
+>> >>         - Fix warnings in printk format specifier for 32 bit
+>> >>           architectures in freq_table.c, longhaul, pasemi, ppc_cbe
+>> >
+>> > Doesn't look much has changed and so it stays as is:
+>> >
+>> > Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+>> >
+>>
+>> Thank you very much!
+>
+> I've applied the series to my bleeding-edge branch, will move it to linux-next
+> after build testing later this week.
 
-> Sorry I should have been specific and mention that the discussions
-> happened at LSF and partly at the KS.
-> 
-> The strongest point was made by Rik when he claimed that memcg is not
-> aware of memory zones and so one memcg with lowlimit larger than the
-> size of a zone can eat up that zone without any way to free it.
+This breaks if CONFIG_CPU_FREQ=n, e.g. ARM/shmobile/koelsch/
+non-multiplatform:
 
-But who actually cares if an individual zone can be reclaimed?
+drivers/built-in.o: In function `clk_round_parent':
+clkdev.c:(.text+0xcf168): undefined reference to `cpufreq_next_valid'
+drivers/built-in.o: In function `clk_rate_table_find':
+clkdev.c:(.text+0xcf820): undefined reference to `cpufreq_next_valid'
+make[3]: *** [vmlinux] Error 1
 
-Userspace allocations can fall back to any other zone.  Unless there
-are hard bindings, but hopefully nobody binds a memcg to a node that
-is smaller than that memcg's guarantee.  And while the pages are not
-reclaimable, they are still movable, so the NUMA balancer is free to
-correct any allocation mistakes later on.
+drivers/sh/clk/core.c (pre-CCF shmobile clock core) calls
+cpufreq_for_each_valid_entry():
 
-As to kernel allocations, watermarks and lowmem protection prevent any
-single zone from filling up with userspace pages, regardless of their
-reclaimability.
+#define cpufreq_for_each_valid_entry(pos, table)        \
+        for (pos = table; cpufreq_next_valid(&pos); pos++)
 
-> This can cause additional troubles (permanent reclaim on that zone
-> and OOM in an extreme situations).
+but cpufreq_next_valid() in drivers/cpufreq/cpufreq.c is not
+compiled in.
 
-We have protection against wasting CPU cycles on unreclaimable zones.
+Gr{oetje,eeting}s,
 
-So how is it different than anonymous/shared memory without swap?  Or
-mlocked memory?
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
