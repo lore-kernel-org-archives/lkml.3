@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934544AbaEFL4z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 07:56:55 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:54154 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757279AbaEFL4x (ORCPT
+	id S934696AbaEFL6A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 07:58:00 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:54843 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757279AbaEFL54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 07:56:53 -0400
-Date: Tue, 6 May 2014 13:56:44 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Preeti Murthy <preeti.lkml@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>, umgwanakikbuti@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Ingo Molnar <mingo@kernel.org>, george.mccollister@gmail.com,
-        ktkhai@parallels.com, Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
-Message-ID: <20140506115644.GI11096@twins.programming.kicks-ass.net>
-References: <20140502004237.79dd3de6@annuminas.surriel.com>
- <1399011219.5233.55.camel@marge.simpson.net>
- <53633B81.1080403@redhat.com>
- <CAM4v1pPwe4B0K8MPpf183LqabRoRKRPi_R7n8-Y02aR43M8iQQ@mail.gmail.com>
+	Tue, 6 May 2014 07:57:56 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Mathias Nyman <mathias.nyman@intel.com>, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Lior Amsalem <alior@marvell.com>, Rob Herring <robh+dt@kernel.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v3 06/20] usb: host: xhci-plat: Add support for the Armada 38x
+Date: Tue, 06 May 2014 13:57:44 +0200
+Message-ID: <61061197.hLhKsFqJLF@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1584794.IM1uiSkBdk@amdc1032>
+References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com> <1399335255-589-7-git-send-email-gregory.clement@free-electrons.com> <1584794.IM1uiSkBdk@amdc1032>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="H2kTGx6mr3R59oXC"
-Content-Disposition: inline
-In-Reply-To: <CAM4v1pPwe4B0K8MPpf183LqabRoRKRPi_R7n8-Y02aR43M8iQQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:avVxO3JDAVJVXZM23Pg69XiMnBZZ3MBqm4PDK5FiQqX
+ XSBcx38Evj+uBS4rR8y++Se+DQydwVbL6RkWSLZ180s/ytytIG
+ nR3AjxWKIZqxePyOC1/kXqh5ucE1A1dhUEPtX/mqF9S9oJ3615
+ +8hXbqZ2SOEvp+i5wV33VsGfYj+F/+eSDDCT4nENRsFWecuQ4b
+ +w9Kdb98IHe6YnhuSIeBtQ0RLsb4/d60nsCOfbHoRX9q/JmsTk
+ RSHX5bwvpAvQ6qvsELNcdLv1RqKPLqnz2Coar4pbxCsSa5udsE
+ zAGrixMniFGQPPQtbGTHukRsVHUDpbwvtw836B2ekwWx0ZleXG
+ z18u5uYFclJ3HOEqNsxQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 06 May 2014 13:34:46 Bartlomiej Zolnierkiewicz wrote:
+> On Tuesday, May 06, 2014 02:14:01 AM Gregory CLEMENT wrote:
+> > For the Armada 38x SoCs which come with an xhci controller, specific
+> > initialization must be done during probe related to the MBus windows
+> > configuration. This patch adds the support of this quirk.
+> > 
+> > Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> > ---
+> >  drivers/usb/host/Kconfig      |  7 +++++
+> >  drivers/usb/host/Makefile     |  1 +
+> >  drivers/usb/host/xhci-mvebu.c | 71 +++++++++++++++++++++++++++++++++++++++++++
+> >  drivers/usb/host/xhci-mvebu.h | 21 +++++++++++++
+> >  drivers/usb/host/xhci-plat.c  |  6 ++++
+> >  5 files changed, 106 insertions(+)
+> >  create mode 100644 drivers/usb/host/xhci-mvebu.c
+> >  create mode 100644 drivers/usb/host/xhci-mvebu.h
+> > 
+> > diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+> > index 3d9e54062d62..e70943fac4a1 100644
+> > --- a/drivers/usb/host/Kconfig
+> > +++ b/drivers/usb/host/Kconfig
+> > @@ -29,6 +29,13 @@ if USB_XHCI_HCD
+> >  config USB_XHCI_PLATFORM
+> >       tristate
+> >  
+> > +config USB_XHCI_MVEBU
+> > +     tristate "xHCI support for Marvell Armada 38x"
+> 
+> Please limit this driver to mvebu arch and compile testing, i.e.
+> 
+>         depends on ARCH_MVEBU || COMPILE_TEST
 
---H2kTGx6mr3R59oXC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I think it actually needs a dependency on MVEBU_MBUS.
 
-On Sun, May 04, 2014 at 05:14:59PM +0530, Preeti Murthy wrote:
-> As far as my understanding goes, the logic in select_task_rq_fair()
-> does wake_affine() or calls select_idle_sibling() only at those
-> levels of sched domains where the flag SD_WAKE_AFFINE is set.
-> This flag is not set at the numa domain and hence they will not be
-> balancing across numa nodes. So I don't understand how
-> *these functions* are affecting NUMA placements.
+You probably need something like
 
-It _is_ set at NUMA domains, just not on those > RECLAIM_DISTANCE. That
-means you typically need a non-fully connected system and then the top
-numa tier will not get wake affine.
+	depends on MVEBU_MBUS=y || (MVEBU_MBUS=m && USB_XHCI=m)
 
---H2kTGx6mr3R59oXC
-Content-Type: application/pgp-signature
+Also, having the option 'tristate' makes no sense, since you
+can't have it as a loadable module.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTaM38AAoJEHZH4aRLwOS6zhAQAIFj7SxkOeqBWYd4NocPkkOf
-XTUTS367CsCfo27pFpqm2IT6+nrTaXamGyqWhoU9eo74qf+/Vileq8E2jsyDmGEI
-AWOKICtEEllqQZT7onG2W6oBoYXPOMokkOf0GdAnANa7uQsEiSPjOF+cJfdFNjw9
-YMgWFhSbwKrjL/MfzO0H+YbK1RxTAGjjbXtiEvL+h4Mw9rojKLT+v0xkkem48EyF
-8KGO6bqIMUgG/WOhR86Pvebjd5QsCNoHrrpeyQgj+fgcyg5ngAIMOSPL7yYm0u04
-gQhgjaJ+tdjD2E8SbEnKH/EQDxPN6Uv7p8CaPg/6NNkvT7KK6rycocxev1+TIgxq
-ejz6jAqvS9Q7Gwbd6Z7FVws/n+zJcVOFn+nv/R7JLV4SfFxsxaKQCMgku6XJB1XZ
-mZ8bPOQdbCtMKIKeE4ZUpGl0Pu98fw9Q9tO3VPBKRH+UUQl0cifi8nMOnB76ocac
-38fS0MSZtBWYYlEolpDskDtcvjekb5Kqj5fzRn7ytKE4iYoyDvZAML7uHGb5+LGv
-Qs4tvqLuVxu5gU98Hr6Ke9kp4i9DWFy8dkyXo/6DWdMUB19BQT6lEb8Wb1fwDAJK
-xAqg92/UFoLHdaeCz0FTk1d5994LAqO2chCvBGjvDK7WrB0IEff2fv+MPePMDjKJ
-qX5cYPwZfvVHeLktL8df
-=4Km0
------END PGP SIGNATURE-----
-
---H2kTGx6mr3R59oXC--
+	Arnd
