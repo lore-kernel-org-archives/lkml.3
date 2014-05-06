@@ -1,67 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345AbaEFMdw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 08:33:52 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:32077 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752524AbaEFMdt (ORCPT
+	id S1755835AbaEFMfK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 08:35:10 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:40381 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753405AbaEFMfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 08:33:49 -0400
-Date: Tue, 6 May 2014 08:33:46 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Seth Jennings <sjenning@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-Message-ID: <20140506083346.2c96b8ad@gandalf.local.home>
-In-Reply-To: <20140506121211.GA4125@treble.redhat.com>
-References: <cover.1398958771.git.jpoimboe@redhat.com>
-	<20140505085537.GA32196@gmail.com>
-	<20140505132638.GA14432@treble.redhat.com>
-	<20140505141038.GA27403@localhost.localdomain>
-	<20140505184304.GA15137@gmail.com>
-	<20140505214919.GE2099@localhost.localdomain>
-	<20140506121211.GA4125@treble.redhat.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Tue, 6 May 2014 08:35:07 -0400
+Message-ID: <5368D6F7.3030200@6wind.com>
+Date: Tue, 06 May 2014 14:35:03 +0200
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reply-To: nicolas.dichtel@6wind.com
+Organization: 6WIND
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>
+CC: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, ebiederm@xmission.com
+Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
+References: <cover.1398176489.git.rgb@redhat.com>	<1399154328.2505.29.camel@dabdike.int.hansenpartnership.com>	<20140505034814.GA27548@mail.hallyn.com>	<20140505214818.GC6867@madcap2.tricolour.ca>	<1399326698.2164.47.camel@dabdike.int.hansenpartnership.com>	<20140505222758.GA6508@ubuntumail>	<1399329001.2164.56.camel@dabdike.int.hansenpartnership.com>	<20140505223638.GB6508@ubuntumail> <a09ed85b-d6ef-4472-853b-84057d5957c2@email.android.com>
+In-Reply-To: <a09ed85b-d6ef-4472-853b-84057d5957c2@email.android.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 May 2014 07:12:11 -0500
-Josh Poimboeuf <jpoimboe@redhat.com> wrote:
+Le 06/05/2014 01:23, James Bottomley a écrit :
+>
+>
+> On May 5, 2014 3:36:38 PM PDT, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+>> Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
+>>> On Mon, 2014-05-05 at 22:27 +0000, Serge Hallyn wrote:
+>>>> Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
+>>>>> On Mon, 2014-05-05 at 17:48 -0400, Richard Guy Briggs wrote:
+>>>>>> On 14/05/05, Serge E. Hallyn wrote:
+>>>>>>> Quoting James Bottomley
+>> (James.Bottomley@HansenPartnership.com):
+>>>>>>>> On Tue, 2014-04-22 at 14:12 -0400, Richard Guy Briggs
+>> wrote:
+>>>>>>>>> Questions:
+>>>>>>>>> Is there a way to link serial numbers of namespaces
+>> involved in migration of a
+>>>>>>>>> container to another kernel?  (I had a brief look at
+>> CRIU.)  Is there a unique
+>>>>>>>>> identifier for each running instance of a kernel?  Or at
+>> least some identifier
+>>>>>>>>> within the container migration realm?
+>>>>>>>>
+>>>>>>>> Are you asking for a way of distinguishing an migrated
+>> container from an
+>>>>>>>> unmigrated one?  The answer is pretty much "no" because the
+>> job of
+>>>>>>>> migration is to restore to the same state as much as
+>> possible.
+>>>>>>>>
+>>>>>>>> Reading between the lines, I think your goal is to
+>> correlate audit
+>>>>>>>> information across a container migration, right?  Ideally
+>> the management
+>>>>>>>> system should be able to cough up an audit trail for a
+>> container
+>>>>>>>> wherever it's running and however many times it's been
+>> migrated?
+>>>>>>>>
+>>>>>>>> In that case, I think your idea of a numeric serial number
+>> in a dense
+>>>>>>>> range is wrong.  Because the range is dense you're
+>> obviously never going
+>>>>>>>> to be able to use the same serial number across a
+>> migration.  However,
+>>>>>>>
+>>>>>>> Ah, but I was being silly before, we can actually address
+>> this pretty
+>>>>>>> simply.  If we just (for instance) add
+>>>>>>> /proc/self/ns/{ic,mnt,net,pid,user,uts}_seq containing the
+>> serial number
+>>>>>>> for the relevant ns for the task, then criu can dump this
+>> info at
+>>>>>>> checkpoint.  Then at restart it can dump an audit message per
+>> task and
+>>>>>>> ns saying old_serial=%x,new_serial=%x.  That way the audit
+>> log reader
+>>>>>>> can if it cares keep track.
+>>>>>>
+>>>>>> This is the sort of idea I had in mind...
+>>>>>
+>>>>> OK, but I don't understand then why you need a serial number.
+>> There are
+>>>>> plenty of things we preserve across a migration, like namespace
+>> name for
+>>>>> instance.  Could you explain what function it performs because I
+>> think I
+>>>>> might be missing something.
+>>>>
+>>>> We're looking ahead to a time when audit is namespaced, and a
+>> container
+>>>> can keep its own audit logs (without limiting what the host audits
+>> of
+>>>> course).  So if a container is auditing suspicious activity by some
+>>>> task in a sub-namesapce, then the whole parent container gets
+>> migrated,
+>>>> after migration we want to continue being able to correlate the
+>> namespaces.
+>>>>
+>>>> We're also looking at audit trails on a host that is up for years.
+>> We
+>>>> would like every namespace to be uniquely logged there.  That is
+>> why
+>>>> inode #s on /proc/self/ns/* are not sufficient, unless we add a
+>> generation
+>>>> # (which would end more complicated, not less, than a serial #).
+>>>
+>>> Right, but when the contaner has an audit namespace, that namespace
+>> has
+>>> a name,
+>>
+>> What ns has a name?
+>
+> The netns for instance.
+netns does not have names. iproute2 uses names (a filename in fact, to hold a
+reference on the netns), but the kernel never got this name. It only get a file
+descriptor (or a pid).
 
-> Live patching is a very sensitive and risky operation, and from a kernel
-> standpoint we should make it as safe as we reasonably can.  But we can't
-> do much about careless users.  Ultimately the risk is in the hands of
-> the user and their choice of patches.  They need to absolutely
-> understand all the implications of patching a particular function.  If
-> the patch changes the way a function interacts with some external data,
-> then they're starting to tempt fate and they need to be extra careful.
-> This care needs to be taken for *all* kernel functions, not just for the
-> few that are called from kernel threads.
 
-Ideally the kpatch tools should be able to somewhat prevent users from
-doing damage. Or at least make them type a sentence that says:
-
-  I know what I'm doing and will not blame anyone but myself if this
-  kills the system along with all my puppies and kittens.
-
-I'm guessing that kpatch needs to be marketed that a distro or "hired
-help" will be creating the patch and the admin only needs to "trust"
-the one that gave them the kpatch module to load. All the
-testing/checking that the module works will be done by kernel
-developers and not by any "users".
-
-
--- Steve
+Regards,
+Nicolas
