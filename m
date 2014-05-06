@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777AbaEFT4w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 15:56:52 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:52081 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaEFT4u (ORCPT
+	id S1753974AbaEFT5J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 15:57:09 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:57876 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752358AbaEFT5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 15:56:50 -0400
-Date: Tue, 6 May 2014 21:56:45 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH 3/4] memcg, doc: clarify global vs. limit reclaims
-Message-ID: <20140506195645.GC30921@dhcp22.suse.cz>
-References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
- <1398688005-26207-4-git-send-email-mhocko@suse.cz>
- <20140430230350.GF26041@cmpxchg.org>
- <20140502094351.GD3446@dhcp22.suse.cz>
+	Tue, 6 May 2014 15:57:06 -0400
+Date: Tue, 6 May 2014 21:57:04 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Tom Herbert <therbert@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        josh@joshtriplett.org, David Miller <davem@davemloft.net>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linux Netdev List <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, tom.zanussi@linux.intel.com
+Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
+Message-ID: <20140506195704.GA5619@two.firstfloor.org>
+References: <1399328773-6531-9-git-send-email-andi@firstfloor.org>
+ <20140505.231229.136734008603421707.davem@davemloft.net>
+ <20140506032114.GP2382@two.firstfloor.org>
+ <20140505.232327.578134514220748085.davem@davemloft.net>
+ <20140506155703.GA20391@cloud>
+ <1399394359.15399.20.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140506183216.GM19657@tassilo.jf.intel.com>
+ <CA+mtBx81EdtZeXRG_ubgWMy+8rSOpK3q0S3YktBDDFt-LG2poA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140502094351.GD3446@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CA+mtBx81EdtZeXRG_ubgWMy+8rSOpK3q0S3YktBDDFt-LG2poA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew, could you queue this one please?
+> Can this at least be done without the combinatorial explosion in
+> number of configurations? As Yuchung pointed out these patches
+> introduce at least one unresolved configuration dependency. CONFIG_SMP
+> works quite well since with a single parameter we can enable/disable a
+> whole bunch of functionality in bulk, and it's quite clear that new
+> development cannot break smp or non-smp configurations. Maybe you want
+> something similar like CONFIG_NETWORK_SMALL?
 
-On Fri 02-05-14 11:43:51, Michal Hocko wrote:
-[...]
-> From 30b9505169e574cdb553226e1a361cc527ed492b Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Fri, 2 May 2014 11:42:35 +0200
-> Subject: [PATCH] mmotm: memcg-doc-clarify-global-vs-limit-reclaims-fix.patch
-> 
-> update doc as per Johannes
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  Documentation/cgroups/memory.txt | 10 +---------
->  1 file changed, 1 insertion(+), 9 deletions(-)
-> 
-> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> index add1be001416..2cde96787ceb 100644
-> --- a/Documentation/cgroups/memory.txt
-> +++ b/Documentation/cgroups/memory.txt
-> @@ -241,17 +241,9 @@ global VM. Cgroups can get reclaimed basically under two conditions
->     proportionally wrt. their LRU size in a round robin fashion
->   - when a cgroup or its hierarchical parent (see 6. Hierarchical support)
->     hits hard limit. If the reclaim is unsuccessful, an OOM routine is invoked
-> -   to select and kill the bulkiest task in the cgroup. (See 10. OOM Control
-> +   to select and kill the bulkiest task in the hiearchy. (See 10. OOM Control
->     below.)
->  
-> -Global and hard-limit reclaims share the same code the only difference
-> -is the objective of the reclaim. The global reclaim aims at balancing
-> -zones' watermarks while the limit reclaim frees some memory to allow new
-> -charges.
-> -
-> -NOTE: Hard limit reclaim does not work for the root cgroup, since we cannot set
-> -any limits on the root cgroup.
-> -
->  Note2: When panic_on_oom is set to "2", the whole system will panic.
->  
->  When oom event notifier is registered, event will be delivered to the root
-> -- 
-> 2.0.0.rc0
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Yes I've considered this.  I'm not sure SMP is good enough though,
+at some point we'll get tiny dual core systems.
 
--- 
-Michal Hocko
-SUSE Labs
+>From the 0/0:
+
+>>>
+Right now I'm using own Kconfigs for every removed features. I realize
+this somewhat increases the compile test matrix. It would be possible
+to hide some of the options and select them using higher level
+configurations like the ones listed above. I haven't done this
+in this version.
+<<<
+
+-Andi
