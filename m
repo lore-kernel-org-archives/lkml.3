@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808AbaEFVOQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 17:14:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41047 "EHLO
+	id S1753584AbaEFVOO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 17:14:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41040 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807AbaEFVOJ (ORCPT
+	with ESMTP id S1751798AbaEFVOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 17:14:09 -0400
+	Tue, 6 May 2014 17:14:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Luis Henriques <luis.henriques@canonical.com>,
+Cc: Matthew Daley <mattd@bugfuzz.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 1/4] netfilter: nf_conntrack_dccp: fix skb_header_pointer API usages
-Date: Tue,  6 May 2014 14:13:52 -0700
-Message-Id: <1399410835-24162-2-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 3/4] floppy: ignore kernel-only members in FDRAWCMD ioctl input
+Date: Tue,  6 May 2014 14:13:54 -0700
+Message-Id: <1399410835-24162-4-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399410835-24162-1-git-send-email-kamal@canonical.com>
 References: <1399410835-24162-1-git-send-email-kamal@canonical.com>
@@ -29,66 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Matthew Daley <mattd@bugfuzz.com>
 
-commit b22f5126a24b3b2f15448c3f2a254fc10cbc2b92 upstream.
+commit ef87dbe7614341c2e7bfe8d32fcb7028cc97442c upstream.
 
-Some occurences in the netfilter tree use skb_header_pointer() in
-the following way ...
+Always clear out these floppy_raw_cmd struct members after copying the
+entire structure from userspace so that the in-kernel version is always
+valid and never left in an interdeterminate state.
 
-  struct dccp_hdr _dh, *dh;
-  ...
-  skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
-
-... where dh itself is a pointer that is being passed as the copy
-buffer. Instead, we need to use &_dh as the forth argument so that
-we're copying the data into an actual buffer that sits on the stack.
-
-Currently, we probably could overwrite memory on the stack (e.g.
-with a possibly mal-formed DCCP packet), but unintentionally, as
-we only want the buffer to be placed into _dh variable.
-
-Fixes: 2bc780499aa3 ("[NETFILTER]: nf_conntrack: add DCCP protocol support")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Reference: CVE-2014-2523
-Cc: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Matthew Daley <mattd@bugfuzz.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+References: CVE-2014-1737
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/netfilter/nf_conntrack_proto_dccp.c | 6 +++---
+ drivers/block/floppy.c | 6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/netfilter/nf_conntrack_proto_dccp.c b/net/netfilter/nf_conntrack_proto_dccp.c
-index a8ae287..9a2cec6 100644
---- a/net/netfilter/nf_conntrack_proto_dccp.c
-+++ b/net/netfilter/nf_conntrack_proto_dccp.c
-@@ -428,7 +428,7 @@ static bool dccp_new(struct nf_conn *ct, const struct sk_buff *skb,
- 	const char *msg;
- 	u_int8_t state;
+diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+index 2ddd64a..7ca5d3d 100644
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -3107,10 +3107,11 @@ loop:
+ 		return -ENOMEM;
+ 	*rcmd = ptr;
+ 	ret = copy_from_user(ptr, param, sizeof(*ptr));
+-	if (ret)
+-		return -EFAULT;
+ 	ptr->next = NULL;
+ 	ptr->buffer_length = 0;
++	ptr->kernel_data = NULL;
++	if (ret)
++		return -EFAULT;
+ 	param += sizeof(struct floppy_raw_cmd);
+ 	if (ptr->cmd_count > 33)
+ 			/* the command may now also take up the space
+@@ -3126,7 +3127,6 @@ loop:
+ 	for (i = 0; i < 16; i++)
+ 		ptr->reply[i] = 0;
+ 	ptr->resultcode = 0;
+-	ptr->kernel_data = NULL;
  
--	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
-+	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
- 	BUG_ON(dh == NULL);
- 
- 	state = dccp_state_table[CT_DCCP_ROLE_CLIENT][dh->dccph_type][CT_DCCP_NONE];
-@@ -485,7 +485,7 @@ static int dccp_packet(struct nf_conn *ct, const struct sk_buff *skb,
- 	u_int8_t type, old_state, new_state;
- 	enum ct_dccp_roles role;
- 
--	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
-+	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
- 	BUG_ON(dh == NULL);
- 	type = dh->dccph_type;
- 
-@@ -576,7 +576,7 @@ static int dccp_error(struct net *net, struct nf_conn *tmpl,
- 	unsigned int cscov;
- 	const char *msg;
- 
--	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
-+	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
- 	if (dh == NULL) {
- 		msg = "nf_ct_dccp: short packet ";
- 		goto out_invalid;
+ 	if (ptr->flags & (FD_RAW_READ | FD_RAW_WRITE)) {
+ 		if (ptr->length <= 0)
 -- 
 1.9.1
 
