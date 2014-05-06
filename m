@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758126AbaEFP5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 11:57:10 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:37112 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757937AbaEFP5I (ORCPT
+	id S1758137AbaEFP5n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 11:57:43 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:12576 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757478AbaEFP5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 11:57:08 -0400
-Date: Tue, 6 May 2014 08:57:03 -0700
-From: josh@joshtriplett.org
-To: David Miller <davem@davemloft.net>
-Cc: andi@firstfloor.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tom.zanussi@linux.intel.com, ak@linux.intel.com
-Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
-Message-ID: <20140506155703.GA20391@cloud>
-References: <1399328773-6531-9-git-send-email-andi@firstfloor.org>
- <20140505.231229.136734008603421707.davem@davemloft.net>
- <20140506032114.GP2382@two.firstfloor.org>
- <20140505.232327.578134514220748085.davem@davemloft.net>
+	Tue, 6 May 2014 11:57:42 -0400
+Message-ID: <53690672.8050708@atmel.com>
+Date: Tue, 6 May 2014 17:57:38 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505.232327.578134514220748085.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mark Brown <broonie@kernel.org>
+CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-spi@vger.kernel.org>
+Subject: Re: [PATCH] spi: atmel: fix incorrect comparison
+References: <1399391081-16095-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1399391081-16095-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 11:23:27PM -0400, David Miller wrote:
-> From: Andi Kleen <andi@firstfloor.org>
-> Date: Tue, 6 May 2014 05:21:14 +0200
+On 06/05/2014 17:44, Alexandre Belloni :
+> Found using smatch:
+> drivers/spi/spi-atmel.c:878 atmel_spi_pump_pio_data() warn: unsigned
+> 'as->current_remaining_bytes' is never less than zero.
 > 
-> > What parts would you remove to get the foot print down for a 2MB
-> > single purpose machine?
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+
+Yes as the variable is declared as unsigned:
+
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+
+> ---
+>  drivers/spi/spi-atmel.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
 > 
-> I wouldn't use Linux, end of story.
+> diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+> index 079e6b1b0cdb..39417fd8462f 100644
+> --- a/drivers/spi/spi-atmel.c
+> +++ b/drivers/spi/spi-atmel.c
+> @@ -874,8 +874,9 @@ atmel_spi_pump_pio_data(struct atmel_spi *as, struct spi_transfer *xfer)
+>  		spi_readl(as, RDR);
+>  	}
+>  	if (xfer->bits_per_word > 8) {
+> -		as->current_remaining_bytes -= 2;
+> -		if (as->current_remaining_bytes < 0)
+> +		if (as->current_remaining_bytes > 2)
+> +			as->current_remaining_bytes -= 2;
+> +		else
+>  			as->current_remaining_bytes = 0;
+>  	} else {
+>  		as->current_remaining_bytes--;
 > 
-> Maybe two decades ago, but not now, those days are over.
 
-That's a self-fulfilling prophecy: if you and others assume that Linux
-should not run on such machines, then size regressions will continue to
-happen, and patches to make Linux continue running on such systems
-will not make it into the kernel.
 
-There are real people and products intending to use Linux on incredibly
-tiny embedded systems; Tom already posted about one in this thread.
-Personally, I'd much rather see Linux on such systems rather than some
-crazy embedded (often proprietary) OS, and so would many other people.
-A NAK isn't going to cut it, here; tiny Linux systems are going to
-exist, and they shouldn't have to maintain a long-term out-of-tree fork
-or use crazy things like LWIP.
-
-I understand that you want to reduce maintenance effort and Kconfig
-option proliferation; that's a very real concern.  It's likely possible
-to address those concerns while still producing a usable minimal version
-of the networking stack, if you'd be willing to provide feedback and
-support iteration of patches like these.
-
-Would you be interested in discussing this at Kernel Summit, perhaps?
-Would that help to hammer out a plan for this?
-
-- Josh Triplett
+-- 
+Nicolas Ferre
