@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609AbaEFStI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 14:49:08 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:36298 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289AbaEFStF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 14:49:05 -0400
+	id S1753911AbaEFStX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 14:49:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52702 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753783AbaEFStU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 14:49:20 -0400
+Message-ID: <53692EA6.5010702@redhat.com>
+Date: Tue, 06 May 2014 14:49:10 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1399388179-7647-1-git-send-email-emilgoode@gmail.com>
-References: <1399388179-7647-1-git-send-email-emilgoode@gmail.com>
-Date: Tue, 6 May 2014 11:49:04 -0700
-Message-ID: <CACwgvgU7xC0zzgByh-C6Nh6kwgrtHVRih40YQU4-LLnBPHgn1g@mail.gmail.com>
-Subject: Re: [PATCH] staging: lustre: remove unused variables
-From: Fredrick Prashanth John Berchmans <fredrickprashanth@gmail.com>
-To: Emil Goode <emilgoode@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peng Tao <bergwolf@gmail.com>,
-        Andreas Dilger <andreas.dilger@intel.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+To: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 11/17] mm: page_alloc: Use unsigned int for order in more
+ places
+References: <1398933888-4940-1-git-send-email-mgorman@suse.de> <1398933888-4940-12-git-send-email-mgorman@suse.de>
+In-Reply-To: <1398933888-4940-12-git-send-email-mgorman@suse.de>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 6, 2014 at 7:56 AM, Emil Goode <emilgoode@gmail.com> wrote:
-> The following commit left some unused variables behind.
->
-> commit 80db2734acbc78db12798cfb611d6acc7fe389e6
-> Author: Fredrick John Berchmans <fredrickprashanth@gmail.com>
-> Date:   Fri May 2 19:50:15 2014 -0700
->
->     staging: lustre use kernel socket sockopt apis
->
-> Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> ---
->  drivers/staging/lustre/lustre/libcfs/linux/linux-tcpip.c |    2 --
->  1 file changed, 2 deletions(-)
->
-> diff --git a/drivers/staging/lustre/lustre/libcfs/linux/linux-tcpip.c b/drivers/staging/lustre/lustre/libcfs/linux/linux-tcpip.c
-> index 4153b4a..ac3a444 100644
-> --- a/drivers/staging/lustre/lustre/libcfs/linux/linux-tcpip.c
-> +++ b/drivers/staging/lustre/lustre/libcfs/linux/linux-tcpip.c
-> @@ -46,10 +46,8 @@
->  int
->  libcfs_sock_ioctl(int cmd, unsigned long arg)
->  {
-> -       mm_segment_t    oldmm = get_fs();
->         struct socket  *sock;
->         int          rc;
-> -       struct file    *sock_filp;
->
->         rc = sock_create (PF_INET, SOCK_STREAM, 0, &sock);
->         if (rc != 0) {
-> --
-> 1.7.10.4
->
+On 05/01/2014 04:44 AM, Mel Gorman wrote:
+> X86 prefers the use of unsigned types for iterators and there is a
+> tendency to mix whether a signed or unsigned type if used for page
+> order. This converts a number of sites in mm/page_alloc.c to use
+> unsigned int for order where possible.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Hi Emil,
+Acked-by: Rik van Riel <riel@redhat.com>
 
-I have already submitted a patch for this.
 
-Thanks,
-Fredrick
+-- 
+All rights reversed
