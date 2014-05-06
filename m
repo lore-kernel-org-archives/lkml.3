@@ -1,36 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793AbaEFQxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 12:53:00 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64056 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaEFQw7 (ORCPT
+	id S1751881AbaEFQx2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 12:53:28 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:56945 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349AbaEFQx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 12:52:59 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19KitkwZOERvtNpQ3qSQygo
-Date: Tue, 6 May 2014 09:52:55 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Sourav Poddar <sourav.poddar@ti.com>
-Cc: bcousson@baylibre.com, devicetree@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [Resend/PATCH] arm: dts: dra7: Add qspi device.
-Message-ID: <20140506165254.GN18474@atomide.com>
-References: <1399374445-16456-1-git-send-email-sourav.poddar@ti.com>
+	Tue, 6 May 2014 12:53:26 -0400
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Tue, 6 May 2014 12:57:08 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+In-Reply-To: <alpine.DEB.2.10.1405052104210.1258@vincent-weaver-1.umelst.maine.edu>
+Message-ID: <alpine.DEB.2.10.1405061251350.3372@vincent-weaver-1.umelst.maine.edu>
+References: <20140502172731.GK30445@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405021337390.22556@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.02.1405022111540.6261@ionos.tec.linutronix.de> <alpine.DEB.2.10.1405021611540.23984@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.02.1405022243550.6261@ionos.tec.linutronix.de> <alpine.DEB.2.10.1405022227420.25174@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405022253530.25174@vincent-weaver-1.umelst.maine.edu> <20140505093124.GN17778@laptop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1405051200010.31049@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405051309160.31072@vincent-weaver-1.umelst.maine.edu> <20140505171428.GU26782@laptop.programming.kicks-ass.net> <alpine.DEB.2.10.1405051443260.31072@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.10.1405052104210.1258@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399374445-16456-1-git-send-email-sourav.poddar@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sourav Poddar <sourav.poddar@ti.com> [140506 04:08]:
-> These add device tree entry for qspi controller driver on dra7-evm.
+On Mon, 5 May 2014, Vince Weaver wrote:
 
-Thanks applying into omap-for-v3.16/dt.
+> On Mon, 5 May 2014, Vince Weaver wrote:
+> 
+> > Meanwhile the haswell and AMD machines have been fuzzing away without 
+> > issue, I don't know why the core2 machine is always the trouble maker.
+> 
+> The haswell has been fuzzing 12 hours with only a NMI dazed/confused 
+> message.
 
-Tony
+So the Haswell seemed to still be going strong after 24-hours, but then I 
+killed the fuzzer with control-C and got this.
+
+^C
+[87536.479011] ------------[ cut here ]------------
+[87536.484553] WARNING: CPU: 1 PID: 11978 at lib/list_debug.c:59 __list_del_entry+0xa1/0xd0()
+[87536.493994] list_del corruption. prev->next should be ffff8800ce684810, but was 6b6b6b6b6b6b6b6b
+[87536.503915] Modules linked in: fuse x86_pkg_temp_thermal intel_powerclamp coretemp kvm snd_hda_codec_hdmi crct10dif_pclmul crc32_pclmul ghash_clmulni_intel snd_hda_codec_realtek snd_hda_codec_generic i915 aesni_intel snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_pcm snd_seq snd_timer snd_seq_device tpm_tis ppdev snd aes_x86_64 parport_pc tpm evdev mei_me drm_kms_helper iTCO_wdt drm soundcore lrw gf128mul glue_helper iTCO_vendor_support wmi ablk_helper i2c_algo_bit button battery processor mei psmouse parport pcspkr serio_raw cryptd i2c_i801 video i2c_core lpc_ich mfd_core sd_mod sr_mod crc_t10dif cdrom crct10dif_common ahci libahci ehci_pci e1000e libata xhci_hcd ehci_hcd ptp crc32c_intel usbcore scsi_mod pps_core usb_common fan thermal thermal_sys
+[87536.581372] CPU: 1 PID: 11978 Comm: perf_fuzzer Tainted: G        W     3.15.0-rc1+ #104
+[87536.590762] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
+[87536.599435]  0000000000000009 ffff880117b57ad8 ffffffff81649ca0 ffff880117b57b20
+[87536.608228]  ffff880117b57b10 ffffffff810646ad ffff8800ce684800 ffff880036a64000
+[87536.616970]  ffff8800ce684810 ffff8800ce684800 0000000000000001 ffff880117b57b70
+[87536.625688] Call Trace:
+[87536.629039]  [<ffffffff81649ca0>] dump_stack+0x45/0x56
+[87536.635247]  [<ffffffff810646ad>] warn_slowpath_common+0x7d/0xa0
+[87536.642374]  [<ffffffff8106471c>] warn_slowpath_fmt+0x4c/0x50
+[87536.649211]  [<ffffffff813c9fe1>] __list_del_entry+0xa1/0xd0
+[87536.655953]  [<ffffffff81131ec4>] list_del_event+0xe4/0xf0
+[87536.662477]  [<ffffffff811326c0>] perf_remove_from_context+0xb0/0x120
+[87536.670005]  [<ffffffff81133d8f>] perf_event_release_kernel+0x3f/0x80
+[87536.677530]  [<ffffffff81133ea3>] put_event+0xd3/0x100
+[87536.683702]  [<ffffffff81133e00>] ? put_event+0x30/0x100
+[87536.690047]  [<ffffffff81133ee5>] perf_release+0x15/0x20
+[87536.696292]  [<ffffffff811b69fc>] __fput+0xdc/0x1e0
+[87536.702191]  [<ffffffff811b6b4e>] ____fput+0xe/0x10
+[87536.708038]  [<ffffffff81085154>] task_work_run+0xc4/0xe0
+[87536.714503]  [<ffffffff81066d5c>] do_exit+0x2cc/0xa50
+[87536.720546]  [<ffffffff81076949>] ? get_signal_to_deliver+0x249/0x650
+[87536.728117]  [<ffffffff8106756c>] do_group_exit+0x4c/0xc0
+[87536.734480]  [<ffffffff81076991>] get_signal_to_deliver+0x291/0x650
+[87536.741814]  [<ffffffff81012438>] do_signal+0x48/0x990
+[87536.747877]  [<ffffffff81090c4d>] ? finish_task_switch+0x7d/0x120
+[87536.754994]  [<ffffffff81651437>] ? _raw_spin_unlock_irq+0x27/0x40
+[87536.762243]  [<ffffffff81090c4d>] ? finish_task_switch+0x7d/0x120
+[87536.769465]  [<ffffffff81090c0f>] ? finish_task_switch+0x3f/0x120
+[87536.776622]  [<ffffffff81012df0>] do_notify_resume+0x70/0xa0
+[87536.783323]  [<ffffffff81651fbc>] retint_signal+0x48/0x8c
+[87536.789726] ---[ end trace 2b5a3d32e8d767a7 ]---
+[87537.231116] ------------[ cut here ]------------
+[87537.238622] WARNING: CPU: 1 PID: 5694 at lib/list_debug.c:59 __list_del_entry+0xa1/0xd0()
+[87537.250022] list_del corruption. prev->next should be ffff88003697d010, but was 6b6b6b6b6b6b6b6b
+[87537.262134] Modules linked in: fuse x86_pkg_temp_thermal intel_powerclamp coretemp kvm snd_hda_codec_hdmi crct10dif_pclmul crc32_pclmul ghash_clmulni_intel snd_hda_codec_realtek snd_hda_codec_generic i915 aesni_intel snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_pcm snd_seq snd_timer snd_seq_device tpm_tis ppdev snd aes_x86_64 parport_pc tpm evdev mei_me drm_kms_helper iTCO_wdt drm soundcore lrw gf128mul glue_helper iTCO_vendor_support wmi ablk_helper i2c_algo_bit button battery processor mei psmouse parport pcspkr serio_raw cryptd i2c_i801 video i2c_core lpc_ich mfd_core sd_mod sr_mod crc_t10dif cdrom crct10dif_common ahci libahci ehci_pci e1000e libata xhci_hcd ehci_hcd ptp crc32c_intel usbcore scsi_mod pps_core usb_common fan thermal thermal_sys
+[87537.350071] CPU: 1 PID: 5694 Comm: perf_fuzzer Tainted: G        W     3.15.0-rc1+ #104
+[87537.362120] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
+[87537.373623]  0000000000000009 ffff88011780bad8 ffffffff81649ca0 ffff88011780bb20
+[87537.385332]  ffff88011780bb10 ffffffff810646ad ffff88003697d000 ffff8800cf2bd000
+[87537.397049]  ffff88003697d010 ffff88003697d000 0000000000000001 ffff88011780bb70
+[87537.408852] Call Trace:
+[87537.415220]  [<ffffffff81649ca0>] dump_stack+0x45/0x56
+[87537.424550]  [<ffffffff810646ad>] warn_slowpath_common+0x7d/0xa0
+[87537.434876]  [<ffffffff8106471c>] warn_slowpath_fmt+0x4c/0x50
+[87537.444923]  [<ffffffff813c9fe1>] __list_del_entry+0xa1/0xd0
+[87537.454848]  [<ffffffff81131ec4>] list_del_event+0xe4/0xf0
+[87537.464638]  [<ffffffff811326c0>] perf_remove_from_context+0xb0/0x120
+[87537.475461]  [<ffffffff81133d8f>] perf_event_release_kernel+0x3f/0x80
+[87537.486265]  [<ffffffff81133ea3>] put_event+0xd3/0x100
+[87537.495776]  [<ffffffff81133e00>] ? put_event+0x30/0x100
+[87537.505405]  [<ffffffff81133ee5>] perf_release+0x15/0x20
+[87537.515112]  [<ffffffff811b69fc>] __fput+0xdc/0x1e0
+[87537.524426]  [<ffffffff811b6b4e>] ____fput+0xe/0x10
+[87537.533695]  [<ffffffff81085154>] task_work_run+0xc4/0xe0
+[87537.543618]  [<ffffffff81066d5c>] do_exit+0x2cc/0xa50
+[87537.553129]  [<ffffffff81076949>] ? get_signal_to_deliver+0x249/0x650
+[87537.564205]  [<ffffffff8106756c>] do_group_exit+0x4c/0xc0
+[87537.574142]  [<ffffffff81076991>] get_signal_to_deliver+0x291/0x650
+[87537.585042]  [<ffffffff81012438>] do_signal+0x48/0x990
+[87537.594644]  [<ffffffff81090c4d>] ? finish_task_switch+0x7d/0x120
+[87537.605102]  [<ffffffff81651437>] ? _raw_spin_unlock_irq+0x27/0x40
+[87537.615521]  [<ffffffff81090c0f>] ? finish_task_switch+0x3f/0x120
+[87537.625663]  [<ffffffff81012df0>] do_notify_resume+0x70/0xa0
+[87537.635166]  [<ffffffff81651fbc>] retint_signal+0x48/0x8c
+[87537.644367] ---[ end trace 2b5a3d32e8d767a8 ]---
+[87541.568852] ------------[ cut here ]------------
+[87541.577199] WARNING: CPU: 1 PID: 5694 at lib/list_debug.c:59 __list_del_entry+0xa1/0xd0()
+[87541.589363] list_del corruption. prev->next should be ffff8800cdfed810, but was 6b6b6b6b6b6b6b6b
+[87541.602267] Modules linked in: fuse x86_pkg_temp_thermal intel_powerclamp coretemp kvm snd_hda_codec_hdmi crct10dif_pclmul crc32_pclmul ghash_clmulni_intel snd_hda_codec_realtek snd_hda_codec_generic i915 aesni_intel snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_pcm snd_seq snd_timer snd_seq_device tpm_tis ppdev snd aes_x86_64 parport_pc tpm evdev mei_me drm_kms_helper iTCO_wdt drm soundcore lrw gf128mul glue_helper iTCO_vendor_support wmi ablk_helper i2c_algo_bit button battery processor mei psmouse parport pcspkr serio_raw cryptd i2c_i801 video i2c_core lpc_ich mfd_core sd_mod sr_mod crc_t10dif cdrom crct10dif_common ahci libahci ehci_pci e1000e libata xhci_hcd ehci_hcd ptp crc32c_intel usbcore scsi_mod pps_core usb_common fan thermal thermal_sys
+[87541.692626] CPU: 1 PID: 5694 Comm: perf_fuzzer Tainted: G        W     3.15.0-rc1+ #104
+[87541.705282] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
+[87541.717333]  0000000000000009 ffff88011780baf8 ffffffff81649ca0 ffff88011780bb40
+[87541.729445]  ffff88011780bb30 ffffffff810646ad ffff8800cdfed800 ffff8800cf2bd000
+[87541.741712]  ffff8800cdfed810 ffff8800cdfed800 0000000000000001 ffff88011780bb90
+[87541.753980] Call Trace:
+[87541.760749]  [<ffffffff81649ca0>] dump_stack+0x45/0x56
+[87541.770475]  [<ffffffff810646ad>] warn_slowpath_common+0x7d/0xa0
+[87541.781089]  [<ffffffff8106471c>] warn_slowpath_fmt+0x4c/0x50
+[87541.791465]  [<ffffffff813c9fe1>] __list_del_entry+0xa1/0xd0
+[87541.801773]  [<ffffffff81131ec4>] list_del_event+0xe4/0xf0
+[87541.811853]  [<ffffffff811326c0>] perf_remove_from_context+0xb0/0x120
+[87541.822965]  [<ffffffff81133d8f>] perf_event_release_kernel+0x3f/0x80
+[87541.834111]  [<ffffffff81133ea3>] put_event+0xd3/0x100
+[87541.843821]  [<ffffffff81133e00>] ? put_event+0x30/0x100
+[87541.853752]  [<ffffffff81134e91>] __perf_event_exit_task.isra.79+0xd1/0x120
+[87541.865386]  [<ffffffff8113b226>] perf_event_exit_task+0x206/0x260
+[87541.876240]  [<ffffffff81066d69>] do_exit+0x2d9/0xa50
+[87541.885869]  [<ffffffff81076949>] ? get_signal_to_deliver+0x249/0x650
+[87541.896974]  [<ffffffff8106756c>] do_group_exit+0x4c/0xc0
+[87541.907010]  [<ffffffff81076991>] get_signal_to_deliver+0x291/0x650
+[87541.917964]  [<ffffffff81012438>] do_signal+0x48/0x990
+[87541.927735]  [<ffffffff81090c4d>] ? finish_task_switch+0x7d/0x120
+[87541.938519]  [<ffffffff81651437>] ? _raw_spin_unlock_irq+0x27/0x40
+[87541.949341]  [<ffffffff81090c0f>] ? finish_task_switch+0x3f/0x120
+[87541.960078]  [<ffffffff81012df0>] do_notify_resume+0x70/0xa0
+[87541.970193]  [<ffffffff81651fbc>] retint_signal+0x48/0x8c
+[87541.979819] ---[ end trace 2b5a3d32e8d767a9 ]---
+
