@@ -1,53 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536AbaEFMmn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 08:42:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36531 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757342AbaEFMmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 08:42:36 -0400
-Message-ID: <1399380153.5192.219.camel@marge.simpson.net>
-Subject: Re: Slow down stupid pounders
-From: Mike Galbraith <mgalbraith@suse.de>
-To: Borislav Petkov <bp@alien8.de>
-Cc: lkml <linux-kernel@vger.kernel.org>, x86-ml <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Date: Tue, 06 May 2014 14:42:33 +0200
-In-Reply-To: <20140506102924.GA25013@pd.tnic>
-References: <20140506102924.GA25013@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+	id S1757553AbaEFMm4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 08:42:56 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51000 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756257AbaEFMmv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 08:42:51 -0400
+Date: Tue, 6 May 2014 14:42:42 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Andrew Lunn <andrew@lunn.ch>, linux-usb@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>,
+        Mathias Nyman <mathias.nyman@intel.com>, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Nadav Haklai <nadavh@marvell.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v3 06/20] usb: host: xhci-plat: Add support for the
+ Armada 38x
+Message-ID: <20140506144242.1b098f30@skate>
+In-Reply-To: <4660313.evfclGtT1x@wuerfel>
+References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com>
+	<61061197.hLhKsFqJLF@wuerfel>
+	<20140506141023.715b932d@skate>
+	<4660313.evfclGtT1x@wuerfel>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-06 at 12:29 +0200, Borislav Petkov wrote: 
-> Hi,
-> 
-> so I'm getting sick'n'tired of all those bug reports of people pounding
-> cpu hotplug with stupid scripts.
-> 
-> * We know cpu hotplug is fragile/buggy/crap/needs proper rewrite.
-> 
-> * Stupid hotplugging script doesn't resemble any real use case - go use
-> a real benchmark/stress test to trigger bugs.
-> 
-> So if we can't make pounders stop jerking off, let's make it
-> uninterestingly slow. Stupid patch below, it might be completely idiotic
-> to do it this way but at least starts the discussion about this being a
-> really annoying issue which needs some sort of dealing with.
-> 
-> I dunno, we can make it configurable (which will probably defeat its
-> purpose partially), we can do some more fancy ratelimiting, per cpu,
-> whatever... we'll see.
-> 
-> Opinions, flames?
+Dear Arnd Bergmann,
 
-Damn.  I was gonna suggest we shorten hours in -rt kernels to achieve my
-full day stress testing survival goal.
+On Tue, 06 May 2014 14:21:55 +0200, Arnd Bergmann wrote:
 
--Mike
+> > That's not what we do for any of the other drivers that use the
+> > MVEBU_MBUS functions.
+> 
+> Fair enough. I guess using ARCH_MVEBU as the dependency works as well
+> because it implies MVEBU_MBUS. However, you can't use COMPILE_TEST
+> then because the driver itself needs the interfaces provided by MBUS.
+> 
+> It could be
+> 
+> 	depends on ARCH_MVEBU || (MVEBU_MBUS && COMPILE_TEST)
+> 
+> to describe the dependency most accurately.
 
+Right, that would work indeed, but is in fact not necessary, at least
+for this driver. The only mbus function used by this driver is
+mv_mbus_dram_info(), and <linux/mbus.h> provides an empty stub for this
+function (returning NULL) when MVEBU_MBUS is disabled. So from a
+compile time point of view, there is no problem with compiling the
+xhci-plat driver with MVEBU_MBUS disabled, so in fact:
+
+	depends on ARCH_MVEBU || COMPILE_TEST
+
+will work just fine.
+
+The only case where this doesn't work is for drivers that use the other
+mbus functions to create/remove windows, because no stubs are provided
+for these ones. However, as things are today, the only driver in this
+situation is the pci-mvebu driver, and its dependency is:
+
+	depends on ARCH_MVEBU || ARCH_DOVE || ARCH_KIRKWOOD
+
+For this one, we could indeed add || (MVEBU_MBUS && COMPILE_TEST)
+
+Best regards,
+
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
