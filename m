@@ -1,115 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900AbaEFTEZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 15:04:25 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:58909 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708AbaEFTEX (ORCPT
+	id S1754010AbaEFTHB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 15:07:01 -0400
+Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:8003
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751930AbaEFTHA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 15:04:23 -0400
-Message-ID: <53693229.3080705@gmail.com>
-Date: Tue, 06 May 2014 21:04:09 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 6 May 2014 15:07:00 -0400
+From: Bryan Evenson <bevenson@melinkcorp.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+CC: Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] rtc: rtc-at91rm9200: fix infinite wait for ACKUPD irq
+Thread-Topic: [PATCH] rtc: rtc-at91rm9200: fix infinite wait for ACKUPD irq
+Thread-Index: AQHPaTdn2DsGCuuDv0qEn/+YwaYxfZsz511A
+Date: Tue, 6 May 2014 19:06:56 +0000
+Message-ID: <aed75d16aa46476eb6f6c5b0d4bef30d@BLUPR05MB037.namprd05.prod.outlook.com>
+References: <94c06375c1b44c8eb5233b0ccf2e4b13@BY2PR05MB048.namprd05.prod.outlook.com>
+ <1399386481-18643-1-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1399386481-18643-1-git-send-email-boris.brezillon@free-electrons.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-vipre-scanned: 019FF9D1007100019FFB1E
+x-originating-ip: [98.100.91.242]
+x-forefront-prvs: 0203C93D51
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(377454003)(51704005)(13464003)(101416001)(76576001)(81542001)(87936001)(85852003)(21056001)(99396002)(81342001)(33646001)(99286001)(4396001)(2656002)(83072002)(76482001)(19580395003)(83322001)(46102001)(77982001)(76176999)(50986999)(19580405001)(54356999)(64706001)(20776003)(79102001)(92566001)(74662001)(66066001)(31966008)(80022001)(74502001)(74316001)(86362001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR05MB040;H:BLUPR05MB037.namprd05.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=bevenson@melinkcorp.com; 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-CC: kgene.kim@samsung.com, Russell King <linux@arm.linux.org.uk>,
-        arnd@arndb.de, Wolfram Sang <wsa@the-dreams.de>, t.figa@samsung.com,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v2 2/6] ARM: EXYNOS: Move SYS_I2C_CFG register save/restore
- to i2c driver
-References: <1399366282-4191-1-git-send-email-pankaj.dubey@samsung.com> <1399366282-4191-3-git-send-email-pankaj.dubey@samsung.com>
-In-Reply-To: <1399366282-4191-3-git-send-email-pankaj.dubey@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: melinkcorp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pankaj,
+Boris,
 
-On 06.05.2014 10:51, Pankaj Dubey wrote:
-> Let's move SYS_I2C_CFG register save/restore during s2r into i2c driver.
-> This will help in removing static iodesc based mapping from exynos.c.
-> Also will help in removing SoC specific checks in pm.c making it
-> more independent of such macros.
->
-> CC: Wolfram Sang <wsa@the-dreams.de>
-> CC: Russell King <linux@arm.linux.org.uk>
-> CC: linux-i2c@vger.kernel.org
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> -----Original Message-----
+> From: Boris BREZILLON [mailto:boris.brezillon@free-electrons.com]
+> Sent: Tuesday, May 06, 2014 10:28 AM
+> To: Bryan Evenson
+> Cc: Andrew Victor; Nicolas Ferre; Jean-Christophe Plagniol-Villard; linux-arm-
+> kernel@lists.infradead.org; Alessandro Zummo; rtc-
+> linux@googlegroups.com; linux-kernel@vger.kernel.org; Boris BREZILLON
+> Subject: [PATCH] rtc: rtc-at91rm9200: fix infinite wait for ACKUPD irq
+> 
+> The rtc user must wait at least 1 sec between each time/calandar update
+> (see atmel's datasheet chapter "Updating Time/Calendar").
+> 
+> Use the 1Hz interrupt to update the at91_rtc_upd_rdy flag and wait for
+> the at91_rtc_wait_upd_rdy event if the rtc is not ready.
+> 
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
 > ---
->   arch/arm/mach-exynos/exynos.c           |   12 +-----------
->   arch/arm/mach-exynos/include/mach/map.h |    3 ---
->   arch/arm/mach-exynos/pm.c               |   10 ----------
->   arch/arm/mach-exynos/regs-sys.h         |   22 ----------------------
->   drivers/i2c/busses/i2c-s3c2410.c        |    8 ++++++++
->   5 files changed, 9 insertions(+), 46 deletions(-)
->   delete mode 100644 arch/arm/mach-exynos/regs-sys.h
+> Hello Bryan,
+> 
+> I reproduced your bug (using your script) and this patch seems to fix the
+> problem.
+> 
+> Could you try it and let me know if it works for you ?
 
-[snip]
+Looks good to me.  I modified the test script as follows:
 
-> diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-> index 0420150..2095a01 100644
-> --- a/drivers/i2c/busses/i2c-s3c2410.c
-> +++ b/drivers/i2c/busses/i2c-s3c2410.c
-> @@ -133,6 +133,7 @@ struct s3c24xx_i2c {
->   	struct notifier_block	freq_transition;
->   #endif
->   	struct regmap		*sysreg;
-> +	unsigned int		syc_cfg;
+----------
+#!/bin/sh
+i=0
+while [ 1 ]; do
+  hwclock -w -u > /dev/null 2>&1
+  echo $$ $i $?
+  : $((i++))
+done
+----------
 
-I suspect this is a typo, as the name syc_cfg looks a bit strange. 
-Shouldn't it be sys_i2c_cfg?
+This version then attempts to write to the RTC as often as possible (script change was due to a suggestion on the Busybox mailing list).  I ran two instances of the script, which each looped through about 60,000 times over a 30 minute run.  At no point has access to the RTC been permanently locked out on my system.  I'd call this fixed.
 
->   };
->
->   static struct platform_device_id s3c24xx_driver_ids[] = {
-> @@ -1293,6 +1294,9 @@ static int s3c24xx_i2c_suspend_noirq(struct device *dev)
->   	struct platform_device *pdev = to_platform_device(dev);
->   	struct s3c24xx_i2c *i2c = platform_get_drvdata(pdev);
->
-> +	if (i2c->sysreg)
+I'd assume this patch would be backported to the longterm releases?
 
-IS_ERR() should be used.
+Regards,
+Bryan
 
-> +		regmap_read(i2c->sysreg, EXYNOS5_SYS_I2C_CFG, &i2c->syc_cfg);
-
-Aha, so this is where the reference to the regmap gets used outside the 
-probe. I'd say that changes to the i2c driver from this patch should be 
-squashed with previous patch and this patch should contain only arch 
-changes to remove old code.
-
-However, I wonder if this is really the right approach to this, as now 
-you have save and restore duplicated for every instance of s3c24xx-i2c 
-IP block. If there are no bits other than interrupt mux selectors in 
-this registers then I guess this is fine (I can't look it up in the 
-documentation at the moment), but otherwise you can end-up with multiple 
-paths doing read-modify-write to this register in parallel possibly with 
-different values.
-
-Needless to say, this isn't very elegant, but I'm not opposed too much, 
-as I can't really think of anything better right now.
-
+> 
+> Best Regards,
+> 
+> Boris
+> 
+>  drivers/rtc/rtc-at91rm9200.c | 14 +++++++++++++-
+>  1 file changed, 13 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
+> index 3281c90..e3fe54c 100644
+> --- a/drivers/rtc/rtc-at91rm9200.c
+> +++ b/drivers/rtc/rtc-at91rm9200.c
+> @@ -48,11 +48,13 @@ struct at91_rtc_config {
+> 
+>  static const struct at91_rtc_config *at91_rtc_config;
+>  static DECLARE_COMPLETION(at91_rtc_updated);
+> +static DECLARE_COMPLETION(at91_rtc_wait_upd_rdy);
+>  static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
+>  static void __iomem *at91_rtc_regs;
+>  static int irq;
+>  static DEFINE_SPINLOCK(at91_rtc_lock);
+>  static u32 at91_rtc_shadow_imr;
+> +static bool at91_rtc_upd_rdy;
+> 
+>  static void at91_rtc_write_ier(u32 mask)
+>  {
+> @@ -161,6 +163,8 @@ static int at91_rtc_settime(struct device *dev, struct
+> rtc_time *tm)
+>  		1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
+>  		tm->tm_hour, tm->tm_min, tm->tm_sec);
+> 
+> +	wait_for_completion(&at91_rtc_wait_upd_rdy);
 > +
->   	i2c->suspended = 1;
->
->   	return 0;
-> @@ -1304,6 +1308,10 @@ static int s3c24xx_i2c_resume(struct device *dev)
->   	struct s3c24xx_i2c *i2c = platform_get_drvdata(pdev);
->
->   	i2c->suspended = 0;
-> +
-> +	if (i2c->sysreg)
-> +		regmap_write(i2c->sysreg, i2c->syc_cfg, EXYNOS5_SYS_I2C_CFG);
-> +
+>  	/* Stop Time/Calendar from counting */
+>  	cr = at91_rtc_read(AT91_RTC_CR);
+>  	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL |
+> AT91_RTC_UPDTIM);
+> @@ -183,6 +187,7 @@ static int at91_rtc_settime(struct device *dev, struct
+> rtc_time *tm)
+> 
+>  	/* Restart Time/Calendar */
+>  	cr = at91_rtc_read(AT91_RTC_CR);
+> +	at91_rtc_upd_rdy = 0;
+>  	at91_rtc_write(AT91_RTC_CR, cr & ~(AT91_RTC_UPDCAL |
+> AT91_RTC_UPDTIM));
+> 
+>  	return 0;
+> @@ -290,8 +295,13 @@ static irqreturn_t at91_rtc_interrupt(int irq, void
+> *dev_id)
+>  	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
+>  		if (rtsr & AT91_RTC_ALARM)
+>  			events |= (RTC_AF | RTC_IRQF);
+> -		if (rtsr & AT91_RTC_SECEV)
+> +		if (rtsr & AT91_RTC_SECEV) {
+>  			events |= (RTC_UF | RTC_IRQF);
+> +			if (!at91_rtc_upd_rdy) {
+> +				at91_rtc_upd_rdy = 1;
+> +				complete(&at91_rtc_wait_upd_rdy);
+> +			}
+> +		}
+>  		if (rtsr & AT91_RTC_ACKUPD)
+>  			complete(&at91_rtc_updated);
+> 
+> @@ -413,6 +423,8 @@ static int __init at91_rtc_probe(struct
+> platform_device *pdev)
+>  		return PTR_ERR(rtc);
+>  	platform_set_drvdata(pdev, rtc);
+> 
+> +	/* Enable 1Hz events */
+> +	at91_rtc_write_ier(AT91_RTC_SECEV);
+>  	dev_info(&pdev->dev, "AT91 Real Time Clock driver.\n");
+>  	return 0;
+>  }
+> --
+> 1.8.3.2
 
-I'd say this should be happening before setting i2c->suspended to 0 to 
-account for possible i2c transfers being requested in parallel. Also see 
-patch [1].
-
-[1] https://lkml.org/lkml/2014/4/11/632
-
-Best regards,
-Tomasz
