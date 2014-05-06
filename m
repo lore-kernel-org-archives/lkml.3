@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161AbaEFV2l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 17:28:41 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:49101 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250AbaEFV2j (ORCPT
+	id S1754204AbaEFV3r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 17:29:47 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:43942 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170AbaEFV3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 17:28:39 -0400
-Message-ID: <536953C4.8030201@linux.vnet.ibm.com>
-Date: Wed, 07 May 2014 02:57:32 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 6 May 2014 17:29:45 -0400
+Message-ID: <53695443.6020004@gmail.com>
+Date: Tue, 06 May 2014 23:29:39 +0200
+From: poma <pomidorabelisima@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, peterz@infradead.org,
-        tglx@linutronix.de, mingo@kernel.org, rusty@rustcorp.com.au,
-        fweisbec@gmail.com, hch@infradead.org, mgorman@suse.de,
-        riel@redhat.com, bp@suse.de, rostedt@goodmis.org, mgalbraith@suse.de,
-        ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
-        rjw@rjwysocki.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] CPU hotplug, stop-machine: Plug race-window that
- leads to "IPI-to-offline-CPU"
-References: <20140506180213.14375.5904.stgit@srivatsabhat.in.ibm.com> <20140506180258.14375.20181.stgit@srivatsabhat.in.ibm.com> <20140506134054.8cd531296c8aa5d9c3eff958@linux-foundation.org> <20140506204248.GH27738@htj.dyndns.org>
-In-Reply-To: <20140506204248.GH27738@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050621-7014-0000-0000-000004D757E9
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Corentin Chary <corentincj@iksaif.net>, linux-kernel@vger.kernel.org,
+        kernel@lists.fedoraproject.org, andreas.utterberg@thundera.se,
+        jwboyer@fedoraproject.org, sgruszka@redhat.com
+Subject: Re: [PATCH] asus-nb-wmi: set wapf=4 for ASUSTeK COMPUTER INC. X75VBP
+ & X550CA
+References: <1398550344-3785-1-git-send-email-pomidorabelisima@gmail.com> <53684CF9.8020305@gmail.com> <5368F58C.1040702@gmail.com> <20140506144800.GA29600@srcf.ucam.org> <5369434A.1020909@gmail.com> <20140506205525.GA30712@srcf.ucam.org>
+In-Reply-To: <20140506205525.GA30712@srcf.ucam.org>
+Content-Type: multipart/mixed;
+ boundary="------------060305080703050104050408"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2014 02:12 AM, Tejun Heo wrote:
-> On Tue, May 06, 2014 at 01:40:54PM -0700, Andrew Morton wrote:
->> On Tue, 06 May 2014 23:33:03 +0530 "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->>
->>> --- a/kernel/stop_machine.c
->>> +++ b/kernel/stop_machine.c
->>> @@ -165,12 +165,21 @@ static void ack_state(struct multi_stop_data *msdata)
->>>  		set_state(msdata, msdata->state + 1);
->>>  }
->>>  
->>> +/* Holding area for active CPUs, to let all the non-active CPUs go first */
->>> +static void hold_active_cpus(struct multi_stop_data *msdata,
->>> +			     int num_active_cpus)
->>> +{
->>> +	/* Wait until all the non-active threads ack the state */
->>> +	while (atomic_read(&msdata->thread_ack) > num_active_cpus)
->>> +		cpu_relax();
->>> +}
->>
->> The code comments are a bit lame.  Can we do a better job of explaining
->> the overall dynamic behaviour?  Help readers to understand the problem
->> which hold_active_cpus() is solving and how it solves it?
-> 
-> Does it even need to be a separate function?  I kinda really dislike
-> trivial helpers which are used only once.  It obfuscates more than
-> helping anything.  I think proper comment where the actual
-> synchronization is happening along with open coded wait would be
-> easier to follow.
-> 
+This is a multi-part message in MIME format.
+--------------060305080703050104050408
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-Ok, I'll open code it and add an appropriate comment explaining the
-synchronization.
 
-Thank you!
- 
-Regards,
-Srivatsa S. Bhat
 
+
+--------------060305080703050104050408
+Content-Type: text/x-patch;
+ name="0001-WAPF-4-for-ASUSTeK-COMPUTER-INC.-X75VBP-WLAN-ON.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-WAPF-4-for-ASUSTeK-COMPUTER-INC.-X75VBP-WLAN-ON.patch"
+
+>From d39d3460f1ab36365a48b6815dd9a5d26613d3ec Mon Sep 17 00:00:00 2001
+From: poma <pomidorabelisima@gmail.com>
+Date: Tue, 6 May 2014 22:03:38 +0200
+Subject: [PATCH] WAPF 4 for ASUSTeK COMPUTER INC. X75VBP WLAN ON.
+
+The 'asus-nb-wmi' WAPF parameter must be set to 4, so the internal Wireless LAN device is operational.
+
+Signed-off-by: poma <pomidorabelisima@gmail.com>
+---
+ drivers/platform/x86/asus-nb-wmi.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/platform/x86/asus-nb-wmi.c b/drivers/platform/x86/asus-nb-wmi.c
+index 563f59e..674793d 100644
+--- a/drivers/platform/x86/asus-nb-wmi.c
++++ b/drivers/platform/x86/asus-nb-wmi.c
+@@ -182,6 +182,15 @@ static struct dmi_system_id asus_quirks[] = {
+ 	},
+ 	{
+ 		.callback = dmi_matched,
++		.ident = "ASUSTeK COMPUTER INC. X75VBP",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X75VBP"),
++		},
++		.driver_data = &quirk_asus_x401u,
++	},
++	{
++		.callback = dmi_matched,
+ 		.ident = "ASUSTeK COMPUTER INC. 1015E",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
+-- 
+1.9.0
+
+
+
+--------------060305080703050104050408--
