@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341AbaEFRNV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 13:13:21 -0400
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:22447 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751831AbaEFRNU (ORCPT
+	id S1752803AbaEFROB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 13:14:01 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41580 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799AbaEFRN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 13:13:20 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsMUAG8XaVNbtAAq/2dsb2JhbABZgwaCQaksBAEBAQEBAQUBmgcCAoEfF3SCZhwjGIECJBOIRQHONYVWiHyERgEDjxuKGwGLAId7gzY7
-Date: Tue, 6 May 2014 19:13:13 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] kernel/latencytop.c: convert seq_printf to seq_puts
-Message-Id: <20140506191313.894bd684c95489dc126598f0@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+	Tue, 6 May 2014 13:13:59 -0400
+Date: Tue, 06 May 2014 13:13:54 -0400 (EDT)
+Message-Id: <20140506.131354.1811745259385565455.davem@davemloft.net>
+To: davej@redhat.com
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140506162946.GA28261@redhat.com>
+References: <20140506.113031.1577209312429629073.davem@davemloft.net>
+	<20140506162946.GA28261@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 06 May 2014 10:13:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch also fixes one function declaration over 80 characters.
+From: Dave Jones <davej@redhat.com>
+Date: Tue, 6 May 2014 12:29:46 -0400
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- kernel/latencytop.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+> It seems like forever you go you sent me patches to trinity to make it
+> work on sparc. I'm curious if you've tried running it again more
+> recently ?   Given the work I've done it to do more creative things with
+> VM related syscalls, I wouldn't be surprised if it also found some sparc
+> specific bugs in thp.
+> 
+> It should now also scale up to run a lot more child processes than the older
+> version, with the -c option, which could be interesting on some of the
+> bigger sparc machines.
+> 
+> (It's entirely possible I've broken the compile on non-x86 in
+>  current git, but it shouldn't be much work to fix up).
+> 
+> git://github.com/kernelslacker/trinity is where it lives now.
 
-diff --git a/kernel/latencytop.c b/kernel/latencytop.c
-index a462b31..a028127 100644
---- a/kernel/latencytop.c
-+++ b/kernel/latencytop.c
-@@ -88,7 +88,8 @@ static void clear_global_latency_tracing(void)
- }
- 
- static void __sched
--account_global_scheduler_latency(struct task_struct *tsk, struct latency_record *lat)
-+account_global_scheduler_latency(struct task_struct *tsk,
-+				 struct latency_record *lat)
- {
- 	int firstnonnull = MAXLR + 1;
- 	int i;
-@@ -255,7 +256,7 @@ static int lstats_show(struct seq_file *m, void *v)
- 					break;
- 				seq_printf(m, " %ps", (void *)bt);
- 			}
--			seq_printf(m, "\n");
-+			seq_puts(m, "\n");
- 		}
- 	}
- 	return 0;
--- 
-1.8.4.5
-
+Thanks Dave, I'll take a look and get back to you.
