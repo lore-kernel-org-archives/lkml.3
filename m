@@ -1,40 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751670AbaEFV1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 17:27:41 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:28479 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839AbaEFV1k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 17:27:40 -0400
-Date: Wed, 7 May 2014 00:27:21 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Remi Pommarel <repk@triplefau.lt>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8188eu: Fixed prohibited spaces after open
- '('
-Message-ID: <20140506212721.GW26890@mwanda>
-References: <BLU436-SMTP123832E2D1B174A82D6FACA64F0@phx.gbl>
- <20140506211011.GH490@cruxbox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140506211011.GH490@cruxbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1754067AbaEFV2H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 17:28:07 -0400
+Received: from mga09.intel.com ([134.134.136.24]:50805 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751832AbaEFV2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 17:28:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,998,1389772800"; 
+   d="scan'208";a="507187668"
+Message-ID: <1399411616.2458.45.camel@acox1-desk.ger.corp.intel.com>
+Subject: Re: [PATCH] libata-sff: remove dead code
+From: Alan Cox <alan@linux.intel.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 06 May 2014 22:26:56 +0100
+In-Reply-To: <1399204229.8729.15.camel@x220>
+References: <1399204229.8729.15.camel@x220>
+Organization: Intel Corporation
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 11:10:11PM +0200, Remi Pommarel wrote:
-> Oups sorry msmtp messed up the from mail address. Do you want me to
-> re-submit this or you can fix it while applying the patch ?
-> 
+On Sun, 2014-05-04 at 13:50 +0200, Paul Bolle wrote:
+> Ever since v2.6.19 the code contains a check for CONFIG_NO_ATA_LEGACY.
+> But that macro has never been defined. Apparently no one ran into
+> problems on platforms that do not support compatibility mode.
 
-Best to fix it yourself and Greg can take which ever version is easiest.
+It was needed for some of the FRV devices I belive. Please check with
+David Howells if it's still relevant (even if its not used in the
+default configs)
 
-https://www.google.com/search?q=how+to+send+a+v2+patch
+Alan
 
-regards,
-dan carpenter
+
