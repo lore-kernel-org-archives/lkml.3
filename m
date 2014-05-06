@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456AbaEFVsw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 17:48:52 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:56307 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753AbaEFVsv (ORCPT
+	id S1752145AbaEFVwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 17:52:20 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:63415 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110AbaEFVwT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 17:48:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrVHj1rd=ma-dW8C9RNyQNj3smRAyevWJSQXmvgshbQb6w@mail.gmail.com>
-References: <e94ab903e725eaf9d98e56f3043878bde7fc1b58.1399408110.git.luto@amacapital.net>
-	<CA+55aFy6NzQOfyne4xLqQQCvuhpi-KSXnJNLjXTRc7+4ChPAnQ@mail.gmail.com>
-	<CA+55aFw_Dj7Lx_bE0B3mDxMUNz_K1yc=saziC9dmA_dKSkFWiw@mail.gmail.com>
-	<CA+55aFwix8dSDQ1N1Qu2-9rzGxWeeGAv4fSPVQWGo1YNzJoCoA@mail.gmail.com>
-	<CALCETrVHj1rd=ma-dW8C9RNyQNj3smRAyevWJSQXmvgshbQb6w@mail.gmail.com>
-Date: Tue, 6 May 2014 14:48:50 -0700
-X-Google-Sender-Auth: 2l8u7XME4WkCL8HIxb16pAQgJDE
-Message-ID: <CA+55aFx8UQGS_anYJrSkkzeM+vx97-2sAUTTE6ZxDJNUKTkD0Q@mail.gmail.com>
-Subject: Re: [ABOMINATION] x86: Fast interrupt return to userspace
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 6 May 2014 17:52:19 -0400
+Subject: Re: [PATCH 6/6] mm: Postpone the disabling of kmemleak early logging
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Content-Type: text/plain; charset=windows-1252
+From: Catalin Marinas <catalin.marinas@arm.com>
+In-Reply-To: <536926DD.30402@oracle.com>
+Date: Tue, 6 May 2014 22:52:16 +0100
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zefan <lizefan@huawei.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <49655FE2-17CA-433C-8F4A-76DD6C2FEF61@arm.com>
+References: <1399038070-1540-1-git-send-email-catalin.marinas@arm.com> <1399038070-1540-7-git-send-email-catalin.marinas@arm.com> <5368FDBB.8070106@oracle.com> <20140506170549.GM23957@arm.com> <536926DD.30402@oracle.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 6, 2014 at 2:34 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->
-> I don't think that's enough to fix this -- interrupts may not have
-> been on in the first place, I think.  I wonder if __put_user_inatomic
-> would work here.
+On 6 May 2014, at 19:15, Sasha Levin <sasha.levin@oracle.com> wrote:
+> On 05/06/2014 01:05 PM, Catalin Marinas wrote:
+>> On Tue, May 06, 2014 at 04:20:27PM +0100, Sasha Levin wrote:
+>>> On 05/02/2014 09:41 AM, Catalin Marinas wrote:
+>>>> Currently, kmemleak_early_log is disabled at the beginning of the
+>>>> kmemleak_init() function, before the full kmemleak tracing is actually
+>>>> enabled. In this small window, kmem_cache_create() is called by kmemleak
+>>>> which triggers additional memory allocation that are not traced. This
+>>>> patch moves the kmemleak_early_log disabling further down and at the
+>>>> same time with full kmemleak enabling.
+>>>> 
+>>>> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+>>>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>>> 
+>>> This patch makes the kernel die during the boot process:
+>>> 
+>>> [   24.471801] BUG: unable to handle kernel paging request at ffffffff922f2b93
+>>> [   24.472496] IP: [<ffffffff922f2b93>] log_early+0x0/0xcd
+>> 
+>> Thanks for reporting this. I assume you run with
+>> CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF enabled and kmemleak_early_log remains
+>> set even though kmemleak is not in use.
+>> 
+>> Does the patch below fix it?
+> 
+> Nope, that didn't help as I don't have DEBUG_KMEMLEAK_DEFAULT_OFF enabled.
+> 
+> For reference:
+> 
+> $ cat .config | grep KMEMLEAK
+> CONFIG_HAVE_DEBUG_KMEMLEAK=y
+> CONFIG_DEBUG_KMEMLEAK=y
+> CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE=400
+> # CONFIG_DEBUG_KMEMLEAK_TEST is not set
+> # CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF is not set
 
-That might be the way to go, yes.
+I assume your dmesg shows some kmemleak error during boot? I’ll send
+another patch tomorrow.
 
-And in addition to the CS value you should probably check that TF and
-RF are clear in eflags, and possibly other things too that the sysret
-doesn't get right compared to iret.
+The code around kmemleak_init was changed by commit 8910ae896c8c
+(kmemleak: change some global variables to int). It looks like it
+wasn’t just a simple conversion but slightly changed the
+kmemleak_early_log logic which led to false positives for the kmemleak
+cache objects and that’s what my patch was trying to solve.
 
-> Also, sysexit might be better than sysret.  And I categorically refuse
-> to add any new feature that requires vsyscall=native, so this would
-> have to use the vdso instead.  Plus it's awful.
+The failure is caused by kmemleak_alloc() still calling log_early() much
+later after the __init section has been freed because kmemleak_early_log
+hasn’t been set to 0 (the default off is one path, another is the
+kmemleak_error path).
 
-Yeah, it's disgusting. I think it is worth fixing to get better
-numbers (it *would* be very interesting to hear whether this plus the
-kernel 'retq' thing actually makes real device interrupt overhead
-lower), but I'd be very wary of using it in production.
-
-> Is there actual interest in turning something like this into a real
-> patch?  It would almost certainly have to default off and no one sane
-> would ever use it except for special-purpose machines.
-
-I don't think it's necessarily worth actually merging, but maybe a
-couple of improvements makes it go from "disgusting and unmergeable"
-to just "disgusting". The "avoid iret for return to kernel mode" thing
-might be more easily merged (but needs similar CS content checks to
-make sure we're ok with BIOS/EFI execution environments)
-
-            Linus
+Catalin
