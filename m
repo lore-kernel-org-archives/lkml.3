@@ -1,88 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934170AbaEFGj7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 02:39:59 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:48866 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933953AbaEFGj5 (ORCPT
+	id S934085AbaEFGoh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 02:44:37 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:28191 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933956AbaEFGoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 02:39:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.11.1405052238230.980@knanqh.ubzr>
-References: <CAPz6YkXsig6XornqoMyn5DtRd9NECyc+qgQo39RQK0sDeat34Q@mail.gmail.com>
- <alpine.LFD.2.11.1405052238230.980@knanqh.ubzr>
-From: Sonny Rao <sonnyrao@chromium.org>
-Date: Mon, 5 May 2014 23:39:36 -0700
-X-Google-Sender-Auth: wzCupQwkz4fmCmy-80h5IszxB6I
-Message-ID: <CAPz6YkXFeoj5HyrpD3tETj+9mhesmvADNcxeQtMRhouWf3sXGg@mail.gmail.com>
-Subject: Re: CPU performance counters not working on big.LITTLE switcher
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Douglas Anderson <dianders@chromium.org>, Olof <olofj@chromium.org>,
-        Stephane Eranian <eranian@google.com>,
-        Bhaskar Janakiraman <bjanakiraman@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 6 May 2014 02:44:34 -0400
+X-AuditID: cbfec7f4-b7fb36d000006ff7-ee-536884d06fc2
+Message-id: <536884D9.4050104@samsung.com>
+Date: Tue, 06 May 2014 08:44:41 +0200
+From: Jacek Anaszewski <j.anaszewski@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: linux-media@vger.kernel.org, linux-leds@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        s.nawrocki@samsung.com, a.hajda@samsung.com, kyungmin.park@samsung.com
+Subject: Re: [PATCH/RFC v3 5/5] media: Add registration helpers for V4L2 flash
+ sub-devices
+References: <1397228216-6657-1-git-send-email-j.anaszewski@samsung.com>
+ <1397228216-6657-6-git-send-email-j.anaszewski@samsung.com>
+ <20140416182141.GG8753@valkosipuli.retiisi.org.uk>
+ <534F9044.6080508@samsung.com>
+ <20140423152435.GJ8753@valkosipuli.retiisi.org.uk>
+ <535E3A95.6010206@samsung.com>
+ <20140502110651.GX8753@valkosipuli.retiisi.org.uk>
+In-reply-to: <20140502110651.GX8753@valkosipuli.retiisi.org.uk>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsVy+t/xa7oXWjKCDfauELe4te4cq8X8I0Di
+	bNMbdovLu+awWWx9s47RomfDVlaLw2/aWS3O7F/J5sDhcfjrQhaPvi2rGD0+b5ILYI7isklJ
+	zcksSy3St0vgyphz6y97QQNfxaspD9gbGOdzdzFyckgImEg0LDjEDGGLSVy4t56ti5GLQ0hg
+	KaPErmW3GCGcj4wSB06/ZQKp4hXQkph35gSYzSKgKrH6zjp2EJtNwFDi54vXYHFRgQiJP6f3
+	sULUC0r8mHyPBcQWEVCTeLrpIQvIUGaBg4wSH7ZfYANJCAvESCw79ANq2zMmiR9Hb4PdxClg
+	L9G8bgvYVGYBa4mVk7YxQtjyEpvXvGWewCgwC8mSWUjKZiEpW8DIvIpRNLU0uaA4KT3XUK84
+	Mbe4NC9dLzk/dxMjJMC/7GBcfMzqEKMAB6MSD++L6IxgIdbEsuLK3EOMEhzMSiK89flAId6U
+	xMqq1KL8+KLSnNTiQ4xMHJxSDYyNrZ3TnskXrPr6vqqn0feYd/x71YaVtd+YZlUafbncueTI
+	owuyHELPqvouSpqucNkSezu+8iyvf84cmR83osLKS27ffHekvfzbhS9td5sj7fn/PTvhMnHl
+	lD1OQZ0di5JEr+g+07kYpK/A69/suas+49weF8c1TdePvTT/O92+r/uPUd+tf3OUWIozEg21
+	mIuKEwFQ0LuMTgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 5, 2014 at 7:52 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> On Mon, 5 May 2014, Sonny Rao wrote:
->
->> Hi, we have the problem today that cpu based performance counters don't
->> work when we're using the big.LITTLE switcher on Exynos 5420, and it
->> doesn't look like code exists to deal with this in the switcher.
+Hi Sakari,
+
+On 05/02/2014 01:06 PM, Sakari Ailus wrote:
+
+>>>> [...]
+>>>>>> +static inline enum led_brightness v4l2_flash_intensity_to_led_brightness(
+>>>>>> +					struct led_ctrl *config,
+>>>>>> +					u32 intensity)
+>>>>>
+>>>>> Fits on a single line.
+>>>>>
+>>>>>> +{
+>>>>>> +	return intensity / config->step;
+>>>>>
+>>>>> Shouldn't you first decrement the minimum before the division?
+>>>>
+>>>> Brightness level 0 means that led is off. Let's consider following case:
+>>>>
+>>>> intensity - 15625
+>>>> config->step - 15625
+>>>> intensity / config->step = 1 (the lowest possible current level)
+>>>
+>>> In V4L2 controls the minimum is not off, and zero might not be a possible
+>>> value since minimum isn't divisible by step.
+>>>
+>>> I wonder how to best take that into account.
 >>
->> As it stands right now, if you put an A-15 or A-7 PMU node into your
->> device-tree on an bl_switcher system it's very broken.  At the minimum, I
->> think it should disable performance counters until there's some kind of
->> proper implementation.
->>
->> I looked into trying to make this work, but it turned out to not be as
->> simple as just context switching counters from A-15 to A-7.  The biggest
->> problem is that the PMUs are not architecturally compatible.  There are
->> different events and differing numbers of counters on these two cores.
->>  There's also the tangential issue of representing this in the device tree,
->> but that's far less important.
->>
->> My guess as to how to fix this is to create an "architectural" PMU which
->> contains the intersection of the two performance monitor units with the
->> minimum number of counters supported by either core (which in this case
->> looks to be 4 on the A7).  However, I don't really have the bandwidth to
->> work on this at  the moment.  I was mostly wondering, have other people run
->> into this limitation and is there any sort of plan to work on it?
+>> I've assumed that in MODE_TORCH a led is always on. Switching
+>> the mode to MODE_FLASH or MODE_OFF turns the led off.
+>> This way we avoid the problem with converting 0 uA value to
+>> led_brightness, as available torch brightness levels start from
+>> the minimum current level value and turning the led off is
+>> accomplished on transition to MODE_OFF or MODE_FLASH, by
+>> calling brightness_set op with led_brightness = 0.
 >
-> The Linaro kernel release from a year ago or so contained a hack to make
-> PMUs available and cope with the switcher.
-
-Ok, any pointers?  Like I mentioned, if one enables the A15 Counters
-with an upstream kernel that's using the switcher, I think things are
-very broken, and since the switcher code is upstream, it seems like at
-a minimum it would be good to deal with that somehow.  The big hammer
-would be just to make hardware PMU support incompatible with the
-switcher support, but maybe there are better solutions.
-
-> However, the ultimate solution is to add multi-PMU support in a generic
-> way to the kernel and let user space see both A15 and A7 counters.  It
-> is then up to the analysis tools to consolidate (some of) them if
-> wanted.  And this would work whether the switcher is used, or even when
-> the scheduler has learned to do proper task placement for b.L systems
-> where tasks may migrate across clusters.
-
-How is that meant to work?  I think you'd need the generic perf-event
-subsystem to properly support multiple CPU-type PMUs, which it
-currently does not.  In the case of a system using the switcher, would
-the events on a particular logical "cpu" just get inter-mingled from
-the different cores?  I think it would be difficult to make sense of
-data like that without extra information about when the logical cpu
-switched from one type to the other.
-
-> Someone at ARM indicated they'd be working on the multi-PMU support if I
-> remember correctly.  For that reason, Linaro stopped maintaining the
-> initial hack since it was a lot of work to keep it working on top of
-> later kernels and a better solution was coming anyway.  I don't know
-> what the status of that work is though.
+> I'm not sure if we understood the issue the same way. My concern was that if
+> the intensity isn't a multiple of step (but intensity - min is), the above
+> formula won't return a valid result (unless I miss something).
 >
->
-> Nicolas
+
+Please note that v4l2_flash_intensity_to_led_brightness is called only
+from s_ctrl callback, and thus it expects to get the intensity aligned
+to the step value, so it will always be a multiple of step.
+Is it possible that s_ctrl callback would be passed a non-aligned
+control value?
+
+Regards,
+Jacek Anaszewski
+
