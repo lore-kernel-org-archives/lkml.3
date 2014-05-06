@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757892AbaEFPQW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 11:16:22 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52165 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754361AbaEFPQU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 11:16:20 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH] usb: gadget: atmel_usba: always test udc->driver
-Date: Tue,  6 May 2014 17:16:07 +0200
-Message-Id: <1399389367-15456-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	id S1757914AbaEFPQm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 11:16:42 -0400
+Received: from mga02.intel.com ([134.134.136.20]:4918 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755059AbaEFPQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 11:16:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,997,1389772800"; 
+   d="scan'208";a="535580777"
+Message-ID: <5368FDB6.3000107@linux.intel.com>
+Date: Tue, 06 May 2014 08:20:22 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Jean Delvare <jdelvare@suse.de>
+CC: Guenter Roeck <linux@roeck-us.net>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] coretemp.0 folder contents changed
+References: <5367C6A7.5020008@linux.intel.com> <20140505173231.GA25644@roeck-us.net> <20140506135558.3cafd062@endymion.delvare>
+In-Reply-To: <20140506135558.3cafd062@endymion.delvare>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found using smatch: drivers/usb/gadget/atmel_usba_udc.c:1689 usba_udc_irq()
-error: we previously assumed 'udc->driver' could be null (see line 1636)
+On 05/06/2014 04:55 AM, Jean Delvare wrote:
+> Hi Guenter, Srinivas,
+>
+> On Mon, 5 May 2014 10:32:31 -0700, Guenter Roeck wrote:
+>> On Mon, May 05, 2014 at 10:13:11AM -0700, Srinivas Pandruvada wrote:
+>>> for kernel : 3.15.rc3 .
+>>>
+>>> Is there any change in the coretemp? Previously we used to see,
+>>> tempx data (like temp2_input, temp2_max etc.)
+>>> /sys/devices/platform/coretemp.0/.
+>> That isn't where you are supposed to look for hwmon attributes.
+> Actually I used to recommend looking there when people were not using
+> libsensors (e.g. for pwmconfig / fancontrol or custom scripts.) This
+> path had the great merit of being stable across reboots, while hwmon
+> class device numbers are not (or at least they aren't guaranteed to be.)
+I maintain thermal daemon, which was using the path. So once Ubuntu 
+upgrade kernel,
+this will break. So I have to make sure that corresponding user space 
+change is submitted.
+I don't want to depend on too many libraries as it also runs on many 
+embedded platforms
+where many library pre-builts don't exists.
+>> (...)
+>> To give you the background, hwmon attributes are in the process of
+>> being moved from the parent device to the hwmon device, or from
+>> /sys/class/hwmon/hwmonX/device/ to /sys/class/hwmon/hwmonX/,
+>> as part of an effort to streamline the code and make it more
+>> consistent and maintainable.
+> I am just realizing that we are also losing the stability of hardware
+> device based paths with that move :( I suppose I shouldn't have
+> bothered adding support for this to fancontrol.
+>
+> Don't get me wrong, I still believe this is the right move, but I fear
+> that the question of persistent hwmon device names will resurface every
+> now and then again. libsensors offers a solution but 1* it lacks
+> support for pwm attributes and 2* it doesn't help with shell or perl
+> scripts such as pwmconfig and fancontrol.
+Also when using Android like platform with limited library support,
+we have to make sure that libsensor exists.
 
-Always test udc->driver before using its members.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- drivers/usb/gadget/atmel_usba_udc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
-index 9f65324f9ae0..76023ce449a3 100644
---- a/drivers/usb/gadget/atmel_usba_udc.c
-+++ b/drivers/usb/gadget/atmel_usba_udc.c
-@@ -1686,7 +1686,7 @@ static irqreturn_t usba_udc_irq(int irq, void *devid)
- 		reset_all_endpoints(udc);
- 
- 		if (udc->gadget.speed != USB_SPEED_UNKNOWN
--				&& udc->driver->disconnect) {
-+				&& udc->driver && udc->driver->disconnect) {
- 			udc->gadget.speed = USB_SPEED_UNKNOWN;
- 			spin_unlock(&udc->lock);
- 			udc->driver->disconnect(&udc->gadget);
--- 
-1.9.1
+Thanks,
+Srinivas
 
