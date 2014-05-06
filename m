@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757952AbaEFQDR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 12:03:17 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:63973 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755148AbaEFQDQ (ORCPT
+	id S1751207AbaEFQGz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 12:06:55 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:33738 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838AbaEFQGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 12:03:16 -0400
-Message-ID: <1399392184.3691.15.camel@ltli10.sensirion.lokal>
-Subject: Re: [RFC][PATCH v2] hwmon: add support for Sensirion SHTC1 sensor
-From: Tomas Pop <tomas.pop.mff@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "jdelvare@suse.de" <jdelvare@suse.de>, lm-sensors@lm-sensors.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        johannes.winkelmann@sensirion.com
-Date: Tue, 06 May 2014 09:03:04 -0700
-In-Reply-To: <536853C0.8020406@roeck-us.net>
-References: <1398985530.17142.15.camel@ltli10.sensirion.lokal>
-			 <5362FDA9.8080300@roeck-us.net>
-			 <1399064369.3019.83.camel@ltli10.sensirion.lokal>
-			 <20140502231528.GA5157@roeck-us.net>
-		 <1399338214.24993.10.camel@ltli10.sensirion.lokal>
-		 <53683D38.7010904@roeck-us.net>
-	 <1399341707.24993.20.camel@ltli10.sensirion.lokal>
-	 <536853C0.8020406@roeck-us.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 6 May 2014 12:06:54 -0400
+Date: Tue, 6 May 2014 20:06:51 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf_fuzzer crash on pentium 4
+Message-ID: <20140506160651.GO28248@moon>
+References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
+ <20140506154637.GW26782@laptop.programming.kicks-ass.net>
+ <20140506154901.GL28248@moon>
+ <alpine.DEB.2.10.1405061205030.3372@vincent-weaver-1.umelst.maine.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1405061205030.3372@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gunter,
-
-Yes, that's exactly the idea - we would like to provide basic support
-for a few low-cost boards as a starting point for anybody who is
-interested in the sensor. Previously I was testing mostly on some
-Android devices (kernel 3.4), and it seems, that a lot of thinks changed
-in since version 3.4 :-)
-
-I will send in few days a tested version..
-
-Thanks,
-Tomas
-
- 
-
-On Mon, 2014-05-05 at 20:15 -0700, Guenter Roeck wrote:
-> On 05/05/2014 07:01 PM, Tomas Pop wrote:
-> > Hi Guenter,
-> >
-> > Thanks a lot for comments and patience - with the testing you are right,
-> > I'm still waiting for board, where I will be able to run latest kernel
-> > and have the chip wired in - sorry for this...
-> >
+On Tue, May 06, 2014 at 12:05:41PM -0400, Vince Weaver wrote:
+> On Tue, 6 May 2014, Cyrill Gorcunov wrote:
 > 
-> No problem. Please make sure that the driver has been tested with the real
-> chip before the final submission.
+> > On Tue, May 06, 2014 at 05:46:37PM +0200, Peter Zijlstra wrote:
+> > > On Tue, May 06, 2014 at 11:42:58AM -0400, Vince Weaver wrote:
+> > > > 
+> > > > So just to be difficult I fired up the perf_fuzzer on a Pentium 4 machine.
+> > > > 
+> > > > It crashes more or less instantly (sorry for the line wrapping, 
+> > > > just got the serial console hooked up and don't have minicom configured 
+> > > > right yet).
+> > > > 
+> > > > this is 3.15-rc4 with the anti-memory corruption patch applied.
+> > > 
+> > > *sigh*.. the one x86 PMU driver I really don't know. I might actually
+> > > have some P4 class hardware, I'll try and get it wired up this week
+> > > somewhere.
+> > 
+> > I'll take a look, thanks.
 > 
-> Just wondering - don't you have a little test board to make the i2c pins
-> more readily available ? Such a board could be connected to any i2c adapter
-> and/or to a mainboard which exposes i2c pins. That is usually how I test
-> the various sensors I am working with. You could even sell that to the
-> hobbyists :-).
-> 
-> Thanks,
-> Guenter
-> 
+> This happens quickly enough I can probably generate a small test case, but 
+> I won't have time to do that until maybe tomorrow.
 
-
+I'm quite busy until night as well, so no rush.
