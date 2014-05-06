@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482AbaEFWtf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 18:49:35 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:54053 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754535AbaEFWtd (ORCPT
+	id S1755206AbaEFWuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 18:50:44 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:41189 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752358AbaEFWun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 18:49:33 -0400
-Message-ID: <536966F5.2020600@hitachi.com>
-Date: Wed, 07 May 2014 07:49:25 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 6 May 2014 18:50:43 -0400
+Date: Tue, 6 May 2014 15:50:39 -0700
+From: josh@joshtriplett.org
+To: David Miller <davem@davemloft.net>
+Cc: xiyou.wangcong@gmail.com, andi@firstfloor.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com,
+        ak@linux.intel.com
+Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
+Message-ID: <20140506225039.GA22331@cloud>
+References: <CAM_iQpUgj7BqpzRL070DEGQ32SWwN68BRgM5DtFqvBLjGGOLQA@mail.gmail.com>
+ <20140506.164410.15377655213427639.davem@davemloft.net>
+ <20140506210815.GB21791@cloud>
+ <20140506.171117.1365037653422161013.davem@davemloft.net>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Seth Jennings <sjenning@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-References: <cover.1398958771.git.jpoimboe@redhat.com> <20140505085537.GA32196@gmail.com> <20140505132638.GA14432@treble.redhat.com> <20140505141038.GA27403@localhost.localdomain> <20140505184304.GA15137@gmail.com> <20140505214919.GE2099@localhost.localdomain> <20140506121211.GA4125@treble.redhat.com> <20140506083346.2c96b8ad@gandalf.local.home>
-In-Reply-To: <20140506083346.2c96b8ad@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140506.171117.1365037653422161013.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/05/06 21:33), Steven Rostedt wrote:
-> On Tue, 6 May 2014 07:12:11 -0500
-> Josh Poimboeuf <jpoimboe@redhat.com> wrote:
+On Tue, May 06, 2014 at 05:11:17PM -0400, David Miller wrote:
+> From: josh@joshtriplett.org
+> Date: Tue, 6 May 2014 14:08:15 -0700
 > 
->> Live patching is a very sensitive and risky operation, and from a kernel
->> standpoint we should make it as safe as we reasonably can.  But we can't
->> do much about careless users.  Ultimately the risk is in the hands of
->> the user and their choice of patches.  They need to absolutely
->> understand all the implications of patching a particular function.  If
->> the patch changes the way a function interacts with some external data,
->> then they're starting to tempt fate and they need to be extra careful.
->> This care needs to be taken for *all* kernel functions, not just for the
->> few that are called from kernel threads.
+> > On Tue, May 06, 2014 at 04:44:10PM -0400, David Miller wrote:
+> >> From: Cong Wang <xiyou.wangcong@gmail.com>
+> >> Date: Tue, 6 May 2014 11:33:11 -0700
+> >> 
+> >> > So why bothers 3.15+ Linux kernel? Why not use an old kernel e.g. 2.4.x?
+> >> > 2.4.x kernel doesn't have so many new features you want to get rid of here.
+> >> 
+> >> +1
+> > 
+> > You've got to be kidding.  Using 2.4 for a new network-connected device,
+> > today?  With all of its potential security holes that nobody is paying
+> > attention to?  Easier to fork 3.15 and trim it down than to do *that*.
+> > And there *are* a huge number of useful features in 3.15+, not least of
+> > which drivers for current hardware.
 > 
-> Ideally the kpatch tools should be able to somewhat prevent users from
-> doing damage. Or at least make them type a sentence that says:
-> 
->   I know what I'm doing and will not blame anyone but myself if this
->   kills the system along with all my puppies and kittens.
-> 
-> I'm guessing that kpatch needs to be marketed that a distro or "hired
-> help" will be creating the patch and the admin only needs to "trust"
-> the one that gave them the kpatch module to load. All the
-> testing/checking that the module works will be done by kernel
-> developers and not by any "users".
+> So you're saying that the 2.4.x -stable maintainer did a shitty job and
+> his work is worthless?
 
-I strongly agreed. Desktop/Cloud users may not care about it, most of
-users just update kernel and reboot. Somewhat "enterprise" users may
-also like to do "rolling update" their cluster systems. Only limited
-mission critical non-stop systems require it. And since they usually
-don't want to loose distro support, all binary patches will be provided
-and tested by distro kernel developers, not by users itself. :)
+There's a difference between maintaining 2.4.x for all the existing
+users who can't or won't upgrade, and introducing a *new* product
+shipping with 2.4.x.  There's something very wrong if 2.4.x works for
+cases that 3.x doesn't; that would be a serious regression.
 
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+- Josh Triplett
