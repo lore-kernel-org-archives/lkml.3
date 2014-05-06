@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755676AbaEFMa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 08:30:56 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64435 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752419AbaEFMaz (ORCPT
+	id S1756378AbaEFMbU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 08:31:20 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:38887 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755939AbaEFMbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 08:30:55 -0400
-Date: Tue, 6 May 2014 13:30:20 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Larry Bassel <larry.bassel@linaro.org>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "khilman@linaro.org" <khilman@linaro.org>
-Subject: Re: [PATCH] arm64: Support arch_irq_work_raise() via self IPIs
-Message-ID: <20140506123020.GC30234@arm.com>
-References: <1399322907-21280-1-git-send-email-larry.bassel@linaro.org>
+	Tue, 6 May 2014 08:31:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399322907-21280-1-git-send-email-larry.bassel@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140505133517.71b7dc7cf327cb304e8a9edc@linux-foundation.org>
+References: <CALZtONB-wT16fPX7GjBVFO_5Bof3=zxviG22p6_9ymbnzA9QAA@mail.gmail.com>
+ <1399300985-11137-1-git-send-email-ddstreet@ieee.org> <20140505133517.71b7dc7cf327cb304e8a9edc@linux-foundation.org>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Tue, 6 May 2014 08:30:56 -0400
+X-Google-Sender-Auth: jw0r1miR1EarRV267m7Ldg1aJqk
+Message-ID: <CALZtONAVTQuOF3ddZ6jVZqCGgKBicAtT=_w5w4GEueYAsf3jtw@mail.gmail.com>
+Subject: Re: [PATCH] plist: replace pr_debug with printk in plist_test()
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, Fabian Frederick <fabf@skynet.be>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 09:48:27PM +0100, Larry Bassel wrote:
-> Support for arch_irq_work_raise() was missing from
-> arm64 (a prerequisite for FULL_NOHZ).
-> 
-> This patch is based on the arm32 patch ARM 7872/1
-> which ports cleanly.
-> 
-> commit bf18525fd793101df42a1344ecc48b49b62e48c9
-> Author: Stephen Boyd <sboyd@codeaurora.org>
-> Date:   Tue Oct 29 20:32:56 2013 +0100
-> 
->     ARM: 7872/1: Support arch_irq_work_raise() via self IPIs
-> 
->     By default, IRQ work is run from the tick interrupt (see
->     irq_work_run() in update_process_times()). When we're in full
->     NOHZ mode, restarting the tick requires the use of IRQ work and
->     if the only place we run IRQ work is in the tick interrupt we
->     have an unbreakable cycle. Implement arch_irq_work_raise() via
->     self IPIs to break this cycle and get the tick started again.
->     Note that we implement this via IPIs which are only available on
->     SMP builds. This shouldn't be a problem because full NOHZ is only
->     supported on SMP builds anyway.
-> 
->     Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->     Reviewed-by: Kevin Hilman <khilman@linaro.org>
->     Cc: Frederic Weisbecker <fweisbec@gmail.com>
->     Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> 
-> Signed-off-by: Larry Bassel <larry.bassel@linaro.org>
-> Reviewed-by: Kevin Hilman <khilman@linaro.org>
+On Mon, May 5, 2014 at 4:35 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Mon,  5 May 2014 10:43:05 -0400 Dan Streetman <ddstreet@ieee.org> wrote:
+>
+>> Replace pr_debug() in lib/plist.c test function plist_test() with
+>> printk(KERN_DEBUG ...).
+>>
+>> Without DEBUG defined, pr_debug() is complied out, but the entire
+>> plist_test() function is already inside CONFIG_DEBUG_PI_LIST, so
+>> printk should just be used directly.
+>>
+>> --- a/lib/plist.c
+>> +++ b/lib/plist.c
+>> @@ -175,7 +175,7 @@ static int  __init plist_test(void)
+>>       int nr_expect = 0, i, loop;
+>>       unsigned int r = local_clock();
+>>
+>> -     pr_debug("start plist test\n");
+>> +     printk(KERN_DEBUG "start plist test\n");
+>
+> Now someone will come along and helpfully switch it back to pr_debug()
+> again :(
+>
+> What about adding a #define DEBUG?
+>
+>
+>
+> This aspect of pr_debug() is rather surprising and unfortunate and I
+> guess we screwed it up.  pr_debug() should unconditionally do the
+> printk, just like pr_warn, pr_emerg, etc.  And there should be a
+> separate pr_debug_cond() which honours the DEBUG setting.
 
-Looks fine to me, thanks.
+I agree, it's definitely surprising and not obvious.  At the least,
+maybe some clearer comments/docs would help; besides actually
+reviewing the printk.h code, the only other indication of this
+behavior is CodingStyle which currently says:
 
-Will
+"For messages that aren't associated with a particular device,
+<linux/printk.h> defines pr_debug() and pr_info()."
+
+Listing pr_debug() and pr_info() on the same line with no
+qualifications kind of implies they behave the same.  Maybe the
+example should be pr_err() and pr_info(), or really anything besides
+pr_debug(), which is discussed in (very brief) detail in the next
+paragraph...
+
+"Such messages should be compiled out when the DEBUG symbol is not
+defined (that is, by default they are not included).  When you use
+dev_dbg() or pr_debug(), that's automatic.  Many subsystems have
+Kconfig options to turn on -DDEBUG."
+
+While that does explain that pr_debug() won't actually print anything
+without DEBUG defined, it's hardly in a way that jumps out, clearly
+indicating that pr_debug() is unlike all the other pr_XXX() functions.
+
+I'll try sending a patch to update the docs to make pr_debug()'s
+behavior clearer...
+
+>
+> akpm3:/usr/src/linux-3.15-rc4> grep -r pr_debug . | wc -l
+> 10286
+>
+> Boy, that's going to be a big patch ;)
