@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934321AbaEFHlS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 03:41:18 -0400
-Received: from smtp.adetelgroup.com ([94.247.26.71]:10160 "EHLO
+	id S934287AbaEFHlP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 03:41:15 -0400
+Received: from smtp.adetelgroup.com ([94.247.26.71]:10155 "EHLO
 	hbg-pa71.hmc-pa.adm" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934110AbaEFHlL (ORCPT
+	with ESMTP id S934069AbaEFHlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 May 2014 03:41:11 -0400
 From: Hubert Chaumette <hchaumette@adeneo-embedded.com>
@@ -14,172 +14,39 @@ Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, robh+dt@kernel.org,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
         rdunlap@infradead.org, xobs@kosagi.com, davem@davemloft.net,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [PATCH v4 1/2] Update Micrel KSZ90x1 binding documentation
-Date: Tue,  6 May 2014 09:40:16 +0200
-Message-Id: <1399362017-25787-2-git-send-email-hchaumette@adeneo-embedded.com>
+Subject: [PATCH v4 0/2] net/phy: micrel: Add DT configuration support and documentation for KSZ9031
+Date: Tue,  6 May 2014 09:40:15 +0200
+Message-Id: <1399362017-25787-1-git-send-email-hchaumette@adeneo-embedded.com>
 X-Mailer: git-send-email 2.0.0.rc0
-In-Reply-To: <1399362017-25787-1-git-send-email-hchaumette@adeneo-embedded.com>
-References: <1399362017-25787-1-git-send-email-hchaumette@adeneo-embedded.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Renames micrel-ksz9021.txt to micrel-ksz90x1.txt and adds documentation for
-the KSZ9031 binding from patch 1. Also adds step increment information, and
-note about phy fixups.
+ - Adds DT configuration support for ksz9031
+ - Renames micrel-ksz9021.txt to micrel-ksz90x1.txt and adds ksz9031 binding
+   documentation
 
-Signed-off-by: Hubert Chaumette <hchaumette@adeneo-embedded.com>
----
- .../devicetree/bindings/net/micrel-ksz9021.txt     | 49 -------------
- .../devicetree/bindings/net/micrel-ksz90x1.txt     | 83 ++++++++++++++++++++++
- 2 files changed, 83 insertions(+), 49 deletions(-)
+Changes since v3:
+ - Rebased on net-next
+Changes since v2:
+ - Merged together ksz9031_load_{clk,data,ctrl}_skew_values()
+ - Added field length and number of fields prameter to account for registers
+  specificities
+ - Added binding documentation
+Changes since v1:
+ - Removed ksz9021 and ksz9031 fixup deletions from arch/arm/mach-imx/mach-imx6q.c
+
+Hubert Chaumette (2):
+  Update Micrel KSZ90x1 binding documentation
+  ARM: i.MX6: Add OF configuration support for ksz9031
+
+ .../devicetree/bindings/net/micrel-ksz9021.txt     |  49 ----------
+ .../devicetree/bindings/net/micrel-ksz90x1.txt     |  83 ++++++++++++++++
+ drivers/net/phy/micrel.c                           | 106 ++++++++++++++++++++-
+ 3 files changed, 188 insertions(+), 50 deletions(-)
  delete mode 100644 Documentation/devicetree/bindings/net/micrel-ksz9021.txt
  create mode 100644 Documentation/devicetree/bindings/net/micrel-ksz90x1.txt
 
-diff --git a/Documentation/devicetree/bindings/net/micrel-ksz9021.txt b/Documentation/devicetree/bindings/net/micrel-ksz9021.txt
-deleted file mode 100644
-index 997a63f..0000000
---- a/Documentation/devicetree/bindings/net/micrel-ksz9021.txt
-+++ /dev/null
-@@ -1,49 +0,0 @@
--Micrel KSZ9021 Gigabit Ethernet PHY
--
--Some boards require special tuning values, particularly when it comes to
--clock delays.  You can specify clock delay values by adding
--micrel-specific properties to an Ethernet OF device node.
--
--All skew control options are specified in picoseconds.  The minimum
--value is 0, and the maximum value is 3000.
--
--Optional properties:
-- - rxc-skew-ps : Skew control of RXC pad
-- - rxdv-skew-ps : Skew control of RX CTL pad
-- - txc-skew-ps : Skew control of TXC pad
-- - txen-skew-ps : Skew control of TX_CTL pad
-- - rxd0-skew-ps : Skew control of RX data 0 pad
-- - rxd1-skew-ps : Skew control of RX data 1 pad
-- - rxd2-skew-ps : Skew control of RX data 2 pad
-- - rxd3-skew-ps : Skew control of RX data 3 pad
-- - txd0-skew-ps : Skew control of TX data 0 pad
-- - txd1-skew-ps : Skew control of TX data 1 pad
-- - txd2-skew-ps : Skew control of TX data 2 pad
-- - txd3-skew-ps : Skew control of TX data 3 pad
--
--Examples:
--
--	/* Attach to an Ethernet device with autodetected PHY */
--	&enet {
--		rxc-skew-ps = <3000>;
--		rxdv-skew-ps = <0>;
--		txc-skew-ps = <3000>;
--		txen-skew-ps = <0>;
--		status = "okay";
--	};
--
--	/* Attach to an explicitly-specified PHY */
--	mdio {
--		phy0: ethernet-phy@0 {
--			rxc-skew-ps = <3000>;
--			rxdv-skew-ps = <0>;
--			txc-skew-ps = <3000>;
--			txen-skew-ps = <0>;
--			reg = <0>;
--		};
--	};
--	ethernet@70000 {
--		status = "okay";
--		phy = <&phy0>;
--		phy-mode = "rgmii-id";
--	};
-diff --git a/Documentation/devicetree/bindings/net/micrel-ksz90x1.txt b/Documentation/devicetree/bindings/net/micrel-ksz90x1.txt
-new file mode 100644
-index 0000000..692076f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/micrel-ksz90x1.txt
-@@ -0,0 +1,83 @@
-+Micrel KSZ9021/KSZ9031 Gigabit Ethernet PHY
-+
-+Some boards require special tuning values, particularly when it comes to
-+clock delays. You can specify clock delay values by adding
-+micrel-specific properties to an Ethernet OF device node.
-+
-+Note that these settings are applied after any phy-specific fixup from
-+phy_fixup_list (see phy_init_hw() from drivers/net/phy/phy_device.c),
-+and therefore may overwrite them.
-+
-+KSZ9021:
-+
-+  All skew control options are specified in picoseconds. The minimum
-+  value is 0, the maximum value is 3000, and it is incremented by 200ps
-+  steps.
-+
-+  Optional properties:
-+
-+    - rxc-skew-ps : Skew control of RXC pad
-+    - rxdv-skew-ps : Skew control of RX CTL pad
-+    - txc-skew-ps : Skew control of TXC pad
-+    - txen-skew-ps : Skew control of TX CTL pad
-+    - rxd0-skew-ps : Skew control of RX data 0 pad
-+    - rxd1-skew-ps : Skew control of RX data 1 pad
-+    - rxd2-skew-ps : Skew control of RX data 2 pad
-+    - rxd3-skew-ps : Skew control of RX data 3 pad
-+    - txd0-skew-ps : Skew control of TX data 0 pad
-+    - txd1-skew-ps : Skew control of TX data 1 pad
-+    - txd2-skew-ps : Skew control of TX data 2 pad
-+    - txd3-skew-ps : Skew control of TX data 3 pad
-+
-+KSZ9031:
-+
-+  All skew control options are specified in picoseconds. The minimum
-+  value is 0, and the maximum is property-dependent. The increment
-+  step is 60ps.
-+
-+  Optional properties:
-+
-+    Maximum value of 1860:
-+
-+      - rxc-skew-ps : Skew control of RX clock pad
-+      - txc-skew-ps : Skew control of TX clock pad
-+
-+    Maximum value of 900:
-+
-+      - rxdv-skew-ps : Skew control of RX CTL pad
-+      - txen-skew-ps : Skew control of TX CTL pad
-+      - rxd0-skew-ps : Skew control of RX data 0 pad
-+      - rxd1-skew-ps : Skew control of RX data 1 pad
-+      - rxd2-skew-ps : Skew control of RX data 2 pad
-+      - rxd3-skew-ps : Skew control of RX data 3 pad
-+      - txd0-skew-ps : Skew control of TX data 0 pad
-+      - txd1-skew-ps : Skew control of TX data 1 pad
-+      - txd2-skew-ps : Skew control of TX data 2 pad
-+      - txd3-skew-ps : Skew control of TX data 3 pad
-+
-+Examples:
-+
-+	/* Attach to an Ethernet device with autodetected PHY */
-+	&enet {
-+		rxc-skew-ps = <3000>;
-+		rxdv-skew-ps = <0>;
-+		txc-skew-ps = <3000>;
-+		txen-skew-ps = <0>;
-+		status = "okay";
-+	};
-+
-+	/* Attach to an explicitly-specified PHY */
-+	mdio {
-+		phy0: ethernet-phy@0 {
-+			rxc-skew-ps = <3000>;
-+			rxdv-skew-ps = <0>;
-+			txc-skew-ps = <3000>;
-+			txen-skew-ps = <0>;
-+			reg = <0>;
-+		};
-+	};
-+	ethernet@70000 {
-+		status = "okay";
-+		phy = <&phy0>;
-+		phy-mode = "rgmii-id";
-+	};
 -- 
 2.0.0.rc0
 
