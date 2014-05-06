@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556AbaEFRG1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 13:06:27 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:14157 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750830AbaEFRGZ (ORCPT
+	id S1752047AbaEFRG5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 13:06:57 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:54335 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838AbaEFRGz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 13:06:25 -0400
-Date: Tue, 6 May 2014 18:05:49 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 6/6] mm: Postpone the disabling of kmemleak early logging
-Message-ID: <20140506170549.GM23957@arm.com>
-References: <1399038070-1540-1-git-send-email-catalin.marinas@arm.com>
- <1399038070-1540-7-git-send-email-catalin.marinas@arm.com>
- <5368FDBB.8070106@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5368FDBB.8070106@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 6 May 2014 13:06:55 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [Patch v2 1/4] soc: Placeholder files for drivers/soc
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <53593D89.1020703@ti.com>
+Date: Tue, 6 May 2014 10:06:52 -0700
+Cc: Andy Gross <agross@codeaurora.org>, linux-kernel@vger.kernel.org,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <655E240A-D6B1-4750-AC3A-09BA9D0C084E@codeaurora.org>
+References: <1398357082-5102-1-git-send-email-agross@codeaurora.org> <1398357082-5102-2-git-send-email-agross@codeaurora.org> <53593D89.1020703@ti.com>
+To: Paul Walmsley <paul@pwsan.com>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 04:20:27PM +0100, Sasha Levin wrote:
-> On 05/02/2014 09:41 AM, Catalin Marinas wrote:
-> > Currently, kmemleak_early_log is disabled at the beginning of the
-> > kmemleak_init() function, before the full kmemleak tracing is actually
-> > enabled. In this small window, kmem_cache_create() is called by kmemleak
-> > which triggers additional memory allocation that are not traced. This
-> > patch moves the kmemleak_early_log disabling further down and at the
-> > same time with full kmemleak enabling.
-> > 
-> > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
+
+On Apr 24, 2014, at 9:36 AM, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+
+> On Thursday 24 April 2014 12:31 PM, Andy Gross wrote:
+>> Add placeholder Kconfig and linkage for driver/soc.
+>> 
+>> The first patch set that implemented this was authored by Santosh Shilimkar:
+>> https://lkml.org/lkml/2014/2/28/567
+>> 
+>> Signed-off-by: Andy Gross <agross@codeaurora.org>
+>> ---
+> Good to see these patches on the list. Me and Kumar spoke about it
+> many times before.
 > 
-> This patch makes the kernel die during the boot process:
+> BTW, I just posted updated version. Feel free to use the from it instead
+> of 4subject one.
 > 
-> [   24.471801] BUG: unable to handle kernel paging request at ffffffff922f2b93
-> [   24.472496] IP: [<ffffffff922f2b93>] log_early+0x0/0xcd
+> Regards,
+> Santosh
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks for reporting this. I assume you run with
-CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF enabled and kmemleak_early_log remains
-set even though kmemleak is not in use.
+Paul,
 
-Does the patch below fix it?
+Did you have any other thoughts on this, do we want to add more to Santosh’s patch w/regards to comments or MAINTAINERs?
 
-diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index 0cd6aabd45a0..e7f74091c024 100644
---- a/mm/kmemleak.c
-+++ b/mm/kmemleak.c
-@@ -1811,6 +1811,7 @@ void __init kmemleak_init(void)
- 
- #ifdef CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF
- 	if (!kmemleak_skip_disable) {
-+		kmemleak_early_log = 0;
- 		kmemleak_disable();
- 		return;
- 	}
-
-Thanks.
+- k
 
 -- 
-Catalin
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
