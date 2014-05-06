@@ -1,92 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251AbaEFNNI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 09:13:08 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34265 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751870AbaEFNNE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 09:13:04 -0400
-Date: Tue, 6 May 2014 14:12:34 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Jan Kara <jack@suse.cz>
-Cc: "mm-commits@vger.kernel.org" <mm-commits@vger.kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "kay@vrfy.org" <kay@vrfy.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: +
- printk-print-initial-logbuf-contents-before-re-enabling-interrupts.patch
- added to -mm tree
-Message-ID: <20140506131234.GD30234@arm.com>
-References: <53640c8c.5++0zeO0pmfqKMwm%akpm@linux-foundation.org>
- <20140502224651.GG23636@quack.suse.cz>
- <20140506120648.GA30234@arm.com>
- <20140506122958.GG9291@quack.suse.cz>
+	id S1754609AbaEFNOi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 09:14:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34960 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752279AbaEFNOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 09:14:36 -0400
+Date: Tue, 6 May 2014 15:15:54 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Tomas Henzl <thenzl@redhat.com>
+Cc: ching <ching2048@areca.com.tw>, jbottomley@parallels.com,
+        dan.carpenter@oracle.com, linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1.1 2/16 update 2] arcmsr:  Adding code to support MSI-X
+ interrupt
+Message-ID: <20140506131553.GA3847@dhcp-26-207.brq.redhat.com>
+References: <1399364269.6486.12.camel@localhost>
+ <5368DB95.10304@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140506122958.GG9291@quack.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5368DB95.10304@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 01:29:58PM +0100, Jan Kara wrote:
-> On Tue 06-05-14 13:06:48, Will Deacon wrote:
-> > On Fri, May 02, 2014 at 11:46:51PM +0100, Jan Kara wrote:
-> > >   I really dislike this patch. It goes completely against my efforts of
-> > > lowering irq latency caused by printing to console (which are the
-> > > problems I have observed ;).
-> > 
-> > Hmmm, what makes you think that? Interrupts only remain disabled whilst we
-> > process the backlog, which in the usual case should be pretty small. We also
-> > hold the logbuf_lock during this time, so we can't get stuck in an unbounded
-> > loop.
+On Tue, May 06, 2014 at 02:54:45PM +0200, Tomas Henzl wrote:
+> On 05/06/2014 10:17 AM, ching wrote:
+> > From: Ching<ching2048@areca.com.tw>
 > >
-> > Can you elaborate a bit more on the problems you've observed, please?
->   Well, with serial console the backlog can get actually pretty big. During
-> boot on large machines I've seen CPUs stuck in that very loop in
-> console_unlock() for tens of seconds. Obviously that causes problems - e.g.
-> watchdog fires, RCU lockup detector fires, when interrupts are disabled,
-> some hardware gives up because its interrupts weren't served for too long.
-> All in all the machine just dies.
+> > Adding code to support MSI-X interrupt.
+> >
+> > This update has modification by Tomas' suggestion.
+> > And I add a msix_vector_count for free_irq.
+> >
+> > Signed-off-by: Ching<ching2048@areca.com.tw>
+> > ---
+> >
+> > diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
+> > --- a/drivers/scsi/arcmsr/arcmsr.h	2014-04-28 16:02:46.000000000 +0800
+> > +++ b/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:24:36.000000000 +0800
+> > @@ -64,6 +64,7 @@ struct device_attribute;
+> >  #define ARCMSR_MAX_HBB_POSTQUEUE						264
+> >  #define ARCMSR_MAX_XFER_LEN							0x26000 /* 152K */
+> >  #define ARCMSR_CDB_SG_PAGE_LENGTH						256 
+> > +#define ARCMST_NUM_MSIX_VECTORS		4
+> >  #ifndef PCI_DEVICE_ID_ARECA_1880
+> >  #define PCI_DEVICE_ID_ARECA_1880 0x1880
+> >   #endif
+> > @@ -508,6 +509,7 @@ struct AdapterControlBlock
+> >  	struct pci_dev *		pdev;
+> >  	struct Scsi_Host *		host;
+> >  	unsigned long			vir2phy_offset;
+> > +	struct msix_entry	entries[ARCMST_NUM_MSIX_VECTORS];
+> >  	/* Offset is used in making arc cdb physical to virtual calculations */
+> >  	uint32_t			outbound_int_enable;
+> >  	uint32_t			cdb_phyaddr_hi32;
+> > @@ -544,6 +546,8 @@ struct AdapterControlBlock
+> >  	/* iop init */
+> >  	#define ACB_F_ABORT				0x0200
+> >  	#define ACB_F_FIRMWARE_TRAP           		0x0400
+> > +	#define ACB_F_MSI_ENABLED		0x1000
+> > +	#define ACB_F_MSIX_ENABLED		0x2000
+> >  	struct CommandControlBlock *			pccb_pool[ARCMSR_MAX_FREECCB_NUM];
+> >  	/* used for memory free */
+> >  	struct list_head		ccb_free_list;
+> > @@ -594,6 +598,7 @@ struct AdapterControlBlock
+> >  				#define	FW_DEADLOCK	0x0010
+> >  	atomic_t 			rq_map_token;
+> >  	atomic_t			ante_token_value;
+> > +	int		msix_vector_count;
+> >  };/* HW_DEVICE_EXTENSION */
+> >  /*
+> >  *******************************************************************************
+> > diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+> > --- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-28 15:58:34.000000000 +0800
+> > +++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-06 15:20:48.000000000 +0800
+> > @@ -603,6 +603,65 @@ static void arcmsr_message_isr_bh_fn(str
+> >  	}
+> >  }
+> >  
+> > +static int
+> > +arcmsr_request_irq(struct pci_dev *pdev, struct AdapterControlBlock *acb)
+> > +{
+> > +	int	i, j, r;
+> > +	struct msix_entry entries[ARCMST_NUM_MSIX_VECTORS];
+> > +
+> > +	if (!pci_find_capability(pdev, PCI_CAP_ID_MSIX))
+> > +		goto msi_int;
+> > +	for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++)
+> > +		entries[i].entry = i;
+> > +	r = pci_enable_msix(pdev, entries, ARCMST_NUM_MSIX_VECTORS);
+> 
+> The use of pci_enable_msix is deprecated, please use pci_enable_msix_range or
+> pci_enable_msix_exact instead. Sorry for not noticing the first time I reviewed
+> this patch.
+> 
+> > +	if (r < 0)
+> > +		goto msi_int;
+> > +	if (r) {
+> > +		if (pci_enable_msix(pdev, entries, r))
+> > +			goto msi_int;
+> > +	} else
+> > +		r = ARCMST_NUM_MSIX_VECTORS;
+> > +	acb->msix_vector_count = r;
+> > +	for (i = 0; i < r; i++) {
+> > +		if (request_irq(entries[i].vector,
+> > +			arcmsr_do_interrupt, 0, "arcmsr", acb)) {
+> > +			pr_warn("arcmsr%d: request_irq =%d failed!\n",
+> > +				acb->host->host_no, pdev->irq);
+> > +			for (j = 0 ; j < i ; j++)
+> > +				free_irq(entries[j].vector, acb);
+> > +			pci_disable_msix(pdev);
+> > +			goto msi_int;
+> > +		}
+> > +		acb->entries[i] = entries[i];
+> > +	}
+> > +	acb->acb_flags |= ACB_F_MSIX_ENABLED;
+> > +	pr_info("arcmsr%d: msi-x enabled\n", acb->host->host_no);
+> > +	return ARC_SUCCESS;
+> > +msi_int:
+> > +	if (!pci_find_capability(pdev, PCI_CAP_ID_MSI))
+> > +		goto legacy_int;
+> > +	if (pci_enable_msi(pdev))
+> 
+> Similarly here, use the new pci_enable_msi_range() or pci_enable_msi_exact()
 
-Right, so there's the usual compromise here between throughput and latency.
-I hoped that pegging the amount of irq-disabled work using console_end_seq
-would give us the best of both worlds, but you're saying that it can still
-lead to issues on large machines (in the worst case, the whole buffer fills
-up while we're printing the last lot, so the irq-disabled work amounts to
-draining logbuf, right?).
+Nope, pci_enable_msi() is not going to deprecate and could be used here.
 
-That said, printing one message each time seems to go too far in the
-opposite direction for my liking, so the best bet is likely to limit the
-work to some fixed number of messages. Do you have any feeling for such a
-limit?
+> > +		goto legacy_int;
+> > +	if (request_irq(pdev->irq, arcmsr_do_interrupt,
+> > +		IRQF_SHARED, "arcmsr", acb)) {
+> > +		pr_warn("arcmsr%d: request_irq =%d failed!\n",
+> > +			acb->host->host_no, pdev->irq);
+> > +		pci_disable_msi(pdev);
+> > +		goto legacy_int;
+> > +	}
+> > +	acb->acb_flags |= ACB_F_MSI_ENABLED;
+> > +	pr_info("arcmsr%d: msi enabled\n", acb->host->host_no);
+> > +	return ARC_SUCCESS;
+> > +legacy_int:
+> > +	if (request_irq(pdev->irq, arcmsr_do_interrupt,
+> > +		IRQF_SHARED, "arcmsr", acb)) {
+> > +		pr_warn("arcmsr%d: request_irq = %d failed!\n",
+> > +			acb->host->host_no, pdev->irq);
+> > +		return ARC_FAILURE;
+> > +	}
+> > +	return ARC_SUCCESS;
+> > +}
+> > +
+> >  static int arcmsr_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+> >  {
+> >  	struct Scsi_Host *host;
+> > @@ -667,16 +726,13 @@ static int arcmsr_probe(struct pci_dev *
+> >  	if(error){
+> >  		goto free_hbb_mu;
+> >  	}
+> > -	arcmsr_iop_init(acb);
+> >  	error = scsi_add_host(host, &pdev->dev);
+> >  	if(error){
+> >  		goto RAID_controller_stop;
+> >  	}
+> > -	error = request_irq(pdev->irq, arcmsr_do_interrupt, IRQF_SHARED, "arcmsr", acb);
+> > -	if(error){
+> > +	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
+> >  		goto scsi_host_remove;
+> > -	}
+> > -	host->irq = pdev->irq;
+> > +	arcmsr_iop_init(acb);
+> >      	scsi_scan_host(host);
+> >  	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
+> >  	atomic_set(&acb->rq_map_token, 16);
+> > @@ -992,6 +1048,22 @@ static void arcmsr_done4abort_postqueue(
+> >  	}
+> >  	}
+> >  }
+> > +
+> > +static void arcmsr_free_irq(struct pci_dev *pdev, struct AdapterControlBlock *acb)
+> > +{
+> > +	int i;
+> > +
+> > +	if (acb->acb_flags & ACB_F_MSI_ENABLED) {
+> > +		free_irq(pdev->irq, acb);
+> > +		pci_disable_msi(pdev);
+> > +	} else if (acb->acb_flags & ACB_F_MSIX_ENABLED) {
+> > +		for (i = 0; i < acb->msix_vector_count; i++)
+> > +			free_irq(acb->entries[i].vector, acb);
+> > +		pci_disable_msix(pdev);
+> > +	} else
+> > +		free_irq(pdev->irq, acb);
+> > +}
+> > +
+> >  static void arcmsr_remove(struct pci_dev *pdev)
+> >  {
+> >  	struct Scsi_Host *host = pci_get_drvdata(pdev);
+> > @@ -1029,7 +1101,7 @@ static void arcmsr_remove(struct pci_dev
+> >  			}
+> >  		}
+> >  	}
+> > -	free_irq(pdev->irq, acb);
+> > +	arcmsr_free_irq(pdev, acb);
+> >  	arcmsr_free_ccb_pool(acb);
+> >  	arcmsr_free_hbb_mu(acb);
+> >  	arcmsr_unmap_pciregion(acb);
+> > @@ -1045,6 +1117,7 @@ static void arcmsr_shutdown(struct pci_d
+> >  		(struct AdapterControlBlock *)host->hostdata;
+> >  	del_timer_sync(&acb->eternal_timer);
+> >  	arcmsr_disable_outbound_ints(acb);
+> > +	arcmsr_free_irq(pdev, acb);
+> >  	flush_work(&acb->arcmsr_do_message_isr_bh);
+> >  	arcmsr_stop_adapter_bgrb(acb);
+> >  	arcmsr_flush_adapter_cache(acb);
+> > @@ -2516,8 +2589,6 @@ static int arcmsr_iop_confirm(struct Ada
+> >  	case ACB_ADAPTER_TYPE_A: {
+> >  		if (cdb_phyaddr_hi32 != 0) {
+> >  			struct MessageUnit_A __iomem *reg = acb->pmuA;
+> > -			uint32_t intmask_org;
+> > -			intmask_org = arcmsr_disable_outbound_ints(acb);
+> >  			writel(ARCMSR_SIGNATURE_SET_CONFIG, \
+> >  						&reg->message_rwbuffer[0]);
+> >  			writel(cdb_phyaddr_hi32, &reg->message_rwbuffer[1]);
+> > @@ -2529,7 +2600,6 @@ static int arcmsr_iop_confirm(struct Ada
+> >  				acb->host->host_no);
+> >  				return 1;
+> >  			}
+> > -			arcmsr_enable_outbound_ints(acb, intmask_org);
+> >  		}
+> >  		}
+> >  		break;
+> > @@ -2539,8 +2609,6 @@ static int arcmsr_iop_confirm(struct Ada
+> >  		uint32_t __iomem *rwbuffer;
+> >  
+> >  		struct MessageUnit_B *reg = acb->pmuB;
+> > -		uint32_t intmask_org;
+> > -		intmask_org = arcmsr_disable_outbound_ints(acb);
+> >  		reg->postq_index = 0;
+> >  		reg->doneq_index = 0;
+> >  		writel(ARCMSR_MESSAGE_SET_POST_WINDOW, reg->drv2iop_doorbell);
+> > @@ -2569,7 +2637,6 @@ static int arcmsr_iop_confirm(struct Ada
+> >  			return 1;
+> >  		}
+> >  		arcmsr_hbb_enable_driver_mode(acb);
+> > -		arcmsr_enable_outbound_ints(acb, intmask_org);
+> >  		}
+> >  		break;
+> >  	case ACB_ADAPTER_TYPE_C: {
+> >
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-> And the backlog builds up because while one cpu is doing the printing in
-> console_unlock() all the other cpus are busily adding new messages to the
-> buffer faster than they can be printed...
-
-Understood, but that's also the situation without this patch (and not one
-that I think you can fix without hurting latency).
-
-> > > My opinion is that when you are printing from each and every interrupt
-> > > which happens so often, then you have a problem and disabling IRQs in
-> > > printk so that your interrupt doesn't happen that often seems like a poor
-> > > solution to me. You could as well just ratelimit your debug messages,
-> > > couldn't you?
-> > 
-> > My use-case was basically using printk as a debug trace during early boot
-> > when bringing up Linux on a new CPU core. I don't think ratelimiting would
-> > be the right thing there, since I really did want as many messages to
-> > reach the console as possible (which is also why I wrote this patch, not
-> > just the other one in the series).
->   OK, I understand. It just seems wrong to me to throttle all interrupts on
-> the cpu while doing printing just because someone might be doing debug
-> printing from the interrupt. Sure it's fine as a debug hack but on a
-> production machine that seems rather counterproductive.
-
-Perhaps, but the one time I *really* want printk to be reliable is when I'm
-using it to debug a problem.
-
-Will
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
