@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222AbaEFTZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 15:25:59 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:42081 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425AbaEFTZ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 15:25:57 -0400
-Message-ID: <1399404354.15399.64.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH 06/24] net, diet: Use small UDP hash tables on small
- kernels
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com
-Date: Tue, 06 May 2014 12:25:54 -0700
-In-Reply-To: <20140506182344.GL19657@tassilo.jf.intel.com>
-References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
-	 <1399328773-6531-7-git-send-email-andi@firstfloor.org>
-	 <1399386402.15399.11.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140506182344.GL19657@tassilo.jf.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754242AbaEFT1F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 15:27:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12774 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751459AbaEFT1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 15:27:02 -0400
+Date: Tue, 6 May 2014 21:26:41 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 1/2] uprobes: add comment with insn opcodes, mnemonics
+	and why we dont support them
+Message-ID: <20140506192641.GA12481@redhat.com>
+References: <1399314247-7368-1-git-send-email-dvlasenk@redhat.com> <20140505194100.GA26916@redhat.com> <5369156C.4000602@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5369156C.4000602@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-06 at 11:23 -0700, Andi Kleen wrote:
+Firstly, let me remind that my understanding of low lovel hardware details
+is very limited.
 
-> Ok I need to fix that, because a single slot on a 2MB system 
-> is likely not enough.
+On 05/06, Denys Vlasenko wrote:
+>
+> Oleg, can you clear for me the following -
+>
+> If the probed instruction triggers an "illegal insn" or "privileged insn"
+> CPU exception - are we completely fine?
 
-You have nothing to do.
+Yes I think we are fine. I assume that, say, do_debug() won't be called in this
+case, and do_invalid_op()->do_trap() should trigger arch_uprobe_xol_was_trapped()
+logic.
 
-It will use a 128 slots hash table with current code.
+Well, actually we are not 100% fine because si_addr can be wrong. But this is
+not invalid_op-specific, we need to fix this anyway and the fix is simple.
 
+I do not want to discuss this now, but I am going to make another series later
+which adds something like uprobe_instruction_pointer(regs). It can (should) be
+used by DO_ERROR_INFO() (perhaps by something else, not sure about math_error())
+_and_ by show_unhandled_signals users (actually the main reason to me). The only
+problem is that this code should be cleanuped first. In fact I was thinking about
+this change from the very beginning of the recent fixes, the "wrong" ip reported
+by do_general_protection() greatly complicated the investigation of that problem.
+But I need to take a rest of uprobes ;)
 
+Oleg.
 
