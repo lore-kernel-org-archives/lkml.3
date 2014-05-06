@@ -1,134 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934255AbaEFHfK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 03:35:10 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:43928 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934110AbaEFHfF (ORCPT
+	id S934268AbaEFHiI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 03:38:08 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:35747 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934110AbaEFHiD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 03:35:05 -0400
-Date: Tue, 6 May 2014 09:35:00 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH/RFC] Deprecate BUG/BUG_ON in favour of
- BUG_AND_HALT/BUG_AND_HALT_ON
-Message-ID: <20140506073500.GA26303@gmail.com>
-References: <1398870207-52889-1-git-send-email-paul.gortmaker@windriver.com>
- <CAFLxGvzhd6jwGsu9eOBtXu92JcH1PnZsR9EB_h5LihYRNS-hyQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFLxGvzhd6jwGsu9eOBtXu92JcH1PnZsR9EB_h5LihYRNS-hyQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 6 May 2014 03:38:03 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7fb36d000006ff7-97-53689158538c
+Content-transfer-encoding: 8BIT
+Message-id: <1399361891.5441.9.camel@AMDC1943>
+Subject: Re: [PATCH part2 0/6] charger/mfd: max14577: Part 2 of adding support
+ for MAX77836
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Anton Vorontsov <anton@enomsg.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Date: Tue, 06 May 2014 09:38:11 +0200
+In-reply-to: <1398264640-12122-1-git-send-email-k.kozlowski@samsung.com>
+References: <1398264640-12122-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: Evolution 3.10.4-0ubuntu1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsVy+t/xK7oREzOCDT5O0rA4uFXTYuOM9awW
+	Ux8+YbOY9OQ9s8XElZOZLc42vWG3uP/1KKPFtysdTBaXd81hs1h75C67xeluVov1M16zOPB4
+	TOj/xOixc9Zddo/NK7Q8Nq3qZPO4c20Pm8e8k4EefVtWMXp83iQXwBHFZZOSmpNZllqkb5fA
+	ldHxcQFbwRTFivYPPYwNjG8luxg5OSQETCR2b5/NAmGLSVy4t56ti5GLQ0hgKaNE46TNbCAJ
+	XgFBiR+T7wEVcXAwC8hLHLmUDRJmFlCXmDRvETNE/WdGiZV9d5lBangF9CQ+Hi0DqREWiJU4
+	9L6dCcRmEzCW2Lx8CdhIEYFoidbbvWC7mAX6mCXurdwNlmARUJVYNn0jK8gcTgEPictP7UDC
+	QgLuEj/fTGSFuFNZYt7+Y0wTGAVmIbluFsJ1s5Bct4CReRWjaGppckFxUnquoV5xYm5xaV66
+	XnJ+7iZGSKR82cG4+JjVIUYBDkYlHt4X0RnBQqyJZcWVuYcYJTiYlUR46/OBQrwpiZVVqUX5
+	8UWlOanFhxiZODilGhi1GBf22s+z3ST4bo4FT4f/axubwClbmhnnfYvpFtAseRx26apMstqa
+	9ZvrFir//f3hsePLI4GBm7jfc4Te3nu9udPkktXFGdO9L1jxf/tn1Kd0e9/Es8d2Xg+7ZD4n
+	/JKAeKZvyY3f4oUBXb9lBFqudWQ+sxBdFx34zT/pkiAvc1j02wcqyRuUWIozEg21mIuKEwF+
+	TOB9cgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Dmitry, David,
 
-* Richard Weinberger <richard.weinberger@gmail.com> wrote:
 
-> On Wed, Apr 30, 2014 at 5:03 PM, Paul Gortmaker
-> <paul.gortmaker@windriver.com> wrote:
-> > A long standing problem for us has been the misuse of BUG/BUG_ON.
-> > The typical misuse is someone only thinking of what represents
-> > a bug in their local code, and especially for people relatively
-> > new to Linux, starting out in device drivers, the appeal of using
-> > BUG w/o knowing what it really does is too great.
-> >
-> > So you end up with some trivial non system critical driver bringing
-> > the whole system to a grinding halt just because it detected an
-> > internal inconsistency.  That just makes users unhappy and looks bad.
-> >
-> > It is hopeless to think we can reclaim BUG/BUG_ON for their original
-> > intent, given there are currently ~20k instances.  To make progress
-> > here, we create BUG_AND_HALT variants, which leave no doubt as to
-> > what they do in name alone.
-> >
-> > Then we can incrementally move the real BUG users (unrecoverable
-> > filesystem corruption, page table mangling, etc) onto BUG_AND_HALT,
-> > and finally at some time in the future we'll simply make the old
-> > BUG/BUG_ON be aliases for WARN/WARN_ON, once we've moved over the
-> > bulk of the instances really needing to halt the system.
-> >
-> > Suggested-by: Ingo Molnar <mingo@kernel.org>
-> > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> > ---
-> >
-> > [This might not be a unique idea; but I'm pretty sure I'd first
-> > heard of it during a discussion with Ingo at RT summit last year.]
-> >
-> >  include/asm-generic/bug.h | 16 ++++++++++++++++
-> >  scripts/checkpatch.pl     |  7 +++++++
-> >  2 files changed, 23 insertions(+)
-> >
-> > diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
-> > index 630dd2372238..57b79a394ceb 100644
-> > --- a/include/asm-generic/bug.h
-> > +++ b/include/asm-generic/bug.h
-> > @@ -43,6 +43,14 @@ struct bug_entry {
-> >   * If you're tempted to BUG(), think again:  is completely giving up
-> >   * really the *only* solution?  There are usually better options, where
-> >   * users don't need to reboot ASAP and can mostly shut down cleanly.
-> > + *
-> > + * Sadly nobody listens to the above, and trying to reclaim BUG/BUG_ON
-> > + * for their original intent is about as hopeful as wishing "selfie"
-> > + * wasn't headed for the OED.  So the plan is to avoid BUG/BUG_ON
-> > + * entirely.  Either use WARN/WARN_ON or BUG_AND_HALT/BUG_AND_HALT_ON.
-> > + * Once the critical (e.g. fs etc) BUG/BUG_ON users are updated to use
-> > + * the clearly named HALT variants, we can point the old BUG/BUG_ON
-> > + * defines below to be clones of the less drastic WARN variants.
-> >   */
-> >  #ifndef HAVE_ARCH_BUG
-> >  #define BUG() do { \
-> > @@ -51,10 +59,18 @@ struct bug_entry {
-> >  } while (0)
-> >  #endif
-> >
-> > +#ifndef HAVE_ARCH_BUG_AND_HALT
-> > +#define BUG_AND_HALT BUG
-> > +#endif
-> > +
-> >  #ifndef HAVE_ARCH_BUG_ON
-> >  #define BUG_ON(condition) do { if (unlikely(condition)) BUG(); } while (0)
-> >  #endif
-> >
-> > +#ifndef HAVE_ARCH_BUG_AND_HALT_ON
-> > +#define BUG_AND_HALT_ON BUG_ON
-> > +#endif
-> > +
-> >  /*
-> >   * WARN(), WARN_ON(), WARN_ON_ONCE, and so on can be used to report
-> >   * significant issues that need prompt attention if they should ever
-> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> > index 34eb2160489d..3cbf3591cf76 100755
-> > --- a/scripts/checkpatch.pl
-> > +++ b/scripts/checkpatch.pl
-> > @@ -2010,6 +2010,13 @@ sub process {
-> >                         $rpt_cleaners = 1;
-> >                 }
-> >
-> > +# Dont use BUG/BUG_ON; use WARN/WARN_ON or BUG_AND_HALT/BUG_AND_HALT_ON
-> > +               if ($rawline =~ /^\+.*BUG\(/ || $rawline =~ /^\+.*BUG_ON\(/) {
-> > +                       my $herevet = "$here\n" . cat_vet($rawline) . "\n";
-> > +                       WARN("BUG/BUG_ON",
-> > +                            "Use of BUG/BUG_ON is deprecated. Use WARN/WARN_ON or BUG_AND_HALT/BUG_AND_HALT_ON\n" . $herevet);
-> > +               }
-> > +
-> >  # Check for FSF mailing addresses.
-> >                 if ($rawline =~ /\bwrite to the Free/i ||
-> >                     $rawline =~ /\b59\s+Temple\s+Pl/i ||
-> > --
+I need acks or reviews from power supply subsystem maintainers for
+patches:
+ - 1/6: charger: max14577: Add support for MAX77836 charger
+ - 3/6: charger: max14577: Configure battery-dependent settings from DTS
+ - 4/6: power: max17040: Add ID for MAX77836 Fuel Gauge block
+These patches were published for the first time around February 2014.
+
+
+Could you look at them?
+
+
+Best regards,
+Krzysztof
+
+
+On śro, 2014-04-23 at 16:50 +0200, Krzysztof Kozlowski wrote:
+> Hi,
 > 
-> I like the idea but not the name.
-> What about DIE() and DIE_ON()?
+> 
+> This is second part of patches adding support for MAX77836 device
+> to the max14577 drivers.
+> 
+> The first part [1] was applied by Lee Jones [2][3] and this patchset *depends*
+> on it.
+> 
+> This patchset changes the max14577 charger and regulator drivers
+> and documents Device Tree bindings.
+> 
+> The patches 1 to 3 depends on each other so they should be pulled at once.
+> Patches 4, 5 and 6 can be applied independently. However still the
+> smoothest way to apply this would be through one tree after obtaining
+> necessary acks from maintainers.
+> 
+> I need acks from power (patches: 1, 3, 4) and regulator (patch 5) trees.
+> 
+> 
+> Changes since v4 (for this second part only)
+> ============================================
+> 1. Updated Kconfig entries mentioning MAX77836.
+> 2. Added patch 5/6 (regulator: max14577: Implement SUSPEND mode for
+>    MAX77836 LDO-s)
+> 3. Charger: Require a charger subnode in DTS with charger settings.
+>    Previously the charger driver didn't use any properties from DTS.
+>    Now it needs a subnode with settings because it supports different
+>    devices with different charging characteristics.
+> 4. Rebased on 3.15-rc2.
+> 
+> Changes since v3
+> ================
+> 1. Applied minor fixes (pointed by Lee Jones).
+> 2. Added one ACK (Lee Jones) and Review-by (Tomasz Figa).
+> 3. Patch 14/charger: Minor change in parsing EOC value from DTS.
+> 4. Rebased on next-20140224.
+> 
+> Changes since v2
+> ================
+> 1. Added ACK-s.
+> 2. Applied minor checkpatch fixes (pointed by Lee Jones).
+> 3. Rebased on next-20140217.
+> 
+> Changes since v1
+> ================
+> 1. Added ACK-s, reviews and tested-by tags.
+> 2. Removed applied patches (they were merged to the linux-next tree).
+> 3. Applied comments from review (Lee Jones) to 5/15 (detection of device type)
+>    and 8/15 (add max77836 support to max14577).
+> 4. Rebased on next tree.
+> 5. Added patch 13 and 14 (pointed by Jenny Tc):
+>    - regulator/mfd: max14577: Export symbols for calculating charger current
+>    - charger: max14577: Configure battery-dependent settings from DTS
+> 6. Updated bindings documentation with new charger bindings.
+> 
+> 
+> References
+> ==========
+> [1] http://thread.gmane.org/gmane.linux.kernel/1682503
+> [2] http://www.spinics.net/lists/kernel/msg1728274.html
+> [3] https://git.kernel.org/cgit/linux/kernel/git/lee/mfd.git/log/?h=ib-mfd-extcon-3.16
+> 
+> Previous, full v4 patchset can be found here:
+> http://thread.gmane.org/gmane.linux.kernel/1654267
+> 
+> 
+> Best regards,
+> Krzysztof Kozlowski
+> 
+> 
+> Krzysztof Kozlowski (6):
+>   charger: max14577: Add support for MAX77836 charger
+>   regulator/mfd: max14577: Export symbols for calculating charger
+>     current
+>   charger: max14577: Configure battery-dependent settings from DTS
+>   power: max17040: Add ID for MAX77836 Fuel Gauge block
+>   regulator: max14577: Implement SUSPEND mode for MAX77836 LDO-s
+>   devicetree: mfd: max14577: Add device tree bindings document
+> 
+>  Documentation/devicetree/bindings/mfd/max14577.txt | 152 +++++++++++
+>  drivers/mfd/max14577.c                             | 100 ++++++-
+>  drivers/power/Kconfig                              |   4 +-
+>  drivers/power/max14577_charger.c                   | 291 ++++++++++++++++++---
+>  drivers/power/max17040_battery.c                   |   1 +
+>  drivers/regulator/max14577.c                       | 139 +++++-----
+>  include/linux/mfd/max14577-private.h               |  92 +++++--
+>  include/linux/mfd/max14577.h                       |  31 +++
+>  8 files changed, 673 insertions(+), 137 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
+> 
 
-CRASH_ON() might be a suggestive name as well, as from the user's 
-point of view we are crashing her system.
-
-Thanks,
-
-	Ingo
