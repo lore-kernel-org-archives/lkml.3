@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934550AbaEFJT6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 05:19:58 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:35736 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934484AbaEFJTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 05:19:54 -0400
-Message-ID: <5368A934.1060905@mev.co.uk>
-Date: Tue, 6 May 2014 10:19:48 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S934600AbaEFJUr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 05:20:47 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:53618 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S934441AbaEFJUp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 05:20:45 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Andi Kleen'" <andi@firstfloor.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tom.zanussi@linux.intel.com" <tom.zanussi@linux.intel.com>
+Subject: RE: A reduced Linux network stack for small systems
+Thread-Topic: A reduced Linux network stack for small systems
+Thread-Index: AQHPaLIs/67+aq2J9EOC0vxlfbVkoJszRFeg
+Date: Tue, 6 May 2014 09:18:25 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F70CFB5@AcuExch.aculab.com>
+References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Chase Southwood <chase.southwood@gmail.com>, <gregkh@linuxfoundation.org>
-CC: <hsweeten@visionengravers.com>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] staging: comedi: addi_apci_1564: Further cleanups
-References: <1399103661-14853-1-git-send-email-chase.southwood@gmail.com>
-In-Reply-To: <1399103661-14853-1-git-send-email-chase.southwood@gmail.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
- (10.0.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-05-03 08:54, Chase Southwood wrote:
-> Latest patchset in a continuing cleanup of addi_apci_1564.c.  Main focus
-> is on the auto_attach() function, but also cleaning up some of the old addi
-> common code wrappers.
->
-> To be applied on top of my prior patchset to this file (the one beginning
-> with [PATCH 1/6] staging: comedi: addi_apci_1564: remove eeprom support code)
->
-> Chase Southwood (4):
->    staging: comedi: addi_apci_1564: board has 32 digital outputs
->    staging: comedi: addi_apci_1564: don't allocate unused subdevices
->    staging: comedi: addi_apci_1564: absorb apci1564_reset()
->    staging: comedi: addi_apci_1564: call apci1564_interrupt() directly
->
->   .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 32 -------
->   drivers/staging/comedi/drivers/addi_apci_1564.c    | 98 ++++++++++------------
->   2 files changed, 45 insertions(+), 85 deletions(-)
+From: Andi Kleen
+> There has been a lot of interest recently to run Linux on very small systems,
+> like Quark systems. These may have only 2-4MB memory. They are also limited
+> by flash space.
 
-Thumbs up from me too!
+I'm intrigued about the 2-4MB memory.
+That is more that would typically be available on-chip in a DSP or FPGA.
+It sounds like an expensive SRAM chip.
+OTOH a single SDRAM gives 16MB and DDR a lot more - and are a lot cheaper
+and lower power.
+Most modern silicon can easily have SDRAM/DDR interfaces.
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+You may want some size reduction to run in 16MB, but it is not as problematic
+as running in 2MB.
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+With that little memory I wouldn't want to run anything that relied on
+dynamic memory allocation (after startup) - except for fixed size data
+buffers.
+
+	David
+
+
+
