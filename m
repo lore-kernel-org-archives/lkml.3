@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934383AbaEFHnd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 03:43:33 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:38611 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934229AbaEFHna (ORCPT
+	id S934255AbaEFHyG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 03:54:06 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37316 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934069AbaEFHyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 03:43:30 -0400
+	Tue, 6 May 2014 03:54:02 -0400
+Date: Tue, 6 May 2014 09:53:53 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Bob Moore <robert.moore@intel.com>
+Subject: Re: [PATCH 02/27] ACPICA: Utilities: Deploy ACPI_DEBUGGER_EXEC for
+ ACPI_DEBUGGER enabled code in utglobal.c.
+Message-ID: <20140506075353.GA20931@xo-6d-61-c0.localdomain>
+References: <cover.1398817612.git.lv.zheng@intel.com>
+ <53dbe352c16de24ea99d00af21eb01750af90074.1398817612.git.lv.zheng@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdUGdfF8x58dz46VWNsC4X0cmFng39Z2xSO_pXYqn9u=HA@mail.gmail.com>
-References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be>
-	<1398334403-26181-4-git-send-email-geert+renesas@glider.be>
-	<CAPDyKFpTwPDu9afhOjhhQ2PKGFB+hWsp=mcaYTq8OvuGF7yT3Q@mail.gmail.com>
-	<CAMuHMdUGdfF8x58dz46VWNsC4X0cmFng39Z2xSO_pXYqn9u=HA@mail.gmail.com>
-Date: Tue, 6 May 2014 09:43:30 +0200
-Message-ID: <CAPDyKFoSOUfgvrKE8x3dih7xvm3VBoNZHjPxWCtFw_h-QALqvw@mail.gmail.com>
-Subject: Re: [PATCH/RFC 3/4] of/clk: Register clocks suitable for Runtime PM
- with the PM core
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, Felipe Balbi <balbi@ti.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53dbe352c16de24ea99d00af21eb01750af90074.1398817612.git.lv.zheng@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 May 2014 16:35, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> Hi Ulf,
->
-> On Fri, May 2, 2014 at 10:56 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->>> +static int of_clk_pm_runtime_suspend(struct device *dev)
->>> +{
->>> +       int ret;
->>> +
->>> +       ret = pm_generic_runtime_suspend(dev);
->>> +       if (ret)
->>> +               return ret;
->>> +
->>> +       ret = pm_clk_suspend(dev);
->>
->> What about slow clocks? Those aren't handled with pm_clk_suspend().
->
-> How are slow clocks handled?
+On Wed 2014-04-30 10:03:39, Lv Zheng wrote:
+> This patch deploys ACPI_DEBUGGER_EXEC usage to utglobal.c to reduce "ifdef"
+> of ACPI_DEBUGGER.  No functional changes.  Lv Zheng.
+> 
+> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> Signed-off-by: Bob Moore <robert.moore@intel.com>
+> ---
+>  drivers/acpi/acpica/utglobal.c |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpica/utglobal.c b/drivers/acpi/acpica/utglobal.c
+> index f3abeae..825b064 100644
+> --- a/drivers/acpi/acpica/utglobal.c
+> +++ b/drivers/acpi/acpica/utglobal.c
+> @@ -377,9 +377,7 @@ acpi_status acpi_ut_init_globals(void)
+>  	acpi_gbl_disable_mem_tracking = FALSE;
+>  #endif
+>  
+> -#ifdef ACPI_DEBUGGER
+> -	acpi_gbl_db_terminate_threads = FALSE;
+> -#endif
+> +	ACPI_DEBUGGER_EXEC(acpi_gbl_db_terminate_threads = FALSE);
+>  
+>  	return_ACPI_STATUS(AE_OK);
 
-clk_prepare|unprepare - these functions may sleep.
+Is it just me or is this incredibly ugly?
 
-Kind regards
-Ulf Hansson
-
->
-> Gr{oetje,eeting}s,
->
->                         Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
