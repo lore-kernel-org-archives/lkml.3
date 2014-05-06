@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751652AbaEFRfT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 13:35:19 -0400
-Received: from s4.n225.n6.n64.static.myhostcenter.com ([64.6.225.4]:39287 "EHLO
-	ps04.myhostcenter.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086AbaEFRfS convert rfc822-to-8bit (ORCPT
+	id S1751930AbaEFRhI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 13:37:08 -0400
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:50739 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018AbaEFRhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 13:35:18 -0400
-X-Additional-Header: /usr/share/psa-horde/imp
-Message-ID: <20140506133128.s9ot9h5zk8gswosk@webmail.elihof.com>
-Date: Tue, 06 May 2014 13:31:28 -0400
-From: Mark Thompson <markthompson@voila.fr>
-To: undisclosed-recipients:;
-Subject: DEAR FRIEND!
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
+	Tue, 6 May 2014 13:37:06 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] usb: gadget: s3c-hsotg: Mark s3c_hsotg_map_dma()/s3c_hsotg_unmap_dma() inline
+Date: Tue,  6 May 2014 19:37:01 +0200
+Message-Id: <1399397822-351-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If NO_DMA=y, depending on the gcc version:
 
+    drivers/built-in.o: In function `s3c_hsotg_map_dma':
+    s3c-hsotg.c:(.text+0x375b2c): undefined reference to `usb_gadget_map_request'
+    drivers/built-in.o: In function `s3c_hsotg_unmap_dma':
+    s3c-hsotg.c:(.text+0x376a32): undefined reference to `usb_gadget_unmap_request'
+    make[3]: *** [vmlinux] Error 1
 
-From: Mr. Mark Thompson
-Bank of Africa Burkina Faso.
+The obvious fix of making USB_S3C_HSOTG depend on HAS_DMA is a bit overkill,
+as DMA is never actually used. All (two) calls to s3c_hsotg_map_dma() and
+s3c_hsotg_unmap_dma() are protected by a call into the using_dma() checking
+function, which always returns false:
 
-Dear Friend,
-I am the manager account/audit department (Annexe) Bank of African (BOA) in
-Burkina faso. I would like you to indicate your interest to receive this
-transfer of US$10.5 Million; as the beneficiary (next of kin) to our  
-late client
-whom account is presently dormant and awaiting any claimer details  
-shall be send
-to you with drafted application letter to apply.
-Please reply to this email address:(markthompson@voila.fr)
+    static inline bool using_dma(struct s3c_hsotg *hsotg)
+    {
+            return false;   /* support is not complete */
+    }
 
-1. Full name:.........
-2. Current Address:.........
-3. Telephone N°:...........
-4. Occupation:.............
-5. Copy of your identity...
-6. Age:............
-7. Country:........
+Due to the constant return value, gcc optimizes away the calls to
+s3c_hsotg_map_dma() and s3c_hsotg_unmap_dma(). But some versions of gcc
+(e.g. 4.1.2) still emit the functions themselves, causing link errors.
 
-Yours truly
-Mr. Mark Thompson
-Tel: 00226 75 49 66 04
+Marking s3c_hsotg_map_dma()/s3c_hsotg_unmap_dma() inline fixes this.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+This replaces "[PATCH/RFC] usb: gadget: CONFIG_USB_S3C_HSOTG should depend on
+HAS_DMA"
+
+ drivers/usb/gadget/s3c-hsotg.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index 2a9cb674926a..2740042228a4 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -437,9 +437,9 @@ static inline int is_ep_periodic(struct s3c_hsotg_ep *hs_ep)
+  * This is the reverse of s3c_hsotg_map_dma(), called for the completion
+  * of a request to ensure the buffer is ready for access by the caller.
+  */
+-static void s3c_hsotg_unmap_dma(struct s3c_hsotg *hsotg,
+-				struct s3c_hsotg_ep *hs_ep,
+-				struct s3c_hsotg_req *hs_req)
++static inline void s3c_hsotg_unmap_dma(struct s3c_hsotg *hsotg,
++				       struct s3c_hsotg_ep *hs_ep,
++				       struct s3c_hsotg_req *hs_req)
+ {
+ 	struct usb_request *req = &hs_req->req;
+ 
+@@ -861,9 +861,9 @@ static void s3c_hsotg_start_req(struct s3c_hsotg *hsotg,
+  * DMA memory, then we map the memory and mark our request to allow us to
+  * cleanup on completion.
+  */
+-static int s3c_hsotg_map_dma(struct s3c_hsotg *hsotg,
+-			     struct s3c_hsotg_ep *hs_ep,
+-			     struct usb_request *req)
++static inline int s3c_hsotg_map_dma(struct s3c_hsotg *hsotg,
++				    struct s3c_hsotg_ep *hs_ep,
++				    struct usb_request *req)
+ {
+ 	struct s3c_hsotg_req *hs_req = our_req(req);
+ 	int ret;
+-- 
+1.7.9.5
+
