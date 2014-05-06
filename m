@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933492AbaEFAlM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 20:41:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59168 "EHLO mx1.redhat.com"
+	id S933557AbaEFAlT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 20:41:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56284 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933005AbaEFAlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 20:41:11 -0400
+	id S933498AbaEFAlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 20:41:15 -0400
 From: Bandan Das <bsd@redhat.com>
 To: kvm@vger.kernel.org
 Cc: Paolo Bonzini <pbonzini@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         Gleb Natapov <gleb@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 0/3] Emulator Speedups - Optimize Instruction fetches
-Date: Mon,  5 May 2014 20:40:56 -0400
-Message-Id: <1399336859-7227-1-git-send-email-bsd@redhat.com>
+Subject: [RFC PATCH 2/3] KVM: x86: use memory_prepare in fetch helper function
+Date: Mon,  5 May 2014 20:40:58 -0400
+Message-Id: <1399336859-7227-3-git-send-email-bsd@redhat.com>
+In-Reply-To: <1399336859-7227-1-git-send-email-bsd@redhat.com>
+References: <1399336859-7227-1-git-send-email-bsd@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My initial attempt at caching gva->gpa->hva translations. Pretty straight
-forward with details in the individual patches.
+Insn fetch fastpath function. Not that
+arch.walk_mmu->gva_to_gpa can't be used but let's
+piggyback on top of interface meant for our purpose
 
-I haven't yet looked into if there are other possibilities
-to speed things up, just thought of sending these out since 
-the numbers are better
+Signed-off-by: Bandan Das <bsd@redhat.com>
+---
+ arch/x86/kvm/x86.c | 25 +++++++++++++++++--------
+ 1 file changed, 17 insertions(+), 8 deletions(-)
 
-567 cycles/emulated jump instruction
-718 cycles/emulated move instruction
-730 cycles/emulated arithmetic instruction
-946 cycles/emulated memory load instruction
-956 cycles/emulated memory store instruction
-921 cycles/emulated memory RMW instruction
-
-Old realmode.flat numbers from init ctxt changes -
-https://lkml.org/lkml/2014/4/16/848
-
-639 cycles/emulated jump instruction (4.3%)
-776 cycles/emulated move instruction (7.5%)
-791 cycles/emulated arithmetic instruction (11%)
-943 cycles/emulated memory load instruction (5.2%)
-948 cycles/emulated memory store instruction (7.6%)
-929 cycles/emulated memory RMW instruction (9.0%)
-
-Bandan Das (3):
-  KVM: x86: pass ctxt to fetch helper function
-  KVM: x86: use memory_prepare in fetch helper function
-  KVM: x86: cache userspace address for faster fetches
-
- arch/x86/include/asm/kvm_emulate.h |  7 +++++-
- arch/x86/kvm/x86.c                 | 46 ++++++++++++++++++++++++++++----------
- 2 files changed, 40 insertions(+), 13 deletions(-)
-
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 17e3d661..cf69e3b 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -4065,29 +4065,38 @@ static int kvm_read_guest_virt_helper(gva_t addr, void *val, unsigned int bytes,
+ 				      struct x86_exception *exception)
+ {
+ 	void *data = val;
+-	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
+ 	int r = X86EMUL_CONTINUE;
+ 
+ 	while (bytes) {
+-		gpa_t gpa = vcpu->arch.walk_mmu->gva_to_gpa(vcpu, addr, access,
+-							    exception);
+ 		unsigned offset = addr & (PAGE_SIZE-1);
+ 		unsigned toread = min(bytes, (unsigned)PAGE_SIZE - offset);
+ 		int ret;
++		unsigned long uaddr;
+ 
+-		if (gpa == UNMAPPED_GVA)
+-			return X86EMUL_PROPAGATE_FAULT;
+-		ret = kvm_read_guest(vcpu->kvm, gpa, data, toread);
++		ret = ctxt->ops->memory_prepare(ctxt, addr, toread,
++						exception, false,
++						NULL, &uaddr);
++		if (ret != X86EMUL_CONTINUE)
++			return ret;
++
++		if (unlikely(kvm_is_error_hva(uaddr))) {
++			r = X86EMUL_PROPAGATE_FAULT;
++			return r;
++		}
++
++		ret = __copy_from_user(data, (void __user *)uaddr, toread);
+ 		if (ret < 0) {
+ 			r = X86EMUL_IO_NEEDED;
+-			goto out;
++			return r;
+ 		}
+ 
++		ctxt->ops->memory_finish(ctxt, NULL, uaddr);
++
+ 		bytes -= toread;
+ 		data += toread;
+ 		addr += toread;
+ 	}
+-out:
++
+ 	return r;
+ }
+ 
 -- 
 1.8.3.1
 
