@@ -1,100 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105AbaEFLnV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 07:43:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60407 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754483AbaEFLnU (ORCPT
+	id S1754698AbaEFLp7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 07:45:59 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:57907 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570AbaEFLp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 07:43:20 -0400
-Date: Tue, 6 May 2014 13:43:15 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@linaro.org>
-Cc: Morten Rasmussen <morten.rasmussen@arm.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "wangyun@linux.vnet.ibm.com" <wangyun@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mgorman@suse.de" <mgorman@suse.de>
-Subject: Re: [RESEND PATCH V5 0/8] remove cpu_load idx
-Message-ID: <20140506114315.GG11096@twins.programming.kicks-ass.net>
-References: <1397616209-27275-1-git-send-email-alex.shi@linaro.org>
- <20140429145221.GH2639@e103034-lin>
- <5360C15B.9060608@linaro.org>
- <53689E62.9090403@linaro.org>
+	Tue, 6 May 2014 07:45:57 -0400
+Message-ID: <5368CB6E.3090105@hitachi.com>
+Date: Tue, 06 May 2014 20:45:50 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ugCSa1rMkiCAmd9S"
-Content-Disposition: inline
-In-Reply-To: <53689E62.9090403@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Josh Poimboeuf <jpoimboe@redhat.com>,
+        Seth Jennings <sjenning@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+References: <cover.1398958771.git.jpoimboe@redhat.com> <20140505085537.GA32196@gmail.com> <20140505132638.GA14432@treble.redhat.com> <20140505141038.GA27403@localhost.localdomain> <20140505184304.GA15137@gmail.com>
+In-Reply-To: <20140505184304.GA15137@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2014/05/06 3:43), Ingo Molnar wrote:
+> 
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 
+>> On Mon, May 05, 2014 at 08:26:38AM -0500, Josh Poimboeuf wrote:
+>>> On Mon, May 05, 2014 at 10:55:37AM +0200, Ingo Molnar wrote:
+>>>>
+>>>> * Josh Poimboeuf <jpoimboe@redhat.com> wrote:
+>>>>
+>>>>> [...]
+>>>>>
+>>>>> kpatch checks the backtraces of all tasks in stop_machine() to 
+>>>>> ensure that no instances of the old function are running when the 
+>>>>> new function is applied.  I think the biggest downside of this 
+>>>>> approach is that stop_machine() has to idle all other CPUs during 
+>>>>> the patching process, so it inserts a small amount of latency (a few 
+>>>>> ms on an idle system).
+>>>>
+>>>> When live patching the kernel, how about achieving an even 'cleaner' 
+>>>> state for all tasks in the system: to freeze all tasks, as the suspend 
+>>>> and hibernation code (and kexec) does, via freeze_processes()?
+>>>>
+>>>> That means no tasks in the system have any real kernel execution 
+>>>> state, and there's also no problem with long-sleeping tasks, as 
+>>>> freeze_processes() is supposed to be fast as well.
+>>>>
+>>>> I.e. go for the most conservative live patching state first, and relax 
+>>>> it only once the initial model is upstream and is working robustly.
+>>>
+>>> I had considered doing this before, but the problem I found is 
+>>> that many kernel threads are unfreezable.  So we wouldn't be able 
+>>> to check whether its safe to replace any functions in use by those 
+>>> kernel threads.
+>>
+>> OTOH many kernel threads are parkable. Which achieves kind of 
+>> similar desired behaviour: the kernel threads then aren't running.
+>>
+>> And in fact we could implement freezing on top of park for kthreads.
+>>
+>> But unfortunately there are still quite some of them which don't 
+>> support parking.
+> 
+> Well, if distros are moving towards live patching (and they are!), 
+> then it looks rather necessary to me that something scary as flipping 
+> out live kernel instructions with substantially different code should 
+> be as safe as possible, and only then fast.
 
---ugCSa1rMkiCAmd9S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Agreed.
+At this point, I think we'd better take a safer way to live patch.
 
-On Tue, May 06, 2014 at 04:33:38PM +0800, Alex Shi wrote:
->=20
-> >=20
-> > Maybe the predication is reasonable on per task history. but on a cpu
-> > load history, with many tasks rebalance. No testing show current method
-> > is helpful.
-> >=20
-> > For task load change, scheduler has no idea for its future except guess
-> > from its history. but for cpu load change, scheduler know this from task
-> > wakeup and balance, which both under control and its aim.
-> >=20
-> >=20
-> > I think the first patch of this serial has the same effect of LB_LIAS
-> > disable. and previous result show performance is good.
-> >=20
-> > Anyway, I just pushed the following patch to github, maybe fengguang's
-> > testing system will care this.
->=20
-> Fengguang,
->=20
-> Are there any performance change on
-> https://github.com/alexshi/power-scheduling.git noload repository?
+However, I also think if users can accept such freezing wait-time,
+it means they can also accept kexec based "checkpoint-restart" patching.
+So, I think the final goal of the kpatch will be live patching without
+stopping the machine. I'm discussing the issue on github #138, but that is
+off-topic. :)
 
-You forgot to qualify that with the important bit; on _large_ systems.
-Esp. non fully connected numa boxen. Also, I'm not sure Wu has workloads
-that are typical of such systems -- even if he has such machines, which
-I don't know either.
+> If a kernel refuses to patch with certain threads running, that will 
+> drive those kernel threads being fixed and such. It's a deterministic, 
+> recoverable, reportable bug situation, so fixing it should be fast.
 
-Enterprise distro testing has _some_ of that, but the very sad truth is
-that most enterprise users lag behind at least a full release cycle. So
-by the time people start using the kernel, its so old nobody really
-cares anymore :-(
+That's nice to fix that. As Frederic said, we can make all kthreads
+park-able.
+
+> We learned these robustness lessons the hard way with kprobes and 
+> ftrace dynamic code patching... which are utterly simple compared to 
+> live kernel patching!
+
+Yeah, thanks for your help :)
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
-
---ugCSa1rMkiCAmd9S
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTaMrTAAoJEHZH4aRLwOS6dtkQAJcSaP54jjn2WMTa+PAFJROn
-ktjNsDY+Bikr2JDJaPr7LzFb8QQ/MQS7sNOn+d9G47OQ7jJuJY5wCKzNfyJtUz8G
-KWdm+UbqlfeFjXL1uSCFXXan5BWlWkml1dDVv8FBgG4p7ds0Ism2Excz+aDhNfET
-rJ1dB6flTuhk5ssJ29zJRYmI3tmgqU0cJqgzPhp7r+etiy+Q9YSuGVzDGB6p7D49
-Ro4gCs2NEVaxAJAx1743jKHmCnJzs7LUGN/xvgUZcS+hcF2tg5fhQH0aoNqyS8zF
-mzlGLbKckQo4mx7t3tliC83Cq31//5KQqoLv/hhiP442MdcRKA0LPpbaMyr0jNhk
-9UBqFlFIHbrCE13FNXgGasH6XKVMYZo+G7MugiW3AqeWWkGFDp3szGxX69zMw75x
-Zpsf58tQwp9b6H+T0JqCCAu2DCNfmYNtMH1ZZXnPh+u9hJ2iQeVw0As2C+AL3qme
-hZbGmrGlgOruSWwKmPE46YqUfa5lbUHzAsNkaZJyDJxlKynHukxs3Rggrp8w1AAF
-Gazf0KcOOzVLKruvC3SNdRDPbeQUV9z2aaGtBAC6pTsl+NRC61Jfnr4VBnbrp1Zk
-IrvhE85vDl3CMtljXpNfJiTANXIB5GyJH5bvsEEkXYtoBv3rtHqqM83auBa72fCi
-w99+4mE6/edA2zHCx67D
-=GhrS
------END PGP SIGNATURE-----
-
---ugCSa1rMkiCAmd9S--
