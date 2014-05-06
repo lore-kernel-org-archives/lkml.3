@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784AbaEFUNb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 16:13:31 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:49543 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922AbaEFUN3 (ORCPT
+	id S1754798AbaEFUOa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 16:14:30 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:54856 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207AbaEFUO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 16:13:29 -0400
-Date: Tue, 6 May 2014 16:13:24 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] arm: put_user: fix possible data corruption in
- put_user
-In-Reply-To: <1399360312-13843-1-git-send-email-a.ryabinin@samsung.com>
-Message-ID: <alpine.LFD.2.11.1405061610450.980@knanqh.ubzr>
-References: <alpine.LFD.2.11.1405050950410.980@knanqh.ubzr> <1399360312-13843-1-git-send-email-a.ryabinin@samsung.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Tue, 6 May 2014 16:14:29 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: Re: intel_rapl: No such device
+Date: Tue, 6 May 2014 22:14:24 +0200
+User-Agent: KMail/1.13.7 (Linux/3.15.0-031500rc3-generic; KDE/4.13.0; x86_64; ; )
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+References: <201404261224.45353@pali> <20140428035157.6e9458e6@jacob-desktop>
+In-Reply-To: <20140428035157.6e9458e6@jacob-desktop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed;
+  boundary="nextPart2005404.C325AhxMKu";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201405062214.24768@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 May 2014, Andrey Ryabinin wrote:
+--nextPart2005404.C325AhxMKu
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-> According to arm procedure call standart r2 register is call-cloberred.
-> So after the result of x expression was put into r2 any following
-> function call in p may overwrite r2. To fix this, the result of p
-> expression must be saved to the temporary variable before the
-> assigment x expression to __r2.
-> 
-> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-> Reviewed-by: Nicolas Pitre <nico@linaro.org>
-> Cc: stable@vger.kernel.org
+On Monday 28 April 2014 12:51:57 Jacob Pan wrote:
+> On Sat, 26 Apr 2014 12:24:45 +0200
+>=20
+> Pali Roh=C3=A1r <pali.rohar@gmail.com> wrote:
+> > Hello,
+> >=20
+> > on intel haswell mobile cpu it is not possible to load
+> > intel_rapl driver. Modprobe will show this error message:
+> >=20
+> > intel_rapl.ko': -1 No such device
+> > intel_rapl: driver does not support CPU family 6 model 60
+> >=20
+> > Is not intel mobile cpu supported by intel_rapl?
+>=20
+> intel_rapl should support this model. I just haven't got a
+> chance to test on this particular part.
+> I will send out a patch soon and CC you.
+>=20
+> Thanks,
+>=20
+> Jacob
+>=20
 
-Please push this patch into Russell's patch system.
+Hello, do you have something new about this?
 
-Thanks.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-> ---
-> Since v1:
->  - tmp_p variable renamed to __tmp_p
->  - added Reviewed-by tag
->  - added Cc: stable@vger.kernel.org
-> 
->  arch/arm/include/asm/uaccess.h | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/include/asm/uaccess.h b/arch/arm/include/asm/uaccess.h
-> index 12c3a5d..75d9579 100644
-> --- a/arch/arm/include/asm/uaccess.h
-> +++ b/arch/arm/include/asm/uaccess.h
-> @@ -171,8 +171,9 @@ extern int __put_user_8(void *, unsigned long long);
->  #define __put_user_check(x,p)							\
->  	({								\
->  		unsigned long __limit = current_thread_info()->addr_limit - 1; \
-> +		const typeof(*(p)) __user *__tmp_p = (p);		\
->  		register const typeof(*(p)) __r2 asm("r2") = (x);	\
-> -		register const typeof(*(p)) __user *__p asm("r0") = (p);\
-> +		register const typeof(*(p)) __user *__p asm("r0") = __tmp_p; \
->  		register unsigned long __l asm("r1") = __limit;		\
->  		register int __e asm("r0");				\
->  		switch (sizeof(*(__p))) {				\
-> -- 
-> 1.8.5.5
-> 
+--nextPart2005404.C325AhxMKu
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlNpQqAACgkQi/DJPQPkQ1If7wCgnbnL1Pt0jSAuA9ewx4SoMMBj
+LXoAoLRABqyxX4ZYlEDoI6N8TQCPq8MQ
+=k2+K
+-----END PGP SIGNATURE-----
+
+--nextPart2005404.C325AhxMKu--
