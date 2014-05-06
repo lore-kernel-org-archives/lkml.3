@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944AbaEFQb1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 12:31:27 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:43010 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799AbaEFQbZ (ORCPT
+	id S1752020AbaEFQbj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 12:31:39 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:64658 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963AbaEFQbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 12:31:25 -0400
-Date: Tue, 6 May 2014 09:31:24 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: Ilya Dryomov <ilya.dryomov@inktank.com>
-cc: Chunwei Chen <tuxoko@gmail.com>,
-        Ceph Development <ceph-devel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ceph: fix corruption when using page_count 0 page in
- rbd
-In-Reply-To: <CALFYKtBovU83Y5WDsYq1Kzi6=QtHPKuefxJ5Ej5bdFdVADCNzQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1405060930450.26929@cobra.newdream.net>
-References: <1398227709-4926-1-git-send-email-tuxoko@gmail.com> <CALFYKtBovU83Y5WDsYq1Kzi6=QtHPKuefxJ5Ej5bdFdVADCNzQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 6 May 2014 12:31:37 -0400
+Date: Tue, 6 May 2014 12:31:34 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/10] workqueue: async worker destruction
+Message-ID: <20140506163134.GE27738@htj.dyndns.org>
+References: <1398571754-12443-1-git-send-email-laijs@cn.fujitsu.com>
+ <1398571754-12443-4-git-send-email-laijs@cn.fujitsu.com>
+ <20140505150217.GH11231@htj.dyndns.org>
+ <CACvQF53z7=kRxmEMqguxNOzrpb=E3zQsKptBJzRC1nm+6AKp=g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACvQF53z7=kRxmEMqguxNOzrpb=E3zQsKptBJzRC1nm+6AKp=g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 May 2014, Ilya Dryomov wrote:
-> On Wed, Apr 23, 2014 at 8:35 AM, Chunwei Chen <tuxoko@gmail.com> wrote:
-> > It has been reported that using ZFSonLinux on rbd will result in memory
-> > corruption. The bug report can be found here:
-> >
-> > https://github.com/zfsonlinux/spl/issues/241
-> > http://tracker.ceph.com/issues/7790
-> >
-> > The reason is that ZFS will send pages with page_count 0 into rbd, which in
-> > turns send them to tcp_sendpage. However, tcp_sendpage cannot deal with
-> > page_count 0, as it will do get_page and put_page, and erroneously free the
-> > page.
-> >
-> > This type of issue has been noted before, and handled in iscsi, drbd,
-> > etc. So, rbd should also handle this. This fix address this issue by fall back
-> > to slower sendmsg when page_count 0 detected.
-> >
-> > Cc: Sage Weil <sage@inktank.com>
-> > Cc: Yehuda Sadeh <yehuda@inktank.com>
-> > Cc: stable@vger.kernel.org
-> > Signed-off-by: Chunwei Chen <tuxoko@gmail.com>
-> > ---
-> >  net/ceph/messenger.c | 20 +++++++++++++++++++-
-> >  1 file changed, 19 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-> > index 4f55f9c..9a964e7 100644
-> > --- a/net/ceph/messenger.c
-> > +++ b/net/ceph/messenger.c
-> > @@ -557,7 +557,7 @@ static int ceph_tcp_sendmsg(struct socket *sock, struct kvec *iov,
-> >         return r;
-> >  }
-> >
-> > -static int ceph_tcp_sendpage(struct socket *sock, struct page *page,
-> > +static int __ceph_tcp_sendpage(struct socket *sock, struct page *page,
-> >                      int offset, size_t size, bool more)
-> >  {
-> >         int flags = MSG_DONTWAIT | MSG_NOSIGNAL | (more ? MSG_MORE : MSG_EOR);
-> > @@ -570,6 +570,24 @@ static int ceph_tcp_sendpage(struct socket *sock, struct page *page,
-> >         return ret;
-> >  }
-> >
-> > +static int ceph_tcp_sendpage(struct socket *sock, struct page *page,
-> > +                    int offset, size_t size, bool more)
-> > +{
-> > +       int ret;
-> > +       struct kvec iov;
-> > +
-> > +       /* sendpage cannot properly handle pages with page_count == 0,
-> > +        * we need to fallback to sendmsg if that's the case */
-> > +       if (page_count(page) >= 1)
-> > +               return __ceph_tcp_sendpage(sock, page, offset, size, more);
-> > +
-> > +       iov.iov_base = kmap(page) + offset;
-> > +       iov.iov_len = size;
-> > +       ret = ceph_tcp_sendmsg(sock, &iov, 1, size, more);
-> > +       kunmap(page);
-> > +
-> > +       return ret;
-> > +}
+Hello, Lai.
+
+On Wed, May 07, 2014 at 12:27:13AM +0800, Lai Jiangshan wrote:
+> I considered several names (searching from an English dictionary)
+> assoc/pin/bind/attach/add...
+
+Yeah, naming is hard.
+
+> The last I chose the winner "bind" from the last two candidates assoc&bind.
 > 
-> Looks good to me.  Have you tested it with pre "Fix crash when using
-> ZFS on Ceph rbd" ZFS?
+> worker_OP[_to]_pool()
+>         OP(assoc/pin/bind/attach/add) the worker to OP_list of the
+> pool, do cpu-binding for the worker
+> OP_list
+>         the list in the pool for the workers, iterating(when
+> cpu-binding and worker concurrency [un]bound)
+> OP_entry
+>         worker entry for OP_list, for  iterating(when cpu-binding and
+> worker concurrency [un]bound)
 
-Once this looks ready, we should perhaps stick it in for-linus so that it 
-can go into 3.15.
+So, VERB_list or VERB_entry doesn't really work well unless they're
+really for a list which is specifically created for the action.
 
-sage
+> OP_mutex
+>         protects worker_OP_to_pool() protect cpu-binding for the workers,
+>         protect iterating(when cpu-binding and worker concurrency [un]bound)
+> 
+> every sentence has "bind", so I think "bind_mutex" is proper.
+> since I used "bind_mutex", I will use bind_list and worker_bind_pool().
+
+I don't think it's necessary for all those entries to share the same
+prefix.  It could have some benefits but as long as the locking
+requirements are clearly indicated in the comment, I don't think the
+benefit is large enough to overrule the downsides of such naming.
+
+> I don't refuse to use worker_attach_to_pool(), but I hope you choose
+> other names for me:
+> 
+> attach_list VS bind_list
+> attach_mutex VS bind_mutex
+
+Just use worker->node and pool->workers for the list.  I don't think
+attach_mutex sounds too bad.
+
+> I guess they will be attach_list&attach_mutex.  it's a little pity to
+> drop the nice name bind_mutex.
+
+Why is bind_mutex any better than attach_mutex?
+
+Thanks.
+
+-- 
+tejun
