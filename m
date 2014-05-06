@@ -1,36 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005AbaEFRBt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 13:01:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43610 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751876AbaEFRBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 13:01:46 -0400
-Message-ID: <5369156F.1070104@redhat.com>
-Date: Tue, 06 May 2014 19:01:35 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752066AbaEFRB4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 13:01:56 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46575 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750834AbaEFRBy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 13:01:54 -0400
+Date: Tue, 6 May 2014 18:00:39 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 3/3] perf tools: Add libdw DWARF post unwind support for
+ ARM64
+Message-ID: <20140506170039.GB13677@arm.com>
+References: <1399391733-11927-1-git-send-email-jean.pihet@linaro.org>
+ <1399391733-11927-4-git-send-email-jean.pihet@linaro.org>
 MIME-Version: 1.0
-To: Bandan Das <bsd@redhat.com>, kvm@vger.kernel.org
-CC: Gleb Natapov <gleb@kernel.org>, Jan Kiszka <jan.kiszka@siemens.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] Emulate VMXON region correctly
-References: <1399357158-8305-1-git-send-email-bsd@redhat.com>
-In-Reply-To: <1399357158-8305-1-git-send-email-bsd@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399391733-11927-4-git-send-email-jean.pihet@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 06/05/2014 08:19, Bandan Das ha scritto:
-> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=54521
->
-> The vmxon region is unused by nvmx, but adding these checks
-> are probably harmless and may detect buggy L1 hypervisors in
-> the future!
+Hi Jean,
 
-Applied to kvm/queue, unit test patches are welcome (hint, hint!).
+On Tue, May 06, 2014 at 04:55:33PM +0100, Jean Pihet wrote:
+> Adding libdw DWARF post unwind support, which is part
+> of elfutils-devel/libdw-dev package from version 0.158.
+> 
+> Note: the libdw code needs some support for dwarf unwinding
+> on ARM64, this code is submitted seperately on the elfutils
+> ML.
+> 
+> The new code is contained in unwin-libdw.c object, and
+> implements unwind__get_entries unwind interface function.
 
-Paolo
+Are you planning to implement support for 32-bit ARM too? If so, we'll need
+compat handling here again (your favourite!).
+
+> +bool libdw__arch_set_initial_registers(Dwfl_Thread *thread, void *arg)
+> +{
+> +	struct unwind_info *ui = arg;
+> +	struct regs_dump *user_regs = &ui->sample->user_regs;
+> +	Dwarf_Word dwarf_regs[PERF_REG_ARM64_MAX];
+
+Shouldn't this be PERF_REG_ARM64_MAX - 1?
+
+Will
