@@ -1,75 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642AbaEFXMx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 19:12:53 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:59726 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752244AbaEFXMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 19:12:52 -0400
-Date: Wed, 7 May 2014 00:12:51 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm radeon mullins support.
-Message-ID: <alpine.DEB.2.00.1405070011210.22006@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751517AbaEFX1Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 19:27:24 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:43748 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867AbaEFX1X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 19:27:23 -0400
+Message-ID: <1399418839.15399.106.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: josh@joshtriplett.org
+Cc: David Miller <davem@davemloft.net>, xiyou.wangcong@gmail.com,
+        andi@firstfloor.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com,
+        ak@linux.intel.com
+Date: Tue, 06 May 2014 16:27:19 -0700
+In-Reply-To: <20140506225039.GA22331@cloud>
+References: <CAM_iQpUgj7BqpzRL070DEGQ32SWwN68BRgM5DtFqvBLjGGOLQA@mail.gmail.com>
+	 <20140506.164410.15377655213427639.davem@davemloft.net>
+	 <20140506210815.GB21791@cloud>
+	 <20140506.171117.1365037653422161013.davem@davemloft.net>
+	 <20140506225039.GA22331@cloud>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2014-05-06 at 15:50 -0700, josh@joshtriplett.org wrote:
 
-This is support for the new AMD mullins APU, it pretty much just adds 
-support to the driver in the all the right places, and is pretty low risk 
-wrt other GPUs, however I'll leave it up to you if it fits with the 
-current release cycle,
+> There's something very wrong if 2.4.x works for
+> cases that 3.x doesn't; that would be a serious regression.
 
-Dave.
-
-The following changes since commit 2a1235e53bed8fa111e1c1ee2e7d8d91efa71ebc:
-
-  Merge branch 'drm-nouveau-next' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes (2014-05-07 09:06:21 +1000)
-
-are available in the git repository at:
+You'll have to ask Linus to bring back i386 support then,
+I believe it was removed in 3.8
 
 
-  git://people.freedesktop.org/~airlied/linux drm-radeon-mullins
 
-for you to fetch changes up to 995c376e89992e756cf844b86209eb4ceb5ebe27:
-
-  Merge branch 'mullins' of git://people.freedesktop.org/~deathsimple/linux into drm-fixes (2014-05-07 09:10:28 +1000)
-
-----------------------------------------------------------------
-
-Alex Deucher (1):
-      drm/radeon: dpm updates for KV/KB
-
-Dave Airlie (1):
-      Merge branch 'mullins' of git://people.freedesktop.org/~deathsimple/linux into drm-fixes
-
-Leo Liu (1):
-      drm/radeon: add Mullins VCE support
-
-Samuel Li (6):
-      drm/radeon: add Mullins chip family
-      drm/radeon: update cik init for Mullins.
-      drm/radeon: add Mullins UVD support.
-      drm/radeon: add Mullins dpm support.
-      drm/radeon: modesetting updates for Mullins.
-      drm/radeon: add pci ids for Mullins
-
- drivers/gpu/drm/radeon/atombios_crtc.c |   5 +-
- drivers/gpu/drm/radeon/cik.c           |  71 +++++++++++++++++
- drivers/gpu/drm/radeon/kv_dpm.c        | 135 ++++++++++++++++++++++++++-------
- drivers/gpu/drm/radeon/radeon_asic.c   |   1 +
- drivers/gpu/drm/radeon/radeon_device.c |   1 +
- drivers/gpu/drm/radeon/radeon_family.h |   1 +
- drivers/gpu/drm/radeon/radeon_pm.c     |   1 +
- drivers/gpu/drm/radeon/radeon_ucode.h  |   1 +
- drivers/gpu/drm/radeon/radeon_uvd.c    |   1 +
- drivers/gpu/drm/radeon/radeon_vce.c    |   1 +
- include/drm/drm_pciids.h               |  16 ++++
- 11 files changed, 203 insertions(+), 31 deletions(-)
