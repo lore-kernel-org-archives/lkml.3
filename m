@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934652AbaEFJf6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 05:35:58 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:53224 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934526AbaEFJfw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934626AbaEFJfw (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 6 May 2014 05:35:52 -0400
-Date: Tue, 6 May 2014 11:35:48 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: Richard Weinberger <richard.weinberger@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH/RFC] Deprecate BUG/BUG_ON in favour of
- BUG_AND_HALT/BUG_AND_HALT_ON
-Message-ID: <20140506093548.GA27476@gmail.com>
-References: <1398870207-52889-1-git-send-email-paul.gortmaker@windriver.com>
- <CAFLxGvzhd6jwGsu9eOBtXu92JcH1PnZsR9EB_h5LihYRNS-hyQ@mail.gmail.com>
- <20140506073500.GA26303@gmail.com>
- <5368987E.7040608@nod.at>
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:49633 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934526AbaEFJfh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 05:35:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5368987E.7040608@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140403180644.GD21565@kroah.com>
+References: <20140402144219.4cafbe37@gandalf.local.home>
+	<20140402221212.GD16570@mguzik.redhat.com>
+	<CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
+	<alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz>
+	<yw1x7g76k62z.fsf@unicorn.mansr.com>
+	<CA+bK7J57f8mHC0=UWrFG1MyyURb2hU6p2K1RTsHoWRNUz9LWLw@mail.gmail.com>
+	<20140403180644.GD21565@kroah.com>
+Date: Tue, 6 May 2014 04:35:35 -0500
+Message-ID: <CAMP44s3BeUSBqTm=nJbcOnNqZuqBX3q1O47645LV_wgvbV2TgA@mail.gmail.com>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Tim Bird <tbird20d@gmail.com>,
+        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mateusz Guzik <mguzik@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 3, 2014 at 12:06 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Thu, Apr 03, 2014 at 08:17:33AM -0700, Tim Bird wrote:
+>>
+>> I had no idea systemd was so verbose and was abusing the kernel
+>> log buffers so badly.  I'm not a big fan of the rate-limiting, as this just
+>> seems to encourage this kind of abuse.
+>
+> That was a bug in systemd, and has been fixed up in the latest versions,
+> so it shouldn't happen anymore, even with debugging enabled.
 
-* Richard Weinberger <richard@nod.at> wrote:
+Excellent. Did Kay Sievers accept it was a bug? From what I can see
+the bug report is still open[1], and your patch to rename the
+configuration to systemd.debug received unanimous consensus in the
+mailing list, yet it wasn't applied.
 
-> >> I like the idea but not the name.
-> >> What about DIE() and DIE_ON()?
-> > 
-> > CRASH_ON() might be a suggestive name as well, as from the user's 
-> > point of view we are crashing her system.
-> 
-> I fear such users will think "Why should I crash the kernel?". ;-)
+So I bet the answer is no, he never accepted it, and we should expect
+these issues to continue... it's only a matter of time before we hit
+the next breakage.
 
-That's exactly the impression that the naming should create in kernel 
-developers why try to add CRASH_ON() in the future: only do it as an 
-absolute last resort.
+[1] https://bugs.freedesktop.org/show_bug.cgi?id=76935
 
-WARN_ON() and other non-destructive ways to deal with error conditions 
-are almost always preferred.
-
-Thanks,
-
-	Ingo
+-- 
+Felipe Contreras
