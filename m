@@ -1,36 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938AbaEFTLM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 15:11:12 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45899 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444AbaEFTLJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 15:11:09 -0400
-Date: Tue, 6 May 2014 20:11:05 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: IMA & truncate
-Message-ID: <20140506191105.GV18016@ZenIV.linux.org.uk>
-References: <5368E46B.9050708@samsung.com>
- <20140506165901.GS18016@ZenIV.linux.org.uk>
- <1399401557.9468.21.camel@dhcp-9-2-203-236.watson.ibm.com>
+	id S1754047AbaEFTL4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 15:11:56 -0400
+Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:29559
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751595AbaEFTLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 15:11:54 -0400
+X-WSS-ID: 0N562NC-07-BT0-02
+X-M-MSG: 
+Message-ID: <536933E9.6040404@amd.com>
+Date: Tue, 6 May 2014 14:11:37 -0500
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399401557.9468.21.camel@dhcp-9-2-203-236.watson.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joerg Roedel <joro@8bytes.org>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <kim.naru@amd.com>, <jay.cornwall@amd.com>
+Subject: Re: [PATCH] iommu/amd: Take mmap_sem when calling get_user_pages
+References: <1398724066-3730-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <20140506181438.GD12376@8bytes.org>
+In-Reply-To: <20140506181438.GD12376@8bytes.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(199002)(189002)(51704005)(377454003)(479174003)(87936001)(76482001)(99396002)(83506001)(46102001)(81542001)(97736001)(86362001)(81342001)(87266999)(54356999)(77096999)(4396001)(77982001)(50986999)(84676001)(65816999)(76176999)(2009001)(74502001)(31966008)(74662001)(19580405001)(83322001)(80316001)(92566001)(19580395003)(44976005)(85852003)(83072002)(80022001)(65806001)(79102001)(20776003)(47776003)(64706001)(23756003)(64126003)(36756003)(21056001)(68736004)(92726001)(101416001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR02MB113;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-PRVS: 0203C93D51
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 02:39:17PM -0400, Mimi Zohar wrote:
+On 5/6/2014 1:14 PM, Joerg Roedel wrote:
+> On Mon, Apr 28, 2014 at 05:27:46PM -0500, Suthikulpanit, Suravee wrote:
+>> From: Jay Cornwall <jay.cornwall@amd.com>
+>>
+>> get_user_pages requires caller to hold a read lock on mmap_sem.
+>
+> Right, but can't we just switch to get_user_pages_fast instead?
+>
+>
+> 	Joerg
+>
 
-> Al, you're not going to like this, but ima_calc_file_hash() calls
-> ima_calc_file_hash_tfm(), which already sets/unsets FMODE_READ in order
-> to calculate the file hash.
+You're right. I think it can. Let me spin out another patch.
 
-And if it happens to be on NFS and server says "no reads for you"?
+Suravee
+
