@@ -1,242 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486AbaEFXhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 19:37:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43013 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaEFXhQ (ORCPT
+	id S1752904AbaEFXhy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 19:37:54 -0400
+Received: from unicorn.mansr.com ([81.2.72.234]:37134 "EHLO unicorn.mansr.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751133AbaEFXhx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 19:37:16 -0400
-Date: Tue, 6 May 2014 16:37:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
+	Tue, 6 May 2014 19:37:53 -0400
+From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
 To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, pmladek@suse.cz,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH] printk: Remove separate printk_sched buffers and use
- printk buf instead
-Message-Id: <20140506163714.058937e8d6ec17caca406fb7@linux-foundation.org>
-In-Reply-To: <20140506070446.33bde17c@gandalf.local.home>
-References: <20140505191846.35aa6f9b@gandalf.local.home>
-	<20140506094557.GA9291@quack.suse.cz>
-	<20140506070446.33bde17c@gandalf.local.home>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "the arch\/x86 maintainers" <x86@kernel.org>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [ABOMINATION] x86: Fast interrupt return to userspace
+References: <e94ab903e725eaf9d98e56f3043878bde7fc1b58.1399408110.git.luto@amacapital.net>
+	<CA+55aFy6NzQOfyne4xLqQQCvuhpi-KSXnJNLjXTRc7+4ChPAnQ@mail.gmail.com>
+	<CA+55aFw_Dj7Lx_bE0B3mDxMUNz_K1yc=saziC9dmA_dKSkFWiw@mail.gmail.com>
+	<CA+55aFwix8dSDQ1N1Qu2-9rzGxWeeGAv4fSPVQWGo1YNzJoCoA@mail.gmail.com>
+	<CALCETrVHj1rd=ma-dW8C9RNyQNj3smRAyevWJSQXmvgshbQb6w@mail.gmail.com>
+	<CA+55aFx8UQGS_anYJrSkkzeM+vx97-2sAUTTE6ZxDJNUKTkD0Q@mail.gmail.com>
+	<20140506184922.61ba640b@gandalf.local.home>
+Date: Wed, 07 May 2014 00:37:51 +0100
+In-Reply-To: <20140506184922.61ba640b@gandalf.local.home> (Steven Rostedt's
+	message of "Tue, 6 May 2014 18:49:22 -0400")
+Message-ID: <yw1xeh06wka8.fsf@unicorn.mansr.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 May 2014 07:04:46 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
+Steven Rostedt <rostedt@goodmis.org> writes:
 
-> On Tue, 6 May 2014 11:45:57 +0200
-> Jan Kara <jack@suse.cz> wrote:
-> 
-> > On Mon 05-05-14 19:18:46, Steven Rostedt wrote:
-> > > To prevent deadlocks with doing a printk inside the scheduler,
-> > > printk_sched() was created. The issue is that printk has a console_sem
-> > > that it can grab and release. The release does a wake up if there's a
-> > > task pending on the sem, and this wake up grabs the rq locks that is
-> > > held in the scheduler. This leads to a possible deadlock if the wake up
-> > > uses the same rq as the one with the rq lock held already.
-> > > 
-> > > What printk_sched() does is to save the printk write in a per cpu buffer
-> > > and sets the PRINTK_PENDING_SCHED flag. On a timer tick, if this flag is
-> > > set, the printk() is done against the buffer.
-> > > 
-> > > There's a couple of issues with this approach.
-> > > 
-> > > 1) If two printk_sched()s are called before the tick, the second one
-> > > will overwrite the first one.
-> > > 
-> > > 2) The temporary buffer is 512 bytes and is per cpu. This is a quite a
-> > > bit of space wasted for something that is seldom used.
-> > > 
-> > > In order to remove this, the printk_sched() can use the printk buffer
-> > > instead, and delay the console_trylock()/console_unlock() to the queued
-> > > work.
-> > > 
-> > > Because printk_sched() would then be taking the logbuf_lock, the
-> > > logbuf_lock must not be held while doing anything that may call into the
-> > > scheduler functions, which includes wake ups. Unfortunately, printk()
-> > > also has a console_sem that it uses, and on release, the
-> > > up(&console_sem) may do a wake up of any pending waiters. This must be
-> > > avoided while holding the logbuf_lock.
-> > > 
-> > > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> >   Andrew already has this patch in -mm tree AFAIK...
-> 
-> Ah, and somebody told me that it wasn't in linux-next. But looking at
-> it now, it seems to be.
-> 
+> On Tue, 6 May 2014 14:48:50 -0700
+> Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>
+>> Yeah, it's disgusting. I think it is worth fixing to get better
+>> numbers (it *would* be very interesting to hear whether this plus the
+>> kernel 'retq' thing actually makes real device interrupt overhead
+>> lower), but I'd be very wary of using it in production.
+>
+> Darn it. I was actually hoping that someone else could have the
+> reputation of doing "I can't believe they actually did this" code in the
+> kernel.
 
-What I have in -next is very different from this version of the patch. 
-What's happening?
+Hey, I tried: http://article.gmane.org/gmane.linux.kernel/1594134
 
-
-From: Steven Rostedt <rostedt@goodmis.org>
-Subject: printk: remove separate printk_sched buffers and use printk buf instead
-
-To prevent deadlocks with doing a printk inside the scheduler,
-printk_sched() was created.  The issue is that printk has a console_sem
-that it can grab and release.  The release does a wake up if there's a
-task pending on the sem, and this wake up grabs the rq locks that is held
-in the scheduler.  This leads to a possible deadlock if the wake up uses
-the same rq as the one with the rq lock held already.
-
-What printk_sched() does is to save the printk write in a per cpu buffer
-and sets the PRINTK_PENDING_SCHED flag.  On a timer tick, if this flag is
-set, the printk() is done against the buffer.
-
-There's a couple of issues with this approach.
-
-1) If two printk_sched()s are called before the tick, the second one
-   will overwrite the first one.
-
-2) The temporary buffer is 512 bytes and is per cpu.  This is a quite a
-   bit of space wasted for something that is seldom used.
-
-In order to remove this, the printk_sched() can use the printk buffer
-instead, and delay the console_trylock()/console_unlock() to the queued
-work.
-
-Because printk_sched() would then be taking the logbuf_lock, the
-logbuf_lock must not be held while doing anything that may call into the
-scheduler functions, which includes wake ups.  Unfortunately, printk()
-also has a console_sem that it uses, and on release, the up(&console_sem)
-may do a wake up of any pending waiters.  This must be avoided while
-holding the logbuf_lock.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- kernel/printk/printk.c |   47 ++++++++++++++++++++++++---------------
- 1 file changed, 29 insertions(+), 18 deletions(-)
-
-diff -puN kernel/printk/printk.c~printk-remove-separate-printk_sched-buffers-and-use-printk-buf-instead kernel/printk/printk.c
---- a/kernel/printk/printk.c~printk-remove-separate-printk_sched-buffers-and-use-printk-buf-instead
-+++ a/kernel/printk/printk.c
-@@ -68,6 +68,9 @@ int console_printk[4] = {
- 	DEFAULT_CONSOLE_LOGLEVEL,	/* default_console_loglevel */
- };
- 
-+/* Deferred messaged from sched code are marked by this special level */
-+#define SCHED_MESSAGE_LOGLEVEL -2
-+
- /*
-  * Low level drivers may need that to know if they can schedule in
-  * their unblank() callback or not. So let's export it.
-@@ -229,7 +232,9 @@ struct printk_log {
- };
- 
- /*
-- * The logbuf_lock protects kmsg buffer, indices, counters.
-+ * The logbuf_lock protects kmsg buffer, indices, counters.  This can be taken
-+ * within the scheduler's rq lock. It must be released before calling
-+ * console_unlock() or anything else that might wake up a process.
-  */
- static DEFINE_RAW_SPINLOCK(logbuf_lock);
- 
-@@ -1577,14 +1582,19 @@ asmlinkage int vprintk_emit(int facility
- 	static int recursion_bug;
- 	static char textbuf[LOG_LINE_MAX];
- 	char *text = textbuf;
--	size_t text_len;
-+	size_t text_len = 0;
- 	enum log_flags lflags = 0;
- 	unsigned long flags;
- 	int this_cpu;
- 	int printed_len = 0;
-+	bool in_sched = false;
- 	/* cpu currently holding logbuf_lock in this function */
- 	static volatile unsigned int logbuf_cpu = UINT_MAX;
- 
-+	if (level == SCHED_MESSAGE_LOGLEVEL) {
-+		level = -1;
-+		in_sched = true;
-+	}
- 
- 	boot_delay_msec(level);
- 	printk_delay();
-@@ -1631,7 +1641,12 @@ asmlinkage int vprintk_emit(int facility
- 	 * The printf needs to come first; we need the syslog
- 	 * prefix which might be passed-in as a parameter.
- 	 */
--	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
-+	if (in_sched)
-+		text_len = scnprintf(text, sizeof(textbuf),
-+				     KERN_WARNING "[sched_delayed] ");
-+
-+	text_len += vscnprintf(text + text_len,
-+			       sizeof(textbuf) - text_len, fmt, args);
- 
- 	/* mark and strip a trailing newline */
- 	if (text_len && text[text_len-1] == '\n') {
-@@ -1713,6 +1728,10 @@ asmlinkage int vprintk_emit(int facility
- 	lockdep_on();
- 	local_irq_restore(flags);
- 
-+	/* If called from the scheduler, we can not call up(). */
-+	if (in_sched)
-+		return printed_len;
-+
- 	/*
- 	 * Disable preemption to avoid being preempted while holding
- 	 * console_sem which would prevent anyone from printing to console
-@@ -2531,21 +2550,19 @@ late_initcall(printk_late_init);
- /*
-  * Delayed printk version, for scheduler-internal messages:
-  */
--#define PRINTK_BUF_SIZE		512
--
- #define PRINTK_PENDING_WAKEUP	0x01
--#define PRINTK_PENDING_SCHED	0x02
-+#define PRINTK_PENDING_OUTPUT	0x02
- 
- static DEFINE_PER_CPU(int, printk_pending);
--static DEFINE_PER_CPU(char [PRINTK_BUF_SIZE], printk_sched_buf);
- 
- static void wake_up_klogd_work_func(struct irq_work *irq_work)
- {
- 	int pending = __this_cpu_xchg(printk_pending, 0);
- 
--	if (pending & PRINTK_PENDING_SCHED) {
--		char *buf = __get_cpu_var(printk_sched_buf);
--		pr_warn("[sched_delayed] %s", buf);
-+	if (pending & PRINTK_PENDING_OUTPUT) {
-+		/* If trylock fails, someone else is doing the printing */
-+		if (console_trylock())
-+			console_unlock();
- 	}
- 
- 	if (pending & PRINTK_PENDING_WAKEUP)
-@@ -2569,21 +2586,15 @@ void wake_up_klogd(void)
- 
- int printk_sched(const char *fmt, ...)
- {
--	unsigned long flags;
- 	va_list args;
--	char *buf;
- 	int r;
- 
--	local_irq_save(flags);
--	buf = __get_cpu_var(printk_sched_buf);
--
- 	va_start(args, fmt);
--	r = vsnprintf(buf, PRINTK_BUF_SIZE, fmt, args);
-+	r = vprintk_emit(0, SCHED_MESSAGE_LOGLEVEL, NULL, 0, fmt, args);
- 	va_end(args);
- 
--	__this_cpu_or(printk_pending, PRINTK_PENDING_SCHED);
-+	__this_cpu_or(printk_pending, PRINTK_PENDING_OUTPUT);
- 	irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
--	local_irq_restore(flags);
- 
- 	return r;
- }
-_
+-- 
+Måns Rullgård
+mans@mansr.com
