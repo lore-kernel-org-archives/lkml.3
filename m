@@ -1,119 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158AbaEFUkp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 16:40:45 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:50107 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458AbaEFUko (ORCPT
+	id S1755535AbaEFUk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 16:40:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40607 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755442AbaEFUkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 16:40:44 -0400
-MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <1399406800.13799.20.camel@buesod1.americas.hpqcorp.net>
-References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
- <CAKgNAkjuU68hgyMOVGBVoBTOhhGdBytQh6H0ExiLoXfujKyP_w@mail.gmail.com> <1399406800.13799.20.camel@buesod1.americas.hpqcorp.net>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Tue, 6 May 2014 22:40:23 +0200
-Message-ID: <CAKgNAkjOKP7P9veOpnokNkVXSszVZt5asFsNp7rm7AXJdjcLLA@mail.gmail.com>
-Subject: Re: [PATCH 0/4] ipc/shm.c: increase the limits for SHMMAX, SHMALL
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, aswin@hp.com,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 6 May 2014 16:40:55 -0400
+Date: Tue, 6 May 2014 13:40:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org, tj@kernel.org,
+        rusty@rustcorp.com.au, fweisbec@gmail.com, hch@infradead.org,
+        mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
+        mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] CPU hotplug, stop-machine: Plug race-window that
+ leads to "IPI-to-offline-CPU"
+Message-Id: <20140506134054.8cd531296c8aa5d9c3eff958@linux-foundation.org>
+In-Reply-To: <20140506180258.14375.20181.stgit@srivatsabhat.in.ibm.com>
+References: <20140506180213.14375.5904.stgit@srivatsabhat.in.ibm.com>
+	<20140506180258.14375.20181.stgit@srivatsabhat.in.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Davidlohr,
+On Tue, 06 May 2014 23:33:03 +0530 "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
 
-On Tue, May 6, 2014 at 10:06 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> On Fri, 2014-05-02 at 15:16 +0200, Michael Kerrisk (man-pages) wrote:
->> Hi Manfred,
->>
->> On Mon, Apr 21, 2014 at 4:26 PM, Manfred Spraul
->> <manfred@colorfullife.com> wrote:
->> > Hi all,
->> >
->> > the increase of SHMMAX/SHMALL is now a 4 patch series.
->> > I don't have ideas how to improve it further.
->>
->> On the assumption that your patches are heading to mainline, could you
->> send me a man-pages patch for the changes?
->
-> Btw, I think that the code could still use some love wrt documentation.
+> --- a/kernel/stop_machine.c
+> +++ b/kernel/stop_machine.c
+> @@ -165,12 +165,21 @@ static void ack_state(struct multi_stop_data *msdata)
+>  		set_state(msdata, msdata->state + 1);
+>  }
+>  
+> +/* Holding area for active CPUs, to let all the non-active CPUs go first */
+> +static void hold_active_cpus(struct multi_stop_data *msdata,
+> +			     int num_active_cpus)
+> +{
+> +	/* Wait until all the non-active threads ack the state */
+> +	while (atomic_read(&msdata->thread_ack) > num_active_cpus)
+> +		cpu_relax();
+> +}
 
-(Agreed.)
+The code comments are a bit lame.  Can we do a better job of explaining
+the overall dynamic behaviour?  Help readers to understand the problem
+which hold_active_cpus() is solving and how it solves it?
 
-> Andrew, please consider this for -next if folks agree. Thanks.
->
-> 8<----------------------------------------------------------
->
-> From: Davidlohr Bueso <davidlohr@hp.com>
-> Subject: [PATCH] ipc,shm: document new limits in the uapi header
->
-> This is useful in the future and allows users to
-> better understand the reasoning behind the changes.
->
-> Also use UL as we're dealing with it anyways.
->
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> ---
->  include/uapi/linux/shm.h | 14 ++++++++------
->  1 file changed, 8 insertions(+), 6 deletions(-)
->
-> diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
-> index 74e786d..e37fb08 100644
-> --- a/include/uapi/linux/shm.h
-> +++ b/include/uapi/linux/shm.h
-> @@ -8,17 +8,19 @@
->  #endif
->
->  /*
-> - * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
 
-Something is wrong in the line above (missing word(s)?) ("are upper
-limits are defaults")
-
-> - * be modified by sysctl.
-> + * SHMMNI, SHMMAX and SHMALL are the default upper limits which can be
-> + * modified by sysctl. Both SHMMAX and SHMALL have their default values
-> + * to the maximum limit which is as large as it can be without helping
-> + * userspace overflow the values. There is really nothing the kernel
-> + * can do to avoid this any variables. It is therefore not advised to
-
-Something is missing in that last line.
-
-> + * make them any larger. This is suitable for both 32 and 64-bit systems.
-
-"This" is not so clear. I suggest replacing with an actual noun.
-
->   */
-> -
->  #define SHMMIN 1                        /* min shared seg size (bytes) */
->  #define SHMMNI 4096                     /* max num of segs system wide */
-> -#define SHMMAX (ULONG_MAX - (1L<<24))   /* max shared seg size (bytes) */
-> -#define SHMALL (ULONG_MAX - (1L<<24))   /* max shm system wide (pages) */
-> +#define SHMMAX (ULONG_MAX - (1UL << 24)) /* max shared seg size (bytes) */
-> +#define SHMALL (ULONG_MAX - (1UL << 24)) /* max shm system wide (pages) */
->  #define SHMSEG SHMMNI                   /* max shared segs per process */
->
-> -
->  /* Obsolete, used only for backwards compatibility and libc5 compiles */
->  struct shmid_ds {
->         struct ipc_perm         shm_perm;       /* operation perms */
-
-Cheers,
-
-Michael
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
