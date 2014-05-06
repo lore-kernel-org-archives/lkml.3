@@ -1,102 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757307AbaEFIzM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 04:55:12 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:45979 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757143AbaEFIzJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 04:55:09 -0400
-X-AuditID: cbfee61a-b7f2b6d000006c4d-2a-5368a36c31fd
-From: Chao Yu <chao2.yu@samsung.com>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][PATCH 6/6] f2fs: add a tracepoint for f2fs_read_data_pages
-Date: Tue, 06 May 2014 16:54:23 +0800
-Message-id: <004801cf6908$e2149bd0$a63dd370$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9pCJ1oMWLILZnWThWRJ0xujooqLA==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jAd2cxRnBBj/bxC2u7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyphw+TxLwS/eiq2/
-	nzE1MG7j7mLk5JAQMJE4PuMPM4QtJnHh3nq2LkYuDiGBRYwSZz+9ZIFwfjBKPLq2lBWkik1A
-	RWJ5x38mEFtEQFPi8fLNYN3MApkS95pmgNnCAn4SdybPZwSxWQRUJZ6dnQ8U5+DgFbCU+Hvd
-	ESTMKyAo8WPyPRaIVi2J9TuPM0HY8hKb17yFOkhBYsfZ14wgrSICehJXLkhBlIhLbDxyi2UC
-	o8AsJJNmIZk0C8mkWUhaFjCyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQIDuNnUjsYVzZY
-	HGIU4GBU4uE9sTI9WIg1say4MvcQowQHs5IIb31+RrAQb0piZVVqUX58UWlOavEhRmkOFiVx
-	3gOt1oFCAumJJanZqakFqUUwWSYOTqkGxsTXes0Ta7wnHRHOWiLjua2329zJ2epuOsN6wzWv
-	w/aEVJ9f+ed6qILq1aB99/Qihbg2n2CoPsV9Yvukr3mLt6b5LvNQ65cTErq9WoZx+daZy4Lm
-	r4mdp6ugWVx1YfsB/c0TxSxc43ZafTR5635C6IyceOhuNpG1mxf/1HIK+ha/Q9i/ebeKuBJL
-	cUaioRZzUXEiAPWZNb5fAgAA
+	id S934441AbaEFIz1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 04:55:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58984 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754680AbaEFIzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 04:55:20 -0400
+Date: Tue, 6 May 2014 09:55:15 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch v2 4/4] mm, thp: do not perform sync compaction on
+ pagefault
+Message-ID: <20140506085515.GW23991@suse.de>
+References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1405011435210.23898@chino.kir.corp.google.com>
+ <20140502102231.GQ23991@suse.de>
+ <alpine.DEB.2.02.1405020402500.19297@chino.kir.corp.google.com>
+ <20140502115834.GR23991@suse.de>
+ <alpine.DEB.2.02.1405021319350.24195@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1405021319350.24195@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a tracepoint for f2fs_read_data_pages to trace when pages are
-readahead by VFS.
+On Fri, May 02, 2014 at 01:29:33PM -0700, David Rientjes wrote:
+> On Fri, 2 May 2014, Mel Gorman wrote:
+> 
+> > > The page locks I'm referring to is the lock_page() in __unmap_and_move() 
+> > > that gets called for sync compaction after the migrate_pages() iteration 
+> > > makes a few passes and unsuccessfully grabs it.  This becomes a forced 
+> > > migration since __unmap_and_move() returns -EAGAIN when the trylock fails.
+> > > 
+> > 
+> > Can that be fixed then instead of disabling it entirely?
+> > 
+> 
+> We could return -EAGAIN when the trylock_page() fails for 
+> MIGRATE_SYNC_LIGHT.  It would become a forced migration but we ignore that 
+> currently for MIGRATE_ASYNC, and I could extend it to be ignored for 
+> MIGRATE_SYNC_LIGHT as well.
+> 
+> > > We have perf profiles from one workload in particular that shows 
+> > > contention on i_mmap_mutex (anon isn't interesting since the vast majority 
+> > > of memory on this workload [120GB on a 128GB machine] is has a gup pin and 
+> > > doesn't get isolated because of 119d6d59dcc0 ("mm, compaction: avoid 
+> > > isolating pinned pages")) between cpus all doing memory compaction trying 
+> > > to fault thp memory.
+> > > 
+> > 
+> > Abort SYNC_LIGHT compaction if the mutex is contended.
+> > 
+> 
+> Yeah, I have patches for that as well but we're waiting to see if they are 
+> actually needed when sync compaction is disabled for thp.  If we aren't 
+> actually going to disable it entirely, then I can revive those patches if 
+> the contention becomes such an issue.
+> 
+> > > That's one example that we've seen, but the fact remains that at times 
+> > > sync compaction will iterate the entire 128GB machine and not allow an 
+> > > order-9 page to be allocated and there's nothing to preempt it like the 
+> > > need_resched() or lock contention checks that async compaction has. 
+> > 
+> > Make compact_control->sync the same enum field and check for contention
+> > on the async/sync_light case but leave it for sync if compacting via the
+> > proc interface?
+> > 
+> 
+> Ok, that certainly can be done, I wasn't sure you would be happy with such 
+> a change. 
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/data.c              |    3 +++
- include/trace/events/f2fs.h |   26 ++++++++++++++++++++++++++
- 2 files changed, 29 insertions(+)
+I'm not super-keen as the success rates are already very poor for allocations
+under pressure. It's something Vlastimil is working on so it may be possible
+to get some of the success rates back. It has always been the case that
+compaction should not severely impact overall performance as THP gains
+must offset compaction. While I'm not happy to reduce the success rates
+further I do not think we should leave a known performance impact on
+128G machines wait on Vlastimil's series.
 
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 8c250a5..f2d1e8a 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -729,6 +729,9 @@ static int f2fs_read_data_pages(struct file *file,
- 			struct list_head *pages, unsigned nr_pages)
- {
- 	struct inode *inode = file->f_mapping->host;
-+	struct page *page = list_entry(pages->prev, struct page, lru);
-+
-+	trace_f2fs_readpages(inode, page, nr_pages);
- 
- 	/* If the file has inline data, skip readpages */
- 	if (f2fs_has_inline_data(inode))
-diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
-index b983990..7fbaaaa 100644
---- a/include/trace/events/f2fs.h
-+++ b/include/trace/events/f2fs.h
-@@ -847,6 +847,32 @@ TRACE_EVENT(f2fs_writepages,
- 		__entry->for_sync)
- );
- 
-+TRACE_EVENT(f2fs_readpages,
-+
-+	TP_PROTO(struct inode *inode, struct page *page, unsigned int nrpage),
-+
-+	TP_ARGS(inode, page, nrpage),
-+
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+		__field(ino_t,	ino)
-+		__field(pgoff_t,	start)
-+		__field(unsigned int,	nrpage)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev	= inode->i_sb->s_dev;
-+		__entry->ino	= inode->i_ino;
-+		__entry->start	= page->index;
-+		__entry->nrpage	= nrpage;
-+	),
-+
-+	TP_printk("dev = (%d,%d), ino = %lu, start = %lu nrpage = %u",
-+		show_dev_ino(__entry),
-+		(unsigned long)__entry->start,
-+		__entry->nrpage)
-+);
-+
- TRACE_EVENT(f2fs_submit_page_mbio,
- 
- 	TP_PROTO(struct page *page, int rw, int type, block_t blk_addr),
+Vlastimil, what do you think?
+
+> I'm not sure there's so much of a difference between the new 
+> compact_control->sync == MIGRATE_ASYNC and == MIGRATE_SYNC_LIGHT now, 
+> though.  Would it make sense to remove MIGRATE_SYNC_LIGHT entirely from 
+> the page allocator, i.e. remove sync_migration entirely, and just retry 
+> with a second call to compaction before failing instead? 
+
+Would it be possible if only khugepaged entered SYNC_LIGHT migration and
+kswapd and direct THP allocations used only MIGRATE_ASYNC? That would
+allow khugepaged to continue locking pages and buffers in a slow path
+while still not allowing it to issue IO or wait on writeback. It would
+also give a chance for Vlastimil's series to shake out a bit without him
+having to reintroduce SYNC_LIGHT as part of that series.
+
 -- 
-1.7.9.5
-
-
+Mel Gorman
+SUSE Labs
