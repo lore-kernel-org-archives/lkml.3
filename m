@@ -1,113 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757677AbaEFPMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 11:12:38 -0400
-Received: from sym2.noone.org ([178.63.92.236]:55885 "EHLO sym2.noone.org"
+	id S1757834AbaEFPM5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 11:12:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40312 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752527AbaEFPMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 11:12:36 -0400
-Date: Tue, 6 May 2014 17:12:35 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Darek Marcinkiewicz <reksio@newterm.pl>
-Cc: davem@davemloft.net, romieu@fr.zoreil.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 1/1] Driver for Beckhoff CX5020 EtherCAT master
- module.
-Message-ID: <20140506151235.GI6455@distanz.ch>
-References: <20140505191045.GK1156@newterm.pl>
- <20140506145606.GH6455@distanz.ch>
+	id S1751778AbaEFPM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 11:12:56 -0400
+Date: Tue, 6 May 2014 16:12:52 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/17] mm: page_alloc: Use word-based accesses for
+ get/set pageblock bitmaps
+Message-ID: <20140506151252.GZ23991@suse.de>
+References: <1398933888-4940-1-git-send-email-mgorman@suse.de>
+ <1398933888-4940-9-git-send-email-mgorman@suse.de>
+ <53641D8C.6040601@oracle.com>
+ <20140504131454.GS23991@suse.de>
+ <536786C6.8040805@suse.cz>
+ <20140506091336.GX23991@suse.de>
+ <5368F4CA.7060002@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20140506145606.GH6455@distanz.ch>
-X-Editor: Vi IMproved 7.2
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5368F4CA.7060002@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-05-06 at 16:56:06 +0200, Tobias Klauser <tklauser@distanz.ch> wrote:
-> On 2014-05-05 at 21:10:45 +0200, Darek Marcinkiewicz <reksio@newterm.pl> wrote:
-> > 
-> > This driver adds support for EtherCAT master module located on CCAT
-> > FPGA found on Beckhoff CX series industrial PCs. The driver exposes
-> > EtherCAT master as an ethernet interface.
-> > 
-> > EtherCAT is a fieldbus protocol defined on top of ethernet and Beckhoff
-> > CX5020 PCs come with built-in EtherCAT master module located on a FPGA,
-> > which in turn is connected to a PCI bus.
-> > 
-> > Signed-off-by: Dariusz Marcinkiewicz <reksio@newterm.pl>
-> > ---
-> > 
-> > Changes from v7:
-> >   * added 'depends on PCI' to the driver's Kconfig entry
-> > 
-> > Changes from v6:
-> >   * added memory barriers to avoid race between timer handler and xmit routine 
-> >   * includes formatting/indeting changes from Francois Romieu
-> > 
-> > Changes from v5:
-> >   * removal of needless locking on tx path
-> >   * driver makes actual use of tx fifo
-> >   * driver uses descriptors' array instead of descriptor list
-> > 
-> > Changes from v4: 
-> >   * incorporates Francois Romieu comments
-> >   * fixes typo spotted by Jesper Brouer
-> > 
-> > Changes from v3:
-> >   * some clarificatoins around buffer allocations
-> > 
-> > Changes from v2:
-> >   * removed all checkpatch warnings
-> >   * driver makes use of device rx fifo
-> > 
-> > Changes from v1:
-> >   * added endianess annotation to descriptors' structures
-> >   * killed checkpath warnings about string literals being split into multiple
-> >     lines
-> > 
-> >  drivers/net/ethernet/Kconfig  |   12 +
-> >  drivers/net/ethernet/Makefile |    1 +
-> >  drivers/net/ethernet/ec_bhf.c |  705 +++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 718 insertions(+)
-> >  create mode 100644 drivers/net/ethernet/ec_bhf.c
+On Tue, May 06, 2014 at 04:42:18PM +0200, Vlastimil Babka wrote:
+> >>>+unsigned long get_pageblock_flags_mask(struct page *page,
+> >>>+					unsigned long end_bitidx,
+> >>>+					unsigned long nr_flag_bits,
+> >>>+					unsigned long mask)
+> >>>  {
+> >>>  	struct zone *zone;
+> >>>  	unsigned long *bitmap;
+> >>>-	unsigned long pfn, bitidx;
+> >>>-	unsigned long flags = 0;
+> >>>-	unsigned long value = 1;
+> >>>+	unsigned long pfn, bitidx, word_bitidx;
+> >>>+	unsigned long word;
+> >>>
+> >>>  	zone = page_zone(page);
+> >>>  	pfn = page_to_pfn(page);
+> >>>  	bitmap = get_pageblock_bitmap(zone, pfn);
+> >>>  	bitidx = pfn_to_bitidx(zone, pfn);
+> >>>+	word_bitidx = bitidx / BITS_PER_LONG;
+> >>>+	bitidx &= (BITS_PER_LONG-1);
+> >>>
+> >>>-	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
+> >>>-		if (test_bit(bitidx + start_bitidx, bitmap))
+> >>>-			flags |= value;
+> >>>-
+> >>>-	return flags;
+> >>>+	word = bitmap[word_bitidx];
+> >>
+> >>I wonder if on some architecture this may result in inconsistent
+> >>word when racing with set(), i.e. cmpxchg? We need consistency at
+> >>least on the granularity of byte to prevent the problem with bogus
+> >>migratetype values being read.
+> >>fix:
+> >
+> >The number of bits align on the byte boundary so I do not think there is
+> >a problem there. There is a BUILD_BUG_ON check in set_pageblock_flags_mask
+> >in case this changes so it can be revisited if necessary.
 > 
-> [...]
+> I was wondering about hardware guarantees in that case (e.g.
+> consistency at least on the granularity of byte when a simple memory
+> read races with write) but after some discussion in the office I
+> understand that hardware without such guarantees wouldn't be able to
+> run Linux anyway :)
 > 
-> > +struct ec_bhf_priv {
-> > +	struct net_device *net_dev;
-> > +
-> > +	struct pci_dev *dev;
-> > +
-> > +	void * __iomem io;
-> > +	void * __iomem dma_io;
-> > +
-> > +	struct hrtimer hrtimer;
-> > +
-> > +	int tx_dma_chan;
-> > +	int rx_dma_chan;
-> > +	void * __iomem ec_io;
-> > +	void * __iomem fifo_io;
-> > +	void * __iomem mii_io;
-> > +	void * __iomem mac_io;
-> > +
-> > +	struct bhf_dma rx_buf;
-> > +	struct rx_desc *rx_descs;
-> > +	int rx_dnext;
-> > +	int rx_dcount;
-> > +
-> > +	struct bhf_dma tx_buf;
-> > +	struct tx_desc *tx_descs;
-> > +	int tx_dcount;
-> > +	int tx_dnext;
-> > +
-> > +	u64 stat_rx_bytes;
-> > +	u64 stat_tx_bytes;
+> Still I wonder if ACCESS_ONCE would be safer in the 'word' variable
+> assignment to protect against compiler trying to be too smart?
 > 
-> netdev->stats already provides {rx,tx}_bytes members, so you can get rid
-> of these two.
 
-Actually, no. The net_device_stats members are unsigned long, so your
-solution is fine. Please disregard.
+I couldn't see a case in the get path where it would matter. I put an
+ACCESS_ONCE in the set path in case the compiler accidentally determined
+that old_word was invariant in that loop.
+
+> Anyway with the nr_flag_bits removed:
+> 
+> Acked-by: Vlastimil Babka <vbabka@suse.cz>
+> 
+
+Thanks.
+
+-- 
+Mel Gorman
+SUSE Labs
