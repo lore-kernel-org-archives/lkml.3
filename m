@@ -1,86 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568AbaEFWew (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 18:34:52 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:58569 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473AbaEFWev (ORCPT
+	id S1754154AbaEFWnp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 18:43:45 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:61729 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751250AbaEFWno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 18:34:51 -0400
-Date: Tue, 6 May 2014 15:34:46 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] kernel/rcu/tree.c: make rcu node arrays static const
- char * const
-Message-ID: <20140506223446.GZ8754@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140506192114.60ed15ab76cba9fc10a6e7f3@skynet.be>
+	Tue, 6 May 2014 18:43:44 -0400
+Date: Tue, 6 May 2014 18:43:41 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Weijie Yang <weijieut@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 3/4] plist: add plist_rotate
+Message-ID: <20140506184341.6e12e80a@gandalf.local.home>
+In-Reply-To: <CALZtONAUXiv6jfy8vW9NTotPR=V0q6Worcy9_rvou4A0s0whPw@mail.gmail.com>
+References: <1397336454-13855-1-git-send-email-ddstreet@ieee.org>
+	<1399057350-16300-1-git-send-email-ddstreet@ieee.org>
+	<1399057350-16300-4-git-send-email-ddstreet@ieee.org>
+	<20140505221846.4564e04d@gandalf.local.home>
+	<CALZtONAr7XGMB8LHwKRjqeEaWTEKBbwkUuP1RAZd04YQiwxrGw@mail.gmail.com>
+	<20140506163950.7e278f7c@gandalf.local.home>
+	<CALZtONAUXiv6jfy8vW9NTotPR=V0q6Worcy9_rvou4A0s0whPw@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140506192114.60ed15ab76cba9fc10a6e7f3@skynet.be>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050622-7164-0000-0000-000001901790
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 07:21:14PM +0200, Fabian Frederick wrote:
-> Those 2 arrays are being passed to lockdep_init_map with const char *
-> and stored in lockdep_map the same way
-> 
-> Cc: Dipankar Sarma <dipankar@in.ibm.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+On Tue, 6 May 2014 17:47:16 -0400
+Dan Streetman <ddstreet@ieee.org> wrote:
 
-Queued for 3.17, thank you Fabian!
 
-							Thanx, Paul
+> well the specific reason in swap's case is the need to use
+> same-priority entries in a round-robin basis, but I don't know if
+> plist_round_robin() is very clear.
 
-> ---
->  kernel/rcu/tree.c | 18 ++++++++++--------
->  1 file changed, 10 insertions(+), 8 deletions(-)
-> 
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index 0c47e30..90ebc83 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -3357,14 +3357,16 @@ static void __init rcu_init_levelspread(struct rcu_state *rsp)
->  static void __init rcu_init_one(struct rcu_state *rsp,
->  		struct rcu_data __percpu *rda)
->  {
-> -	static char *buf[] = { "rcu_node_0",
-> -			       "rcu_node_1",
-> -			       "rcu_node_2",
-> -			       "rcu_node_3" };  /* Match MAX_RCU_LVLS */
-> -	static char *fqs[] = { "rcu_node_fqs_0",
-> -			       "rcu_node_fqs_1",
-> -			       "rcu_node_fqs_2",
-> -			       "rcu_node_fqs_3" };  /* Match MAX_RCU_LVLS */
-> +	static const char * const buf[] = {
-> +		"rcu_node_0",
-> +		"rcu_node_1",
-> +		"rcu_node_2",
-> +		"rcu_node_3" };  /* Match MAX_RCU_LVLS */
-> +	static const char * const fqs[] = {
-> +		"rcu_node_fqs_0",
-> +		"rcu_node_fqs_1",
-> +		"rcu_node_fqs_2",
-> +		"rcu_node_fqs_3" };  /* Match MAX_RCU_LVLS */
->  	int cpustride = 1;
->  	int i;
->  	int j;
-> -- 
-> 1.8.4.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+No, that's not very clear.
 
+> 
+> Maybe plist_demote()?  Although demote might imply actually changing priority.
+
+Agreed.
+
+> 
+> plist_shuffle()?  That might imply random shuffling though.
+
+Yep.
+
+> 
+> plist_readd() or plist_requeue()?  That might make sense since
+> technically the function could be replicated by just plist_del() and
+> plist_add(), based on the implementation detail that plist_add()
+> inserts after all other same-priority entries, instead of before.
+
+plist_requeue() sounds like the best so far.
+
+> 
+> Or add priority into the name explicitly, like plist_priority_yield(),
+> or plist_priority_rotate(), plist_priority_requeue()?
+
+No, even plist_yield() assumes priority is the same, thus adding
+priority to a plist that means "priority list" is rather redundant.
+
+I think its up between plist_yield() and plist_requeue(), where I'm
+leaning towards plist_requeue().
+
+Unless others have any better ideas or objections, lets go with
+plist_requeue(). I think that's rather self explanatory and it sounds
+just like what you said. It's basically an optimized version of
+plist_del() followed by a plist_add().
+
+ 
+> Ok here's try 3, before I update the patch :)  Does this make sense?
+> 
+> This is needed by the next patch in this series, which changes swap
+> from using regular lists to track its available swap devices
+> (partitions or files) to using plists.  Each swap device has a
+> priority, and swap allocates pages from devices in priority order,
+> filling up the highest priority device first (and then removing it
+> from the available list), by allocating a page from the swap device
+> that is first in the priority-ordered list.  With regular lists, swap
+> was managing the ordering by priority, while with plists the ordering
+> is automatically handled.  However, swap requires special handling of
+> swap devices with the same priority; pages must be allocated from them
+> in round-robin order.  To accomplish this with a plist, this new
+> function is used; when a page is allocated from the first swap device
+> in the plist, that entry is moved to the end of any same-priority
+> entries.  Then the next time a page needs to be allocated, the next
+> swap device will be used, and so on.
+
+OK, I read the above a few times and I think I know where my confusion
+is coming from. I was thinking that the pages were being added to the
+plist. I believe you are saying that the swap devices themselves are
+added to the plist, and when the device is empty (no more pages left)
+it is removed from the plist. When dealing with memory and swap one
+thinks of managing pages. But here we are managing the devices.
+
+Please state clearly at the beginning of your explanation that the swap
+devices are being stored in the plist and stay there as long as they
+still have pages left to be allocated from. In order to treat swap
+devices of the same priority in a round robin fashion, after a device
+has pages allocated from it, it needs to be requeued at the end of it's
+priority, behind other swap devices of the same priority in order to
+make sure the next allocation comes from a different device (of same
+priority).
+
+
+-- Steve
