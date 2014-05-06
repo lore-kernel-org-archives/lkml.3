@@ -1,106 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901AbaEFXni (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 19:43:38 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:50016 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaEFXng convert rfc822-to-8bit (ORCPT
+	id S1752476AbaEFXqc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 19:46:32 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:47819 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750845AbaEFXqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 19:43:36 -0400
-X-AuditID: cbfee68d-b7f4e6d000004845-f9-536973a11aba
-From: Jonghwan Choi <jhbird.choi@samsung.com>
-To: "'Viresh Kumar'" <viresh.kumar@linaro.org>, "'Nishanth Menon'" <nm@ti.com>
-Cc: "'Linux PM list'" <linux-pm@vger.kernel.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>,
-        "'Rafael J. Wysocki'" <rjw@rjwysocki.net>,
-        "'Len Brown'" <len.brown@intel.com>,
-        "'Amit Daniel Kachhap'" <amit.daniel@samsung.com>
-References: <000001cf643d$69e5e350$3db1a9f0$@samsung.com>
- <CAOh2x=m8DzmLOGqL0E_seOZMuzU=O9vQuu-JEp+E5454RmfEXw@mail.gmail.com>
- <003901cf6664$e4e8d2a0$aeba77e0$@samsung.com>
- <CAKohpon7W726Hxj5OJ6SnmPz3gYhAeBRr1wS3SCa3F2hSLriLQ@mail.gmail.com>
- <5367946F.1030407@ti.com>
- <CAKohpon-KZpSJK7PxpLjZS7sVPcYraDxb4oJHN6dxSagD+F--Q@mail.gmail.com>
- <CAGo_u6pUVeMM9mqe5htvM1X_4pkRGEUVOA2ty4ZPfUyLcLZkrw@mail.gmail.com>
- <CAKohpokfcptseU6ST+e_GfU6poVJxXCXMeoYCvT65060v5GJYQ@mail.gmail.com>
-In-reply-to: <CAKohpokfcptseU6ST+e_GfU6poVJxXCXMeoYCvT65060v5GJYQ@mail.gmail.com>
-Subject: RE: [PATCH 1/3] PM / OPP: Add support for descending order for cpufreq
- table
-Date: Wed, 07 May 2014 08:43:29 +0900
-Message-id: <003e01cf6984$fb950280$f2bf0780$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQIqe0fjYa0YwQL6oKQ2dX7E8rarYwGe0UWzAg3L9n0CFbDXrQI73VqNAJ+GCpEBnU9akQFwpfDYmiC0acA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOIsWRmVeSWpSXmKPExsVy+t8zY92FxZnBBn/vKFg0XA2xmDVlL5PF
-	5V1z2Cw+9x5htHjz4yyTxZnTl1gtNn71cGD3WLznJZPHnWt72Dy2XG1n8ejbsorR4/iN7Uwe
-	nzfJBbBFcdmkpOZklqUW6dslcGVsX3iWqWA+V0X7uuMsDYxTOLoYOTkkBEwkLl05xAphi0lc
-	uLeerYuRi0NIYBmjxJFDqxhhiiYtf8cEkVjEKPHmwU0o5x+jRGPbayaQKjYBXYlj67eAjRIR
-	8JL4sfoE2ChmgfuMEv/PvYaa+4JZYt+XbcwgVZwCwRLzNq9hB7GFBcIl1qybCTaJRUBV4szB
-	qWC7eQUsJX58nsgOYQtK/Jh8jwXEZhZQl5g0bxEzhK0t8eTdBagnFCR2nH3NCHFFisSf9ueM
-	EDUiEvtevIP65yO7xJwPXBC7BCS+TT4ENJMDKC4rsekAM0SJpMTBFTdYJjBKzEKyeRaSzbOQ
-	bJ6FZMMCRpZVjKKpBckFxUnpRYZ6xYm5xaV56XrJ+bmbGCGR3LuD8fYB60OMyUDrJzJLiSbn
-	AxNBXkm8obGZkYWpiamxkbmlGWnCSuK8SQ+TgoQE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUw
-	+jTJTStZu++IlvjqNZLHHh+P861e4/44fJqjG5fbJJvsGV76ii+Dnx/ctK/k3En7R6bdimuD
-	985Y//Trnf4z36oTPD57d38+5ctx8e0rhuNb5DPOtlw9JGVk8mXFcSXpi6siJbeoOz68WSdc
-	v90q4VHxXq297JwmR26534s+1PJGas1xyS8ZkUosxRmJhlrMRcWJAMfcPzP6AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKKsWRmVeSWpSXmKPExsVy+t9jAd2FxZnBBt/bZSwaroZYzJqyl8ni
-	8q45bBafe48wWrz5cZbJ4szpS6wWG796OLB7LN7zksnjzrU9bB5brrazePRtWcXocfzGdiaP
-	z5vkAtiiGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0y
-	c4BOUVIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmbF94lqlgPldF+7rj
-	LA2MUzi6GDk5JARMJCYtf8cEYYtJXLi3nq2LkYtDSGARo8SbBzeZIJx/jBKNba/BqtgEdCWO
-	rd/CCmKLCHhJ/Fh9AqyDWeA+o8T/c6+h2l8wS+z7so0ZpIpTIFhi3uY17CC2sEC4xJp1M8Em
-	sQioSpw5OJURxOYVsJT48XkiO4QtKPFj8j0WEJtZQF1i0rxFzBC2tsSTdxdYIW5VkNhx9jUj
-	xBUpEn/anzNC1IhI7HvxjnECo9AsJKNmIRk1C8moWUhaFjCyrGIUTS1ILihOSs811CtOzC0u
-	zUvXS87P3cQIThTPpHYwrmywOMQowMGoxMNr8TYjWIg1say4MvcQowQHs5II703dzGAh3pTE
-	yqrUovz4otKc1OJDjMlAn05klhJNzgcmsbySeENjEzMjSyMzCyMTc3PShJXEeQ+0WgcKCaQn
-	lqRmp6YWpBbBbGHi4JRqYDxl4XncwoX5vTGL3F3Ddxt+rOfUWnF934b4+R+uV4Yn/8ji8S1l
-	CdzNk2s9s/uzW9Y1zjIe3+tvH80+YuvgsiOvuVZ1tevm5RNCm82btcUPvOe1WxupsJN/wjd/
-	kQcT5G65yZVvrnpm/20uI5u/3dElx3tePkj9yJLtuFSnSCLL5X/hC7sbf5RYijMSDbWYi4oT
-	AQBTy2tYAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 6 May 2014 19:46:30 -0400
+Date: Tue, 6 May 2014 19:46:28 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, pmladek@suse.cz,
+        Peter Zijlstra <peterz@infradead.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH] printk: Remove separate printk_sched buffers and use
+ printk buf instead
+Message-ID: <20140506194628.2d6d9961@gandalf.local.home>
+In-Reply-To: <20140506163714.058937e8d6ec17caca406fb7@linux-foundation.org>
+References: <20140505191846.35aa6f9b@gandalf.local.home>
+	<20140506094557.GA9291@quack.suse.cz>
+	<20140506070446.33bde17c@gandalf.local.home>
+	<20140506163714.058937e8d6ec17caca406fb7@linux-foundation.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi  
+On Tue, 6 May 2014 16:37:14 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-My holiday is finished.
+> What I have in -next is very different from this version of the patch. 
+> What's happening?
 
-I implemented another cpufreq driver. And that driver also have to use exynos_sort_descend_freq_table().
-Then exynos5440 and new cpufreq have a duplicate function.(exynos_sort_descend_freq_table().
-So I want to solve it.
+Hmm, good question.
 
-Thanks.~
+Let me review this one. The one I sent recently was one I pulled from
+my "sent" folder. I thought it was the latest one, but perhaps I sent
+another one after that.
 
-> -----Original Message-----
-> From: Viresh Kumar [mailto:viresh.kumar@linaro.org]
-> Sent: Monday, May 05, 2014 11:39 PM
-> To: Nishanth Menon
-> Cc: Jonghwan Choi; Linux PM list; open list; Rafael J. Wysocki; Len Brown;
-> Amit Daniel Kachhap
-> Subject: Re: [PATCH 1/3] PM / OPP: Add support for descending order for
-> cpufreq table
+
+I'll go investigate.
+
+-- Steve
+
 > 
-> On 5 May 2014 19:53, Nishanth Menon <nm@ti.com> wrote:
-> > ceil and floor allows us to walk down the opp entries the direction we
-> > want it to.
-> > one can convert that data any way one wants it - especially when
-> > custom mapping such as this is desired.
 > 
-> Yeah, but doing that for every frequency transition is not right.
-> Otherwise they already have a solution, where they reverse order of
-> frequencies for their driver. exynos_sort_descend_freq_table().
+> From: Steven Rostedt <rostedt@goodmis.org>
+> Subject: printk: remove separate printk_sched buffers and use printk buf instead
 > 
-> Probably that's a better solution then :)
+> To prevent deadlocks with doing a printk inside the scheduler,
+> printk_sched() was created.  The issue is that printk has a console_sem
+> that it can grab and release.  The release does a wake up if there's a
+> task pending on the sem, and this wake up grabs the rq locks that is held
+> in the scheduler.  This leads to a possible deadlock if the wake up uses
+> the same rq as the one with the rq lock held already.
 > 
-> But, Jonghwan was probably trying to get this solved in the framework only,
-> in case anybody else needs it.
+> What printk_sched() does is to save the printk write in a per cpu buffer
+> and sets the PRINTK_PENDING_SCHED flag.  On a timer tick, if this flag is
+> set, the printk() is done against the buffer.
 > 
-> --
-> viresh
+> There's a couple of issues with this approach.
+> 
+> 1) If two printk_sched()s are called before the tick, the second one
+>    will overwrite the first one.
+> 
+> 2) The temporary buffer is 512 bytes and is per cpu.  This is a quite a
+>    bit of space wasted for something that is seldom used.
+> 
+> In order to remove this, the printk_sched() can use the printk buffer
+> instead, and delay the console_trylock()/console_unlock() to the queued
+> work.
+> 
+> Because printk_sched() would then be taking the logbuf_lock, the
+> logbuf_lock must not be held while doing anything that may call into the
+> scheduler functions, which includes wake ups.  Unfortunately, printk()
+> also has a console_sem that it uses, and on release, the up(&console_sem)
+> may do a wake up of any pending waiters.  This must be avoided while
+> holding the logbuf_lock.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  kernel/printk/printk.c |   47 ++++++++++++++++++++++++---------------
+>  1 file changed, 29 insertions(+), 18 deletions(-)
+> 
+> diff -puN kernel/printk/printk.c~printk-remove-separate-printk_sched-buffers-and-use-printk-buf-instead kernel/printk/printk.c
+> --- a/kernel/printk/printk.c~printk-remove-separate-printk_sched-buffers-and-use-printk-buf-instead
+> +++ a/kernel/printk/printk.c
+> @@ -68,6 +68,9 @@ int console_printk[4] = {
+>  	DEFAULT_CONSOLE_LOGLEVEL,	/* default_console_loglevel */
+>  };
+>  
+> +/* Deferred messaged from sched code are marked by this special level */
+> +#define SCHED_MESSAGE_LOGLEVEL -2
+> +
+>  /*
+>   * Low level drivers may need that to know if they can schedule in
+>   * their unblank() callback or not. So let's export it.
+> @@ -229,7 +232,9 @@ struct printk_log {
+>  };
+>  
+>  /*
+> - * The logbuf_lock protects kmsg buffer, indices, counters.
+> + * The logbuf_lock protects kmsg buffer, indices, counters.  This can be taken
+> + * within the scheduler's rq lock. It must be released before calling
+> + * console_unlock() or anything else that might wake up a process.
+>   */
+>  static DEFINE_RAW_SPINLOCK(logbuf_lock);
+>  
+> @@ -1577,14 +1582,19 @@ asmlinkage int vprintk_emit(int facility
+>  	static int recursion_bug;
+>  	static char textbuf[LOG_LINE_MAX];
+>  	char *text = textbuf;
+> -	size_t text_len;
+> +	size_t text_len = 0;
+>  	enum log_flags lflags = 0;
+>  	unsigned long flags;
+>  	int this_cpu;
+>  	int printed_len = 0;
+> +	bool in_sched = false;
+>  	/* cpu currently holding logbuf_lock in this function */
+>  	static volatile unsigned int logbuf_cpu = UINT_MAX;
+>  
+> +	if (level == SCHED_MESSAGE_LOGLEVEL) {
+> +		level = -1;
+> +		in_sched = true;
+> +	}
+>  
+>  	boot_delay_msec(level);
+>  	printk_delay();
+> @@ -1631,7 +1641,12 @@ asmlinkage int vprintk_emit(int facility
+>  	 * The printf needs to come first; we need the syslog
+>  	 * prefix which might be passed-in as a parameter.
+>  	 */
+> -	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
+> +	if (in_sched)
+> +		text_len = scnprintf(text, sizeof(textbuf),
+> +				     KERN_WARNING "[sched_delayed] ");
+> +
+> +	text_len += vscnprintf(text + text_len,
+> +			       sizeof(textbuf) - text_len, fmt, args);
+>  
+>  	/* mark and strip a trailing newline */
+>  	if (text_len && text[text_len-1] == '\n') {
+> @@ -1713,6 +1728,10 @@ asmlinkage int vprintk_emit(int facility
+>  	lockdep_on();
+>  	local_irq_restore(flags);
+>  
+> +	/* If called from the scheduler, we can not call up(). */
+> +	if (in_sched)
+> +		return printed_len;
+> +
+>  	/*
+>  	 * Disable preemption to avoid being preempted while holding
+>  	 * console_sem which would prevent anyone from printing to console
+> @@ -2531,21 +2550,19 @@ late_initcall(printk_late_init);
+>  /*
+>   * Delayed printk version, for scheduler-internal messages:
+>   */
+> -#define PRINTK_BUF_SIZE		512
+> -
+>  #define PRINTK_PENDING_WAKEUP	0x01
+> -#define PRINTK_PENDING_SCHED	0x02
+> +#define PRINTK_PENDING_OUTPUT	0x02
+>  
+>  static DEFINE_PER_CPU(int, printk_pending);
+> -static DEFINE_PER_CPU(char [PRINTK_BUF_SIZE], printk_sched_buf);
+>  
+>  static void wake_up_klogd_work_func(struct irq_work *irq_work)
+>  {
+>  	int pending = __this_cpu_xchg(printk_pending, 0);
+>  
+> -	if (pending & PRINTK_PENDING_SCHED) {
+> -		char *buf = __get_cpu_var(printk_sched_buf);
+> -		pr_warn("[sched_delayed] %s", buf);
+> +	if (pending & PRINTK_PENDING_OUTPUT) {
+> +		/* If trylock fails, someone else is doing the printing */
+> +		if (console_trylock())
+> +			console_unlock();
+>  	}
+>  
+>  	if (pending & PRINTK_PENDING_WAKEUP)
+> @@ -2569,21 +2586,15 @@ void wake_up_klogd(void)
+>  
+>  int printk_sched(const char *fmt, ...)
+>  {
+> -	unsigned long flags;
+>  	va_list args;
+> -	char *buf;
+>  	int r;
+>  
+> -	local_irq_save(flags);
+> -	buf = __get_cpu_var(printk_sched_buf);
+> -
+>  	va_start(args, fmt);
+> -	r = vsnprintf(buf, PRINTK_BUF_SIZE, fmt, args);
+> +	r = vprintk_emit(0, SCHED_MESSAGE_LOGLEVEL, NULL, 0, fmt, args);
+>  	va_end(args);
+>  
+> -	__this_cpu_or(printk_pending, PRINTK_PENDING_SCHED);
+> +	__this_cpu_or(printk_pending, PRINTK_PENDING_OUTPUT);
+>  	irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
+> -	local_irq_restore(flags);
+>  
+>  	return r;
+>  }
+> _
 
