@@ -1,125 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933711AbaEFBkM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 21:40:12 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:47480 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933469AbaEFBkK (ORCPT
+	id S933681AbaEFBnc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 21:43:32 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43882 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933530AbaEFBna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 21:40:10 -0400
-X-IronPort-AV: E=Sophos;i="4.97,993,1389715200"; 
-   d="scan'208";a="30110683"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: <mingo@kernel.org>
-CC: <jolsa@redhat.com>, <a.p.zijlstra@chello.nl>, <paulus@samba.org>,
-        <acme@kernel.org>, <linux-kernel@vger.kernel.org>,
-        Dongsheng <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH V2] perf tools: Clarify the output of perf sched map.
-Date: Tue, 6 May 2014 09:40:07 +0900
-Message-ID: <1399336807-10698-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <20140505183736.GA15038@gmail.com>
-References: <20140505183736.GA15038@gmail.com>
+	Mon, 5 May 2014 21:43:30 -0400
+Message-ID: <53683E40.1060909@codeaurora.org>
+Date: Mon, 05 May 2014 18:43:28 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.49]
+To: Alex Elder <elder@linaro.org>
+CC: mporter@linaro.org, bcm@fixthebug.org, devicetree@vger.kernel.org,
+        arnd@arndb.de, bcm-kernel-feedback-list@broadcom.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] ARM: add SMP support for Broadcom mobile SoCs
+References: <1396577891-2713-1-git-send-email-elder@linaro.org> <1396577891-2713-3-git-send-email-elder@linaro.org> <533EF21C.6000909@codeaurora.org> <53680A5B.4060208@linaro.org>
+In-Reply-To: <53680A5B.4060208@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dongsheng <yangds.fnst@cn.fujitsu.com>
+On 05/05/14 15:02, Alex Elder wrote:
+> On 04/04/2014 12:55 PM, Stephen Boyd wrote:
+>> On 04/03/14 19:18, Alex Elder wrote:
+>>> +
+>>> +/*
+>>> + * Secondary startup method setup routine to extract the location of
+>>> + * the secondary boot register from a "cpu" or "cpus" device tree
+>>> + * node.  Only the first seen secondary boot register value is used;
+>>> + * any others are ignored.  The secondary boot register value must be
+>>> + * non-zero.
+>>> + *
+>>> + * Returns 0 if successful or an error code otherwise.
+>>> + */
+>>> +static int __init of_enable_method_setup(struct device_node *node)
+>>> +{
+>>> +	int ret;
+>>> +
+>>> +	/* Ignore all but the first one specified */
+>>> +	if (secondary_boot)
+>>> +		return 0;
+>>> +
+>>> +	ret = of_property_read_u32(node, OF_SECONDARY_BOOT, &secondary_boot);
+>>> +	if (ret)
+>>> +		pr_err("%s: missing/invalid " OF_SECONDARY_BOOT " property\n",
+>>> +			node->name);
+>>> +
+>>> +	return ret;
+>>> +}
+>> I don't understand why we need this. Why can't we get the secondary boot
+>> address from the /cpus node in the smp_prepare_cpus op. It isn't that
+>> hard to get access to the cpus node there via of_find_node_by_path().
+>> Then we don't need patch 1 at all. If it turns out to be common stuff,
+>> we can always have the common function live in arm common code or maybe
+>> even be a devicetree API.
+> I already responded to this, but never got any response.  I
+> was preparing to re-send this series and wanted to try to
+> pull the added feature (patch 1) out and not be dependent on
+> it.  But I think it's a bit ugly so I'm hoping to get a
+> blessing to proceed with what I originally proposed.  For
+> reference, here's the thread:
+>     https://lkml.org/lkml/2014/4/3/421
+>
+> What I'm trying to do is get the value of a "secondary-boot-reg"
+> property from a node known to have an "enable-method" property
+> that matches the method name supplied in CPU_METHOD_OF_DECLARE().
 
-In output of perf sched map, any shortname of thread will be explained
-at the first time when it appear.
+I don't recall seeing any documentation about the secondary-boot-reg
+property. Please make sure it is documented in the next patch series.
 
-Example:
-	      *A0       228836.978985 secs A0 => perf:23032
-          *.   A0       228836.979016 secs B0 => swapper:0
-           .  *C0       228836.979099 secs C0 => migration/3:22
-  *A0      .   C0       228836.979115 secs
-   A0      .  *.        228836.979115 secs
+>
+> Using the callback function as I originally proposed, this is
+> very easy.  When arm_dt_init_cpu_maps() parses the "cpus" portion
+> of the device tree it calls set_smp_ops_by_method() for a
+> matching "cpu" or "cpus" node, and that function supplies
+> the node to the callback function. The callback can extract
+> additional property values if needed.
+>
+> If I hold off until smp_prepare_cpus() is called, I have to
+> re-parse the device tree to find the "cpus" node (this is
+> in itself trivial).  I then need to re-parse that node to
+> verify the matching "enable-method" property is found before
+> looking for the parameter information I need for that enable
+> method.  I would really prefer not to re-do this parsing
+> step.  It's imprecise and a little inefficient, and it
+> duplicates (but not exactly) logic that's already performed
+> by arm_dt_init_cpu_maps().
 
-But B0, which is explained as swapper:0 did not appear in the
-left part of output. Instead, we use '.' as the shortname of
-swapper:0. So the comment of "B0 => swapper:0" is not easy to
-understand.
+Do you have any devices where the enable-method and secondary-boot-reg
+isn't the same across all CPUs? A lot of the complexity comes from
+broken DTs that don't specify a secondary-boot-reg along with the
+enable-method. From the description and the code it seems that we should
+just always put these two properties in the cpus node to make things
+simple and precise. I agree it's a minor duplication to read the DT
+again to get the /cpus node and read a property out of it, but I doubt
+you could even measure the difference.
 
-This patch clarify the output of perf sched map with not allocating
-one letter-number shortname for swapper:0 and print ". => swapper:0"
-as the explaination for swapper:0.
+>
+> One more point of clarification.  This "secondary-boot-reg"
+> value is *not* the secondary boot address--that is, it's
+> not the address secondary cores jump to when they are
+> activated.  Instead, this is the address of a register
+> that's used to request the ROM code release a core from
+> its ROM-implemented holding pen.  For this machine,
+> control jumps at that point to secondary_startup(),
+> defined in arch/arm/kernel/head.S.
 
-Example:
-              *A0       228836.978985 secs A0 => perf:23032
-          * .  A0       228836.979016 secs . => swapper:0
-            . *B0       228836.979099 secs B0 => migration/3:22
-  *A0       .  B0       228836.979115 secs
-   A0       . * .       228836.979115 secs
-   A0     *C0   .       228836.979225 secs C0 => ksoftirqd/2:18
-   A0     *D0   .       228836.979236 secs D0 => rcu_sched:7
+Yes it wouldn't be possible to specify the entry address in DT (depends
+on compile time factors). How is this different from cpu-release-addr
+though? It looks like it describes something similar to what ePAPR
+describes and how arm64 uses it (although those two slightly differ).
+Assuming it's paired with a different enable-method than spin-table I
+don't see a problem reusing the same name.
 
-Signed-off-by: Dongsheng <yangds.fnst@cn.fujitsu.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
----
- tools/perf/builtin-sched.c | 38 ++++++++++++++++++++++----------------
- 1 file changed, 22 insertions(+), 16 deletions(-)
+>
+> So...
+>
+> Stephen, I'd like to hear from you whether my explanation
+> is adequate, and whether you think my addition and use of
+> CPU_METHOD_OF_DECLARE_SETUP() is reasonable.  (If you have
+> a suggestion for a better name, I'm open.)
+>
+> If you still don't like it, I'll follow up with a
+> new version of the patches, this time parsing the
+> device tree in the smp_prepare_cpus() method as
+> you suggested.  I don't want this to hold up getting
+> this SMP support into the kernel.
+>
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 4f0dd21..c6a6f5c 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1300,17 +1300,26 @@ static int map_switch_event(struct perf_sched *sched, struct perf_evsel *evsel,
- 
- 	new_shortname = 0;
- 	if (!sched_in->shortname[0]) {
--		sched_in->shortname[0] = sched->next_shortname1;
--		sched_in->shortname[1] = sched->next_shortname2;
--
--		if (sched->next_shortname1 < 'Z') {
--			sched->next_shortname1++;
--		} else {
--			sched->next_shortname1='A';
--			if (sched->next_shortname2 < '9') {
--				sched->next_shortname2++;
-+		if (!strcmp(thread__comm_str(sched_in), "swapper")) {
-+			/*
-+			 * Don't allocate a letter-number for swapper:0
-+			 * as a shortname. Instead, we use '.' for it.
-+			 */
-+			sched_in->shortname[0] = '.';
-+			sched_in->shortname[1] = '\0';
-+		}else {
-+			sched_in->shortname[0] = sched->next_shortname1;
-+			sched_in->shortname[1] = sched->next_shortname2;
-+
-+			if (sched->next_shortname1 < 'Z') {
-+				sched->next_shortname1++;
- 			} else {
--				sched->next_shortname2='0';
-+				sched->next_shortname1='A';
-+				if (sched->next_shortname2 < '9') {
-+					sched->next_shortname2++;
-+				} else {
-+					sched->next_shortname2='0';
-+				}
- 			}
- 		}
- 		new_shortname = 1;
-@@ -1322,12 +1331,9 @@ static int map_switch_event(struct perf_sched *sched, struct perf_evsel *evsel,
- 		else
- 			printf("*");
- 
--		if (sched->curr_thread[cpu]) {
--			if (sched->curr_thread[cpu]->tid)
--				printf("%2s ", sched->curr_thread[cpu]->shortname);
--			else
--				printf(".  ");
--		} else
-+		if (sched->curr_thread[cpu])
-+			printf("%2s ", sched->curr_thread[cpu]->shortname);
-+		else
- 			printf("   ");
- 	}
- 
+This was my train of thought. It annoys me that we have smp ops at two
+levels. We already have SMP ops that deal with SMP things and now we
+have another level that is associated with the enable-method. If we
+really need this callback why couldn't we just collapse it with the
+smp_ops we already have? When we do that we realize that
+smp_prepare_cpus() is a fairly similar place to do this sort of thing,
+but changing that callback to take the node is annoying to propagate to
+all users. But do we really need that node? It seems simple enough to
+just get the cpus node and then read out the property we care about and
+we can do all that in smp_prepare_cpus() one time (and keep the mapping
+around forever) without requiring any core ARM changes.
+
+Do you have any more complicated use cases for this setup hook? RIght
+now I'm not convinced that we need to add all this framework for
+something that looks like it could be done in a couple lines in the
+prepare_cpus() step.
+
+	cpus = of_find_node_by_path("/cpus")
+	ret = of_property_read_u32(cpus, "secondary-boot-reg", &addr);
+
+
 -- 
-1.8.2.1
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
