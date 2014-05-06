@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933845AbaEFDIc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 23:08:32 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:35901 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933731AbaEFDIb (ORCPT
+	id S933933AbaEFDIh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 23:08:37 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:42833 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933731AbaEFDIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 23:08:31 -0400
-Date: Mon, 05 May 2014 23:08:30 -0400 (EDT)
-Message-Id: <20140505.230830.1291070654883866275.davem@davemloft.net>
-To: andi@firstfloor.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tom.zanussi@linux.intel.com, ak@linux.intel.com
-Subject: Re: [PATCH 12/24] net, diet: Make rtnetlink optional
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1399328773-6531-13-git-send-email-andi@firstfloor.org>
+	Mon, 5 May 2014 23:08:34 -0400
+Date: Tue, 6 May 2014 05:08:33 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: David Miller <davem@davemloft.net>
+Cc: andi@firstfloor.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tom.zanussi@linux.intel.com, ak@linux.intel.com,
+        robert.olsson@its.uu.se
+Subject: Re: [PATCH 22/24] net, diet: Support simpler routing table
+Message-ID: <20140506030833.GL2382@two.firstfloor.org>
 References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
-	<1399328773-6531-13-git-send-email-andi@firstfloor.org>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 05 May 2014 20:08:31 -0700 (PDT)
+ <1399328773-6531-23-git-send-email-andi@firstfloor.org>
+ <20140505.230259.1803147080660592366.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140505.230259.1803147080660592366.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <andi@firstfloor.org>
-Date: Mon,  5 May 2014 15:26:01 -0700
-
-> From: Andi Kleen <ak@linux.intel.com>
+On Mon, May 05, 2014 at 11:02:59PM -0400, David Miller wrote:
+> From: Andi Kleen <andi@firstfloor.org>
+> Date: Mon,  5 May 2014 15:26:11 -0700
 > 
-> Small systems can use ioctl/ifconfig for routing and
-> interface configuration. Make rtnetlink optional
-> This saves ~29k without LTO, more with LTO.
+> > Add an optional fib_list that uses a simple list to store routes.
+> > This is suitable for single homed client system which typically
+> > have only a handful of routes.
 > 
->    text    data     bss     dec     hex filename
->  483545   19371   13480  516396   7e12c net/built-in.o-with-rtnetlink
->  454365   19275   12936  486576   76cb0 net/built-in.o-wo-rtnetlink
+> Sorry I'm not applying this.
 > 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> We had two routing table implementations for some time and it sucked,
+> it meant two code paths and two places for bugs to hide.
 
-Andi, I've had about enough with this patch series.
+FWIW it seems to me the trie code is very stable, there doesn't
+seem to be any big changes in a long time.
 
-We have moved several tools to only use netlink because it's
-the only extensible facility, and we are not looking back.
+> 
+> I want only one data structure which does the job well, and we have
+> that now.
 
-The moment one of these "small" systems, or whatever you want to call
-it, tries to use any feature added to device configuration in the last
-20 years ioctl doesn't cut it.
+I don't see any good way to slim the trie code down. Do you?
+
+It's just inherently complex. Yes on many systems it's a good thing,
+and the complexity is justified,
+but on the tiny systems the bloat and code size just hurts.
+
+If we can't get the bloat down these users will just desert us to lwip ...
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
