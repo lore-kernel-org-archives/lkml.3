@@ -1,39 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757110AbaEFPLH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 11:11:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27510 "EHLO mx1.redhat.com"
+	id S1757677AbaEFPMi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 11:12:38 -0400
+Received: from sym2.noone.org ([178.63.92.236]:55885 "EHLO sym2.noone.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751962AbaEFPLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 11:11:05 -0400
-Message-ID: <5368FB80.3010100@redhat.com>
-Date: Tue, 06 May 2014 11:10:56 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752527AbaEFPMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 11:12:36 -0400
+Date: Tue, 6 May 2014 17:12:35 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Darek Marcinkiewicz <reksio@newterm.pl>
+Cc: davem@davemloft.net, romieu@fr.zoreil.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 1/1] Driver for Beckhoff CX5020 EtherCAT master
+ module.
+Message-ID: <20140506151235.GI6455@distanz.ch>
+References: <20140505191045.GK1156@newterm.pl>
+ <20140506145606.GH6455@distanz.ch>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/17] mm: page_alloc: Use jump labels to avoid checking
- number_of_cpusets
-References: <1398933888-4940-1-git-send-email-mgorman@suse.de> <1398933888-4940-4-git-send-email-mgorman@suse.de>
-In-Reply-To: <1398933888-4940-4-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140506145606.GH6455@distanz.ch>
+X-Editor: Vi IMproved 7.2
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2014 04:44 AM, Mel Gorman wrote:
-> If cpusets are not in use then we still check a global variable on every
-> page allocation. Use jump labels to avoid the overhead.
+On 2014-05-06 at 16:56:06 +0200, Tobias Klauser <tklauser@distanz.ch> wrote:
+> On 2014-05-05 at 21:10:45 +0200, Darek Marcinkiewicz <reksio@newterm.pl> wrote:
+> > 
+> > This driver adds support for EtherCAT master module located on CCAT
+> > FPGA found on Beckhoff CX series industrial PCs. The driver exposes
+> > EtherCAT master as an ethernet interface.
+> > 
+> > EtherCAT is a fieldbus protocol defined on top of ethernet and Beckhoff
+> > CX5020 PCs come with built-in EtherCAT master module located on a FPGA,
+> > which in turn is connected to a PCI bus.
+> > 
+> > Signed-off-by: Dariusz Marcinkiewicz <reksio@newterm.pl>
+> > ---
+> > 
+> > Changes from v7:
+> >   * added 'depends on PCI' to the driver's Kconfig entry
+> > 
+> > Changes from v6:
+> >   * added memory barriers to avoid race between timer handler and xmit routine 
+> >   * includes formatting/indeting changes from Francois Romieu
+> > 
+> > Changes from v5:
+> >   * removal of needless locking on tx path
+> >   * driver makes actual use of tx fifo
+> >   * driver uses descriptors' array instead of descriptor list
+> > 
+> > Changes from v4: 
+> >   * incorporates Francois Romieu comments
+> >   * fixes typo spotted by Jesper Brouer
+> > 
+> > Changes from v3:
+> >   * some clarificatoins around buffer allocations
+> > 
+> > Changes from v2:
+> >   * removed all checkpatch warnings
+> >   * driver makes use of device rx fifo
+> > 
+> > Changes from v1:
+> >   * added endianess annotation to descriptors' structures
+> >   * killed checkpath warnings about string literals being split into multiple
+> >     lines
+> > 
+> >  drivers/net/ethernet/Kconfig  |   12 +
+> >  drivers/net/ethernet/Makefile |    1 +
+> >  drivers/net/ethernet/ec_bhf.c |  705 +++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 718 insertions(+)
+> >  create mode 100644 drivers/net/ethernet/ec_bhf.c
 > 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> [...]
+> 
+> > +struct ec_bhf_priv {
+> > +	struct net_device *net_dev;
+> > +
+> > +	struct pci_dev *dev;
+> > +
+> > +	void * __iomem io;
+> > +	void * __iomem dma_io;
+> > +
+> > +	struct hrtimer hrtimer;
+> > +
+> > +	int tx_dma_chan;
+> > +	int rx_dma_chan;
+> > +	void * __iomem ec_io;
+> > +	void * __iomem fifo_io;
+> > +	void * __iomem mii_io;
+> > +	void * __iomem mac_io;
+> > +
+> > +	struct bhf_dma rx_buf;
+> > +	struct rx_desc *rx_descs;
+> > +	int rx_dnext;
+> > +	int rx_dcount;
+> > +
+> > +	struct bhf_dma tx_buf;
+> > +	struct tx_desc *tx_descs;
+> > +	int tx_dcount;
+> > +	int tx_dnext;
+> > +
+> > +	u64 stat_rx_bytes;
+> > +	u64 stat_tx_bytes;
+> 
+> netdev->stats already provides {rx,tx}_bytes members, so you can get rid
+> of these two.
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
-
--- 
-All rights reversed
+Actually, no. The net_device_stats members are unsigned long, so your
+solution is fine. Please disregard.
