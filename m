@@ -1,55 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755713AbaEFNdv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 09:33:51 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:34278 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671AbaEFNdt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 09:33:49 -0400
-Date: Tue, 6 May 2014 16:33:26 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Martin Kepplinger <martink@posteo.de>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        lidza.louina@gmail.com, driverdev-devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: dgnc: fix compile warning frame size is larger
- than 1024 bytes
-Message-ID: <20140506133326.GU26890@mwanda>
-References: <1399380097-11908-1-git-send-email-martink@posteo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399380097-11908-1-git-send-email-martink@posteo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1756190AbaEFNeY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 09:34:24 -0400
+Received: from mga02.intel.com ([134.134.136.20]:17283 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755847AbaEFNeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 09:34:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,997,1389772800"; 
+   d="scan'208";a="535495088"
+Message-ID: <1399383246.8767.99.camel@empanada>
+Subject: Re: RFC: A reduced Linux network stack for small systems
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 06 May 2014 08:34:06 -0500
+In-Reply-To: <CAFLxGvww8t-PpuS3B=dFvn8k3xBydk3CgA=qoLyEbkKJZJ0xhQ@mail.gmail.com>
+References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
+	 <CAFLxGvww8t-PpuS3B=dFvn8k3xBydk3CgA=qoLyEbkKJZJ0xhQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 02:41:37PM +0200, Martin Kepplinger wrote:
-> fix following warning by dynamically allocating memory:
-> dgnc_tty.c:583:1: warning: the frame size of 1060 bytes is larger than 1024 bytes [-Wframe-larger-than=]
+On Tue, 2014-05-06 at 09:25 +0200, Richard Weinberger wrote:
+> On Tue, May 6, 2014 at 12:25 AM, Andi Kleen <andi@firstfloor.org> wrote:
+> > There has been a lot of interest recently to run Linux on very small systems,
+> > like Quark systems. These may have only 2-4MB memory. They are also limited
+> > by flash space.
+> >
+> > One problem on these small system is the size of the network stack.
+> > Currently enabling IPv4 costs about 400k in text, which is prohibitive on
+> > a 2MB system, and very expensive with 4MB.
+> >
+> > There were proposals to instead use LWIP in user space. LWIP with
+> > its socket interface comes in at a bit over 100k overhead per application.
+> >
+> > I maintain that the Linux network stack is actually not that bloated,
+> > it just has a lot of features :-)  The goal of this project was to
+> > subset it in a sensible way so that the native kernel stack becomes
+> > competitive with LWIP.
+> >
+> > It turns out that the standard stack has a couple of features that
+> > are not really needed on client systems. Luckily it is also
+> > relatively well modularized, so it becomes possible to stub
+> > out these features at the edge.
+> >
+> > With removing these features we still have a powerful TCP/IP stack,
+> > but one that fits better into small systems.
+> >
+> > It would have been prohibitive to ifdef every optional feature.
+> > This patchkit relies heavily on LTO to effectively remove unused
+> > code. This allows to disable features only at the module boundaries,
+> > and rely on the compiler to drop unreferenced code and data.
+> >
+> > A few features have been also reimplemented in a simpler way.
+> > And I shrank a number of data structures based on CONFIG_BASE_SMALL.
+> >
+> > With these changes I can get a fully featured network stack down
+> > to about 170k with LTO. Without LTO there are also benefits,
+> > but somewhat less.
+> >
+> > There are essentially three sensible configurations:
+> > - Full featured like today.
+> > - Client only subset, but still works with standard distribution userland.
+> > Remove some obscure features like fastopen, make all tables smaller,
+> > packet socket mmap code, use a simpler routing table, remove
+> > high speed networking features like RPX, XPS, GRO offload.
+> > Disable SNMP, TCP metrics
+> > - Minimal subset for deeply embedded systems that can use special userland.
+> > Remove rtnetlink (ioctl only), remove ethtool, raw sockets.
+> >
+> > Right now I'm using own Kconfigs for every removed features. I realize
+> > this somewhat increases the compile test matrix. It would be possible
+> > to hide some of the options and select them using higher level
+> > configurations like the ones listed above. I haven't done this
+> > in this version.
+> >
+> > At this point I'm mainly interested in review and comments.
+> >
+> > Git trees:
+> >
+> > git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc net/debloat
+> > Main tree
+> >
+> > git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc net/debloat-3.14
+> > 3.14 based tree.
+> >
+> > Thanks to Tom Zanussi for contributions and testing.
 > 
-> Signed-off-by: Martin Kepplinger <martink@posteo.de>
-> ---
-> This is more of a question. Is this a desired solution to fixing such a
-> frame size warning?
+> What kind of userspace do you use on such a small system?
+> It looks like you run kernels without procfs and netlink, so not even
+> ps would work. :)
+> 
 
-This warning is because the kernel uses an 8k stack so you add up all
-the stack memory used by each function from the syscall to here.  If
-it adds up to more than 8k then it's a bug.  The 1k limit per function
-is just a hack to spot where people are maybe being reckless.
+The microYocto 'distro' I have running with these net-diet patches
+doesn't use a full procfs, but a pared-down version (CONFIG_PROCFS_MIN).
+Keeping ps working is of course essential, and it does that (along with
+a couple other things like /proc/filesystems and /proc/mounts I needed
+to boot):
 
-There are no kfree()s and this function is called with a spin_lock held
-so this patch introduces a couple bugs.
+https://github.com/tzanussi/linux-yocto-micro-3.14/commit/68379432afcfa82ac695d9f02892fcf48ade5ae8
 
-There may be a better way to allocate this.  Like maybe at probe() and
-then use spinlocks to serialize access to the buffer.  But sometimes
-that's a very bad idea.
+Anyway all the userspace and kernel bits are available for anyone who
+wants to build it and try it out:
 
-It's better if you know the driver a bit and can test things.
+https://github.com/tzanussi/meta-galileo/blob/daisy/meta-galileo/README
 
-regards,
-dan carpenter
+It's very much a work-in-progress with a lot of rough edges, but it is a
+fully functional system on real hardware (Galileo board/Quark processor)
+with a usable shell (ps too!) and web server running on a kernel with
+native networking and ~ 750k text size.
+
+Tom
+
+
+
 
