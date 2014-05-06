@@ -1,51 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047AbaEFTL4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 15:11:56 -0400
-Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:29559
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751595AbaEFTLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 15:11:54 -0400
-X-WSS-ID: 0N562NC-07-BT0-02
-X-M-MSG: 
-Message-ID: <536933E9.6040404@amd.com>
-Date: Tue, 6 May 2014 14:11:37 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754080AbaEFTNF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 15:13:05 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:35923 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456AbaEFTND convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 15:13:03 -0400
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <kim.naru@amd.com>, <jay.cornwall@amd.com>
-Subject: Re: [PATCH] iommu/amd: Take mmap_sem when calling get_user_pages
-References: <1398724066-3730-1-git-send-email-suravee.suthikulpanit@amd.com>
- <20140506181438.GD12376@8bytes.org>
-In-Reply-To: <20140506181438.GD12376@8bytes.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(199002)(189002)(51704005)(377454003)(479174003)(87936001)(76482001)(99396002)(83506001)(46102001)(81542001)(97736001)(86362001)(81342001)(87266999)(54356999)(77096999)(4396001)(77982001)(50986999)(84676001)(65816999)(76176999)(2009001)(74502001)(31966008)(74662001)(19580405001)(83322001)(80316001)(92566001)(19580395003)(44976005)(85852003)(83072002)(80022001)(65806001)(79102001)(20776003)(47776003)(64706001)(23756003)(64126003)(36756003)(21056001)(68736004)(92726001)(101416001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR02MB113;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Forefront-PRVS: 0203C93D51
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+In-Reply-To: <20140506181151.GU28564@pengutronix.de>
+References: <CAOk88BLR=nwNGdT++39vLdOt=TwZmemF-trSQPY8AdMN9tKtKQ@mail.gmail.com>
+ <20140506181151.GU28564@pengutronix.de>
+From: Brian Lilly <brian@crystalfontz.com>
+Date: Tue, 6 May 2014 12:12:22 -0700
+Message-ID: <CAOk88BJ+sCtM_cRLuBktUKWYHcPo6KtQ+GAgTJL0zBgQqcQYog@mail.gmail.com>
+Subject: Re: i.MX28 based system losing eth0 on boot
+To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Jim Baxter <jim_baxter@mentor.com>, Frank Li <Frank.Li@freescale.com>,
+        Fugang Duan <B38611@freescale.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/6/2014 1:14 PM, Joerg Roedel wrote:
-> On Mon, Apr 28, 2014 at 05:27:46PM -0500, Suthikulpanit, Suravee wrote:
->> From: Jay Cornwall <jay.cornwall@amd.com>
->>
->> get_user_pages requires caller to hold a read lock on mmap_sem.
->
-> Right, but can't we just switch to get_user_pages_fast instead?
->
->
-> 	Joerg
->
+It is happening during boot up:
 
-You're right. I think it can. Let me spin out another patch.
+<snip, kernel 3.12 >
 
-Suravee
+Configuring network interfaces... [   35.117114] fec 800f0000.ethernet
+eth0: Freescale FEC PHY driver [SMSC LAN8710/LAN8720]
+(mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
+[   35.129967] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+udhcpc (v1.21.1) started
 
+Sending discover...
+
+[   37.113901] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
+[   37.120134] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+Sending discover...
+
+Sending select for 10.10.10.217...
+Lease of 10.10.10.217 obtained, lease time 86400
+/etc/udhcpc.d/50default: Adding DNS 10.10.10.13
+[   39.319957] IPv6: ADDRCONF(NETDEV_UP): usb0: link is not ready
+done.
+Starting rpcbind daemon...done.
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.conf.all.rp_filter = 1
+Mon Apr 14 22:40:00 UTC 2014
+INIT: Entering runlevel: 5
+Starting Xserver
+Starting system message bus: dbus.
+Starting Connection Manager
+Starting wpa_supplicant
+Successfully initialized wpa_supplicant
+Starting Dropbear SSH server
+[   44.754915] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
+[SMSC LAN8710/LAN8720] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
+[   45.781364] fec 800f0000.ethernet eth0: MDIO read timeout
+[   46.826170] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+[   47.811385] fec 800f0000.ethernet eth0: MDIO read timeout
+
+With a different kernel (3.14):
+
+[   28.989897] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
+[Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
+[   30.991210] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
+[   37.369372] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
+[Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
+[   38.398346] fec 800f0000.ethernet eth0: MDIO read timeout
+[   39.438412] fec 800f0000.ethernet eth0: MDIO read timeout
+[   39.468419] fec 800f0000.ethernet eth0: MDIO write timeout
+[   40.498848] fec 800f0000.ethernet eth0: MDIO read timeout
+
+Afterward I have to ifdown eth0, ifup eth0 and then it functions
+normally, without reverting the commit.
+
+root@cfa100xx:~# ifdown eth0
+[ 1154.679658] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
+[Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
+root@cfa100xx:~# ifup eth0
+udhcpc (v1.21.1) started
+Sending discover...
+[ 1156.679547] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
+Sending discover...
+Sending select for 10.10.10.217...
+Lease of 10.10.10.217 obtained, lease time 86400
+ip: RTNETLINK answers: File exists
+
+--
+Brian
+
+
+On Tue, May 6, 2014 at 11:11 AM, Uwe Kleine-König
+<u.kleine-koenig@pengutronix.de> wrote:
+> Hello Brian,
+>
+> On Tue, May 06, 2014 at 09:44:34AM -0700, Brian Lilly wrote:
+>> With commit a264b981f2c76e281ef27e7232774bf6c54ec865 we're having eth0
+>> come up, then brought right back down with an MDIO rx timeout moments
+>> after.  Adding back in the removed code keeps the interface alive and
+>> it's working afterward without trouble.  I've tested the re-inserted
+>> code in 3.12, 3.14 without issue on our boards.
+> So you can reliably trigger that problem? You're just doing
+>
+>         ifconfig eth0 1.2.3.4 up
+>
+> (or equivalent) and the interface goes down without further
+> interference with the above mentioned commit? The exact error you're
+> seeing is
+>
+>         MDIO read timeout
+>
+> (with some prefix saying something about fec and eth0 I think)?
+>
+> This error is also present with a264b981f2 reverted, just doesn't affect
+> eth0 being functional? Does the timeout always happen, or only on
+> specific addresses?
+>
+> This is not a proper fix, but does it help to increment FEC_MII_TIMEOUT?
+>
+>> Is there something else that can be done to prevent the MDIO timeouts?
+>> We are using basically the same schematic for networking as the
+>> imx28evk.
+> Hard to say, but assuming it works just fine on the imx28evk for you,
+> too, there seems to be some hardware difference that makes your machine
+> fail. (That doesn't mean it's not fixable in software.)
+>
+> I don't know if a mdio read error is intended to make the device go
+> down, maybe one the the netdev guys can answer that.
+> Assuming that it's not intended, instrument the code, find out how that
+> timeout makes your device go down and find the wrong branch. I'd start
+> with adding stackdumps when the mdio timeout happens and when
+> fec_enet_start_xmit is called with fep->link == 0.
+>
+> Best regards
+> Uwe
+>
+> --
+> Pengutronix e.K.                           | Uwe Kleine-König            |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
