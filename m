@@ -1,302 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932136AbaEFMpd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 08:45:33 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:59945 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757506AbaEFMog (ORCPT
+	id S1756464AbaEFMtV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 08:49:21 -0400
+Received: from xavier.telenet-ops.be ([195.130.132.52]:35338 "EHLO
+	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754840AbaEFMtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 08:44:36 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, vgoyal@redhat.com,
-        axboe@kernel.dk, hannes@cmpxchg.org, mhocko@suse.cz,
-        arozansk@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/5] cgroup: replace cftype->trigger() with cftype->write()
-Date: Tue,  6 May 2014 08:44:24 -0400
-Message-Id: <1399380266-3324-4-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1399380266-3324-1-git-send-email-tj@kernel.org>
-References: <1399380266-3324-1-git-send-email-tj@kernel.org>
+	Tue, 6 May 2014 08:49:17 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH/RFC] usb: gadget: CONFIG_USB_S3C_HSOTG should depend on HAS_DMA
+Date: Tue,  6 May 2014 14:49:14 +0200
+Message-Id: <1399380554-3746-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cftype->trigger() is pointless.  It's trivial to ignore the input
-buffer from a regular ->write() operation.  Convert all ->trigger()
-users to ->write() and remove ->trigger().
+If NO_DMA=y:
 
-This patch doesn't introduce any visible behavior changes.
+drivers/built-in.o: In function `s3c_hsotg_map_dma':
+s3c-hsotg.c:(.text+0x375b2c): undefined reference to `usb_gadget_map_request'
+drivers/built-in.o: In function `s3c_hsotg_unmap_dma':
+s3c-hsotg.c:(.text+0x376a32): undefined reference to `usb_gadget_unmap_request'
+make[3]: *** [vmlinux] Error 1
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
+Note that all callers of s3c_hsotg_map_dma()/s3c_hsotg_unmap_dma() are
+protected by a call into the using_dma() checking function:
+
+static inline bool using_dma(struct s3c_hsotg *hsotg)
+{
+        return false;   /* support is not complete */
+}
+
+but not all versions of gcc manage to optimize the check away, causing a
+link error.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- include/linux/cgroup.h    |  8 --------
- kernel/cgroup.c           |  5 +----
- mm/hugetlb_cgroup.c       | 16 ++++++++--------
- mm/memcontrol.c           | 34 ++++++++++++++++++----------------
- net/ipv4/tcp_memcontrol.c | 15 ++++++++-------
- 5 files changed, 35 insertions(+), 43 deletions(-)
+Perhaps the DMA code should be removed completely, as its unused, or be
+protected by #ifdef CONFIG_HAS_DMA instead?
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 5f717d7..f8cfadb 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -502,14 +502,6 @@ struct cftype {
- 			 s64 val);
+ drivers/usb/gadget/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+index 3557c7e5040d..0e9dead51a27 100644
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -302,6 +302,7 @@ config USB_PXA27X
  
- 	/*
--	 * trigger() callback can be used to get some kick from the
--	 * userspace, when the actual string written is not important
--	 * at all. The private field can be used to determine the
--	 * kick type for multiplexing.
--	 */
--	int (*trigger)(struct cgroup_subsys_state *css, unsigned int event);
--
--	/*
- 	 * write() is the generic write callback which maps directly to
- 	 * kernfs write operation and overrides all other operations.
- 	 * Maximum write size is determined by ->max_write_len.  Use
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 8939fe4..4b340c3 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1034,8 +1034,7 @@ static umode_t cgroup_file_mode(const struct cftype *cft)
- 	if (cft->read_u64 || cft->read_s64 || cft->seq_show)
- 		mode |= S_IRUGO;
- 
--	if (cft->write_u64 || cft->write_s64 || cft->write ||
--	    cft->trigger)
-+	if (cft->write_u64 || cft->write_s64 || cft->write)
- 		mode |= S_IWUSR;
- 
- 	return mode;
-@@ -2748,8 +2747,6 @@ static ssize_t cgroup_file_write(struct kernfs_open_file *of, char *buf,
- 		ret = kstrtoll(buf, 0, &v);
- 		if (!ret)
- 			ret = cft->write_s64(css, cft, v);
--	} else if (cft->trigger) {
--		ret = cft->trigger(css, (unsigned int)cft->private);
- 	} else {
- 		ret = -EINVAL;
- 	}
-diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-index faea871..8597daa 100644
---- a/mm/hugetlb_cgroup.c
-+++ b/mm/hugetlb_cgroup.c
-@@ -284,14 +284,14 @@ static ssize_t hugetlb_cgroup_write(struct kernfs_open_file *of,
- 	return ret ?: nbytes;
- }
- 
--static int hugetlb_cgroup_reset(struct cgroup_subsys_state *css,
--				unsigned int event)
-+static ssize_t hugetlb_cgroup_reset(struct kernfs_open_file *of,
-+				    char *buf, size_t nbytes, loff_t off)
- {
- 	int idx, name, ret = 0;
--	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_css(css);
-+	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_css(of_css(of));
- 
--	idx = MEMFILE_IDX(event);
--	name = MEMFILE_ATTR(event);
-+	idx = MEMFILE_IDX(of_cft(of)->private);
-+	name = MEMFILE_ATTR(of_cft(of)->private);
- 
- 	switch (name) {
- 	case RES_MAX_USAGE:
-@@ -304,7 +304,7 @@ static int hugetlb_cgroup_reset(struct cgroup_subsys_state *css,
- 		ret = -EINVAL;
- 		break;
- 	}
--	return ret;
-+	return ret ?: nbytes;
- }
- 
- static char *mem_fmt(char *buf, int size, unsigned long hsize)
-@@ -344,14 +344,14 @@ static void __init __hugetlb_cgroup_file_init(int idx)
- 	cft = &h->cgroup_files[2];
- 	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.max_usage_in_bytes", buf);
- 	cft->private = MEMFILE_PRIVATE(idx, RES_MAX_USAGE);
--	cft->trigger = hugetlb_cgroup_reset;
-+	cft->write = hugetlb_cgroup_reset;
- 	cft->read_u64 = hugetlb_cgroup_read_u64;
- 
- 	/* Add the failcntfile */
- 	cft = &h->cgroup_files[3];
- 	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.failcnt", buf);
- 	cft->private  = MEMFILE_PRIVATE(idx, RES_FAILCNT);
--	cft->trigger  = hugetlb_cgroup_reset;
-+	cft->write = hugetlb_cgroup_reset;
- 	cft->read_u64 = hugetlb_cgroup_read_u64;
- 
- 	/* NULL terminate the last cft */
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 0258419..0845097 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4885,14 +4885,15 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
- 	return 0;
- }
- 
--static int mem_cgroup_force_empty_write(struct cgroup_subsys_state *css,
--					unsigned int event)
-+static ssize_t mem_cgroup_force_empty_write(struct kernfs_open_file *of,
-+					    char *buf, size_t nbytes,
-+					    loff_t off)
- {
--	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-+	struct mem_cgroup *memcg = mem_cgroup_from_css(of_css(of));
- 
- 	if (mem_cgroup_is_root(memcg))
- 		return -EINVAL;
--	return mem_cgroup_force_empty(memcg);
-+	return mem_cgroup_force_empty(memcg) ?: nbytes;
- }
- 
- static u64 mem_cgroup_hierarchy_read(struct cgroup_subsys_state *css,
-@@ -5218,14 +5219,15 @@ out:
- 	*memsw_limit = min_memsw_limit;
- }
- 
--static int mem_cgroup_reset(struct cgroup_subsys_state *css, unsigned int event)
-+static ssize_t mem_cgroup_reset(struct kernfs_open_file *of, char *buf,
-+				size_t nbytes, loff_t off)
- {
--	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-+	struct mem_cgroup *memcg = mem_cgroup_from_css(of_css(of));
- 	int name;
- 	enum res_type type;
- 
--	type = MEMFILE_TYPE(event);
--	name = MEMFILE_ATTR(event);
-+	type = MEMFILE_TYPE(of_cft(of)->private);
-+	name = MEMFILE_ATTR(of_cft(of)->private);
- 
- 	switch (name) {
- 	case RES_MAX_USAGE:
-@@ -5250,7 +5252,7 @@ static int mem_cgroup_reset(struct cgroup_subsys_state *css, unsigned int event)
- 		break;
- 	}
- 
--	return 0;
-+	return nbytes;
- }
- 
- static u64 mem_cgroup_move_charge_read(struct cgroup_subsys_state *css,
-@@ -6103,7 +6105,7 @@ static struct cftype mem_cgroup_files[] = {
- 	{
- 		.name = "max_usage_in_bytes",
- 		.private = MEMFILE_PRIVATE(_MEM, RES_MAX_USAGE),
--		.trigger = mem_cgroup_reset,
-+		.write = mem_cgroup_reset,
- 		.read_u64 = mem_cgroup_read_u64,
- 	},
- 	{
-@@ -6121,7 +6123,7 @@ static struct cftype mem_cgroup_files[] = {
- 	{
- 		.name = "failcnt",
- 		.private = MEMFILE_PRIVATE(_MEM, RES_FAILCNT),
--		.trigger = mem_cgroup_reset,
-+		.write = mem_cgroup_reset,
- 		.read_u64 = mem_cgroup_read_u64,
- 	},
- 	{
-@@ -6130,7 +6132,7 @@ static struct cftype mem_cgroup_files[] = {
- 	},
- 	{
- 		.name = "force_empty",
--		.trigger = mem_cgroup_force_empty_write,
-+		.write = mem_cgroup_force_empty_write,
- 	},
- 	{
- 		.name = "use_hierarchy",
-@@ -6184,13 +6186,13 @@ static struct cftype mem_cgroup_files[] = {
- 	{
- 		.name = "kmem.failcnt",
- 		.private = MEMFILE_PRIVATE(_KMEM, RES_FAILCNT),
--		.trigger = mem_cgroup_reset,
-+		.write = mem_cgroup_reset,
- 		.read_u64 = mem_cgroup_read_u64,
- 	},
- 	{
- 		.name = "kmem.max_usage_in_bytes",
- 		.private = MEMFILE_PRIVATE(_KMEM, RES_MAX_USAGE),
--		.trigger = mem_cgroup_reset,
-+		.write = mem_cgroup_reset,
- 		.read_u64 = mem_cgroup_read_u64,
- 	},
- #ifdef CONFIG_SLABINFO
-@@ -6213,7 +6215,7 @@ static struct cftype memsw_cgroup_files[] = {
- 	{
- 		.name = "memsw.max_usage_in_bytes",
- 		.private = MEMFILE_PRIVATE(_MEMSWAP, RES_MAX_USAGE),
--		.trigger = mem_cgroup_reset,
-+		.write = mem_cgroup_reset,
- 		.read_u64 = mem_cgroup_read_u64,
- 	},
- 	{
-@@ -6225,7 +6227,7 @@ static struct cftype memsw_cgroup_files[] = {
- 	{
- 		.name = "memsw.failcnt",
- 		.private = MEMFILE_PRIVATE(_MEMSWAP, RES_FAILCNT),
--		.trigger = mem_cgroup_reset,
-+		.write = mem_cgroup_reset,
- 		.read_u64 = mem_cgroup_read_u64,
- 	},
- 	{ },	/* terminate */
-diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
-index 841fd3f..f7a2ec3 100644
---- a/net/ipv4/tcp_memcontrol.c
-+++ b/net/ipv4/tcp_memcontrol.c
-@@ -170,17 +170,18 @@ static u64 tcp_cgroup_read(struct cgroup_subsys_state *css, struct cftype *cft)
- 	return val;
- }
- 
--static int tcp_cgroup_reset(struct cgroup_subsys_state *css, unsigned int event)
-+static ssize_t tcp_cgroup_reset(struct kernfs_open_file *of,
-+				char *buf, size_t nbytes, loff_t off)
- {
- 	struct mem_cgroup *memcg;
- 	struct cg_proto *cg_proto;
- 
--	memcg = mem_cgroup_from_css(css);
-+	memcg = mem_cgroup_from_css(of_css(of));
- 	cg_proto = tcp_prot.proto_cgroup(memcg);
- 	if (!cg_proto)
--		return 0;
-+		return nbytes;
- 
--	switch (event) {
-+	switch (of_cft(of)->private) {
- 	case RES_MAX_USAGE:
- 		res_counter_reset_max(&cg_proto->memory_allocated);
- 		break;
-@@ -189,7 +190,7 @@ static int tcp_cgroup_reset(struct cgroup_subsys_state *css, unsigned int event)
- 		break;
- 	}
- 
--	return 0;
-+	return nbytes;
- }
- 
- static struct cftype tcp_files[] = {
-@@ -207,13 +208,13 @@ static struct cftype tcp_files[] = {
- 	{
- 		.name = "kmem.tcp.failcnt",
- 		.private = RES_FAILCNT,
--		.trigger = tcp_cgroup_reset,
-+		.write = tcp_cgroup_reset,
- 		.read_u64 = tcp_cgroup_read,
- 	},
- 	{
- 		.name = "kmem.tcp.max_usage_in_bytes",
- 		.private = RES_MAX_USAGE,
--		.trigger = tcp_cgroup_reset,
-+		.write = tcp_cgroup_reset,
- 		.read_u64 = tcp_cgroup_read,
- 	},
- 	{ }	/* terminate */
+ config USB_S3C_HSOTG
+ 	tristate "Designware/S3C HS/OtG USB Device controller"
++	depends on HAS_DMA
+ 	help
+ 	  The Designware USB2.0 high-speed gadget controller
+ 	  integrated into many SoCs.
 -- 
-1.9.0
+1.7.9.5
 
