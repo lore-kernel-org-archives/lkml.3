@@ -1,96 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255AbaEFNmG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 09:42:06 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59294 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753136AbaEFNmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 09:42:03 -0400
-Message-ID: <5368E693.1060201@ti.com>
-Date: Tue, 6 May 2014 08:41:39 -0500
-From: Dan Murphy <dmurphy@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1757999AbaEFNmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 09:42:14 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:47903 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886AbaEFNmL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 09:42:11 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: "bhelgaas@google.com" <bhelgaas@google.com>
+CC: "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] DMA-API: Change dma_declare_coherent_memory() CPU
+ address to phys_addr_t
+Thread-Topic: [PATCH] DMA-API: Change dma_declare_coherent_memory() CPU
+ address to phys_addr_t
+Thread-Index: AQHPZLNvK1nxQSaf0ES3zCf+oGYc5JssOYIAgABS9ACAALo/AIAAKhYAgAWm7gCAAD3VAIAAsZ8AgAAGtIA=
+Date: Tue, 6 May 2014 13:42:06 +0000
+Message-ID: <1399383725.2237.26.camel@dabdike.int.hansenpartnership.com>
+References: <20140430203321.30056.14833.stgit@bhelgaas-glaptop.roam.corp.google.com>
+	 <CAErSpo7zjXg8xrV7=q36rNp_g573P93HiXTB72Z1cZfjGeeBmg@mail.gmail.com>
+	 <1399011100.2174.45.camel@dabdike> <11081303.OBX0h8mIfH@wuerfel>
+	 <20140505230104.GB8883@google.com>
+	 <1399344142.2164.67.camel@dabdike.int.hansenpartnership.com>
+	 <CAErSpo7wJTP+GyM4sNN6gAA69cV_j3m=nOsgJasi1XYFZMA2YA@mail.gmail.com>
+In-Reply-To: <CAErSpo7wJTP+GyM4sNN6gAA69cV_j3m=nOsgJasi1XYFZMA2YA@mail.gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.46.150.111]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <C1840CDB9C38A844AC77AD8C7E5BC2A9@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>
-CC: <rogerq@ti.com>, <balajitk@ti.com>
-Subject: Re: [TEMP PATCH 16/17] pci: host: pcie-dra7xx: use reset framework
- APIs to reset PCIe
-References: <1399383244-14556-1-git-send-email-kishon@ti.com> <1399383244-14556-17-git-send-email-kishon@ti.com>
-In-Reply-To: <1399383244-14556-17-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2014 08:34 AM, Kishon Vijay Abraham I wrote:
-> Get reset nodes from dt and use reset framework APIs to reset PCIe.
-> This is needed since reset is handled by the SoC.
->
-> Cc: Dan Murphy <dmurphy@ti.com>
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->  Documentation/devicetree/bindings/pci/ti-pci.txt |    2 ++
->  drivers/pci/host/pci-dra7xx.c                    |   10 ++++++++++
->  2 files changed, 12 insertions(+)
->
-> diff --git a/Documentation/devicetree/bindings/pci/ti-pci.txt b/Documentation/devicetree/bindings/pci/ti-pci.txt
-> index 6cb6f09..cfb95c0 100644
-> --- a/Documentation/devicetree/bindings/pci/ti-pci.txt
-> +++ b/Documentation/devicetree/bindings/pci/ti-pci.txt
-> @@ -9,6 +9,8 @@ This node should have the properties described in "designware-pcie.txt".
->   - phys : the phandle for the PHY device (used by generic PHY framework)
->   - phy-names : the names of the PHY corresponding to the PHYs present in the
->     *phy* phandle.
-> + - resets: phandle used if reset is handled be soc
-> + - reset-names: name given to the phandle
+On Tue, 2014-05-06 at 07:18 -0600, Bjorn Helgaas wrote:
+> On Mon, May 5, 2014 at 8:42 PM, James Bottomley
+> <jbottomley@parallels.com> wrote:
+> > On Mon, 2014-05-05 at 17:01 -0600, Bjorn Helgaas wrote:
+> >> On Fri, May 02, 2014 at 10:42:18AM +0200, Arnd Bergmann wrote:
+> >
+> >> > I don't know about NCR_Q720, but all others are only used on machines
+> >> > where physical addresses and bus addresses are in the same space.
+> >>
+> >> In general, the driver doesn't know whether physical and bus addresses
+> >> are in the same space.  At least, I *hope* it doesn't have to know,
+> >> because it can't be very generic if it does.
+> >
+> > The API was designed for the case where the memory resides on a PCI
+> > device (the Q720 case), the card config gives us a bus address, but if
+> > the system has an IOMMU, we'd have to do a dma_map of the entire region
+> > to set up the IOMMU before we can touch it.  The address it gets back
+> > from the dma_map (the dma_addr_t handle for the IOMMU mapping) is what
+> > we pass into dma_declare_coherent_memory().
+> 
+> The IOMMU (if any) is only involved for DMA to system memory, and
+> there is no system memory in this picture.  The device does DMA to its
+> own memory; no dma_map is required for this.  We use
+> dma_declare_coherent_memory() to set things up so the CPU can also do
+> programmed I/O to the memory.
 
-You should just refer to the ti,reset.txt document for this.
+Right, but for the CPU to access memory on a device, the access has to
+go through the IOMMU: it has to be programmed to map the memory on the
+bus to a physical address.
 
->  
->  Example:
->  pcie@51000000 {
-> diff --git a/drivers/pci/host/pci-dra7xx.c b/drivers/pci/host/pci-dra7xx.c
-> index a37c25c..17d64ee 100644
-> --- a/drivers/pci/host/pci-dra7xx.c
-> +++ b/drivers/pci/host/pci-dra7xx.c
-> @@ -20,6 +20,7 @@
->  #include <linux/platform_device.h>
->  #include <linux/pm_runtime.h>
->  #include <linux/resource.h>
-> +#include <linux/reset.h>
->  #include <linux/types.h>
->  
->  #include "pcie-designware.h"
-> @@ -281,6 +282,7 @@ static int __init dra7xx_pcie_probe(struct platform_device *pdev)
->  	struct resource *res;
->  	struct dra7xx_pcie *dra7xx;
->  	struct device *dev = &pdev->dev;
-> +	struct reset_control *rstc;
->  
->  	dra7xx = devm_kzalloc(&pdev->dev, sizeof(*dra7xx), GFP_KERNEL);
->  	if (!dra7xx)
-> @@ -304,6 +306,14 @@ static int __init dra7xx_pcie_probe(struct platform_device *pdev)
->  	if (!base)
->  		return -ENOMEM;
->  
-> +	rstc = devm_reset_control_get(dev, "reset");
-> +	if (IS_ERR(rstc))
-> +		return PTR_ERR(rstc);
-> +
-> +	ret = reset_control_deassert(rstc);
-> +	if (ret)
-> +		return ret;
-> +
->  	phy = devm_phy_get(dev, "pcie-phy");
->  	if (IS_ERR(phy))
->  		return PTR_ERR(phy);
+> > The reason it does an
+> > ioremap is because this IOMMU mapped address is now physical to the CPU
+> > and we want to make the region available to virtual space.  Essentially
+> > the memory the allocator hands out behaves as proper virtual memory but
+> > it's backed by physical memory on the card behind the PCI bridge.
+> 
+> Yep, the programmed I/O depends on the ioremap().  But I don't think
+> it depends on any IOMMU mapping.
 
+At least on Parisc with U2/Uturn, unless there are IOMMU entries, you
+won't be able to address the memory on the device because it's behind
+the IOMMU.  For regions like this, the necessary IOMMU entries are set
+up at init time because without them you don't get memory mapped access
+to register space either.
 
--- 
-------------------
-Dan Murphy
+So like I said, I can go either way.  The entries arrive properly set
+up, so perhaps we should use phys_addr_t because that's what's the other
+side of the IOMMU.  On the other hand it is a handle for something on
+the device, so perhaps it should be dma_addr_t.
+
+James
+
+> > I'm still not that fussed about the difference between phys_addr_t and
+> > dma_addr_t, but if the cookie returned from a dma_map is a dma_addr_t
+> > then that's what dma_declare_coherent_memory() should use.  If it's a
+> > phys_addr_t, then likewise.
+> >
+> > James
+> >
+
 
