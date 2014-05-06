@@ -1,134 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255AbaEFPUx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 11:20:53 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:64625 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754445AbaEFPUv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 11:20:51 -0400
+	id S1757938AbaEFPV3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 11:21:29 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:60461 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752511AbaEFPV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 11:21:27 -0400
+Date: Tue, 6 May 2014 11:21:12 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 1/4] memcg, mm: introduce lowlimit reclaim
+Message-ID: <20140506152112.GG19914@cmpxchg.org>
+References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
+ <1398688005-26207-2-git-send-email-mhocko@suse.cz>
+ <20140430225550.GD26041@cmpxchg.org>
+ <20140502093628.GC3446@dhcp22.suse.cz>
+ <20140502155805.GO23420@cmpxchg.org>
+ <20140502164930.GP3446@dhcp22.suse.cz>
+ <20140502220056.GP23420@cmpxchg.org>
+ <20140506132932.GF19914@cmpxchg.org>
+ <20140506143242.GB19672@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <1399383246.8767.99.camel@empanada>
-References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
-	<CAFLxGvww8t-PpuS3B=dFvn8k3xBydk3CgA=qoLyEbkKJZJ0xhQ@mail.gmail.com>
-	<1399383246.8767.99.camel@empanada>
-Date: Tue, 6 May 2014 08:20:50 -0700
-Message-ID: <CAADnVQLYiNfXRrXc=VZkGEFDbNhF63AzPg6Gyu6P1SF=6AiO7g@mail.gmail.com>
-Subject: Re: RFC: A reduced Linux network stack for small systems
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: Richard Weinberger <richard.weinberger@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140506143242.GB19672@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 6, 2014 at 6:34 AM, Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
-> On Tue, 2014-05-06 at 09:25 +0200, Richard Weinberger wrote:
->> On Tue, May 6, 2014 at 12:25 AM, Andi Kleen <andi@firstfloor.org> wrote:
->> > There has been a lot of interest recently to run Linux on very small systems,
->> > like Quark systems. These may have only 2-4MB memory. They are also limited
->> > by flash space.
->> >
->> > One problem on these small system is the size of the network stack.
->> > Currently enabling IPv4 costs about 400k in text, which is prohibitive on
->> > a 2MB system, and very expensive with 4MB.
->> >
->> > There were proposals to instead use LWIP in user space. LWIP with
->> > its socket interface comes in at a bit over 100k overhead per application.
->> >
->> > I maintain that the Linux network stack is actually not that bloated,
->> > it just has a lot of features :-)  The goal of this project was to
->> > subset it in a sensible way so that the native kernel stack becomes
->> > competitive with LWIP.
->> >
->> > It turns out that the standard stack has a couple of features that
->> > are not really needed on client systems. Luckily it is also
->> > relatively well modularized, so it becomes possible to stub
->> > out these features at the edge.
->> >
->> > With removing these features we still have a powerful TCP/IP stack,
->> > but one that fits better into small systems.
->> >
->> > It would have been prohibitive to ifdef every optional feature.
->> > This patchkit relies heavily on LTO to effectively remove unused
->> > code. This allows to disable features only at the module boundaries,
->> > and rely on the compiler to drop unreferenced code and data.
->> >
->> > A few features have been also reimplemented in a simpler way.
->> > And I shrank a number of data structures based on CONFIG_BASE_SMALL.
->> >
->> > With these changes I can get a fully featured network stack down
->> > to about 170k with LTO. Without LTO there are also benefits,
->> > but somewhat less.
->> >
->> > There are essentially three sensible configurations:
->> > - Full featured like today.
->> > - Client only subset, but still works with standard distribution userland.
->> > Remove some obscure features like fastopen, make all tables smaller,
->> > packet socket mmap code, use a simpler routing table, remove
->> > high speed networking features like RPX, XPS, GRO offload.
->> > Disable SNMP, TCP metrics
->> > - Minimal subset for deeply embedded systems that can use special userland.
->> > Remove rtnetlink (ioctl only), remove ethtool, raw sockets.
->> >
->> > Right now I'm using own Kconfigs for every removed features. I realize
->> > this somewhat increases the compile test matrix. It would be possible
->> > to hide some of the options and select them using higher level
->> > configurations like the ones listed above. I haven't done this
->> > in this version.
->> >
->> > At this point I'm mainly interested in review and comments.
->> >
->> > Git trees:
->> >
->> > git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc net/debloat
->> > Main tree
->> >
->> > git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc net/debloat-3.14
->> > 3.14 based tree.
->> >
->> > Thanks to Tom Zanussi for contributions and testing.
->>
->> What kind of userspace do you use on such a small system?
->> It looks like you run kernels without procfs and netlink, so not even
->> ps would work. :)
->>
->
-> The microYocto 'distro' I have running with these net-diet patches
-> doesn't use a full procfs, but a pared-down version (CONFIG_PROCFS_MIN).
-> Keeping ps working is of course essential, and it does that (along with
-> a couple other things like /proc/filesystems and /proc/mounts I needed
-> to boot):
->
-> https://github.com/tzanussi/linux-yocto-micro-3.14/commit/68379432afcfa82ac695d9f02892fcf48ade5ae8
->
-> Anyway all the userspace and kernel bits are available for anyone who
-> wants to build it and try it out:
->
-> https://github.com/tzanussi/meta-galileo/blob/daisy/meta-galileo/README
->
-> It's very much a work-in-progress with a lot of rough edges, but it is a
-> fully functional system on real hardware (Galileo board/Quark processor)
-> with a usable shell (ps too!) and web server running on a kernel with
-> native networking and ~ 750k text size.
+On Tue, May 06, 2014 at 04:32:42PM +0200, Michal Hocko wrote:
+> On Tue 06-05-14 09:29:32, Johannes Weiner wrote:
+> > On Fri, May 02, 2014 at 06:00:56PM -0400, Johannes Weiner wrote:
+> > > On Fri, May 02, 2014 at 06:49:30PM +0200, Michal Hocko wrote:
+> > > > On Fri 02-05-14 11:58:05, Johannes Weiner wrote:
+> > > > > This is not even guarantees anymore, but rather another reclaim
+> > > > > prioritization scheme with best-effort semantics.  That went over
+> > > > > horribly with soft limits, and I don't want to repeat this.
+> > > > > 
+> > > > > Overcommitting on guarantees makes no sense, and you even agree you
+> > > > > are not interested in it.  We also agree that we can always add a knob
+> > > > > later on to change semantics when an actual usecase presents itself,
+> > > > > so why not start with the clear and simple semantics, and the simpler
+> > > > > implementation?
+> > > > 
+> > > > So you are really preferring an OOM instead? That was the original
+> > > > implementation posted at the end of last year and some people
+> > > > had concerns about it. This is the primary reason I came up with a
+> > > > weaker version which fallbacks rather than OOM.
+> > > 
+> > > I'll dig through the archives on this then, thanks.
+> > 
+> > The most recent discussion on this I could find was between you and
+> > Greg, where the final outcome was (excerpt):
+> > 
+> > ---
+> > 
+> > From: Greg Thelen <gthelen@google.com>
+> > To: Michal Hocko <mhocko@suse.cz>
+> > Cc: linux-mm@kvack.org,  Johannes Weiner <hannes@cmpxchg.org>,  Andrew Morton <akpm@linux-foundation.org>,  KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,  LKML <linux-kernel@vger.kernel.org>,  Ying Han <yinghan@google.com>,  Hugh Dickins <hughd@google.com>,  Michel Lespinasse <walken@google.com>,  KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,  Tejun Heo <tj@kernel.org>
+> > Subject: Re: [RFC 0/4] memcg: Low-limit reclaim
+> > References: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
+> > 	<xr93sis6obb5.fsf@gthelen.mtv.corp.google.com>
+> > 	<20140130123044.GB13509@dhcp22.suse.cz>
+> > 	<xr931tzphu50.fsf@gthelen.mtv.corp.google.com>
+> > 	<20140203144341.GI2495@dhcp22.suse.cz>
+> > Date: Mon, 03 Feb 2014 17:33:13 -0800
+> > Message-ID: <xr93zjm7br1i.fsf@gthelen.mtv.corp.google.com>
+> > List-ID: <linux-mm.kvack.org>
+> > 
+> > On Mon, Feb 03 2014, Michal Hocko wrote:
+> > 
+> > > On Thu 30-01-14 16:28:27, Greg Thelen wrote:
+> > >> But this soft_limit,priority extension can be added later.
+> > >
+> > > Yes, I would like to have the strong semantic first and then deal with a
+> > > weaker form. Either by a new limit or a flag.
+> > 
+> > Sounds good.
+> > 
+> > ---
+> > 
+> > So I think everybody involved in the discussions so far are preferring
+> > a hard guarantee, and then later, if needed, to either add a knob to
+> > make it a soft guarantee or to actually implement a usable soft limit.
+> 
+> I am afraid the most of that discussion happened off-list :( Sadly not
+> much of a discussion happened on the list.
 
-Intel Galileo datasheet says:
-- 400MHz 32bit Intel
-- 512 KBytes of on-die embedded SRAM
-- 256 MByte DRAM, enabled by the firmware by default
+Time to do it now, then :)
 
-where did 2-4Mbyte restriction come from?
+> Sorry I should have been specific and mention that the discussions
+> happened at LSF and partly at the KS.
+> 
+> The strongest point was made by Rik when he claimed that memcg is not
+> aware of memory zones and so one memcg with lowlimit larger than the
+> size of a zone can eat up that zone without any way to free it.
 
-Anyway, with all these hacks you get a half functional kernel with "a
-lot of rough edges"
-that is likely working only for the given very limited set of applications.
-Kernel function profiling can potentially achieve the same thing.
-Profile the kernel with the set of apps and then prune all cold
-functions out of kernel.
-config explosion and LTO is unnecessary. Just some linker hacks.
-Obviously such kernel will also be half functional,
-but you'll get big reduction in .text that it seems is the goal of this project.
+But who actually cares if an individual zone can be reclaimed?
+
+Userspace allocations can fall back to any other zone.  Unless there
+are hard bindings, but hopefully nobody binds a memcg to a node that
+is smaller than that memcg's guarantee.  And while the pages are not
+reclaimable, they are still movable, so the NUMA balancer is free to
+correct any allocation mistakes later on.
+
+As to kernel allocations, watermarks and lowmem protection prevent any
+single zone from filling up with userspace pages, regardless of their
+reclaimability.
+
+> This can cause additional troubles (permanent reclaim on that zone
+> and OOM in an extreme situations).
+
+We have protection against wasting CPU cycles on unreclaimable zones.
+
+So how is it different than anonymous/shared memory without swap?  Or
+mlocked memory?
