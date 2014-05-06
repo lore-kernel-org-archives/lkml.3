@@ -1,60 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047AbaEFRyj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 13:54:39 -0400
-Received: from smtp5-g21.free.fr ([212.27.42.5]:56950 "EHLO smtp5-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751914AbaEFRyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 13:54:38 -0400
-X-Greylist: delayed 81516 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 May 2014 13:54:38 EDT
-From: =?UTF-8?q?Cl=C3=A9ment=20Calmels?= <clement.calmels@free.fr>
-To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: sep: fix coding style issue
-Date: Tue,  6 May 2014 19:54:41 +0200
-Message-Id: <1399398881-2611-1-git-send-email-clement.calmels@free.fr>
-X-Mailer: git-send-email 2.0.0.rc0
+	id S1752326AbaEFRza (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 13:55:30 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:50897 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752121AbaEFRz2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 13:55:28 -0400
+Message-ID: <5369220A.3030207@semaphore.gr>
+Date: Tue, 06 May 2014 20:55:22 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Simon Horman <horms@verge.net.au>, Sekhar Nori <nsekhar@ti.com>,
+        Samuel Ortiz <samuel@sortiz.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Subject: Re: [PATCH v5 0/8] Introduce new cpufreq helper macros
+References: <535AC247.3070907@semaphore.gr>	<CAKohpok-74uK5k-adxjmEy71=vF8V7MaBwdCD1Vb2ats7FHi_A@mail.gmail.com>	<535FCDBD.6080500@semaphore.gr>	<1621123.rMC9JtD3Mo@vostro.rjw.lan> <CAMuHMdU6eKQbmqvDj8Ra3MjuqhvFQ6WxoTsiJ4mojqXY4XOtaw@mail.gmail.com>
+In-Reply-To: <CAMuHMdU6eKQbmqvDj8Ra3MjuqhvFQ6WxoTsiJ4mojqXY4XOtaw@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to fix coding style issue found by
-scripts/checkpatch.pl utility.
+Hi all,
 
-Signed-off-by: Clément Calmels <clement.calmels@free.fr>
----
- drivers/staging/sep/sep_dev.h | 3 +++
- 1 file changed, 3 insertions(+)
+On 06/05/2014 06:24 μμ, Geert Uytterhoeven wrote:
+> Hi Stratos,
+> 
+> On Wed, Apr 30, 2014 at 12:26 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> On Tuesday, April 29, 2014 07:05:17 PM Stratos Karafotis wrote:
+>>> On 29/04/2014 07:17 πμ, Viresh Kumar wrote:
+>>>> On 26 April 2014 01:45, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+>>>>> This patch set introduces two freq_table helper macros which
+>>>>> can be used for iteration over cpufreq_frequency_table and
+>>>>> makes the necessary changes to cpufreq core and drivers that
+>>>>> use such an iteration procedure.
+>>>>>
+>>>>> The motivation was a usage of common procedure to iterate over
+>>>>> cpufreq_frequency_table across all drivers and cpufreq core.
+>>>>>
+>>>>> This was tested on a x86_64 platform.
+>>>>> Most files compiled successfully but unfortunately I was not
+>>>>> able to compile sh_sir.c pasemi_cpufreq.c and ppc_cbe_cpufreq.c
+>>>>> due to lack of cross compiler.
+>>>>>
+>>>>> Changelog
+>>>>>
+>>>>> v4 -> v5
+>>>>>         - Fix warnings in printk format specifier for 32 bit
+>>>>>           architectures in freq_table.c, longhaul, pasemi, ppc_cbe
+>>>>
+>>>> Doesn't look much has changed and so it stays as is:
+>>>>
+>>>> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+>>>>
+>>>
+>>> Thank you very much!
+>>
+>> I've applied the series to my bleeding-edge branch, will move it to linux-next
+>> after build testing later this week.
+> 
+> This breaks if CONFIG_CPU_FREQ=n, e.g. ARM/shmobile/koelsch/
+> non-multiplatform:
+> 
+> drivers/built-in.o: In function `clk_round_parent':
+> clkdev.c:(.text+0xcf168): undefined reference to `cpufreq_next_valid'
+> drivers/built-in.o: In function `clk_rate_table_find':
+> clkdev.c:(.text+0xcf820): undefined reference to `cpufreq_next_valid'
+> make[3]: *** [vmlinux] Error 1
+> 
+> drivers/sh/clk/core.c (pre-CCF shmobile clock core) calls
+> cpufreq_for_each_valid_entry():
+> 
+> #define cpufreq_for_each_valid_entry(pos, table)        \
+>         for (pos = table; cpufreq_next_valid(&pos); pos++)
+> 
+> but cpufreq_next_valid() in drivers/cpufreq/cpufreq.c is not
+> compiled in.
 
-diff --git a/drivers/staging/sep/sep_dev.h b/drivers/staging/sep/sep_dev.h
-index 5f6a07f..5faeefa1 100644
---- a/drivers/staging/sep/sep_dev.h
-+++ b/drivers/staging/sep/sep_dev.h
-@@ -139,12 +139,14 @@ struct sep_queue_info {
- static inline void sep_write_reg(struct sep_device *dev, int reg, u32 value)
- {
- 	void __iomem *addr = dev->reg_addr + reg;
-+
- 	writel(value, addr);
- }
- 
- static inline u32 sep_read_reg(struct sep_device *dev, int reg)
- {
- 	void __iomem *addr = dev->reg_addr + reg;
-+
- 	return readl(addr);
- }
- 
-@@ -152,6 +154,7 @@ static inline u32 sep_read_reg(struct sep_device *dev, int reg)
- static inline void sep_wait_sram_write(struct sep_device *dev)
- {
- 	u32 reg_val;
-+
- 	do {
- 		reg_val = sep_read_reg(dev, HW_SRAM_DATA_READY_REG_ADDR);
- 	} while (!(reg_val & 1));
--- 
-2.0.0.rc0
+My bad. I'm sorry for this. :(
 
+Rafael,
+A solution could be to make cpufreq_next_valid an inline function in cpufreq.h,
+but as Viresh mentioned this would be very inefficient because of multiple copies.
+
+So, maybe it's better to revert the 2 patches that don't depend on CONFIG_CPU_FREQ:
+
+4229e1c61a4a ("sh: clk: Use cpufreq_for_each_valid_entry macro for iteration") and
+04ae58645afa ("irda: sh_sir: Use cpufreq_for_each_valid_entry macro for iteration").
+
+Do I need to send revert patches for the above?
+
+
+Thanks,
+Stratos
