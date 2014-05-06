@@ -1,105 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934798AbaEFLOL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 07:14:11 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:33783 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934708AbaEFLOI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 07:14:08 -0400
-Date: Tue, 6 May 2014 13:13:46 +0200
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH 1/2] of: add bq and radxa vendor prefixes
-Message-ID: <20140506111345.GB22196@gmail.com>
-References: <1398973835-26303-1-git-send-email-b.galvani@gmail.com>
- <2225372.rvnmuAdhHE@phil>
- <CABuKBe+fFCU2__rEHfiU+XPQwKE613VBxQ4=8xiA3PXQkBiMDQ@mail.gmail.com>
+	id S1757179AbaEFLWL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 07:22:11 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34409 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754671AbaEFLWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 07:22:08 -0400
+Date: Tue, 6 May 2014 13:22:04 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, x86-ml <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.com>,
+        Mike Galbraith <mgalbraith@suse.de>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Slow down stupid pounders
+Message-ID: <20140506112204.GB25013@pd.tnic>
+References: <20140506102924.GA25013@pd.tnic>
+ <20140506070854.757fd3ea@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CABuKBe+fFCU2__rEHfiU+XPQwKE613VBxQ4=8xiA3PXQkBiMDQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140506070854.757fd3ea@gandalf.local.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 04, 2014 at 02:57:52PM +0200, Matthias Brugger wrote:
-> 2014-05-02 1:32 GMT+02:00 Heiko Stübner <heiko@sntech.de>:
-> > Hi Beniamino,
-> >
-> > Am Donnerstag, 1. Mai 2014, 21:50:34 schrieb Beniamino Galvani:
-> >> Add new vendor prefixes for:
-> >>
-> >>     * bq, a company that sells multimedia devices and 3D printers
-> >
-> > bq is actually only a brandname. The company itself is "Mundo Reader S.L.".
-> > I'm not sure what the actual policy is concerning the vendor prefix, i.e. if it
-> > should use the visible brand name or the actual company name.
-> >
-> > I.e. another possibility would be to add the vendor prefix
-> >         mundoreader     Mundo Reader S.L.
-> > and name the currie
-> >         mundoreader,bq-curie2
-> 
-> I think we should stick to the brand name, as this is the name people know.
+On Tue, May 06, 2014 at 07:08:54AM -0400, Steven Rostedt wrote:
+> Hey, I'm one of those that jerk off to CPU hotplug stress test scripts!
 
-Personally I don't have a strong preference, so either of the two.
+I know you are, Mike gave me your script. Like you haven't done enough!
 
-Beniamino
+:-P
 
+> We were just bitching about this yesterday, but -rt related. As
+> anything crap in mainline just becomes exponentially more crap in -rt.
+> The CPU hotplug case becomes a mountain of crap that we just dig
+> tunnels through to get by.
 > 
-> >
-> >
-> > Heiko
-> >
-> >>     * Radxa, manufacturer of ARM boards
-> >>
-> >> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
-> >> ---
-> >>  Documentation/devicetree/bindings/vendor-prefixes.txt |    2 ++
-> >>  1 file changed, 2 insertions(+)
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> >> b/Documentation/devicetree/bindings/vendor-prefixes.txt index
-> >> abc3080..6f8177c 100644
-> >> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> >> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> >> @@ -21,6 +21,7 @@ atmel       Atmel Corporation
-> >>  auo  AU Optronics Corporation
-> >>  avago        Avago Technologies
-> >>  bosch        Bosch Sensortec GmbH
-> >> +bq   bq
-> >>  brcm Broadcom Corporation
-> >>  buffalo      Buffalo, Inc.
-> >>  calxeda      Calxeda
-> >> @@ -98,6 +99,7 @@ powervr     PowerVR (deprecated, use img)
-> >>  qca  Qualcomm Atheros, Inc.
-> >>  qcom Qualcomm Technologies, Inc
-> >>  qnap QNAP Systems, Inc.
-> >> +radxa        Radxa
-> >>  raidsonic    RaidSonic Technology GmbH
-> >>  ralink       Mediatek/Ralink Technology Corp.
-> >>  ramtron      Ramtron International
-> >
-> >
-> > _______________________________________________
-> > linux-arm-kernel mailing list
-> > linux-arm-kernel@lists.infradead.org
-> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> A while ago Thomas had a proof of concept patch I believe that was
+> suppose to pick up traction but unfortunately never went anywhere, even
+> after being told it would.
 > 
-> 
-> 
-> -- 
-> motzblog.wordpress.com
+> The real option is to rewrite cpu hotplug.
+
+I know, and we might get lucky, after all.
+
+I'm proposing this as a temporary thing until we have the real deal in
+place. I simply would like to shoo those pounding beaks in the interim.
+
+:-)
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
