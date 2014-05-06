@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317AbaEFNTn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 09:19:43 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:58439 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751750AbaEFNTl convert rfc822-to-8bit (ORCPT
+	id S1752018AbaEFNWS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 09:22:18 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:33106 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaEFNWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 09:19:41 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Geert Uytterhoeven'" <geert@linux-m68k.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH/RFC] usb: gadget: CONFIG_USB_S3C_HSOTG should depend on
- HAS_DMA
-Thread-Topic: [PATCH/RFC] usb: gadget: CONFIG_USB_S3C_HSOTG should depend on
- HAS_DMA
-Thread-Index: AQHPaSoEOGIFqNQgR0C9GLltpnfBXJszh4tg
-Date: Tue, 6 May 2014 13:17:21 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F70D180@AcuExch.aculab.com>
-References: <1399380554-3746-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1399380554-3746-1-git-send-email-geert@linux-m68k.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Tue, 6 May 2014 09:22:17 -0400
+Date: Tue, 6 May 2014 09:22:14 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 2/9] cgroup: update and fix parsing of
+ "cgroup.subtree_control"
+Message-ID: <20140506132214.GC27738@htj.dyndns.org>
+References: <1399377044-29873-1-git-send-email-tj@kernel.org>
+ <1399377044-29873-3-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399377044-29873-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven
-> If NO_DMA=y:
-> 
-> drivers/built-in.o: In function `s3c_hsotg_map_dma':
-> s3c-hsotg.c:(.text+0x375b2c): undefined reference to `usb_gadget_map_request'
-> drivers/built-in.o: In function `s3c_hsotg_unmap_dma':
-> s3c-hsotg.c:(.text+0x376a32): undefined reference to `usb_gadget_unmap_request'
-> make[3]: *** [vmlinux] Error 1
-> 
-> Note that all callers of s3c_hsotg_map_dma()/s3c_hsotg_unmap_dma() are
-> protected by a call into the using_dma() checking function:
-> 
-> static inline bool using_dma(struct s3c_hsotg *hsotg)
-> {
->         return false;   /* support is not complete */
-> }
-> 
-> but not all versions of gcc manage to optimize the check away, causing a
-> link error.
+I was confused that strsep() was equivalent to strtok_r() in skipping
+over consecutive delimiters.  strsep() just splits at the first
+occurrence of one of the delimiters which makes the parsing very
+inflexible, which makes allowing multiple whitespace chars as
+delimters kinda moot.  Let's just be consistently strict and require
+list of tokens separated by spaces.  This is what
+Documentation/cgroups/unified-hierarchy.txt describes too.
 
-A have seen gcc optimise away a call, but leave the undefined symbol
-in the symbol table.
-That might be what is happening here.
+Also, parsing may access beyond the end of the string if the string
+ends with spaces or is zero-length.  Make sure it skips zero-length
+tokens.  Note that this also ensures that the parser doesn't puke on
+multiple consecutive spaces.
 
-I don't know a generic solution, I used 'objcopy -N__udivdi3' to remove
-the explicit unwanted reference from my driver.
+v2: Add zero-length token skipping.
 
-	David
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/cgroup.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 54fd12d..9e6b4ac 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2542,11 +2542,13 @@ static int cgroup_subtree_control_write(struct cgroup_subsys_state *dummy_css,
+ 	int ssid, ret;
+ 
+ 	/*
+-	 * Parse input - white space separated list of subsystem names
+-	 * prefixed with either + or -.
++	 * Parse input - space separated list of subsystem names prefixed
++	 * with either + or -.
+ 	 */
+ 	p = buffer;
+-	while ((tok = strsep(&p, " \t\n"))) {
++	while ((tok = strsep(&p, " "))) {
++		if (tok[0] =='\0')
++			continue;
+ 		for_each_subsys(ss, ssid) {
+ 			if (ss->disabled || strcmp(tok + 1, ss->name))
+ 				continue;
+-- 
+1.9.0
 
