@@ -1,233 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381AbaEFWGo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 18:06:44 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:43837 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaEFWGm convert rfc822-to-8bit (ORCPT
+	id S1754496AbaEFWIG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 18:08:06 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:44210 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473AbaEFWIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 18:06:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOk88B+5CQZ639S_DwprrdBwZCs9m1cN_hr5hDRVkP18DqHd0w@mail.gmail.com>
-References: <CAOk88BLR=nwNGdT++39vLdOt=TwZmemF-trSQPY8AdMN9tKtKQ@mail.gmail.com>
- <20140506181151.GU28564@pengutronix.de> <CAOk88BJ+sCtM_cRLuBktUKWYHcPo6KtQ+GAgTJL0zBgQqcQYog@mail.gmail.com>
- <CAGVrzcZs9-f4bCLNv3-s9iubMk8SF8P9+aJaere7rdLbvfo0bw@mail.gmail.com> <CAOk88B+5CQZ639S_DwprrdBwZCs9m1cN_hr5hDRVkP18DqHd0w@mail.gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Tue, 6 May 2014 15:06:01 -0700
-Message-ID: <CAGVrzcbdm-owTaz6ENZMCCGDxQsSaHoEVP=5ex9kZj-FprqUxQ@mail.gmail.com>
-Subject: Re: i.MX28 based system losing eth0 on boot
-To: Brian Lilly <brian@crystalfontz.com>
-Cc: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Jim Baxter <jim_baxter@mentor.com>, Frank Li <Frank.Li@freescale.com>,
-        Fugang Duan <B38611@freescale.com>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kernel <kernel@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 6 May 2014 18:08:05 -0400
+Message-ID: <1399414081.30629.2.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 0/4] ipc/shm.c: increase the limits for SHMMAX, SHMALL
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: mtk.manpages@gmail.com
+Cc: Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, aswin@hp.com,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Tue, 06 May 2014 15:08:01 -0700
+In-Reply-To: <CAKgNAkjOKP7P9veOpnokNkVXSszVZt5asFsNp7rm7AXJdjcLLA@mail.gmail.com>
+References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
+	 <CAKgNAkjuU68hgyMOVGBVoBTOhhGdBytQh6H0ExiLoXfujKyP_w@mail.gmail.com>
+	 <1399406800.13799.20.camel@buesod1.americas.hpqcorp.net>
+	 <CAKgNAkjOKP7P9veOpnokNkVXSszVZt5asFsNp7rm7AXJdjcLLA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-06 14:40 GMT-07:00 Brian Lilly <brian@crystalfontz.com>:
-> The PHY on board is the SMSC LAN8720
->
-> With the generic PHY driver selected:  http://pastebin.com/A4MH4Ptw
->
-> [   28.828761] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
-> [Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
-> [   28.840626] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
-> [   30.827536] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
-> [   30.833739] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-> [   32.986999] IPv6: ADDRCONF(NETDEV_UP): usb0: link is not ready
-> [   37.316421] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
-> [Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
-> [   38.345047] fec 800f0000.ethernet eth0: MDIO read timeout
-> [   39.506210] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
-> [   40.374961] fec 800f0000.ethernet eth0: MDIO read timeout
->
-> With the SMSC PHY driver selected:  http://pastebin.com/DhdDyrMv
->
-> [   28.778974] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
-> [SMSC LAN8710/LAN8720] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
-> [   28.791742] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
-> [   30.773078] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
-> [   30.779286] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-> [   32.934692] IPv6: ADDRCONF(NETDEV_UP): usb0: link is not ready
-> [   37.242162] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
-> [SMSC LAN8710/LAN8720] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
-> [   38.270611] fec 800f0000.ethernet eth0: MDIO read timeout
-> [   39.415256] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
-> [   40.300454] fec 800f0000.ethernet eth0: MDIO read timeout
+On Tue, 2014-05-06 at 22:40 +0200, Michael Kerrisk (man-pages) wrote:
+> Hi Davidlohr,
+> 
+> On Tue, May 6, 2014 at 10:06 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> > On Fri, 2014-05-02 at 15:16 +0200, Michael Kerrisk (man-pages) wrote:
+> >> Hi Manfred,
+> >>
+> >> On Mon, Apr 21, 2014 at 4:26 PM, Manfred Spraul
+> >> <manfred@colorfullife.com> wrote:
+> >> > Hi all,
+> >> >
+> >> > the increase of SHMMAX/SHMALL is now a 4 patch series.
+> >> > I don't have ideas how to improve it further.
+> >>
+> >> On the assumption that your patches are heading to mainline, could you
+> >> send me a man-pages patch for the changes?
+> >
+> > Btw, I think that the code could still use some love wrt documentation.
+> 
+> (Agreed.)
+> 
+> > Andrew, please consider this for -next if folks agree. Thanks.
+> >
+> > 8<----------------------------------------------------------
+> >
+> > From: Davidlohr Bueso <davidlohr@hp.com>
+> > Subject: [PATCH] ipc,shm: document new limits in the uapi header
+> >
+> > This is useful in the future and allows users to
+> > better understand the reasoning behind the changes.
+> >
+> > Also use UL as we're dealing with it anyways.
+> >
+> > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> > ---
+> >  include/uapi/linux/shm.h | 14 ++++++++------
+> >  1 file changed, 8 insertions(+), 6 deletions(-)
+> >
+> > diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
+> > index 74e786d..e37fb08 100644
+> > --- a/include/uapi/linux/shm.h
+> > +++ b/include/uapi/linux/shm.h
+> > @@ -8,17 +8,19 @@
+> >  #endif
+> >
+> >  /*
+> > - * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
+> 
+> Something is wrong in the line above (missing word(s)?) ("are upper
+> limits are defaults")
+> 
+> > - * be modified by sysctl.
+> > + * SHMMNI, SHMMAX and SHMALL are the default upper limits which can be
+> > + * modified by sysctl. Both SHMMAX and SHMALL have their default values
+> > + * to the maximum limit which is as large as it can be without helping
+> > + * userspace overflow the values. There is really nothing the kernel
+> > + * can do to avoid this any variables. It is therefore not advised to
+> 
+> Something is missing in that last line.
+> 
+> > + * make them any larger. This is suitable for both 32 and 64-bit systems.
+> 
+> "This" is not so clear. I suggest replacing with an actual noun.
 
-Thanks for trying this, at least this is consistent no matter which
-PHY driver we are using. Just to rule out a potential PHY power-down
-issue, could you try to revert the following commit
-be9dad1f9f26604fb71c0d53ccb39a8f1d425807 ("net: phy: suspend phydev
-when going to HALTED") and see if that works better for you?
+Good point. Perhaps 'These values are ...' would do instead. 
 
-Thanks!
+Thanks,
+Davidlohr
 
->
-> On Tue, May 6, 2014 at 12:24 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
->> 2014-05-06 12:12 GMT-07:00 Brian Lilly <brian@crystalfontz.com>:
->>> It is happening during boot up:
->>>
->>> <snip, kernel 3.12 >
->>>
->>> Configuring network interfaces... [   35.117114] fec 800f0000.ethernet
->>> eth0: Freescale FEC PHY driver [SMSC LAN8710/LAN8720]
->>
->> Note that the SMSC PHY driver is picked up here, and that specific
->> driver implements a different phy_read_status() callback due to how
->> the PHY operates. The PHY driver also overrides the config_init()
->> callback to perform some PHY-specific initialization. See below for
->> more.
->>
->>> (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
->>> [   35.129967] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
->>> udhcpc (v1.21.1) started
->>>
->>> Sending discover...
->>>
->>> [   37.113901] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
->>> [   37.120134] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
->>> Sending discover...
->>>
->>> Sending select for 10.10.10.217...
->>> Lease of 10.10.10.217 obtained, lease time 86400
->>> /etc/udhcpc.d/50default: Adding DNS 10.10.10.13
->>> [   39.319957] IPv6: ADDRCONF(NETDEV_UP): usb0: link is not ready
->>> done.
->>> Starting rpcbind daemon...done.
->>> net.ipv4.conf.default.rp_filter = 1
->>> net.ipv4.conf.all.rp_filter = 1
->>> Mon Apr 14 22:40:00 UTC 2014
->>> INIT: Entering runlevel: 5
->>> Starting Xserver
->>> Starting system message bus: dbus.
->>> Starting Connection Manager
->>> Starting wpa_supplicant
->>> Successfully initialized wpa_supplicant
->>> Starting Dropbear SSH server
->>> [   44.754915] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
->>> [SMSC LAN8710/LAN8720] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
->>
->> The correct PHY driver is selected here...
->>
->>> [   45.781364] fec 800f0000.ethernet eth0: MDIO read timeout
->>> [   46.826170] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
->>> [   47.811385] fec 800f0000.ethernet eth0: MDIO read timeout
->>
->> But we are still seeing MDIO read timeouts, which is not great.
->>
->>>
->>> With a different kernel (3.14):
->>>
->>> [   28.989897] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
->>> [Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
->>> [   30.991210] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
->>> [   37.369372] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
->>> [Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
->>
->> Here, the Generic PHY driver has been selected, which will use the
->> MII_BMSR register contents to determine the Link status and
->> parameters. You might want to make sure that your board selects the
->> appropriate PHY driver, such that we are not chasing two issues here.
->>
->>> [   38.398346] fec 800f0000.ethernet eth0: MDIO read timeout
->>> [   39.438412] fec 800f0000.ethernet eth0: MDIO read timeout
->>> [   39.468419] fec 800f0000.ethernet eth0: MDIO write timeout
->>> [   40.498848] fec 800f0000.ethernet eth0: MDIO read timeout
->>
->> It would also be helpful to print the register that were accessed,
->> such that you could correlate this with the exact steps in the PHY
->> library state machine. Please also retry the experiment with the SMSC
->> PHY driver enabled, as it does some PHY specific initialization that
->> seems to be relevant. Then we are hopefully left with only the MDIO
->> timeout issue and not the PHY mis-configuration + MDIO timeout.
->>
->>>
->>> Afterward I have to ifdown eth0, ifup eth0 and then it functions
->>> normally, without reverting the commit.
->>>
->>> root@cfa100xx:~# ifdown eth0
->>> [ 1154.679658] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
->>> [Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
->>> root@cfa100xx:~# ifup eth0
->>> udhcpc (v1.21.1) started
->>> Sending discover...
->>> [ 1156.679547] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
->>> Sending discover...
->>> Sending select for 10.10.10.217...
->>> Lease of 10.10.10.217 obtained, lease time 86400
->>> ip: RTNETLINK answers: File exists
->>>
->>> --
->>> Brian
->>>
->>>
->>> On Tue, May 6, 2014 at 11:11 AM, Uwe Kleine-König
->>> <u.kleine-koenig@pengutronix.de> wrote:
->>>> Hello Brian,
->>>>
->>>> On Tue, May 06, 2014 at 09:44:34AM -0700, Brian Lilly wrote:
->>>>> With commit a264b981f2c76e281ef27e7232774bf6c54ec865 we're having eth0
->>>>> come up, then brought right back down with an MDIO rx timeout moments
->>>>> after.  Adding back in the removed code keeps the interface alive and
->>>>> it's working afterward without trouble.  I've tested the re-inserted
->>>>> code in 3.12, 3.14 without issue on our boards.
->>>> So you can reliably trigger that problem? You're just doing
->>>>
->>>>         ifconfig eth0 1.2.3.4 up
->>>>
->>>> (or equivalent) and the interface goes down without further
->>>> interference with the above mentioned commit? The exact error you're
->>>> seeing is
->>>>
->>>>         MDIO read timeout
->>>>
->>>> (with some prefix saying something about fec and eth0 I think)?
->>>>
->>>> This error is also present with a264b981f2 reverted, just doesn't affect
->>>> eth0 being functional? Does the timeout always happen, or only on
->>>> specific addresses?
->>>>
->>>> This is not a proper fix, but does it help to increment FEC_MII_TIMEOUT?
->>>>
->>>>> Is there something else that can be done to prevent the MDIO timeouts?
->>>>> We are using basically the same schematic for networking as the
->>>>> imx28evk.
->>>> Hard to say, but assuming it works just fine on the imx28evk for you,
->>>> too, there seems to be some hardware difference that makes your machine
->>>> fail. (That doesn't mean it's not fixable in software.)
->>>>
->>>> I don't know if a mdio read error is intended to make the device go
->>>> down, maybe one the the netdev guys can answer that.
->>>> Assuming that it's not intended, instrument the code, find out how that
->>>> timeout makes your device go down and find the wrong branch. I'd start
->>>> with adding stackdumps when the mdio timeout happens and when
->>>> fec_enet_start_xmit is called with fep->link == 0.
->>>>
->>>> Best regards
->>>> Uwe
->>>>
->>>> --
->>>> Pengutronix e.K.                           | Uwe Kleine-König            |
->>>> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe netdev" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->>
->>
->> --
->> Florian
-
-
-
--- 
-Florian
