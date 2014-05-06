@@ -1,80 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219AbaEFVmP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 17:42:15 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:46912 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751456AbaEFVmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 17:42:14 -0400
-Message-ID: <53695734.9040302@ispras.ru>
-Date: Wed, 07 May 2014 01:42:12 +0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754392AbaEFVm2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 17:42:28 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:51882 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753374AbaEFVm0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 17:42:26 -0400
+Date: Tue, 6 May 2014 22:42:24 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: poma <pomidorabelisima@gmail.com>
+Cc: "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Corentin Chary <corentincj@iksaif.net>, linux-kernel@vger.kernel.org,
+        kernel@lists.fedoraproject.org, andreas.utterberg@thundera.se,
+        jwboyer@fedoraproject.org, sgruszka@redhat.com
+Subject: Re: [PATCH] asus-nb-wmi: set wapf=4 for ASUSTeK COMPUTER INC. X75VBP
+ & X550CA
+Message-ID: <20140506214224.GA2007@srcf.ucam.org>
+References: <1398550344-3785-1-git-send-email-pomidorabelisima@gmail.com>
+ <53684CF9.8020305@gmail.com>
+ <5368F58C.1040702@gmail.com>
+ <20140506144800.GA29600@srcf.ucam.org>
+ <5369434A.1020909@gmail.com>
+ <20140506205525.GA30712@srcf.ucam.org>
+ <53695443.6020004@gmail.com>
 MIME-Version: 1.0
-To: David Fries <David@Fries.net>
-CC: Evgeniy Polyakov <zbr@ioremap.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: Re: [PATCH] w1: do not unlock unheld list_mutex in __w1_remove_master_device()
-References: <1398890278-15319-1-git-send-email-khoroshilov@ispras.ru> <20140501034759.GG5096@spacedout.fries.net>
-In-Reply-To: <20140501034759.GG5096@spacedout.fries.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53695443.6020004@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01.05.2014 07:48, David Fries wrote:
-> On Thu, May 01, 2014 at 12:37:58AM +0400, Alexey Khoroshilov wrote:
->> w1_process_callbacks() expects to be called with dev->list_mutex held,
->> but it is the fact only in w1_process(). __w1_remove_master_device()
->> calls w1_process_callbacks() after it releases list_mutex.
->>
->> The patch fixes __w1_remove_master_device() to acquire list_mutex
->> for w1_process_callbacks(). It is implemented by moving
->> w1_process_callbacks() functionality to __w1_process_callbacks()
->> and adding a wrapper with the old name.
-> Good catch.  I guess as it was in the shutdown path it failed the
-> unlock silently.
->
-> I would prefer a different fix.  If w1_process_callbacks was more of a
-> public facing API called from multiple locations where the caller
-> doesn't have access to the locks, something like this would probably
-> be the way to go.  This is called from two areas of the code, and not
-> likely to be called from any new areas in the future.
->
-> Adding a documentation comment is good.  I would be tempted in
-> __w1_remove_master_device to move the dev->list_mutex down after the
-> while loop, but I can't be sure that whatever has a refcnt wouldn't
-> need list_mutex.  The last w1_process_callbacks after the while loop
-> shouldn't be needed I wouldn't think, I was just being defensive.
-I do not understand all the details, but I am not sure.
-refcnt can became 0, but that does not mean all callbacks have been
-processed because they can be added before refcnt decrement but after
-previous w1_process_callbacks invocation.
->   By
-> the time it completes the while loop the reference count is 0 so there
-> shouldn't be anything left for it to process and if there is, it's a
-> race condition and game over anyway.  So just sandwich
-> w1_process_callbacks with the lock/unlock in
-> __w1_remove_master_device please.
-Done.
+Thanks, if there are no objections I'll apply that.
 
-
-Another suspicious question for me is how safe is it to call
-  wake_up_process(dev->thread);
-after
-  kthread_stop(dev->thread);
-?
-
->> Found by Linux Driver Verification project (linuxtesting.org).
-> Was this found with code inspection or hardware testing with lock
-> debugging enabled?
-It was found by static verification tools developed within Linux Driver
-Verification project.
-
-
-Best regards,
-Alexey
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
