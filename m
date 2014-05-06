@@ -1,96 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933731AbaEFCaN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 22:30:13 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:54281 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933630AbaEFCaL (ORCPT
+	id S933767AbaEFCap (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 22:30:45 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:48549 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933630AbaEFCao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 22:30:11 -0400
-X-IronPort-AV: E=Sophos;i="4.97,993,1389715200"; 
-   d="scan'208";a="30112647"
-Message-ID: <53683B14.3060702@cn.fujitsu.com>
-Date: Tue, 6 May 2014 10:29:56 +0900
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: <peterz@infradead.org>, <bsegall@google.com>, <mingo@redhat.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: Move the wakeup tracepoint from ttwu_do_wakeup()
- to ttwu_activate().
-References: <53673074.1040406@cn.fujitsu.com> <1399271647-25696-1-git-send-email-yangds.fnst@cn.fujitsu.com> <20140505100014.19b46560@gandalf.local.home> <53682AA7.9060401@cn.fujitsu.com> <20140505220628.5d62fdec@gandalf.local.home>
-In-Reply-To: <20140505220628.5d62fdec@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Mon, 5 May 2014 22:30:44 -0400
+Message-ID: <1399343437.2498.3.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [tip:locking/core] rwsem: Add comments to explain the meaning
+ of the rwsem's count field
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-tip-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, peter@hurleysoftware.com, jason.low2@hp.com,
+        riel@redhat.com, alex.shi@linaro.org, paulmck@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, walken@google.com,
+        "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 05 May 2014 19:30:37 -0700
+In-Reply-To: <1399330276.2970.207.camel@schen9-DESK>
+References: <1399060437.2970.146.camel@schen9-DESK>
+	 <tip-3cf2f34e1a3d4d5ff209d087925cf950e52f4805@git.kernel.org>
+	 <1399305808.2970.186.camel@schen9-DESK> <20140505172611.GA7154@gmail.com>
+	 <1399314085.2970.205.camel@schen9-DESK>  <20140505182750.GA14826@gmail.com>
+	 <1399330276.2970.207.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.49]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2014 11:06 AM, Steven Rostedt wrote:
-> On Tue, 6 May 2014 09:19:51 +0900
-> Dongsheng Yang <yangds.fnst@cn.fujitsu.com> wrote:
->
-> I wonder if we should have the event, or way to distinguish the
-> difference. Hmm, there's that "success" parameter in the tracepoint.
-> Could we possible be able to trace events where the success is true
-> only if it was actually waking the event, and false otherwise?
->
-> Having the sched_wakeup trace event show you when something woke the
-> task up may still be useful information. For example, you add yourself
-> to a wait queue and want to see the "wakeup". If we only show it for
-> tasks that really woke up then we wont see it for those that added
-> itself to a waitqueue but was "woken" before it could schedule out.
->
-> The original sched_wakeup did this, but with the ttwu rewrite, it was
-> lost.
+On Mon, 2014-05-05 at 15:51 -0700, Tim Chen wrote:
+> On Mon, 2014-05-05 at 20:27 +0200, Ingo Molnar wrote:
+> 
+> > > Ingo,
+> > > 
+> > > The delta patch is included below.  Thinking a bit more,
+> > > the state diagram approach is not necessarily less verbose
+> > > because the state is a tuple (count, wait queue state).
+> > > After enumerating the states, we may wind up with very similar
+> > > to what I have.
+> > 
+> > Could we at least try with one diagram and see how it goes?
+> > 
+> 
+> I've tried (see below).  But I don't like how it came out :(
 
-Ha, got what you mean. Yes, we can take the use of success in sched_wakeup
-event.
->
-> Something like below?
->
-> -- Steve
->
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 268a45e..e583989 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1404,6 +1404,7 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
->   {
->   	activate_task(rq, p, en_flags);
->   	p->on_rq = 1;
-> +	trace_sched_wakeup(p, true);
->   
->   	/* if a worker is waking up, notify workqueue */
->   	if (p->flags & PF_WQ_WORKER)
-> @@ -1417,7 +1418,6 @@ static void
->   ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
->   {
->   	check_preempt_curr(rq, p, wake_flags);
-> -	trace_sched_wakeup(p, true);
->   
->   	p->state = TASK_RUNNING;
->   #ifdef CONFIG_SMP
-> @@ -1662,6 +1662,8 @@ static void try_to_wake_up_local(struct task_struct *p)
->   
->   	if (!p->on_rq)
->   		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
-> +	else
-> +		trace_sched_wakeup(p, false);
+And quite nice, thanks for doing this. Personally, however, I much
+prefer the already applied patch to this approach.
 
-Also we should add a false trace point in ttwu_remote().
->   
->   	ttwu_do_wakeup(rq, p, 0);
->   	ttwu_stat(p, smp_processor_id(), 0);
-
-Thanx steven, I will send a new patch as you suggested here.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> .
->
+Thanks,
+Davidlohr
 
