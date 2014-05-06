@@ -1,102 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520AbaEFLfQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 07:35:16 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:63399 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753435AbaEFLfN (ORCPT
+	id S1757143AbaEFLgf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 07:36:35 -0400
+Received: from mail-bn1blp0185.outbound.protection.outlook.com ([207.46.163.185]:59219
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750736AbaEFLge convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 07:35:13 -0400
-X-AuditID: cbfee61a-b7f2b6d000006c4d-25-5368c8ef2f3e
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        devicetree@vger.kernel.org, Nadav Haklai <nadavh@marvell.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v3 06/20] usb: host: xhci-plat: Add support for the Armada
- 38x
-Date: Tue, 06 May 2014 13:34:46 +0200
-Message-id: <1584794.IM1uiSkBdk@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <1399335255-589-7-git-send-email-gregory.clement@free-electrons.com>
-References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com>
- <1399335255-589-7-git-send-email-gregory.clement@free-electrons.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t9jQd33JzKCDWZukbe40H+J2eL83UPM
-	Fgfv11vMP3KO1eL0qQWsFgf+7GC0aF68ns1iU9tbRovGJZdZLDY9vsZqcXnXHDaLRctamS2a
-	N01htZjU3s5u0br3CLvF+5+OFstO/WS0ePqgiclByOPJpouMHjtn3WX3WLznJZPHplWdbB4N
-	B86zeNy5tofNY//cNewem5fUe+zc8ZnJY/LCi8wex29sZ/L4vEkugCeKyyYlNSezLLVI3y6B
-	K+PknA0sBW08FUdnHWFrYHzI2cXIySEhYCLR93AzI4QtJnHh3nq2LkYuDiGB6YwSbz+tZ4Rw
-	WpgkZk49wAJSxSZgJTGxfRVYh4iAhsSUrsfsIDazwHZWiW3zEkFsYYEQib7/k1hBbBYBVYmG
-	W3eYQGxeAU2JH+tmsoHYogKeEju2rwSzOQWCJZ4vX8wMsWwmo8T1nh5miAZBiR+T77FALJCX
-	2Ld/KiuErSWxfudxpgmMArOQlM1CUjYLSdkCRuZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmb
-	GMFx+UxqB+PKBotDjAIcjEo8vCdWpgcLsSaWFVfmHmKU4GBWEuFVXJkRLMSbklhZlVqUH19U
-	mpNafIhRmoNFSZz3QKt1oJBAemJJanZqakFqEUyWiYNTqoHRV6dEN2GZhMWKF4U9RQ6X93WY
-	th7eHLKe6fKfuw68vUndluF1tfpqDasuxB0TWRogI9m2pfz2fpV/NoeVNu9Z82HW3AnH3r6s
-	rpfVYouee7701ppzfK+yy2rMHNwYV6UyzHs+q1HxK1OsZNyFv+d3/czmXpjVIMT8W8HvhYhc
-	7sYXbzKuiwQosRRnJBpqMRcVJwIA/6Ew0scCAAA=
+	Tue, 6 May 2014 07:36:34 -0400
+From: Bryan Evenson <bevenson@melinkcorp.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+CC: Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] rtc: rtc-at91rm9200: fix lost ACKUPD interrupt
+Thread-Topic: [PATCH] rtc: rtc-at91rm9200: fix lost ACKUPD interrupt
+Thread-Index: AQHPaJ/f7r6faF+fSUiFpt/iOZTHKZsyyC8Q
+Date: Tue, 6 May 2014 11:36:30 +0000
+Message-ID: <7bc7c23d3bd541b2a021065f9fed174e@BLUPR05MB037.namprd05.prod.outlook.com>
+References: <55cab9fba2ea4eed8f73591b37cc874b@BLUPR05MB037.namprd05.prod.outlook.com>
+ <1399321388-15148-1-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1399321388-15148-1-git-send-email-boris.brezillon@free-electrons.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-vipre-scanned: 004D47DA0070EC004D4927
+x-originating-ip: [98.100.91.242]
+x-forefront-prvs: 0203C93D51
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(377454003)(51704005)(13464003)(21056001)(76576001)(87936001)(101416001)(99396002)(83072002)(4396001)(85852003)(81342001)(33646001)(81542001)(2656002)(76482001)(83322001)(19580405001)(19580395003)(46102001)(77982001)(76176999)(50986999)(54356999)(64706001)(20776003)(79102001)(66066001)(92566001)(80022001)(74502001)(31966008)(74662001)(74316001)(86362001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR05MB040;H:BLUPR05MB037.namprd05.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=bevenson@melinkcorp.com; 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: melinkcorp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Boris,
 
-Hi,
-
-On Tuesday, May 06, 2014 02:14:01 AM Gregory CLEMENT wrote:
-> For the Armada 38x SoCs which come with an xhci controller, specific
-> initialization must be done during probe related to the MBus windows
-> configuration. This patch adds the support of this quirk.
+> -----Original Message-----
+> From: Boris BREZILLON [mailto:boris.brezillon@free-electrons.com]
+> Sent: Monday, May 05, 2014 4:23 PM
+> To: Bryan Evenson
+> Cc: Andrew Victor; Nicolas Ferre; Jean-Christophe Plagniol-Villard; linux-arm-
+> kernel@lists.infradead.org; Alessandro Zummo; rtc-
+> linux@googlegroups.com; linux-kernel@vger.kernel.org; Boris BREZILLON
+> Subject: [PATCH] rtc: rtc-at91rm9200: fix lost ACKUPD interrupt
 > 
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> If an alarm interrupt raises just after the CR register is written and before the
+> ACKUPD is unmasked the ACKUPD bit might be cleaned up without waking
+> up the waiting thread.
+> 
+> Unmask the ACKUPD interrupt before writing the CR register so that the
+> ACKUPD cannot be lost.
+> 
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
 > ---
->  drivers/usb/host/Kconfig      |  7 +++++
->  drivers/usb/host/Makefile     |  1 +
->  drivers/usb/host/xhci-mvebu.c | 71 +++++++++++++++++++++++++++++++++++++++++++
->  drivers/usb/host/xhci-mvebu.h | 21 +++++++++++++
->  drivers/usb/host/xhci-plat.c  |  6 ++++
->  5 files changed, 106 insertions(+)
->  create mode 100644 drivers/usb/host/xhci-mvebu.c
->  create mode 100644 drivers/usb/host/xhci-mvebu.h
+> Hello Bryan,
 > 
-> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-> index 3d9e54062d62..e70943fac4a1 100644
-> --- a/drivers/usb/host/Kconfig
-> +++ b/drivers/usb/host/Kconfig
-> @@ -29,6 +29,13 @@ if USB_XHCI_HCD
->  config USB_XHCI_PLATFORM
->  	tristate
->  
-> +config USB_XHCI_MVEBU
-> +	tristate "xHCI support for Marvell Armada 38x"
+> Could you try to apply this patch and tell me if it fixes your bug ?
+> 
 
-Please limit this driver to mvebu arch and compile testing, i.e.
+I tried the patch and it didn't help.  I still have the same issue.  Do you see this problem on your end?  Is there debug output that would be helpful to see?
 
-	depends on ARCH_MVEBU || COMPILE_TEST
+Regards,
+Bryan
 
-> +	select USB_XHCI_PLATFORM
-> +	---help---
-> +	  Say 'Y' to enable the support for the xHCI host controller
-> +	  found in Marvell Armada 38x ARM SOCs.
-> +
->  endif # USB_XHCI_HCD
->  
->  config USB_EHCI_HCD
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+> Best Regards,
+> 
+> Boris
+> 
+>  drivers/rtc/rtc-at91rm9200.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c index
+> 3281c90..c16c423 100644
+> --- a/drivers/rtc/rtc-at91rm9200.c
+> +++ b/drivers/rtc/rtc-at91rm9200.c
+> @@ -163,9 +163,9 @@ static int at91_rtc_settime(struct device *dev, struct
+> rtc_time *tm)
+> 
+>  	/* Stop Time/Calendar from counting */
+>  	cr = at91_rtc_read(AT91_RTC_CR);
+> +	at91_rtc_write_ier(AT91_RTC_ACKUPD);
+>  	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL |
+> AT91_RTC_UPDTIM);
+> 
+> -	at91_rtc_write_ier(AT91_RTC_ACKUPD);
+>  	wait_for_completion(&at91_rtc_updated);	/* wait for ACKUPD
+> interrupt */
+>  	at91_rtc_write_idr(AT91_RTC_ACKUPD);
+> 
+> --
+> 1.8.3.2
 
