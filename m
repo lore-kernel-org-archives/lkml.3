@@ -1,98 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757860AbaEFPUl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 11:20:41 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:29636 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755170AbaEFPUk (ORCPT
+	id S932255AbaEFPUx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 11:20:53 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:64625 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754445AbaEFPUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 11:20:40 -0400
-Message-ID: <5368FDBB.8070106@oracle.com>
-Date: Tue, 06 May 2014 11:20:27 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 6 May 2014 11:20:51 -0400
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 6/6] mm: Postpone the disabling of kmemleak early logging
-References: <1399038070-1540-1-git-send-email-catalin.marinas@arm.com> <1399038070-1540-7-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1399038070-1540-7-git-send-email-catalin.marinas@arm.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <1399383246.8767.99.camel@empanada>
+References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
+	<CAFLxGvww8t-PpuS3B=dFvn8k3xBydk3CgA=qoLyEbkKJZJ0xhQ@mail.gmail.com>
+	<1399383246.8767.99.camel@empanada>
+Date: Tue, 6 May 2014 08:20:50 -0700
+Message-ID: <CAADnVQLYiNfXRrXc=VZkGEFDbNhF63AzPg6Gyu6P1SF=6AiO7g@mail.gmail.com>
+Subject: Re: RFC: A reduced Linux network stack for small systems
+From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: Richard Weinberger <richard.weinberger@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2014 09:41 AM, Catalin Marinas wrote:
-> Currently, kmemleak_early_log is disabled at the beginning of the
-> kmemleak_init() function, before the full kmemleak tracing is actually
-> enabled. In this small window, kmem_cache_create() is called by kmemleak
-> which triggers additional memory allocation that are not traced. This
-> patch moves the kmemleak_early_log disabling further down and at the
-> same time with full kmemleak enabling.
-> 
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
+On Tue, May 6, 2014 at 6:34 AM, Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
+> On Tue, 2014-05-06 at 09:25 +0200, Richard Weinberger wrote:
+>> On Tue, May 6, 2014 at 12:25 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>> > There has been a lot of interest recently to run Linux on very small systems,
+>> > like Quark systems. These may have only 2-4MB memory. They are also limited
+>> > by flash space.
+>> >
+>> > One problem on these small system is the size of the network stack.
+>> > Currently enabling IPv4 costs about 400k in text, which is prohibitive on
+>> > a 2MB system, and very expensive with 4MB.
+>> >
+>> > There were proposals to instead use LWIP in user space. LWIP with
+>> > its socket interface comes in at a bit over 100k overhead per application.
+>> >
+>> > I maintain that the Linux network stack is actually not that bloated,
+>> > it just has a lot of features :-)  The goal of this project was to
+>> > subset it in a sensible way so that the native kernel stack becomes
+>> > competitive with LWIP.
+>> >
+>> > It turns out that the standard stack has a couple of features that
+>> > are not really needed on client systems. Luckily it is also
+>> > relatively well modularized, so it becomes possible to stub
+>> > out these features at the edge.
+>> >
+>> > With removing these features we still have a powerful TCP/IP stack,
+>> > but one that fits better into small systems.
+>> >
+>> > It would have been prohibitive to ifdef every optional feature.
+>> > This patchkit relies heavily on LTO to effectively remove unused
+>> > code. This allows to disable features only at the module boundaries,
+>> > and rely on the compiler to drop unreferenced code and data.
+>> >
+>> > A few features have been also reimplemented in a simpler way.
+>> > And I shrank a number of data structures based on CONFIG_BASE_SMALL.
+>> >
+>> > With these changes I can get a fully featured network stack down
+>> > to about 170k with LTO. Without LTO there are also benefits,
+>> > but somewhat less.
+>> >
+>> > There are essentially three sensible configurations:
+>> > - Full featured like today.
+>> > - Client only subset, but still works with standard distribution userland.
+>> > Remove some obscure features like fastopen, make all tables smaller,
+>> > packet socket mmap code, use a simpler routing table, remove
+>> > high speed networking features like RPX, XPS, GRO offload.
+>> > Disable SNMP, TCP metrics
+>> > - Minimal subset for deeply embedded systems that can use special userland.
+>> > Remove rtnetlink (ioctl only), remove ethtool, raw sockets.
+>> >
+>> > Right now I'm using own Kconfigs for every removed features. I realize
+>> > this somewhat increases the compile test matrix. It would be possible
+>> > to hide some of the options and select them using higher level
+>> > configurations like the ones listed above. I haven't done this
+>> > in this version.
+>> >
+>> > At this point I'm mainly interested in review and comments.
+>> >
+>> > Git trees:
+>> >
+>> > git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc net/debloat
+>> > Main tree
+>> >
+>> > git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc net/debloat-3.14
+>> > 3.14 based tree.
+>> >
+>> > Thanks to Tom Zanussi for contributions and testing.
+>>
+>> What kind of userspace do you use on such a small system?
+>> It looks like you run kernels without procfs and netlink, so not even
+>> ps would work. :)
+>>
+>
+> The microYocto 'distro' I have running with these net-diet patches
+> doesn't use a full procfs, but a pared-down version (CONFIG_PROCFS_MIN).
+> Keeping ps working is of course essential, and it does that (along with
+> a couple other things like /proc/filesystems and /proc/mounts I needed
+> to boot):
+>
+> https://github.com/tzanussi/linux-yocto-micro-3.14/commit/68379432afcfa82ac695d9f02892fcf48ade5ae8
+>
+> Anyway all the userspace and kernel bits are available for anyone who
+> wants to build it and try it out:
+>
+> https://github.com/tzanussi/meta-galileo/blob/daisy/meta-galileo/README
+>
+> It's very much a work-in-progress with a lot of rough edges, but it is a
+> fully functional system on real hardware (Galileo board/Quark processor)
+> with a usable shell (ps too!) and web server running on a kernel with
+> native networking and ~ 750k text size.
 
-This patch makes the kernel die during the boot process:
+Intel Galileo datasheet says:
+- 400MHz 32bit Intel
+- 512 KBytes of on-die embedded SRAM
+- 256 MByte DRAM, enabled by the firmware by default
 
-[   24.471801] BUG: unable to handle kernel paging request at ffffffff922f2b93
-[   24.472496] IP: [<ffffffff922f2b93>] log_early+0x0/0xcd
-[   24.473021] PGD 10e30067 PUD 10e31063 PMD 12200062
-[   24.473544] Oops: 0010 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[   24.474129] Dumping ftrace buffer:
-[   24.474535]    (ftrace buffer empty)
-[   24.474901] Modules linked in:
-[   24.475220] CPU: 0 PID: 1 Comm: swapper/0 Tainted: G        W     3.15.0-rc4-sasha-00193-g315d7bf #442
-[   24.476094] task: ffff88025c540000 ti: ffff880036210000 task.ti: ffff880036210000
-[   24.476807] RIP: 0010:[<ffffffff922f2b93>]  [<ffffffff922f2b93>] log_early+0x0/0xcd
-[   24.477561] RSP: 0000:ffff880036211c20  EFLAGS: 00010246
-[   24.478075] RAX: 0000000000000000 RBX: ffff880034e26458 RCX: 0000000000000001
-[   24.478727] RDX: 0000000000000400 RSI: ffff880034e26458 RDI: 0000000000000000
-[   24.479400] RBP: ffff880036211c48 R08: 0000000000000000 R09: 0000000000000000
-[   24.480064] R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000000400
-[   24.480171] R13: 0000000000000001 R14: 0000000000000001 R15: ffff88003680e600
-[   24.480171] FS:  0000000000000000(0000) GS:ffff880036c00000(0000) knlGS:0000000000000000
-[   24.480171] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   24.480171] CR2: ffffffff922f2b93 CR3: 0000000010e2d000 CR4: 00000000000006b0
-[   24.480171] Stack:
-[   24.480171]  ffffffff8f4fb6ac ffff880036ddb210 ffff880034e26458 0000000000000020
-[   24.480171]  ffff88003680e600 ffff880036211cc8 ffffffff8c2e0bf1 0000000000000002
-[   24.480171]  000000008c19b731 ffffffff8cb07a03 0000000000000000 0000000000000400
-[   24.480171] Call Trace:
-[   24.480171]  [<ffffffff8f4fb6ac>] ? kmemleak_alloc+0xac/0xd0
-[   24.480171]  [<ffffffff8c2e0bf1>] kmem_cache_alloc_node_trace+0x201/0x3d0
-[   24.480171]  [<ffffffff8cb07a03>] ? alloc_cpumask_var_node+0x23/0x90
-[   24.480171]  [<ffffffff8f566358>] ? preempt_count_sub+0xd8/0x130
-[   24.480171]  [<ffffffff8c0c16e0>] ? alloc_pte_page+0x80/0x80
-[   24.480171]  [<ffffffff8cb07a03>] alloc_cpumask_var_node+0x23/0x90
-[   24.480171]  [<ffffffff8cb07a7e>] alloc_cpumask_var+0xe/0x10
-[   24.480171]  [<ffffffff8c0a8a0a>] native_send_call_func_ipi+0x2a/0x130
-[   24.480171]  [<ffffffff8cb07bee>] ? cpumask_next_and+0xae/0xd0
-[   24.480171]  [<ffffffff8c0c16e0>] ? alloc_pte_page+0x80/0x80
-[   24.480171]  [<ffffffff8c0c16e0>] ? alloc_pte_page+0x80/0x80
-[   24.480171]  [<ffffffff8c20121b>] smp_call_function_many+0x29b/0x390
-[   24.480171]  [<ffffffff8c0c16e0>] ? alloc_pte_page+0x80/0x80
-[   24.480171]  [<ffffffff8c201726>] smp_call_function+0x46/0x80
-[   24.480171]  [<ffffffff8c0c16e0>] ? alloc_pte_page+0x80/0x80
-[   24.480171]  [<ffffffff8c2017ce>] on_each_cpu+0x3e/0x110
-[   24.480171]  [<ffffffff8c0c3adb>] change_page_attr_set_clr+0x40b/0x4f0
-[   24.480171]  [<ffffffff8c19b731>] ? get_parent_ip+0x11/0x50
-[   24.480171]  [<ffffffff8c0c49ef>] set_memory_np+0x2f/0x40
-[   24.480171]  [<ffffffff8c0bf32d>] free_init_pages+0x8d/0xb0
-[   24.480171]  [<ffffffff8f4f7d60>] ? rest_init+0x140/0x140
-[   24.480171]  [<ffffffff8c0bf373>] free_initmem+0x23/0x30
-[   24.480171]  [<ffffffff8f4f7d78>] kernel_init+0x18/0x100
-[   24.480171]  [<ffffffff8f56b0fc>] ret_from_fork+0x7c/0xb0
-[   24.480171]  [<ffffffff8f4f7d60>] ? rest_init+0x140/0x140
-[   24.480171] Code:  Bad RIP value.
-[   24.480171] RIP  [<ffffffff922f2b93>] log_early+0x0/0xcd
-[   24.480171]  RSP <ffff880036211c20>
-[   24.480171] CR2: ffffffff922f2b93
+where did 2-4Mbyte restriction come from?
 
-
-Thanks,
-Sasha
+Anyway, with all these hacks you get a half functional kernel with "a
+lot of rough edges"
+that is likely working only for the given very limited set of applications.
+Kernel function profiling can potentially achieve the same thing.
+Profile the kernel with the set of apps and then prune all cold
+functions out of kernel.
+config explosion and LTO is unnecessary. Just some linker hacks.
+Obviously such kernel will also be half functional,
+but you'll get big reduction in .text that it seems is the goal of this project.
