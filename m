@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334AbaEFUhr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 16:37:47 -0400
-Received: from mga03.intel.com ([143.182.124.21]:45011 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751458AbaEFUhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 16:37:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,998,1389772800"; 
-   d="scan'208";a="428500741"
-Date: Tue, 6 May 2014 13:37:43 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: josh@joshtriplett.org, David Miller <davem@davemloft.net>,
-        andi@firstfloor.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com
-Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
-Message-ID: <20140506203743.GP19657@tassilo.jf.intel.com>
-References: <1399328773-6531-9-git-send-email-andi@firstfloor.org>
- <20140505.231229.136734008603421707.davem@davemloft.net>
- <20140506032114.GP2382@two.firstfloor.org>
- <20140505.232327.578134514220748085.davem@davemloft.net>
- <20140506155703.GA20391@cloud>
- <1399394359.15399.20.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140506183216.GM19657@tassilo.jf.intel.com>
- <1399407478.15399.81.camel@edumazet-glaptop2.roam.corp.google.com>
+	id S1755347AbaEFUjW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 16:39:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34652 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754190AbaEFUjU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 16:39:20 -0400
+Date: Tue, 6 May 2014 22:39:16 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, linux-kernel@vger.kernel.org,
+        morten.rasmussen@arm.com, mingo@kernel.org,
+        george.mccollister@gmail.com, ktkhai@parallels.com
+Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
+Message-ID: <20140506203916.GQ17778@laptop.programming.kicks-ass.net>
+References: <20140502004237.79dd3de6@annuminas.surriel.com>
+ <1399011219.5233.55.camel@marge.simpson.net>
+ <53633B81.1080403@redhat.com>
+ <1399016273.5233.94.camel@marge.simpson.net>
+ <536379D0.8070306@redhat.com>
+ <1399030032.5233.142.camel@marge.simpson.net>
+ <5363B793.9010208@redhat.com>
+ <20140506115448.GH11096@twins.programming.kicks-ass.net>
+ <536943C9.4030502@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1399407478.15399.81.camel@edumazet-glaptop2.roam.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <536943C9.4030502@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In 1024 bytes of memory, and keep an efficient kernel to handle
-> arbitrary number of sockets using the venerable and slow BSD socket api.
+On Tue, May 06, 2014 at 04:19:21PM -0400, Rik van Riel wrote:
+> On 05/06/2014 07:54 AM, Peter Zijlstra wrote:
+> > On Fri, May 02, 2014 at 11:19:47AM -0400, Rik van Riel wrote:
+> >> As an aside, it also looks like SD_BALANCE_WAKE is set on all domains
+                                     ^^^^^^^^^^^^^^^
 
-I agree running in 1024 bytes would be challenging.
+> >> of a NUMA system by default, so even the non-affine wakeup will end
+> >> up looking for the lowest load NUMA node to start up on.
+> > 
+> > I can't find it being set on anything by default.
+> 
+>                 .flags                  = 1*SD_LOAD_BALANCE
+>                                         | 1*SD_BALANCE_NEWIDLE
+>                                         | 0*SD_BALANCE_EXEC
+>                                         | 0*SD_BALANCE_FORK
+>                                         | 0*SD_BALANCE_WAKE
 
-> Adding ~1000 lines of code to save few KB was the point I gave up.
+                                            ^
 
-You're refering to fib_list? It currently has some duplicated code
-(this could/should be fixed). Or we could drop it, I suppose, if really
-everyone hates it.
+last time I checked 0*x was still 0.
 
-(I thought it was a cute idea, but I'm biased :-)
+>                                         | 0*SD_WAKE_AFFINE
+>                                         | 0*SD_SHARE_CPUPOWER
+>                                         | 0*SD_SHARE_PKG_RESOURCES
+>                                         | 1*SD_SERIALIZE
+>                                         | 0*SD_PREFER_SIBLING
+>                                         | 1*SD_NUMA
+>                                         | sd_local_flags(level)
+> 
+> 
+> static inline int sd_local_flags(int level)
+> {
+>         if (sched_domains_numa_distance[level] > RECLAIM_DISTANCE)
+>                 return 0;
+> 
+>         return SD_BALANCE_EXEC | SD_BALANCE_FORK | SD_WAKE_AFFINE;
+> }
 
-Total it is saving 350k, about 30% of the total text size of the mini kernel
-(plus some dynamic savings) with networking.
-
-I would be happy to fix any reasonable objection. But fundamental 
-"I don't care about anything smaller than my smart phone" type arguments
-are not particularly constructive.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+No BALANCE_WAKE there
