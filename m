@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934412AbaEFIUb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 04:20:31 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:57336 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934235AbaEFIU2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 04:20:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140506071843.GD5206@lee--X1>
-References: <1399305223-18703-1-git-send-email-gabriel.fernandez@linaro.org>
-	<1399305223-18703-2-git-send-email-gabriel.fernandez@linaro.org>
-	<20140506071843.GD5206@lee--X1>
-Date: Tue, 6 May 2014 10:20:27 +0200
-Message-ID: <CAG374jD+msPPbPtFS+ji=8jS9+D-YHu31k7zzzC7Ty7jw9n7jQ@mail.gmail.com>
-Subject: Re: [PATCH 1/9] ARM: STi: DT: STiH416: 416 DT Entry for clockgen A0/1/10/11/12
-From: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pankaj Dev <pankaj.dev@st.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S934419AbaEFIWe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 04:22:34 -0400
+Received: from mx02.posteo.de ([89.146.194.165]:56873 "EHLO posteo.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S934235AbaEFIWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 04:22:31 -0400
+From: Martin Kepplinger <martink@posteo.de>
+To: gregkh@linuxfoundation.org
+Cc: burzalodowa@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Martin Kepplinger <martink@posteo.de>
+Subject: [PATCH] staging: rtl8192u: initialize array in C compliant way
+Date: Tue,  6 May 2014 10:22:08 +0200
+Message-Id: <1399364528-3727-1-git-send-email-martink@posteo.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+Don't list elements to initialize. Remaining elements of a partly
+initialized array are set to zero. Sparse complained here.
 
-On 6 May 2014 09:18, Lee Jones <lee.jones@linaro.org> wrote:
->> Patch adds DT entries for clockgen A0/1/10/11/12
->>
->> Signed-off-by: Pankaj Dev <pankaj.dev@st.com>
->> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
->> ---
->>  arch/arm/boot/dts/stih416-clks.h     |  15 ++
->
-> This should live in include/dt-bindings/clk
->
-include/dt-bindings/clk or  include/dt-bindings/clock ?
+Signed-off-by: Martin Kepplinger <martink@posteo.de>
+---
+ drivers/staging/rtl8192u/ieee80211/rtl819x_TSProc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->>  arch/arm/boot/dts/stih416-clock.dtsi | 477 ++++++++++++++++++++++++++++++++++
->>  arch/arm/boot/dts/stih416.dtsi       |  10 +-
->>  3 files changed, 497 insertions(+), 5 deletions(-)
->>  create mode 100644 arch/arm/boot/dts/stih416-clks.h
->
-> --
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+diff --git a/drivers/staging/rtl8192u/ieee80211/rtl819x_TSProc.c b/drivers/staging/rtl8192u/ieee80211/rtl819x_TSProc.c
+index 426f223..c96dbab 100644
+--- a/drivers/staging/rtl8192u/ieee80211/rtl819x_TSProc.c
++++ b/drivers/staging/rtl8192u/ieee80211/rtl819x_TSProc.c
+@@ -241,7 +241,7 @@ static PTS_COMMON_INFO SearchAdmitTRStream(struct ieee80211_device *ieee,
+ {
+ 	//DIRECTION_VALUE	dir;
+ 	u8	dir;
+-	bool				search_dir[4] = {0, 0, 0, 0};
++	bool				search_dir[4] = {0};
+ 	struct list_head		*psearch_list; //FIXME
+ 	PTS_COMMON_INFO	pRet = NULL;
+ 	if(ieee->iw_mode == IW_MODE_MASTER) //ap mode
+-- 
+1.7.10.4
 
-Best regards
