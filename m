@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047AbaEFRG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 13:06:57 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:54335 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaEFRGz convert rfc822-to-8bit (ORCPT
+	id S1751934AbaEFRHs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 13:07:48 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:22031 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750904AbaEFRHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 13:06:55 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [Patch v2 1/4] soc: Placeholder files for drivers/soc
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <53593D89.1020703@ti.com>
-Date: Tue, 6 May 2014 10:06:52 -0700
-Cc: Andy Gross <agross@codeaurora.org>, linux-kernel@vger.kernel.org,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <655E240A-D6B1-4750-AC3A-09BA9D0C084E@codeaurora.org>
-References: <1398357082-5102-1-git-send-email-agross@codeaurora.org> <1398357082-5102-2-git-send-email-agross@codeaurora.org> <53593D89.1020703@ti.com>
-To: Paul Walmsley <paul@pwsan.com>
-X-Mailer: Apple Mail (2.1874)
+	Tue, 6 May 2014 13:07:46 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Al4UALwWaVNbtAAq/2dsb2JhbABZgwarbQQBAQEBAQEFAZoHAgKBHxd0gmYcIxiBAiQTiEUBzjOFVoh8hEYBA48bihsBiwCHe4M2Ow
+Date: Tue, 6 May 2014 19:07:34 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] arch/unicore32/mm/ioremap.c: convert printk/warn_on to
+ warn(1
+Message-Id: <20140506190734.56036e71639f391e57c6ed00@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
++coalesce formats
 
-On Apr 24, 2014, at 9:36 AM, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+(This is untested)
 
-> On Thursday 24 April 2014 12:31 PM, Andy Gross wrote:
->> Add placeholder Kconfig and linkage for driver/soc.
->> 
->> The first patch set that implemented this was authored by Santosh Shilimkar:
->> https://lkml.org/lkml/2014/2/28/567
->> 
->> Signed-off-by: Andy Gross <agross@codeaurora.org>
->> ---
-> Good to see these patches on the list. Me and Kumar spoke about it
-> many times before.
-> 
-> BTW, I just posted updated version. Feel free to use the from it instead
-> of 4subject one.
-> 
-> Regards,
-> Santosh
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ arch/unicore32/mm/ioremap.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-Paul,
-
-Did you have any other thoughts on this, do we want to add more to Santosh’s patch w/regards to comments or MAINTAINERs?
-
-- k
-
+diff --git a/arch/unicore32/mm/ioremap.c b/arch/unicore32/mm/ioremap.c
+index 13068ee..5d9568c 100644
+--- a/arch/unicore32/mm/ioremap.c
++++ b/arch/unicore32/mm/ioremap.c
+@@ -143,13 +143,8 @@ void __iomem *__uc32_ioremap_pfn_caller(unsigned long pfn,
+ 	/*
+ 	 * Don't allow RAM to be mapped
+ 	 */
+-	if (pfn_valid(pfn)) {
+-		printk(KERN_WARNING "BUG: Your driver calls ioremap() on\n"
+-			"system memory.  This leads to architecturally\n"
+-			"unpredictable behaviour, and ioremap() will fail in\n"
+-			"the next kernel release. Please fix your driver.\n");
+-		WARN_ON(1);
+-	}
++	if (pfn_valid(pfn))
++		WARN(1, "BUG: Your driver calls ioremap() on\nsystem memory.  This leads to architecturally\nunpredictable behaviour, and ioremap() will fail in\nthe next kernel release. Please fix your driver.\n");
+ 
+ 	type = get_mem_type(mtype);
+ 	if (!type)
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+1.8.4.5
 
