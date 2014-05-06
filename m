@@ -1,65 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464AbaEFMtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 08:49:21 -0400
-Received: from xavier.telenet-ops.be ([195.130.132.52]:35338 "EHLO
-	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754840AbaEFMtR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 08:49:17 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH/RFC] usb: gadget: CONFIG_USB_S3C_HSOTG should depend on HAS_DMA
-Date: Tue,  6 May 2014 14:49:14 +0200
-Message-Id: <1399380554-3746-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756371AbaEFMyj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 08:54:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61257 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753074AbaEFMyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 08:54:35 -0400
+Date: Tue, 6 May 2014 08:54:24 -0400
+From: Aristeu Rozanski <arozansk@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vgoyal@redhat.com, axboe@kernel.dk, hannes@cmpxchg.org, mhocko@suse.cz
+Subject: Re: [PATCH 2/5] cgroup: replace cftype->write_string() with
+ cftype->write()
+Message-ID: <20140506125423.GT29214@redhat.com>
+References: <1399380266-3324-1-git-send-email-tj@kernel.org>
+ <1399380266-3324-3-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399380266-3324-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If NO_DMA=y:
+On Tue, May 06, 2014 at 08:44:23AM -0400, Tejun Heo wrote:
+> Convert all cftype->write_string() users to the new cftype->write()
+> which maps directly to kernfs write operation and has full access to
+> kernfs and cgroup contexts.  The conversions are mostly mechanical.
+> 
+> * @css and @cft are accessed using of_css() and of_cft() accessors
+>   respectively instead of being specified as arguments.
+> 
+> * Should return @nbytes on success instead of 0.
+> 
+> * @buf is not trimmed automatically.  Trim if necessary.  Note that
+>   blkcg doesn't need this as blkg_conf_prep() can already handle
+>   whitespaces.
+> 
+> cftype->write_string() has no user left after the conversions and
+> removed.
+> 
+> While at it, remove unnecessary local variable @p in
+> cgroup_subtree_control_write() and stale comment about
+> CGROUP_LOCAL_BUFFER_SIZE in cgroup_freezer.c.
+> 
+> This patch doesn't introduce any visible behavior changes.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Li Zefan <lizefan@huawei.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Aristeu Rozanski <arozansk@redhat.com>
+> ---
+>  block/blk-throttle.c      | 32 ++++++++++++++++----------------
+>  block/cfq-iosched.c       | 28 ++++++++++++++--------------
+>  include/linux/cgroup.h    | 10 +---------
+>  kernel/cgroup.c           | 38 +++++++++++++++++++-------------------
+>  kernel/cgroup_freezer.c   | 20 +++++++++-----------
+>  kernel/cpuset.c           | 16 +++++++++-------
+>  mm/hugetlb_cgroup.c       | 17 +++++++++--------
+>  mm/memcontrol.c           | 46 +++++++++++++++++++++++++---------------------
+>  net/ipv4/tcp_memcontrol.c | 16 +++++++++-------
+>  security/device_cgroup.c  | 14 +++++++-------
+>  10 files changed, 118 insertions(+), 119 deletions(-)
 
-drivers/built-in.o: In function `s3c_hsotg_map_dma':
-s3c-hsotg.c:(.text+0x375b2c): undefined reference to `usb_gadget_map_request'
-drivers/built-in.o: In function `s3c_hsotg_unmap_dma':
-s3c-hsotg.c:(.text+0x376a32): undefined reference to `usb_gadget_unmap_request'
-make[3]: *** [vmlinux] Error 1
+(...)
 
-Note that all callers of s3c_hsotg_map_dma()/s3c_hsotg_unmap_dma() are
-protected by a call into the using_dma() checking function:
+> diff --git a/security/device_cgroup.c b/security/device_cgroup.c
+> index 8365909..82d6b4f 100644
+> --- a/security/device_cgroup.c
+> +++ b/security/device_cgroup.c
+> @@ -651,27 +651,27 @@ static int devcgroup_update_access(struct dev_cgroup *devcgroup,
+>  	return rc;
+>  }
+>  
+> -static int devcgroup_access_write(struct cgroup_subsys_state *css,
+> -				  struct cftype *cft, char *buffer)
+> +static ssize_t devcgroup_access_write(struct kernfs_open_file *of,
+> +				      char *buf, size_t nbytes, loff_t off)
+>  {
+>  	int retval;
+>  
+>  	mutex_lock(&devcgroup_mutex);
+> -	retval = devcgroup_update_access(css_to_devcgroup(css),
+> -					 cft->private, buffer);
+> +	retval = devcgroup_update_access(css_to_devcgroup(of_css(of)),
+> +					 of_cft(of)->private, strstrip(buf));
+>  	mutex_unlock(&devcgroup_mutex);
+> -	return retval;
+> +	return retval ?: nbytes;
+>  }
+>  
+>  static struct cftype dev_cgroup_files[] = {
+>  	{
+>  		.name = "allow",
+> -		.write_string  = devcgroup_access_write,
+> +		.write = devcgroup_access_write,
+>  		.private = DEVCG_ALLOW,
+>  	},
+>  	{
+>  		.name = "deny",
+> -		.write_string = devcgroup_access_write,
+> +		.write = devcgroup_access_write,
+>  		.private = DEVCG_DENY,
+>  	},
+>  	{
 
-static inline bool using_dma(struct s3c_hsotg *hsotg)
-{
-        return false;   /* support is not complete */
-}
+for the device_cgroup part
+Acked-by: Aristeu Rozanski <aris@redhat.com>
 
-but not all versions of gcc manage to optimize the check away, causing a
-link error.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-Perhaps the DMA code should be removed completely, as its unused, or be
-protected by #ifdef CONFIG_HAS_DMA instead?
-
- drivers/usb/gadget/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index 3557c7e5040d..0e9dead51a27 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -302,6 +302,7 @@ config USB_PXA27X
- 
- config USB_S3C_HSOTG
- 	tristate "Designware/S3C HS/OtG USB Device controller"
-+	depends on HAS_DMA
- 	help
- 	  The Designware USB2.0 high-speed gadget controller
- 	  integrated into many SoCs.
 -- 
-1.7.9.5
+Aristeu
 
