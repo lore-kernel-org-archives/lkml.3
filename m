@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933482AbaEFAhk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 20:37:40 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:32981 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933005AbaEFAhj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 20:37:39 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1954hZl8sL3Z7OY36DmQXux
-Date: Mon, 5 May 2014 17:37:34 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dts: am335x-boneblack: remove use of
- ti,vcc-aux-disable-is-sleep
-Message-ID: <20140506003734.GO25949@atomide.com>
-References: <1398432986-30585-1-git-send-email-jhovold@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398432986-30585-1-git-send-email-jhovold@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S933492AbaEFAlM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 20:41:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59168 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933005AbaEFAlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 20:41:11 -0400
+From: Bandan Das <bsd@redhat.com>
+To: kvm@vger.kernel.org
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 0/3] Emulator Speedups - Optimize Instruction fetches
+Date: Mon,  5 May 2014 20:40:56 -0400
+Message-Id: <1399336859-7227-1-git-send-email-bsd@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Johan Hovold <jhovold@gmail.com> [140425 06:37]:
-> Remove use of property ti,vcc-aux-disable-is-sleep, which does not
-> exist.
-> 
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+My initial attempt at caching gva->gpa->hva translations. Pretty straight
+forward with details in the individual patches.
 
-Thanks applying into omap-for-v3.16/fixes-not-urgent.
+I haven't yet looked into if there are other possibilities
+to speed things up, just thought of sending these out since 
+the numbers are better
 
-Tony
+567 cycles/emulated jump instruction
+718 cycles/emulated move instruction
+730 cycles/emulated arithmetic instruction
+946 cycles/emulated memory load instruction
+956 cycles/emulated memory store instruction
+921 cycles/emulated memory RMW instruction
 
-> ---
->  arch/arm/boot/dts/am335x-boneblack.dts | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
-> index 6b71ad95a5cf..305975d3f531 100644
-> --- a/arch/arm/boot/dts/am335x-boneblack.dts
-> +++ b/arch/arm/boot/dts/am335x-boneblack.dts
-> @@ -26,7 +26,6 @@
->  	pinctrl-0 = <&emmc_pins>;
->  	bus-width = <8>;
->  	status = "okay";
-> -	ti,vcc-aux-disable-is-sleep;
->  };
->  
->  &am33xx_pinmux {
-> -- 
-> 1.8.3.2
-> 
+Old realmode.flat numbers from init ctxt changes -
+https://lkml.org/lkml/2014/4/16/848
+
+639 cycles/emulated jump instruction (4.3%)
+776 cycles/emulated move instruction (7.5%)
+791 cycles/emulated arithmetic instruction (11%)
+943 cycles/emulated memory load instruction (5.2%)
+948 cycles/emulated memory store instruction (7.6%)
+929 cycles/emulated memory RMW instruction (9.0%)
+
+Bandan Das (3):
+  KVM: x86: pass ctxt to fetch helper function
+  KVM: x86: use memory_prepare in fetch helper function
+  KVM: x86: cache userspace address for faster fetches
+
+ arch/x86/include/asm/kvm_emulate.h |  7 +++++-
+ arch/x86/kvm/x86.c                 | 46 ++++++++++++++++++++++++++++----------
+ 2 files changed, 40 insertions(+), 13 deletions(-)
+
+-- 
+1.8.3.1
+
