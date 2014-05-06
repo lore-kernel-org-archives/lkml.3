@@ -1,45 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890AbaEFQOL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 12:14:11 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:39380 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750874AbaEFQOJ (ORCPT
+	id S1753910AbaEFQQS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 12:16:18 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:33977 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838AbaEFQQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 12:14:09 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18l9uNWteVV7HR01/S/ExRI
-Date: Tue, 6 May 2014 09:14:04 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: sourav <sourav.poddar@ti.com>
-Cc: bcousson@baylibre.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, balbi@ti.com
-Subject: Re: [Resend/PATCH] arm: dts: am43x-epos: Add qspi device.
-Message-ID: <20140506161404.GI18474@atomide.com>
-References: <1398692550-31758-1-git-send-email-sourav.poddar@ti.com>
- <53689BDF.5030208@ti.com>
+	Tue, 6 May 2014 12:16:17 -0400
+Date: Tue, 6 May 2014 20:16:13 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf_fuzzer crash on pentium 4
+Message-ID: <20140506161613.GP28248@moon>
+References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
+ <20140506154637.GW26782@laptop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1405061205550.3372@vincent-weaver-1.umelst.maine.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53689BDF.5030208@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.DEB.2.10.1405061205550.3372@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* sourav <sourav.poddar@ti.com> [140506 01:23]:
-> Hi Tony,
+On Tue, May 06, 2014 at 12:11:49PM -0400, Vince Weaver wrote:
 > 
-> On Monday 28 April 2014 07:12 PM, Sourav Poddar wrote:
-> >This patch adds qspi nodes for am43xx SOC devices.
-> >
-> >Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
-> 
-> This patch has been posted many times before.
-> If this patch looks OK, can it be picked?
+> If I had infinite time I'd try to get the SGI Octane, Ultrasparc, and 
+> avr32 boards up and going again.
 
-Thanks applying into omap-for-v3.16/dt.
-
-Tony
+Btw, Vince, perf_fuzzer -- it's http://web.eece.maine.edu/~vweaver/projects/perf_events/fuzzer/?
