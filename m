@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934389AbaEFHFP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 03:05:15 -0400
+	id S934465AbaEFHG0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 03:06:26 -0400
 Received: from mga01.intel.com ([192.55.52.88]:54280 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934364AbaEFHFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 03:05:06 -0400
+	id S934375AbaEFHFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 03:05:13 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,995,1389772800"; 
-   d="scan'208";a="526662892"
+   d="scan'208";a="526663022"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
         Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
@@ -20,9 +20,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
         dmaengine@vger.kernel.org
-Subject: [Patch Part3 V2 17/21] iommu/vt-d: search _DSM method for DMAR hotplug
-Date: Tue,  6 May 2014 15:05:28 +0800
-Message-Id: <1399359932-28972-18-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part3 V2 19/21] iommu/vt-d: enhance error recovery in function intel_enable_irq_remapping()
+Date: Tue,  6 May 2014 15:05:30 +0800
+Message-Id: <1399359932-28972-20-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1399359932-28972-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1399359932-28972-1-git-send-email-jiang.liu@linux.intel.com>
@@ -30,74 +30,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to Intel VT-d specification, _DSM method to support DMAR
-hotplug should exist directly under corresponding ACPI object
-representing PCI host bridge. But some BIOSes doesn't conform to
-this, so search for _DSM method in the subtree starting from the
-ACPI object representing the PCI host bridge.
+Enhance error recovery in function intel_enable_irq_remapping()
+by tearing down all created data structures.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/iommu/dmar.c |   35 +++++++++++++++++++++++++++++++----
- 1 file changed, 31 insertions(+), 4 deletions(-)
+ drivers/iommu/intel_irq_remapping.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 2006e1cd8c0f..a1b436b105a0 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -1921,21 +1921,48 @@ static int dmar_hotplug_remove(acpi_handle handle)
- 	return ret;
- }
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index 9f1c86566452..f65b68d3de10 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -673,9 +673,11 @@ static int __init intel_enable_irq_remapping(void)
+ 	return eim ? IRQ_REMAP_X2APIC_MODE : IRQ_REMAP_XAPIC_MODE;
  
--static int dmar_device_hotplug(acpi_handle handle, bool insert)
-+static acpi_status dmar_get_dsm_handle(acpi_handle handle, u32 lvl,
-+				       void *context, void **retval)
-+{
-+	acpi_handle *phdl = retval;
-+
-+	if (dmar_detect_dsm(handle, DMAR_DSM_FUNC_DRHD)) {
-+		*phdl = handle;
-+		return AE_CTRL_TERMINATE;
-+	}
-+
-+	return AE_OK;
-+}
-+
-+int dmar_device_hotplug(acpi_handle handle, bool insert)
- {
- 	int ret;
-+	acpi_handle tmp = NULL;
-+	acpi_status status;
- 
- 	if (!dmar_in_use())
- 		return 0;
- 
--	if (!dmar_detect_dsm(handle, DMAR_DSM_FUNC_DRHD))
-+	if (dmar_detect_dsm(handle, DMAR_DSM_FUNC_DRHD)) {
-+		tmp = handle;
-+	} else {
-+		status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
-+					     ACPI_UINT32_MAX,
-+					     dmar_get_dsm_handle,
-+					     NULL, NULL, &tmp);
-+		if (ACPI_FAILURE(status)) {
-+			pr_warn("Failed to locate _DSM method.\n");
-+			return -ENXIO;
+ error:
+-	/*
+-	 * handle error condition gracefully here!
+-	 */
++	for_each_iommu(iommu, drhd)
++		if (ecap_ir_support(iommu->ecap)) {
++			iommu_disable_irq_remapping(iommu);
++			intel_teardown_irq_remapping(iommu);
 +		}
-+	}
-+	if (tmp == NULL)
- 		return 0;
  
- 	down_write(&dmar_global_lock);
- 	if (insert)
--		ret = dmar_hotplug_insert(handle);
-+		ret = dmar_hotplug_insert(tmp);
- 	else
--		ret = dmar_hotplug_remove(handle);
-+		ret = dmar_hotplug_remove(tmp);
- 	up_write(&dmar_global_lock);
- 
- 	return ret;
+ 	if (x2apic_present)
+ 		pr_warn("Failed to enable irq remapping.  You are vulnerable to irq-injection attacks.\n");
 -- 
 1.7.10.4
 
