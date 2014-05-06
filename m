@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436AbaEFUVu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 16:21:50 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:64709 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755146AbaEFUTo (ORCPT
+	id S1755512AbaEFUWM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 16:22:12 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:42491 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620AbaEFUTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 16:19:44 -0400
+	Tue, 6 May 2014 16:19:40 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 4/8] cgroup: move cgroup->kn->priv clearing to cgroup_rmdir()
-Date: Tue,  6 May 2014 16:19:30 -0400
-Message-Id: <1399407574-21472-5-git-send-email-tj@kernel.org>
+Subject: [PATCH 1/8] cgroup: reorganize cgroup_create()
+Date: Tue,  6 May 2014 16:19:27 -0400
+Message-Id: <1399407574-21472-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1399407574-21472-1-git-send-email-tj@kernel.org>
 References: <1399407574-21472-1-git-send-email-tj@kernel.org>
@@ -21,72 +21,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ->priv field of a cgroup directory kernfs_node points back to the
-cgroup.  This field is RCU cleared in cgroup_destroy_locked() for
-non-kernfs accesses from css_tryget_from_dir() and
-cgroupstats_build().
+Reorganize cgroup_create() so that all paths share unlock out path.
 
-As these are only applicable to cgroups which finished creation
-successfully and fully initialized cgroups are always removed by
-cgroup_rmdir(), this can be safely moved to the end of cgroup_rmdir().
+* All err_* labels are renamed to out_* as they're now shared by both
+  success and failure paths.
 
-This will help simplifying cgroup locking and shouldn't introduce any
-behavior difference.
+* @err renamed to @ret for the similar reason as above and so that
+  it's more consistent with other functions.
+
+* cgroup memory allocation moved after locking so that freeing failed
+  cgroup happens before unlocking.  While this moves more code inside
+  critical section, memory allocations inside cgroup locking are
+  already pretty common and this is unlikely to make any noticeable
+  difference.
+
+* While at it, replace a stray @parent->root dereference with @root.
+
+This reorganization will help simplifying locking.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cgroup.c | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+ kernel/cgroup.c | 69 ++++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 34 insertions(+), 35 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index f544e46..3118a63 100644
+index da493a4..4d58229 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -4547,17 +4547,7 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+@@ -4247,15 +4247,10 @@ static long cgroup_create(struct cgroup *parent, const char *name,
+ {
+ 	struct cgroup *cgrp;
+ 	struct cgroup_root *root = parent->root;
+-	int ssid, err;
++	int ssid, ret;
+ 	struct cgroup_subsys *ss;
+ 	struct kernfs_node *kn;
  
- 	/* remove @cgrp directory along with the base files */
- 	mutex_unlock(&cgroup_mutex);
+-	/* allocate the cgroup and its ID, 0 is reserved for the root */
+-	cgrp = kzalloc(sizeof(*cgrp), GFP_KERNEL);
+-	if (!cgrp)
+-		return -ENOMEM;
 -
--	/*
--	 * There are two control paths which try to determine cgroup from
--	 * dentry without going through kernfs - cgroupstats_build() and
--	 * css_tryget_from_dir().  Those are supported by RCU protecting
--	 * clearing of cgrp->kn->priv backpointer, which should happen
--	 * after all files under it have been removed.
--	 */
- 	kernfs_remove(cgrp->kn);	/* @cgrp has an extra ref on its kn */
--	RCU_INIT_POINTER(*(void __rcu __force **)&cgrp->kn->priv, NULL);
--
- 	mutex_lock(&cgroup_mutex);
+ 	mutex_lock(&cgroup_tree_mutex);
  
- 	return 0;
-@@ -4616,6 +4606,17 @@ static int cgroup_rmdir(struct kernfs_node *kn)
- 	mutex_unlock(&cgroup_tree_mutex);
- 
- 	kernfs_unbreak_active_protection(kn);
-+
-+	/*
-+	 * There are two control paths which try to determine cgroup from
-+	 * dentry without going through kernfs - cgroupstats_build() and
-+	 * css_tryget_from_dir().  Those are supported by RCU protecting
-+	 * clearing of kn->priv backpointer, which should happen after all
-+	 * files under it have been removed.
-+	 */
-+	if (!ret)
-+		RCU_INIT_POINTER(*(void __rcu __force **)&kn->priv, NULL);
-+
- 	cgroup_put(cgrp);
- 	return ret;
- }
-@@ -5175,7 +5176,7 @@ struct cgroup_subsys_state *css_tryget_from_dir(struct dentry *dentry,
  	/*
- 	 * This path doesn't originate from kernfs and @kn could already
- 	 * have been or be removed at any point.  @kn->priv is RCU
--	 * protected for this access.  See destroy_locked() for details.
-+	 * protected for this access.  See cgroup_rmdir() for details.
+@@ -4266,8 +4261,15 @@ static long cgroup_create(struct cgroup *parent, const char *name,
+ 	 * don't get nasty surprises if we ever grow another caller.
  	 */
- 	cgrp = rcu_dereference(kn->priv);
- 	if (cgrp)
+ 	if (!cgroup_lock_live_group(parent)) {
+-		err = -ENODEV;
+-		goto err_unlock_tree;
++		ret = -ENODEV;
++		goto out_unlock_tree;
++	}
++
++	/* allocate the cgroup and its ID, 0 is reserved for the root */
++	cgrp = kzalloc(sizeof(*cgrp), GFP_KERNEL);
++	if (!cgrp) {
++		ret = -ENOMEM;
++		goto out_unlock;
+ 	}
+ 
+ 	/*
+@@ -4276,15 +4278,15 @@ static long cgroup_create(struct cgroup *parent, const char *name,
+ 	 */
+ 	cgrp->id = cgroup_idr_alloc(&root->cgroup_idr, NULL, 2, 0, GFP_NOWAIT);
+ 	if (cgrp->id < 0) {
+-		err = -ENOMEM;
+-		goto err_unlock;
++		ret = -ENOMEM;
++		goto out_free_cgrp;
+ 	}
+ 
+ 	init_cgroup_housekeeping(cgrp);
+ 
+ 	cgrp->parent = parent;
+ 	cgrp->dummy_css.parent = &parent->dummy_css;
+-	cgrp->root = parent->root;
++	cgrp->root = root;
+ 
+ 	if (notify_on_release(parent))
+ 		set_bit(CGRP_NOTIFY_ON_RELEASE, &cgrp->flags);
+@@ -4295,8 +4297,8 @@ static long cgroup_create(struct cgroup *parent, const char *name,
+ 	/* create the directory */
+ 	kn = kernfs_create_dir(parent->kn, name, mode, cgrp);
+ 	if (IS_ERR(kn)) {
+-		err = PTR_ERR(kn);
+-		goto err_free_id;
++		ret = PTR_ERR(kn);
++		goto out_free_id;
+ 	}
+ 	cgrp->kn = kn;
+ 
+@@ -4319,20 +4321,20 @@ static long cgroup_create(struct cgroup *parent, const char *name,
+ 	 */
+ 	cgroup_idr_replace(&root->cgroup_idr, cgrp, cgrp->id);
+ 
+-	err = cgroup_kn_set_ugid(kn);
+-	if (err)
+-		goto err_destroy;
++	ret = cgroup_kn_set_ugid(kn);
++	if (ret)
++		goto out_destroy;
+ 
+-	err = cgroup_addrm_files(cgrp, cgroup_base_files, true);
+-	if (err)
+-		goto err_destroy;
++	ret = cgroup_addrm_files(cgrp, cgroup_base_files, true);
++	if (ret)
++		goto out_destroy;
+ 
+ 	/* let's create and online css's */
+ 	for_each_subsys(ss, ssid) {
+ 		if (parent->child_subsys_mask & (1 << ssid)) {
+-			err = create_css(cgrp, ss);
+-			if (err)
+-				goto err_destroy;
++			ret = create_css(cgrp, ss);
++			if (ret)
++				goto out_destroy;
+ 		}
+ 	}
+ 
+@@ -4345,25 +4347,22 @@ static long cgroup_create(struct cgroup *parent, const char *name,
+ 
+ 	kernfs_activate(kn);
+ 
+-	mutex_unlock(&cgroup_mutex);
+-	mutex_unlock(&cgroup_tree_mutex);
+-
+-	return 0;
++	ret = 0;
++	goto out_unlock;
+ 
+-err_free_id:
++out_free_id:
+ 	cgroup_idr_remove(&root->cgroup_idr, cgrp->id);
+-err_unlock:
++out_free_cgrp:
++	kfree(cgrp);
++out_unlock:
+ 	mutex_unlock(&cgroup_mutex);
+-err_unlock_tree:
++out_unlock_tree:
+ 	mutex_unlock(&cgroup_tree_mutex);
+-	kfree(cgrp);
+-	return err;
++	return ret;
+ 
+-err_destroy:
++out_destroy:
+ 	cgroup_destroy_locked(cgrp);
+-	mutex_unlock(&cgroup_mutex);
+-	mutex_unlock(&cgroup_tree_mutex);
+-	return err;
++	goto out_unlock;
+ }
+ 
+ static int cgroup_mkdir(struct kernfs_node *parent_kn, const char *name,
 -- 
 1.9.0
 
