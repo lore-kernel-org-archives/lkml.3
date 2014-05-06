@@ -1,179 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757796AbaEFO4L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 10:56:11 -0400
-Received: from sym2.noone.org ([178.63.92.236]:54490 "EHLO sym2.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752375AbaEFO4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 10:56:09 -0400
-Date: Tue, 6 May 2014 16:56:06 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Darek Marcinkiewicz <reksio@newterm.pl>
-Cc: davem@davemloft.net, romieu@fr.zoreil.com, netdev@vger.kernel.org,
+	id S1757861AbaEFO43 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 10:56:29 -0400
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:49747 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753881AbaEFO41 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 10:56:27 -0400
+X-AuditID: cbfec37d-b7f966d000005e7e-79-5368f819d94e
+Message-id: <5368F817.1080608@samsung.com>
+Date: Tue, 06 May 2014 08:56:23 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 1/1] Driver for Beckhoff CX5020 EtherCAT master
- module.
-Message-ID: <20140506145606.GH6455@distanz.ch>
-References: <20140505191045.GK1156@newterm.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505191045.GK1156@newterm.pl>
-X-Editor: Vi IMproved 7.2
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 3.14 000/158] 3.14.3-stable review
+References: <20140504154029.975081050@linuxfoundation.org>
+In-reply-to: <20140504154029.975081050@linuxfoundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.134.247]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t9hX12pHxnBBhvmsVrMWb+GzaJ58Xo2
+	i8u75rBZPFl4hsli6qkJLBYLNj5itHjU95bdgd1j56y77B4nZvxm8dg/dw2Q+72B3ePzJrkA
+	1igum5TUnMyy1CJ9uwSujK629+wFJ9gq5k2fx97AOJO1i5GTQ0LAROL9zV3MELaYxIV769m6
+	GLk4hASWMUo0PT7KDuH0Mkmc272fCcLZxijx9WMDWDuvgJbEtP51TCA2i4CqxNa198FsNgF1
+	ic+vd7CD2EICchJNS1YDreDgEBWIkHh8QQiiVVDix+R7LCC2iECwxNqvCxlB5jMLrGKUuH55
+	ORtIQljATOL0hP2sEHOsJJo37mcBmcMpYC0xY2E5SJgZqORRyzpmCFteYvOat8wQ5coSfy6f
+	YoL4TFli457bbBMYRWYhWT0LSfssJO0LGJlXMYqVFicXFCelp1aY6BUn5haX5qXrJefnbmKE
+	RFLtDsb7X20OMQpwMCrx8CqsSQ8WYk0sK67MPcQowcGsJMLb8CUjWIg3JbGyKrUoP76oNCe1
+	+BAjEwenVANjel7TOSY9O6GyD6U9XZlMFXqZ6VxXeI3enNrz+EF4rduEahvXi+vdnJ4u5o6+
+	tfrooZWz7zKaXXul9HDKq/JI1eZvSsa7EnSi67xerWBgebq1a+7boH/ROrGvnc7tkEsM2PPv
+	lZPFBsU1f1/9jntrknjZbhXzMcHzW5N1ZrWFtHRyGh/6tGiXEktxRqKhFnNRcSIAvj5dSIIC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-05-05 at 21:10:45 +0200, Darek Marcinkiewicz <reksio@newterm.pl> wrote:
-> 
-> This driver adds support for EtherCAT master module located on CCAT
-> FPGA found on Beckhoff CX series industrial PCs. The driver exposes
-> EtherCAT master as an ethernet interface.
-> 
-> EtherCAT is a fieldbus protocol defined on top of ethernet and Beckhoff
-> CX5020 PCs come with built-in EtherCAT master module located on a FPGA,
-> which in turn is connected to a PCI bus.
-> 
-> Signed-off-by: Dariusz Marcinkiewicz <reksio@newterm.pl>
-> ---
-> 
-> Changes from v7:
->   * added 'depends on PCI' to the driver's Kconfig entry
-> 
-> Changes from v6:
->   * added memory barriers to avoid race between timer handler and xmit routine 
->   * includes formatting/indeting changes from Francois Romieu
-> 
-> Changes from v5:
->   * removal of needless locking on tx path
->   * driver makes actual use of tx fifo
->   * driver uses descriptors' array instead of descriptor list
-> 
-> Changes from v4: 
->   * incorporates Francois Romieu comments
->   * fixes typo spotted by Jesper Brouer
-> 
-> Changes from v3:
->   * some clarificatoins around buffer allocations
-> 
-> Changes from v2:
->   * removed all checkpatch warnings
->   * driver makes use of device rx fifo
-> 
-> Changes from v1:
->   * added endianess annotation to descriptors' structures
->   * killed checkpath warnings about string literals being split into multiple
->     lines
-> 
->  drivers/net/ethernet/Kconfig  |   12 +
->  drivers/net/ethernet/Makefile |    1 +
->  drivers/net/ethernet/ec_bhf.c |  705 +++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 718 insertions(+)
->  create mode 100644 drivers/net/ethernet/ec_bhf.c
+On 05/04/2014 09:38 AM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.14.3 release.
+> There are 158 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Tue May  6 15:38:47 UTC 2014.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.3-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-[...]
+Compiled and booted on my test systems. No dmesg regressions.
 
-> +struct ec_bhf_priv {
-> +	struct net_device *net_dev;
-> +
-> +	struct pci_dev *dev;
-> +
-> +	void * __iomem io;
-> +	void * __iomem dma_io;
-> +
-> +	struct hrtimer hrtimer;
-> +
-> +	int tx_dma_chan;
-> +	int rx_dma_chan;
-> +	void * __iomem ec_io;
-> +	void * __iomem fifo_io;
-> +	void * __iomem mii_io;
-> +	void * __iomem mac_io;
-> +
-> +	struct bhf_dma rx_buf;
-> +	struct rx_desc *rx_descs;
-> +	int rx_dnext;
-> +	int rx_dcount;
-> +
-> +	struct bhf_dma tx_buf;
-> +	struct tx_desc *tx_descs;
-> +	int tx_dcount;
-> +	int tx_dnext;
-> +
-> +	u64 stat_rx_bytes;
-> +	u64 stat_tx_bytes;
+-- Shuah
 
-netdev->stats already provides {rx,tx}_bytes members, so you can get rid
-of these two.
 
-[...]
-
-> +static void ec_bhf_process_rx(struct ec_bhf_priv *priv)
-> +{
-> +	struct rx_desc *desc = &priv->rx_descs[priv->rx_dnext];
-> +	struct device *dev = PRIV_TO_DEV(priv);
-> +
-> +	while (ec_bhf_pkt_received(desc)) {
-> +		int pkt_size = (le16_to_cpu(desc->header.len) &
-> +			       RXHDR_LEN_MASK) - sizeof(struct rx_header) - 4;
-> +		u8 *data = desc->data;
-> +		struct sk_buff *skb;
-> +
-> +		skb = netdev_alloc_skb_ip_align(priv->net_dev, pkt_size);
-> +		dev_dbg(dev, "Received packet, size: %d\n", pkt_size);
-> +
-> +		if (skb) {
-> +			memcpy(skb_put(skb, pkt_size), data, pkt_size);
-> +			skb->protocol = eth_type_trans(skb, priv->net_dev);
-> +			dev_dbg(dev, "Protocol type: %x\n", skb->protocol);
-> +
-> +			netif_rx(skb);
-> +		} else {
-> +			dev_err_ratelimited(dev,
-> +				"Couldn't allocate a skb_buff for a packet of size %u\n",
-> +				pkt_size);
-> +		}
-> +
-> +		priv->stat_rx_bytes += pkt_size;
-
-This should only be incremented if the packet was actually passed to
-netif_rx(), no?
-
-> +
-> +		desc->header.recv = 0;
-> +
-> +		ec_bhf_add_rx_desc(priv, desc);
-> +
-> +		priv->rx_dnext = (priv->rx_dnext + 1) % priv->rx_dcount;
-> +		desc = &priv->rx_descs[priv->rx_dnext];
-> +	}
-> +
-> +}
-
-[...]
-
-> +static struct rtnl_link_stats64 *
-> +ec_bhf_get_stats(struct net_device *net_dev,
-> +		 struct rtnl_link_stats64 *stats)
-> +{
-> +	struct ec_bhf_priv *priv = netdev_priv(net_dev);
-> +
-> +	memset(stats, 0, sizeof(*stats));
-
-No need to memset() here, this is already done in dev_get_stats()
-
-> +	stats->rx_errors = ioread8(priv->mac_io + MAC_RX_ERR_CNT) +
-> +				ioread8(priv->mac_io + MAC_CRC_ERR_CNT) +
-> +				ioread8(priv->mac_io + MAC_FRAME_ERR_CNT);
-> +	stats->rx_packets = ioread32(priv->mac_io + MAC_RX_FRAME_CNT);
-> +	stats->tx_packets = ioread32(priv->mac_io + MAC_TX_FRAME_CNT);
-> +	stats->rx_dropped = ioread8(priv->mac_io + MAC_DROPPED_FRMS);
-> +
-> +	stats->tx_bytes = priv->stat_tx_bytes;
-> +	stats->rx_bytes = priv->stat_rx_bytes;
-> +
-> +	return stats;
-> +}
-
-[...]
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
