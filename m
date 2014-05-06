@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933771AbaEFCe5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 22:34:57 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:59266 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933630AbaEFCey (ORCPT
+	id S933787AbaEFCfr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 22:35:47 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:47447 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933630AbaEFCfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 22:34:54 -0400
-X-AuditID: cbfee68f-b7eff6d000002b70-a1-53684a4d662c
+	Mon, 5 May 2014 22:35:44 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-5c-53684a7b8e52
 From: Kukjin Kim <kgene.kim@samsung.com>
 To: "'Tomasz Figa'" <t.figa@samsung.com>,
         "'Tomasz Stanislawski'" <t.stanislaws@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Ben Dooks'" <ben-linux@fluff.org>,
-        "'Rob Herring'" <robh+dt@kernel.org>,
+Cc: "'Ben Dooks'" <ben-linux@fluff.org>, "'Rob Herring'" <robh+dt@kernel.org>,
         "'Pawel Moll'" <pawel.moll@arm.com>, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>,
-        j.anaszewski@samsung.com,
         =?UTF-8?B?J+uwleqyveuvvCc=?= <kyungmin.park@samsung.com>
-References: <534D4143.3050801@samsung.com> <53594496.4010607@samsung.com>
-In-reply-to: <53594496.4010607@samsung.com>
-Subject: RE: [PATCH] arm: dts: exynos4412-trats2: rename alias for i2c_ak8975
- label
-Date: Tue, 06 May 2014 11:34:52 +0900
-Message-id: <098d01cf68d3$c2420b10$46c62130$@samsung.com>
+References: <534E7A3F.7050406@samsung.com> <534E7F1A.8080502@samsung.com>
+In-reply-to: <534E7F1A.8080502@samsung.com>
+Subject: RE: [PATCH] arm: dts: exynos4: add missing pinctrls for I2C controllers
+Date: Tue, 06 May 2014 11:35:38 +0900
+Message-id: <099a01cf68d3$de1044b0$9a30ce10$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=UTF-8
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQI8wzRZu5e3m6UdmYMT6niTju0uVAHqV4wwmkjOStA=
+Thread-index: AQI90i8zx/tL6O8TlCQCnrPTNlb+DQGYbHEhmkk/4qA=
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAKsWRmVeSWpSXmKPExsVy+t8zA11fr4xgg+5lHBYbZ6xntZi07gCT
-	xfwj51gt+t8sZLU492olo0Xv1eeMFmeb3rBbbHp8jdXi8q45bBYzzu9jsrh9mddi6fWLTBYT
-	pq9lsWjde4TdYv2M1ywW89pfsjoIeKyZt4bRo6W5h83jcl8vk8ffVS+YPVYu/8LmsWlVJ5vH
-	5iX1Hn1bVjF6fN4kF8AZxWWTkpqTWZZapG+XwJXxd0kva8FMrorOlYdYGhh7OboYOTgkBEwk
-	Og7IdzFyApliEhfurWfrYuTiEBJYxihx7eN0ZoiEicS8DT9ZIRKLGCUautYwgiSEBP4ySvyZ
-	Zw5iswloSBx+/4wdZKiIQJTE0RlpIPXMAi0sEq3nb7NA1HtKHLy9ih3E5hTQlph+ZjVYXFgg
-	VKJ3Tw/YMhYBVYm1jYfA5vMKWEqc2jmLDcIWlPgx+R5YPbOAusSkeYuYIWx5ic1r3kIdqiCx
-	4+xrsF4RASuJtSdeQNWISOx78Y4R5CAJgTMcEqc/PmSDWCYg8W3yIRZISMhKbDoANUdS4uCK
-	GywTGCVmIVk9C8nqWUhWz0KyYgEjyypG0dSC5ILipPQiY73ixNzi0rx0veT83E2MkNTRv4Px
-	7gHrQ4zJQOsnMkuJJucDU09eSbyhsZmRhamJqbGRuaUZacJK4rz3HyYFCQmkJ5akZqemFqQW
-	xReV5qQWH2Jk4uCUamBMfvvMSKH+2M5s7p9bDz7+VNo1J2GKifKK6LfrfUrSd55hmiGzJV38
-	a/GKHzUxmXdSPu2dPKGzdupfwdWTooQPzvxy9oPSlOefVM/N/+USX65qsKjfyuXwEseNC569
-	Prfl59wTS790f/Cexc3LureNtV7hxZJ81eZPfLJLw17LL1v6Ys+z1mN3LJVYijMSDbWYi4oT
-	AeZBVR8zAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHKsWRmVeSWpSXmKPExsVy+t9jAV1fr4xgg2N3mSw2zljPajFp3QEm
-	i/lHzrFa9L9ZyGpx7tVKRoveq88ZLc42vWG32PT4GqvF5V1z2CxmnN/HZHH7Mq/F0usXmSwm
-	TF/LYtG69wi7xfoZr1ks5rW/ZHUQ8Fgzbw2jR0tzD5vH5b5eJo+/q14we6xc/oXNY9OqTjaP
-	zUvqPfq2rGL0+LxJLoAzqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8x
-	N9VWycUnQNctMwfoDSWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxt8l
-	vawFM7kqOlceYmlg7OXoYuTkkBAwkZi34ScrhC0mceHeerYuRi4OIYFFjBINXWsYQRJCAn8Z
-	Jf7MMwex2QQ0JA6/f8bexcjBISIQJXF0RhpIPbNAC4tE6/nbLBD1nhIHb69iB7E5BbQlpp9Z
-	DRYXFgiV6N3TwwxiswioSqxtPAQ2n1fAUuLUzllsELagxI/J98DqmQXUJSbNW8QMYctLbF7z
-	lhniUAWJHWdfg/WKCFhJrD3xAqpGRGLfi3eMExiFZiEZNQvJqFlIRs1C0rKAkWUVo2hqQXJB
-	cVJ6rqFecWJucWleul5yfu4mRnBqeia1g3Flg8UhRgEORiUe3hMr04OFWBPLiitzDzFKcDAr
-	ifD6O2UEC/GmJFZWpRblxxeV5qQWH2JMBvp0IrOUaHI+MG3mlcQbGpuYGVkamVkYmZibkyas
-	JM57oNU6UEggPbEkNTs1tSC1CGYLEwenVANj21zv4JDqT+uDnWQibJ4fFY77sTP20MMd+Qte
-	fOl+ss3D/EGf0Mr4OrFn5h8ClB6V7Pfg3xGee/Adv+G+A7vvvXj96HFz/wPdOo7PRuqHYu+y
-	PTy8o9JZiE/qmKyh3+w4Qb55l3o/HbFNWrCmaXXf+RWRj6c8NvWM2d1fpVuU5fXH/HHCtQtp
-	SizFGYmGWsxFxYkAsQsT+ZEDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFKsWRmVeSWpSXmKPExsVy+t8zfd1qr4xgg/ZefYuNM9azWkxad4DJ
+	Yv6Rc6wW/W8Wslqce7WS0eJs0xt2i02Pr7FaXN41h81ixvl9TBa3L/NaLL1+kcliwvS1LBat
+	e4+wW6yf8ZrFYl77S1YHfo8189YwerQ097B5XO7rZfL4u+oFs8fK5V/YPDat6mTz2Lyk3qNv
+	yypGj8+b5AI4o7hsUlJzMstSi/TtErgyXs3ew1gwSaDixJ4v7A2MF7i7GDk5JARMJK5saGSE
+	sMUkLtxbz9bFyMUhJLCMUeLC1stADgdY0dQfMRDxRYwSVw79BGsQEvjLKLHlsS2IzSagIXH4
+	/TN2kHoRgSiJozPSQOqZBV4wSyy8epIFot5T4tPnE6wgNqeAtsSma5vZQWxhgQCJtd/mgcVZ
+	BFQlpn+dCBbnFbCU2PlzMROELSjxY/I9sDnMAuoSk+YtYoaw5SU2r3nLDPGAgsSOs6/BbhMR
+	sJJYPWcvO0SNiMS+F++gnjzBIbGvMRZil4DEt8mHWCB+lJXYdABqjKTEwRU3WCYwSsxCsnkW
+	ks2zkGyehWTDAkaWVYyiqQXJBcVJ6UUmesWJucWleel6yfm5mxgh6WLCDsZ7B6wPMSYDrZ/I
+	LCWanA9MN3kl8YbGZkYWpiamxkbmlmakCSuJ86o9SgoSEkhPLEnNTk0tSC2KLyrNSS0+xMjE
+	wSnVwGi6duID4/CgvMtbKx1rlvEd+xQge8i1RH9Go0TvlJbnx5K2aWY09VUrRHW7eTrbnp7/
+	8/C5GftPyNecLClrE1jdG75Fszvb7egChn8Tu08zN+llL3Q/frl0TdWmVZFFvHLXrNUufT2g
+	ee1c3df2NabX7yQl9Jle+WR8dW/pW+GiasWwzuoCZyWW4oxEQy3mouJEABcNU+ItAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBKsWRmVeSWpSXmKPExsVy+t9jAd1qr4xgg+ZNWhYbZ6xntZi07gCT
+	xfwj51gt+t8sZLU492olo8XZpjfsFpseX2O1uLxrDpvFjPP7mCxuX+a1WHr9IpPFhOlrWSxa
+	9x5ht1g/4zWLxbz2l6wO/B5r5q1h9Ghp7mHzuNzXy+Txd9ULZo+Vy7+weWxa1cnmsXlJvUff
+	llWMHp83yQVwRjUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4
+	BOi6ZeYAfaCkUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzHg1ew9jwSSB
+	ihN7vrA3MF7g7mLk4JAQMJGY+iOmi5ETyBSTuHBvPVsXIxeHkMAiRokrh34ygiSEBP4ySmx5
+	bAtiswloSBx+/4wdpFdEIEri6Iw0kHpmgRfMEguvnmSBqPeU+PT5BCuIzSmgLbHp2mZ2EFtY
+	IEBi7bd5YHEWAVWJ6V8ngsV5BSwldv5czARhC0r8mHwPbA6zgLrEpHmLmCFseYnNa94yQxyq
+	ILHj7Guw20QErCRWz9nLDlEjIrHvxTvGCYxCs5CMmoVk1Cwko2YhaVnAyLKKUTS1ILmgOCk9
+	11CvODG3uDQvXS85P3cTIzgdPZPawbiyweIQowAHoxIP74mV6cFCrIllxZW5hxglOJiVRHj9
+	nTKChXhTEiurUovy44tKc1KLDzEmA306kVlKNDkfmCrzSuINjU3MjCyNzCyMTMzNSRNWEuc9
+	0GodKCSQnliSmp2aWpBaBLOFiYNTqoFx24wZIaVrt893ntgYcV0l49qanMA7FmXzs6vdXhxX
+	sfn6dc67aZlqGwxmJF681+nB9Na0x0uWdY2E83nW7OBg3j87m3TqbkxZvOjAqTv/pPyDeGbd
+	ExXa/31Tymm2Z7Y/DNfke19SWaov7FuQlaHcvPXLp8fNNXtVV/3rey9X+phJmWOP6sPTSizF
+	GYmGWsxFxYkA7vC3vYsDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -74,41 +69,74 @@ Tomasz Figa wrote:
 > 
 > Hi Tomasz,
 > 
-> On 15.04.2014 16:25, Tomasz Stanislawski wrote:
-> > The i2c_ak8975 controler uses label i2c8.
-> > This alias is already used for I2C controller 8 defined
-> > in file arch/arm/boot/dts/exynos4.dtsi.
-> >
-> > This patch renames a label for i2c_ak8975 to i2c9.
+> On 16.04.2014 14:40, Tomasz Stanislawski wrote:
+> > This patch adds missing pinctrls for I2C controllers 2-7.
 > >
 > > Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
 > > ---
-> >   arch/arm/boot/dts/exynos4412-trats2.dts |    2 +-
-> >   1 file changed, 1 insertion(+), 1 deletion(-)
+> >   arch/arm/boot/dts/exynos4.dtsi |   12 ++++++++++++
+> >   1 file changed, 12 insertions(+)
 > >
-> > diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts
-> b/arch/arm/boot/dts/exynos4412-trats2.dts
-> > index c16b315..5add765 100644
-> > --- a/arch/arm/boot/dts/exynos4412-trats2.dts
-> > +++ b/arch/arm/boot/dts/exynos4412-trats2.dts
-> > @@ -20,7 +20,7 @@
-> >   	compatible = "samsung,trats2", "samsung,exynos4412",
-> "samsung,exynos4";
-> >
-> >   	aliases {
-> > -		i2c8 = &i2c_ak8975;
-> > +		i2c9 = &i2c_ak8975;
+> > diff --git a/arch/arm/boot/dts/exynos4.dtsi
+> b/arch/arm/boot/dts/exynos4.dtsi
+> > index 0401f4d..288aa81 100644
+> > --- a/arch/arm/boot/dts/exynos4.dtsi
+> > +++ b/arch/arm/boot/dts/exynos4.dtsi
+> > @@ -357,6 +357,8 @@
+> >   		interrupts = <0 60 0>;
+> >   		clocks = <&clock CLK_I2C2>;
+> >   		clock-names = "i2c";
+> > +		pinctrl-names = "default";
+> > +		pinctrl-0 = <&i2c2_bus>;
+> >   		status = "disabled";
 > >   	};
 > >
-> >   	memory {
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-samsung-
-> soc" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > @@ -368,6 +370,8 @@
+> >   		interrupts = <0 61 0>;
+> >   		clocks = <&clock CLK_I2C3>;
+> >   		clock-names = "i2c";
+> > +		pinctrl-names = "default";
+> > +		pinctrl-0 = <&i2c3_bus>;
+> >   		status = "disabled";
+> >   	};
 > >
-> 
-> Seems reasonable.
+> > @@ -379,6 +383,8 @@
+> >   		interrupts = <0 62 0>;
+> >   		clocks = <&clock CLK_I2C4>;
+> >   		clock-names = "i2c";
+> > +		pinctrl-names = "default";
+> > +		pinctrl-0 = <&i2c4_bus>;
+> >   		status = "disabled";
+> >   	};
+> >
+> > @@ -390,6 +396,8 @@
+> >   		interrupts = <0 63 0>;
+> >   		clocks = <&clock CLK_I2C5>;
+> >   		clock-names = "i2c";
+> > +		pinctrl-names = "default";
+> > +		pinctrl-0 = <&i2c5_bus>;
+> >   		status = "disabled";
+> >   	};
+> >
+> > @@ -401,6 +409,8 @@
+> >   		interrupts = <0 64 0>;
+> >   		clocks = <&clock CLK_I2C6>;
+> >   		clock-names = "i2c";
+> > +		pinctrl-names = "default";
+> > +		pinctrl-0 = <&i2c6_bus>;
+> >   		status = "disabled";
+> >   	};
+> >
+> > @@ -412,6 +422,8 @@
+> >   		interrupts = <0 65 0>;
+> >   		clocks = <&clock CLK_I2C7>;
+> >   		clock-names = "i2c";
+> > +		pinctrl-names = "default";
+> > +		pinctrl-0 = <&i2c7_bus>;
+> >   		status = "disabled";
+> >   	};
+> >
+> >
 > 
 > Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 > 
