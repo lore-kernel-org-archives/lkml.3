@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751597AbaEFRBY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 13:01:24 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:35782 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821AbaEFRBW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 13:01:22 -0400
+	id S1751867AbaEFRBp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 13:01:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11454 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750857AbaEFRBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 13:01:43 -0400
+Message-ID: <5369156C.4000602@redhat.com>
+Date: Tue, 06 May 2014 19:01:32 +0200
+From: Denys Vlasenko <dvlasenk@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140506165233.GR18016@ZenIV.linux.org.uk>
-References: <20140502055127.GH18016@ZenIV.linux.org.uk>
-	<CAELBmZC9g91+8B6HsnbmwWJBmiYXgMW6QfdREJYyd8EP5RpRpQ@mail.gmail.com>
-	<20140502210813.GB32527@tucsk.piliscsaba.szeredi.hu>
-	<CA+55aFzbtGwxTf_d97pSLc4hAciErGDdkOSzLkpt_hP-UmLPWg@mail.gmail.com>
-	<20140502224022.GJ18016@ZenIV.linux.org.uk>
-	<20140503042604.GM18016@ZenIV.linux.org.uk>
-	<20140503182110.GN18016@ZenIV.linux.org.uk>
-	<20140504062915.GQ18016@ZenIV.linux.org.uk>
-	<CAJfpegvWOzd01tW5nRfWKW7EoBgPD8rudODJJm5OqxPd5Pd7uA@mail.gmail.com>
-	<CA+55aFxeVn2Xfa4Dwt2+GzAL7MxV3UK-jMf-+Nvm2HE9hETS9w@mail.gmail.com>
-	<20140506165233.GR18016@ZenIV.linux.org.uk>
-Date: Tue, 6 May 2014 10:01:21 -0700
-X-Google-Sender-Auth: 5lA6GIUxZCvS26-ik3OKMYrOKLY
-Message-ID: <CA+55aFwzkKAFD3Bmq3G9xu2xNgbwfwY1gDv+2CWcjJJb0PCD5g@mail.gmail.com>
-Subject: Re: dcache shrink list corruption?
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-kernel@vger.kernel.org, Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 1/2] uprobes: add comment with insn opcodes, mnemonics
+ and why we dont support them
+References: <1399314247-7368-1-git-send-email-dvlasenk@redhat.com> <20140505194100.GA26916@redhat.com>
+In-Reply-To: <20140505194100.GA26916@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 6, 2014 at 9:52 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> OK...  There's one more thing I would like to put there, if you are going to
-> be away for the week.  It has sat in -next for a while, and it could stay
-> there, except that there's a _lot_ of followups touching stuff all over the
-> tree and I'd obviously prefer those to go into subsystem trees.  Which
-> means inter-tree dependencies ;-/  Would you be OK if I included that one
-> into pull request?  It just turns kvfree() into inline and takes it to
-> mm.h, next to is_vmalloc_addr();
+On 05/05/2014 09:41 PM, Oleg Nesterov wrote:
+> On 05/05, Denys Vlasenko wrote:
+>>
+>> + * Opcodes we'll probably never support:
+>> + * 6c-6f - ins,outs. SEGVs if used in userspace
+>> + * e4-e7 - in,out imm. SEGVs if used in userspace
+>> + * ec-ef - in,out acc. SEGVs if used in userspace
+> 
+> Well. I have no idea why they are nacked, but this is not the reason.
+> 
+> SEGVs are fine. Plus we have ioperm().
 
-Is there any particular reason for inlining this? I'd actually rather
-not, _especially_ if it means that a lot of "is_vmalloc_addr()" usage
-goes away and we may end up with this as a real interface.
+Noted.
 
-But no, I don't hate the patch.
+Oleg, can you clear for me the following -
 
-              Linus
+If the probed instruction triggers an "illegal insn" or "privileged insn"
+CPU exception - are we completely fine?
+
+Or there are some problems? how bad are they?
+Slightly wrong signal stack? Wrong EFLAGs on stack?
+Wrong address of failing insn?
