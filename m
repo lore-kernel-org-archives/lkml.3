@@ -1,206 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934969AbaEFLHE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 07:07:04 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35866 "EHLO bear.ext.ti.com"
+	id S934976AbaEFLHl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 07:07:41 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52111 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934720AbaEFLG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 07:06:58 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <dmitry.torokhov@gmail.com>
-CC: <rydberg@euromail.se>, <balbi@ti.com>, <dmurphy@ti.com>,
-        <mugunthanvnm@ti.com>, <nsekhar@ti.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v5 7/7] Input: pixcir_i2c_ts: Add device tree support
-Date: Tue, 6 May 2014 14:06:12 +0300
-Message-ID: <1399374372-29123-8-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1399374372-29123-1-git-send-email-rogerq@ti.com>
-References: <1399374372-29123-1-git-send-email-rogerq@ti.com>
+	id S934703AbaEFLHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 07:07:35 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <tony@atomide.com>, <bcousson@baylibre.com>, <devicetree@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Sourav Poddar <sourav.poddar@ti.com>
+Subject: [Resend/PATCH] arm: dts: dra7: Add qspi device.
+Date: Tue, 6 May 2014 16:37:24 +0530
+Message-ID: <1399374445-16456-1-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide device tree support and binding information.
-Also provide support for a new chip "pixcir_tangoc".
+These add device tree entry for qspi controller driver on dra7-evm.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
 ---
- .../bindings/input/touchscreen/pixcir_i2c_ts.txt   | 26 ++++++++
- .../devicetree/bindings/vendor-prefixes.txt        |  1 +
- drivers/input/touchscreen/pixcir_i2c_ts.c          | 78 ++++++++++++++++++++++
- 3 files changed, 105 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
+Depends on sricharan's irq crossbar.
 
-diff --git a/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt b/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
-new file mode 100644
-index 0000000..0ab9505
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
-@@ -0,0 +1,26 @@
-+* Pixcir I2C touchscreen controllers
+ arch/arm/boot/dts/dra7-evm.dts |   80 ++++++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/dra7.dtsi    |   14 +++++++
+ 2 files changed, 94 insertions(+)
+
+diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
+index 5babba0..62f4256 100644
+--- a/arch/arm/boot/dts/dra7-evm.dts
++++ b/arch/arm/boot/dts/dra7-evm.dts
+@@ -93,6 +93,21 @@
+ 			0x24c (PIN_INPUT_SLEW | MUX_MODE0) /* uart3_txd */
+ 		>;
+ 	};
 +
-+Required properties:
-+- compatible: must be "pixcir,pixcir_ts" or "pixcir,pixcir_tangoc"
-+- reg: I2C address of the chip
-+- interrupts: interrupt to which the chip is connected
-+- attb-gpio: GPIO connected to the ATTB line of the chip
-+- x-size: horizontal resolution of touchscreen
-+- y-size: vertical resolution of touchscreen
-+
-+Example:
-+
-+	i2c@00000000 {
-+		/* ... */
-+
-+		pixcir_ts@5c {
-+			compatible = "pixcir,pixcir_ts";
-+			reg = <0x5c>;
-+			interrupts = <2 0>;
-+			attb-gpio = <&gpf 2 0 2>;
-+			x-size = <800>;
-+			y-size = <600>;
-+		};
-+
-+		/* ... */
++	qspi1_pins: pinmux_qspi1_pins {
++		pinctrl-single,pins = <
++			0x4c (PIN_INPUT | MUX_MODE1)  /* gpmc_a3.qspi1_cs2 */
++			0x50 (PIN_INPUT | MUX_MODE1)  /* gpmc_a4.qspi1_cs3 */
++			0x74 (PIN_INPUT | MUX_MODE1)  /* gpmc_a13.qspi1_rtclk */
++			0x78 (PIN_INPUT | MUX_MODE1)  /* gpmc_a14.qspi1_d3 */
++			0x7c (PIN_INPUT | MUX_MODE1)  /* gpmc_a15.qspi1_d2 */
++			0x80 (PIN_INPUT | MUX_MODE1) /* gpmc_a16.qspi1_d1 */
++			0x84 (PIN_INPUT | MUX_MODE1)  /* gpmc_a17.qspi1_d0 */
++			0x88 (PIN_INPUT | MUX_MODE1)  /* qpmc_a18.qspi1_sclk */
++			0xb8 (PIN_INPUT_PULLUP | MUX_MODE1)  /* gpmc_cs2.qspi1_cs0 */
++			0xbc (PIN_INPUT_PULLUP | MUX_MODE1)  /* gpmc_cs3.qspi1_cs1 */
++		>;
 +	};
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index abc3080..2270ebe 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -94,6 +94,7 @@ panasonic	Panasonic Corporation
- phytec	PHYTEC Messtechnik GmbH
- picochip	Picochip Ltd
- plathome	Plat'Home Co., Ltd.
-+pixcir  PIXCIR MICROELECTRONICS Co., Ltd
- powervr	PowerVR (deprecated, use img)
- qca	Qualcomm Atheros, Inc.
- qcom	Qualcomm Technologies, Inc
-diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
-index b0f7680..a2f8100 100644
---- a/drivers/input/touchscreen/pixcir_i2c_ts.c
-+++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
-@@ -26,6 +26,9 @@
- #include <linux/input/mt.h>
- #include <linux/input/pixcir_ts.h>
- #include <linux/gpio.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
-+#include <linux/of_device.h>
- 
- #define PIXCIR_MAX_SLOTS       5 /* Max fingers supported by driver */
- 
-@@ -407,16 +410,70 @@ unlock:
- static SIMPLE_DEV_PM_OPS(pixcir_dev_pm_ops,
- 			 pixcir_i2c_ts_suspend, pixcir_i2c_ts_resume);
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id pixcir_of_match[];
-+
-+static struct pixcir_ts_platform_data *pixcir_parse_dt(struct device *dev)
-+{
-+	struct pixcir_ts_platform_data *pdata;
-+	struct device_node *np = dev->of_node;
-+
-+	const struct of_device_id *match;
-+
-+	match = of_match_device(of_match_ptr(pixcir_of_match), dev);
-+	if (!match)
-+		return ERR_PTR(-EINVAL);
-+
-+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata)
-+		return ERR_PTR(-ENOMEM);
-+
-+	pdata->chip = *(const struct pixcir_i2c_chip_data *)match->data;
-+
-+	pdata->gpio_attb = of_get_named_gpio(np, "attb-gpio", 0);
-+	/* gpio_attb validity is checked in probe */
-+
-+	if (of_property_read_u32(np, "x-size", &pdata->x_max)) {
-+		dev_err(dev, "Failed to get x-size property\n");
-+		return ERR_PTR(-EINVAL);
-+	}
-+	pdata->x_max -= 1;
-+
-+	if (of_property_read_u32(np, "y-size", &pdata->y_max)) {
-+		dev_err(dev, "Failed to get y-size property\n");
-+		return ERR_PTR(-EINVAL);
-+	}
-+	pdata->y_max -= 1;
-+
-+	dev_dbg(dev, "%s: x %d, y %d, gpio %d\n", __func__,
-+		pdata->x_max + 1, pdata->y_max + 1, pdata->gpio_attb);
-+
-+	return pdata;
-+}
-+#else
-+static struct pixcir_ts_platform_data *pixcir_parse_dt(struct device *dev)
-+{
-+	return ERR_PTR(-EINVAL);
-+}
-+#endif
-+
- static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 					 const struct i2c_device_id *id)
- {
- 	const struct pixcir_ts_platform_data *pdata =
- 			dev_get_platdata(&client->dev);
- 	struct device *dev = &client->dev;
-+	struct device_node *np = dev->of_node;
- 	struct pixcir_i2c_ts_data *tsdata;
- 	struct input_dev *input;
- 	int error;
- 
-+	if (np && !pdata) {
-+		pdata = pixcir_parse_dt(dev);
-+		if (IS_ERR(pdata))
-+			return PTR_ERR(pdata);
-+	}
-+
- 	if (!pdata) {
- 		dev_err(&client->dev, "platform data not defined\n");
- 		return -EINVAL;
-@@ -522,15 +579,36 @@ static int pixcir_i2c_ts_remove(struct i2c_client *client)
- 
- static const struct i2c_device_id pixcir_i2c_ts_id[] = {
- 	{ "pixcir_ts", 0 },
-+	{ "pixcir_tangoc", 0 },
- 	{ }
  };
- MODULE_DEVICE_TABLE(i2c, pixcir_i2c_ts_id);
  
-+#ifdef CONFIG_OF
-+static const struct pixcir_i2c_chip_data pixcir_ts_data = {
-+	.max_fingers = 2,
-+	/* no hw id support */
-+};
+ &i2c1 {
+@@ -273,3 +288,68 @@
+ &cpu0 {
+ 	cpu0-supply = <&smps123_reg>;
+ };
 +
-+static const struct pixcir_i2c_chip_data pixcir_tangoc_data = {
-+	.max_fingers = 5,
-+	.has_hw_ids = true,
-+};
++&qspi {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&qspi1_pins>;
 +
-+static const struct of_device_id pixcir_of_match[] = {
-+	{ .compatible = "pixcir,pixcir_ts", .data = &pixcir_ts_data },
-+	{ .compatible = "pixcir,pixcir_tangoc", .data = &pixcir_tangoc_data },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, pixcir_of_match);
-+#endif
++	spi-max-frequency = <48000000>;
++	m25p80@0 {
++		compatible = "s25fl256s1";
++		spi-max-frequency = <48000000>;
++		reg = <0>;
++		spi-tx-bus-width = <1>;
++		spi-rx-bus-width = <4>;
++		spi-cpol;
++		spi-cpha;
++		#address-cells = <1>;
++		#size-cells = <1>;
 +
- static struct i2c_driver pixcir_i2c_ts_driver = {
- 	.driver = {
- 		.owner	= THIS_MODULE,
- 		.name	= "pixcir_ts",
- 		.pm	= &pixcir_dev_pm_ops,
-+		.of_match_table = of_match_ptr(pixcir_of_match),
- 	},
- 	.probe		= pixcir_i2c_ts_probe,
- 	.remove		= pixcir_i2c_ts_remove,
++		/* MTD partition table.
++		 * The ROM checks the first four physical blocks
++		 * for a valid file to boot and the flash here is
++		 * 64KiB block size.
++		 */
++		partition@0 {
++			label = "QSPI.SPL";
++			reg = <0x00000000 0x000010000>;
++		};
++		partition@1 {
++			label = "QSPI.SPL.backup1";
++			reg = <0x00010000 0x00010000>;
++		};
++		partition@2 {
++			label = "QSPI.SPL.backup2";
++			reg = <0x00020000 0x00010000>;
++		};
++		partition@3 {
++			label = "QSPI.SPL.backup3";
++			reg = <0x00030000 0x00010000>;
++		};
++		partition@4 {
++			label = "QSPI.u-boot";
++			reg = <0x00040000 0x00100000>;
++		};
++		partition@5 {
++			label = "QSPI.u-boot-spl-os";
++			reg = <0x00140000 0x00010000>;
++		};
++		partition@6 {
++			label = "QSPI.u-boot-env";
++			reg = <0x00150000 0x00010000>;
++		};
++		partition@7 {
++			label = "QSPI.u-boot-env.backup1";
++			reg = <0x00160000 0x0010000>;
++		};
++		partition@8 {
++			label = "QSPI.kernel";
++			reg = <0x00170000 0x0800000>;
++		};
++		partition@9 {
++			label = "QSPI.file-system";
++			reg = <0x00970000 0x01690000>;
++		};
++	};
++};
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index d93311a..a4557b4 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -798,6 +798,20 @@
+ 			dma-names = "tx0", "rx0";
+ 			status = "disabled";
+ 		};
++
++		qspi: qspi@4b300000 {
++			compatible = "ti,dra7xxx-qspi";
++			reg = <0x4b300000 0x100>;
++			reg-names = "qspi_base";
++			#address-cells = <1>;
++			#size-cells = <0>;
++			ti,hwmods = "qspi";
++			clocks = <&qspi_gfclk_div>;
++			clock-names = "fck";
++			num-cs = <4>;
++			interrupts = <0 343 0x4>;
++			status = "disabled";
++		};
+ 	};
+ 
+ 	crossbar_mpu: crossbar@4a020000 {
 -- 
-1.8.3.2
+1.7.9.5
 
