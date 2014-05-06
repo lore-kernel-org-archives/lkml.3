@@ -1,83 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717AbaEFULv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 16:11:51 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:42779 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070AbaEFULu (ORCPT
+	id S1754737AbaEFUNR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 16:13:17 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:38450 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538AbaEFUNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 16:11:50 -0400
-Date: Tue, 6 May 2014 13:11:45 -0700
-From: josh@joshtriplett.org
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, andi@firstfloor.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com,
-        ak@linux.intel.com
-Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
-Message-ID: <20140506201145.GC21332@cloud>
-References: <20140506164546.GB20536@cloud>
- <20140506.131752.740569380523989782.davem@davemloft.net>
- <20140506172106.GB20776@cloud>
- <20140506.132501.331724703594119414.davem@davemloft.net>
+	Tue, 6 May 2014 16:13:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140506.132501.331724703594119414.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140505221846.4564e04d@gandalf.local.home>
+References: <1397336454-13855-1-git-send-email-ddstreet@ieee.org>
+ <1399057350-16300-1-git-send-email-ddstreet@ieee.org> <1399057350-16300-4-git-send-email-ddstreet@ieee.org>
+ <20140505221846.4564e04d@gandalf.local.home>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Tue, 6 May 2014 16:12:54 -0400
+X-Google-Sender-Auth: Bpm6Nl9QLNQYqsJkVuBohWjrmXI
+Message-ID: <CALZtONAr7XGMB8LHwKRjqeEaWTEKBbwkUuP1RAZd04YQiwxrGw@mail.gmail.com>
+Subject: Re: [PATCH 3/4] plist: add plist_rotate
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Weijie Yang <weijieut@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 01:25:01PM -0400, David Miller wrote:
-> From: josh@joshtriplett.org
-> Date: Tue, 6 May 2014 10:21:06 -0700
-> 
-> > On Tue, May 06, 2014 at 01:17:52PM -0400, David Miller wrote:
-> >> From: josh@joshtriplett.org
-> >> Date: Tue, 6 May 2014 09:45:46 -0700
-> >> 
-> >> > The kernel can do the same.  Consider the idea of analyzing a set of
-> >> > userspace programs, determining what kernel functionality they do and
-> >> > don't need, feeding that information into the kernel build process, and
-> >> > automatically dropping unused bits of the kernel.
-> >> 
-> >> Please make sure I'm not on the list of people who see reports for
-> >> bugs reported in that setup.
-> >> 
-> >> Thanks :-)
-> > 
-> > Fine by me.  Just please allow such a setup to exist. :)
-> 
-> You see, that's the point I'm trying to make, once it's upstream
-> then it's my problem.
-> 
-> You absolutely must consider the burdon you put upon upstream
-> maintainers when you ask for things to be included.
+On Mon, May 5, 2014 at 10:18 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Fri,  2 May 2014 15:02:29 -0400
+> Dan Streetman <ddstreet@ieee.org> wrote:
+>
+>> Add plist_rotate(), which moves the specified plist_node after
+>> all other same-priority plist_nodes in the list.
+>
+> This is a little confusing? You mean it takes a plist_node from a plist
+> and simply moves it to the end of the list of all other nodes of the
+> same priority?
 
-Absolutely.  And Andi and I are both interested in working *with* you to
-find a way to run on tiny embedded systems *without* necessarily
-introducing excessive proliferation of configuration options or
-unnecessarily increasing your support burden.
+yes, exactly
 
-For instance, it's easy enough to key some options off of CONFIG_NR_CPUS
-(such as data structure sizes), or introduce a big config switch
-(CONFIG_NETWORK_FULL=n or similar) that controls all of these cases
-rather than having option for each.  That would not be hard to supply in
-a v2 of this patch series.
+> Kind of like what a sched_yield() would do with a
+> SCHED_FIFO task? I wonder if we should call this "plist_yield()" then?
 
-And if you're asking for someone to help pay attention to bug reports so
-you don't have to, that's reasonable as well; just like you probably
-have a stock response for "that's a crazy distro kernel, ask them about
-it and not me", you could have a stock response for "that kernel has the
-crazy embedded option turned on, ask the embedded people about it and
-not me".  It doesn't just have to be *your* problem alone.
+I suppose it is similar, yes...I'll rename it in a v2 patch.
 
-There's a stigma rightfully attached to out-of-tree patches, which
-roughly amounts to "people ought to submit patches upstream, we
-shouldn't have to support or care about out-of-tree patches".  But that
-only works if the responses to patch submissions are either "No, because
-you need to fix X, Y, and Z", or "No, because your use case is better
-served by this existing mechanism already in the kernel", rather than
-"No, your use case is not valid".
+>
+>>
+>> This is needed by swap, which has a plist of swap_info_structs
+>> and needs to use each same-priority swap_info_struct equally.
+>
+> "needs to use each same-priority swap_info_struct equally"
+>
+> -ENOCOMPUTE
 
-- Josh Triplett
+heh, yeah that needs a bit more explaining doesn't it :-)
+
+by "equally", I mean as swap writes pages out to its swap devices, it
+must write to any same-priority devices on a round-robin basis.
+
+I'll update the comment in the v2 patch to try to explain clearer.
+
+>
+>>
+>> Also add plist_test_rotate() test function, for use by plist_test()
+>> to test plist_rotate() function.
+>>
+>> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+>> Cc: Mel Gorman <mgorman@suse.de>
+>> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>>
+>> ---
+>>
+>> This patch is new to this patch set, and it's required by the next patch,
+>> which needs a way to move a plist entry to the end of all following
+>> same-priority entries.  This is possible to do manually instead of adding
+>> a new plist function, but having a common plist function instead of code
+>> specific only to swap seems preferable.
+>>
+>>  include/linux/plist.h |  2 ++
+>>  lib/plist.c           | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
+>>  2 files changed, 50 insertions(+)
+>>
+>> diff --git a/include/linux/plist.h b/include/linux/plist.h
+>> index c815491..06e6925 100644
+>> --- a/include/linux/plist.h
+>> +++ b/include/linux/plist.h
+>> @@ -141,6 +141,8 @@ static inline void plist_node_init(struct plist_node *node, int prio)
+>>  extern void plist_add(struct plist_node *node, struct plist_head *head);
+>>  extern void plist_del(struct plist_node *node, struct plist_head *head);
+>>
+>> +extern void plist_rotate(struct plist_node *node, struct plist_head *head);
+>> +
+>>  /**
+>>   * plist_for_each - iterate over the plist
+>>   * @pos:     the type * to use as a loop counter
+>> diff --git a/lib/plist.c b/lib/plist.c
+>> index 1ebc95f..a8b54e5 100644
+>> --- a/lib/plist.c
+>> +++ b/lib/plist.c
+>> @@ -134,6 +134,42 @@ void plist_del(struct plist_node *node, struct plist_head *head)
+>>       plist_check_head(head);
+>>  }
+>>
+>> +/**
+>> + * plist_rotate - Rotate @node to end of same-prio entries.
+>> + *
+>> + * @node:    &struct plist_node pointer - entry to be moved
+>> + * @head:    &struct plist_head pointer - list head
+>> + */
+>> +void plist_rotate(struct plist_node *node, struct plist_head *head)
+>> +{
+>> +     struct plist_node *next;
+>> +     struct list_head *next_node_list = &head->node_list;
+>
+> Naming convention should be the same as plist_add() and call this
+> node_next instead of next_node_list.
+
+ok will do.
+
+>
+> -- Steve
+>
+>> +
+>> +     plist_check_head(head);
+>> +     BUG_ON(plist_head_empty(head));
+>> +     BUG_ON(plist_node_empty(node));
+>> +
+>> +     if (node == plist_last(head))
+>> +             return;
+>> +
+>> +     next = plist_next(node);
+>> +
+>> +     if (node->prio != next->prio)
+>> +             return;
+>> +
+>> +     plist_del(node, head);
+>> +
+>> +     plist_for_each_continue(next, head) {
+>> +             if (node->prio != next->prio) {
+>> +                     next_node_list = &next->node_list;
+>> +                     break;
+>> +             }
+>> +     }
+>> +     list_add_tail(&node->node_list, next_node_list);
+>> +
+>> +     plist_check_head(head);
+>> +}
+>> +
+>>  #ifdef CONFIG_DEBUG_PI_LIST
+>>  #include <linux/sched.h>
+>>  #include <linux/module.h>
+>> @@ -170,6 +206,14 @@ static void __init plist_test_check(int nr_expect)
+>>       BUG_ON(prio_pos->prio_list.next != &first->prio_list);
+>>  }
+>>
+>> +static void __init plist_test_rotate(struct plist_node *node)
+>> +{
+>> +     plist_rotate(node, &test_head);
+>> +
+>> +     if (node != plist_last(&test_head))
+>> +             BUG_ON(node->prio == plist_next(node)->prio);
+>> +}
+>> +
+>>  static int  __init plist_test(void)
+>>  {
+>>       int nr_expect = 0, i, loop;
+>> @@ -193,6 +237,10 @@ static int  __init plist_test(void)
+>>                       nr_expect--;
+>>               }
+>>               plist_test_check(nr_expect);
+>> +             if (!plist_node_empty(test_node + i)) {
+>> +                     plist_test_rotate(test_node + i);
+>> +                     plist_test_check(nr_expect);
+>> +             }
+>>       }
+>>
+>>       for (i = 0; i < ARRAY_SIZE(test_node); i++) {
+>
