@@ -1,121 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154AbaEFWnp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 18:43:45 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:61729 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751250AbaEFWno (ORCPT
+	id S1754717AbaEFWqk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 18:46:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41853 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349AbaEFWqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 18:43:44 -0400
-Date: Tue, 6 May 2014 18:43:41 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Weijie Yang <weijieut@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 3/4] plist: add plist_rotate
-Message-ID: <20140506184341.6e12e80a@gandalf.local.home>
-In-Reply-To: <CALZtONAUXiv6jfy8vW9NTotPR=V0q6Worcy9_rvou4A0s0whPw@mail.gmail.com>
-References: <1397336454-13855-1-git-send-email-ddstreet@ieee.org>
-	<1399057350-16300-1-git-send-email-ddstreet@ieee.org>
-	<1399057350-16300-4-git-send-email-ddstreet@ieee.org>
-	<20140505221846.4564e04d@gandalf.local.home>
-	<CALZtONAr7XGMB8LHwKRjqeEaWTEKBbwkUuP1RAZd04YQiwxrGw@mail.gmail.com>
-	<20140506163950.7e278f7c@gandalf.local.home>
-	<CALZtONAUXiv6jfy8vW9NTotPR=V0q6Worcy9_rvou4A0s0whPw@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Tue, 6 May 2014 18:46:39 -0400
+Date: Tue, 6 May 2014 15:46:02 -0700
+From: tip-bot for Arnd Bergmann <tipbot@zytor.com>
+Message-ID: <tip-4c88d7f9b0d5fb0588c3386be62115cc2eaa8f9f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, hpa@zytor.com,
+        mingo@kernel.org, k.kozlowski@samsung.com, tglx@linutronix.de,
+        kgene.kim@samsung.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, k.kozlowski@samsung.com,
+        tglx@linutronix.de, kgene.kim@samsung.com
+In-Reply-To: <5619084.0zmrrIUZLV@wuerfel>
+References: <5619084.0zmrrIUZLV@wuerfel>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/urgent] genirq:
+  Provide irq_force_affinity fallback for non-SMP
+Git-Commit-ID: 4c88d7f9b0d5fb0588c3386be62115cc2eaa8f9f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 May 2014 17:47:16 -0400
-Dan Streetman <ddstreet@ieee.org> wrote:
+Commit-ID:  4c88d7f9b0d5fb0588c3386be62115cc2eaa8f9f
+Gitweb:     http://git.kernel.org/tip/4c88d7f9b0d5fb0588c3386be62115cc2eaa8f9f
+Author:     Arnd Bergmann <arnd@arndb.de>
+AuthorDate: Wed, 23 Apr 2014 14:49:17 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 7 May 2014 00:42:09 +0200
 
+genirq: Provide irq_force_affinity fallback for non-SMP
 
-> well the specific reason in swap's case is the need to use
-> same-priority entries in a round-robin basis, but I don't know if
-> plist_round_robin() is very clear.
+Patch 01f8fa4f01d "genirq: Allow forcing cpu affinity of interrupts" added
+an irq_force_affinity() function, and 30ccf03b4a6 "clocksource: Exynos_mct:
+Use irq_force_affinity() in cpu bringup" subsequently uses it. However, the
+driver can be used with CONFIG_SMP disabled, but the function declaration
+is only available for CONFIG_SMP, leading to this build error:
 
-No, that's not very clear.
+drivers/clocksource/exynos_mct.c:431:3: error: implicit declaration of function 'irq_force_affinity' [-Werror=implicit-function-declaration]
+   irq_force_affinity(mct_irqs[MCT_L0_IRQ + cpu], cpumask_of(cpu));
 
-> 
-> Maybe plist_demote()?  Although demote might imply actually changing priority.
+This patch introduces a dummy helper function for the non-SMP case
+that always returns success, to get rid of the build error.
+Since the patches causing the problem are marked for stable backports,
+this one should be as well.
 
-Agreed.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/5619084.0zmrrIUZLV@wuerfel
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/interrupt.h | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-> 
-> plist_shuffle()?  That might imply random shuffling though.
-
-Yep.
-
-> 
-> plist_readd() or plist_requeue()?  That might make sense since
-> technically the function could be replicated by just plist_del() and
-> plist_add(), based on the implementation detail that plist_add()
-> inserts after all other same-priority entries, instead of before.
-
-plist_requeue() sounds like the best so far.
-
-> 
-> Or add priority into the name explicitly, like plist_priority_yield(),
-> or plist_priority_rotate(), plist_priority_requeue()?
-
-No, even plist_yield() assumes priority is the same, thus adding
-priority to a plist that means "priority list" is rather redundant.
-
-I think its up between plist_yield() and plist_requeue(), where I'm
-leaning towards plist_requeue().
-
-Unless others have any better ideas or objections, lets go with
-plist_requeue(). I think that's rather self explanatory and it sounds
-just like what you said. It's basically an optimized version of
-plist_del() followed by a plist_add().
-
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 97ac926..051c850 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -272,6 +272,11 @@ static inline int irq_set_affinity(unsigned int irq, const struct cpumask *m)
+ 	return -EINVAL;
+ }
  
-> Ok here's try 3, before I update the patch :)  Does this make sense?
-> 
-> This is needed by the next patch in this series, which changes swap
-> from using regular lists to track its available swap devices
-> (partitions or files) to using plists.  Each swap device has a
-> priority, and swap allocates pages from devices in priority order,
-> filling up the highest priority device first (and then removing it
-> from the available list), by allocating a page from the swap device
-> that is first in the priority-ordered list.  With regular lists, swap
-> was managing the ordering by priority, while with plists the ordering
-> is automatically handled.  However, swap requires special handling of
-> swap devices with the same priority; pages must be allocated from them
-> in round-robin order.  To accomplish this with a plist, this new
-> function is used; when a page is allocated from the first swap device
-> in the plist, that entry is moved to the end of any same-priority
-> entries.  Then the next time a page needs to be allocated, the next
-> swap device will be used, and so on.
-
-OK, I read the above a few times and I think I know where my confusion
-is coming from. I was thinking that the pages were being added to the
-plist. I believe you are saying that the swap devices themselves are
-added to the plist, and when the device is empty (no more pages left)
-it is removed from the plist. When dealing with memory and swap one
-thinks of managing pages. But here we are managing the devices.
-
-Please state clearly at the beginning of your explanation that the swap
-devices are being stored in the plist and stay there as long as they
-still have pages left to be allocated from. In order to treat swap
-devices of the same priority in a round robin fashion, after a device
-has pages allocated from it, it needs to be requeued at the end of it's
-priority, behind other swap devices of the same priority in order to
-make sure the next allocation comes from a different device (of same
-priority).
-
-
--- Steve
++static inline int irq_force_affinity(unsigned int irq, const struct cpumask *cpumask)
++{
++	return 0;
++}
++
+ static inline int irq_can_set_affinity(unsigned int irq)
+ {
+ 	return 0;
