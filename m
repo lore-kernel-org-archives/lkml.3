@@ -1,186 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587AbaEFO1K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 10:27:10 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:11536 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756448AbaEFO1H (ORCPT
+	id S1757649AbaEFO2H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 10:28:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51849 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755633AbaEFO2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 10:27:07 -0400
-X-AuditID: cbfec7f5-b7fae6d000004d6d-f9-5368f137b75f
-Message-id: <5368F136.6070804@samsung.com>
-Date: Tue, 06 May 2014 16:27:02 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        kishon@ti.com, linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
-        t.figa@samsung.com, k.debski@samsung.com
-Subject: Re: [PATCH v7 1/2] phy: Add new Exynos5 USB 3.0 PHY driver
-References: <1398665874-31238-1-git-send-email-gautam.vivek@samsung.com>
-In-reply-to: <1398665874-31238-1-git-send-email-gautam.vivek@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t/xK7rmHzOCDaatMbM4eL/eYv6Rc6wW
-	bVcOsls0L17PZvHj9QU2i94FV9ksLjztYbPY9Pgaq8XCtiUsFpd3zWGzmHF+H5PFomWtzBbr
-	Z7xmceD12D93DbvH5iX1Hn1bVjF6HL+xncnj8ya5ANYoLpuU1JzMstQifbsEroyV94+xFmzW
-	rjh19yl7A+M6pS5GDg4JAROJG2vCuxg5gUwxiQv31rN1MXJxCAksZZTY++culPOJUWLP+1Xs
-	IA28AloSvWsdQBpYBFQlXv+fwQpiswkYSvQe7WMEsUUFIiTuNR4Gi/MKCEr8mHyPBcQWEdCW
-	2D53EivITGaBvUwSLQ372EASwgLOEhN2nAQrEhLwkHjQdRUszingKdH6dRITiM0soCOxv3Ua
-	G4QtL7F5zVvmCYwCs5DsmIWkbBaSsgWMzKsYRVNLkwuKk9JzjfSKE3OLS/PS9ZLzczcxQqLj
-	6w7GpcesDjEKcDAq8fAukMkIFmJNLCuuzD3EKMHBrCTCe+Y9UIg3JbGyKrUoP76oNCe1+BAj
-	EwenVAOjAptQUNTqeS1cD4+2C/5aJ174RPfd/01NwTWCr9/JSTO6Wf5g7pXiC20xlNmZVn9M
-	9L7C2YPT/7v8VNcte+tlXD/BqjOi5eJ5ITXmm2t6bSeYauec+O0iIeHolBXA5+gXdMeNrfPa
-	ck6XK3sVna+a36jfmePYkiy7Murjujfegt+EbR0OuCixFGckGmoxFxUnAgBLmHj2bAIAAA==
+	Tue, 6 May 2014 10:28:05 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Bryan Evenson <bevenson@melinkcorp.com>
+Cc: Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH] rtc: rtc-at91rm9200: fix infinite wait for ACKUPD irq
+Date: Tue,  6 May 2014 16:28:01 +0200
+Message-Id: <1399386481-18643-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <94c06375c1b44c8eb5233b0ccf2e4b13@BY2PR05MB048.namprd05.prod.outlook.com>
+References: <94c06375c1b44c8eb5233b0ccf2e4b13@BY2PR05MB048.namprd05.prod.outlook.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/04/14 08:17, Vivek Gautam wrote:
-> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
-> The new driver uses the generic PHY framework and will interact
-> with DWC3 controller present on Exynos5 series of SoCs.
-> Thereby, removing old phy-samsung-usb3 driver and related code
-> used untill now which was based on usb/phy framework.
-> 
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> ---
-> 
-> Changes from v6:
->  - Addressed review comments:
->    -- Sorted config entries in Kconfig and Makefile
->    -- Made #define to_usbdrd_phy(inst) to a static inline routine.
->    -- Restructured exynos5_rate_to_clk() as suggested.
->    -- Amended 'val' field for regmap_update_bits() in the routine
->       exynos5_usbdrd_phy_isol().
->    -- Removed sentinel entry from exynos5_usbdrd_phy_cfg[] struct.
->    -- Removed check for 'match' entry in probe().
-> 
->  .../devicetree/bindings/phy/samsung-phy.txt        |   40 ++
->  drivers/phy/Kconfig                                |   11 +
->  drivers/phy/Makefile                               |    1 +
->  drivers/phy/phy-exynos5-usbdrd.c                   |  627 ++++++++++++++++++++
->  4 files changed, 679 insertions(+)
->  create mode 100644 drivers/phy/phy-exynos5-usbdrd.c
-> 
-> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-> index b422e38..51efe4c 100644
-> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
-> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-> @@ -114,3 +114,43 @@ Example:
->  		compatible = "samsung,exynos-sataphy-i2c";
->  		reg = <0x38>;
->  	};
-> +
-> +Samsung Exynos5 SoC series USB DRD PHY controller
-> +--------------------------------------------------
-> +
-> +Required properties:
-> +- compatible : Should be set to one of the following supported values:
-> +	- "samsung,exynos5250-usbdrd-phy" - for exynos5250 SoC,
-> +	- "samsung,exynos5420-usbdrd-phy" - for exynos5420 SoC.
-> +- reg : Register offset and length of USB DRD PHY register set;
-> +- clocks: Clock IDs array as required by the controller
-> +- clock-names: names of clocks correseponding to IDs in the clock property;
-> +	       Required clocks:
-> +	- phy: main PHY clock (same as USB DRD controller i.e. DWC3 IP clock),
-> +	       used for register access.
-> +	- ref: PHY's reference clock (usually crystal clock), used for
-> +	       PHY operations, associated by phy name. It is used to
-> +	       determine bit values for clock settings register.
-> +	       For Exynos5420 this is given as 'sclk_usbphy30' in CMU.
-> +- samsung,pmu-syscon: phandle for PMU system controller interface, used to
-> +		      control pmu registers for power isolation.
-> +- samsung,pmu-offset: phy power control register offset to pmu-system-controller
-> +		      base.
+The rtc user must wait at least 1 sec between each time/calandar update
+(see atmel's datasheet chapter "Updating Time/Calendar").
 
-It doesn't seem right to have register offset encoded in the device tree
-like this. I think it'd be more appropriate to associate such an offset
-with the compatible string's value in the driver.
+Use the 1Hz interrupt to update the at91_rtc_upd_rdy flag and wait for
+the at91_rtc_wait_upd_rdy event if the rtc is not ready.
 
-Also it might be sensible to create a new header file in include/linux/mfd/
-syscon/ for Exynos5 SoCs and put any required PMU offset definitions there. 
-Instead having them scattered and possibly duplicated in various drivers.
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
+---
+Hello Bryan,
 
-> +- #phy-cells : from the generic PHY bindings, must be 1;
-> +
-> +For "samsung,exynos5250-usbdrd-phy" and "samsung,exynos5420-usbdrd-phy"
-> +compatible PHYs, the second cell in the PHY specifier identifies the
-> +PHY id, which is interpreted as follows:
-> +  0 - UTMI+ type phy,
-> +  1 - PIPE3 type phy,
-> +
-> +Example:
-> +	usb3_phy: usbphy@12100000 {
-> +		compatible = "samsung,exynos5250-usbdrd-phy";
-> +		reg = <0x12100000 0x100>;
-> +		clocks = <&clock 286>, <&clock 1>;
-> +		clock-names = "phy", "ref";
-> +		samsung,pmu-syscon = <&pmu_system_controller>;
-> +		samsung,pmu-offset = <0x704>;
-> +		#phy-cells = <1>;
-> +	};
-[...]
-> +struct usbdrd_phy_config {
+I reproduced your bug (using your script) and this patch seems to fix the
+problem.
 
-Isn't name of this data structure too generic ? 
-Perhaps rename it to exynos_usbdrd_phy_config ?
+Could you try it and let me know if it works for you ?
 
-> +	u32 id;
-> +	void (*phy_isol)(struct phy_usb_instance *inst, u32 on);
-> +	void (*phy_init)(struct exynos5_usbdrd_phy *phy_drd);
-> +	unsigned int (*set_refclk)(struct phy_usb_instance *inst);
-> +};
-> +
-> +struct exynos5_usbdrd_phy_drvdata {
-> +	const struct usbdrd_phy_config *phy_cfg;
-> +};
-> +
-[...]
-> +const struct exynos5_usbdrd_phy_drvdata exynos5420_usbdrd_phy = {
-> +	.phy_cfg		= exynos5_usbdrd_phy_cfg,
-> +};
-> +
-> +const struct exynos5_usbdrd_phy_drvdata exynos5250_usbdrd_phy = {
-> +	.phy_cfg		= exynos5_usbdrd_phy_cfg,
-> +};
-> +
-> +static const struct of_device_id exynos5_usbdrd_phy_of_match[] = {
-> +	{
-> +		.compatible = "samsung,exynos5250-usbdrd-phy",
-> +		.data = &exynos5250_usbdrd_phy
-> +	}, {
-> +		.compatible = "samsung,exynos5420-usbdrd-phy",
-> +		.data = &exynos5420_usbdrd_phy
-> +	},
-> +	{ },
-> +};
-> +
-> +static int exynos5_usbdrd_phy_probe(struct platform_device *pdev)
-> +{
-[...]
-> +	reg_pmu = syscon_regmap_lookup_by_phandle(dev->of_node,
-> +						   "samsung,pmu-syscon");
-> +	if (IS_ERR(reg_pmu)) {
-> +		dev_err(dev, "Failed to map PMU register (via syscon)\n");
+Best Regards,
 
-nit: Maybe change it to: "Failed to lookup PMU regmap\n" ?
+Boris
 
-> +		return PTR_ERR(reg_pmu);
-> +	}
-> +
-> +	ret = of_property_read_u32(node, "samsung,pmu-offset", &pmu_offset);
-> +	if (ret) {
-> +		dev_err(dev, "Missing pmu-offset for phy isolation\n");
-> +		return ret;
-> +	}
+ drivers/rtc/rtc-at91rm9200.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-Otherwise the patch looks good.
+diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
+index 3281c90..e3fe54c 100644
+--- a/drivers/rtc/rtc-at91rm9200.c
++++ b/drivers/rtc/rtc-at91rm9200.c
+@@ -48,11 +48,13 @@ struct at91_rtc_config {
+ 
+ static const struct at91_rtc_config *at91_rtc_config;
+ static DECLARE_COMPLETION(at91_rtc_updated);
++static DECLARE_COMPLETION(at91_rtc_wait_upd_rdy);
+ static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
+ static void __iomem *at91_rtc_regs;
+ static int irq;
+ static DEFINE_SPINLOCK(at91_rtc_lock);
+ static u32 at91_rtc_shadow_imr;
++static bool at91_rtc_upd_rdy;
+ 
+ static void at91_rtc_write_ier(u32 mask)
+ {
+@@ -161,6 +163,8 @@ static int at91_rtc_settime(struct device *dev, struct rtc_time *tm)
+ 		1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
+ 		tm->tm_hour, tm->tm_min, tm->tm_sec);
+ 
++	wait_for_completion(&at91_rtc_wait_upd_rdy);
++
+ 	/* Stop Time/Calendar from counting */
+ 	cr = at91_rtc_read(AT91_RTC_CR);
+ 	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL | AT91_RTC_UPDTIM);
+@@ -183,6 +187,7 @@ static int at91_rtc_settime(struct device *dev, struct rtc_time *tm)
+ 
+ 	/* Restart Time/Calendar */
+ 	cr = at91_rtc_read(AT91_RTC_CR);
++	at91_rtc_upd_rdy = 0;
+ 	at91_rtc_write(AT91_RTC_CR, cr & ~(AT91_RTC_UPDCAL | AT91_RTC_UPDTIM));
+ 
+ 	return 0;
+@@ -290,8 +295,13 @@ static irqreturn_t at91_rtc_interrupt(int irq, void *dev_id)
+ 	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
+ 		if (rtsr & AT91_RTC_ALARM)
+ 			events |= (RTC_AF | RTC_IRQF);
+-		if (rtsr & AT91_RTC_SECEV)
++		if (rtsr & AT91_RTC_SECEV) {
+ 			events |= (RTC_UF | RTC_IRQF);
++			if (!at91_rtc_upd_rdy) {
++				at91_rtc_upd_rdy = 1;
++				complete(&at91_rtc_wait_upd_rdy);
++			}
++		}
+ 		if (rtsr & AT91_RTC_ACKUPD)
+ 			complete(&at91_rtc_updated);
+ 
+@@ -413,6 +423,8 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
+ 		return PTR_ERR(rtc);
+ 	platform_set_drvdata(pdev, rtc);
+ 
++	/* Enable 1Hz events */
++	at91_rtc_write_ier(AT91_RTC_SECEV);
+ 	dev_info(&pdev->dev, "AT91 Real Time Clock driver.\n");
+ 	return 0;
+ }
+-- 
+1.8.3.2
 
---
-Thanks,
-Sylwester
