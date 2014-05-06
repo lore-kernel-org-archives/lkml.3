@@ -1,109 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935038AbaEFLJB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 07:09:01 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:51958 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934798AbaEFLI6 (ORCPT
+	id S934798AbaEFLOL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 07:14:11 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:33783 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934708AbaEFLOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 07:08:58 -0400
-Date: Tue, 6 May 2014 07:08:54 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: lkml <linux-kernel@vger.kernel.org>, x86-ml <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.com>,
-        Mike Galbraith <mgalbraith@suse.de>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Slow down stupid pounders
-Message-ID: <20140506070854.757fd3ea@gandalf.local.home>
-In-Reply-To: <20140506102924.GA25013@pd.tnic>
-References: <20140506102924.GA25013@pd.tnic>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Tue, 6 May 2014 07:14:08 -0400
+Date: Tue, 6 May 2014 13:13:46 +0200
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH 1/2] of: add bq and radxa vendor prefixes
+Message-ID: <20140506111345.GB22196@gmail.com>
+References: <1398973835-26303-1-git-send-email-b.galvani@gmail.com>
+ <2225372.rvnmuAdhHE@phil>
+ <CABuKBe+fFCU2__rEHfiU+XPQwKE613VBxQ4=8xiA3PXQkBiMDQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABuKBe+fFCU2__rEHfiU+XPQwKE613VBxQ4=8xiA3PXQkBiMDQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 May 2014 12:29:24 +0200
-Borislav Petkov <bp@alien8.de> wrote:
-
-> Hi,
+On Sun, May 04, 2014 at 02:57:52PM +0200, Matthias Brugger wrote:
+> 2014-05-02 1:32 GMT+02:00 Heiko Stübner <heiko@sntech.de>:
+> > Hi Beniamino,
+> >
+> > Am Donnerstag, 1. Mai 2014, 21:50:34 schrieb Beniamino Galvani:
+> >> Add new vendor prefixes for:
+> >>
+> >>     * bq, a company that sells multimedia devices and 3D printers
+> >
+> > bq is actually only a brandname. The company itself is "Mundo Reader S.L.".
+> > I'm not sure what the actual policy is concerning the vendor prefix, i.e. if it
+> > should use the visible brand name or the actual company name.
+> >
+> > I.e. another possibility would be to add the vendor prefix
+> >         mundoreader     Mundo Reader S.L.
+> > and name the currie
+> >         mundoreader,bq-curie2
 > 
-> so I'm getting sick'n'tired of all those bug reports of people pounding
-> cpu hotplug with stupid scripts.
-> 
-> * We know cpu hotplug is fragile/buggy/crap/needs proper rewrite.
-> 
-> * Stupid hotplugging script doesn't resemble any real use case - go use
-> a real benchmark/stress test to trigger bugs.
-> 
-> So if we can't make pounders stop jerking off, let's make it
-> uninterestingly slow. Stupid patch below, it might be completely idiotic
-> to do it this way but at least starts the discussion about this being a
-> really annoying issue which needs some sort of dealing with.
+> I think we should stick to the brand name, as this is the name people know.
 
-Hey, I'm one of those that jerk off to CPU hotplug stress test scripts!
+Personally I don't have a strong preference, so either of the two.
 
-> 
-> I dunno, we can make it configurable (which will probably defeat its
-> purpose partially), we can do some more fancy ratelimiting, per cpu,
-> whatever... we'll see.
-> 
-> Opinions, flames?
-
-We were just bitching about this yesterday, but -rt related. As
-anything crap in mainline just becomes exponentially more crap in -rt.
-The CPU hotplug case becomes a mountain of crap that we just dig
-tunnels through to get by.
-
-A while ago Thomas had a proof of concept patch I believe that was
-suppose to pick up traction but unfortunately never went anywhere, even
-after being told it would.
-
-The real option is to rewrite cpu hotplug.
-
--- Steve
-
+Beniamino
 
 > 
-> ---
-> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-> index 006b1bc5297d..615c7af767ed 100644
-> --- a/drivers/base/cpu.c
-> +++ b/drivers/base/cpu.c
-> @@ -40,6 +40,11 @@ static void change_cpu_under_node(struct cpu *cpu,
->  	cpu->node_id = to_nid;
->  }
->  
-> +static void delay_hotplug(void)
-> +{
-> +	schedule_timeout_uninterruptible(msecs_to_jiffies(MSEC_PER_SEC));
-> +}
-> +
->  static int __ref cpu_subsys_online(struct device *dev)
->  {
->  	struct cpu *cpu = container_of(dev, struct cpu, dev);
-> @@ -47,6 +52,8 @@ static int __ref cpu_subsys_online(struct device *dev)
->  	int from_nid, to_nid;
->  	int ret;
->  
-> +	delay_hotplug();
-> +
->  	from_nid = cpu_to_node(cpuid);
->  	if (from_nid == NUMA_NO_NODE)
->  		return -ENODEV;
-> @@ -65,6 +72,8 @@ static int __ref cpu_subsys_online(struct device *dev)
->  
->  static int cpu_subsys_offline(struct device *dev)
->  {
-> +	delay_hotplug();
-> +
->  	return cpu_down(dev->id);
->  }
->  
+> >
+> >
+> > Heiko
+> >
+> >>     * Radxa, manufacturer of ARM boards
+> >>
+> >> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+> >> ---
+> >>  Documentation/devicetree/bindings/vendor-prefixes.txt |    2 ++
+> >>  1 file changed, 2 insertions(+)
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> >> b/Documentation/devicetree/bindings/vendor-prefixes.txt index
+> >> abc3080..6f8177c 100644
+> >> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> >> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> >> @@ -21,6 +21,7 @@ atmel       Atmel Corporation
+> >>  auo  AU Optronics Corporation
+> >>  avago        Avago Technologies
+> >>  bosch        Bosch Sensortec GmbH
+> >> +bq   bq
+> >>  brcm Broadcom Corporation
+> >>  buffalo      Buffalo, Inc.
+> >>  calxeda      Calxeda
+> >> @@ -98,6 +99,7 @@ powervr     PowerVR (deprecated, use img)
+> >>  qca  Qualcomm Atheros, Inc.
+> >>  qcom Qualcomm Technologies, Inc
+> >>  qnap QNAP Systems, Inc.
+> >> +radxa        Radxa
+> >>  raidsonic    RaidSonic Technology GmbH
+> >>  ralink       Mediatek/Ralink Technology Corp.
+> >>  ramtron      Ramtron International
+> >
+> >
+> > _______________________________________________
+> > linux-arm-kernel mailing list
+> > linux-arm-kernel@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 > 
-
+> 
+> 
+> -- 
+> motzblog.wordpress.com
