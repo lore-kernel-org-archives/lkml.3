@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934718AbaEFMHo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 08:07:44 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63150 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757426AbaEFMHT (ORCPT
+	id S1755121AbaEFMK3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 08:10:29 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50773 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753674AbaEFMK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 08:07:19 -0400
-Date: Tue, 6 May 2014 13:06:48 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Jan Kara <jack@suse.cz>
-Cc: "mm-commits@vger.kernel.org" <mm-commits@vger.kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "kay@vrfy.org" <kay@vrfy.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: +
- printk-print-initial-logbuf-contents-before-re-enabling-interrupts.patch
- added to -mm tree
-Message-ID: <20140506120648.GA30234@arm.com>
-References: <53640c8c.5++0zeO0pmfqKMwm%akpm@linux-foundation.org>
- <20140502224651.GG23636@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140502224651.GG23636@quack.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 6 May 2014 08:10:27 -0400
+Date: Tue, 6 May 2014 14:10:23 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Mathias Nyman <mathias.nyman@intel.com>, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Lior Amsalem <alior@marvell.com>, Rob Herring <robh+dt@kernel.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v3 06/20] usb: host: xhci-plat: Add support for the
+ Armada 38x
+Message-ID: <20140506141023.715b932d@skate>
+In-Reply-To: <61061197.hLhKsFqJLF@wuerfel>
+References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com>
+	<1399335255-589-7-git-send-email-gregory.clement@free-electrons.com>
+	<1584794.IM1uiSkBdk@amdc1032>
+	<61061197.hLhKsFqJLF@wuerfel>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Dear Arnd Bergmann,
 
-On Fri, May 02, 2014 at 11:46:51PM +0100, Jan Kara wrote:
-> On Fri 02-05-14 14:22:20, Andrew Morton wrote:
-> > From: Will Deacon <will.deacon@arm.com>
-> > Subject: printk: print initial logbuf contents before re-enabling interrupts
+On Tue, 06 May 2014 13:57:44 +0200, Arnd Bergmann wrote:
+
+> > Please limit this driver to mvebu arch and compile testing, i.e.
 > > 
-> > When running on a hideously slow system (~10Mhz FPGA) with a bunch of
-> > debug printk invocations on the timer interrupt path, we end up filling
-> > the log buffer faster than we can drain it.
-> > 
-> > The reason is that console_unlock (which is responsible for moving
-> > messages out of logbuf to hand over to the console driver) removes one
-> > message at a time, briefly re-enabling interrupts between each of them. 
-> > If the interrupt path prints more than a single message, then we can
-> > easily generate more messages than we can print for a regular, recurring
-> > interrupt (e.g.  a 1khz timer).  This results in messages getting silently
-> > dropped, leading to counter-intuitive, incomplete printk traces on the
-> > console.
-> > 
-> > Rather than run the console_unlock loop with interrupts disabled (which
-> > has obvious latency problems), this patch records the sequence number of
-> > the last message in the log buffer after taking the logbuf_lock.  We can
-> > then print this fixed amount of work before re-enabling interrupts again,
-> > making sure we keep up with ourself.  Other CPUs could still potentially
-> > flood the buffer, but there's little that we can do to protect against
-> > that.
->   I really dislike this patch. It goes completely against my efforts of
-> lowering irq latency caused by printing to console (which are the
-> problems I have observed ;).
+> >         depends on ARCH_MVEBU || COMPILE_TEST
+> 
+> I think it actually needs a dependency on MVEBU_MBUS.
 
-Hmmm, what makes you think that? Interrupts only remain disabled whilst we
-process the backlog, which in the usual case should be pretty small. We also
-hold the logbuf_lock during this time, so we can't get stuck in an unbounded
-loop.
+That's not what we do for any of the other drivers that use the
+MVEBU_MBUS functions.
 
-Can you elaborate a bit more on the problems you've observed, please?
+> You probably need something like
+> 
+> 	depends on MVEBU_MBUS=y || (MVEBU_MBUS=m && USB_XHCI=m)
 
-> My opinion is that when you are printing from each and every interrupt
-> which happens so often, then you have a problem and disabling IRQs in
-> printk so that your interrupt doesn't happen that often seems like a poor
-> solution to me. You could as well just ratelimit your debug messages,
-> couldn't you?
+MVEBU_MBUS is a bool, so there is no way is can be =m.
 
-My use-case was basically using printk as a debug trace during early boot
-when bringing up Linux on a new CPU core. I don't think ratelimiting would
-be the right thing there, since I really did want as many messages to
-reach the console as possible (which is also why I wrote this patch, not
-just the other one in the series).
-
-Cheers,
-
-Will
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
