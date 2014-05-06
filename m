@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528AbaEFNkg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 09:40:36 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:34059 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457AbaEFNkc (ORCPT
+	id S1757613AbaEFNf0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 09:35:26 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44234 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812AbaEFNfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 09:40:32 -0400
-Date: Tue, 6 May 2014 15:40:16 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: sched,numa: invalid memory access in account_entity_dequeue
-Message-ID: <20140506134016.GL11096@twins.programming.kicks-ass.net>
-References: <5364EC10.9090900@oracle.com>
- <20140506110838.GE11096@twins.programming.kicks-ass.net>
- <5368D43D.5050601@oracle.com>
+	Tue, 6 May 2014 09:35:17 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>
+CC: <rogerq@ti.com>, <balajitk@ti.com>, Keerthy <j-keerthy@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>, Tero Kristo <t-kristo@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, Kishon Vijay Abraham I <kishon@ti.com>
+Subject: [PATCH 08/17] ARM: dts: DRA7: Change the parent of apll_pcie_in_clk_mux to dpll_pcie_ref_m2ldo_ck
+Date: Tue, 6 May 2014 19:03:54 +0530
+Message-ID: <1399383244-14556-9-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1399383244-14556-1-git-send-email-kishon@ti.com>
+References: <1399383244-14556-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="G2d+m75Tjo442KmM"
-Content-Disposition: inline
-In-Reply-To: <5368D43D.5050601@oracle.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Keerthy <j-keerthy@ti.com>
 
---G2d+m75Tjo442KmM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Change the parent of apll_pcie_in_clk_mux to dpll_pcie_ref_m2ldo_ck
+from dpll_pcie_ref_ck.
 
-On Tue, May 06, 2014 at 08:23:25AM -0400, Sasha Levin wrote:
-> > I suppose you've scripted this addr2line -ie vmlinux for all addresses =
-in this splat?
->=20
-> Yeah, I'm trying to get that script upstream (https://lkml.org/lkml/2014/=
-3/29/1)
-> since it seems to simplify looking at stack traces.
+Cc: Rajendra Nayak <rnayak@ti.com>
+Cc: Tero Kristo <t-kristo@ti.com>
+Cc: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Keerthy <j-keerthy@ti.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ arch/arm/boot/dts/dra7xx-clocks.dtsi |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Seems like a nice addition to scripts/ indeed. Although Linus doesn't
-seem to like it much:
+diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
+index 55e95c5..44993ec 100644
+--- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
++++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
+@@ -1152,7 +1152,7 @@
+ 
+ 	apll_pcie_in_clk_mux: apll_pcie_in_clk_mux@4ae06118 {
+ 		compatible = "ti,mux-clock";
+-		clocks = <&dpll_pcie_ref_ck>, <&pciesref_acs_clk_ck>;
++		clocks = <&dpll_pcie_ref_m2ldo_ck>, <&pciesref_acs_clk_ck>;
+ 		#clock-cells = <0>;
+ 		reg = <0x021c 0x4>;
+ 		ti,bit-shift = <7>;
+-- 
+1.7.9.5
 
-  http://marc.info/?l=3Dlinux-kernel&m=3D139862933908922
-
-
-> > Could you maybe also do the same with the Code? -- that is, script an a=
-uto-decode for it?
-
-> Sure, I can look into that.
-
-Thanks!
-
-> > la-la-la..
-> >=20
->=20
-> I haven't seen it happening again, so maybe an unrelated memory corruptio=
-n?
-
-Yeah, just the thing we need :/ In any case, let me know if you do hit
-it again this side of the Sun burning up.
-
-
-
---G2d+m75Tjo442KmM
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTaOZAAAoJEHZH4aRLwOS6jMUP/Rr7XHgtsdWwZJ/LAoZdDCqW
-RyKoaKqRj4OxXC5B2FhKs348d04wKaYrnq6YOewOiAItSuljwdkwT5+9E1VvBcj5
-uWmH3tVZirLfLoRM+gTFdJswgTRtgRUIQDkNW2K8DBfRZQyyJxVnibExvqiYPWU0
-WlFn+NLPnZVDYtUMVVXypyY3Tptyk8kUH4/YtdY5CD4jLp54c1tODvwtV9Rc2Njd
-ePX2j49RltVYQmPB4NCSTRVaTSrY0EXWh+puzzDnI+sZwZeNzWapmgUHhahQWG4A
-Uee2JTy4WQI22X/HpoAKhmi1Uzo9Tql9H/aZNruWTRyQLjqWM4ZcPfyN2pwzp2la
-GjbV15ifj4qzLuS7Rx09B7nInSQvdB8YBnk5Hdc6CrmYujM6DHySIGVjgwgmDOPd
-UTZVghr7q3mZTiAmRjiZ25o7+yU+yLRyxMgGJebTjRodox6cbq/AAxS18RCTovu7
-TLd15T7f7FctkYBhao5/l/JCthU5yhHmDcFPRQ6OJeGFQiuVsLFkqQqZl1LOxxIY
-X2SZQDODzgyRXZdQ6294IhianEsM46tEF/Zp0I3OQmoAPAs5mNtHLNxT3Qj1z9bX
-c5s6UzB6WCg2mKb/Irh0+FS8x5FZrT5FgE3RlkI8CGpTwdY23cAKSX0orXYCrl1w
-kKctB51L3GsBRmQAaMfw
-=rV4s
------END PGP SIGNATURE-----
-
---G2d+m75Tjo442KmM--
