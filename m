@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934334AbaEFHEy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 03:04:54 -0400
-Received: from mga03.intel.com ([143.182.124.21]:11617 "EHLO mga03.intel.com"
+	id S934315AbaEFHEu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 03:04:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:56976 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934293AbaEFHEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 03:04:47 -0400
+	id S934243AbaEFHEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 03:04:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,995,1389772800"; 
-   d="scan'208";a="526662636"
+   d="scan'208";a="526662389"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
         Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
@@ -20,9 +20,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
         dmaengine@vger.kernel.org
-Subject: [Patch Part3 V2 14/21] IOMMU/vt-d: introduce helper function dmar_walk_resources()
-Date: Tue,  6 May 2014 15:05:25 +0800
-Message-Id: <1399359932-28972-15-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part3 V2 11/21] iommu/vt-d: introduce helper domain_pfn_within_range() to simplify code
+Date: Tue,  6 May 2014 15:05:22 +0800
+Message-Id: <1399359932-28972-12-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1399359932-28972-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1399359932-28972-1-git-send-email-jiang.liu@linux.intel.com>
@@ -30,380 +30,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce helper function dmar_walk_resources to walk resource entries
-in DMAR table and ACPI buffer object returned by ACPI _DSM method
-for IOMMU hot-plug.
+Introduce helper function domain_pfn_within_range() to simplify code
+and improve readability.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/iommu/dmar.c        |  208 +++++++++++++++++++++++--------------------
- drivers/iommu/intel-iommu.c |    4 +-
- include/linux/dmar.h        |   19 ++--
- 3 files changed, 122 insertions(+), 109 deletions(-)
+ drivers/iommu/intel-iommu.c |   30 ++++++++++++++++--------------
+ 1 file changed, 16 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 39f8b717fe84..acfceb25a2d2 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -43,6 +43,14 @@
- 
- #include "irq_remapping.h"
- 
-+typedef int (*dmar_res_handler_t)(struct acpi_dmar_header *, void *);
-+struct dmar_res_callback {
-+	dmar_res_handler_t	cb[ACPI_DMAR_TYPE_RESERVED];
-+	void			*arg[ACPI_DMAR_TYPE_RESERVED];
-+	bool			ignore_unhandled;
-+	bool			print_entry;
-+};
-+
- /*
-  * Assumptions:
-  * 1) The hotplug framework guarentees that DMAR unit will be hot-added
-@@ -332,7 +340,7 @@ static struct notifier_block dmar_pci_bus_nb = {
-  * present in the platform
-  */
- static int __init
--dmar_parse_one_drhd(struct acpi_dmar_header *header)
-+dmar_parse_one_drhd(struct acpi_dmar_header *header, void *arg)
- {
- 	struct acpi_dmar_hardware_unit *drhd;
- 	struct dmar_drhd_unit *dmaru;
-@@ -363,6 +371,10 @@ dmar_parse_one_drhd(struct acpi_dmar_header *header)
- 		return ret;
- 	}
- 	dmar_register_drhd_unit(dmaru);
-+
-+	if (arg)
-+		(*(int *)arg)++;
-+
- 	return 0;
- }
- 
-@@ -375,7 +387,8 @@ static void dmar_free_drhd(struct dmar_drhd_unit *dmaru)
- 	kfree(dmaru);
- }
- 
--static int __init dmar_parse_one_andd(struct acpi_dmar_header *header)
-+static int __init dmar_parse_one_andd(struct acpi_dmar_header *header,
-+				      void *arg)
- {
- 	struct acpi_dmar_andd *andd = (void *)header;
- 
-@@ -397,7 +410,7 @@ static int __init dmar_parse_one_andd(struct acpi_dmar_header *header)
- 
- #ifdef CONFIG_ACPI_NUMA
- static int __init
--dmar_parse_one_rhsa(struct acpi_dmar_header *header)
-+dmar_parse_one_rhsa(struct acpi_dmar_header *header, void *arg)
- {
- 	struct acpi_dmar_rhsa *rhsa;
- 	struct dmar_drhd_unit *drhd;
-@@ -424,6 +437,8 @@ dmar_parse_one_rhsa(struct acpi_dmar_header *header)
- 
- 	return 0;
- }
-+#else
-+#define	dmar_parse_one_rhsa		dmar_res_noop
- #endif
- 
- static void __init
-@@ -485,6 +500,52 @@ static int __init dmar_table_detect(void)
- 	return (ACPI_SUCCESS(status) ? 1 : 0);
- }
- 
-+static int dmar_walk_resources(struct acpi_dmar_header *start, size_t len,
-+			       struct dmar_res_callback *cb)
-+{
-+	int ret = 0;
-+	struct acpi_dmar_header *iter, *next;
-+	struct acpi_dmar_header *end = ((void *)start) + len;
-+
-+	for (iter = start; iter < end && ret == 0; iter = next) {
-+		next = (void *)iter + iter->length;
-+		if (iter->length == 0) {
-+			/* Avoid looping forever on bad ACPI tables */
-+			pr_debug(FW_BUG "Invalid 0-length structure\n");
-+			break;
-+		} else if (next > end) {
-+			/* Avoid passing table end */
-+			pr_warn(FW_BUG "record passes table end\n");
-+			ret = -EINVAL;
-+			break;
-+		}
-+
-+		if (cb->print_entry)
-+			dmar_table_print_dmar_entry(iter);
-+
-+		if (iter->type >= ACPI_DMAR_TYPE_RESERVED) {
-+			/* continue for forward compatibility */
-+			pr_debug("Unknown DMAR structure type %d\n",
-+				 iter->type);
-+		} else if (cb->cb[iter->type]) {
-+			ret = cb->cb[iter->type](iter, cb->arg[iter->type]);
-+		} else if (!cb->ignore_unhandled) {
-+			pr_warn("No handler for DMAR structure type %d\n",
-+				iter->type);
-+			ret = -EINVAL;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+static inline int dmar_walk_dmar_table(struct acpi_table_dmar *dmar,
-+				       struct dmar_res_callback *cb)
-+{
-+	return dmar_walk_resources((struct acpi_dmar_header *)(dmar + 1),
-+				   dmar->header.length - sizeof(*dmar), cb);
-+}
-+
- /**
-  * parse_dmar_table - parses the DMA reporting table
-  */
-@@ -492,9 +553,18 @@ static int __init
- parse_dmar_table(void)
- {
- 	struct acpi_table_dmar *dmar;
--	struct acpi_dmar_header *entry_header;
- 	int ret = 0;
- 	int drhd_count = 0;
-+	struct dmar_res_callback cb = {
-+		.print_entry = true,
-+		.ignore_unhandled = true,
-+		.arg[ACPI_DMAR_TYPE_HARDWARE_UNIT] = &drhd_count,
-+		.cb[ACPI_DMAR_TYPE_HARDWARE_UNIT] = &dmar_parse_one_drhd,
-+		.cb[ACPI_DMAR_TYPE_RESERVED_MEMORY] = &dmar_parse_one_rmrr,
-+		.cb[ACPI_DMAR_TYPE_ATSR] = &dmar_parse_one_atsr,
-+		.cb[ACPI_DMAR_HARDWARE_AFFINITY] = &dmar_parse_one_rhsa,
-+		.cb[ACPI_DMAR_TYPE_ANDD] = &dmar_parse_one_andd,
-+	};
- 
- 	/*
- 	 * Do it again, earlier dmar_tbl mapping could be mapped with
-@@ -519,50 +589,10 @@ parse_dmar_table(void)
- 
- 	pr_info("Host address width %d\n", dmar->width + 1);
- 
--	entry_header = (struct acpi_dmar_header *)(dmar + 1);
--	while (((unsigned long)entry_header) <
--			(((unsigned long)dmar) + dmar_tbl->length)) {
--		/* Avoid looping forever on bad ACPI tables */
--		if (entry_header->length == 0) {
--			pr_warn("Invalid 0-length structure\n");
--			ret = -EINVAL;
--			break;
--		}
--
--		dmar_table_print_dmar_entry(entry_header);
--
--		switch (entry_header->type) {
--		case ACPI_DMAR_TYPE_HARDWARE_UNIT:
--			drhd_count++;
--			ret = dmar_parse_one_drhd(entry_header);
--			break;
--		case ACPI_DMAR_TYPE_RESERVED_MEMORY:
--			ret = dmar_parse_one_rmrr(entry_header);
--			break;
--		case ACPI_DMAR_TYPE_ATSR:
--			ret = dmar_parse_one_atsr(entry_header);
--			break;
--		case ACPI_DMAR_HARDWARE_AFFINITY:
--#ifdef CONFIG_ACPI_NUMA
--			ret = dmar_parse_one_rhsa(entry_header);
--#endif
--			break;
--		case ACPI_DMAR_TYPE_ANDD:
--			ret = dmar_parse_one_andd(entry_header);
--			break;
--		default:
--			pr_warn("Unknown DMAR structure type %d\n",
--				entry_header->type);
--			ret = 0; /* for forward compatibility */
--			break;
--		}
--		if (ret)
--			break;
--
--		entry_header = ((void *)entry_header + entry_header->length);
--	}
--	if (drhd_count == 0)
-+	ret = dmar_walk_dmar_table(dmar, &cb);
-+	if (ret == 0 && drhd_count == 0)
- 		pr_warn(FW_BUG "No DRHD structure found in DMAR table\n");
-+
- 	return ret;
- }
- 
-@@ -761,76 +791,60 @@ static void warn_invalid_dmar(u64 addr, const char *message)
- 		dmi_get_system_info(DMI_PRODUCT_VERSION));
- }
- 
--static int __init check_zero_address(void)
-+static int __ref
-+dmar_validate_one_drhd(struct acpi_dmar_header *entry, void *arg)
- {
--	struct acpi_table_dmar *dmar;
--	struct acpi_dmar_header *entry_header;
- 	struct acpi_dmar_hardware_unit *drhd;
-+	void __iomem *addr;
-+	u64 cap, ecap;
- 
--	dmar = (struct acpi_table_dmar *)dmar_tbl;
--	entry_header = (struct acpi_dmar_header *)(dmar + 1);
--
--	while (((unsigned long)entry_header) <
--			(((unsigned long)dmar) + dmar_tbl->length)) {
--		/* Avoid looping forever on bad ACPI tables */
--		if (entry_header->length == 0) {
--			pr_warn("Invalid 0-length structure\n");
--			return 0;
--		}
--
--		if (entry_header->type == ACPI_DMAR_TYPE_HARDWARE_UNIT) {
--			void __iomem *addr;
--			u64 cap, ecap;
--
--			drhd = (void *)entry_header;
--			if (!drhd->address) {
--				warn_invalid_dmar(0, "");
--				goto failed;
--			}
-+	drhd = (void *)entry;
-+	if (!drhd->address) {
-+		warn_invalid_dmar(0, "");
-+		return -EINVAL;
-+	}
- 
--			addr = early_ioremap(drhd->address, VTD_PAGE_SIZE);
--			if (!addr ) {
--				printk("IOMMU: can't validate: %llx\n", drhd->address);
--				goto failed;
--			}
--			cap = dmar_readq(addr + DMAR_CAP_REG);
--			ecap = dmar_readq(addr + DMAR_ECAP_REG);
--			early_iounmap(addr, VTD_PAGE_SIZE);
--			if (cap == (uint64_t)-1 && ecap == (uint64_t)-1) {
--				warn_invalid_dmar(drhd->address,
--						  " returns all ones");
--				goto failed;
--			}
--		}
-+	addr = early_ioremap(drhd->address, VTD_PAGE_SIZE);
-+	if (!addr) {
-+		pr_warn("IOMMU: can't validate: %llx\n", drhd->address);
-+		return -EINVAL;
-+	}
-+	cap = dmar_readq(addr + DMAR_CAP_REG);
-+	ecap = dmar_readq(addr + DMAR_ECAP_REG);
-+	early_iounmap(addr, VTD_PAGE_SIZE);
- 
--		entry_header = ((void *)entry_header + entry_header->length);
-+	if (cap == (uint64_t)-1 && ecap == (uint64_t)-1) {
-+		warn_invalid_dmar(drhd->address, " returns all ones");
-+		return -EINVAL;
- 	}
--	return 1;
- 
--failed:
- 	return 0;
- }
- 
- int __init detect_intel_iommu(void)
- {
- 	int ret;
-+	struct dmar_res_callback validate_drhd_cb = {
-+		.cb[ACPI_DMAR_TYPE_HARDWARE_UNIT] = &dmar_validate_one_drhd,
-+		.ignore_unhandled = true,
-+	};
- 
- 	down_write(&dmar_global_lock);
- 	ret = dmar_table_detect();
- 	if (ret)
--		ret = check_zero_address();
--	{
--		if (ret && !no_iommu && !iommu_detected && !dmar_disabled) {
--			iommu_detected = 1;
--			/* Make sure ACS will be enabled */
--			pci_request_acs();
--		}
-+		ret = !dmar_walk_dmar_table((struct acpi_table_dmar *)dmar_tbl,
-+					    &validate_drhd_cb);
-+	if (ret && !no_iommu && !iommu_detected && !dmar_disabled) {
-+		iommu_detected = 1;
-+		/* Make sure ACS will be enabled */
-+		pci_request_acs();
-+	}
- 
- #ifdef CONFIG_X86
--		if (ret)
--			x86_init.iommu.iommu_init = intel_iommu_init;
-+	if (ret)
-+		x86_init.iommu.iommu_init = intel_iommu_init;
- #endif
--	}
-+
- 	early_acpi_os_unmap_memory((void __iomem *)dmar_tbl, dmar_tbl_size);
- 	dmar_tbl = NULL;
- 	up_write(&dmar_global_lock);
 diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 080b4f24bd7c..b696bcd3f6e0 100644
+index cf083c8a223e..7b54f4a08bb9 100644
 --- a/drivers/iommu/intel-iommu.c
 +++ b/drivers/iommu/intel-iommu.c
-@@ -3652,7 +3652,7 @@ static inline void init_iommu_pm_ops(void) {}
- #endif	/* CONFIG_PM */
- 
- 
--int __init dmar_parse_one_rmrr(struct acpi_dmar_header *header)
-+int __init dmar_parse_one_rmrr(struct acpi_dmar_header *header, void *arg)
- {
- 	struct acpi_dmar_reserved_memory *rmrr;
- 	struct dmar_rmrr_unit *rmrru;
-@@ -3678,7 +3678,7 @@ int __init dmar_parse_one_rmrr(struct acpi_dmar_header *header)
- 	return 0;
+@@ -549,6 +549,14 @@ static inline int domain_type_is_vm_or_si(struct dmar_domain *domain)
+ 				DOMAIN_FLAG_STATIC_IDENTITY);
  }
  
--int __init dmar_parse_one_atsr(struct acpi_dmar_header *hdr)
-+int __init dmar_parse_one_atsr(struct acpi_dmar_header *hdr, void *arg)
- {
- 	struct acpi_dmar_atsr *atsr;
- 	struct dmar_atsr_unit *atsru;
-diff --git a/include/linux/dmar.h b/include/linux/dmar.h
-index 1deece46a0ca..fac8ca34f9a8 100644
---- a/include/linux/dmar.h
-+++ b/include/linux/dmar.h
-@@ -115,22 +115,21 @@ extern int dmar_remove_dev_scope(struct dmar_pci_notify_info *info,
- extern int detect_intel_iommu(void);
- extern int enable_drhd_fault_handling(void);
- 
-+static inline int dmar_res_noop(struct acpi_dmar_header *hdr, void *arg)
++static inline int domain_pfn_supported(struct dmar_domain *domain,
++				       unsigned long pfn)
 +{
-+	return 0;
++	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
++
++	return !(addr_width < BITS_PER_LONG && pfn >> addr_width);
 +}
 +
- #ifdef CONFIG_INTEL_IOMMU
- extern int iommu_detected, no_iommu;
- extern int intel_iommu_init(void);
--extern int dmar_parse_one_rmrr(struct acpi_dmar_header *header);
--extern int dmar_parse_one_atsr(struct acpi_dmar_header *header);
-+extern int dmar_parse_one_rmrr(struct acpi_dmar_header *header, void *arg);
-+extern int dmar_parse_one_atsr(struct acpi_dmar_header *header, void *arg);
- extern int dmar_iommu_notify_scope_dev(struct dmar_pci_notify_info *info);
- #else /* !CONFIG_INTEL_IOMMU: */
- static inline int intel_iommu_init(void) { return -ENODEV; }
--static inline int dmar_parse_one_rmrr(struct acpi_dmar_header *header)
--{
--	return 0;
--}
--static inline int dmar_parse_one_atsr(struct acpi_dmar_header *header)
--{
--	return 0;
--}
-+#define	dmar_parse_one_rmrr		dmar_res_noop
-+#define	dmar_parse_one_atsr		dmar_res_noop
- static inline int dmar_iommu_notify_scope_dev(struct dmar_pci_notify_info *info)
+ static int __iommu_calculate_agaw(struct intel_iommu *iommu, int max_gaw)
  {
- 	return 0;
+ 	unsigned long sagaw;
+@@ -822,14 +830,13 @@ out:
+ static struct dma_pte *pfn_to_dma_pte(struct dmar_domain *domain,
+ 				      unsigned long pfn, int *target_level)
+ {
+-	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
+ 	struct dma_pte *parent, *pte = NULL;
+ 	int level = agaw_to_level(domain->agaw);
+ 	int offset;
+ 
+ 	BUG_ON(!domain->pgd);
+ 
+-	if (addr_width < BITS_PER_LONG && pfn >> addr_width)
++	if (!domain_pfn_supported(domain, pfn))
+ 		/* Address beyond IOMMU's addressing capabilities. */
+ 		return NULL;
+ 
+@@ -914,12 +921,11 @@ static void dma_pte_clear_range(struct dmar_domain *domain,
+ 				unsigned long start_pfn,
+ 				unsigned long last_pfn)
+ {
+-	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
+ 	unsigned int large_page = 1;
+ 	struct dma_pte *first_pte, *pte;
+ 
+-	BUG_ON(addr_width < BITS_PER_LONG && start_pfn >> addr_width);
+-	BUG_ON(addr_width < BITS_PER_LONG && last_pfn >> addr_width);
++	BUG_ON(!domain_pfn_supported(domain, start_pfn));
++	BUG_ON(!domain_pfn_supported(domain, last_pfn));
+ 	BUG_ON(start_pfn > last_pfn);
+ 
+ 	/* we don't need lock here; nobody else touches the iova range */
+@@ -980,10 +986,8 @@ static void dma_pte_free_pagetable(struct dmar_domain *domain,
+ 				   unsigned long start_pfn,
+ 				   unsigned long last_pfn)
+ {
+-	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
+-
+-	BUG_ON(addr_width < BITS_PER_LONG && start_pfn >> addr_width);
+-	BUG_ON(addr_width < BITS_PER_LONG && last_pfn >> addr_width);
++	BUG_ON(!domain_pfn_supported(domain, start_pfn));
++	BUG_ON(!domain_pfn_supported(domain, last_pfn));
+ 	BUG_ON(start_pfn > last_pfn);
+ 
+ 	dma_pte_clear_range(domain, start_pfn, last_pfn);
+@@ -1085,11 +1089,10 @@ struct page *domain_unmap(struct dmar_domain *domain,
+ 			  unsigned long start_pfn,
+ 			  unsigned long last_pfn)
+ {
+-	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
+ 	struct page *freelist = NULL;
+ 
+-	BUG_ON(addr_width < BITS_PER_LONG && start_pfn >> addr_width);
+-	BUG_ON(addr_width < BITS_PER_LONG && last_pfn >> addr_width);
++	BUG_ON(!domain_pfn_supported(domain, start_pfn));
++	BUG_ON(!domain_pfn_supported(domain, last_pfn));
+ 	BUG_ON(start_pfn > last_pfn);
+ 
+ 	/* we don't need lock here; nobody else touches the iova range */
+@@ -1993,12 +1996,11 @@ static int __domain_mapping(struct dmar_domain *domain, unsigned long iov_pfn,
+ {
+ 	struct dma_pte *first_pte = NULL, *pte = NULL;
+ 	phys_addr_t uninitialized_var(pteval);
+-	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
+ 	unsigned long sg_res;
+ 	unsigned int largepage_lvl = 0;
+ 	unsigned long lvl_pages = 0;
+ 
+-	BUG_ON(addr_width < BITS_PER_LONG && (iov_pfn + nr_pages - 1) >> addr_width);
++	BUG_ON(!domain_pfn_supported(domain, iov_pfn + nr_pages - 1));
+ 
+ 	if ((prot & (DMA_PTE_READ|DMA_PTE_WRITE)) == 0)
+ 		return -EINVAL;
 -- 
 1.7.10.4
 
