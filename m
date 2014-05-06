@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752280AbaEFQlO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 12:41:14 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:46158 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747AbaEFQlN (ORCPT
+	id S1751205AbaEFQpR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 12:45:17 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:61427 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885AbaEFQpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 12:41:13 -0400
-Date: Tue, 6 May 2014 09:41:08 -0700
-From: josh@joshtriplett.org
-To: David Miller <davem@davemloft.net>
-Cc: andi@firstfloor.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tom.zanussi@linux.intel.com, ak@linux.intel.com
-Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
-Message-ID: <20140506164108.GA20536@cloud>
-References: <20140506032114.GP2382@two.firstfloor.org>
- <20140505.232327.578134514220748085.davem@davemloft.net>
- <20140506155703.GA20391@cloud>
- <20140506.115941.428706504757835279.davem@davemloft.net>
+	Tue, 6 May 2014 12:45:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140506.115941.428706504757835279.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Brian Lilly <brian@crystalfontz.com>
+Date: Tue, 6 May 2014 09:44:34 -0700
+Message-ID: <CAOk88BLR=nwNGdT++39vLdOt=TwZmemF-trSQPY8AdMN9tKtKQ@mail.gmail.com>
+Subject: i.MX28 based system losing eth0 on boot
+To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Jim Baxter <jim_baxter@mentor.com>, Frank Li <Frank.Li@freescale.com>,
+        Fugang Duan <B38611@freescale.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 11:59:41AM -0400, David Miller wrote:
-> From: josh@joshtriplett.org
-> Date: Tue, 6 May 2014 08:57:03 -0700
-> 
-> > On Mon, May 05, 2014 at 11:23:27PM -0400, David Miller wrote:
-> >> From: Andi Kleen <andi@firstfloor.org>
-> >> Date: Tue, 6 May 2014 05:21:14 +0200
-> >> 
-> >> > What parts would you remove to get the foot print down for a 2MB
-> >> > single purpose machine?
-> >> 
-> >> I wouldn't use Linux, end of story.
-> >> 
-> >> Maybe two decades ago, but not now, those days are over.
-> > 
-> > That's a self-fulfilling prophecy:
-> 
-> Making 2MB RAM machines today makes no sense at all.
-> 
-> The lowest end dirt cheap smartphone, something which fits on
-> someone's pocket, has gigabytes of ram.
+Uwe:
 
-The lowest-end smartphone isn't anywhere close to "dirt cheap", and
-hardly counts as "embedded" at all anymore.  Smartphones cost $100+;
-we're talking about systems in the low tens of dollars or less.  These
-systems will have no graphics, no peripherals, and only one or two
-specific functions.  The entirety of their functionality will likely
-consist of a single userspace program; they might not even have a PID 2.
-*That's* the kind of "embedded" we're talking about, not the
-supercomputers we carry around in our pockets.
+With commit a264b981f2c76e281ef27e7232774bf6c54ec865 we're having eth0
+come up, then brought right back down with an MDIO rx timeout moments
+after.  Adding back in the removed code keeps the interface alive and
+it's working afterward without trouble.  I've tested the re-inserted
+code in 3.12, 3.14 without issue on our boards.
 
-Every KB of RAM costs real money and SoC die area (for eDRAM/eSRAM).
-Look at how much cache low-end processors have, and imagine running
-entirely out of *that*.  Let's not surrender that entire class of
-devices to VxWorks, FreeRTOS, and other painfully non-Linux systems,
-when we already know it's possible to run Linux on them successfully.
+Is there something else that can be done to prevent the MDIO timeouts?
+We are using basically the same schematic for networking as the
+imx28evk.
 
-- Josh Triplett
+Any thoughts on how to resolve this?
+
+Thanks,
+Brian Lilly
