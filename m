@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757730AbaEFN6z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 09:58:55 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60305 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757692AbaEFN6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 09:58:52 -0400
-From: Sricharan R <r.sricharan@ti.com>
-To: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
-        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
-        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <mark.rutland@arm.com>, <tglx@linutronix.de>, <galak@codeaurora.org>,
-        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>,
-        <robherring2@gmail.com>
-CC: Sricharan R <r.sricharan@ti.com>
-Subject: [PATCH V5 3/3] arm: dts: dra7: Add routable-irqs property for gic node
-Date: Tue, 6 May 2014 19:26:19 +0530
-Message-ID: <1399384579-25620-4-git-send-email-r.sricharan@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1399384579-25620-1-git-send-email-r.sricharan@ti.com>
-References: <1399384579-25620-1-git-send-email-r.sricharan@ti.com>
+	id S1757774AbaEFN7J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 09:59:09 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:49982 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756464AbaEFN7G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 09:59:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-pci@vger.kernel.org, rogerq@ti.com,
+        balajitk@ti.com, Bjorn Helgaas <bhelgaas@google.com>,
+        Marek Vasut <marex@denx.de>, santosh.shilimkar@ti.com
+Subject: Re: [PATCH 06/17] pci: host: pcie-designware: Use *base-mask* for configuring the iATU
+Date: Tue, 06 May 2014 15:59 +0200
+Message-ID: <4764413.ZAEU5S5p0p@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1399383244-14556-7-git-send-email-kishon@ti.com>
+References: <1399383244-14556-1-git-send-email-kishon@ti.com> <1399383244-14556-7-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:gphsvx8dMcd7jA6duQgC8Pf/yrvGof4abbINljBFhi0
+ TZXgJPOrXS/Fbf6bWd7+Hfd0QU8zdf0y7IEbaQ3B5uS0kiBAyb
+ VMU0FBYCWwy71xk/iQPlm5zTw+ScE6tJIF6MH/pK05G+J+YMZm
+ puhc945dxMcdS6zkKZslGzZvksiebI74zKQQ04vGhZkPrcdAiL
+ h14JHZgYJewkDvtdZPzPERz8XmxjksttdQfrLk5qTuR3wplWUl
+ Tfmm/sycUREGVLyTnL1XPTceUEsdR3JCvkrpHbIf+YydxfA/+0
+ v0ajPortOaesm9KiqH2qSjCsTHbTzHN6G9FopVGjRhZxBgkuzQ
+ dkkn8KOfOvbzEWZneaa8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a IRQ crossbar device in the soc, which maps the
-irq requests from the peripherals to the mpu interrupt
-controller's inputs. The gic provides the support for such
-IPs in the form of routable-irqs. So adding the property
-here to gic node.
+On Tuesday 06 May 2014 19:03:52 Kishon Vijay Abraham I wrote:
+> In DRA7, the cpu sees 32bit address, but the pcie controller can see only 28bit
+> address. So whenever the cpu issues a read/write request, the 4 most
+> significant bits are used by L3 to determine the target controller.
+> For example, the cpu reserves 0x2000_0000 - 0x2FFF_FFFF for PCIe controller but
+> the PCIe controller will see only (0x000_0000 - 0xFFF_FFF). So for programming
+> the outbound translation window the *base* should be programmed as 0x000_0000.
+> Whenever we try to write to say 0x2000_0000, it will be translated to whatever
+> we have programmed in the translation window with base as 0x000_0000.
+> 
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Marek Vasut <marex@denx.de>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> Acked-by: Jingoo Han <jg1.han@samsung.com>
+> Acked-by: Mohit Kumar <mohit.kumar@st.com>
 
-Cc: Benoit Cousson <bcousson@baylibre.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Rajendra Nayak <rnayak@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Sricharan R <r.sricharan@ti.com>
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
-[V5] Rebased and corrected routable irqs from 160 to 192
+Sorry, but NAK.
 
- arch/arm/boot/dts/dra7.dtsi |    1 +
- 1 file changed, 1 insertion(+)
+We have a standard 'dma-ranges' property to handle this, so use it.
 
-diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-index 52e4bd0..cec826f 100644
---- a/arch/arm/boot/dts/dra7.dtsi
-+++ b/arch/arm/boot/dts/dra7.dtsi
-@@ -72,6 +72,7 @@
- 		compatible = "arm,cortex-a15-gic";
- 		interrupt-controller;
- 		#interrupt-cells = <3>;
-+		arm,routable-irqs = <192>;
- 		reg = <0x48211000 0x1000>,
- 		      <0x48212000 0x1000>,
- 		      <0x48214000 0x2000>,
--- 
-1.7.9.5
+See the x-gene PCIe driver patches for an example. Please also talk
+to Santosh about it, as he is implementing generic support for
+parsing dma-ranges in platform devices at the moment.
+
+I also suspect you will have to implement swiotlb support to make
+generic PCI devices work behind this bridge. Otherwise you end up
+with random physical addresses passed into DMA registers.
+
+	Arnd
 
