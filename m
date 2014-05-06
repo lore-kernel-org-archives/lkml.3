@@ -1,98 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499AbaEFT7b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 15:59:31 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35366 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754460AbaEFT73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 15:59:29 -0400
-Date: Tue, 6 May 2014 14:58:04 -0500
-From: Darren Etheridge <detheridge@ti.com>
-To: Nishanth Menon <nm@ti.com>
-CC: <balbi@ti.com>, Sricharan R <r.sricharan@ti.com>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
-        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
-        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <mark.rutland@arm.com>, <tglx@linutronix.de>, <galak@codeaurora.org>,
-        <santosh.shilimkar@ti.com>, <bcousson@baylibre.com>,
-        <robherring2@gmail.com>
-Subject: Re: [PATCH V5 1/3] arm: dts: dra7: Add crossbar device binding
-Message-ID: <20140506195804.GD2626@ti.com>
-References: <1399384579-25620-1-git-send-email-r.sricharan@ti.com>
- <1399384579-25620-2-git-send-email-r.sricharan@ti.com>
- <20140506194055.GA6962@saruman.home>
- <53693C02.2090305@ti.com>
+	id S1754578AbaEFT7h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 15:59:37 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:45404 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754460AbaEFT7f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 15:59:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <53693C02.2090305@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140506084749.GT26890@mwanda>
+References: <1399364528-3727-1-git-send-email-martink@posteo.de>
+	<20140506084749.GT26890@mwanda>
+Date: Tue, 6 May 2014 12:59:34 -0700
+X-Google-Sender-Auth: 1a3Plpjwuem22MHYcTRnU4hOkBc
+Message-ID: <CANeU7QmZXJ0KqVvkLfqxF6CGx81KQ93S++ViR9smWRTj8_6Dtg@mail.gmail.com>
+Subject: Re: [PATCH] staging: rtl8192u: initialize array in C compliant way
+From: Christopher Li <sparse@chrisli.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Martin Kepplinger <martink@posteo.de>,
+        Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, burzalodowa@gmail.com,
+        Linux-Sparse <linux-sparse@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nishanth Menon <nm@ti.com> wrote on Tue [2014-May-06 14:46:10 -0500]:
-> On 05/06/2014 02:40 PM, Felipe Balbi wrote:
-> > On Tue, May 06, 2014 at 07:26:17PM +0530, Sricharan R wrote:
-> >> This adds the irq crossbar device node.
-> >>
-> >> There is a IRQ crossbar device in the soc, which
-> >> maps the irq requests from the peripherals to the
-> >> mpu interrupt controller's inputs. The Peripheral irq
-> >> requests are connected to only one crossbar
-> >> input and the output of the crossbar is connected to only one
-> >> controller's input line. The crossbar device is used to map
-> >> a peripheral input to a free mpu's interrupt controller line.
-> >>
-> >> Cc: Benoit Cousson <bcousson@baylibre.com>
-> >> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> >> Cc: Rajendra Nayak <rnayak@ti.com>
-> >> Cc: Tony Lindgren <tony@atomide.com>
-> >> Signed-off-by: Sricharan R <r.sricharan@ti.com>
-> >> Signed-off-by: Nishanth Menon <nm@ti.com>
-> >> ---
-> >> [V5] Rebased on top of 3.15-rc4 and corrected the
-> >>      irqs-reserved list
-> >>
-> >>  arch/arm/boot/dts/dra7.dtsi |    8 ++++++++
-> >>  1 file changed, 8 insertions(+)
-> >>
-> >> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-> >> index 149b550..0274a86 100644
-> >> --- a/arch/arm/boot/dts/dra7.dtsi
-> >> +++ b/arch/arm/boot/dts/dra7.dtsi
-> >> @@ -790,6 +790,14 @@
-> >>  			status = "disabled";
-> >>  		};
-> >>  	};
-> >> +
-> >> +	crossbar_mpu: crossbar@4a020000 {
-> > 
-> > shouldn't this be "status = disabled"; so that boards enable this
-> > on-demand ??
-> > 
-> It cannot be and does not need to be. crossbar is an SoC feature. by
-> defining crossbar, the IRQ numbers we provide in DTS now becomes
-> crossbar numbers which get mapped to GIC interrupt numbers dynamically.
-> 
-> further crossbar is not a board feature. it is as ingrained in DRA7
-> behavior as GIC is. we are fortunate that we have some default mapping
-> of crossbar that allows the current peripherals to work, with this
-> support, we dont have to depend any longer on "we are lucky that is
-> mapped".
-> 
-> That said, in hindsight, patch #1 and 2 should be squashed IMHO. else
-> we have a bisectability problem here.
-> 
-Yes the bisectability problem is completely true - I was just testing
-that as your email came in.  In fact I think all three patches need to
-be squashed into one, I can't boot the dra7-EVM unless I have all three
-patches applied.
+On Tue, May 6, 2014 at 1:47 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+>> -     bool                            search_dir[4] = {0, 0, 0, 0};
+>> +     bool                            search_dir[4] = {0};
+>
+> That's weird.  The original code is valid but it generates a sparse
+> warning.
+>
+> drivers/staging/rtl8192u/ieee80211/rtl819x_TSProc.c:244:58: warning: Initializer entry defined twice
+> drivers/staging/rtl8192u/ieee80211/rtl819x_TSProc.c:244:61:   also defined here
+>
+> It has something to do with "_Bool" types.  Changing it to "int" will
+> also make the warning disappear.  I've CC'd the sparse list to see if
+> anyone knows what's happening.
 
-With all three patches applied, basic boot is looking good.  I will
-reply with my tested-by once I have got VIP, etc up and running.
+This is easy reproducible with a small test case. It is a sparse bug for sure.
 
-Darren
+Let me take a look.
 
+Chris
