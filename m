@@ -1,160 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533AbaEFPfq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 11:35:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:40644 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751085AbaEFPfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 11:35:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,998,1389772800"; 
-   d="scan'208";a="506840761"
-Message-ID: <1399390490.8767.122.camel@empanada>
-Subject: Re: RFC: A reduced Linux network stack for small systems
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-Cc: Richard Weinberger <richard.weinberger@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 06 May 2014 10:34:50 -0500
-In-Reply-To: <CAADnVQLYiNfXRrXc=VZkGEFDbNhF63AzPg6Gyu6P1SF=6AiO7g@mail.gmail.com>
-References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
-	 <CAFLxGvww8t-PpuS3B=dFvn8k3xBydk3CgA=qoLyEbkKJZJ0xhQ@mail.gmail.com>
-	 <1399383246.8767.99.camel@empanada>
-	 <CAADnVQLYiNfXRrXc=VZkGEFDbNhF63AzPg6Gyu6P1SF=6AiO7g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757884AbaEFPgk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 11:36:40 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52423 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757662AbaEFPgi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 11:36:38 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Olof Johansson <olof@lixom.net>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH] netdev: add support for interface name retrieval from DT aliases
+Date: Tue,  6 May 2014 17:36:34 +0200
+Message-Id: <1399390594-1409-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-06 at 08:20 -0700, Alexei Starovoitov wrote:
-> On Tue, May 6, 2014 at 6:34 AM, Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
-> > On Tue, 2014-05-06 at 09:25 +0200, Richard Weinberger wrote:
-> >> On Tue, May 6, 2014 at 12:25 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> >> > There has been a lot of interest recently to run Linux on very small systems,
-> >> > like Quark systems. These may have only 2-4MB memory. They are also limited
-> >> > by flash space.
-> >> >
-> >> > One problem on these small system is the size of the network stack.
-> >> > Currently enabling IPv4 costs about 400k in text, which is prohibitive on
-> >> > a 2MB system, and very expensive with 4MB.
-> >> >
-> >> > There were proposals to instead use LWIP in user space. LWIP with
-> >> > its socket interface comes in at a bit over 100k overhead per application.
-> >> >
-> >> > I maintain that the Linux network stack is actually not that bloated,
-> >> > it just has a lot of features :-)  The goal of this project was to
-> >> > subset it in a sensible way so that the native kernel stack becomes
-> >> > competitive with LWIP.
-> >> >
-> >> > It turns out that the standard stack has a couple of features that
-> >> > are not really needed on client systems. Luckily it is also
-> >> > relatively well modularized, so it becomes possible to stub
-> >> > out these features at the edge.
-> >> >
-> >> > With removing these features we still have a powerful TCP/IP stack,
-> >> > but one that fits better into small systems.
-> >> >
-> >> > It would have been prohibitive to ifdef every optional feature.
-> >> > This patchkit relies heavily on LTO to effectively remove unused
-> >> > code. This allows to disable features only at the module boundaries,
-> >> > and rely on the compiler to drop unreferenced code and data.
-> >> >
-> >> > A few features have been also reimplemented in a simpler way.
-> >> > And I shrank a number of data structures based on CONFIG_BASE_SMALL.
-> >> >
-> >> > With these changes I can get a fully featured network stack down
-> >> > to about 170k with LTO. Without LTO there are also benefits,
-> >> > but somewhat less.
-> >> >
-> >> > There are essentially three sensible configurations:
-> >> > - Full featured like today.
-> >> > - Client only subset, but still works with standard distribution userland.
-> >> > Remove some obscure features like fastopen, make all tables smaller,
-> >> > packet socket mmap code, use a simpler routing table, remove
-> >> > high speed networking features like RPX, XPS, GRO offload.
-> >> > Disable SNMP, TCP metrics
-> >> > - Minimal subset for deeply embedded systems that can use special userland.
-> >> > Remove rtnetlink (ioctl only), remove ethtool, raw sockets.
-> >> >
-> >> > Right now I'm using own Kconfigs for every removed features. I realize
-> >> > this somewhat increases the compile test matrix. It would be possible
-> >> > to hide some of the options and select them using higher level
-> >> > configurations like the ones listed above. I haven't done this
-> >> > in this version.
-> >> >
-> >> > At this point I'm mainly interested in review and comments.
-> >> >
-> >> > Git trees:
-> >> >
-> >> > git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc net/debloat
-> >> > Main tree
-> >> >
-> >> > git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc net/debloat-3.14
-> >> > 3.14 based tree.
-> >> >
-> >> > Thanks to Tom Zanussi for contributions and testing.
-> >>
-> >> What kind of userspace do you use on such a small system?
-> >> It looks like you run kernels without procfs and netlink, so not even
-> >> ps would work. :)
-> >>
-> >
-> > The microYocto 'distro' I have running with these net-diet patches
-> > doesn't use a full procfs, but a pared-down version (CONFIG_PROCFS_MIN).
-> > Keeping ps working is of course essential, and it does that (along with
-> > a couple other things like /proc/filesystems and /proc/mounts I needed
-> > to boot):
-> >
-> > https://github.com/tzanussi/linux-yocto-micro-3.14/commit/68379432afcfa82ac695d9f02892fcf48ade5ae8
-> >
-> > Anyway all the userspace and kernel bits are available for anyone who
-> > wants to build it and try it out:
-> >
-> > https://github.com/tzanussi/meta-galileo/blob/daisy/meta-galileo/README
-> >
-> > It's very much a work-in-progress with a lot of rough edges, but it is a
-> > fully functional system on real hardware (Galileo board/Quark processor)
-> > with a usable shell (ps too!) and web server running on a kernel with
-> > native networking and ~ 750k text size.
-> 
-> Intel Galileo datasheet says:
-> - 400MHz 32bit Intel
-> - 512 KBytes of on-die embedded SRAM
-> - 256 MByte DRAM, enabled by the firmware by default
-> 
-> where did 2-4Mbyte restriction come from?
-> 
+There is currently no proper way to bind a net interface to a specific
+name. The interface name is chosen based on the interface type (eth,
+wlan, ...) and the interfaces already registered (the core codes takes
+the first unused interface id of the given type).
 
-General 'order-of-magnitude' difference from the typical 'tiny distro'
-which typically targets about 16MB, so sort of arbitrary, but it's a
-nice round goal for similar systems I'm sure are coming.
+Add support for DT retrieval of the interface id based on DT aliases.
+The alias name must match the interface type (e.g. ethX if you're defining
+an ethernet dev alias).
 
-Actually, a better goal would be to run only on the 512k SRAM, but let's
-start with something more achievable for a first cut.
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ net/core/dev.c | 45 +++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 41 insertions(+), 4 deletions(-)
 
-> Anyway, with all these hacks you get a half functional kernel with "a
-> lot of rough edges"
-
-'work-in-progress' see above.
-
-> that is likely working only for the given very limited set of applications.
-> Kernel function profiling can potentially achieve the same thing.
-> Profile the kernel with the set of apps and then prune all cold
-> functions out of kernel.
-
-Right, and are Profile-Guided-Optimization results now reproduceable?
-Better change it to Trace-Guided-Optimization.  But yeah, for a
-single-purpose system where it's known exactly what will run for the
-lifetime of the system, it makes sense to get rid of all the codepaths
-that will never be hit.
-
-> config explosion and LTO is unnecessary. Just some linker hacks.
-> Obviously such kernel will also be half functional,
-> but you'll get big reduction in .text that it seems is the goal of this project.
-
+diff --git a/net/core/dev.c b/net/core/dev.c
+index d2c8a06..8f30cb8 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -132,6 +132,7 @@
+ #include <linux/hashtable.h>
+ #include <linux/vmalloc.h>
+ #include <linux/if_macvlan.h>
++#include <linux/of.h>
+ 
+ #include "net-sysfs.h"
+ 
+@@ -960,13 +961,19 @@ EXPORT_SYMBOL(dev_valid_name);
+  *	Returns the number of the unit assigned or a negative errno code.
+  */
+ 
+-static int __dev_alloc_name(struct net *net, const char *name, char *buf)
++static int __dev_alloc_name(struct net *net, struct net_device *dev,
++			    const char *name, char *buf)
+ {
+ 	int i = 0;
++	int of_id = -EINVAL;
+ 	const char *p;
+ 	const int max_netdevices = 8*PAGE_SIZE;
+ 	unsigned long *inuse;
+ 	struct net_device *d;
++	struct device_node *np = NULL;
++
++	if (dev->dev.parent)
++		np = dev->dev.parent->of_node;
+ 
+ 	p = strnchr(name, IFNAMSIZ-1, '%');
+ 	if (p) {
+@@ -978,11 +985,38 @@ static int __dev_alloc_name(struct net *net, const char *name, char *buf)
+ 		if (p[1] != 'd' || strchr(p + 2, '%'))
+ 			return -EINVAL;
+ 
++		if (np) {
++			strlcpy(buf, name, (size_t)(p + 1 - name));
++			of_id = of_alias_get_id(np, buf);
++		}
++
+ 		/* Use one page as a bit array of possible slots */
+ 		inuse = (unsigned long *) get_zeroed_page(GFP_ATOMIC);
+ 		if (!inuse)
+ 			return -ENOMEM;
+ 
++#ifdef CONFIG_OF
++		/* iterate over aliases to reserve interfaces names */
++		np = of_find_node_by_path("/aliases");
++		if (np) {
++			struct property *pp;
++			for_each_property_of_node(np, pp) {
++				if (!sscanf(pp->name, name, &i))
++					continue;
++				if (i < 0 || i >= max_netdevices)
++					continue;
++
++				/* avoid cases where sscanf is not exact
++				 * inverse of printf
++				 */
++				snprintf(buf, IFNAMSIZ, name, i);
++				if (!strncmp(buf, pp->name, IFNAMSIZ) &&
++				    i != of_id)
++					set_bit(i, inuse);
++			}
++		}
++#endif
++
+ 		for_each_netdev(net, d) {
+ 			if (!sscanf(d->name, name, &i))
+ 				continue;
+@@ -995,7 +1029,10 @@ static int __dev_alloc_name(struct net *net, const char *name, char *buf)
+ 				set_bit(i, inuse);
+ 		}
+ 
+-		i = find_first_zero_bit(inuse, max_netdevices);
++		if (of_id >= 0 && !test_bit(of_id, inuse))
++			i = of_id;
++		else
++			i = find_first_zero_bit(inuse, max_netdevices);
+ 		free_page((unsigned long) inuse);
+ 	}
+ 
+@@ -1033,7 +1070,7 @@ int dev_alloc_name(struct net_device *dev, const char *name)
+ 
+ 	BUG_ON(!dev_net(dev));
+ 	net = dev_net(dev);
+-	ret = __dev_alloc_name(net, name, buf);
++	ret = __dev_alloc_name(net, dev, name, buf);
+ 	if (ret >= 0)
+ 		strlcpy(dev->name, buf, IFNAMSIZ);
+ 	return ret;
+@@ -1047,7 +1084,7 @@ static int dev_alloc_name_ns(struct net *net,
+ 	char buf[IFNAMSIZ];
+ 	int ret;
+ 
+-	ret = __dev_alloc_name(net, name, buf);
++	ret = __dev_alloc_name(net, dev, name, buf);
+ 	if (ret >= 0)
+ 		strlcpy(dev->name, buf, IFNAMSIZ);
+ 	return ret;
+-- 
+1.8.3.2
 
