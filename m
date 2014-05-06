@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673AbaEFO5f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 10:57:35 -0400
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:64066 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152AbaEFO5d (ORCPT
+	id S1754837AbaEFPBJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 11:01:09 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40292 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750948AbaEFPBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 10:57:33 -0400
-X-AuditID: cbfec37b-b7fc26d0000070ab-b8-5368f85d2415
-Message-id: <5368F85A.3060307@samsung.com>
-Date: Tue, 06 May 2014 08:57:30 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
-Cc: linux@roeck-us.net, satoru.takeuchi@gmail.com,
-        linux-kernel@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 3.12 00/50] 3.12.19-stable review
-References: <cover.1399292849.git.jslaby@suse.cz>
-In-reply-to: <cover.1399292849.git.jslaby@suse.cz>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.134.247]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t9hP93YHxnBBi9fi1h8/r2L1eLyrjls
-	Fk8WnmGymHpqAovFgo2PGB1YPXbOusvusfN7A7vHmQVH2D0+b5ILYInisklJzcksSy3St0vg
-	ytgyYwJzwTG2itPdnA2Ms1m7GDk4JARMJPZu8+ti5AQyxSQu3FvP1sXIxSEksIxRYvXqTawQ
-	Ti+TROvRbkYIZxujxIuu/ewgLbwCWhKtM74wg9gsAqoSxz7eZwOx2QTUJT6/3gFWIyQgJ9G0
-	ZDUzyDZRgQiJxxeEIFoFJX5MvscCYosImEs8uHMArJxZoETi+vMvYGOEBUwlFs/Yyg7SKiRg
-	KHH3nD1ImFPASGLO5vVMEOXWEisnbWOEsOUlNq95ywyxVVniz+VTTBCPKUts3HObbQKjyCwk
-	m2chaZ+FpH0BI/MqRrHS4uSC4qT01AojveLE3OLSvHS95PzcTYyQKKnewXj3q80hRgEORiUe
-	XoU16cFCrIllxZW5hxglOJiVRHgbvmQEC/GmJFZWpRblxxeV5qQWH2Jk4uCUamBUNmRrU25f
-	sOStz+W+yvyT67dK1Ucsu58T8NGtVjK7wrGHT+vrO8kC6+OJcTpBluWPFjpLTXkX+Uh8Uov/
-	kcXWE2I95MKXpvpMfnHgbU2k6PkHyrlzRB6+WVi3K9pNfW/uoUM7s3ec2XfgXdT0ZJckl5rL
-	UiVzJrz2PsB2SYRxxdqaY4uE/yxQYinOSDTUYi4qTgQAeCc0knACAAA=
+	Tue, 6 May 2014 11:01:07 -0400
+Date: Tue, 6 May 2014 16:00:37 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Jan Kara <jack@suse.cz>
+Cc: "mm-commits@vger.kernel.org" <mm-commits@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "kay@vrfy.org" <kay@vrfy.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: +
+ printk-print-initial-logbuf-contents-before-re-enabling-interrupts.patch
+ added to -mm tree
+Message-ID: <20140506150036.GJ30234@arm.com>
+References: <53640c8c.5++0zeO0pmfqKMwm%akpm@linux-foundation.org>
+ <20140502224651.GG23636@quack.suse.cz>
+ <20140506120648.GA30234@arm.com>
+ <20140506122958.GG9291@quack.suse.cz>
+ <20140506131234.GD30234@arm.com>
+ <20140506140032.GA22739@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140506140032.GA22739@quack.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2014 06:28 AM, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.19 release.
-> There are 50 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Wed May  7 12:27:29 2014
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.19-rc1.xz
-> and the diffstat can be found below.
->
-> thanks,
-> js
->
+On Tue, May 06, 2014 at 03:00:32PM +0100, Jan Kara wrote:
+> On Tue 06-05-14 14:12:34, Will Deacon wrote:
+> > On Tue, May 06, 2014 at 01:29:58PM +0100, Jan Kara wrote:
+> > >   Well, with serial console the backlog can get actually pretty big. During
+> > > boot on large machines I've seen CPUs stuck in that very loop in
+> > > console_unlock() for tens of seconds. Obviously that causes problems - e.g.
+> > > watchdog fires, RCU lockup detector fires, when interrupts are disabled,
+> > > some hardware gives up because its interrupts weren't served for too long.
+> > > All in all the machine just dies.
+> > 
+> > Right, so there's the usual compromise here between throughput and latency.
+>   I'd see that compromise if enabling & disabling interrupts would be
+> taking considerable amount of time. I don't think that was your concern,
+> was it? Maybe I just misunderstood you...
 
-Compiled and booted on my test systems. No dmesg regressions.
+Well, that isn't the quickest operation on ARM (since it's
+self-synchronising), but I was actually referring to the ability to drain
+the log buffer (with interrupts disabled) vs the ability to service
+interrupts quickly. The moment we re-enable interrupts, we can start adding
+more messages to the buffer from the IRQ path (I didn't attempt to solve the
+multi-CPU case, as I mentioned before).
 
--- Shuah
+> > That said, printing one message each time seems to go too far in the
+> > opposite direction for my liking, so the best bet is likely to limit the
+> > work to some fixed number of messages. Do you have any feeling for such a
+> > limit?
+>   If you really are concerned about enabling and disabling of interrupts
+> taking significant time (and it may be, I just don't know), then printing
+> couple of messages without enabling them makes sense. How many is a tricky
+> question since it depends on the console speed. I had a similar problem
+> when I was deciding in my patch when we should ask another CPU to take over
+> printing from the current CPU (to avoid the issues I've described in the
+> previous email). I was experimenting with various stuff but in the end I
+> restorted to a stupid "after X characters are printed".
 
+Yeah, so you also end up with the same problem of tuning your heuristics.
+Peter's suggestion of X == 42 is as good as any arbitrary constant I can
+suggest, hence my snapshotting of log_next_seq originally.
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+> > > And the backlog builds up because while one cpu is doing the printing in
+> > > console_unlock() all the other cpus are busily adding new messages to the
+> > > buffer faster than they can be printed...
+> > 
+> > Understood, but that's also the situation without this patch (and not one
+> > that I think you can fix without hurting latency).
+>   Sure. I have a patch which transitions printing to another CPU once in a
+> while so single CPU isn't hogged for too long and that solves the issues I
+> have observed. But Alan didn't like this solution so the issue is unfixed
+> for now.
+
+Interesting. Do you have a pointer to the thread?
+
+Will
