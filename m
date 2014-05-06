@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757693AbaEFPPx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 11:15:53 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:55612 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511AbaEFPPt (ORCPT
+	id S1757892AbaEFPQW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 11:16:22 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52165 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754361AbaEFPQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 11:15:49 -0400
-Date: Tue, 6 May 2014 17:15:44 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [GIT PULL] fuse fixes for 3.15
-Message-ID: <20140506151544.GC32527@tucsk.piliscsaba.szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 6 May 2014 11:16:20 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH] usb: gadget: atmel_usba: always test udc->driver
+Date: Tue,  6 May 2014 17:16:07 +0200
+Message-Id: <1399389367-15456-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Found using smatch: drivers/usb/gadget/atmel_usba_udc.c:1689 usba_udc_irq()
+error: we previously assumed 'udc->driver' could be null (see line 1636)
 
-Please pull the following:
+Always test udc->driver before using its members.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-linus
-
-This adds ctime update in the new cached writeback mode and also
-fixes/simplifies the mtime update handling.  Support for rename flags (aka
-renameat2) is also added to the userspace API.
-
-Thanks,
-Miklos
-----
-Fabian Frederick (1):
-      fuse: add __exit to fuse_ctl_cleanup
-
-Maxim Patlasov (6):
-      fuse: do not use uninitialized i_mode
-      fuse: update mtime on truncate(2)
-      fuse: update mtime on open(O_TRUNC) in atomic_o_trunc mode
-      fuse: allow ctime flushing to userspace
-      fuse: trust kernel i_ctime only
-      fuse: clear FUSE_I_CTIME_DIRTY flag on setattr
-
-Miklos Szeredi (9):
-      fuse: check fallocate mode
-      fuse: fix mtime update error in fsync
-      fuse: fuse: fallocate: use file_update_time()
-      fuse: clean up fsync
-      fuse: add .write_inode
-      fuse: fuse: add time_gran to INIT_OUT
-      fuse: remove .update_time
-      fuse: clear MS_I_VERSION
-      fuse: add renameat2 support
-
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- fs/fuse/control.c         |   2 +-
- fs/fuse/dir.c             | 146 +++++++++++++++++++++++++++++++---------------
- fs/fuse/file.c            |  84 ++++++++++++++++----------
- fs/fuse/fuse_i.h          |  10 ++--
- fs/fuse/inode.c           |  16 +++--
- include/uapi/linux/fuse.h |  22 ++++++-
- 6 files changed, 192 insertions(+), 88 deletions(-)
+ drivers/usb/gadget/atmel_usba_udc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
+index 9f65324f9ae0..76023ce449a3 100644
+--- a/drivers/usb/gadget/atmel_usba_udc.c
++++ b/drivers/usb/gadget/atmel_usba_udc.c
+@@ -1686,7 +1686,7 @@ static irqreturn_t usba_udc_irq(int irq, void *devid)
+ 		reset_all_endpoints(udc);
+ 
+ 		if (udc->gadget.speed != USB_SPEED_UNKNOWN
+-				&& udc->driver->disconnect) {
++				&& udc->driver && udc->driver->disconnect) {
+ 			udc->gadget.speed = USB_SPEED_UNKNOWN;
+ 			spin_unlock(&udc->lock);
+ 			udc->driver->disconnect(&udc->gadget);
+-- 
+1.9.1
+
