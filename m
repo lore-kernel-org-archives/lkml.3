@@ -1,124 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190AbaEFNeY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 09:34:24 -0400
-Received: from mga02.intel.com ([134.134.136.20]:17283 "EHLO mga02.intel.com"
+	id S1756464AbaEFNen (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 09:34:43 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54791 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755847AbaEFNeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 09:34:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,997,1389772800"; 
-   d="scan'208";a="535495088"
-Message-ID: <1399383246.8767.99.camel@empanada>
-Subject: Re: RFC: A reduced Linux network stack for small systems
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 06 May 2014 08:34:06 -0500
-In-Reply-To: <CAFLxGvww8t-PpuS3B=dFvn8k3xBydk3CgA=qoLyEbkKJZJ0xhQ@mail.gmail.com>
-References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
-	 <CAFLxGvww8t-PpuS3B=dFvn8k3xBydk3CgA=qoLyEbkKJZJ0xhQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751457AbaEFNek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 09:34:40 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>
+CC: <rogerq@ti.com>, <balajitk@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>
+Subject: [PATCH 00/17] PCIe support for DRA7xx
+Date: Tue, 6 May 2014 19:03:46 +0530
+Message-ID: <1399383244-14556-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-06 at 09:25 +0200, Richard Weinberger wrote:
-> On Tue, May 6, 2014 at 12:25 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> > There has been a lot of interest recently to run Linux on very small systems,
-> > like Quark systems. These may have only 2-4MB memory. They are also limited
-> > by flash space.
-> >
-> > One problem on these small system is the size of the network stack.
-> > Currently enabling IPv4 costs about 400k in text, which is prohibitive on
-> > a 2MB system, and very expensive with 4MB.
-> >
-> > There were proposals to instead use LWIP in user space. LWIP with
-> > its socket interface comes in at a bit over 100k overhead per application.
-> >
-> > I maintain that the Linux network stack is actually not that bloated,
-> > it just has a lot of features :-)  The goal of this project was to
-> > subset it in a sensible way so that the native kernel stack becomes
-> > competitive with LWIP.
-> >
-> > It turns out that the standard stack has a couple of features that
-> > are not really needed on client systems. Luckily it is also
-> > relatively well modularized, so it becomes possible to stub
-> > out these features at the edge.
-> >
-> > With removing these features we still have a powerful TCP/IP stack,
-> > but one that fits better into small systems.
-> >
-> > It would have been prohibitive to ifdef every optional feature.
-> > This patchkit relies heavily on LTO to effectively remove unused
-> > code. This allows to disable features only at the module boundaries,
-> > and rely on the compiler to drop unreferenced code and data.
-> >
-> > A few features have been also reimplemented in a simpler way.
-> > And I shrank a number of data structures based on CONFIG_BASE_SMALL.
-> >
-> > With these changes I can get a fully featured network stack down
-> > to about 170k with LTO. Without LTO there are also benefits,
-> > but somewhat less.
-> >
-> > There are essentially three sensible configurations:
-> > - Full featured like today.
-> > - Client only subset, but still works with standard distribution userland.
-> > Remove some obscure features like fastopen, make all tables smaller,
-> > packet socket mmap code, use a simpler routing table, remove
-> > high speed networking features like RPX, XPS, GRO offload.
-> > Disable SNMP, TCP metrics
-> > - Minimal subset for deeply embedded systems that can use special userland.
-> > Remove rtnetlink (ioctl only), remove ethtool, raw sockets.
-> >
-> > Right now I'm using own Kconfigs for every removed features. I realize
-> > this somewhat increases the compile test matrix. It would be possible
-> > to hide some of the options and select them using higher level
-> > configurations like the ones listed above. I haven't done this
-> > in this version.
-> >
-> > At this point I'm mainly interested in review and comments.
-> >
-> > Git trees:
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc net/debloat
-> > Main tree
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc net/debloat-3.14
-> > 3.14 based tree.
-> >
-> > Thanks to Tom Zanussi for contributions and testing.
-> 
-> What kind of userspace do you use on such a small system?
-> It looks like you run kernels without procfs and netlink, so not even
-> ps would work. :)
-> 
+This patch series adds support for PCIe in DRA7xx including drivers and dt
+data. PCIe in DRA7xx uses desingware IP and hence this re-uses the
+pcie desingware driver (pcie-designware.c) by Jingoo.
 
-The microYocto 'distro' I have running with these net-diet patches
-doesn't use a full procfs, but a pared-down version (CONFIG_PROCFS_MIN).
-Keeping ps working is of course essential, and it does that (along with
-a couple other things like /proc/filesystems and /proc/mounts I needed
-to boot):
+The last couple of patches are marked as *TEMP* since the TI reset driver [1]
+is not yet merged and is in RFC.
 
-https://github.com/tzanussi/linux-yocto-micro-3.14/commit/68379432afcfa82ac695d9f02892fcf48ade5ae8
+Tested broadcom PCIe card and XIO2000 bridge along with DGE530T ethernet
+card.
 
-Anyway all the userspace and kernel bits are available for anyone who
-wants to build it and try it out:
+Changes from RFC:
+* Added external clock support for PCIE APLL
+* Miscellaneous cleanups in Documentation, macro naming etc..
 
-https://github.com/tzanussi/meta-galileo/blob/daisy/meta-galileo/README
+[1] -> http://www.spinics.net/lists/linux-omap/msg106411.html
 
-It's very much a work-in-progress with a lot of rough edges, but it is a
-fully functional system on real hardware (Galileo board/Quark processor)
-with a usable shell (ps too!) and web server running on a kernel with
-native networking and ~ 750k text size.
+Keerthy (2):
+  ARM: dts: DRA7: Add divider table to optfclk_pciephy_div clock
+  ARM: dts: DRA7: Change the parent of apll_pcie_in_clk_mux to
+    dpll_pcie_ref_m2ldo_ck
 
-Tom
+Kishon Vijay Abraham I (15):
+  phy: phy-omap-pipe3: Add support for PCIe PHY
+  phy: omap-control: add external clock support for PCIe PHY
+  phy: ti-pipe3: add external clock support for PCIe PHY
+  phy: pipe3: insert delay to enumerate in GEN2 mode
+  pci: host: pcie-dra7xx: add support for pcie-dra7xx controller
+  pci: host: pcie-designware: Use *base-mask* for configuring the iATU
+  arm: dra7xx: Add hwmod data for pcie1 phy and pcie2 phy
+  arm: dra7xx: Add hwmod data for pcie1 and pcie2 subsystems
+  ARM: dts: dra7xx-clocks: Add missing 32khz clocks used for PHY
+  ARM: dts: dra7: Add dt data for PCIe PHY control module
+  ARM: dts: dra7: Add dt data for PCIe PHY
+  ARM: dts: dra7: Add dt data for PCIe controller
+  ARM: OMAP: Enable PCI for DRA7
+  pci: host: pcie-dra7xx: use reset framework APIs to reset PCIe
+  ARM: dts: dra7: Add *resets* property for PCIe dt node
 
+ .../devicetree/bindings/pci/designware-pcie.txt    |    1 +
+ Documentation/devicetree/bindings/pci/ti-pci.txt   |   35 ++
+ Documentation/devicetree/bindings/phy/ti-phy.txt   |   21 +-
+ arch/arm/boot/dts/dra7.dtsi                        |   55 +++
+ arch/arm/boot/dts/dra7xx-clocks.dtsi               |   11 +-
+ arch/arm/mach-omap2/Kconfig                        |    2 +
+ arch/arm/mach-omap2/cm2_7xx.h                      |    4 +
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c          |  112 ++++++
+ arch/arm/mach-omap2/prm7xx.h                       |    4 +
+ drivers/pci/host/Kconfig                           |   10 +
+ drivers/pci/host/Makefile                          |    1 +
+ drivers/pci/host/pci-dra7xx.c                      |  395 ++++++++++++++++++++
+ drivers/pci/host/pcie-designware.c                 |   39 +-
+ drivers/pci/host/pcie-designware.h                 |    1 +
+ drivers/phy/phy-omap-control.c                     |   92 ++++-
+ drivers/phy/phy-ti-pipe3.c                         |  142 +++++--
+ include/linux/phy/omap_control_phy.h               |   23 ++
+ 17 files changed, 898 insertions(+), 50 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pci/ti-pci.txt
+ create mode 100644 drivers/pci/host/pci-dra7xx.c
 
-
+-- 
+1.7.9.5
 
