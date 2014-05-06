@@ -1,83 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934063AbaEFGh7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 02:37:59 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:27871 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933956AbaEFGh5 (ORCPT
+	id S934140AbaEFGiu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 02:38:50 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:34519 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933977AbaEFGit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 02:37:57 -0400
-X-AuditID: cbfec7f5-b7fae6d000004d6d-d0-53688343c461
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Axel Lin <axel.lin@ingics.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 1/3] regulator: s2mps11: Fix accidental enable of buck6 ramp
- delay
-Date: Tue, 06 May 2014 08:37:36 +0200
-Message-id: <1399358258-21536-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEJMWRmVeSWpSXmKPExsVy+t/xK7rOzRnBBvdfCVscmfOV2WLqwyds
-	Fq9fGFp8u9LBZHF51xw2i5N/ehktLq74wuTA7rFz1l12j7afZR6bVnWyedy5tofNo2/LKkaP
-	z5vkAtiiuGxSUnMyy1KL9O0SuDJ2PjvFVrCZt+LM9YnMDYxN3F2MnBwSAiYSfw/8ZoSwxSQu
-	3FvP1sXIxSEksJRRov3CfVYIp49J4krTGhaQKjYBY4nNy5eAVYkIbGOUmNDfywSSYBYIllj3
-	9CQbiC0sEC6xffFjZhCbRUBVYuPrQ2A2r4C7xLWbM5gh1slJnDw2mXUCI/cCRoZVjKKppckF
-	xUnpuUZ6xYm5xaV56XrJ+bmbGCHh8nUH49JjVocYBTgYlXh4F8hkBAuxJpYVV+YeYpTgYFYS
-	4a3PBwrxpiRWVqUW5ccXleakFh9iZOLglGpgvHnLuJLPuCN8fUrWilM/Ljh2fROyXf+lsuaM
-	X/7+3p+KC8wTn7d2KWQodORaVF35fbDwx/vNazVt/116tpixp29/kNtDv+/83TNmuv+v+Pol
-	+UE/69N9wpXT2L+17WXx+8dquaPbTlxx/lvD7S/N+FPrxTY9P7fcS31Px+RbL/4zOHE9K7Df
-	pcRSnJFoqMVcVJwIAF309sn1AQAA
+	Tue, 6 May 2014 02:38:49 -0400
+X-IronPort-AV: E=Sophos;i="4.97,995,1389715200"; 
+   d="scan'208";a="30123042"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: <mingo@kernel.org>
+CC: <jolsa@redhat.com>, <a.p.zijlstra@chello.nl>, <paulus@samba.org>,
+        <acme@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Dongsheng <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH V3] perf tools: Clarify the output of perf sched map.
+Date: Tue, 6 May 2014 14:39:01 +0900
+Message-ID: <1399354741-19522-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <20140506062350.GA25208@gmail.com>
+References: <20140506062350.GA25208@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.49]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-S2MPS11 supports enabling/disabling ramp delay only for buck[2346].
-Other bucks have ramp delay enabled always.
+From: Dongsheng <yangds.fnst@cn.fujitsu.com>
 
-However the bit shift for enabling buck6 ramp delay in register is equal
-to 0. When ramp delay was set for the bucks unsupporting enable/disable
-(buck[15789] and buck10), the ramp delay for buck6 was also enabled.
+In output of perf sched map, any shortname of thread will be explained
+at the first time when it appear.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Fixes: b96244fad953 ("regulator: s2mps11: Don't check enable_shift before setting enable ramp rate")
+Example:
+              *A0       228836.978985 secs A0 => perf:23032
+          *.   A0       228836.979016 secs B0 => swapper:0
+           .  *C0       228836.979099 secs C0 => migration/3:22
+  *A0      .   C0       228836.979115 secs
+   A0      .  *.        228836.979115 secs
+
+But B0, which is explained as swapper:0 did not appear in the
+left part of output. Instead, we use '.' as the shortname of
+swapper:0. So the comment of "B0 => swapper:0" is not easy to
+understand.
+
+This patch clarify the output of perf sched map with not allocating
+one letter-number shortname for swapper:0 and print ". => swapper:0"
+as the explaination for swapper:0.
+
+Example:
+              *A0       228836.978985 secs A0 => perf:23032
+          * .  A0       228836.979016 secs .  => swapper:0
+            . *B0       228836.979099 secs B0 => migration/3:22
+  *A0       .  B0       228836.979115 secs
+   A0       . * .       228836.979115 secs
+   A0     *C0   .       228836.979225 secs C0 => ksoftirqd/2:18
+   A0     *D0   .       228836.979236 secs D0 => rcu_sched:7
+
+Signed-off-by: Dongsheng <yangds.fnst@cn.fujitsu.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
 ---
+ tools/perf/builtin-sched.c | 38 ++++++++++++++++++++++----------------
+ 1 file changed, 22 insertions(+), 16 deletions(-)
 
-Changes since v2:
- * Apply Axel Lin's suggestion (don't change the meaning
-   of enable_shift variable).
-
----
- drivers/regulator/s2mps11.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index e713c162fbd4..aaca37e1424f 100644
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -202,11 +202,16 @@ static int s2mps11_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
- 	if (!ramp_enable)
- 		goto ramp_disable;
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 4f0dd21..f3b35e5 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -1300,17 +1300,26 @@ static int map_switch_event(struct perf_sched *sched, struct perf_evsel *evsel,
  
--	ret = regmap_update_bits(rdev->regmap, S2MPS11_REG_RAMP,
--				 1 << enable_shift, 1 << enable_shift);
--	if (ret) {
--		dev_err(&rdev->dev, "failed to enable ramp rate\n");
--		return ret;
-+	/* Ramp delay can be enabled/disabled only for buck[2346] */
-+	if ((rdev_get_id(rdev) >= S2MPS11_BUCK2 &&
-+			rdev_get_id(rdev) <= S2MPS11_BUCK4) ||
-+			rdev_get_id(rdev) == S2MPS11_BUCK6)  {
-+		ret = regmap_update_bits(rdev->regmap, S2MPS11_REG_RAMP,
-+					 1 << enable_shift, 1 << enable_shift);
-+		if (ret) {
-+			dev_err(&rdev->dev, "failed to enable ramp rate\n");
-+			return ret;
-+		}
+ 	new_shortname = 0;
+ 	if (!sched_in->shortname[0]) {
+-		sched_in->shortname[0] = sched->next_shortname1;
+-		sched_in->shortname[1] = sched->next_shortname2;
+-
+-		if (sched->next_shortname1 < 'Z') {
+-			sched->next_shortname1++;
+-		} else {
+-			sched->next_shortname1='A';
+-			if (sched->next_shortname2 < '9') {
+-				sched->next_shortname2++;
++		if (!strcmp(thread__comm_str(sched_in), "swapper")) {
++			/*
++			 * Don't allocate a letter-number for swapper:0
++			 * as a shortname. Instead, we use '.' for it.
++			 */
++			sched_in->shortname[0] = '.';
++			sched_in->shortname[1] = ' ';
++		}else {
++			sched_in->shortname[0] = sched->next_shortname1;
++			sched_in->shortname[1] = sched->next_shortname2;
++
++			if (sched->next_shortname1 < 'Z') {
++				sched->next_shortname1++;
+ 			} else {
+-				sched->next_shortname2='0';
++				sched->next_shortname1='A';
++				if (sched->next_shortname2 < '9') {
++					sched->next_shortname2++;
++				} else {
++					sched->next_shortname2='0';
++				}
+ 			}
+ 		}
+ 		new_shortname = 1;
+@@ -1322,12 +1331,9 @@ static int map_switch_event(struct perf_sched *sched, struct perf_evsel *evsel,
+ 		else
+ 			printf("*");
+ 
+-		if (sched->curr_thread[cpu]) {
+-			if (sched->curr_thread[cpu]->tid)
+-				printf("%2s ", sched->curr_thread[cpu]->shortname);
+-			else
+-				printf(".  ");
+-		} else
++		if (sched->curr_thread[cpu])
++			printf("%2s ", sched->curr_thread[cpu]->shortname);
++		else
+ 			printf("   ");
  	}
  
- 	ramp_val = get_ramp_delay(ramp_delay);
 -- 
-1.9.1
+1.8.2.1
 
