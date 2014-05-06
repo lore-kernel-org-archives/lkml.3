@@ -1,76 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757880AbaEFPa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 11:30:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40916 "EHLO mx2.suse.de"
+	id S1757533AbaEFPfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 11:35:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:40644 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752018AbaEFPaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 11:30:55 -0400
-Message-ID: <5369002D.7030600@suse.cz>
-Date: Tue, 06 May 2014 17:30:53 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 15/17] mm: Do not use unnecessary atomic operations when
- adding pages to the LRU
-References: <1398933888-4940-1-git-send-email-mgorman@suse.de> <1398933888-4940-16-git-send-email-mgorman@suse.de>
-In-Reply-To: <1398933888-4940-16-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1751085AbaEFPfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 11:35:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,998,1389772800"; 
+   d="scan'208";a="506840761"
+Message-ID: <1399390490.8767.122.camel@empanada>
+Subject: Re: RFC: A reduced Linux network stack for small systems
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
+To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+Cc: Richard Weinberger <richard.weinberger@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 06 May 2014 10:34:50 -0500
+In-Reply-To: <CAADnVQLYiNfXRrXc=VZkGEFDbNhF63AzPg6Gyu6P1SF=6AiO7g@mail.gmail.com>
+References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
+	 <CAFLxGvww8t-PpuS3B=dFvn8k3xBydk3CgA=qoLyEbkKJZJ0xhQ@mail.gmail.com>
+	 <1399383246.8767.99.camel@empanada>
+	 <CAADnVQLYiNfXRrXc=VZkGEFDbNhF63AzPg6Gyu6P1SF=6AiO7g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2014 10:44 AM, Mel Gorman wrote:
-> When adding pages to the LRU we clear the active bit unconditionally. As the
-> page could be reachable from other paths we cannot use unlocked operations
-> without risk of corruption such as a parallel mark_page_accessed. This
-> patch test if is necessary to clear the atomic flag before using an atomic
+On Tue, 2014-05-06 at 08:20 -0700, Alexei Starovoitov wrote:
+> On Tue, May 6, 2014 at 6:34 AM, Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
+> > On Tue, 2014-05-06 at 09:25 +0200, Richard Weinberger wrote:
+> >> On Tue, May 6, 2014 at 12:25 AM, Andi Kleen <andi@firstfloor.org> wrote:
+> >> > There has been a lot of interest recently to run Linux on very small systems,
+> >> > like Quark systems. These may have only 2-4MB memory. They are also limited
+> >> > by flash space.
+> >> >
+> >> > One problem on these small system is the size of the network stack.
+> >> > Currently enabling IPv4 costs about 400k in text, which is prohibitive on
+> >> > a 2MB system, and very expensive with 4MB.
+> >> >
+> >> > There were proposals to instead use LWIP in user space. LWIP with
+> >> > its socket interface comes in at a bit over 100k overhead per application.
+> >> >
+> >> > I maintain that the Linux network stack is actually not that bloated,
+> >> > it just has a lot of features :-)  The goal of this project was to
+> >> > subset it in a sensible way so that the native kernel stack becomes
+> >> > competitive with LWIP.
+> >> >
+> >> > It turns out that the standard stack has a couple of features that
+> >> > are not really needed on client systems. Luckily it is also
+> >> > relatively well modularized, so it becomes possible to stub
+> >> > out these features at the edge.
+> >> >
+> >> > With removing these features we still have a powerful TCP/IP stack,
+> >> > but one that fits better into small systems.
+> >> >
+> >> > It would have been prohibitive to ifdef every optional feature.
+> >> > This patchkit relies heavily on LTO to effectively remove unused
+> >> > code. This allows to disable features only at the module boundaries,
+> >> > and rely on the compiler to drop unreferenced code and data.
+> >> >
+> >> > A few features have been also reimplemented in a simpler way.
+> >> > And I shrank a number of data structures based on CONFIG_BASE_SMALL.
+> >> >
+> >> > With these changes I can get a fully featured network stack down
+> >> > to about 170k with LTO. Without LTO there are also benefits,
+> >> > but somewhat less.
+> >> >
+> >> > There are essentially three sensible configurations:
+> >> > - Full featured like today.
+> >> > - Client only subset, but still works with standard distribution userland.
+> >> > Remove some obscure features like fastopen, make all tables smaller,
+> >> > packet socket mmap code, use a simpler routing table, remove
+> >> > high speed networking features like RPX, XPS, GRO offload.
+> >> > Disable SNMP, TCP metrics
+> >> > - Minimal subset for deeply embedded systems that can use special userland.
+> >> > Remove rtnetlink (ioctl only), remove ethtool, raw sockets.
+> >> >
+> >> > Right now I'm using own Kconfigs for every removed features. I realize
+> >> > this somewhat increases the compile test matrix. It would be possible
+> >> > to hide some of the options and select them using higher level
+> >> > configurations like the ones listed above. I haven't done this
+> >> > in this version.
+> >> >
+> >> > At this point I'm mainly interested in review and comments.
+> >> >
+> >> > Git trees:
+> >> >
+> >> > git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc net/debloat
+> >> > Main tree
+> >> >
+> >> > git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc net/debloat-3.14
+> >> > 3.14 based tree.
+> >> >
+> >> > Thanks to Tom Zanussi for contributions and testing.
+> >>
+> >> What kind of userspace do you use on such a small system?
+> >> It looks like you run kernels without procfs and netlink, so not even
+> >> ps would work. :)
+> >>
+> >
+> > The microYocto 'distro' I have running with these net-diet patches
+> > doesn't use a full procfs, but a pared-down version (CONFIG_PROCFS_MIN).
+> > Keeping ps working is of course essential, and it does that (along with
+> > a couple other things like /proc/filesystems and /proc/mounts I needed
+> > to boot):
+> >
+> > https://github.com/tzanussi/linux-yocto-micro-3.14/commit/68379432afcfa82ac695d9f02892fcf48ade5ae8
+> >
+> > Anyway all the userspace and kernel bits are available for anyone who
+> > wants to build it and try it out:
+> >
+> > https://github.com/tzanussi/meta-galileo/blob/daisy/meta-galileo/README
+> >
+> > It's very much a work-in-progress with a lot of rough edges, but it is a
+> > fully functional system on real hardware (Galileo board/Quark processor)
+> > with a usable shell (ps too!) and web server running on a kernel with
+> > native networking and ~ 750k text size.
+> 
+> Intel Galileo datasheet says:
+> - 400MHz 32bit Intel
+> - 512 KBytes of on-die embedded SRAM
+> - 256 MByte DRAM, enabled by the firmware by default
+> 
+> where did 2-4Mbyte restriction come from?
+> 
 
-                                           active
+General 'order-of-magnitude' difference from the typical 'tiny distro'
+which typically targets about 16MB, so sort of arbitrary, but it's a
+nice round goal for similar systems I'm sure are coming.
 
-> operation. In the unlikely even this races with mark_page_accesssed the
-> consequences are simply that the page may be promoted to the active list
-> that might have been left on the inactive list before the patch. This is
-> a marginal consequence.
+Actually, a better goal would be to run only on the 512k SRAM, but let's
+start with something more achievable for a first cut.
 
-Well if this is racy, then even before the patch, mark_page_accessed 
-might have come right after ClearPageActive(page) anyway? Or is the 
-changelog saying that this change only extended the race window that 
-already existed? If yes it could be more explicit, as now it might sound 
-as if the race was introduced.
+> Anyway, with all these hacks you get a half functional kernel with "a
+> lot of rough edges"
 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->   include/linux/swap.h | 6 ++++--
->   1 file changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index da8a250..395dcab 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -329,13 +329,15 @@ extern void add_page_to_unevictable_list(struct page *page);
->    */
->   static inline void lru_cache_add_anon(struct page *page)
->   {
-> -	ClearPageActive(page);
-> +	if (PageActive(page))
-> +		ClearPageActive(page);
->   	__lru_cache_add(page);
->   }
->
->   static inline void lru_cache_add_file(struct page *page)
->   {
-> -	ClearPageActive(page);
-> +	if (PageActive(page))
-> +		ClearPageActive(page);
->   	__lru_cache_add(page);
->   }
->
->
+'work-in-progress' see above.
+
+> that is likely working only for the given very limited set of applications.
+> Kernel function profiling can potentially achieve the same thing.
+> Profile the kernel with the set of apps and then prune all cold
+> functions out of kernel.
+
+Right, and are Profile-Guided-Optimization results now reproduceable?
+Better change it to Trace-Guided-Optimization.  But yeah, for a
+single-purpose system where it's known exactly what will run for the
+lifetime of the system, it makes sense to get rid of all the codepaths
+that will never be hit.
+
+> config explosion and LTO is unnecessary. Just some linker hacks.
+> Obviously such kernel will also be half functional,
+> but you'll get big reduction in .text that it seems is the goal of this project.
+
 
