@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206AbaEFWuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 18:50:44 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:41189 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752358AbaEFWun (ORCPT
+	id S1753053AbaEFWyc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 18:54:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42875 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355AbaEFWya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 18:50:43 -0400
-Date: Tue, 6 May 2014 15:50:39 -0700
-From: josh@joshtriplett.org
-To: David Miller <davem@davemloft.net>
-Cc: xiyou.wangcong@gmail.com, andi@firstfloor.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com,
-        ak@linux.intel.com
-Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
-Message-ID: <20140506225039.GA22331@cloud>
-References: <CAM_iQpUgj7BqpzRL070DEGQ32SWwN68BRgM5DtFqvBLjGGOLQA@mail.gmail.com>
- <20140506.164410.15377655213427639.davem@davemloft.net>
- <20140506210815.GB21791@cloud>
- <20140506.171117.1365037653422161013.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140506.171117.1365037653422161013.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 6 May 2014 18:54:30 -0400
+Date: Tue, 6 May 2014 15:54:28 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        tkhai@yandex.ru
+Subject: Re: [PATCH] kmod: Pass usermodehelper "-b" to use blacklist
+ commands
+Message-Id: <20140506155428.6f8602726560c21ff099e28c@linux-foundation.org>
+In-Reply-To: <20140506173136.GA1535@redhat.com>
+References: <1399363388.3718.59.camel@tkhai>
+	<20140506173136.GA1535@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 05:11:17PM -0400, David Miller wrote:
-> From: josh@joshtriplett.org
-> Date: Tue, 6 May 2014 14:08:15 -0700
-> 
-> > On Tue, May 06, 2014 at 04:44:10PM -0400, David Miller wrote:
-> >> From: Cong Wang <xiyou.wangcong@gmail.com>
-> >> Date: Tue, 6 May 2014 11:33:11 -0700
-> >> 
-> >> > So why bothers 3.15+ Linux kernel? Why not use an old kernel e.g. 2.4.x?
-> >> > 2.4.x kernel doesn't have so many new features you want to get rid of here.
-> >> 
-> >> +1
-> > 
-> > You've got to be kidding.  Using 2.4 for a new network-connected device,
-> > today?  With all of its potential security holes that nobody is paying
-> > attention to?  Easier to fork 3.15 and trim it down than to do *that*.
-> > And there *are* a huge number of useful features in 3.15+, not least of
-> > which drivers for current hardware.
-> 
-> So you're saying that the 2.4.x -stable maintainer did a shitty job and
-> his work is worthless?
+On Tue, 6 May 2014 19:31:36 +0200 Oleg Nesterov <oleg@redhat.com> wrote:
 
-There's a difference between maintaining 2.4.x for all the existing
-users who can't or won't upgrade, and introducing a *new* product
-shipping with 2.4.x.  There's something very wrong if 2.4.x works for
-cases that 3.x doesn't; that would be a serious regression.
+> On 05/06, Kirill Tkhai wrote:
+> >
+> > User may want to prohibit autoloading of some modules,
+> > which happens when someone in kernel calls request_module().
+> >
+> > For comparison, udev considers blacklist even if corresponding
+> > hardware presents in the system. In-kernel request_module()
+> > functionality is rather similar to udev's, so user may want
+> > to disallow it too.
+> 
+> Personally, I am always nervous (perhaps too much) when it comes to the
+> user-visible changes like this.
+> 
+> And if a user/distro wants "-b" it can create a simple script which just
+> execs /sbin/modprobe with "-b" and overwrite /proc/sys/kernel/modprobe.
+> 
+> OTOH. What if /proc/sys/kernel/modprobe points to a binary which is not
+> /sbin/modprobe and doesn't expect "-b" ? This can break things.
+> 
 
-- Josh Triplett
+Yup.  Perhaps the kernel should provide modprobe with a reliable way of
+knowing "you were called by the kernel" (if there isn't presently a
+way) and let modprobe work out what to do.
