@@ -1,75 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558AbaEFTvZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 15:51:25 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:41614 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021AbaEFTvY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 15:51:24 -0400
-From: minyard@acm.org
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Corey Minyard <cminyard@mvista.com>
-Subject: [PATCH] sched: Initialize rq->age_stamp on processor start
-Date: Tue,  6 May 2014 14:50:57 -0500
-Message-Id: <1399405857-14056-1-git-send-email-minyard@acm.org>
-X-Mailer: git-send-email 1.8.3.1
+	id S1751477AbaEFTzr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 15:55:47 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:60488 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750810AbaEFTzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 15:55:45 -0400
+Date: Tue, 6 May 2014 15:55:31 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/4] memcg, mm: introduce lowlimit reclaim
+Message-ID: <20140506195531.GL19914@cmpxchg.org>
+References: <20140502093628.GC3446@dhcp22.suse.cz>
+ <20140502155805.GO23420@cmpxchg.org>
+ <20140502164930.GP3446@dhcp22.suse.cz>
+ <20140502220056.GP23420@cmpxchg.org>
+ <20140506132932.GF19914@cmpxchg.org>
+ <20140506143242.GB19672@dhcp22.suse.cz>
+ <20140506152112.GG19914@cmpxchg.org>
+ <20140506161256.GE19672@dhcp22.suse.cz>
+ <20140506165150.GI19914@cmpxchg.org>
+ <20140506183001.GB30921@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140506183001.GB30921@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Corey Minyard <cminyard@mvista.com>
+On Tue, May 06, 2014 at 08:30:01PM +0200, Michal Hocko wrote:
+> On Tue 06-05-14 12:51:50, Johannes Weiner wrote:
+> > On Tue, May 06, 2014 at 06:12:56PM +0200, Michal Hocko wrote:
+> > > On Tue 06-05-14 11:21:12, Johannes Weiner wrote:
+> > > > On Tue, May 06, 2014 at 04:32:42PM +0200, Michal Hocko wrote:
+> [...]
+> > > > > The strongest point was made by Rik when he claimed that memcg is not
+> > > > > aware of memory zones and so one memcg with lowlimit larger than the
+> > > > > size of a zone can eat up that zone without any way to free it.
+> > > > 
+> > > > But who actually cares if an individual zone can be reclaimed?
+> > > > 
+> > > > Userspace allocations can fall back to any other zone.  Unless there
+> > > > are hard bindings, but hopefully nobody binds a memcg to a node that
+> > > > is smaller than that memcg's guarantee. 
+> > > 
+> > > The protected group might spill over to another group and eat it when
+> > > another group would be simply pushed out from the node it is bound to.
+> > 
+> > I don't really understand the point you're trying to make.
+> 
+> I was just trying to show a case where individual zone matters. To make
+> it more specific consider 2 groups A (with low-limit 60% RAM) and B
+> (say with low-limit 10% RAM) and bound to a node X (25% of RAM). Now
+> having 70% of RAM reserved for guarantee makes some sense, right? B is
+> not over-committing the node it is bound to. Yet the A's allocations
+> might make pressure on X regardless that the whole system is still doing
+> good. This can lead to a situation where X gets depleted and nothing
+> would be reclaimable leading to an OOM condition.
 
-If the sched_clock time starts at a large value, the kernel will spin
-in sched_avg_update for a long time while rq->age_stamp catches up
-with rq->clock.
+Once you assume control of memory *placement* in the system like this,
+you can not also pretend to be clueless and have unreclaimable memory
+of this magnitude spread around into nodes used by other bound tasks.
 
-The comment in kernel/sched/clock.c says that there is no strict promise
-that it starts at zero.  So initialize rq->age_stamp when a cpu starts up
-to avoid this.
+If we were to actively support such configurations, we should be doing
+direct NUMA balancing and migrate these pages out of node X when B
+needs to allocate.  That would fix the problem for all unevictable
+memory, not just memcg guarantees, and would prefer node-offloading
+over swapping in cases where swap is available.
 
-I was seeing long delays on a simulator that didn't start the clock at
-zero.  This might also be an issue on reboots on processors that don't
-re-initialize the timer to zero on reset, and when using kexec.
+But really, this whole scenario sounds contrived to me.  And there is
+nothing specific about memcg guarantees in there.
 
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
----
- kernel/sched/core.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+> I can imagine that most people would rather see the lowlimit break than
+> OOM. And if there is somebody who really wants OOM even under such
+> condition then why not, I would be happy to add a knob which would allow
+> that. But I feel that the default behavior should be the least explosive
+> one...
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 268a45e..6e9570b 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5039,11 +5039,20 @@ static struct notifier_block migration_notifier = {
- 	.priority = CPU_PRI_MIGRATION,
- };
- 
-+static void __cpuinit set_cpu_rq_start_time(void)
-+{
-+	int cpu = smp_processor_id();
-+	struct rq *rq = cpu_rq(cpu);
-+	rq->age_stamp = sched_clock_cpu(cpu);
-+}
-+
- static int sched_cpu_active(struct notifier_block *nfb,
- 				      unsigned long action, void *hcpu)
- {
- 	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_STARTING:
-+		set_cpu_rq_start_time();
-+		/* fall through */
- 	case CPU_DOWN_FAILED:
- 		set_cpu_active((long)hcpu, true);
- 		return NOTIFY_OK;
-@@ -6923,6 +6932,7 @@ void __init sched_init(void)
- 	init_sched_fair_class();
- 
- 	scheduler_running = 1;
-+	set_cpu_rq_start_time();
- }
- 
- #ifdef CONFIG_DEBUG_ATOMIC_SLEEP
--- 
-1.8.3.1
+Memcgs being node-agnostic is a reason *for* doing hard guarantees,
+not against it.  If I set up guarantees on a NUMA system balanced by
+the kernel, I want them to be honored, and not have my guaranteed
+memory reclaimed randomly due to kernel-internal placement decisions.
 
+> > > > And while the pages are not
+> > > > reclaimable, they are still movable, so the NUMA balancer is free to
+> > > > correct any allocation mistakes later on.
+> > > 
+> > > Do we want to depend on NUMA balancer, though?
+> > 
+> > You're missing my point.
+> > 
+> > This is about which functionality of the system is actually impeded by
+> > having large portions of a zone unreclaimable.  Freeing pages in a
+> > zone is means to an end, not an end in itself.
+> > 
+> > We wouldn't depend on the NUMA balancer to "free" a zone, I'm just
+> > saying that the NUMA balancer would be unaffected by a zone full of
+> > unreclaimable pages, as long as they are movable.
+> 
+> Agreed. I wasn't objecting to that part. I was merely noticing that we
+> do not want to depend on NUMA balancer to fix up placements later just
+> because they are unreclaimable due to restrictions defined outside of
+> the NUMA scope.
+
+Again, this is not a new problem.  Solve it if you want to, but don't
+design a new userspace ABI around a limitation in NUMA node reclaim.
+
+> > So who exactly cares about the ability to reclaim individual zones and
+> > how is it a new type of problem compared to existing unreclaimable but
+> > movable memory?
+> 
+> The low limit makes the current situation different. Page allocator
+> simply cannot make the best decisions on the placement because it
+> doesn't have any idea to which group the page gets charged to and
+> therefore whether it gets protected or not. NUMA balancing can help
+> to reduce this issues but I do not think it can handle the problem
+> itself.
+
+It depends on the task, not on the group.
+
+You can turn your argument upside down: if you fail guarantees just
+because a single zone is otherwise unreclaimable, then page allocator
+placement ends up dictating which page is guaranteed memory and which
+is not.  This really makes no sense to me.
