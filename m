@@ -1,118 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207AbaEFMMe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 08:12:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22534 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751769AbaEFMMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 08:12:32 -0400
-Date: Tue, 6 May 2014 07:12:11 -0500
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Seth Jennings <sjenning@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-Message-ID: <20140506121211.GA4125@treble.redhat.com>
-References: <cover.1398958771.git.jpoimboe@redhat.com>
- <20140505085537.GA32196@gmail.com>
- <20140505132638.GA14432@treble.redhat.com>
- <20140505141038.GA27403@localhost.localdomain>
- <20140505184304.GA15137@gmail.com>
- <20140505214919.GE2099@localhost.localdomain>
+	id S1755175AbaEFMP4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 08:15:56 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:64908 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419AbaEFMPz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 08:15:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140505214919.GE2099@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1399377878-29995-1-git-send-email-geert@linux-m68k.org>
+References: <1399377878-29995-1-git-send-email-geert@linux-m68k.org>
+Date: Tue, 6 May 2014 14:15:54 +0200
+X-Google-Sender-Auth: F1sxpSCPriWeivL7hPjxCSNaZi8
+Message-ID: <CAMuHMdUxTDCLFWEDxYT2CT8__xyZcp83dXLYqeJfoG+u8BDVBg@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.15-rc4
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 11:49:23PM +0200, Frederic Weisbecker wrote:
-> On Mon, May 05, 2014 at 08:43:04PM +0200, Ingo Molnar wrote:
-> > If a kernel refuses to patch with certain threads running, that will 
-> > drive those kernel threads being fixed and such. It's a deterministic, 
-> > recoverable, reportable bug situation, so fixing it should be fast.
-> > 
-> > We learned these robustness lessons the hard way with kprobes and 
-> > ftrace dynamic code patching... which are utterly simple compared to 
-> > live kernel patching!
-> 
-> Yeah, agreed. More rationale behind: we want to put the kthreads into
-> semantic sleeps, not just random sleeping point. This way we lower the
-> chances to execute new code messing up living state that is expecting old
-> code after random preemption or sleeping points.
-> 
-> But by semantic sleeps I mean more than just explicit calls to schedule()
-> as opposed to preemption points.
-> It also implies shutting down as well the living states handled by the kthread
-> such that some sort of re-initialization of the state is also needed when
-> the kthread gets back to run.
-> 
-> And that's exactly what good implementations of kthread park provide.
-> 
-> Consider kernel/watchdog.c as an example: when we park the lockup
-> detector kthread, it disables the perf event and the hrtimer before it goes
-> to actually park and sleep. When the kthread is later unparked, the kthread
-> restarts the hrtimer and the perf event.
-> 
-> If we live patch code that has obscure relations with perf or hrtimer here,
-> we lower a lot the chances for a crash when the watchdog kthread is parked.
-> 
-> So I'm in favour of parking all possible kthreads before live patching. Freezing
-> alone doesn't provide the same state shutdown than parking.
-> 
-> Now since parking looks more widely implemented than kthread freezing, we could
-> even think about implementing kthread freezing using parking as backend.
+On Tue, May 6, 2014 at 2:04 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> JFYI, when comparing v3.15-rc4[1]  to v3.15-rc3[3], the summaries are:
+>   - build errors: +7/-1
 
-The vast majority of kernel threads on my system don't seem to know
-anything about parking or freezing.  I see one kthread function which
-calls kthread_should_park(), which is smpboot_thread_fn(), used for
-ksoftirqd/*, migration/* and watchdog/*.  But there are many other
-kthread functions which seem to be parking ignorant, including:
+  + /scratch/kisskb/src/arch/powerpc/include/asm/fixmap.h: error:
+overflow in enumeration values  CC      drivers/hwmon/smsc47m192.o:
+=> 51:2
+  + /scratch/kisskb/src/arch/powerpc/include/asm/fixmap.h: error:
+overflow in enumeration values  CC [M]  drivers/usb/gadget/f_rndis.o:
+=> 51:2
+  + /scratch/kisskb/src/arch/powerpc/include/asm/fixmap.h: error:
+overflow in enumeration values:  => 51:2
 
-  cpu_idle_loop
-  kthreadd
-  rcu_gp_kthread
-  worker_thread
-  rescuer_thread
-  devtmpfsd
-  hub_thread
-  kswapd
-  ksm_scan_thread
-  khugepaged
-  fsnotify_mark_destroy
-  scsi_error_handler
-  kauditd_thread
-  kjournald2
-  irq_thread
-  rfcomm_run
+powerpc-randconfig (looks scary, is CONFIG_HIGHMEM=y broken on ppc?)
 
-Maybe we could modify all these thread functions (and probably more) to
-be park and/or freezer capable.  But really it wouldn't make much of a
-difference IMO.  It would only protect careless users from a tiny
-percentage of all possible havoc that a careless user could create.
+  + /scratch/kisskb/src/arch/powerpc/kernel/head_44x.S: Error: invalid
+operands (*ABS* and *UND* sections) for `|':  => 686, 603
+  + /scratch/kisskb/src/arch/powerpc/mm/tlb_nohash_low.S: Error:
+unsupported relocation against PPC47x_TLBE_SIZE:  => 113
 
-Live patching is a very sensitive and risky operation, and from a kernel
-standpoint we should make it as safe as we reasonably can.  But we can't
-do much about careless users.  Ultimately the risk is in the hands of
-the user and their choice of patches.  They need to absolutely
-understand all the implications of patching a particular function.  If
-the patch changes the way a function interacts with some external data,
-then they're starting to tempt fate and they need to be extra careful.
-This care needs to be taken for *all* kernel functions, not just for the
-few that are called from kernel threads.
+powerpc-randconfig
 
-Also, the top level kernel thread functions (like those listed above)
-will never be patchable anyway, because we never patch an in-use
-function (these functions are always in the threads' backtraces).  This
-further diminishes the benefit of parking/freezing kernel threads.
+  + /scratch/kisskb/src/arch/powerpc/platforms/powernv/setup.c: error:
+implicit declaration of function 'get_hard_smp_processor_id'
+[-Werror=implicit-function-declaration]:  => 179:4
 
--- 
-Josh
+ppc64_defconfig+UP
+
+Lemme guess: If CONFIG_SMP=n, <linux/smp.h> does not include <asm/smp.h>,
+so it needs an explicit #include <asm/smp.h>?
+
+  + error: initramfs.c: undefined reference to `__stack_chk_guard':
+=> .init.text+0x19dc)
+
+x86_64-randconfig
+
+> [1] http://kisskb.ellerman.id.au/kisskb/head/7449/ (all 119 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/7427/ (all 119 configs)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
