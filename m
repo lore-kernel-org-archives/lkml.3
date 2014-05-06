@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540AbaEFScV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 14:32:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:28247 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751339AbaEFScU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 14:32:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,998,1389772800"; 
-   d="scan'208";a="535751507"
-Date: Tue, 6 May 2014 11:32:16 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: josh@joshtriplett.org, David Miller <davem@davemloft.net>,
-        andi@firstfloor.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com
-Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
-Message-ID: <20140506183216.GM19657@tassilo.jf.intel.com>
-References: <1399328773-6531-9-git-send-email-andi@firstfloor.org>
- <20140505.231229.136734008603421707.davem@davemloft.net>
- <20140506032114.GP2382@two.firstfloor.org>
- <20140505.232327.578134514220748085.davem@davemloft.net>
- <20140506155703.GA20391@cloud>
- <1399394359.15399.20.camel@edumazet-glaptop2.roam.corp.google.com>
+	id S1753128AbaEFSdN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 14:33:13 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:60808 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255AbaEFSdL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 14:33:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399394359.15399.20.camel@edumazet-glaptop2.roam.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140506175547.GE20776@cloud>
+References: <20140506155703.GA20391@cloud>
+	<20140506.115941.428706504757835279.davem@davemloft.net>
+	<20140506164108.GA20536@cloud>
+	<20140506.131643.994244006906866938.davem@davemloft.net>
+	<20140506175547.GE20776@cloud>
+Date: Tue, 6 May 2014 11:33:11 -0700
+Message-ID: <CAM_iQpUgj7BqpzRL070DEGQ32SWwN68BRgM5DtFqvBLjGGOLQA@mail.gmail.com>
+Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: David Miller <davem@davemloft.net>, Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, tom.zanussi@linux.intel.com,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> We simply can not compete with user space, as a programmer is free to
-> keep what he really wants/needs.
+On Tue, May 6, 2014 at 10:55 AM,  <josh@joshtriplett.org> wrote:
+> On Tue, May 06, 2014 at 01:16:43PM -0400, David Miller wrote:
+>> From: josh@joshtriplett.org
+>> Date: Tue, 6 May 2014 09:41:08 -0700
+>>
+>> > Every KB of RAM costs real money and SoC die area (for eDRAM/eSRAM).
+>>
+>> Another poster commented that 16MB of DRAM would be cheaper than
+>> the 2MB of ram you have on these boards, probably one that fits
+>> your size profile is available as well.
+>>
+>> 2MB is just a rediculous restriction.
+>
+> Embedded systems experts disagree with you there; there *are* systems
+> where the most cost-efficient approach is a few MB (or a few hundred KB)
+> of non-discrete memory.  We're not talking about socketed memory or even
+> soldered-down memory; we're talking about entire systems that fit on a
+> small SoC die.  The space not used by that extra RAM may well be better
+> spent on CPU optimizations, or some other integrated component.
+>
+> Such boards will be built, and many of them will run Linux, despite your
+> incredulity.  When you're building millions of a board, it's well worth
+> optimizing software to eliminate components from the bill of materials.
 
-Not true.
-
-With my patches and LTO Linux can be competive with LWIP+socket layer.
-(about 60K more text). And it's easier to use because it's just
-the standard interface.
-
-> I have started using linux on 386/486 pcs which had more than 2MB of
-> memory, it makes me sad we want linux-3.16 to run on this kind of
-> hardware, and consuming time to save few KB here and here.
-
-Linux has always been a system from very small to big.
-That's been one of its strengths. It is very adaptable.
-
-Many subsystems are very configurable for this.
-For example that is why we have both SLOB and SLUB.
-That is why we have NOMMU MM and lots of other tuning 
-knobs for small systems.
-
-So if the other subsystems can do this, why should it be
-impossible for networking?
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+So why bothers 3.15+ Linux kernel? Why not use an old kernel e.g. 2.4.x?
+2.4.x kernel doesn't have so many new features you want to get rid of here.
