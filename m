@@ -1,115 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757854AbaEFOAh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 10:00:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38486 "EHLO mx2.suse.de"
+	id S1756322AbaEFODa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 10:03:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55173 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757533AbaEFOAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 10:00:35 -0400
-Date: Tue, 6 May 2014 16:00:32 +0200
-From: Jan Kara <jack@suse.cz>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Jan Kara <jack@suse.cz>,
-        "mm-commits@vger.kernel.org" <mm-commits@vger.kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "kay@vrfy.org" <kay@vrfy.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: +
- printk-print-initial-logbuf-contents-before-re-enabling-interrupts.patch
- added to -mm tree
-Message-ID: <20140506140032.GA22739@quack.suse.cz>
-References: <53640c8c.5++0zeO0pmfqKMwm%akpm@linux-foundation.org>
- <20140502224651.GG23636@quack.suse.cz>
- <20140506120648.GA30234@arm.com>
- <20140506122958.GG9291@quack.suse.cz>
- <20140506131234.GD30234@arm.com>
+	id S1753731AbaEFOD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 10:03:29 -0400
+Date: Tue, 6 May 2014 10:03:20 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        eparis@redhat.com, linux-audit@redhat.com, ebiederm@xmission.com,
+        sgrubb@redhat.com
+Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
+Message-ID: <20140506140320.GG6867@madcap2.tricolour.ca>
+References: <cover.1398176489.git.rgb@redhat.com>
+ <1399154328.2505.29.camel@dabdike.int.hansenpartnership.com>
+ <20140505214424.GB6867@madcap2.tricolour.ca>
+ <20140506033308.GE6508@ubuntumail>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140506131234.GD30234@arm.com>
+In-Reply-To: <20140506033308.GE6508@ubuntumail>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 06-05-14 14:12:34, Will Deacon wrote:
-> On Tue, May 06, 2014 at 01:29:58PM +0100, Jan Kara wrote:
-> > On Tue 06-05-14 13:06:48, Will Deacon wrote:
-> > > On Fri, May 02, 2014 at 11:46:51PM +0100, Jan Kara wrote:
-> > > >   I really dislike this patch. It goes completely against my efforts of
-> > > > lowering irq latency caused by printing to console (which are the
-> > > > problems I have observed ;).
+On 14/05/06, Serge Hallyn wrote:
+> Quoting Richard Guy Briggs (rgb@redhat.com):
+> > On 14/05/03, James Bottomley wrote:
+> > > On Tue, 2014-04-22 at 14:12 -0400, Richard Guy Briggs wrote:
+> > > > Questions:
+> > > > Is there a way to link serial numbers of namespaces involved in migration of a
+> > > > container to another kernel?  (I had a brief look at CRIU.)  Is there a unique
+> > > > identifier for each running instance of a kernel?  Or at least some identifier
+> > > > within the container migration realm?
 > > > 
-> > > Hmmm, what makes you think that? Interrupts only remain disabled whilst we
-> > > process the backlog, which in the usual case should be pretty small. We also
-> > > hold the logbuf_lock during this time, so we can't get stuck in an unbounded
-> > > loop.
-> > >
-> > > Can you elaborate a bit more on the problems you've observed, please?
-> >   Well, with serial console the backlog can get actually pretty big. During
-> > boot on large machines I've seen CPUs stuck in that very loop in
-> > console_unlock() for tens of seconds. Obviously that causes problems - e.g.
-> > watchdog fires, RCU lockup detector fires, when interrupts are disabled,
-> > some hardware gives up because its interrupts weren't served for too long.
-> > All in all the machine just dies.
+> > > Are you asking for a way of distinguishing an migrated container from an
+> > > unmigrated one?  The answer is pretty much "no" because the job of
+> > > migration is to restore to the same state as much as possible.
+> > 
+> > I hadn't thought to distinguish a migrated container from an unmigrated
+> > one, but rather I'm more interested in the underlying namespaces.  The
+> > use of a generation number to identify a migrated namespace may be
+> > useful along with the logging to tie them together.
+> > 
+> > > Reading between the lines, I think your goal is to correlate audit
+> > > information across a container migration, right?  Ideally the management
+> > > system should be able to cough up an audit trail for a container
+> > > wherever it's running and however many times it's been migrated?
+> > 
+> > The original intent was to track the underlying namespaces themselves.
+> > This sounds like another layer on top of that which sounds useful but
+> > that I had not yet considered.
+> > 
+> > But yes, that sounds like a good eventual goal.
 > 
-> Right, so there's the usual compromise here between throughput and latency.
-  I'd see that compromise if enabling & disabling interrupts would be
-taking considerable amount of time. I don't think that was your concern,
-was it? Maybe I just misunderstood you...
+> Right and we don't need that now, all *I* wanted to convince myself of
+> was that a serial # as you were using it was not going to be a roadlbock
+> to that, since once we introduce a serial #, we're stuck with that as
+> user-space facing api.
 
-> I hoped that pegging the amount of irq-disabled work using console_end_seq
-> would give us the best of both worlds, but you're saying that it can still
-> lead to issues on large machines (in the worst case, the whole buffer fills
-> up while we're printing the last lot, so the irq-disabled work amounts to
-> draining logbuf, right?).
-  Yup.
+Understood.  If a container gets migrated somewhere along with its
+namespace, the namespace elsewhere is going to have a new serial number,
+but the migration log is going to hopefully show both serial numbers.
+If that container gets migrated back, the supporting namespace will get
+yet a new serial number, with its log trail connecting the previous
+remote one.  Those logs can be used by a higher layer audit aggregator
+to piece together those log crumbs.
 
-> That said, printing one message each time seems to go too far in the
-> opposite direction for my liking, so the best bet is likely to limit the
-> work to some fixed number of messages. Do you have any feeling for such a
-> limit?
-  If you really are concerned about enabling and disabling of interrupts
-taking significant time (and it may be, I just don't know), then printing
-couple of messages without enabling them makes sense. How many is a tricky
-question since it depends on the console speed. I had a similar problem
-when I was deciding in my patch when we should ask another CPU to take over
-printing from the current CPU (to avoid the issues I've described in the
-previous email). I was experimenting with various stuff but in the end I
-restorted to a stupid "after X characters are printed".
+The serial number was intended to be an alternative to the inode numbers
+which had the issues of needing a qualifying device number accompanying
+it, plus the reservation that that inode number could change in the
+future to solve unforseen technical problems.  I saw no other stable
+identifiers common to all namespace types with which I could work.
 
-> > And the backlog builds up because while one cpu is doing the printing in
-> > console_unlock() all the other cpus are busily adding new messages to the
-> > buffer faster than they can be printed...
+Containers may have their own names, but I didn't see any consistent way
+to identify namespace instances.
+
+> > > In that case, I think your idea of a numeric serial number in a dense
+> > > range is wrong.  Because the range is dense you're obviously never going
+> > > to be able to use the same serial number across a migration.  However,
+> > > if you look at all the management systems for containers, they all have
+> > > a concept of some unique ID per container, be it name, UUID or even
+> > > GUID.  I suspect it's that you should be using to tag the audit trail
+> > > with.
+> > 
+> > That does sound potentially useful but for the fact that several
+> > containers could share one or more types of namespaces.
+> > 
+> > Would logging just a container ID be sufficient for audit purposes?  I'm
+> > going to have to dig a bit to understand that one because I was unaware
+> > each container had a unique ID.
 > 
-> Understood, but that's also the situation without this patch (and not one
-> that I think you can fix without hurting latency).
-  Sure. I have a patch which transitions printing to another CPU once in a
-while so single CPU isn't hogged for too long and that solves the issues I
-have observed. But Alan didn't like this solution so the issue is unfixed
-for now.
+> They don't :)
 
-> > > > My opinion is that when you are printing from each and every interrupt
-> > > > which happens so often, then you have a problem and disabling IRQs in
-> > > > printk so that your interrupt doesn't happen that often seems like a poor
-> > > > solution to me. You could as well just ratelimit your debug messages,
-> > > > couldn't you?
-> > > 
-> > > My use-case was basically using printk as a debug trace during early boot
-> > > when bringing up Linux on a new CPU core. I don't think ratelimiting would
-> > > be the right thing there, since I really did want as many messages to
-> > > reach the console as possible (which is also why I wrote this patch, not
-> > > just the other one in the series).
-> >   OK, I understand. It just seems wrong to me to throttle all interrupts on
-> > the cpu while doing printing just because someone might be doing debug
-> > printing from the interrupt. Sure it's fine as a debug hack but on a
-> > production machine that seems rather counterproductive.
+Ok, so I'd be looking in vain...
+
+> > I did originally consider a UUID/GUID for namespaces.
 > 
-> Perhaps, but the one time I *really* want printk to be reliable is when I'm
-> using it to debug a problem.
-  Yes, I understand that. 
+> So I think that apart from resending to address the serial # overflow
+> comment, I'm happy to ack the patches.  Then we probably need to convicne
+> Eric that we're not torturing kittens.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+I've already fixed the overflow issues.  I'll resend with the fixes.
+
+This patch pair was intended to sort out some of my understanding of the
+problem I perceived, and has helped me understand there are other layers
+that need work too to make it useful, but this is a good base.
+
+A subsequent piece would be to expose that serial number in the proc
+filesystem.
+
+> -serge
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
