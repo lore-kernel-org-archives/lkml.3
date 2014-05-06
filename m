@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934220AbaEFHU3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 03:20:29 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:61201 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933838AbaEFHU1 (ORCPT
+	id S934245AbaEFHVM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 03:21:12 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:30344 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933838AbaEFHVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 03:20:27 -0400
-Date: Tue, 6 May 2014 08:20:21 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-Cc: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Pankaj Dev <pankaj.dev@st.com>
-Subject: Re: [PATCH 6/9] ARM: STi: DT: STiH415: 415 DT Entry for clockgen
- A0/1/10/11/12
-Message-ID: <20140506072021.GE5206@lee--X1>
-References: <1399305223-18703-1-git-send-email-gabriel.fernandez@linaro.org>
- <1399305223-18703-7-git-send-email-gabriel.fernandez@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1399305223-18703-7-git-send-email-gabriel.fernandez@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 6 May 2014 03:21:05 -0400
+X-AuditID: cbfec7f5-b7fae6d000004d6d-b0-53688d5f1f3b
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: linux@arm.linux.org.uk
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>, stable@vger.kernel.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org (moderated list:ARM PORT),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCHv2] arm: put_user: fix possible data corruption in put_user
+Date: Tue, 06 May 2014 11:11:51 +0400
+Message-id: <1399360312-13843-1-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 1.8.5.5
+In-reply-to: <alpine.LFD.2.11.1405050950410.980@knanqh.ubzr>
+References: <alpine.LFD.2.11.1405050950410.980@knanqh.ubzr>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFJMWRmVeSWpSXmKPExsVy+t/xq7rxvRnBBpuXslls+/WIzWLT42us
+	Fpd3zWGzuH2Z1+LTs3/sFgs2PmK0ePnxBIsDu8eaeWsYPVqae9g87lzbw+axeUm9R9+WVYwe
+	nzfJBbBFcdmkpOZklqUW6dslcGX8XNvMWvCfq2Lmkk2MDYxfOLoYOTkkBEwktp//wQhhi0lc
+	uLeerYuRi0NIYCmjxJLXbVBOD5PE+s99YFVsAnoS/2ZtZwOxRQSkJGbsXMoOUsQs0MgksfLt
+	bLAiYQEviVd/H7CA2CwCqhKL1/4Gs3kF3CRmv37FCrFOQWLZ8plgNqeAjcTWb/1MILaQgLXE
+	t1+trBMYeRcwMqxiFE0tTS4oTkrPNdIrTswtLs1L10vOz93ECAmvrzsYlx6zOsQowMGoxMO7
+	QCYjWIg1say4MvcQowQHs5IIb30+UIg3JbGyKrUoP76oNCe1+BAjEwenVAOjw6ygHsUMhnVX
+	gr7GZq+8pzv7lPlbk9f7fm000Ft09cD9+zuW35NZN8ezxUshS9h2sfxKpR3XM//82nj+Alvf
+	ylsTw+pi5l99cqSrqtf6+DIrow+bnzpNC/JJLwuMSr+ltfXXJMZ7DVcdD4tO0l73Ktr8Xr6b
+	5XRZ35ZdL+X/2VyfFfgoau+tlUosxRmJhlrMRcWJAItoSNwNAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Patch adds DT entries for clockgen A0/1/10/11/12
-> 
-> Signed-off-by: Pankaj Dev <pankaj.dev@st.com>
-> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-> ---
->  arch/arm/boot/dts/stih415-clks.h     |  15 ++
+According to arm procedure call standart r2 register is call-cloberred.
+So after the result of x expression was put into r2 any following
+function call in p may overwrite r2. To fix this, the result of p
+expression must be saved to the temporary variable before the
+assigment x expression to __r2.
 
-Move to include/dt-bindings/clk.
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Cc: stable@vger.kernel.org
+---
+Since v1:
+ - tmp_p variable renamed to __tmp_p
+ - added Reviewed-by tag
+ - added Cc: stable@vger.kernel.org
 
+ arch/arm/include/asm/uaccess.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/include/asm/uaccess.h b/arch/arm/include/asm/uaccess.h
+index 12c3a5d..75d9579 100644
+--- a/arch/arm/include/asm/uaccess.h
++++ b/arch/arm/include/asm/uaccess.h
+@@ -171,8 +171,9 @@ extern int __put_user_8(void *, unsigned long long);
+ #define __put_user_check(x,p)							\
+ 	({								\
+ 		unsigned long __limit = current_thread_info()->addr_limit - 1; \
++		const typeof(*(p)) __user *__tmp_p = (p);		\
+ 		register const typeof(*(p)) __r2 asm("r2") = (x);	\
+-		register const typeof(*(p)) __user *__p asm("r0") = (p);\
++		register const typeof(*(p)) __user *__p asm("r0") = __tmp_p; \
+ 		register unsigned long __l asm("r1") = __limit;		\
+ 		register int __e asm("r0");				\
+ 		switch (sizeof(*(__p))) {				\
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.5.5
+
