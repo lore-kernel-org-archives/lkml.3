@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933368AbaEFAOs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 20:14:48 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41568 "EHLO
+	id S933500AbaEFAQn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 20:16:43 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:41589 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757289AbaEFAOp (ORCPT
+	with ESMTP id S1757299AbaEFAOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 20:14:45 -0400
+	Mon, 5 May 2014 20:14:47 -0400
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Mathias Nyman <mathias.nyman@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -21,9 +21,9 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         Grant Likely <grant.likely@linaro.org>,
         Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: [PATCH v3 14/20] xhci-platform: Add a new controller using xHCI: Armada 375
-Date: Tue,  6 May 2014 02:14:09 +0200
-Message-Id: <1399335255-589-15-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH v3 16/20] dt: binding: Armada 375 USB cluster
+Date: Tue,  6 May 2014 02:14:11 +0200
+Message-Id: <1399335255-589-17-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com>
@@ -31,28 +31,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend the compatible string list with armada-375-xhci. It is used to
-describe xHCI controller which is in the Armada 375 SoC.
+Armada 375 comes with an USB2 host and device controller and an USB3
+controller. The USB cluster control register allows to manage common
+features of both USB controllers.
 
 Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 ---
- Documentation/devicetree/bindings/usb/usb-xhci.txt | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ .../bindings/phy/armada-375-usb-phy-cluster.txt       | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/armada-375-usb-phy-cluster.txt
 
-diff --git a/Documentation/devicetree/bindings/usb/usb-xhci.txt b/Documentation/devicetree/bindings/usb/usb-xhci.txt
-index a0915941fc25..5eafa9a4e136 100644
---- a/Documentation/devicetree/bindings/usb/usb-xhci.txt
-+++ b/Documentation/devicetree/bindings/usb/usb-xhci.txt
-@@ -2,7 +2,8 @@ USB xHCI controllers
- 
- Required properties:
-   - compatible: should be one of "generic-xhci",
--    "marvell,armada-380-xhci" (deprecated: "xhci-platform").
-+    "marvell,armada-375-xhci", "marvell,armada-380-xhci" (deprecated:
-+    "xhci-platform").
-   - reg: should contain address and length of the standard XHCI
-     register set for the device.
-   - interrupts: one XHCI interrupt should be described here.
+diff --git a/Documentation/devicetree/bindings/phy/armada-375-usb-phy-cluster.txt b/Documentation/devicetree/bindings/phy/armada-375-usb-phy-cluster.txt
+new file mode 100644
+index 000000000000..258407c5ab90
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/armada-375-usb-phy-cluster.txt
+@@ -0,0 +1,19 @@
++Armada 375 USB cluster
++----------------------
++
++Armada 375 comes with an USB2 host and device controller and an USB3
++controller. The USB cluster control register allows to manage common
++features of both USB controllers.
++
++Required properties:
++
++- compatible: "marvell,armada-375-usb-cluster"
++- reg: Should contain usb cluster register location and length.
++- #phy-cells : from the generic phy bindings, must be 1
++
++Example:
++	usbcluster: usb-cluster@18400 {
++		compatible = "marvell,armada-375-usb-cluster";
++		reg = <0x18400 0x4>;
++		#phy-cells = <1>
++	};
 -- 
 1.8.1.2
 
