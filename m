@@ -1,201 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128AbaEFQbz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 12:31:55 -0400
-Received: from fieldses.org ([174.143.236.118]:41038 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751963AbaEFQbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 12:31:52 -0400
-Date: Tue, 6 May 2014 12:31:51 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@poochiereds.net>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] locks: add some tracepoints in the lease handling code
-Message-ID: <20140506163151.GB18281@fieldses.org>
-References: <1399291075-16122-1-git-send-email-jlayton@poochiereds.net>
+	id S1752235AbaEFQd0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 12:33:26 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:51886 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804AbaEFQdY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 12:33:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399291075-16122-1-git-send-email-jlayton@poochiereds.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140506051133.GA30179@teo>
+References: <1398268565-4789-3-git-send-email-dianders@chromium.org>
+	<CAD=FV=W=Ffye5wp0PhJ2uX4jhEQkTKA4VTT4LyX2ZdByfE4UaQ@mail.gmail.com>
+	<CAOesGMi+jH7xEzVxRX5qEoVycdtJ=FXOJRp1xut+65d4X8YFYA@mail.gmail.com>
+	<20140506051133.GA30179@teo>
+Date: Tue, 6 May 2014 09:33:23 -0700
+X-Google-Sender-Auth: J3Kgzr1knPyc7MVtjs4yWY09TZ8
+Message-ID: <CAD=FV=VYOXRq_mVjqcqu3FxE5D0ZG=nSu6s_5VENfZ+42B4WFQ@mail.gmail.com>
+Subject: Re: [RESEND PATCH v3 2/5] charger: tps65090: Allow charger module to
+ be used when no irq
+From: Doug Anderson <dianders@chromium.org>
+To: Anton Vorontsov <anton@enomsg.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Olof Johansson <olof@lixom.net>, Sachin Kamat <sachin.kamat@linaro.org>,
+        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 07:57:55AM -0400, Jeff Layton wrote:
-> v2: add a __break_lease tracepoint for non-blocking case
-> 
-> Recently, I needed these to help track down a softlockup when recalling a
-> delegation, but they might be helpful in other situations as well.
+Anton,
 
-Still feels a little ad-hoc, but I don't have another proposal, so, ACK.
+On Mon, May 5, 2014 at 10:11 PM, Anton Vorontsov <anton@enomsg.org> wrote:
+> On Mon, May 05, 2014 at 09:51:28AM -0700, Olof Johansson wrote:
+>> > All the rest of this series has been acked and applied.  Do you have
+>> > time to review this patch?
+>> >
+>> > Thanks!  :)
+>>
+>> FWIW, I've seen very little email traffic from Anton this year, he
+>> might have limited time for maintainership at the moment.
+>
+> Yup.
+>
+> commit 573189354b7c97cd2256b87cf083ee435584594e
+> Author: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+> Date:   Tue Jan 21 03:33:09 2014 +0400
+>
+>     MAINTAINERS: Pick up power supply maintainership
+>
+>     Anton stated that he would have to abandon power supply maintainership
+>     due to the lack of time. By agreement with him and David, pick up power
+>     supply tree.
+>
+>     Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+>     Acked-by: Anton Vorontsov <anton@enomsg.org>
 
-The forced-unlock/downgrade case in time_out_leases might be another
-good spot for a tracepoint.
+Doh, thanks for the pointer.
 
---b.
 
-> 
-> Cc: "J. Bruce Fields" <bfields@fieldses.org>
-> Signed-off-by: Jeff Layton <jlayton@poochiereds.net>
-> ---
->  fs/locks.c                      | 10 +++++
->  include/trace/events/filelock.h | 93 +++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 103 insertions(+)
->  create mode 100644 include/trace/events/filelock.h
-> 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index 6b01d5a1de4a..2367f3118662 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -130,6 +130,9 @@
->  #include <linux/percpu.h>
->  #include <linux/lglock.h>
->  
-> +#define CREATE_TRACE_POINTS
-> +#include <trace/events/filelock.h>
-> +
->  #include <asm/uaccess.h>
->  
->  #define IS_POSIX(fl)	(fl->fl_flags & FL_POSIX)
-> @@ -1386,6 +1389,7 @@ int __break_lease(struct inode *inode, unsigned int mode, unsigned int type)
->  	}
->  
->  	if (i_have_this_lease || (mode & O_NONBLOCK)) {
-> +		trace_break_lease_noblock(inode, new_fl);
->  		error = -EWOULDBLOCK;
->  		goto out;
->  	}
-> @@ -1397,10 +1401,12 @@ restart:
->  	if (break_time == 0)
->  		break_time++;
->  	locks_insert_block(flock, new_fl);
-> +	trace_break_lease_block(inode, new_fl);
->  	spin_unlock(&inode->i_lock);
->  	error = wait_event_interruptible_timeout(new_fl->fl_wait,
->  						!new_fl->fl_next, break_time);
->  	spin_lock(&inode->i_lock);
-> +	trace_break_lease_unblock(inode, new_fl);
->  	locks_delete_block(new_fl);
->  	if (error >= 0) {
->  		if (error == 0)
-> @@ -1522,6 +1528,8 @@ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp
->  	int error;
->  
->  	lease = *flp;
-> +	trace_generic_add_lease(inode, lease);
-> +
->  	/*
->  	 * In the delegation case we need mutual exclusion with
->  	 * a number of operations that take the i_mutex.  We trylock
-> @@ -1611,6 +1619,8 @@ static int generic_delete_lease(struct file *filp, struct file_lock **flp)
->  	struct dentry *dentry = filp->f_path.dentry;
->  	struct inode *inode = dentry->d_inode;
->  
-> +	trace_generic_delete_lease(inode, *flp);
-> +
->  	for (before = &inode->i_flock;
->  			((fl = *before) != NULL) && IS_LEASE(fl);
->  			before = &fl->fl_next) {
-> diff --git a/include/trace/events/filelock.h b/include/trace/events/filelock.h
-> new file mode 100644
-> index 000000000000..d1e9d3eaa8ce
-> --- /dev/null
-> +++ b/include/trace/events/filelock.h
-> @@ -0,0 +1,93 @@
-> +/*
-> + * Events for filesystem locks
-> + *
-> + * Copyright 2013 Jeff Layton <jlayton@poochiereds.net>
-> + */
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM filelock
-> +
-> +#if !defined(_TRACE_FILELOCK_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_FILELOCK_H
-> +
-> +#include <linux/tracepoint.h>
-> +#include <linux/fs.h>
-> +#include <linux/device.h>
-> +#include <linux/kdev_t.h>
-> +
-> +#define show_fl_flags(val)						\
-> +	__print_flags(val, "|", 					\
-> +		{ FL_POSIX,		"FL_POSIX" },			\
-> +		{ FL_FLOCK,		"FL_FLOCK" },			\
-> +		{ FL_DELEG,		"FL_DELEG" },			\
-> +		{ FL_ACCESS,		"FL_ACCESS" },			\
-> +		{ FL_EXISTS,		"FL_EXISTS" },			\
-> +		{ FL_LEASE,		"FL_LEASE" },			\
-> +		{ FL_CLOSE,		"FL_CLOSE" },			\
-> +		{ FL_SLEEP,		"FL_SLEEP" },			\
-> +		{ FL_DOWNGRADE_PENDING,	"FL_DOWNGRADE_PENDING" },	\
-> +		{ FL_UNLOCK_PENDING,	"FL_UNLOCK_PENDING" },		\
-> +		{ FL_OFDLCK,		"FL_OFDLCK" })
-> +
-> +#define show_fl_type(val)				\
-> +	__print_symbolic(val,				\
-> +			{ F_RDLCK, "F_RDLCK" },		\
-> +			{ F_WRLCK, "F_WRLCK" },		\
-> +			{ F_UNLCK, "F_UNLCK" })
-> +
-> +DECLARE_EVENT_CLASS(filelock_lease,
-> +
-> +	TP_PROTO(struct inode *inode, struct file_lock *fl),
-> +
-> +	TP_ARGS(inode, fl),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(struct file_lock *, fl)
-> +		__field(unsigned long, i_ino)
-> +		__field(dev_t, s_dev)
-> +		__field(struct file_lock *, fl_next)
-> +		__field(fl_owner_t, fl_owner)
-> +		__field(unsigned int, fl_flags)
-> +		__field(unsigned char, fl_type)
-> +		__field(unsigned long, fl_break_time)
-> +		__field(unsigned long, fl_downgrade_time)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->fl = fl;
-> +		__entry->s_dev = inode->i_sb->s_dev;
-> +		__entry->i_ino = inode->i_ino;
-> +		__entry->fl_next = fl->fl_next;
-> +		__entry->fl_owner = fl->fl_owner;
-> +		__entry->fl_flags = fl->fl_flags;
-> +		__entry->fl_type = fl->fl_type;
-> +		__entry->fl_break_time = fl->fl_break_time;
-> +		__entry->fl_downgrade_time = fl->fl_downgrade_time;
-> +	),
-> +
-> +	TP_printk("fl=0x%p dev=0x%x:0x%x ino=0x%lx fl_next=0x%p fl_owner=0x%p fl_flags=%s fl_type=%s fl_break_time=%lu fl_downgrade_time=%lu",
-> +		__entry->fl, MAJOR(__entry->s_dev), MINOR(__entry->s_dev),
-> +		__entry->i_ino, __entry->fl_next, __entry->fl_owner,
-> +		show_fl_flags(__entry->fl_flags),
-> +		show_fl_type(__entry->fl_type),
-> +		__entry->fl_break_time, __entry->fl_downgrade_time)
-> +);
-> +
-> +DEFINE_EVENT(filelock_lease, break_lease_noblock, TP_PROTO(struct inode *inode, struct file_lock *fl),
-> +		TP_ARGS(inode, fl));
-> +
-> +DEFINE_EVENT(filelock_lease, break_lease_block, TP_PROTO(struct inode *inode, struct file_lock *fl),
-> +		TP_ARGS(inode, fl));
-> +
-> +DEFINE_EVENT(filelock_lease, break_lease_unblock, TP_PROTO(struct inode *inode, struct file_lock *fl),
-> +		TP_ARGS(inode, fl));
-> +
-> +DEFINE_EVENT(filelock_lease, generic_add_lease, TP_PROTO(struct inode *inode, struct file_lock *fl),
-> +		TP_ARGS(inode, fl));
-> +
-> +DEFINE_EVENT(filelock_lease, generic_delete_lease, TP_PROTO(struct inode *inode, struct file_lock *fl),
-> +		TP_ARGS(inode, fl));
-> +
-> +#endif /* _TRACE_FILELOCK_H */
-> +
-> +/* This part must be outside protection */
-> +#include <trace/define_trace.h>
-> -- 
-> 1.9.0
-> 
+Dmitry: you were CCed on the patch.  Do you still have it in your
+email somewhere?  I'm happy to repost it with you in the "To" line if
+it's helpful.
+
+Thanks!  :)
+
+-Doug
