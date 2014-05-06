@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933606AbaEFBPE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 21:15:04 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:50445 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933458AbaEFBPB (ORCPT
+	id S933519AbaEFBTj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 21:19:39 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:23996 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933432AbaEFBTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 21:15:01 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5368378E.2040403@roeck-us.net>
-Date: Mon, 05 May 2014 18:14:54 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 5 May 2014 21:19:38 -0400
+X-IronPort-AV: E=Sophos;i="4.97,992,1389715200"; 
+   d="scan'208";a="30109848"
+Message-ID: <53682AA7.9060401@cn.fujitsu.com>
+Date: Tue, 6 May 2014 09:19:51 +0900
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 00/86] 3.10.39-stable review
-References: <20140504154140.444932005@linuxfoundation.org> <536683D0.5000708@roeck-us.net> <20140505204343.GA18222@kroah.com> <53682837.3050103@roeck-us.net> <20140506002824.GA7006@kroah.com>
-In-Reply-To: <20140506002824.GA7006@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: <peterz@infradead.org>, <bsegall@google.com>, <mingo@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: Move the wakeup tracepoint from ttwu_do_wakeup()
+ to ttwu_activate().
+References: <53673074.1040406@cn.fujitsu.com> <1399271647-25696-1-git-send-email-yangds.fnst@cn.fujitsu.com> <20140505100014.19b46560@gandalf.local.home>
+In-Reply-To: <20140505100014.19b46560@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.49]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2014 05:28 PM, Greg Kroah-Hartman wrote:
-> On Mon, May 05, 2014 at 05:09:27PM -0700, Guenter Roeck wrote:
->> On 05/05/2014 01:43 PM, Greg Kroah-Hartman wrote:
->>> On Sun, May 04, 2014 at 11:15:44AM -0700, Guenter Roeck wrote:
->>>> On 05/04/2014 08:40 AM, Greg Kroah-Hartman wrote:
->>>>> This is the start of the stable review cycle for the 3.10.39 release.
->>>>> There are 86 patches in this series, all will be posted as a response
->>>>> to this one.  If anyone has any issues with these being applied, please
->>>>> let me know.
->>>>>
->>>>> Responses should be made by Tue May  6 15:41:13 UTC 2014.
->>>>> Anything received after that time might be too late.
->>>>>
->>>>
->>>> I am still seeing build failures, even with x86_64 (both allmodconfig and
->>>> allyesconfig fail).
->>>> 	total: 127 pass: 113 skipped: 4 fail: 10
->>>>
->>>> drivers/usb/musb/musb_core.c: In function 'musb_stage0_irq':
->>>> drivers/usb/musb/musb_core.c:673:26: error: 'struct musb' has no member named 'hcd'
->>>>
->>>> Problem is due to 'usb: musb: avoid NULL pointer dereference'.
->>>> A brief glance into the code suggests that the patch will require an explicit
->>>> back-port to 3.10.
->>>
->>> Thanks, I've now dropped that one.
->>>
+On 05/05/2014 11:00 PM, Steven Rostedt wrote:
+> On Mon, 5 May 2014 15:34:07 +0900
+> Dongsheng Yang <yangds.fnst@cn.fujitsu.com> wrote:
+>
+>> The original design of sched:sched_wakeup is to trace the event inserting
+>> a task into run queue. It means we can know that the state of this task is
+>> changed from "sleeping" to "waiting_cpu". Then we can calculate the delay time
+>> from this task on_rq = 1 to running on cpu in `perf sched latency`.
 >>
->> Looks like you added it back in. The build with the dropped patch was fine.
->> I'll send another note after the rebuild with the patch added back in is complete.
+>> But currently, sched:sched_wakeup event is tracing ttwu_do_wakeup() and this
+>> function only set the p->state to TASK_RUNNING. This trace point can tell user
+>> very little. When get a event of sched:sched_wakeup, user know that kernel call
+>> ttwu_do_wakeup() once, but we can not say that task start to wait cpu from now
+>> on. Maybe it did not dequeue at all, in this case we will get a wrong latency
+>> time calculated by "sched_in_time - wakeup_time".
+>>
+>> Anyway, current sched:sched_wakeup event can tell user very little.
+>> When we get a sched:sched_wakeup:
+>> * We can not say a task is inserted into run queue, it is also used for task
+>> which is on_rq and only change the task->state to TASK_RUNNING.
+>> * We can not say the task->state is changed from {UN}INTERRUPTABLE to RUNNING,
+>> sometimes task->state is already changed to RUNNING by other cpu.
+>>
+>> As explained above, this patch move the trace point of sched:sched_wakeup from
+>> ttwu_do_wakeup() to ttwu_activate(), then when we get an event of sched_wakeup,
+>> we can say that a task enqueued and started waiting cpu to run.
+>>
+> tldr;
+
+Yes, it is really loooong, sorry for my terrible expression in english. :(
 >
-> I added back the "fixed" one, hopefully it really is :)
+> ttwu_do_wakeup() is called when the task's state is switched back to
+> TASK_RUNNING, whether or not the task actually scheduled out. Tracing
+> the wakeup event when the task never scheduled out is quite confusing.
+> It should only trace the task wake up if the task actually did go to
+> sleep. Move the tracepoint from ttwu_do_wakeup() to ttwu_activate()
+> where it is called only if the task is really woken up and not just
+> have its state changed.
+
+Thanx for your kind comment here, it looks shorter and more clear to me.
+I will update my commit message with your suggestion.
+
+Thank you very much! :)
 >
-
-Yes. Final build results:
-	total: 127 pass: 122 skipped: 4 fail: 1
-
-[ unicore32:defconfig is the failing build ]
-
-Guenter
-
-
-
+> -- Steve
+>
+>
+>> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+>> ---
+>>   kernel/sched/core.c | 2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index 9074c6d..0cae994 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -1420,6 +1420,7 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
+>>   {
+>>   	activate_task(rq, p, en_flags);
+>>   	p->on_rq = 1;
+>> +	trace_sched_wakeup(p, true);
+>>   
+>>   	/* if a worker is waking up, notify workqueue */
+>>   	if (p->flags & PF_WQ_WORKER)
+>> @@ -1433,7 +1434,6 @@ static void
+>>   ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
+>>   {
+>>   	check_preempt_curr(rq, p, wake_flags);
+>> -	trace_sched_wakeup(p, true);
+>>   
+>>   	p->state = TASK_RUNNING;
+>>   #ifdef CONFIG_SMP
+> .
+>
 
