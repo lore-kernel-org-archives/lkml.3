@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933783AbaEFCwW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 22:52:22 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:26007 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933714AbaEFCwU (ORCPT
+	id S933805AbaEFCwt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 22:52:49 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:38643 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933630AbaEFCws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 22:52:20 -0400
-X-IronPort-AV: E=Sophos;i="4.97,993,1389715200"; 
-   d="scan'208";a="30113503"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: <rostedt@goodmis.org>
-CC: <peterz@infradead.org>, <bsegall@google.com>, <mingo@redhat.com>,
-        <linux-kernel@vger.kernel.org>,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH] sched: Distinguish sched_wakeup event when wake up a task which did schedule out or not.
-Date: Tue, 6 May 2014 10:52:34 +0900
-Message-ID: <1399341154-11785-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <53683B14.3060702@cn.fujitsu.com>
-References: <53683B14.3060702@cn.fujitsu.com>
+	Mon, 5 May 2014 22:52:48 -0400
+Date: Mon, 5 May 2014 22:52:45 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Sonny Rao <sonnyrao@chromium.org>
+cc: linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Douglas Anderson <dianders@chromium.org>, Olof <olofj@chromium.org>,
+        Stephane Eranian <eranian@google.com>,
+        Bhaskar Janakiraman <bjanakiraman@chromium.org>
+Subject: Re: CPU performance counters not working on big.LITTLE switcher
+In-Reply-To: <CAPz6YkXsig6XornqoMyn5DtRd9NECyc+qgQo39RQK0sDeat34Q@mail.gmail.com>
+Message-ID: <alpine.LFD.2.11.1405052238230.980@knanqh.ubzr>
+References: <CAPz6YkXsig6XornqoMyn5DtRd9NECyc+qgQo39RQK0sDeat34Q@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.49]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ttwu_do_wakeup() is called when the task's state is switched back to
-TASK_RUNNING, whether or not the task actually scheduled out. Tracing
-the wakeup event when the task never scheduled out is quite confusing.
+On Mon, 5 May 2014, Sonny Rao wrote:
 
-This patch take the use of 'success' parameter in sched_wakeup tracepoint,
-to indicate that the task we are waking up did schedule out or just
-change its state to TASK_RUNNING.
+> Hi, we have the problem today that cpu based performance counters don't
+> work when we're using the big.LITTLE switcher on Exynos 5420, and it
+> doesn't look like code exists to deal with this in the switcher.
+> 
+> As it stands right now, if you put an A-15 or A-7 PMU node into your
+> device-tree on an bl_switcher system it's very broken.  At the minimum, I
+> think it should disable performance counters until there's some kind of
+> proper implementation.
+> 
+> I looked into trying to make this work, but it turned out to not be as
+> simple as just context switching counters from A-15 to A-7.  The biggest
+> problem is that the PMUs are not architecturally compatible.  There are
+> different events and differing numbers of counters on these two cores.
+>  There's also the tangential issue of representing this in the device tree,
+> but that's far less important.
+> 
+> My guess as to how to fix this is to create an "architectural" PMU which
+> contains the intersection of the two performance monitor units with the
+> minimum number of counters supported by either core (which in this case
+> looks to be 4 on the A7).  However, I don't really have the bandwidth to
+> work on this at  the moment.  I was mostly wondering, have other people run
+> into this limitation and is there any sort of plan to work on it?
 
-success is true:
-	task was out of run queue and sleeping, we are really wake it up.
-success is false:
-	taks was on run queue all the time and we just change its state
-	to TASK_RUNNING.
+The Linaro kernel release from a year ago or so contained a hack to make 
+PMUs available and cope with the switcher.
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
----
- kernel/sched/core.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+However, the ultimate solution is to add multi-PMU support in a generic 
+way to the kernel and let user space see both A15 and A7 counters.  It 
+is then up to the analysis tools to consolidate (some of) them if 
+wanted.  And this would work whether the switcher is used, or even when 
+the scheduler has learned to do proper task placement for b.L systems 
+where tasks may migrate across clusters.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 9074c6d..14b9fe4 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1420,6 +1420,7 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
- {
- 	activate_task(rq, p, en_flags);
- 	p->on_rq = 1;
-+	trace_sched_wakeup(p, true);
- 
- 	/* if a worker is waking up, notify workqueue */
- 	if (p->flags & PF_WQ_WORKER)
-@@ -1433,7 +1434,6 @@ static void
- ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
- {
- 	check_preempt_curr(rq, p, wake_flags);
--	trace_sched_wakeup(p, true);
- 
- 	p->state = TASK_RUNNING;
- #ifdef CONFIG_SMP
-@@ -1481,6 +1481,7 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
- 	if (p->on_rq) {
- 		/* check_preempt_curr() may use rq clock */
- 		update_rq_clock(rq);
-+		trace_sched_wakeup(p, false);
- 		ttwu_do_wakeup(rq, p, wake_flags);
- 		ret = 1;
- 	}
-@@ -1675,6 +1676,8 @@ static void try_to_wake_up_local(struct task_struct *p)
- 
- 	if (!p->on_rq)
- 		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
-+	else
-+		trace_sched_wakeup(p, false);
- 
- 	ttwu_do_wakeup(rq, p, 0);
- 	ttwu_stat(p, smp_processor_id(), 0);
--- 
-1.8.2.1
+Someone at ARM indicated they'd be working on the multi-PMU support if I 
+remember correctly.  For that reason, Linaro stopped maintaining the 
+initial hack since it was a lot of work to keep it working on top of 
+later kernels and a better solution was coming anyway.  I don't know 
+what the status of that work is though.
 
+
+Nicolas
