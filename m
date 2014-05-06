@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535AbaEFUk5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 16:40:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40607 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755442AbaEFUkz (ORCPT
+	id S1755591AbaEFUlY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 16:41:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34663 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522AbaEFUlU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 16:40:55 -0400
-Date: Tue, 6 May 2014 13:40:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org, tj@kernel.org,
-        rusty@rustcorp.com.au, fweisbec@gmail.com, hch@infradead.org,
-        mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
-        mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] CPU hotplug, stop-machine: Plug race-window that
- leads to "IPI-to-offline-CPU"
-Message-Id: <20140506134054.8cd531296c8aa5d9c3eff958@linux-foundation.org>
-In-Reply-To: <20140506180258.14375.20181.stgit@srivatsabhat.in.ibm.com>
-References: <20140506180213.14375.5904.stgit@srivatsabhat.in.ibm.com>
-	<20140506180258.14375.20181.stgit@srivatsabhat.in.ibm.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 6 May 2014 16:41:20 -0400
+Date: Tue, 6 May 2014 22:41:17 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Preeti Murthy <preeti.lkml@gmail.com>, umgwanakikbuti@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Ingo Molnar <mingo@kernel.org>, george.mccollister@gmail.com,
+        ktkhai@parallels.com, Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
+Message-ID: <20140506204117.GR17778@laptop.programming.kicks-ass.net>
+References: <20140502004237.79dd3de6@annuminas.surriel.com>
+ <1399011219.5233.55.camel@marge.simpson.net>
+ <53633B81.1080403@redhat.com>
+ <CAM4v1pPwe4B0K8MPpf183LqabRoRKRPi_R7n8-Y02aR43M8iQQ@mail.gmail.com>
+ <53663565.9080306@redhat.com>
+ <20140506132516.GJ11096@twins.programming.kicks-ass.net>
+ <5369442B.9010505@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <5369442B.9010505@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 06 May 2014 23:33:03 +0530 "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+On Tue, May 06, 2014 at 04:20:59PM -0400, Rik van Riel wrote:
+> On 05/06/2014 09:25 AM, Peter Zijlstra wrote:
+> > On Sun, May 04, 2014 at 08:41:09AM -0400, Rik van Riel wrote:
+> >> Even on 8-node DL980 systems, the NUMA distance in the
+> >> SLIT table is less than RECLAIM_DISTANCE, and we will
+> >> do wake_affine across the entire system.
+> > 
+> > Yeah, so the problem is that (AFAIK) ACPI doesn't actually specify a
+> > metric for the SLIT distance. This (in as far as BIOS people would care
+> > to stick to specs anyhow) has lead to the 'fun' situation where BIOS
+> > engineers tweak SLIT table values to make OSes behave as they thing it
+> > should.
+> > 
+> > So if the BIOS engineer finds that this system should have <
+> > RECLAIM_DISTANCE it will simply make the table such that the max SLIT
+> > value is below that.
+> > 
+> > And yes, I've seen this :-(
+> 
+> It appears to be the case on the vast majority of the NUMA
+> systems that are actually in use.
+> 
+> To me, this suggests that we should probably deal with it.
 
-> --- a/kernel/stop_machine.c
-> +++ b/kernel/stop_machine.c
-> @@ -165,12 +165,21 @@ static void ack_state(struct multi_stop_data *msdata)
->  		set_state(msdata, msdata->state + 1);
->  }
->  
-> +/* Holding area for active CPUs, to let all the non-active CPUs go first */
-> +static void hold_active_cpus(struct multi_stop_data *msdata,
-> +			     int num_active_cpus)
-> +{
-> +	/* Wait until all the non-active threads ack the state */
-> +	while (atomic_read(&msdata->thread_ack) > num_active_cpus)
-> +		cpu_relax();
-> +}
-
-The code comments are a bit lame.  Can we do a better job of explaining
-the overall dynamic behaviour?  Help readers to understand the problem
-which hold_active_cpus() is solving and how it solves it?
-
-
+What we could do is redefine this distance in hops, that'll force them
+to lie more blatantly and actually miss represent the topology.
