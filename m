@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934954AbaEFLG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 07:06:57 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35863 "EHLO bear.ext.ti.com"
+	id S934969AbaEFLHE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 07:07:04 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:35866 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934720AbaEFLGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 07:06:53 -0400
+	id S934720AbaEFLG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 07:06:58 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <dmitry.torokhov@gmail.com>
 CC: <rydberg@euromail.se>, <balbi@ti.com>, <dmurphy@ti.com>,
         <mugunthanvnm@ti.com>, <nsekhar@ti.com>, <linux-input@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
         Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v5 5/7] Input: pixcir_i2c_ts: support upto 5 fingers and hardware provided tracking IDs
-Date: Tue, 6 May 2014 14:06:10 +0300
-Message-ID: <1399374372-29123-6-git-send-email-rogerq@ti.com>
+Subject: [PATCH v5 7/7] Input: pixcir_i2c_ts: Add device tree support
+Date: Tue, 6 May 2014 14:06:12 +0300
+Message-ID: <1399374372-29123-8-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1399374372-29123-1-git-send-email-rogerq@ti.com>
 References: <1399374372-29123-1-git-send-email-rogerq@ti.com>
@@ -24,216 +24,183 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some variants of the Pixcir touch controller support upto 5
-simultaneous fingers and hardware tracking IDs. Prepare the driver
-for that.
+Provide device tree support and binding information.
+Also provide support for a new chip "pixcir_tangoc".
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/input/touchscreen/pixcir_i2c_ts.c | 74 ++++++++++++++++++++++++-------
- include/linux/input/pixcir_ts.h           | 12 +++++
- 2 files changed, 69 insertions(+), 17 deletions(-)
+ .../bindings/input/touchscreen/pixcir_i2c_ts.txt   | 26 ++++++++
+ .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+ drivers/input/touchscreen/pixcir_i2c_ts.c          | 78 ++++++++++++++++++++++
+ 3 files changed, 105 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
 
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt b/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
+new file mode 100644
+index 0000000..0ab9505
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
+@@ -0,0 +1,26 @@
++* Pixcir I2C touchscreen controllers
++
++Required properties:
++- compatible: must be "pixcir,pixcir_ts" or "pixcir,pixcir_tangoc"
++- reg: I2C address of the chip
++- interrupts: interrupt to which the chip is connected
++- attb-gpio: GPIO connected to the ATTB line of the chip
++- x-size: horizontal resolution of touchscreen
++- y-size: vertical resolution of touchscreen
++
++Example:
++
++	i2c@00000000 {
++		/* ... */
++
++		pixcir_ts@5c {
++			compatible = "pixcir,pixcir_ts";
++			reg = <0x5c>;
++			interrupts = <2 0>;
++			attb-gpio = <&gpf 2 0 2>;
++			x-size = <800>;
++			y-size = <600>;
++		};
++
++		/* ... */
++	};
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index abc3080..2270ebe 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -94,6 +94,7 @@ panasonic	Panasonic Corporation
+ phytec	PHYTEC Messtechnik GmbH
+ picochip	Picochip Ltd
+ plathome	Plat'Home Co., Ltd.
++pixcir  PIXCIR MICROELECTRONICS Co., Ltd
+ powervr	PowerVR (deprecated, use img)
+ qca	Qualcomm Atheros, Inc.
+ qcom	Qualcomm Technologies, Inc
 diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
-index 1b6e4e5..0728c04 100644
+index b0f7680..a2f8100 100644
 --- a/drivers/input/touchscreen/pixcir_i2c_ts.c
 +++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
-@@ -27,18 +27,20 @@
+@@ -26,6 +26,9 @@
+ #include <linux/input/mt.h>
  #include <linux/input/pixcir_ts.h>
  #include <linux/gpio.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/of_device.h>
  
--#define PIXCIR_MAX_SLOTS       2
-+#define PIXCIR_MAX_SLOTS       5 /* Max fingers supported by driver */
+ #define PIXCIR_MAX_SLOTS       5 /* Max fingers supported by driver */
  
- struct pixcir_i2c_ts_data {
- 	struct i2c_client *client;
+@@ -407,16 +410,70 @@ unlock:
+ static SIMPLE_DEV_PM_OPS(pixcir_dev_pm_ops,
+ 			 pixcir_i2c_ts_suspend, pixcir_i2c_ts_resume);
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id pixcir_of_match[];
++
++static struct pixcir_ts_platform_data *pixcir_parse_dt(struct device *dev)
++{
++	struct pixcir_ts_platform_data *pdata;
++	struct device_node *np = dev->of_node;
++
++	const struct of_device_id *match;
++
++	match = of_match_device(of_match_ptr(pixcir_of_match), dev);
++	if (!match)
++		return ERR_PTR(-EINVAL);
++
++	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return ERR_PTR(-ENOMEM);
++
++	pdata->chip = *(const struct pixcir_i2c_chip_data *)match->data;
++
++	pdata->gpio_attb = of_get_named_gpio(np, "attb-gpio", 0);
++	/* gpio_attb validity is checked in probe */
++
++	if (of_property_read_u32(np, "x-size", &pdata->x_max)) {
++		dev_err(dev, "Failed to get x-size property\n");
++		return ERR_PTR(-EINVAL);
++	}
++	pdata->x_max -= 1;
++
++	if (of_property_read_u32(np, "y-size", &pdata->y_max)) {
++		dev_err(dev, "Failed to get y-size property\n");
++		return ERR_PTR(-EINVAL);
++	}
++	pdata->y_max -= 1;
++
++	dev_dbg(dev, "%s: x %d, y %d, gpio %d\n", __func__,
++		pdata->x_max + 1, pdata->y_max + 1, pdata->gpio_attb);
++
++	return pdata;
++}
++#else
++static struct pixcir_ts_platform_data *pixcir_parse_dt(struct device *dev)
++{
++	return ERR_PTR(-EINVAL);
++}
++#endif
++
+ static int pixcir_i2c_ts_probe(struct i2c_client *client,
+ 					 const struct i2c_device_id *id)
+ {
+ 	const struct pixcir_ts_platform_data *pdata =
+ 			dev_get_platdata(&client->dev);
+ 	struct device *dev = &client->dev;
++	struct device_node *np = dev->of_node;
+ 	struct pixcir_i2c_ts_data *tsdata;
  	struct input_dev *input;
--	const struct pixcir_ts_platform_data *chip;
-+	const struct pixcir_ts_platform_data *pdata;
- 	bool running;
-+	int max_fingers;	/* Max fingers supported in this instance */
- };
+ 	int error;
  
- struct pixcir_touch {
- 	int x;
- 	int y;
-+	int id;
- };
- 
- struct pixcir_report_data {
-@@ -49,13 +51,21 @@ struct pixcir_report_data {
- static void pixcir_ts_parse(struct pixcir_i2c_ts_data *tsdata,
- 			    struct pixcir_report_data *report)
- {
--	u8 rdbuf[10], wrbuf[1] = { 0 };
-+	u8 rdbuf[2 + PIXCIR_MAX_SLOTS * 5];
-+	u8 wrbuf[1] = { 0 };
- 	u8 *bufptr;
- 	u8 touch;
- 	int ret, i;
-+	int readsize;
-+	const struct pixcir_i2c_chip_data *chip = &tsdata->pdata->chip;
- 
- 	memset(report, 0, sizeof(struct pixcir_report_data));
- 
-+	i = chip->has_hw_ids ? 1 : 0;
-+	readsize = 2 + tsdata->max_fingers * (4 + i);
-+	if (readsize > sizeof(rdbuf))
-+		readsize = sizeof(rdbuf);
-+
- 	ret = i2c_master_send(tsdata->client, wrbuf, sizeof(wrbuf));
- 	if (ret != sizeof(wrbuf)) {
- 		dev_err(&tsdata->client->dev,
-@@ -64,7 +74,7 @@ static void pixcir_ts_parse(struct pixcir_i2c_ts_data *tsdata,
- 		return;
- 	}
- 
--	ret = i2c_master_recv(tsdata->client, rdbuf, sizeof(rdbuf));
-+	ret = i2c_master_recv(tsdata->client, rdbuf, readsize);
- 	if (ret != sizeof(rdbuf)) {
- 		dev_err(&tsdata->client->dev,
- 			"%s: i2c_master_recv failed(), ret=%d\n",
-@@ -73,8 +83,8 @@ static void pixcir_ts_parse(struct pixcir_i2c_ts_data *tsdata,
- 	}
- 
- 	touch = rdbuf[0] & 0x7;
--	if (touch > PIXCIR_MAX_SLOTS)
--		touch = PIXCIR_MAX_SLOTS;
-+	if (touch > tsdata->max_fingers)
-+		touch = tsdata->max_fingers;
- 
- 	report->num_touches = touch;
- 	bufptr = &rdbuf[2];
-@@ -83,7 +93,12 @@ static void pixcir_ts_parse(struct pixcir_i2c_ts_data *tsdata,
- 		report->touches[i].x = (bufptr[1] << 8) | bufptr[0];
- 		report->touches[i].y = (bufptr[3] << 8) | bufptr[2];
- 
--		bufptr = &bufptr[4];
-+		if (chip->has_hw_ids) {
-+			report->touches[i].id = bufptr[4];
-+			bufptr = &bufptr[5];
-+		} else {
-+			bufptr = &bufptr[4];
-+		}
- 	}
- }
- 
-@@ -95,22 +110,35 @@ static void pixcir_ts_report(struct pixcir_i2c_ts_data *ts,
- 	struct pixcir_touch *touch;
- 	int n, i, slot;
- 	struct device *dev = &ts->client->dev;
-+	const struct pixcir_i2c_chip_data *chip = &ts->pdata->chip;
- 
- 	n = report->num_touches;
- 	if (n > PIXCIR_MAX_SLOTS)
- 		n = PIXCIR_MAX_SLOTS;
- 
--	for (i = 0; i < n; i++) {
--		touch = &report->touches[i];
--		pos[i].x = touch->x;
--		pos[i].y = touch->y;
--	}
-+	if (!chip->has_hw_ids) {
-+		for (i = 0; i < n; i++) {
-+			touch = &report->touches[i];
-+			pos[i].x = touch->x;
-+			pos[i].y = touch->y;
-+		}
- 
--	input_mt_assign_slots(ts->input, slots, pos, n);
-+		input_mt_assign_slots(ts->input, slots, pos, n);
-+	}
- 
- 	for (i = 0; i < n; i++) {
- 		touch = &report->touches[i];
--		slot = slots[i];
-+
-+		if (chip->has_hw_ids) {
-+			slot = input_mt_get_slot_by_key(ts->input, touch->id);
-+			if (slot < 0) {
-+				dev_dbg(dev, "no free slot for id 0x%x\n",
-+					touch->id);
-+				continue;
-+			}
-+		} else {
-+			slot = slots[i];
-+		}
- 
- 		input_mt_slot(ts->input, slot);
- 		input_mt_report_slot_state(ts->input,
-@@ -130,7 +158,7 @@ static void pixcir_ts_report(struct pixcir_i2c_ts_data *ts,
- static irqreturn_t pixcir_ts_isr(int irq, void *dev_id)
- {
- 	struct pixcir_i2c_ts_data *tsdata = dev_id;
--	const struct pixcir_ts_platform_data *pdata = tsdata->chip;
-+	const struct pixcir_ts_platform_data *pdata = tsdata->pdata;
- 	struct pixcir_report_data report;
- 
- 	while (tsdata->running) {
-@@ -359,6 +387,11 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 			dev_err(dev, "Invalid gpio_attb in pdata\n");
- 			return -EINVAL;
- 		}
-+
-+		if (pdata->chip.max_fingers <= 0) {
-+			dev_err(dev, "Invalid max_fingers in pdata\n");
-+			return -EINVAL;
-+		}
- 	}
- 
- 	tsdata = devm_kzalloc(dev, sizeof(*tsdata), GFP_KERNEL);
-@@ -373,7 +406,7 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 
- 	tsdata->client = client;
- 	tsdata->input = input;
--	tsdata->chip = pdata;
-+	tsdata->pdata = pdata;
- 
- 	input->name = client->name;
- 	input->id.bustype = BUS_I2C;
-@@ -389,7 +422,14 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 	input_set_abs_params(input, ABS_MT_POSITION_X, 0, pdata->x_max, 0, 0);
- 	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, pdata->y_max, 0, 0);
- 
--	error = input_mt_init_slots(input, PIXCIR_MAX_SLOTS,
-+	tsdata->max_fingers = tsdata->pdata->chip.max_fingers;
-+	if (tsdata->max_fingers > PIXCIR_MAX_SLOTS) {
-+		tsdata->max_fingers = PIXCIR_MAX_SLOTS;
-+		dev_info(dev, "Limiting maximum fingers to %d\n",
-+			 tsdata->max_fingers);
++	if (np && !pdata) {
++		pdata = pixcir_parse_dt(dev);
++		if (IS_ERR(pdata))
++			return PTR_ERR(pdata);
 +	}
 +
-+	error = input_mt_init_slots(input, tsdata->max_fingers,
- 				    INPUT_MT_DIRECT | INPUT_MT_DROP_UNUSED);
- 	if (error) {
- 		dev_err(dev, "Error initializing Multi-Touch slots\n");
-diff --git a/include/linux/input/pixcir_ts.h b/include/linux/input/pixcir_ts.h
-index 160cf35..7bae83b 100644
---- a/include/linux/input/pixcir_ts.h
-+++ b/include/linux/input/pixcir_ts.h
-@@ -43,10 +43,22 @@ enum pixcir_int_mode {
- #define PIXCIR_INT_ENABLE	(1UL << 3)
- #define PIXCIR_INT_POL_HIGH	(1UL << 2)
+ 	if (!pdata) {
+ 		dev_err(&client->dev, "platform data not defined\n");
+ 		return -EINVAL;
+@@ -522,15 +579,36 @@ static int pixcir_i2c_ts_remove(struct i2c_client *client)
  
-+/**
-+ * struct pixcir_irc_chip_data - chip related data
-+ * @max_fingers:	Max number of fingers reported simultaneously by h/w
-+ * @has_hw_ids:		Hardware supports finger tracking IDs
-+ *
-+ */
-+struct pixcir_i2c_chip_data {
-+	u8 max_fingers;
-+	bool has_hw_ids;
+ static const struct i2c_device_id pixcir_i2c_ts_id[] = {
+ 	{ "pixcir_ts", 0 },
++	{ "pixcir_tangoc", 0 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, pixcir_i2c_ts_id);
+ 
++#ifdef CONFIG_OF
++static const struct pixcir_i2c_chip_data pixcir_ts_data = {
++	.max_fingers = 2,
++	/* no hw id support */
 +};
 +
- struct pixcir_ts_platform_data {
- 	int x_max;
- 	int y_max;
- 	int gpio_attb;		/* GPIO connected to ATTB line */
-+	struct pixcir_i2c_chip_data chip;
- };
- 
- #endif
++static const struct pixcir_i2c_chip_data pixcir_tangoc_data = {
++	.max_fingers = 5,
++	.has_hw_ids = true,
++};
++
++static const struct of_device_id pixcir_of_match[] = {
++	{ .compatible = "pixcir,pixcir_ts", .data = &pixcir_ts_data },
++	{ .compatible = "pixcir,pixcir_tangoc", .data = &pixcir_tangoc_data },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, pixcir_of_match);
++#endif
++
+ static struct i2c_driver pixcir_i2c_ts_driver = {
+ 	.driver = {
+ 		.owner	= THIS_MODULE,
+ 		.name	= "pixcir_ts",
+ 		.pm	= &pixcir_dev_pm_ops,
++		.of_match_table = of_match_ptr(pixcir_of_match),
+ 	},
+ 	.probe		= pixcir_i2c_ts_probe,
+ 	.remove		= pixcir_i2c_ts_remove,
 -- 
 1.8.3.2
 
