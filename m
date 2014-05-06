@@ -1,39 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538AbaEFVjS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 17:39:18 -0400
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:47690 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaEFVjR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 17:39:17 -0400
-X-Originating-IP: 78.232.94.57
-Date: Tue, 6 May 2014 23:40:28 +0200
-From: Remi Pommarel <repk@triplefau.lt>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8188eu: Fixed prohibited spaces after open
- '('
-Message-ID: <20140506214028.GI490@cruxbox>
-References: <BLU436-SMTP123832E2D1B174A82D6FACA64F0@phx.gbl>
- <20140506211011.GH490@cruxbox>
- <20140506212721.GW26890@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140506212721.GW26890@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752062AbaEFVjs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 17:39:48 -0400
+Received: from ns.horizon.com ([71.41.210.147]:39261 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751349AbaEFVjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 17:39:47 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 May 2014 17:39:46 EDT
+Date: 6 May 2014 17:33:06 -0400
+Message-ID: <20140506213306.17674.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: john.stultz@linaro.org
+Subject: Re: [PATCH 4/4] timekeeping: Use printk_deferred when holding timekeeping seqlock
+Cc: linux@horizon.com, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 12:27:21AM +0300, Dan Carpenter wrote:
-> Best to fix it yourself and Greg can take which ever version is easiest.
+One misfeature in the timekeeping seqlock code I noticed is that
+read_seqcount_begin returns "unsigned int", not "unsigned long".
 
-Ok thank you so I'll re-submitted it.
+Casting to a larger type is harmless, but inefficient.
 
-Regards
+> This is due to printk() triggering console sem wakeup, which can
+> cause scheduling code to trigger hrtimers which may try to read
+> the time.
 
--- 
-Remi Pommarel
+An alternative solution, which avoids the need for this entire patch
+series, is to make ktime_get completely nonblocking.
+
+To do that, use a seqlock variant wherein you mintain an array of "struct
+timekeeper" structures so that reading is always non-blocking if there
+is no writer progress.  (I.e. livelock is remotely possible, but deadlock
+is not.)
+
+In the basic version, there are two.  (You can add more to further
+reduce the chance of livelock.)  The currently stable one is indicated
+by (timekeeper_seq->sequence & 2).  Writers update the appropriate
+one ping-pong.  The low two bits indicate four phases:
+
+0: Both timekeepers stable, [0] preferred for reading
+1: Timekeeper[1] is being written; read timekeeper[0] only
+2: Both timekeepers stable, [1] preferred for reading
+3: Timekeeper[0] is being written; read timekeeper[1] only
+
+The actual writer locking code is exactly the current write_seqcount_begin
+and write_seqcount_end code.
+
+A reader needs to retry only if end_seq > (start_seq & ~1u) + 2.
+Accounting for wraparound, the read sequence is:
+
+unsigned raw_read_FOO_begin(seqcount_t const *s)
+{
+	unsigned ret = ACCESS_ONCE(s->sequence);
+	smp_rmb();
+	return ret;
+}
+
+unsigned raw_read_FOO_retry(seqcount_t const *s, unsigned start)
+{
+	smp_rmb();
+	start &= ~1u;
+	return unlikely(s->seqence - start > 2);
+}
+
+
+A reader does:
+
+        unsigned seq;
+
+        do {
+		struct timekeeper const *tk;
+                seq = read_FOO_begin(&timekeeper_seq);
+ 		tk = timekeeper + (seq >> 1 & 1);
+		frobnicate(tk);
+        } while (read_FOO_retry(&timekeeper_seq, seq));
+
+I haven't yet thought of a good name (to replace FOO) for this.
+"seqnonblock"?
+
+
+If you have more frequent updates, there's another variant that does
+away with lsbit of the sequence number, so the writer only increments it
+once, after update.  This reduces coherency traffic.  It does, however,
+cause more readers to retry unless you go to an array of 4 structures.
