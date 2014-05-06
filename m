@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757624AbaEFMpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 08:45:30 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:52332 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757557AbaEFMoh (ORCPT
+	id S1757635AbaEFMpg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 08:45:36 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:37996 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754840AbaEFMoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 08:44:37 -0400
+	Tue, 6 May 2014 08:44:34 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, vgoyal@redhat.com,
         axboe@kernel.dk, hannes@cmpxchg.org, mhocko@suse.cz,
         arozansk@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 4/5] cgroup: convert "tasks" and "cgroup.procs" handle to use cftype->write()
-Date: Tue,  6 May 2014 08:44:25 -0400
-Message-Id: <1399380266-3324-5-git-send-email-tj@kernel.org>
+Subject: [PATCH 1/5] cgroup: implement cftype->write()
+Date: Tue,  6 May 2014 08:44:22 -0400
+Message-Id: <1399380266-3324-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1399380266-3324-1-git-send-email-tj@kernel.org>
 References: <1399380266-3324-1-git-send-email-tj@kernel.org>
@@ -22,97 +22,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup_tasks_write() and cgroup_procs_write() are currently using
-cftype->write_u64().  This patch converts them to use cftype->write()
-instead.  This allows access to the associated kernfs_open_file which
-will be necessary to implement the planned kernfs active protection
-manipulation for these files.
+During the recent conversion to kernfs, cftype's seq_file operations
+are updated so that they are directly mapped to kernfs operations and
+thus can fully access the associated kernfs and cgroup contexts;
+however, write path hasn't seen similar updates and none of the
+existing write operations has access to, for example, the associated
+kernfs_open_file.
 
-This shifts buffer parsing to attach_task_by_pid() and makes it return
-@nbytes on success.  Let's rename it to __cgroup_procs_write() to
-clearly indicate that this is a write handler implementation.
+Let's introduce a new operation cftype->write() which maps directly to
+the kernfs write operation and has access to all the arguments and
+contexts.  This will replace ->write_string() and ->trigger() and ease
+manipulation of kernfs active protection from cgroup file operations.
 
-This patch doesn't introduce any visible behavior changes.
+Two accessors - of_cft() and of_css() - are introduced to enable
+accessing the associated cgroup context from cftype->write() which
+only takes kernfs_open_file for the context information.  The
+accessors for seq_file operations - seq_cft() and seq_css() - are
+rewritten to wrap the of_ accessors.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cgroup.c | 26 ++++++++++++++++----------
- 1 file changed, 16 insertions(+), 10 deletions(-)
+ include/linux/cgroup.h | 27 +++++++++++++++++++++++----
+ kernel/cgroup.c        | 14 ++++++++------
+ 2 files changed, 31 insertions(+), 10 deletions(-)
 
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 2dfabb3..da7a0ca 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -517,6 +517,15 @@ struct cftype {
+ 	 */
+ 	int (*trigger)(struct cgroup_subsys_state *css, unsigned int event);
+ 
++	/*
++	 * write() is the generic write callback which maps directly to
++	 * kernfs write operation and overrides all other operations.
++	 * Maximum write size is determined by ->max_write_len.  Use
++	 * of_css/cft() to access the associated css and cft.
++	 */
++	ssize_t (*write)(struct kernfs_open_file *of,
++			 char *buf, size_t nbytes, loff_t off);
++
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 	struct lock_class_key	lockdep_key;
+ #endif
+@@ -553,14 +562,24 @@ static inline ino_t cgroup_ino(struct cgroup *cgrp)
+ 		return 0;
+ }
+ 
+-static inline struct cftype *seq_cft(struct seq_file *seq)
++/* cft/css accessors for cftype->write() operation */
++static inline struct cftype *of_cft(struct kernfs_open_file *of)
+ {
+-	struct kernfs_open_file *of = seq->private;
+-
+ 	return of->kn->priv;
+ }
+ 
+-struct cgroup_subsys_state *seq_css(struct seq_file *seq);
++struct cgroup_subsys_state *of_css(struct kernfs_open_file *of);
++
++/* cft/css accessors for cftype->seq_*() operations */
++static inline struct cftype *seq_cft(struct seq_file *seq)
++{
++	return of_cft(seq->private);
++}
++
++static inline struct cgroup_subsys_state *seq_css(struct seq_file *seq)
++{
++	return of_css(seq->private);
++}
+ 
+ /*
+  * Name / path handling functions.  All are thin wrappers around the kernfs
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 4b340c3..06ad484 100644
+index 57c2021..32d1624 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -2232,12 +2232,18 @@ static int cgroup_attach_task(struct cgroup *dst_cgrp,
-  * function to attach either it or all tasks in its threadgroup. Will lock
-  * cgroup_mutex and threadgroup.
-  */
--static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
-+static ssize_t __cgroup_procs_write(struct kernfs_open_file *of, char *buf,
-+				    size_t nbytes, loff_t off, bool threadgroup)
- {
- 	struct task_struct *tsk;
- 	const struct cred *cred = current_cred(), *tcred;
-+	struct cgroup *cgrp = of_css(of)->cgroup;
-+	pid_t pid;
- 	int ret;
- 
-+	if (kstrtoint(strstrip(buf), 0, &pid) || pid < 0)
-+		return -EINVAL;
-+
- 	if (!cgroup_lock_live_group(cgrp))
- 		return -ENODEV;
- 
-@@ -2305,7 +2311,7 @@ retry_find_task:
- 	put_task_struct(tsk);
- out_unlock_cgroup:
- 	mutex_unlock(&cgroup_mutex);
--	return ret;
-+	return ret ?: nbytes;
+@@ -283,11 +283,10 @@ static inline bool cgroup_is_dead(const struct cgroup *cgrp)
+ 	return test_bit(CGRP_DEAD, &cgrp->flags);
  }
+ 
+-struct cgroup_subsys_state *seq_css(struct seq_file *seq)
++struct cgroup_subsys_state *of_css(struct kernfs_open_file *of)
+ {
+-	struct kernfs_open_file *of = seq->private;
+ 	struct cgroup *cgrp = of->kn->parent->priv;
+-	struct cftype *cft = seq_cft(seq);
++	struct cftype *cft = of_cft(of);
+ 
+ 	/*
+ 	 * This is open and unprotected implementation of cgroup_css().
+@@ -302,7 +301,7 @@ struct cgroup_subsys_state *seq_css(struct seq_file *seq)
+ 	else
+ 		return &cgrp->dummy_css;
+ }
+-EXPORT_SYMBOL_GPL(seq_css);
++EXPORT_SYMBOL_GPL(of_css);
  
  /**
-@@ -2339,16 +2345,16 @@ int cgroup_attach_task_all(struct task_struct *from, struct task_struct *tsk)
- }
- EXPORT_SYMBOL_GPL(cgroup_attach_task_all);
+  * cgroup_is_descendant - test ancestry
+@@ -1035,8 +1034,8 @@ static umode_t cgroup_file_mode(const struct cftype *cft)
+ 	if (cft->read_u64 || cft->read_s64 || cft->seq_show)
+ 		mode |= S_IRUGO;
  
--static int cgroup_tasks_write(struct cgroup_subsys_state *css,
--			      struct cftype *cft, u64 pid)
-+static ssize_t cgroup_tasks_write(struct kernfs_open_file *of,
-+				  char *buf, size_t nbytes, loff_t off)
- {
--	return attach_task_by_pid(css->cgroup, pid, false);
-+	return __cgroup_procs_write(of, buf, nbytes, off, false);
- }
+-	if (cft->write_u64 || cft->write_s64 || cft->write_string ||
+-	    cft->trigger)
++	if (cft->write_u64 || cft->write_s64 || cft->write ||
++	    cft->write_string || cft->trigger)
+ 		mode |= S_IWUSR;
  
--static int cgroup_procs_write(struct cgroup_subsys_state *css,
--			      struct cftype *cft, u64 tgid)
-+static ssize_t cgroup_procs_write(struct kernfs_open_file *of,
-+				  char *buf, size_t nbytes, loff_t off)
- {
--	return attach_task_by_pid(css->cgroup, tgid, true);
-+	return __cgroup_procs_write(of, buf, nbytes, off, true);
- }
+ 	return mode;
+@@ -2724,6 +2723,9 @@ static ssize_t cgroup_file_write(struct kernfs_open_file *of, char *buf,
+ 	struct cgroup_subsys_state *css;
+ 	int ret;
  
- static ssize_t cgroup_release_agent_write(struct kernfs_open_file *of,
-@@ -3951,7 +3957,7 @@ static struct cftype cgroup_base_files[] = {
- 		.seq_stop = cgroup_pidlist_stop,
- 		.seq_show = cgroup_pidlist_show,
- 		.private = CGROUP_FILE_PROCS,
--		.write_u64 = cgroup_procs_write,
-+		.write = cgroup_procs_write,
- 		.mode = S_IRUGO | S_IWUSR,
- 	},
- 	{
-@@ -4000,7 +4006,7 @@ static struct cftype cgroup_base_files[] = {
- 		.seq_stop = cgroup_pidlist_stop,
- 		.seq_show = cgroup_pidlist_show,
- 		.private = CGROUP_FILE_TASKS,
--		.write_u64 = cgroup_tasks_write,
-+		.write = cgroup_tasks_write,
- 		.mode = S_IRUGO | S_IWUSR,
- 	},
- 	{
++	if (cft->write)
++		return cft->write(of, buf, nbytes, off);
++
+ 	/*
+ 	 * kernfs guarantees that a file isn't deleted with operations in
+ 	 * flight, which means that the matching css is and stays alive and
 -- 
 1.9.0
 
