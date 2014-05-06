@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467AbaEFN6A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 09:58:00 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:59157 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751962AbaEFN56 (ORCPT
+	id S1757640AbaEFN6g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 09:58:36 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45863 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754931AbaEFN6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 09:57:58 -0400
-From: Levente Kurusa <levex@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux ATA/IDE <linux-ide@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Joe Thomas <Joe.Thomas@dothill.com>, Levente Kurusa <levex@linux.com>
-Subject: [PATCH] libata: clean up ZPODD when a port is detached
-Date: Tue,  6 May 2014 15:57:48 +0200
-Message-Id: <1399384668-20394-1-git-send-email-levex@linux.com>
-X-Mailer: git-send-email 1.8.3.1
+	Tue, 6 May 2014 09:58:30 -0400
+From: Sricharan R <r.sricharan@ti.com>
+To: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
+        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
+        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <mark.rutland@arm.com>, <tglx@linutronix.de>, <galak@codeaurora.org>,
+        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>,
+        <robherring2@gmail.com>
+CC: Sricharan R <r.sricharan@ti.com>
+Subject: [PATCH V5 1/3] arm: dts: dra7: Add crossbar device binding
+Date: Tue, 6 May 2014 19:26:17 +0530
+Message-ID: <1399384579-25620-2-git-send-email-r.sricharan@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1399384579-25620-1-git-send-email-r.sricharan@ti.com>
+References: <1399384579-25620-1-git-send-email-r.sricharan@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a ZPODD device is unbound via sysfs, the ACPI notify handler
-is not removed. This causes panics as observed in Bug #74601. The
-panic only happens when the wake happens from outside the kernel
-(i.e. inserting a media or pressing a button). Add a loop to
-ata_port_detach which loops through the port's devices and checks
-if zpodd is enabled, if so call zpodd_exit.
+This adds the irq crossbar device node.
 
-Cc: stable@vger.kernel.org
-Reviewed-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Levente Kurusa <levex@linux.com>
+There is a IRQ crossbar device in the soc, which
+maps the irq requests from the peripherals to the
+mpu interrupt controller's inputs. The Peripheral irq
+requests are connected to only one crossbar
+input and the output of the crossbar is connected to only one
+controller's input line. The crossbar device is used to map
+a peripheral input to a free mpu's interrupt controller line.
+
+Cc: Benoit Cousson <bcousson@baylibre.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Rajendra Nayak <rnayak@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Sricharan R <r.sricharan@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- drivers/ata/libata-core.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+[V5] Rebased on top of 3.15-rc4 and corrected the
+     irqs-reserved list
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 943cc8b..ea83828 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -6314,6 +6314,8 @@ int ata_host_activate(struct ata_host *host, int irq,
- static void ata_port_detach(struct ata_port *ap)
- {
- 	unsigned long flags;
-+	struct ata_link *link;
-+	struct ata_device *dev;
+ arch/arm/boot/dts/dra7.dtsi |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index 149b550..0274a86 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -790,6 +790,14 @@
+ 			status = "disabled";
+ 		};
+ 	};
++
++	crossbar_mpu: crossbar@4a020000 {
++		compatible = "ti,irq-crossbar";
++		reg = <0x4a002a48 0x130>;
++		ti,max-irqs = <160>;
++		ti,reg-size = <2>;
++		ti,irqs-reserved = <0 1 2 3 5 6 131 132>;
++	};
+ };
  
- 	if (!ap->ops->error_handler)
- 		goto skip_eh;
-@@ -6333,6 +6335,13 @@ static void ata_port_detach(struct ata_port *ap)
- 	cancel_delayed_work_sync(&ap->hotplug_task);
- 
-  skip_eh:
-+	/* clean up zpodd on port removal */
-+	ata_for_each_link(link, ap, HOST_FIRST) {
-+		ata_for_each_dev(dev, link, ALL) {
-+			if (zpodd_dev_enabled(dev))
-+				zpodd_exit(dev);
-+		}
-+	}
- 	if (ap->pmp_link) {
- 		int i;
- 		for (i = 0; i < SATA_PMP_MAX_PORTS; i++)
+ /include/ "dra7xx-clocks.dtsi"
 -- 
-1.8.3.1
+1.7.9.5
 
