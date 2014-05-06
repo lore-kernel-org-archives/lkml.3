@@ -1,49 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564AbaEFUHw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 16:07:52 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:63536 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529AbaEFUHv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 16:07:51 -0400
-Date: Tue, 6 May 2014 22:07:38 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: josh@joshtriplett.org, David Miller <davem@davemloft.net>,
-        andi@firstfloor.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com
-Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
-Message-ID: <20140506200738.GA17813@netboy>
-References: <20140506032114.GP2382@two.firstfloor.org>
- <20140505.232327.578134514220748085.davem@davemloft.net>
- <20140506155703.GA20391@cloud>
- <20140506.115941.428706504757835279.davem@davemloft.net>
- <20140506164108.GA20536@cloud>
- <20140506191447.GB4137@netboy>
- <20140506195049.GO19657@tassilo.jf.intel.com>
+	id S1754690AbaEFUJN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 16:09:13 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49796 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750953AbaEFUJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 16:09:11 -0400
+Date: Tue, 6 May 2014 15:07:50 -0500
+From: Darren Etheridge <detheridge@ti.com>
+To: Nishanth Menon <nm@ti.com>
+CC: <balbi@ti.com>, Sricharan R <r.sricharan@ti.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
+        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
+        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <mark.rutland@arm.com>, <tglx@linutronix.de>, <galak@codeaurora.org>,
+        <santosh.shilimkar@ti.com>, <bcousson@baylibre.com>,
+        <robherring2@gmail.com>
+Subject: Re: [PATCH V5 1/3] arm: dts: dra7: Add crossbar device binding
+Message-ID: <20140506200750.GE2626@ti.com>
+References: <1399384579-25620-1-git-send-email-r.sricharan@ti.com>
+ <1399384579-25620-2-git-send-email-r.sricharan@ti.com>
+ <20140506194055.GA6962@saruman.home>
+ <53693C02.2090305@ti.com>
+ <20140506195804.GD2626@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20140506195049.GO19657@tassilo.jf.intel.com>
+In-Reply-To: <20140506195804.GD2626@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 12:50:49PM -0700, Andi Kleen wrote:
+Darren Etheridge <detheridge@ti.com> wrote on Tue [2014-May-06 14:58:04 -0500]:
+> Nishanth Menon <nm@ti.com> wrote on Tue [2014-May-06 14:46:10 -0500]:
+> > On 05/06/2014 02:40 PM, Felipe Balbi wrote:
+> > > On Tue, May 06, 2014 at 07:26:17PM +0530, Sricharan R wrote:
+> > >> This adds the irq crossbar device node.
+> > >>
+> > >> There is a IRQ crossbar device in the soc, which
+> > >> maps the irq requests from the peripherals to the
+> > >> mpu interrupt controller's inputs. The Peripheral irq
+> > >> requests are connected to only one crossbar
+> > >> input and the output of the crossbar is connected to only one
+> > >> controller's input line. The crossbar device is used to map
+> > >> a peripheral input to a free mpu's interrupt controller line.
+> > >>
+> > >> Cc: Benoit Cousson <bcousson@baylibre.com>
+> > >> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> > >> Cc: Rajendra Nayak <rnayak@ti.com>
+> > >> Cc: Tony Lindgren <tony@atomide.com>
+> > >> Signed-off-by: Sricharan R <r.sricharan@ti.com>
+> > >> Signed-off-by: Nishanth Menon <nm@ti.com>
+> > >> ---
+> > >> [V5] Rebased on top of 3.15-rc4 and corrected the
+> > >>      irqs-reserved list
+> > >>
+> > >>  arch/arm/boot/dts/dra7.dtsi |    8 ++++++++
+> > >>  1 file changed, 8 insertions(+)
+> > >>
+> > >> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+> > >> index 149b550..0274a86 100644
+> > >> --- a/arch/arm/boot/dts/dra7.dtsi
+> > >> +++ b/arch/arm/boot/dts/dra7.dtsi
+> > >> @@ -790,6 +790,14 @@
+> > >>  			status = "disabled";
+> > >>  		};
+> > >>  	};
+> > >> +
+> > >> +	crossbar_mpu: crossbar@4a020000 {
+> > > 
+> > > shouldn't this be "status = disabled"; so that boards enable this
+> > > on-demand ??
+> > > 
+> > It cannot be and does not need to be. crossbar is an SoC feature. by
+> > defining crossbar, the IRQ numbers we provide in DTS now becomes
+> > crossbar numbers which get mapped to GIC interrupt numbers dynamically.
+> > 
+> > further crossbar is not a board feature. it is as ingrained in DRA7
+> > behavior as GIC is. we are fortunate that we have some default mapping
+> > of crossbar that allows the current peripherals to work, with this
+> > support, we dont have to depend any longer on "we are lucky that is
+> > mapped".
+> > 
+> > That said, in hindsight, patch #1 and 2 should be squashed IMHO. else
+> > we have a bisectability problem here.
+> > 
+> Yes the bisectability problem is completely true - I was just testing
+> that as your email came in.  In fact I think all three patches need to
+> be squashed into one, I can't boot the dra7-EVM unless I have all three
+> patches applied.
 > 
-> > So I think Dave is right
-> > in rejecting anything that compromises the _quality_ of the stack.
-> 
-> I don't think anything I removed compromised quality (modulo bugs)
-> It's still a more-features-than-your-typical-BSD TCP/IP stack
 
-But Dave seems to think so.
+Or I just tried reordering, so patch 3/3 becomes patch 1 and then squash
+patch 1/3 and patch 2/3 together to form patch 2.  That seems to at
+least let the kernel boot to completion.
 
-My (obvious?) point is, if you make the stack different, and not just
-smaller by omitting optional features, then that defeats the point of
-wanting the Linux stack in the first place.
-
-Thanks,
-Richard
+Darren
