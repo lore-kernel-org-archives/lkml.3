@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502AbaEFVqd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 17:46:33 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:54089 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349AbaEFVqc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 17:46:32 -0400
-Date: Wed, 7 May 2014 01:46:30 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf_fuzzer crash on pentium 4
-Message-ID: <20140506214630.GB1458@moon>
-References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
- <20140506202307.GA1458@moon>
- <alpine.DEB.2.10.1405061729350.4849@vincent-weaver-1.umelst.maine.edu>
+	id S1754118AbaEFVqr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 17:46:47 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54050 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753359AbaEFVqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 17:46:45 -0400
+Date: Tue, 6 May 2014 16:45:26 -0500
+From: Darren Etheridge <detheridge@ti.com>
+To: Sricharan R <r.sricharan@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
+        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
+        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <mark.rutland@arm.com>, <tglx@linutronix.de>, <galak@codeaurora.org>,
+        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>,
+        <robherring2@gmail.com>
+Subject: Re: [PATCH V5 0/3] arm: dts: dra7: Updates for adding crossbar device
+Message-ID: <20140506214526.GF2626@ti.com>
+References: <1399384579-25620-1-git-send-email-r.sricharan@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1405061729350.4849@vincent-weaver-1.umelst.maine.edu>
+In-Reply-To: <1399384579-25620-1-git-send-email-r.sricharan@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 05:30:19PM -0400, Vince Weaver wrote:
-> On Wed, 7 May 2014, Cyrill Gorcunov wrote:
+Sricharan R <r.sricharan@ti.com> wrote on Tue [2014-May-06 19:26:16 +0530]:
+> Some socs have a large number of interrupts requests to service
+> the needs of its many peripherals and subsystems. All of the interrupt
+> requests lines from the subsystems are not needed at the same
+> time, so they have to be muxed to the controllers appropriately.
+> In such places a interrupt controllers are preceded by an
+> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
+> requests to the controller inputs.
 > 
-> > > [   67.872274] BUG: unable to handle kernel NULL pointer dereference at 00000004
-> > > [   67.876146] IP: [<ffffffff81013df2>] p4_pmu_schedule_events+0xa5/0x331
-> > 
-> > This looks like
-> > 
-> > p4_pmu_schedule_events:
-> > 		...
-> > 		bind = p4_config_get_bind(hwc->config);
-> > 			returned bind = NULL;
-> > 		escr_idx = p4_get_escr_idx(bind->escr_msr[thread]); NULL deref
-> > 
-> > If i'm right (btw it's possible to use addr2line helper?) 
+> The dts file update to support the crossbar device and convert
+> peripheral irq numbers to crossbar number are added here.
 > 
-> Yes, the address maps to
+> This is a rebase of V4 series on top of 3.15-rc4
 > 
-> 	escr_idx = p4_get_escr_idx(bind->escr_msr[thread]);
+> This series depends on crossbar-driver-fixes sent below
+> http://marc.info/?l=linux-omap&m=139929963420299&w=2
+> 
+> Sricharan R (3):
+>   arm: dts: dra7: Add crossbar device binding
+>   arm: dts: dra7: Replace peripheral interrupt numbers with crossbar
+>     inputs
+>   arm: dts: dra7: Add routable-irqs property for gic node
+> 
 
-Great, now we knows the reason of the issue, only to figure out
-why is left ;)
+OK, assuming the bisectability issues discussed earlier on this thread
+are addressed.  I have tested the earlier crossbar patch series in
+conjunction with this dts series with VIP capture and DSS display
+running together on DRA7.  Looks good with this combination of
+devices. VIP is one of the modules that must have a crossbar mapping as
+there is no default interrupt mapping for it, therefore VIP makes a good
+test case.
 
-> > then hwc->config
-> > is corrupted and p4_config_get_bind returned nil simply because proper event
-> > was not found. And I don't understand how it could happen because before
-> > configuration gets written into hwc->config it's validated once obtained
-> > from user-space as a raw event. Weird...
+So please feel free to add:
+
+Tested-by: Darren Etheridge <detheridge@ti.com>
+
+
+>  arch/arm/boot/dts/dra7.dtsi |  109 +++++++++++++++++++++++++------------------
+>  1 file changed, 63 insertions(+), 46 deletions(-)
 > 
-> I'll try to get some sort of trace out if it to see what event is being 
-> tried.
-
-Yeah, this would help a lot.
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
