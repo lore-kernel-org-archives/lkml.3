@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512AbaEFUWM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 16:22:12 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:42491 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620AbaEFUTk (ORCPT
+	id S1755459AbaEFUWK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 16:22:10 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:40587 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755135AbaEFUTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 16:19:40 -0400
+	Tue, 6 May 2014 16:19:43 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/8] cgroup: reorganize cgroup_create()
-Date: Tue,  6 May 2014 16:19:27 -0400
-Message-Id: <1399407574-21472-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 3/8] cgroup: grab cgroup_mutex earlier in cgroup_subtree_control_write()
+Date: Tue,  6 May 2014 16:19:29 -0400
+Message-Id: <1399407574-21472-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1399407574-21472-1-git-send-email-tj@kernel.org>
 References: <1399407574-21472-1-git-send-email-tj@kernel.org>
@@ -21,164 +21,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reorganize cgroup_create() so that all paths share unlock out path.
+Move cgroup_lock_live_group() invocation upwards to right below
+cgroup_tree_mutex in cgroup_subtree_control_write().  This is to help
+the planned locking simplification.
 
-* All err_* labels are renamed to out_* as they're now shared by both
-  success and failure paths.
-
-* @err renamed to @ret for the similar reason as above and so that
-  it's more consistent with other functions.
-
-* cgroup memory allocation moved after locking so that freeing failed
-  cgroup happens before unlocking.  While this moves more code inside
-  critical section, memory allocations inside cgroup locking are
-  already pretty common and this is unlikely to make any noticeable
-  difference.
-
-* While at it, replace a stray @parent->root dereference with @root.
-
-This reorganization will help simplifying locking.
+This doesn't make any userland-visible behavioral changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cgroup.c | 69 ++++++++++++++++++++++++++++-----------------------------
- 1 file changed, 34 insertions(+), 35 deletions(-)
+ kernel/cgroup.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index da493a4..4d58229 100644
+index 69c0ed9..f544e46 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -4247,15 +4247,10 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- {
- 	struct cgroup *cgrp;
- 	struct cgroup_root *root = parent->root;
--	int ssid, err;
-+	int ssid, ret;
- 	struct cgroup_subsys *ss;
- 	struct kernfs_node *kn;
+@@ -2583,6 +2583,10 @@ static ssize_t cgroup_subtree_control_write(struct kernfs_open_file *of,
+ 	kernfs_break_active_protection(of->kn);
  
--	/* allocate the cgroup and its ID, 0 is reserved for the root */
--	cgrp = kzalloc(sizeof(*cgrp), GFP_KERNEL);
--	if (!cgrp)
--		return -ENOMEM;
--
  	mutex_lock(&cgroup_tree_mutex);
- 
- 	/*
-@@ -4266,8 +4261,15 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- 	 * don't get nasty surprises if we ever grow another caller.
- 	 */
- 	if (!cgroup_lock_live_group(parent)) {
--		err = -ENODEV;
--		goto err_unlock_tree;
++	if (!cgroup_lock_live_group(cgrp)) {
 +		ret = -ENODEV;
 +		goto out_unlock_tree;
 +	}
-+
-+	/* allocate the cgroup and its ID, 0 is reserved for the root */
-+	cgrp = kzalloc(sizeof(*cgrp), GFP_KERNEL);
-+	if (!cgrp) {
-+		ret = -ENOMEM;
+ 
+ 	for_each_subsys(ss, ssid) {
+ 		if (enable & (1 << ssid)) {
+@@ -2606,6 +2610,7 @@ static ssize_t cgroup_subtree_control_write(struct kernfs_open_file *of,
+ 				cgroup_get(child);
+ 				prepare_to_wait(&child->offline_waitq, &wait,
+ 						TASK_UNINTERRUPTIBLE);
++				mutex_unlock(&cgroup_mutex);
+ 				mutex_unlock(&cgroup_tree_mutex);
+ 				schedule();
+ 				finish_wait(&child->offline_waitq, &wait);
+@@ -2620,7 +2625,7 @@ static ssize_t cgroup_subtree_control_write(struct kernfs_open_file *of,
+ 			    (cgrp->parent &&
+ 			     !(cgrp->parent->child_subsys_mask & (1 << ssid)))) {
+ 				ret = -ENOENT;
+-				goto out_unlock_tree;
++				goto out_unlock;
+ 			}
+ 		} else if (disable & (1 << ssid)) {
+ 			if (!(cgrp->child_subsys_mask & (1 << ssid))) {
+@@ -2632,7 +2637,7 @@ static ssize_t cgroup_subtree_control_write(struct kernfs_open_file *of,
+ 			cgroup_for_each_live_child(child, cgrp) {
+ 				if (child->child_subsys_mask & (1 << ssid)) {
+ 					ret = -EBUSY;
+-					goto out_unlock_tree;
++					goto out_unlock;
+ 				}
+ 			}
+ 		}
+@@ -2640,12 +2645,7 @@ static ssize_t cgroup_subtree_control_write(struct kernfs_open_file *of,
+ 
+ 	if (!enable && !disable) {
+ 		ret = 0;
+-		goto out_unlock_tree;
+-	}
+-
+-	if (!cgroup_lock_live_group(cgrp)) {
+-		ret = -ENODEV;
+-		goto out_unlock_tree;
 +		goto out_unlock;
  	}
  
  	/*
-@@ -4276,15 +4278,15 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- 	 */
- 	cgrp->id = cgroup_idr_alloc(&root->cgroup_idr, NULL, 2, 0, GFP_NOWAIT);
- 	if (cgrp->id < 0) {
--		err = -ENOMEM;
--		goto err_unlock;
-+		ret = -ENOMEM;
-+		goto out_free_cgrp;
- 	}
- 
- 	init_cgroup_housekeeping(cgrp);
- 
- 	cgrp->parent = parent;
- 	cgrp->dummy_css.parent = &parent->dummy_css;
--	cgrp->root = parent->root;
-+	cgrp->root = root;
- 
- 	if (notify_on_release(parent))
- 		set_bit(CGRP_NOTIFY_ON_RELEASE, &cgrp->flags);
-@@ -4295,8 +4297,8 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- 	/* create the directory */
- 	kn = kernfs_create_dir(parent->kn, name, mode, cgrp);
- 	if (IS_ERR(kn)) {
--		err = PTR_ERR(kn);
--		goto err_free_id;
-+		ret = PTR_ERR(kn);
-+		goto out_free_id;
- 	}
- 	cgrp->kn = kn;
- 
-@@ -4319,20 +4321,20 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- 	 */
- 	cgroup_idr_replace(&root->cgroup_idr, cgrp, cgrp->id);
- 
--	err = cgroup_kn_set_ugid(kn);
--	if (err)
--		goto err_destroy;
-+	ret = cgroup_kn_set_ugid(kn);
-+	if (ret)
-+		goto out_destroy;
- 
--	err = cgroup_addrm_files(cgrp, cgroup_base_files, true);
--	if (err)
--		goto err_destroy;
-+	ret = cgroup_addrm_files(cgrp, cgroup_base_files, true);
-+	if (ret)
-+		goto out_destroy;
- 
- 	/* let's create and online css's */
- 	for_each_subsys(ss, ssid) {
- 		if (parent->child_subsys_mask & (1 << ssid)) {
--			err = create_css(cgrp, ss);
--			if (err)
--				goto err_destroy;
-+			ret = create_css(cgrp, ss);
-+			if (ret)
-+				goto out_destroy;
- 		}
- 	}
- 
-@@ -4345,25 +4347,22 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- 
- 	kernfs_activate(kn);
- 
--	mutex_unlock(&cgroup_mutex);
--	mutex_unlock(&cgroup_tree_mutex);
--
--	return 0;
-+	ret = 0;
-+	goto out_unlock;
- 
--err_free_id:
-+out_free_id:
- 	cgroup_idr_remove(&root->cgroup_idr, cgrp->id);
--err_unlock:
-+out_free_cgrp:
-+	kfree(cgrp);
-+out_unlock:
- 	mutex_unlock(&cgroup_mutex);
--err_unlock_tree:
-+out_unlock_tree:
- 	mutex_unlock(&cgroup_tree_mutex);
--	kfree(cgrp);
--	return err;
-+	return ret;
- 
--err_destroy:
-+out_destroy:
- 	cgroup_destroy_locked(cgrp);
--	mutex_unlock(&cgroup_mutex);
--	mutex_unlock(&cgroup_tree_mutex);
--	return err;
-+	goto out_unlock;
- }
- 
- static int cgroup_mkdir(struct kernfs_node *parent_kn, const char *name,
 -- 
 1.9.0
 
