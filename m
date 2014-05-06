@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261AbaEFRCl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 13:02:41 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:63837 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897AbaEFRCi (ORCPT
+	id S1752366AbaEFRD2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 13:03:28 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:49174 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281AbaEFRD1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 13:02:38 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Tue, 6 May 2014 13:06:20 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        =?ISO-8859-15?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
-Subject: Re: [perf] more perf_fuzzer memory corruption
-In-Reply-To: <alpine.DEB.2.10.1405060041140.1436@vincent-weaver-1.umelst.maine.edu>
-Message-ID: <alpine.DEB.2.10.1405061305210.3372@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1405021230130.22556@vincent-weaver-1.umelst.maine.edu> <20140502172731.GK30445@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405021337390.22556@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.02.1405022111540.6261@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1405021611540.23984@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.02.1405022243550.6261@ionos.tec.linutronix.de> <alpine.DEB.2.10.1405022227420.25174@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405022253530.25174@vincent-weaver-1.umelst.maine.edu>
- <20140505093124.GN17778@laptop.programming.kicks-ass.net> <alpine.DEB.2.10.1405051200010.31049@vincent-weaver-1.umelst.maine.edu> <20140505172951.GB7154@gmail.com> <alpine.DEB.2.10.1405060041140.1436@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 6 May 2014 13:03:27 -0400
+Message-ID: <1399395804.15399.27.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: josh@joshtriplett.org
+Cc: David Miller <davem@davemloft.net>, andi@firstfloor.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tom.zanussi@linux.intel.com, ak@linux.intel.com
+Date: Tue, 06 May 2014 10:03:24 -0700
+In-Reply-To: <20140506164546.GB20536@cloud>
+References: <1399328773-6531-9-git-send-email-andi@firstfloor.org>
+	 <20140505.231229.136734008603421707.davem@davemloft.net>
+	 <20140506032114.GP2382@two.firstfloor.org>
+	 <20140505.232327.578134514220748085.davem@davemloft.net>
+	 <20140506155703.GA20391@cloud>
+	 <1399394359.15399.20.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20140506164546.GB20536@cloud>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 May 2014, Vince Weaver wrote:
+On Tue, 2014-05-06 at 09:45 -0700, josh@joshtriplett.org wrote:
 
-> In any case if we can get the recent patches applied in time for 3.15 I 
-> think it will turn out to be a nice release perf-event-stability wise.
+> Sounds like we have some optimization to do, then; there's no
+> fundamental unfixable reason for that delta.
 
-I should also mention I have a list of open perf_fuzzer issues here:
-	http://web.eece.maine.edu/~vweaver/projects/perf_events/fuzzer/bugs_found.html
+I think you have little idea of the reasons for this delta.
 
-It's not organized well but it's how I keep track of the various issues 
-after I find and report them.
+Some servers handle 10 millions of TCP flows, using as little as 1KB per
+connection in user space, all included.
 
-Vince
+Do you have an idea of how much memory is needed for 10 millions TCP
+sockets in the kernel ?
+
+
+
