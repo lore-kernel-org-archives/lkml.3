@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067AbaEFWFG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 18:05:06 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:39323 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751670AbaEFWFF (ORCPT
+	id S1754194AbaEFWF4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 18:05:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42530 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751670AbaEFWFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 18:05:05 -0400
-Date: Tue, 6 May 2014 23:05:02 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Alessandro Zummo <a.zummo@towertech.it>
-cc: Andrew Morton <akpm@linux-foundation.org>, rtc-linux@googlegroups.com,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [rtc-linux] [PATCH 1/2] RTC: rtc-cmos: drivers/char/rtc.c features
- for DECstation support
-In-Reply-To: <20140506115458.4010da2e@linux.lan.towertech.it>
-Message-ID: <alpine.LFD.2.11.1405062258130.21408@eddie.linux-mips.org>
-References: <alpine.LFD.2.11.1404192224250.11598@eddie.linux-mips.org> <20140506115458.4010da2e@linux.lan.towertech.it>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 6 May 2014 18:05:55 -0400
+Date: Tue, 6 May 2014 15:05:53 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Jan Kara <jack@suse.cz>,
+        "mm-commits@vger.kernel.org" <mm-commits@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "kay@vrfy.org" <kay@vrfy.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: +
+ printk-print-initial-logbuf-contents-before-re-enabling-interrupts.patch
+ added to -mm tree
+Message-Id: <20140506150553.a12959fd71d83eddcb4b325d@linux-foundation.org>
+In-Reply-To: <20140506131234.GD30234@arm.com>
+References: <53640c8c.5++0zeO0pmfqKMwm%akpm@linux-foundation.org>
+	<20140502224651.GG23636@quack.suse.cz>
+	<20140506120648.GA30234@arm.com>
+	<20140506122958.GG9291@quack.suse.cz>
+	<20140506131234.GD30234@arm.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 May 2014, Alessandro Zummo wrote:
+On Tue, 6 May 2014 14:12:34 +0100 Will Deacon <will.deacon@arm.com> wrote:
 
-> > This brings in drivers/char/rtc.c functionality required for DECstation 
-> > and, should the maintainers decide to switch, Alpha systems to use 
-> > rtc-cmos.
+> > > > My opinion is that when you are printing from each and every interrupt
+> > > > which happens so often, then you have a problem and disabling IRQs in
+> > > > printk so that your interrupt doesn't happen that often seems like a poor
+> > > > solution to me. You could as well just ratelimit your debug messages,
+> > > > couldn't you?
+> > > 
+> > > My use-case was basically using printk as a debug trace during early boot
+> > > when bringing up Linux on a new CPU core. I don't think ratelimiting would
+> > > be the right thing there, since I really did want as many messages to
+> > > reach the console as possible (which is also why I wrote this patch, not
+> > > just the other one in the series).
+> >   OK, I understand. It just seems wrong to me to throttle all interrupts on
+> > the cpu while doing printing just because someone might be doing debug
+> > printing from the interrupt. Sure it's fine as a debug hack but on a
+> > production machine that seems rather counterproductive.
 > 
->  Seems sane. We need to be sure it doesn't break anything
->  on non-Alpha machines. Did you test it on x86? It would be fine if
->  we can get a couple of Tested-by:
+> Perhaps, but the one time I *really* want printk to be reliable is when I'm
+> using it to debug a problem.
 
- Thanks for your review.  I can't test x86 easily/immediately, but I'll 
-see what I can do, and will also appreciate if people can check that this 
-change didn't cause any regressions.  Also Andrew was kind enough to pull 
-this patch into his -mm tree, so hopefully any breakage will show up soon.
+If you're debugging a problem, you're able to alter printk!  So perhaps
+one way out of this is some developer-only ifdef to robustify printk
+for particular usage patterns.
 
-  Maciej
