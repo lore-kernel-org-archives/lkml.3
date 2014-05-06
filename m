@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337AbaEFPE1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 11:04:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52385 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751085AbaEFPE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 11:04:26 -0400
-Message-ID: <5368F9F0.5070702@redhat.com>
-Date: Tue, 06 May 2014 11:04:16 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/17] mm: page_alloc: Do not update zlc unless the zlc
- is active
-References: <1398933888-4940-1-git-send-email-mgorman@suse.de> <1398933888-4940-2-git-send-email-mgorman@suse.de>
-In-Reply-To: <1398933888-4940-2-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
+	id S1757603AbaEFPFM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 11:05:12 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:40631 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228AbaEFPFK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 11:05:10 -0400
+Date: Tue, 06 May 2014 11:05:04 -0400 (EDT)
+Message-Id: <20140506.110504.2135392385828482331.davem@davemloft.net>
+To: nicolas.palix@imag.fr
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tom.zanussi@linux.intel.com, ak@linux.intel.com, Julia.Lawall@lip6.fr,
+        Gilles.Muller@lip6.fr
+Subject: Re: [PATCH 23/24] net, diet: Add coccinelle script to convert
+ drivers to ETHTOOL_OPS
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAAxaTiOYTEQgibnpDBXdhNpJUAVrLFwxz0roq8Bin1rNnnsxgg@mail.gmail.com>
+References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
+	<1399328773-6531-24-git-send-email-andi@firstfloor.org>
+	<CAAxaTiOYTEQgibnpDBXdhNpJUAVrLFwxz0roq8Bin1rNnnsxgg@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 06 May 2014 08:05:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2014 04:44 AM, Mel Gorman wrote:
-> The zlc is used on NUMA machines to quickly skip over zones that are full.
-> However it is always updated, even for the first zone scanned when the
-> zlc might not even be active. As it's a write to a bitmap that potentially
-> bounces cache line it's deceptively expensive and most machines will not
-> care. Only update the zlc if it was active.
+From: Nicolas Palix <nicolas.palix@imag.fr>
+Date: Tue, 6 May 2014 11:27:27 +0200
+
+> I saw you rejected almost the entire patch series.
 > 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> However, is there any interest to enforce the use of SET_ETHTOOL_OPS ?
+> Are you likely to merge the patch 24/24 [1] ?
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+SET_ETHTOOL_OPS only exists so that drivers could be compiled
+on "older" kernels.
 
--- 
-All rights reversed
+But the usefulness of that is long gone, we've had netdev->ethtool_ops
+since way before we started using GIT.
+
+I'd rather see a patch which removes it, to be honest.
