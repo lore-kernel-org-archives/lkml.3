@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659AbaEFVF0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 17:05:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10260 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754524AbaEFVFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 17:05:25 -0400
-Message-ID: <53694E7D.6060706@redhat.com>
-Date: Tue, 06 May 2014 17:05:01 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1756024AbaEFVFe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 17:05:34 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:56573 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755794AbaEFVFb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 17:05:31 -0400
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>, Jan Kara <jack@suse.cz>,
-        Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Dave Chinner <david@fromorbit.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Mel Gorman <mgorman@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] nfsd: Only set PF_LESS_THROTTLE when really needed.
-References: <20140423022441.4725.89693.stgit@notabene.brown> <20140423024058.4725.38098.stgit@notabene.brown>
-In-Reply-To: <20140423024058.4725.38098.stgit@notabene.brown>
+In-Reply-To: <20140506200047.GB5619@two.firstfloor.org>
+References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
+	<CAFLxGvww8t-PpuS3B=dFvn8k3xBydk3CgA=qoLyEbkKJZJ0xhQ@mail.gmail.com>
+	<1399383246.8767.99.camel@empanada>
+	<CAADnVQLYiNfXRrXc=VZkGEFDbNhF63AzPg6Gyu6P1SF=6AiO7g@mail.gmail.com>
+	<1399390490.8767.122.camel@empanada>
+	<CAADnVQ+nCtshedoDWN+QgiKzsCzBcojZOzrhkfzsqyXTpi4L=w@mail.gmail.com>
+	<20140506200047.GB5619@two.firstfloor.org>
+Date: Tue, 6 May 2014 14:05:30 -0700
+Message-ID: <CAADnVQLR1ayAjmaRMq4+56BUTEXafgpPGfenvVrq8pGSq3+nVg@mail.gmail.com>
+Subject: Re: RFC: A reduced Linux network stack for small systems
+From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2014 10:40 PM, NeilBrown wrote:
-> PF_LESS_THROTTLE has a very specific use case: to avoid deadlocks
-> and live-locks while writing to the page cache in a loop-back
-> NFS mount situation.
-> 
-> It therefore makes sense to *only* set PF_LESS_THROTTLE in this
-> situation.
-> We now know when a request came from the local-host so it could be a
-> loop-back mount.  We already know when we are handling write requests,
-> and when we are doing anything else.
-> 
-> So combine those two to allow nfsd to still be throttled (like any
-> other process) in every situation except when it is known to be
-> problematic.
+On Tue, May 6, 2014 at 1:00 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>> not quite. I'm saying: no extra optimizations, no GCC changes.
+>> Compile kernel as-is. Most functions have a stub for mcount() already.
+>> Use it to track whether kernel function was called or not.
+>> Collect this data in userspace (as perf already does), add few
+>> more functions that had 'notrace' attribute on them, and feed this into
+>> special linker that unpacks existing vmlinux, throws away cold functions,
+>> relocates the rest and here you have tiny vmlinux without recompilation.
+>
+> That's very difficult for networking code. How would you know you
+> exercised all the corner cases in the TCP stack? And you wouldn't
+> want a remotely exploitable system because some important error
+> handler is missing.
 
-The FUSE code has something similar, but on the "client"
-side.
+I think removing functions by linker will get you the same level of bugs
+then stubbing functions out by kconfig.
+One doesn't have to use profile feedback to remove them.
+Either linker or config approach seems pretty much equivalent to me.
+In case of config, a lot of patches need to be reviewed and maintained.
+In case of linker the embedded setup can pick and choose without burdening
+mainline. If it crashes, it will be clear that it crashed due to call to removed
+function. Iteratively you'll get a setup that works for this
+particular application.
+Both approaches are full of potential crashes, undoing removal is much
+easier with linker. Best solution is to add memory and don't mess with .text.
 
-See BDI_CAP_STRICTLIMIT in mm/writeback.c
-
-Would it make sense to use that flag on loopback-mounted
-NFS filesystems?
-
--- 
-All rights reversed
+> I agree it may work for some other subsystems.
+>
+> -Andi
