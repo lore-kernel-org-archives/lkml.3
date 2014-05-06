@@ -1,211 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934402AbaEFIZv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 04:25:51 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:42561 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934304AbaEFIZq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 04:25:46 -0400
-Date: Tue, 6 May 2014 12:25:42 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        torvalds@linux-foundation.org, mgorman@suse.de, hpa@zytor.com,
-        mingo@kernel.org, steven@uplinklabs.net, riel@redhat.com,
-        david.vrabel@citrix.com, peterz@infradead.org, xemul@parallels.com
-Subject: [patch 2/2] mm: pgtable -- Require X86_64 for soft-dirty tracker, v2
-Message-ID: <20140506082542.GI28248@moon>
-References: <20140425081030.185969086@openvz.org>
- <20140425082042.848656782@openvz.org>
- <20140505163123.65e6f8853cdf0646f26bd5b4@linux-foundation.org>
+	id S934442AbaEFI2B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 04:28:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38600 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934235AbaEFI15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 04:27:57 -0400
+Message-ID: <53689D08.2070801@redhat.com>
+Date: Tue, 06 May 2014 10:27:52 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505163123.65e6f8853cdf0646f26bd5b4@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bandan Das <bsd@redhat.com>, kvm@vger.kernel.org
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 2/3] KVM: x86: use memory_prepare in fetch helper
+ function
+References: <1399336859-7227-1-git-send-email-bsd@redhat.com> <1399336859-7227-3-git-send-email-bsd@redhat.com>
+In-Reply-To: <1399336859-7227-3-git-send-email-bsd@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 04:31:23PM -0700, Andrew Morton wrote:
-> On Fri, 25 Apr 2014 12:10:32 +0400 Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> 
-> > Tracking dirty status on 2 level pages requires very ugly macros
-> > and taking into account how old the machines who can operate
-> > without PAE mode only are, lets drop soft dirty tracker from
-> > them for code simplicity (note I can't drop all the macros
-> > from 2 level pages by now since _PAGE_BIT_PROTNONE and
-> > _PAGE_BIT_FILE are still used even without tracker).
-> > 
-> > Linus proposed to completely rip off softdirty support on
-> > x86-32 (even with PAE) and since for CRIU we're not planning
-> > to support native x86-32 mode, lets do that.
-> > 
-> > (Softdirty tracker is relatively new feature which mostly used
-> >  by CRIU so I don't expect if such API change would cause problems
-> >  on userspace).
-> 
-> i386 allnoconfig:
-> 
-> In file included from /usr/src/25/arch/x86/include/asm/pgtable.h:886,
+Il 06/05/2014 02:40, Bandan Das ha scritto:
+> Insn fetch fastpath function. Not that
+> arch.walk_mmu->gva_to_gpa can't be used but let's
+> piggyback on top of interface meant for our purpose
+>
+> Signed-off-by: Bandan Das <bsd@redhat.com>
+> ---
+>  arch/x86/kvm/x86.c | 25 +++++++++++++++++--------
+>  1 file changed, 17 insertions(+), 8 deletions(-)
+>
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 17e3d661..cf69e3b 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -4065,29 +4065,38 @@ static int kvm_read_guest_virt_helper(gva_t addr, void *val, unsigned int bytes,
+>  				      struct x86_exception *exception)
+>  {
+>  	void *data = val;
+> -	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
+>  	int r = X86EMUL_CONTINUE;
+>
+>  	while (bytes) {
+> -		gpa_t gpa = vcpu->arch.walk_mmu->gva_to_gpa(vcpu, addr, access,
+> -							    exception);
+>  		unsigned offset = addr & (PAGE_SIZE-1);
+>  		unsigned toread = min(bytes, (unsigned)PAGE_SIZE - offset);
+>  		int ret;
+> +		unsigned long uaddr;
+>
+> -		if (gpa == UNMAPPED_GVA)
+> -			return X86EMUL_PROPAGATE_FAULT;
+> -		ret = kvm_read_guest(vcpu->kvm, gpa, data, toread);
+> +		ret = ctxt->ops->memory_prepare(ctxt, addr, toread,
+> +						exception, false,
+> +						NULL, &uaddr);
 
-Thanks! Here is an updated version.
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH -next] mm: pgtable -- Require X86_64 for soft-dirty tracker
+You can call the function from x86.c directly, no need to go through 
+ctxt->ops.
 
-Tracking dirty status on 2 level pages requires very ugly macros
-and taking into account how old the machines who can operate
-without PAE mode only are, lets drop soft dirty tracker from
-them for code simplicity (note I can't drop all the macros
-from 2 level pages by now since _PAGE_BIT_PROTNONE and
-_PAGE_BIT_FILE are still used even without tracker).
+> +		if (ret != X86EMUL_CONTINUE)
+> +			return ret;
+> +
+> +		if (unlikely(kvm_is_error_hva(uaddr))) {
+> +			r = X86EMUL_PROPAGATE_FAULT;
+> +			return r;
+> +		}
+> +
+> +		ret = __copy_from_user(data, (void __user *)uaddr, toread);
+>  		if (ret < 0) {
+>  			r = X86EMUL_IO_NEEDED;
+> -			goto out;
+> +			return r;
+>  		}
+>
+> +		ctxt->ops->memory_finish(ctxt, NULL, uaddr);
 
-Linus proposed to completely rip off softdirty support on
-x86-32 (even with PAE) and since for CRIU we're not planning
-to support native x86-32 mode, lets do that.
+No need to call memory_finish, since you know the implementation 
+(perhaps add a comment).
 
-(Softdirty tracker is relatively new feature which mostly used
- by CRIU so I don't expect if such API change would cause problems
- on userspace).
+Paolo
 
-v2 (by akpm@):
- - guard helpers with CONFIG_HAVE_ARCH_SOFT_DIRTY on i386, otherwise
-   it fails to build because we've a generic definitions in
-   asm-generic/pgtable.h
+>  		bytes -= toread;
+>  		data += toread;
+>  		addr += toread;
+>  	}
+> -out:
+> +
+>  	return r;
+>  }
+>
+>
 
-CC: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>
-CC: Peter Anvin <hpa@zytor.com>
-CC: Ingo Molnar <mingo@kernel.org>
-CC: Steven Noonan <steven@uplinklabs.net>
-CC: Rik van Riel <riel@redhat.com>
-CC: David Vrabel <david.vrabel@citrix.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- arch/x86/Kconfig                      |    2 -
- arch/x86/include/asm/pgtable-2level.h |   49 ----------------------------------
- arch/x86/include/asm/pgtable.h        |    5 +++
- 3 files changed, 6 insertions(+), 50 deletions(-)
-
-Index: linux-2.6.git/arch/x86/Kconfig
-===================================================================
---- linux-2.6.git.orig/arch/x86/Kconfig
-+++ linux-2.6.git/arch/x86/Kconfig
-@@ -106,7 +106,7 @@ config X86
- 	select HAVE_ARCH_SECCOMP_FILTER
- 	select BUILDTIME_EXTABLE_SORT
- 	select GENERIC_CMOS_UPDATE
--	select HAVE_ARCH_SOFT_DIRTY
-+	select HAVE_ARCH_SOFT_DIRTY if X86_64
- 	select CLOCKSOURCE_WATCHDOG
- 	select GENERIC_CLOCKEVENTS
- 	select ARCH_CLOCKSOURCE_DATA
-Index: linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
-===================================================================
---- linux-2.6.git.orig/arch/x86/include/asm/pgtable-2level.h
-+++ linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
-@@ -62,53 +62,6 @@ static inline unsigned long pte_bitop(un
- 	return ((value >> rightshift) & mask) << leftshift;
- }
- 
--#ifdef CONFIG_MEM_SOFT_DIRTY
--
--/*
-- * Bits _PAGE_BIT_PRESENT, _PAGE_BIT_FILE, _PAGE_BIT_SOFT_DIRTY and
-- * _PAGE_BIT_PROTNONE are taken, split up the 28 bits of offset
-- * into this range.
-- */
--#define PTE_FILE_MAX_BITS	28
--#define PTE_FILE_SHIFT1		(_PAGE_BIT_PRESENT + 1)
--#define PTE_FILE_SHIFT2		(_PAGE_BIT_FILE + 1)
--#define PTE_FILE_SHIFT3		(_PAGE_BIT_PROTNONE + 1)
--#define PTE_FILE_SHIFT4		(_PAGE_BIT_SOFT_DIRTY + 1)
--#define PTE_FILE_BITS1		(PTE_FILE_SHIFT2 - PTE_FILE_SHIFT1 - 1)
--#define PTE_FILE_BITS2		(PTE_FILE_SHIFT3 - PTE_FILE_SHIFT2 - 1)
--#define PTE_FILE_BITS3		(PTE_FILE_SHIFT4 - PTE_FILE_SHIFT3 - 1)
--
--#define PTE_FILE_MASK1		((1U << PTE_FILE_BITS1) - 1)
--#define PTE_FILE_MASK2		((1U << PTE_FILE_BITS2) - 1)
--#define PTE_FILE_MASK3		((1U << PTE_FILE_BITS3) - 1)
--
--#define PTE_FILE_LSHIFT2	(PTE_FILE_BITS1)
--#define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
--#define PTE_FILE_LSHIFT4	(PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)
--
--static __always_inline pgoff_t pte_to_pgoff(pte_t pte)
--{
--	return (pgoff_t)
--		(pte_bitop(pte.pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1,  0)		    +
--		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2,  PTE_FILE_LSHIFT2) +
--		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT3, PTE_FILE_MASK3,  PTE_FILE_LSHIFT3) +
--		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT4,           -1UL,  PTE_FILE_LSHIFT4));
--}
--
--static __always_inline pte_t pgoff_to_pte(pgoff_t off)
--{
--	return (pte_t){
--		.pte_low =
--			pte_bitop(off,                0, PTE_FILE_MASK1,  PTE_FILE_SHIFT1) +
--			pte_bitop(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2,  PTE_FILE_SHIFT2) +
--			pte_bitop(off, PTE_FILE_LSHIFT3, PTE_FILE_MASK3,  PTE_FILE_SHIFT3) +
--			pte_bitop(off, PTE_FILE_LSHIFT4,           -1UL,  PTE_FILE_SHIFT4) +
--			_PAGE_FILE,
--	};
--}
--
--#else /* CONFIG_MEM_SOFT_DIRTY */
--
- /*
-  * Bits _PAGE_BIT_PRESENT, _PAGE_BIT_FILE and _PAGE_BIT_PROTNONE are taken,
-  * split up the 29 bits of offset into this range.
-@@ -145,8 +98,6 @@ static __always_inline pte_t pgoff_to_pt
- 	};
- }
- 
--#endif /* CONFIG_MEM_SOFT_DIRTY */
--
- /* Encode and de-code a swap entry */
- #define SWP_TYPE_BITS (_PAGE_BIT_FILE - _PAGE_BIT_PRESENT - 1)
- #define SWP_OFFSET_SHIFT (_PAGE_BIT_PROTNONE + 1)
-Index: linux-2.6.git/arch/x86/include/asm/pgtable.h
-===================================================================
---- linux-2.6.git.orig/arch/x86/include/asm/pgtable.h
-+++ linux-2.6.git/arch/x86/include/asm/pgtable.h
-@@ -297,6 +297,7 @@ static inline pmd_t pmd_mknotpresent(pmd
- 	return pmd_clear_flags(pmd, _PAGE_PRESENT);
- }
- 
-+#ifdef CONFIG_HAVE_ARCH_SOFT_DIRTY
- static inline int pte_soft_dirty(pte_t pte)
- {
- 	return pte_flags(pte) & _PAGE_SOFT_DIRTY;
-@@ -332,6 +333,8 @@ static inline int pte_file_soft_dirty(pt
- 	return pte_flags(pte) & _PAGE_SOFT_DIRTY;
- }
- 
-+#endif /* CONFIG_HAVE_ARCH_SOFT_DIRTY */
-+
- /*
-  * Mask out unsupported bits in a present pgprot.  Non-present pgprots
-  * can use those bits for other purposes, so leave them be.
-@@ -865,6 +868,7 @@ static inline void update_mmu_cache_pmd(
- {
- }
- 
-+#ifdef CONFIG_HAVE_ARCH_SOFT_DIRTY
- static inline pte_t pte_swp_mksoft_dirty(pte_t pte)
- {
- 	VM_BUG_ON(pte_present_nonuma(pte));
-@@ -882,6 +886,7 @@ static inline pte_t pte_swp_clear_soft_d
- 	VM_BUG_ON(pte_present_nonuma(pte));
- 	return pte_clear_flags(pte, _PAGE_SWP_SOFT_DIRTY);
- }
-+#endif
- 
- #include <asm-generic/pgtable.h>
- #endif	/* __ASSEMBLY__ */
