@@ -1,114 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919AbaEFUmu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 16:42:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40858 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755769AbaEFUmd (ORCPT
+	id S1756054AbaEFUnh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 16:43:37 -0400
+Received: from g5t1627.atlanta.hp.com ([15.192.137.10]:14565 "EHLO
+	g5t1627.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755309AbaEFUnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 16:42:33 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Peter Hurley <peter@hurleysoftware.com>, Jiri Slaby <jslaby@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 1/3] n_tty: Fix n_tty_write crash when echoing in raw mode
-Date: Tue,  6 May 2014 13:42:18 -0700
-Message-Id: <1399408940-22784-2-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399408940-22784-1-git-send-email-kamal@canonical.com>
-References: <1399408940-22784-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 6 May 2014 16:43:35 -0400
+Message-ID: <1399409007.13799.24.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 0/4] ipc/shm.c: increase the limits for SHMMAX, SHMALL
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: mtk.manpages@gmail.com
+Cc: Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, aswin@hp.com,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Tue, 06 May 2014 13:43:27 -0700
+In-Reply-To: <1399406800.13799.20.camel@buesod1.americas.hpqcorp.net>
+References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
+	 <CAKgNAkjuU68hgyMOVGBVoBTOhhGdBytQh6H0ExiLoXfujKyP_w@mail.gmail.com>
+	 <1399406800.13799.20.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.1 -stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Peter Hurley <peter@hurleysoftware.com>
-
-commit 4291086b1f081b869c6d79e5b7441633dc3ace00 upstream.
-
-The tty atomic_write_lock does not provide an exclusion guarantee for
-the tty driver if the termios settings are LECHO & !OPOST.  And since
-it is unexpected and not allowed to call TTY buffer helpers like
-tty_insert_flip_string concurrently, this may lead to crashes when
-concurrect writers call pty_write. In that case the following two
-writers:
-* the ECHOing from a workqueue and
-* pty_write from the process
-race and can overflow the corresponding TTY buffer like follows.
-
-If we look into tty_insert_flip_string_fixed_flag, there is:
-  int space = __tty_buffer_request_room(port, goal, flags);
-  struct tty_buffer *tb = port->buf.tail;
-  ...
-  memcpy(char_buf_ptr(tb, tb->used), chars, space);
-  ...
-  tb->used += space;
-
-so the race of the two can result in something like this:
-              A                                B
-__tty_buffer_request_room
-                                  __tty_buffer_request_room
-memcpy(buf(tb->used), ...)
-tb->used += space;
-                                  memcpy(buf(tb->used), ...) ->BOOM
-
-B's memcpy is past the tty_buffer due to the previous A's tb->used
-increment.
-
-Since the N_TTY line discipline input processing can output
-concurrently with a tty write, obtain the N_TTY ldisc output_lock to
-serialize echo output with normal tty writes.  This ensures the tty
-buffer helper tty_insert_flip_string is not called concurrently and
-everything is fine.
-
-Note that this is nicely reproducible by an ordinary user using
-forkpty and some setup around that (raw termios + ECHO). And it is
-present in kernels at least after commit
-d945cb9cce20ac7143c2de8d88b187f62db99bdc (pty: Rework the pty layer to
-use the normal buffering logic) in 2.6.31-rc3.
-
-js: add more info to the commit log
-js: switch to bool
-js: lock unconditionally
-js: lock only the tty->ops->write call
-
-References: CVE-2014-0196
-Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/tty/n_tty.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 4c10837..86093e2 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -2345,8 +2345,12 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
- 			if (tty->ops->flush_chars)
- 				tty->ops->flush_chars(tty);
- 		} else {
-+			struct n_tty_data *ldata = tty->disc_data;
-+
- 			while (nr > 0) {
-+				mutex_lock(&ldata->output_lock);
- 				c = tty->ops->write(tty, b, nr);
-+				mutex_unlock(&ldata->output_lock);
- 				if (c < 0) {
- 					retval = c;
- 					goto break_out;
--- 
-1.9.1
+On Tue, 2014-05-06 at 13:06 -0700, Davidlohr Bueso wrote:
+> On Fri, 2014-05-02 at 15:16 +0200, Michael Kerrisk (man-pages) wrote:
+> > Hi Manfred,
+> > 
+> > On Mon, Apr 21, 2014 at 4:26 PM, Manfred Spraul
+> > <manfred@colorfullife.com> wrote:
+> > > Hi all,
+> > >
+> > > the increase of SHMMAX/SHMALL is now a 4 patch series.
+> > > I don't have ideas how to improve it further.
+> > 
+> > On the assumption that your patches are heading to mainline, could you
+> > send me a man-pages patch for the changes?
+> 
+> Btw, I think that the code could still use some love wrt documentation.
+> Andrew, please consider this for -next if folks agree. Thanks.
+> 
+> 8<----------------------------------------------------------
+> 
+> From: Davidlohr Bueso <davidlohr@hp.com>
+> Subject: [PATCH] ipc,shm: document new limits in the uapi header
+> 
+> This is useful in the future and allows users to
+> better understand the reasoning behind the changes.
+> 
+> Also use UL as we're dealing with it anyways.
+> 
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> ---
+>  include/uapi/linux/shm.h | 14 ++++++++------
+>  1 file changed, 8 insertions(+), 6 deletions(-)
+> 
+> diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
+> index 74e786d..e37fb08 100644
+> --- a/include/uapi/linux/shm.h
+> +++ b/include/uapi/linux/shm.h
+> @@ -8,17 +8,19 @@
+>  #endif
+>  
+>  /*
+> - * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
+> - * be modified by sysctl.
+> + * SHMMNI, SHMMAX and SHMALL are the default upper limits which can be
+> + * modified by sysctl. Both SHMMAX and SHMALL have their default values
+> + * to the maximum limit which is as large as it can be without helping
+> + * userspace overflow the values. There is really nothing the kernel
+> + * can do to avoid this any variables. It is therefore not advised to
+                              ^^^^^^^^^^ should be 'further', sorry.
 
