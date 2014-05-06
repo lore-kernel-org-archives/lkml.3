@@ -1,109 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934995AbaEFLI1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 07:08:27 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36971 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934894AbaEFLGf (ORCPT
+	id S935010AbaEFLIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 07:08:35 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43766 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934988AbaEFLI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 07:06:35 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <dmitry.torokhov@gmail.com>
-CC: <rydberg@euromail.se>, <balbi@ti.com>, <dmurphy@ti.com>,
-        <mugunthanvnm@ti.com>, <nsekhar@ti.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v5 3/7] Input: pixcir_i2c_ts: Get rid of pdata->attb_read_val()
-Date: Tue, 6 May 2014 14:06:08 +0300
-Message-ID: <1399374372-29123-4-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1399374372-29123-1-git-send-email-rogerq@ti.com>
-References: <1399374372-29123-1-git-send-email-rogerq@ti.com>
+	Tue, 6 May 2014 07:08:27 -0400
+Date: Tue, 6 May 2014 13:08:26 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Zheng, Lv" <lv.zheng@intel.com>
+Cc: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>
+Subject: Re: [PATCH 02/27] ACPICA: Utilities: Deploy ACPI_DEBUGGER_EXEC for
+ ACPI_DEBUGGER enabled code in utglobal.c.
+Message-ID: <20140506110826.GB7089@amd.pavel.ucw.cz>
+References: <cover.1398817612.git.lv.zheng@intel.com>
+ <53dbe352c16de24ea99d00af21eb01750af90074.1398817612.git.lv.zheng@intel.com>
+ <20140506075353.GA20931@xo-6d-61-c0.localdomain>
+ <1AE640813FDE7649BE1B193DEA596E880255A03B@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E880255A03B@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the attb_read_val() platform hook. Instead,
-read the ATTB gpio directly from the driver.
+Hi!
 
-Fail if valid ATTB gpio is not provided by patform data.
+> > From: Pavel Machek [mailto:pavel@ucw.cz]
+> > Sent: Tuesday, May 06, 2014 3:54 PM
+> > 
+> > On Wed 2014-04-30 10:03:39, Lv Zheng wrote:
+> > > This patch deploys ACPI_DEBUGGER_EXEC usage to utglobal.c to reduce "ifdef"
+> > > of ACPI_DEBUGGER.  No functional changes.  Lv Zheng.
+> > >
+> > > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> > > Signed-off-by: Bob Moore <robert.moore@intel.com>
+> > > ---
+> > >  drivers/acpi/acpica/utglobal.c |    4 +---
+> > >  1 file changed, 1 insertion(+), 3 deletions(-)
+> > >
+> > > diff --git a/drivers/acpi/acpica/utglobal.c b/drivers/acpi/acpica/utglobal.c
+> > > index f3abeae..825b064 100644
+> > > --- a/drivers/acpi/acpica/utglobal.c
+> > > +++ b/drivers/acpi/acpica/utglobal.c
+> > > @@ -377,9 +377,7 @@ acpi_status acpi_ut_init_globals(void)
+> > >  	acpi_gbl_disable_mem_tracking = FALSE;
+> > >  #endif
+> > >
+> > > -#ifdef ACPI_DEBUGGER
+> > > -	acpi_gbl_db_terminate_threads = FALSE;
+> > > -#endif
+> > > +	ACPI_DEBUGGER_EXEC(acpi_gbl_db_terminate_threads = FALSE);
+> > >
+> > >  	return_ACPI_STATUS(AE_OK);
+> > 
+> > Is it just me or is this incredibly ugly?
+> 
+> This patch is no-op for Linux kernel.
+> ACPI_DEBUGGER is not enabled for Linux kernel.
+> 
+> This patch is here to reduce the source code differences between
+> Linux and ACPICA.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
----
- drivers/input/touchscreen/pixcir_i2c_ts.c | 16 +++++++++++++++-
- include/linux/input/pixcir_ts.h           |  2 +-
- 2 files changed, 16 insertions(+), 2 deletions(-)
+> ACPICA release is done by a set of conversion utilities, the process is known as linuxizing.
+> The generation result of the linuxizing will require more human
+> interventions if such differences grow bigger.
 
-diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
-index 96a1b1e..8a7da61 100644
---- a/drivers/input/touchscreen/pixcir_i2c_ts.c
-+++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
-@@ -24,6 +24,7 @@
- #include <linux/i2c.h>
- #include <linux/input.h>
- #include <linux/input/pixcir_ts.h>
-+#include <linux/gpio.h>
- 
- struct pixcir_i2c_ts_data {
- 	struct i2c_client *client;
-@@ -87,11 +88,12 @@ static void pixcir_ts_poscheck(struct pixcir_i2c_ts_data *data)
- static irqreturn_t pixcir_ts_isr(int irq, void *dev_id)
- {
- 	struct pixcir_i2c_ts_data *tsdata = dev_id;
-+	const struct pixcir_ts_platform_data *pdata = tsdata->chip;
- 
- 	while (tsdata->running) {
- 		pixcir_ts_poscheck(tsdata);
- 
--		if (tsdata->chip->attb_read_val())
-+		if (gpio_get_value(pdata->gpio_attb))
- 			break;
- 
- 		msleep(20);
-@@ -296,6 +298,11 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 	if (!pdata) {
- 		dev_err(&client->dev, "platform data not defined\n");
- 		return -EINVAL;
-+	} else {
-+		if (!gpio_is_valid(pdata->gpio_attb)) {
-+			dev_err(dev, "Invalid gpio_attb in pdata\n");
-+			return -EINVAL;
-+		}
- 	}
- 
- 	tsdata = devm_kzalloc(dev, sizeof(*tsdata), GFP_KERNEL);
-@@ -328,6 +335,13 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 
- 	input_set_drvdata(input, tsdata);
- 
-+	error = devm_gpio_request_one(dev, pdata->gpio_attb,
-+				      GPIOF_DIR_IN, "pixcir_i2c_attb");
-+	if (error) {
-+		dev_err(dev, "Failed to request ATTB gpio\n");
-+		return error;
-+	}
-+
- 	error = devm_request_threaded_irq(dev, client->irq, NULL, pixcir_ts_isr,
- 					  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
- 					  client->name, tsdata);
-diff --git a/include/linux/input/pixcir_ts.h b/include/linux/input/pixcir_ts.h
-index 7942804..160cf35 100644
---- a/include/linux/input/pixcir_ts.h
-+++ b/include/linux/input/pixcir_ts.h
-@@ -44,9 +44,9 @@ enum pixcir_int_mode {
- #define PIXCIR_INT_POL_HIGH	(1UL << 2)
- 
- struct pixcir_ts_platform_data {
--	int (*attb_read_val)(void);
- 	int x_max;
- 	int y_max;
-+	int gpio_attb;		/* GPIO connected to ATTB line */
- };
- 
- #endif
+You don't have to do the change to the original ACPICA release, do
+you?
+
+Would it be feasible to modify your linuxizing scripts to simply
+delete #ifdefs that can not happen for linux?
+								Pavel
+
 -- 
-1.8.3.2
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
