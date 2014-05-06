@@ -1,42 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751205AbaEFQpR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 12:45:17 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:61427 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885AbaEFQpP (ORCPT
+	id S1751660AbaEFQpv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 12:45:51 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:42514 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944AbaEFQpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 12:45:15 -0400
+	Tue, 6 May 2014 12:45:49 -0400
+Date: Tue, 6 May 2014 09:45:46 -0700
+From: josh@joshtriplett.org
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, andi@firstfloor.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tom.zanussi@linux.intel.com, ak@linux.intel.com
+Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
+Message-ID: <20140506164546.GB20536@cloud>
+References: <1399328773-6531-9-git-send-email-andi@firstfloor.org>
+ <20140505.231229.136734008603421707.davem@davemloft.net>
+ <20140506032114.GP2382@two.firstfloor.org>
+ <20140505.232327.578134514220748085.davem@davemloft.net>
+ <20140506155703.GA20391@cloud>
+ <1399394359.15399.20.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-From: Brian Lilly <brian@crystalfontz.com>
-Date: Tue, 6 May 2014 09:44:34 -0700
-Message-ID: <CAOk88BLR=nwNGdT++39vLdOt=TwZmemF-trSQPY8AdMN9tKtKQ@mail.gmail.com>
-Subject: i.MX28 based system losing eth0 on boot
-To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Jim Baxter <jim_baxter@mentor.com>, Frank Li <Frank.Li@freescale.com>,
-        Fugang Duan <B38611@freescale.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399394359.15399.20.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Uwe:
+On Tue, May 06, 2014 at 09:39:19AM -0700, Eric Dumazet wrote:
+> On Tue, 2014-05-06 at 08:57 -0700, josh@joshtriplett.org wrote:
+> 
+> > A NAK isn't going to cut it, here; tiny Linux systems are going to
+> > exist, and they shouldn't have to maintain a long-term out-of-tree fork
+> > or use crazy things like LWIP.
+> 
+> What's wrong with user space implementations of networking stacks ?
 
-With commit a264b981f2c76e281ef27e7232774bf6c54ec865 we're having eth0
-come up, then brought right back down with an MDIO rx timeout moments
-after.  Adding back in the removed code keeps the interface alive and
-it's working afterward without trouble.  I've tested the re-inserted
-code in 3.12, 3.14 without issue on our boards.
+What's wrong with the kernel implementation?
 
-Is there something else that can be done to prevent the MDIO timeouts?
-We are using basically the same schematic for networking as the
-imx28evk.
+> For many usages, it can bring 10 times the performance of having user
+> application and kernel sockets.
 
-Any thoughts on how to resolve this?
+Sounds like we have some optimization to do, then; there's no
+fundamental unfixable reason for that delta.
 
-Thanks,
-Brian Lilly
+> In any cases, we do not model kernel implementations to 'compete' with
+> user space.
+> 
+> We simply can not compete with user space, as a programmer is free to
+> keep what he really wants/needs.
+
+The kernel can do the same.  Consider the idea of analyzing a set of
+userspace programs, determining what kernel functionality they do and
+don't need, feeding that information into the kernel build process, and
+automatically dropping unused bits of the kernel.
+
+Ideally, that kind of process would support eliminating kernel config
+options that just select userspace-visible interfaces, leaving only the
+kernel config options that change how those interfaces behave
+(size/performance/feature tradeoffs).
+
+- Josh Triplett
