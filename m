@@ -1,158 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934851AbaEFLEf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 07:04:35 -0400
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:32502
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934579AbaEFLEb (ORCPT
+	id S934866AbaEFLEw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 07:04:52 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:30368 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934579AbaEFLEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 07:04:31 -0400
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VPS5(zzbb2dI98dI9371Ie0eah1432I4015Ic8kzz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2fh95h839h947hc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h268bh26d3h27e2h2673i19b6n)
-Date: Tue, 6 May 2014 13:04:22 +0200
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 6 May 2014 07:04:50 -0400
+Date: Tue, 6 May 2014 07:04:46 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, pmladek@suse.cz,
+        Peter Zijlstra <peterz@infradead.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH] printk: Remove separate printk_sched buffers and use
+ printk buf instead
+Message-ID: <20140506070446.33bde17c@gandalf.local.home>
+In-Reply-To: <20140506094557.GA9291@quack.suse.cz>
+References: <20140505191846.35aa6f9b@gandalf.local.home>
+	<20140506094557.GA9291@quack.suse.cz>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] ARM: zynq: dt: Clean up device tree
-References: <1399310168-6099-1-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1399310168-6099-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-Message-ID: <cb504244-1639-4ad9-97c3-4258507fb647@CO9EHSMHS026.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2014 07:16 PM, Soren Brinkmann wrote:
->  - Use generic node names
->  - Fix up some weird formatting and white spaces
->  - Update copyright info
-> 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
-> 
->  arch/arm/boot/dts/zynq-7000.dtsi | 29 +++++++++++++++--------------
->  1 file changed, 15 insertions(+), 14 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-> index c1176abc34d9..bed6e0aed00a 100644
-> --- a/arch/arm/boot/dts/zynq-7000.dtsi
-> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
-> @@ -1,5 +1,5 @@
->  /*
-> - *  Copyright (C) 2011 Xilinx
-> + *  Copyright (C) 2011 - 2014 Xilinx
->   *
->   * This software is licensed under the terms of the GNU General Public
->   * License version 2, as published by the Free Software Foundation, and
-> @@ -55,7 +55,7 @@
->  		interrupt-parent = <&intc>;
->  		ranges;
->  
-> -		i2c0: zynq-i2c@e0004000 {
-> +		i2c0: i2c@e0004000 {
->  			compatible = "cdns,i2c-r1p10";
->  			status = "disabled";
->  			clocks = <&clkc 38>;
-> @@ -66,7 +66,7 @@
->  			#size-cells = <0>;
->  		};
->  
-> -		i2c1: zynq-i2c@e0005000 {
-> +		i2c1: i2c@e0005000 {
->  			compatible = "cdns,i2c-r1p10";
->  			status = "disabled";
->  			clocks = <&clkc 39>;
-> @@ -95,7 +95,7 @@
->  			cache-level = <2>;
->  		};
->  
-> -		uart0: uart@e0000000 {
-> +		uart0: serial@e0000000 {
->  			compatible = "xlnx,xuartps";
->  			status = "disabled";
->  			clocks = <&clkc 23>, <&clkc 40>;
-> @@ -104,7 +104,7 @@
->  			interrupts = <0 27 4>;
->  		};
->  
-> -		uart1: uart@e0001000 {
-> +		uart1: serial@e0001000 {
->  			compatible = "xlnx,xuartps";
->  			status = "disabled";
->  			clocks = <&clkc 24>, <&clkc 41>;
-> @@ -131,7 +131,7 @@
->  			clock-names = "pclk", "hclk", "tx_clk";
->  		};
->  
-> -		sdhci0: ps7-sdhci@e0100000 {
-> +		sdhci0: sdhci@e0100000 {
->  			compatible = "arasan,sdhci-8.9a";
->  			status = "disabled";
->  			clock-names = "clk_xin", "clk_ahb";
-> @@ -141,7 +141,7 @@
->  			reg = <0xe0100000 0x1000>;
->  		} ;
->  
-> -		sdhci1: ps7-sdhci@e0101000 {
-> +		sdhci1: sdhci@e0101000 {
->  			compatible = "arasan,sdhci-8.9a";
->  			status = "disabled";
->  			clock-names = "clk_xin", "clk_ahb";
-> @@ -185,26 +185,27 @@
->  			clocks = <&clkc 4>;
->  		};
->  
-> -		ttc0: ttc0@f8001000 {
-> +		ttc0: timer@f8001000 {
->  			interrupt-parent = <&intc>;
-> -			interrupts = < 0 10 4 0 11 4 0 12 4 >;
-> +			interrupts = <0 10 4>, <0 11 4>, <0 12 4>;
->  			compatible = "cdns,ttc";
->  			clocks = <&clkc 6>;
->  			reg = <0xF8001000 0x1000>;
->  		};
->  
-> -		ttc1: ttc1@f8002000 {
-> +		ttc1: timer@f8002000 {
->  			interrupt-parent = <&intc>;
-> -			interrupts = < 0 37 4 0 38 4 0 39 4 >;
-> +			interrupts = <0 37 4>, <0 38 4>, <0 39 4>;
->  			compatible = "cdns,ttc";
->  			clocks = <&clkc 6>;
->  			reg = <0xF8002000 0x1000>;
->  		};
-> -		scutimer: scutimer@f8f00600 {
-> +
-> +		scutimer: timer@f8f00600 {
->  			interrupt-parent = <&intc>;
-> -			interrupts = < 1 13 0x301 >;
-> +			interrupts = <1 13 0x301>;
->  			compatible = "arm,cortex-a9-twd-timer";
-> -			reg = < 0xf8f00600 0x20 >;
-> +			reg = <0xf8f00600 0x20>;
->  			clocks = <&clkc 4>;
->  		} ;
->  	};
-> 
+On Tue, 6 May 2014 11:45:57 +0200
+Jan Kara <jack@suse.cz> wrote:
 
-Looks good to me. Applied to zynq/dt branch.
+> On Mon 05-05-14 19:18:46, Steven Rostedt wrote:
+> > To prevent deadlocks with doing a printk inside the scheduler,
+> > printk_sched() was created. The issue is that printk has a console_sem
+> > that it can grab and release. The release does a wake up if there's a
+> > task pending on the sem, and this wake up grabs the rq locks that is
+> > held in the scheduler. This leads to a possible deadlock if the wake up
+> > uses the same rq as the one with the rq lock held already.
+> > 
+> > What printk_sched() does is to save the printk write in a per cpu buffer
+> > and sets the PRINTK_PENDING_SCHED flag. On a timer tick, if this flag is
+> > set, the printk() is done against the buffer.
+> > 
+> > There's a couple of issues with this approach.
+> > 
+> > 1) If two printk_sched()s are called before the tick, the second one
+> > will overwrite the first one.
+> > 
+> > 2) The temporary buffer is 512 bytes and is per cpu. This is a quite a
+> > bit of space wasted for something that is seldom used.
+> > 
+> > In order to remove this, the printk_sched() can use the printk buffer
+> > instead, and delay the console_trylock()/console_unlock() to the queued
+> > work.
+> > 
+> > Because printk_sched() would then be taking the logbuf_lock, the
+> > logbuf_lock must not be held while doing anything that may call into the
+> > scheduler functions, which includes wake ups. Unfortunately, printk()
+> > also has a console_sem that it uses, and on release, the
+> > up(&console_sem) may do a wake up of any pending waiters. This must be
+> > avoided while holding the logbuf_lock.
+> > 
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+>   Andrew already has this patch in -mm tree AFAIK...
 
-Thanks,
-Michal
+Ah, and somebody told me that it wasn't in linux-next. But looking at
+it now, it seems to be.
 
+Thanks!
 
+-- Steve
