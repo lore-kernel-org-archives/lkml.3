@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933405AbaEFA0d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 20:26:33 -0400
-Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:54872
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933005AbaEFA0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 20:26:32 -0400
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH] ARM: LPAE: Update the comment to support the LPAE
-Date: Tue, 6 May 2014 07:40:56 +0800
-Message-ID: <1399333256-10471-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.1;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(199002)(189002)(86362001)(62966002)(20776003)(47776003)(81342001)(6806004)(93916002)(64706001)(81542001)(80022001)(77096999)(92566001)(92726001)(85852003)(83072002)(48376002)(87286001)(21056001)(79102001)(88136002)(4396001)(89996001)(87936001)(83322001)(19580405001)(19580395003)(44976005)(31966008)(74502001)(74662001)(76482001)(77982001)(50226001)(77156001)(50466002)(50986999)(46102001)(99396002)(36756003)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB503;H:tx30smr01.am.freescale.net;FPR:;PTR:gate-tx3.freescale.com;A:1;MX:1;LANG:en;
+	id S933462AbaEFA1K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 20:27:10 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:55040 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933070AbaEFA1J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 20:27:09 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: "Zheng, Lv" <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>
+Subject: Re: [PATCH 20/27] ACPICA: Tables: Fix invalid pointer accesses in acpi_tb_parse_root_table().
+Date: Tue, 06 May 2014 02:43:44 +0200
+Message-ID: <6913597.VSrPZ98ePF@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CA+5PVA58527N76yJ8yNZPAbOz6YepR3RHXtjaV6t0i1nCYwcXg@mail.gmail.com>
+References: <cover.1398817612.git.lv.zheng@intel.com> <1AE640813FDE7649BE1B193DEA596E8802559B1C@SHSMSX101.ccr.corp.intel.com> <CA+5PVA58527N76yJ8yNZPAbOz6YepR3RHXtjaV6t0i1nCYwcXg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Forefront-PRVS: 0203C93D51
-Authentication-Results: spf=fail (sender IP is 192.88.168.1)
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the LPAE maybe enabled, so we should update the comment
-to support it.
+On Monday, May 05, 2014 08:42:46 AM Josh Boyer wrote:
+> On Mon, May 5, 2014 at 12:23 AM, Zheng, Lv <lv.zheng@intel.com> wrote:
+> > Hi, Rafael
+> >
+> >> From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Rafael J. Wysocki
+> >> Sent: Monday, May 05, 2014 8:43 AM
+> >>
+> >> On Saturday, May 03, 2014 08:59:14 AM Josh Boyer wrote:
+> >> > On Tue, Apr 29, 2014 at 10:05 PM, Lv Zheng <lv.zheng@intel.com> wrote:
+> >> > > The commit of back porting Linux XSDT validation mechanism has introduced
+> >> > > a regreession:
+> >> > >   Commit: 671cc68dc61f029d44b43a681356078e02d8dab8
+> >> > >   Subject: ACPICA: Back port and refine validation of the XSDT root table.
+> >> > > There is a pointer still accessed after unmapping.
+> >> > >
+> >> > > This patch fixes this issue.  Lv Zheng.
+> >> > >
+> >> > > Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=73911
+> >> > > Buglink: https://bugs.archlinux.org/task/39811
+> >> > > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> >> > > Reported-and-tested-by: Bruce Chiarelli <mano155@gmail.com>
+> >> > > Reported-and-tested-by: Spyros Stathopoulos <spystath@gmail.com>
+> >> > > Signed-off-by: Bob Moore <robert.moore@intel.com>
+> >> > > Cc: <stable@vger.kernel.org> # 3.14.x: 671cc68: ACPICA: Back port and refine validation of the XSDT root table.
+> >> >
+> >> > This patch should get into 3.15-rcX soon.  It fixes a known regression
+> >> > that prevents booting on machines with AMI firmware, and that is
+> >> > present in 3.14 so we need it for stable as well.  Rafael?
+> >>
+> >> Lv, is it safe to take this patch alone into 3.15-rc?
+> >
+> > Yes, it's safe to only take this patch to be a regression fix.
+> 
+> FWIW, Fedora is carrying this on top of 3.14.2 already, and people
+> with the impacted machines say it's working for them.  So I agree it
+> should be safe.
+> 
+> Thanks to the both of you.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- arch/arm/kernel/head.S | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+OK, queued up for 3.15, thanks!
 
-diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-index 914616e..005af2d 100644
---- a/arch/arm/kernel/head.S
-+++ b/arch/arm/kernel/head.S
-@@ -29,10 +29,10 @@
- 
- /*
-  * swapper_pg_dir is the virtual address of the initial page table.
-- * We place the page tables 16K below KERNEL_RAM_VADDR.  Therefore, we must
-- * make sure that KERNEL_RAM_VADDR is correctly set.  Currently, we expect
-- * the least significant 16 bits to be 0x8000, but we could probably
-- * relax this restriction to KERNEL_RAM_VADDR >= PAGE_OFFSET + 0x4000.
-+ * We place the page tables PG_DIR_SIZE below KERNEL_RAM_VADDR. Therefore,
-+ * we must make sure that KERNEL_RAM_VADDR is correctly set. Currently,
-+ * we expect the least significant 16 bits to be 0x8000, but we could probably
-+ * relax this restriction to KERNEL_RAM_VADDR >= PAGE_OFFSET + PG_DIR_SIZE.
-  */
- #define KERNEL_RAM_VADDR	(PAGE_OFFSET + TEXT_OFFSET)
- #if (KERNEL_RAM_VADDR & 0xffff) != 0x8000
 -- 
-1.8.4
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
