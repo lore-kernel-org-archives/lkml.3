@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934284AbaEFHXO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 03:23:14 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:56064 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934167AbaEFHXJ (ORCPT
+	id S934258AbaEFHXM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 03:23:12 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:65006 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934148AbaEFHXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 May 2014 03:23:09 -0400
-Date: Tue, 6 May 2014 09:23:04 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: jolsa@redhat.com, a.p.zijlstra@chello.nl, paulus@samba.org,
-        acme@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3] perf tools: Clarify the output of perf sched map.
-Message-ID: <20140506072304.GA25402@gmail.com>
-References: <20140506062350.GA25208@gmail.com>
- <1399354741-19522-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Introducing Exynos ChipId driver
+Date: Tue, 06 May 2014 09:22:32 +0200
+Message-ID: <10277248.fmjBNTktBZ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAL_JsqJXE4uXKA6XU1=3zFjdcEXHyUat2dL6wDKiZBx8S-p+Xg@mail.gmail.com>
+References: <1399097500-4052-1-git-send-email-pankaj.dubey@samsung.com> <13946837.RfnRDPQdge@wuerfel> <CAL_JsqJXE4uXKA6XU1=3zFjdcEXHyUat2dL6wDKiZBx8S-p+Xg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399354741-19522-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:3BGjlqYM15GrjAgBIbte8u7Qwl9Jzwdhu5XMhlN8SNx
+ /AchyaM8D8+Lwj4GPqzrDaMITgL5jlshQZyp7C8vp9JCt+K9TV
+ 8k0SEKs1aToqUQCV8Z+/IGQhprgMHWUYs8XcNrgZRX8Aqdsvna
+ 7BUt+1PLn0ezR8/k57FxJ6Cu/ozw7FWfQZvxbjz6XEEwP22sQG
+ bAVWlXI5fsmQZHa+TjXRqNRenlOXwOI5aH0G9KxaRpKLkyGHwU
+ +UtI0k7tl6tz+p52LVdvEndoInrMWC5lheN1tV0bN4ooLyeF1V
+ zs6Ot/mSGcO+xroZNicfe0ScWQmU+7yRz7XGrQ4KgKzL78cdXl
+ KmJec9vZU9bcEXvud3aA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 05 May 2014 10:34:02 Rob Herring wrote:
+> 
+> > Ideally this should be done by slightly restructuring the DT
+> > source to make all on-chip devices appear below the soc node.
+> > We'd have to think a bit about how to best do this while
+> > preserving compatibility with existing dts files.
+> 
+> I don't agree. How is a block with chip ID info the parent of all the
+> other devices?
+> 
+> In doing some work to move default of_platform_populate out of
+> platforms, I noticed that most platforms using the soc device are
+> making it the parent of platform devices. I think this is either wrong
+> or all platforms should have a default soc device. It makes little
+> sense for some platforms to have a devices under a soc sysfs directory
+> while others do not. Or the location changes when a platform latter
+> adds the soc device.
 
-* Dongsheng Yang <yangds.fnst@cn.fujitsu.com> wrote:
+We had a long discussion about this when we introduced the drivers/soc
+framework. The intention is that the /sys/devices/soc* node is meant to
+describe the SoC in its entirety, the same way you have a pci0000:00 node
+as the root of all PCI devices of the first pci host bridge on a PC
+system. This also reflects the reality of a SoC, which normally has one
+bus that the CPU is connected to and that has all the other devices as
+children.
 
-> From: Dongsheng <yangds.fnst@cn.fujitsu.com>
-> 
-> In output of perf sched map, any shortname of thread will be explained
-> at the first time when it appear.
-> 
-> Example:
->               *A0       228836.978985 secs A0 => perf:23032
->           *.   A0       228836.979016 secs B0 => swapper:0
->            .  *C0       228836.979099 secs C0 => migration/3:22
->   *A0      .   C0       228836.979115 secs
->    A0      .  *.        228836.979115 secs
-> 
-> But B0, which is explained as swapper:0 did not appear in the
-> left part of output. Instead, we use '.' as the shortname of
-> swapper:0. So the comment of "B0 => swapper:0" is not easy to
-> understand.
-> 
-> This patch clarify the output of perf sched map with not allocating
-> one letter-number shortname for swapper:0 and print ". => swapper:0"
-> as the explaination for swapper:0.
-> 
-> Example:
->               *A0       228836.978985 secs A0 => perf:23032
->           * .  A0       228836.979016 secs .  => swapper:0
->             . *B0       228836.979099 secs B0 => migration/3:22
->   *A0       .  B0       228836.979115 secs
->    A0       . * .       228836.979115 secs
->    A0     *C0   .       228836.979225 secs C0 => ksoftirqd/2:18
->    A0     *D0   .       228836.979236 secs D0 => rcu_sched:7
-> 
-> Signed-off-by: Dongsheng <yangds.fnst@cn.fujitsu.com>
-> Acked-by: Ingo Molnar <mingo@kernel.org>
+Having the chipid registers as part of the top-level bus should not
+be interpreted as having the other devices as children of the chipid
+device, but rather the chipid registers as a property of the soc itself
+as opposed to a random device that happens to be part of the soc.
 
-Looks good to me, thanks!
-
-	Ingo
+	Arnd
