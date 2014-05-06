@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934340AbaEFIDV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 04:03:21 -0400
-Received: from relay.parallels.com ([195.214.232.42]:52257 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934069AbaEFIDS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 04:03:18 -0400
-Message-ID: <1399363388.3718.59.camel@tkhai>
-Subject: [PATCH] kmod: Pass usermodehelper "-b" to use blacklist commands
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        <tkhai@yandex.ru>
-Date: Tue, 6 May 2014 12:03:08 +0400
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	id S934357AbaEFID5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 04:03:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58079 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934240AbaEFIDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 04:03:51 -0400
+Date: Tue, 6 May 2014 10:03:46 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Ingo Molnar <mingo@kernel.org>
+cc: David Lang <david@lang.hm>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Seth Jennings <sjenning@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+In-Reply-To: <20140506073228.GA26271@gmail.com>
+Message-ID: <alpine.LNX.2.00.1405060955180.3969@pobox.suse.cz>
+References: <cover.1398958771.git.jpoimboe@redhat.com> <alpine.LRH.2.00.1405021504320.22053@twin.jikos.cz> <alpine.DEB.2.02.1405051633080.14881@nftneq.ynat.uz> <alpine.LNX.2.00.1405060147190.3969@pobox.suse.cz> <20140506073228.GA26271@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-User may want to prohibit autoloading of some modules,
-which happens when someone in kernel calls request_module().
-    
-For comparison, udev considers blacklist even if corresponding
-hardware presents in the system. In-kernel request_module()
-functionality is rather similar to udev's, so user may want
-to disallow it too.
-    
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
----
- kernel/kmod.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+On Tue, 6 May 2014, Ingo Molnar wrote:
 
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index 0ac67a5..68a4ca4 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -71,7 +71,7 @@ char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe";
- 
- static void free_modprobe_argv(struct subprocess_info *info)
- {
--	kfree(info->argv[3]); /* check call_modprobe() */
-+	kfree(info->argv[4]); /* check call_modprobe() */
- 	kfree(info->argv);
- }
- 
-@@ -85,7 +85,7 @@ static int call_modprobe(char *module_name, int wait)
- 		NULL
- 	};
- 
--	char **argv = kmalloc(sizeof(char *[5]), GFP_KERNEL);
-+	char **argv = kmalloc(sizeof(char *[6]), GFP_KERNEL);
- 	if (!argv)
- 		goto out;
- 
-@@ -95,9 +95,10 @@ static int call_modprobe(char *module_name, int wait)
- 
- 	argv[0] = modprobe_path;
- 	argv[1] = "-q";
--	argv[2] = "--";
--	argv[3] = module_name;	/* check free_modprobe_argv() */
--	argv[4] = NULL;
-+	argv[2] = "-b";
-+	argv[3] = "--";
-+	argv[4] = module_name;	/* check free_modprobe_argv() */
-+	argv[5] = NULL;
- 
- 	info = call_usermodehelper_setup(modprobe_path, argv, envp, GFP_KERNEL,
- 					 NULL, free_modprobe_argv, NULL);
+> So what I'm curious about, what is the actual 'in the field' distro 
+> experience, about the type of live-patches that get pushed with 
+> urgency?
 
+This is of course a very good question. We've done some very light 
+preparatory analysis and went through patches which would make most sense 
+to be shipped as hot/live patches without enough time for proper downtime 
+scheduling (i.e. CVE severity high enough (local root), etc). Most of the 
+time, these turn out to be a one-or-few liners, mostly adding extra check, 
+fixing bounds, etc. There were just one or two in a few years history 
+where some extra care would be needed.
 
+Of course, I guess that most valuable input regarding this could be coming 
+from kSplice guys, as they have the biggest in-field experience with this, 
+and are shipping a lot of non-trivial patches this way, not just the 
+"super-critical" ones. But I am not really sure whether we can expect any 
+input from them, unfortunately.
+
+> My guess would be that the overwhelming majority of live-patches don't 
+> change data structures - and hence the right initial model would be to 
+> ensure (via tooling, and via review) that 'v1' and 'v2' data is exactly 
+> the same.
+
+I fully agree ... that's why we are not pro-actively dealing with that in 
+kGraft, for the sake of keeping it stupid at simple (at least in the early 
+stages).
+
+> The most abstract way to 'live patch' a kernel is to do a checkpoint 
+> save on all application state, to reboot the kernel, boot into the 
+> patched kernel and then restore all application state seemlessly.
+
+In some sense yes, but it seems to still be rather costly operation 
+(especially checkpointing on a HUGE machine might take some time, if I 
+understand the technology correctly) compared to just flipping a few bytes 
+(while maintaining overall correctness, of course) in the kernel memory.
+
+Basically, CR might be the best solution for very complex and large kernel 
+updates. What I am currently most concerned about though, are scenarios 
+where datacenter owners need to urgently apply a local root one-liner fix 
+with as little hassle as possible.
+
+-- 
+Jiri Kosina
+SUSE Labs
