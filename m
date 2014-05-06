@@ -1,39 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028AbaEFSyi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 14:54:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13372 "EHLO mx1.redhat.com"
+	id S1752540AbaEFS6c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 14:58:32 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34389 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753544AbaEFSyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 14:54:37 -0400
-Message-ID: <53692FE4.6000905@redhat.com>
-Date: Tue, 06 May 2014 14:54:28 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751272AbaEFS6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 14:58:31 -0400
+Date: Tue, 6 May 2014 20:58:26 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Robert Richter <rric@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH v4 00/16] perf, persistent: Add persistent events
+Message-ID: <20140506185826.GF25013@pd.tnic>
+References: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
+ <20140506123907.GV32718@rric.localhost>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 14/17] mm: Do not use atomic operations when releasing
- pages
-References: <1398933888-4940-1-git-send-email-mgorman@suse.de> <1398933888-4940-15-git-send-email-mgorman@suse.de>
-In-Reply-To: <1398933888-4940-15-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140506123907.GV32718@rric.localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2014 04:44 AM, Mel Gorman wrote:
-> There should be no references to it any more and a parallel mark should
-> not be reordered against us. Use non-locked varient to clear page active.
+On Tue, May 06, 2014 at 02:39:07PM +0200, Robert Richter wrote:
+> I rather would change the ioctl to
 > 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+>  id = ioctl(PERF_EVENT_IOC_SET_PERSIST, arg);
+> 
+>  arg != 0:	create persistent event (unclaim)
+>  arg == 0:	delete persistent event (claim)
+> 
+> This has the advantage that the naming is better and arg can be used
+> as parameter (e.g. event id to share a namespace).
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Yep, this is better than the CLAIM/UNCLAIM thing.
+
+> The unclaim ioctl *creates* a buffer with 512kB default size. The
+> reopening process must mmap with the same buffer size. This is a
+> problem as in this implementation the buffer size is fix and can not
+> be adjusted.
+
+Why do we need it to be adjustable?
+
+> We could let create the process the buffers and make the
+> event persistent including the current buffers.
+> 
+> Variable buffer size is a must,
+
+Yeah, why? I'm just asking for my own understanding.
+
+> so the reopening process also must be
+> able to detect buffer size. Mmap buffer size could be detected by
+> mmap'ing only the header page, reading the buffer size from the header
+> and then remapping the buffer with adjusted size.
+> 
+> It would be good to have a perf tool option -P that puts events in
+> persistent state instead of starting a command:
+> 
+>  # perf record -e ... -a -P <namespace>		# create pers. events
+>  # perf record -e persistent/<namespace>/ -a	# read existing buffers
+>  # perf record -e persistent/<namespace>/ -a -k	# read and kill existing events
+> 
+> Note that no args for a command are given.
+
+Yep, looks sane to me.
 
 -- 
-All rights reversed
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
