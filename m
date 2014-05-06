@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930AbaEFRhI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 13:37:08 -0400
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:50739 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018AbaEFRhG (ORCPT
+	id S1751504AbaEFRl5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 13:41:57 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:59880 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbaEFRl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 13:37:06 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] usb: gadget: s3c-hsotg: Mark s3c_hsotg_map_dma()/s3c_hsotg_unmap_dma() inline
-Date: Tue,  6 May 2014 19:37:01 +0200
-Message-Id: <1399397822-351-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 6 May 2014 13:41:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140506170039.GB13677@arm.com>
+References: <1399391733-11927-1-git-send-email-jean.pihet@linaro.org>
+	<1399391733-11927-4-git-send-email-jean.pihet@linaro.org>
+	<20140506170039.GB13677@arm.com>
+Date: Tue, 6 May 2014 19:41:55 +0200
+Message-ID: <CAFrcx1n923=fw6L=OnrDbRhWc9WGTc-FWRFeDCVtnJjKaPwyDw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] perf tools: Add libdw DWARF post unwind support for ARM64
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Ahern <dsahern@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If NO_DMA=y, depending on the gcc version:
+Hi Will,
 
-    drivers/built-in.o: In function `s3c_hsotg_map_dma':
-    s3c-hsotg.c:(.text+0x375b2c): undefined reference to `usb_gadget_map_request'
-    drivers/built-in.o: In function `s3c_hsotg_unmap_dma':
-    s3c-hsotg.c:(.text+0x376a32): undefined reference to `usb_gadget_unmap_request'
-    make[3]: *** [vmlinux] Error 1
+On 6 May 2014 19:00, Will Deacon <will.deacon@arm.com> wrote:
+> Hi Jean,
+>
+> On Tue, May 06, 2014 at 04:55:33PM +0100, Jean Pihet wrote:
+>> Adding libdw DWARF post unwind support, which is part
+>> of elfutils-devel/libdw-dev package from version 0.158.
+>>
+>> Note: the libdw code needs some support for dwarf unwinding
+>> on ARM64, this code is submitted seperately on the elfutils
+>> ML.
+>>
+>> The new code is contained in unwin-libdw.c object, and
+>> implements unwind__get_entries unwind interface function.
+>
+> Are you planning to implement support for 32-bit ARM too? If so, we'll need
+> compat handling here again (your favourite!).
+Yes! Another patch set (sent just before this one) targets ARM. There
+is a nice ToDo in the cover letter: handle compat mode correctly. In
+fact I sent a patch to libdw, so it supports it already but is
+somewhat broken for compat mode. This is on my prefered ToDo list ;-)
 
-The obvious fix of making USB_S3C_HSOTG depend on HAS_DMA is a bit overkill,
-as DMA is never actually used. All (two) calls to s3c_hsotg_map_dma() and
-s3c_hsotg_unmap_dma() are protected by a call into the using_dma() checking
-function, which always returns false:
+>
+>> +bool libdw__arch_set_initial_registers(Dwfl_Thread *thread, void *arg)
+>> +{
+>> +     struct unwind_info *ui = arg;
+>> +     struct regs_dump *user_regs = &ui->sample->user_regs;
+>> +     Dwarf_Word dwarf_regs[PERF_REG_ARM64_MAX];
+>
+> Shouldn't this be PERF_REG_ARM64_MAX - 1?
+Ah, well spotted! I will change although it shouldn't harm, right?
 
-    static inline bool using_dma(struct s3c_hsotg *hsotg)
-    {
-            return false;   /* support is not complete */
-    }
+>
+> Will
 
-Due to the constant return value, gcc optimizes away the calls to
-s3c_hsotg_map_dma() and s3c_hsotg_unmap_dma(). But some versions of gcc
-(e.g. 4.1.2) still emit the functions themselves, causing link errors.
-
-Marking s3c_hsotg_map_dma()/s3c_hsotg_unmap_dma() inline fixes this.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-This replaces "[PATCH/RFC] usb: gadget: CONFIG_USB_S3C_HSOTG should depend on
-HAS_DMA"
-
- drivers/usb/gadget/s3c-hsotg.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index 2a9cb674926a..2740042228a4 100644
---- a/drivers/usb/gadget/s3c-hsotg.c
-+++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -437,9 +437,9 @@ static inline int is_ep_periodic(struct s3c_hsotg_ep *hs_ep)
-  * This is the reverse of s3c_hsotg_map_dma(), called for the completion
-  * of a request to ensure the buffer is ready for access by the caller.
-  */
--static void s3c_hsotg_unmap_dma(struct s3c_hsotg *hsotg,
--				struct s3c_hsotg_ep *hs_ep,
--				struct s3c_hsotg_req *hs_req)
-+static inline void s3c_hsotg_unmap_dma(struct s3c_hsotg *hsotg,
-+				       struct s3c_hsotg_ep *hs_ep,
-+				       struct s3c_hsotg_req *hs_req)
- {
- 	struct usb_request *req = &hs_req->req;
- 
-@@ -861,9 +861,9 @@ static void s3c_hsotg_start_req(struct s3c_hsotg *hsotg,
-  * DMA memory, then we map the memory and mark our request to allow us to
-  * cleanup on completion.
-  */
--static int s3c_hsotg_map_dma(struct s3c_hsotg *hsotg,
--			     struct s3c_hsotg_ep *hs_ep,
--			     struct usb_request *req)
-+static inline int s3c_hsotg_map_dma(struct s3c_hsotg *hsotg,
-+				    struct s3c_hsotg_ep *hs_ep,
-+				    struct usb_request *req)
- {
- 	struct s3c_hsotg_req *hs_req = our_req(req);
- 	int ret;
--- 
-1.7.9.5
-
+Thx for reviewing,
+Jean
