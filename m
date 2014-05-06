@@ -1,129 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755835AbaEFMfK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 08:35:10 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:40381 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405AbaEFMfH (ORCPT
+	id S1757426AbaEFMfj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 08:35:39 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:17115 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754997AbaEFMfi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 08:35:07 -0400
-Message-ID: <5368D6F7.3030200@6wind.com>
-Date: Tue, 06 May 2014 14:35:03 +0200
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reply-To: nicolas.dichtel@6wind.com
-Organization: 6WIND
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 6 May 2014 08:35:38 -0400
+Date: Tue, 6 May 2014 08:35:36 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: tracing: Replace __get_cpu_var uses with this_cpu_ptr
+Message-ID: <20140506083536.7316e35a@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.10.1404291415560.18364@gentwo.org>
+References: <alpine.DEB.2.10.1404291415560.18364@gentwo.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>
-CC: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-audit@redhat.com, ebiederm@xmission.com
-Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
-References: <cover.1398176489.git.rgb@redhat.com>	<1399154328.2505.29.camel@dabdike.int.hansenpartnership.com>	<20140505034814.GA27548@mail.hallyn.com>	<20140505214818.GC6867@madcap2.tricolour.ca>	<1399326698.2164.47.camel@dabdike.int.hansenpartnership.com>	<20140505222758.GA6508@ubuntumail>	<1399329001.2164.56.camel@dabdike.int.hansenpartnership.com>	<20140505223638.GB6508@ubuntumail> <a09ed85b-d6ef-4472-853b-84057d5957c2@email.android.com>
-In-Reply-To: <a09ed85b-d6ef-4472-853b-84057d5957c2@email.android.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 06/05/2014 01:23, James Bottomley a écrit :
->
->
-> On May 5, 2014 3:36:38 PM PDT, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
->> Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
->>> On Mon, 2014-05-05 at 22:27 +0000, Serge Hallyn wrote:
->>>> Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
->>>>> On Mon, 2014-05-05 at 17:48 -0400, Richard Guy Briggs wrote:
->>>>>> On 14/05/05, Serge E. Hallyn wrote:
->>>>>>> Quoting James Bottomley
->> (James.Bottomley@HansenPartnership.com):
->>>>>>>> On Tue, 2014-04-22 at 14:12 -0400, Richard Guy Briggs
->> wrote:
->>>>>>>>> Questions:
->>>>>>>>> Is there a way to link serial numbers of namespaces
->> involved in migration of a
->>>>>>>>> container to another kernel?  (I had a brief look at
->> CRIU.)  Is there a unique
->>>>>>>>> identifier for each running instance of a kernel?  Or at
->> least some identifier
->>>>>>>>> within the container migration realm?
->>>>>>>>
->>>>>>>> Are you asking for a way of distinguishing an migrated
->> container from an
->>>>>>>> unmigrated one?  The answer is pretty much "no" because the
->> job of
->>>>>>>> migration is to restore to the same state as much as
->> possible.
->>>>>>>>
->>>>>>>> Reading between the lines, I think your goal is to
->> correlate audit
->>>>>>>> information across a container migration, right?  Ideally
->> the management
->>>>>>>> system should be able to cough up an audit trail for a
->> container
->>>>>>>> wherever it's running and however many times it's been
->> migrated?
->>>>>>>>
->>>>>>>> In that case, I think your idea of a numeric serial number
->> in a dense
->>>>>>>> range is wrong.  Because the range is dense you're
->> obviously never going
->>>>>>>> to be able to use the same serial number across a
->> migration.  However,
->>>>>>>
->>>>>>> Ah, but I was being silly before, we can actually address
->> this pretty
->>>>>>> simply.  If we just (for instance) add
->>>>>>> /proc/self/ns/{ic,mnt,net,pid,user,uts}_seq containing the
->> serial number
->>>>>>> for the relevant ns for the task, then criu can dump this
->> info at
->>>>>>> checkpoint.  Then at restart it can dump an audit message per
->> task and
->>>>>>> ns saying old_serial=%x,new_serial=%x.  That way the audit
->> log reader
->>>>>>> can if it cares keep track.
->>>>>>
->>>>>> This is the sort of idea I had in mind...
->>>>>
->>>>> OK, but I don't understand then why you need a serial number.
->> There are
->>>>> plenty of things we preserve across a migration, like namespace
->> name for
->>>>> instance.  Could you explain what function it performs because I
->> think I
->>>>> might be missing something.
->>>>
->>>> We're looking ahead to a time when audit is namespaced, and a
->> container
->>>> can keep its own audit logs (without limiting what the host audits
->> of
->>>> course).  So if a container is auditing suspicious activity by some
->>>> task in a sub-namesapce, then the whole parent container gets
->> migrated,
->>>> after migration we want to continue being able to correlate the
->> namespaces.
->>>>
->>>> We're also looking at audit trails on a host that is up for years.
->> We
->>>> would like every namespace to be uniquely logged there.  That is
->> why
->>>> inode #s on /proc/self/ns/* are not sufficient, unless we add a
->> generation
->>>> # (which would end more complicated, not less, than a serial #).
->>>
->>> Right, but when the contaner has an audit namespace, that namespace
->> has
->>> a name,
->>
->> What ns has a name?
->
-> The netns for instance.
-netns does not have names. iproute2 uses names (a filename in fact, to hold a
-reference on the netns), but the kernel never got this name. It only get a file
-descriptor (or a pid).
+On Tue, 29 Apr 2014 14:17:40 -0500 (CDT)
+Christoph Lameter <cl@linux.com> wrote:
 
+> Replace uses of &__get_cpu_var for address calculation with this_cpu_ptr.
+> 
 
-Regards,
-Nicolas
+I pulled this into my 3.16 queue.
+
+-- Steve
+
+> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> Index: linux/include/linux/kprobes.h
+> ===================================================================
+> --- linux.orig/include/linux/kprobes.h	2014-04-28 13:09:07.228660946 -0500
+> +++ linux/include/linux/kprobes.h	2014-04-28 13:09:07.224661022 -0500
+> @@ -356,7 +356,7 @@
+> 
+>  static inline struct kprobe_ctlblk *get_kprobe_ctlblk(void)
+>  {
+> -	return (&__get_cpu_var(kprobe_ctlblk));
+> +	return this_cpu_ptr(&kprobe_ctlblk);
+>  }
+> 
+>  int register_kprobe(struct kprobe *p);
+> Index: linux/kernel/trace/ftrace.c
+> ===================================================================
+> --- linux.orig/kernel/trace/ftrace.c	2014-04-28 13:09:07.228660946 -0500
+> +++ linux/kernel/trace/ftrace.c	2014-04-28 13:09:07.224661022 -0500
+> @@ -817,7 +817,7 @@
+> 
+>  	local_irq_save(flags);
+> 
+> -	stat = &__get_cpu_var(ftrace_profile_stats);
+> +	stat = this_cpu_ptr(&ftrace_profile_stats);
+>  	if (!stat->hash || !ftrace_profile_enabled)
+>  		goto out;
+> 
+> @@ -848,7 +848,7 @@
+>  	unsigned long flags;
+> 
+>  	local_irq_save(flags);
+> -	stat = &__get_cpu_var(ftrace_profile_stats);
+> +	stat = this_cpu_ptr(&ftrace_profile_stats);
+>  	if (!stat->hash || !ftrace_profile_enabled)
+>  		goto out;
+> 
+> Index: linux/kernel/trace/trace.c
+> ===================================================================
+> --- linux.orig/kernel/trace/trace.c	2014-04-28 13:09:07.228660946 -0500
+> +++ linux/kernel/trace/trace.c	2014-04-28 13:09:07.228660946 -0500
+> @@ -1728,7 +1728,7 @@
+>  	 */
+>  	barrier();
+>  	if (use_stack == 1) {
+> -		trace.entries		= &__get_cpu_var(ftrace_stack).calls[0];
+> +		trace.entries		= this_cpu_ptr(ftrace_stack.calls);
+>  		trace.max_entries	= FTRACE_STACK_MAX_ENTRIES;
+> 
+>  		if (regs)
+
