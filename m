@@ -1,105 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757143AbaEFLgf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 07:36:35 -0400
-Received: from mail-bn1blp0185.outbound.protection.outlook.com ([207.46.163.185]:59219
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750736AbaEFLge convert rfc822-to-8bit (ORCPT
+	id S1757311AbaEFLhO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 07:37:14 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:39760 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754598AbaEFLhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 07:36:34 -0400
-From: Bryan Evenson <bevenson@melinkcorp.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-CC: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] rtc: rtc-at91rm9200: fix lost ACKUPD interrupt
-Thread-Topic: [PATCH] rtc: rtc-at91rm9200: fix lost ACKUPD interrupt
-Thread-Index: AQHPaJ/f7r6faF+fSUiFpt/iOZTHKZsyyC8Q
-Date: Tue, 6 May 2014 11:36:30 +0000
-Message-ID: <7bc7c23d3bd541b2a021065f9fed174e@BLUPR05MB037.namprd05.prod.outlook.com>
-References: <55cab9fba2ea4eed8f73591b37cc874b@BLUPR05MB037.namprd05.prod.outlook.com>
- <1399321388-15148-1-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1399321388-15148-1-git-send-email-boris.brezillon@free-electrons.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-vipre-scanned: 004D47DA0070EC004D4927
-x-originating-ip: [98.100.91.242]
-x-forefront-prvs: 0203C93D51
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(377454003)(51704005)(13464003)(21056001)(76576001)(87936001)(101416001)(99396002)(83072002)(4396001)(85852003)(81342001)(33646001)(81542001)(2656002)(76482001)(83322001)(19580405001)(19580395003)(46102001)(77982001)(76176999)(50986999)(54356999)(64706001)(20776003)(79102001)(66066001)(92566001)(80022001)(74502001)(31966008)(74662001)(74316001)(86362001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR05MB040;H:BLUPR05MB037.namprd05.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=bevenson@melinkcorp.com; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: melinkcorp.com
+	Tue, 6 May 2014 07:37:11 -0400
+X-AuditID: cbfee61b-b7f766d00000646c-1b-5368c965d74d
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        devicetree@vger.kernel.org, Nadav Haklai <nadavh@marvell.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v3 17/20] phy: Add support for USB cluster on the Armada
+ 375 SoC
+Date: Tue, 06 May 2014 13:37:04 +0200
+Message-id: <2511421.HV0z8e3QV0@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <1399335255-589-18-git-send-email-gregory.clement@free-electrons.com>
+References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com>
+ <1399335255-589-18-git-send-email-gregory.clement@free-electrons.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t9jAd3UkxnBBht/6Vpc6L/EbHH+7iFm
+	i4P36y3mHznHanH61AJWiwN/djBaNC9ez2axqe0to0XjksssFpseX2O1uLxrDpvFomWtzBbN
+	m6awWkxqb2e3aN17hN3i/U9Hi2WnfjJaPH3QxOQg5PFk00VGj52z7rJ7LN7zkslj06pONo+G
+	A+dZPO5c28PmsX/uGnaPzUvqPXbu+MzkMXnhRWaP4ze2M3l83iQXwBPFZZOSmpNZllqkb5fA
+	lXHv8kPGgoXcFUsfv2VrYPzJ0cXIySEhYCJxZO0LFghbTOLCvfVsXYxcHEICixglFpy6wg7h
+	tDBJPP97lBGkik3ASmJi+yowW0RAQ2JK12N2EJtZYDurxLZ5iV2MHBzCAmESU3fqgYRZBFQl
+	bq39zwRi8wpoSuy+vh1smaiAp8SO7SvZQGxOgRCJd7POsULsmsUo8WrWU3aIBkGJH5PvsUDM
+	l5fYt38qK4StJbF+53GmCYxA1Qhls5CUzUJStoCReRWjaGpBckFxUnqukV5xYm5xaV66XnJ+
+	7iZGcFQ+k97BuKrB4hCjAAejEg/viZXpwUKsiWXFlbmHGCU4mJVEeBVXZgQL8aYkVlalFuXH
+	F5XmpBYfYpTmYFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYEy8LrPo3uE3NfLflNxqBK4/
+	P+20yrExI2j5bq08P7Hk6PWCj1Y3Ot1Xc9N1YMuJsp6zLGFB3B7Hn1/vf3tUa82WXrwsms1k
+	482zyXJSk89u+DUn6tD1DWZZH44bxy5g+1xWlecuIGwiZSWQNfFMQJxN4+IX8vpTDB6dt5z0
+	9f8NVbOMXRVp95VYijMSDbWYi4oTAbpWrJLGAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Boris,
 
-> -----Original Message-----
-> From: Boris BREZILLON [mailto:boris.brezillon@free-electrons.com]
-> Sent: Monday, May 05, 2014 4:23 PM
-> To: Bryan Evenson
-> Cc: Andrew Victor; Nicolas Ferre; Jean-Christophe Plagniol-Villard; linux-arm-
-> kernel@lists.infradead.org; Alessandro Zummo; rtc-
-> linux@googlegroups.com; linux-kernel@vger.kernel.org; Boris BREZILLON
-> Subject: [PATCH] rtc: rtc-at91rm9200: fix lost ACKUPD interrupt
+Hi,
+
+On Tuesday, May 06, 2014 02:14:12 AM Gregory CLEMENT wrote:
+> The Armada 375 SoC comes with an USB2 host and device controller and
+> an USB3 controller. The USB cluster control register allows to manage
+> common features of both USB controllers. It uses the generic PHY
+> framework
 > 
-> If an alarm interrupt raises just after the CR register is written and before the
-> ACKUPD is unmasked the ACKUPD bit might be cleaned up without waking
-> up the waiting thread.
-> 
-> Unmask the ACKUPD interrupt before writing the CR register so that the
-> ACKUPD cannot be lost.
-> 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 > ---
-> Hello Bryan,
+>  drivers/phy/Kconfig              |   5 ++
+>  drivers/phy/Makefile             |   1 +
+>  drivers/phy/phy-armada375-usb2.c | 154 +++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 160 insertions(+)
+>  create mode 100644 drivers/phy/phy-armada375-usb2.c
 > 
-> Could you try to apply this patch and tell me if it fixes your bug ?
-> 
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index 3bb05f17b9b4..cdf3e2c24e3a 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -15,6 +15,11 @@ config GENERIC_PHY
+>  	  phy users can obtain reference to the PHY. All the users of this
+>  	  framework should select this config.
+>  
+> +config ARMADA375_USBCLUSTER_PHY
+> +	def_bool y
+> +	depends on OF
 
-I tried the patch and it didn't help.  I still have the same issue.  Do you see this problem on your end?  Is there debug output that would be helpful to see?
+Please limit this driver to Armada 375 or compile testing, i.e. add additional
 
-Regards,
-Bryan
+	depends on (ARCH_MVEBU && MACH_ARMADA_375) || COMPILE_TEST
 
-> Best Regards,
-> 
-> Boris
-> 
->  drivers/rtc/rtc-at91rm9200.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c index
-> 3281c90..c16c423 100644
-> --- a/drivers/rtc/rtc-at91rm9200.c
-> +++ b/drivers/rtc/rtc-at91rm9200.c
-> @@ -163,9 +163,9 @@ static int at91_rtc_settime(struct device *dev, struct
-> rtc_time *tm)
-> 
->  	/* Stop Time/Calendar from counting */
->  	cr = at91_rtc_read(AT91_RTC_CR);
-> +	at91_rtc_write_ier(AT91_RTC_ACKUPD);
->  	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL |
-> AT91_RTC_UPDTIM);
-> 
-> -	at91_rtc_write_ier(AT91_RTC_ACKUPD);
->  	wait_for_completion(&at91_rtc_updated);	/* wait for ACKUPD
-> interrupt */
->  	at91_rtc_write_idr(AT91_RTC_ACKUPD);
-> 
-> --
-> 1.8.3.2
+> +	select GENERIC_PHY
+> +
+>  config PHY_EXYNOS_MIPI_VIDEO
+>  	tristate "S5P/EXYNOS SoC series MIPI CSI-2/DSI PHY driver"
+>  	depends on HAS_IOMEM
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
