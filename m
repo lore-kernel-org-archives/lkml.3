@@ -1,130 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237AbaEFUxo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 16:53:44 -0400
-Received: from mail.efficios.com ([78.47.125.74]:37558 "EHLO mail.efficios.com"
+	id S1755545AbaEFUy1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 16:54:27 -0400
+Received: from fieldses.org ([174.143.236.118]:50152 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754191AbaEFUxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 16:53:42 -0400
-Date: Tue, 6 May 2014 20:53:41 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Javi Merino <javi.merino@arm.com>, David Howells <dhowells@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>
-Message-ID: <799562553.12242.1399409621298.JavaMail.zimbra@efficios.com>
-In-Reply-To: <20140506154845.43c7b0ad@gandalf.local.home>
-References: <20140506094407.507b6435@gandalf.local.home> <1033323713.12184.1399404932965.JavaMail.zimbra@efficios.com> <20140506154845.43c7b0ad@gandalf.local.home>
-Subject: Re: [RFA][PATCH] tracing: Add trace_<tracepoint>_enabled() function
+	id S1754832AbaEFUy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 16:54:26 -0400
+Date: Tue, 6 May 2014 16:54:18 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Jan Kara <jack@suse.cz>, Jeff Layton <jlayton@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Dave Chinner <david@fromorbit.com>, Mel Gorman <mgorman@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] nfsd: Only set PF_LESS_THROTTLE when really needed.
+Message-ID: <20140506205418.GQ18281@fieldses.org>
+References: <20140423022441.4725.89693.stgit@notabene.brown>
+ <20140423024058.4725.38098.stgit@notabene.brown>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF29 (Linux)/8.0.5_GA_5839)
-Thread-Topic: tracing: Add trace_<tracepoint>_enabled() function
-Thread-Index: +ULLZQaAbpirMaAMSI4hHD1La85rEQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140423024058.4725.38098.stgit@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Steven Rostedt" <rostedt@goodmis.org>
-> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> Cc: "LKML" <linux-kernel@vger.kernel.org>, "Andrew Morton" <akpm@linux-foundation.org>, "Javi Merino"
-> <javi.merino@arm.com>, "David Howells" <dhowells@redhat.com>, "Ingo Molnar" <mingo@kernel.org>
-> Sent: Tuesday, May 6, 2014 3:48:45 PM
-> Subject: Re: [RFA][PATCH] tracing: Add trace_<tracepoint>_enabled() function
+On Wed, Apr 23, 2014 at 12:40:58PM +1000, NeilBrown wrote:
+> PF_LESS_THROTTLE has a very specific use case: to avoid deadlocks
+> and live-locks while writing to the page cache in a loop-back
+> NFS mount situation.
 > 
-> On Tue, 6 May 2014 19:35:32 +0000 (UTC)
-> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> It therefore makes sense to *only* set PF_LESS_THROTTLE in this
+> situation.
+> We now know when a request came from the local-host so it could be a
+> loop-back mount.  We already know when we are handling write requests,
+> and when we are doing anything else.
 > 
-> 
-> > I'm OK with the intend, however there seems to be two means to achieve
-> > this, and I'm not sure the proposed solution is safe.
-> 
-> I do plan on adding more documentation to this to stress that this
-> should be done like this. But hey, we're kernel developers, we should
-> be responsible enough to not require the hand holding.
+> So combine those two to allow nfsd to still be throttled (like any
+> other process) in every situation except when it is known to be
+> problematic.
 
-I like your optimism. ;-)
-
-> Perhaps change checkpatch to make sure that any use of
-> trace_tracepoint_enabled() encompasses the tracepoint.
-> 
-> Then again, if arg is initialized to something that the tracepoint can
-> handle, that would work too.
-
-True.
+Looks simple enough, ACK.--b.
 
 > 
-> > 
-> > As you point out just above, the trace_mytracepoint_enabled() construct
-> > can easily lead to incorrect code if users are not very careful on how
-> > they use the condition vs the tracepoint itself.
-> > 
-> > I understand that the reason why we cannot simply put the call
-> > to "process_tp_arg()" within the parameters passed to trace_mytracepoint()
-> > is because trace_mytracepoint() is a static inline, and that the
-> > side-effects of the arguments it receives need to be evaluated whether
-> > the tracepoint is enabled or not.
-> > 
-> > To overcome this issue, I have used a layer of macro on top of the
-> > trace_*() call in lttng-ust, giving something similar to this:
-> > 
-> > #define tracepoint(name, ...)                                      \
-> >         do {                                                       \
-> >                 if (static_key_false(&__tracepoint_##name.key)     \
-> >                         trace_##name(__VA_ARGS__);                 \
-> >         } while (0)
-> > 
-> > and the static inline trace_##name declared by __DECLARE_TRACE
-> > simply contains __DO_TRACE(&__tracepoint_##name,
-> >                                 TP_PROTO(data_proto),
-> >                                 TP_ARGS(data_args),
-> >                                 TP_CONDITION(cond),,);
-> > 
-> > This allow calling a tracepoint with:
-> > 
-> >    tracepoint(mytracepoint, process_tp_arg());
-> > 
-> > making sure that process_tp_arg() will only be evaluated if
-> > the tracepoint is enabled. It also ensures that it's impossible
-> > to create a C construct that will open a race window where a
-> > tracepoint could be called with an unpopulated parameter, such as:
-> > 
-> >    if (trace_mytracepoint_enabled())
-> >  	arg = process_tp_arg();
-> >    trace_mytracepoint(arg);
-> > 
-> > Thoughts ?
-> > 
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> ---
+>  fs/nfsd/nfssvc.c |    6 ------
+>  fs/nfsd/vfs.c    |   12 ++++++++++++
+>  2 files changed, 12 insertions(+), 6 deletions(-)
 > 
-> The first time I thought about using this was with David's code, which
-> does this:
+> diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+> index 9a4a5f9e7468..1879e43f2868 100644
+> --- a/fs/nfsd/nfssvc.c
+> +++ b/fs/nfsd/nfssvc.c
+> @@ -591,12 +591,6 @@ nfsd(void *vrqstp)
+>  	nfsdstats.th_cnt++;
+>  	mutex_unlock(&nfsd_mutex);
+>  
+> -	/*
+> -	 * We want less throttling in balance_dirty_pages() so that nfs to
+> -	 * localhost doesn't cause nfsd to lock up due to all the client's
+> -	 * dirty pages.
+> -	 */
+> -	current->flags |= PF_LESS_THROTTLE;
+>  	set_freezable();
+>  
+>  	/*
+> diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+> index 6d7be3f80356..2acd00445ad0 100644
+> --- a/fs/nfsd/vfs.c
+> +++ b/fs/nfsd/vfs.c
+> @@ -913,6 +913,16 @@ nfsd_vfs_write(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file *file,
+>  	int			stable = *stablep;
+>  	int			use_wgather;
+>  	loff_t			pos = offset;
+> +	unsigned int		pflags = current->flags;
+> +
+> +	if (rqstp->rq_local)
+> +		/*
+> +		 * We want less throttling in balance_dirty_pages()
+> +		 * and shrink_inactive_list() so that nfs to
+> +		 * localhost doesn't cause nfsd to lock up due to all
+> +		 * the client's dirty pages or its congested queue.
+> +		 */
+> +		current->flags |= PF_LESS_THROTTLE;
+>  
+>  	dentry = file->f_path.dentry;
+>  	inode = dentry->d_inode;
+> @@ -950,6 +960,8 @@ out_nfserr:
+>  		err = 0;
+>  	else
+>  		err = nfserrno(host_err);
+> +	if (rqstp->rq_local)
+> +		tsk_restore_flags(current, pflags, PF_LESS_THROTTLE);
+>  	return err;
+>  }
+>  
 > 
-> 	if (static_key_false(&i2c_trace_msg)) {
-> 		int i;
-> 		for (i = 0; i < ret; i++)
-> 			if (msgs[i].flags & I2C_M_RD)
-> 				trace_i2c_reply(adap, &msgs[i], i);
-> 		trace_i2c_result(adap, i, ret);
-> 	}
 > 
-> That would look rather silly in a tracepoint.
-
-Which goes with a mandatory silly question: how do you intend mapping
-the single key to two different tracepoints ?
-
-Thanks,
-
-Mathieu
-
-> 
-> -- Steve
-> 
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
