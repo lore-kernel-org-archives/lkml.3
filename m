@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757488AbaEFMlx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 08:41:53 -0400
-Received: from mx02.posteo.de ([89.146.194.165]:56860 "EHLO posteo.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756361AbaEFMlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 08:41:51 -0400
-From: Martin Kepplinger <martink@posteo.de>
-To: gregkh@linuxfoundation.org
-Cc: lidza.louina@gmail.com, driverdev-devel@linuxdriverproject.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Martin Kepplinger <martink@posteo.de>
-Subject: [PATCH] staging: dgnc: fix compile warning frame size is larger than 1024 bytes
-Date: Tue,  6 May 2014 14:41:37 +0200
-Message-Id: <1399380097-11908-1-git-send-email-martink@posteo.de>
-X-Mailer: git-send-email 1.7.10.4
+	id S1757536AbaEFMmn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 08:42:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36531 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757342AbaEFMmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 08:42:36 -0400
+Message-ID: <1399380153.5192.219.camel@marge.simpson.net>
+Subject: Re: Slow down stupid pounders
+From: Mike Galbraith <mgalbraith@suse.de>
+To: Borislav Petkov <bp@alien8.de>
+Cc: lkml <linux-kernel@vger.kernel.org>, x86-ml <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Date: Tue, 06 May 2014 14:42:33 +0200
+In-Reply-To: <20140506102924.GA25013@pd.tnic>
+References: <20140506102924.GA25013@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix following warning by dynamically allocating memory:
-dgnc_tty.c:583:1: warning: the frame size of 1060 bytes is larger than 1024 bytes [-Wframe-larger-than=]
+On Tue, 2014-05-06 at 12:29 +0200, Borislav Petkov wrote: 
+> Hi,
+> 
+> so I'm getting sick'n'tired of all those bug reports of people pounding
+> cpu hotplug with stupid scripts.
+> 
+> * We know cpu hotplug is fragile/buggy/crap/needs proper rewrite.
+> 
+> * Stupid hotplugging script doesn't resemble any real use case - go use
+> a real benchmark/stress test to trigger bugs.
+> 
+> So if we can't make pounders stop jerking off, let's make it
+> uninterestingly slow. Stupid patch below, it might be completely idiotic
+> to do it this way but at least starts the discussion about this being a
+> really annoying issue which needs some sort of dealing with.
+> 
+> I dunno, we can make it configurable (which will probably defeat its
+> purpose partially), we can do some more fancy ratelimiting, per cpu,
+> whatever... we'll see.
+> 
+> Opinions, flames?
 
-Signed-off-by: Martin Kepplinger <martink@posteo.de>
----
-This is more of a question. Is this a desired solution to fixing such a
-frame size warning?
+Damn.  I was gonna suggest we shorten hours in -rt kernels to achieve my
+full day stress testing survival goal.
 
-thanks,
-                martin
-
- drivers/staging/dgnc/dgnc_tty.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/dgnc/dgnc_tty.c b/drivers/staging/dgnc/dgnc_tty.c
-index f0b17c3..1c78cc2 100644
---- a/drivers/staging/dgnc/dgnc_tty.c
-+++ b/drivers/staging/dgnc/dgnc_tty.c
-@@ -481,8 +481,8 @@ void dgnc_sniff_nowait_nolock(struct channel_t *ch, uchar *text, uchar *buf, int
- 	int nbuf;
- 	int i;
- 	int tmpbuflen;
--	char tmpbuf[TMPBUFLEN];
--	char *p = tmpbuf;
-+	char *tmpbuf;
-+	char *p;
- 	int too_much_data;
- 
- 	/* Leave if sniff not open */
-@@ -492,6 +492,13 @@ void dgnc_sniff_nowait_nolock(struct channel_t *ch, uchar *text, uchar *buf, int
- 	do_gettimeofday(&tv);
- 
- 	/* Create our header for data dump */
-+	tmpbuf = kmalloc(TMPBUFLEN, GFP_KERNEL);
-+	if (!tmpbuf) {
-+		pr_err("dgnc: memory allocation error\n");
-+		return;
-+	}
-+	p = tmpbuf;
-+
- 	p += sprintf(p, "<%ld %ld><%s><", tv.tv_sec, tv.tv_usec, text);
- 	tmpbuflen = p - tmpbuf;
- 
--- 
-1.7.10.4
+-Mike
 
