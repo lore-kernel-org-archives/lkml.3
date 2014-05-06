@@ -1,106 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934441AbaEFIz1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 04:55:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58984 "EHLO mx2.suse.de"
+	id S934499AbaEFI6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 04:58:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:64948 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754680AbaEFIzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 04:55:20 -0400
-Date: Tue, 6 May 2014 09:55:15 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch v2 4/4] mm, thp: do not perform sync compaction on
- pagefault
-Message-ID: <20140506085515.GW23991@suse.de>
-References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1405011435210.23898@chino.kir.corp.google.com>
- <20140502102231.GQ23991@suse.de>
- <alpine.DEB.2.02.1405020402500.19297@chino.kir.corp.google.com>
- <20140502115834.GR23991@suse.de>
- <alpine.DEB.2.02.1405021319350.24195@chino.kir.corp.google.com>
+	id S934457AbaEFI6v convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 04:58:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,995,1389772800"; 
+   d="scan'208";a="506608571"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Pavel Machek <pavel@ucw.cz>
+CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>
+Subject: RE: [PATCH 02/27] ACPICA: Utilities: Deploy ACPI_DEBUGGER_EXEC for
+ ACPI_DEBUGGER enabled code in utglobal.c.
+Thread-Topic: [PATCH 02/27] ACPICA: Utilities: Deploy ACPI_DEBUGGER_EXEC for
+ ACPI_DEBUGGER enabled code in utglobal.c.
+Thread-Index: AQHPaQBq7j1bQcZC5EeaTpIQUeDtrZszPiIA
+Date: Tue, 6 May 2014 08:58:36 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E880255A03B@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1398817612.git.lv.zheng@intel.com>
+ <53dbe352c16de24ea99d00af21eb01750af90074.1398817612.git.lv.zheng@intel.com>
+ <20140506075353.GA20931@xo-6d-61-c0.localdomain>
+In-Reply-To: <20140506075353.GA20931@xo-6d-61-c0.localdomain>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1405021319350.24195@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 02, 2014 at 01:29:33PM -0700, David Rientjes wrote:
-> On Fri, 2 May 2014, Mel Gorman wrote:
-> 
-> > > The page locks I'm referring to is the lock_page() in __unmap_and_move() 
-> > > that gets called for sync compaction after the migrate_pages() iteration 
-> > > makes a few passes and unsuccessfully grabs it.  This becomes a forced 
-> > > migration since __unmap_and_move() returns -EAGAIN when the trylock fails.
-> > > 
-> > 
-> > Can that be fixed then instead of disabling it entirely?
-> > 
-> 
-> We could return -EAGAIN when the trylock_page() fails for 
-> MIGRATE_SYNC_LIGHT.  It would become a forced migration but we ignore that 
-> currently for MIGRATE_ASYNC, and I could extend it to be ignored for 
-> MIGRATE_SYNC_LIGHT as well.
-> 
-> > > We have perf profiles from one workload in particular that shows 
-> > > contention on i_mmap_mutex (anon isn't interesting since the vast majority 
-> > > of memory on this workload [120GB on a 128GB machine] is has a gup pin and 
-> > > doesn't get isolated because of 119d6d59dcc0 ("mm, compaction: avoid 
-> > > isolating pinned pages")) between cpus all doing memory compaction trying 
-> > > to fault thp memory.
-> > > 
-> > 
-> > Abort SYNC_LIGHT compaction if the mutex is contended.
-> > 
-> 
-> Yeah, I have patches for that as well but we're waiting to see if they are 
-> actually needed when sync compaction is disabled for thp.  If we aren't 
-> actually going to disable it entirely, then I can revive those patches if 
-> the contention becomes such an issue.
-> 
-> > > That's one example that we've seen, but the fact remains that at times 
-> > > sync compaction will iterate the entire 128GB machine and not allow an 
-> > > order-9 page to be allocated and there's nothing to preempt it like the 
-> > > need_resched() or lock contention checks that async compaction has. 
-> > 
-> > Make compact_control->sync the same enum field and check for contention
-> > on the async/sync_light case but leave it for sync if compacting via the
-> > proc interface?
-> > 
-> 
-> Ok, that certainly can be done, I wasn't sure you would be happy with such 
-> a change. 
+Hi,
 
-I'm not super-keen as the success rates are already very poor for allocations
-under pressure. It's something Vlastimil is working on so it may be possible
-to get some of the success rates back. It has always been the case that
-compaction should not severely impact overall performance as THP gains
-must offset compaction. While I'm not happy to reduce the success rates
-further I do not think we should leave a known performance impact on
-128G machines wait on Vlastimil's series.
+> From: Pavel Machek [mailto:pavel@ucw.cz]
+> Sent: Tuesday, May 06, 2014 3:54 PM
+> 
+> On Wed 2014-04-30 10:03:39, Lv Zheng wrote:
+> > This patch deploys ACPI_DEBUGGER_EXEC usage to utglobal.c to reduce "ifdef"
+> > of ACPI_DEBUGGER.  No functional changes.  Lv Zheng.
+> >
+> > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> > Signed-off-by: Bob Moore <robert.moore@intel.com>
+> > ---
+> >  drivers/acpi/acpica/utglobal.c |    4 +---
+> >  1 file changed, 1 insertion(+), 3 deletions(-)
+> >
+> > diff --git a/drivers/acpi/acpica/utglobal.c b/drivers/acpi/acpica/utglobal.c
+> > index f3abeae..825b064 100644
+> > --- a/drivers/acpi/acpica/utglobal.c
+> > +++ b/drivers/acpi/acpica/utglobal.c
+> > @@ -377,9 +377,7 @@ acpi_status acpi_ut_init_globals(void)
+> >  	acpi_gbl_disable_mem_tracking = FALSE;
+> >  #endif
+> >
+> > -#ifdef ACPI_DEBUGGER
+> > -	acpi_gbl_db_terminate_threads = FALSE;
+> > -#endif
+> > +	ACPI_DEBUGGER_EXEC(acpi_gbl_db_terminate_threads = FALSE);
+> >
+> >  	return_ACPI_STATUS(AE_OK);
+> 
+> Is it just me or is this incredibly ugly?
 
-Vlastimil, what do you think?
+This patch is no-op for Linux kernel.
+ACPI_DEBUGGER is not enabled for Linux kernel.
 
-> I'm not sure there's so much of a difference between the new 
-> compact_control->sync == MIGRATE_ASYNC and == MIGRATE_SYNC_LIGHT now, 
-> though.  Would it make sense to remove MIGRATE_SYNC_LIGHT entirely from 
-> the page allocator, i.e. remove sync_migration entirely, and just retry 
-> with a second call to compaction before failing instead? 
+This patch is here to reduce the source code differences between Linux and ACPICA.
+ACPICA release is done by a set of conversion utilities, the process is known as linuxizing.
+The generation result of the linuxizing will require more human interventions if such differences grow bigger.
+Thus one of our quality insurance step is to control  the divergences down to an acceptable level.
+I should add a document in the kernel source tree to describe the ACPICA release cycle.
 
-Would it be possible if only khugepaged entered SYNC_LIGHT migration and
-kswapd and direct THP allocations used only MIGRATE_ASYNC? That would
-allow khugepaged to continue locking pages and buffers in a slow path
-while still not allowing it to issue IO or wait on writeback. It would
-also give a chance for Vlastimil's series to shake out a bit without him
-having to reintroduce SYNC_LIGHT as part of that series.
+Thanks and best regards
+-Lv
 
--- 
-Mel Gorman
-SUSE Labs
+> 
+> 									Pavel
+> --
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
