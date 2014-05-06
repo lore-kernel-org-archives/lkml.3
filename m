@@ -1,160 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933681AbaEFBnc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 21:43:32 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43882 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933530AbaEFBna (ORCPT
+	id S933664AbaEFBvx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 21:51:53 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:50196 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933507AbaEFBvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 21:43:30 -0400
-Message-ID: <53683E40.1060909@codeaurora.org>
-Date: Mon, 05 May 2014 18:43:28 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 5 May 2014 21:51:51 -0400
 MIME-Version: 1.0
-To: Alex Elder <elder@linaro.org>
-CC: mporter@linaro.org, bcm@fixthebug.org, devicetree@vger.kernel.org,
-        arnd@arndb.de, bcm-kernel-feedback-list@broadcom.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] ARM: add SMP support for Broadcom mobile SoCs
-References: <1396577891-2713-1-git-send-email-elder@linaro.org> <1396577891-2713-3-git-send-email-elder@linaro.org> <533EF21C.6000909@codeaurora.org> <53680A5B.4060208@linaro.org>
-In-Reply-To: <53680A5B.4060208@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5367BB2D.4080907@candelatech.com>
+References: <1399015092-28643-1-git-send-email-zhouzhouyi@gmail.com>
+	<20140502151921.014fbeec@redhat.com>
+	<5363A4E0.2000403@intel.com>
+	<20140505171252.49773a5a@redhat.com>
+	<5367BB2D.4080907@candelatech.com>
+Date: Tue, 6 May 2014 09:51:50 +0800
+Message-ID: <CAABZP2wXOweBKG6aENBPNHCs5sJZgzDZ7-L-xv2eL8cABGS26g@mail.gmail.com>
+Subject: Re: [PATCH] netdev: pktgen xmit packet through vlan interface
+From: Zhouyi Zhou <zhouzhouyi@gmail.com>
+To: Ben Greear <greearb@candelatech.com>
+Cc: Jesper Dangaard Brouer <brouer@redhat.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        David Miller <davem@davemloft.net>, steffen.klassert@secunet.com,
+        fan.du@windriver.com, dborkman@redhat.com,
+        Mathias Krause <minipli@googlemail.com>, tgraf@suug.ch,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/14 15:02, Alex Elder wrote:
-> On 04/04/2014 12:55 PM, Stephen Boyd wrote:
->> On 04/03/14 19:18, Alex Elder wrote:
->>> +
->>> +/*
->>> + * Secondary startup method setup routine to extract the location of
->>> + * the secondary boot register from a "cpu" or "cpus" device tree
->>> + * node.  Only the first seen secondary boot register value is used;
->>> + * any others are ignored.  The secondary boot register value must be
->>> + * non-zero.
->>> + *
->>> + * Returns 0 if successful or an error code otherwise.
->>> + */
->>> +static int __init of_enable_method_setup(struct device_node *node)
->>> +{
->>> +	int ret;
->>> +
->>> +	/* Ignore all but the first one specified */
->>> +	if (secondary_boot)
->>> +		return 0;
->>> +
->>> +	ret = of_property_read_u32(node, OF_SECONDARY_BOOT, &secondary_boot);
->>> +	if (ret)
->>> +		pr_err("%s: missing/invalid " OF_SECONDARY_BOOT " property\n",
->>> +			node->name);
->>> +
->>> +	return ret;
->>> +}
->> I don't understand why we need this. Why can't we get the secondary boot
->> address from the /cpus node in the smp_prepare_cpus op. It isn't that
->> hard to get access to the cpus node there via of_find_node_by_path().
->> Then we don't need patch 1 at all. If it turns out to be common stuff,
->> we can always have the common function live in arm common code or maybe
->> even be a devicetree API.
-> I already responded to this, but never got any response.  I
-> was preparing to re-send this series and wanted to try to
-> pull the added feature (patch 1) out and not be dependent on
-> it.  But I think it's a bit ugly so I'm hoping to get a
-> blessing to proceed with what I originally proposed.  For
-> reference, here's the thread:
->     https://lkml.org/lkml/2014/4/3/421
+> You could just force pktgen to not support multi-skb on vlan interfaces?
 >
-> What I'm trying to do is get the value of a "secondary-boot-reg"
-> property from a node known to have an "enable-method" property
-> that matches the method name supplied in CPU_METHOD_OF_DECLARE().
+> I thought we went through this a year or two ago and came up with
+> something like a 'pktgen-challenged' network interface flag?
 
-I don't recall seeing any documentation about the secondary-boot-reg
-property. Please make sure it is documented in the next patch series.
+Ah yes,  IFF_TX_SKB_SHARING does the job, very sorry for missing that,
+ as matter of fact, I have
+tailed pktgen model for my personal use.
+
+By the way, would skb_clone save the CPU cycles for
+memset(skb_put(skb, datalen), 0, datalen) thing ? especially for
+Jesper's qdisc test scenery.
+
+
+
+
 
 >
-> Using the callback function as I originally proposed, this is
-> very easy.  When arm_dt_init_cpu_maps() parses the "cpus" portion
-> of the device tree it calls set_smp_ops_by_method() for a
-> matching "cpu" or "cpus" node, and that function supplies
-> the node to the callback function. The callback can extract
-> additional property values if needed.
+> Thanks,
+> Ben
 >
-> If I hold off until smp_prepare_cpus() is called, I have to
-> re-parse the device tree to find the "cpus" node (this is
-> in itself trivial).  I then need to re-parse that node to
-> verify the matching "enable-method" property is found before
-> looking for the parameter information I need for that enable
-> method.  I would really prefer not to re-do this parsing
-> step.  It's imprecise and a little inefficient, and it
-> duplicates (but not exactly) logic that's already performed
-> by arm_dt_init_cpu_maps().
-
-Do you have any devices where the enable-method and secondary-boot-reg
-isn't the same across all CPUs? A lot of the complexity comes from
-broken DTs that don't specify a secondary-boot-reg along with the
-enable-method. From the description and the code it seems that we should
-just always put these two properties in the cpus node to make things
-simple and precise. I agree it's a minor duplication to read the DT
-again to get the /cpus node and read a property out of it, but I doubt
-you could even measure the difference.
-
 >
-> One more point of clarification.  This "secondary-boot-reg"
-> value is *not* the secondary boot address--that is, it's
-> not the address secondary cores jump to when they are
-> activated.  Instead, this is the address of a register
-> that's used to request the ROM code release a core from
-> its ROM-implemented holding pen.  For this machine,
-> control jumps at that point to secondary_startup(),
-> defined in arch/arm/kernel/head.S.
-
-Yes it wouldn't be possible to specify the entry address in DT (depends
-on compile time factors). How is this different from cpu-release-addr
-though? It looks like it describes something similar to what ePAPR
-describes and how arm64 uses it (although those two slightly differ).
-Assuming it's paired with a different enable-method than spin-table I
-don't see a problem reusing the same name.
-
+> --
+> Ben Greear <greearb@candelatech.com>
+> Candela Technologies Inc  http://www.candelatech.com
 >
-> So...
->
-> Stephen, I'd like to hear from you whether my explanation
-> is adequate, and whether you think my addition and use of
-> CPU_METHOD_OF_DECLARE_SETUP() is reasonable.  (If you have
-> a suggestion for a better name, I'm open.)
->
-> If you still don't like it, I'll follow up with a
-> new version of the patches, this time parsing the
-> device tree in the smp_prepare_cpus() method as
-> you suggested.  I don't want this to hold up getting
-> this SMP support into the kernel.
->
-
-This was my train of thought. It annoys me that we have smp ops at two
-levels. We already have SMP ops that deal with SMP things and now we
-have another level that is associated with the enable-method. If we
-really need this callback why couldn't we just collapse it with the
-smp_ops we already have? When we do that we realize that
-smp_prepare_cpus() is a fairly similar place to do this sort of thing,
-but changing that callback to take the node is annoying to propagate to
-all users. But do we really need that node? It seems simple enough to
-just get the cpus node and then read out the property we care about and
-we can do all that in smp_prepare_cpus() one time (and keep the mapping
-around forever) without requiring any core ARM changes.
-
-Do you have any more complicated use cases for this setup hook? RIght
-now I'm not convinced that we need to add all this framework for
-something that looks like it could be done in a couple lines in the
-prepare_cpus() step.
-
-	cpus = of_find_node_by_path("/cpus")
-	ret = of_property_read_u32(cpus, "secondary-boot-reg", &addr);
-
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
