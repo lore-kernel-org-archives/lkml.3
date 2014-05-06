@@ -1,81 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020AbaEFQbj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 12:31:39 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:64658 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963AbaEFQbh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 12:31:37 -0400
-Date: Tue, 6 May 2014 12:31:34 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/10] workqueue: async worker destruction
-Message-ID: <20140506163134.GE27738@htj.dyndns.org>
-References: <1398571754-12443-1-git-send-email-laijs@cn.fujitsu.com>
- <1398571754-12443-4-git-send-email-laijs@cn.fujitsu.com>
- <20140505150217.GH11231@htj.dyndns.org>
- <CACvQF53z7=kRxmEMqguxNOzrpb=E3zQsKptBJzRC1nm+6AKp=g@mail.gmail.com>
+	id S1752128AbaEFQbz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 12:31:55 -0400
+Received: from fieldses.org ([174.143.236.118]:41038 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751963AbaEFQbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 12:31:52 -0400
+Date: Tue, 6 May 2014 12:31:51 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@poochiereds.net>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] locks: add some tracepoints in the lease handling code
+Message-ID: <20140506163151.GB18281@fieldses.org>
+References: <1399291075-16122-1-git-send-email-jlayton@poochiereds.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACvQF53z7=kRxmEMqguxNOzrpb=E3zQsKptBJzRC1nm+6AKp=g@mail.gmail.com>
+In-Reply-To: <1399291075-16122-1-git-send-email-jlayton@poochiereds.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
-
-On Wed, May 07, 2014 at 12:27:13AM +0800, Lai Jiangshan wrote:
-> I considered several names (searching from an English dictionary)
-> assoc/pin/bind/attach/add...
-
-Yeah, naming is hard.
-
-> The last I chose the winner "bind" from the last two candidates assoc&bind.
+On Mon, May 05, 2014 at 07:57:55AM -0400, Jeff Layton wrote:
+> v2: add a __break_lease tracepoint for non-blocking case
 > 
-> worker_OP[_to]_pool()
->         OP(assoc/pin/bind/attach/add) the worker to OP_list of the
-> pool, do cpu-binding for the worker
-> OP_list
->         the list in the pool for the workers, iterating(when
-> cpu-binding and worker concurrency [un]bound)
-> OP_entry
->         worker entry for OP_list, for  iterating(when cpu-binding and
-> worker concurrency [un]bound)
+> Recently, I needed these to help track down a softlockup when recalling a
+> delegation, but they might be helpful in other situations as well.
 
-So, VERB_list or VERB_entry doesn't really work well unless they're
-really for a list which is specifically created for the action.
+Still feels a little ad-hoc, but I don't have another proposal, so, ACK.
 
-> OP_mutex
->         protects worker_OP_to_pool() protect cpu-binding for the workers,
->         protect iterating(when cpu-binding and worker concurrency [un]bound)
+The forced-unlock/downgrade case in time_out_leases might be another
+good spot for a tracepoint.
+
+--b.
+
 > 
-> every sentence has "bind", so I think "bind_mutex" is proper.
-> since I used "bind_mutex", I will use bind_list and worker_bind_pool().
-
-I don't think it's necessary for all those entries to share the same
-prefix.  It could have some benefits but as long as the locking
-requirements are clearly indicated in the comment, I don't think the
-benefit is large enough to overrule the downsides of such naming.
-
-> I don't refuse to use worker_attach_to_pool(), but I hope you choose
-> other names for me:
+> Cc: "J. Bruce Fields" <bfields@fieldses.org>
+> Signed-off-by: Jeff Layton <jlayton@poochiereds.net>
+> ---
+>  fs/locks.c                      | 10 +++++
+>  include/trace/events/filelock.h | 93 +++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 103 insertions(+)
+>  create mode 100644 include/trace/events/filelock.h
 > 
-> attach_list VS bind_list
-> attach_mutex VS bind_mutex
-
-Just use worker->node and pool->workers for the list.  I don't think
-attach_mutex sounds too bad.
-
-> I guess they will be attach_list&attach_mutex.  it's a little pity to
-> drop the nice name bind_mutex.
-
-Why is bind_mutex any better than attach_mutex?
-
-Thanks.
-
--- 
-tejun
+> diff --git a/fs/locks.c b/fs/locks.c
+> index 6b01d5a1de4a..2367f3118662 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -130,6 +130,9 @@
+>  #include <linux/percpu.h>
+>  #include <linux/lglock.h>
+>  
+> +#define CREATE_TRACE_POINTS
+> +#include <trace/events/filelock.h>
+> +
+>  #include <asm/uaccess.h>
+>  
+>  #define IS_POSIX(fl)	(fl->fl_flags & FL_POSIX)
+> @@ -1386,6 +1389,7 @@ int __break_lease(struct inode *inode, unsigned int mode, unsigned int type)
+>  	}
+>  
+>  	if (i_have_this_lease || (mode & O_NONBLOCK)) {
+> +		trace_break_lease_noblock(inode, new_fl);
+>  		error = -EWOULDBLOCK;
+>  		goto out;
+>  	}
+> @@ -1397,10 +1401,12 @@ restart:
+>  	if (break_time == 0)
+>  		break_time++;
+>  	locks_insert_block(flock, new_fl);
+> +	trace_break_lease_block(inode, new_fl);
+>  	spin_unlock(&inode->i_lock);
+>  	error = wait_event_interruptible_timeout(new_fl->fl_wait,
+>  						!new_fl->fl_next, break_time);
+>  	spin_lock(&inode->i_lock);
+> +	trace_break_lease_unblock(inode, new_fl);
+>  	locks_delete_block(new_fl);
+>  	if (error >= 0) {
+>  		if (error == 0)
+> @@ -1522,6 +1528,8 @@ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp
+>  	int error;
+>  
+>  	lease = *flp;
+> +	trace_generic_add_lease(inode, lease);
+> +
+>  	/*
+>  	 * In the delegation case we need mutual exclusion with
+>  	 * a number of operations that take the i_mutex.  We trylock
+> @@ -1611,6 +1619,8 @@ static int generic_delete_lease(struct file *filp, struct file_lock **flp)
+>  	struct dentry *dentry = filp->f_path.dentry;
+>  	struct inode *inode = dentry->d_inode;
+>  
+> +	trace_generic_delete_lease(inode, *flp);
+> +
+>  	for (before = &inode->i_flock;
+>  			((fl = *before) != NULL) && IS_LEASE(fl);
+>  			before = &fl->fl_next) {
+> diff --git a/include/trace/events/filelock.h b/include/trace/events/filelock.h
+> new file mode 100644
+> index 000000000000..d1e9d3eaa8ce
+> --- /dev/null
+> +++ b/include/trace/events/filelock.h
+> @@ -0,0 +1,93 @@
+> +/*
+> + * Events for filesystem locks
+> + *
+> + * Copyright 2013 Jeff Layton <jlayton@poochiereds.net>
+> + */
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM filelock
+> +
+> +#if !defined(_TRACE_FILELOCK_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_FILELOCK_H
+> +
+> +#include <linux/tracepoint.h>
+> +#include <linux/fs.h>
+> +#include <linux/device.h>
+> +#include <linux/kdev_t.h>
+> +
+> +#define show_fl_flags(val)						\
+> +	__print_flags(val, "|", 					\
+> +		{ FL_POSIX,		"FL_POSIX" },			\
+> +		{ FL_FLOCK,		"FL_FLOCK" },			\
+> +		{ FL_DELEG,		"FL_DELEG" },			\
+> +		{ FL_ACCESS,		"FL_ACCESS" },			\
+> +		{ FL_EXISTS,		"FL_EXISTS" },			\
+> +		{ FL_LEASE,		"FL_LEASE" },			\
+> +		{ FL_CLOSE,		"FL_CLOSE" },			\
+> +		{ FL_SLEEP,		"FL_SLEEP" },			\
+> +		{ FL_DOWNGRADE_PENDING,	"FL_DOWNGRADE_PENDING" },	\
+> +		{ FL_UNLOCK_PENDING,	"FL_UNLOCK_PENDING" },		\
+> +		{ FL_OFDLCK,		"FL_OFDLCK" })
+> +
+> +#define show_fl_type(val)				\
+> +	__print_symbolic(val,				\
+> +			{ F_RDLCK, "F_RDLCK" },		\
+> +			{ F_WRLCK, "F_WRLCK" },		\
+> +			{ F_UNLCK, "F_UNLCK" })
+> +
+> +DECLARE_EVENT_CLASS(filelock_lease,
+> +
+> +	TP_PROTO(struct inode *inode, struct file_lock *fl),
+> +
+> +	TP_ARGS(inode, fl),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(struct file_lock *, fl)
+> +		__field(unsigned long, i_ino)
+> +		__field(dev_t, s_dev)
+> +		__field(struct file_lock *, fl_next)
+> +		__field(fl_owner_t, fl_owner)
+> +		__field(unsigned int, fl_flags)
+> +		__field(unsigned char, fl_type)
+> +		__field(unsigned long, fl_break_time)
+> +		__field(unsigned long, fl_downgrade_time)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->fl = fl;
+> +		__entry->s_dev = inode->i_sb->s_dev;
+> +		__entry->i_ino = inode->i_ino;
+> +		__entry->fl_next = fl->fl_next;
+> +		__entry->fl_owner = fl->fl_owner;
+> +		__entry->fl_flags = fl->fl_flags;
+> +		__entry->fl_type = fl->fl_type;
+> +		__entry->fl_break_time = fl->fl_break_time;
+> +		__entry->fl_downgrade_time = fl->fl_downgrade_time;
+> +	),
+> +
+> +	TP_printk("fl=0x%p dev=0x%x:0x%x ino=0x%lx fl_next=0x%p fl_owner=0x%p fl_flags=%s fl_type=%s fl_break_time=%lu fl_downgrade_time=%lu",
+> +		__entry->fl, MAJOR(__entry->s_dev), MINOR(__entry->s_dev),
+> +		__entry->i_ino, __entry->fl_next, __entry->fl_owner,
+> +		show_fl_flags(__entry->fl_flags),
+> +		show_fl_type(__entry->fl_type),
+> +		__entry->fl_break_time, __entry->fl_downgrade_time)
+> +);
+> +
+> +DEFINE_EVENT(filelock_lease, break_lease_noblock, TP_PROTO(struct inode *inode, struct file_lock *fl),
+> +		TP_ARGS(inode, fl));
+> +
+> +DEFINE_EVENT(filelock_lease, break_lease_block, TP_PROTO(struct inode *inode, struct file_lock *fl),
+> +		TP_ARGS(inode, fl));
+> +
+> +DEFINE_EVENT(filelock_lease, break_lease_unblock, TP_PROTO(struct inode *inode, struct file_lock *fl),
+> +		TP_ARGS(inode, fl));
+> +
+> +DEFINE_EVENT(filelock_lease, generic_add_lease, TP_PROTO(struct inode *inode, struct file_lock *fl),
+> +		TP_ARGS(inode, fl));
+> +
+> +DEFINE_EVENT(filelock_lease, generic_delete_lease, TP_PROTO(struct inode *inode, struct file_lock *fl),
+> +		TP_ARGS(inode, fl));
+> +
+> +#endif /* _TRACE_FILELOCK_H */
+> +
+> +/* This part must be outside protection */
+> +#include <trace/define_trace.h>
+> -- 
+> 1.9.0
+> 
