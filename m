@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaEFRCM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 13:02:12 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:56922 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751544AbaEFRBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 13:01:55 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Alessandro Zummo <a.zummo@towertech.it>, akpm@linux-foundation.org
-Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] rtc: hym8563: set uie_unsupported
-Date: Tue, 06 May 2014 19:02:28 +0200
-Message-ID: <5265378.nvzJISTqrS@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+	id S1752261AbaEFRCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 13:02:41 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:63837 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897AbaEFRCi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 13:02:38 -0400
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Tue, 6 May 2014 13:06:20 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        =?ISO-8859-15?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+In-Reply-To: <alpine.DEB.2.10.1405060041140.1436@vincent-weaver-1.umelst.maine.edu>
+Message-ID: <alpine.DEB.2.10.1405061305210.3372@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.10.1405021230130.22556@vincent-weaver-1.umelst.maine.edu> <20140502172731.GK30445@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405021337390.22556@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.02.1405022111540.6261@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1405021611540.23984@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.02.1405022243550.6261@ionos.tec.linutronix.de> <alpine.DEB.2.10.1405022227420.25174@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405022253530.25174@vincent-weaver-1.umelst.maine.edu>
+ <20140505093124.GN17778@laptop.programming.kicks-ass.net> <alpine.DEB.2.10.1405051200010.31049@vincent-weaver-1.umelst.maine.edu> <20140505172951.GB7154@gmail.com> <alpine.DEB.2.10.1405060041140.1436@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The alarm of the hym8563 only supports a minute accuracy, while
-the uie wants an alarm one second in the future. Therefore things like
-the select() syscall will fail with a timeout, because the next alarm
-will happen in a worst case of 60 seconds.
+On Tue, 6 May 2014, Vince Weaver wrote:
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-Cc: stable@vger.kernel.org
----
- drivers/rtc/rtc-hym8563.c | 3 +++
- 1 file changed, 3 insertions(+)
+> In any case if we can get the recent patches applied in time for 3.15 I 
+> think it will turn out to be a nice release perf-event-stability wise.
 
-diff --git a/drivers/rtc/rtc-hym8563.c b/drivers/rtc/rtc-hym8563.c
-index bd628a6..e5f13c4 100644
---- a/drivers/rtc/rtc-hym8563.c
-+++ b/drivers/rtc/rtc-hym8563.c
-@@ -569,6 +569,9 @@ static int hym8563_probe(struct i2c_client *client,
- 	if (IS_ERR(hym8563->rtc))
- 		return PTR_ERR(hym8563->rtc);
- 
-+	/* the hym8563 alarm only supports a minute accuracy */
-+	hym8563->rtc->uie_unsupported = 1;
-+
- #ifdef CONFIG_COMMON_CLK
- 	hym8563_clkout_register_clk(hym8563);
- #endif
--- 
-1.9.0
+I should also mention I have a list of open perf_fuzzer issues here:
+	http://web.eece.maine.edu/~vweaver/projects/perf_events/fuzzer/bugs_found.html
 
+It's not organized well but it's how I keep track of the various issues 
+after I find and report them.
 
+Vince
