@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933596AbaEFB0M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 21:26:12 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:20594 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933432AbaEFB0K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 21:26:10 -0400
-X-IronPort-AV: E=Sophos;i="4.97,992,1389715200"; 
-   d="scan'208";a="30110077"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: <rostedt@goodmis.org>
-CC: <peterz@infradead.org>, <bsegall@google.com>, <mingo@redhat.com>,
-        <linux-kernel@vger.kernel.org>,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH] sched: Move the wakeup tracepoint from ttwu_do_wakeup() to ttwu_activate().
-Date: Tue, 6 May 2014 09:26:20 +0900
-Message-ID: <1399335980-10059-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <53682AA7.9060401@cn.fujitsu.com>
-References: <53682AA7.9060401@cn.fujitsu.com>
+	id S933639AbaEFB0X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 21:26:23 -0400
+Received: from ozlabs.org ([103.22.144.67]:54058 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933432AbaEFB0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 21:26:20 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mateusz Guzik <mguzik@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+In-Reply-To: <53678ED6.4070502@infradead.org>
+References: <20140402144219.4cafbe37@gandalf.local.home> <20140402221212.GD16570@mguzik.redhat.com> <CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com> <87wqf1oi22.fsf@rustcorp.com.au> <20140502153409.329d3b5b426275e8197251a2@linux-foundation.org> <871tw9c6kt.fsf@rustcorp.com.au> <53678ED6.4070502@infradead.org>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 06 May 2014 10:27:43 +0930
+Message-ID: <87eh07bu60.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [10.167.226.49]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ttwu_do_wakeup() is called when the task's state is switched back to
-TASK_RUNNING, whether or not the task actually scheduled out. Tracing
-the wakeup event when the task never scheduled out is quite confusing.
-It should only trace the task wake up if the task actually did go to
-sleep. Move the tracepoint from ttwu_do_wakeup() to ttwu_activate()
-where it is called only if the task is really woken up and not just
-have its state changed.
+Randy Dunlap <rdunlap@infradead.org> writes:
+> All looks good to me except for 2 instances of "eg" which should be
+> "e.g." (just above and about 4 paragraphs below here).
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
----
- kernel/sched/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks, fixed:
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 9074c6d..0cae994 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1420,6 +1420,7 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
- {
- 	activate_task(rq, p, en_flags);
- 	p->on_rq = 1;
-+	trace_sched_wakeup(p, true);
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 56a4c2d0c741..a42b9dd6b46b 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -14,7 +14,7 @@ environment, others are passed as command line arguments to init.
+ Everything after "--" is passed as an argument to init.
  
- 	/* if a worker is waking up, notify workqueue */
- 	if (p->flags & PF_WQ_WORKER)
-@@ -1433,7 +1434,6 @@ static void
- ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
- {
- 	check_preempt_curr(rq, p, wake_flags);
--	trace_sched_wakeup(p, true);
+ Module parameters can be specified in two ways: via the kernel command
+-line with a module name prefix, or via modprobe, eg:
++line with a module name prefix, or via modprobe, e.g.:
  
- 	p->state = TASK_RUNNING;
- #ifdef CONFIG_SMP
--- 
-1.8.2.1
-
+ 	(kernel command line) usbcore.blinkenlights=1
+ 	(modprobe command line) modprobe usbcore blinkenlights=1
+@@ -30,7 +30,7 @@ Hyphens (dashes) and underscores are equivalent in parameter names, so
+ can also be entered as
+ 	log-buf-len=1M print_fatal_signals=1
+ 
+-Double-quotes can be used to protect spaces in values, eg:
++Double-quotes can be used to protect spaces in values, e.g.:
+ 	param="spaces in here"
+ 
+ This document may not be entirely up to date and comprehensive. The command
