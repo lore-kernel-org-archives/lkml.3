@@ -1,89 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177AbaEFPUU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 11:20:20 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:26088 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228AbaEFPUS (ORCPT
+	id S1757860AbaEFPUl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 11:20:41 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:29636 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755170AbaEFPUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 11:20:18 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19kf2YOSzb4cUaNJRVHpa/n
-Date: Tue, 6 May 2014 08:20:08 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Alex Shi <alex.shi@linaro.org>
-Cc: mark.hambleton@broadcom.com, mark.brown@linaro.org,
-        eduardo.valentin@ti.com, mporter@linaro.org, lsk-interest@linaro.org,
-        linaro-kernel@linaro.org,
-        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/19] arm: dts: add cooling properties on omap4430 cpu
- node
-Message-ID: <20140506152007.GC18474@atomide.com>
-References: <1395744572-20014-1-git-send-email-alex.shi@linaro.org>
- <1395744572-20014-11-git-send-email-alex.shi@linaro.org>
+	Tue, 6 May 2014 11:20:40 -0400
+Message-ID: <5368FDBB.8070106@oracle.com>
+Date: Tue, 06 May 2014 11:20:27 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1395744572-20014-11-git-send-email-alex.shi@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 6/6] mm: Postpone the disabling of kmemleak early logging
+References: <1399038070-1540-1-git-send-email-catalin.marinas@arm.com> <1399038070-1540-7-git-send-email-catalin.marinas@arm.com>
+In-Reply-To: <1399038070-1540-7-git-send-email-catalin.marinas@arm.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Alex Shi <alex.shi@linaro.org> [140325 03:54]:
-> From: Eduardo Valentin <eduardo.valentin@ti.com>
+On 05/02/2014 09:41 AM, Catalin Marinas wrote:
+> Currently, kmemleak_early_log is disabled at the beginning of the
+> kmemleak_init() function, before the full kmemleak tracing is actually
+> enabled. In this small window, kmem_cache_create() is called by kmemleak
+> which triggers additional memory allocation that are not traced. This
+> patch moves the kmemleak_early_log disabling further down and at the
+> same time with full kmemleak enabling.
 > 
-> OMAP4430 devices can reach high temperatures and thus
-> needs to have cpufreq-cooling on systems running on it.
-> 
-> This patch adds the required cooling device properties
-> so that cpufreq-cpu0 driver loads the cooling device.
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
 
-Alex, what's the status of this series? I could not find
-the complete thread, so wondering what to do with patches
-09 - 13?
+This patch makes the kernel die during the boot process:
 
-Regards,
+[   24.471801] BUG: unable to handle kernel paging request at ffffffff922f2b93
+[   24.472496] IP: [<ffffffff922f2b93>] log_early+0x0/0xcd
+[   24.473021] PGD 10e30067 PUD 10e31063 PMD 12200062
+[   24.473544] Oops: 0010 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[   24.474129] Dumping ftrace buffer:
+[   24.474535]    (ftrace buffer empty)
+[   24.474901] Modules linked in:
+[   24.475220] CPU: 0 PID: 1 Comm: swapper/0 Tainted: G        W     3.15.0-rc4-sasha-00193-g315d7bf #442
+[   24.476094] task: ffff88025c540000 ti: ffff880036210000 task.ti: ffff880036210000
+[   24.476807] RIP: 0010:[<ffffffff922f2b93>]  [<ffffffff922f2b93>] log_early+0x0/0xcd
+[   24.477561] RSP: 0000:ffff880036211c20  EFLAGS: 00010246
+[   24.478075] RAX: 0000000000000000 RBX: ffff880034e26458 RCX: 0000000000000001
+[   24.478727] RDX: 0000000000000400 RSI: ffff880034e26458 RDI: 0000000000000000
+[   24.479400] RBP: ffff880036211c48 R08: 0000000000000000 R09: 0000000000000000
+[   24.480064] R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000000400
+[   24.480171] R13: 0000000000000001 R14: 0000000000000001 R15: ffff88003680e600
+[   24.480171] FS:  0000000000000000(0000) GS:ffff880036c00000(0000) knlGS:0000000000000000
+[   24.480171] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   24.480171] CR2: ffffffff922f2b93 CR3: 0000000010e2d000 CR4: 00000000000006b0
+[   24.480171] Stack:
+[   24.480171]  ffffffff8f4fb6ac ffff880036ddb210 ffff880034e26458 0000000000000020
+[   24.480171]  ffff88003680e600 ffff880036211cc8 ffffffff8c2e0bf1 0000000000000002
+[   24.480171]  000000008c19b731 ffffffff8cb07a03 0000000000000000 0000000000000400
+[   24.480171] Call Trace:
+[   24.480171]  [<ffffffff8f4fb6ac>] ? kmemleak_alloc+0xac/0xd0
+[   24.480171]  [<ffffffff8c2e0bf1>] kmem_cache_alloc_node_trace+0x201/0x3d0
+[   24.480171]  [<ffffffff8cb07a03>] ? alloc_cpumask_var_node+0x23/0x90
+[   24.480171]  [<ffffffff8f566358>] ? preempt_count_sub+0xd8/0x130
+[   24.480171]  [<ffffffff8c0c16e0>] ? alloc_pte_page+0x80/0x80
+[   24.480171]  [<ffffffff8cb07a03>] alloc_cpumask_var_node+0x23/0x90
+[   24.480171]  [<ffffffff8cb07a7e>] alloc_cpumask_var+0xe/0x10
+[   24.480171]  [<ffffffff8c0a8a0a>] native_send_call_func_ipi+0x2a/0x130
+[   24.480171]  [<ffffffff8cb07bee>] ? cpumask_next_and+0xae/0xd0
+[   24.480171]  [<ffffffff8c0c16e0>] ? alloc_pte_page+0x80/0x80
+[   24.480171]  [<ffffffff8c0c16e0>] ? alloc_pte_page+0x80/0x80
+[   24.480171]  [<ffffffff8c20121b>] smp_call_function_many+0x29b/0x390
+[   24.480171]  [<ffffffff8c0c16e0>] ? alloc_pte_page+0x80/0x80
+[   24.480171]  [<ffffffff8c201726>] smp_call_function+0x46/0x80
+[   24.480171]  [<ffffffff8c0c16e0>] ? alloc_pte_page+0x80/0x80
+[   24.480171]  [<ffffffff8c2017ce>] on_each_cpu+0x3e/0x110
+[   24.480171]  [<ffffffff8c0c3adb>] change_page_attr_set_clr+0x40b/0x4f0
+[   24.480171]  [<ffffffff8c19b731>] ? get_parent_ip+0x11/0x50
+[   24.480171]  [<ffffffff8c0c49ef>] set_memory_np+0x2f/0x40
+[   24.480171]  [<ffffffff8c0bf32d>] free_init_pages+0x8d/0xb0
+[   24.480171]  [<ffffffff8f4f7d60>] ? rest_init+0x140/0x140
+[   24.480171]  [<ffffffff8c0bf373>] free_initmem+0x23/0x30
+[   24.480171]  [<ffffffff8f4f7d78>] kernel_init+0x18/0x100
+[   24.480171]  [<ffffffff8f56b0fc>] ret_from_fork+0x7c/0xb0
+[   24.480171]  [<ffffffff8f4f7d60>] ? rest_init+0x140/0x140
+[   24.480171] Code:  Bad RIP value.
+[   24.480171] RIP  [<ffffffff922f2b93>] log_early+0x0/0xcd
+[   24.480171]  RSP <ffff880036211c20>
+[   24.480171] CR2: ffffffff922f2b93
 
-Tony
- 
-> Cc: "Benoît Cousson" <bcousson@baylibre.com>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: linux-omap@vger.kernel.org
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> (cherry picked from commit 72af5e6d0c3e01655c1c1fc7c7ca94a2b663611e)
-> 
-> Signed-off-by: Alex Shi <alex.shi@linaro.org>
-> ---
->  arch/arm/boot/dts/omap443x.dtsi | 5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/omap443x.dtsi b/arch/arm/boot/dts/omap443x.dtsi
-> index cccf39a..d2deba0 100644
-> --- a/arch/arm/boot/dts/omap443x.dtsi
-> +++ b/arch/arm/boot/dts/omap443x.dtsi
-> @@ -22,6 +22,11 @@
->  				1008000 1375000
->  			>;
->  			clock-latency = <300000>; /* From legacy driver */
-> +
-> +			/* cooling options */
-> +			cooling-min-level = <0>;
-> +			cooling-max-level = <3>;
-> +			#cooling-cells = <2>; /* min followed by max */
->  		};
->  	};
->  };
-> -- 
-> 1.8.1.2
-> 
+
+Thanks,
+Sasha
