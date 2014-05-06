@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100AbaEFUoO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 16:44:14 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54855 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754806AbaEFUoN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 16:44:13 -0400
-Message-ID: <53694978.3050303@free-electrons.com>
-Date: Tue, 06 May 2014 22:43:36 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755241AbaEFUp0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 16:45:26 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51361 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754190AbaEFUpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 16:45:24 -0400
+Message-ID: <536949B8.3030106@ti.com>
+Date: Tue, 6 May 2014 16:44:40 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Bryan Evenson <bevenson@melinkcorp.com>
-CC: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Rob Herring <robherring2@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rtc: rtc-at91rm9200: fix infinite wait for ACKUPD irq
-References: <94c06375c1b44c8eb5233b0ccf2e4b13@BY2PR05MB048.namprd05.prod.outlook.com> <1399386481-18643-1-git-send-email-boris.brezillon@free-electrons.com> <aed75d16aa46476eb6f6c5b0d4bef30d@BLUPR05MB037.namprd05.prod.outlook.com>
-In-Reply-To: <aed75d16aa46476eb6f6c5b0d4bef30d@BLUPR05MB037.namprd05.prod.outlook.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v3 4/7] of: configure the platform device dma parameters
+References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com> <CAL_Jsq+nh26NZXx-9Y5FTxWZdVrG7aLTOBhC4j9P8mPPvUu2ag@mail.gmail.com> <536806F4.1090904@ti.com> <7182186.5Q53eQg77F@wuerfel>
+In-Reply-To: <7182186.5Q53eQg77F@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tuesday 06 May 2014 05:40 AM, Arnd Bergmann wrote:
+> On Monday 05 May 2014 17:47:32 Santosh Shilimkar wrote:
+> 
+>> +       dev->coherent_dma_mask = DMA_BIT_MASK(32);
+>> +       if (!dev->dma_mask)
+>> +               dev->dma_mask = &dev->coherent_dma_mask;
+>> +
+>> +       /*
+>> +        * if dma-ranges property doesn't exist - just return else
+>> +        * setup the dma offset
+>> +        */
+>> +       ret = of_dma_get_range(dev->of_node, &dma_addr, &paddr, &size);
+>> +       if (ret < 0) {
+>> +               dev_dbg(dev, "no dma range information to setup\n");
+>> +               return;
+>> +       }
+>> +
+>> +       /* DMA ranges found. Calculate and set dma_pfn_offset */
+>> +       dev->dma_pfn_offset = PFN_DOWN(paddr - dma_addr);
+>> +       dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
+>> +}
+> 
+> I think there should at least be a comment about why we are computing
+> the correct DMA mask here and then ignore that and just use DMA_BIT_MASK(32)
+> instead. I understand that Russell and Rob prefer it that way and I'm not
+> going to argue, but I find it counterintuitive and I think it deserves
+> an explanation in the source code for anybody who is trying to figure
+> out how things fit together.
+> 
+In this patch, the dma_mask related code is just moved. We are not calculating
+dma_mask either. I was looking for the history of how DMA_BIT_MASK(32)
+landed up but couldn't trace it down apart from the fact that the code was
+carried from powerPC. May be Rob knows.
 
-On 06/05/2014 21:06, Bryan Evenson wrote:
-> Boris,
->
->> -----Original Message-----
->> From: Boris BREZILLON [mailto:boris.brezillon@free-electrons.com]
->> Sent: Tuesday, May 06, 2014 10:28 AM
->> To: Bryan Evenson
->> Cc: Andrew Victor; Nicolas Ferre; Jean-Christophe Plagniol-Villard; linux-arm-
->> kernel@lists.infradead.org; Alessandro Zummo; rtc-
->> linux@googlegroups.com; linux-kernel@vger.kernel.org; Boris BREZILLON
->> Subject: [PATCH] rtc: rtc-at91rm9200: fix infinite wait for ACKUPD irq
->>
->> The rtc user must wait at least 1 sec between each time/calandar update
->> (see atmel's datasheet chapter "Updating Time/Calendar").
->>
->> Use the 1Hz interrupt to update the at91_rtc_upd_rdy flag and wait for
->> the at91_rtc_wait_upd_rdy event if the rtc is not ready.
->>
->> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
->> Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
->> ---
->> Hello Bryan,
->>
->> I reproduced your bug (using your script) and this patch seems to fix the
->> problem.
->>
->> Could you try it and let me know if it works for you ?
-> Looks good to me.  I modified the test script as follows:
->
-> ----------
-> #!/bin/sh
-> i=0
-> while [ 1 ]; do
->   hwclock -w -u > /dev/null 2>&1
->   echo $$ $i $?
->   : $((i++))
-> done
-> ----------
->
-> This version then attempts to write to the RTC as often as possible (script change was due to a suggestion on the Busybox mailing list).  I ran two instances of the script, which each looped through about 60,000 times over a 30 minute run.  At no point has access to the RTC been permanently locked out on my system.  I'd call this fixed.
+How about below comment ? I didn't delibratly added point about bus
+intercepting drivers dma_set_*mask() call etc.
 
-Great!
+/*
+ * Set default dma-mask to 32 bit. Drivers are expected to setup
+ * the correct supported dma_mask.
+ */  
++       dev->coherent_dma_mask = DMA_BIT_MASK(32);
++       if (!dev->dma_mask)
++               dev->dma_mask = &dev->coherent_dma_mask;
 
-> I'd assume this patch would be backported to the longterm releases?
-
-I'd like to wait for Nicolas' ack before asking for a backport to stable
-releases.
-
-Best Regards,
-
-Boris
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
-
+Regards,
+Santosh
