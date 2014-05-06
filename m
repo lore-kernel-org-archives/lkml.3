@@ -1,75 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934357AbaEFID5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 04:03:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58079 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934240AbaEFIDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 04:03:51 -0400
-Date: Tue, 6 May 2014 10:03:46 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Ingo Molnar <mingo@kernel.org>
-cc: David Lang <david@lang.hm>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Seth Jennings <sjenning@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-In-Reply-To: <20140506073228.GA26271@gmail.com>
-Message-ID: <alpine.LNX.2.00.1405060955180.3969@pobox.suse.cz>
-References: <cover.1398958771.git.jpoimboe@redhat.com> <alpine.LRH.2.00.1405021504320.22053@twin.jikos.cz> <alpine.DEB.2.02.1405051633080.14881@nftneq.ynat.uz> <alpine.LNX.2.00.1405060147190.3969@pobox.suse.cz> <20140506073228.GA26271@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S934388AbaEFIFB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 04:05:01 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:52654 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934254AbaEFIEu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 04:04:50 -0400
+Subject: Re: [PATCH v1.1 2/16 update] arcmsr:  Adding code to support MSI-X
+ interrupt
+From: ching <ching2048@areca.com.tw>
+To: Tomas Henzl <thenzl@redhat.com>
+Cc: jbottomley@parallels.com, dan.carpenter@oracle.com,
+        linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <536789CA.5010604@redhat.com>
+References: <1399288512.4398.79.camel@localhost>
+	 <536789CA.5010604@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 06 May 2014 16:04:42 +0800
+Message-ID: <1399363482.6486.3.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 May 2014, Ingo Molnar wrote:
+Thanks for Tomas' suggestion.
+I will have a new update for this patch.
 
-> So what I'm curious about, what is the actual 'in the field' distro 
-> experience, about the type of live-patches that get pushed with 
-> urgency?
+On Mon, 2014-05-05 at 14:53 +0200, Tomas Henzl wrote:
+> On 05/05/2014 01:15 PM, ching wrote:
+> > From: Ching<ching2048@areca.com.tw>
+> >
+> > Adding code for supporting MSI-X interrupt.
+> >
+> > This update is for fixing bug of previous [PATCH v1.1 2/16].
+> >
+> > Signed-off-by: Ching<ching2048@areca.com.tw>
+> > ---
+> >
+> > diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
+> > --- a/drivers/scsi/arcmsr/arcmsr.h	2014-04-28 16:02:46.000000000 +0800
+> > +++ b/drivers/scsi/arcmsr/arcmsr.h	2014-04-28 16:25:06.000000000 +0800
+> > @@ -64,6 +64,7 @@ struct device_attribute;
+> >  #define ARCMSR_MAX_HBB_POSTQUEUE						264
+> >  #define ARCMSR_MAX_XFER_LEN							0x26000 /* 152K */
+> >  #define ARCMSR_CDB_SG_PAGE_LENGTH						256 
+> > +#define ARCMST_NUM_MSIX_VECTORS		4
+> >  #ifndef PCI_DEVICE_ID_ARECA_1880
+> >  #define PCI_DEVICE_ID_ARECA_1880 0x1880
+> >   #endif
+> > @@ -508,6 +509,7 @@ struct AdapterControlBlock
+> >  	struct pci_dev *		pdev;
+> >  	struct Scsi_Host *		host;
+> >  	unsigned long			vir2phy_offset;
+> > +	struct msix_entry	entries[ARCMST_NUM_MSIX_VECTORS];
+> >  	/* Offset is used in making arc cdb physical to virtual calculations */
+> >  	uint32_t			outbound_int_enable;
+> >  	uint32_t			cdb_phyaddr_hi32;
+> > @@ -544,6 +546,8 @@ struct AdapterControlBlock
+> >  	/* iop init */
+> >  	#define ACB_F_ABORT				0x0200
+> >  	#define ACB_F_FIRMWARE_TRAP           		0x0400
+> > +	#define ACB_F_MSI_ENABLED		0x1000
+> > +	#define ACB_F_MSIX_ENABLED		0x2000
+> >  	struct CommandControlBlock *			pccb_pool[ARCMSR_MAX_FREECCB_NUM];
+> >  	/* used for memory free */
+> >  	struct list_head		ccb_free_list;
+> > diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+> > --- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-28 15:58:34.000000000 +0800
+> > +++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-05 18:57:03.000000000 +0800
+> > @@ -603,6 +603,79 @@ static void arcmsr_message_isr_bh_fn(str
+> >  	}
+> >  }
+> >  
+> > +static int
+> > +arcmsr_request_irq(struct pci_dev *pdev, struct AdapterControlBlock *acb)
+> > +{
+> > +	int	i, j, r;
+> > +	struct msix_entry entries[ARCMST_NUM_MSIX_VECTORS];
+> > +
+> > +	if (!pci_find_capability(pdev, PCI_CAP_ID_MSIX))
+> > +		goto msi_int;
+> > +	for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++)
+> > +		entries[i].entry = i;
+> > +	r = pci_enable_msix(pdev, entries, ARCMST_NUM_MSIX_VECTORS);
+> > +	if (r < 0)
+> > +		goto msi_int;
+> > +	if (r == 0) {
+> > +		for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++) {
+> > +			if (request_irq(entries[i].vector,
+> > +				arcmsr_do_interrupt, 0, "arcmsr", acb)) {
+> > +				pr_warn("arcmsr%d: request_irq =%d failed!\n",
+> > +					acb->host->host_no, pdev->irq);
+> > +				for (j = 0 ; j < i ; j++)
+> > +					free_irq(entries[j].vector, acb);
+> > +				pci_disable_msix(pdev);
+> > +				goto msi_int;
+> > +			}
+> > +			acb->entries[i] = entries[i];
+> > +		}
+> > +		acb->acb_flags |= ACB_F_MSIX_ENABLED;
+> > +		pr_info("arcmsr%d: msi-x enabled\n", acb->host->host_no);
+> > +		return ARC_SUCCESS;
+> > +	} else {
+> > +		if (pci_enable_msix(pdev, entries, r))
+> > +			goto msi_int;
+> > +		for (i = 0; i < r; i++) {
+> > +			if (request_irq(entries[i].vector,
+> > +				arcmsr_do_interrupt, 0, "arcmsr", acb)) {
+> > +				pr_warn("arcmsr%d: request_irq =%d failed!\n",
+> > +					acb->host->host_no, pdev->irq);
+> > +				for (j = 0 ; j < i ; j++)
+> > +					free_irq(entries[j].vector, acb);
+> > +				pci_disable_msix(pdev);
+> > +				goto msi_int;
+> > +			}
+> > +			acb->entries[i] = entries[i];
+> > +		}
+> > +		acb->acb_flags |= ACB_F_MSIX_ENABLED;
+> > +		pr_info("arcmsr%d: msi-x enabled\n", acb->host->host_no);
+> > +		return ARC_SUCCESS;
+> > +	}
+> 
+> Hi Ching, Dan,
+> the above construction might be simplified even a bit more - 
+> 	if (r) 
+> 		if (pci_enable_msix(pdev, entries, r))
+> 			goto msi_int;
+> 	else 
+> 		r = ARCMST_NUM_MSIX_VECTORS;
+> 		
+> 	for (i = 0; i < r; i++) {
+> 		if (request_irq(entries[i].vector,
+> 			arcmsr_do_interrupt, 0, "arcmsr", acb)) {
+> 			pr_warn("arcmsr%d: request_irq =%d failed!\n",
+> 				acb->host->host_no, pdev->irq);
+> 			for (j = 0 ; j < i ; j++)
+> 				free_irq(entries[j].vector, acb);
+> 			pci_disable_msix(pdev);
+> 			goto msi_int;
+> 		}
+> 		acb->entries[i] = entries[i];
+> 	}
+> 	acb->acb_flags |= ACB_F_MSIX_ENABLED;
+> 	pr_info("arcmsr%d: msi-x enabled\n", acb->host->host_no);
+> 	return ARC_SUCCESS;
+> Otherwise as Dan said the function looks now good
+> thanks, tomas
+> 
+> > +msi_int:
+> > +	if (!pci_find_capability(pdev, PCI_CAP_ID_MSI))
+> > +		goto legacy_int;
+> > +	if (pci_enable_msi(pdev))
+> > +		goto legacy_int;
+> > +	if (request_irq(pdev->irq, arcmsr_do_interrupt,
+> > +		IRQF_SHARED, "arcmsr", acb)) {
+> > +		pr_warn("arcmsr%d: request_irq =%d failed!\n",
+> > +			acb->host->host_no, pdev->irq);
+> > +		pci_disable_msi(pdev);
+> > +		goto legacy_int;
+> > +	}
+> > +	acb->acb_flags |= ACB_F_MSI_ENABLED;
+> > +	pr_info("arcmsr%d: msi enabled\n", acb->host->host_no);
+> > +	return ARC_SUCCESS;
+> > +legacy_int:
+> > +	if (request_irq(pdev->irq, arcmsr_do_interrupt,
+> > +		IRQF_SHARED, "arcmsr", acb)) {
+> > +		pr_warn("arcmsr%d: request_irq = %d failed!\n",
+> > +			acb->host->host_no, pdev->irq);
+> > +		return ARC_FAILURE;
+> > +	}
+> > +	return ARC_SUCCESS;
+> > +}
+> > +
+> >  static int arcmsr_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+> >  {
+> >  	struct Scsi_Host *host;
+> > @@ -667,16 +740,13 @@ static int arcmsr_probe(struct pci_dev *
+> >  	if(error){
+> >  		goto free_hbb_mu;
+> >  	}
+> > -	arcmsr_iop_init(acb);
+> >  	error = scsi_add_host(host, &pdev->dev);
+> >  	if(error){
+> >  		goto RAID_controller_stop;
+> >  	}
+> > -	error = request_irq(pdev->irq, arcmsr_do_interrupt, IRQF_SHARED, "arcmsr", acb);
+> > -	if(error){
+> > +	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
+> >  		goto scsi_host_remove;
+> > -	}
+> > -	host->irq = pdev->irq;
+> > +	arcmsr_iop_init(acb);
+> >      	scsi_scan_host(host);
+> >  	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
+> >  	atomic_set(&acb->rq_map_token, 16);
+> > @@ -992,6 +1062,22 @@ static void arcmsr_done4abort_postqueue(
+> >  	}
+> >  	}
+> >  }
+> > +
+> > +static void arcmsr_free_irq(struct pci_dev *pdev, struct AdapterControlBlock *acb)
+> > +{
+> > +	int i;
+> > +
+> > +	if (acb->acb_flags & ACB_F_MSI_ENABLED) {
+> > +		free_irq(pdev->irq, acb);
+> > +		pci_disable_msi(pdev);
+> > +	} else if (acb->acb_flags & ACB_F_MSIX_ENABLED) {
+> > +		for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++)
+> > +			free_irq(acb->entries[i].vector, acb);
+> > +		pci_disable_msix(pdev);
+> > +	} else
+> > +		free_irq(pdev->irq, acb);
+> > +}
+> > +
+> >  static void arcmsr_remove(struct pci_dev *pdev)
+> >  {
+> >  	struct Scsi_Host *host = pci_get_drvdata(pdev);
+> > @@ -1029,7 +1115,7 @@ static void arcmsr_remove(struct pci_dev
+> >  			}
+> >  		}
+> >  	}
+> > -	free_irq(pdev->irq, acb);
+> > +	arcmsr_free_irq(pdev, acb);
+> >  	arcmsr_free_ccb_pool(acb);
+> >  	arcmsr_free_hbb_mu(acb);
+> >  	arcmsr_unmap_pciregion(acb);
+> > @@ -1045,6 +1131,7 @@ static void arcmsr_shutdown(struct pci_d
+> >  		(struct AdapterControlBlock *)host->hostdata;
+> >  	del_timer_sync(&acb->eternal_timer);
+> >  	arcmsr_disable_outbound_ints(acb);
+> > +	arcmsr_free_irq(pdev, acb);
+> >  	flush_work(&acb->arcmsr_do_message_isr_bh);
+> >  	arcmsr_stop_adapter_bgrb(acb);
+> >  	arcmsr_flush_adapter_cache(acb);
+> > @@ -2516,8 +2603,6 @@ static int arcmsr_iop_confirm(struct Ada
+> >  	case ACB_ADAPTER_TYPE_A: {
+> >  		if (cdb_phyaddr_hi32 != 0) {
+> >  			struct MessageUnit_A __iomem *reg = acb->pmuA;
+> > -			uint32_t intmask_org;
+> > -			intmask_org = arcmsr_disable_outbound_ints(acb);
+> >  			writel(ARCMSR_SIGNATURE_SET_CONFIG, \
+> >  						&reg->message_rwbuffer[0]);
+> >  			writel(cdb_phyaddr_hi32, &reg->message_rwbuffer[1]);
+> > @@ -2529,7 +2614,6 @@ static int arcmsr_iop_confirm(struct Ada
+> >  				acb->host->host_no);
+> >  				return 1;
+> >  			}
+> > -			arcmsr_enable_outbound_ints(acb, intmask_org);
+> >  		}
+> >  		}
+> >  		break;
+> > @@ -2539,8 +2623,6 @@ static int arcmsr_iop_confirm(struct Ada
+> >  		uint32_t __iomem *rwbuffer;
+> >  
+> >  		struct MessageUnit_B *reg = acb->pmuB;
+> > -		uint32_t intmask_org;
+> > -		intmask_org = arcmsr_disable_outbound_ints(acb);
+> >  		reg->postq_index = 0;
+> >  		reg->doneq_index = 0;
+> >  		writel(ARCMSR_MESSAGE_SET_POST_WINDOW, reg->drv2iop_doorbell);
+> > @@ -2569,7 +2651,6 @@ static int arcmsr_iop_confirm(struct Ada
+> >  			return 1;
+> >  		}
+> >  		arcmsr_hbb_enable_driver_mode(acb);
+> > -		arcmsr_enable_outbound_ints(acb, intmask_org);
+> >  		}
+> >  		break;
+> >  	case ACB_ADAPTER_TYPE_C: {
+> >
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-This is of course a very good question. We've done some very light 
-preparatory analysis and went through patches which would make most sense 
-to be shipped as hot/live patches without enough time for proper downtime 
-scheduling (i.e. CVE severity high enough (local root), etc). Most of the 
-time, these turn out to be a one-or-few liners, mostly adding extra check, 
-fixing bounds, etc. There were just one or two in a few years history 
-where some extra care would be needed.
 
-Of course, I guess that most valuable input regarding this could be coming 
-from kSplice guys, as they have the biggest in-field experience with this, 
-and are shipping a lot of non-trivial patches this way, not just the 
-"super-critical" ones. But I am not really sure whether we can expect any 
-input from them, unfortunately.
-
-> My guess would be that the overwhelming majority of live-patches don't 
-> change data structures - and hence the right initial model would be to 
-> ensure (via tooling, and via review) that 'v1' and 'v2' data is exactly 
-> the same.
-
-I fully agree ... that's why we are not pro-actively dealing with that in 
-kGraft, for the sake of keeping it stupid at simple (at least in the early 
-stages).
-
-> The most abstract way to 'live patch' a kernel is to do a checkpoint 
-> save on all application state, to reboot the kernel, boot into the 
-> patched kernel and then restore all application state seemlessly.
-
-In some sense yes, but it seems to still be rather costly operation 
-(especially checkpointing on a HUGE machine might take some time, if I 
-understand the technology correctly) compared to just flipping a few bytes 
-(while maintaining overall correctness, of course) in the kernel memory.
-
-Basically, CR might be the best solution for very complex and large kernel 
-updates. What I am currently most concerned about though, are scenarios 
-where datacenter owners need to urgently apply a local root one-liner fix 
-with as little hassle as possible.
-
--- 
-Jiri Kosina
-SUSE Labs
