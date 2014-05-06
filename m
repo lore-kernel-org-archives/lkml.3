@@ -1,91 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934499AbaEFI6z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 04:58:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64948 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934457AbaEFI6v convert rfc822-to-8bit (ORCPT
+	id S934529AbaEFJAH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 05:00:07 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:50609 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934461AbaEFJAB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 04:58:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,995,1389772800"; 
-   d="scan'208";a="506608571"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Pavel Machek <pavel@ucw.cz>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+	Tue, 6 May 2014 05:00:01 -0400
+Date: Tue, 6 May 2014 09:59:57 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: James Bottomley <jbottomley@parallels.com>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Moore, Robert" <robert.moore@intel.com>
-Subject: RE: [PATCH 02/27] ACPICA: Utilities: Deploy ACPI_DEBUGGER_EXEC for
- ACPI_DEBUGGER enabled code in utglobal.c.
-Thread-Topic: [PATCH 02/27] ACPICA: Utilities: Deploy ACPI_DEBUGGER_EXEC for
- ACPI_DEBUGGER enabled code in utglobal.c.
-Thread-Index: AQHPaQBq7j1bQcZC5EeaTpIQUeDtrZszPiIA
-Date: Tue, 6 May 2014 08:58:36 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E880255A03B@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1398817612.git.lv.zheng@intel.com>
- <53dbe352c16de24ea99d00af21eb01750af90074.1398817612.git.lv.zheng@intel.com>
- <20140506075353.GA20931@xo-6d-61-c0.localdomain>
-In-Reply-To: <20140506075353.GA20931@xo-6d-61-c0.localdomain>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] DMA-API: Change dma_declare_coherent_memory() CPU
+ address to phys_addr_t
+Message-ID: <20140506085957.GQ4750@e106497-lin.cambridge.arm.com>
+Mail-Followup-To: Bjorn Helgaas <bhelgaas@google.com>,
+	James Bottomley <jbottomley@parallels.com>,
+	"rdunlap@infradead.org" <rdunlap@infradead.org>,
+	"linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+	"gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+	"linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Arnd Bergmann <arnd@arndb.de>
+References: <20140430203321.30056.14833.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <1398953290.2313.15.camel@dabdike.int.hansenpartnership.com>
+ <CAErSpo7zjXg8xrV7=q36rNp_g573P93HiXTB72Z1cZfjGeeBmg@mail.gmail.com>
+ <20140502111807.GL4750@e106497-lin.cambridge.arm.com>
+ <20140505224240.GA8883@google.com>
 MIME-Version: 1.0
+In-Reply-To: <20140505224240.GA8883@google.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 06 May 2014 09:00:06.0738 (UTC) FILETIME=[93814B20:01CF6909]
+X-MC-Unique: 114050609595815701
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, May 05, 2014 at 11:42:40PM +0100, Bjorn Helgaas wrote:
+> On Fri, May 02, 2014 at 12:18:07PM +0100, Liviu Dudau wrote:
+> > On Thu, May 01, 2014 at 08:05:04PM +0100, Bjorn Helgaas wrote:
+> > > On Thu, May 1, 2014 at 8:08 AM, James Bottomley
+> > > <jbottomley@parallels.com> wrote:
+> > > > On Wed, 2014-04-30 at 14:33 -0600, Bjorn Helgaas wrote:
+> > > >> dma_declare_coherent_memory() takes two addresses for a region of memory: a
+> > > >> "bus_addr" and a "device_addr".  I think the intent is that "bus_addr" is
+> > > >> the physical address a *CPU* would use to access the region, and
+> > > >> "device_addr" is the bus address the *device* would use to address the
+> > > >> region.
+> > > >>
+> > > >> Rename "bus_addr" to "phys_addr" and change its type to phys_addr_t.
+> > > >
+> > > > Remind me what the difference between phys_addr_t and dma_addr_t are.
+> > > >
+> > > > I thought phys_addr_t was the maximum address the CPU could reach after
+> > > > address translation and dma_addr_t was the maximum physical address any
+> > > > bus attached memory mapped devices could appear at. (of course, mostly
+> > > > they're the same).
+> > > 
+> > > I assumed phys_addr_t was for physical addresses generated by a CPU
+> > > and dma_addr_t was for addresses generated by a device, e.g.,
+> > > addresses you would see with a PCI bus analyzer or in a PCI BAR.  But
+> > > ARCH_DMA_ADDR_T_64BIT does seem more connected to processor-specific
+> > > things, e.g., ARM_LPAE, than to device bus properties like "support
+> > > 64-bit PCI, not just 32-bit PCI."
+> > > 
+> > > DMA-API-HOWTO.txt contains this:
+> > > 
+> > >   ... the definition of the dma_addr_t (which can hold any valid DMA
+> > >   address for the platform) type which should be used everywhere you
+> > >   hold a DMA (bus) address returned from the DMA mapping functions.
+> > > 
+> > > and clearly you use a dma_addr_t from dma_alloc_coherent(), etc., to
+> > > program the device.  It seems silly to have phys_addr_t and dma_addr_t
+> > > for two (possibly slightly different) flavors of CPU physical
+> > > addresses, and then sort of overload dma_addr_t by also using it to
+> > > hold the addresses devices use for DMA.
+> > 
+> > dma_addr_t is a phys_addr_t masked according to the capabilities of the
+> > *DMA engine* (not device). 
 
-> From: Pavel Machek [mailto:pavel@ucw.cz]
-> Sent: Tuesday, May 06, 2014 3:54 PM
+Sorry, I should've said restricted rather than masked.
+
 > 
-> On Wed 2014-04-30 10:03:39, Lv Zheng wrote:
-> > This patch deploys ACPI_DEBUGGER_EXEC usage to utglobal.c to reduce "ifdef"
-> > of ACPI_DEBUGGER.  No functional changes.  Lv Zheng.
-> >
-> > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> > Signed-off-by: Bob Moore <robert.moore@intel.com>
-> > ---
-> >  drivers/acpi/acpica/utglobal.c |    4 +---
-> >  1 file changed, 1 insertion(+), 3 deletions(-)
-> >
-> > diff --git a/drivers/acpi/acpica/utglobal.c b/drivers/acpi/acpica/utglobal.c
-> > index f3abeae..825b064 100644
-> > --- a/drivers/acpi/acpica/utglobal.c
-> > +++ b/drivers/acpi/acpica/utglobal.c
-> > @@ -377,9 +377,7 @@ acpi_status acpi_ut_init_globals(void)
-> >  	acpi_gbl_disable_mem_tracking = FALSE;
-> >  #endif
-> >
-> > -#ifdef ACPI_DEBUGGER
-> > -	acpi_gbl_db_terminate_threads = FALSE;
-> > -#endif
-> > +	ACPI_DEBUGGER_EXEC(acpi_gbl_db_terminate_threads = FALSE);
-> >
-> >  	return_ACPI_STATUS(AE_OK);
-> 
-> Is it just me or is this incredibly ugly?
+> I don't quite agree with this.  phys_addr_t is used for physical
+> addresses generated by a CPU, e.g., ioremap() takes a phys_addr_t and
+> returns a void * (a virtual address).  A dma_addr_t is an address you
+> get from dma_map_page() or a similar interface, and you program into a
+> device (or DMA engine if you prefer).  You can't generate a dma_addr_t
+> simply by masking a phys_addr_t because an IOMMU can make arbitrary
+> mappings of bus addresses to physical memory addresses.
 
-This patch is no-op for Linux kernel.
-ACPI_DEBUGGER is not enabled for Linux kernel.
-
-This patch is here to reduce the source code differences between Linux and ACPICA.
-ACPICA release is done by a set of conversion utilities, the process is known as linuxizing.
-The generation result of the linuxizing will require more human interventions if such differences grow bigger.
-Thus one of our quality insurance step is to control  the divergences down to an acceptable level.
-I should add a document in the kernel source tree to describe the ACPICA release cycle.
-
-Thanks and best regards
--Lv
+Agree, sorry for the confusion I've generated.
 
 > 
-> 									Pavel
+> It is meaningless for a CPU to generate a reference to a dma_addr_t.
+> It will work in some simple cases where there's no IOMMU, but it won't
+> work in general.
+> 
+> > Quite a lot of PCI devices (all?) now contain
+> > a DMA engine, so the distinction is somewhat blurred nowadays.
+> 
+> I'll take your word for the DMA engine/device distinction, but I don't
+> see how it's relevant here.  Linux doesn't have a generic idea of a
+> DMA engine; we just treat it as part of the device capabilities.
+
+Well, ARM has a separate DMA engine that can be used by multiple devices.
+Hence for (my) sanity I prefer to keep the distinction clear.
+
+> 
+> > > I'm not a CPU
+> > > person, so I don't understand the usefulness of dma_addr_t as a
+> > > separate type to hold CPU addresses at which memory-mapped devices can
+> > > appear.  If that's all it is, why not just use phys_addr_t everywhere
+> > > and get rid of dma_addr_t altogether?
+> > 
+> > Because dma_addr_t imposes further restrictions based on what the DMA engine
+> > can access. You could have a DMA engine that can only access 32bit addresses
+> > in a 40+ bit CPU addresses system.
+> 
+> Yes; this is an argument for having separate types for bus addresses
+> and CPU addresses.  I think dma_addr_t *is* for bus addresses.  I
+> thought James was suggesting that it was a subset of CPU physical
+> address space, and that any valid dma_addr_t is also a valid
+> phys_addr_t.  That doesn't seem right to me.
+
+I'm actually more inclined towards James' view. To me the DMA engine is a very
+specialised CPU that does memcpy(). You can pair it with an IOMMU engine and
+you can have address translation into virtual space of any size you want, or
+you can have the engine sitting behind a bus in which case it will use bus
+addresses. But its uses of addresses is similar to a CPU (whenever you want to
+call them phys_addr_t or not is a different discussion).
+
+ARM has a PL330 DMA engine. It's a SoC component and usually doesn't get attached
+to any PCI bus. It uses a system bus called AXI in the same way a CPU would. So
+for that having a *bus* address does not fit with the way hardware is connected.
+
+My mental picture for this discussion is a hypotetical DMA engine that sits on
+a PCI bus but has access to the system memory that the CPU can see (sort of like
+a DMA engine inside a host bridge). Would you use a phys_addr_t when programming
+the device or a bus address? I would say the former, because you know how to 
+translate that into bus addresses and back in the host bridge.
+
+> 
+> > > dma_declare_coherent_memory() calls ioremap() on bus_addr, which seems
+> > > a clear indication that bus_addr is really a physical address usable
+> > > by the CPU.  But I do see your point that bus_addr is a CPU address
+> > > for a memory-mapped device, and would thus fit into your idea of a
+> > > dma_addr_t.
+> > > 
+> > > I think this is the only part of the DMA API that deals with CPU
+> > > physical addresses.  I suppose we could side-step this question by
+> > > having the caller do the ioremap; then dma_declare_coherent_memory()
+> > > could just take a CPU virtual address (a void *) and a device address
+> > > (a dma_addr_t).
+> > 
+> > And how would that change the meaning of the function?
+> 
+> I think the interesting thing here is that we ioremap() a bus address.
+> That doesn't work in general because ioremap() is expecting a CPU
+> physical address, not a bus address.  We don't have a generic way for
+> dma_declare_coherent_memory() to convert a bus address to a CPU
+> physical address.  The caller knows a little more and probably *could*
+> do that, e.g., a PCI driver could use pcibios_bus_to_resource().  If
+> we made a generic way to do the conversion, it would definitely be
+> nicer to leave the ioremap() inside dma_declare_coherent_memory().
+
+Agree, ioremap()-ing a bus address sounds to me like a bug.
+
+Best regards,
+Liviu
+
+> 
+> Bjorn
 > --
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
+
