@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951AbaEFQKL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 12:10:11 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48111 "EHLO mail.skyhub.de"
+	id S1752631AbaEFQLv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 12:11:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12704 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753905AbaEFQKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 12:10:09 -0400
-Date: Tue, 6 May 2014 18:10:04 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Mike Galbraith <mgalbraith@suse.de>
-Cc: lkml <linux-kernel@vger.kernel.org>, x86-ml <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Slow down stupid pounders
-Message-ID: <20140506161004.GC25013@pd.tnic>
-References: <20140506102924.GA25013@pd.tnic>
- <1399388899.5192.273.camel@marge.simpson.net>
+	id S1750838AbaEFQLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 12:11:49 -0400
+Message-ID: <536909BE.2050100@redhat.com>
+Date: Tue, 06 May 2014 18:11:42 +0200
+From: Denys Vlasenko <dvlasenk@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1399388899.5192.273.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 1/2] uprobes: add comment with insn opcodes, mnemonics
+ and why we dont support them
+References: <1399314247-7368-1-git-send-email-dvlasenk@redhat.com> <1399329124.4602.22.camel@oc7886638347.ibm.com.usor.ibm.com>
+In-Reply-To: <1399329124.4602.22.camel@oc7886638347.ibm.com.usor.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 05:08:19PM +0200, Mike Galbraith wrote:
-> Rather than ratelimit the interface perhaps send a ratelimited note
-> telling the user straight up that he's begging for trouble. We can
-> ignore it when regression testing, and point it out to Joe Pounder
-> should he fail to notice.. or be somewhat dense.
+On 05/06/2014 12:32 AM, Jim Keniston wrote:
+> All of the following is FYI.
+> 
+> The good-instruction tables date back 2006-2007.  Back then, the
+> philosophy was to disallow any questionable opcodes, and add them back
+> into the "good" tables only when a need was demonstrated (i.e., somebody
+> needed to probe that particular instruction) and we could verify that
+> probing that instruction worked.
 
-Yeah, if those dudes don't stare at dmesg, that note doesn't bring us
-whit.
+For the record, I do agree with this.
+I think it's not worthwhile to expend additional work
+to add support for instructions which won't ever be seen
+in any sane program.
 
-Alternatively, we could do
+Example: iret instruction works in userspace
+(with the correct stack layout, it will successfully
+pop instruction pointer, statck pointer, flags, and continue
+executing whereever that address points to).
+But no one in userspace has any need to do that.
 
-	add_taint(TAINT_HOTPLUG_POUNDER)
+And since we need to expend additional work to support it
+(we need to account for the fact it sets EFLAGS),
+we can simply prohibit its probing.
 
-when the rate is exceeded...
+However, if a particular insn requires no special support
+whatsoever, it should be enabled even if it's not usually used
+(examples: arpl, lsl). Merely because we want fewer '0' bits
+in the tables - less explaining to ourselves "ok, why is that one
+disallowed?".
 
-I'd rather like to slow it down for a second, though, if it doesn't hurt
-any sensible use cases in doing so.
+And second, if a particular insn will be used in legitimate programs
+(example: the boatload of new vector insns *will be* used by scientific
+supercomputers, and will need debugging), we can't just disable probing
+of it at the slightest inconvenience.
 
--- 
-Regards/Gruss,
-    Boris.
+Example: 0f 78 - vmread (Intel VMX. CPL0 insn).
+We now have it disabled. Presumably because it generates GP exception
+when used in userspace, and we aren't sure we handle it absolutely
+correctly. (The "slightest inconvenience"). So we disable it.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+But there is a problem. With 66 and f2 prefixes, it's not vmread anymore.
+These are valid, innocuous SSE4A vector ops. We disable them too.
+With EVEX prefix on Knight's Landing CPU these are vector conversion ops.
+We disable them too. But they eventually will be used.
+
+I think we should try to support cases like this one.
+Especially that in this case (we disabled an insn which
+*always* throws an exception) it may even already be working
+- we need to check that. If we do, many more '0' bits can become
+'1' - in fact more than half of them.
+
