@@ -1,41 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067AbaEFV2H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 17:28:07 -0400
-Received: from mga09.intel.com ([134.134.136.24]:50805 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751832AbaEFV2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 17:28:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,998,1389772800"; 
-   d="scan'208";a="507187668"
-Message-ID: <1399411616.2458.45.camel@acox1-desk.ger.corp.intel.com>
-Subject: Re: [PATCH] libata-sff: remove dead code
-From: Alan Cox <alan@linux.intel.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 06 May 2014 22:26:56 +0100
-In-Reply-To: <1399204229.8729.15.camel@x220>
-References: <1399204229.8729.15.camel@x220>
-Organization: Intel Corporation
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	id S1754161AbaEFV2l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 17:28:41 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:49101 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250AbaEFV2j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 17:28:39 -0400
+Message-ID: <536953C4.8030201@linux.vnet.ibm.com>
+Date: Wed, 07 May 2014 02:57:32 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, peterz@infradead.org,
+        tglx@linutronix.de, mingo@kernel.org, rusty@rustcorp.com.au,
+        fweisbec@gmail.com, hch@infradead.org, mgorman@suse.de,
+        riel@redhat.com, bp@suse.de, rostedt@goodmis.org, mgalbraith@suse.de,
+        ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
+        rjw@rjwysocki.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] CPU hotplug, stop-machine: Plug race-window that
+ leads to "IPI-to-offline-CPU"
+References: <20140506180213.14375.5904.stgit@srivatsabhat.in.ibm.com> <20140506180258.14375.20181.stgit@srivatsabhat.in.ibm.com> <20140506134054.8cd531296c8aa5d9c3eff958@linux-foundation.org> <20140506204248.GH27738@htj.dyndns.org>
+In-Reply-To: <20140506204248.GH27738@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050621-7014-0000-0000-000004D757E9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-05-04 at 13:50 +0200, Paul Bolle wrote:
-> Ever since v2.6.19 the code contains a check for CONFIG_NO_ATA_LEGACY.
-> But that macro has never been defined. Apparently no one ran into
-> problems on platforms that do not support compatibility mode.
+On 05/07/2014 02:12 AM, Tejun Heo wrote:
+> On Tue, May 06, 2014 at 01:40:54PM -0700, Andrew Morton wrote:
+>> On Tue, 06 May 2014 23:33:03 +0530 "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>
+>>> --- a/kernel/stop_machine.c
+>>> +++ b/kernel/stop_machine.c
+>>> @@ -165,12 +165,21 @@ static void ack_state(struct multi_stop_data *msdata)
+>>>  		set_state(msdata, msdata->state + 1);
+>>>  }
+>>>  
+>>> +/* Holding area for active CPUs, to let all the non-active CPUs go first */
+>>> +static void hold_active_cpus(struct multi_stop_data *msdata,
+>>> +			     int num_active_cpus)
+>>> +{
+>>> +	/* Wait until all the non-active threads ack the state */
+>>> +	while (atomic_read(&msdata->thread_ack) > num_active_cpus)
+>>> +		cpu_relax();
+>>> +}
+>>
+>> The code comments are a bit lame.  Can we do a better job of explaining
+>> the overall dynamic behaviour?  Help readers to understand the problem
+>> which hold_active_cpus() is solving and how it solves it?
+> 
+> Does it even need to be a separate function?  I kinda really dislike
+> trivial helpers which are used only once.  It obfuscates more than
+> helping anything.  I think proper comment where the actual
+> synchronization is happening along with open coded wait would be
+> easier to follow.
+> 
 
-It was needed for some of the FRV devices I belive. Please check with
-David Howells if it's still relevant (even if its not used in the
-default configs)
+Ok, I'll open code it and add an appropriate comment explaining the
+synchronization.
 
-Alan
-
+Thank you!
+ 
+Regards,
+Srivatsa S. Bhat
 
