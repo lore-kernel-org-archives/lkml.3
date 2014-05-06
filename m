@@ -1,66 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaEFQpv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 12:45:51 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:42514 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944AbaEFQpt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 12:45:49 -0400
-Date: Tue, 6 May 2014 09:45:46 -0700
-From: josh@joshtriplett.org
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, andi@firstfloor.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tom.zanussi@linux.intel.com, ak@linux.intel.com
-Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
-Message-ID: <20140506164546.GB20536@cloud>
-References: <1399328773-6531-9-git-send-email-andi@firstfloor.org>
- <20140505.231229.136734008603421707.davem@davemloft.net>
- <20140506032114.GP2382@two.firstfloor.org>
- <20140505.232327.578134514220748085.davem@davemloft.net>
- <20140506155703.GA20391@cloud>
- <1399394359.15399.20.camel@edumazet-glaptop2.roam.corp.google.com>
+	id S1751418AbaEFQtE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 12:49:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38018 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750893AbaEFQtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 12:49:02 -0400
+Message-ID: <53691272.1050602@redhat.com>
+Date: Tue, 06 May 2014 12:48:50 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399394359.15399.20.camel@edumazet-glaptop2.roam.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/17] mm: page_alloc: Only check the zone id check if
+ pages are buddies
+References: <1398933888-4940-1-git-send-email-mgorman@suse.de> <1398933888-4940-6-git-send-email-mgorman@suse.de>
+In-Reply-To: <1398933888-4940-6-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 09:39:19AM -0700, Eric Dumazet wrote:
-> On Tue, 2014-05-06 at 08:57 -0700, josh@joshtriplett.org wrote:
+On 05/01/2014 04:44 AM, Mel Gorman wrote:
+> A node/zone index is used to check if pages are compatible for merging
+> but this happens unconditionally even if the buddy page is not free. Defer
+> the calculation as long as possible. Ideally we would check the zone boundary
+> but nodes can overlap.
 > 
-> > A NAK isn't going to cut it, here; tiny Linux systems are going to
-> > exist, and they shouldn't have to maintain a long-term out-of-tree fork
-> > or use crazy things like LWIP.
-> 
-> What's wrong with user space implementations of networking stacks ?
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
-What's wrong with the kernel implementation?
+Acked-by: Rik van Riel <riel@redhat.com>
 
-> For many usages, it can bring 10 times the performance of having user
-> application and kernel sockets.
-
-Sounds like we have some optimization to do, then; there's no
-fundamental unfixable reason for that delta.
-
-> In any cases, we do not model kernel implementations to 'compete' with
-> user space.
-> 
-> We simply can not compete with user space, as a programmer is free to
-> keep what he really wants/needs.
-
-The kernel can do the same.  Consider the idea of analyzing a set of
-userspace programs, determining what kernel functionality they do and
-don't need, feeding that information into the kernel build process, and
-automatically dropping unused bits of the kernel.
-
-Ideally, that kind of process would support eliminating kernel config
-options that just select userspace-visible interfaces, leaving only the
-kernel config options that change how those interfaces behave
-(size/performance/feature tradeoffs).
-
-- Josh Triplett
+-- 
+All rights reversed
