@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486AbaEFSDy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 14:03:54 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:41126 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154AbaEFSDx (ORCPT
+	id S1753627AbaEFSEH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 14:04:07 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:35131 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751920AbaEFSEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 14:03:53 -0400
+	Tue, 6 May 2014 14:04:04 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 1/2] smp: Print more useful debug info upon receiving IPI on
- an offline CPU
+Subject: [PATCH 2/2] CPU hotplug,
+ stop-machine: Plug race-window that leads to "IPI-to-offline-CPU"
 To: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org, tj@kernel.org,
         rusty@rustcorp.com.au, akpm@linux-foundation.org, fweisbec@gmail.com,
         hch@infradead.org
@@ -17,8 +17,8 @@ Cc: mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
         mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
         oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 06 May 2014 23:32:51 +0530
-Message-ID: <20140506180247.14375.45645.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 06 May 2014 23:33:03 +0530
+Message-ID: <20140506180258.14375.20181.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140506180213.14375.5904.stgit@srivatsabhat.in.ibm.com>
 References: <20140506180213.14375.5904.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -27,69 +27,146 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050618-3864-0000-0000-00000E0F4E22
+x-cbid: 14050618-2674-0000-0000-00000E253C8C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today the smp-call-function code just prints a warning if we get an IPI on
-an offline CPU. This info is sufficient to let us know that something went
-wrong, but often it is very hard to debug exactly who sent the IPI and why,
-from this info alone.
+During CPU offline, stop-machine is used to take control over all the online
+CPUs (via the per-cpu stopper thread) and then run take_cpu_down() on the CPU
+that is to be taken offline.
 
-In most cases, we get the warning about the IPI to an offline CPU, immediately
-after the CPU going offline comes out of the stop-machine phase and reenables
-interrupts. Since all online CPUs participate in stop-machine, the information
-regarding the sender of the IPI is already lost by the time we exit the
-stop-machine loop. So even if we dump the stack on each CPU at this point,
-we won't find anything useful since all of them will show the stack-trace of
-the stopper thread. So we need a better way to figure out who sent the IPI and
-why.
+But stop-machine itself has several stages: _PREPARE, _DISABLE_IRQ, _RUN etc.
+The important thing to note here is that the _DISABLE_IRQ stage comes much
+later after starting stop-machine, and hence there is a large window where
+other CPUs can send IPIs to the CPU going offline. As a result, we can
+encounter a scenario as depicted below, which causes IPIs to be sent to the
+CPU going offline, and that CPU notices them *after* it has gone offline,
+triggering the "IPI-to-offline-CPU" warning from the smp-call-function code.
 
-To achieve this, when we detect an IPI targeted to an offline CPU, loop through
-the call-single-data linked list and print out the payload (i.e., the name
-of the function which was supposed to be executed by the target CPU). This
-would give us an insight as to who might have sent the IPI and help us debug
-this further.
+
+              CPU 1                                         CPU 2
+          (Online CPU)                               (CPU going offline)
+
+       Enter _PREPARE stage                          Enter _PREPARE stage
+
+                                                     Enter _DISABLE_IRQ stage
+
+
+                                                   =
+       Got a device interrupt,                     | Didn't notice the IPI
+       and the interrupt handler                   | since interrupts were
+       called smp_call_function()                  | disabled on this CPU.
+       and sent an IPI to CPU 2.                   |
+                                                   =
+
+
+       Enter _DISABLE_IRQ stage
+
+
+       Enter _RUN stage                              Enter _RUN stage
+
+                                  =
+       Busy loop with interrupts  |                  Invoke take_cpu_down()
+       disabled.                  |                  and take CPU 2 offline
+                                  =
+
+
+       Enter _EXIT stage                             Enter _EXIT stage
+
+       Re-enable interrupts                          Re-enable interrupts
+
+                                                     The pending IPI is noted
+                                                     immediately, but alas,
+                                                     the CPU is offline at
+                                                     this point.
+
+
+
+So, as we can observe from this scenario, the IPI was sent when CPU 2 was
+still online, and hence it was perfectly legal. But unfortunately it was
+noted only after CPU 2 went offline, resulting in the warning from the
+IPI handling code. In other words, the fault was not at the sender, but
+at the receiver side - and if we look closely, the real bug is in the
+stop-machine sequence itself.
+
+The problem here is that the CPU going offline disabled its local interrupts
+(by entering _DISABLE_IRQ phase) *before* the other CPUs. And that's the
+reason why it was not able to respond to the IPI before going offline.
+
+A simple solution to this problem is to ensure that the CPU going offline
+*follows* all other CPUs while entering each subsequent phase within
+stop-machine. In particular, all other CPUs will enter the _DISABLE_IRQ
+phase and disable their local interrupts, and only *then*, the CPU going
+offline will follow suit. Since the other CPUs are executing the stop-machine
+code with interrupts disabled, they won't send any IPIs at all, at that
+point. And by the time stop-machine ends, the CPU would have gone offline
+and disappeared from the cpu_online_mask, and hence future invocations of
+smp_call_function() and friends will automatically prune that CPU out.
+Thus, we can guarantee that no CPU will end up *inadvertently* sending
+IPIs to an offline CPU.
+
+We can implement this by introducing a "holding area" for the CPUs marked
+as 'active_cpus', and use this infrastructure to let the other CPUs
+progress from one stage to the next, before allowing the active_cpus to
+do the same thing.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- kernel/smp.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ kernel/stop_machine.c |   22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 06d574e..6cb0e2e 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -185,15 +185,28 @@ void generic_smp_call_function_single_interrupt(void)
- {
- 	struct llist_node *entry;
- 	struct call_single_data *csd, *csd_next;
-+	int warn = 0;
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index 01fbae5..d65168e 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -165,12 +165,21 @@ static void ack_state(struct multi_stop_data *msdata)
+ 		set_state(msdata, msdata->state + 1);
+ }
  
- 	/*
- 	 * Shouldn't receive this interrupt on a cpu that is not yet online.
- 	 */
--	WARN_ON_ONCE(!cpu_online(smp_processor_id()));
-+	if (unlikely(!cpu_online(smp_processor_id()))) {
-+		warn = 1;
-+		WARN_ON_ONCE(1);
-+	}
- 
- 	entry = llist_del_all(&__get_cpu_var(call_single_queue));
- 	entry = llist_reverse_order(entry);
- 
-+	if (unlikely(warn)) {
-+		/*
-+		 * We don't have to use the _safe() variant here
-+		 * because we are not invoking the IPI handlers yet.
-+		 */
-+		llist_for_each_entry(csd, entry, llist)
-+			pr_warn("SMP IPI Payload: %pS \n", csd->func);
-+	}
++/* Holding area for active CPUs, to let all the non-active CPUs go first */
++static void hold_active_cpus(struct multi_stop_data *msdata,
++			     int num_active_cpus)
++{
++	/* Wait until all the non-active threads ack the state */
++	while (atomic_read(&msdata->thread_ack) > num_active_cpus)
++		cpu_relax();
++}
 +
- 	llist_for_each_entry_safe(csd, csd_next, entry, llist) {
- 		csd->func(csd->info);
- 		csd_unlock(csd);
+ /* This is the cpu_stop function which stops the CPU. */
+ static int multi_cpu_stop(void *data)
+ {
+ 	struct multi_stop_data *msdata = data;
+ 	enum multi_stop_state curstate = MULTI_STOP_NONE;
+-	int cpu = smp_processor_id(), err = 0;
++	int cpu = smp_processor_id(), num_active_cpus, err = 0;
+ 	unsigned long flags;
+ 	bool is_active;
+ 
+@@ -180,15 +189,22 @@ static int multi_cpu_stop(void *data)
+ 	 */
+ 	local_save_flags(flags);
+ 
+-	if (!msdata->active_cpus)
++	if (!msdata->active_cpus) {
+ 		is_active = cpu == cpumask_first(cpu_online_mask);
+-	else
++		num_active_cpus = 1;
++	} else {
+ 		is_active = cpumask_test_cpu(cpu, msdata->active_cpus);
++		num_active_cpus = cpumask_weight(msdata->active_cpus);
++	}
+ 
+ 	/* Simple state machine */
+ 	do {
+ 		/* Chill out and ensure we re-read multi_stop_state. */
+ 		cpu_relax();
++
++		if (is_active)
++			hold_active_cpus(msdata, num_active_cpus);
++
+ 		if (msdata->state != curstate) {
+ 			curstate = msdata->state;
+ 			switch (curstate) {
 
