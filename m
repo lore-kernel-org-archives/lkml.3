@@ -1,218 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938AbaEFVlO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 17:41:14 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:44063 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753706AbaEFVlM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 17:41:12 -0400
+	id S1754140AbaEFVli (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 17:41:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21920 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754024AbaEFVlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 17:41:36 -0400
+Date: Tue, 6 May 2014 17:41:29 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, ebiederm@xmission.com
+Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
+Message-ID: <20140506214129.GC15100@madcap2.tricolour.ca>
+References: <cover.1398176489.git.rgb@redhat.com>
+ <1399154328.2505.29.camel@dabdike.int.hansenpartnership.com>
+ <20140505034814.GA27548@mail.hallyn.com>
+ <20140505214818.GC6867@madcap2.tricolour.ca>
+ <1399326698.2164.47.camel@dabdike.int.hansenpartnership.com>
+ <20140505222758.GA6508@ubuntumail>
+ <1399329001.2164.56.camel@dabdike.int.hansenpartnership.com>
+ <20140505223638.GB6508@ubuntumail>
+ <a09ed85b-d6ef-4472-853b-84057d5957c2@email.android.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGVrzcZs9-f4bCLNv3-s9iubMk8SF8P9+aJaere7rdLbvfo0bw@mail.gmail.com>
-References: <CAOk88BLR=nwNGdT++39vLdOt=TwZmemF-trSQPY8AdMN9tKtKQ@mail.gmail.com>
- <20140506181151.GU28564@pengutronix.de> <CAOk88BJ+sCtM_cRLuBktUKWYHcPo6KtQ+GAgTJL0zBgQqcQYog@mail.gmail.com>
- <CAGVrzcZs9-f4bCLNv3-s9iubMk8SF8P9+aJaere7rdLbvfo0bw@mail.gmail.com>
-From: Brian Lilly <brian@crystalfontz.com>
-Date: Tue, 6 May 2014 14:40:31 -0700
-Message-ID: <CAOk88B+5CQZ639S_DwprrdBwZCs9m1cN_hr5hDRVkP18DqHd0w@mail.gmail.com>
-Subject: Re: i.MX28 based system losing eth0 on boot
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Jim Baxter <jim_baxter@mentor.com>, Frank Li <Frank.Li@freescale.com>,
-        Fugang Duan <B38611@freescale.com>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kernel <kernel@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <a09ed85b-d6ef-4472-853b-84057d5957c2@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PHY on board is the SMSC LAN8720
+On 14/05/05, James Bottomley wrote:
+> On May 5, 2014 3:36:38 PM PDT, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+> >Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
+> >> On Mon, 2014-05-05 at 22:27 +0000, Serge Hallyn wrote:
+> >> > Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
+> >> > > On Mon, 2014-05-05 at 17:48 -0400, Richard Guy Briggs wrote:
+> >> > > > On 14/05/05, Serge E. Hallyn wrote:
+> >> > > > > Quoting James Bottomley
+> >(James.Bottomley@HansenPartnership.com):
+> >> > > > > > On Tue, 2014-04-22 at 14:12 -0400, Richard Guy Briggs
+> >wrote:
+> >> > > > > > > Questions:
+> >> > > > > > > Is there a way to link serial numbers of namespaces
+> >involved in migration of a
+> >> > > > > > > container to another kernel?  (I had a brief look at
+> >CRIU.)  Is there a unique
+> >> > > > > > > identifier for each running instance of a kernel?  Or at
+> >least some identifier
+> >> > > > > > > within the container migration realm?
+> >> > > > > > 
+> >> > > > > > Are you asking for a way of distinguishing an migrated
+> >container from an
+> >> > > > > > unmigrated one?  The answer is pretty much "no" because the
+> >job of
+> >> > > > > > migration is to restore to the same state as much as
+> >possible.
+> >> > > > > > 
+> >> > > > > > Reading between the lines, I think your goal is to
+> >correlate audit
+> >> > > > > > information across a container migration, right?  Ideally
+> >the management
+> >> > > > > > system should be able to cough up an audit trail for a
+> >container
+> >> > > > > > wherever it's running and however many times it's been
+> >migrated?
+> >> > > > > > 
+> >> > > > > > In that case, I think your idea of a numeric serial number
+> >in a dense
+> >> > > > > > range is wrong.  Because the range is dense you're
+> >obviously never going
+> >> > > > > > to be able to use the same serial number across a
+> >migration.  However,
+> >> > > > > 
+> >> > > > > Ah, but I was being silly before, we can actually address
+> >this pretty
+> >> > > > > simply.  If we just (for instance) add
+> >> > > > > /proc/self/ns/{ic,mnt,net,pid,user,uts}_seq containing the
+> >serial number
+> >> > > > > for the relevant ns for the task, then criu can dump this
+> >info at
+> >> > > > > checkpoint.  Then at restart it can dump an audit message per
+> >task and
+> >> > > > > ns saying old_serial=%x,new_serial=%x.  That way the audit
+> >log reader
+> >> > > > > can if it cares keep track.
+> >> > > > 
+> >> > > > This is the sort of idea I had in mind...
+> >> > > 
+> >> > > OK, but I don't understand then why you need a serial number. 
+> >There are
+> >> > > plenty of things we preserve across a migration, like namespace
+> >name for
+> >> > > instance.  Could you explain what function it performs because I
+> >think I
+> >> > > might be missing something.
+> >> > 
+> >> > We're looking ahead to a time when audit is namespaced, and a
+> >container
+> >> > can keep its own audit logs (without limiting what the host audits
+> >of
+> >> > course).  So if a container is auditing suspicious activity by some
+> >> > task in a sub-namesapce, then the whole parent container gets
+> >migrated,
+> >> > after migration we want to continue being able to correlate the
+> >namespaces.
+> >> > 
+> >> > We're also looking at audit trails on a host that is up for years. 
+> >We
+> >> > would like every namespace to be uniquely logged there.  That is
+> >why
+> >> > inode #s on /proc/self/ns/* are not sufficient, unless we add a
+> >generation
+> >> > # (which would end more complicated, not less, than a serial #).
+> >> 
+> >> Right, but when the contaner has an audit namespace, that namespace
+> >has
+> >> a name,
+> >
+> >What ns has a name?
+> 
+> The netns for instance.
+> 
+> >  The audit ns can be tied to 50 pid namespaces, and
+> >we
+> >want to log which pidns is responsible for something.
+> >
+> >If you mean the pidns has a name, that's the problem...  it does not,
+> >it
+> >only has a inode # which may later be re-use.
+> 
+> I still think there's a miscommunication somewhere: I believe you just
+> need a stable id to tie the audit to, so why not just give the audit
+> namespace a name like net?  The id would then be durable across
+> migrations.
 
-With the generic PHY driver selected:  http://pastebin.com/A4MH4Ptw
+Audit does not have its own namespace (yet).  That idea is being
+considered, but we would prefer to avoid it if it makes sense to tie it
+in with an existing namespace.  The pid and user namespaces, being
+heierarchical seem to make the most sense so far, but we are proceeding
+very carefully to avoid creating a security nightmare in the process.
 
-[   28.828761] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
-[Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
-[   28.840626] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
-[   30.827536] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
-[   30.833739] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-[   32.986999] IPv6: ADDRCONF(NETDEV_UP): usb0: link is not ready
-[   37.316421] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
-[Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
-[   38.345047] fec 800f0000.ethernet eth0: MDIO read timeout
-[   39.506210] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
-[   40.374961] fec 800f0000.ethernet eth0: MDIO read timeout
+>From the kernel's perspective, none of the namespaces have a name.  A
+container concept of a group of namespaces may have been assigned one,
+but that isn't apparent to the layer that is logging this information.
 
-With the SMSC PHY driver selected:  http://pastebin.com/DhdDyrMv
+> >> which CRIU would migrate, so why not use that name for the
+> >> log .. no need for numbers (unless you make the name a number, of
+> >> course)?
 
-[   28.778974] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
-[SMSC LAN8710/LAN8720] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
-[   28.791742] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
-[   30.773078] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
-[   30.779286] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-[   32.934692] IPv6: ADDRCONF(NETDEV_UP): usb0: link is not ready
-[   37.242162] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
-[SMSC LAN8710/LAN8720] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
-[   38.270611] fec 800f0000.ethernet eth0: MDIO read timeout
-[   39.415256] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
-[   40.300454] fec 800f0000.ethernet eth0: MDIO read timeout
+There would certainly need to be a way to tie these namespace
+identifiers to container names in log messages.
 
-On Tue, May 6, 2014 at 12:24 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
-> 2014-05-06 12:12 GMT-07:00 Brian Lilly <brian@crystalfontz.com>:
->> It is happening during boot up:
->>
->> <snip, kernel 3.12 >
->>
->> Configuring network interfaces... [   35.117114] fec 800f0000.ethernet
->> eth0: Freescale FEC PHY driver [SMSC LAN8710/LAN8720]
->
-> Note that the SMSC PHY driver is picked up here, and that specific
-> driver implements a different phy_read_status() callback due to how
-> the PHY operates. The PHY driver also overrides the config_init()
-> callback to perform some PHY-specific initialization. See below for
-> more.
->
->> (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
->> [   35.129967] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
->> udhcpc (v1.21.1) started
->>
->> Sending discover...
->>
->> [   37.113901] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
->> [   37.120134] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
->> Sending discover...
->>
->> Sending select for 10.10.10.217...
->> Lease of 10.10.10.217 obtained, lease time 86400
->> /etc/udhcpc.d/50default: Adding DNS 10.10.10.13
->> [   39.319957] IPv6: ADDRCONF(NETDEV_UP): usb0: link is not ready
->> done.
->> Starting rpcbind daemon...done.
->> net.ipv4.conf.default.rp_filter = 1
->> net.ipv4.conf.all.rp_filter = 1
->> Mon Apr 14 22:40:00 UTC 2014
->> INIT: Entering runlevel: 5
->> Starting Xserver
->> Starting system message bus: dbus.
->> Starting Connection Manager
->> Starting wpa_supplicant
->> Successfully initialized wpa_supplicant
->> Starting Dropbear SSH server
->> [   44.754915] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
->> [SMSC LAN8710/LAN8720] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
->
-> The correct PHY driver is selected here...
->
->> [   45.781364] fec 800f0000.ethernet eth0: MDIO read timeout
->> [   46.826170] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
->> [   47.811385] fec 800f0000.ethernet eth0: MDIO read timeout
->
-> But we are still seeing MDIO read timeouts, which is not great.
->
->>
->> With a different kernel (3.14):
->>
->> [   28.989897] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
->> [Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
->> [   30.991210] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
->> [   37.369372] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
->> [Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
->
-> Here, the Generic PHY driver has been selected, which will use the
-> MII_BMSR register contents to determine the Link status and
-> parameters. You might want to make sure that your board selects the
-> appropriate PHY driver, such that we are not chasing two issues here.
->
->> [   38.398346] fec 800f0000.ethernet eth0: MDIO read timeout
->> [   39.438412] fec 800f0000.ethernet eth0: MDIO read timeout
->> [   39.468419] fec 800f0000.ethernet eth0: MDIO write timeout
->> [   40.498848] fec 800f0000.ethernet eth0: MDIO read timeout
->
-> It would also be helpful to print the register that were accessed,
-> such that you could correlate this with the exact steps in the PHY
-> library state machine. Please also retry the experiment with the SMSC
-> PHY driver enabled, as it does some PHY specific initialization that
-> seems to be relevant. Then we are hopefully left with only the MDIO
-> timeout issue and not the PHY mis-configuration + MDIO timeout.
->
->>
->> Afterward I have to ifdown eth0, ifup eth0 and then it functions
->> normally, without reverting the commit.
->>
->> root@cfa100xx:~# ifdown eth0
->> [ 1154.679658] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
->> [Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
->> root@cfa100xx:~# ifup eth0
->> udhcpc (v1.21.1) started
->> Sending discover...
->> [ 1156.679547] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
->> Sending discover...
->> Sending select for 10.10.10.217...
->> Lease of 10.10.10.217 obtained, lease time 86400
->> ip: RTNETLINK answers: File exists
->>
->> --
->> Brian
->>
->>
->> On Tue, May 6, 2014 at 11:11 AM, Uwe Kleine-König
->> <u.kleine-koenig@pengutronix.de> wrote:
->>> Hello Brian,
->>>
->>> On Tue, May 06, 2014 at 09:44:34AM -0700, Brian Lilly wrote:
->>>> With commit a264b981f2c76e281ef27e7232774bf6c54ec865 we're having eth0
->>>> come up, then brought right back down with an MDIO rx timeout moments
->>>> after.  Adding back in the removed code keeps the interface alive and
->>>> it's working afterward without trouble.  I've tested the re-inserted
->>>> code in 3.12, 3.14 without issue on our boards.
->>> So you can reliably trigger that problem? You're just doing
->>>
->>>         ifconfig eth0 1.2.3.4 up
->>>
->>> (or equivalent) and the interface goes down without further
->>> interference with the above mentioned commit? The exact error you're
->>> seeing is
->>>
->>>         MDIO read timeout
->>>
->>> (with some prefix saying something about fec and eth0 I think)?
->>>
->>> This error is also present with a264b981f2 reverted, just doesn't affect
->>> eth0 being functional? Does the timeout always happen, or only on
->>> specific addresses?
->>>
->>> This is not a proper fix, but does it help to increment FEC_MII_TIMEOUT?
->>>
->>>> Is there something else that can be done to prevent the MDIO timeouts?
->>>> We are using basically the same schematic for networking as the
->>>> imx28evk.
->>> Hard to say, but assuming it works just fine on the imx28evk for you,
->>> too, there seems to be some hardware difference that makes your machine
->>> fail. (That doesn't mean it's not fixable in software.)
->>>
->>> I don't know if a mdio read error is intended to make the device go
->>> down, maybe one the the netdev guys can answer that.
->>> Assuming that it's not intended, instrument the code, find out how that
->>> timeout makes your device go down and find the wrong branch. I'd start
->>> with adding stackdumps when the mdio timeout happens and when
->>> fec_enet_start_xmit is called with fep->link == 0.
->>>
->>> Best regards
->>> Uwe
->>>
->>> --
->>> Pengutronix e.K.                           | Uwe Kleine-König            |
->>> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
->> --
->> To unsubscribe from this list: send the line "unsubscribe netdev" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
->
-> --
-> Florian
+> >> James
+> >
+> >Sorry if I'm being dense...
+> 
+> No I think our assumptions are mismatched. I just can't figure out where.
+> 
+> James
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
