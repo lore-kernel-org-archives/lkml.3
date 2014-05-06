@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933598AbaEFATA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 20:19:00 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41510 "EHLO
+	id S933606AbaEFATc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 20:19:32 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:41480 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757245AbaEFAOi (ORCPT
+	with ESMTP id S1757230AbaEFAOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 20:14:38 -0400
+	Mon, 5 May 2014 20:14:35 -0400
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Mathias Nyman <mathias.nyman@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -21,9 +21,9 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         Grant Likely <grant.likely@linaro.org>,
         Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: [PATCH v3 08/20] ARM: mvebu: Add Device Tree description of xHCI hosts on Armada 38x
-Date: Tue,  6 May 2014 02:14:03 +0200
-Message-Id: <1399335255-589-9-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH v3 05/20] usb: host: xhci-plat: Add clocks support
+Date: Tue,  6 May 2014 02:14:00 +0200
+Message-Id: <1399335255-589-6-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com>
@@ -31,80 +31,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Marvell Armada 38x SoCs contains two xHCI host. This commit adds
-the Device Tree description of those interfaces at the SoC level, and
-also enables the two USB3 ports on the Armada 385 DB platform and one
-USB3 port on the Armada 385 RD platform.
+Some platform (such as the Armada 38x ones) can gate the clock of
+their USB controller. This patch add the support for the clock, by
+enabling them during probe and disabling them on remove.
+
+As not all platforms have clock support then enabling and disabling
+the clocks have been placed in separate functions. Then if the clocks
+are not supported we still can use the same calls, and there is no
 
 Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 ---
- arch/arm/boot/dts/armada-385-db.dts |  8 ++++++++
- arch/arm/boot/dts/armada-385-rd.dts |  4 ++++
- arch/arm/boot/dts/armada-38x.dtsi   | 17 +++++++++++++++++
- 3 files changed, 29 insertions(+)
+ drivers/usb/host/xhci-plat.c | 57 +++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 54 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/boot/dts/armada-385-db.dts b/arch/arm/boot/dts/armada-385-db.dts
-index 6828d77696a6..d5db1466da82 100644
---- a/arch/arm/boot/dts/armada-385-db.dts
-+++ b/arch/arm/boot/dts/armada-385-db.dts
-@@ -101,6 +101,14 @@
- 					reg = <0x1000000 0x3f000000>;
- 				};
- 			};
-+
-+			usb3@f0000 {
-+				status = "okay";
-+			};
-+
-+			usb3@f8000 {
-+				status = "okay";
-+			};
- 		};
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index f5351af4b2c5..bb37b941c8ec 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -11,6 +11,7 @@
+  * version 2 as published by the Free Software Foundation.
+  */
  
- 		pcie-controller {
-diff --git a/arch/arm/boot/dts/armada-385-rd.dts b/arch/arm/boot/dts/armada-385-rd.dts
-index 45250c88814b..a505fe94ff37 100644
---- a/arch/arm/boot/dts/armada-385-rd.dts
-+++ b/arch/arm/boot/dts/armada-385-rd.dts
-@@ -77,6 +77,10 @@
- 					reg = <1>;
- 				};
- 			};
-+
-+			usb3@f0000 {
-+				status = "okay";
-+			};
- 		};
++#include <linux/clk.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+@@ -19,6 +20,10 @@
  
- 		pcie-controller {
-diff --git a/arch/arm/boot/dts/armada-38x.dtsi b/arch/arm/boot/dts/armada-38x.dtsi
-index a064f59da02d..5913ce1cc601 100644
---- a/arch/arm/boot/dts/armada-38x.dtsi
-+++ b/arch/arm/boot/dts/armada-38x.dtsi
-@@ -355,6 +355,23 @@
- 				clocks = <&coredivclk 0>;
- 				status = "disabled";
- 			};
-+
-+			usb3@f0000 {
-+				compatible = "marvell,armada-380-xhci";
-+				reg = <0xf0000 0x3fff>,<0xf4000 0x3fff>;
-+				interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
-+				clocks = <&gateclk 9>;
-+				status = "disabled";
-+			};
-+
-+			usb3@f8000 {
-+				compatible = "marvell,armada-380-xhci";
-+				reg = <0xf8000 0x3fff>,<0xfc000 0x3fff>;
-+				interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
-+				clocks = <&gateclk 10>;
-+				status = "disabled";
-+			};
-+
- 		};
- 	};
+ #include "xhci.h"
  
++struct xhci_plat_priv {
++	struct clk *clk;
++};
++
+ static void xhci_plat_quirks(struct device *dev, struct xhci_hcd *xhci)
+ {
+ 	/*
+@@ -38,7 +43,8 @@ static int xhci_plat_setup(struct usb_hcd *hcd)
+ static const struct hc_driver xhci_plat_xhci_driver = {
+ 	.description =		"xhci-hcd",
+ 	.product_desc =		"xHCI Host Controller",
+-	.hcd_priv_size =	sizeof(struct xhci_hcd *),
++	.hcd_priv_size =	sizeof(struct xhci_hcd *) +
++				sizeof(struct xhci_plat_priv),
+ 
+ 	/*
+ 	 * generic hardware linkage
+@@ -85,6 +91,40 @@ static const struct hc_driver xhci_plat_xhci_driver = {
+ 	.bus_resume =		xhci_bus_resume,
+ };
+ 
++static int xhci_plat_enable_clk(struct platform_device *pdev)
++{
++	struct usb_hcd *hcd = platform_get_drvdata(pdev);
++	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
++	struct xhci_plat_priv *priv = (struct xhci_plat_priv *) xhci->priv;
++
++	priv->clk = devm_clk_get(&pdev->dev, NULL);
++
++	/*
++	 * Not all platforms have a clk so it is not an error if the
++	 * clock does not exists.
++	 */
++	if (IS_ERR(priv->clk))
++		return 0;
++
++	return clk_prepare_enable(priv->clk);
++}
++
++static void xhci_plat_disable_clk(struct platform_device *pdev)
++{
++	struct usb_hcd *hcd = platform_get_drvdata(pdev);
++	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
++	struct xhci_plat_priv *priv = (struct xhci_plat_priv *) xhci->priv;
++
++	/*
++	 * Not all platforms have a clk so it is not an error if the
++	 * clock does not exists.
++	 */
++	if (IS_ERR(priv->clk))
++		return;
++
++	clk_disable_unprepare(priv->clk);
++}
++
+ static int xhci_plat_probe(struct platform_device *pdev)
+ {
+ 	const struct hc_driver	*driver;
+@@ -118,7 +158,7 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 
+ 	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
+ 	if (!hcd)
+-		return -ENOMEM;
++		ret = -ENOMEM;
+ 
+ 	hcd->rsrc_start = res->start;
+ 	hcd->rsrc_len = resource_size(res);
+@@ -140,6 +180,13 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 	ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
+ 	if (ret)
+ 		goto unmap_registers;
++
++	ret = xhci_plat_enable_clk(pdev);
++	if (ret) {
++		dev_dbg(&pdev->dev, "error enabling clocks\n");
++		goto dealloc_usb2_hcd;
++	}
++
+ 	device_wakeup_enable(hcd->self.controller);
+ 
+ 	/* USB 2.0 roothub is stored in the platform_device now. */
+@@ -149,7 +196,7 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 			dev_name(&pdev->dev), hcd);
+ 	if (!xhci->shared_hcd) {
+ 		ret = -ENOMEM;
+-		goto dealloc_usb2_hcd;
++		goto disable_clk;
+ 	}
+ 
+ 	/*
+@@ -170,6 +217,9 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ put_usb3_hcd:
+ 	usb_put_hcd(xhci->shared_hcd);
+ 
++disable_clk:
++	xhci_plat_disable_clk(pdev);
++
+ dealloc_usb2_hcd:
+ 	usb_remove_hcd(hcd);
+ 
+@@ -193,6 +243,7 @@ static int xhci_plat_remove(struct platform_device *dev)
+ 	usb_remove_hcd(xhci->shared_hcd);
+ 	usb_put_hcd(xhci->shared_hcd);
+ 
++	xhci_plat_disable_clk(dev);
+ 	usb_remove_hcd(hcd);
+ 	iounmap(hcd->regs);
+ 	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
 -- 
 1.8.1.2
 
