@@ -1,134 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757774AbaEFObA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 10:31:00 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42573 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752982AbaEFOa6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 10:30:58 -0400
-Date: Tue, 6 May 2014 10:30:57 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-cc: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, <devicetree@vger.kernel.org>,
-        <stable@vger.kernel.org>
-Subject: Re: [PATCH v3 01/20] usb: ehci-orion: Fix clock reference leaking
-In-Reply-To: <1399335255-589-2-git-send-email-gregory.clement@free-electrons.com>
-Message-ID: <Pine.LNX.4.44L0.1405061027490.1312-100000@iolanthe.rowland.org>
+	id S1757527AbaEFOcr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 10:32:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39270 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754661AbaEFOcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 10:32:45 -0400
+Date: Tue, 6 May 2014 16:32:42 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 1/4] memcg, mm: introduce lowlimit reclaim
+Message-ID: <20140506143242.GB19672@dhcp22.suse.cz>
+References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
+ <1398688005-26207-2-git-send-email-mhocko@suse.cz>
+ <20140430225550.GD26041@cmpxchg.org>
+ <20140502093628.GC3446@dhcp22.suse.cz>
+ <20140502155805.GO23420@cmpxchg.org>
+ <20140502164930.GP3446@dhcp22.suse.cz>
+ <20140502220056.GP23420@cmpxchg.org>
+ <20140506132932.GF19914@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140506132932.GF19914@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 May 2014, Gregory CLEMENT wrote:
-
-> In order to disable the clock while the module was removing, a call to
-> devm_clk_get() was made. This was wrong and lead to a leak module
-> ref-counts.
+On Tue 06-05-14 09:29:32, Johannes Weiner wrote:
+> On Fri, May 02, 2014 at 06:00:56PM -0400, Johannes Weiner wrote:
+> > On Fri, May 02, 2014 at 06:49:30PM +0200, Michal Hocko wrote:
+> > > On Fri 02-05-14 11:58:05, Johannes Weiner wrote:
+> > > > This is not even guarantees anymore, but rather another reclaim
+> > > > prioritization scheme with best-effort semantics.  That went over
+> > > > horribly with soft limits, and I don't want to repeat this.
+> > > > 
+> > > > Overcommitting on guarantees makes no sense, and you even agree you
+> > > > are not interested in it.  We also agree that we can always add a knob
+> > > > later on to change semantics when an actual usecase presents itself,
+> > > > so why not start with the clear and simple semantics, and the simpler
+> > > > implementation?
+> > > 
+> > > So you are really preferring an OOM instead? That was the original
+> > > implementation posted at the end of last year and some people
+> > > had concerns about it. This is the primary reason I came up with a
+> > > weaker version which fallbacks rather than OOM.
+> > 
+> > I'll dig through the archives on this then, thanks.
 > 
-> In order to have a reference of the clock get, a private structure was
-> added using the override mechanism provided by the ehci framework.
+> The most recent discussion on this I could find was between you and
+> Greg, where the final outcome was (excerpt):
 > 
-> The bug was introduced in v3.6, however the ehci framework allowing to
-> use the override mechanism have only been introduced in v3.8, so this
-> patch won't apply before it.
+> ---
 > 
-> Fixes: 8c869edaee07c623066266827371235fb9c12e01 ('ARM: Orion: EHCI: Add support for enabling clocks')
-> Cc: <stable@vger.kernel.org> # v3.8+
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> From: Greg Thelen <gthelen@google.com>
+> To: Michal Hocko <mhocko@suse.cz>
+> Cc: linux-mm@kvack.org,  Johannes Weiner <hannes@cmpxchg.org>,  Andrew Morton <akpm@linux-foundation.org>,  KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,  LKML <linux-kernel@vger.kernel.org>,  Ying Han <yinghan@google.com>,  Hugh Dickins <hughd@google.com>,  Michel Lespinasse <walken@google.com>,  KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,  Tejun Heo <tj@kernel.org>
+> Subject: Re: [RFC 0/4] memcg: Low-limit reclaim
+> References: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
+> 	<xr93sis6obb5.fsf@gthelen.mtv.corp.google.com>
+> 	<20140130123044.GB13509@dhcp22.suse.cz>
+> 	<xr931tzphu50.fsf@gthelen.mtv.corp.google.com>
+> 	<20140203144341.GI2495@dhcp22.suse.cz>
+> Date: Mon, 03 Feb 2014 17:33:13 -0800
+> Message-ID: <xr93zjm7br1i.fsf@gthelen.mtv.corp.google.com>
+> List-ID: <linux-mm.kvack.org>
+> 
+> On Mon, Feb 03 2014, Michal Hocko wrote:
+> 
+> > On Thu 30-01-14 16:28:27, Greg Thelen wrote:
+> >> But this soft_limit,priority extension can be added later.
+> >
+> > Yes, I would like to have the strong semantic first and then deal with a
+> > weaker form. Either by a new limit or a flag.
+> 
+> Sounds good.
+> 
+> ---
+> 
+> So I think everybody involved in the discussions so far are preferring
+> a hard guarantee, and then later, if needed, to either add a knob to
+> make it a soft guarantee or to actually implement a usable soft limit.
 
+I am afraid the most of that discussion happened off-list :( Sadly not
+much of a discussion happened on the list.
+Sorry I should have been specific and mention that the discussions
+happened at LSF and partly at the KS.
 
->  	hcd = usb_create_hcd(&ehci_orion_hc_driver,
->  			&pdev->dev, dev_name(&pdev->dev));
->  	if (!hcd) {
->  		err = -ENOMEM;
-> -		goto err2;
-> +		goto err1;
->  	}
->  
->  	hcd->rsrc_start = res->start;
-> @@ -211,6 +215,15 @@ static int ehci_orion_drv_probe(struct platform_device *pdev)
->  	ehci->caps = hcd->regs + 0x100;
->  	hcd->has_tt = 1;
->  
-> +	priv = hcd_to_orion_priv(hcd);
-> +	/*
-> +	 * Not all platforms can gate the clock, so it is not an error if
-> +	 * the clock does not exists.
-> +	 */
-> +	priv->clk = devm_clk_get(&pdev->dev, NULL);
-> +	if (!IS_ERR(priv->clk))
-> +		clk_prepare_enable(priv->clk);
-> +
->  	/*
->  	 * (Re-)program MBUS remapping windows if we are asked to.
->  	 */
-> @@ -240,16 +253,16 @@ static int ehci_orion_drv_probe(struct platform_device *pdev)
->  
->  	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
->  	if (err)
-> -		goto err3;
-> +		goto err2;
->  
->  	device_wakeup_enable(hcd->self.controller);
->  	return 0;
->  
-> -err3:
-> -	usb_put_hcd(hcd);
->  err2:
-> -	if (!IS_ERR(clk))
-> -		clk_disable_unprepare(clk);
-> +	usb_put_hcd(hcd);
+The strongest point was made by Rik when he claimed that memcg is not
+aware of memory zones and so one memcg with lowlimit larger than the
+size of a zone can eat up that zone without any way to free it. This
+can cause additional troubles (permanent reclaim on that zone and OOM in
+an extreme situations).
 
-At this point, priv has just become a dangling pointer, because it
-points to something that was allocated along with hcd.
-
-> +
-> +	if (!IS_ERR(priv->clk))
-> +		clk_disable_unprepare(priv->clk);
-
-And now you are dereferencing memory that has been deallocated.  The
-real problem is that you get and enable the clock _after_ creating hcd,
-but you don't disable it _before_ deallocating hcd.
-
->  err1:
->  	dev_err(&pdev->dev, "init %s fail, %d\n",
->  		dev_name(&pdev->dev), err);
-> @@ -260,14 +273,14 @@ err1:
->  static int ehci_orion_drv_remove(struct platform_device *pdev)
->  {
->  	struct usb_hcd *hcd = platform_get_drvdata(pdev);
-> -	struct clk *clk;
-> +	struct orion_ehci_hcd *priv = hcd_to_orion_priv(hcd);
->  
->  	usb_remove_hcd(hcd);
->  	usb_put_hcd(hcd);
->  
-> -	clk = devm_clk_get(&pdev->dev, NULL);
-> -	if (!IS_ERR(clk))
-> -		clk_disable_unprepare(clk);
-> +	if (!IS_ERR(priv->clk))
-> +		clk_disable_unprepare(priv->clk);
-
-This has the same problem as above.
-
-Also, for both this patch and 02/20, it would be better to replace the
-"errN" labels with something more descriptive, so that it's not
-necessary to renumber them every time something changes.
-
-Alan Stern
-
+That convinced me that having the default oom semantic from the very
+beginning is too much and starting with something more relaxed (fallback
+rather than oom), but still usable, is a better choice.
+-- 
+Michal Hocko
+SUSE Labs
