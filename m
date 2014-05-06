@@ -1,125 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933693AbaEFBjX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 21:39:23 -0400
-Received: from mga09.intel.com ([134.134.136.24]:2870 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933469AbaEFBjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 21:39:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,993,1389772800"; 
-   d="scan'208";a="535190347"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-CC: Lv Zheng <zetalog@gmail.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Moore, Robert" <robert.moore@intel.com>
-Subject: RE: [PATCH 20/27] ACPICA: Tables: Fix invalid pointer accesses in
- acpi_tb_parse_root_table().
-Thread-Topic: [PATCH 20/27] ACPICA: Tables: Fix invalid pointer accesses in
- acpi_tb_parse_root_table().
-Thread-Index: AQHPZ/iuve4rvQgJnEi8eqtq/mEgq5sxYmJQgAAGmACAAMlvAIAAinjA
-Date: Tue, 6 May 2014 01:39:04 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E8802559DCE@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1398817612.git.lv.zheng@intel.com>
- <1AE640813FDE7649BE1B193DEA596E8802559B1C@SHSMSX101.ccr.corp.intel.com>
- <CA+5PVA58527N76yJ8yNZPAbOz6YepR3RHXtjaV6t0i1nCYwcXg@mail.gmail.com>
- <6913597.VSrPZ98ePF@vostro.rjw.lan>
-In-Reply-To: <6913597.VSrPZ98ePF@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S933711AbaEFBkM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 21:40:12 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:47480 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933469AbaEFBkK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 21:40:10 -0400
+X-IronPort-AV: E=Sophos;i="4.97,993,1389715200"; 
+   d="scan'208";a="30110683"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: <mingo@kernel.org>
+CC: <jolsa@redhat.com>, <a.p.zijlstra@chello.nl>, <paulus@samba.org>,
+        <acme@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Dongsheng <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH V2] perf tools: Clarify the output of perf sched map.
+Date: Tue, 6 May 2014 09:40:07 +0900
+Message-ID: <1399336807-10698-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <20140505183736.GA15038@gmail.com>
+References: <20140505183736.GA15038@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.49]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s461dWfk007259
 
-Hi,
+From: Dongsheng <yangds.fnst@cn.fujitsu.com>
 
-> From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> Sent: Tuesday, May 06, 2014 8:44 AM
-> 
-> On Monday, May 05, 2014 08:42:46 AM Josh Boyer wrote:
-> > On Mon, May 5, 2014 at 12:23 AM, Zheng, Lv <lv.zheng@intel.com> wrote:
-> > > Hi, Rafael
-> > >
-> > >> From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Rafael J. Wysocki
-> > >> Sent: Monday, May 05, 2014 8:43 AM
-> > >>
-> > >> On Saturday, May 03, 2014 08:59:14 AM Josh Boyer wrote:
-> > >> > On Tue, Apr 29, 2014 at 10:05 PM, Lv Zheng <lv.zheng@intel.com> wrote:
-> > >> > > The commit of back porting Linux XSDT validation mechanism has introduced
-> > >> > > a regreession:
-> > >> > >   Commit: 671cc68dc61f029d44b43a681356078e02d8dab8
-> > >> > >   Subject: ACPICA: Back port and refine validation of the XSDT root table.
-> > >> > > There is a pointer still accessed after unmapping.
-> > >> > >
-> > >> > > This patch fixes this issue.  Lv Zheng.
-> > >> > >
-> > >> > > Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=73911
-> > >> > > Buglink: https://bugs.archlinux.org/task/39811
-> > >> > > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> > >> > > Reported-and-tested-by: Bruce Chiarelli <mano155@gmail.com>
-> > >> > > Reported-and-tested-by: Spyros Stathopoulos <spystath@gmail.com>
-> > >> > > Signed-off-by: Bob Moore <robert.moore@intel.com>
-> > >> > > Cc: <stable@vger.kernel.org> # 3.14.x: 671cc68: ACPICA: Back port and refine validation of the XSDT root table.
-> > >> >
-> > >> > This patch should get into 3.15-rcX soon.  It fixes a known regression
-> > >> > that prevents booting on machines with AMI firmware, and that is
-> > >> > present in 3.14 so we need it for stable as well.  Rafael?
-> > >>
-> > >> Lv, is it safe to take this patch alone into 3.15-rc?
-> > >
-> > > Yes, it's safe to only take this patch to be a regression fix.
-> >
-> > FWIW, Fedora is carrying this on top of 3.14.2 already, and people
-> > with the impacted machines say it's working for them.  So I agree it
-> > should be safe.
-> >
-> > Thanks to the both of you.
-> 
-> OK, queued up for 3.15, thanks!
+In output of perf sched map, any shortname of thread will be explained
+at the first time when it appear.
 
-Actually there are 2 fixes in the same patch set for this issue:
-One is a regression fix for commit 671cc68 - let me call it "Solution 1 - ill formed XSDT skipping".
- https://patchwork.kernel.org/patch/4090591/
-The other is a different approach to solve the old issue that is fixed by solution 1 - let me call it "Solution 2 - R/XSDT NULL entry skipping".
- https://patchwork.kernel.org/patch/4090511/
- https://patchwork.kernel.org/patch/4090501/
+Example:
+	      *A0       228836.978985 secs A0 => perf:23032
+          *.   A0       228836.979016 secs B0 => swapper:0
+           .  *C0       228836.979099 secs C0 => migration/3:22
+  *A0      .   C0       228836.979115 secs
+   A0      .  *.        228836.979115 secs
 
-And if you want to know the whole story before making further decisions.
+But B0, which is explained as swapper:0 did not appear in the
+left part of output. Instead, we use '.' as the shortname of
+swapper:0. So the comment of "B0 => swapper:0" is not easy to
+understand.
 
-The commit 671cc68 is introduced to reduce the ACPICA divergences.
-Lacking in platforms having such ill formed XSDT shipped, I only unit tested the commit in ACPICA development environment where AcpiOsUnmapMemory() is a no-op.
-Thus the buggy commit is leaked to the Linux kernel during the ACPICA release cycle.
+This patch clarify the output of perf sched map with not allocating
+one letter-number shortname for swapper:0 and print ". => swapper:0"
+as the explaination for swapper:0.
 
-When fixing the regression here: https://bugzilla.kernel.org/show_bug.cgi?id=73911
-At first, the root cause is not addressed due to the same test incapability, thus it comes the solution 2 to solve the old issue in a different way.
-As the solution 1 prevents higher versioned tables to be used while solution 2 enables higher versioned tables,
-I believe solution 2 is more correct than the old approach.
-The solution 2 is based on ACPICA 201403 release, for kernel v3.14, a completely different stable material is generated.
+Example:
+              *A0       228836.978985 secs A0 => perf:23032
+          * .  A0       228836.979016 secs . => swapper:0
+            . *B0       228836.979099 secs B0 => migration/3:22
+  *A0       .  B0       228836.979115 secs
+   A0       . * .       228836.979115 secs
+   A0     *C0   .       228836.979225 secs C0 => ksoftirqd/2:18
+   A0     *D0   .       228836.979236 secs D0 => rcu_sched:7
 
-In the meanwhile, the regression is root caused.
-Though the regression fix may not be useful if the solution 2 is proven to be more correct,
-ACPICA also merged this regression fix in order to generate a stable material for Linux.
+Signed-off-by: Dongsheng <yangds.fnst@cn.fujitsu.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/builtin-sched.c | 38 ++++++++++++++++++++++----------------
+ 1 file changed, 22 insertions(+), 16 deletions(-)
 
-I'm not sure if patches for solution 2 also need to be merged using the short-cut path.
-Possibly not as the solution 2 changed old behavior of Linux, so they are not urgent stable materials.
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 4f0dd21..c6a6f5c 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -1300,17 +1300,26 @@ static int map_switch_event(struct perf_sched *sched, struct perf_evsel *evsel,
+ 
+ 	new_shortname = 0;
+ 	if (!sched_in->shortname[0]) {
+-		sched_in->shortname[0] = sched->next_shortname1;
+-		sched_in->shortname[1] = sched->next_shortname2;
+-
+-		if (sched->next_shortname1 < 'Z') {
+-			sched->next_shortname1++;
+-		} else {
+-			sched->next_shortname1='A';
+-			if (sched->next_shortname2 < '9') {
+-				sched->next_shortname2++;
++		if (!strcmp(thread__comm_str(sched_in), "swapper")) {
++			/*
++			 * Don't allocate a letter-number for swapper:0
++			 * as a shortname. Instead, we use '.' for it.
++			 */
++			sched_in->shortname[0] = '.';
++			sched_in->shortname[1] = '\0';
++		}else {
++			sched_in->shortname[0] = sched->next_shortname1;
++			sched_in->shortname[1] = sched->next_shortname2;
++
++			if (sched->next_shortname1 < 'Z') {
++				sched->next_shortname1++;
+ 			} else {
+-				sched->next_shortname2='0';
++				sched->next_shortname1='A';
++				if (sched->next_shortname2 < '9') {
++					sched->next_shortname2++;
++				} else {
++					sched->next_shortname2='0';
++				}
+ 			}
+ 		}
+ 		new_shortname = 1;
+@@ -1322,12 +1331,9 @@ static int map_switch_event(struct perf_sched *sched, struct perf_evsel *evsel,
+ 		else
+ 			printf("*");
+ 
+-		if (sched->curr_thread[cpu]) {
+-			if (sched->curr_thread[cpu]->tid)
+-				printf("%2s ", sched->curr_thread[cpu]->shortname);
+-			else
+-				printf(".  ");
+-		} else
++		if (sched->curr_thread[cpu])
++			printf("%2s ", sched->curr_thread[cpu]->shortname);
++		else
+ 			printf("   ");
+ 	}
+ 
+-- 
+1.8.2.1
 
-Thanks and best regards
--Lv
-
-> 
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
