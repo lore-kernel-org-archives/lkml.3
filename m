@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934AbaEFRHs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 13:07:48 -0400
-Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:22031 "EHLO
-	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750904AbaEFRHq (ORCPT
+	id S1751958AbaEFRKo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 13:10:44 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:50944 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152AbaEFRKm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 13:07:46 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Al4UALwWaVNbtAAq/2dsb2JhbABZgwarbQQBAQEBAQEFAZoHAgKBHxd0gmYcIxiBAiQTiEUBzjOFVoh8hEYBA48bihsBiwCHe4M2Ow
-Date: Tue, 6 May 2014 19:07:34 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] arch/unicore32/mm/ioremap.c: convert printk/warn_on to
- warn(1
-Message-Id: <20140506190734.56036e71639f391e57c6ed00@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 6 May 2014 13:10:42 -0400
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Heiko Stuebner <heiko@sntech.de>
+Cc: Matthias Brugger <matthias.bgg@gmail.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Beniamino Galvani <b.galvani@gmail.com>
+Subject: [PATCH v2 1/2] of: add mundoreader and radxa vendor prefixes
+Date: Tue,  6 May 2014 19:10:10 +0200
+Message-Id: <1399396211-25353-1-git-send-email-b.galvani@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+coalesce formats
+Add new vendor prefixes for:
 
-(This is untested)
+    * Mundo Reader S.L., a company that produces tablets and e-readers
+    * Radxa, manufacturer of ARM boards
 
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
 ---
- arch/unicore32/mm/ioremap.c | 9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
 
-diff --git a/arch/unicore32/mm/ioremap.c b/arch/unicore32/mm/ioremap.c
-index 13068ee..5d9568c 100644
---- a/arch/unicore32/mm/ioremap.c
-+++ b/arch/unicore32/mm/ioremap.c
-@@ -143,13 +143,8 @@ void __iomem *__uc32_ioremap_pfn_caller(unsigned long pfn,
- 	/*
- 	 * Don't allow RAM to be mapped
- 	 */
--	if (pfn_valid(pfn)) {
--		printk(KERN_WARNING "BUG: Your driver calls ioremap() on\n"
--			"system memory.  This leads to architecturally\n"
--			"unpredictable behaviour, and ioremap() will fail in\n"
--			"the next kernel release. Please fix your driver.\n");
--		WARN_ON(1);
--	}
-+	if (pfn_valid(pfn))
-+		WARN(1, "BUG: Your driver calls ioremap() on\nsystem memory.  This leads to architecturally\nunpredictable behaviour, and ioremap() will fail in\nthe next kernel release. Please fix your driver.\n");
- 
- 	type = get_mem_type(mtype);
- 	if (!type)
+v2:
+ - use mundoreader prefix instead of bq as suggested by Heiko Stuebner
+
+ Documentation/devicetree/bindings/vendor-prefixes.txt |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index abc3080..53bd92f 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -79,6 +79,7 @@ microchip	Microchip Technology Inc.
+ mosaixtech	Mosaix Technologies, Inc.
+ moxa	Moxa
+ mpl	MPL AG
++mundoreader	Mundo Reader S.L.
+ mxicy	Macronix International Co., Ltd.
+ national	National Semiconductor
+ neonode		Neonode Inc.
+@@ -98,6 +99,7 @@ powervr	PowerVR (deprecated, use img)
+ qca	Qualcomm Atheros, Inc.
+ qcom	Qualcomm Technologies, Inc
+ qnap	QNAP Systems, Inc.
++radxa	Radxa
+ raidsonic	RaidSonic Technology GmbH
+ ralink	Mediatek/Ralink Technology Corp.
+ ramtron	Ramtron International
 -- 
-1.8.4.5
+1.7.10.4
 
