@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444AbaEFRVM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 13:21:12 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:60139 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052AbaEFRVK (ORCPT
+	id S1753561AbaEFRVW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 13:21:22 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:15212 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751052AbaEFRVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 13:21:10 -0400
-Date: Tue, 6 May 2014 10:21:06 -0700
-From: josh@joshtriplett.org
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, andi@firstfloor.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com,
-        ak@linux.intel.com
-Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
-Message-ID: <20140506172106.GB20776@cloud>
-References: <20140506155703.GA20391@cloud>
- <1399394359.15399.20.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140506164546.GB20536@cloud>
- <20140506.131752.740569380523989782.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140506.131752.740569380523989782.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 6 May 2014 13:21:20 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Al4UAN0YaVNbtAAq/2dsb2JhbABZgwarbQQBAQEBAQEFAZoHAgKBHxd0gmYcIxiBAiQTiEUBzjeFVoh8hEYBA48bihsBknuDNjs
+Date: Tue, 6 May 2014 19:21:14 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Dipankar Sarma <dipankar@in.ibm.com>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] kernel/rcu/tree.c: make rcu node arrays static const
+ char * const
+Message-Id: <20140506192114.60ed15ab76cba9fc10a6e7f3@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 01:17:52PM -0400, David Miller wrote:
-> From: josh@joshtriplett.org
-> Date: Tue, 6 May 2014 09:45:46 -0700
-> 
-> > The kernel can do the same.  Consider the idea of analyzing a set of
-> > userspace programs, determining what kernel functionality they do and
-> > don't need, feeding that information into the kernel build process, and
-> > automatically dropping unused bits of the kernel.
-> 
-> Please make sure I'm not on the list of people who see reports for
-> bugs reported in that setup.
-> 
-> Thanks :-)
+Those 2 arrays are being passed to lockdep_init_map with const char *
+and stored in lockdep_map the same way
 
-Fine by me.  Just please allow such a setup to exist. :)
+Cc: Dipankar Sarma <dipankar@in.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ kernel/rcu/tree.c | 18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
-- Josh Triplett
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index 0c47e30..90ebc83 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -3357,14 +3357,16 @@ static void __init rcu_init_levelspread(struct rcu_state *rsp)
+ static void __init rcu_init_one(struct rcu_state *rsp,
+ 		struct rcu_data __percpu *rda)
+ {
+-	static char *buf[] = { "rcu_node_0",
+-			       "rcu_node_1",
+-			       "rcu_node_2",
+-			       "rcu_node_3" };  /* Match MAX_RCU_LVLS */
+-	static char *fqs[] = { "rcu_node_fqs_0",
+-			       "rcu_node_fqs_1",
+-			       "rcu_node_fqs_2",
+-			       "rcu_node_fqs_3" };  /* Match MAX_RCU_LVLS */
++	static const char * const buf[] = {
++		"rcu_node_0",
++		"rcu_node_1",
++		"rcu_node_2",
++		"rcu_node_3" };  /* Match MAX_RCU_LVLS */
++	static const char * const fqs[] = {
++		"rcu_node_fqs_0",
++		"rcu_node_fqs_1",
++		"rcu_node_fqs_2",
++		"rcu_node_fqs_3" };  /* Match MAX_RCU_LVLS */
+ 	int cpustride = 1;
+ 	int i;
+ 	int j;
+-- 
+1.8.4.5
+
