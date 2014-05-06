@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945AbaEFUzc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 16:55:32 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:51446 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754475AbaEFUza (ORCPT
+	id S1755287AbaEFVAG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 17:00:06 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:58995 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839AbaEFVAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 16:55:30 -0400
-Date: Tue, 6 May 2014 21:55:25 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: poma <pomidorabelisima@gmail.com>
-Cc: "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Corentin Chary <corentincj@iksaif.net>, linux-kernel@vger.kernel.org,
-        kernel@lists.fedoraproject.org, andreas.utterberg@thundera.se,
-        jwboyer@fedoraproject.org, sgruszka@redhat.com
-Subject: Re: [PATCH] asus-nb-wmi: set wapf=4 for ASUSTeK COMPUTER INC. X75VBP
- & X550CA
-Message-ID: <20140506205525.GA30712@srcf.ucam.org>
-References: <1398550344-3785-1-git-send-email-pomidorabelisima@gmail.com>
- <53684CF9.8020305@gmail.com>
- <5368F58C.1040702@gmail.com>
- <20140506144800.GA29600@srcf.ucam.org>
- <5369434A.1020909@gmail.com>
+	Tue, 6 May 2014 17:00:03 -0400
+X-Originating-IP: 173.246.103.110
+Date: Tue, 6 May 2014 13:59:54 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] MAINTAINERS: Add linux-api for review of API/ABI changes
+Message-ID: <20140506205953.GA16997@jtriplet-mobl1>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5369434A.1020909@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Could you include a description in the patch for why this is necessary?
+This makes it more likely that patch submitters will CC API/ABI changes
+to the linux-api list, and tools like get_maintainer.pl will do so
+automatically.
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ MAINTAINERS | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 7578deb..52a282b 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -210,6 +210,13 @@ S:	Supported
+ F:	Documentation/scsi/aacraid.txt
+ F:	drivers/scsi/aacraid/
+ 
++ABI/API
++L:	linux-api@vger.kernel.org
++F:	Documentation/ABI/
++F:	include/linux/syscalls.h
++F:	include/uapi/
++F:	kernel/sys_ni.c
++
+ ABIT UGURU 1,2 HARDWARE MONITOR DRIVER
+ M:	Hans de Goede <hdegoede@redhat.com>
+ L:	lm-sensors@lm-sensors.org
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+2.0.0.rc0
+
