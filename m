@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933826AbaEFDVJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 23:21:09 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:35996 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933739AbaEFDVH (ORCPT
+	id S933881AbaEFDVR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 23:21:17 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:42925 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933739AbaEFDVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 23:21:07 -0400
-Date: Mon, 05 May 2014 23:21:05 -0400 (EDT)
-Message-Id: <20140505.232105.633722669086565626.davem@davemloft.net>
-To: andi@firstfloor.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tom.zanussi@linux.intel.com, ak@linux.intel.com,
-        robert.olsson@its.uu.se
-Subject: Re: [PATCH 22/24] net, diet: Support simpler routing table
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140506030833.GL2382@two.firstfloor.org>
-References: <1399328773-6531-23-git-send-email-andi@firstfloor.org>
-	<20140505.230259.1803147080660592366.davem@davemloft.net>
-	<20140506030833.GL2382@two.firstfloor.org>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 05 May 2014 20:21:06 -0700 (PDT)
+	Mon, 5 May 2014 23:21:15 -0400
+Date: Tue, 6 May 2014 05:21:14 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: David Miller <davem@davemloft.net>
+Cc: andi@firstfloor.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tom.zanussi@linux.intel.com, ak@linux.intel.com
+Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
+Message-ID: <20140506032114.GP2382@two.firstfloor.org>
+References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
+ <1399328773-6531-9-git-send-email-andi@firstfloor.org>
+ <20140505.231229.136734008603421707.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140505.231229.136734008603421707.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <andi@firstfloor.org>
-Date: Tue, 6 May 2014 05:08:33 +0200
+On Mon, May 05, 2014 at 11:12:29PM -0400, David Miller wrote:
+> From: Andi Kleen <andi@firstfloor.org>
+> Date: Mon,  5 May 2014 15:25:57 -0700
+> 
+> > This is all the code that saves connection information
+> > between different sockets. Not really essential for
+> > small systems.
+> 
+> It is absolutely essential unless you want poor performance
+> of TCP connections.
 
-> FWIW it seems to me the trie code is very stable, there doesn't
-> seem to be any big changes in a long time.
+Ok so every code in the network stack is essential?
 
-But it was BUGGY AS HELL in the corner cases because it wasn't
-the default while it sat next to fib_hash.
+What parts would you remove to get the foot print down for a 2MB
+single purpose machine?
 
-It only got totally fixed when it was the ONLY option.
+-Andi
 
-That's exactly my point, parts of it never got tested and were never
-verified because debugging resources for it was split with another
-implementation.
+-- 
+ak@linux.intel.com -- Speaking for myself only.
