@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848AbaEFUQg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 16:16:36 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:45464 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207AbaEFUQe (ORCPT
+	id S1754889AbaEFURU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 16:17:20 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:53865 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754179AbaEFURS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 16:16:34 -0400
+	Tue, 6 May 2014 16:17:18 -0400
+Message-ID: <5369434A.1020909@gmail.com>
+Date: Tue, 06 May 2014 22:17:14 +0200
+From: poma <pomidorabelisima@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1405051458460.16664@nippy.intranet>
-References: <alpine.LNX.2.00.1405051458460.16664@nippy.intranet>
-Date: Wed, 7 May 2014 08:16:33 +1200
-Message-ID: <CAOmrzkKFiEW6sMXr6nxgjGW=Bf2EUbBoBC=sXVLPH=r8iY8BCg@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: add an entry for all the NCR5380 drivers
-From: Michael Schmitz <schmitzmic@gmail.com>
-To: Finn Thain <fthain@telegraphics.com.au>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        scsi <linux-scsi@vger.kernel.org>, Sam Creasey <sammy@sammy.net>,
-        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Corentin Chary <corentincj@iksaif.net>, linux-kernel@vger.kernel.org,
+        kernel@lists.fedoraproject.org, andreas.utterberg@thundera.se,
+        jwboyer@fedoraproject.org, sgruszka@redhat.com
+Subject: Re: [PATCH] asus-nb-wmi: set wapf=4 for ASUSTeK COMPUTER INC. X75VBP
+ & X550CA
+References: <1398550344-3785-1-git-send-email-pomidorabelisima@gmail.com> <53684CF9.8020305@gmail.com> <5368F58C.1040702@gmail.com> <20140506144800.GA29600@srcf.ucam.org>
+In-Reply-To: <20140506144800.GA29600@srcf.ucam.org>
+Content-Type: multipart/mixed;
+ boundary="------------080808000609080707090301"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Michael Schmitz <schmitzmic@gmail.com>
+This is a multi-part message in MIME format.
+--------------080808000609080707090301
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-On Mon, May 5, 2014 at 5:35 PM, Finn Thain <fthain@telegraphics.com.au> wrote:
->
-> Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
-> Cc: Michael Schmitz <schmitzmic@gmail.com>
->
-> ---
->
-> As requested:
-> http://marc.info/?l=linux-arm-kernel&m=139853302724112&w=2
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index e67ea24..60ea600 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -5996,6 +5996,28 @@ M:       Petr Vandrovec <petr@vandrovec.name>
->  S:     Odd Fixes
->  F:     fs/ncpfs/
->
-> +NCR 5380 SCSI DRIVERS
-> +M:     Finn Thain <fthain@telegraphics.com.au>
-> +M:     Michael Schmitz <schmitzmic@gmail.com>
-> +L:     linux-scsi@vger.kernel.org
-> +S:     Maintained
-> +F:     Documentation/scsi/g_NCR5380.txt
-> +F:     drivers/scsi/NCR5380.*
-> +F:     drivers/scsi/arm/cumana_1.c
-> +F:     drivers/scsi/arm/oak.c
-> +F:     drivers/scsi/atari_NCR5380.c
-> +F:     drivers/scsi/atari_scsi.*
-> +F:     drivers/scsi/dmx3191d.c
-> +F:     drivers/scsi/dtc.*
-> +F:     drivers/scsi/g_NCR5380.*
-> +F:     drivers/scsi/g_NCR5380_mmio.c
-> +F:     drivers/scsi/mac_scsi.*
-> +F:     drivers/scsi/pas16.*
-> +F:     drivers/scsi/sun3_NCR5380.c
-> +F:     drivers/scsi/sun3_scsi.*
-> +F:     drivers/scsi/sun3_scsi_vme.c
-> +F:     drivers/scsi/t128.*
-> +
->  NCR DUAL 700 SCSI DRIVER (MICROCHANNEL)
->  M:     "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
->  L:     linux-scsi@vger.kernel.org
+
+
+
+--------------080808000609080707090301
+Content-Type: text/x-patch;
+ name="0001-WAPF-4-for-ASUSTeK-COMPUTER-INC.-X75VBP-WLAN-ON.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-WAPF-4-for-ASUSTeK-COMPUTER-INC.-X75VBP-WLAN-ON.patch"
+
+>From d39d3460f1ab36365a48b6815dd9a5d26613d3ec Mon Sep 17 00:00:00 2001
+From: poma <pomidorabelisima@gmail.com>
+Date: Tue, 6 May 2014 22:03:38 +0200
+Subject: [PATCH] WAPF 4 for ASUSTeK COMPUTER INC. X75VBP WLAN ON.
+
+Signed-off-by: poma <pomidorabelisima@gmail.com>
+---
+ drivers/platform/x86/asus-nb-wmi.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/platform/x86/asus-nb-wmi.c b/drivers/platform/x86/asus-nb-wmi.c
+index 563f59e..674793d 100644
+--- a/drivers/platform/x86/asus-nb-wmi.c
++++ b/drivers/platform/x86/asus-nb-wmi.c
+@@ -182,6 +182,15 @@ static struct dmi_system_id asus_quirks[] = {
+ 	},
+ 	{
+ 		.callback = dmi_matched,
++		.ident = "ASUSTeK COMPUTER INC. X75VBP",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X75VBP"),
++		},
++		.driver_data = &quirk_asus_x401u,
++	},
++	{
++		.callback = dmi_matched,
+ 		.ident = "ASUSTeK COMPUTER INC. 1015E",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
+-- 
+1.9.0
+
+
+
+
+--------------080808000609080707090301--
