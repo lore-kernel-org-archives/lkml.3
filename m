@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934287AbaEFHlP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 03:41:15 -0400
-Received: from smtp.adetelgroup.com ([94.247.26.71]:10155 "EHLO
-	hbg-pa71.hmc-pa.adm" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934069AbaEFHlL (ORCPT
+	id S934383AbaEFHnd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 03:43:33 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:38611 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934229AbaEFHna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 03:41:11 -0400
-From: Hubert Chaumette <hchaumette@adeneo-embedded.com>
-To: f.fainelli@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, xobs@kosagi.com, davem@davemloft.net,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [PATCH v4 0/2] net/phy: micrel: Add DT configuration support and documentation for KSZ9031
-Date: Tue,  6 May 2014 09:40:15 +0200
-Message-Id: <1399362017-25787-1-git-send-email-hchaumette@adeneo-embedded.com>
-X-Mailer: git-send-email 2.0.0.rc0
+	Tue, 6 May 2014 03:43:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMuHMdUGdfF8x58dz46VWNsC4X0cmFng39Z2xSO_pXYqn9u=HA@mail.gmail.com>
+References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be>
+	<1398334403-26181-4-git-send-email-geert+renesas@glider.be>
+	<CAPDyKFpTwPDu9afhOjhhQ2PKGFB+hWsp=mcaYTq8OvuGF7yT3Q@mail.gmail.com>
+	<CAMuHMdUGdfF8x58dz46VWNsC4X0cmFng39Z2xSO_pXYqn9u=HA@mail.gmail.com>
+Date: Tue, 6 May 2014 09:43:30 +0200
+Message-ID: <CAPDyKFoSOUfgvrKE8x3dih7xvm3VBoNZHjPxWCtFw_h-QALqvw@mail.gmail.com>
+Subject: Re: [PATCH/RFC 3/4] of/clk: Register clocks suitable for Runtime PM
+ with the PM core
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Felipe Balbi <balbi@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- - Adds DT configuration support for ksz9031
- - Renames micrel-ksz9021.txt to micrel-ksz90x1.txt and adds ksz9031 binding
-   documentation
+On 2 May 2014 16:35, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> Hi Ulf,
+>
+> On Fri, May 2, 2014 at 10:56 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>>> +static int of_clk_pm_runtime_suspend(struct device *dev)
+>>> +{
+>>> +       int ret;
+>>> +
+>>> +       ret = pm_generic_runtime_suspend(dev);
+>>> +       if (ret)
+>>> +               return ret;
+>>> +
+>>> +       ret = pm_clk_suspend(dev);
+>>
+>> What about slow clocks? Those aren't handled with pm_clk_suspend().
+>
+> How are slow clocks handled?
 
-Changes since v3:
- - Rebased on net-next
-Changes since v2:
- - Merged together ksz9031_load_{clk,data,ctrl}_skew_values()
- - Added field length and number of fields prameter to account for registers
-  specificities
- - Added binding documentation
-Changes since v1:
- - Removed ksz9021 and ksz9031 fixup deletions from arch/arm/mach-imx/mach-imx6q.c
+clk_prepare|unprepare - these functions may sleep.
 
-Hubert Chaumette (2):
-  Update Micrel KSZ90x1 binding documentation
-  ARM: i.MX6: Add OF configuration support for ksz9031
+Kind regards
+Ulf Hansson
 
- .../devicetree/bindings/net/micrel-ksz9021.txt     |  49 ----------
- .../devicetree/bindings/net/micrel-ksz90x1.txt     |  83 ++++++++++++++++
- drivers/net/phy/micrel.c                           | 106 ++++++++++++++++++++-
- 3 files changed, 188 insertions(+), 50 deletions(-)
- delete mode 100644 Documentation/devicetree/bindings/net/micrel-ksz9021.txt
- create mode 100644 Documentation/devicetree/bindings/net/micrel-ksz90x1.txt
-
--- 
-2.0.0.rc0
-
+>
+> Gr{oetje,eeting}s,
+>
+>                         Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
