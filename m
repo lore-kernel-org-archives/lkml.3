@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757884AbaEFPzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 11:55:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41765 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752029AbaEFPzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 11:55:04 -0400
-Date: Tue, 6 May 2014 16:55:00 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 15/17] mm: Do not use unnecessary atomic operations when
- adding pages to the LRU
-Message-ID: <20140506155500.GA23991@suse.de>
-References: <1398933888-4940-1-git-send-email-mgorman@suse.de>
- <1398933888-4940-16-git-send-email-mgorman@suse.de>
- <5369002D.7030600@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <5369002D.7030600@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757994AbaEFPzu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 11:55:50 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:58521 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757861AbaEFPzt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 11:55:49 -0400
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>, will.deacon@arm.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jean Pihet <jean.pihet@linaro.org>
+Subject: [PATCH 0/3] perf tools: Add libdw DWARF post unwind support for ARM64
+Date: Tue,  6 May 2014 17:55:30 +0200
+Message-Id: <1399391733-11927-1-git-send-email-jean.pihet@linaro.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 05:30:53PM +0200, Vlastimil Babka wrote:
-> On 05/01/2014 10:44 AM, Mel Gorman wrote:
-> >When adding pages to the LRU we clear the active bit unconditionally. As the
-> >page could be reachable from other paths we cannot use unlocked operations
-> >without risk of corruption such as a parallel mark_page_accessed. This
-> >patch test if is necessary to clear the atomic flag before using an atomic
-> 
->                                           active
-> 
+Adding libdw DWARF post unwind support, which is part
+of elfutils-devel/libdw-dev package from version 0.158.
 
-Thanks. Clearly I had atomic on the brain.
+Also includes the test suite for dwarf unwinding, by adding the
+arch specific test code and the perf_regs_load function.
 
-> >operation. In the unlikely even this races with mark_page_accesssed the
-> >consequences are simply that the page may be promoted to the active list
-> >that might have been left on the inactive list before the patch. This is
-> >a marginal consequence.
-> 
-> Well if this is racy, then even before the patch, mark_page_accessed
-> might have come right after ClearPageActive(page) anyway?
-> Or is the
-> changelog saying that this change only extended the race window that
-> already existed? If yes it could be more explicit, as now it might
-> sound as if the race was introduced.
-> 
+This series depends on the following kernel patches series:
+- AARCH64 unwinding support [1]. Already mainlined.
+- ARM libdw integration [2],
+and on the changes from the branch for:
+- libdw AARCH64 unwinding support [3].
 
-When adding pages to the LRU we clear the active bit unconditionally. As the
-page could be reachable from other paths we cannot use unlocked operations
-without risk of corruption such as a parallel mark_page_accessed. This
-patch tests if is necessary to clear the active flag before using an atomic
-operation. This potentially opens a tiny race when PageActive is checked
-as mark_page_accessed could be called after PageActive was checked. The
-race already exists but this patch changes it slightly. The consequence
-is that that the page may be promoted to the active list that might have
-been left on the inactive list before the patch. It's too tiny a race and
-too marginal a consequence to always use atomic operations for.
+[1] http://www.spinics.net/lists/arm-kernel/msg304483.html
+[2] https://lkml.org/lkml/2014/5/6/366
+[3] https://git.fedorahosted.org/cgit/elfutils.git/log/?h=mjw/aarch64-unwind
 
-?
+ToDo: investigate the libdw unwinding problem with compat binaries (i.e.
+ARMv7 binaries running on ARMv8). Since this functionality works ok with
+libunwind, the problem should be in libdw compat support [3].
+
+
+Jean Pihet (3):
+  perf tests: Introduce perf_regs_load function on ARM64
+  perf tests: Add dwarf unwind test on ARM64
+  perf tools: Add libdw DWARF post unwind support for ARM64
+
+ tools/perf/Makefile.perf                   |  2 +-
+ tools/perf/arch/arm64/Makefile             |  7 ++++
+ tools/perf/arch/arm64/include/perf_regs.h  |  5 +++
+ tools/perf/arch/arm64/tests/dwarf-unwind.c | 59 ++++++++++++++++++++++++++++++
+ tools/perf/arch/arm64/tests/regs_load.S    | 39 ++++++++++++++++++++
+ tools/perf/arch/arm64/util/unwind-libdw.c  | 53 +++++++++++++++++++++++++++
+ tools/perf/tests/builtin-test.c            |  3 +-
+ tools/perf/tests/tests.h                   |  3 +-
+ 8 files changed, 168 insertions(+), 3 deletions(-)
+ create mode 100644 tools/perf/arch/arm64/tests/dwarf-unwind.c
+ create mode 100644 tools/perf/arch/arm64/tests/regs_load.S
+ create mode 100644 tools/perf/arch/arm64/util/unwind-libdw.c
+
+---
+Rebased on the latest jolsa/perf/core
 
 -- 
-Mel Gorman
-SUSE Labs
+1.7.11.7
+
