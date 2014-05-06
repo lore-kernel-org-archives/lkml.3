@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933851AbaEFDDc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 23:03:32 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:42808 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933731AbaEFDDb (ORCPT
+	id S933871AbaEFDDu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 23:03:50 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35857 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933731AbaEFDDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 23:03:31 -0400
-Date: Tue, 6 May 2014 05:03:28 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: David Miller <davem@davemloft.net>
-Cc: andi@firstfloor.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Mon, 5 May 2014 23:03:48 -0400
+Date: Mon, 05 May 2014 23:03:47 -0400 (EDT)
+Message-Id: <20140505.230347.627861494715804965.davem@davemloft.net>
+To: andi@firstfloor.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         tom.zanussi@linux.intel.com, ak@linux.intel.com
-Subject: Re: [PATCH 13/24] net, diet: Make GRO offload optional
-Message-ID: <20140506030328.GK2382@two.firstfloor.org>
+Subject: Re: [PATCH 01/24] net, diet: Reduce netdev name hash table for
+ CONFIG_BASE_SMALL
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1399328773-6531-2-git-send-email-andi@firstfloor.org>
 References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
- <1399328773-6531-14-git-send-email-andi@firstfloor.org>
- <20140505.230118.938429615465621236.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505.230118.938429615465621236.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	<1399328773-6531-2-git-send-email-andi@firstfloor.org>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 05 May 2014 20:03:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 11:01:18PM -0400, David Miller wrote:
-> From: Andi Kleen <andi@firstfloor.org>
-> Date: Mon,  5 May 2014 15:26:02 -0700
-> 
-> > It's not needed on small systems.
-> 
-> On the contrary, I would expect the performance gains from
-> batching the packet receive path to be even larger on slow
-> small computers.
+From: Andi Kleen <andi@firstfloor.org>
+Date: Mon,  5 May 2014 15:25:50 -0700
 
-Ok I will rephrase it. The issue is really only the text size.
+> Small systems typically only have two network devices, so use
+> hash shift 2.
 
--Andi
+Maybe in terms of physical interfaces, but they may also have lots of
+software interfaces.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Sorry, this doesn't make any sense, I'm not applying this.
