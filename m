@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450AbaEFQRj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 12:17:39 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39591 "EHLO arroyo.ext.ti.com"
+	id S1753981AbaEFQRv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 12:17:51 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53899 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750962AbaEFQRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 12:17:37 -0400
-Date: Tue, 6 May 2014 11:16:53 -0500
+	id S1753300AbaEFQRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 12:17:48 -0400
+Date: Tue, 6 May 2014 11:17:03 -0500
 From: Felipe Balbi <balbi@ti.com>
 To: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
 CC: LKML <linux-kernel@vger.kernel.org>, <bcousson@baylibre.com>,
@@ -17,28 +17,28 @@ CC: LKML <linux-kernel@vger.kernel.org>, <bcousson@baylibre.com>,
         <linux-arm-kernel@lists.infradead.org>,
         Ezequiel =?iso-8859-1?Q?Garc=EDa?= 
 	<ezequiel@vanguardiasur.com.ar>
-Subject: Re: [PATCH 3/4] ARM: dts: am335x-evmsk: use phandles for USB and DMA
- refs
-Message-ID: <20140506161653.GL25849@saruman.home>
+Subject: Re: [PATCH 4/4] ARM: dts: am335x-igep0033: use phandles for USB and
+ DMA refs
+Message-ID: <20140506161703.GM25849@saruman.home>
 Reply-To: <balbi@ti.com>
 References: <1398693512-5355-1-git-send-email-guido@vanguardiasur.com.ar>
- <1398693512-5355-3-git-send-email-guido@vanguardiasur.com.ar>
+ <1398693512-5355-4-git-send-email-guido@vanguardiasur.com.ar>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UeXZ3FjlYZvuln/G"
+	protocol="application/pgp-signature"; boundary="McpcKDxJRrEJVmOH"
 Content-Disposition: inline
-In-Reply-To: <1398693512-5355-3-git-send-email-guido@vanguardiasur.com.ar>
+In-Reply-To: <1398693512-5355-4-git-send-email-guido@vanguardiasur.com.ar>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---UeXZ3FjlYZvuln/G
+--McpcKDxJRrEJVmOH
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Apr 28, 2014 at 10:58:31AM -0300, Guido Mart=EDnez wrote:
+On Mon, Apr 28, 2014 at 10:58:32AM -0300, Guido Mart=EDnez wrote:
 > Use phandles instead of unit adresses to reference usb and dma nodes.
 > This makes the DT more robust and readable.
 >=20
@@ -47,15 +47,15 @@ On Mon, Apr 28, 2014 at 10:58:31AM -0300, Guido Mart=EDnez wrote:
 Acked-by: Felipe Balbi <balbi@ti.com>
 
 > ---
->  arch/arm/boot/dts/am335x-evmsk.dts | 12 ++++++------
+>  arch/arm/boot/dts/am335x-igep0033.dtsi | 12 ++++++------
 >  1 file changed, 6 insertions(+), 6 deletions(-)
 >=20
-> diff --git a/arch/arm/boot/dts/am335x-evmsk.dts b/arch/arm/boot/dts/am335=
-x-evmsk.dts
-> index ab23885..44b8d75 100644
-> --- a/arch/arm/boot/dts/am335x-evmsk.dts
-> +++ b/arch/arm/boot/dts/am335x-evmsk.dts
-> @@ -364,28 +364,28 @@
+> diff --git a/arch/arm/boot/dts/am335x-igep0033.dtsi b/arch/arm/boot/dts/a=
+m335x-igep0033.dtsi
+> index 9f22c18..81cf68b 100644
+> --- a/arch/arm/boot/dts/am335x-igep0033.dtsi
+> +++ b/arch/arm/boot/dts/am335x-igep0033.dtsi
+> @@ -201,28 +201,28 @@
 >  &usb {
 >  	status =3D "okay";
 > =20
@@ -102,26 +102,26 @@ x-evmsk.dts
 --=20
 balbi
 
---UeXZ3FjlYZvuln/G
+--McpcKDxJRrEJVmOH
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTaQr1AAoJEIaOsuA1yqRELgMP/08TnA+0ygwdhLvnv/kENDBV
-fjgVCXjLwUy991enOg572OwqZWqXTAOWBBZRmDj8i3VJ3T27PHgnH2vlH/1cd35+
-HgEO8EXNe1/EE5Jcp5ZSs7mFh/DsBJzvoevLW2ckKSuwoWFgOULr3YbE0sW1CI6o
-SucCsQ0ePd2ZSG0LmSA1ISr/AKfVPPvb8N614WgPtg8wc27KjKmwUY33V8dRvjSO
-Oc4D5jq6gUXRZcRDilyq0S7fnxe6VqY5nj/aYvTCrUXOesUXvTkRArZyKIT39mHj
-hPqQ+yKRaCWbOk3OiOtpYZ3yEZeEuYsRmG6iToNuBGgK/2xe1zYbSkH1uCiVHW/B
-XYpZl9wbzFk80LNXn92cjzklbBhRsRNn6EBdwpl5FQAZNtidLg9XBWDOIO966Wo2
-rULACbamT6o8DgVt+WGJDWpzxczfCWDbJpZI9+TpoZLJ+xUX/OA9kF/Lh9EAKd56
-wnCr8FFQ8On8qnCkatzSQEt0g+jmRo63hbsJLD6jakLTr1fQqC5uyyf1PidJYidL
-sainci9Vw/tlI9mk25VDgbwSF1MlllZ+EOlXe5P3F9DdgGo+huVFicz2JlfRygbm
-I/PBKy3rioSbn684koclpjkO7YIo0GB+ESM8dLcLQ7TPhICSMsObF7fVAZ5ACX/U
-NhUPqfXct9YAnMK1SVdY
-=Vexg
+iQIcBAEBAgAGBQJTaQr/AAoJEIaOsuA1yqREYjEQAKiMKdTfGKKPkJO91rX2+EAO
+5ec7cXNIiaNl/7vRZLxCU7sLR57iYHRvjt3kxjq2mrr8ObFkXQtFc0RbTo8flULk
+bA4fTdm0xlweb7jz735shA0zDSh3eX4UtYxafUtGbtxjckY7vvT61JNOciayrPRJ
+FTqvnOots9iOWhIYnfDE1+jBivTEZ3RmN5ftwF3SrsISns5im4JPtkVgl+jlwCFH
+sUzftadNnxeZK6qmR5BSql5N9lWhRSqMIN1Fq/+M7P7u8qJiYhNDjWwfzbargLsW
+28RarO93ZaAd5NiePCnVr5Hfp698iIu3l9mEk2frfF2Br4oVz0M4trtqqF0R4x8J
+LoeJqTieTp1hasZNQwgbZ62n3TKkxSZ+rekJC25wgPlqecNpKlU+ciwN6BbbZKeN
+21l9x/YKhL2i2yicALlMn6s/+yZAhc9zQx+4zj/fUWkxUXb3iltya4h/4kD8MtkJ
+0tScREwV1pZQEIJj4LgEGQesuegA/6Ks1V/sdlGCCyCEMQdwOQUGbXbD8cs8B0v2
+LcUrUnkNQKm8s3MbAP+gNkizrFkgurtQGytAtChFNCvt7aoAIjICJMU8Q6QeYzH9
+sktTUYS9RHFgyqekjI1di05Qe6+lDuM+OX3MvcS3E12F3tUwk196l06sldaDkyLz
+4GWA20JJ3z2sCW9AxucS
+=ZZxB
 -----END PGP SIGNATURE-----
 
---UeXZ3FjlYZvuln/G--
+--McpcKDxJRrEJVmOH--
