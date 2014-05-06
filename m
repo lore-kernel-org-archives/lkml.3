@@ -1,145 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939AbaEFOmV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 10:42:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39546 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752524AbaEFOmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 10:42:20 -0400
-Message-ID: <5368F4CA.7060002@suse.cz>
-Date: Tue, 06 May 2014 16:42:18 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755271AbaEFOph (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 10:45:37 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:33790 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570AbaEFOpg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 10:45:36 -0400
+Message-ID: <5368F58C.1040702@gmail.com>
+Date: Tue, 06 May 2014 16:45:32 +0200
+From: poma <pomidorabelisima@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Sasha Levin <sasha.levin@oracle.com>, Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/17] mm: page_alloc: Use word-based accesses for get/set
- pageblock bitmaps
-References: <1398933888-4940-1-git-send-email-mgorman@suse.de> <1398933888-4940-9-git-send-email-mgorman@suse.de> <53641D8C.6040601@oracle.com> <20140504131454.GS23991@suse.de> <536786C6.8040805@suse.cz> <20140506091336.GX23991@suse.de>
-In-Reply-To: <20140506091336.GX23991@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Corentin Chary <corentin.chary@gmail.com>,
+        Corentin Chary <corentincj@iksaif.net>, linux-kernel@vger.kernel.org,
+        kernel@lists.fedoraproject.org, andreas.utterberg@thundera.se,
+        jwboyer@fedoraproject.org, sgruszka@redhat.com
+Subject: Re: [PATCH] asus-nb-wmi: set wapf=4 for ASUSTeK COMPUTER INC. X75VBP
+ & X550CA
+References: <1398550344-3785-1-git-send-email-pomidorabelisima@gmail.com> <53684CF9.8020305@gmail.com>
+In-Reply-To: <53684CF9.8020305@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2014 11:13 AM, Mel Gorman wrote:
-> On Mon, May 05, 2014 at 02:40:38PM +0200, Vlastimil Babka wrote:
->>> @@ -62,11 +65,35 @@ extern int pageblock_order;
->>>   /* Forward declaration */
->>>   struct page;
->>>
->>> +unsigned long get_pageblock_flags_mask(struct page *page,
->>> +				unsigned long end_bitidx,
->>> +				unsigned long nr_flag_bits,
->>> +				unsigned long mask);
->>> +void set_pageblock_flags_mask(struct page *page,
->>> +				unsigned long flags,
->>> +				unsigned long end_bitidx,
->>> +				unsigned long nr_flag_bits,
->>> +				unsigned long mask);
->>> +
->>
->> The nr_flag_bits parameter is not used anymore and can be dropped.
->>
->
-> Fixed
->
->>>   /* Declarations for getting and setting flags. See mm/page_alloc.c */
->>> -unsigned long get_pageblock_flags_group(struct page *page,
->>> -					int start_bitidx, int end_bitidx);
->>> -void set_pageblock_flags_group(struct page *page, unsigned long flags,
->>> -					int start_bitidx, int end_bitidx);
->>> +static inline unsigned long get_pageblock_flags_group(struct page *page,
->>> +					int start_bitidx, int end_bitidx)
->>> +{
->>> +	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
->>> +	unsigned long mask = (1 << nr_flag_bits) - 1;
->>> +
->>> +	return get_pageblock_flags_mask(page, end_bitidx, nr_flag_bits, mask);
->>> +}
->>> +
->>> +static inline void set_pageblock_flags_group(struct page *page,
->>> +					unsigned long flags,
->>> +					int start_bitidx, int end_bitidx)
->>> +{
->>> +	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
->>> +	unsigned long mask = (1 << nr_flag_bits) - 1;
->>> +
->>> +	set_pageblock_flags_mask(page, flags, end_bitidx, nr_flag_bits, mask);
->>> +}
->>>
->>>   #ifdef CONFIG_COMPACTION
->>>   #define get_pageblock_skip(page) \
->>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->>> index dc123ff..f393b0e 100644
->>> --- a/mm/page_alloc.c
->>> +++ b/mm/page_alloc.c
->>> @@ -6032,53 +6032,64 @@ static inline int pfn_to_bitidx(struct zone *zone, unsigned long pfn)
->>>    * @end_bitidx: The last bit of interest
->>>    * returns pageblock_bits flags
->>>    */
->>> -unsigned long get_pageblock_flags_group(struct page *page,
->>> -					int start_bitidx, int end_bitidx)
->>> +unsigned long get_pageblock_flags_mask(struct page *page,
->>> +					unsigned long end_bitidx,
->>> +					unsigned long nr_flag_bits,
->>> +					unsigned long mask)
->>>   {
->>>   	struct zone *zone;
->>>   	unsigned long *bitmap;
->>> -	unsigned long pfn, bitidx;
->>> -	unsigned long flags = 0;
->>> -	unsigned long value = 1;
->>> +	unsigned long pfn, bitidx, word_bitidx;
->>> +	unsigned long word;
->>>
->>>   	zone = page_zone(page);
->>>   	pfn = page_to_pfn(page);
->>>   	bitmap = get_pageblock_bitmap(zone, pfn);
->>>   	bitidx = pfn_to_bitidx(zone, pfn);
->>> +	word_bitidx = bitidx / BITS_PER_LONG;
->>> +	bitidx &= (BITS_PER_LONG-1);
->>>
->>> -	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
->>> -		if (test_bit(bitidx + start_bitidx, bitmap))
->>> -			flags |= value;
->>> -
->>> -	return flags;
->>> +	word = bitmap[word_bitidx];
->>
->> I wonder if on some architecture this may result in inconsistent
->> word when racing with set(), i.e. cmpxchg? We need consistency at
->> least on the granularity of byte to prevent the problem with bogus
->> migratetype values being read.
->>fix:
->
-> The number of bits align on the byte boundary so I do not think there is
-> a problem there. There is a BUILD_BUG_ON check in set_pageblock_flags_mask
-> in case this changes so it can be revisited if necessary.
 
-I was wondering about hardware guarantees in that case (e.g. consistency 
-at least on the granularity of byte when a simple memory read races with 
-write) but after some discussion in the office I understand that 
-hardware without such guarantees wouldn't be able to run Linux anyway :)
+> Corentin, care to pick up this one?
+> https://bugzilla.redhat.com/attachment.cgi?id=892751
 
-Still I wonder if ACCESS_ONCE would be safer in the 'word' variable 
-assignment to protect against compiler trying to be too smart?
+Matthew, who actually maintains the Asus Notebooks WMI Hotkey Driver i.e. 'asus-nb-wmi'?
 
-Anyway with the nr_flag_bits removed:
 
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
+poma
 
->>> +	bitidx += end_bitidx;
->>> +	return (word >> (BITS_PER_LONG - bitidx - 1)) & mask;
->>
->> Yes that looks correct to me, bits don't seem to overlap anymore.
->>
->
-> Thanks.
->
 
