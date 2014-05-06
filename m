@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757861AbaEFO43 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 10:56:29 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:49747 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881AbaEFO41 (ORCPT
+	id S1755673AbaEFO5f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 10:57:35 -0400
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:64066 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152AbaEFO5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 10:56:27 -0400
-X-AuditID: cbfec37d-b7f966d000005e7e-79-5368f819d94e
-Message-id: <5368F817.1080608@samsung.com>
-Date: Tue, 06 May 2014 08:56:23 -0600
+	Tue, 6 May 2014 10:57:33 -0400
+X-AuditID: cbfec37b-b7fc26d0000070ab-b8-5368f85d2415
+Message-id: <5368F85A.3060307@samsung.com>
+Date: Tue, 06 May 2014 08:57:30 -0600
 From: Shuah Khan <shuah.kh@samsung.com>
 Reply-to: shuah.kh@samsung.com
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
  Thunderbird/24.5.0
 MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 3.14 000/158] 3.14.3-stable review
-References: <20140504154029.975081050@linuxfoundation.org>
-In-reply-to: <20140504154029.975081050@linuxfoundation.org>
-Content-type: text/plain; charset=UTF-8; format=flowed
+To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
+Cc: linux@roeck-us.net, satoru.takeuchi@gmail.com,
+        linux-kernel@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 3.12 00/50] 3.12.19-stable review
+References: <cover.1399292849.git.jslaby@suse.cz>
+In-reply-to: <cover.1399292849.git.jslaby@suse.cz>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
 Content-transfer-encoding: 7bit
 X-Originating-IP: [105.144.134.247]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t9hX12pHxnBBhvmsVrMWb+GzaJ58Xo2
-	i8u75rBZPFl4hsli6qkJLBYLNj5itHjU95bdgd1j56y77B4nZvxm8dg/dw2Q+72B3ePzJrkA
-	1igum5TUnMyy1CJ9uwSujK629+wFJ9gq5k2fx97AOJO1i5GTQ0LAROL9zV3MELaYxIV769m6
-	GLk4hASWMUo0PT7KDuH0Mkmc272fCcLZxijx9WMDWDuvgJbEtP51TCA2i4CqxNa198FsNgF1
-	ic+vd7CD2EICchJNS1YDreDgEBWIkHh8QQiiVVDix+R7LCC2iECwxNqvCxlB5jMLrGKUuH55
-	ORtIQljATOL0hP2sEHOsJJo37mcBmcMpYC0xY2E5SJgZqORRyzpmCFteYvOat8wQ5coSfy6f
-	YoL4TFli457bbBMYRWYhWT0LSfssJO0LGJlXMYqVFicXFCelp1aY6BUn5haX5qXrJefnbmKE
-	RFLtDsb7X20OMQpwMCrx8CqsSQ8WYk0sK67MPcQowcGsJMLb8CUjWIg3JbGyKrUoP76oNCe1
-	+BAjEwenVANjel7TOSY9O6GyD6U9XZlMFXqZ6VxXeI3enNrz+EF4rduEahvXi+vdnJ4u5o6+
-	tfrooZWz7zKaXXul9HDKq/JI1eZvSsa7EnSi67xerWBgebq1a+7boH/ROrGvnc7tkEsM2PPv
-	lZPFBsU1f1/9jntrknjZbhXzMcHzW5N1ZrWFtHRyGh/6tGiXEktxRqKhFnNRcSIAvj5dSIIC	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t9hP93YHxnBBi9fi1h8/r2L1eLyrjls
+	Fk8WnmGymHpqAovFgo2PGB1YPXbOusvusfN7A7vHmQVH2D0+b5ILYInisklJzcksSy3St0vg
+	ytgyYwJzwTG2itPdnA2Ms1m7GDk4JARMJPZu8+ti5AQyxSQu3FvP1sXIxSEksIxRYvXqTawQ
+	Ti+TROvRbkYIZxujxIuu/ewgLbwCWhKtM74wg9gsAqoSxz7eZwOx2QTUJT6/3gFWIyQgJ9G0
+	ZDUzyDZRgQiJxxeEIFoFJX5MvscCYosImEs8uHMArJxZoETi+vMvYGOEBUwlFs/Yyg7SKiRg
+	KHH3nD1ImFPASGLO5vVMEOXWEisnbWOEsOUlNq95ywyxVVniz+VTTBCPKUts3HObbQKjyCwk
+	m2chaZ+FpH0BI/MqRrHS4uSC4qT01AojveLE3OLSvHS95PzcTYyQKKnewXj3q80hRgEORiUe
+	XoU16cFCrIllxZW5hxglOJiVRHgbvmQEC/GmJFZWpRblxxeV5qQWH2Jk4uCUamBUNmRrU25f
+	sOStz+W+yvyT67dK1Ucsu58T8NGtVjK7wrGHT+vrO8kC6+OJcTpBluWPFjpLTXkX+Uh8Uov/
+	kcXWE2I95MKXpvpMfnHgbU2k6PkHyrlzRB6+WVi3K9pNfW/uoUM7s3ec2XfgXdT0ZJckl5rL
+	UiVzJrz2PsB2SYRxxdqaY4uE/yxQYinOSDTUYi4qTgQAeCc0knACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2014 09:38 AM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.14.3 release.
-> There are 158 patches in this series, all will be posted as a response
+On 05/05/2014 06:28 AM, Jiri Slaby wrote:
+> This is the start of the stable review cycle for the 3.12.19 release.
+> There are 50 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 >
-> Responses should be made by Tue May  6 15:38:47 UTC 2014.
+> Responses should be made by Wed May  7 12:27:29 2014
 > Anything received after that time might be too late.
 >
 > The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.3-rc1.gz
+> 	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.19-rc1.xz
 > and the diffstat can be found below.
 >
 > thanks,
->
-> greg k-h
+> js
 >
 
 Compiled and booted on my test systems. No dmesg regressions.
