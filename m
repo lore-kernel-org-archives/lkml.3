@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934759AbaEFKRh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 06:17:37 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:61711 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934609AbaEFKRe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 06:17:34 -0400
+	id S934660AbaEFK3b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 06:29:31 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55391 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934549AbaEFK3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 06:29:30 -0400
+Date: Tue, 6 May 2014 12:29:24 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: x86-ml <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Mike Galbraith <mgalbraith@suse.de>
+Subject: Slow down stupid pounders
+Message-ID: <20140506102924.GA25013@pd.tnic>
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <20140504062915.GQ18016@ZenIV.linux.org.uk>
-References: <20140430023142.GN18016@ZenIV.linux.org.uk>
-	<CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
-	<20140430091515.GB3113@tucsk.piliscsaba.szeredi.hu>
-	<20140502055127.GH18016@ZenIV.linux.org.uk>
-	<CAELBmZC9g91+8B6HsnbmwWJBmiYXgMW6QfdREJYyd8EP5RpRpQ@mail.gmail.com>
-	<20140502210813.GB32527@tucsk.piliscsaba.szeredi.hu>
-	<CA+55aFzbtGwxTf_d97pSLc4hAciErGDdkOSzLkpt_hP-UmLPWg@mail.gmail.com>
-	<20140502224022.GJ18016@ZenIV.linux.org.uk>
-	<20140503042604.GM18016@ZenIV.linux.org.uk>
-	<20140503182110.GN18016@ZenIV.linux.org.uk>
-	<20140504062915.GQ18016@ZenIV.linux.org.uk>
-Date: Tue, 6 May 2014 12:17:32 +0200
-Message-ID: <CAJfpegvWOzd01tW5nRfWKW7EoBgPD8rudODJJm5OqxPd5Pd7uA@mail.gmail.com>
-Subject: Re: dcache shrink list corruption?
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 4, 2014 at 8:29 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Sat, May 03, 2014 at 07:21:11PM +0100, Al Viro wrote:
->> On Sat, May 03, 2014 at 05:26:04AM +0100, Al Viro wrote:
->>
->> > See vfs.git#dentry_kill-3; warning - this is completely untested and I would
->> > really like comments on spinning case there (i.e. the one where select_collect()
->> > finds some stuff already on some other shrink list and nothing with zero
->> > refcount that wouldn't be there).  In that case (and it's basically "somebody
->> > else is evicting stuff in our subtree and they'd already picked everything
->> > we want evicted") I just let the loop in check_submounts_and_drop() repeat
->> > (we do have cond_resched() there).  Any better suggestions would be welcome...
->>
->> Hmm...  As the matter of fact, the whole shrink_dcache_for_umount() could
->> be made a lot saner.  What we need is to reuse shrink_dcache_parent()
->> and follow it with d_walk() that would just go through whatever remains and
->> complain about the leaves of that.  For anon roots we'll obviously need to
->> wrap that into dget and d_drop/dput.
->>
->> I'm testing that right now; everything seems to be working so far and if
->> it survives, I'll push that sucker out.  Total since the beginning of
->> the whole series:
->>  fs/dcache.c            |  310 ++++++++++++++++++++++++++++++++---------------------------------------------------------
->>  include/linux/dcache.h |    2 +
->>  2 files changed, 112 insertions(+), 200 deletions(-)
->
-> No regressions compared to mainline; force-pushed into vfs#dentry_kill-3.
-> Review and testing would be very welcome...  Summary for that branch:
-> (it's *not* a pull request yet; the thing really needs review)
+Hi,
 
-Patches look okay to me.
+so I'm getting sick'n'tired of all those bug reports of people pounding
+cpu hotplug with stupid scripts.
 
-Reviewed-by: Miklos Szeredi <mszeredi@suse.cz>
+* We know cpu hotplug is fragile/buggy/crap/needs proper rewrite.
 
->       dentry_kill(): don't try to remove from shrink list
+* Stupid hotplugging script doesn't resemble any real use case - go use
+a real benchmark/stress test to trigger bugs.
 
-Backport of this to 3.12 was tested by IBM and apparently fixes the
-issue for them (I didn't backport the cleanup patches only the actual
-fix)
+So if we can't make pounders stop jerking off, let's make it
+uninterestingly slow. Stupid patch below, it might be completely idiotic
+to do it this way but at least starts the discussion about this being a
+really annoying issue which needs some sort of dealing with.
 
->       don't remove from shrink list in select_collect()
+I dunno, we can make it configurable (which will probably defeat its
+purpose partially), we can do some more fancy ratelimiting, per cpu,
+whatever... we'll see.
 
-I've also asked them to test this, although I think this is even
-harder to trigger.  But at least the non-racy codepaths need to be
-tested.
+Opinions, flames?
 
-Thanks,
-Miklos
+---
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 006b1bc5297d..615c7af767ed 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -40,6 +40,11 @@ static void change_cpu_under_node(struct cpu *cpu,
+ 	cpu->node_id = to_nid;
+ }
+ 
++static void delay_hotplug(void)
++{
++	schedule_timeout_uninterruptible(msecs_to_jiffies(MSEC_PER_SEC));
++}
++
+ static int __ref cpu_subsys_online(struct device *dev)
+ {
+ 	struct cpu *cpu = container_of(dev, struct cpu, dev);
+@@ -47,6 +52,8 @@ static int __ref cpu_subsys_online(struct device *dev)
+ 	int from_nid, to_nid;
+ 	int ret;
+ 
++	delay_hotplug();
++
+ 	from_nid = cpu_to_node(cpuid);
+ 	if (from_nid == NUMA_NO_NODE)
+ 		return -ENODEV;
+@@ -65,6 +72,8 @@ static int __ref cpu_subsys_online(struct device *dev)
+ 
+ static int cpu_subsys_offline(struct device *dev)
+ {
++	delay_hotplug();
++
+ 	return cpu_down(dev->id);
+ }
+ 
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
