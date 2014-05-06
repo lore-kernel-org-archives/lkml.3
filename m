@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933901AbaEFDdO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 23:33:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36012 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933740AbaEFDdN (ORCPT
+	id S933931AbaEFDeJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 23:34:09 -0400
+Received: from mail-ob0-f201.google.com ([209.85.214.201]:38934 "EHLO
+	mail-ob0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933740AbaEFDeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 23:33:13 -0400
-Date: Tue, 6 May 2014 03:33:08 +0000
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        eparis@redhat.com, linux-audit@redhat.com, ebiederm@xmission.com,
-        sgrubb@redhat.com
-Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
-Message-ID: <20140506033308.GE6508@ubuntumail>
-References: <cover.1398176489.git.rgb@redhat.com>
- <1399154328.2505.29.camel@dabdike.int.hansenpartnership.com>
- <20140505214424.GB6867@madcap2.tricolour.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505214424.GB6867@madcap2.tricolour.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 5 May 2014 23:34:07 -0400
+From: David Decotigny <decot@googlers.com>
+To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Weilong Chen <chenweilong@huawei.com>,
+        David Decotigny <decot@googlers.com>, Jiri Pirko <jiri@resnulli.us>,
+        Michael Dalton <mwdalton@google.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH v1] net-sysfs: expose permanent hardware address in sysfs
+Date: Mon,  5 May 2014 20:34:00 -0700
+Message-Id: <cd90d330753ff145d209240a72caafac32f5e750.1399347193.git.decot@googlers.com>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
+In-Reply-To: <cover.1399347193.git.decot@googlers.com>
+References: <cover.1399347193.git.decot@googlers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Richard Guy Briggs (rgb@redhat.com):
-> On 14/05/03, James Bottomley wrote:
-> > On Tue, 2014-04-22 at 14:12 -0400, Richard Guy Briggs wrote:
-> > > Questions:
-> > > Is there a way to link serial numbers of namespaces involved in migration of a
-> > > container to another kernel?  (I had a brief look at CRIU.)  Is there a unique
-> > > identifier for each running instance of a kernel?  Or at least some identifier
-> > > within the container migration realm?
-> > 
-> > Are you asking for a way of distinguishing an migrated container from an
-> > unmigrated one?  The answer is pretty much "no" because the job of
-> > migration is to restore to the same state as much as possible.
-> 
-> I hadn't thought to distinguish a migrated container from an unmigrated
-> one, but rather I'm more interested in the underlying namespaces.  The
-> use of a generation number to identify a migrated namespace may be
-> useful along with the logging to tie them together.
-> 
-> > Reading between the lines, I think your goal is to correlate audit
-> > information across a container migration, right?  Ideally the management
-> > system should be able to cough up an audit trail for a container
-> > wherever it's running and however many times it's been migrated?
-> 
-> The original intent was to track the underlying namespaces themselves.
-> This sounds like another layer on top of that which sounds useful but
-> that I had not yet considered.
-> 
-> But yes, that sounds like a good eventual goal.
+Tested:
+  grep . /sys/class/net/*/*addr*
 
-Right and we don't need that now, all *I* wanted to convince myself of
-was that a serial # as you were using it was not going to be a roadlbock
-to that, since once we introduce a serial #, we're stuck with that as
-user-space facing api.
+Signed-off-by: David Decotigny <decot@googlers.com>
+---
+ net/core/net-sysfs.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-> > In that case, I think your idea of a numeric serial number in a dense
-> > range is wrong.  Because the range is dense you're obviously never going
-> > to be able to use the same serial number across a migration.  However,
-> > if you look at all the management systems for containers, they all have
-> > a concept of some unique ID per container, be it name, UUID or even
-> > GUID.  I suspect it's that you should be using to tag the audit trail
-> > with.
-> 
-> That does sound potentially useful but for the fact that several
-> containers could share one or more types of namespaces.
-> 
-> Would logging just a container ID be sufficient for audit purposes?  I'm
-> going to have to dig a bit to understand that one because I was unaware
-> each container had a unique ID.
+diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+index 1cac29e..bf57024 100644
+--- a/net/core/net-sysfs.c
++++ b/net/core/net-sysfs.c
+@@ -127,6 +127,20 @@ static ssize_t address_show(struct device *dev, struct device_attribute *attr,
+ }
+ static DEVICE_ATTR_RO(address);
+ 
++static ssize_t perm_addr_show(struct device *dev, struct device_attribute *attr,
++			      char *buf)
++{
++	struct net_device *net = to_net_dev(dev);
++	ssize_t ret = -EINVAL;
++
++	read_lock(&dev_base_lock);
++	if (dev_isalive(net))
++		ret = sysfs_format_mac(buf, net->perm_addr, net->addr_len);
++	read_unlock(&dev_base_lock);
++	return ret;
++}
++static DEVICE_ATTR_RO(perm_addr);
++
+ static ssize_t broadcast_show(struct device *dev,
+ 			      struct device_attribute *attr, char *buf)
+ {
+@@ -391,6 +405,7 @@ static struct attribute *net_class_attrs[] = {
+ 	&dev_attr_addr_len.attr,
+ 	&dev_attr_link_mode.attr,
+ 	&dev_attr_address.attr,
++	&dev_attr_perm_addr.attr,
+ 	&dev_attr_broadcast.attr,
+ 	&dev_attr_speed.attr,
+ 	&dev_attr_duplex.attr,
+-- 
+1.9.1.423.g4596e3a
 
-They don't :)
-
-> I did originally consider a UUID/GUID for namespaces.
-
-So I think that apart from resending to address the serial # overflow
-comment, I'm happy to ack the patches.  Then we probably need to convicne
-Eric that we're not torturing kittens.
-
--serge
