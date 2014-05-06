@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757635AbaEFMpg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 08:45:36 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:37996 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754840AbaEFMoe (ORCPT
+	id S932136AbaEFMpd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 08:45:33 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:59945 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757506AbaEFMog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 08:44:34 -0400
+	Tue, 6 May 2014 08:44:36 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, vgoyal@redhat.com,
         axboe@kernel.dk, hannes@cmpxchg.org, mhocko@suse.cz,
         arozansk@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/5] cgroup: implement cftype->write()
-Date: Tue,  6 May 2014 08:44:22 -0400
-Message-Id: <1399380266-3324-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 3/5] cgroup: replace cftype->trigger() with cftype->write()
+Date: Tue,  6 May 2014 08:44:24 -0400
+Message-Id: <1399380266-3324-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1399380266-3324-1-git-send-email-tj@kernel.org>
 References: <1399380266-3324-1-git-send-email-tj@kernel.org>
@@ -22,127 +22,281 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During the recent conversion to kernfs, cftype's seq_file operations
-are updated so that they are directly mapped to kernfs operations and
-thus can fully access the associated kernfs and cgroup contexts;
-however, write path hasn't seen similar updates and none of the
-existing write operations has access to, for example, the associated
-kernfs_open_file.
+cftype->trigger() is pointless.  It's trivial to ignore the input
+buffer from a regular ->write() operation.  Convert all ->trigger()
+users to ->write() and remove ->trigger().
 
-Let's introduce a new operation cftype->write() which maps directly to
-the kernfs write operation and has access to all the arguments and
-contexts.  This will replace ->write_string() and ->trigger() and ease
-manipulation of kernfs active protection from cgroup file operations.
-
-Two accessors - of_cft() and of_css() - are introduced to enable
-accessing the associated cgroup context from cftype->write() which
-only takes kernfs_open_file for the context information.  The
-accessors for seq_file operations - seq_cft() and seq_css() - are
-rewritten to wrap the of_ accessors.
+This patch doesn't introduce any visible behavior changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
 ---
- include/linux/cgroup.h | 27 +++++++++++++++++++++++----
- kernel/cgroup.c        | 14 ++++++++------
- 2 files changed, 31 insertions(+), 10 deletions(-)
+ include/linux/cgroup.h    |  8 --------
+ kernel/cgroup.c           |  5 +----
+ mm/hugetlb_cgroup.c       | 16 ++++++++--------
+ mm/memcontrol.c           | 34 ++++++++++++++++++----------------
+ net/ipv4/tcp_memcontrol.c | 15 ++++++++-------
+ 5 files changed, 35 insertions(+), 43 deletions(-)
 
 diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 2dfabb3..da7a0ca 100644
+index 5f717d7..f8cfadb 100644
 --- a/include/linux/cgroup.h
 +++ b/include/linux/cgroup.h
-@@ -517,6 +517,15 @@ struct cftype {
- 	 */
- 	int (*trigger)(struct cgroup_subsys_state *css, unsigned int event);
- 
-+	/*
-+	 * write() is the generic write callback which maps directly to
-+	 * kernfs write operation and overrides all other operations.
-+	 * Maximum write size is determined by ->max_write_len.  Use
-+	 * of_css/cft() to access the associated css and cft.
-+	 */
-+	ssize_t (*write)(struct kernfs_open_file *of,
-+			 char *buf, size_t nbytes, loff_t off);
-+
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	struct lock_class_key	lockdep_key;
- #endif
-@@ -553,14 +562,24 @@ static inline ino_t cgroup_ino(struct cgroup *cgrp)
- 		return 0;
- }
- 
--static inline struct cftype *seq_cft(struct seq_file *seq)
-+/* cft/css accessors for cftype->write() operation */
-+static inline struct cftype *of_cft(struct kernfs_open_file *of)
- {
--	struct kernfs_open_file *of = seq->private;
--
- 	return of->kn->priv;
- }
- 
--struct cgroup_subsys_state *seq_css(struct seq_file *seq);
-+struct cgroup_subsys_state *of_css(struct kernfs_open_file *of);
-+
-+/* cft/css accessors for cftype->seq_*() operations */
-+static inline struct cftype *seq_cft(struct seq_file *seq)
-+{
-+	return of_cft(seq->private);
-+}
-+
-+static inline struct cgroup_subsys_state *seq_css(struct seq_file *seq)
-+{
-+	return of_css(seq->private);
-+}
- 
- /*
-  * Name / path handling functions.  All are thin wrappers around the kernfs
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 57c2021..32d1624 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -283,11 +283,10 @@ static inline bool cgroup_is_dead(const struct cgroup *cgrp)
- 	return test_bit(CGRP_DEAD, &cgrp->flags);
- }
- 
--struct cgroup_subsys_state *seq_css(struct seq_file *seq)
-+struct cgroup_subsys_state *of_css(struct kernfs_open_file *of)
- {
--	struct kernfs_open_file *of = seq->private;
- 	struct cgroup *cgrp = of->kn->parent->priv;
--	struct cftype *cft = seq_cft(seq);
-+	struct cftype *cft = of_cft(of);
+@@ -502,14 +502,6 @@ struct cftype {
+ 			 s64 val);
  
  	/*
- 	 * This is open and unprotected implementation of cgroup_css().
-@@ -302,7 +301,7 @@ struct cgroup_subsys_state *seq_css(struct seq_file *seq)
- 	else
- 		return &cgrp->dummy_css;
- }
--EXPORT_SYMBOL_GPL(seq_css);
-+EXPORT_SYMBOL_GPL(of_css);
- 
- /**
-  * cgroup_is_descendant - test ancestry
-@@ -1035,8 +1034,8 @@ static umode_t cgroup_file_mode(const struct cftype *cft)
+-	 * trigger() callback can be used to get some kick from the
+-	 * userspace, when the actual string written is not important
+-	 * at all. The private field can be used to determine the
+-	 * kick type for multiplexing.
+-	 */
+-	int (*trigger)(struct cgroup_subsys_state *css, unsigned int event);
+-
+-	/*
+ 	 * write() is the generic write callback which maps directly to
+ 	 * kernfs write operation and overrides all other operations.
+ 	 * Maximum write size is determined by ->max_write_len.  Use
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 8939fe4..4b340c3 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1034,8 +1034,7 @@ static umode_t cgroup_file_mode(const struct cftype *cft)
  	if (cft->read_u64 || cft->read_s64 || cft->seq_show)
  		mode |= S_IRUGO;
  
--	if (cft->write_u64 || cft->write_s64 || cft->write_string ||
+-	if (cft->write_u64 || cft->write_s64 || cft->write ||
 -	    cft->trigger)
-+	if (cft->write_u64 || cft->write_s64 || cft->write ||
-+	    cft->write_string || cft->trigger)
++	if (cft->write_u64 || cft->write_s64 || cft->write)
  		mode |= S_IWUSR;
  
  	return mode;
-@@ -2724,6 +2723,9 @@ static ssize_t cgroup_file_write(struct kernfs_open_file *of, char *buf,
- 	struct cgroup_subsys_state *css;
- 	int ret;
+@@ -2748,8 +2747,6 @@ static ssize_t cgroup_file_write(struct kernfs_open_file *of, char *buf,
+ 		ret = kstrtoll(buf, 0, &v);
+ 		if (!ret)
+ 			ret = cft->write_s64(css, cft, v);
+-	} else if (cft->trigger) {
+-		ret = cft->trigger(css, (unsigned int)cft->private);
+ 	} else {
+ 		ret = -EINVAL;
+ 	}
+diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+index faea871..8597daa 100644
+--- a/mm/hugetlb_cgroup.c
++++ b/mm/hugetlb_cgroup.c
+@@ -284,14 +284,14 @@ static ssize_t hugetlb_cgroup_write(struct kernfs_open_file *of,
+ 	return ret ?: nbytes;
+ }
  
-+	if (cft->write)
-+		return cft->write(of, buf, nbytes, off);
-+
- 	/*
- 	 * kernfs guarantees that a file isn't deleted with operations in
- 	 * flight, which means that the matching css is and stays alive and
+-static int hugetlb_cgroup_reset(struct cgroup_subsys_state *css,
+-				unsigned int event)
++static ssize_t hugetlb_cgroup_reset(struct kernfs_open_file *of,
++				    char *buf, size_t nbytes, loff_t off)
+ {
+ 	int idx, name, ret = 0;
+-	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_css(css);
++	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_css(of_css(of));
+ 
+-	idx = MEMFILE_IDX(event);
+-	name = MEMFILE_ATTR(event);
++	idx = MEMFILE_IDX(of_cft(of)->private);
++	name = MEMFILE_ATTR(of_cft(of)->private);
+ 
+ 	switch (name) {
+ 	case RES_MAX_USAGE:
+@@ -304,7 +304,7 @@ static int hugetlb_cgroup_reset(struct cgroup_subsys_state *css,
+ 		ret = -EINVAL;
+ 		break;
+ 	}
+-	return ret;
++	return ret ?: nbytes;
+ }
+ 
+ static char *mem_fmt(char *buf, int size, unsigned long hsize)
+@@ -344,14 +344,14 @@ static void __init __hugetlb_cgroup_file_init(int idx)
+ 	cft = &h->cgroup_files[2];
+ 	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.max_usage_in_bytes", buf);
+ 	cft->private = MEMFILE_PRIVATE(idx, RES_MAX_USAGE);
+-	cft->trigger = hugetlb_cgroup_reset;
++	cft->write = hugetlb_cgroup_reset;
+ 	cft->read_u64 = hugetlb_cgroup_read_u64;
+ 
+ 	/* Add the failcntfile */
+ 	cft = &h->cgroup_files[3];
+ 	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.failcnt", buf);
+ 	cft->private  = MEMFILE_PRIVATE(idx, RES_FAILCNT);
+-	cft->trigger  = hugetlb_cgroup_reset;
++	cft->write = hugetlb_cgroup_reset;
+ 	cft->read_u64 = hugetlb_cgroup_read_u64;
+ 
+ 	/* NULL terminate the last cft */
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 0258419..0845097 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4885,14 +4885,15 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
+ 	return 0;
+ }
+ 
+-static int mem_cgroup_force_empty_write(struct cgroup_subsys_state *css,
+-					unsigned int event)
++static ssize_t mem_cgroup_force_empty_write(struct kernfs_open_file *of,
++					    char *buf, size_t nbytes,
++					    loff_t off)
+ {
+-	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
++	struct mem_cgroup *memcg = mem_cgroup_from_css(of_css(of));
+ 
+ 	if (mem_cgroup_is_root(memcg))
+ 		return -EINVAL;
+-	return mem_cgroup_force_empty(memcg);
++	return mem_cgroup_force_empty(memcg) ?: nbytes;
+ }
+ 
+ static u64 mem_cgroup_hierarchy_read(struct cgroup_subsys_state *css,
+@@ -5218,14 +5219,15 @@ out:
+ 	*memsw_limit = min_memsw_limit;
+ }
+ 
+-static int mem_cgroup_reset(struct cgroup_subsys_state *css, unsigned int event)
++static ssize_t mem_cgroup_reset(struct kernfs_open_file *of, char *buf,
++				size_t nbytes, loff_t off)
+ {
+-	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
++	struct mem_cgroup *memcg = mem_cgroup_from_css(of_css(of));
+ 	int name;
+ 	enum res_type type;
+ 
+-	type = MEMFILE_TYPE(event);
+-	name = MEMFILE_ATTR(event);
++	type = MEMFILE_TYPE(of_cft(of)->private);
++	name = MEMFILE_ATTR(of_cft(of)->private);
+ 
+ 	switch (name) {
+ 	case RES_MAX_USAGE:
+@@ -5250,7 +5252,7 @@ static int mem_cgroup_reset(struct cgroup_subsys_state *css, unsigned int event)
+ 		break;
+ 	}
+ 
+-	return 0;
++	return nbytes;
+ }
+ 
+ static u64 mem_cgroup_move_charge_read(struct cgroup_subsys_state *css,
+@@ -6103,7 +6105,7 @@ static struct cftype mem_cgroup_files[] = {
+ 	{
+ 		.name = "max_usage_in_bytes",
+ 		.private = MEMFILE_PRIVATE(_MEM, RES_MAX_USAGE),
+-		.trigger = mem_cgroup_reset,
++		.write = mem_cgroup_reset,
+ 		.read_u64 = mem_cgroup_read_u64,
+ 	},
+ 	{
+@@ -6121,7 +6123,7 @@ static struct cftype mem_cgroup_files[] = {
+ 	{
+ 		.name = "failcnt",
+ 		.private = MEMFILE_PRIVATE(_MEM, RES_FAILCNT),
+-		.trigger = mem_cgroup_reset,
++		.write = mem_cgroup_reset,
+ 		.read_u64 = mem_cgroup_read_u64,
+ 	},
+ 	{
+@@ -6130,7 +6132,7 @@ static struct cftype mem_cgroup_files[] = {
+ 	},
+ 	{
+ 		.name = "force_empty",
+-		.trigger = mem_cgroup_force_empty_write,
++		.write = mem_cgroup_force_empty_write,
+ 	},
+ 	{
+ 		.name = "use_hierarchy",
+@@ -6184,13 +6186,13 @@ static struct cftype mem_cgroup_files[] = {
+ 	{
+ 		.name = "kmem.failcnt",
+ 		.private = MEMFILE_PRIVATE(_KMEM, RES_FAILCNT),
+-		.trigger = mem_cgroup_reset,
++		.write = mem_cgroup_reset,
+ 		.read_u64 = mem_cgroup_read_u64,
+ 	},
+ 	{
+ 		.name = "kmem.max_usage_in_bytes",
+ 		.private = MEMFILE_PRIVATE(_KMEM, RES_MAX_USAGE),
+-		.trigger = mem_cgroup_reset,
++		.write = mem_cgroup_reset,
+ 		.read_u64 = mem_cgroup_read_u64,
+ 	},
+ #ifdef CONFIG_SLABINFO
+@@ -6213,7 +6215,7 @@ static struct cftype memsw_cgroup_files[] = {
+ 	{
+ 		.name = "memsw.max_usage_in_bytes",
+ 		.private = MEMFILE_PRIVATE(_MEMSWAP, RES_MAX_USAGE),
+-		.trigger = mem_cgroup_reset,
++		.write = mem_cgroup_reset,
+ 		.read_u64 = mem_cgroup_read_u64,
+ 	},
+ 	{
+@@ -6225,7 +6227,7 @@ static struct cftype memsw_cgroup_files[] = {
+ 	{
+ 		.name = "memsw.failcnt",
+ 		.private = MEMFILE_PRIVATE(_MEMSWAP, RES_FAILCNT),
+-		.trigger = mem_cgroup_reset,
++		.write = mem_cgroup_reset,
+ 		.read_u64 = mem_cgroup_read_u64,
+ 	},
+ 	{ },	/* terminate */
+diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
+index 841fd3f..f7a2ec3 100644
+--- a/net/ipv4/tcp_memcontrol.c
++++ b/net/ipv4/tcp_memcontrol.c
+@@ -170,17 +170,18 @@ static u64 tcp_cgroup_read(struct cgroup_subsys_state *css, struct cftype *cft)
+ 	return val;
+ }
+ 
+-static int tcp_cgroup_reset(struct cgroup_subsys_state *css, unsigned int event)
++static ssize_t tcp_cgroup_reset(struct kernfs_open_file *of,
++				char *buf, size_t nbytes, loff_t off)
+ {
+ 	struct mem_cgroup *memcg;
+ 	struct cg_proto *cg_proto;
+ 
+-	memcg = mem_cgroup_from_css(css);
++	memcg = mem_cgroup_from_css(of_css(of));
+ 	cg_proto = tcp_prot.proto_cgroup(memcg);
+ 	if (!cg_proto)
+-		return 0;
++		return nbytes;
+ 
+-	switch (event) {
++	switch (of_cft(of)->private) {
+ 	case RES_MAX_USAGE:
+ 		res_counter_reset_max(&cg_proto->memory_allocated);
+ 		break;
+@@ -189,7 +190,7 @@ static int tcp_cgroup_reset(struct cgroup_subsys_state *css, unsigned int event)
+ 		break;
+ 	}
+ 
+-	return 0;
++	return nbytes;
+ }
+ 
+ static struct cftype tcp_files[] = {
+@@ -207,13 +208,13 @@ static struct cftype tcp_files[] = {
+ 	{
+ 		.name = "kmem.tcp.failcnt",
+ 		.private = RES_FAILCNT,
+-		.trigger = tcp_cgroup_reset,
++		.write = tcp_cgroup_reset,
+ 		.read_u64 = tcp_cgroup_read,
+ 	},
+ 	{
+ 		.name = "kmem.tcp.max_usage_in_bytes",
+ 		.private = RES_MAX_USAGE,
+-		.trigger = tcp_cgroup_reset,
++		.write = tcp_cgroup_reset,
+ 		.read_u64 = tcp_cgroup_read,
+ 	},
+ 	{ }	/* terminate */
 -- 
 1.9.0
 
