@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757613AbaEFNf0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 09:35:26 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44234 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812AbaEFNfR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 09:35:17 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>
-CC: <rogerq@ti.com>, <balajitk@ti.com>, Keerthy <j-keerthy@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>, Tero Kristo <t-kristo@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, Kishon Vijay Abraham I <kishon@ti.com>
-Subject: [PATCH 08/17] ARM: dts: DRA7: Change the parent of apll_pcie_in_clk_mux to dpll_pcie_ref_m2ldo_ck
-Date: Tue, 6 May 2014 19:03:54 +0530
-Message-ID: <1399383244-14556-9-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1399383244-14556-1-git-send-email-kishon@ti.com>
-References: <1399383244-14556-1-git-send-email-kishon@ti.com>
+	id S1757973AbaEFNlH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 09:41:07 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55268 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756416AbaEFNlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 09:41:04 -0400
+Message-ID: <5368E658.1040209@ti.com>
+Date: Tue, 6 May 2014 08:40:40 -0500
+From: Dan Murphy <dmurphy@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Kishon Vijay Abraham I <kishon@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>
+CC: <rogerq@ti.com>, <balajitk@ti.com>
+Subject: Re: [TEMP PATCH 17/17] ARM: dts: dra7: Add *resets* property for
+ PCIe dt node
+References: <1399383244-14556-1-git-send-email-kishon@ti.com> <1399383244-14556-18-git-send-email-kishon@ti.com>
+In-Reply-To: <1399383244-14556-18-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Keerthy <j-keerthy@ti.com>
+On 05/06/2014 08:34 AM, Kishon Vijay Abraham I wrote:
+> Added *resets* and *reset-names* properies for PCIe dt node.
+> The documention for this node can be found @ ../bindings/pci/ti-pci.txt.
+>
+> Cc: Dan Murphy <dmurphy@ti.com>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>  arch/arm/boot/dts/dra7.dtsi |    2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+> index 20b1a09..7bc0555 100644
+> --- a/arch/arm/boot/dts/dra7.dtsi
+> +++ b/arch/arm/boot/dts/dra7.dtsi
+> @@ -1031,6 +1031,8 @@
+>  			ti,hwmods = "pcie1";
+>  			phys = <&pcie1_phy>;
+>  			phy-names = "pcie-phy";
+> +			resets = <&prm_resets &device_reset>;
 
-Change the parent of apll_pcie_in_clk_mux to dpll_pcie_ref_m2ldo_ck
-from dpll_pcie_ref_ck.
+If you look @ v2 of the reset framework patchset your phandle should be
 
-Cc: Rajendra Nayak <rnayak@ti.com>
-Cc: Tero Kristo <t-kristo@ti.com>
-Cc: Paul Walmsley <paul@pwsan.com>
-Signed-off-by: Keerthy <j-keerthy@ti.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- arch/arm/boot/dts/dra7xx-clocks.dtsi |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+resets = <&prm_resets &pcie1_reset>;
 
-diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-index 55e95c5..44993ec 100644
---- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
-+++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-@@ -1152,7 +1152,7 @@
- 
- 	apll_pcie_in_clk_mux: apll_pcie_in_clk_mux@4ae06118 {
- 		compatible = "ti,mux-clock";
--		clocks = <&dpll_pcie_ref_ck>, <&pciesref_acs_clk_ck>;
-+		clocks = <&dpll_pcie_ref_m2ldo_ck>, <&pciesref_acs_clk_ck>;
- 		#clock-cells = <0>;
- 		reg = <0x021c 0x4>;
- 		ti,bit-shift = <7>;
+If you call the device_reset phandle you will reset the SoC.
+
+
+> +			reset-names = "reset";
+
+This needs to be more descriptive.
+
+>  		};
+>  
+>  		sata: sata@4a141100 {
+
+
 -- 
-1.7.9.5
+------------------
+Dan Murphy
 
