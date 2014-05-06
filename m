@@ -1,134 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758026AbaEFPo4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 11:44:56 -0400
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:16914 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757883AbaEFPox (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 11:44:53 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjkYAGACaVNbtAAq/2dsb2JhbABZgwZPqx0BAQEBAQEFAZoHAgKBHhd0giUBAQQBOhwjBQsIAw4KLjkeBhOIOQwBzhcXhVaIfAeEPwEDjxuKGwGBPIlEh3uDNjs
-Date: Tue, 6 May 2014 17:44:45 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH] plist: replace pr_debug with printk in plist_test()
-Message-Id: <20140506174445.b64dffb78d0676b48fa68eea@skynet.be>
-In-Reply-To: <CALZtONAVTQuOF3ddZ6jVZqCGgKBicAtT=_w5w4GEueYAsf3jtw@mail.gmail.com>
-References: <CALZtONB-wT16fPX7GjBVFO_5Bof3=zxviG22p6_9ymbnzA9QAA@mail.gmail.com>
-	<1399300985-11137-1-git-send-email-ddstreet@ieee.org>
-	<20140505133517.71b7dc7cf327cb304e8a9edc@linux-foundation.org>
-	<CALZtONAVTQuOF3ddZ6jVZqCGgKBicAtT=_w5w4GEueYAsf3jtw@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758031AbaEFPpm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 11:45:42 -0400
+Received: from mail-bl2on0131.outbound.protection.outlook.com ([65.55.169.131]:13216
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755148AbaEFPpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 11:45:40 -0400
+Message-ID: <1399390979.11533.6.camel@linux-builds1>
+Subject: Re: [PATCHv3 3/3] edac: altera: Add EDAC support for Altera SDRAM
+From: Dinh Nguyen <dinguyen@altera.com>
+To: Thor Thayer <tthayer@altera.com>
+CC: <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <dougthompson@xmission.com>, <grant.likely@linaro.org>, <bp@alien8.de>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>
+Date: Tue, 6 May 2014 10:42:59 -0500
+In-Reply-To: <1399330337-16748-4-git-send-email-tthayer@altera.com>
+References: <1399330337-16748-1-git-send-email-tthayer@altera.com>
+	 <1399330337-16748-4-git-send-email-tthayer@altera.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(24454002)(51704005)(199002)(377424004)(189002)(47776003)(44976005)(83322001)(33716001)(79102001)(6806004)(19580405001)(50466002)(19580395003)(77982001)(46102001)(20776003)(50986999)(84676001)(87936001)(97736001)(99396002)(76176999)(87286001)(74662001)(77156001)(31966008)(2009001)(33646001)(81542001)(80022001)(92566001)(88136002)(4396001)(62966002)(89996001)(92726001)(81342001)(23676002)(50226001)(86362001)(83072002)(74502001)(85852003)(76482001)(93916002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2FFO11HUB030;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:A85DFFE5.2C3BA4D8.13751FCF.9C77F279.20205;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-OriginatorOrg: altera.onmicrosoft.com
+X-Forefront-PRVS: 0203C93D51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 May 2014 08:30:56 -0400
-Dan Streetman <ddstreet@ieee.org> wrote:
-
-> On Mon, May 5, 2014 at 4:35 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > On Mon,  5 May 2014 10:43:05 -0400 Dan Streetman <ddstreet@ieee.org> wrote:
-> >
-> >> Replace pr_debug() in lib/plist.c test function plist_test() with
-> >> printk(KERN_DEBUG ...).
-> >>
-> >> Without DEBUG defined, pr_debug() is complied out, but the entire
-> >> plist_test() function is already inside CONFIG_DEBUG_PI_LIST, so
-> >> printk should just be used directly.
-> >>
-> >> --- a/lib/plist.c
-> >> +++ b/lib/plist.c
-> >> @@ -175,7 +175,7 @@ static int  __init plist_test(void)
-> >>       int nr_expect = 0, i, loop;
-> >>       unsigned int r = local_clock();
-> >>
-> >> -     pr_debug("start plist test\n");
-> >> +     printk(KERN_DEBUG "start plist test\n");
-> >
-> > Now someone will come along and helpfully switch it back to pr_debug()
-> > again :(
-> >
-> > What about adding a #define DEBUG?
-> >
-> >
-> >
-> > This aspect of pr_debug() is rather surprising and unfortunate and I
-> > guess we screwed it up.  pr_debug() should unconditionally do the
-> > printk, just like pr_warn, pr_emerg, etc.  And there should be a
-> > separate pr_debug_cond() which honours the DEBUG setting.
+On Mon, 2014-05-05 at 17:52 -0500, Thor Thayer wrote:
+> From: Thor Thayer <tthayer@altera.com>
 > 
-> I agree, it's definitely surprising and not obvious.  At the least,
-> maybe some clearer comments/docs would help; besides actually
-> reviewing the printk.h code, the only other indication of this
-> behavior is CodingStyle which currently says:
+> ---
+> v2: Use the SDRAM controller registers to calculate memory size
+>     instead of the Device Tree. Update To & Cc list. Add maintainer
+>     information.
 > 
-> "For messages that aren't associated with a particular device,
-> <linux/printk.h> defines pr_debug() and pr_info()."
+> v3: EDAC driver cleanup based on comments from Mailing list.
 > 
-> Listing pr_debug() and pr_info() on the same line with no
-> qualifications kind of implies they behave the same.  Maybe the
-> example should be pr_err() and pr_info(), or really anything besides
-> pr_debug(), which is discussed in (very brief) detail in the next
-> paragraph...
+> Signed-off-by: Thor Thayer <tthayer@altera.com>
+> ---
+>  MAINTAINERS                |    5 +
+>  drivers/edac/Kconfig       |    9 +
+>  drivers/edac/Makefile      |    2 +
+>  drivers/edac/altera_edac.c |  411 ++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 427 insertions(+)
+>  create mode 100644 drivers/edac/altera_edac.c
 > 
-> "Such messages should be compiled out when the DEBUG symbol is not
-> defined (that is, by default they are not included).  When you use
-> dev_dbg() or pr_debug(), that's automatic.  Many subsystems have
-> Kconfig options to turn on -DDEBUG."
-> 
-> While that does explain that pr_debug() won't actually print anything
-> without DEBUG defined, it's hardly in a way that jumps out, clearly
-> indicating that pr_debug() is unlike all the other pr_XXX() functions.
-> 
-> I'll try sending a patch to update the docs to make pr_debug()'s
-> behavior clearer...
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index e67ea24..ecd1277 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -1290,6 +1290,11 @@ M:	Dinh Nguyen <dinguyen@altera.com>
+>  S:	Maintained
+>  F:	drivers/clk/socfpga/
+>  
+> +ARM/SOCFPGA SDRAM EDAC SUPPORT
+> +M:	Thor Thayer <tthayer@altera.com>
+> +S:	Maintained
+> +F:	drivers/edac/altera_edac.c
+> +
+>  ARM/STI ARCHITECTURE
+>  M:	Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
+>  M:	Maxime Coquelin <maxime.coquelin@st.com>
+> diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+> index 878f090..4f4d379 100644
+> --- a/drivers/edac/Kconfig
+> +++ b/drivers/edac/Kconfig
+> @@ -368,4 +368,13 @@ config EDAC_OCTEON_PCI
+>  	  Support for error detection and correction on the
+>  	  Cavium Octeon family of SOCs.
+>  
+> +config EDAC_ALTERA_MC
+> +	bool "Altera SDRAM Memory Controller EDAC"
 
-Admitting checkpatch is the authority in that matter and that per subsystem
-debug granularity would be kept, we could at least add some specification 
-like below ?
+Can this be tristate?
 
-[PATCH 1/1] scripts/checkpatch.pl: add printk(KERN_DEBUG to pr_debug specification
-
-Such conversions can't be done as trivially as other printk occurences.
-
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- scripts/checkpatch.pl | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 34eb216..4e462d7 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2863,9 +2863,14 @@ sub process {
- 			my $level = lc($orig);
- 			$level = "warn" if ($level eq "warning");
- 			my $level2 = $level;
--			$level2 = "dbg" if ($level eq "debug");
-+			my $note = "";
-+			if ($level eq "debug"){
-+				$level2 = "dbg";
-+				$note = "Note that printk(KERN_DEBUG conversions to pr_debug require local DEBUG definition.\n";
-+			}
- 			WARN("PREFER_PR_LEVEL",
--			     "Prefer [subsystem eg: netdev]_$level2([subsystem]dev, ... then dev_$level2(dev, ... then pr_$level(...  to printk(KERN_$orig ...\n" . $herecurr);
-+			     "Prefer [subsystem eg: netdev]_$level2([subsystem]dev, ... then dev_$level2(dev, ... then pr_$level(...  to printk(KERN_$orig ...\n$note" . $herecurr);
-+
- 		}
- 
- 		if ($line =~ /\bpr_warning\s*\(/) {
--- 
-1.8.4.5
+Dinh
 
