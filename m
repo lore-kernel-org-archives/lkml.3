@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672AbaEFUXU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 16:23:20 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:8699 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755568AbaEFUXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 16:23:15 -0400
-From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH linux-next] ARM: mvebu: Fix pmsu compilation when ARMv6 is selected
-Date: Tue,  6 May 2014 22:23:02 +0200
-Message-Id: <1399407782-29091-1-git-send-email-vincent.stehle@laposte.net>
-X-Mailer: git-send-email 1.9.2
+	id S1755555AbaEFUXN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 16:23:13 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:54600 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754725AbaEFUXL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 16:23:11 -0400
+Date: Wed, 7 May 2014 00:23:08 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf_fuzzer crash on pentium 4
+Message-ID: <20140506202307.GA1458@moon>
+References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When compiling for multiplatform for both ARMv6 and ARMv7, the default compiler
-flags are for ARMv6, and we will get:
+On Tue, May 06, 2014 at 11:42:58AM -0400, Vince Weaver wrote:
+> 
+> So just to be difficult I fired up the perf_fuzzer on a Pentium 4 machine.
+> 
+> It crashes more or less instantly (sorry for the line wrapping, 
+> just got the serial console hooked up and don't have minicom configured 
+> right yet).
+> 
+> this is 3.15-rc4 with the anti-memory corruption patch applied.
+> 
+> [   67.872274] BUG: unable to handle kernel NULL pointer dereference at 00000004
+> [   67.876146] IP: [<ffffffff81013df2>] p4_pmu_schedule_events+0xa5/0x331
 
-  /tmp/ccwDEzd0.s: Assembler messages:
-  /tmp/ccwDEzd0.s:639: Error: selected processor does not support ARM mode `isb '
-  /tmp/ccwDEzd0.s:645: Error: selected processor does not support ARM mode `isb '
-  /tmp/ccwDEzd0.s:646: Error: selected processor does not support ARM mode `dsb '
-  /tmp/ccwDEzd0.s:695: Error: selected processor does not support ARM mode `isb '
-  make[1]: *** [arch/arm/mach-mvebu/pmsu.o] Error 1
+This looks like
 
-Fix this in a similar manner than done previously in commit
-72533b77d30c2be02672e26b5dde1263d7b4c2be, by specifying ARMv7 flags for pmsu.o.
+p4_pmu_schedule_events:
+		...
+		bind = p4_config_get_bind(hwc->config);
+			returned bind = NULL;
+		escr_idx = p4_get_escr_idx(bind->escr_msr[thread]); NULL deref
 
-Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>
----
-
-Hi,
-
-This build issue can be seen with e.g. Linux next-20140506, ARCH=arm and
-allmodconfig.
-
-Best regards,
-
-V.
-
- arch/arm/mach-mvebu/Makefile | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/mach-mvebu/Makefile b/arch/arm/mach-mvebu/Makefile
-index 854b72a..2ecb828 100644
---- a/arch/arm/mach-mvebu/Makefile
-+++ b/arch/arm/mach-mvebu/Makefile
-@@ -2,6 +2,7 @@ ccflags-$(CONFIG_ARCH_MULTIPLATFORM) := -I$(srctree)/$(src)/include \
- 	-I$(srctree)/arch/arm/plat-orion/include
- 
- AFLAGS_coherency_ll.o		:= -Wa,-march=armv7-a
-+CFLAGS_pmsu.o			:= -march=armv7-a
- 
- obj-y				 += system-controller.o mvebu-soc-id.o
- 
--- 
-1.9.2
-
+If i'm right (btw it's possible to use addr2line helper?) then hwc->config
+is corrupted and p4_config_get_bind returned nil simply because proper event
+was not found. And I don't understand how it could happen because before
+configuration gets written into hwc->config it's validated once obtained
+from user-space as a raw event. Weird...
