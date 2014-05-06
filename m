@@ -1,115 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757213AbaEFLax (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 07:30:53 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:52047 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750736AbaEFLav convert rfc822-to-8bit (ORCPT
+	id S1757236AbaEFLbw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 07:31:52 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:60082 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209AbaEFLbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 07:30:51 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Beniamino Galvani <b.galvani@gmail.com>
-Cc: Matthias Brugger <matthias.bgg@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH 1/2] of: add bq and radxa vendor prefixes
-Date: Tue, 06 May 2014 13:31:24 +0200
-Message-ID: <3107321.XJc3MCHyeC@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20140506111345.GB22196@gmail.com>
-References: <1398973835-26303-1-git-send-email-b.galvani@gmail.com> <CABuKBe+fFCU2__rEHfiU+XPQwKE613VBxQ4=8xiA3PXQkBiMDQ@mail.gmail.com> <20140506111345.GB22196@gmail.com>
+	Tue, 6 May 2014 07:31:51 -0400
+Date: Tue, 6 May 2014 07:31:48 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>,
+        akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/2] kernel/cpuset.c: kernel-doc fixes
+Message-ID: <20140506113148.GA27738@htj.dyndns.org>
+References: <20140505194655.6d1304a0826c107debdbbe30@skynet.be>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140505194655.6d1304a0826c107debdbbe30@skynet.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 6. Mai 2014, 13:13:46 schrieb Beniamino Galvani:
-> On Sun, May 04, 2014 at 02:57:52PM +0200, Matthias Brugger wrote:
-> > 2014-05-02 1:32 GMT+02:00 Heiko Stübner <heiko@sntech.de>:
-> > > Hi Beniamino,
-> > > 
-> > > Am Donnerstag, 1. Mai 2014, 21:50:34 schrieb Beniamino Galvani:
-> > >> Add new vendor prefixes for:
-> > >>     * bq, a company that sells multimedia devices and 3D printers
-> > > 
-> > > bq is actually only a brandname. The company itself is "Mundo Reader
-> > > S.L.".
-> > > I'm not sure what the actual policy is concerning the vendor prefix,
-> > > i.e. if it should use the visible brand name or the actual company
-> > > name.
-> > > 
-> > > I.e. another possibility would be to add the vendor prefix
-> > > 
-> > >         mundoreader     Mundo Reader S.L.
-> > > 
-> > > and name the currie
-> > > 
-> > >         mundoreader,bq-curie2
-> > 
-> > I think we should stick to the brand name, as this is the name people
-> > know.
+On Mon, May 05, 2014 at 07:46:55PM +0200, Fabian Frederick wrote:
+> This patch also converts seq_printf to seq_puts
 > 
-> Personally I don't have a strong preference, so either of the two.
+> Cc: Li Zefan <lizefan@huawei.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 
-According to an IRC conversation I just had, it is supposed to be the real 
-company name ... so I guess my option above would be the correct one.
+Applied to cgroup/for-3.16.
 
+Thanks.
 
-Heiko
-
-> 
-> Beniamino
-> 
-> > > Heiko
-> > > 
-> > >>     * Radxa, manufacturer of ARM boards
-> > >> 
-> > >> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
-> > >> ---
-> > >> 
-> > >>  Documentation/devicetree/bindings/vendor-prefixes.txt |    2 ++
-> > >>  1 file changed, 2 insertions(+)
-> > >> 
-> > >> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> > >> b/Documentation/devicetree/bindings/vendor-prefixes.txt index
-> > >> abc3080..6f8177c 100644
-> > >> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> > >> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> > >> @@ -21,6 +21,7 @@ atmel       Atmel Corporation
-> > >> 
-> > >>  auo  AU Optronics Corporation
-> > >>  avago        Avago Technologies
-> > >>  bosch        Bosch Sensortec GmbH
-> > >> 
-> > >> +bq   bq
-> > >> 
-> > >>  brcm Broadcom Corporation
-> > >>  buffalo      Buffalo, Inc.
-> > >>  calxeda      Calxeda
-> > >> 
-> > >> @@ -98,6 +99,7 @@ powervr     PowerVR (deprecated, use img)
-> > >> 
-> > >>  qca  Qualcomm Atheros, Inc.
-> > >>  qcom Qualcomm Technologies, Inc
-> > >>  qnap QNAP Systems, Inc.
-> > >> 
-> > >> +radxa        Radxa
-> > >> 
-> > >>  raidsonic    RaidSonic Technology GmbH
-> > >>  ralink       Mediatek/Ralink Technology Corp.
-> > >>  ramtron      Ramtron International
-> > > 
-> > > _______________________________________________
-> > > linux-arm-kernel mailing list
-> > > linux-arm-kernel@lists.infradead.org
-> > > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
+-- 
+tejun
