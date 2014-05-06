@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771AbaEFNbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 09:31:50 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:65453 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628AbaEFNbr (ORCPT
+	id S1755251AbaEFNcZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 09:32:25 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:57137 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754223AbaEFNcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 09:31:47 -0400
-X-AuditID: cbfec7f5-b7fae6d000004d6d-a7-5368e441e40f
-Message-id: <5368E46B.9050708@samsung.com>
-Date: Tue, 06 May 2014 16:32:27 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: linux-security-module <linux-security-module@vger.kernel.org>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: viro@ZenIV.linux.org.uk,
+	Tue, 6 May 2014 09:32:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <s5hha53ujeq.wl%tiwai@suse.de>
+References: <s5htx94fkfi.wl%tiwai@suse.de>
+	<CAKMK7uHcYvuViEeyxLc75+kMVPPaKMr8svJQysk124--cjGL+g@mail.gmail.com>
+	<s5hd2fsffhk.wl%tiwai@suse.de>
+	<CAKMK7uGD5JCQSfk+Vuf=qrjU9x+Y+-W3o-xyGyTM_BreR_XZcw@mail.gmail.com>
+	<s5hha53ujeq.wl%tiwai@suse.de>
+Date: Tue, 6 May 2014 15:32:21 +0200
+Message-ID: <CANq1E4QkzqhrgeJrAZ=wxQR751BdSK13E4QjWPWkiq5B8vFr9Q@mail.gmail.com>
+Subject: Re: Atomicity in KMS panic notifier
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Daniel Vetter <daniel@ffwll.ch>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: IMA & truncate
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrALMWRmVeSWpSXmKPExsVy+t/xq7qOTzKCDX7N4La4vGsOm8WHnkds
-	Fuf/Hme1+LRiErMDi8eDQ5tZPD5vkvPY9OQtUwBzFJdNSmpOZllqkb5dAlfGq5mHmQqeMFfc
-	vT+BsYGxibmLkZNDQsBEon3XHlYIW0ziwr31bF2MXBxCAksZJXa+/ATlNDJJbFo5mxXCmcUo
-	8f/BRrB2XgEtiVcPG8HaWQRUJW78+c4EYrMJ6ElsaP7B3sXIwSEqECHx+IIQRLmgxI/J91hA
-	bBGBLIkNc5rZQGxmgXCJNWfesoGUCwuIS7T8VIQI60jsb50GVSIvsXnNW7CtQkCbuteuZYM4
-	WlHi9ORzzBMYBWch2TALSfssJO0LGJlXMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoSE8tcd
-	jEuPWR1iFOBgVOLhXSCTESzEmlhWXJl7iFGCg1lJhFf8PlCINyWxsiq1KD++qDQntfgQIxMH
-	p1QDo8OcZy//GdZN32asP4FT4cnvToUilRPHTf/cWuJuZDy99emLOvlC3ViB5K/J68w4fv/t
-	n71c9e2GO7EXV9nHbPrwel168p/NjRV8uxQaWBYySPG7sF5Wtj9feeLzYbvqp1Uzq49taWI0
-	qtw/4XvS/oXrW09FSk3f1zv54yGpp8fnT7bnvy68I1SJpTgj0VCLuag4EQBXlvKXQwIAAA==
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi
 
-I have discovered one IMA related issue.
+On Tue, May 6, 2014 at 3:27 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Mon, 5 May 2014 16:52:45 +0200,
+> Daniel Vetter wrote:
+>>
+>> On Mon, May 5, 2014 at 4:48 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> >
+>> > The current problem I see is that the rest of panic notifier chain
+>> > won't be called once when we hit the problem in KMS notifier.  So,
+>> > this bug in KMS influences on the rest panic behavior.
+>> >
+>> > Maybe a hackish solution would be to keep KMS notifier at the end of
+>> > notifier chain so that it crashes at last.  I don't like this either,
+>> > but...
+>>
+>> You need to do that with both the kms panic notifier in
+>> drm_fb_helper.c and with the fbcon panic notifier. And iirc there's
+>> also a console->unblank call somewhere which _also_ can end up in
+>> ->set_par. But I'm not sure anymore when exactly that one is run, I've
+>> tried hard to forget this all ;-)
+>
+> Looking back at the code again, it seems that fbcon has no panic
+> notifier.  It has own notifier chain, but it's a private chain that
+> isn't called by the panic.  So, we can forget about fbcon, at least (I
+> hope).
 
-IMA file hash is re-calculate if needed on file close.
+fbcon is called through the VT or fbdev layer, which is called by
+bust_spinlocks(1) via either unblank_screen() or console_unblank().
 
-It works with ftruncate(fd, length) syscall, because it operates on
-"opened" file.
-Recalculation is happening on file close.
-
-truncate(path, length) syscall works with path and no file open/close
-takes place.
-Recalculation does not happen.
-IMA denies file access later.
-
-It looks like vfs_truncate() should possibly call IMA to recalculate the
-hash.
-
-- Dmitry
-
+Cheers
+David
