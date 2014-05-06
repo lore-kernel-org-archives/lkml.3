@@ -1,79 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631AbaEFQLv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 12:11:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12704 "EHLO mx1.redhat.com"
+	id S1753496AbaEFQNA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 12:13:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42014 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838AbaEFQLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 12:11:49 -0400
-Message-ID: <536909BE.2050100@redhat.com>
-Date: Tue, 06 May 2014 18:11:42 +0200
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753053AbaEFQM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 12:12:59 -0400
+Date: Tue, 6 May 2014 18:12:56 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/4] memcg, mm: introduce lowlimit reclaim
+Message-ID: <20140506161256.GE19672@dhcp22.suse.cz>
+References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
+ <1398688005-26207-2-git-send-email-mhocko@suse.cz>
+ <20140430225550.GD26041@cmpxchg.org>
+ <20140502093628.GC3446@dhcp22.suse.cz>
+ <20140502155805.GO23420@cmpxchg.org>
+ <20140502164930.GP3446@dhcp22.suse.cz>
+ <20140502220056.GP23420@cmpxchg.org>
+ <20140506132932.GF19914@cmpxchg.org>
+ <20140506143242.GB19672@dhcp22.suse.cz>
+ <20140506152112.GG19914@cmpxchg.org>
 MIME-Version: 1.0
-To: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 1/2] uprobes: add comment with insn opcodes, mnemonics
- and why we dont support them
-References: <1399314247-7368-1-git-send-email-dvlasenk@redhat.com> <1399329124.4602.22.camel@oc7886638347.ibm.com.usor.ibm.com>
-In-Reply-To: <1399329124.4602.22.camel@oc7886638347.ibm.com.usor.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140506152112.GG19914@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2014 12:32 AM, Jim Keniston wrote:
-> All of the following is FYI.
+I am adding Rik to CC (sorry to put you in the middle of a thread -
+we have started here: https://lkml.org/lkml/2014/4/28/237). You were
+stressing out risks of using lowlimit as a hard guarantee at LSF. Could
+you repeat your concerns here as well, please?
+
+Short summary:
+We are basically discussing how to handle lowlimit overcommit situation,
+when no group is reclaimable because it either doesn't have any pages on
+the LRU or it is bellow its lowlimit (aka guaranteed memory).
+
+The solution proposed in this series is to fallback and reclaim
+everybody rather than OOM with a note that if somebody really needs an
+OOM then we can add a per-memcg knob which tells whether to fallback or oom.
+
+Previously I was suggesting OOM as a default but I realized that this
+might be too risky for the default behavior although I can see some
+point in that behavior as well (it would allow to have a group which
+would never reclaim memory and rather go OOM where the memory demand can
+be handled more specifically). I do not have any call for such a hard
+guarantee requirement usecase now and it would be quite trivial to build
+it on top of the more relaxed implementation so I am more inclined to
+the fallback default now.
+
+More comments inlined below.
+
+On Tue 06-05-14 11:21:12, Johannes Weiner wrote:
+> On Tue, May 06, 2014 at 04:32:42PM +0200, Michal Hocko wrote:
+> > On Tue 06-05-14 09:29:32, Johannes Weiner wrote:
+> > > On Fri, May 02, 2014 at 06:00:56PM -0400, Johannes Weiner wrote:
+> > > > On Fri, May 02, 2014 at 06:49:30PM +0200, Michal Hocko wrote:
+> > > > > On Fri 02-05-14 11:58:05, Johannes Weiner wrote:
+> > > > > > This is not even guarantees anymore, but rather another reclaim
+> > > > > > prioritization scheme with best-effort semantics.  That went over
+> > > > > > horribly with soft limits, and I don't want to repeat this.
+> > > > > > 
+> > > > > > Overcommitting on guarantees makes no sense, and you even agree you
+> > > > > > are not interested in it.  We also agree that we can always add a knob
+> > > > > > later on to change semantics when an actual usecase presents itself,
+> > > > > > so why not start with the clear and simple semantics, and the simpler
+> > > > > > implementation?
+> > > > > 
+> > > > > So you are really preferring an OOM instead? That was the original
+> > > > > implementation posted at the end of last year and some people
+> > > > > had concerns about it. This is the primary reason I came up with a
+> > > > > weaker version which fallbacks rather than OOM.
+> > > > 
+> > > > I'll dig through the archives on this then, thanks.
+> > > 
+> > > The most recent discussion on this I could find was between you and
+> > > Greg, where the final outcome was (excerpt):
+> > > 
+> > > ---
+> > > 
+> > > From: Greg Thelen <gthelen@google.com>
+> > > To: Michal Hocko <mhocko@suse.cz>
+> > > Cc: linux-mm@kvack.org,  Johannes Weiner <hannes@cmpxchg.org>,  Andrew Morton <akpm@linux-foundation.org>,  KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,  LKML <linux-kernel@vger.kernel.org>,  Ying Han <yinghan@google.com>,  Hugh Dickins <hughd@google.com>,  Michel Lespinasse <walken@google.com>,  KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,  Tejun Heo <tj@kernel.org>
+> > > Subject: Re: [RFC 0/4] memcg: Low-limit reclaim
+> > > References: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
+> > > 	<xr93sis6obb5.fsf@gthelen.mtv.corp.google.com>
+> > > 	<20140130123044.GB13509@dhcp22.suse.cz>
+> > > 	<xr931tzphu50.fsf@gthelen.mtv.corp.google.com>
+> > > 	<20140203144341.GI2495@dhcp22.suse.cz>
+> > > Date: Mon, 03 Feb 2014 17:33:13 -0800
+> > > Message-ID: <xr93zjm7br1i.fsf@gthelen.mtv.corp.google.com>
+> > > List-ID: <linux-mm.kvack.org>
+> > > 
+> > > On Mon, Feb 03 2014, Michal Hocko wrote:
+> > > 
+> > > > On Thu 30-01-14 16:28:27, Greg Thelen wrote:
+> > > >> But this soft_limit,priority extension can be added later.
+> > > >
+> > > > Yes, I would like to have the strong semantic first and then deal with a
+> > > > weaker form. Either by a new limit or a flag.
+> > > 
+> > > Sounds good.
+> > > 
+> > > ---
+> > > 
+> > > So I think everybody involved in the discussions so far are preferring
+> > > a hard guarantee, and then later, if needed, to either add a knob to
+> > > make it a soft guarantee or to actually implement a usable soft limit.
+> > 
+> > I am afraid the most of that discussion happened off-list :( Sadly not
+> > much of a discussion happened on the list.
 > 
-> The good-instruction tables date back 2006-2007.  Back then, the
-> philosophy was to disallow any questionable opcodes, and add them back
-> into the "good" tables only when a need was demonstrated (i.e., somebody
-> needed to probe that particular instruction) and we could verify that
-> probing that instruction worked.
+> Time to do it now, then :)
+> 
+> > Sorry I should have been specific and mention that the discussions
+> > happened at LSF and partly at the KS.
+> > 
+> > The strongest point was made by Rik when he claimed that memcg is not
+> > aware of memory zones and so one memcg with lowlimit larger than the
+> > size of a zone can eat up that zone without any way to free it.
+> 
+> But who actually cares if an individual zone can be reclaimed?
+> 
+> Userspace allocations can fall back to any other zone.  Unless there
+> are hard bindings, but hopefully nobody binds a memcg to a node that
+> is smaller than that memcg's guarantee. 
 
-For the record, I do agree with this.
-I think it's not worthwhile to expend additional work
-to add support for instructions which won't ever be seen
-in any sane program.
+The protected group might spill over to another group and eat it when
+another group would be simply pushed out from the node it is bound to.
 
-Example: iret instruction works in userspace
-(with the correct stack layout, it will successfully
-pop instruction pointer, statck pointer, flags, and continue
-executing whereever that address points to).
-But no one in userspace has any need to do that.
+> And while the pages are not
+> reclaimable, they are still movable, so the NUMA balancer is free to
+> correct any allocation mistakes later on.
 
-And since we need to expend additional work to support it
-(we need to account for the fact it sets EFLAGS),
-we can simply prohibit its probing.
+Do we want to depend on NUMA balancer, though?
 
-However, if a particular insn requires no special support
-whatsoever, it should be enabled even if it's not usually used
-(examples: arpl, lsl). Merely because we want fewer '0' bits
-in the tables - less explaining to ourselves "ok, why is that one
-disallowed?".
+> As to kernel allocations, watermarks and lowmem protection prevent any
+> single zone from filling up with userspace pages, regardless of their
+> reclaimability.
 
-And second, if a particular insn will be used in legitimate programs
-(example: the boatload of new vector insns *will be* used by scientific
-supercomputers, and will need debugging), we can't just disable probing
-of it at the slightest inconvenience.
+Yes but that protects kernel allocations so it wouldn't help with
+competing userspace in different memcgs.
 
-Example: 0f 78 - vmread (Intel VMX. CPL0 insn).
-We now have it disabled. Presumably because it generates GP exception
-when used in userspace, and we aren't sure we handle it absolutely
-correctly. (The "slightest inconvenience"). So we disable it.
-
-But there is a problem. With 66 and f2 prefixes, it's not vmread anymore.
-These are valid, innocuous SSE4A vector ops. We disable them too.
-With EVEX prefix on Knight's Landing CPU these are vector conversion ops.
-We disable them too. But they eventually will be used.
-
-I think we should try to support cases like this one.
-Especially that in this case (we disabled an insn which
-*always* throws an exception) it may even already be working
-- we need to check that. If we do, many more '0' bits can become
-'1' - in fact more than half of them.
-
+> > This can cause additional troubles (permanent reclaim on that zone
+> > and OOM in an extreme situations).
+> 
+> We have protection against wasting CPU cycles on unreclaimable zones.
+> 
+> So how is it different than anonymous/shared memory without swap?  Or
+> mlocked memory?
+-- 
+Michal Hocko
+SUSE Labs
