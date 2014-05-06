@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933898AbaEFDwx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 23:52:53 -0400
-Received: from ozlabs.org ([103.22.144.67]:38013 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933767AbaEFDwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 23:52:51 -0400
-Date: Tue, 6 May 2014 13:52:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Carlos Garcia <carlos@cgarcia.org>, Lokesh Vutla <lokeshvutla@ti.com>,
-        Benoit Cousson <bcousson@baylibre.com>
-Subject: linux-next: manual merge of the trivial tree with Linus'  tree
-Message-Id: <20140506135245.1e11ac1f55aca61df58105d4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__6_May_2014_13_52_45_+1000_Gty1//SSfIRkEWeP"
+	id S1751143AbaEFED2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 00:03:28 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:53484 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804AbaEFED0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 00:03:26 -0400
+From: David Matlack <dmatlack@google.com>
+To: gregkh@linuxfoundation.org
+Cc: liodot@gmail.com, charrer@alacritech.com, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, David Matlack <dmatlack@google.com>
+Subject: [PATCH 0/7] staging: slicoss: bug fixes to stabilize driver
+Date: Mon,  5 May 2014 21:02:30 -0700
+Message-Id: <1399348957-16663-1-git-send-email-dmatlack@google.com>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__6_May_2014_13_52_45_+1000_Gty1//SSfIRkEWeP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The following patch series fixes multiple small but critical bugs in
+the slicoss driver that can cause kernel oopses, panics, and lots of
+memory leaking.
 
-Hi Jiri,
+The intent of this patch series is to provide the ground work so that
+proper work (NAPI, locking re-design, ... see TODO) can be done.
 
-Today's linux-next merge of the trivial tree got a conflict in
-Documentation/devicetree/bindings/arm/omap/omap.txt between commit
-11e2191c2a6f ("ARM: dts: am437x-gp-evm: Add gp dts") from the  tree and
-commit c98be0c96db0 ("doc: spelling error changes") from the trivial tree.
+All patches were tested on the "Mojave" (single port, PCI) card.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+David Matlack (7):
+  staging: slicoss: fix use-after-free in slic_entry_probe
+  staging: slicoss: fix multiple free-after-free in slic_entry_remove
+  staging: slicoss: remove unused members of struct adapter
+  staging: slicoss: remove gratuitous debug infrastructure
+  staging: slicoss: fix dma memory leak
+  staging: slicoss: fix 64-bit isr address bug
+  staging: slicoss: fix use-after-free bug in slic_entry_remove
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+ drivers/staging/slicoss/TODO      |   1 -
+ drivers/staging/slicoss/slic.h    |   5 -
+ drivers/staging/slicoss/slicoss.c | 487 ++------------------------------------
+ 3 files changed, 16 insertions(+), 477 deletions(-)
 
-diff --cc Documentation/devicetree/bindings/arm/omap/omap.txt
-index 36ede19a1630,aa71962352ff..000000000000
---- a/Documentation/devicetree/bindings/arm/omap/omap.txt
-+++ b/Documentation/devicetree/bindings/arm/omap/omap.txt
-@@@ -117,8 -114,5 +117,8 @@@ Boards
-  - AM43x EPOS EVM
-    compatible =3D "ti,am43x-epos-evm", "ti,am4372", "ti,am43"
- =20
- +- AM437x GP EVM
- +  compatible =3D "ti,am437x-gp-evm", "ti,am4372", "ti,am43"
- +
-- - DRA7 EVM:  Software Developement Board for DRA7XX
-+ - DRA7 EVM:  Software Development Board for DRA7XX
-    compatible =3D "ti,dra7-evm", "ti,dra7"
+-- 
+1.9.2
 
---Signature=_Tue__6_May_2014_13_52_45_+1000_Gty1//SSfIRkEWeP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTaFyRAAoJEMDTa8Ir7ZwV/iMP/1IgLGwliBGu1zTQAFAtxNt8
-CRbrXXnMSyebne/S5kVz47OoQiwjBKunptxGJiAIRordQMl38tZ/LtCR33LAkIoD
-kNR6qQNaoLUePsab7TFOgp7BzHrQdusxqYXxUI6SKKjYYKH6vrN6GnWIM0F0m6qh
-BZwUsQdd8/r10Eq4AMJL4Pots+aMmDV0b7DVaEBcDvf1/6dsbWPWz2laazP45Pdu
-qAKwlCpNDS+9OlkPMizdkweqXsSmj3XgfkxFHuwmNYbdcwPBPuiuTHQiXraa995y
-5PMcyxv1mFyFhbd+ahpYKu9DCEb3wWYRi3kZIEqanFqFHDLG4XfqpPnYxk1CrDKu
-MGCHOsm6mTZDFe1oaGSJHgYPIFsQYmDH0UkGsUERYlwDQ2PUWjKc467VhLs4tiWN
-Fx0vNTqqvUoKmJ6/gxfIcCtsBFjxmamRiWbJOvVJsY9k3pmKWj59+c2el1SnH4Wz
-fSP9S4BGD2OSNsmaKpOaRWgCNSqM+P93oZUe1PcNBF4B83ZmEcEJ1kFDdElwwx/R
-fNPGsyKqJJ3S0ZNizU3i0U35N5dOxLLXyGP6DikkmKYnwqcZhGSum5osNr3CRX/V
-N6pPewlT9OPhNXqs+hTesxU3AilNPz+3MLq+XS3O02myT6pdBBaK4j1Lf94mn6om
-BAwFcp+kXicW/PqK3Q3+
-=yN0A
------END PGP SIGNATURE-----
-
---Signature=_Tue__6_May_2014_13_52_45_+1000_Gty1//SSfIRkEWeP--
