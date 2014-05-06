@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757936AbaEFP7p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 11:59:45 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41006 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347AbaEFP7o (ORCPT
+	id S1757984AbaEFQCI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 12:02:08 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:42934 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029AbaEFQCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 11:59:44 -0400
-Date: Tue, 06 May 2014 11:59:41 -0400 (EDT)
-Message-Id: <20140506.115941.428706504757835279.davem@davemloft.net>
-To: josh@joshtriplett.org
-Cc: andi@firstfloor.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tom.zanussi@linux.intel.com, ak@linux.intel.com
-Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140506155703.GA20391@cloud>
-References: <20140506032114.GP2382@two.firstfloor.org>
-	<20140505.232327.578134514220748085.davem@davemloft.net>
-	<20140506155703.GA20391@cloud>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 06 May 2014 08:59:43 -0700 (PDT)
+	Tue, 6 May 2014 12:02:06 -0400
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Tue, 6 May 2014 12:05:41 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf_fuzzer crash on pentium 4
+In-Reply-To: <20140506154901.GL28248@moon>
+Message-ID: <alpine.DEB.2.10.1405061205030.3372@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu> <20140506154637.GW26782@laptop.programming.kicks-ass.net> <20140506154901.GL28248@moon>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: josh@joshtriplett.org
-Date: Tue, 6 May 2014 08:57:03 -0700
+On Tue, 6 May 2014, Cyrill Gorcunov wrote:
 
-> On Mon, May 05, 2014 at 11:23:27PM -0400, David Miller wrote:
->> From: Andi Kleen <andi@firstfloor.org>
->> Date: Tue, 6 May 2014 05:21:14 +0200
->> 
->> > What parts would you remove to get the foot print down for a 2MB
->> > single purpose machine?
->> 
->> I wouldn't use Linux, end of story.
->> 
->> Maybe two decades ago, but not now, those days are over.
+> On Tue, May 06, 2014 at 05:46:37PM +0200, Peter Zijlstra wrote:
+> > On Tue, May 06, 2014 at 11:42:58AM -0400, Vince Weaver wrote:
+> > > 
+> > > So just to be difficult I fired up the perf_fuzzer on a Pentium 4 machine.
+> > > 
+> > > It crashes more or less instantly (sorry for the line wrapping, 
+> > > just got the serial console hooked up and don't have minicom configured 
+> > > right yet).
+> > > 
+> > > this is 3.15-rc4 with the anti-memory corruption patch applied.
+> > 
+> > *sigh*.. the one x86 PMU driver I really don't know. I might actually
+> > have some P4 class hardware, I'll try and get it wired up this week
+> > somewhere.
 > 
-> That's a self-fulfilling prophecy:
+> I'll take a look, thanks.
 
-Making 2MB RAM machines today makes no sense at all.
+This happens quickly enough I can probably generate a small test case, but 
+I won't have time to do that until maybe tomorrow.
 
-The lowest end dirt cheap smartphone, something which fits on
-someone's pocket, has gigabytes of ram.
-
-The only entity looking backwards are the people making these
-improperly provisioned systems.
-
+Vince
