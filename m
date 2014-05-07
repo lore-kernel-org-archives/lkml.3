@@ -1,60 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbaEGXnL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 19:43:11 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:49196 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620AbaEGXnI (ORCPT
+	id S1752849AbaEGXn0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 19:43:26 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:45221 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486AbaEGXnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 19:43:08 -0400
-Date: Thu, 8 May 2014 05:12:56 +0530
-From: Afzal Mohammed <afzal.mohd.ma@gmail.com>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: linux@arm.linux.org.uk, open list <linux-kernel@vger.kernel.org>,
-        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: memset: zero out upper bytes in r1
-Message-ID: <20140507234255.GA2050@afzal-ThinkPad-R50e>
-References: <1399273875-8403-1-git-send-email-a.ryabinin@samsung.com>
+	Wed, 7 May 2014 19:43:20 -0400
+Date: Wed, 7 May 2014 16:43:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: josh@joshtriplett.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 01/45] rcutorture: Add forward-progress
+ checking for writer
+Message-ID: <20140507234313.GP8754@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140429002455.GA15461@linux.vnet.ibm.com>
+ <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140507211649.GA27924@cloud>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1399273875-8403-1-git-send-email-a.ryabinin@samsung.com>
+In-Reply-To: <20140507211649.GA27924@cloud>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050723-0928-0000-0000-000001C74478
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrey,
-
-On Mon, May 05, 2014 at 11:11:13AM +0400, Andrey Ryabinin wrote:
-
-> memset doesn't work right for following example:
+On Wed, May 07, 2014 at 02:16:49PM -0700, josh@joshtriplett.org wrote:
+> On Mon, Apr 28, 2014 at 05:24:49PM -0700, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > The rcutorture output currently does not distinguish between stalls in
+> > the RCU implementation and stalls in the rcu_torture_writer() kthreads.
+> > This commit therefore adds some diagnostics to help distinguish between
+> > these two conditions, at least for the non-SRCU implementations.  (SRCU
+> > does not provide evidence of update-side forward progress by design.)
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > 
-> 	signed char c = 0xF0;
-> 	memset(addr, c, size);
+> The concept makes sense, and the writer state annotations seem like a
+> useful debugging mechanism, but having RCU know about RCU torture types
+> seems fundamentally wrong.  This mechanism accesses rcu_state, which is
+> already implementation-specific, so why not just only define the
+> function for the RCU implementations that support it, and then have a
+> function pointer in the torture-test structure to report a stall?
+
+Ouch.  It is worse than that!  When running RCU-bh or RCU-sched,
+the current code incorrectly returns the statistics for RCU.
+So I do need some way for rcutorture to tell RCU which flavor
+it is testing.
+
+One thing I could do would be to pass in a pointer to the call_rcu()
+function (cur_ops->call from rcutorture's viewpoint), then scan the
+rcu_state structures looking for the selected flavor (rsp->call from
+tree.c's viewpoint).  In the SRCU and RCU-busted cases, the flavor would
+not be found, and I could then just set everything to zero.
+
+Does that seem reasonable, or is there a better way to do this?
+
+							Thanx, Paul
+
+> - Josh Triplett
 > 
-> Variable c is signed, so after typcasting to int the value will be 0xFFFFFFF0.
-> This value will be passed through r1 regitster to memset function.
-> memset doesn't zero out upper bytes in r1, so memory will be filled
-> with 0xFFFFFFF0 instead of expected 0xF0F0F0F0.
+> >  include/linux/rcupdate.h | 19 +++++++++++++++++++
+> >  kernel/rcu/rcutorture.c  | 37 +++++++++++++++++++++++++++++++++++++
+> >  kernel/rcu/tree.c        | 18 ++++++++++++++++++
+> >  3 files changed, 74 insertions(+)
+> > 
+> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > index 00a7fd61b3c6..a6c3898e141e 100644
+> > --- a/include/linux/rcupdate.h
+> > +++ b/include/linux/rcupdate.h
+> > @@ -51,7 +51,17 @@ extern int rcu_expedited; /* for sysctl */
+> >  extern int rcutorture_runnable; /* for sysctl */
+> >  #endif /* #ifdef CONFIG_RCU_TORTURE_TEST */
+> >  
+> > +enum rcutorture_type {
+> > +	RTORT_BUSTED,
+> > +	RTORT_RCU,
+> > +	RTORT_RCU_BH,
+> > +	RTORT_RCU_SCHED,
+> > +	RTORT_SRCU
+> > +};
+> > +
+> >  #if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
+> > +void rcutorture_get_gp_data(enum rcutorture_type test_type, int *flags,
+> > +			    unsigned long *gpnum, unsigned long *completed);
+> >  void rcutorture_record_test_transition(void);
+> >  void rcutorture_record_progress(unsigned long vernum);
+> >  void do_trace_rcu_torture_read(const char *rcutorturename,
+> > @@ -60,6 +70,15 @@ void do_trace_rcu_torture_read(const char *rcutorturename,
+> >  			       unsigned long c_old,
+> >  			       unsigned long c);
+> >  #else
+> > +static inline void rcutorture_get_gp_data(enum rcutorture_type test_type,
+> > +					  int *flags,
+> > +					  unsigned long *gpnum,
+> > +					  unsigned long *completed)
+> > +{
+> > +	*flags = 0;
+> > +	*gpnum = 0;
+> > +	*completed = 0;
+> > +}
+> >  static inline void rcutorture_record_test_transition(void)
+> >  {
+> >  }
+> > diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+> > index bd30bc61bc05..1110db210318 100644
+> > --- a/kernel/rcu/rcutorture.c
+> > +++ b/kernel/rcu/rcutorture.c
+> > @@ -138,6 +138,15 @@ static long n_barrier_attempts;
+> >  static long n_barrier_successes;
+> >  static struct list_head rcu_torture_removed;
+> >  
+> > +static int rcu_torture_writer_state;
+> > +#define RTWS_FIXED_DELAY	0
+> > +#define RTWS_DELAY		1
+> > +#define RTWS_REPLACE		2
+> > +#define RTWS_DEF_FREE		3
+> > +#define RTWS_EXP_SYNC		4
+> > +#define RTWS_STUTTER		5
+> > +#define RTWS_STOPPING		6
+> > +
+> >  #if defined(MODULE) || defined(CONFIG_RCU_TORTURE_TEST_RUNNABLE)
+> >  #define RCUTORTURE_RUNNABLE_INIT 1
+> >  #else
+> > @@ -214,6 +223,7 @@ rcu_torture_free(struct rcu_torture *p)
+> >   */
+> >  
+> >  struct rcu_torture_ops {
+> > +	int ttype;
+> >  	void (*init)(void);
+> >  	int (*readlock)(void);
+> >  	void (*read_delay)(struct torture_random_state *rrsp);
+> > @@ -312,6 +322,7 @@ static void rcu_sync_torture_init(void)
+> >  }
+> >  
+> >  static struct rcu_torture_ops rcu_ops = {
+> > +	.ttype		= RTORT_RCU,
+> >  	.init		= rcu_sync_torture_init,
+> >  	.readlock	= rcu_torture_read_lock,
+> >  	.read_delay	= rcu_read_delay,
+> > @@ -355,6 +366,7 @@ static void rcu_bh_torture_deferred_free(struct rcu_torture *p)
+> >  }
+> >  
+> >  static struct rcu_torture_ops rcu_bh_ops = {
+> > +	.ttype		= RTORT_RCU_BH,
+> >  	.init		= rcu_sync_torture_init,
+> >  	.readlock	= rcu_bh_torture_read_lock,
+> >  	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
+> > @@ -397,6 +409,7 @@ call_rcu_busted(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
+> >  }
+> >  
+> >  static struct rcu_torture_ops rcu_busted_ops = {
+> > +	.ttype		= RTORT_BUSTED,
+> >  	.init		= rcu_sync_torture_init,
+> >  	.readlock	= rcu_torture_read_lock,
+> >  	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
+> > @@ -492,6 +505,7 @@ static void srcu_torture_synchronize_expedited(void)
+> >  }
+> >  
+> >  static struct rcu_torture_ops srcu_ops = {
+> > +	.ttype		= RTORT_SRCU,
+> >  	.init		= rcu_sync_torture_init,
+> >  	.readlock	= srcu_torture_read_lock,
+> >  	.read_delay	= srcu_read_delay,
+> > @@ -527,6 +541,7 @@ static void rcu_sched_torture_deferred_free(struct rcu_torture *p)
+> >  }
+> >  
+> >  static struct rcu_torture_ops sched_ops = {
+> > +	.ttype		= RTORT_RCU_SCHED,
+> >  	.init		= rcu_sync_torture_init,
+> >  	.readlock	= sched_torture_read_lock,
+> >  	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
+> > @@ -699,12 +714,15 @@ rcu_torture_writer(void *arg)
+> >  	set_user_nice(current, MAX_NICE);
+> >  
+> >  	do {
+> > +		rcu_torture_writer_state = RTWS_FIXED_DELAY;
+> >  		schedule_timeout_uninterruptible(1);
+> >  		rp = rcu_torture_alloc();
+> >  		if (rp == NULL)
+> >  			continue;
+> >  		rp->rtort_pipe_count = 0;
+> > +		rcu_torture_writer_state = RTWS_DELAY;
+> >  		udelay(torture_random(&rand) & 0x3ff);
+> > +		rcu_torture_writer_state = RTWS_REPLACE;
+> >  		old_rp = rcu_dereference_check(rcu_torture_current,
+> >  					       current == writer_task);
+> >  		rp->rtort_mbtest = 1;
+> > @@ -721,8 +739,10 @@ rcu_torture_writer(void *arg)
+> >  			else
+> >  				exp = gp_exp;
+> >  			if (!exp) {
+> > +				rcu_torture_writer_state = RTWS_DEF_FREE;
+> >  				cur_ops->deferred_free(old_rp);
+> >  			} else {
+> > +				rcu_torture_writer_state = RTWS_EXP_SYNC;
+> >  				cur_ops->exp_sync();
+> >  				list_add(&old_rp->rtort_free,
+> >  					 &rcu_torture_removed);
+> > @@ -743,8 +763,10 @@ rcu_torture_writer(void *arg)
+> >  			}
+> >  		}
+> >  		rcutorture_record_progress(++rcu_torture_current_version);
+> > +		rcu_torture_writer_state = RTWS_STUTTER;
+> >  		stutter_wait("rcu_torture_writer");
+> >  	} while (!torture_must_stop());
+> > +	rcu_torture_writer_state = RTWS_STOPPING;
+> >  	torture_kthread_stopping("rcu_torture_writer");
+> >  	return 0;
+> >  }
+> > @@ -937,6 +959,7 @@ rcu_torture_printk(char *page)
+> >  	int i;
+> >  	long pipesummary[RCU_TORTURE_PIPE_LEN + 1] = { 0 };
+> >  	long batchsummary[RCU_TORTURE_PIPE_LEN + 1] = { 0 };
+> > +	static unsigned long rtcv_snap = ULONG_MAX;
+> >  
+> >  	for_each_possible_cpu(cpu) {
+> >  		for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++) {
+> > @@ -997,6 +1020,20 @@ rcu_torture_printk(char *page)
+> >  	page += sprintf(page, "\n");
+> >  	if (cur_ops->stats)
+> >  		cur_ops->stats(page);
+> > +	if (rtcv_snap == rcu_torture_current_version &&
+> > +	    rcu_torture_current != NULL) {
+> > +		int __maybe_unused flags;
+> > +		unsigned long __maybe_unused gpnum;
+> > +		unsigned long __maybe_unused completed;
+> > +
+> > +		rcutorture_get_gp_data(cur_ops->ttype,
+> > +				       &flags, &gpnum, &completed);
+> > +		page += sprintf(page,
+> > +				"??? Writer stall state %d g%lu c%lu f%#x\n",
+> > +				rcu_torture_writer_state,
+> > +				gpnum, completed, flags);
+> > +	}
+> > +	rtcv_snap = rcu_torture_current_version;
+> >  }
+> >  
+> >  /*
+> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> > index 0c47e300210a..032106df7391 100644
+> > --- a/kernel/rcu/tree.c
+> > +++ b/kernel/rcu/tree.c
+> > @@ -294,6 +294,24 @@ void rcutorture_record_test_transition(void)
+> >  EXPORT_SYMBOL_GPL(rcutorture_record_test_transition);
+> >  
+> >  /*
+> > + * Send along grace-period-related data for rcutorture diagnostics.
+> > + */
+> > +void rcutorture_get_gp_data(enum rcutorture_type test_type, int *flags,
+> > +			    unsigned long *gpnum, unsigned long *completed)
+> > +{
+> > +	if (test_type == RTORT_SRCU || test_type == RTORT_BUSTED) {
+> > +		*flags = 0;
+> > +		*gpnum = 0;
+> > +		*completed = 0;
+> > +		return;
+> > +	}
+> > +	*flags = ACCESS_ONCE(rcu_state->gp_flags);
+> > +	*gpnum = ACCESS_ONCE(rcu_state->gpnum);
+> > +	*completed = ACCESS_ONCE(rcu_state->completed);
+> > +}
+> > +EXPORT_SYMBOL_GPL(rcutorture_get_gp_data);
+> > +
+> > +/*
+> >   * Record the number of writer passes through the current rcutorture test.
+> >   * This is also used to correlate debugfs tracing stats with the rcutorture
+> >   * messages.
+> > -- 
+> > 1.8.1.5
+> > 
+> 
 
-> --- a/arch/arm/lib/memset.S
-> +++ b/arch/arm/lib/memset.S
-> @@ -22,7 +22,8 @@ ENTRY(memset)
->  /*
->   * we know that the pointer in ip is aligned to a word boundary.
->   */
-> -1:	orr	r1, r1, r1, lsl #8
-> +1:	and	r1, r1, #0xff
-> +	orr	r1, r1, r1, lsl #8
-
-int is to be converted to unsigned char in memset, would having above
-change immediately upon entry to memset rather than at a place where it
-won't always execute make intention clearer ? (although it doesn't make
-difference)
-
-ubfx r1, r1, #0, #8 would have given the needed typecasting, but seems
-it is available only on ARMv6T2 & above.
-
-Regards
-Afzal
