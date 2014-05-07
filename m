@@ -1,22 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933933AbaEGNcr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:32:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45419 "EHLO
+	id S933950AbaEGNdD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:33:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45410 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932855AbaEGNOG (ORCPT
+	with ESMTP id S932820AbaEGNOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:14:06 -0400
+	Wed, 7 May 2014 09:14:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Jiang <dave.jiang@intel.com>,
-        Ed Ciechanowski <ed.ciechanowski@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, Tejun Heo <tj@kernel.org>,
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 16/70] libata/ahci: accommodate tag ordered controllers
-Date: Wed,  7 May 2014 14:12:19 +0100
-Message-Id: <1399468393-10140-17-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 13/70] clocksource: Exynos_mct: Register clock event after request_irq()
+Date: Wed,  7 May 2014 14:12:16 +0100
+Message-Id: <1399468393-10140-14-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -29,100 +35,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 8a4aeec8d2d6a3edeffbdfae451cdf05cbf0fefd upstream.
+commit 8db6e5104b77de5d0b7002b95069da0992a34be9 upstream.
 
-The AHCI spec allows implementations to issue commands in tag order
-rather than FIFO order:
+After hotplugging CPU1 the first call of interrupt handler for CPU1
+oneshot timer was called on CPU0 because it fired before setting IRQ
+affinity. Affected are SoCs where Multi Core Timer interrupts are
+shared (SPI), e.g. Exynos 4210.
 
-	5.3.2.12 P:SelectCmd
-	HBA sets pSlotLoc = (pSlotLoc + 1) mod (CAP.NCS + 1)
-	or HBA selects the command to issue that has had the
-	PxCI bit set to '1' longer than any other command
-	pending to be issued.
+During setup of the MCT timers the clock event device should be
+registered after setting the affinity for interrupt. This will prevent
+starting the timer too early.
 
-The result is that commands posted sequentially (time-wise) may play out
-of sequence when issued by hardware.
-
-This behavior has likely been hidden by drives that arrange for commands
-to complete in issue order.  However, it appears recent drives (two from
-different vendors that we have found so far) inflict out-of-order
-completions as a matter of course.  So, we need to take care to maintain
-ordered submission, otherwise we risk triggering a drive to fall out of
-sequential-io automation and back to random-io processing, which incurs
-large latency and degrades throughput.
-
-This issue was found in simple benchmarks where QD=2 seq-write
-performance was 30-50% *greater* than QD=32 seq-write performance.
-
-Tagging for -stable and making the change globally since it has a low
-risk-to-reward ratio.  Also, word is that recent versions of an unnamed
-OS also does it this way now.  So, drives in the field are already
-experienced with this tag ordering scheme.
-
-Cc: Dave Jiang <dave.jiang@intel.com>
-Cc: Ed Ciechanowski <ed.ciechanowski@intel.com>
-Reviewed-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Tomasz Figa <t.figa@samsung.com>,
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+Link: http://lkml.kernel.org/r/20140416143316.299247848@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/libata-core.c | 21 +++++++++++++--------
- include/linux/libata.h    |  1 +
- 2 files changed, 14 insertions(+), 8 deletions(-)
+ drivers/clocksource/exynos_mct.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index ac04311..908c07c 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4765,21 +4765,26 @@ void swap_buf_le16(u16 *buf, unsigned int buf_words)
- static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
- {
- 	struct ata_queued_cmd *qc = NULL;
--	unsigned int i;
-+	unsigned int i, tag;
+diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
+index b2bbc41..14bc622 100644
+--- a/drivers/clocksource/exynos_mct.c
++++ b/drivers/clocksource/exynos_mct.c
+@@ -417,8 +417,6 @@ static int exynos4_local_timer_setup(struct clock_event_device *evt)
+ 	evt->set_mode = exynos4_tick_set_mode;
+ 	evt->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
+ 	evt->rating = 450;
+-	clockevents_config_and_register(evt, clk_rate / (TICK_BASE_CNT + 1),
+-					0xf, 0x7fffffff);
  
- 	/* no command while frozen */
- 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
- 		return NULL;
+ 	exynos4_mct_write(TICK_BASE_CNT, mevt->base + MCT_L_TCNTB_OFFSET);
  
--	/* the last tag is reserved for internal command. */
--	for (i = 0; i < ATA_MAX_QUEUE - 1; i++)
--		if (!test_and_set_bit(i, &ap->qc_allocated)) {
--			qc = __ata_qc_from_tag(ap, i);
-+	for (i = 0; i < ATA_MAX_QUEUE; i++) {
-+		tag = (i + ap->last_tag + 1) % ATA_MAX_QUEUE;
-+
-+		/* the last tag is reserved for internal command. */
-+		if (tag == ATA_TAG_INTERNAL)
-+			continue;
-+
-+		if (!test_and_set_bit(tag, &ap->qc_allocated)) {
-+			qc = __ata_qc_from_tag(ap, tag);
-+			qc->tag = tag;
-+			ap->last_tag = tag;
- 			break;
- 		}
--
--	if (qc)
--		qc->tag = i;
-+	}
+@@ -435,6 +433,8 @@ static int exynos4_local_timer_setup(struct clock_event_device *evt)
+ 	} else {
+ 		enable_percpu_irq(mct_irqs[MCT_L0_IRQ], 0);
+ 	}
++	clockevents_config_and_register(evt, clk_rate / (TICK_BASE_CNT + 1),
++					0xf, 0x7fffffff);
  
- 	return qc;
+ 	return 0;
  }
-diff --git a/include/linux/libata.h b/include/linux/libata.h
-index 611d733..d0c64ab 100644
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -773,6 +773,7 @@ struct ata_port {
- 	unsigned long		qc_allocated;
- 	unsigned int		qc_active;
- 	int			nr_active_links; /* #links with active qcs */
-+	unsigned int		last_tag;	/* track next tag hw expects */
- 
- 	struct ata_link		link;		/* host default link */
- 	struct ata_link		*slave_link;	/* see ata_slave_link_init() */
 -- 
 1.9.1
 
