@@ -1,102 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932885AbaEGMzl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 08:55:41 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58521 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751487AbaEGMzj (ORCPT
+	id S932908AbaEGMzy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 08:55:54 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52741 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932823AbaEGMzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 08:55:39 -0400
-Date: Wed, 7 May 2014 14:55:36 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 17/20] phy: Add support for USB cluster on the Armada
- 375 SoC
-Message-ID: <20140507145536.29003dfa@free-electrons.com>
-In-Reply-To: <20140506205330.GA27308@arch.cereza>
-References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com>
-	<1399335255-589-18-git-send-email-gregory.clement@free-electrons.com>
-	<20140506205330.GA27308@arch.cereza>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 7 May 2014 08:55:53 -0400
+Date: Wed, 7 May 2014 14:55:48 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched/clock: cleanup, remove wrap_{max|min}().
+Message-ID: <20140507125548.GL30445@twins.programming.kicks-ass.net>
+References: <1399463338-15507-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u65IjBhB3TIa72Vp"
+Content-Disposition: inline
+In-Reply-To: <1399463338-15507-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Ezequiel Garcia,
 
-On Tue, 6 May 2014 17:53:30 -0300, Ezequiel Garcia wrote:
+--u65IjBhB3TIa72Vp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > +#define USB2_PHY_CONFIG_ENABLE BIT(0) /* active low */
-> > +
-> 
-> I still think it's more readable to use USB2_PHY_CONFIG_DISABLE.
-> It's just a nitpick, though.
+On Wed, May 07, 2014 at 08:48:58PM +0900, Dongsheng Yang wrote:
+> I am not sure why we need the wrap_{max|min}() in kernel/sched/clock.c.
+> But I checked the implementation of max() and min() in linux/kernel.h, I think
+> we can reuse them here rather than introduce a new function named
+> wrap_{max|min}().
 
-Yes, fixed.
+wrap is a good hint there.. they're supposed to deal with the clock
+wrapping. Of course 2^64 ns is a rather long time (~584 years in fact),
+but that doesn't mean we shouldn't care.
 
-> > +static int armada375_usb_phy_probe(struct platform_device *pdev)
-> > +{
-> > +	struct device *dev = &pdev->dev;
-> > +	struct phy *phy;
-> > +	struct device_node *np = dev->of_node;
-> > +	struct phy_provider *phy_provider;
-> > +	void __iomem *usb_cluster_base;
-> > +	struct device_node *xhci_node;
-> > +	int i;
-> > +
-> > +	usb_cluster_base = of_iomap(np, 0);
-> > +	BUG_ON(!usb_cluster_base);
-> > +
-> 
-> Isn't a bit extreme to call BUG_ON (and thus bring down the whole system)
-> in a phy driver?
+And no, min/max don't do the right thing.
 
-Indeed, fixed by a more normal error return.
+--u65IjBhB3TIa72Vp
+Content-Type: application/pgp-signature
 
-> > +	for (i = 0; i < NB_PHY; i++) {
-> > +		phy = devm_phy_create(dev, &armada375_usb_phy_ops, NULL);
-> > +		if (IS_ERR(phy))
-> > +			dev_err(dev, "failed to create PHY n%d\n", i);
-> > +
-> 
-> I think you're missing a continue/break here.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Indeed, fixed, I just do a return from the ->probe() function if
-creating the PHY fails.
+iQIcBAEBAgAGBQJTai1UAAoJEHZH4aRLwOS63I0P+wRmIeVGoHtTtO/i3I1vxq7I
+No5WMj1cmEzg33Es5Yi475aqxG8dey4NTfWNdeJ6bPRHltB5MCa+LFdF32gNQO09
+PqrL/0e4yj9qM8Jb/qxOJu3dmnRxEdAmQhiVKf5ogPZfooLojDzQsLQvYdEuuank
+PlY7K/QedA68SQ8rucwJGESh63q5M+PxofwEg+i0OeSA6L2iWwK0ptAEputCKvs3
+6Nqc+wB8EA20v3u9m1TaBOFqCH/GqUWnhvEoKHHps7jsYlsR+CN1x7jL/BuOdf7W
+KDBFVPE2hJsgb6InhE7EkwUqIpNze5dJyT9pY7VcGQJSWoXgIdOGb2ES2t9sJX3i
+Ey5QEj6NJEs5uuFP7de6Nxv7OLf6/+AQGI5a6eF/h3WpusXaaH4OTYxJ+w4ql+ek
+SswG0pICn4I8Dy6oUeJpQucWQOa0EPcvKouszPB6dztZdtAyBy5nqF89O7OJTMRD
+iZVE3hXNfqio8T//FDcYbR2Hyg7HxpiiwNVdcLuChCTjzGmViAlr6Qgu4PIWuRJG
+w/TMaGBFnWtoFxeLizX+gXJxsgcCXkyGgg0oGNFB7+5+dRA1cVng1jZsnaj/HG2V
+l+9wyWl1J95BEWCTN29ELQB4cuUmDtDehU2MATb9JT4nRuqr491YnMcpaakvO7oi
+1MoZkjzOQ25jLgqbWmmz
+=TsNX
+-----END PGP SIGNATURE-----
 
-> > +MODULE_DESCRIPTION("Armada 375 USB cluster driver");
-> > +MODULE_AUTHOR("Gregory CLEMENT <gregory.clement@free-electrons.com>");
-> > +MODULE_LICENSE("GPL");
-> 
-> GPL v2 ?
-
-Well, using just "GPL" seems to be the more common usage through the
-kernel:
-
-linux/drivers $ git grep MODULE_LICENSE | grep "\"GPL\"" | wc -l
-4276
-linux/drivers $ git grep MODULE_LICENSE | grep "\"GPLv2\"" | wc -l
-5
-linux/drivers $ git grep MODULE_LICENSE | grep "\"GPL v2\"" | wc -l
-841
-
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+--u65IjBhB3TIa72Vp--
