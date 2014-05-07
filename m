@@ -1,96 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932440AbaEGJsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:48:18 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:40006 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754715AbaEGJsQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:48:16 -0400
-X-AuditID: cbfec7f5-b7fae6d000004d6d-ad-536a015d30b4
-Message-id: <1399456105.15392.3.camel@AMDC1943>
-Subject: Re: [PATCH v2 1/3] regulator: s2mps11: Fix accidental enable of buck6
- ramp delay
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Sachin Kamat <sachin.kamat@linaro.org>, Axel Lin <axel.lin@ingics.com>,
-        Sangbeom Kim <sbkim73@samsung.com>
-Date: Wed, 07 May 2014 11:48:25 +0200
-In-reply-to: <1399358258-21536-1-git-send-email-k.kozlowski@samsung.com>
-References: <1399358258-21536-1-git-send-email-k.kozlowski@samsung.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu1
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xa7qxjFnBBifbZS2OzPnKbDH14RM2
-	i29XOpgsLu+aw2Zx8k8vo8XFFV+YHNg8ds66y+7R9rPMY9OqTjaPO9f2sHn0bVnF6PF5k1wA
-	WxSXTUpqTmZZapG+XQJXRseWbWwFj/krJs84w97AeJWni5GTQ0LARGJ60z5GCFtM4sK99Wxd
-	jFwcQgJLGSUmPD/NCuF8ZpTYP3UbUxcjBwevgL7E8heKIA3CAtESK46dA2tmEzCW2Lx8CRuI
-	LSKgLHH1+14WkF5mga2MEuuWt7GCJFgEVCVWtS9jBrE5BTwk3qzZBhYXEnCXWHr+PjuIzSyg
-	LjFp3iJmiIuUJebtP8YEYvMKCEr8mHyPBaJGXmLzmrfMExgFZiFpmYWkbBaSsgWMzKsYRVNL
-	kwuKk9JzjfSKE3OLS/PS9ZLzczcxQoL86w7GpcesDjEKcDAq8fAukMkIFmJNLCuuzD3EKMHB
-	rCTCa/k3M1iINyWxsiq1KD++qDQntfgQIxMHp1QD43SVcMbZSnsO2vjn8THKKC04Om37vJcs
-	zo2sz1eqfV61f4V4jNMP8SO3TMx+7Zv+fdGLZUJL9mS8OqFxoM3OgOt1nrOKbSGzjIolw6Wf
-	a9hZV7c2mlcUKVS9qM4W37ZM/ar+ywslmzgE5rO/qyv5/05Ob/VfiY1H407dv/KHvcnfrV3v
-	1WTVeCWW4oxEQy3mouJEAKnHSS9QAgAA
+	id S932530AbaEGJtC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:49:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45860 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932501AbaEGJs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 05:48:59 -0400
+Message-ID: <536A0160.8070805@redhat.com>
+Date: Wed, 07 May 2014 11:48:16 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux ARM <linux-arm-kernel@lists.infradead.org>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 00/20] USB support for Armada 38x and Armada 375
+References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com> <loom.20140507T102941-222@post.gmane.org> <5369FB36.7040404@gmail.com>
+In-Reply-To: <5369FB36.7040404@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I forgot to CC the stable.
+Hi,
 
-Mark, if the patches are OK and if you'll apply them, could you add a CC
-stable to the commit msg?
+On 05/07/2014 11:21 AM, Sebastian Hesselbarth wrote:
+> [Adding back the original Cc-List]
+> 
+> On 05/07/2014 10:33 AM, Hans de Goede wrote:
+>> Hi Gregory,
+>>
+>> Gregory CLEMENT <gregory.clement <at> free-electrons.com> writes:
+>>
+>>> This patch set adds the USB support for the Armada 38x Armada
+>>> 375. These SoCs use an xHCI but still need specific initialization,
+>>> mainly to setup the windows memory on the mbus. They also use the same
+>>> controller that the other mvebu SoC for EHCI.
+>>
+>> <snip>
+>>
+>>> Gregory CLEMENT (20):
+>>>    usb: ehci-orion: Fix clock reference leaking
+>>>    usb: ehci-orion: Add the optional PHY support
+>>
+>> If you're using a proper phy driver, do you really need a soc specific ehci
+>> driver? I've spend a lot of time during the last release cycle to make
+>> ehci-platform a lot more generic, including adding (optional) phy support to
+>> it. It would be great if the new Armada SoCs could use ehci-platform instead
+>> of extending ehci-orion to cover more models (ideally most ehci-foo drivers
+>> would go away completely). I've no idea how feasible it is to use
+>> ehci-platform in your case, but IMHO it should at least be considered.
+> 
+> Hans,
+> 
+> unfortunately we currently have no USB-PHY driver for the other mvebu
+> SoCs. I have started some code grabbing for barebox bootloader and plan
+> to add proper USB-PHYs for Linux later.
+> 
+> There is one thing very specific to mvebu SoCs, which is the mbus:
+> you need to setup upstream memory windows for the usb bus master.
+> From my current understanding, that will require at least a minimal
+> stub to remain for ehci-orion.
+> 
+> I do think that most of the stuff in ehci-orion can (and should) be
+> replaced with ehci-platform then. So, we definitely consider reusing
+> the generic foo-platform drivers on all opportunities but IMHO we are
+> not yet ready for it.
 
-Best regards,
-Krzysztof
+Ok, thanks for explaining.
 
+Regards,
 
-On wto, 2014-05-06 at 08:37 +0200, Krzysztof Kozlowski wrote:
-> S2MPS11 supports enabling/disabling ramp delay only for buck[2346].
-> Other bucks have ramp delay enabled always.
-> 
-> However the bit shift for enabling buck6 ramp delay in register is equal
-> to 0. When ramp delay was set for the bucks unsupporting enable/disable
-> (buck[15789] and buck10), the ramp delay for buck6 was also enabled.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Fixes: b96244fad953 ("regulator: s2mps11: Don't check enable_shift before setting enable ramp rate")
-> ---
-> 
-> Changes since v2:
->  * Apply Axel Lin's suggestion (don't change the meaning
->    of enable_shift variable).
-> 
-> ---
->  drivers/regulator/s2mps11.c | 15 ++++++++++-----
->  1 file changed, 10 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-> index e713c162fbd4..aaca37e1424f 100644
-> --- a/drivers/regulator/s2mps11.c
-> +++ b/drivers/regulator/s2mps11.c
-> @@ -202,11 +202,16 @@ static int s2mps11_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
->  	if (!ramp_enable)
->  		goto ramp_disable;
->  
-> -	ret = regmap_update_bits(rdev->regmap, S2MPS11_REG_RAMP,
-> -				 1 << enable_shift, 1 << enable_shift);
-> -	if (ret) {
-> -		dev_err(&rdev->dev, "failed to enable ramp rate\n");
-> -		return ret;
-> +	/* Ramp delay can be enabled/disabled only for buck[2346] */
-> +	if ((rdev_get_id(rdev) >= S2MPS11_BUCK2 &&
-> +			rdev_get_id(rdev) <= S2MPS11_BUCK4) ||
-> +			rdev_get_id(rdev) == S2MPS11_BUCK6)  {
-> +		ret = regmap_update_bits(rdev->regmap, S2MPS11_REG_RAMP,
-> +					 1 << enable_shift, 1 << enable_shift);
-> +		if (ret) {
-> +			dev_err(&rdev->dev, "failed to enable ramp rate\n");
-> +			return ret;
-> +		}
->  	}
->  
->  	ramp_val = get_ramp_delay(ramp_delay);
-
+Hans
