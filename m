@@ -1,149 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797AbaEGFK2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 01:10:28 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:43404 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905AbaEGFK0 convert rfc822-to-8bit (ORCPT
+	id S1752200AbaEGFOn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 01:14:43 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:12682 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793AbaEGFOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 01:10:26 -0400
-Content-Type: text/plain; charset=US-ASCII
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [linux-sunxi] [PATCH 7/7] ARM: sunxi: dt: add APP4-EVB1 board support
-From: Koen Kooi <koen@dominion.thruhere.net>
-In-Reply-To: <1399434623-20383-8-git-send-email-maxime.ripard@free-electrons.com>
-Date: Wed, 7 May 2014 07:10:21 +0200
-Cc: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        kishon@ti.com, hdegoede@redhat.com,
-        Boris Brezillon <boris@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <EEF98E4B-881E-469C-A1C7-8B4EB8825467@dominion.thruhere.net>
-References: <1399434623-20383-1-git-send-email-maxime.ripard@free-electrons.com> <1399434623-20383-8-git-send-email-maxime.ripard@free-electrons.com>
-To: linux-sunxi@googlegroups.com
-X-Mailer: Apple Mail (2.1874)
+	Wed, 7 May 2014 01:14:40 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=EUC-KR
+X-AuditID: cbfee68d-b7f4e6d000004845-44-5369c13e2b4a
+Content-transfer-encoding: 8BIT
+Message-id: <5369C13C.3080506@samsung.com>
+Date: Wed, 07 May 2014 14:14:36 +0900
+From: Seung-Woo Kim <sw0312.kim@samsung.com>
+Reply-to: sw0312.kim@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011
+ Thunderbird/16.0.1
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Inki Dae <inki.dae@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        seanpaul@chromium.org, marcheu@chromium.org,
+        Seung-Woo Kim <sw0312.kim@samsung.com>
+Subject: Re: [PATCH 2/4] drm/exynos/mixer: use MXR_GRP_SXY_SY
+References: <1399217181-26442-1-git-send-email-djkurtz@chromium.org>
+ <1399217181-26442-3-git-send-email-djkurtz@chromium.org>
+In-reply-to: <1399217181-26442-3-git-send-email-djkurtz@chromium.org>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsWyRsSkQNfuYGawwflteha9504yWTTOmM9q
+	ceXrezaLSfcnsFi8uHeRxaJ3wVU2i7NNb9gtNj2+xmpxedccNosZ5/cxWcw79JvR4u6Gs4wW
+	Mya/ZHPg9ZjdcJHFY/u3B6we97uPM3lsXlLv0bdlFaPH501yAWxRXDYpqTmZZalF+nYJXBnL
+	Nz9mK+jmqbgxcSpTA+Mrzi5GTg4JAROJ543zGSFsMYkL99azgdhCAksZJfYdsoOp2b3yAnMX
+	IxdQfDqjxOTzj5hAErwCghI/Jt9j6WLk4GAWkJc4cikbJMwsoCEx9fVpRoj614wSM5ZOYYOo
+	15I4s+cM2DIWAVWJBzM6WEFsNgEdif1LfrNCLFaQuDLxGDvITFGBMImdm9NBTBEBdYlfN5xA
+	RjILLGOWuLz1FNhIYQFbie62F+wQrfUSsxvngMU5BVwlNpz+yQ7SICEwlUNiy94ZTBB7BSS+
+	TT4EdrOEgKzEpgPMED9KShxccYNlAqP4LCSfzUL4bBaSzxYwMq9iFE0tSC4oTkovMtQrTswt
+	Ls1L10vOz93ECIzm0/+e9e5gvH3A+hBjMtDGicxSosn5wGSQVxJvaGxmZGFqYmpsZG5pRpqw
+	kjhv0sOkICGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MG94WTbx4JPTsk6o/lUtPsHEr27qV
+	22/aWHuGPTtg+cYb0dxePbJh7vsV+5313qQKNK7SUdadtnDnlC9Rx5QfaPfqpXfJ2C3xNDLo
+	KjsgXTDvS+OWzqWzuOYq8Pt2fzHfLLON8aDEFLnZkasstKL0arRX1Wm9nKy0/cCpj4x3jj+5
+	wH8qbMIzJZbijERDLeai4kQAHf/QX/wCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOKsWRmVeSWpSXmKPExsVy+t9jQV27g5nBBpv2qVr0njvJZNE4Yz6r
+	xZWv79ksJt2fwGLx4t5FFoveBVfZLM42vWG32PT4GqvF5V1z2CxmnN/HZDHv0G9Gi7sbzjJa
+	zJj8ks2B12N2w0UWj+3fHrB63O8+zuSxeUm9R9+WVYwenzfJBbBFNTDaZKQmpqQWKaTmJeen
+	ZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gBdqqRQlphTChQKSCwuVtK3wzQh
+	NMRN1wKmMULXNyQIrsfIAA0krGHMWL75MVtBN0/FjYlTmRoYX3F2MXJySAiYSOxeeYEZwhaT
+	uHBvPVsXIxeHkMB0RonJ5x8xgSR4BQQlfky+x9LFyMHBLCAvceRSNkiYWUBDYurr04wQ9a8Z
+	JWYsncIGUa8lcWbPGUYQm0VAVeLBjA5WEJtNQEdi/5LfYLaQgILElYnH2EFmigqESezcnA5i
+	igioS/y64QQykllgGbPE5a2nwEYKC9hKdLe9YIdorZeY3TgHLM4p4Cqx4fRP9gmMgrOQXDoL
+	4dJZSC5dwMi8ilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4WTyT3sG4qsHiEKMAB6MSD6/F
+	24xgIdbEsuLK3EOMEhzMSiK8Nvsyg4V4UxIrq1KL8uOLSnNSiw8xJgP9OZFZSjQ5H5jI8kri
+	DY1NzIwsjcwNLYyMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBMU3VZdvC2mlWbax7
+	zrs3xGY8jGFvTnR2UX3c2ZtxdEvkbS4Gvc2rupLW/itm/7pju8WmeFU2sahlte39n/JdFr5l
+	U/ZgmZyh7qCgwlG14MA7OXNp54i5m2qXB/sYNjWkvZG9pLL6nfvbJ5UX1213dXww603i8QcS
+	zj/Tj/1cWp8vqPPtL+cTJZbijERDLeai4kQA7JNUpVoDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Daniel,
 
-Op 7 mei 2014, om 05:50 heeft Maxime Ripard <maxime.ripard@free-electrons.com> het volgende geschreven:
-
-> From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+On 2014³â 05¿ù 05ÀÏ 00:26, Daniel Kurtz wrote:
+> Mixer hardware supports offsetting dma from start of source buffer using
+> the MXR_GRP_SXY register.
 > 
-> The APP4 EVB1 development boards embeds an A31, together with some NAND, one SD
-> card slot, and one SDIO + UART WiFi and Bluetooth chip, a few I2C buses, USB,
-> and a LCD display.
-> 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 > ---
-> arch/arm/boot/dts/Makefile                |  1 +
-> arch/arm/boot/dts/sun6i-a31-app4-evb1.dts | 63 +++++++++++++++++++++++++++++++
-> 2 files changed, 64 insertions(+)
-> create mode 100644 arch/arm/boot/dts/sun6i-a31-app4-evb1.dts
+>  drivers/gpu/drm/exynos/exynos_mixer.c | 8 +++-----
+>  1 file changed, 3 insertions(+), 5 deletions(-)
 > 
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index ffa3f5ef27d3..d50c0895a9d5 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -343,6 +343,7 @@ dtb-$(CONFIG_ARCH_SUNXI) += \
-> 	sun5i-a10s-olinuxino-micro.dtb \
-> 	sun5i-a13-olinuxino.dtb \
-> 	sun5i-a13-olinuxino-micro.dtb \
-> +	sun6i-a31-app4-evb1.dtb \
-> 	sun6i-a31-colombus.dtb \
-> 	sun6i-a31-m9.dtb \
-> 	sun7i-a20-cubieboard2.dtb \
-> diff --git a/arch/arm/boot/dts/sun6i-a31-app4-evb1.dts b/arch/arm/boot/dts/sun6i-a31-app4-evb1.dts
-> new file mode 100644
-> index 000000000000..270ab978f858
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/sun6i-a31-app4-evb1.dts
-> @@ -0,0 +1,63 @@
-> +/*
-> + * Copyright 2014 Boris Brezillon
-> + *
-> + * Boris Brezillon <boris.brezillon@free-electrons.com>
-> + *
-> + * The code contained herein is licensed under the GNU General Public
-> + * License. You may obtain a copy of the GNU General Public License
-> + * Version 2 or later at the following locations:
+> diff --git a/drivers/gpu/drm/exynos/exynos_mixer.c b/drivers/gpu/drm/exynos/exynos_mixer.c
+> index 475eb49..40cf39b 100644
+> --- a/drivers/gpu/drm/exynos/exynos_mixer.c
+> +++ b/drivers/gpu/drm/exynos/exynos_mixer.c
+> @@ -529,13 +529,11 @@ static void mixer_graph_buffer(struct mixer_context *ctx, int win)
+>  
+>  	dst_x_offset = win_data->crtc_x;
+>  	dst_y_offset = win_data->crtc_y;
+> +	src_x_offset = win_data->fb_x;
+> +	src_y_offset = win_data->fb_y;
+>  
+>  	/* converting dma address base and source offset */
+> -	dma_addr = win_data->dma_addr
+> -		+ (win_data->fb_x * win_data->bpp >> 3)
+> -		+ (win_data->fb_y * win_data->fb_width * win_data->bpp >> 3);
+> -	src_x_offset = 0;
+> -	src_y_offset = 0;
+> +	dma_addr = win_data->dma_addr;
 
-Doesn't the kernel try to avoid the 'or later' clause?
+Basically, you are right and source offset register can be used. But
+because of limitation of resolution for mixer up to 1920x1080, I
+considered modified soruce dma address to set one frame buffer, which is
+bigger than 1920x1080, on to both fimd and hdmi.
 
-regards,
+Regards,
+- Seung-Woo Kim
 
-Koen
-
-
-> + *
-> + * http://www.opensource.org/licenses/gpl-license.html
-> + * http://www.gnu.org/copyleft/gpl.html
-> + */
-> +
-> +/dts-v1/;
-> +/include/ "sun6i-a31.dtsi"
-> +
-> +/ {
-> +	model = "Allwinner A31 APP4 EVB1 Evaluation Board";
-> +	compatible = "allwinner,app4-evb1", "allwinner,sun6i-a31";
-> +
-> +	chosen {
-> +		bootargs = "earlyprintk console=ttyS0,115200";
-> +	};
-> +
-> +	soc@01c00000 {
-> +		pio: pinctrl@01c20800 {
-> +			usb1_vbus_pin_a: usb1_vbus_pin@0 {
-> +				allwinner,pins = "PH27";
-> +				allwinner,function = "gpio_out";
-> +				allwinner,drive = <0>;
-> +				allwinner,pull = <0>;
-> +			};
-> +		};
-> +
-> +		usbphy: phy@01c19400 {
-> +			usb1_vbus-supply = <&reg_usb1_vbus>;
-> +			status = "okay";
-> +		};
-> +
-> +		ehci0: usb@01c1a000 {
-> +			status = "okay";
-> +		};
-> +
-> +		uart0: serial@01c28000 {
-> +			pinctrl-names = "default";
-> +			pinctrl-0 = <&uart0_pins_a>;
-> +			status = "okay";
-> +		};
-> +	};
-> +
-> +	reg_usb1_vbus: usb1-vbus {
-> +		compatible = "regulator-fixed";
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&usb1_vbus_pin_a>;
-> +		regulator-name = "usb1-vbus";
-> +		regulator-min-microvolt = <5000000>;
-> +		regulator-max-microvolt = <5000000>;
-> +		enable-active-high;
-> +		gpio = <&pio 7 27 0>;
-> +		status = "okay";
-> +	};
-> +
-> +};
-> -- 
-> 1.9.1
+>  
+>  	if (win_data->scan_flags & DRM_MODE_FLAG_INTERLACE)
+>  		ctx->interlace = true;
 > 
-> -- 
-> You received this message because you are subscribed to the Google Groups "linux-sunxi" group.
-> To unsubscribe from this group and stop receiving emails from it, send an email to linux-sunxi+unsubscribe@googlegroups.com.
-> For more options, visit https://groups.google.com/d/optout.
-> 
+
+-- 
+Seung-Woo Kim
+Samsung Software R&D Center
+--
 
