@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718AbaEGQ7K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:59:10 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42671 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751636AbaEGQ7I (ORCPT
+	id S1751813AbaEGQ7q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:59:46 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:27997 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762AbaEGQ7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:59:08 -0400
-Date: Wed, 7 May 2014 12:59:06 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Zhuang Jin Can <jin.can.zhuang@intel.com>
-cc: Felipe Balbi <balbi@ti.com>, USB list <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        <liping.zhou@intel.com>, <david.a.cohen@linux.intel.com>
-Subject: Re: [PATCH] usb: dwc3: ep0: fix delayed status is queued too early
-In-Reply-To: <20140508043902.GI19925@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1405071252550.1325-100000@iolanthe.rowland.org>
+	Wed, 7 May 2014 12:59:44 -0400
+Message-ID: <536A6670.5070107@oracle.com>
+Date: Wed, 07 May 2014 12:59:28 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: mm: gpf in global_dirty_limits
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 May 2014, Zhuang Jin Can wrote:
+Hi all,
 
-> > A similar problem can occur in the opposite sense: The thread queuing
-> > the delayed status request might be delayed for so long that another
-> > SETUP packet arrives from the host first.  In that case, the delayed
-> > status request is a response for a stale transfer, so it must not be
-> > sent to the host.
-> > 
-> > Do dwc3 and composite.c handle this case correctly?
-> > 
-> So the situation you describe is that we get the STATUS XferNotReady
-> event, but gadget queues a status request when control transfer already
-> failed.
+While fuzzing with trinity inside a KVM tools guest running the latest -next
+kernel I've stumbled on the following spew:
 
-When the host already timed out the control transfer and started a new 
-one.  Here's what I'm talking about:
+[ 1139.410483] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 1139.413202] Dumping ftrace buffer:
+[ 1139.414152]    (ftrace buffer empty)
+[ 1139.415069] Modules linked in:
+[ 1139.415846] CPU: 10 PID: 39777 Comm: kworker/u115:2 Tainted: G        W     3.15.0-rc4-next-20140506-sasha-00021-gc164334-dirty #447
+[ 1139.418931] Workqueue: writeback bdi_writeback_workfn (flush-7:10)
+[ 1139.420320] task: ffff880285848000 ti: ffff880282dbc000 task.ti: ffff880282dbc000
+[ 1139.420320] RIP: global_dirty_limits (include/trace/events/writeback.h:308 mm/page-writeback.c:309)
+[ 1139.420320] RSP: 0018:ffff880282dbdc28  EFLAGS: 00010282
+[ 1139.420320] RAX: 6b6b6b6b6b6b6b6b RBX: 0000000000088034 RCX: 0000000000000001
+[ 1139.420320] RDX: 0000000000110068 RSI: 0000000000088034 RDI: 6b6b6b6b6b6b6b6b
+[ 1139.420320] RBP: ffff880282dbdc48 R08: 00000000000abad6 R09: ffff880285848cf0
+[ 1139.420320] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000110068
+[ 1139.420320] R13: ffff8805bc5932a8 R14: ffff880282dbdc60 R15: 0000000000001cc0
+[ 1139.420320] FS:  0000000000000000(0000) GS:ffff880292c00000(0000) knlGS:0000000000000000
+[ 1139.420320] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 1139.420320] CR2: 0000000000000001 CR3: 0000000025e2d000 CR4: 00000000000006a0
+[ 1139.438692] Stack:
+[ 1139.438692]  ffff8804e3ed0278 ffff8804e3ed0570 0000000000000000 ffff8804e3ed06c8
+[ 1139.438692]  ffff880282dbdc78 ffffffffa1342180 0000000000088034 0000000000110068
+[ 1139.438692]  0000000000000000 ffff8804e3ed0570 ffff880282dbdd38 ffffffffa1346f3a
+[ 1139.438692] Call Trace:
+[ 1139.438692] over_bground_thresh (arch/x86/include/asm/atomic64_64.h:21 include/asm-generic/atomic-long.h:31 include/linux/vmstat.h:122 fs/fs-writeback.c:772)
+[ 1139.438692] bdi_writeback_workfn (fs/fs-writeback.c:934 fs/fs-writeback.c:1014 fs/fs-writeback.c:1043)
+[ 1139.438692] process_one_work (kernel/workqueue.c:2227 include/linux/jump_label.h:105 include/trace/events/workqueue.h:111 kernel/workqueue.c:2232)
+[ 1139.438692] ? process_one_work (include/linux/workqueue.h:186 kernel/workqueue.c:611 kernel/workqueue.c:638 kernel/workqueue.c:2220)
+[ 1139.438692] worker_thread (kernel/workqueue.c:2354)
+[ 1139.438692] ? rescuer_thread (kernel/workqueue.c:2303)
+[ 1139.438692] kthread (kernel/kthread.c:210)
+[ 1139.438692] ? kthread_create_on_node (kernel/kthread.c:176)
+[ 1139.438692] ret_from_fork (arch/x86/kernel/entry_64.S:553)
+[ 1139.438692] ? kthread_create_on_node (kernel/kthread.c:176)
+[ 1139.438692] Code: 25 a0 da 00 00 0f 84 82 00 00 00 66 90 eb 2e 66 0f 1f 44 00 00 49 8b 45 00 0f 1f 40 00 49 8b 7d 08 4c 89 e2 49 83 c5 10 48 89 de <ff> d0 49 8b 45 00 48 85 c0 75 e7 eb c5 0f 1f 44 00 00 eb 53 66
+[ 1139.438692] RIP global_dirty_limits (include/trace/events/writeback.h:308 mm/page-writeback.c:309)
+[ 1139.438692]  RSP <ffff880282dbdc28>
 
-	Host sends a Set-Configuration request.
 
-	The UDC driver calls the gadget driver's setup function.
-
-	The setup function returns DELAYED_STATUS.
-
-	After a few seconds, the host gets tired of waiting and
-	sends a Get-Descriptor request
-
-	The gadget driver finally submits the delayed request response
-	to the Set-Configuration request.  But it is now too late,
-	because the host expects a response to the Get-Descriptor 
-	request.
-
->  dwc3 can't move to SETUP phase until the status request arrives,
-> so any SETUP transaction from host will fail. If status request
-> eventually arrives, it already missed the first control transfer, and
-> I don't know how the controller will behave. If we still can get a
-> STATUS XferComplete event without actually transfer anything on the
-> bus, then we can move back to SETUP PHASE which will remove the stale
-> delayed status request and start the new SETUP transaction. But I think
-> in this situation, the host should already lose it patience and start
-> to reset the bus.
-
-My point is that the UDC driver can't handle this.  Therefore the
-gadget driver has to prevent this from happening.
-
-That means composite.c has to avoid sending delayed status responses if 
-a new SETUP packet has been received already.
-
-> Per my understanding, it's impossible for dwc3 to send a stale STATUS
-> request for a new SETUP transaction. 
-
-dwc3 won't know that the status response is stale.  It will think the 
-response was meant for the new transfer, not the old one.
-
-Alan Stern
-
+Thanks,
+Sasha
