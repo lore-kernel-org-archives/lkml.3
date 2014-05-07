@@ -1,80 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592AbaEGTTB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 15:19:01 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:50275 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982AbaEGTS7 (ORCPT
+	id S1751496AbaEGTVZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 15:21:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52554 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911AbaEGTVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 15:18:59 -0400
-Date: Wed, 7 May 2014 12:18:55 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: [GIT PULL] MTD update for 3.15-rc5
-Message-ID: <20140507191855.GF28907@ld-irv-0074>
+	Wed, 7 May 2014 15:21:24 -0400
+Date: Wed, 7 May 2014 12:18:33 -0700
+From: tip-bot for Vineet Gupta <tipbot@zytor.com>
+Message-ID: <tip-69902c718c0b476e94ed7fccd3cf29ca39fe433a@git.kernel.org>
+Cc: mingo@kernel.org, rusty@rustcorp.com.au, torvalds@linux-foundation.org,
+        Vineet.Gupta1@synopsys.com, rdunlap@infradead.org, arnd@arndb.de,
+        jeremy@goop.org, dl9pf@gmx.de, sparse@chrisli.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, hpa@zytor.com,
+        Anton.Kolesov@synopsys.com, anil.s.keshavamurthy@intel.com,
+        davem@davemloft.net, ananth@in.ibm.com, vgupta@synopsys.com,
+        masami.hiramatsu.pt@hitachi.com, chrisw@sous-sol.org,
+        akataria@vmware.com
+Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
+        rusty@rustcorp.com.au, Vineet.Gupta1@synopsys.com,
+        rdunlap@infradead.org, arnd@arndb.de, jeremy@goop.org, dl9pf@gmx.de,
+        sparse@chrisli.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, Anton.Kolesov@synopsys.com,
+        anil.s.keshavamurthy@intel.com, davem@davemloft.net, ananth@in.ibm.com,
+        masami.hiramatsu.pt@hitachi.com, vgupta@synopsys.com,
+        chrisw@sous-sol.org, akataria@vmware.com
+In-Reply-To: <5361DB14.7010406@synopsys.com>
+References: <5361DB14.7010406@synopsys.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/kprobes] kprobes: Ensure blacklist data is aligned
+Git-Commit-ID: 69902c718c0b476e94ed7fccd3cf29ca39fe433a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  69902c718c0b476e94ed7fccd3cf29ca39fe433a
+Gitweb:     http://git.kernel.org/tip/69902c718c0b476e94ed7fccd3cf29ca39fe433a
+Author:     Vineet Gupta <Vineet.Gupta1@synopsys.com>
+AuthorDate: Thu, 1 May 2014 10:56:44 +0530
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 7 May 2014 21:04:57 +0200
 
---RnlQjJ0d97Da+TV1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+kprobes: Ensure blacklist data is aligned
 
-Hi Linus,
+ARC Linux (not supporting native unaligned access) was failing
+to boot because __start_kprobe_blacklist was not aligned.
 
-The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
+This was because per generated vmlinux.lds it was emitted right
+next to .rodata with strings etc hence could be randomly
+unaligned.
 
-  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
+Fix that by ensuring a word alignment. While 4 would suffice for
+32bit arches and problem at hand, it is probably better to put 8.
 
-are available in the git repository at:
+| Path: (null) CPU: 0 PID: 1 Comm: swapper Not tainted
+| 3.15.0-rc3-next-20140430 #2
+| task: 8f044000 ti: 8f01e000 task.ti: 8f01e000
+|
+| [ECR   ]: 0x00230400 => Misaligned r/w from 0x800fb0d3
+| [EFA   ]: 0x800fb0d3
+| [BLINK ]: do_one_initcall+0x86/0x1bc
+| [ERET  ]: init_kprobes+0x52/0x120
 
-  git://git.infradead.org/linux-mtd.git tags/for-linus-20140507
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: <torvalds@linux-foundation.org>
+Cc: <rusty@rustcorp.com.au>
+Cc: <rdunlap@infradead.org>
+Cc: <jeremy@goop.org>
+Cc: <arnd@arndb.de>
+Cc: <dl9pf@gmx.de>
+Cc: <sparse@chrisli.org>
+Cc: <anil.s.keshavamurthy@intel.com>
+Cc: <davem@davemloft.net>
+Cc: <ananth@in.ibm.com>
+Cc: <masami.hiramatsu.pt@hitachi.com>
+Cc: <chrisw@sous-sol.org>
+Cc: <akataria@vmware.com>
+Cc: anton Kolesov <Anton.Kolesov@synopsys.com>
+Link: http://lkml.kernel.org/r/5361DB14.7010406@synopsys.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/asm-generic/vmlinux.lds.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-for you to fetch changes up to 28c015a9daabe4ed3aeb0ccf669a3f1c2b8b81d5:
-
-  mtd: davinci-nand: disable subpage write for keystone-nand (2014-04-30 15:26:49 -0700)
-
-----------------------------------------------------------------
-MTD update for 3.15-rc5
-
-A single update for Keystone SoC's, whose NAND controller does not support
-subpage programming.
-
-----------------------------------------------------------------
-Murali Karicheri (1):
-      mtd: davinci-nand: disable subpage write for keystone-nand
-
- drivers/mtd/nand/davinci_nand.c | 6 ++++++
- 1 file changed, 6 insertions(+)
-
---RnlQjJ0d97Da+TV1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTaocfAAoJEFySrpd9RFgtIK8P/RtmYYI7oSe3IKcms4t3tVtf
-0GD82wDjiOOoDxySKM5uXgSvoJHYvuCfydeN0vLLl78kvLPV8eD1YAuUNhNxXjSk
-0oxiE3Qmf97RMjKXEVLd5LPhAKtlxr3R6k4yqVMqafFXH3iHKwfKl81BYjcWR/MG
-LSiO13AoZVXpr2ULKsMgZjP1PLj0P1QYWg4Ly5xbXeRrTia1lzuR3CxJHj/rz8BL
-G4VlquLcvszJ1d5XdhCw3aLmjWYorazCAlJKE/WhUPGRNotgg2kRIXKl0P1kmXMr
-sNI54Qg04z2dyxLceQUwrj/Pas4VGxrrzODXTt7EQvRWAHkzgTAm9dfWySfxDU/J
-ij9QaPBdafMAEM/KAj+LbkN3Eztb6yZqLB50V3/x+rnTT4CkaWOwE8uBqLo3uzPK
-Sdc3sqxYy6I8f/OQna8dgLKj/PIBaVpQWojDIKz+i/hiKhB3k6eD6FV6miYla75O
-HFxPEtUzRAKNWEvlZjQqu0qri+aGiBZmoHN+byT412WgSViCWl6SUBkHTPUZKIk+
-l7/8bUumlyvrerWPE3Jm+R0RuXlHbsuvvn7cvuvOwG6UIJHFI+3DEKf2T7rapvbL
-aN1ZUVPmwtI1mTQkrxpHOXjoKoucjTK/WQq/oylLMxWSMutZ2Jaga9yHGbKVhUje
-yqjma5WX5GV3x1WId34i
-=m8w3
------END PGP SIGNATURE-----
-
---RnlQjJ0d97Da+TV1--
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 40ceb3c..8e0204a 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -110,7 +110,8 @@
+ #endif
+ 
+ #ifdef CONFIG_KPROBES
+-#define KPROBE_BLACKLIST()	VMLINUX_SYMBOL(__start_kprobe_blacklist) = .; \
++#define KPROBE_BLACKLIST()	. = ALIGN(8);				      \
++				VMLINUX_SYMBOL(__start_kprobe_blacklist) = .; \
+ 				*(_kprobe_blacklist)			      \
+ 				VMLINUX_SYMBOL(__stop_kprobe_blacklist) = .;
+ #else
