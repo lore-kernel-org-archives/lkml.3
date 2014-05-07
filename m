@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932634AbaEGMGf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 08:06:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41466 "EHLO mx1.redhat.com"
+	id S932735AbaEGMGx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 08:06:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32895 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932181AbaEGMGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 08:06:33 -0400
-Date: Wed, 7 May 2014 14:05:21 +0200
+	id S932181AbaEGMGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 08:06:52 -0400
+Date: Wed, 7 May 2014 14:06:03 +0200
 From: Jiri Olsa <jolsa@redhat.com>
 To: Jean Pihet <jean.pihet@linaro.org>
 Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, will.deacon@arm.com,
@@ -20,23 +20,34 @@ Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, will.deacon@arm.com,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 2/3] perf tests: Add dwarf unwind test on ARM64
-Message-ID: <20140507120521.GB2019@krava.brq.redhat.com>
-References: <1399391733-11927-1-git-send-email-jean.pihet@linaro.org>
- <1399391733-11927-3-git-send-email-jean.pihet@linaro.org>
+Subject: Re: [PATCH 2/3] perf tests: Add dwarf unwind test on ARM
+Message-ID: <20140507120603.GC2019@krava.brq.redhat.com>
+References: <1399389979-11279-1-git-send-email-jean.pihet@linaro.org>
+ <1399389979-11279-3-git-send-email-jean.pihet@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1399391733-11927-3-git-send-email-jean.pihet@linaro.org>
+In-Reply-To: <1399389979-11279-3-git-send-email-jean.pihet@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 05:55:32PM +0200, Jean Pihet wrote:
+On Tue, May 06, 2014 at 05:26:18PM +0200, Jean Pihet wrote:
 
 SNIP
 
+> diff --git a/tools/perf/arch/arm/tests/dwarf-unwind.c b/tools/perf/arch/arm/tests/dwarf-unwind.c
+> new file mode 100644
+> index 0000000..d618f5f
+> --- /dev/null
+> +++ b/tools/perf/arch/arm/tests/dwarf-unwind.c
+> @@ -0,0 +1,59 @@
+> +#include <string.h>
+> +#include "perf_regs.h"
+> +#include "thread.h"
+> +#include "map.h"
+> +#include "event.h"
 > +#include "tests/tests.h"
 > +
 > +#define STACK_SIZE 8192
@@ -55,7 +66,7 @@ SNIP
 > +		return -1;
 > +	}
 > +
-> +	sp = (unsigned long) regs[PERF_REG_ARM64_SP];
+> +	sp = (unsigned long) regs[PERF_REG_ARM_SP];
 > +
 > +	map = map_groups__find(&thread->mg, MAP__FUNCTION, (u64) sp);
 > +	if (!map) {
