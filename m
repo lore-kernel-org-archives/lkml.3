@@ -1,55 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719AbaEGWVF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 18:21:05 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:56073 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966AbaEGWVB (ORCPT
+	id S1752723AbaEGWWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 18:22:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58012 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744AbaEGWWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 18:21:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140507153713.GA23775@amd.pavel.ucw.cz>
-References: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org>
-	<1394016605-24120-3-git-send-email-sebastian.capella@linaro.org>
-	<20140416101243.GA6952@n2100.arm.linux.org.uk>
-	<CADHgK6vyWU1HCueN=F5D0JxzknV==h-jOG9JmcXeOrH_RGV4JQ@mail.gmail.com>
-	<CADHgK6v43=KSpe2FRG374nbHSMOt9hb+xEhO7z20vhEAQsx0tQ@mail.gmail.com>
-	<CADHgK6tg=7JpYgc0LBmpQzJS-TjK5v_0FQeKRxuFNTqy=QSQzA@mail.gmail.com>
-	<CADHgK6uCQT2iAfL+oQvwN7f65u4musKP-AX-E6j1i2OL6ZMJwA@mail.gmail.com>
-	<20140507153713.GA23775@amd.pavel.ucw.cz>
-Date: Wed, 7 May 2014 15:20:59 -0700
-Message-ID: <CADHgK6tUDZeumk9VPpQ2fLubSE9686Tf==KdfcN+TY1ePryeAw@mail.gmail.com>
-Subject: Re: [PATCH v7 2/2] ARM hibernation / suspend-to-disk
-From: Sebastian Capella <sebastian.capella@linaro.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Len Brown <len.brown@intel.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Sricharan R <r.sricharan@ti.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, Russ Dill <Russ.Dill@ti.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jiang Liu <liuj97@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 7 May 2014 18:22:14 -0400
+Date: Wed, 7 May 2014 15:22:13 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Raghavendra Ganiga <ravi23ganiga@gmail.com>, a.zummo@towertech.it,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtc: add support for maxim dallas rtc ds1343 and ds1344
+Message-Id: <20140507152213.f7eaf5644ccbb8c6059739f4@linux-foundation.org>
+In-Reply-To: <20140507231529.4a3810e5@www.etchedpixels.co.uk>
+References: <1399403036-11377-1-git-send-email-ravi23ganiga@gmail.com>
+	<20140507144248.cf3d5e7411186e2cd616ded8@linux-foundation.org>
+	<20140507231529.4a3810e5@www.etchedpixels.co.uk>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Pavel!
+On Wed, 7 May 2014 23:15:29 +0100 Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-I believe it's missed 3.15, so will need to verify again for 3.16.
+> On Wed, 7 May 2014 14:42:48 -0700
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+> > On Wed,  7 May 2014 00:33:56 +0530 Raghavendra Ganiga <ravi23ganiga@gmail.com> wrote:
+> > 
+> > > This is a patch to add support for
+> > > maxim dallas rtc ds1343 and ds1344
+> > > 
+> > > ...
+> > >
+> > > +static int ds1343_ioctl(struct device *dev, unsigned int cmd, unsigned long arg)
+> > > +{
+> > > +	switch (cmd) {
+> > > +#ifdef RTC_SET_CHARGE
+> > > +	case RTC_SET_CHARGE:
+> > > +	{
+> > > +		int val;
+> > > +
+> > > +		if (copy_from_user(&val, (int __user *)arg, sizeof(int)))
+> > > +			return -EFAULT;
+> > > +
+> > > +		return regmap_write(priv->map, DS1343_TRICKLE_REG, val);
+> > > +	}
+> > > +	break;
+> > > +#endif
+> > > +	}
+> > 
+> > Why is RTC_SET_CHARGE defined only for m32r?  It seems pretty generic?
+> > 
+> > > +	return -ENOIOCTLCMD;
+> > > +}
+> > 
+> > It's possible that this should be -ENOTTY.  I always forget the rule,
+> > but Alan never forgets anything ;)
+> 
+> I forget lots 8)
+> 
+> -ENOTTY if it will be returned to user space, -ENOIOCTLCMD is used by
+> some core code internally as a way for the sub drivers to tell the core
+> "I didn't handle this, maybe you have a default method ?"
 
-Sebastian
+Ah OK, thanks.
+
+drivers/rtc/rtc-dev.c does
+
+	default:
+		/* Finally try the driver's ioctl interface */
+		if (ops->ioctl) {
+			err = ops->ioctl(rtc->dev.parent, cmd, arg);
+			if (err == -ENOIOCTLCMD)
+				err = -ENOTTY;
+		} else
+			err = -ENOTTY;
+
+so ENOIOCTLCMD is appropriate here.
+
+Even though rtc is upside down - it prioritises the core's ioctl
+parsing ahead of the drivers'.
+
