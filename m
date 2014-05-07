@@ -1,75 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbaEGSUA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 14:20:00 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:62396 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750924AbaEGST7 (ORCPT
+	id S1751899AbaEGSWt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 14:22:49 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:17364 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282AbaEGSWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 14:19:59 -0400
-Date: Wed, 7 May 2014 14:19:56 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joe Perches <joe@perches.com>
-Cc: Dan Streetman <ddstreet@ieee.org>, Fabian Frederick <fabf@skynet.be>,
+	Wed, 7 May 2014 14:22:47 -0400
+Message-ID: <1399486965.4567.9.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 0/4] ipc/shm.c: increase the limits for SHMMAX, SHMALL
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] plist: replace pr_debug with printk in plist_test()
-Message-ID: <20140507141956.4eb6ff8d@gandalf.local.home>
-In-Reply-To: <1399486238.2911.20.camel@joe-AO725>
-References: <CALZtONB-wT16fPX7GjBVFO_5Bof3=zxviG22p6_9ymbnzA9QAA@mail.gmail.com>
-	<1399300985-11137-1-git-send-email-ddstreet@ieee.org>
-	<20140505133517.71b7dc7cf327cb304e8a9edc@linux-foundation.org>
-	<CALZtONAVTQuOF3ddZ6jVZqCGgKBicAtT=_w5w4GEueYAsf3jtw@mail.gmail.com>
-	<20140506174445.b64dffb78d0676b48fa68eea@skynet.be>
-	<CALZtONBADrb_yCPqCAUfw1ei9sYxw_-MopPko3dcfas2mqsVZg@mail.gmail.com>
-	<20140507103512.5b3f7928@gandalf.local.home>
-	<1399486238.2911.20.camel@joe-AO725>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, aswin@hp.com,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Wed, 07 May 2014 11:22:45 -0700
+In-Reply-To: <5369C43D.1000206@gmail.com>
+References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
+		 <CAKgNAkjuU68hgyMOVGBVoBTOhhGdBytQh6H0ExiLoXfujKyP_w@mail.gmail.com>
+		 <1399406800.13799.20.camel@buesod1.americas.hpqcorp.net>
+		 <CAKgNAkjOKP7P9veOpnokNkVXSszVZt5asFsNp7rm7AXJdjcLLA@mail.gmail.com>
+	 <1399414081.30629.2.camel@buesod1.americas.hpqcorp.net>
+	 <5369C43D.1000206@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 07 May 2014 11:10:38 -0700
-Joe Perches <joe@perches.com> wrote:
-
-> On Wed, 2014-05-07 at 10:35 -0400, Steven Rostedt wrote:
-> > On Wed, 7 May 2014 10:21:28 -0400 Dan Streetman <ddstreet@ieee.org> wrote:
-> 
-> > > It would be even better if the note could clarify that sometimes it is
-> > > ok to use printk(KERN_DEBUG
+On Wed, 2014-05-07 at 07:27 +0200, Michael Kerrisk (man-pages) wrote:
+> On 05/07/2014 12:08 AM, Davidlohr Bueso wrote:
+> > On Tue, 2014-05-06 at 22:40 +0200, Michael Kerrisk (man-pages) wrote:
+> >> Hi Davidlohr,
+> >>
+> >> On Tue, May 6, 2014 at 10:06 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> >>> On Fri, 2014-05-02 at 15:16 +0200, Michael Kerrisk (man-pages) wrote:
+> >>>> Hi Manfred,
+> >>>>
+> >>>> On Mon, Apr 21, 2014 at 4:26 PM, Manfred Spraul
+> >>>> <manfred@colorfullife.com> wrote:
+> >>>>> Hi all,
+> >>>>>
+> >>>>> the increase of SHMMAX/SHMALL is now a 4 patch series.
+> >>>>> I don't have ideas how to improve it further.
+> >>>>
+> >>>> On the assumption that your patches are heading to mainline, could you
+> >>>> send me a man-pages patch for the changes?
+> >>>
+> >>> Btw, I think that the code could still use some love wrt documentation.
+> >>
+> >> (Agreed.)
+> >>
+> >>> Andrew, please consider this for -next if folks agree. Thanks.
+> >>>
+> >>> 8<----------------------------------------------------------
+> >>>
+> >>> From: Davidlohr Bueso <davidlohr@hp.com>
+> >>> Subject: [PATCH] ipc,shm: document new limits in the uapi header
+> >>>
+> >>> This is useful in the future and allows users to
+> >>> better understand the reasoning behind the changes.
+> >>>
+> >>> Also use UL as we're dealing with it anyways.
+> >>>
+> >>> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> >>> ---
+> >>>  include/uapi/linux/shm.h | 14 ++++++++------
+> >>>  1 file changed, 8 insertions(+), 6 deletions(-)
+> >>>
+> >>> diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
+> >>> index 74e786d..e37fb08 100644
+> >>> --- a/include/uapi/linux/shm.h
+> >>> +++ b/include/uapi/linux/shm.h
+> >>> @@ -8,17 +8,19 @@
+> >>>  #endif
+> >>>
+> >>>  /*
+> >>> - * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
+> >>
+> >> Something is wrong in the line above (missing word(s)?) ("are upper
+> >> limits are defaults")
+> >>
+> >>> - * be modified by sysctl.
+> >>> + * SHMMNI, SHMMAX and SHMALL are the default upper limits which can be
+> >>> + * modified by sysctl. Both SHMMAX and SHMALL have their default values
+> >>> + * to the maximum limit which is as large as it can be without helping
+> >>> + * userspace overflow the values. There is really nothing the kernel
+> >>> + * can do to avoid this any variables. It is therefore not advised to
+> >>
+> >> Something is missing in that last line.
+> >>
+> >>> + * make them any larger. This is suitable for both 32 and 64-bit systems.
+> >>
+> >> "This" is not so clear. I suggest replacing with an actual noun.
 > > 
-> > Exactly. I think it's rather stupid to have to do a #define DEBUG to
-> > have pr_debug() print in general.
-> > 
-> > I see no reason to have pr_debug() be anything different than the other
-> > pr_*() functions.
+> > Good point. Perhaps 'These values are ...' would do instead. 
 > 
-> pr_debug is meant to be disabled and have _no_ runtime
-> effect unless DEBUG is #defined.
+> That's better.
+> 
+> Did you miss the first point I raised above?
 
-I understand why it does it, but having pr_debug() named just like
-pr_info(), pr_notice(), pr_warning(), pr_err(), pr_crit(), pr_alert(),
-pr_emerg(), where all those are just printk(<LOGLEVEL>...) *except* for
-pr_debug(). That's inconsistent and wrong.
+No, actually our emails crossed paths and I had sent a suggestion before
+I replied to yours: https://lkml.org/lkml/2014/5/6/613
 
-pr_debug() should have been just printk(KERN_DEBUG ...) as that follows
-convention. Not something that gets disabled by default. For that, we
-should have given it a different name. That's the point I was trying to
-make.
-
-Yes, it's somewhat too late as pr_debug() is all over the place, but
-maybe when things slow down (Ha! like that will ever happen ... "are we
-done yet?"), then we could do a massive clean up and rename pr_debug()
-to something not so confusing in its usage compared to the other pr_*()
-prints.
-
--- Steve
+Thanks.
+Davidlohr
 
