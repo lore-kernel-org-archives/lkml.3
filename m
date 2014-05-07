@@ -1,448 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933886AbaEGQEf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:04:35 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:62877 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932891AbaEGQEc (ORCPT
+	id S934027AbaEGQFQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:05:16 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:33219 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756640AbaEGQFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:04:32 -0400
-Date: Wed, 7 May 2014 12:04:29 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH cgroup/for-3.16] cgroup: rename css_tryget*() to
- css_tryget_online*()
-Message-ID: <20140507160429.GE26540@htj.dyndns.org>
+	Wed, 7 May 2014 12:05:13 -0400
+Date: Wed, 7 May 2014 18:05:08 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        khilman@linaro.org, tglx@linutronix.de, axboe@fb.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:timers/nohz] nohz: Move full nohz kick to its own IPI
+Message-ID: <20140507160504.GC16694@localhost.localdomain>
+References: <tip-72aacf0259bb7d53b7a3b5b2f7bf982acaa52b61@git.kernel.org>
+ <20140505123706.GP17778@laptop.programming.kicks-ass.net>
+ <20140505133113.GD1429@laptop.programming.kicks-ass.net>
+ <20140505150356.GB2099@localhost.localdomain>
+ <20140505151228.GR26782@laptop.programming.kicks-ass.net>
+ <20140505153405.GD2099@localhost.localdomain>
+ <20140507151735.GQ30445@twins.programming.kicks-ass.net>
+ <20140507152922.GB16694@localhost.localdomain>
+ <20140507153736.GS30445@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140507153736.GS30445@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike the more usual refcnting, what css_tryget() provides is the
-distinction between online and offline csses instead of protection
-against upping a refcnt which already reached zero.  cgroup is
-planning to provide actual tryget which fails if the refcnt already
-reached zero.  Let's rename the existing trygets so that they clearly
-indicate that they're onliness.
+On Wed, May 07, 2014 at 05:37:36PM +0200, Peter Zijlstra wrote:
+> On Wed, May 07, 2014 at 05:29:24PM +0200, Frederic Weisbecker wrote:
+> > On Wed, May 07, 2014 at 05:17:35PM +0200, Peter Zijlstra wrote:
+> > > On Mon, May 05, 2014 at 05:34:08PM +0200, Frederic Weisbecker wrote:
+> > > > On Mon, May 05, 2014 at 05:12:28PM +0200, Peter Zijlstra wrote:
+> > > > > > Note the current ordering:
+> > > > > > 
+> > > > > >     cmpxchg(&qsd->pending, 0, 1)       get ipi
+> > > > > >     csd_lock(qsd->csd)                 xchg(&qsd->pending, 1)
+> > > > > >     send ipi                           csd_unlock(qsd->csd)
+> > > > > > 
+> > > > > > 
+> > > > > > So there shouldn't be racing updaters. Also ipi sender shouldn't
+> > > > > > race with ipi receiver, the update shouldn't always eventually see
+> > > > > > the unlock happening.
+> > > > > 
+> > > > > Yeah, I've not spotted how this particular train wreck happens either.
+> > > > > 
+> > > > > The problem is reproduction, it took me 9 hours to confirm I could
+> > > > > reproduce the problem on my machine. So how long to I run it with this
+> > > > > patch reverted to show its gone..
+> > > > 
+> > > > Maybe it could be favoured cpu hotplug. Anyway converting to irq_work should
+> > > > fix it.
+> > > 
+> > > Ingo needs a commit msg for the revert of this patch; do you think you
+> > > have time to look into _why_ this patch is broken and write such a
+> > > thing?
+> > 
+> > I can try but I need to reproduce it. Do you have any clue on how to do so?
+> > Also which HEAD were you guys using?
+> 
+> Ha!, so I was running a tip/master with that commit in -- a few days
+> ago, v3.15-rc4-1644-g5c658b0cdf22 might've been it.
+> 
+> Then I ran it on my dual socket AMD interlagos, with:
+> 
+> while :; make O=allyesconfig-build/ clean; make O=allyesconfig-build/
+> -j96 -s; done
+> 
+> for 9 hours, and then got empty RCU stall warns and a bricked machine.
+> 
+> I might still have the .config, but I don't think there was anything
+> particularly odd about the config other than having NOHZ_FULL enabled.
+> 
+> The only way I found this patch was by staring at some RCU stall warns
+> Ingo managed to get, sometimes they actually got backtraces in them
+> apparently.
+> 
+> According to Ingo the bigger the machine the faster it reproduces, but
+> reproduction times, even for these 32 cpu machines, are in the many
+> hours range.
 
-I thought about keeping the existing names as-are and introducing new
-names for the planned actual tryget; however, given that each
-controller participates in the synchronization of the online state, it
-seems worthwhile to make it explicit that these functions are about
-on/offline state.
+Ok then, I'll try something.
 
-Rename css_tryget() to css_tryget_online() and css_tryget_from_dir()
-to css_tryget_online_from_dir().  This is pure rename.
+But note that those commits aren't upstream yet and they are in a seperate
+branch tip:timers/nohz with no other non-upstream commits.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
----
- block/blk-cgroup.c     |    2 +-
- fs/bio.c               |    2 +-
- include/linux/cgroup.h |   14 +++++++-------
- kernel/cgroup.c        |   40 ++++++++++++++++++++--------------------
- kernel/cpuset.c        |    6 +++---
- kernel/events/core.c   |    3 ++-
- mm/hugetlb_cgroup.c    |    2 +-
- mm/memcontrol.c        |   46 ++++++++++++++++++++++++----------------------
- 8 files changed, 59 insertions(+), 56 deletions(-)
+And I work alone on this branch.
 
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -185,7 +185,7 @@ static struct blkcg_gq *blkg_create(stru
- 	lockdep_assert_held(q->queue_lock);
- 
- 	/* blkg holds a reference to blkcg */
--	if (!css_tryget(&blkcg->css)) {
-+	if (!css_tryget_online(&blkcg->css)) {
- 		ret = -EINVAL;
- 		goto err_free_blkg;
- 	}
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -1970,7 +1970,7 @@ int bio_associate_current(struct bio *bi
- 	/* associate blkcg if exists */
- 	rcu_read_lock();
- 	css = task_css(current, blkio_cgrp_id);
--	if (css && css_tryget(css))
-+	if (css && css_tryget_online(css))
- 		bio->bi_css = css;
- 	rcu_read_unlock();
- 
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -95,16 +95,16 @@ static inline void css_get(struct cgroup
- }
- 
- /**
-- * css_tryget - try to obtain a reference on the specified css
-+ * css_tryget_online - try to obtain a reference on the specified css if online
-  * @css: target css
-  *
-- * Obtain a reference on @css if it's alive.  The caller naturally needs to
-- * ensure that @css is accessible but doesn't have to be holding a
-+ * Obtain a reference on @css if it's online.  The caller naturally needs
-+ * to ensure that @css is accessible but doesn't have to be holding a
-  * reference on it - IOW, RCU protected access is good enough for this
-  * function.  Returns %true if a reference count was successfully obtained;
-  * %false otherwise.
-  */
--static inline bool css_tryget(struct cgroup_subsys_state *css)
-+static inline bool css_tryget_online(struct cgroup_subsys_state *css)
- {
- 	if (css->flags & CSS_ROOT)
- 		return true;
-@@ -115,7 +115,7 @@ static inline bool css_tryget(struct cgr
-  * css_put - put a css reference
-  * @css: target css
-  *
-- * Put a reference obtained via css_get() and css_tryget().
-+ * Put a reference obtained via css_get() and css_tryget_online().
-  */
- static inline void css_put(struct cgroup_subsys_state *css)
- {
-@@ -890,8 +890,8 @@ void css_task_iter_end(struct css_task_i
- int cgroup_attach_task_all(struct task_struct *from, struct task_struct *);
- int cgroup_transfer_tasks(struct cgroup *to, struct cgroup *from);
- 
--struct cgroup_subsys_state *css_tryget_from_dir(struct dentry *dentry,
--						struct cgroup_subsys *ss);
-+struct cgroup_subsys_state *css_tryget_online_from_dir(struct dentry *dentry,
-+						       struct cgroup_subsys *ss);
- 
- #else /* !CONFIG_CGROUPS */
- 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -3768,7 +3768,7 @@ int cgroupstats_build(struct cgroupstats
- 
- 	/*
- 	 * We aren't being called from kernfs and there's no guarantee on
--	 * @kn->priv's validity.  For this and css_tryget_from_dir(),
-+	 * @kn->priv's validity.  For this and css_tryget_online_from_dir(),
- 	 * @kn->priv is RCU safe.  Let's do the RCU dancing.
- 	 */
- 	rcu_read_lock();
-@@ -4057,9 +4057,9 @@ err:
-  *    Implemented in kill_css().
-  *
-  * 2. When the percpu_ref is confirmed to be visible as killed on all CPUs
-- *    and thus css_tryget() is guaranteed to fail, the css can be offlined
-- *    by invoking offline_css().  After offlining, the base ref is put.
-- *    Implemented in css_killed_work_fn().
-+ *    and thus css_tryget_online() is guaranteed to fail, the css can be
-+ *    offlined by invoking offline_css().  After offlining, the base ref is
-+ *    put.  Implemented in css_killed_work_fn().
-  *
-  * 3. When the percpu_ref reaches zero, the only possible remaining
-  *    accessors are inside RCU read sections.  css_release() schedules the
-@@ -4384,7 +4384,7 @@ static int cgroup_mkdir(struct kernfs_no
- 
- /*
-  * This is called when the refcnt of a css is confirmed to be killed.
-- * css_tryget() is now guaranteed to fail.
-+ * css_tryget_online() is now guaranteed to fail.
-  */
- static void css_killed_work_fn(struct work_struct *work)
- {
-@@ -4396,8 +4396,8 @@ static void css_killed_work_fn(struct wo
- 	mutex_lock(&cgroup_mutex);
- 
- 	/*
--	 * css_tryget() is guaranteed to fail now.  Tell subsystems to
--	 * initate destruction.
-+	 * css_tryget_online() is guaranteed to fail now.  Tell subsystems
-+	 * to initate destruction.
- 	 */
- 	offline_css(css);
- 
-@@ -4438,8 +4438,8 @@ static void css_killed_ref_fn(struct per
-  *
-  * This function initiates destruction of @css by removing cgroup interface
-  * files and putting its base reference.  ->css_offline() will be invoked
-- * asynchronously once css_tryget() is guaranteed to fail and when the
-- * reference count reaches zero, @css will be released.
-+ * asynchronously once css_tryget_online() is guaranteed to fail and when
-+ * the reference count reaches zero, @css will be released.
-  */
- static void kill_css(struct cgroup_subsys_state *css)
- {
-@@ -4460,7 +4460,7 @@ static void kill_css(struct cgroup_subsy
- 	/*
- 	 * cgroup core guarantees that, by the time ->css_offline() is
- 	 * invoked, no new css reference will be given out via
--	 * css_tryget().  We can't simply call percpu_ref_kill() and
-+	 * css_tryget_online().  We can't simply call percpu_ref_kill() and
- 	 * proceed to offlining css's because percpu_ref_kill() doesn't
- 	 * guarantee that the ref is seen as killed on all CPUs on return.
- 	 *
-@@ -4476,9 +4476,9 @@ static void kill_css(struct cgroup_subsy
-  *
-  * css's make use of percpu refcnts whose killing latency shouldn't be
-  * exposed to userland and are RCU protected.  Also, cgroup core needs to
-- * guarantee that css_tryget() won't succeed by the time ->css_offline() is
-- * invoked.  To satisfy all the requirements, destruction is implemented in
-- * the following two steps.
-+ * guarantee that css_tryget_online() won't succeed by the time
-+ * ->css_offline() is invoked.  To satisfy all the requirements,
-+ * destruction is implemented in the following two steps.
-  *
-  * s1. Verify @cgrp can be destroyed and mark it dying.  Remove all
-  *     userland visible parts and start killing the percpu refcnts of
-@@ -4572,9 +4572,9 @@ static int cgroup_destroy_locked(struct
- 	/*
- 	 * There are two control paths which try to determine cgroup from
- 	 * dentry without going through kernfs - cgroupstats_build() and
--	 * css_tryget_from_dir().  Those are supported by RCU protecting
--	 * clearing of cgrp->kn->priv backpointer, which should happen
--	 * after all files under it have been removed.
-+	 * css_tryget_online_from_dir().  Those are supported by RCU
-+	 * protecting clearing of cgrp->kn->priv backpointer, which should
-+	 * happen after all files under it have been removed.
- 	 */
- 	kernfs_remove(cgrp->kn);	/* @cgrp has an extra ref on its kn */
- 	RCU_INIT_POINTER(*(void __rcu __force **)&cgrp->kn->priv, NULL);
-@@ -5171,7 +5171,7 @@ static int __init cgroup_disable(char *s
- __setup("cgroup_disable=", cgroup_disable);
- 
- /**
-- * css_tryget_from_dir - get corresponding css from the dentry of a cgroup dir
-+ * css_tryget_online_from_dir - get corresponding css from a cgroup dentry
-  * @dentry: directory dentry of interest
-  * @ss: subsystem of interest
-  *
-@@ -5179,8 +5179,8 @@ __setup("cgroup_disable=", cgroup_disabl
-  * to get the corresponding css and return it.  If such css doesn't exist
-  * or can't be pinned, an ERR_PTR value is returned.
-  */
--struct cgroup_subsys_state *css_tryget_from_dir(struct dentry *dentry,
--						struct cgroup_subsys *ss)
-+struct cgroup_subsys_state *css_tryget_online_from_dir(struct dentry *dentry,
-+						       struct cgroup_subsys *ss)
- {
- 	struct kernfs_node *kn = kernfs_node_from_dentry(dentry);
- 	struct cgroup_subsys_state *css = NULL;
-@@ -5202,7 +5202,7 @@ struct cgroup_subsys_state *css_tryget_f
- 	if (cgrp)
- 		css = cgroup_css(cgrp, ss);
- 
--	if (!css || !css_tryget(css))
-+	if (!css || !css_tryget_online(css))
- 		css = ERR_PTR(-ENOENT);
- 
- 	rcu_read_unlock();
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -875,7 +875,7 @@ static void update_tasks_cpumask_hier(st
- 				continue;
- 			}
- 		}
--		if (!css_tryget(&cp->css))
-+		if (!css_tryget_online(&cp->css))
- 			continue;
- 		rcu_read_unlock();
- 
-@@ -1110,7 +1110,7 @@ static void update_tasks_nodemask_hier(s
- 				continue;
- 			}
- 		}
--		if (!css_tryget(&cp->css))
-+		if (!css_tryget_online(&cp->css))
- 			continue;
- 		rcu_read_unlock();
- 
-@@ -2155,7 +2155,7 @@ static void cpuset_hotplug_workfn(struct
- 
- 		rcu_read_lock();
- 		cpuset_for_each_descendant_pre(cs, pos_css, &top_cpuset) {
--			if (cs == &top_cpuset || !css_tryget(&cs->css))
-+			if (cs == &top_cpuset || !css_tryget_online(&cs->css))
- 				continue;
- 			rcu_read_unlock();
- 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -607,7 +607,8 @@ static inline int perf_cgroup_connect(in
- 	if (!f.file)
- 		return -EBADF;
- 
--	css = css_tryget_from_dir(f.file->f_dentry, &perf_event_cgrp_subsys);
-+	css = css_tryget_online_from_dir(f.file->f_dentry,
-+					 &perf_event_cgrp_subsys);
- 	if (IS_ERR(css)) {
- 		ret = PTR_ERR(css);
- 		goto out;
---- a/mm/hugetlb_cgroup.c
-+++ b/mm/hugetlb_cgroup.c
-@@ -181,7 +181,7 @@ int hugetlb_cgroup_charge_cgroup(int idx
- again:
- 	rcu_read_lock();
- 	h_cg = hugetlb_cgroup_from_task(current);
--	if (!css_tryget(&h_cg->css)) {
-+	if (!css_tryget_online(&h_cg->css)) {
- 		rcu_read_unlock();
- 		goto again;
- 	}
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -567,7 +567,8 @@ void sock_update_memcg(struct sock *sk)
- 		memcg = mem_cgroup_from_task(current);
- 		cg_proto = sk->sk_prot->proto_cgroup(memcg);
- 		if (!mem_cgroup_is_root(memcg) &&
--		    memcg_proto_active(cg_proto) && css_tryget(&memcg->css)) {
-+		    memcg_proto_active(cg_proto) &&
-+		    css_tryget_online(&memcg->css)) {
- 			sk->sk_cgrp = cg_proto;
- 		}
- 		rcu_read_unlock();
-@@ -834,7 +835,7 @@ retry:
- 	 */
- 	__mem_cgroup_remove_exceeded(mz->memcg, mz, mctz);
- 	if (!res_counter_soft_limit_excess(&mz->memcg->res) ||
--		!css_tryget(&mz->memcg->css))
-+	    !css_tryget_online(&mz->memcg->css))
- 		goto retry;
- done:
- 	return mz;
-@@ -1076,7 +1077,7 @@ static struct mem_cgroup *get_mem_cgroup
- 		memcg = mem_cgroup_from_task(rcu_dereference(mm->owner));
- 		if (unlikely(!memcg))
- 			memcg = root_mem_cgroup;
--	} while (!css_tryget(&memcg->css));
-+	} while (!css_tryget_online(&memcg->css));
- 	rcu_read_unlock();
- 	return memcg;
- }
-@@ -1113,7 +1114,8 @@ skip_node:
- 	 */
- 	if (next_css) {
- 		if ((next_css == &root->css) ||
--		    ((next_css->flags & CSS_ONLINE) && css_tryget(next_css)))
-+		    ((next_css->flags & CSS_ONLINE) &&
-+		     css_tryget_online(next_css)))
- 			return mem_cgroup_from_css(next_css);
- 
- 		prev_css = next_css;
-@@ -1159,7 +1161,7 @@ mem_cgroup_iter_load(struct mem_cgroup_r
- 		 * would be returned all the time.
- 		 */
- 		if (position && position != root &&
--				!css_tryget(&position->css))
-+		    !css_tryget_online(&position->css))
- 			position = NULL;
- 	}
- 	return position;
-@@ -2785,9 +2787,9 @@ static void __mem_cgroup_cancel_local_ch
- 
- /*
-  * A helper function to get mem_cgroup from ID. must be called under
-- * rcu_read_lock().  The caller is responsible for calling css_tryget if
-- * the mem_cgroup is used for charging. (dropping refcnt from swap can be
-- * called against removed memcg.)
-+ * rcu_read_lock().  The caller is responsible for calling
-+ * css_tryget_online() if the mem_cgroup is used for charging. (dropping
-+ * refcnt from swap can be called against removed memcg.)
-  */
- static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
- {
-@@ -2810,14 +2812,14 @@ struct mem_cgroup *try_get_mem_cgroup_fr
- 	lock_page_cgroup(pc);
- 	if (PageCgroupUsed(pc)) {
- 		memcg = pc->mem_cgroup;
--		if (memcg && !css_tryget(&memcg->css))
-+		if (memcg && !css_tryget_online(&memcg->css))
- 			memcg = NULL;
- 	} else if (PageSwapCache(page)) {
- 		ent.val = page_private(page);
- 		id = lookup_swap_cgroup_id(ent);
- 		rcu_read_lock();
- 		memcg = mem_cgroup_lookup(id);
--		if (memcg && !css_tryget(&memcg->css))
-+		if (memcg && !css_tryget_online(&memcg->css))
- 			memcg = NULL;
- 		rcu_read_unlock();
- 	}
-@@ -3473,7 +3475,7 @@ struct kmem_cache *__memcg_kmem_get_cach
- 	}
- 
- 	/* The corresponding put will be done in the workqueue. */
--	if (!css_tryget(&memcg->css))
-+	if (!css_tryget_online(&memcg->css))
- 		goto out;
- 	rcu_read_unlock();
- 
-@@ -4246,8 +4248,8 @@ void mem_cgroup_uncharge_swap(swp_entry_
- 	memcg = mem_cgroup_lookup(id);
- 	if (memcg) {
- 		/*
--		 * We uncharge this because swap is freed.
--		 * This memcg can be obsolete one. We avoid calling css_tryget
-+		 * We uncharge this because swap is freed.  This memcg can
-+		 * be obsolete one. We avoid calling css_tryget_online().
- 		 */
- 		if (!mem_cgroup_is_root(memcg))
- 			res_counter_uncharge(&memcg->memsw, PAGE_SIZE);
-@@ -5840,10 +5842,10 @@ static void kmem_cgroup_css_offline(stru
- 	 * which is then paired with css_put during uncharge resp. here.
- 	 *
- 	 * Although this might sound strange as this path is called from
--	 * css_offline() when the referencemight have dropped down to 0
--	 * and shouldn't be incremented anymore (css_tryget would fail)
--	 * we do not have other options because of the kmem allocations
--	 * lifetime.
-+	 * css_offline() when the referencemight have dropped down to 0 and
-+	 * shouldn't be incremented anymore (css_tryget_online() would
-+	 * fail) we do not have other options because of the kmem
-+	 * allocations lifetime.
- 	 */
- 	css_get(&memcg->css);
- 
-@@ -6051,8 +6053,8 @@ static int memcg_write_event_control(str
- 	 * automatically removed on cgroup destruction but the removal is
- 	 * asynchronous, so take an extra ref on @css.
- 	 */
--	cfile_css = css_tryget_from_dir(cfile.file->f_dentry->d_parent,
--					&memory_cgrp_subsys);
-+	cfile_css = css_tryget_online_from_dir(cfile.file->f_dentry->d_parent,
-+					       &memory_cgrp_subsys);
- 	ret = -EINVAL;
- 	if (IS_ERR(cfile_css))
- 		goto out_put_cfile;
-@@ -6496,7 +6498,7 @@ static void mem_cgroup_css_free(struct c
- 	/*
- 	 * XXX: css_offline() would be where we should reparent all
- 	 * memory to prepare the cgroup for destruction.  However,
--	 * memcg does not do css_tryget() and res_counter charging
-+	 * memcg does not do css_tryget_online() and res_counter charging
- 	 * under the same RCU lock region, which means that charging
- 	 * could race with offlining.  Offlining only happens to
- 	 * cgroups with no tasks in them but charges can show up
-@@ -6510,9 +6512,9 @@ static void mem_cgroup_css_free(struct c
- 	 *                           lookup_swap_cgroup_id()
- 	 *                           rcu_read_lock()
- 	 *                           mem_cgroup_lookup()
--	 *                           css_tryget()
-+	 *                           css_tryget_online()
- 	 *                           rcu_read_unlock()
--	 * disable css_tryget()
-+	 * disable css_tryget_online()
- 	 * call_rcu()
- 	 *   offline_css()
- 	 *     reparent_charges()
+So we can as well zap these commits and replace them with the irq_work_on()
+conversion (still preparing that).
