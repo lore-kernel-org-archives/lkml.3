@@ -1,119 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755801AbaEGJAg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:00:36 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:10795 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751320AbaEGJAe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:00:34 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Christoffer Dall <christoffer.dall@linaro.org>
-Cc: Kim Phillips <kim.phillips@linaro.org>,
-        "kvmarm\@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kvm\@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Eric Auger <eric.auger@linaro.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Kim Phillips <kim.phillips@freescale.com>
-Subject: Re: [PATCH 2/2] ARM: KVM: user_mem_abort: support stage 2 MMIO page mapping
-In-Reply-To: <20140506180448.GH3066@lvm> (Christoffer Dall's message of "Tue,
-	6 May 2014 19:04:48 +0100")
-Organization: ARM Ltd
-References: <1395785294-2545-1-git-send-email-kim.phillips@linaro.org>
-	<1395785294-2545-2-git-send-email-kim.phillips@linaro.org>
-	<20140506180448.GH3066@lvm>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Wed, 07 May 2014 10:00:21 +0100
-Message-ID: <87bnvaotei.fsf@approximate.cambridge.arm.com>
+	id S932204AbaEGJD3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:03:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55690 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751838AbaEGJD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 05:03:26 -0400
+Date: Wed, 7 May 2014 10:03:22 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Jan Kara <jack@suse.cz>
+Cc: Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 17/17] mm: filemap: Avoid unnecessary barries and
+ waitqueue lookup in unlock_page fastpath
+Message-ID: <20140507090322.GD23991@suse.de>
+References: <1398933888-4940-1-git-send-email-mgorman@suse.de>
+ <1398933888-4940-18-git-send-email-mgorman@suse.de>
+ <20140505105054.GC23927@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140505105054.GC23927@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kim, Christoffer,
+On Mon, May 05, 2014 at 12:50:54PM +0200, Jan Kara wrote:
+> On Thu 01-05-14 09:44:48, Mel Gorman wrote:
+> > From: Nick Piggin <npiggin@suse.de>
+> > 
+> > This patch introduces a new page flag for 64-bit capable machines,
+> > PG_waiters, to signal there are processes waiting on PG_lock and uses it to
+> > avoid memory barriers and waitqueue hash lookup in the unlock_page fastpath.
+> > 
+> > This adds a few branches to the fast path but avoids bouncing a dirty
+> > cache line between CPUs. 32-bit machines always take the slow path but the
+> > primary motivation for this patch is large machines so I do not think that
+> > is a concern.
+> ...
+> >  /* 
+> > diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
+> > index 7d50f79..fb83fe0 100644
+> > --- a/kernel/sched/wait.c
+> > +++ b/kernel/sched/wait.c
+> > @@ -304,8 +304,7 @@ int wake_bit_function(wait_queue_t *wait, unsigned mode, int sync, void *arg)
+> >  		= container_of(wait, struct wait_bit_queue, wait);
+> >  
+> >  	if (wait_bit->key.flags != key->flags ||
+> > -			wait_bit->key.bit_nr != key->bit_nr ||
+> > -			test_bit(key->bit_nr, key->flags))
+> > +			wait_bit->key.bit_nr != key->bit_nr)
+> >  		return 0;
+> >  	else
+> >  		return autoremove_wake_function(wait, mode, sync, key);
+>   This change seems to be really unrelated? And it would deserve a comment
+> on its own I'd think so maybe split that in a separate patch?
+> 
 
-On Tue, May 06 2014 at  7:04:48 pm BST, Christoffer Dall <christoffer.dall@linaro.org> wrote:
-> On Tue, Mar 25, 2014 at 05:08:14PM -0500, Kim Phillips wrote:
->> Use the correct memory type for device MMIO mappings: PAGE_S2_DEVICE.
->> 
->> Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
->> ---
->>  arch/arm/kvm/mmu.c | 11 ++++++++---
->>  1 file changed, 8 insertions(+), 3 deletions(-)
->> 
->> diff --git a/arch/arm/kvm/mmu.c b/arch/arm/kvm/mmu.c
->> index 7789857..a354610 100644
->> --- a/arch/arm/kvm/mmu.c
->> +++ b/arch/arm/kvm/mmu.c
->> @@ -652,6 +652,7 @@ static int user_mem_abort(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
->>  	struct kvm_mmu_memory_cache *memcache = &vcpu->arch.mmu_page_cache;
->>  	struct vm_area_struct *vma;
->>  	pfn_t pfn;
->> +	pgprot_t mem_type = PAGE_S2;
->>  
->>  	write_fault = kvm_is_write_fault(kvm_vcpu_get_hsr(vcpu));
->>  	if (fault_status == FSC_PERM && !write_fault) {
->> @@ -702,6 +703,9 @@ static int user_mem_abort(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
->>  	if (is_error_pfn(pfn))
->>  		return -EFAULT;
->>  
->> +	if (kvm_is_mmio_pfn(pfn))
->> +		mem_type = PAGE_S2_DEVICE;
->> +
->>  	spin_lock(&kvm->mmu_lock);
->>  	if (mmu_notifier_retry(kvm, mmu_seq))
->>  		goto out_unlock;
->> @@ -709,7 +713,7 @@ static int user_mem_abort(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
->>  		hugetlb = transparent_hugepage_adjust(&pfn, &fault_ipa);
->>  
->>  	if (hugetlb) {
->> -		pmd_t new_pmd = pfn_pmd(pfn, PAGE_S2);
->> +		pmd_t new_pmd = pfn_pmd(pfn, mem_type);
->>  		new_pmd = pmd_mkhuge(new_pmd);
->>  		if (writable) {
->>  			kvm_set_s2pmd_writable(&new_pmd);
->> @@ -718,13 +722,14 @@ static int user_mem_abort(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
->>  		coherent_icache_guest_page(kvm, hva & PMD_MASK, PMD_SIZE);
->>  		ret = stage2_set_pmd_huge(kvm, memcache, fault_ipa, &new_pmd);
->>  	} else {
->> -		pte_t new_pte = pfn_pte(pfn, PAGE_S2);
->> +		pte_t new_pte = pfn_pte(pfn, mem_type);
->>  		if (writable) {
->>  			kvm_set_s2pte_writable(&new_pte);
->>  			kvm_set_pfn_dirty(pfn);
->>  		}
->>  		coherent_icache_guest_page(kvm, hva, PAGE_SIZE);
->> -		ret = stage2_set_pte(kvm, memcache, fault_ipa, &new_pte, false);
->> +		ret = stage2_set_pte(kvm, memcache, fault_ipa, &new_pte,
->> +				     mem_type == PAGE_S2_DEVICE);
->>  	}
->>  
->>  
->> -- 
->> 1.9.1
->> 
->
-> I think this looks reasonable.
->
-> Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
+Without it processes can sleep forever on the lock bit and hang due to
+races between when the PG_waiters is set and cleared. I'll investigate
+if this can be done a better way.
 
-I feel like I'm missing some context here, and the commit message is way
-too terse for me to make sense of it.
+> > diff --git a/mm/filemap.c b/mm/filemap.c
+> > index c60ed0f..93e4385 100644
+> > --- a/mm/filemap.c
+> > +++ b/mm/filemap.c
+> > +int  __wait_on_page_locked_killable(struct page *page)
+> > +{
+> > +	int ret = 0;
+> > +	wait_queue_head_t *wq = page_waitqueue(page);
+> > +	DEFINE_WAIT_BIT(wait, &page->flags, PG_locked);
+> > +
+> > +	if (!test_bit(PG_locked, &page->flags))
+> > +		return 0;
+> > +	do {
+> > +		prepare_to_wait(wq, &wait.wait, TASK_KILLABLE);
+> > +		if (!PageWaiters(page))
+> > +			SetPageWaiters(page);
+> > +		if (likely(PageLocked(page)))
+> > +			ret = sleep_on_page_killable(page);
+> > +		finish_wait(wq, &wait.wait);
+> > +	} while (PageLocked(page) && !ret);
+>   So I'm somewhat wondering why this is the only page waiting variant that
+> does finish_wait() inside the loop. Everyone else does it outside the while
+> loop which seems sufficient to me even in this case...
+> 
 
-So far, we can only get into user_mem_abort on a Stage-2 fault
-(translation or permission) for memory. How can we suddenly get here for
-a *device* fault? Do we get a special kind of memslot?
+No reason. The finish_wait can always be outside. I'll fix it up.
+Thanks.
 
-I'm not saying the patch does anything wrong, but I'd like to understand
-the rationale behind it. On its own, it doesn't make much sense.
-
-Thanks,
-
-        M.
 -- 
-Jazz is not dead. It just smells funny.
+Mel Gorman
+SUSE Labs
