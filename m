@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546AbaEGVX0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 17:23:26 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:47918 "EHLO
+	id S1752558AbaEGVYL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 17:24:11 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:55970 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226AbaEGVXY (ORCPT
+	with ESMTP id S1751315AbaEGVYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 17:23:24 -0400
-Date: Wed, 7 May 2014 14:23:20 -0700
+	Wed, 7 May 2014 17:24:08 -0400
+Date: Wed, 7 May 2014 14:24:03 -0700
 From: josh@joshtriplett.org
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
@@ -16,81 +16,81 @@ Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 08/45] torture: Rename RCU_KMAKE_ARG to
- TORTURE_KMAKE_ARG
-Message-ID: <20140507212320.GD27924@cloud>
+Subject: Re: [PATCH tip/core/rcu 10/45] torture: Rename RCU_BUILDONLY to
+ TORTURE_BUILDONLY
+Message-ID: <20140507212403.GE27924@cloud>
 References: <20140429002455.GA15461@linux.vnet.ibm.com>
  <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1398731133-18925-8-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1398731133-18925-10-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398731133-18925-8-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1398731133-18925-10-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 05:24:56PM -0700, Paul E. McKenney wrote:
+On Mon, Apr 28, 2014 at 05:24:58PM -0700, Paul E. McKenney wrote:
 > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
 > This commit makes the torture scripts a bit more RCU-independent.
 
-You've also dropped unnecessary "export" calls; please document that in
-the commit message.  With that change:
+And removes unnecessary exports; please document that.  With that
+change:
 
 > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
 > ---
->  tools/testing/selftests/rcutorture/bin/kvm-build.sh | 2 +-
->  tools/testing/selftests/rcutorture/bin/kvm.sh       | 6 +++---
->  2 files changed, 4 insertions(+), 4 deletions(-)
+>  tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh | 2 +-
+>  tools/testing/selftests/rcutorture/bin/kvm.sh            | 9 ++++++---
+>  2 files changed, 7 insertions(+), 4 deletions(-)
 > 
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-build.sh b/tools/testing/selftests/rcutorture/bin/kvm-build.sh
-> index d8e68a5e4411..e838c775f709 100755
-> --- a/tools/testing/selftests/rcutorture/bin/kvm-build.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm-build.sh
-> @@ -60,7 +60,7 @@ then
->  	exit 2
->  fi
->  ncpus=`cpus2use.sh`
-> -make O=$builddir -j$ncpus $RCU_KMAKE_ARG > $builddir/Make.out 2>&1
-> +make O=$builddir -j$ncpus $TORTURE_KMAKE_ARG > $builddir/Make.out 2>&1
->  retval=$?
->  if test $retval -ne 0 || grep "rcu[^/]*": < $builddir/Make.out | egrep -q "Stop|Error|error:|warning:" || egrep -q "Stop|Error|error:" < $builddir/Make.out
+> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> index e82f4f201c8c..86e6ffe6df45 100755
+> --- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> +++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> @@ -152,7 +152,7 @@ boot_args="`configfrag_boot_params "$boot_args" "$config_template"`"
+>  boot_args="`per_version_boot_params "$boot_args" $builddir/.config $seconds`"
+>  
+>  echo $QEMU $qemu_args -m 512 -kernel $builddir/arch/x86/boot/bzImage -append \"$qemu_append $boot_args\" > $resdir/qemu-cmd
+> -if test -n "$RCU_BUILDONLY"
+> +if test -n "$TORTURE_BUILDONLY"
 >  then
+>  	echo Build-only run specified, boot/test omitted.
+>  	exit 0
 > diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> index 59945b7793d9..04ad1f980dfe 100644
+> index 08c90cba79d2..73c586f6bdf6 100644
 > --- a/tools/testing/selftests/rcutorture/bin/kvm.sh
 > +++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> @@ -40,7 +40,7 @@ KVM="`pwd`/tools/testing/selftests/rcutorture"; export KVM
->  PATH=${KVM}/bin:$PATH; export PATH
->  TORTURE_DEFCONFIG=defconfig
->  TORTURE_INITRD="$KVM/initrd"; export TORTURE_INITRD
-> -RCU_KMAKE_ARG=""; export RCU_KMAKE_ARG
-> +TORTURE_KMAKE_ARG=""
->  TORTURE_SUITE=rcu
->  resdir=""
->  configs=""
-> @@ -118,7 +118,7 @@ do
->  		;;
->  	--kmake-arg)
->  		checkarg --kmake-arg "(kernel make arguments)" $# "$2" '.*' '^error$'
-> -		RCU_KMAKE_ARG="$2"; export RCU_KMAKE_ARG
-> +		TORTURE_KMAKE_ARG="$2"
+> @@ -81,7 +81,7 @@ do
 >  		shift
 >  		;;
->  	--kversion)
-> @@ -376,7 +376,7 @@ then
+>  	--buildonly)
+> -		RCU_BUILDONLY=1; export RCU_BUILDONLY
+> +		TORTURE_BUILDONLY=1
+>  		;;
+>  	--configs)
+>  		checkarg --configs "(list of config files)" "$#" "$2" '^[^/]*$' '^--'
+> @@ -374,7 +374,7 @@ then
+>  	echo KVM="$KVM; export KVM"
+>  	echo KVPATH="$KVPATH; export KVPATH"
 >  	echo PATH="$PATH; export PATH"
->  	echo RCU_BUILDONLY="$RCU_BUILDONLY; export RCU_BUILDONLY"
+> -	echo RCU_BUILDONLY="$RCU_BUILDONLY; export RCU_BUILDONLY"
+> +	echo TORTURE_BUILDONLY="$TORTURE_BUILDONLY; export TORTURE_BUILDONLY"
 >  	echo TORTURE_INITRD="$TORTURE_INITRD; export TORTURE_INITRD"
-> -	echo RCU_KMAKE_ARG="$RCU_KMAKE_ARG; export RCU_KMAKE_ARG"
-> +	echo TORTURE_KMAKE_ARG="$TORTURE_KMAKE_ARG; export TORTURE_KMAKE_ARG"
+>  	echo TORTURE_KMAKE_ARG="$TORTURE_KMAKE_ARG; export TORTURE_KMAKE_ARG"
 >  	echo RCU_QEMU_CMD="$RCU_QEMU_CMD; export RCU_QEMU_CMD"
->  	echo RCU_QEMU_INTERACTIVE="$RCU_QEMU_INTERACTIVE; export RCU_QEMU_INTERACTIVE"
->  	echo RCU_QEMU_MAC="$RCU_QEMU_MAC; export RCU_QEMU_MAC"
+> @@ -402,4 +402,7 @@ echo
+>  echo
+>  echo " --- `date` Test summary:"
+>  echo Results directory: $resdir/$ds
+> -kvm-recheck.sh $resdir/$ds
+> +if test -n "$TORTURE_BUILDONLY"
+> +then
+> +	kvm-recheck.sh $resdir/$ds
+> +fi
 > -- 
 > 1.8.1.5
 > 
