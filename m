@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932726AbaEGQTj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:19:39 -0400
-Received: from denmail01-v4020.amcc.com ([192.195.68.30]:36580 "EHLO
+	id S932558AbaEGQTg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:19:36 -0400
+Received: from denmail01-v4020.amcc.com ([192.195.68.30]:36578 "EHLO
 	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932324AbaEGQTd (ORCPT
+	with ESMTP id S932307AbaEGQTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 May 2014 12:19:33 -0400
 From: Feng Kan <fkan@apm.com>
@@ -13,57 +13,58 @@ To: dbaryshkov@gmail.com, catalin.marinas@arm.com, dwmw2@infradead.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         patches@apm.com
 Cc: Feng Kan <fkan@apm.com>
-Subject: [PATCH V6 3/5] Documentation: power: reset: Add documentation for generic SYSCON reboot driver
-Date: Wed,  7 May 2014 09:18:02 -0700
-Message-Id: <1399479484-2605-4-git-send-email-fkan@apm.com>
+Subject: [PATCH V6 0/5] Generic syscon reboot driver for APM X-Gene platforms
+Date: Wed,  7 May 2014 09:17:59 -0700
+Message-Id: <1399479484-2605-1-git-send-email-fkan@apm.com>
 X-Mailer: git-send-email 1.7.6.1
-In-Reply-To: <1399479484-2605-1-git-send-email-fkan@apm.com>
-References: <1399479484-2605-1-git-send-email-fkan@apm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add documentation for generic SYSCON reboot driver.
+Enable reboot driver for the X-Gene platform. Add generic syscon reboot
+driver.
 
-Signed-off-by: Feng Kan <fkan@apm.com>
----
- .../bindings/power/reset/syscon-reboot.txt         |   27 ++++++++++++++++++++
- 1 files changed, 27 insertions(+), 0 deletions(-)
+V6 Change:
+	- Added reference in documenation for reference phandle
+
+V5 Change:
+	- Documentation update, endian and access size.
+
+V4 Change:
+	- Remove old X-Gene reboot driver
+	- Add generic syscon reboot driver
+	- Add DTS and Kconfig for X-Gene reboot using syscon method
+
+V3 Change:
+	- Remove the reboot driver's use of acpi resource patch.
+	- Change the reboot driver to use syscon to parse out 
+	  system clock register. Remove the old method of getting
+	  register from the reboot driver directly.
+	- Remove documentation since its now simple.
+
+V2 Change:
+	- Add support for using ACPI resource.
+
+Feng Kan (5):
+  power: reset: Add generic SYSCON register mapped reset
+  power: reset: Remove X-Gene reboot driver
+  arm64: dts: Add X-Gene reboot driver dts node
+  arm64: Select reboot driver for X-Gene platform
+  Documentation: power: reset: Add documentation for generic SYSCON
+    reboot driver
+
+ .../bindings/power/reset/syscon-reboot.txt         |   27 +++++
+ arch/arm64/Kconfig                                 |    2 +
+ arch/arm64/boot/dts/apm-storm.dtsi                 |   13 +++
+ drivers/power/reset/Kconfig                        |    8 +-
+ drivers/power/reset/Makefile                       |    2 +-
+ drivers/power/reset/syscon-reboot.c                |  100 +++++++++++++++++++
+ drivers/power/reset/xgene-reboot.c                 |  103 --------------------
+ 7 files changed, 147 insertions(+), 108 deletions(-)
  create mode 100644 Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+ create mode 100644 drivers/power/reset/syscon-reboot.c
+ delete mode 100644 drivers/power/reset/xgene-reboot.c
 
-diff --git a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
-new file mode 100644
-index 0000000..79942a3
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
-@@ -0,0 +1,27 @@
-+Generic SYSCON mapped register reset driver
-+
-+This is a generic reset driver using syscon to map the reset register.
-+The reset is generally performed with a write to the reset register
-+defined by the register map pointed by syscon reference plus the offset
-+with the mask defined in the reboot node.
-+
-+Required properties:
-+- compatible: should contain "syscon-reboot"
-+- regmap: this is phandle to the register map node 
-+- offset: offset in the register map for the reboot register (in bytes)
-+- mask: the reset value written to the reboot register (32 bit access)
-+
-+Default will be little endian mode, 32 bit access only.
-+
-+Examples:
-+	regmapnode {
-+		compatible = "apm,xgene-scu","syscon";
-+		reg = <0xXXXXXXXX 0xXXXXXXXX>;
-+	}
-+
-+	reboot {
-+	   compatible = "syscon-reboot";
-+	   regmap = <&regmapnode>;
-+	   offset = <0x0>;
-+	   mask = <0x1>;
-+	};
 -- 
 1.7.6.1
 
