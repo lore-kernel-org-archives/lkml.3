@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755656AbaEGImR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 04:42:17 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:30098 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755104AbaEGImP (ORCPT
+	id S1755737AbaEGIm1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 04:42:27 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:28962 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755104AbaEGImW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 04:42:15 -0400
-Date: Wed, 7 May 2014 11:41:56 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: John Church <j.church@ymail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, georgiana.chelu93@gmail.com,
-        waydi1@gmail.com
-Subject: Re: [PATCH] Staging: android: fix coding style issue in timed_gpio.c
-Message-ID: <20140507084156.GX26890@mwanda>
-References: <5369D165.1080400@ymail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5369D165.1080400@ymail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 7 May 2014 04:42:22 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f5-b7fae6d000004d6d-28-5369f1e9ed66
+Content-transfer-encoding: 8BIT
+Message-id: <1399452150.15392.1.camel@AMDC1943>
+Subject: Re: [PATCH 2/5] regulator: max8952: Make of_device_id array const
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Mark Brown'" <broonie@kernel.org>,
+        "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Wed, 07 May 2014 10:42:30 +0200
+In-reply-to: <01ec01cf69cb$430ae9e0$c920bda0$%han@samsung.com>
+References: <01e101cf69c9$abd91f70$038b5e50$%han@samsung.com>
+ <01ec01cf69cb$430ae9e0$c920bda0$%han@samsung.com>
+X-Mailer: Evolution 3.10.4-0ubuntu1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGLMWRmVeSWpSXmKPExsVy+t/xa7ovP2YGG5xbYWUx9eETNovLCy+x
+	Wny70sFkcXnXHDYHFo+ds+6ye2xa1cnm0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBmNTQ8Y
+	C86zVTQv6GRvYFzH2sXIySEhYCLxaPMkZghbTOLCvfVsXYxcHEICSxkl5j09BJbgFRCU+DH5
+	HksXIwcHs4C8xJFL2SBhZgF1iUnzFjFD1H9mlLj7fA4TRL2+xJRpK5hA6oUFvCSafwmAhNkE
+	jCU2L1/CBmKLCKhIfF5/nA1iZI7E9dNGIGEWAVWJrqUP2UFsTgE7iY9zDzOC2EIChRJNjz9B
+	nawsMW//MaYJjAKzkBw3C+G4WUiOW8DIvIpRNLU0uaA4KT3XSK84Mbe4NC9dLzk/dxMjJGy/
+	7mBceszqEKMAB6MSD+8CmYxgIdbEsuLK3EOMEhzMSiK8uy5mBgvxpiRWVqUW5ccXleakFh9i
+	ZOLglGpgdPYqfG3iFKZR4dydoDPzF++L68rPE27+470Qcr+y5dq8bY++v9cp/eH99eSix7K2
+	rCKbHipUmk64+Gb/0dXqc1Vfbp61bukadr1yh/NWai+uhlu9nNqu3P9d+rtjbv7P7L4uTx9e
+	z8B1R6QPP2H9eHla3JnJ7RZHY3juy9QVxb9/8UTk/CQJEyWW4oxEQy3mouJEAESs8a85AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 07:23:33AM +0100, John Church wrote:
-> This patch fixes a coding style issue. It modifies a single line
-> that was over 80 characters long.
+On śro, 2014-05-07 at 17:06 +0900, Jingoo Han wrote:
+> Make of_device_id array const, because all OF functions
+> handle it as const.
 > 
-> Thanks,
-> John
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/regulator/max8952.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Signed-off-by: John Church <j.church@ymail.com>
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-This patch isn't sent in the correct way.  Use git send-email or
-read Documentation/email-clients.txt.  Send the patch to yourself.
-Save it as raw text including headers and everything.
-`cat raw_email.txt | git am`.  Review the log with "git log -p".  When
-that looks good then resend it to the list.
+Best regards,
+Krzysztof
+
 
 > 
-> --- linux-next/drivers/staging/android/timed_gpio.c.orig	2014-05-07 00:20:50.429090320 +0100
-> +++ linux-next/drivers/staging/android/timed_gpio.c	2014-05-07 00:22:09.204795052 +0100
-> @@ -92,7 +92,7 @@ static int timed_gpio_probe(struct platf
->  		return -EBUSY;
+> diff --git a/drivers/regulator/max8952.c b/drivers/regulator/max8952.c
+> index d920f5a..c2792f0 100644
+> --- a/drivers/regulator/max8952.c
+> +++ b/drivers/regulator/max8952.c
+> @@ -129,7 +129,7 @@ static const struct regulator_desc regulator = {
+>  };
 >  
->  	gpio_data = devm_kzalloc(&pdev->dev,
-> -				sizeof(struct timed_gpio_data) * pdata->num_gpios,
-> +			sizeof(struct timed_gpio_data) * pdata->num_gpios,
->  				GFP_KERNEL);
-
-To be honest, I prefered the original because everything lined up nicely
-in the original.  Now it just looks whacky.
-
-regards,
-dan carpenter
-
->  	if (!gpio_data)
->  		return -ENOMEM;
+>  #ifdef CONFIG_OF
+> -static struct of_device_id max8952_dt_match[] = {
+> +static const struct of_device_id max8952_dt_match[] = {
+>  	{ .compatible = "maxim,max8952" },
+>  	{},
+>  };
 
