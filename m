@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779AbaEGQhJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:37:09 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53611 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925AbaEGQhI (ORCPT
+	id S1756428AbaEGQi7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:38:59 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:52040 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755943AbaEGQhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:37:08 -0400
+	Wed, 7 May 2014 12:37:13 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
@@ -15,52 +15,103 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
         Mike Galbraith <bitbucket@online.de>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [RFC PATCH 0/6] workqueue: Introduce low-level unbound wq sysfs cpumask v2
-Date: Wed,  7 May 2014 18:36:55 +0200
-Message-Id: <1399480621-19555-1-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 3/6] workqueue: Create low-level unbound workqueues cpumask
+Date: Wed,  7 May 2014 18:36:58 +0200
+Message-Id: <1399480621-19555-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1399480621-19555-1-git-send-email-fweisbec@gmail.com>
+References: <1399480621-19555-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Create a cpumask that limit the affinity of all unbound workqueues.
+This cpumask is controlled though a file at the root of the workqueue
+sysfs directory.
 
-This is the 2nd version of https://lkml.org/lkml/2014/4/24/427
+It works on a lower-level than the per WQ_SYSFS workqueues cpumask files
+such that the effective cpumask applied for a given unbound workqueue is
+the intersection of /sys/devices/virtual/workqueue/$WORKQUEUE/cpumask and
+the new /sys/devices/virtual/workqueue/cpumask_unbounds file.
 
-Changes in this version include:
+This patch implements the basic infrastructure and the read interface.
+cpumask_unbounds is initially set to cpu_possible_mask.
 
-* Allow to call apply_workqueue_attrs() on ordered workqueues and remove
-the associated special cases (thanks Lai!)
-
-* Improve error handling
-
-* Add some lockdep_assert_held() to check locking requirements
-
-* Rename unbounds_cpumask file to cpumask (some prefix still in discusion
-with Tejun).
-
-* Better handle widening of cpumask (see 6th patch), but need to be done
-more properly, see changelog.
-
-* Rebase on top of Tejun's workqueue next branch
-
-Thanks,
-	Frederic
-
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	core/workqueue-v4
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Mike Galbraith <bitbucket@online.de>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
+ kernel/workqueue.c | 29 +++++++++++++++++++++++++++--
+ 1 file changed, 27 insertions(+), 2 deletions(-)
 
-Frederic Weisbecker (5):
-      workqueue: Reorder sysfs code
-      workqueue: Create low-level unbound workqueues cpumask
-      workqueue: Split apply attrs code from its locking
-      workqueue: Allow modifying low level unbound workqueue cpumask
-      workqueue: Record real per-workqueue cpumask
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index e5d7719..1252a8c 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -293,6 +293,8 @@ static DEFINE_SPINLOCK(wq_mayday_lock);	/* protects wq->maydays list */
+ static LIST_HEAD(workqueues);		/* PL: list of all workqueues */
+ static bool workqueue_freezing;		/* PL: have wqs started freezing? */
+ 
++static cpumask_var_t wq_unbound_cpumask;
++
+ /* the per-cpu worker pools */
+ static DEFINE_PER_CPU_SHARED_ALIGNED(struct worker_pool [NR_STD_WORKER_POOLS],
+ 				     cpu_worker_pools);
+@@ -3674,7 +3676,7 @@ int apply_workqueue_attrs(struct workqueue_struct *wq,
+ 
+ 	/* make a copy of @attrs and sanitize it */
+ 	copy_workqueue_attrs(new_attrs, attrs);
+-	cpumask_and(new_attrs->cpumask, new_attrs->cpumask, cpu_possible_mask);
++	cpumask_and(new_attrs->cpumask, new_attrs->cpumask, wq_unbound_cpumask);
+ 
+ 	/*
+ 	 * We may create multiple pwqs with differing cpumasks.  Make a
+@@ -4071,9 +4073,29 @@ static struct bus_type wq_subsys = {
+ 	.dev_groups			= wq_sysfs_groups,
+ };
+ 
++static ssize_t unbounds_cpumask_show(struct device *dev,
++				     struct device_attribute *attr, char *buf)
++{
++	int written;
++
++	written = cpumask_scnprintf(buf, PAGE_SIZE, wq_unbound_cpumask);
++	written += scnprintf(buf + written, PAGE_SIZE - written, "\n");
++
++	return written;
++}
++
++static struct device_attribute wq_sysfs_cpumask_attr =
++	__ATTR(cpumask, 0444, unbounds_cpumask_show, NULL);
++
+ static int __init wq_sysfs_init(void)
+ {
+-	return subsys_virtual_register(&wq_subsys, NULL);
++	int err;
++
++	err = subsys_virtual_register(&wq_subsys, NULL);
++	if (err)
++		return err;
++
++	return device_create_file(wq_subsys.dev_root, &wq_sysfs_cpumask_attr);
+ }
+ core_initcall(wq_sysfs_init);
+ 
+@@ -5068,6 +5090,9 @@ static int __init init_workqueues(void)
+ 
+ 	WARN_ON(__alignof__(struct pool_workqueue) < __alignof__(long long));
+ 
++	BUG_ON(!alloc_cpumask_var(&wq_unbound_cpumask, GFP_KERNEL));
++	cpumask_copy(wq_unbound_cpumask, cpu_possible_mask);
++
+ 	pwq_cache = KMEM_CACHE(pool_workqueue, SLAB_PANIC);
+ 
+ 	cpu_notifier(workqueue_cpu_up_callback, CPU_PRI_WORKQUEUE_UP);
+-- 
+1.8.3.1
 
-Lai Jiangshan (1):
-      workqueue: Allow changing attributions of ordered workqueues
-
-
- kernel/workqueue.c | 1672 ++++++++++++++++++++++++++++------------------------
- 1 file changed, 896 insertions(+), 776 deletions(-)
