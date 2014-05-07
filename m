@@ -1,93 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283AbaEGDGD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 23:06:03 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43121 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222AbaEGDGB (ORCPT
+	id S1754494AbaEGDH6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 23:07:58 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:40860 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412AbaEGDH4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 23:06:01 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCHSET 00/17] perf report: Add -F option for specifying output fields (v4)
-References: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
-	<20140422211647.GO8488@redhat.com> <87lhuwr2pk.fsf@sejong.aot.lge.com>
-	<20140423125828.GL5328@redhat.com> <1398346899.1681.18.camel@leonhard>
-	<20140424210015.GJ8488@redhat.com> <20140428194642.GQ5328@redhat.com>
-	<878uqpos3k.fsf@sejong.aot.lge.com>
-	<20140429172735.GD32375@redhat.com>
-	<874n1bpuzh.fsf@sejong.aot.lge.com>
-	<20140430133554.GB61249@redhat.com>
-Date: Wed, 07 May 2014 12:05:58 +0900
-In-Reply-To: <20140430133554.GB61249@redhat.com> (Don Zickus's message of
-	"Wed, 30 Apr 2014 09:35:55 -0400")
-Message-ID: <87mweunv8p.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 6 May 2014 23:07:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAOk88BKmoSytTCXrXgsAGQXhUYvXqCPeX7TmYBRST+K8e0bv3w@mail.gmail.com>
+References: <CAOk88BLR=nwNGdT++39vLdOt=TwZmemF-trSQPY8AdMN9tKtKQ@mail.gmail.com>
+ <20140506181151.GU28564@pengutronix.de> <CAOk88BJ+sCtM_cRLuBktUKWYHcPo6KtQ+GAgTJL0zBgQqcQYog@mail.gmail.com>
+ <CAGVrzcZs9-f4bCLNv3-s9iubMk8SF8P9+aJaere7rdLbvfo0bw@mail.gmail.com>
+ <CAOk88B+5CQZ639S_DwprrdBwZCs9m1cN_hr5hDRVkP18DqHd0w@mail.gmail.com>
+ <CAGVrzcbdm-owTaz6ENZMCCGDxQsSaHoEVP=5ex9kZj-FprqUxQ@mail.gmail.com> <CAOk88BKmoSytTCXrXgsAGQXhUYvXqCPeX7TmYBRST+K8e0bv3w@mail.gmail.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Tue, 6 May 2014 20:07:15 -0700
+Message-ID: <CAGVrzcaL6817-WQ73srFHC022QY9LOJwQyx=uxqjHBt+Cf7ZRg@mail.gmail.com>
+Subject: Re: i.MX28 based system losing eth0 on boot
+To: Brian Lilly <brian@crystalfontz.com>
+Cc: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Jim Baxter <jim_baxter@mentor.com>, Frank Li <Frank.Li@freescale.com>,
+        Fugang Duan <B38611@freescale.com>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kernel <kernel@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Don,
+2014-05-06 15:27 GMT-07:00 Brian Lilly <brian@crystalfontz.com>:
+> It would appear that I don't have that commit.  I could move to 3.14
+> to see if it makes a difference, but the last couple of responses have
+> been on 3.12.18 -- or perhaps I'm missing something else.
 
-On Wed, 30 Apr 2014 09:35:55 -0400, Don Zickus wrote:
-> On Wed, Apr 30, 2014 at 08:38:10AM +0900, Namhyung Kim wrote:
->> Hi Don,
->> 
->> On Tue, 29 Apr 2014 13:27:35 -0400, Don Zickus wrote:
->> > On Tue, Apr 29, 2014 at 10:13:35AM +0900, Namhyung Kim wrote:
->> >> >        /*
->> >> >         * Addresses with no major/minor numbers are assumed to be
->> >> >         * anonymous in userspace.  Sort those on pid then address.
->> >> >         *
->> >> >         * The kernel and non-zero major/minor mapped areas are
->> >> >         * assumed to be unity mapped.  Sort those on address.
->> >> >         */
->> >> >
->> >> >        if ((left->cpumode != PERF_RECORD_MISC_KERNEL) &&
->> >> >            !l_map->maj && !l_map->min && !l_map->ino &&
->> >> >            !l_map->ino_generation) {
->> >> >                /* userspace anonymous */
->> >> >
->> >> >                if (left->thread->pid_ > right->thread->pid_) return -1;
->> >> >                if (left->thread->pid_ < right->thread->pid_) return 1;
->> >> 
->> >> Isn't it necessary to check whether the address is in a same map in case
->> >> of anon pages?  I mean the daddr.al_addr is a map-relative offset so it
->> >> might have same value for different maps.
->> >
->> > That's why I sort on pids here.  Because the anon address might have the
->> > same value for different maps.  The thought was to group all the pid
->> > addresses together to keep things seperated.
->> >
->> > Do you see a different way to solve the problem?  I am not sure al_addr
->> > vs. addr will make much difference here.
->> 
->> I'm not saying to get rid of the pid check, I'm saying that it might
->> need to add another check for maps (i.e. start address) as there might
->> be many maps in a single address space.
+I did miss that you were also seeing the problem in 3.12. At that
+point, I believe that the driver was working around a potential PHY
+bug that is not covered by the SMSC PHY driver, or that the MDIO
+timeout is simply not long enough, or that your MDIO interrupts fire
+much longer than what the timeout allows, or that these interrupts are
+not reliable.
+
+You could probably try to ignore the timeout and see if you get
+sensible data out of the MDIO bus regardless.
+
+> Please let me know if you have any questions.
 >
-> Hmm, I guess I would need to see an example.  While I agree there might be
-> many maps in a single address space (/proc/<pid>/maps demonstrates that),
-> I understood them to map to a unique location (ie no overlap) unless they
-> are shared.
+> Thank you.
 >
-> I am willing to believe I missed scenario when sorting, I just can't think
-> of it (so I wouldn't know how to fix it).  That's why I was looking for an
-> example to make it more obvious to me.  Sorry for being slow..
+> Brian Lilly
+> Crystalfontz America, Incorporated
+> 12412 East Saltese Road
+> Spokane Valley, WA 99216
+> brian@crystalfontz.com http://www.crystalfontz.com
+> Twitter: @Crystalfontz
+> US toll-free (888) 206-9720 voice (509) 892-1200
+>
+>
+> On Tue, May 6, 2014 at 3:06 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+>> 2014-05-06 14:40 GMT-07:00 Brian Lilly <brian@crystalfontz.com>:
+>>> The PHY on board is the SMSC LAN8720
+>>>
+>>> With the generic PHY driver selected:  http://pastebin.com/A4MH4Ptw
+>>>
+>>> [   28.828761] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
+>>> [Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
+>>> [   28.840626] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+>>> [   30.827536] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
+>>> [   30.833739] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+>>> [   32.986999] IPv6: ADDRCONF(NETDEV_UP): usb0: link is not ready
+>>> [   37.316421] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
+>>> [Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
+>>> [   38.345047] fec 800f0000.ethernet eth0: MDIO read timeout
+>>> [   39.506210] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+>>> [   40.374961] fec 800f0000.ethernet eth0: MDIO read timeout
+>>>
+>>> With the SMSC PHY driver selected:  http://pastebin.com/DhdDyrMv
+>>>
+>>> [   28.778974] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
+>>> [SMSC LAN8710/LAN8720] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
+>>> [   28.791742] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+>>> [   30.773078] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
+>>> [   30.779286] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+>>> [   32.934692] IPv6: ADDRCONF(NETDEV_UP): usb0: link is not ready
+>>> [   37.242162] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
+>>> [SMSC LAN8710/LAN8720] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
+>>> [   38.270611] fec 800f0000.ethernet eth0: MDIO read timeout
+>>> [   39.415256] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+>>> [   40.300454] fec 800f0000.ethernet eth0: MDIO read timeout
+>>
+>> Thanks for trying this, at least this is consistent no matter which
+>> PHY driver we are using. Just to rule out a potential PHY power-down
+>> issue, could you try to revert the following commit
+>> be9dad1f9f26604fb71c0d53ccb39a8f1d425807 ("net: phy: suspend phydev
+>> when going to HALTED") and see if that works better for you?
+>>
+>> Thanks!
+>>
+>>>
+>>> On Tue, May 6, 2014 at 12:24 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+>>>> 2014-05-06 12:12 GMT-07:00 Brian Lilly <brian@crystalfontz.com>:
+>>>>> It is happening during boot up:
+>>>>>
+>>>>> <snip, kernel 3.12 >
+>>>>>
+>>>>> Configuring network interfaces... [   35.117114] fec 800f0000.ethernet
+>>>>> eth0: Freescale FEC PHY driver [SMSC LAN8710/LAN8720]
+>>>>
+>>>> Note that the SMSC PHY driver is picked up here, and that specific
+>>>> driver implements a different phy_read_status() callback due to how
+>>>> the PHY operates. The PHY driver also overrides the config_init()
+>>>> callback to perform some PHY-specific initialization. See below for
+>>>> more.
+>>>>
+>>>>> (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
+>>>>> [   35.129967] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+>>>>> udhcpc (v1.21.1) started
+>>>>>
+>>>>> Sending discover...
+>>>>>
+>>>>> [   37.113901] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
+>>>>> [   37.120134] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+>>>>> Sending discover...
+>>>>>
+>>>>> Sending select for 10.10.10.217...
+>>>>> Lease of 10.10.10.217 obtained, lease time 86400
+>>>>> /etc/udhcpc.d/50default: Adding DNS 10.10.10.13
+>>>>> [   39.319957] IPv6: ADDRCONF(NETDEV_UP): usb0: link is not ready
+>>>>> done.
+>>>>> Starting rpcbind daemon...done.
+>>>>> net.ipv4.conf.default.rp_filter = 1
+>>>>> net.ipv4.conf.all.rp_filter = 1
+>>>>> Mon Apr 14 22:40:00 UTC 2014
+>>>>> INIT: Entering runlevel: 5
+>>>>> Starting Xserver
+>>>>> Starting system message bus: dbus.
+>>>>> Starting Connection Manager
+>>>>> Starting wpa_supplicant
+>>>>> Successfully initialized wpa_supplicant
+>>>>> Starting Dropbear SSH server
+>>>>> [   44.754915] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
+>>>>> [SMSC LAN8710/LAN8720] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
+>>>>
+>>>> The correct PHY driver is selected here...
+>>>>
+>>>>> [   45.781364] fec 800f0000.ethernet eth0: MDIO read timeout
+>>>>> [   46.826170] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+>>>>> [   47.811385] fec 800f0000.ethernet eth0: MDIO read timeout
+>>>>
+>>>> But we are still seeing MDIO read timeouts, which is not great.
+>>>>
+>>>>>
+>>>>> With a different kernel (3.14):
+>>>>>
+>>>>> [   28.989897] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
+>>>>> [Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
+>>>>> [   30.991210] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
+>>>>> [   37.369372] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
+>>>>> [Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
+>>>>
+>>>> Here, the Generic PHY driver has been selected, which will use the
+>>>> MII_BMSR register contents to determine the Link status and
+>>>> parameters. You might want to make sure that your board selects the
+>>>> appropriate PHY driver, such that we are not chasing two issues here.
+>>>>
+>>>>> [   38.398346] fec 800f0000.ethernet eth0: MDIO read timeout
+>>>>> [   39.438412] fec 800f0000.ethernet eth0: MDIO read timeout
+>>>>> [   39.468419] fec 800f0000.ethernet eth0: MDIO write timeout
+>>>>> [   40.498848] fec 800f0000.ethernet eth0: MDIO read timeout
+>>>>
+>>>> It would also be helpful to print the register that were accessed,
+>>>> such that you could correlate this with the exact steps in the PHY
+>>>> library state machine. Please also retry the experiment with the SMSC
+>>>> PHY driver enabled, as it does some PHY specific initialization that
+>>>> seems to be relevant. Then we are hopefully left with only the MDIO
+>>>> timeout issue and not the PHY mis-configuration + MDIO timeout.
+>>>>
+>>>>>
+>>>>> Afterward I have to ifdown eth0, ifup eth0 and then it functions
+>>>>> normally, without reverting the commit.
+>>>>>
+>>>>> root@cfa100xx:~# ifdown eth0
+>>>>> [ 1154.679658] fec 800f0000.ethernet eth0: Freescale FEC PHY driver
+>>>>> [Generic PHY] (mii_bus:phy_addr=800f0000.etherne:00, irq=-1)
+>>>>> root@cfa100xx:~# ifup eth0
+>>>>> udhcpc (v1.21.1) started
+>>>>> Sending discover...
+>>>>> [ 1156.679547] libphy: 800f0000.etherne:00 - Link is Up - 100/Full
+>>>>> Sending discover...
+>>>>> Sending select for 10.10.10.217...
+>>>>> Lease of 10.10.10.217 obtained, lease time 86400
+>>>>> ip: RTNETLINK answers: File exists
+>>>>>
+>>>>> --
+>>>>> Brian
+>>>>>
+>>>>>
+>>>>> On Tue, May 6, 2014 at 11:11 AM, Uwe Kleine-König
+>>>>> <u.kleine-koenig@pengutronix.de> wrote:
+>>>>>> Hello Brian,
+>>>>>>
+>>>>>> On Tue, May 06, 2014 at 09:44:34AM -0700, Brian Lilly wrote:
+>>>>>>> With commit a264b981f2c76e281ef27e7232774bf6c54ec865 we're having eth0
+>>>>>>> come up, then brought right back down with an MDIO rx timeout moments
+>>>>>>> after.  Adding back in the removed code keeps the interface alive and
+>>>>>>> it's working afterward without trouble.  I've tested the re-inserted
+>>>>>>> code in 3.12, 3.14 without issue on our boards.
+>>>>>> So you can reliably trigger that problem? You're just doing
+>>>>>>
+>>>>>>         ifconfig eth0 1.2.3.4 up
+>>>>>>
+>>>>>> (or equivalent) and the interface goes down without further
+>>>>>> interference with the above mentioned commit? The exact error you're
+>>>>>> seeing is
+>>>>>>
+>>>>>>         MDIO read timeout
+>>>>>>
+>>>>>> (with some prefix saying something about fec and eth0 I think)?
+>>>>>>
+>>>>>> This error is also present with a264b981f2 reverted, just doesn't affect
+>>>>>> eth0 being functional? Does the timeout always happen, or only on
+>>>>>> specific addresses?
+>>>>>>
+>>>>>> This is not a proper fix, but does it help to increment FEC_MII_TIMEOUT?
+>>>>>>
+>>>>>>> Is there something else that can be done to prevent the MDIO timeouts?
+>>>>>>> We are using basically the same schematic for networking as the
+>>>>>>> imx28evk.
+>>>>>> Hard to say, but assuming it works just fine on the imx28evk for you,
+>>>>>> too, there seems to be some hardware difference that makes your machine
+>>>>>> fail. (That doesn't mean it's not fixable in software.)
+>>>>>>
+>>>>>> I don't know if a mdio read error is intended to make the device go
+>>>>>> down, maybe one the the netdev guys can answer that.
+>>>>>> Assuming that it's not intended, instrument the code, find out how that
+>>>>>> timeout makes your device go down and find the wrong branch. I'd start
+>>>>>> with adding stackdumps when the mdio timeout happens and when
+>>>>>> fec_enet_start_xmit is called with fep->link == 0.
+>>>>>>
+>>>>>> Best regards
+>>>>>> Uwe
+>>>>>>
+>>>>>> --
+>>>>>> Pengutronix e.K.                           | Uwe Kleine-König            |
+>>>>>> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>
+>>>>
+>>>>
+>>>> --
+>>>> Florian
+>>
+>>
+>>
+>> --
+>> Florian
 
-I'm also sorry for being late.  Looking at the code, it seems to use
-identity__map_ip() for anon maps so my concern is bogus.  Please just
-forget about it and keep going.  Sorry for interrupting your work..
 
-Thanks,
-Namhyung
+
+-- 
+Florian
