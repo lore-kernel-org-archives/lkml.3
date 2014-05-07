@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932893AbaEGNDy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:03:54 -0400
-Received: from mail-yk0-f176.google.com ([209.85.160.176]:35083 "EHLO
-	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932850AbaEGNDw (ORCPT
+	id S932953AbaEGNEL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:04:11 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:29053 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932903AbaEGNEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:03:52 -0400
-From: =?UTF-8?q?Guido=20Mart=C3=ADnez?= <guido@vanguardiasur.com.ar>
-To: robh+dt@kernel.org
-Cc: devicetree@vger.kernel.org,
-        =?UTF-8?q?Ezequiel=20Garc=C3=ADa?= <ezequiel@vanguardiasur.com.ar>,
-        dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        =?UTF-8?q?Guido=20Mart=C3=ADnez?= <guido@vanguardiasur.com.ar>
-Subject: [RFC/PATCH 2/3] DT: input: adp5589: add adp5589 include file
-Date: Wed,  7 May 2014 10:00:43 -0300
-Message-Id: <1399467644-27222-3-git-send-email-guido@vanguardiasur.com.ar>
-X-Mailer: git-send-email 2.0.0.rc0
-In-Reply-To: <1399467644-27222-1-git-send-email-guido@vanguardiasur.com.ar>
-References: <1399467644-27222-1-git-send-email-guido@vanguardiasur.com.ar>
+	Wed, 7 May 2014 09:04:06 -0400
+X-IronPort-AV: E=Sophos;i="4.97,1003,1389715200"; 
+   d="scan'208";a="30200079"
+Message-ID: <536A2143.5090106@cn.fujitsu.com>
+Date: Wed, 7 May 2014 21:04:19 +0900
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Peter Zijlstra <peterz@infradead.org>
+CC: <mingo@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched/clock: cleanup, remove wrap_{max|min}().
+References: <1399463338-15507-1-git-send-email-yangds.fnst@cn.fujitsu.com> <20140507125548.GL30445@twins.programming.kicks-ass.net>
+In-Reply-To: <20140507125548.GL30445@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.49]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add include file with macros ADP_COL and ADP_ROW, used to specify pull
-configuration for the adp5589.
+On 05/07/2014 09:55 PM, Peter Zijlstra wrote:
+> On Wed, May 07, 2014 at 08:48:58PM +0900, Dongsheng Yang wrote:
+>> I am not sure why we need the wrap_{max|min}() in kernel/sched/clock.c.
+>> But I checked the implementation of max() and min() in linux/kernel.h, I think
+>> we can reuse them here rather than introduce a new function named
+>> wrap_{max|min}().
+> wrap is a good hint there.. they're supposed to deal with the clock
+> wrapping. Of course 2^64 ns is a rather long time (~584 years in fact),
+> but that doesn't mean we shouldn't care.
+>
+> And no, min/max don't do the right thing.
 
-Signed-off-by: Guido Martínez <guido@vanguardiasur.com.ar>
----
- include/dt-bindings/input/adp5589.h | 7 +++++++
- 1 file changed, 7 insertions(+)
- create mode 100644 include/dt-bindings/input/adp5589.h
+IMMO,  max() in kernel.h is checking and returning the u64 with typeof() if
+we are passing a u64 parameter to max(). And I checked current callers 
+of wrap_max(),
+they are all passing parameters of u64 type. So I think max/min works 
+well at
+the place of wrap_max/min().
 
-diff --git a/include/dt-bindings/input/adp5589.h b/include/dt-bindings/input/adp5589.h
-new file mode 100644
-index 0000000..5285003
---- /dev/null
-+++ b/include/dt-bindings/input/adp5589.h
-@@ -0,0 +1,7 @@
-+#ifndef _DT_BINDINGS_INPUT_ADP5589_H
-+#define _DT_BINDINGS_INPUT_ADP5589_H
-+
-+#define ADP_ROW(x)	(1 << (x))
-+#define ADP_COL(x)	(1 << (8+(x)))
-+
-+#endif
--- 
-2.0.0.rc0
+Maybe I am missing something here, please correct me if I understand it 
+incorrectly.
 
+Thanx
