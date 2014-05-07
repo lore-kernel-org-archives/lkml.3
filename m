@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933537AbaEGNQz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:16:55 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:37035 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933450AbaEGNP1 (ORCPT
+	id S933426AbaEGNPW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:15:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45635 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933345AbaEGNPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:15:27 -0400
-Date: Wed, 7 May 2014 09:15:23 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 03/10] workqueue: async worker destruction
-Message-ID: <20140507131523.GC16702@htj.dyndns.org>
-References: <1398571754-12443-1-git-send-email-laijs@cn.fujitsu.com>
- <1398571754-12443-4-git-send-email-laijs@cn.fujitsu.com>
- <5369E11F.5010909@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5369E11F.5010909@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 7 May 2014 09:15:12 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Tyler Stachecki <tstache1@binghamton.edu>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 58/70] [SCSI] mpt2sas: Don't disable device twice at suspend.
+Date: Wed,  7 May 2014 14:13:01 +0100
+Message-Id: <1399468393-10140-59-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
+References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 03:30:39PM +0800, Lai Jiangshan wrote:
-> On 04/27/2014 12:08 PM, Lai Jiangshan wrote:
-> 
-> >  
-> >  	spin_unlock_irq(&pool->lock);
-> > +
-> > +	wait_event_cmd(pool->workers_unbound,
-> > +		       idr_is_empty(&pool->worker_idr),
-> > +		       mutex_unlock(&pool->manager_mutex),
-> > +		       mutex_lock(&pool->manager_mutex));
-> > +
-> 
-> 
-> How about I wrap it as wait_event_mutex()?
-> (like wait_event_lock_irq() in kernel and pthread_cond_wait() in userspace)
+3.11.10.10 -stable review patch.  If anyone has any objections, please let me know.
 
-waitq tends to be trickier to get right.  Can you please give
-completion a shot?  completion is pretty convenient for (its only
-purpose after all) this sort of one-shot synchronizations.
+------------------
 
+From: Tyler Stachecki <tstache1@binghamton.edu>
+
+commit af61e27c3f77c7623b5335590ae24b6a5c323e22 upstream.
+
+On suspend, _scsih_suspend calls mpt2sas_base_free_resources, which
+in turn calls pci_disable_device if the device is enabled prior to
+suspending. However, _scsih_suspend also calls pci_disable_device
+itself.
+
+Thus, in the event that the device is enabled prior to suspending,
+pci_disable_device will be called twice. This patch removes the
+duplicate call to pci_disable_device in _scsi_suspend as it is both
+unnecessary and results in a kernel oops.
+
+Signed-off-by: Tyler Stachecki <tstache1@binghamton.edu>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+index 5100476..029dbbb 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -8287,7 +8287,6 @@ _scsih_suspend(struct pci_dev *pdev, pm_message_t state)
+ 
+ 	mpt2sas_base_free_resources(ioc);
+ 	pci_save_state(pdev);
+-	pci_disable_device(pdev);
+ 	pci_set_power_state(pdev, device_state);
+ 	return 0;
+ }
 -- 
-tejun
+1.9.1
+
