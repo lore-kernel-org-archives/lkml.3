@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362AbaEGVUg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 17:20:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57466 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751476AbaEGVUf (ORCPT
+	id S1752435AbaEGVVN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 17:21:13 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:35340 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111AbaEGVVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 17:20:35 -0400
-Date: Wed, 7 May 2014 14:20:33 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+	Wed, 7 May 2014 17:21:12 -0400
+Date: Wed, 7 May 2014 14:21:10 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
         Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch v3 6/6] mm, compaction: terminate async compaction when
- rescheduling
-Message-Id: <20140507142033.1ec148fe35059121db547f25@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1405061922220.18635@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com>
-	<alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com>
-	<alpine.DEB.2.02.1405061920470.18635@chino.kir.corp.google.com>
-	<alpine.DEB.2.02.1405061922220.18635@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: [patch v3 2/6] mm, compaction: return failed migration target
+ pages back to freelist
+In-Reply-To: <20140507141534.d4def933b3a9999e7826df5c@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1405071420110.8454@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com> <alpine.DEB.2.02.1405061920470.18635@chino.kir.corp.google.com> <alpine.DEB.2.02.1405061921040.18635@chino.kir.corp.google.com>
+ <20140507141534.d4def933b3a9999e7826df5c@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 May 2014 19:22:52 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
+On Wed, 7 May 2014, Andrew Morton wrote:
 
-> Async compaction terminates prematurely when need_resched(), see
-> compact_checklock_irqsave().  This can never trigger, however, if the 
-> cond_resched() in isolate_migratepages_range() always takes care of the 
-> scheduling.
+> > Memory compaction works by having a "freeing scanner" scan from one end of a 
+> > zone which isolates pages as migration targets while another "migrating scanner" 
+> > scans from the other end of the same zone which isolates pages for migration.
+> > 
+> > When page migration fails for an isolated page, the target page is returned to 
+> > the system rather than the freelist built by the freeing scanner.  This may 
+> > require the freeing scanner to continue scanning memory after suitable migration 
+> > targets have already been returned to the system needlessly.
+> > 
+> > This patch returns destination pages to the freeing scanner freelist when page 
+> > migration fails.  This prevents unnecessary work done by the freeing scanner but 
+> > also encourages memory to be as compacted as possible at the end of the zone.
+> > 
+> > Reported-by: Greg Thelen <gthelen@google.com>
 > 
-> If the cond_resched() actually triggers, then terminate this pageblock scan for 
-> async compaction as well.
+> What did Greg actually report?  IOW, what if any observable problem is
+> being fixed here?
 > 
-> ..
->
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -500,8 +500,13 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  			return 0;
->  	}
->  
-> +	if (cond_resched()) {
-> +		/* Async terminates prematurely on need_resched() */
-> +		if (cc->mode == MIGRATE_ASYNC)
-> +			return 0;
-> +	}
 
-Comment comments the obvious.  What is less obvious is *why* we do this.
-
-
-Someone please remind my why sync and async compaction use different
-scanning cursors?
-
+Greg reported by code inspection that he found isolated free pages were 
+returned back to the VM rather than the compaction freelist.  This will 
+cause holes behind the free scanner and cause it to reallocate additional 
+memory if necessary later.
