@@ -1,135 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932225AbaEGIrD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 04:47:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:25096 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755104AbaEGIrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 04:47:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1001,1389772800"; 
-   d="scan'208";a="507511507"
-Date: Wed, 7 May 2014 14:16:55 +0530
-From: Jenny Tc <jenny.tc@intel.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-kernel@vger.kernel.org, dbaryshkov@gmail.com, cbouatmailru@gmail.com,
-        anton.vorontsov@linaro.org, tony@atomide.com,
-        linux-omap@vger.kernel.org
-Subject: Re: [jenny.tc@intel.com: [RFC] power_supply: Introduce generic psy
- charging driver]
-Message-ID: <20140507084655.GA25243@jenny-desktop>
-References: <20140429062526.GA12879@jenny-desktop>
- <20140505124745.GC16461@amd.pavel.ucw.cz>
+	id S932168AbaEGIu4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 04:50:56 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:61256 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838AbaEGIux (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 04:50:53 -0400
+Date: Wed, 7 May 2014 10:49:00 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Beniamino Galvani <b.galvani@gmail.com>, linux-pwm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pwm: spear: fix check on pwmchip_add() return value
+Message-ID: <20140507084900.GE6362@ulmo>
+References: <1399325340-20416-1-git-send-email-b.galvani@gmail.com>
+ <CAOh2x=mWqa=p2d1kRjf0_37DiioJZOJm3Ewv2xpMrNjPy69rvA@mail.gmail.com>
+ <20140507082410.GC6362@ulmo>
+ <CAKohpomkrR715dhyZZQwu_-S6LHsYBOj9YsX9HR6PCMKkMdrVw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ep0oHQY+/Gbo/zt0"
 Content-Disposition: inline
-In-Reply-To: <20140505124745.GC16461@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKohpomkrR715dhyZZQwu_-S6LHsYBOj9YsX9HR6PCMKkMdrVw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +static struct charger_cable cable_list[] = {
-> > +	{
-> > +	 .psy_cable_type = PSY_CHARGER_CABLE_TYPE_USB_SDP,
-> > +	 },
-> > +	{
-> > +	 .psy_cable_type = PSY_CHARGER_CABLE_TYPE_USB_CDP,
-> > +	 },
-> > +	{
-> > +	 .psy_cable_type = PSY_CHARGER_CABLE_TYPE_USB_DCP,
-> > +	 },
-> > +	{
-> > +	 .psy_cable_type = PSY_CHARGER_CABLE_TYPE_USB_ACA,
-> > +	 },
-> > +	{
-> > +	 .psy_cable_type = PSY_CHARGER_CABLE_TYPE_ACA_DOCK,
-> > +	 },
-> > +	{
-> > +	 .psy_cable_type = PSY_CHARGER_CABLE_TYPE_SE1,
-> > +	 },
-> > +	{
-> > +	 .psy_cable_type = PSY_CHARGER_CABLE_TYPE_AC,
-> > +	 },
-> > +};
-> 
-> Can we get rid of this?
 
-Agreed, can initialize it runtime.
+--ep0oHQY+/Gbo/zt0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > +	for (i = 0; i < psy->num_supplicants; i++) {
-> > +		charger_context->supplied_to_psy[cnt++] =
-> > +			power_supply_get_by_name(psy->supplied_to[i]);
-> > +		charger_context->supplied_to_psy[cnt] = NULL;
-> > +	}
-> > +}
-> 
-> Still some name lookups to be killed.
+On Wed, May 07, 2014 at 02:02:24PM +0530, Viresh Kumar wrote:
+> On 7 May 2014 13:54, Thierry Reding <thierry.reding@gmail.com> wrote:
+> > So the current code would run clk_unprepare() on success, but not on
+> > failure. Does that cause any harm?
+>=20
+> Yeah, that would make the device unusable  as clk_enable will always fail.
 
-The look up is only once, when the charger/battery driver is registered.
-The supplied_to is defined as character pointer in struct power_supply.
+Hmm... so ever since this driver was merged in 3.8 it was completely
+broken and nobody noticed? Interesting.
 
-char **supplied_to;
-size_t num_supplicants;
+> > Is the device still usable after this?
+>=20
+> Yes, this will fix the bug.
+>=20
+> > I'm asking because I'm not sure if this is linux-next material
+> > or should be a fix for 3.15 (and possibly backported to stable).
+>=20
+> IMO, it should be sent for stable: v3.8+
 
-This allows the drivers to define the supplied_to argument even if the
-supplied_to driver is loaded at later stage. So the name lookup cannot be
-avoided. But it is optimized to do lookup only once
-> 
-> > +		for (i = 0; i < pst->num_supplicants; i++) {
-> > +			psb = power_supply_get_by_name(pst->supplied_to[i]);
-> > +			if (psb == psy) {
-> > +				batt_context->supplied_by_psy[cnt++] = pst;
-> > +				batt_context->supplied_by_psy[cnt] = NULL;
-> > +				break;
-> > +			}
-> > +		}
-> > +	}
-> 
-> And here.
+Since this was obviously broken since 3.8 and nobody noticed I wonder if
+there's really an urgent need for this in stable.
 
-Same here
-> > +	charger_context = (struct psy_charger_context *)psy->data;
-> 
-> > +static inline bool is_supplied_to_has_ext_pwr_changed(struct power_supply *psy)
-> > +{
-> > +	int i;
-> > +	struct power_supply *psb;
-> > +	bool is_pwr_changed_defined = true;
-> > +
-> > +	for (i = 0; i < psy->num_supplicants; i++) {
-> > +		psb =
-> > +		    power_supply_get_by_name(psy->
-> > +					     supplied_to[i]);
-> > +		if (psb && !psb->external_power_changed)
-> > +			is_pwr_changed_defined &= false;
-> > +	}
-> 
-> You did not really get rid of the name lookups..
+Thierry
 
-This lookup can be removed
-> > +#define PSY_MAX_CV(psy) \
-> > +		psy_get_ps_int_property(psy,\
-> > +			POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE_MAX)
-> > +#define PSY_VOLTAGE_NOW(psy) \
-> > +		psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_VOLTAGE_NOW)
-> > +#define PSY_VOLTAGE_OCV(psy) \
-> > +		psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_VOLTAGE_OCV)
-> > +#define PSY_CURRENT_NOW(psy) \
-> > +		psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_CURRENT_NOW)
-> > +#define PSY_STATUS(psy) \
-> > +		psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_STATUS)
-> > +#define PSY_TEMPERATURE(psy) \
-> > +		psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_TEMP)
-> > +#define PSY_BATTERY_TYPE(psy) \
-> > +		psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_TECHNOLOGY)
-> > +#define PSY_ONLINE(psy) \
-> > +		psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_ONLINE)
-> 
-> This looks like bad idea. Just opencode it.
+--ep0oHQY+/Gbo/zt0
+Content-Type: application/pgp-signature
 
-This was to make it more readable, and avoids open codes in multiple places.
-Initially Anton had positive thoughts about this. Isn't it more readable with
-the macros?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTafN8AAoJEN0jrNd/PrOhR1UP/iaYKosA2sQqoiLAcFLbm/v6
+aaV0ZGwMVfc7oRimFrxG3TU4xWftvTZ0QlxG4S4dZZQtRBdKVL0mLjCCLGwqkGgp
+oIxfir8XY8IZ1nMluFwhObyEbzwy72/Ukb6h9sPoxuiVolPEEFizXZrV0UxCC7or
+yZZTfHhnhV57qk7OrvP1m4pqbk/NbQy9I0yXYz/V38JyhG61q7pwwu4U7+rg0mH0
+nZv0LsZXVRKRjfVyI5LJ3uzEFVRAZqnCt8D9mpSDAM+oua1jI3F7hgXJEoltgVkU
+jl/TOp7jqG4s3DBGLMLzAxb3xMHcXmx7rBCvakaHkfyaJQWsR69V+ThD317umvx9
+JeTkkaI9lfWt/REG0RAn8cLELiOXqVbBkGb6x5Uua1xswKjtgqwYkks41yIUZNW5
+5gqglPqJrXD0lstZ0Bc0NCee9n3aa7FdGQJyzBZLI4EF1raRb/E5r27C4t58gOaw
+E+LovqbBdiNrk+Q4Ux9gxNKcEo9hYf2s3kJ/eUUHf4S8M6XllvmWnb48w7QZyAc6
+8dBAxT2TgQvoTBxco6uX/Wf02kkGWOQ4DQIWn0MslmSSrneSUlQlnm1GV0TZcYgi
+da3IRoj112qOj3CS+16b0WFpygfLkcDRIdIrqpZJXr5q7UtKOyeKrk2lSVXpbVXv
+CYL5Jeatjn6bs8E3Qpi4
+=yYEN
+-----END PGP SIGNATURE-----
 
+--ep0oHQY+/Gbo/zt0--
