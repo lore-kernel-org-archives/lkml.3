@@ -1,58 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934044AbaEGPxS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:53:18 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:32818 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933936AbaEGPxO (ORCPT
+	id S1756753AbaEGPnz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:43:55 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48485 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752076AbaEGPnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:53:14 -0400
-Message-ID: <536A56E4.5020909@oracle.com>
-Date: Wed, 07 May 2014 11:53:08 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Jens Axboe <axboe@fb.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: blk-mq: WARN at block/blk-mq.c:585 __blk_mq_run_hw_queue
-References: <536A532C.4050001@oracle.com> <536A5532.1060008@fb.com>
-In-Reply-To: <536A5532.1060008@fb.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 7 May 2014 11:43:50 -0400
+Message-Id: <20140507153622.703412101@linutronix.de>
+User-Agent: quilt/0.60-1
+Date: Wed, 07 May 2014 15:44:03 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Anvin <hpa@zytor.com>,
+        Tony Luck <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: [patch 00/32] genirq: Another round of tree wide cleanups
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2014 11:45 AM, Jens Axboe wrote:
-> On 05/07/2014 09:37 AM, Sasha Levin wrote:
->> Hi all,
->>
->> While fuzzing with trinity inside a KVM tools guest running the latest -next
->> kernel I've stumbled on the following spew:
->>
->> [  986.962569] WARNING: CPU: 41 PID: 41607 at block/blk-mq.c:585 __blk_mq_run_hw_queue+0x90/0x500()
-> 
-> I'm going to need more info than this. What were you running? How as kvm
-> invoked (nr cpus)?
+This cleanup series addresses a few histerical leftovers:
 
-Sure!
+1) irq_reserve_irq()
 
-It's running in a KVM tools guest (not qemu), with the following options:
+   The remaining callsites are pointless except s390, but we have a
+   better way to protect the lower interrupt space there.
 
-'--rng --balloon -m 28000 -c 48 -p "numa=fake=32 init=/virt/init zcache ftrace_dump_on_oops debugpat kvm.mmu_audit=1 slub_debug=FZPU rcutorture.rcutorture_runnable=0 loop.max_loop=64 zram.num_devices=4 rcutorture.nreaders=8 oops=panic nr_hugepages=1000 numa_balancing=enable'.
+   It's gone for good and it will never come back. Use irq domains, if
+   you want hot pluggable irq chips.
 
-So basically 48 vcpus (the host has 128 physical ones), and ~28G of RAM.
+2) create/destroy_irq and their variants
 
-I've been running trinity as a fuzzer, which doesn't handle logging too well,
-so I can't reproduce it's actions easily.
+   Designed in different circles of hell we have an incompatible zoo
+   of those.
 
-There was an additional stress of hotplugging CPUs and memory during this recent
-fuzzing run, so it's fair to suspect that this happened as a result of that.
+   Three different implementations with different semantics vs. the
+   return values. Two use cases which are just reusing the global
+   namespace. And they come along with four different flavours of
+   dynamic irq allocation.
 
-Anything else that might be helpful?
+   I created a core implementation for that and put it under
+   GENERIC_IRQ_LEGACY_ALLOC_HWIRQ to make clear that this is not for
+   new code. That implementation is used by x86 and tile. I gave up on
+   converting ia64 over, so I moved the create/destroy_irq prototypes
+   into ia64 headers and provided a wrapper for the shared dmar driver.
 
+   The core implementation is a very basic allocator and that's
+   deliberately so. I don't want more users and every more complex
+   than that wants to use irq domains.
+
+3) dynamic_irq_init/cleanup
+
+   Another leftover from the past. By moving tile and iop13xx to
+   sparse irq there is only ia64 left. I simplified the code and made
+   this available only under a legacy config option to avoid that more
+   people think they need this.
+
+Full diffstat below.
 
 Thanks,
-Sasha
+
+	tglx
+---
+ arch/arm/Kconfig                          |    1 
+ arch/arm/mach-iop13xx/include/mach/irqs.h |    2 
+ arch/arm/mach-iop13xx/include/mach/time.h |    3 
+ arch/arm/mach-iop13xx/iq81340mc.c         |    1 
+ arch/arm/mach-iop13xx/iq81340sc.c         |    1 
+ arch/arm/mach-iop13xx/msi.c               |   51 ++---------
+ arch/arm/mach-iop13xx/setup.c             |    1 
+ arch/arm/mach-iop13xx/tpmi.c              |    1 
+ arch/ia64/Kconfig                         |    1 
+ arch/ia64/include/asm/hw_irq.h            |    1 
+ arch/ia64/include/asm/irq.h               |    3 
+ arch/ia64/include/asm/irq_remapping.h     |    2 
+ arch/ia64/kernel/iosapic.c                |    2 
+ arch/ia64/kernel/irq_ia64.c               |   15 ---
+ arch/mips/pci/msi-xlp.c                   |   10 --
+ arch/mips/pci/pci-xlr.c                   |   10 --
+ arch/s390/kernel/irq.c                    |    5 -
+ arch/s390/pci/pci.c                       |    6 -
+ arch/tile/Kconfig                         |    2 
+ arch/tile/include/asm/irq.h               |    6 -
+ arch/tile/kernel/irq.c                    |   40 ---------
+ arch/tile/kernel/pci_gx.c                 |   17 +--
+ arch/x86/Kconfig                          |    1 
+ arch/x86/include/asm/io_apic.h            |    2 
+ arch/x86/include/asm/irq_remapping.h      |    3 
+ arch/x86/kernel/apic/io_apic.c            |  130 +++++-------------------------
+ arch/x86/kernel/hpet.c                    |    5 -
+ arch/x86/platform/uv/uv_irq.c             |   10 --
+ drivers/iommu/dmar.c                      |    8 -
+ drivers/iommu/irq_remapping.c             |   12 +-
+ drivers/net/ethernet/tile/tilegx.c        |    6 -
+ drivers/pci/htirq.c                       |   13 ---
+ drivers/sh/intc/core.c                    |    6 -
+ drivers/tty/hvc/hvc_tile.c                |    8 -
+ drivers/tty/serial/tilegx.c               |    8 -
+ drivers/usb/host/ehci-tilegx.c            |    8 -
+ drivers/usb/host/ohci-tilegx.c            |    8 -
+ drivers/xen/events/events_base.c          |   17 ---
+ include/linux/irq.h                       |   38 +++-----
+ kernel/irq/Kconfig                        |    9 ++
+ kernel/irq/chip.c                         |    5 -
+ kernel/irq/internals.h                    |    6 +
+ kernel/irq/irqdesc.c                      |   95 ++++++++++++++-------
+ 43 files changed, 216 insertions(+), 363 deletions(-)
+
+
+
