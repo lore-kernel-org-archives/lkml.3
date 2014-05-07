@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933184AbaEGPh7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:37:59 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:21814 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932410AbaEGPhY (ORCPT
+	id S1756670AbaEGPjB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:39:01 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:33694 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291AbaEGPjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:37:24 -0400
-Message-ID: <536A532C.4050001@oracle.com>
-Date: Wed, 07 May 2014 11:37:16 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 7 May 2014 11:39:00 -0400
+Date: Wed, 7 May 2014 17:38:54 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>, ak@linux.intel.com,
+        gong.chen@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 1/5] x86, nmi:  Add new nmi type 'external'
+Message-ID: <20140507153854.GA14926@gmail.com>
+References: <1399476883-98970-1-git-send-email-dzickus@redhat.com>
+ <1399476883-98970-2-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-To: axboe@fb.com
-CC: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: blk-mq: WARN at block/blk-mq.c:585 __blk_mq_run_hw_queue
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399476883-98970-2-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel I've stumbled on the following spew:
+* Don Zickus <dzickus@redhat.com> wrote:
 
-[  986.962569] WARNING: CPU: 41 PID: 41607 at block/blk-mq.c:585 __blk_mq_run_hw_queue+0x90/0x500()
-[  986.964364] Modules linked in:
-[  986.964996] CPU: 41 PID: 41607 Comm: kworker/u147:1 Not tainted 3.15.0-rc4-next-20140506-sasha-00021-gc164334-dirty #447
-[  986.967025] Workqueue: kblockd blk_mq_run_work_fn
-[  986.967939]  0000000000000009 ffff8802410e1c68 ffffffff94536f8a 0000000000000001
-[  986.970333]  0000000000000000 ffff8802410e1ca8 ffffffff9115febc ffffffff91183ef7
-[  986.973173]  ffff8801b478ef60 0000000000000000 ffff8802410e1ce8 ffff8801b3f07978
-[  986.975749] Call Trace:
-[  986.976700] dump_stack (lib/dump_stack.c:52)
-[  986.978875] warn_slowpath_common (kernel/panic.c:430)
-[  986.981924] ? process_one_work (kernel/workqueue.c:2224)
-[  986.984245] warn_slowpath_null (kernel/panic.c:465)
-[  986.986670] __blk_mq_run_hw_queue (arch/x86/include/asm/bitops.h:311 (discriminator 65) block/blk-mq.c:587 (discriminator 65))
-[  986.989000] ? process_one_work (include/linux/workqueue.h:186 kernel/workqueue.c:611 kernel/workqueue.c:638 kernel/workqueue.c:2220)
-[  986.991584] ? get_parent_ip (kernel/sched/core.c:2485)
-[  986.994168] blk_mq_run_work_fn (block/blk-mq.c:777)
-[  986.996379] process_one_work (kernel/workqueue.c:2227 include/linux/jump_label.h:105 include/trace/events/workqueue.h:111 kernel/workqueue.c:2232)
-[  986.998641] ? process_one_work (include/linux/workqueue.h:186 kernel/workqueue.c:611 kernel/workqueue.c:638 kernel/workqueue.c:2220)
-[  987.001352] worker_thread (kernel/workqueue.c:2354)
-[  987.003676] ? rescuer_thread (kernel/workqueue.c:2303)
-[  987.006703] kthread (kernel/kthread.c:210)
-[  987.009161] ? kthread_create_on_node (kernel/kthread.c:176)
-[  987.012536] ret_from_fork (arch/x86/kernel/entry_64.S:553)
-[  987.015272] ? kthread_create_on_node (kernel/kthread.c:176)
+> I noticed when debugging a perf problem on a machine with GHES enabled,
+> perf seemed slow.  I then realized that the GHES NMI routine was taking
+> a global lock all the time to inspect the hardware.  This contended
+> with all the local perf counters which did not need a lock.  So each cpu
+> accidentally was synchronizing with itself when using perf.
+> 
+> This is because the way the nmi handler works.  It executes all the handlers
+> registered to a particular subtype (to deal with nmi sharing).  As a result
+> the GHES handler was executed on every PMI.
+> 
+> Fix this by creating a new nmi type called NMI_EXT, which is used by
+> handlers that need to probe external hardware and require a global lock
+> to do so.
+> 
+> Now the main NMI handler can check the internal NMI handlers first and
+> then the external ones if nothing is found.
+> 
+> This makes perf a little faster again on those machines with GHES enabled.
 
+So what happens if GHES asserts an NMI at the same time a PMI 
+triggers?
+
+If the perf PMI executes and indicates that it has handled something, 
+we don't execute the GHES handler, right? Will the GHES re-trigger the 
+NMI after we return?
 
 Thanks,
-Sasha
+
+	Ingo
