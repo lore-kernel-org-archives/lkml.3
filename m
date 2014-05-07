@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934239AbaEGNjy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:39:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45330 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756079AbaEGNNW (ORCPT
+	id S933107AbaEGNlq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:41:46 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:41492 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932352AbaEGNlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:13:22 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 02/70] KVM: ioapic: fix assignment of ioapic->rtc_status.pending_eoi (CVE-2014-0155)
-Date: Wed,  7 May 2014 14:12:05 +0100
-Message-Id: <1399468393-10140-3-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
-References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Wed, 7 May 2014 09:41:45 -0400
+Date: Wed, 7 May 2014 09:41:42 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/10] workqueue: destroy worker directly in the idle
+ timeout handler
+Message-ID: <20140507134142.GF16702@htj.dyndns.org>
+References: <1398571754-12443-1-git-send-email-laijs@cn.fujitsu.com>
+ <1398571754-12443-5-git-send-email-laijs@cn.fujitsu.com>
+ <20140505143613.GD11231@htj.dyndns.org>
+ <5369DC5C.20001@cn.fujitsu.com>
+ <20140507131257.GB16702@htj.dyndns.org>
+ <CACvQF50kdodjDGnaxgQC2sW82rvkFVLtWQDOn90cohNkzG-oZw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACvQF50kdodjDGnaxgQC2sW82rvkFVLtWQDOn90cohNkzG-oZw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.10 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, May 07, 2014 at 09:38:39PM +0800, Lai Jiangshan wrote:
+> On Wed, May 7, 2014 at 9:12 PM, Tejun Heo <tj@kernel.org> wrote:
+> > Hello, Lai.
+> >
+> > On Wed, May 07, 2014 at 03:10:20PM +0800, Lai Jiangshan wrote:
+> >> 1) complete() can't be called inside attach_mutex due to the worker
+> >>    shouldn't access to the pool after complete().
+> >
+> > Sure, complete it after releasing the lock.  Shutdown can't complete
+> > before the completion gets completed, right?
+> >
+> >> 2) put_unbound_pool() may called from get_unbound_pool(), we need to add
+> >>    an additional check and avoid the wait_for_completion() if so.
+> 
+> Do you accept if I remove put_unbound_pool() from get_unbound_pool()
+> and use several freeing code instead?
 
-------------------
+Hah?  How much extra complexity are we talking about?  It's a single
+if, no?
 
-From: Paolo Bonzini <pbonzini@redhat.com>
-
-commit 5678de3f15010b9022ee45673f33bcfc71d47b60 upstream.
-
-QE reported that they got the BUG_ON in ioapic_service to trigger.
-I cannot reproduce it, but there are two reasons why this could happen.
-
-The less likely but also easiest one, is when kvm_irq_delivery_to_apic
-does not deliver to any APIC and returns -1.
-
-Because irqe.shorthand == 0, the kvm_for_each_vcpu loop in that
-function is never reached.  However, you can target the similar loop in
-kvm_irq_delivery_to_apic_fast; just program a zero logical destination
-address into the IOAPIC, or an out-of-range physical destination address.
-
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- virt/kvm/ioapic.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
-index 2d68297..39dc5bc 100644
---- a/virt/kvm/ioapic.c
-+++ b/virt/kvm/ioapic.c
-@@ -306,7 +306,7 @@ static int ioapic_deliver(struct kvm_ioapic *ioapic, int irq, bool line_status)
- 		BUG_ON(ioapic->rtc_status.pending_eoi != 0);
- 		ret = kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe,
- 				ioapic->rtc_status.dest_map);
--		ioapic->rtc_status.pending_eoi = ret;
-+		ioapic->rtc_status.pending_eoi = (ret < 0 ? 0 : ret);
- 	} else
- 		ret = kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe, NULL);
- 
 -- 
-1.9.1
-
+tejun
