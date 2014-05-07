@@ -1,231 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877AbaEGLvS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 07:51:18 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:35848 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540AbaEGLvQ (ORCPT
+	id S932567AbaEGLwn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 07:52:43 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:34284 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932181AbaEGLwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 07:51:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <201404301734.14478.arnd@arndb.de>
-References: <1397561911-11647-1-git-send-email-sthokal@xilinx.com>
-	<201404301734.14478.arnd@arndb.de>
-Date: Wed, 7 May 2014 17:21:13 +0530
-X-Google-Sender-Auth: Z5tjabTU8bk1APtH8BrNONlLjys
-Message-ID: <CA+mB=1K_AU5cLsW0J9OhVXmpvc+nYSZwpS5iyNXVTFpibfHq6g@mail.gmail.com>
-Subject: Re: [PATCH v3] pcie: Add Xilinx PCIe Host Bridge IP driver
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Srikanth Thokala <sthokal@xilinx.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 7 May 2014 07:52:41 -0400
+Subject: [PATCH v1.1 2/16 update 3] arcmsr:  Adding code to support MSI-X
+ interrupt
+From: ching <ching2048@areca.com.tw>
+To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
+        agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 07 May 2014 19:52:28 +0800
+Message-ID: <1399463548.23184.6.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 9:04 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 15 April 2014, Srikanth Thokala wrote:
->> +Required properties:
->> +- #address-cells: Address representation for root ports, set to <3>
->> +- #size-cells: Size representation for root ports, set to <2>
->> +- #interrupt-cells: specifies the number of cells needed to encode an
->> +     interrupt source. The value must be 1.
->> +- compatible: Should contain "xlnx,axi-pcie-host-1.00.a"
->> +- reg: Should contain AXI PCIe registers location and length
->> +- device_type: must be "pci"
->> +- interrupts: Should contain AXI PCIe interrupt
->> +- interrupt-map-mask,
->> +  interrupt-map: standard PCI properties to define the mapping of the
->> +     PCI interface to interrupt numbers.
->> +- ranges: ranges for the PCI memory regions (I/O space region is noti
->
-> typo: noti -> not
+From: Ching<ching2048@areca.com.tw>
 
-Ok, will fix.
+Adding code to support MSI-X interrupt.
 
->
->> +     supported by hardware)
->> +     Please refer to the standard PCI bus binding document for a more
->> +     detailed explanation
->> +
->> +Optional properties:
->> +- bus-range: PCI bus numbers covered
->> +
->> +Interrupt controller child node
->> ++++++++++++++++++++++++++++++++
->> +Required properties:
->> +- interrupt-controller: identifies the node as an interrupt controller
->> +- #address-cells: specifies the number of cells needed to encode an
->> +     address. The value must be 0.
->> +- #interrupt-cells: specifies the number of cells needed to encode an
->> +     interrupt source. The value must be 1.
->> +
->> +NOTE:
->> +The core provides a single interrupt for both INTx/MSI messages. So,
->> +created a interrupt controller node to support 'interrupt-map' DT
->> +functionality.  The driver will create an IRQ domain for this map, decode
->> +the four INTx interrupts in ISR and route them to this domain.
->
-> How does this work if the pci core is combined with a GIC version that
-> also has MSI support. Presumably you'd want to use that for performance
-> reason rather than the integrated MSI chip.
->
-> Shouldn't there be a way to pick between the two?
+This update has made change by Tomas' and Alexander's suggestion.
 
-I will check and come back to you on this.
+Signed-off-by: Ching<ching2048@areca.com.tw>
+---
 
->
->> +/**
->> + * xilinx_pcie_get_config_base - Get configuration base
->> + * @bus: Bus structure of current bus
->> + * @devfn: Device/function
->> + * @where: Offset from base
->> + *
->> + * Return: Base address of the configuration space needed to be
->> + *      accessed.
->> + */
->> +static void __iomem *xilinx_pcie_get_config_base(struct pci_bus *bus,
->> +                                              unsigned int devfn,
->> +                                              int where)
->> +{
->> +     struct xilinx_pcie_port *port = sys_to_pcie(bus->sysdata);
->> +     int relbus;
->> +
->> +     relbus = (bus->number << ECAM_BUS_NUM_SHIFT) |
->> +              (devfn << ECAM_DEV_NUM_SHIFT);
->> +
->> +     return port->reg_base + relbus + where;
->> +}
->
-> Does this mean you have an ECAM-compliant config space? Nice!
->
-> Would it be possible to split the config space access out into
-> a separate file? It would be nice to share that with the generic
-> ECAM driver that Will Deacon has sent.
+diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
+--- a/drivers/scsi/arcmsr/arcmsr.h	2014-04-28 16:02:46.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:24:36.000000000 +0800
+@@ -64,6 +64,7 @@ struct device_attribute;
+ #define ARCMSR_MAX_HBB_POSTQUEUE						264
+ #define ARCMSR_MAX_XFER_LEN							0x26000 /* 152K */
+ #define ARCMSR_CDB_SG_PAGE_LENGTH						256 
++#define ARCMST_NUM_MSIX_VECTORS		4
+ #ifndef PCI_DEVICE_ID_ARECA_1880
+ #define PCI_DEVICE_ID_ARECA_1880 0x1880
+  #endif
+@@ -508,6 +509,7 @@ struct AdapterControlBlock
+ 	struct pci_dev *		pdev;
+ 	struct Scsi_Host *		host;
+ 	unsigned long			vir2phy_offset;
++	struct msix_entry	entries[ARCMST_NUM_MSIX_VECTORS];
+ 	/* Offset is used in making arc cdb physical to virtual calculations */
+ 	uint32_t			outbound_int_enable;
+ 	uint32_t			cdb_phyaddr_hi32;
+@@ -544,6 +546,8 @@ struct AdapterControlBlock
+ 	/* iop init */
+ 	#define ACB_F_ABORT				0x0200
+ 	#define ACB_F_FIRMWARE_TRAP           		0x0400
++	#define ACB_F_MSI_ENABLED		0x1000
++	#define ACB_F_MSIX_ENABLED		0x2000
+ 	struct CommandControlBlock *			pccb_pool[ARCMSR_MAX_FREECCB_NUM];
+ 	/* used for memory free */
+ 	struct list_head		ccb_free_list;
+@@ -594,6 +598,7 @@ struct AdapterControlBlock
+ 				#define	FW_DEADLOCK	0x0010
+ 	atomic_t 			rq_map_token;
+ 	atomic_t			ante_token_value;
++	int		msix_vector_count;
+ };/* HW_DEVICE_EXTENSION */
+ /*
+ *******************************************************************************
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-28 15:58:34.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-07 18:42:40.000000000 +0800
+@@ -603,6 +603,60 @@ static void arcmsr_message_isr_bh_fn(str
+ 	}
+ }
+ 
++static int
++arcmsr_request_irq(struct pci_dev *pdev, struct AdapterControlBlock *acb)
++{
++	int	i, j, r;
++	struct msix_entry entries[ARCMST_NUM_MSIX_VECTORS];
++
++	if (!pci_find_capability(pdev, PCI_CAP_ID_MSIX))
++		goto msi_int;
++	for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++)
++		entries[i].entry = i;
++	r = pci_enable_msix_range(pdev, entries, 1, ARCMST_NUM_MSIX_VECTORS);
++	if (r < 0)
++		goto msi_int;
++	acb->msix_vector_count = r;
++	for (i = 0; i < r; i++) {
++		if (request_irq(entries[i].vector,
++			arcmsr_do_interrupt, 0, "arcmsr", acb)) {
++			pr_warn("arcmsr%d: request_irq =%d failed!\n",
++				acb->host->host_no, pdev->irq);
++			for (j = 0 ; j < i ; j++)
++				free_irq(entries[j].vector, acb);
++			pci_disable_msix(pdev);
++			goto msi_int;
++		}
++		acb->entries[i] = entries[i];
++	}
++	acb->acb_flags |= ACB_F_MSIX_ENABLED;
++	pr_info("arcmsr%d: msi-x enabled\n", acb->host->host_no);
++	return ARC_SUCCESS;
++msi_int:
++	if (!pci_find_capability(pdev, PCI_CAP_ID_MSI))
++		goto legacy_int;
++	if (pci_enable_msi_range(pdev, 1, 1) < 0)
++		goto legacy_int;
++	if (request_irq(pdev->irq, arcmsr_do_interrupt,
++		IRQF_SHARED, "arcmsr", acb)) {
++		pr_warn("arcmsr%d: request_irq =%d failed!\n",
++			acb->host->host_no, pdev->irq);
++		pci_disable_msi(pdev);
++		goto legacy_int;
++	}
++	acb->acb_flags |= ACB_F_MSI_ENABLED;
++	pr_info("arcmsr%d: msi enabled\n", acb->host->host_no);
++	return ARC_SUCCESS;
++legacy_int:
++	if (request_irq(pdev->irq, arcmsr_do_interrupt,
++		IRQF_SHARED, "arcmsr", acb)) {
++		pr_warn("arcmsr%d: request_irq = %d failed!\n",
++			acb->host->host_no, pdev->irq);
++		return ARC_FAILURE;
++	}
++	return ARC_SUCCESS;
++}
++
+ static int arcmsr_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ {
+ 	struct Scsi_Host *host;
+@@ -667,16 +721,13 @@ static int arcmsr_probe(struct pci_dev *
+ 	if(error){
+ 		goto free_hbb_mu;
+ 	}
+-	arcmsr_iop_init(acb);
+ 	error = scsi_add_host(host, &pdev->dev);
+ 	if(error){
+ 		goto RAID_controller_stop;
+ 	}
+-	error = request_irq(pdev->irq, arcmsr_do_interrupt, IRQF_SHARED, "arcmsr", acb);
+-	if(error){
++	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
+ 		goto scsi_host_remove;
+-	}
+-	host->irq = pdev->irq;
++	arcmsr_iop_init(acb);
+     	scsi_scan_host(host);
+ 	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
+ 	atomic_set(&acb->rq_map_token, 16);
+@@ -710,6 +761,21 @@ pci_disable_dev:
+ 	return -ENODEV;
+ }
+ 
++static void arcmsr_free_irq(struct pci_dev *pdev, struct AdapterControlBlock *acb)
++{
++	int i;
++
++	if (acb->acb_flags & ACB_F_MSI_ENABLED) {
++		free_irq(pdev->irq, acb);
++		pci_disable_msi(pdev);
++	} else if (acb->acb_flags & ACB_F_MSIX_ENABLED) {
++		for (i = 0; i < acb->msix_vector_count; i++)
++			free_irq(acb->entries[i].vector, acb);
++		pci_disable_msix(pdev);
++	} else
++		free_irq(pdev->irq, acb);
++}
++
+ static uint8_t arcmsr_abort_hba_allcmd(struct AdapterControlBlock *acb)
+ {
+ 	struct MessageUnit_A __iomem *reg = acb->pmuA;
+@@ -992,6 +1058,7 @@ static void arcmsr_done4abort_postqueue(
+ 	}
+ 	}
+ }
++
+ static void arcmsr_remove(struct pci_dev *pdev)
+ {
+ 	struct Scsi_Host *host = pci_get_drvdata(pdev);
+@@ -1029,7 +1096,7 @@ static void arcmsr_remove(struct pci_dev
+ 			}
+ 		}
+ 	}
+-	free_irq(pdev->irq, acb);
++	arcmsr_free_irq(pdev, acb);
+ 	arcmsr_free_ccb_pool(acb);
+ 	arcmsr_free_hbb_mu(acb);
+ 	arcmsr_unmap_pciregion(acb);
+@@ -1045,6 +1112,7 @@ static void arcmsr_shutdown(struct pci_d
+ 		(struct AdapterControlBlock *)host->hostdata;
+ 	del_timer_sync(&acb->eternal_timer);
+ 	arcmsr_disable_outbound_ints(acb);
++	arcmsr_free_irq(pdev, acb);
+ 	flush_work(&acb->arcmsr_do_message_isr_bh);
+ 	arcmsr_stop_adapter_bgrb(acb);
+ 	arcmsr_flush_adapter_cache(acb);
+@@ -2516,8 +2584,6 @@ static int arcmsr_iop_confirm(struct Ada
+ 	case ACB_ADAPTER_TYPE_A: {
+ 		if (cdb_phyaddr_hi32 != 0) {
+ 			struct MessageUnit_A __iomem *reg = acb->pmuA;
+-			uint32_t intmask_org;
+-			intmask_org = arcmsr_disable_outbound_ints(acb);
+ 			writel(ARCMSR_SIGNATURE_SET_CONFIG, \
+ 						&reg->message_rwbuffer[0]);
+ 			writel(cdb_phyaddr_hi32, &reg->message_rwbuffer[1]);
+@@ -2529,7 +2595,6 @@ static int arcmsr_iop_confirm(struct Ada
+ 				acb->host->host_no);
+ 				return 1;
+ 			}
+-			arcmsr_enable_outbound_ints(acb, intmask_org);
+ 		}
+ 		}
+ 		break;
+@@ -2539,8 +2604,6 @@ static int arcmsr_iop_confirm(struct Ada
+ 		uint32_t __iomem *rwbuffer;
+ 
+ 		struct MessageUnit_B *reg = acb->pmuB;
+-		uint32_t intmask_org;
+-		intmask_org = arcmsr_disable_outbound_ints(acb);
+ 		reg->postq_index = 0;
+ 		reg->doneq_index = 0;
+ 		writel(ARCMSR_MESSAGE_SET_POST_WINDOW, reg->drv2iop_doorbell);
+@@ -2569,7 +2632,6 @@ static int arcmsr_iop_confirm(struct Ada
+ 			return 1;
+ 		}
+ 		arcmsr_hbb_enable_driver_mode(acb);
+-		arcmsr_enable_outbound_ints(acb, intmask_org);
+ 		}
+ 		break;
+ 	case ACB_ADAPTER_TYPE_C: {
 
-Yes, it should be possible.  Is it ok, if I work on top of this driver?
 
->
->> +
->> +     msg.address_hi = 0;
->> +     msg.address_lo = virt_to_phys((void *)port->msg_addr);
->> +     msg.data = irq;
->> +
->> +     write_msi_msg(irq, &msg);
->
-> It seems strange to pass the msg_addr as an integer referring to
-> a virtual address. I'd suggest using phys_addr_t for the type
-> and converting it at the point the page gets allocated, and then
-> always assigning both the high and low part here. You'll need
-> that anyway for 64-bit operation.
 
-Ok, I will fix it. Thanks.
-
->
->> +/**
->> + * xilinx_pcie_enable_msi - Enable MSI support
->> + * @port: PCIe port information
->> + */
->> +static void xilinx_pcie_enable_msi(struct xilinx_pcie_port *port)
->> +{
->> +     port->msg_addr = __get_free_pages(GFP_KERNEL, 0);
->> +
->> +     pcie_write(port, 0x0, XILINX_PCIE_REG_MSIBASE1);
->> +     pcie_write(port, virt_to_phys((void *)port->msg_addr),
->> +                XILINX_PCIE_REG_MSIBASE2);
->> +}
->
-> here too.
->
-> As a general comment about the MSI implementation, I wonder if this is actually
-> generic enough to be shared with other host controllers. It could be moved
-> into a separate file like the config space access in that case.
-
-I feel the MSI implementation is not generic by looking into the other
-host controllers,
-it is more specific to the hardware.  Correct me, if am wrong.
-
->
->> +/**
->> + * xilinx_pcie_init_irq_domain - Initialize IRQ domain
->> + * @port: PCIe port information
->> + *
->> + * Return: '0' on success and error value on failure
->> + */
->> +static int xilinx_pcie_init_irq_domain(struct xilinx_pcie_port *port)
->> +{
->> +     struct device *dev = port->dev;
->> +     struct device_node *node = dev->of_node;
->> +
->> +     if (IS_ENABLED(CONFIG_PCI_MSI)) {
->> +             /* Setup MSI */
->> +             int i;
->> +
->> +             port->irq_domain = irq_domain_add_linear(node,
->> +                                                      XILINX_NUM_MSI_IRQS,
->> +                                                      &msi_domain_ops,
->> +                                                      &xilinx_pcie_msi_chip);
->> +             if (!port->irq_domain) {
->> +                     dev_err(dev, "Failed to get a MSI IRQ domain\n");
->> +                     return PTR_ERR(port->irq_domain);
->> +             }
->> +
->> +             for (i = 0; i < XILINX_NUM_MSI_IRQS; i++)
->> +                     irq_create_mapping(port->irq_domain, i);
->
-> I'm still not that familiar with the irqdomain code, but shouldn't you
-> do the irq_create_mapping() in xilinx_pcie_assign_msi()?
->
-> It seems wasteful to create all 128 mappings upfront.
-
-Ok, I agree with you.  I will fix it.
-
->
->> +/**
->> + * xilinx_pcie_setup - Setup memory resources
->> + * @nr: Bus number
->> + * @sys: Per controller structure
->> + *
->> + * Return: '1' on success and error value on failure
->> + */
->> +static int xilinx_pcie_setup(int nr, struct pci_sys_data *sys)
->> +{
->
-> I think if you move most of the code from this function into the probe()
-> function, it will be easier later to add arm64 support, and you can handle
-> errors better.
->
-> AFAICT, the only thing you need here is to list_move() the resources
-> from the xilinx_pcie_port to sys->resources. Ideally, the entire range
-> parsing can go away soon, once we have generic infrastructure for that.
-
-Sure.  I will do.
-
->
->
->> +     /* Register the device */
->> +     pci_common_init_dev(dev, &hw);
->> +
->> +     platform_set_drvdata(pdev, port);
->
-> Don't you have to do the platform_set_drvdata() before pci_common_init_dev()?
-
-It should be fine, as I don't see any dependencies.
-
-Srikanth
-
->
->         Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
