@@ -1,61 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934225AbaEGNi7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:38:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46115 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932959AbaEGNi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:38:57 -0400
-Message-ID: <536A3747.5040506@redhat.com>
-Date: Wed, 07 May 2014 15:38:15 +0200
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: linux-kernel@vger.kernel.org,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 4/4] nohz: Fix iowait overcounting if iowait task migrates
-References: <1398365158-12568-1-git-send-email-dvlasenk@redhat.com> <1398365158-12568-4-git-send-email-dvlasenk@redhat.com> <20140429144727.GB6129@localhost.localdomain> <5367D30E.9020901@redhat.com>
-In-Reply-To: <5367D30E.9020901@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S934231AbaEGNj3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:39:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45342 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756118AbaEGNN0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 09:13:26 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 01/70] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy and handle errors
+Date: Wed,  7 May 2014 14:12:04 +0100
+Message-Id: <1399468393-10140-2-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
+References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2014 08:06 PM, Denys Vlasenko wrote:
-> On 04/29/2014 04:47 PM, Frederic Weisbecker wrote:
->> On Thu, Apr 24, 2014 at 08:45:58PM +0200, Denys Vlasenko wrote:
->>> +void tick_nohz_iowait_to_idle(int cpu)
->>> +{
->>> +	struct tick_sched *ts = tick_get_tick_sched(cpu);
->>> +	ktime_t now = ktime_get();
->>> +
->>> +	write_seqcount_begin(&ts->idle_sleeptime_seq);
->>> +	ts->iowait_exittime = now;
->>> +	write_seqcount_end(&ts->idle_sleeptime_seq);
->>
->> So now you have two concurrent updaters using the seqcount, which is
->> very dangerous as the counters aren't updated atomically.
->>
->> seqcount is only suitable when there is a single sequential updater.
->> Once you deal with concurrent updaters you need seqlock.
->>
->> And once you add seqlock in the hot scheduler path, you're hitting
->> a big scalability issue.
-> 
-> What I need here is merely an atomic store.
-> The complication is, of course, that, ktime_t is not atomic[64]_t.
-> 
-> How do you think I can do an atomic store?
+3.11.10.10 -stable review patch.  If anyone has any objections, please let me know.
 
-Ok, I think a have a version which uses atomic64_t
-and is not looking ugly. Sending new patchset now...
+------------------
+
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+
+commit 36d5fe6a000790f56039afe26834265db0a3ad4c upstream.
+
+skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+orphan them. Also, it doesn't handle errors, so this patch takes care of that
+as well, and modify the callers accordingly. skb_tx_error() is also added to
+the callers so they will signal the failed delivery towards the creator of the
+skb.
+
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+[ luis: backported to 3.11: used 3.13 backport from Josh and Ben ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/netfilter/nfnetlink_queue_core.c | 31 ++++++++++++++++++++++---------
+ 1 file changed, 22 insertions(+), 9 deletions(-)
+
+diff --git a/net/netfilter/nfnetlink_queue_core.c b/net/netfilter/nfnetlink_queue_core.c
+index 8a703c3..39e8935 100644
+--- a/net/netfilter/nfnetlink_queue_core.c
++++ b/net/netfilter/nfnetlink_queue_core.c
+@@ -235,22 +235,23 @@ nfqnl_flush(struct nfqnl_instance *queue, nfqnl_cmpfn cmpfn, unsigned long data)
+ 	spin_unlock_bh(&queue->lock);
+ }
+ 
+-static void
+-nfqnl_zcopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
++static int
++nfqnl_zcopy(struct sk_buff *to, struct sk_buff *from, int len, int hlen)
+ {
+ 	int i, j = 0;
+ 	int plen = 0; /* length of skb->head fragment */
++	int ret;
+ 	struct page *page;
+ 	unsigned int offset;
+ 
+ 	/* dont bother with small payloads */
+-	if (len <= skb_tailroom(to)) {
+-		skb_copy_bits(from, 0, skb_put(to, len), len);
+-		return;
+-	}
++	if (len <= skb_tailroom(to))
++		return skb_copy_bits(from, 0, skb_put(to, len), len);
+ 
+ 	if (hlen) {
+-		skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
++		ret = skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
++		if (unlikely(ret))
++			return ret;
+ 		len -= hlen;
+ 	} else {
+ 		plen = min_t(int, skb_headlen(from), len);
+@@ -268,6 +269,11 @@ nfqnl_zcopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
+ 	to->len += len + plen;
+ 	to->data_len += len + plen;
+ 
++	if (unlikely(skb_orphan_frags(from, GFP_ATOMIC))) {
++		skb_tx_error(from);
++		return -ENOMEM;
++	}
++
+ 	for (i = 0; i < skb_shinfo(from)->nr_frags; i++) {
+ 		if (!len)
+ 			break;
+@@ -278,6 +284,8 @@ nfqnl_zcopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
+ 		j++;
+ 	}
+ 	skb_shinfo(to)->nr_frags = j;
++
++	return 0;
+ }
+ 
+ static int
+@@ -374,13 +382,16 @@ nfqnl_build_packet_message(struct nfqnl_instance *queue,
+ 
+ 	skb = nfnetlink_alloc_skb(&init_net, size, queue->peer_portid,
+ 				  GFP_ATOMIC);
+-	if (!skb)
++	if (!skb) {
++		skb_tx_error(entskb);
+ 		return NULL;
++	}
+ 
+ 	nlh = nlmsg_put(skb, 0, 0,
+ 			NFNL_SUBSYS_QUEUE << 8 | NFQNL_MSG_PACKET,
+ 			sizeof(struct nfgenmsg), 0);
+ 	if (!nlh) {
++		skb_tx_error(entskb);
+ 		kfree_skb(skb);
+ 		return NULL;
+ 	}
+@@ -504,13 +515,15 @@ nfqnl_build_packet_message(struct nfqnl_instance *queue,
+ 		nla->nla_type = NFQA_PAYLOAD;
+ 		nla->nla_len = nla_attr_size(data_len);
+ 
+-		nfqnl_zcopy(skb, entskb, data_len, hlen);
++		if (nfqnl_zcopy(skb, entskb, data_len, hlen))
++			goto nla_put_failure;
+ 	}
+ 
+ 	nlh->nlmsg_len = skb->len;
+ 	return skb;
+ 
+ nla_put_failure:
++	skb_tx_error(entskb);
+ 	kfree_skb(skb);
+ 	net_err_ratelimited("nf_queue: error creating packet message\n");
+ 	return NULL;
+-- 
+1.9.1
 
