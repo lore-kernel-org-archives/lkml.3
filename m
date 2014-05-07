@@ -1,124 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932788AbaEGOOj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 10:14:39 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:59356 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932297AbaEGOOh convert rfc822-to-8bit (ORCPT
+	id S932879AbaEGOTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 10:19:15 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:47176 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932752AbaEGOTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 10:14:37 -0400
+	Wed, 7 May 2014 10:19:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <5369C13C.3080506@samsung.com>
-References: <1399217181-26442-1-git-send-email-djkurtz@chromium.org>
- <1399217181-26442-3-git-send-email-djkurtz@chromium.org> <5369C13C.3080506@samsung.com>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Wed, 7 May 2014 22:14:16 +0800
-X-Google-Sender-Auth: DQYfCAEiqlQ2SW95Grz1idbS_ak
-Message-ID: <CAGS+omAbuzRpNDvB6eTw67Dcv3WMdWF3yz+bU5p3j5JRourOyw@mail.gmail.com>
-Subject: Re: [PATCH 2/4] drm/exynos/mixer: use MXR_GRP_SXY_SY
-To: Seung-Woo Kim <sw0312.kim@samsung.com>
-Cc: Inki Dae <inki.dae@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        David Airlie <airlied@linux.ie>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+In-Reply-To: <536A36F5.5080303@samsung.com>
+References: <1396967856-27470-1-git-send-email-t.stanislaws@samsung.com>
+	<1396967856-27470-2-git-send-email-t.stanislaws@samsung.com>
+	<534506B1.4040908@samsung.com>
+	<CAPdUM4M109_kzY6cUMJQPSwgazvWmNDWL1JeXgiqnzvH8dhK2Q@mail.gmail.com>
+	<53451A60.4050803@samsung.com>
+	<53675D72.70103@ti.com>
+	<CAPdUM4N+2VXpiFSiWW9gKfbte1zkpDbCOSF+KvEo4T1KLqqwjw@mail.gmail.com>
+	<536A36F5.5080303@samsung.com>
+Date: Wed, 7 May 2014 19:49:10 +0530
+X-Google-Sender-Auth: NYl_x072jUJhgJs_YED1XAdMXdo
+Message-ID: <CAPdUM4M6uk2KN_L487_cRkOqbgJrhhMRx9zpczA6-3LzSM3FSg@mail.gmail.com>
+Subject: Re: [PATCHv2 1/3] phy: Add exynos-simple-phy driver
+From: Rahul Sharma <rahul.sharma@samsung.com>
+To: Tomasz Stanislawski <t.stanislaws@samsung.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sean Paul <seanpaul@chromium.org>,
-        =?UTF-8?Q?St=C3=A9phane_Marchesin?= <marcheu@chromium.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        sunil joshi <joshi@samsung.com>, Andrzej Hajda <a.hajda@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 7, 2014 at 1:14 PM, Seung-Woo Kim <sw0312.kim@samsung.com> wrote:
-> Hi Daniel,
+On 7 May 2014 19:06, Tomasz Stanislawski <t.stanislaws@samsung.com> wrote:
+> On 05/07/2014 12:38 PM, Rahul Sharma wrote:
+>> On 5 May 2014 15:14, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>> Hi,
+>>>
+>>> On Wednesday 09 April 2014 03:31 PM, Sylwester Nawrocki wrote:
+>>>> Hi,
+>>>>
+>>>> On 09/04/14 11:12, Rahul Sharma wrote:
+>>>>> Idea looks good. How about keeping compatible which is independent
+>>>>> of SoC, something like "samsung,exynos-simple-phy" and provide Reg
+>>>>> and Bit through phy provider node. This way we can avoid SoC specific
+>>>>> hardcoding in phy driver and don't need to look into dt bindings for
+>>>>> each new SoC.
+>>>>
+>>>> I believe it is a not recommended approach.
+>>>
+>>> Why not? We should try to avoid hard coding in the driver code. Moreover by
+>>> avoiding hardcoding we can make it a generic driver for single bit PHYs.
+>>>
+>>
+>> +1.
+>>
+>> @Tomasz, any plans to consider this approach for simple phy driver?
+>>
+>> Regards,
+>> Rahul Sharma.
+>>
 >
-> On 2014년 05월 05일 00:26, Daniel Kurtz wrote:
->> Mixer hardware supports offsetting dma from start of source buffer using
->> the MXR_GRP_SXY register.
->>
->> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
->> ---
->>  drivers/gpu/drm/exynos/exynos_mixer.c | 8 +++-----
->>  1 file changed, 3 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/gpu/drm/exynos/exynos_mixer.c b/drivers/gpu/drm/exynos/exynos_mixer.c
->> index 475eb49..40cf39b 100644
->> --- a/drivers/gpu/drm/exynos/exynos_mixer.c
->> +++ b/drivers/gpu/drm/exynos/exynos_mixer.c
->> @@ -529,13 +529,11 @@ static void mixer_graph_buffer(struct mixer_context *ctx, int win)
->>
->>       dst_x_offset = win_data->crtc_x;
->>       dst_y_offset = win_data->crtc_y;
->> +     src_x_offset = win_data->fb_x;
->> +     src_y_offset = win_data->fb_y;
->>
->>       /* converting dma address base and source offset */
->> -     dma_addr = win_data->dma_addr
->> -             + (win_data->fb_x * win_data->bpp >> 3)
->> -             + (win_data->fb_y * win_data->fb_width * win_data->bpp >> 3);
->> -     src_x_offset = 0;
->> -     src_y_offset = 0;
->> +     dma_addr = win_data->dma_addr;
+> Hi Rahul,
+> Initially, I wanted to make a very generic driver and to add bit and
+> register (or its offset) attribute to the PHY node.
+> However, there was a very strong opposition from DT maintainers
+> to adding any bit related configuration to DT.
+> The current solution was designed to be a trade-off between
+> being generic and being accepted :).
 >
-> Basically, you are right and source offset register can be used. But
-> because of limitation of resolution for mixer up to 1920x1080, I
-> considered modified soruce dma address to set one frame buffer, which is
-> bigger than 1920x1080, on to both fimd and hdmi.
 
-Hi Seung-Woo,
+Thanks Tomasz,
+Ok got it. lets discuss it again and conclude it.
 
-I do not see why the maximum MIXER resolution matters for choosing
-between offsetting BASE or using SXY.
+@Kishon, DT-folks,
 
-Let's say you have one big 1920x1908 framebuffer, with a span of 1920,
-starting at dma_addr (there is no extra padding at the end of the
-line).
-Let's say you wanted the mixer to scan out 1920x1080 pixels starting
-from (0, 800) in the framebuffer, and start drawing them at (0,0) on
-the screen.
+The original RFC patch from Tomasz (at https://lkml.org/lkml/2013/10/21/313)
+added simple phy driver as "Generic-simple-phy" with these properties:
 
-What we currently do is:
-  BASE = dma_addr + (800 * 1080 * 4)
-  SPAN = 1920
-  SXY = SX(0) | SY(0)
-  WH = W(1920) | H(1080)
-  DXY = DX(0) | DY(0)
++ of_property_read_u32(dev->of_node, "mask", &sphy->mask);
++ of_property_read_u32(dev->of_node, "on-value", &sphy->on_value);
++ of_property_read_u32(dev->of_node, "off-value", &sphy->off_value);
 
-I am proposing we do:
-  BASE = dma_addr
-  SPAN = 1920
-  SXY = SX(0) | SY(800)
-  WH = W(1920) | H(1080)
-  DXY = DX(0) | DY(0)
+Shall we consider the same solution again for generic simple phy
+driver which just expose on/off control through register bit.
 
-In both cases, the mixer resolution is 1920x1080.
+Regards,
+Rahul Sharma
 
-My motivation for wanting to program an un-modified dma_addr into BASE
-is so we can then just check BASE_S to determine from which buffer the
-mixer is actively being scanned out without worrying about the source
-offset, since the source offset can change for a given framebuffer
-(for example, when doing panning, or if an overlay is used for a HW
-cursor).
-
-Best Regards,
--Daniel
-
->
 > Regards,
-> - Seung-Woo Kim
+> Tomasz Stanislawski
 >
+>
+>
+>>> Cheers
+>>> Kishon
 >>
->>       if (win_data->scan_flags & DRM_MODE_FLAG_INTERLACE)
->>               ctx->interlace = true;
->>
 >
-> --
-> Seung-Woo Kim
-> Samsung Software R&D Center
-> --
->
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
