@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899AbaEGTRl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 15:17:41 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:19349 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499AbaEGTRg (ORCPT
+	id S1751592AbaEGTTB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 15:19:01 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:50275 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982AbaEGTS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 15:17:36 -0400
-Message-ID: <1399490251.4567.24.camel@buesod1.americas.hpqcorp.net>
-Subject: [PATCH v2] ipc,shm: document new limits in the uapi header
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, aswin@hp.com,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Date: Wed, 07 May 2014 12:17:31 -0700
-In-Reply-To: <1399486965.4567.9.camel@buesod1.americas.hpqcorp.net>
-References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
-	 <CAKgNAkjuU68hgyMOVGBVoBTOhhGdBytQh6H0ExiLoXfujKyP_w@mail.gmail.com>
-	 <1399406800.13799.20.camel@buesod1.americas.hpqcorp.net>
-	 <CAKgNAkjOKP7P9veOpnokNkVXSszVZt5asFsNp7rm7AXJdjcLLA@mail.gmail.com>
-	 <1399414081.30629.2.camel@buesod1.americas.hpqcorp.net>
-	 <5369C43D.1000206@gmail.com>
-	 <1399486965.4567.9.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 7 May 2014 15:18:59 -0400
+Date: Wed, 7 May 2014 12:18:55 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: [GIT PULL] MTD update for 3.15-rc5
+Message-ID: <20140507191855.GF28907@ld-irv-0074>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is useful in the future and allows users to
-better understand the reasoning behind the changes.
 
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
----
- include/uapi/linux/shm.h | 15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+--RnlQjJ0d97Da+TV1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
-index 74e786d..3400b6e 100644
---- a/include/uapi/linux/shm.h
-+++ b/include/uapi/linux/shm.h
-@@ -8,17 +8,20 @@
- #endif
- 
- /*
-- * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
-- * be modified by sysctl.
-+ * SHMMNI, SHMMAX and SHMALL are the default upper limits which can be
-+ * modified by sysctl. Both SHMMAX and SHMALL have their default values
-+ * to the maximum limit which is as large as it can be without helping
-+ * userspace overflow the values. There is really nothing the kernel
-+ * can do to avoid this any further. It is therefore not advised to
-+ * make them any larger. These limits are suitable for both 32 and
-+ * 64-bit systems.
-  */
--
- #define SHMMIN 1			 /* min shared seg size (bytes) */
- #define SHMMNI 4096			 /* max num of segs system wide */
--#define SHMMAX (ULONG_MAX - (1L<<24))	 /* max shared seg size (bytes) */
--#define SHMALL (ULONG_MAX - (1L<<24))	 /* max shm system wide (pages) */
-+#define SHMMAX (ULONG_MAX - (1UL << 24)) /* max shared seg size (bytes) */
-+#define SHMALL (ULONG_MAX - (1UL << 24)) /* max shm system wide (pages) */
- #define SHMSEG SHMMNI			 /* max shared segs per process */
- 
--
- /* Obsolete, used only for backwards compatibility and libc5 compiles */
- struct shmid_ds {
- 	struct ipc_perm		shm_perm;	/* operation perms */
--- 
-1.8.1.4
+Hi Linus,
 
+The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
 
+  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
 
+are available in the git repository at:
+
+  git://git.infradead.org/linux-mtd.git tags/for-linus-20140507
+
+for you to fetch changes up to 28c015a9daabe4ed3aeb0ccf669a3f1c2b8b81d5:
+
+  mtd: davinci-nand: disable subpage write for keystone-nand (2014-04-30 15:26:49 -0700)
+
+----------------------------------------------------------------
+MTD update for 3.15-rc5
+
+A single update for Keystone SoC's, whose NAND controller does not support
+subpage programming.
+
+----------------------------------------------------------------
+Murali Karicheri (1):
+      mtd: davinci-nand: disable subpage write for keystone-nand
+
+ drivers/mtd/nand/davinci_nand.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--RnlQjJ0d97Da+TV1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTaocfAAoJEFySrpd9RFgtIK8P/RtmYYI7oSe3IKcms4t3tVtf
+0GD82wDjiOOoDxySKM5uXgSvoJHYvuCfydeN0vLLl78kvLPV8eD1YAuUNhNxXjSk
+0oxiE3Qmf97RMjKXEVLd5LPhAKtlxr3R6k4yqVMqafFXH3iHKwfKl81BYjcWR/MG
+LSiO13AoZVXpr2ULKsMgZjP1PLj0P1QYWg4Ly5xbXeRrTia1lzuR3CxJHj/rz8BL
+G4VlquLcvszJ1d5XdhCw3aLmjWYorazCAlJKE/WhUPGRNotgg2kRIXKl0P1kmXMr
+sNI54Qg04z2dyxLceQUwrj/Pas4VGxrrzODXTt7EQvRWAHkzgTAm9dfWySfxDU/J
+ij9QaPBdafMAEM/KAj+LbkN3Eztb6yZqLB50V3/x+rnTT4CkaWOwE8uBqLo3uzPK
+Sdc3sqxYy6I8f/OQna8dgLKj/PIBaVpQWojDIKz+i/hiKhB3k6eD6FV6miYla75O
+HFxPEtUzRAKNWEvlZjQqu0qri+aGiBZmoHN+byT412WgSViCWl6SUBkHTPUZKIk+
+l7/8bUumlyvrerWPE3Jm+R0RuXlHbsuvvn7cvuvOwG6UIJHFI+3DEKf2T7rapvbL
+aN1ZUVPmwtI1mTQkrxpHOXjoKoucjTK/WQq/oylLMxWSMutZ2Jaga9yHGbKVhUje
+yqjma5WX5GV3x1WId34i
+=m8w3
+-----END PGP SIGNATURE-----
+
+--RnlQjJ0d97Da+TV1--
