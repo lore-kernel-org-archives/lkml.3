@@ -1,100 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933621AbaEGPMU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:12:20 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:62350 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933553AbaEGPMS (ORCPT
+	id S933224AbaEGPNN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:13:13 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64171 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144AbaEGPNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:12:18 -0400
+	Wed, 7 May 2014 11:13:10 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18RP+HfmgATl5OqV14PgZAE7d/O0cR054w=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 7590E56E56F
+Date: Wed, 7 May 2014 11:12:59 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Corey Minyard <minyard@acm.org>
+Cc: "Kevin's boot bot" <khilman@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        kernel-build-reports@lists.linaro.org, linaro-kernel@lists.linaro.org,
+        openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+Subject: Re: IPMI misbehaving on ARM defconfigs, was [Re: stable boot: 18
+ pass, 4 fail (v3.10.39)]
+Message-ID: <20140507151259.GF28159@titan.lakedaemon.net>
+References: <5369063f.4291420a.03aa.495e@mx.google.com>
+ <20140507142056.GD28159@titan.lakedaemon.net>
+ <536A43BA.20105@acm.org>
 MIME-Version: 1.0
-In-Reply-To: <CAL_JsqL6+i_ED+s6kODsadszefaZUcA7VHCfZ4k4yj62iXsarQ@mail.gmail.com>
-References: <536982E3.10303@gmail.com>
-	<CAL_JsqL6+i_ED+s6kODsadszefaZUcA7VHCfZ4k4yj62iXsarQ@mail.gmail.com>
-Date: Wed, 7 May 2014 08:12:17 -0700
-Message-ID: <CAJAp7OiyjefyPMu2p8jTkbfQWYUKeYV62pVTtJ2JOP-6YOOGKA@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] devicetree, qcomm PMIC: fix node name conflict
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Frank Rowand <frowand.list@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <536A43BA.20105@acm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 6, 2014 at 6:32 PM, Rob Herring <robherring2@gmail.com> wrote:
-> On Tue, May 6, 2014 at 7:48 PM, Frank Rowand <frowand.list@gmail.com> wrote:
->> An issue with the path of SPMI nodes under /sys/bus/... was reported in
->> https://lkml.org/lkml/2014/4/23/312.  The symptom is that two different
->> grandchild nodes of the spmi with the same node-name@unit-address will
->> result in attempting to create duplicate links at
->> /sys/bus/platform/devices/unit-address.node-name.  It turns out that the
->> specific example provided might not be an expected configuration for
->> current hardware, but the reported trap remains an issue.
->>
->> I have been poking at the problem, trying to figure out how to cleanly
->> fix the issue without breaking devicetree device creation.
->>
->> The first patch in the series is the one that may be a very bad idea.  Or
->> it may help show the way forward to deal with what I think is the major
->> underlying problem.  I have not finished investigating the possible negative
->> side effects.  And I am still thinking whether this is a conceptually good
->> approach, or whether it is simply an expediant hack that hides the underlying
->> problem.  But I am throwing this out prematurely because I have mentioned
->> it to several people, and I want to make it visible to everyone involved.
->>
->> The underlying architectural problem (in my opinion) is that a lot of devices
->> are created by the device tree infrastructure as platform devices, when they
->> truly should not be platform devices.  They should not be platform devices
->> because they are not physically on a platform bus, they are instead somewhere
->> below some other bus.  The first patch in this series is a hack which
->> results in the devices still being represented by "struct platform_device"
->> objects, but with a link to their parent's "struct bus_type" instead of
->> to &platform_bus_type.
->>
->> The second patch does not require the first patch.  The second patch provides
->> a mechanism to allow subsystems to provide a method of naming devices to
->> avoid name collisions.
->>
->> The third patch provides an example of a subsystem using the new feature
->> provided by the second patch.
->>
->
-> I think the primary question to ask is there any added benefit to
-> having the additional hierarchy of devices. I don't think there is
-> much support to have more hierarchy from what I have seen of past
-> discussions.
->
-> Another approach could be to support having multiple platform bus
-> instances. Then drivers can easily create a new instance for each set
-> of sub-devices.
->
-> This can be solved in a much less invasive way just in the DT naming
-> algorithm. This is slightly different from what I had suggested of
-> just dropping the unit address. It keeps the unit address, but adds
-> the unique index on untranslate-able addresses. The diff is bigger due
-> to refactoring to reduce the indentation levels. It is untested and
-> whitespace corrupted:
+Corey,
 
-The unique index leads to an interesting dependency between the order
-of nodes in the DTB and userspace; paths to e.g. our the path to our
-block devices contains soc.X where X changes now and then. Fortunately
-soc.X won't change that often, but forcing more peripheral nodes to use
-the same schema would show the problem quite often.
+On Wed, May 07, 2014 at 09:31:22AM -0500, Corey Minyard wrote:
+> You probably don't have an IPMI controller on your system.  You can just
+> remove the driver from the config.  Kernel 3.15 will have the default
+> probing removed, and you won't see these messages any more.
 
-Does translatable/untranslatable refer to if this is an address translatable
-my the cpu or that it's just a translatable address on this specific bus?
-As far as I can see it's the latter and in our case (revid { reg =
-<0x100, 0x100>; })
-seem to be translatable with the current implementation.
+ahh, here it is:
 
-Regards,
-Bjorn
+  0dfe6e7ed47f ipmi: Turn off default probing of interfaces
+
+Since Arnd says it's possible to have this hardware on an ARM platform,
+I think backporting this fix may be appropriate.
+
+Although, it looks like the only ARM defconfig that selects this driver
+is mini2440_defconfig.  So I'm uncertain how it gets turned on in
+multi_v7_defconfig, particularly for the v3.10.y stable tree...
+
+thx,
+
+Jason.
+
+> On 05/07/2014 09:20 AM, Jason Cooper wrote:
+> > Cory, all,
+> >
+> > On our ARM boot farm, we've started seeing the following:
+> >
+> > On Tue, May 06, 2014 at 08:56:47AM -0700, Kevin's boot bot wrote:
+> >> Tree/Branch: stable
+> >> Git describe: v3.10.39
+> >> Failed boot tests (console logs at the end)
+> >> ===========================================
+> >>                    da850-evm:     FAIL:    arm-davinci_all_defconfig
+> >>   armada-xp-openblocks-ax3-4:     FAIL:    arm-multi_v7_defconfig
+> >>           armada-370-mirabox:     FAIL:    arm-multi_v7_defconfig
+> >>         sun4i-a10-cubieboard:     FAIL:    arm-multi_v7_defconfig
+> >>
+> > ...
+> >> arm-multi_v7_defconfig
+> >> ----------------------
+> >>
+> >> 	armada-xp-openblocks-ax3-4: FAIL: last 80 lines of boot log:
+> >> 	------------------------------------------------------------
+> >>
+> >> pps_core: LinuxPPS API ver. 1 registered
+> >> pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+> >> PTP clock support registered
+> >> EDAC MC: Ver: 3.0.0
+> >> Switching to clocksource armada_370_xp_clocksource
+> >> bounce pool size: 64 pages
+> >> Block layer SCSI generic (bsg) driver version 0.4 loaded (major 251)
+> >> io scheduler noop registered
+> >> io scheduler deadline registered
+> >> io scheduler cfq registered (default)
+> >> armada-xp-pinctrl d0018000.pinctrl: registered pinctrl driver
+> >> ipmi message handler version 39.2
+> >> IPMI System Interface driver.
+> >> ipmi_si: Adding default-specified kcs state machine
+> >> ipmi_si: Trying default-specified kcs state machine at i/o address 0xca2, slave address 0x0, irq 0
+> >> ipmi_si: Could not set up I/O space
+> >> Trying to free nonexistent resource <0000000000000ca2-0000000000000ca2>
+> >> Trying to free nonexistent resource <0000000000000ca3-0000000000000ca3>
+> >> ipmi_si: Adding default-specified smic state machine
+> >> ipmi_si: Trying default-specified smic state machine at i/o address 0xca9, slave address 0x0, irq 0
+> >> ipmi_si: Could not set up I/O space
+> >> Trying to free nonexistent resource <0000000000000ca9-0000000000000ca9>
+> >> Trying to free nonexistent resource <0000000000000caa-0000000000000caa>
+> >> Trying to free nonexistent resource <0000000000000cab-0000000000000cab>
+> >> ipmi_si: Adding default-specified bt state machine
+> >> ipmi_si: Trying default-specified bt state machine at i/o address 0xe4, slave address 0x0, irq 0
+> >> ipmi_si: Could not set up I/O space
+> >> Trying to free nonexistent resource <00000000000000e4-00000000000000e4>
+> >> Trying to free nonexistent resource <00000000000000e5-00000000000000e5>
+> >> Trying to free nonexistent resource <00000000000000e6-00000000000000e6>
+> >> ipmi_si: Unable to find any System Interface(s)
+> >> Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+> > ...
+> >
+> > It appears to be unrelated to the failure this original message was
+> > about.  However, the failure brought the above to our attention. :)
+> >
+> > Is the IPMI driver used on ARM?  Documentation/IPMI.txt indicates a
+> > dependency on ACPI, but that isn't reflected in the Kconfig.  At any
+> > rate, it seems rather unhappy.  :(
+> >
+> > thx,
+> >
+> > Jason.
+> 
