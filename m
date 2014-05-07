@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308AbaEGKRl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 06:17:41 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62728 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754598AbaEGKRk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 06:17:40 -0400
-Date: Wed, 7 May 2014 11:17:09 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Larry Bassel <larry.bassel@linaro.org>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "khilman@linaro.org" <khilman@linaro.org>
-Subject: Re: [PATCH v2 2/2] arm64: enable context tracking
-Message-ID: <20140507101709.GE18456@arm.com>
-References: <1399419149-26685-1-git-send-email-larry.bassel@linaro.org>
- <1399419149-26685-3-git-send-email-larry.bassel@linaro.org>
+	id S932387AbaEGKSW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 06:18:22 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46159 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755400AbaEGKSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 06:18:20 -0400
+Date: Wed, 7 May 2014 12:18:15 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Sven Joachim <svenjoac@gmx.de>
+Cc: Alexandre Julliard <julliard@winehq.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Brian Gerst <brgerst@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on
+ 64-bit kernels
+Message-ID: <20140507101815.GA16725@pd.tnic>
+References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org>
+ <CAMzpN2jx4H4p8fQr-WHxVyCHhWi0iO3WZZKyxYD7Dfa7pWkEgg@mail.gmail.com>
+ <CA+55aFwzvSiAGYfFb2R3JeVvh8_PQuOKJDrYP5C_3VQz2zhnBw@mail.gmail.com>
+ <CAMzpN2jj3dwQG7qC__8zLPhkg_ER6n4CcNxa5eg7okRN+k_VUA@mail.gmail.com>
+ <CA+55aFxr_dz3vhko1FPXhZd0ZNeGveX0oSLqUo_wyiVbxatLQw@mail.gmail.com>
+ <87k3aspd1h.fsf@wine.dyndns.org>
+ <87zjiuymiu.fsf@turtle.gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1399419149-26685-3-git-send-email-larry.bassel@linaro.org>
+In-Reply-To: <87zjiuymiu.fsf@turtle.gmx.de>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 12:32:29AM +0100, Larry Bassel wrote:
-> Make calls to ct_user_enter when the kernel is exited
-> and ct_user_exit when the kernel is entered (in el0_da,
-> el0_ia, el0_svc, el0_irq).
+On Wed, May 07, 2014 at 11:18:49AM +0200, Sven Joachim wrote:
+> I would rather not set up a virtual machine just for wine (I don't
+> have Windows anymore).
 
-Why only these entry points? I can reschedule after any exception from EL0,
-so I'd expect all exceptions from userspace to need annotating, no?
+What about reactos? (I'm not saying this shouldn't be addressed,
+regardless...)
 
-> These macros expand to function calls which will only work
-> properly if el0_sync and related code has been rearranged
-> (in a previous patch of this series).
-> 
-> In order to avoid saving registers, the slow syscall path
-> is forced (as x86 does).
+-- 
+Regards/Gruss,
+    Boris.
 
-... and if you decide to handle undef exceptions, I think you'll need
-the register saving too, in case the kernel needs to perform emulation.
-
-Will
+Sent from a fat crate under my desk. Formatting is fine.
+--
