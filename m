@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158AbaEGQnk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:43:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28624 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752412AbaEGQnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:43:39 -0400
-Date: Wed, 7 May 2014 11:43:19 -0500
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Seth Jennings <sjenning@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-Message-ID: <20140507164319.GB31555@treble.redhat.com>
-References: <20140505132638.GA14432@treble.redhat.com>
- <20140505141038.GA27403@localhost.localdomain>
- <20140505184304.GA15137@gmail.com>
- <20140505214919.GE2099@localhost.localdomain>
- <20140506121211.GA4125@treble.redhat.com>
- <20140506140516.GF2099@localhost.localdomain>
- <20140506145010.GA6702@treble.redhat.com>
- <20140507122444.GB12234@gmail.com>
- <20140507154114.GA31555@treble.redhat.com>
- <20140507155754.GA15221@gmail.com>
+	id S1756448AbaEGQoR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:44:17 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:51819 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932134AbaEGQoO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 12:44:14 -0400
+Date: Wed, 7 May 2014 18:44:07 +0200
+From: Robert Richter <rric@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jean Pihet <jean.pihet@linaro.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH v4 00/16] perf, persistent: Add persistent events
+Message-ID: <20140507164407.GG32718@rric.localhost>
+References: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
+ <20140506123907.GV32718@rric.localhost>
+ <20140506185359.GE25013@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140507155754.GA15221@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140506185359.GE25013@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 05:57:54PM +0200, Ingo Molnar wrote:
-> Live patching does not enter into this question, ever. The correctness 
-> of a patch to the source does not depend on 'live patching' 
-> considerations in any way, shape or form.
+On 06.05.14 20:53:59, Borislav Petkov wrote:
+> On Tue, May 06, 2014 at 02:39:07PM +0200, Robert Richter wrote:
+> > Events could also be shared transparently. This means, if there is
+> > already an event running with the same attr, it could be reused. Not
+> > sure if this makes sense much and is also feasible. Most events are
+> > opened with writable buffers and thus can not be shared anyway.
 > 
-> Any mechanism that tries to blur these lines is broken by design.
+> Well, this is simple: sharing events implicitly says they're read-only -
+> you can't share them otherwise. If you want the buffers to be writable,
+> then the events cannot be shared.
 > 
-> My claim is that if a patch is correct/safe in the old fashioned way, 
-> then a fundamental principle is that a live patching subsystem must 
-> either safely apply, or safely reject the live patching attempt, 
-> independently from any user input.
+> I think this is nicely simple.
 
-That's a valiant goal, but it's not going to happen unless you want to
-rewrite Linux in Haskell.  It's just not possible for a program to prove
-that a patch is safe to apply to a running kernel.  There are way too
-many subtle interactions with dynamically allocated data between
-functions.
+With transparently I mean that the process even does not know that the
+same event is already running by another process. The kernel detects
+this and maps the request to that event and buffer. Of course the
+event's buffer must be at least readonly to be shared for this.
 
-I think the only way to achieve that is with CRIU, but it still requires
-a kexec or a reboot, so you lose all kernel state and it's much more
-disruptive.
+This could be a mechanism to connect to persistent events. The kernel
+detects by type and attr that the requested event is already running
+persistent and maps to it.
 
-> "We think/hope it won't blow up in most cases and we automated some 
-> checks halfways" or "the user must know what he is doing" is really 
-> not something that I think is a good concept for something as fragile 
-> as live patching.
+But at the moment persistent events can only be shared using
 
-This is a distro tool, not a general purpose one.  If distros are
-careful with their patch selection, it won't blow up.  It's a valuable
-way for distros to help out sysadmins who need a hot security fix but
-can't reboot immediately.
+ attr.type = PERF_TYPE_PERSISTENT
+ attr.config = id
 
--- 
-Josh
+So the above is more an alternative to connect to persistent events
+and the question is, which one to use. Presumable the easiest first,
+which is the current implementation.
+
+-Robert
