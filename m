@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933914AbaEGN1G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:27:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45520 "EHLO
+	id S933967AbaEGN1i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:27:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45515 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933093AbaEGNOh (ORCPT
+	with ESMTP id S933078AbaEGNOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:14:37 -0400
+	Wed, 7 May 2014 09:14:35 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 36/70] usb: option: add Alcatel L800MA
-Date: Wed,  7 May 2014 14:12:39 +0100
-Message-Id: <1399468393-10140-37-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 35/70] usb: option: add Olivetti Olicard 500
+Date: Wed,  7 May 2014 14:12:38 +0100
+Message-Id: <1399468393-10140-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -33,42 +33,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit dd6b48ecec2ea7d15f28d5e5474388681899a5e1 upstream.
+commit 533b3994610f316e5cd61b56d0c4daa15c830f89 upstream.
 
 Device interface layout:
 0: ff/ff/ff - serial
-1: ff/00/00 - serial AT+PPP
-2: ff/ff/ff - QMI/wwan
-3: 08/06/50 - storage
+1: ff/ff/ff - serial AT+PPP
+2: 08/06/50 - storage
+3: ff/ff/ff - serial
+4: ff/ff/ff - QMI/wwan
 
+Reported-by: Julio Araujo <julio.araujo@wllctel.com.br>
 Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/option.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/option.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
 diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 6335222..776c86f 100644
+index 367c7f0..6335222 100644
 --- a/drivers/usb/serial/option.c
 +++ b/drivers/usb/serial/option.c
-@@ -287,6 +287,7 @@ static void option_instat_callback(struct urb *urb);
- #define ALCATEL_PRODUCT_X060S_X200		0x0000
- #define ALCATEL_PRODUCT_X220_X500D		0x0017
- #define ALCATEL_PRODUCT_L100V			0x011e
-+#define ALCATEL_PRODUCT_L800MA			0x0203
+@@ -349,6 +349,7 @@ static void option_instat_callback(struct urb *urb);
+ #define OLIVETTI_PRODUCT_OLICARD100		0xc000
+ #define OLIVETTI_PRODUCT_OLICARD145		0xc003
+ #define OLIVETTI_PRODUCT_OLICARD200		0xc005
++#define OLIVETTI_PRODUCT_OLICARD500		0xc00b
  
- #define PIRELLI_VENDOR_ID			0x1266
- #define PIRELLI_PRODUCT_C100_1			0x1002
-@@ -1501,6 +1502,8 @@ static const struct usb_device_id option_ids[] = {
- 	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L100V),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L800MA),
-+	  .driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
- 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
+ /* Celot products */
+ #define CELOT_VENDOR_ID				0x211f
+@@ -1545,6 +1546,9 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200),
+ 		.driver_info = (kernel_ulong_t)&net_intf6_blacklist
+ 	},
++	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD500),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist
++	},
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEM600) },
 -- 
 1.9.1
 
