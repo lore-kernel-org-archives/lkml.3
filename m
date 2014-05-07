@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477AbaEGD6i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 23:58:38 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:63929 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455AbaEGD6e (ORCPT
+	id S1755535AbaEGD6p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 23:58:45 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:47325 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455AbaEGD6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 23:58:34 -0400
-X-Google-Original-Message-ID: <1399435056-32386-3-git-send-email-y>
+	Tue, 6 May 2014 23:58:42 -0400
+X-Google-Original-Message-ID: <1399435056-32386-4-git-send-email-y>
 X-Google-Original-From: y
 From: navin.patidar@gmail.com
 To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 02/13] staging: rtl8188eu: Remove unused member variables of struct recv_priv
-Date: Wed,  7 May 2014 09:27:25 +0530
-Message-Id: <5369af66.0382440a.71b7.1dd2@mx.google.com>
+Subject: [PATCH 03/13] staging: rtl8188eu: Remove 'spinlock_t lock' from struct recv_priv
+Date: Wed,  7 May 2014 09:27:26 +0530
+Message-Id: <5369af71.23de440a.24bf.1d32@mx.google.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1399435056-32386-1-git-send-email-y>
 References: <1399435056-32386-1-git-send-email-y>
@@ -25,36 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: navin patidar <navin.patidar@gmail.com>
 
+Remove unused variable 'spinlock_t lock'.
+
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/include/rtw_recv.h |    6 ------
- 1 file changed, 6 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_recv.c    |    2 --
+ drivers/staging/rtl8188eu/include/rtw_recv.h |    1 -
+ 2 files changed, 3 deletions(-)
 
+diff --git a/drivers/staging/rtl8188eu/core/rtw_recv.c b/drivers/staging/rtl8188eu/core/rtw_recv.c
+index a065a7f..5260fe5 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_recv.c
++++ b/drivers/staging/rtl8188eu/core/rtw_recv.c
+@@ -63,8 +63,6 @@ int _rtw_init_recv_priv(struct recv_priv *precvpriv, struct adapter *padapter)
+ 
+ 	int	res = _SUCCESS;
+ 
+-	spin_lock_init(&precvpriv->lock);
+-
+ 	_rtw_init_queue(&precvpriv->free_recv_queue);
+ 	_rtw_init_queue(&precvpriv->recv_pending_queue);
+ 	_rtw_init_queue(&precvpriv->uc_swdec_pending_queue);
 diff --git a/drivers/staging/rtl8188eu/include/rtw_recv.h b/drivers/staging/rtl8188eu/include/rtw_recv.h
-index 5b3bf29..d52cfe8 100644
+index d52cfe8..68c2ad5f 100644
 --- a/drivers/staging/rtl8188eu/include/rtw_recv.h
 +++ b/drivers/staging/rtl8188eu/include/rtw_recv.h
-@@ -189,10 +189,6 @@ struct recv_priv {
- 	u64	rx_drop;
- 	u64	last_rx_bytes;
- 
--	uint  rx_icv_err;
--	uint  rx_largepacket_crcerr;
--	uint  rx_smallpacket_crcerr;
--	uint  rx_middlepacket_crcerr;
- 	uint	ff_hwaddr;
- 	u8	rx_pending_cnt;
- 
-@@ -212,9 +208,7 @@ struct recv_priv {
- 	u8 signal_strength;
- 	u8 signal_qual;
- 	u8 noise;
--	int RxSNRdB[2];
- 	s8 RxRssi[2];
--	int FalseAlmCnt_all;
- 
- 	struct timer_list signal_stat_timer;
- 	u32 signal_stat_sampling_interval;
+@@ -175,7 +175,6 @@ recv_thread(passive) ; returnpkt(dispatch)
+ using enter_critical section to protect
+ */
+ struct recv_priv {
+-	spinlock_t lock;
+ 	struct __queue free_recv_queue;
+ 	struct __queue recv_pending_queue;
+ 	struct __queue uc_swdec_pending_queue;
 -- 
 1.7.10.4
 
