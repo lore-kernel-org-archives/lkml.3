@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932908AbaEGMzy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 08:55:54 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:52741 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932823AbaEGMzx (ORCPT
+	id S932927AbaEGM4l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 08:56:41 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:63681 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932840AbaEGM4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 08:55:53 -0400
-Date: Wed, 7 May 2014 14:55:48 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched/clock: cleanup, remove wrap_{max|min}().
-Message-ID: <20140507125548.GL30445@twins.programming.kicks-ass.net>
-References: <1399463338-15507-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+	Wed, 7 May 2014 08:56:39 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Stratos Karafotis <stratosk@semaphore.gr>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Simon Horman <horms@verge.net.au>, Sekhar Nori <nsekhar@ti.com>,
+        Samuel Ortiz <samuel@sortiz.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Subject: Re: [PATCH v5 0/8] Introduce new cpufreq helper macros
+Date: Wed, 07 May 2014 15:13:18 +0200
+Message-ID: <4469396.zveA7sC36d@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAKohpo=3_7G+3bMF2CpWgZXvktdXBkCi4-tCxogwGcvvEEh18w@mail.gmail.com>
+References: <535AC247.3070907@semaphore.gr> <5369220A.3030207@semaphore.gr> <CAKohpo=3_7G+3bMF2CpWgZXvktdXBkCi4-tCxogwGcvvEEh18w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u65IjBhB3TIa72Vp"
-Content-Disposition: inline
-In-Reply-To: <1399463338-15507-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, May 07, 2014 10:53:16 AM Viresh Kumar wrote:
+> On 6 May 2014 23:25, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+> > My bad. I'm sorry for this. :(
+> >
+> > Rafael,
+> > A solution could be to make cpufreq_next_valid an inline function in cpufreq.h,
+> > but as Viresh mentioned this would be very inefficient because of multiple copies.
+> 
+> That statement was true when we didn't had this problem..
+> 
+> > So, maybe it's better to revert the 2 patches that don't depend on CONFIG_CPU_FREQ:
+> >
+> > 4229e1c61a4a ("sh: clk: Use cpufreq_for_each_valid_entry macro for iteration") and
+> > 04ae58645afa ("irda: sh_sir: Use cpufreq_for_each_valid_entry macro for iteration").
+> 
+> This doesn't look right. It can happen to some other drivers as well in future.
+> So, there are two solutions I can think of:
+> 1. move cpufreq_next_valid and rename it to __cpufreq_next_valid(). Also make it
+> inline. Then create two versions of cpufreq_next_valid(), one inlined (only when
+> CONFIG_CPU_FREQ=n) and other one in cpufreq.c (non- inlined)..
+> 
+> But probably that would be called ugly by some people :)
+> 
+> 2. Make cpufreq_next_valid() inline and forget about extra space it takes :)
+> 
+> @Rafel: Let me know which one you like :)
 
---u65IjBhB3TIa72Vp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+2.
 
-On Wed, May 07, 2014 at 08:48:58PM +0900, Dongsheng Yang wrote:
-> I am not sure why we need the wrap_{max|min}() in kernel/sched/clock.c.
-> But I checked the implementation of max() and min() in linux/kernel.h, I think
-> we can reuse them here rather than introduce a new function named
-> wrap_{max|min}().
 
-wrap is a good hint there.. they're supposed to deal with the clock
-wrapping. Of course 2^64 ns is a rather long time (~584 years in fact),
-but that doesn't mean we shouldn't care.
-
-And no, min/max don't do the right thing.
-
---u65IjBhB3TIa72Vp
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTai1UAAoJEHZH4aRLwOS63I0P+wRmIeVGoHtTtO/i3I1vxq7I
-No5WMj1cmEzg33Es5Yi475aqxG8dey4NTfWNdeJ6bPRHltB5MCa+LFdF32gNQO09
-PqrL/0e4yj9qM8Jb/qxOJu3dmnRxEdAmQhiVKf5ogPZfooLojDzQsLQvYdEuuank
-PlY7K/QedA68SQ8rucwJGESh63q5M+PxofwEg+i0OeSA6L2iWwK0ptAEputCKvs3
-6Nqc+wB8EA20v3u9m1TaBOFqCH/GqUWnhvEoKHHps7jsYlsR+CN1x7jL/BuOdf7W
-KDBFVPE2hJsgb6InhE7EkwUqIpNze5dJyT9pY7VcGQJSWoXgIdOGb2ES2t9sJX3i
-Ey5QEj6NJEs5uuFP7de6Nxv7OLf6/+AQGI5a6eF/h3WpusXaaH4OTYxJ+w4ql+ek
-SswG0pICn4I8Dy6oUeJpQucWQOa0EPcvKouszPB6dztZdtAyBy5nqF89O7OJTMRD
-iZVE3hXNfqio8T//FDcYbR2Hyg7HxpiiwNVdcLuChCTjzGmViAlr6Qgu4PIWuRJG
-w/TMaGBFnWtoFxeLizX+gXJxsgcCXkyGgg0oGNFB7+5+dRA1cVng1jZsnaj/HG2V
-l+9wyWl1J95BEWCTN29ELQB4cuUmDtDehU2MATb9JT4nRuqr491YnMcpaakvO7oi
-1MoZkjzOQ25jLgqbWmmz
-=TsNX
------END PGP SIGNATURE-----
-
---u65IjBhB3TIa72Vp--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
