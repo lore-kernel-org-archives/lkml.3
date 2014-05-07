@@ -1,121 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799AbaEGQad (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:30:33 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45417 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493AbaEGQac (ORCPT
+	id S932676AbaEGQay (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:30:54 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:54601 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932402AbaEGQax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:30:32 -0400
-Date: Wed, 7 May 2014 17:29:41 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Pali =?UTF-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, linux-doc@vger.kernel.org,
-        Sonal Santan <sonal.santan@gmail.com>
-Subject: Re: [PATCH 1/2] platform: x86: dell-smo8800: Dell Latitude freefall
- driver (ACPI SMO8800/SMO8810)
-Message-ID: <20140507172941.66aca8fa@alan.etchedpixels.co.uk>
-In-Reply-To: <1399114077-19314-2-git-send-email-pali.rohar@gmail.com>
-References: <1399114077-19314-1-git-send-email-pali.rohar@gmail.com>
-	<1399114077-19314-2-git-send-email-pali.rohar@gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 7 May 2014 12:30:53 -0400
+Date: Wed, 7 May 2014 18:30:47 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>, ak@linux.intel.com,
+        gong.chen@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 5/5] x86, nmi: Add better NMI stats to /proc/interrupts
+ and show handlers
+Message-ID: <20140507163047.GB15779@gmail.com>
+References: <1399476883-98970-1-git-send-email-dzickus@redhat.com>
+ <1399476883-98970-6-git-send-email-dzickus@redhat.com>
+ <20140507154231.GB14926@gmail.com>
+ <20140507160439.GR39568@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140507160439.GR39568@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +static irqreturn_t smo8800_interrupt_quick(int irq, void *data)
-> +{
-> +	struct smo8800_device *smo8800 = data;
-> +	atomic_inc(&smo8800->count);
-> +	wake_up_interruptible(&smo8800->misc_wait);
-> +	return IRQ_WAKE_THREAD;
-> +}
-> +
-> +static irqreturn_t smo8800_interrupt_thread(int irq, void *data)
-> +{
-> +	struct smo8800_device *smo8800 = data;
-> +	dev_info(smo8800->dev, "detected free fall\n");
 
-printk should be fast enough not to justify a thread, in fact the
-threaded IRQ overhead is going to be higher than the printk IMHO.
+* Don Zickus <dzickus@redhat.com> wrote:
 
-I'm not entirely sure a printk is the useful response here either ?
+> On Wed, May 07, 2014 at 05:42:31PM +0200, Ingo Molnar wrote:
+> > 
+> > * Don Zickus <dzickus@redhat.com> wrote:
+> > 
+> > > The main reason for this patch is because I have a hard time knowing
+> > > what NMI handlers are registered on the system when debugging NMI issues.
+> > > 
+> > > This info is provided in /proc/interrupts for interrupt handlers, so I
+> > > added support for NMI stuff too.  As a bonus it provides stat breakdowns
+> > > much like the interrupts.
+> > > 
+> > > The only ugly issue is how to label NMI subtypes using only 3 letters
+> > > and still make it obvious it is part of the NMI.  Adding a /proc/nmi
+> > > seemed overkill, so I choose to indent things by one space.  Sample
+> > > output is below:
+> > > 
+> > > [root@dhcp71-248 ~]# cat /proc/interrupts
+> > >            CPU0       CPU1       CPU2       CPU3
+> > >   0:         29          0          0          0  IR-IO-APIC-edge      timer
+> > > <snip>
+> > > NMI:         20        774      10986       4227   Non-maskable interrupts
+> > >  LOC:         21        775      10987       4228  Local     PMI, arch_bt
+> > >  EXT:          0          0          0          0  External  plat
+> > >  UNK:          0          0          0          0  Unknown
+> > >  SWA:          0          0          0          0  Swallowed
+> > > LOC:      30374      24749      20795      15095   Local timer interrupts
+> > > SPU:          0          0          0          0   Spurious interrupts
+> > > PMI:         20        774      10986       4227   Performance monitoring interrupts
+> > > <snip>
+> > 
+> > Looks pretty useful!
+> > 
+> > The lost vertical alignment of the counts is a problem though IMHO.
+> 
+> Agreed!  It wasn't obvious to me at the time on how to keep that 
+> alignment while only changing the first column.  I can look at it 
+> again, if you are ok with the small shift in the first column.  
+> Otherwise alternate ideas are welcomed. :-)
 
+So I'd just pick a unique 3-letter shortcut for the first column and 
+not do any shifting. Do the 'these are NMI sub-cases' distinction in 
+the descripion field. Example mockup:
 
-> +static ssize_t smo8800_misc_read(struct file *file, char __user *buf,
-> +				 size_t count, loff_t *pos)
-> +{
-> +	struct smo8800_device *smo8800 = container_of(file->private_data,
-> +					 struct smo8800_device, miscdev);
-> +
-> +	DECLARE_WAITQUEUE(wait, current);
-> +	u32 data;
-> +	unsigned char byte_data;
-> +	ssize_t retval = 1;
-> +
-> +	if (count < 1)
-> +		return -EINVAL;
+ NMI:         20        774      10986       4227   Non-maskable interrupts
+ NLC:         21        775      10987       4228   NMI: Local PMI, arch_bt
+ NXT:          0          0          0          0   NMI: External plat
+ NUN:          0          0          0          0   NMI: Unknown
+ NSW:          0          0          0          0   NMI: Swallowed
+ LOC:      30374      24749      20795      15095   Local timer interrupts
 
-How can this occur ??
+or so.
 
-> +
-> +	add_wait_queue(&smo8800->misc_wait, &wait);
-> +	while (true) {
-> +		set_current_state(TASK_INTERRUPTIBLE);
-> +		data = atomic_xchg(&smo8800->count, 0);
-> +		if (data)
-> +			break;
-> +
-> +		if (file->f_flags & O_NONBLOCK) {
-> +			retval = -EAGAIN;
-> +			goto out;
-> +		}
-> +
-> +		if (signal_pending(current)) {
-> +			retval = -ERESTARTSYS;
-> +			goto out;
-> +		}
-> +
-> +		schedule();
-> +	}
+Thanks,
 
-wait_event_interruptible ?
-
-> +	if (copy_to_user(buf, &byte_data, sizeof(byte_data)))
-> +		retval = -EFAULT;
-
-put_user
-
-
-> +static int smo8800_add(struct acpi_device *device)
-> +{
-> +	int err;
-> +	struct smo8800_device *smo8800;
-> +
-> +	if (!device)
-> +		return -EINVAL;
-
-How can this occur ??
-
-> +	atomic_set(&smo8800->count, 0);
-
-Not needed - you can't see a count until it is open
-
-> +	dev_info(&device->dev, "device /dev/freefall registered with IRQ %d\n",
-> +		 smo8800->irq);
-
-dev_dbg would be more appropriate. If every driver reported its
-registration we'd drown in logs
-
-> +	dev_info(&device->dev, "device /dev/freefall unregistered\n");
-
-Ditto
-
-
-Alan
+	Ingo
