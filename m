@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187AbaEGTxP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 15:53:15 -0400
-Received: from mout.gmx.net ([212.227.17.22]:64674 "EHLO mout.gmx.net"
+	id S1752310AbaEGTx2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 15:53:28 -0400
+Received: from mout.gmx.net ([212.227.17.22]:63830 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752062AbaEGTxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 15:53:09 -0400
-Date: Wed, 7 May 2014 21:30:23 +0200
+	id S1752216AbaEGTxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 15:53:21 -0400
+Date: Wed, 7 May 2014 21:43:37 +0200
 From: Christian Engelmayer <cengelma@gmx.at>
-To: Christian Engelmayer <cengelma@gmx.at>
-Cc: devel@driverdev.osuosl.org, w-lkml@lebenslange-mailadresse.de,
-        gregkh@linuxfoundation.org, peter.p.waskiewicz.jr@intel.com,
-        oat.elena@gmail.com, linux-kernel@vger.kernel.org, teobaluta@gmail.com,
-        dan.carpenter@oracle.com, Larry.Finger@lwfinger.net
-Subject: [PATCH v2 1/5] staging: rtl8188eu: fix potential leak in
- rtw_wx_read32()
-Message-ID: <20140507213023.0efacc80@spike>
-In-Reply-To: <20140507212825.2289e00e@spike>
-References: <20140507212825.2289e00e@spike>
+To: devel@driverdev.osuosl.org
+Cc: gregkh@linuxfoundation.org, peter.senna@gmail.com,
+        linux-kernel@vger.kernel.org, forest@alittletooquiet.net,
+        dan.carpenter@oracle.com
+Subject: [PATCH v2] staging: vt6656: fix potential leak in
+ vt6656_hostap_ioctl()
+Message-ID: <20140507214337.14a78a9c@spike>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:qp+wBbwpI489UFV2GagGaLC5h/2rNwYwIuZuHNL2nDqY+WDVVRF
- Y6uh/w11Is7kgHH3pVMqJ5vjhGnxt2RTpFcFZ2OmDxWbL/XwhtyMbMrKrDIDOXb201ftTkq
- 9GO1fv136kmAIyd3yD4ZJ4uR4O0/bjE+y0AwhG2dHlBQpvrLbR2F+ZVz6c4wJ8nN/+4Eqrg
- RfKJKKIKftHSEWDLe0x5A==
+X-Provags-ID: V03:K0:m+6QJbNQ6PELtv2LDNxt4ygZDG9nAuDjAKe2eAS+iHSWfM41yk2
+ BNI65EwRq5CvfByOLvBoz6jeKIgI4aBKVzWCRB5J1JElgKZmVzt6hh1/jWB/I9Xz3kLJ6S1
+ jmL3kUMGaAOfpC18k7Vq0mOMmtt7ZySuJOuHFLDCIk7F29G7aQLm73TA7LJMw4cKYeKkDVc
+ lhpskWg770WPw8iN8x/SQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function rtw_wx_read32() dynamically allocates a temporary buffer that is not
-freed in all error paths. Use a centralized exit path and make sure that all
-memory is freed correctly. Detected by Coverity - CID 1077711.
+Commit fb841d67 (staging: vt6656: don't leak 'param' in vt6656_hostap_ioctl()
+when returning -EOPNOTSUPP) cleaned up direct returns in the ioctl switch
+statement that leaked already allocated memory. Fix the same issue for
+VIAWGET_HOSTAPD_SCAN_REQ and VIAWGET_HOSTAPD_MLME that are not supported by
+this driver. Detected by Coverity - CID 144381.
 
 Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 ---
- drivers/staging/rtl8188eu/os_dep/ioctl_linux.c | 15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+v2: Resend after v1 failed to apply
 
-diff --git a/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c b/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c
-index cf30a08..45b47e2 100644
---- a/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c
-+++ b/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c
-@@ -2154,6 +2154,7 @@ static int rtw_wx_read32(struct net_device *dev,
- 	u32 bytes;
- 	u8 *ptmp;
- 	int rv;
-+	int ret = 0;
+   * rebased against staging-next - commit 09c3fbba (staging: rtl8188eu:
+     Remove 'u8 *pbuf' from struct recv_buf)
+   * fixed mua: no multipart, 7bit text/plain us-ascii
+
+Compile tested and applies against branch staging-next of tree
+git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+---
+ drivers/staging/vt6656/hostap.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/vt6656/hostap.c b/drivers/staging/vt6656/hostap.c
+index 67ba48b..a0d9fff 100644
+--- a/drivers/staging/vt6656/hostap.c
++++ b/drivers/staging/vt6656/hostap.c
+@@ -742,7 +742,8 @@ int vt6656_hostap_ioctl(struct vnt_private *pDevice, struct iw_point *p)
  
- 	padapter = (struct adapter *)rtw_netdev_priv(dev);
- 	p = &wrqu->data;
-@@ -2163,16 +2164,16 @@ static int rtw_wx_read32(struct net_device *dev,
- 		return -ENOMEM;
+ 	case VIAWGET_HOSTAPD_MLME:
+ 	    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_HOSTAPD_MLME \n");
+-	    return -EOPNOTSUPP;
++	    ret = -EOPNOTSUPP;
++	    goto out;
  
- 	if (copy_from_user(ptmp, p->pointer, len)) {
--		kfree(ptmp);
--		return -EFAULT;
-+		ret = -EFAULT;
-+		goto exit;
- 	}
+ 	case VIAWGET_HOSTAPD_SET_GENERIC_ELEMENT:
+ 	    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_HOSTAPD_SET_GENERIC_ELEMENT \n");
+@@ -751,7 +752,8 @@ int vt6656_hostap_ioctl(struct vnt_private *pDevice, struct iw_point *p)
  
- 	bytes = 0;
- 	addr = 0;
- 	rv = sscanf(ptmp, "%d,%x", &bytes, &addr);
- 	if (rv != 2) {
--		kfree(ptmp);
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto exit;
- 	}
+ 	case VIAWGET_HOSTAPD_SCAN_REQ:
+ 	    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_HOSTAPD_SCAN_REQ \n");
+-	    return -EOPNOTSUPP;
++	    ret = -EOPNOTSUPP;
++	    goto out;
  
- 	switch (bytes) {
-@@ -2190,12 +2191,14 @@ static int rtw_wx_read32(struct net_device *dev,
- 		break;
- 	default:
- 		DBG_88E(KERN_INFO "%s: usage> read [bytes],[address(hex)]\n", __func__);
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto exit;
- 	}
- 	DBG_88E(KERN_INFO "%s: addr = 0x%08X data =%s\n", __func__, addr, extra);
- 
-+exit:
- 	kfree(ptmp);
--	return 0;
-+	return ret;
- }
- 
- static int rtw_wx_write32(struct net_device *dev,
+ 	case VIAWGET_HOSTAPD_STA_CLEAR_STATS:
+ 	    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_HOSTAPD_STA_CLEAR_STATS \n");
 -- 
 1.9.1
 
