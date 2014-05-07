@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933088AbaEGQuc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:50:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31380 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753272AbaEGQub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:50:31 -0400
-Message-ID: <536A642B.7080309@redhat.com>
-Date: Wed, 07 May 2014 18:49:47 +0200
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755226AbaEGQvO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:51:14 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:35891 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753272AbaEGQvN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 12:51:13 -0400
+Message-ID: <536A645B.9000709@st.com>
+Date: Wed, 7 May 2014 18:50:35 +0200
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 3/4 v2] nohz: Fix idle/iowait counts going backwards
-References: <1399470094-8070-1-git-send-email-dvlasenk@redhat.com> <1399470094-8070-3-git-send-email-dvlasenk@redhat.com> <20140507142321.GA2844@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140507142321.GA2844@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tomasz Figa <t.figa@samsung.com>, <linux-arm-kernel@lists.infradead.org>
+Cc: Mike Turquette <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: divider: Fix overflow in clk_divider_bestdiv
+References: <1399479850-25292-1-git-send-email-t.figa@samsung.com>
+In-Reply-To: <1399479850-25292-1-git-send-email-t.figa@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.129.6.132]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-07_05:2014-05-07,2014-05-07,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2014 04:23 PM, Peter Zijlstra wrote:
-> On Wed, May 07, 2014 at 03:41:33PM +0200, Denys Vlasenko wrote:
->> With this change, "iowait-ness" of every idle period is decided
->> at the moment it starts:
->> if this CPU's run-queue had tasks waiting on I/O, then this idle
->> period's duration will be added to iowait_sleeptime.
->>
->> This fixes the bug where iowait and/or idle counts could go backwards,
->> but iowait accounting is not precise (it can show more iowait
->> that there really is).
->>
-> 
-> NAK on this, the thing going backwards is a symptom of the bug, not an
-> actual bug itself.
+Hi Tomasz,
 
-This patch does fix that bug.
+On 05/07/2014 06:24 PM, Tomasz Figa wrote:
+> Commit c686078 ("clk: divider: Add round to closest divider") introduced
+> a helper function to check whether given divisor is the best one instead
+> of direct check. However due to int type used instead of unsigned long
+> for passing calculated rates to this function in certain cases an
+> overflow could occur, for example when trying to obtain maximum possible
+> clock rate by calling clk_round_rate(..., UINT_MAX).
+>
+> This patch fixes this issue by changing the type of rate, now and best
+> arguments of the function to unsigned long, which is the type that
+> should be used for clock rates.
+Good catch.
 
-The bug is that in nohz_stop_idle(),
-we base the decision to add accumulated time to
-ts->iowait_sleeptime or to ts->idle_sleeptime
-on nr_iowait_cpu(cpu):
+Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
 
-        if (nr_iowait_cpu(smp_processor_id()) > 0)
-                ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
-        else
-                ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
-
-and we use the same nr_iowait_cpu(cpu)
-to calculate result of get_cpu_iowait_time_us():
-
-               if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
-                       delta = ktime_sub(now, ts->idle_entrytime);
-                       iowait = ktime_add(ts->iowait_sleeptime, delta);
-               }
-
-This is wrong because nr_iowait_cpu(cpu) is not stable.
-It could be != 0 in get_cpu_iowait_time_us() but later
-become 0 when we are in nohz_stop_idle().
-
-We must use consistent logic in these two functions.
-If nr_iowait_cpu() added something to iowait counter,
-the same should be done in nohz_stop_idle().
+Thanks,
+Maxime
+>
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> ---
+>   drivers/clk/clk-divider.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+> index c572945..e0b360a 100644
+> --- a/drivers/clk/clk-divider.c
+> +++ b/drivers/clk/clk-divider.c
+> @@ -232,7 +232,7 @@ static int _div_round(struct clk_divider *divider, unsigned long parent_rate,
+>   }
+>
+>   static bool _is_best_div(struct clk_divider *divider,
+> -		int rate, int now, int best)
+> +		unsigned long rate, unsigned long now, unsigned long best)
+>   {
+>   	if (divider->flags & CLK_DIVIDER_ROUND_CLOSEST)
+>   		return abs(rate - now) < abs(rate - best);
+>
