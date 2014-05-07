@@ -1,108 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaEGWAM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 18:00:12 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:34218 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751351AbaEGWAK (ORCPT
+	id S1752240AbaEGWAa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 18:00:30 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:38799 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351AbaEGWA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 18:00:10 -0400
-Date: Wed, 7 May 2014 16:57:39 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        hdegoede@redhat.com, Boris Brezillon <boris@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH 3/7] phy: usb: sunxi: Introduce Allwinner A31 USB PHY
- support
-Message-ID: <20140507215739.GB7047@lukather>
-References: <1399434623-20383-1-git-send-email-maxime.ripard@free-electrons.com>
- <1399434623-20383-4-git-send-email-maxime.ripard@free-electrons.com>
- <536A36A2.5030109@ti.com>
+	Wed, 7 May 2014 18:00:27 -0400
+Date: Wed, 7 May 2014 15:00:25 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>
+cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [patch v2] mm, slab: suppress out of memory warning unless debug is
+ enabled
+In-Reply-To: <20140507144858.9aee4e420908ccf9334dfdf2@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1405071500030.25024@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1405071418410.8389@chino.kir.corp.google.com> <20140507142925.b0e31514d4cd8d5857b10850@linux-foundation.org> <alpine.DEB.2.02.1405071431580.8454@chino.kir.corp.google.com>
+ <20140507144858.9aee4e420908ccf9334dfdf2@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DBIVS5p969aUjpLe"
-Content-Disposition: inline
-In-Reply-To: <536A36A2.5030109@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When the slab or slub allocators cannot allocate additional slab pages, they 
+emit diagnostic information to the kernel log such as current number of slabs, 
+number of objects, active objects, etc.  This is always coupled with a page 
+allocation failure warning since it is controlled by !__GFP_NOWARN.
 
---DBIVS5p969aUjpLe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Suppress this out of memory warning if the allocator is configured without debug 
+supported.  The page allocation failure warning will indicate it is a failed 
+slab allocation, the order, and the gfp mask, so this is only useful to diagnose 
+allocator issues.
 
-On Wed, May 07, 2014 at 07:05:30PM +0530, Kishon Vijay Abraham I wrote:
-> Hi,
->=20
-> On Wednesday 07 May 2014 09:20 AM, Maxime Ripard wrote:
-> > The USB phy controller in the A31 differs mostly from the older control=
-lers
-> > because it has a clock dedicated for each phy, while the older ones wer=
-e having
-> > a single clock for all the phys.
-> >=20
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > ---
-> >  drivers/phy/phy-sun4i-usb.c | 35 ++++++++++++++++++++++++++---------
-> >  1 file changed, 26 insertions(+), 9 deletions(-)
-> >=20
-> > diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
-> > index e6e6c4ba7145..1d83abe07a29 100644
-> > --- a/drivers/phy/phy-sun4i-usb.c
-> > +++ b/drivers/phy/phy-sun4i-usb.c
-> > @@ -61,16 +61,17 @@
-> >  #define MAX_PHYS			3
-> > =20
-> >  struct sun4i_usb_phy_data {
-> > -	struct clk *clk;
-> >  	void __iomem *base;
-> >  	struct mutex mutex;
-> >  	int num_phys;
-> >  	u32 disc_thresh;
-> > +	bool dedicated_clocks;
->=20
-> Don't think we need this structure member as it's been used only in probe.
+Since CONFIG_SLUB_DEBUG is already enabled by default for the slub allocator, 
+there is no functional change with this patch.  If debug is disabled, however, 
+the warnings are now suppressed.
 
-Ah, right.
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ v2: added ratelimit state for slab out of memory warnings per Andrew
+     added gfp mask and order to changelog per Andrew
 
-I'll change this in the next version.
+ mm/slab.c | 10 ++++++++--
+ mm/slub.c | 11 ++++++++---
+ 2 files changed, 16 insertions(+), 5 deletions(-)
 
-Thanks!
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---DBIVS5p969aUjpLe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTaqxTAAoJEBx+YmzsjxAgNdkQAICNJU5W4AmWZdwMlRV7wPgo
-mNpuBMo7MiJe5f6MYGChADx6wZUiKhC4rjtpl+tnPoD02PoRqx7ScMm6uEWt6jW4
-y1AgLZhqjcQuLOjG/w34iz4jI3Nmndz5pIeAbwI1a4vh8C2Qd7wud5XATYwxPwa1
-mnAcNdCiDLvtB55EpMpDuIAI/huHBj4GHL3EM0wfqbJV2x0VpVWKcbsl942WRrKl
-HsOL4pIZ5tB/PVk8Ug77sHbT6YSGxu0DIJBLSGv+zN3wdeSD9JMwmlewDf2jOePL
-jvJrs0sCVp2NckreIJUZsabUaRwAKkgxK40tHR+84F3YVX4CZgcY5M3kPcMXQB8s
-jhXQe2J2P0VY0VV/HvcRpgxPBxQpUqmyvUNw0WXhk8E8M70RBlYStLZaM1w0JSJv
-D4k6tEx9T/fE3DJTM0ir1apyOmuQHyvlponeEJVv/h22USGm2j+Ma8Wz35t2jRJ7
-MVE91QzViNQiBGgsDvIKFAoTXTb7LWMWWh+cYb0xP0PkWQxas4cKGpkg9rWJiXF8
-gXWnN5K06ZAp38FgGgRPp0ej4rqh3D9FKAoVHBI+77tFcymrzX1D+5nDbqHPXLYc
-lQnRuca0Uio4N6B5CnsZuhJy1eRBncop6gP4zqbUn5hv1XCrlWsKSKIc3dE6N2lO
-21w6+qNZHkCPtCSqjs96
-=Fe6F
------END PGP SIGNATURE-----
-
---DBIVS5p969aUjpLe--
+diff --git a/mm/slab.c b/mm/slab.c
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1621,10 +1621,16 @@ __initcall(cpucache_init);
+ static noinline void
+ slab_out_of_memory(struct kmem_cache *cachep, gfp_t gfpflags, int nodeid)
+ {
++#if DEBUG
+ 	struct kmem_cache_node *n;
+ 	struct page *page;
+ 	unsigned long flags;
+ 	int node;
++	static DEFINE_RATELIMIT_STATE(slab_oom_rs, DEFAULT_RATELIMIT_INTERVAL,
++				      DEFAULT_RATELIMIT_BURST);
++
++	if ((gfpflags & __GFP_NOWARN) || !__ratelimit(&slab_oom_rs))
++		return;
+ 
+ 	printk(KERN_WARNING
+ 		"SLAB: Unable to allocate memory on node %d (gfp=0x%x)\n",
+@@ -1662,6 +1668,7 @@ slab_out_of_memory(struct kmem_cache *cachep, gfp_t gfpflags, int nodeid)
+ 			node, active_slabs, num_slabs, active_objs, num_objs,
+ 			free_objects);
+ 	}
++#endif
+ }
+ 
+ /*
+@@ -1683,8 +1690,7 @@ static struct page *kmem_getpages(struct kmem_cache *cachep, gfp_t flags,
+ 
+ 	page = alloc_pages_exact_node(nodeid, flags | __GFP_NOTRACK, cachep->gfporder);
+ 	if (!page) {
+-		if (!(flags & __GFP_NOWARN) && printk_ratelimit())
+-			slab_out_of_memory(cachep, flags, nodeid);
++		slab_out_of_memory(cachep, flags, nodeid);
+ 		return NULL;
+ 	}
+ 
+diff --git a/mm/slub.c b/mm/slub.c
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2152,8 +2152,14 @@ static inline unsigned long node_nr_objs(struct kmem_cache_node *n)
+ static noinline void
+ slab_out_of_memory(struct kmem_cache *s, gfp_t gfpflags, int nid)
+ {
++#ifdef CONFIG_SLUB_DEBUG
++	static DEFINE_RATELIMIT_STATE(slub_oom_rs, DEFAULT_RATELIMIT_INTERVAL,
++				      DEFAULT_RATELIMIT_BURST);
+ 	int node;
+ 
++	if ((gfpflags & __GFP_NOWARN) || !__ratelimit(&slub_oom_rs))
++		return;
++
+ 	printk(KERN_WARNING
+ 		"SLUB: Unable to allocate memory on node %d (gfp=0x%x)\n",
+ 		nid, gfpflags);
+@@ -2182,6 +2188,7 @@ slab_out_of_memory(struct kmem_cache *s, gfp_t gfpflags, int nid)
+ 			"  node %d: slabs: %ld, objs: %ld, free: %ld\n",
+ 			node, nr_slabs, nr_objs, nr_free);
+ 	}
++#endif
+ }
+ 
+ static inline void *new_slab_objects(struct kmem_cache *s, gfp_t flags,
+@@ -2360,9 +2367,7 @@ new_slab:
+ 	freelist = new_slab_objects(s, gfpflags, node, &c);
+ 
+ 	if (unlikely(!freelist)) {
+-		if (!(gfpflags & __GFP_NOWARN) && printk_ratelimit())
+-			slab_out_of_memory(s, gfpflags, node);
+-
++		slab_out_of_memory(s, gfpflags, node);
+ 		local_irq_restore(flags);
+ 		return NULL;
+ 	}
