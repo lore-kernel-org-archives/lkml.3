@@ -1,45 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932705AbaEGLkJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 07:40:09 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:36103 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755316AbaEGLkG (ORCPT
+	id S932711AbaEGLkT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 07:40:19 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:11674 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755316AbaEGLkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 07:40:06 -0400
-Message-ID: <536A1B91.2070103@redhat.com>
-Date: Wed, 07 May 2014 13:40:01 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 7 May 2014 07:40:15 -0400
+Date: Wed, 7 May 2014 12:39:28 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        "Linux Kernel, Mailing List" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [BUG] kmemleak on __radix_tree_preload
+Message-ID: <20140507113928.GB17253@arm.com>
+References: <1398390340.4283.36.camel@kjgkr>
+ <20140501170610.GB28745@arm.com>
+ <20140501184112.GH23420@cmpxchg.org>
+ <1399431488.13268.29.camel@kjgkr>
 MIME-Version: 1.0
-To: Abel Gordon <abel@stratoscale.com>
-CC: Hu Yaohui <loki2441@gmail.com>, Bandan Das <bsd@redhat.com>,
-        kvm <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Muli Ben-Yehuda <muli@stratoscale.com>
-Subject: Re: KVM Nested L2 guest startup problems
-References: <CAHqbYQv+ZekSRQBbdEdfo+pXrM4ErjVDcj1T4oxHSP8Tc+322A@mail.gmail.com>	<53636B1D.8030405@redhat.com>	<CAHqbYQsTnJifwQMnhzaBEBYNpN9aHaZ4Vr0GhNkQZuN+o2vNtA@mail.gmail.com>	<5363BF42.9020505@redhat.com>	<CAHqbYQvjBmeu2_WzrSesGA=PH+8-ZfYxdmKxvsPfHRYNEcObAg@mail.gmail.com>	<jpgzjj0xbxl.fsf@nelium.bos.redhat.com>	<CAHqbYQuaaUaGTahryghh0nX99msMgeNQr=yv34mbgDJbFeSCbw@mail.gmail.com>	<CAESbUUzDm0REihDHinZ+fmQL8MWqn4kYCY8mQaVEnmVr4hh7NA@mail.gmail.com>	<CAHqbYQuv73Wm_9p-_yhYn5C5K9Ag+8Az+sJ_-WEnk9u9Z586Ww@mail.gmail.com>	<5369F5B0.7050307@redhat.com> <CAESbUUyQJ=BF1otV7XY2VpiM5TH6AxMMqGWCwO0+Mk_51sX_BA@mail.gmail.com> <536A1AEA.9020309@redhat.com>
-In-Reply-To: <536A1AEA.9020309@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399431488.13268.29.camel@kjgkr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 07/05/2014 13:37, Paolo Bonzini ha scritto:
-> Il 07/05/2014 13:16, Abel Gordon ha scritto:
->>> > PLE should be left enabled, I think.
->> Well... the PLE settings L0 uses to run  L1 (vmcs01) may be different
->> than the PLE settings L1 configured to run  L2 (vmcs12).
->> For example, L0 can use a  ple_gap to run L1 that is bigger than the
->> ple_gap L1 configured to run L2. Or  L0 can use a ple_window to run L1
->> that is smaller than the ple_window L1 configured to run L2.
->
-> That's correct.  We should leave PLE enabled while running L2, but hide
-> the feature altogether from L1.
+On Wed, May 07, 2014 at 03:58:08AM +0100, Jaegeuk Kim wrote:
+> And then when I tested again with Catalin's patch, it still throws the
+> following warning.
+> Is it false alarm?
 
-... which we already do.  The only secondary execution controls we allow 
-are APIC page, unrestricted guest, WBINVD exits, and of course EPT.
+BTW, you can try this kmemleak branch:
 
-Paolo
+git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git kmemleak
+
+> unreferenced object 0xffff880004226da0 (size 576):
+>   comm "fsstress", pid 14590, jiffies 4295191259 (age 706.308s)
+>   hex dump (first 32 bytes):
+>     01 00 00 00 81 ff ff ff 00 00 00 00 00 00 00 00  ................
+>     50 89 34 81 ff ff ff ff b8 6d 22 04 00 88 ff ff  P.4......m".....
+>   backtrace:
+>     [<ffffffff816c02e8>] kmemleak_update_trace+0x58/0x80
+>     [<ffffffff81349517>] radix_tree_node_alloc+0x77/0xa0
+>     [<ffffffff81349718>] __radix_tree_create+0x1d8/0x230
+>     [<ffffffff8113286c>] __add_to_page_cache_locked+0x9c/0x1b0
+>     [<ffffffff811329a8>] add_to_page_cache_lru+0x28/0x80
+>     [<ffffffff81132f58>] grab_cache_page_write_begin+0x98/0xf0
+>     [<ffffffffa02e4bf4>] f2fs_write_begin+0xb4/0x3c0 [f2fs]
+>     [<ffffffff81131b77>] generic_perform_write+0xc7/0x1c0
+>     [<ffffffff81133b7d>] __generic_file_aio_write+0x1cd/0x3f0
+>     [<ffffffff81133dfe>] generic_file_aio_write+0x5e/0xe0
+>     [<ffffffff81195c5a>] do_sync_write+0x5a/0x90
+>     [<ffffffff811968d2>] vfs_write+0xc2/0x1d0
+>     [<ffffffff81196daf>] SyS_write+0x4f/0xb0
+>     [<ffffffff816dead2>] system_call_fastpath+0x16/0x1b
+>     [<ffffffffffffffff>] 0xffffffffffffffff
+
+OK, it shows that the allocation happens via add_to_page_cache_locked()
+and I guess it's page_cache_tree_insert() which calls
+__radix_tree_create() (the latter reusing the preloaded node). I'm not
+familiar enough to this code (radix-tree.c and filemap.c) to tell where
+the node should have been freed, who keeps track of it.
+
+At a quick look at the hex dump (assuming that the above leak is struct
+radix_tree_node):
+
+	.path = 1
+	.count = -0x7f (or 0xffffff81 as unsigned int)
+	union {
+		{
+			.parent = NULL
+			.private_data = 0xffffffff81348950
+		}
+		{
+			.rcu_head.next = NULL
+			.rcu_head.func = 0xffffffff81348950
+		}
+	}
+
+The count is a bit suspicious.
+
+>From the union, it looks most likely like rcu_head information. Is
+radix_tree_node_rcu_free() function at the above rcu_head.func?
+
+Could you please send us your .config file?
+
+Also, if you run echo scan > /sys/kernel/debug/kmemleak a few times, do
+any of the above leaks disappear (in case the above are some transient
+rcu freeing reports; normally this shouldn't happen as the objects are
+still referred but I'll look at the relevant code once I have your
+.config).
+
+Thanks.
+
+-- 
+Catalin
