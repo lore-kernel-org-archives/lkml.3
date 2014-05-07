@@ -1,105 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934008AbaEGPwp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:52:45 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48544 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756761AbaEGPn4 (ORCPT
+	id S934039AbaEGPwx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:52:53 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:32534 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933440AbaEGPwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:43:56 -0400
-Message-Id: <20140507154336.372289825@linutronix.de>
-User-Agent: quilt/0.60-1
-Date: Wed, 07 May 2014 15:44:11 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Anvin <hpa@zytor.com>,
-        Tony Luck <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, Joerg Roedel <joro@8bytes.org>
-Subject: [patch 12/32] iommu: dmar: Provide arch specific irq allocation
-References: <20140507153622.703412101@linutronix.de>
-Content-Disposition: inline;
- filename=iommu-dmar-provide-arch-specific-irq-alloc.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 7 May 2014 11:52:50 -0400
+Message-ID: <536A56C3.2070505@oracle.com>
+Date: Wed, 07 May 2014 11:52:35 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>
+CC: roland@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: ptrace: gpf in syscall_trace_enter
+References: <53698021.5020108@oracle.com>	<53699F7C.1040308@oracle.com>	<20140507140422.GB17419@redhat.com> <20140507114938.28e300c6@gandalf.local.home>
+In-Reply-To: <20140507114938.28e300c6@gandalf.local.home>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ia64 and x86 share this driver. x86 is moving to a different irq
-allocation and ia64 keeps its private irq_create/destroy stuff.
+On 05/07/2014 11:49 AM, Steven Rostedt wrote:
+> On Wed, 7 May 2014 16:04:22 +0200
+> Oleg Nesterov <oleg@redhat.com> wrote:
+> 
+>> On 05/06, Sasha Levin wrote:
+>>>
+>>> On 05/06/2014 08:36 PM, Sasha Levin wrote:
+>>>> Hi all,
+>>>>
+>>>> While fuzzing with trinity inside a KVM tools guest running the latest -next
+>>>> kernel I've stumbled on the following spew:
+>>>
+>>> And another similar trace:
+>>
+>> Again, this looks like __DO_TRACE() trying to call it_func_ptr->func().
+>>
+>>> [ 6897.628729] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>>> [ 6897.629654] Dumping ftrace buffer:
+>>> [ 6897.630034]    (ftrace buffer empty)
+>>> [ 6897.630034] Modules linked in:
+>>> [ 6897.630034] CPU: 24 PID: 23736 Comm: trinity-c148 Tainted: G    B         3.15.0-rc4-next-20140506-sasha-00021-gc164334-dirty #447
+>>> [ 6897.630034] task: ffff88002a870000 ti: ffff88000ef04000 task.ti: ffff88000ef04000
+>>> [ 6897.630034] RIP: syscall_trace_leave (include/trace/events/syscalls.h:42 arch/x86/kernel/ptrace.c:1517)
+> 
+> Thanks for sending the objdump, but then I just realized that this dump
+> doesn't have the actual RIP. It just says syscall_trace_leave, without
+> even giving me the offset.
+> 
+> As the objdump is just of the object files and not the vmlinux, I would
+> need the offset from syscall_trace_leave of the RIP.
 
-Use macros to redirect to one or the other. Yes, macros to avoid
-include hell.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: x86@kernel.org
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-ia64@vger.kernel.org
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: iommu@lists.linux-foundation.org
----
- arch/ia64/include/asm/irq_remapping.h |    2 ++
- arch/x86/include/asm/irq_remapping.h  |    3 +++
- drivers/iommu/dmar.c                  |    6 +++---
- 3 files changed, 8 insertions(+), 3 deletions(-)
-
-Index: tip/arch/ia64/include/asm/irq_remapping.h
-===================================================================
---- tip.orig/arch/ia64/include/asm/irq_remapping.h
-+++ tip/arch/ia64/include/asm/irq_remapping.h
-@@ -1,4 +1,6 @@
- #ifndef __IA64_INTR_REMAPPING_H
- #define __IA64_INTR_REMAPPING_H
- #define irq_remapping_enabled 0
-+#define dmar_alloc_hwirq	create_irq
-+#define dmar_free_hwirq		destroy_irq
- #endif
-Index: tip/arch/x86/include/asm/irq_remapping.h
-===================================================================
---- tip.orig/arch/x86/include/asm/irq_remapping.h
-+++ tip/arch/x86/include/asm/irq_remapping.h
-@@ -58,6 +58,9 @@ extern bool setup_remapped_irq(int irq,
- 
- void irq_remap_modify_chip_defaults(struct irq_chip *chip);
- 
-+#define dmar_alloc_hwirq()	irq_alloc_hwirq(-1)
-+#define dmar_free_hwirq		irq_free_hwirq
-+
- #else  /* CONFIG_IRQ_REMAP */
- 
- static inline void setup_irq_remapping_ops(void) { }
-Index: tip/drivers/iommu/dmar.c
-===================================================================
---- tip.orig/drivers/iommu/dmar.c
-+++ tip/drivers/iommu/dmar.c
-@@ -994,7 +994,7 @@ static void free_iommu(struct intel_iomm
- 	if (iommu->irq) {
- 		free_irq(iommu->irq, iommu);
- 		irq_set_handler_data(iommu->irq, NULL);
--		destroy_irq(iommu->irq);
-+		dmar_free_hwirq(iommu->irq);
- 	}
- 
- 	if (iommu->qi) {
-@@ -1550,7 +1550,7 @@ int dmar_set_interrupt(struct intel_iomm
- 	if (iommu->irq)
- 		return 0;
- 
--	irq = create_irq();
-+	irq = dmar_alloc_hwirq();
- 	if (irq <= 0) {
- 		pr_err("IOMMU: no free vectors\n");
- 		return -EINVAL;
-@@ -1563,7 +1563,7 @@ int dmar_set_interrupt(struct intel_iomm
- 	if (ret) {
- 		irq_set_handler_data(irq, NULL);
- 		iommu->irq = 0;
--		destroy_irq(irq);
-+		dmar_free_hwirq(irq);
- 		return ret;
- 	}
- 
+    2803:	41 ff 14 24          	callq  *(%r12)  <=== Here
+    2807:	49 83 c4 10          	add    $0x10,%r12
+    280b:	49 83 3c 24 00       	cmpq   $0x0,(%r12)
 
 
+Thanks,
+Sasha
