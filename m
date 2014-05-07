@@ -1,130 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812AbaEGAcK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 20:32:10 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:35748 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133AbaEGAcH (ORCPT
+	id S1754737AbaEGAg6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 20:36:58 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:16896 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486AbaEGAg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 20:32:07 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee691-b7f3e6d000002ce8-6e-53697f065f51
-Content-transfer-encoding: 8BIT
-Message-id: <1399422592.13268.15.camel@kjgkr>
-Subject: Re: [f2fs-dev][PATCH 6/6] f2fs: add a tracepoint for
- f2fs_read_data_pages
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 07 May 2014 09:29:52 +0900
-In-reply-to: <004801cf6908$e2149bd0$a63dd370$@samsung.com>
-References: <004801cf6908$e2149bd0$a63dd370$@samsung.com>
-Organization: Samsung
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t8zA122+sxgg5Z3ghb/mz6yWVxa5G6x
-	Z+9JFovLu+awObB47F7wmcmjb8sqRo/Pm+QCmKO4bFJSczLLUov07RK4Ms4eOspY8JK/omvB
-	B6YGxtM8XYycHBICJhJ9MzYxQdhiEhfurWfrYuTiEBJYxihxfOkVZpiiQxcPM0IkFjFKnF26
-	gBEkwSsgKPFj8j2WLkYODmYBeYkjl7JBwswC6hKT5i1ihqh/xSgx98NhVoh6XYlL89vAhgoL
-	hEhsOnINrJdNQFti834DkLCQgKLE2/13wcpFBJQkfs1fxAoxM1PiXtMMsFYWAVWJqw+esYDY
-	nAJWEhe+QYwUErCUmHXwGhuIzS8gKnF44Xao+5Ukdrd3skPYh9glji2Lg5gjIPFt8iGwEyQE
-	ZCU2HYAql5Q4uOIGywRGiVlInpyF8OQsJE8uYGRexSiaWpBcUJyUXmSqV5yYW1yal66XnJ+7
-	iRESbRN3MN4/YH2IMRlo40RmKdHkfGC05pXEGxqbGVmYmpgaG5lbmpEmrCTOm/4oKUhIID2x
-	JDU7NbUgtSi+qDQntfgQIxMHp1QD40yBw3Yns1yL1vd7rD+/9NqzutfHL59jOjdRcuuHyaGc
-	p3b/e3K2Z/E+9zM5L4JlH/xkzjO6t8EoPu0sZ2GhrsZHy/fX1ya/+89zxVfVVe5679wLlb/+
-	d3k/tCqdF3vm4K3//48+s73xJsig96VblOoL7jRF+ylmlh1/iw7lL3x4LIpDTmdL7golluKM
-	REMt5qLiRACa3OWmzAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsVy+t9jAV22+sxgg/d9fBb/mz6yWVxa5G6x
-	Z+9JFovLu+awObB47F7wmcmjb8sqRo/Pm+QCmKMaGG0yUhNTUosUUvOS81My89JtlbyD453j
-	Tc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgLYpKZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUN
-	CYLrMTJAAwnrGDPOHjrKWPCSv6JrwQemBsbTPF2MnBwSAiYShy4eZoSwxSQu3FvP1sXIxSEk
-	sIhR4uzSBWAJXgFBiR+T77F0MXJwMAvISxy5lA0SZhZQl5g0bxEzRP0rRom5Hw6zQtTrSlya
-	38YMYgsLhEhsOnINrJdNQFti834DkLCQgKLE2/13wcpFBJQkfs1fxAoxM1PiXtMMsFYWAVWJ
-	qw+esYDYnAJWEhe+QYwUErCUmHXwGhuIzS8gKnF44XZmiPuVJHa3d7JPYBSaheTqWQhXz0Jy
-	9QJG5lWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwdH8THoH46oGi0OMAhyMSjy8Fm8zgoVY
-	E8uKK3MPMUpwMCuJ8N7UzQwW4k1JrKxKLcqPLyrNSS0+xJgMdPhEZinR5HxgoskriTc0NjEz
-	sjQyszAyMTcnTVhJnPdgq3WgkEB6YklqdmpqQWoRzBYmDk6pBsZpVnvs3gvuyG7J75JfnROj
-	MCvO1SJpqvD2Z+pvmD41RZQ2nfS3Z3GOsWlumr4qJKP8j1r9nBqjzR8NVL8cfGvUee6Wine6
-	vfG5V9cs7esanKpOyu5ek3Vv0hntMycyiierKkio9tlVbu3jrD2Y6VEgzzSRoS7v9m0P0eS3
-	klKRjQ+4Zv/LUGIpzkg01GIuKk4EAL4+FN0qAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 6 May 2014 20:36:56 -0400
+Message-ID: <53698021.5020108@oracle.com>
+Date: Tue, 06 May 2014 20:36:49 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: roland@redhat.com, Oleg Nesterov <oleg@redhat.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: ptrace: gpf in syscall_trace_enter
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chao,
+Hi all,
 
-2014-05-06 (화), 16:54 +0800, Chao Yu:
-> This patch adds a tracepoint for f2fs_read_data_pages to trace when pages are
-> readahead by VFS.
-> 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> ---
->  fs/f2fs/data.c              |    3 +++
->  include/trace/events/f2fs.h |   26 ++++++++++++++++++++++++++
->  2 files changed, 29 insertions(+)
-> 
-> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-> index 8c250a5..f2d1e8a 100644
-> --- a/fs/f2fs/data.c
-> +++ b/fs/f2fs/data.c
-> @@ -729,6 +729,9 @@ static int f2fs_read_data_pages(struct file *file,
->  			struct list_head *pages, unsigned nr_pages)
->  {
->  	struct inode *inode = file->f_mapping->host;
-> +	struct page *page = list_entry(pages->prev, struct page, lru);
+While fuzzing with trinity inside a KVM tools guest running the latest -next
+kernel I've stumbled on the following spew:
 
-IMO, it needs to avoid the above line.
+[ 3029.100936] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 3029.102198] Dumping ftrace buffer:
+[ 3029.102928]    (ftrace buffer empty)
+[ 3029.103644] Modules linked in:
+[ 3029.104732] CPU: 16 PID: 4959 Comm: sleep Tainted: G    B         3.15.0-rc4-next-20140506-sasha-00021-gc164334-dirty #447
+[ 3029.108662] task: ffff8805472f8000 ti: ffff880547e3e000 task.ti: ffff880547e3e000
+[ 3029.109900] RIP: syscall_trace_enter (include/trace/events/syscalls.h:16 arch/x86/kernel/ptrace.c:1488)
+[ 3029.110064] RSP: 0018:ffff880547e3ff28  EFLAGS: 00010286
+[ 3029.110064] RAX: 0000000000000000 RBX: ffff880547e3ff58 RCX: 0000000000000001
+[ 3029.110064] RDX: 000000000000000c RSI: ffff880547e3ff58 RDI: 6b6b6b6b6b6b6b6b
+[ 3029.110064] RBP: ffff880547e3ff48 R08: 0000000000000000 R09: 0000000000000001
+[ 3029.110064] R10: 0000000000000000 R11: 0000000000000000 R12: 000000000000000c
+[ 3029.110064] R13: 0000000000000000 R14: ffff880039583d50 R15: 0000000000001000
+[ 3029.110064] FS:  0000000000000000(0000) GS:ffff8803d6e00000(0000) knlGS:0000000000000000
+[ 3029.110064] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 3029.110064] CR2: 00007fe08b205130 CR3: 000000061d271000 CR4: 00000000000006a0
+[ 3029.110064] DR0: 00000000006df000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 3029.110064] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[ 3029.110064] Stack:
+[ 3029.110064]  0000000000400040 0000000000000009 00007fffe95ab4b9 0000000000000000
+[ 3029.110064]  00007fe08afe64e0 ffffffffaa585625 0000000000001000 0000000000000000
+[ 3029.110064]  00007fffe95ab4b9 0000000000000009 00007fe08afe64e0 0000000000400040
+[ 3029.110064] Call Trace:
+[ 3029.110064] tracesys (arch/x86/kernel/entry_64.S:736)
+[ 3029.110064] Code: c6 05 e0 9f f0 05 01 e8 3d 30 14 00 4d 85 f6 75 10 65 ff 0c 25 a0 da 00 00 0f 84 ca 00 00 00 eb 19 49 8b 7e 08 4c 89 e2 48 89 de <41> ff 16 49 83 c6 10 49 83 3e 00 75 e9 eb d7 4c 8b 63 78 0f 1f
+[ 3029.110064] RIP syscall_trace_enter (include/trace/events/syscalls.h:16 arch/x86/kernel/ptrace.c:1488)
+[ 3029.110064]  RSP <ffff880547e3ff28>
+
+
 Thanks,
-
-> +
-> +	trace_f2fs_readpages(inode, page, nr_pages);
->  
->  	/* If the file has inline data, skip readpages */
->  	if (f2fs_has_inline_data(inode))
-> diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
-> index b983990..7fbaaaa 100644
-> --- a/include/trace/events/f2fs.h
-> +++ b/include/trace/events/f2fs.h
-> @@ -847,6 +847,32 @@ TRACE_EVENT(f2fs_writepages,
->  		__entry->for_sync)
->  );
->  
-> +TRACE_EVENT(f2fs_readpages,
-> +
-> +	TP_PROTO(struct inode *inode, struct page *page, unsigned int nrpage),
-> +
-> +	TP_ARGS(inode, page, nrpage),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(dev_t,	dev)
-> +		__field(ino_t,	ino)
-> +		__field(pgoff_t,	start)
-> +		__field(unsigned int,	nrpage)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->dev	= inode->i_sb->s_dev;
-> +		__entry->ino	= inode->i_ino;
-> +		__entry->start	= page->index;
-> +		__entry->nrpage	= nrpage;
-> +	),
-> +
-> +	TP_printk("dev = (%d,%d), ino = %lu, start = %lu nrpage = %u",
-> +		show_dev_ino(__entry),
-> +		(unsigned long)__entry->start,
-> +		__entry->nrpage)
-> +);
-> +
->  TRACE_EVENT(f2fs_submit_page_mbio,
->  
->  	TP_PROTO(struct page *page, int rw, int type, block_t blk_addr),
-
--- 
-Jaegeuk Kim
-Samsung
-
+Sasha
