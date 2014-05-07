@@ -1,81 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaEGT7D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 15:59:03 -0400
-Received: from mout.gmx.net ([212.227.17.20]:56338 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751318AbaEGTw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 15:52:59 -0400
-Date: Wed, 7 May 2014 21:24:00 +0200
-From: Christian Engelmayer <cengelma@gmx.at>
-To: devel@driverdev.osuosl.org
-Cc: gregkh@linuxfoundation.org, chad@dahc.us, tulinizer@gmail.com,
-        lorenz@badgers.com, michael.banken@mathe.stud.uni-erlangen.de,
-        rashika.kheria@gmail.com, andriy.shevchenko@linux.intel.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] staging: silicom: Remove needless calls of
- get_status_port_fn()
-Message-ID: <20140507212400.569bde1c@spike>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
+	id S1752255AbaEGUBK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 16:01:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56942 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279AbaEGUBI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 16:01:08 -0400
+Date: Wed, 7 May 2014 13:01:06 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, Lee Jones <lee.jones@linaro.org>,
+        Mark Brown <broonie@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RTC linux <rtc-linux@googlegroups.com>
+Subject: Re: [RESEND] [PATCH V1 2/2] rtc: da9063: RTC driver
+Message-Id: <20140507130106.409f65f673317710104d7681@linux-foundation.org>
+In-Reply-To: <3cca26c6dedcfd95df75d44e10a27447350c6e35.1399465372.git.stwiss.opensource@diasemi.com>
+References: <cover.1399465372.git.stwiss.opensource@diasemi.com>
+	<3cca26c6dedcfd95df75d44e10a27447350c6e35.1399465372.git.stwiss.opensource@diasemi.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:8HIw9yBF5Fp557NVJR1yCadU3X/x0bvsS/xBNNb23J0eliw2zDL
- q3/sjDqFMQj5GBZ5j79tXwbcVX2/q0oM4JDXHdNGRWgMn7cFs9gRWW8e7SuUHga2ewetDCs
- /SGqZf+NR6nf55BxRpmwtp5QzrrJ6NQdJU/rE2JOR1FJPWjweb2scb0mNayG7veTqdD1WiD
- k2xXUPuAXJalDriPhidxg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove a needless pointer initialisation and call to get_status_port_fn()
-in functions remove_bypass_tpl_auto() and set_tpl_fn(). Variable
-'pbpctl_dev_b' is set correctly later in the function before first use.
+On Wed, 7 May 2014 13:22:52 +0100 "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com> wrote:
 
-Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
----
-v2: Resend after v1 failed to apply
+> Add the RTC driver for DA9063.
 
-   * rebased against staging-next - commit 09c3fbba (staging: rtl8188eu:
-     Remove 'u8 *pbuf' from struct recv_buf)
-   * fixed mua: no multipart, 7bit text/plain us-ascii
+A few minor things:
 
-Compile tested and applies against branch staging-next of tree
-git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
----
- drivers/staging/silicom/bpctl_mod.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+>
+> ...
+>
+> +static int da9063_rtc_stop_alarm(struct device *dev)
+> +{
+> +	struct da9063_rtc *rtc = dev_get_drvdata(dev);
+> +	return regmap_update_bits(rtc->hw->regmap, DA9063_REG_ALARM_Y,
+> +				  DA9063_ALARM_ON, 0);
+> +}
+> +
+> +static int da9063_rtc_start_alarm(struct device *dev)
+> +{
+> +	struct da9063_rtc *rtc = dev_get_drvdata(dev);
+> +	return regmap_update_bits(rtc->hw->regmap, DA9063_REG_ALARM_Y,
+> +				  DA9063_ALARM_ON, DA9063_ALARM_ON);
+> +}
 
-diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/bpctl_mod.c
-index 7f3d884..bbc183f 100644
---- a/drivers/staging/silicom/bpctl_mod.c
-+++ b/drivers/staging/silicom/bpctl_mod.c
-@@ -4735,10 +4735,9 @@ static void bp_tpl_timer_fn(unsigned long param)
- 
- static void remove_bypass_tpl_auto(struct bpctl_dev *pbpctl_dev)
+It's conventional to put a newline between end-of-locals and
+start-of-code.  My version of checkpatch warns about this and soon
+everyone's will.
+
+> +static int da9063_rtc_read_time(struct device *dev, struct rtc_time *tm)
+> +{
+> +	struct da9063_rtc *rtc = dev_get_drvdata(dev);
+> +	unsigned long tm_secs;
+> +	unsigned long al_secs;
+> +	u8 data[RTC_DATA_LEN];
+> +	int ret;
+> +
+> +	ret = regmap_bulk_read(rtc->hw->regmap, DA9063_REG_COUNT_S,
+> +			       data, RTC_DATA_LEN);
+> +	if (ret < 0) {
+> +		dev_err(dev, "Failed to read RTC time data: %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	if (!(data[RTC_SEC] & DA9063_RTC_READ)) {
+> +		dev_dbg(dev, "RTC not yet ready to be read by the host\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	da9063_data_to_tm(data, tm);
+> +
+> +	(void)rtc_tm_to_time(tm, &tm_secs);
+> +	(void)rtc_tm_to_time(&rtc->alarm_time, &al_secs);
+
+The void casts are a bit useful - they tell the reader that the author
+deliberately chose to ignore the return value.  But kernel code
+generally doesn't do this trick.
+
+
+> +	/* handle the rtc synchronisation delay */
+> +	if (rtc->rtc_sync == true && al_secs - tm_secs == 1)
+> +		(void)memcpy((void *)tm, (const void *)&rtc->alarm_time,
+> +			     sizeof(struct rtc_time));
+
+And all three casts here are unneeded.
+
+And they're actually a bit harmful.  If rtc->alarm_time has type `int'
+then we really want the warning, but this cast will suppress it.
+
+> +	else
+> +		rtc->rtc_sync = false;
+> +
+> +	return rtc_valid_tm(tm);
+> +}
+
+
+So how does this look?
+
+--- a/drivers/rtc/rtc-da9063.c~rtc-da9063-rtc-driver-fix
++++ a/drivers/rtc/rtc-da9063.c
+@@ -82,6 +82,7 @@ static void da9063_tm_to_data(struct rtc
+ static int da9063_rtc_stop_alarm(struct device *dev)
  {
--	struct bpctl_dev *pbpctl_dev_b = NULL;
-+	struct bpctl_dev *pbpctl_dev_b;
- 	if (!pbpctl_dev)
- 		return;
--	pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
- 
- 	if (pbpctl_dev->bp_caps & TPL_CAP) {
- 		del_timer_sync(&pbpctl_dev->bp_tpl_timer);
-@@ -4785,12 +4784,10 @@ static int set_bypass_tpl_auto(struct bpctl_dev *pbpctl_dev, unsigned int param)
- static int set_tpl_fn(struct bpctl_dev *pbpctl_dev, int tpl_mode)
+ 	struct da9063_rtc *rtc = dev_get_drvdata(dev);
++
+ 	return regmap_update_bits(rtc->hw->regmap, DA9063_REG_ALARM_Y,
+ 				  DA9063_ALARM_ON, 0);
+ }
+@@ -89,6 +90,7 @@ static int da9063_rtc_stop_alarm(struct
+ static int da9063_rtc_start_alarm(struct device *dev)
  {
+ 	struct da9063_rtc *rtc = dev_get_drvdata(dev);
++
+ 	return regmap_update_bits(rtc->hw->regmap, DA9063_REG_ALARM_Y,
+ 				  DA9063_ALARM_ON, DA9063_ALARM_ON);
+ }
+@@ -115,13 +117,12 @@ static int da9063_rtc_read_time(struct d
  
--	struct bpctl_dev *pbpctl_dev_b = NULL;
-+	struct bpctl_dev *pbpctl_dev_b;
- 	if (!pbpctl_dev)
- 		return -1;
+ 	da9063_data_to_tm(data, tm);
  
--	pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
--
- 	if (pbpctl_dev->bp_caps & TPL_CAP) {
- 		if (tpl_mode) {
- 			pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
--- 
-1.9.1
+-	(void)rtc_tm_to_time(tm, &tm_secs);
+-	(void)rtc_tm_to_time(&rtc->alarm_time, &al_secs);
++	rtc_tm_to_time(tm, &tm_secs);
++	rtc_tm_to_time(&rtc->alarm_time, &al_secs);
+ 
+ 	/* handle the rtc synchronisation delay */
+ 	if (rtc->rtc_sync == true && al_secs - tm_secs == 1)
+-		(void)memcpy((void *)tm, (const void *)&rtc->alarm_time,
+-			     sizeof(struct rtc_time));
++		memcpy(tm, &rtc->alarm_time, sizeof(struct rtc_time));
+ 	else
+ 		rtc->rtc_sync = false;
+ 
+_
 
