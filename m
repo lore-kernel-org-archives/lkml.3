@@ -1,52 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933688AbaEGNVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:21:17 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45019 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933140AbaEGNVP convert rfc822-to-8bit (ORCPT
+	id S933696AbaEGNVi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:21:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45621 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933297AbaEGNPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:21:15 -0400
-Date: Wed, 7 May 2014 14:20:47 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: "'Andi Kleen'" <andi@firstfloor.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tom.zanussi@linux.intel.com" <tom.zanussi@linux.intel.com>
-Subject: Re: A reduced Linux network stack for small systems
-Message-ID: <20140507142047.46012957@alan.etchedpixels.co.uk>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F70CFB5@AcuExch.aculab.com>
-References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
-	<063D6719AE5E284EB5DD2968C1650D6D0F70CFB5@AcuExch.aculab.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 7 May 2014 09:15:07 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mark Salter <msalter@redhat.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 55/70] arm: KVM: fix possible misalignment of PGDs and bounce page
+Date: Wed,  7 May 2014 14:12:58 +0100
+Message-Id: <1399468393-10140-56-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
+References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You may want some size reduction to run in 16MB, but it is not as problematic
-> as running in 2MB.
-> 
-> With that little memory I wouldn't want to run anything that relied on
-> dynamic memory allocation (after startup) - except for fixed size data
-> buffers.
+3.11.10.10 -stable review patch.  If anyone has any objections, please let me know.
 
-You mean like µhttpd 8) Been there, done that and Tom in fact sent me the
-patches to port it to Linux from 2.11BSD PDP/11.
+------------------
 
-You can do a lot in a very small space. Heck you can run a full 2.11BSD
-on a PDP/11 in 1MB, including network stack. You used to be able to build
-a full self hosting Linux 1.x on a 4MB 386.
+From: Mark Salter <msalter@redhat.com>
 
-If you are using glibc and GNU tools it isn't going to work, but long ago
-tools were written which just did the job they were supposed to do at the
-time and were small and tidy. Programmers were expected to use shell
-scripts to combine them for harder jobs rather than be the one person a
-year who invoked gnu-wibble --format-sideways-while-singing
---tune=waltzing-matilda
+commit 5d4e08c45a6cf8f1ab3c7fa375007635ac569165 upstream.
 
-Alan
+The kvm/mmu code shared by arm and arm64 uses kalloc() to allocate
+a bounce page (if hypervisor init code crosses page boundary) and
+hypervisor PGDs. The problem is that kalloc() does not guarantee
+the proper alignment. In the case of the bounce page, the page sized
+buffer allocated may also cross a page boundary negating the purpose
+and leading to a hang during kvm initialization. Likewise the PGDs
+allocated may not meet the minimum alignment requirements of the
+underlying MMU. This patch uses __get_free_page() to guarantee the
+worst case alignment needs of the bounce page and PGDs on both arm
+and arm64.
+
+Signed-off-by: Mark Salter <msalter@redhat.com>
+Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/arm/kvm/mmu.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/kvm/mmu.c b/arch/arm/kvm/mmu.c
+index b91a68b..df3e999 100644
+--- a/arch/arm/kvm/mmu.c
++++ b/arch/arm/kvm/mmu.c
+@@ -41,6 +41,8 @@ static unsigned long hyp_idmap_start;
+ static unsigned long hyp_idmap_end;
+ static phys_addr_t hyp_idmap_vector;
+ 
++#define pgd_order get_order(PTRS_PER_PGD * sizeof(pgd_t))
++
+ static void kvm_tlb_flush_vmid_ipa(struct kvm *kvm, phys_addr_t ipa)
+ {
+ 	/*
+@@ -172,14 +174,14 @@ void free_boot_hyp_pgd(void)
+ 	if (boot_hyp_pgd) {
+ 		unmap_range(NULL, boot_hyp_pgd, hyp_idmap_start, PAGE_SIZE);
+ 		unmap_range(NULL, boot_hyp_pgd, TRAMPOLINE_VA, PAGE_SIZE);
+-		kfree(boot_hyp_pgd);
++		free_pages((unsigned long)boot_hyp_pgd, pgd_order);
+ 		boot_hyp_pgd = NULL;
+ 	}
+ 
+ 	if (hyp_pgd)
+ 		unmap_range(NULL, hyp_pgd, TRAMPOLINE_VA, PAGE_SIZE);
+ 
+-	kfree(init_bounce_page);
++	free_page((unsigned long)init_bounce_page);
+ 	init_bounce_page = NULL;
+ 
+ 	mutex_unlock(&kvm_hyp_pgd_mutex);
+@@ -209,7 +211,7 @@ void free_hyp_pgds(void)
+ 		for (addr = VMALLOC_START; is_vmalloc_addr((void*)addr); addr += PGDIR_SIZE)
+ 			unmap_range(NULL, hyp_pgd, KERN_TO_HYP(addr), PGDIR_SIZE);
+ 
+-		kfree(hyp_pgd);
++		free_pages((unsigned long)hyp_pgd, pgd_order);
+ 		hyp_pgd = NULL;
+ 	}
+ 
+@@ -782,7 +784,7 @@ int kvm_mmu_init(void)
+ 		size_t len = __hyp_idmap_text_end - __hyp_idmap_text_start;
+ 		phys_addr_t phys_base;
+ 
+-		init_bounce_page = kmalloc(PAGE_SIZE, GFP_KERNEL);
++		init_bounce_page = (void *)__get_free_page(GFP_KERNEL);
+ 		if (!init_bounce_page) {
+ 			kvm_err("Couldn't allocate HYP init bounce page\n");
+ 			err = -ENOMEM;
+@@ -808,8 +810,9 @@ int kvm_mmu_init(void)
+ 			 (unsigned long)phys_base);
+ 	}
+ 
+-	hyp_pgd = kzalloc(PTRS_PER_PGD * sizeof(pgd_t), GFP_KERNEL);
+-	boot_hyp_pgd = kzalloc(PTRS_PER_PGD * sizeof(pgd_t), GFP_KERNEL);
++	hyp_pgd = (pgd_t *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, pgd_order);
++	boot_hyp_pgd = (pgd_t *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, pgd_order);
++
+ 	if (!hyp_pgd || !boot_hyp_pgd) {
+ 		kvm_err("Hyp mode PGD not allocated\n");
+ 		err = -ENOMEM;
+-- 
+1.9.1
+
