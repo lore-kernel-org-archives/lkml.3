@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933651AbaEGNSo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:18:44 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:41315 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933384AbaEGNSk (ORCPT
+	id S933386AbaEGNPS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:15:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45616 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933296AbaEGNPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:18:40 -0400
-Date: Wed, 7 May 2014 09:18:36 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Levente Kurusa <levex@linux.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux ATA/IDE <linux-ide@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Joe Thomas <Joe.Thomas@dothill.com>
-Subject: Re: [PATCH] libata: clean up ZPODD when a port is detached
-Message-ID: <20140507131836.GD16702@htj.dyndns.org>
-References: <1399384668-20394-1-git-send-email-levex@linux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399384668-20394-1-git-send-email-levex@linux.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 7 May 2014 09:15:05 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 54/70] s390/bpf,jit: initialize A register if 1st insn is BPF_S_LDX_B_MSH
+Date: Wed,  7 May 2014 14:12:57 +0100
+Message-Id: <1399468393-10140-55-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
+References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 03:57:48PM +0200, Levente Kurusa wrote:
-> When a ZPODD device is unbound via sysfs, the ACPI notify handler
-> is not removed. This causes panics as observed in Bug #74601. The
-> panic only happens when the wake happens from outside the kernel
-> (i.e. inserting a media or pressing a button). Add a loop to
-> ata_port_detach which loops through the port's devices and checks
-> if zpodd is enabled, if so call zpodd_exit.
-> 
-> Cc: stable@vger.kernel.org
-> Reviewed-by: Aaron Lu <aaron.lu@intel.com>
-> Signed-off-by: Levente Kurusa <levex@linux.com>
+3.11.10.10 -stable review patch.  If anyone has any objections, please let me know.
 
-Applied to libata/for-3.15-fixes.
+------------------
 
-Thanks.
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
+commit 6e0de817594c61f3b392a9245deeb09609ec707d upstream.
+
+The A register needs to be initialized to zero in the prolog if the
+first instruction of the BPF program is BPF_S_LDX_B_MSH to prevent
+leaking the content of %r5 to user space.
+
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/s390/net/bpf_jit_comp.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/s390/net/bpf_jit_comp.c b/arch/s390/net/bpf_jit_comp.c
+index 3d613b8..8ccd6a6 100644
+--- a/arch/s390/net/bpf_jit_comp.c
++++ b/arch/s390/net/bpf_jit_comp.c
+@@ -276,7 +276,6 @@ static void bpf_jit_noleaks(struct bpf_jit *jit, struct sock_filter *filter)
+ 	case BPF_S_LD_W_IND:
+ 	case BPF_S_LD_H_IND:
+ 	case BPF_S_LD_B_IND:
+-	case BPF_S_LDX_B_MSH:
+ 	case BPF_S_LD_IMM:
+ 	case BPF_S_LD_MEM:
+ 	case BPF_S_MISC_TXA:
 -- 
-tejun
+1.9.1
+
