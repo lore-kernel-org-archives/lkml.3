@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772AbaEGT6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 15:58:21 -0400
-Received: from mout.gmx.net ([212.227.17.22]:63116 "EHLO mout.gmx.net"
+	id S1752807AbaEGT7D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 15:59:03 -0400
+Received: from mout.gmx.net ([212.227.17.20]:56338 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752011AbaEGTxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 15:53:07 -0400
-Date: Wed, 7 May 2014 21:31:20 +0200
+	id S1751318AbaEGTw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 15:52:59 -0400
+Date: Wed, 7 May 2014 21:24:00 +0200
 From: Christian Engelmayer <cengelma@gmx.at>
-To: Christian Engelmayer <cengelma@gmx.at>
-Cc: devel@driverdev.osuosl.org, w-lkml@lebenslange-mailadresse.de,
-        gregkh@linuxfoundation.org, peter.p.waskiewicz.jr@intel.com,
-        oat.elena@gmail.com, linux-kernel@vger.kernel.org, teobaluta@gmail.com,
-        dan.carpenter@oracle.com, Larry.Finger@lwfinger.net
-Subject: [PATCH v2 2/5] staging: rtl8188eu: fix potential leak in
- rtw_wx_set_enc_ext()
-Message-ID: <20140507213120.27fc914f@spike>
-In-Reply-To: <20140507212825.2289e00e@spike>
-References: <20140507212825.2289e00e@spike>
+To: devel@driverdev.osuosl.org
+Cc: gregkh@linuxfoundation.org, chad@dahc.us, tulinizer@gmail.com,
+        lorenz@badgers.com, michael.banken@mathe.stud.uni-erlangen.de,
+        rashika.kheria@gmail.com, andriy.shevchenko@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] staging: silicom: Remove needless calls of
+ get_status_port_fn()
+Message-ID: <20140507212400.569bde1c@spike>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:iWNlHSHSW3QFCNh+lW7ybTZ45PlmAMhrVJ8/e2rv3PNKln/1df5
- 2KvdqyS+iRCmAAoqKTwmkO5sKs86aSt8sIMfDTVNySI6BF9axK5dGwfB/ypdd2dGJIBfquT
- /MrcT72XKCBzXsBdHr4H3hkrATKN7eKISyATjrveO5K5a4uPaWxwU6gIJ10QXcei5ebdIgu
- 1gK1YjY1Fqga2PP3ORWyg==
+X-Provags-ID: V03:K0:8HIw9yBF5Fp557NVJR1yCadU3X/x0bvsS/xBNNb23J0eliw2zDL
+ q3/sjDqFMQj5GBZ5j79tXwbcVX2/q0oM4JDXHdNGRWgMn7cFs9gRWW8e7SuUHga2ewetDCs
+ /SGqZf+NR6nf55BxRpmwtp5QzrrJ6NQdJU/rE2JOR1FJPWjweb2scb0mNayG7veTqdD1WiD
+ k2xXUPuAXJalDriPhidxg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function rtw_wx_set_enc_ext() dynamically allocates a temporary buffer that
-is not freed in all error paths. Use a centralized exit path and make sure
-that all memory is freed correctly. Detected by Coverity - CID 1077712.
+Remove a needless pointer initialisation and call to get_status_port_fn()
+in functions remove_bypass_tpl_auto() and set_tpl_fn(). Variable
+'pbpctl_dev_b' is set correctly later in the function before first use.
 
 Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 ---
- drivers/staging/rtl8188eu/os_dep/ioctl_linux.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+v2: Resend after v1 failed to apply
 
-diff --git a/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c b/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c
-index 45b47e2..1bd476d 100644
---- a/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c
-+++ b/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c
-@@ -2097,7 +2097,8 @@ static int rtw_wx_set_enc_ext(struct net_device *dev,
- 		alg_name = "CCMP";
- 		break;
- 	default:
--		return -1;
-+		ret = -1;
-+		goto exit;
- 	}
+   * rebased against staging-next - commit 09c3fbba (staging: rtl8188eu:
+     Remove 'u8 *pbuf' from struct recv_buf)
+   * fixed mua: no multipart, 7bit text/plain us-ascii
+
+Compile tested and applies against branch staging-next of tree
+git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+---
+ drivers/staging/silicom/bpctl_mod.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/bpctl_mod.c
+index 7f3d884..bbc183f 100644
+--- a/drivers/staging/silicom/bpctl_mod.c
++++ b/drivers/staging/silicom/bpctl_mod.c
+@@ -4735,10 +4735,9 @@ static void bp_tpl_timer_fn(unsigned long param)
  
- 	strncpy((char *)param->u.crypt.alg, alg_name, IEEE_CRYPT_ALG_NAME_LEN);
-@@ -2124,6 +2125,7 @@ static int rtw_wx_set_enc_ext(struct net_device *dev,
+ static void remove_bypass_tpl_auto(struct bpctl_dev *pbpctl_dev)
+ {
+-	struct bpctl_dev *pbpctl_dev_b = NULL;
++	struct bpctl_dev *pbpctl_dev_b;
+ 	if (!pbpctl_dev)
+ 		return;
+-	pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
  
- 	ret =  wpa_set_encryption(dev, param, param_len);
+ 	if (pbpctl_dev->bp_caps & TPL_CAP) {
+ 		del_timer_sync(&pbpctl_dev->bp_tpl_timer);
+@@ -4785,12 +4784,10 @@ static int set_bypass_tpl_auto(struct bpctl_dev *pbpctl_dev, unsigned int param)
+ static int set_tpl_fn(struct bpctl_dev *pbpctl_dev, int tpl_mode)
+ {
  
-+exit:
- 	kfree(param);
- 	return ret;
- }
+-	struct bpctl_dev *pbpctl_dev_b = NULL;
++	struct bpctl_dev *pbpctl_dev_b;
+ 	if (!pbpctl_dev)
+ 		return -1;
+ 
+-	pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
+-
+ 	if (pbpctl_dev->bp_caps & TPL_CAP) {
+ 		if (tpl_mode) {
+ 			pbpctl_dev_b = get_status_port_fn(pbpctl_dev);
 -- 
 1.9.1
 
