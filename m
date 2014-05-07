@@ -1,128 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751348AbaEGEPJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 00:15:09 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56299 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750986AbaEGEPI (ORCPT
+	id S1751555AbaEGEQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 00:16:56 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:45896 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393AbaEGEQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 00:15:08 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        kishon@ti.com, hdegoede@redhat.com
-Cc: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        linux-sunxi@googlegroups.com,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 7/7] ARM: sunxi: dt: add APP4-EVB1 board support
-Date: Tue,  6 May 2014 22:50:23 -0500
-Message-Id: <1399434623-20383-8-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399434623-20383-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1399434623-20383-1-git-send-email-maxime.ripard@free-electrons.com>
+	Wed, 7 May 2014 00:16:55 -0400
+Message-ID: <5369B3B2.3070108@gmail.com>
+Date: Wed, 07 May 2014 12:16:50 +0800
+From: tuxoko <tuxoko@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>
+CC: Ceph Development <ceph-devel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ceph: fix corruption when using page_count 0 page in
+ rbd
+References: <1398227709-4926-1-git-send-email-tuxoko@gmail.com>	<CALFYKtBovU83Y5WDsYq1Kzi6=QtHPKuefxJ5Ej5bdFdVADCNzQ@mail.gmail.com>	<alpine.DEB.2.00.1405060930450.26929@cobra.newdream.net> <CALFYKtDEobYdZDRxoSLHK-EQWa04S+rut8wOKWvf3_jT_HWrvQ@mail.gmail.com>
+In-Reply-To: <CALFYKtDEobYdZDRxoSLHK-EQWa04S+rut8wOKWvf3_jT_HWrvQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
-The APP4 EVB1 development boards embeds an A31, together with some NAND, one SD
-card slot, and one SDIO + UART WiFi and Bluetooth chip, a few I2C buses, USB,
-and a LCD display.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/boot/dts/Makefile                |  1 +
- arch/arm/boot/dts/sun6i-a31-app4-evb1.dts | 63 +++++++++++++++++++++++++++++++
- 2 files changed, 64 insertions(+)
- create mode 100644 arch/arm/boot/dts/sun6i-a31-app4-evb1.dts
+On 西元2014年05月07日 00:34, Ilya Dryomov wrote:
+> On Tue, May 6, 2014 at 8:31 PM, Sage Weil <sage@inktank.com> wrote:
+>> On Tue, 6 May 2014, Ilya Dryomov wrote:
+>>>
+>>> Looks good to me.  Have you tested it with pre "Fix crash when using
+>>> ZFS on Ceph rbd" ZFS?
+>>
+>> Once this looks ready, we should perhaps stick it in for-linus so that it
+>> can go into 3.15.
+> 
+> That's the plan, I just wanted to confirm it's been tested, since ZFS
+> folks went ahead and fixed it by using compound pages.
+> 
+> Thanks,
+> 
+>                 Ilya
+> 
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index ffa3f5ef27d3..d50c0895a9d5 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -343,6 +343,7 @@ dtb-$(CONFIG_ARCH_SUNXI) += \
- 	sun5i-a10s-olinuxino-micro.dtb \
- 	sun5i-a13-olinuxino.dtb \
- 	sun5i-a13-olinuxino-micro.dtb \
-+	sun6i-a31-app4-evb1.dtb \
- 	sun6i-a31-colombus.dtb \
- 	sun6i-a31-m9.dtb \
- 	sun7i-a20-cubieboard2.dtb \
-diff --git a/arch/arm/boot/dts/sun6i-a31-app4-evb1.dts b/arch/arm/boot/dts/sun6i-a31-app4-evb1.dts
-new file mode 100644
-index 000000000000..270ab978f858
---- /dev/null
-+++ b/arch/arm/boot/dts/sun6i-a31-app4-evb1.dts
-@@ -0,0 +1,63 @@
-+/*
-+ * Copyright 2014 Boris Brezillon
-+ *
-+ * Boris Brezillon <boris.brezillon@free-electrons.com>
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
-+
-+/dts-v1/;
-+/include/ "sun6i-a31.dtsi"
-+
-+/ {
-+	model = "Allwinner A31 APP4 EVB1 Evaluation Board";
-+	compatible = "allwinner,app4-evb1", "allwinner,sun6i-a31";
-+
-+	chosen {
-+		bootargs = "earlyprintk console=ttyS0,115200";
-+	};
-+
-+	soc@01c00000 {
-+		pio: pinctrl@01c20800 {
-+			usb1_vbus_pin_a: usb1_vbus_pin@0 {
-+				allwinner,pins = "PH27";
-+				allwinner,function = "gpio_out";
-+				allwinner,drive = <0>;
-+				allwinner,pull = <0>;
-+			};
-+		};
-+
-+		usbphy: phy@01c19400 {
-+			usb1_vbus-supply = <&reg_usb1_vbus>;
-+			status = "okay";
-+		};
-+
-+		ehci0: usb@01c1a000 {
-+			status = "okay";
-+		};
-+
-+		uart0: serial@01c28000 {
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&uart0_pins_a>;
-+			status = "okay";
-+		};
-+	};
-+
-+	reg_usb1_vbus: usb1-vbus {
-+		compatible = "regulator-fixed";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&usb1_vbus_pin_a>;
-+		regulator-name = "usb1-vbus";
-+		regulator-min-microvolt = <5000000>;
-+		regulator-max-microvolt = <5000000>;
-+		enable-active-high;
-+		gpio = <&pio 7 27 0>;
-+		status = "okay";
-+	};
-+
-+};
--- 
-1.9.1
+Hi Ilya
 
+Yes, I've tested before the ZFS fix and it worked for me.
+
+Thanks,
+Chunwei Chen
