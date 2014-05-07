@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476AbaEGFqm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 01:46:42 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:39740 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104AbaEGFqk (ORCPT
+	id S1752166AbaEGFu6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 01:50:58 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:57439 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750930AbaEGFu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 01:46:40 -0400
+	Wed, 7 May 2014 01:50:57 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+CC: <rmk+kernel@arm.linux.org.uk>, Neil Zhang <zhangwm@marvell.com>
+Subject: [PATCH] ARM: remove redundant code in machine_halt
+Date: Wed, 7 May 2014 13:50:23 +0800
+Message-ID: <1399441823-9907-1-git-send-email-zhangwm@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <20140506191105.GV18016@ZenIV.linux.org.uk>
-References: <5368E46B.9050708@samsung.com>
-	<20140506165901.GS18016@ZenIV.linux.org.uk>
-	<1399401557.9468.21.camel@dhcp-9-2-203-236.watson.ibm.com>
-	<20140506191105.GV18016@ZenIV.linux.org.uk>
-Date: Wed, 7 May 2014 08:46:38 +0300
-Message-ID: <CACE9dm_YdxyY152dnVB4EC9FoyzdtEp5MfFnhcs0MK=xnS+HHQ@mail.gmail.com>
-Subject: Re: IMA & truncate
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-07_02:2014-05-06,2014-05-07,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1405070082
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 May 2014 22:11, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Tue, May 06, 2014 at 02:39:17PM -0400, Mimi Zohar wrote:
->
->> Al, you're not going to like this, but ima_calc_file_hash() calls
->> ima_calc_file_hash_tfm(), which already sets/unsets FMODE_READ in order
->> to calculate the file hash.
->
-> And if it happens to be on NFS and server says "no reads for you"?
+There is no need to call local_irq_disable twice.
 
-Sorry for repost. Lousy Android gmail client is not able to send with
-plain text, even with reply.
+Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+---
+ arch/arm/kernel/process.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-IMA works by policy. It ignores non-local file systems by default.
-
-But if someone still tries to enable nfs in the custom policy, it
-might get into such situation. But then there are other issues like
-security xattrs. Anyone using ima needs to be aware what he does.
-
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 81ef686..18cfce4 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -195,7 +195,6 @@ void machine_halt(void)
+ 	local_irq_disable();
+ 	smp_send_stop();
+ 
+-	local_irq_disable();
+ 	while (1);
+ }
+ 
 -- 
-Thanks,
-Dmitry
+1.7.9.5
+
