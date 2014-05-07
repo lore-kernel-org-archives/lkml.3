@@ -1,107 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104AbaEGIPA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 04:15:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37429 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754642AbaEGIO5 (ORCPT
+	id S1755243AbaEGIP3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 04:15:29 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:58935 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829AbaEGIPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 04:14:57 -0400
-Message-ID: <5369EB78.7080105@ti.com>
-Date: Wed, 7 May 2014 11:14:48 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 7 May 2014 04:15:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-doc@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joerg Roedel <joro@8bytes.org>, Randy Dunlap <rdunlap@infradead.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, linux-kernel@vger.kernel.org,
+        James Bottomley <jbottomley@parallels.com>, linux-pci@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH v2 3/5] sh/PCI: Pass GAPSPCI_DMA_BASE CPU address to dma_declare_coherent_memory()
+Date: Wed, 07 May 2014 10:15:10 +0200
+Message-ID: <4271645.KYLAoYxC5v@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <6994558.Q3OYh8PWMa@wuerfel>
+References: <20140506223250.17968.27054.stgit@bhelgaas-glaptop.roam.corp.google.com> <20140506224833.17968.87108.stgit@bhelgaas-glaptop.roam.corp.google.com> <6994558.Q3OYh8PWMa@wuerfel>
 MIME-Version: 1.0
-To: <tony@atomide.com>
-CC: <kishon@ti.com>, <george.cherian@ti.com>, <balbi@ti.com>,
-        <balajitk@ti.com>, <hdegoede@redhat.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        R Sricharan <r.sricharan@ti.com>, "Menon, Nishanth" <nm@ti.com>
-Subject: Re: [PATCH v4 4/4] ARM: dts: dra7: add OCP2SCP3 and SATA nodes
-References: <1398274237-24510-1-git-send-email-rogerq@ti.com> <1398274575-24818-1-git-send-email-rogerq@ti.com>
-In-Reply-To: <1398274575-24818-1-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:9gLfCHiPMJAM3xAjCKlOynNAiadzSNwxOoDFWRd0cep
+ 7G5uwHX2bmQWi2LZVTWl+K/pOAkaaTyUDnFpIUiqV1cpWuS5cd
+ t8BlUquxjyyBVvyrGeW4E6N8EVdvcO50aH8HLp1AF69KiWmrlU
+ 81Gf10RxfksX04ynLBsc7qa+FoUB+oIfdlr7UGsZRqC/517XOD
+ V8bNzju30PtG1jIxVJVRh9Vphy1uHYSPQKlPibbEz8kVqWHIHC
+ TdJ5ZaPj1cpvQcFh1/w05xw2eQrHKEHXKja4CdgdWDo7k4eq91
+ 9ZMHNAQryY4zXZ8dEbv7jzzAXPBa7ytWTejYRRIzJgy9N+Nbsv
+ olqa78X/VhWATqhwg790=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony,
-
-On 04/23/2014 08:36 PM, Roger Quadros wrote:
-> From: Balaji T K <balajitk@ti.com>
+On Wednesday 07 May 2014 09:55:16 Arnd Bergmann wrote:
+> On Tuesday 06 May 2014 16:48:33 Bjorn Helgaas wrote:
+> > @@ -51,8 +53,12 @@ static void gapspci_fixup_resources(struct pci_dev *dev)
+> >                 /*
+> >                  * Redirect dma memory allocations to special memory window.
+> >                  */
+> > +               region.start = GAPSPCI_DMA_BASE;
+> > +               region.end = GAPSPCI_DMA_BASE + GAPSPCI_DMA_SIZE - 1;
+> > +               res.flags = IORESOURCE_MEM;
+> > +               pcibios_bus_to_resource(dev->bus, &res, &region);
+> >                 BUG_ON(!dma_declare_coherent_memory(&dev->dev,
+> > -                                               GAPSPCI_DMA_BASE,
+> > +                                               res->start,
+> >                                                 GAPSPCI_DMA_BASE,
+> >                                                 GAPSPCI_DMA_SIZE,
+> >                                                 DMA_MEMORY_MAP |
 > 
-> Add nodes for OCP2SCP3 bus, SATA controller and SATA PHY.
+> Not sure if this is an improvement. I understand the intention, but
+> it's actually possible for the offset to be different both ways:
 > 
-> [Roger Q] Clean up.
-> 
-> CC: Benoit Cousson <bcousson@baylibre.com>
-> Signed-off-by: Balaji T K <balajitk@ti.com>
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  arch/arm/boot/dts/dra7.dtsi | 39 +++++++++++++++++++++++++++++++++++++++
->  1 file changed, 39 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-> index 1c0f8e1..084f42e 100644
-> --- a/arch/arm/boot/dts/dra7.dtsi
-> +++ b/arch/arm/boot/dts/dra7.dtsi
-> @@ -789,6 +789,45 @@
->  			dma-names = "tx0", "rx0";
->  			status = "disabled";
->  		};
-> +
-> +		omap_control_sata: control-phy@4a002374 {
-> +			compatible = "ti,control-phy-pipe3";
-> +			reg = <0x4a002374 0x4>;
-> +			reg-names = "power";
-> +			clocks = <&sys_clkin1>;
-> +			clock-names = "sysclk";
-> +		};
-> +
-> +		/* OCP2SCP3 */
-> +		ocp2scp@4a090000 {
-> +			compatible = "ti,omap-ocp2scp";
-> +			#address-cells = <1>;
-> +			#size-cells = <1>;
-> +			ranges;
-> +			reg = <0x4a090000 0x20>;
-> +			ti,hwmods = "ocp2scp3";
-> +			sata_phy: phy@4A096000 {
-> +				compatible = "ti,phy-pipe3-sata";
-> +				reg = <0x4A096000 0x80>, /* phy_rx */
-> +				      <0x4A096400 0x64>, /* phy_tx */
-> +				      <0x4A096800 0x40>; /* pll_ctrl */
-> +				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
-> +				ctrl-module = <&omap_control_sata>;
-> +				clocks = <&sys_clkin1>;
-> +				clock-names = "sysclk";
-> +				#phy-cells = <0>;
-> +			};
-> +		};
-> +
-> +		sata: sata@4a141100 {
-> +			compatible = "snps,dwc-ahci";
-> +			reg = <0x4a140000 0x1100>, <0x4a141100 0x7>;
-> +			interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_HIGH>;
+> Your patch applies the outbound mem_offset that was provided when
+> registering the MMIO resource for the PCI host bridge. What the driver
+> needs instead is the inbound DMA offset that gets applied by some
+> host bridges that don't have a 1:1 mapping but also don't have an
+> IOMMU. We know that on this particular platform, both are zero, so
+> the original code works and it will keep working with your change,
+> but I think it's a mistake anyway. I have seen both kinds of offsets
+> in the past on real machines, but I am not aware of any where they
+> are both nonzero and have the same value.
 
-This will need to be changed like so if the IRQ crossbar changes [1] go in 
+Hmm, looking at it again, it seem even weirder: the address we register
+for DMA allocations is the same that gets passed into the PCI host
+for MMIO resources. Something is very strange here. Still, I'd rather
+not touch it at all, whatever it does.
 
-+			interrupts = <GIC_SPI 49 IRQ_TYPE_LEVEL_HIGH>;
-
-cheers,
--roger
-
-[1] - http://article.gmane.org/gmane.linux.documentation/23293
-
-> +			phys = <&sata_phy>;
-> +			phy-names = "sata-phy";
-> +			clocks = <&sata_ref_clk>;
-> +			ti,hwmods = "sata";
-> +		};
->  	};
->  };
->  
-> 
-
+	Arnd
