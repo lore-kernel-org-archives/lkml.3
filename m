@@ -1,176 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549AbaEGCtR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 22:49:17 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:45056 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751586AbaEGCtP (ORCPT
+	id S1754680AbaEGCup (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 22:50:45 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:24999 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105AbaEGCun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 22:49:15 -0400
-Message-ID: <53699F28.4070409@gmail.com>
-Date: Tue, 06 May 2014 19:49:12 -0700
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 6 May 2014 22:50:43 -0400
+Message-ID: <53699F7C.1040308@oracle.com>
+Date: Tue, 06 May 2014 22:50:36 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCH 0/3] devicetree, qcomm PMIC: fix node name conflict
-References: <536982E3.10303@gmail.com> <CAL_JsqL6+i_ED+s6kODsadszefaZUcA7VHCfZ4k4yj62iXsarQ@mail.gmail.com>
-In-Reply-To: <CAL_JsqL6+i_ED+s6kODsadszefaZUcA7VHCfZ4k4yj62iXsarQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: roland@redhat.com, Oleg Nesterov <oleg@redhat.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: ptrace: gpf in syscall_trace_enter
+References: <53698021.5020108@oracle.com>
+In-Reply-To: <53698021.5020108@oracle.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/6/2014 6:32 PM, Rob Herring wrote:
-> On Tue, May 6, 2014 at 7:48 PM, Frank Rowand <frowand.list@gmail.com> wrote:
->> An issue with the path of SPMI nodes under /sys/bus/... was reported in
->> https://lkml.org/lkml/2014/4/23/312.  The symptom is that two different
-
-< snip >
-
->>
+On 05/06/2014 08:36 PM, Sasha Levin wrote:
+> Hi all,
 > 
-> I think the primary question to ask is there any added benefit to
-> having the additional hierarchy of devices. I don't think there is
-> much support to have more hierarchy from what I have seen of past
-> discussions.
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel I've stumbled on the following spew:
 
-The hierarchy avoids the name space conflict.
+And another similar trace:
 
-It also maps the physical reality better than pretending all devices
-are on the platform bus.
+[ 6897.628729] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 6897.629654] Dumping ftrace buffer:
+[ 6897.630034]    (ftrace buffer empty)
+[ 6897.630034] Modules linked in:
+[ 6897.630034] CPU: 24 PID: 23736 Comm: trinity-c148 Tainted: G    B         3.15.0-rc4-next-20140506-sasha-00021-gc164334-dirty #447
+[ 6897.630034] task: ffff88002a870000 ti: ffff88000ef04000 task.ti: ffff88000ef04000
+[ 6897.630034] RIP: syscall_trace_leave (include/trace/events/syscalls.h:42 arch/x86/kernel/ptrace.c:1517)
+[ 6897.630034] RSP: 0000:ffff88000ef05f20  EFLAGS: 00010286
+[ 6897.630034] RAX: 0000000000000000 RBX: ffff88000ef05f58 RCX: 0000000000000001
+[ 6897.630034] RDX: fffffffffffffff2 RSI: ffff88000ef05f58 RDI: 6b6b6b6b6b6b6b6b
+[ 6897.630034] RBP: ffff88000ef05f40 R08: ffff880218c3c498 R09: 0000000100290024
+[ 6897.630034] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8806c5d04630
+[ 6897.630034] R13: fffffffffffffff2 R14: 00000000000032e0 R15: 00000000000000af
+[ 6897.630034] FS:  00007f5541eec700(0000) GS:ffff880587000000(0000) knlGS:0000000000000000
+[ 6897.630034] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 6897.630034] CR2: 00007fff1ac95d78 CR3: 00000000036a0000 CR4: 00000000000006a0
+[ 6897.630034] DR0: 00000000006df000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 6897.630034] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 00000000000f0602
+[ 6897.630034] Stack:
+[ 6897.630034]  00007f5541f0e2e0 00000000006e2000 00007f5541f0e2e0 0000000000000094
+[ 6897.630034]  0000000000000011 ffffffffb458577f 000000001008feff 00000000000000af
+[ 6897.630034]  00000000000032e0 0000000000000094 00007f5541f0e2e0 0000000000000011
+[ 6897.630034] Call Trace:
+[ 6897.630034] int_check_syscall_exit_work (arch/x86/kernel/entry_64.S:795)
+[ 6897.630034] Code: 05 d1 9d f0 05 01 e8 2d 2e 14 00 4d 85 e4 75 10 65 ff 0c 25 a0 da 00 00 0f 84 85 00 00 00 eb 1c 49 8b 7c 24 08 4c 89 ea 48 89 de <41> ff 14 24 49 83 c4 10 49 83 3c 24 00 75 e6 eb d4 0f 1f 40 00
+[ 6897.630034] RIP syscall_trace_leave (include/trace/events/syscalls.h:42 arch/x86/kernel/ptrace.c:1517)
+[ 6897.630034]  RSP <ffff88000ef05f20>
 
-It follows the model that non-device tree systems use.  For example,
-why should a usb device show up under /sys/bus/platform/ instead of
-under /sys/bus/usb/ ?  (I'm not positive this actually happens, but
-let me pretend it would.)
 
-> Another approach could be to support having multiple platform bus
-> instances. Then drivers can easily create a new instance for each set
-> of sub-devices.
-> 
-> This can be solved in a much less invasive way just in the DT naming
-> algorithm. This is slightly different from what I had suggested of
-> just dropping the unit address. It keeps the unit address, but adds
-> the unique index on untranslate-able addresses. The diff is bigger due
-> to refactoring to reduce the indentation levels. It is untested and
-> whitespace corrupted:
-> 
-> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> index 404d1da..c77dd7a 100644
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -105,23 +105,33 @@ void of_device_make_bus_id(struct device *dev)
->          * For MMIO, get the physical address
->          */
->         reg = of_get_property(node, "reg", NULL);
-> -       if (reg) {
-> -               if (of_can_translate_address(node)) {
-> -                       addr = of_translate_address(node, reg);
-> -               } else {
-> -                       addrp = of_get_address(node, 0, NULL, NULL);
-> -                       if (addrp)
-> -                               addr = of_read_number(addrp, 1);
-> -                       else
-> -                               addr = OF_BAD_ADDR;
-> -               }
-> -               if (addr != OF_BAD_ADDR) {
-> -                       dev_set_name(dev, "%llx.%s",
-> -                                    (unsigned long long)addr, node->name);
-> -                       return;
-> -               }
-> +       if (!reg)
-> +               goto no_bus_id;
-> +
-> +       if (of_can_translate_address(node)) {
-> +               addr = of_translate_address(node, reg);
-> +               if (addr == OF_BAD_ADDR)
-> +                       goto no_bus_id;
-> +
-> +               dev_set_name(dev, "%llx.%s",
-> +                            (unsigned long long)addr, node->name);
-> +               return;
->         }
-> 
-> +       addrp = of_get_address(node, 0, NULL, NULL);
-> +       if (!addrp)
-> +               goto no_bus_id;
-> +
-> +       addr = of_read_number(addrp, 1);
-> +       if (addr == OF_BAD_ADDR)
-> +               goto no_bus_id;
-> +
-> +       magic = atomic_add_return(1, &bus_no_reg_magic);
-> +       dev_set_name(dev, "%llx.%s.%d", (unsigned long long)addr,
-> +                    node->name, magic - 1);
-> +       return;
-> +
-> +no_bus_id:
->         /*
->          * No BusID, use the node name and add a globally incremented
->          * counter (and pray...)
-> 
-
-I think the refactored code is easier to read.  (End of bike shed...)
-
-The result of that patch is an even uglier set of device names.  I would love to get rid of
-the bus_no_reg_magic instead of making more extensive use of it.  The new names for the
-system that started this discussion are:
-
-$ ls /sys/devices/soc.2/fc4cf000.qcom,spmi/spmi-0/0-00/
-100.qcom,revid.19            gpios.21
-3100.qcom,pm8x41-adc-usr.20  power
-6000.qcom,rtc.18             subsystem
-driver                       uevent
-
-$ ls /sys/bus/platform/devices/soc.2/fc4cf000.qcom,spmi/spmi-0/0-00/
-100.qcom,revid.19            gpios.21
-3100.qcom,pm8x41-adc-usr.20  power
-6000.qcom,rtc.18             subsystem
-driver                       uevent
-
-$ ls /sys/bus/platform/devices/soc.2/fc4cf000.qcom,spmi/spmi-0/0-01/
-b040.pm8xxx-pwm.22      driver                  uevent
-d000.pm8xxx-pwm-led.23  power
-d800.pm8xxx-wled.24     subsystem
-
-$ ls /sys/bus/platform/devices/soc.2/fc4cf000.qcom,spmi/spmi-0/0-04/
-100.qcom,revid.25  power              uevent
-driver             subsystem
-
-$ ls /sys/bus/platform/devices/
-100.qcom,revid.19              fc4ab000.restart
-100.qcom,revid.25              fc4cf000.qcom,spmi
-3100.qcom,pm8x41-adc-usr.20    fd484000.hwlock
-6000.qcom,rtc.18               fd510000.pinctrl
-alarmtimer                     fd8c0000.clock-controller
-b040.pm8xxx-pwm.22             gpio_keys.5
-cpu-pmu.1                      gpios.21
-cpus.0                         iio-thermal.4
-d000.pm8xxx-pwm-led.23         pm8841-s1.6
-d800.pm8xxx-wled.24            pm8841-s2.7
-f9000000.interrupt-controller  pm8941-l3.11
-f9011000.smem                  pm8941-l6.12
-f9012000.regulator             reg-dummy
-f9020000.timer                 regulator-l11.14
-f9088000.clock-controller      regulator-l19.15
-f9098000.clock-controller      regulator-l20.16
-f90a8000.clock-controller      regulator-l22.17
-f90b8000.clock-controller      regulator-l9.13
-f9824900.sdhc                  regulator-s1.8
-f991e000.serial                regulator-s2.9
-f9924000.i2c2                  regulator-s3.10
-f9928000.i2c6                  regulatory.0
-f9bff000.rng                   snd-soc-dummy
-fc400000.clock-controller      soc.2
-fc4281d0.qcom,mpm              timer.3
+Thanks,
+Sasha
 
