@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933114AbaEGQmn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:42:43 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:57255 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932223AbaEGQml (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:42:41 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Wed, 7 May 2014 12:46:24 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf_fuzzer crash on pentium 4
-In-Reply-To: <20140506214630.GB1458@moon>
-Message-ID: <alpine.DEB.2.10.1405071244570.6340@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu> <20140506202307.GA1458@moon> <alpine.DEB.2.10.1405061729350.4849@vincent-weaver-1.umelst.maine.edu> <20140506214630.GB1458@moon>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1756158AbaEGQnk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:43:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28624 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752412AbaEGQnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 12:43:39 -0400
+Date: Wed, 7 May 2014 11:43:19 -0500
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Seth Jennings <sjenning@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+Message-ID: <20140507164319.GB31555@treble.redhat.com>
+References: <20140505132638.GA14432@treble.redhat.com>
+ <20140505141038.GA27403@localhost.localdomain>
+ <20140505184304.GA15137@gmail.com>
+ <20140505214919.GE2099@localhost.localdomain>
+ <20140506121211.GA4125@treble.redhat.com>
+ <20140506140516.GF2099@localhost.localdomain>
+ <20140506145010.GA6702@treble.redhat.com>
+ <20140507122444.GB12234@gmail.com>
+ <20140507154114.GA31555@treble.redhat.com>
+ <20140507155754.GA15221@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140507155754.GA15221@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 May 2014, Cyrill Gorcunov wrote:
-
-> On Tue, May 06, 2014 at 05:30:19PM -0400, Vince Weaver wrote:
-> > On Wed, 7 May 2014, Cyrill Gorcunov wrote:
-> > 
-> > > > [   67.872274] BUG: unable to handle kernel NULL pointer dereference at 00000004
-> > > > [   67.876146] IP: [<ffffffff81013df2>] p4_pmu_schedule_events+0xa5/0x331
-> > > 
-> > > This looks like
-> > > 
-> > > p4_pmu_schedule_events:
-> > > 		...
-> > > 		bind = p4_config_get_bind(hwc->config);
-> > > 			returned bind = NULL;
-> > > 		escr_idx = p4_get_escr_idx(bind->escr_msr[thread]); NULL deref
-> > > 
-> > > If i'm right (btw it's possible to use addr2line helper?) 
-> > 
-> > Yes, the address maps to
-> > 
-> > 	escr_idx = p4_get_escr_idx(bind->escr_msr[thread]);
+On Wed, May 07, 2014 at 05:57:54PM +0200, Ingo Molnar wrote:
+> Live patching does not enter into this question, ever. The correctness 
+> of a patch to the source does not depend on 'live patching' 
+> considerations in any way, shape or form.
 > 
-> Great, now we knows the reason of the issue, only to figure out
-> why is left ;)
+> Any mechanism that tries to blur these lines is broken by design.
 > 
-> > > then hwc->config
-> > > is corrupted and p4_config_get_bind returned nil simply because proper event
-> > > was not found. And I don't understand how it could happen because before
-> > > configuration gets written into hwc->config it's validated once obtained
-> > > from user-space as a raw event. Weird...
-> > 
-> > I'll try to get some sort of trace out if it to see what event is being 
-> > tried.
-> 
-> Yeah, this would help a lot.
+> My claim is that if a patch is correct/safe in the old fashioned way, 
+> then a fundamental principle is that a live patching subsystem must 
+> either safely apply, or safely reject the live patching attempt, 
+> independently from any user input.
 
-sorry for the delay, I like to compile kernels locally and it takes a 
-really long time to build a ftrace-enabled kernel on a pentium 4 it seems.
+That's a valiant goal, but it's not going to happen unless you want to
+rewrite Linux in Haskell.  It's just not possible for a program to prove
+that a patch is safe to apply to a running kernel.  There are way too
+many subtle interactions with dynamically allocated data between
+functions.
 
-Anyway I threw some printks in, and this is what I get:
+I think the only way to achieve that is with CRIU, but it still requires
+a kexec or a reboot, so you lose all kernel state and it's much more
+disruptive.
 
-[  447.572626] VMW: bind=NULL config=6b6b6b6b6b6b6b6b
+> "We think/hope it won't blow up in most cases and we automated some 
+> checks halfways" or "the user must know what he is doing" is really 
+> not something that I think is a good concept for something as fragile 
+> as live patching.
 
-I have slab poisoning turned on.  Use after free?
+This is a distro tool, not a general purpose one.  If distros are
+careful with their patch selection, it won't blow up.  It's a valuable
+way for distros to help out sysadmins who need a hot security fix but
+can't reboot immediately.
 
-Vince
+-- 
+Josh
