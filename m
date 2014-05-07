@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724AbaEGT41 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 15:56:27 -0400
-Received: from mout.gmx.net ([212.227.17.21]:49436 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752125AbaEGTxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 15:53:20 -0400
-Date: Wed, 7 May 2014 21:42:27 +0200
-From: Christian Engelmayer <cengelma@gmx.at>
-To: devel@driverdev.osuosl.org
-Cc: gregkh@linuxfoundation.org, Jes.Sorensen@redhat.com, mguzik@redhat.com,
-        linux-kernel@vger.kernel.org, Larry.Finger@lwfinger.net
-Subject: [PATCH v3] staging: rtl8188eu: fix potential leak in
- update_bcn_wps_ie()
-Message-ID: <20140507214227.621a814d@spike>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1752703AbaEGT4V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 15:56:21 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59866 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111AbaEGT4S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 15:56:18 -0400
+Date: Wed, 7 May 2014 20:55:54 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Philipp Zabel'" <p.zabel@pengutronix.de>,
+        "'Shawn Guo'" <shawn.guo@linaro.org>
+Message-ID: <20140507195554.GO22111@sirena.org.uk>
+References: <01e101cf69c9$abd91f70$038b5e50$%han@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:Tr/PrH1ytErR/titjpeWQDAKEMLTC2sAU/C9QYQrpZrSYJXjEYg
- taeodfaUROvhEK6+sZtzSwYXg4azTBMVl6Flk07h5yQN/gfmD87Cqe0qHdel6aZ9orUvr9a
- HEGIKJQPZYKClQxiWtzkJeWxJ9b7gXfP/AY4Rl0v3xIAPWIyVdYddFvRi4zMsh3NPVoVyKX
- NEYJVt83uqB3gii5E2M3g==
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WQS/f3aCdEH+xDC1"
+Content-Disposition: inline
+In-Reply-To: <01e101cf69c9$abd91f70$038b5e50$%han@samsung.com>
+X-Cookie: You are standing on my toes.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 92.40.248.116
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/5] regulator: anatop: Make of_device_id array const
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a potential leak in the error path of function update_bcn_wps_ie().
-Move the affected input verification to the beginning of the function so
-that it may return directly without leaking already allocated memory.
-Detected by Coverity - CID 1077718.
 
-Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
----
-v3: Resend after v2 failed to apply
+--WQS/f3aCdEH+xDC1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-  * rebased against staging-next - commit 09c3fbba (staging: rtl8188eu:
-    Remove 'u8 *pbuf' from struct recv_buf)
-  * fixed mua: no multipart, 7bit text/plain us-ascii
+On Wed, May 07, 2014 at 04:55:10PM +0900, Jingoo Han wrote:
+> Make of_device_id array const, because all OF functions
+> handle it as const.
 
-v2: Added change suggested by Mateusz Guzik for the rtl8723au variant:
+Applied all, thanks.
 
-    Move the check before allocating the memory instead of freeing the
-    resource afterwards in the error path.
+--WQS/f3aCdEH+xDC1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Compile tested and applies against branch staging-next of tree
-git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
----
- drivers/staging/rtl8188eu/core/rtw_ap.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_ap.c b/drivers/staging/rtl8188eu/core/rtw_ap.c
-index ff74d0d..85fda61 100644
---- a/drivers/staging/rtl8188eu/core/rtw_ap.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_ap.c
-@@ -1306,6 +1306,10 @@ static void update_bcn_wps_ie(struct adapter *padapter)
- 
- 	DBG_88E("%s\n", __func__);
- 
-+	pwps_ie_src = pmlmepriv->wps_beacon_ie;
-+	if (pwps_ie_src == NULL)
-+		return;
-+
- 	pwps_ie = rtw_get_wps_ie(ie+_FIXED_IE_LENGTH_, ielen-_FIXED_IE_LENGTH_, NULL, &wps_ielen);
- 
- 	if (pwps_ie == NULL || wps_ielen == 0)
-@@ -1323,10 +1327,6 @@ static void update_bcn_wps_ie(struct adapter *padapter)
- 			memcpy(pbackup_remainder_ie, premainder_ie, remainder_ielen);
- 	}
- 
--	pwps_ie_src = pmlmepriv->wps_beacon_ie;
--	if (pwps_ie_src == NULL)
--		return;
--
- 	wps_ielen = (uint)pwps_ie_src[1];/* to get ie data len */
- 	if ((wps_offset+wps_ielen+2+remainder_ielen) <= MAX_IE_SZ) {
- 		memcpy(pwps_ie, pwps_ie_src, wps_ielen+2);
--- 
-1.9.1
+iQIcBAEBAgAGBQJTao/GAAoJELSic+t+oim9Ro8P/Rm772qY3+praXPzBRITwexa
+u9+YLVBtyu3ss3nWRk6eJrMHvt26OL9qiHcXVdKJ4Dby9rA1GCxWFPIroE82MMF1
+bGSy3YkgJZL8RUdAvuVjqBIwHzSzJaaOlrtdp/vtlPIN+PJwzj9IFQaBPEdl6N0O
+f+pTuik7J4nif9Io4oSxPYW5LTiEbtCQxK+VuBchXcYIfMRfKSScVXIdB4Yke1z3
+eLQeYsiDx4DnglupJ8OWEWn1bWyHAfd8wnuwF0pdPtFA3Y3TN8hU7rxEuMIRUJJE
+57fVIGpgBYLsr3RCkzRozKuEtGfNh8nim+lxrVOIpttH67JM8Xz/Tgv7KLClJDKJ
+W6LInxGXwyPf2yUfXmIR1Gti9lgantUMXZvUdJu6kWJcyxntRJQK9fQQo9EteJ6A
+yYYNtATKKoSKddEf7N5IaMrwVZxGtgXnBIG/V2OdoL97Z8JZAl/FCanriLxNmeUk
+TrO5PdejS7vKHRzQ4FidJsLeNSThGYxHMG0tDEG5n+fjXK2y+IFWz1Zf1sUFXArh
+ZnXRVEmuSjBPSwD21kW8ZeFBtm4Q8HOumQ3bx9ZZKMF5pqELMvZkj8WJB4mZ+ByM
+fkjh2YkHQeFVrLJURoEy9MStwKAR3QWVAODZSo6Us5DYIRGKledC81gl8GHzD/ei
+5TxgtsntmvUoARr/qrWZ
+=zGi3
+-----END PGP SIGNATURE-----
 
+--WQS/f3aCdEH+xDC1--
