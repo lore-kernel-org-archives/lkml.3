@@ -1,110 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837AbaEGVuU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 17:50:20 -0400
-Received: from ns.horizon.com ([71.41.210.147]:49283 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752350AbaEGVuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 17:50:15 -0400
-Date: 7 May 2014 17:50:12 -0400
-Message-ID: <20140507215012.11213.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, rientjes@google.com
-Subject: Re: [PATCH v2 03/10] slab: move up code to get kmem_cache_node in free_block()
-Cc: cl@linux.com, iamjoonsoo.kim@lge.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-In-Reply-To: <alpine.DEB.2.02.1405071429310.8454@chino.kir.corp.google.com>
+	id S1752294AbaEGVs3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 17:48:29 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:51032 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaEGVs1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 17:48:27 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn@kryo.se>, Frank Rowand <frowand.list@gmail.com>,
+        Rob Herring <robh@kernel.org>
+Subject: [PATCH 0/4] DT platform device name collision fixes
+Date: Wed,  7 May 2014 16:48:14 -0500
+Message-Id: <1399499298-8830-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I think this unnecessarily obfuscates the code.
+From: Rob Herring <robh@kernel.org>
 
-Thanks for the feedback!  (Even if it's negative, I appreciate it.)
+This series fixes the device naming collisions that can occur with 
+nultiple devices having the same name and non-translatable unit 
+addresses. This issue was raised in this thread[1]. I intend to merge 
+this regardless of whether or not some hierarchy in sysfs is created. 
+That is really a separate issue independent of these fixes.
 
-To me, the confusing thing is the whole passing-a-pointer-to-a-pointer
-business.  How about the following, which makes set_obj_pfmemalloc and
-clear_obj_pfmemalloc take void *, not void **?  Is this better, or worse?
+I found and fix a couple of other issues in the process of testing the 
+fix.
 
-(Also Signed-off-by: George Spelvin <linux@horizon.com>)
+Rob
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 388cb1ae6f..f09716ce87 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -209,15 +209,14 @@ static inline bool is_obj_pfmemalloc(void *objp)
- 	return (unsigned long)objp & SLAB_OBJ_PFMEMALLOC;
- }
- 
--static inline void set_obj_pfmemalloc(void **objp)
-+static inline void *set_obj_pfmemalloc(void *objp)
- {
--	*objp = (void *)((unsigned long)*objp | SLAB_OBJ_PFMEMALLOC);
--	return;
-+	return (void *)((unsigned long)objp | SLAB_OBJ_PFMEMALLOC);
- }
- 
--static inline void clear_obj_pfmemalloc(void **objp)
-+static inline void *clear_obj_pfmemalloc(void *objp)
- {
--	*objp = (void *)((unsigned long)*objp & ~SLAB_OBJ_PFMEMALLOC);
-+	return (void *)((unsigned long)objp & ~SLAB_OBJ_PFMEMALLOC);
- }
- 
- /*
-@@ -809,10 +808,8 @@ static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
- 	if (unlikely(is_obj_pfmemalloc(objp))) {
- 		struct kmem_cache_node *n;
- 
--		if (gfp_pfmemalloc_allowed(flags)) {
--			clear_obj_pfmemalloc(&objp);
--			return objp;
--		}
-+		if (gfp_pfmemalloc_allowed(flags))
-+			return clear_obj_pfmemalloc(objp);
- 
- 		/* The caller cannot use PFMEMALLOC objects, find another one */
- 		for (i = 0; i < ac->avail; i++) {
-@@ -833,9 +830,8 @@ static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
- 		if (!list_empty(&n->slabs_free) && force_refill) {
- 			struct page *page = virt_to_head_page(objp);
- 			ClearPageSlabPfmemalloc(page);
--			clear_obj_pfmemalloc(&objp);
- 			recheck_pfmemalloc_active(cachep, ac);
--			return objp;
-+			return clear_obj_pfmemalloc(objp);
- 		}
- 
- 		/* No !PFMEMALLOC objects available */
-@@ -866,7 +862,7 @@ static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
- 		/* Some pfmemalloc slabs exist, check if this is one */
- 		struct page *page = virt_to_head_page(objp);
- 		if (PageSlabPfmemalloc(page))
--			set_obj_pfmemalloc(&objp);
-+			objp = set_obj_pfmemalloc(objp);
- 	}
- 
- 	return objp;
-@@ -3362,17 +3358,12 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int nr_objects,
- 		       int node)
- {
- 	int i;
--	struct kmem_cache_node *n;
-+	struct kmem_cache_node *n = cachep->node[node];
- 
- 	for (i = 0; i < nr_objects; i++) {
--		void *objp;
--		struct page *page;
--
--		clear_obj_pfmemalloc(&objpp[i]);
--		objp = objpp[i];
-+		void *objp = objpp[i] = clear_obj_pfmemalloc(objpp[i]);
-+		struct page *page = virt_to_head_page(objp);
- 
--		page = virt_to_head_page(objp);
--		n = cachep->node[node];
- 		list_del(&page->lru);
- 		check_spinlock_acquired_node(cachep, node);
- 		slab_put_obj(cachep, page, objp, node);
+[1] https://lkml.org/lkml/2014/4/23/312
 
+Rob Herring (4):
+  of/selftest: add testcase for nodes with same name and address
+  of/platform: return error on of_platform_device_create_pdata failure
+  of/platform: fix device naming for non-translatable addresses
+  of: kill off of_can_translate_address
+
+ drivers/of/address.c                         | 22 +----------------
+ drivers/of/platform.c                        | 20 +++++-----------
+ drivers/of/selftest.c                        | 23 ++++++++++++++++++
+ drivers/of/testcase-data/testcases.dtsi      |  1 +
+ drivers/of/testcase-data/tests-platform.dtsi | 35 ++++++++++++++++++++++++++++
+ include/linux/of_address.h                   |  1 -
+ 6 files changed, 66 insertions(+), 36 deletions(-)
+ create mode 100644 drivers/of/testcase-data/tests-platform.dtsi
+
+-- 
+1.9.1
 
