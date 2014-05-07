@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaEGWJN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 18:09:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46189 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591AbaEGWJK (ORCPT
+	id S1752357AbaEGWKH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 18:10:07 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:33824 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751600AbaEGWKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 18:09:10 -0400
-Message-ID: <536AAEEC.5090508@ti.com>
-Date: Wed, 7 May 2014 17:08:44 -0500
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Linux OMAP List <linux-omap@vger.kernel.org>,
+	Wed, 7 May 2014 18:10:04 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/LXyfjPWPcUDutOWS0zFsY
+Date: Wed, 7 May 2014 15:10:00 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Joel Fernandes <joelf@ti.com>
+Cc: Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/26] ARM: OMAP: dmtimer: Remove setting of clk parent
- indirectly through platform hook
-References: <1398375849-6017-1-git-send-email-joelf@ti.com> <1398375849-6017-2-git-send-email-joelf@ti.com> <20140507151907.GB9502@atomide.com> <536AA900.4040200@ti.com> <20140507220426.GC19102@atomide.com>
-In-Reply-To: <20140507220426.GC19102@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 09/26] ARM: OMAP: dmtimer: Get rid of check for mem
+ resource error
+Message-ID: <20140507220959.GE19102@atomide.com>
+References: <1398375849-6017-1-git-send-email-joelf@ti.com>
+ <1398375849-6017-10-git-send-email-joelf@ti.com>
+ <20140507152426.GD9502@atomide.com>
+ <536AAB1C.6010301@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <536AAB1C.6010301@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2014 05:04 PM, Tony Lindgren wrote:
-> * Joel Fernandes <joelf@ti.com> [140507 14:44]:
->> On 05/07/2014 10:19 AM, Tony Lindgren wrote:
->>> * Joel Fernandes <joelf@ti.com> [140424 14:44]:
->>>> There is a platform specific hook just for OMAP1 to set its clk parent.  Remove
->>>> this hook and have OMAP1 set its parent in omap1_dm_timer_init.  If OMAP1 is
->>>> ever migrated to clock framework, the correct way to do this would be through
->>>> clk_set_parent like other platforms.
->>>>
->>>> Signed-off-by: Joel Fernandes <joelf@ti.com>
->>>> ---
->>>>  arch/arm/mach-omap1/timer.c                |    8 +++++++-
->>>>  arch/arm/plat-omap/dmtimer.c               |    8 +++-----
->>>>  include/linux/platform_data/dmtimer-omap.h |    2 --
->>>>  3 files changed, 10 insertions(+), 8 deletions(-)
->>>>
->>>> diff --git a/arch/arm/mach-omap1/timer.c b/arch/arm/mach-omap1/timer.c
->>>> index bde7a35..4b9c604 100644
->>>> --- a/arch/arm/mach-omap1/timer.c
->>>> +++ b/arch/arm/mach-omap1/timer.c
->>>> @@ -140,7 +140,13 @@ static int __init omap1_dm_timer_init(void)
->>>>  			goto err_free_pdata;
->>>>  		}
->>>>  
->>>> -		pdata->set_timer_src = omap1_dm_timer_set_src;
->>>> +		/*
->>>> +		 * Since OMAP1 doesn't support clock framework, set timer clock
->>>> +		 * source to 32KHz here instead of expecting it to be set by
->>>> +		 * dmtimer code.
->>>> +		 */
->>>> +		omap1_dm_timer_set_src(pdev, 0x01);
->>>> +
->>>>  		pdata->timer_capability = OMAP_TIMER_ALWON |
->>>>  				OMAP_TIMER_NEEDS_RESET | OMAP_TIMER_HAS_DSP_IRQ;
->>>>  
->>>
->>> This does not sound right, omap1 does support clock framework just fine.
->>> It is not using the common clock framework though.
->>>
->>> This breaks omap_dm_timer_set_source() for sure. Setting the source
->>> during init is not a right solution here. Probably best to keep the
->>> pdata hook around, drivers can support pdata and DT data together
->>> just fine.
->>
->> Actually pdata hook in this case is used only in 1 place, and is OMAP1
->> specific so I felt its better to clean it up.
->>
->> Can you elaborate a bit more on why it breaks? I have no way of testing
->> OMAP1 without hardware.
->>
->> What difference is it to set MOD_CONF_CTRL_1 in omap1's
->> arch_initcall(omap1_dm_timer_init)  versus doing so later?
+* Joel Fernandes <joelf@ti.com> [140507 14:53]:
+> On 05/07/2014 10:24 AM, Tony Lindgren wrote:
+> > * Joel Fernandes <joelf@ti.com> [140424 14:44]:
+> >> The subsequent devm_ioremap_resource will catch it and print an error, let it
+> >> be checked there.
+> >>
+> >> Signed-off-by: Joel Fernandes <joelf@ti.com>
+> >> ---
+> >>  arch/arm/plat-omap/dmtimer.c |    4 ----
+> >>  1 file changed, 4 deletions(-)
+> >>
+> >> diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
+> >> index 7e806f9..1fd30fa 100644
+> >> --- a/arch/arm/plat-omap/dmtimer.c
+> >> +++ b/arch/arm/plat-omap/dmtimer.c
+> >> @@ -810,10 +810,6 @@ static int omap_dm_timer_probe(struct platform_device *pdev)
+> >>  	}
+> >>  
+> >>  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> >> -	if (unlikely(!mem)) {
+> >> -		dev_err(dev, "%s: no memory resource.\n", __func__);
+> >> -		return -ENODEV;
+> >> -	}
+> >>  
+> >>  	timer = devm_kzalloc(dev, sizeof(struct omap_dm_timer), GFP_KERNEL);
+> >>  	if (!timer) {
+> > 
+> > We still need to return an error here and not try to continue though.
 > 
-> You're making a driver behave in a different way for omap1
-> compared to omap2+ where selecting the clock source won't work
-> for omap1.
+> We are returning an error if mem is NULL so the redundant check is
+> unnecessary:
+> 
+> ...
+>         timer->io_base = devm_ioremap_resource(dev, mem);
+>         if (IS_ERR(timer->io_base))
+>                 return PTR_ERR(timer->io_base);
 
-Ok, I'll drop this patch and leave the hook as-is. Thanks.
+Why would you want to even continue omap_dm_timer_probe()
+further and allocate memory if platform_get_resource() fails?
 
-Regards,
--Joel
-
+Tony
