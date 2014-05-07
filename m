@@ -1,82 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934264AbaEGQDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:03:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25935 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934252AbaEGQD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:03:27 -0400
-Date: Wed, 7 May 2014 12:02:51 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>, ak@linux.intel.com,
-        gong.chen@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 1/5] x86, nmi:  Add new nmi type 'external'
-Message-ID: <20140507160251.GQ39568@redhat.com>
-References: <1399476883-98970-1-git-send-email-dzickus@redhat.com>
- <1399476883-98970-2-git-send-email-dzickus@redhat.com>
- <20140507153854.GA14926@gmail.com>
+	id S1756804AbaEGQEA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:04:00 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:45848 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756126AbaEGQD7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 12:03:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140507153854.GA14926@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140507154335.452206351@linutronix.de>
+References: <20140507153622.703412101@linutronix.de> <20140507154335.452206351@linutronix.de>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 7 May 2014 10:03:38 -0600
+Message-ID: <CAErSpo4=GUxUpAEtBH_=-DeXAij4zy+r15N4bjapY=54Y7x0Sg@mail.gmail.com>
+Subject: Re: [patch 08/32] x86: htirq: Use irq_alloc/free_irq()
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Anvin <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 05:38:54PM +0200, Ingo Molnar wrote:
-> 
-> * Don Zickus <dzickus@redhat.com> wrote:
-> 
-> > I noticed when debugging a perf problem on a machine with GHES enabled,
-> > perf seemed slow.  I then realized that the GHES NMI routine was taking
-> > a global lock all the time to inspect the hardware.  This contended
-> > with all the local perf counters which did not need a lock.  So each cpu
-> > accidentally was synchronizing with itself when using perf.
-> > 
-> > This is because the way the nmi handler works.  It executes all the handlers
-> > registered to a particular subtype (to deal with nmi sharing).  As a result
-> > the GHES handler was executed on every PMI.
-> > 
-> > Fix this by creating a new nmi type called NMI_EXT, which is used by
-> > handlers that need to probe external hardware and require a global lock
-> > to do so.
-> > 
-> > Now the main NMI handler can check the internal NMI handlers first and
-> > then the external ones if nothing is found.
-> > 
-> > This makes perf a little faster again on those machines with GHES enabled.
-> 
-> So what happens if GHES asserts an NMI at the same time a PMI 
-> triggers?
-> 
-> If the perf PMI executes and indicates that it has handled something, 
-> we don't execute the GHES handler, right? Will the GHES re-trigger the 
-> NMI after we return?
+On Wed, May 7, 2014 at 9:44 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> No functional change, just cleaned up a bit.
+>
+> This does not replace the requirement to move x86 to irq domains, but
+> it limits the mess to some degree.
+>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-In my head, I had thought they would be queued up and things work out
-fine.  But I guess in theory, if a PMI NMI comes in and before the cpu can
-accept it and GHES NMI comes in, then it would suffice to say it may get
-dropped.  That would be not be good.  Though the race would be very small.
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
-I don't have a good idea how to handle that.
+I assume you'll merge this along with the rest of your series.  Let me
+know if you need me to do anything.
 
-On the flip side, we have the same exact problem, today, with the other
-common external NMIs (SERR, IO).  If a PCI SERR comes in at the same time
-as a PMI, then it gets dropped.  Worse, it doesn't get re-enabled and
-blocks future SERRs (just found this out two weeks ago because of a dirty
-perf status register on boot).
-
-Again, I don't have a solution to juggle between PMI performance and
-reliable delivery.  We could do away with the spinlocks and go back to
-single cpu delivery (like it used to be).  Then devise a mechanism to
-switch delivery to another cpu upon hotplug.
-
-Thoughts?
-
-Cheers,
-Don
+> Cc: x86@kernel.org
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  drivers/pci/htirq.c |   13 ++++---------
+>  1 file changed, 4 insertions(+), 9 deletions(-)
+>
+> Index: tip/drivers/pci/htirq.c
+> ===================================================================
+> --- tip.orig/drivers/pci/htirq.c
+> +++ tip/drivers/pci/htirq.c
+> @@ -87,12 +87,9 @@ void unmask_ht_irq(struct irq_data *data
+>  int __ht_create_irq(struct pci_dev *dev, int idx, ht_irq_update_t *update)
+>  {
+>         struct ht_irq_cfg *cfg;
+> +       int max_irq, pos, irq;
+>         unsigned long flags;
+>         u32 data;
+> -       int max_irq;
+> -       int pos;
+> -       int irq;
+> -       int node;
+>
+>         pos = pci_find_ht_capability(dev, HT_CAPTYPE_IRQ);
+>         if (!pos)
+> @@ -120,10 +117,8 @@ int __ht_create_irq(struct pci_dev *dev,
+>         cfg->msg.address_lo = 0xffffffff;
+>         cfg->msg.address_hi = 0xffffffff;
+>
+> -       node = dev_to_node(&dev->dev);
+> -       irq = create_irq_nr(0, node);
+> -
+> -       if (irq <= 0) {
+> +       irq = irq_alloc_hwirq(dev_to_node(&dev->dev));
+> +       if (!irq) {
+>                 kfree(cfg);
+>                 return -EBUSY;
+>         }
+> @@ -166,7 +161,7 @@ void ht_destroy_irq(unsigned int irq)
+>         cfg = irq_get_handler_data(irq);
+>         irq_set_chip(irq, NULL);
+>         irq_set_handler_data(irq, NULL);
+> -       destroy_irq(irq);
+> +       irq_free_hwirq(irq);
+>
+>         kfree(cfg);
+>  }
+>
+>
