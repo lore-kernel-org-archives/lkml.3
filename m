@@ -1,122 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751037AbaEGTzb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 15:55:31 -0400
-Received: from mout.gmx.net ([212.227.17.21]:50901 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752195AbaEGTxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 15:53:20 -0400
-Date: Wed, 7 May 2014 21:40:41 +0200
-From: Christian Engelmayer <cengelma@gmx.at>
-To: devel@driverdev.osuosl.org
-Cc: Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
-        gregkh@linuxfoundation.org, linuxgeek@gmail.com,
-        alexandre.f.demers@gmail.com, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] staging: rtl8712: fix potential leaks in r8712_set_key()
-Message-ID: <20140507214041.7809c595@spike>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:GSTsmqUoLGon4NoOWpR1T9dWK2k4dmDkRjDF6w1zYwxwhFA9wLX
- u5Y5/NpOYUhV2ehns140Zo/kNjDjjRaR0dNonjqNBY27rAc9j39f0tT1DnUQRdrpNThsgmy
- DrQKpxcCxkTq605id5jrJvDnCQFfIIKzcdu8sVnYAK6VGAhRq5T7HncWQfJlL4gNapqEFml
- 2NNkoMwGfHOeuQKXimDSg==
+	id S1752674AbaEGT4D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 15:56:03 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:42829 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000AbaEGTz5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 15:55:57 -0400
+From: Dimitri John Ledkov <dimitri.ledkov@canonical.com>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Dimitri John Ledkov <dimitri.ledkov@canonical.com>
+Subject: [PATCH v2] NVMe: Update namespace and controller identity structures as per 1.1a spec
+Date: Wed,  7 May 2014 20:55:30 +0100
+Message-Id: <1399492530-7774-1-git-send-email-dimitri.ledkov@canonical.com>
+X-Mailer: git-send-email 2.0.0.rc0
+In-Reply-To: <20140423151304.GF13050@linux.intel.com>
+References: <20140423151304.GF13050@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix potential leaks in the error paths of r8712_set_key(). In case the
-algorithm specific checks fail, the function returns without enqueuing
-or freeing the already allocated command and parameter structs. Use a
-centralized exit path and make sure that all memory is freed correctly.
-Detected by Coverity - CID 144370, 144371.
+Controller: add CNTLID, AVSCC, APSTA, NVSCC, ACWU, SGLS fields.
 
-Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+Namespace: add NMIC, RESCAP, EUI64 fields. EUI64 is specifically
+interesting, since it can be used to construct an UEFI NVMe device
+path for a boot entry.
+
+As per NVM Express 1.1a spec:
+http://www.nvmexpress.org/wp-content/uploads/NVM-Express-1_1a.pdf
+
+Signed-off-by: Dimitri John Ledkov <dimitri.ledkov@canonical.com>
 ---
-v2: Resend after v1 failed to apply
 
-   * rebased against staging-next - commit 09c3fbba (staging: rtl8188eu:
-     Remove 'u8 *pbuf' from struct recv_buf)
-   * fixed mua: no multipart, 7bit text/plain us-ascii
+ Changes since v1:
+  - Change cntlid from __le16 to __u16 ("it's a cookie")
+  - Change eui64 from __le64 to __u8[8] (as per IEEE's recommendation)
 
-Compile tested and applies against branch staging-next of tree
-git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
----
- drivers/staging/rtl8712/rtl871x_mlme.c | 28 ++++++++++++++++++++--------
- 1 file changed, 20 insertions(+), 8 deletions(-)
+ include/uapi/linux/nvme.h | 19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/rtl8712/rtl871x_mlme.c b/drivers/staging/rtl8712/rtl871x_mlme.c
-index 3ea99ae..23fd8c1 100644
---- a/drivers/staging/rtl8712/rtl871x_mlme.c
-+++ b/drivers/staging/rtl8712/rtl871x_mlme.c
-@@ -1243,14 +1243,15 @@ sint r8712_set_key(struct _adapter *adapter,
- 	struct cmd_obj *pcmd;
- 	struct setkey_parm *psetkeyparm;
- 	u8 keylen;
-+	sint ret = _SUCCESS;
- 
- 	pcmd = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
- 	if (pcmd == NULL)
- 		return _FAIL;
- 	psetkeyparm = (struct setkey_parm *)_malloc(sizeof(struct setkey_parm));
- 	if (psetkeyparm == NULL) {
--		kfree((unsigned char *)pcmd);
--		return _FAIL;
-+		ret = _FAIL;
-+		goto err_free_cmd;
- 	}
- 	memset(psetkeyparm, 0, sizeof(struct setkey_parm));
- 	if (psecuritypriv->AuthAlgrthm == 2) { /* 802.1X */
-@@ -1274,23 +1275,28 @@ sint r8712_set_key(struct _adapter *adapter,
- 			psecuritypriv->DefKey[keyid].skey, keylen);
- 		break;
- 	case _TKIP_:
--		if (keyid < 1 || keyid > 2)
--			return _FAIL;
-+		if (keyid < 1 || keyid > 2) {
-+			ret = _FAIL;
-+			goto err_free_parm;
-+		}
- 		keylen = 16;
- 		memcpy(psetkeyparm->key,
- 			&psecuritypriv->XGrpKey[keyid - 1], keylen);
- 		psetkeyparm->grpkey = 1;
- 		break;
- 	case _AES_:
--		if (keyid < 1 || keyid > 2)
--			return _FAIL;
-+		if (keyid < 1 || keyid > 2) {
-+			ret = _FAIL;
-+			goto err_free_parm;
-+		}
- 		keylen = 16;
- 		memcpy(psetkeyparm->key,
- 			&psecuritypriv->XGrpKey[keyid - 1], keylen);
- 		psetkeyparm->grpkey = 1;
- 		break;
- 	default:
--		return _FAIL;
-+		ret = _FAIL;
-+		goto err_free_parm;
- 	}
- 	pcmd->cmdcode = _SetKey_CMD_;
- 	pcmd->parmbuf = (u8 *)psetkeyparm;
-@@ -1299,7 +1305,13 @@ sint r8712_set_key(struct _adapter *adapter,
- 	pcmd->rspsz = 0;
- 	_init_listhead(&pcmd->list);
- 	r8712_enqueue_cmd(pcmdpriv, pcmd);
--	return _SUCCESS;
-+	return ret;
-+
-+err_free_parm:
-+	kfree(psetkeyparm);
-+err_free_cmd:
-+	kfree(pcmd);
-+	return ret;
- }
- 
- /* adjust IEs for r8712_joinbss_cmd in WMM */
+diff --git a/include/uapi/linux/nvme.h b/include/uapi/linux/nvme.h
+index f090336..e74da78 100644
+--- a/include/uapi/linux/nvme.h
++++ b/include/uapi/linux/nvme.h
+@@ -45,7 +45,8 @@ struct nvme_id_ctrl {
+ 	__u8			ieee[3];
+ 	__u8			mic;
+ 	__u8			mdts;
+-	__u8			rsvd78[178];
++	__u16			cntlid;
++	__u8			rsvd80[176];
+ 	__le16			oacs;
+ 	__u8			acl;
+ 	__u8			aerl;
+@@ -53,7 +54,9 @@ struct nvme_id_ctrl {
+ 	__u8			lpa;
+ 	__u8			elpe;
+ 	__u8			npss;
+-	__u8			rsvd264[248];
++	__u8			avscc;
++	__u8			apsta;
++	__u8			rsvd266[246];
+ 	__u8			sqes;
+ 	__u8			cqes;
+ 	__u8			rsvd514[2];
+@@ -64,7 +67,12 @@ struct nvme_id_ctrl {
+ 	__u8			vwc;
+ 	__le16			awun;
+ 	__le16			awupf;
+-	__u8			rsvd530[1518];
++	__u8			nvscc;
++	__u8			rsvd531;
++	__le16			acwu;
++	__u8			rsvd534[2];
++	__le32			sgls;
++	__u8			rsvd540[1508];
+ 	struct nvme_id_power_state	psd[32];
+ 	__u8			vs[1024];
+ };
+@@ -92,7 +100,10 @@ struct nvme_id_ns {
+ 	__u8			mc;
+ 	__u8			dpc;
+ 	__u8			dps;
+-	__u8			rsvd30[98];
++	__u8			nmic;
++	__u8			rescap;
++	__u8			rsvd32[88];
++	__u8			eui64[8];
+ 	struct nvme_lbaf	lbaf[16];
+ 	__u8			rsvd192[192];
+ 	__u8			vs[3712];
 -- 
-1.9.1
+2.0.0.rc0
 
