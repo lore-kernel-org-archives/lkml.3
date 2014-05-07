@@ -1,116 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371AbaEGSKH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 14:10:07 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:33377 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900AbaEGSKE (ORCPT
+	id S1752415AbaEGSKn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 14:10:43 -0400
+Received: from smtprelay0229.hostedemail.com ([216.40.44.229]:34314 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752210AbaEGSKm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 14:10:04 -0400
-Message-ID: <536A76F9.3090908@linaro.org>
-Date: Wed, 07 May 2014 11:10:01 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: David Riley <davidriley@chromium.org>,
+	Wed, 7 May 2014 14:10:42 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:2740:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3872:3874:4250:4321:4385:5007:6691:7652:7903:10004:10400:10848:10967:11026:11232:11473:11658:11914:12438:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: place96_22e207eef9c22
+X-Filterd-Recvd-Size: 2627
+Message-ID: <1399486238.2911.20.camel@joe-AO725>
+Subject: Re: [PATCH] plist: replace pr_debug with printk in plist_test()
+From: Joe Perches <joe@perches.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Dan Streetman <ddstreet@ieee.org>, Fabian Frederick <fabf@skynet.be>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] Add test to validate udelay
-References: <1399421543-7751-1-git-send-email-davidriley@chromium.org>	<53697D7D.4020908@linaro.org> <CAD=FV=VqPFcAFMfRi2L=QiRJ1qP8fokycmPxrjOi4mPv2W9NMA@mail.gmail.com>
-In-Reply-To: <CAD=FV=VqPFcAFMfRi2L=QiRJ1qP8fokycmPxrjOi4mPv2W9NMA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 07 May 2014 11:10:38 -0700
+In-Reply-To: <20140507103512.5b3f7928@gandalf.local.home>
+References: <CALZtONB-wT16fPX7GjBVFO_5Bof3=zxviG22p6_9ymbnzA9QAA@mail.gmail.com>
+	 <1399300985-11137-1-git-send-email-ddstreet@ieee.org>
+	 <20140505133517.71b7dc7cf327cb304e8a9edc@linux-foundation.org>
+	 <CALZtONAVTQuOF3ddZ6jVZqCGgKBicAtT=_w5w4GEueYAsf3jtw@mail.gmail.com>
+	 <20140506174445.b64dffb78d0676b48fa68eea@skynet.be>
+	 <CALZtONBADrb_yCPqCAUfw1ei9sYxw_-MopPko3dcfas2mqsVZg@mail.gmail.com>
+	 <20140507103512.5b3f7928@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2014 09:19 PM, Doug Anderson wrote:
-> John,
->
-> On Tue, May 6, 2014 at 5:25 PM, John Stultz <john.stultz@linaro.org> wrote:
->> On 05/06/2014 05:12 PM, David Riley wrote:
->>> This change adds a module and a script that makes use of it to
->>> validate that udelay delays for at least as long as requested
->>> (as compared to ktime).
->> Interesting.
->>
->> So fundamentally, udelay is a good bit fuzzier accuracy wise then
->> ktime_get(), as it may be backed by relatively coarsely calibrated delay
->> loops, or very rough tsc freq estimates.
->>
->> ktime_get on the other hand is as fine grained as we can be, and is ntp
->> corrected, so that a second can really be a second.
->>
->> So your comparing the fast and loose interface so we can delay a bit
->> before hitting some hardware again with a fairly precise interface.
->> Thus  I'd not be surprised if your test failed on various hardware. I'd
->> really only trust udelay to be roughly accurate, so you might want to
->> consider adding some degree of acceptable error to the test.
-> My understanding is that udelay should be >= the true delay.
-> Specifically it tends to be used when talking to hardware.  We used it
-> to ensure a minimum delay between SPI transactions when talking to a
-> slow embedded controller.  I think the regulator code uses udelay() to
-> wait for voltage to ramp up, for instance.  Waiting too long isn't
-> terrible, but too short is bad.
->
-> That being said, I think if udelay was within 1% we're probably OK.  I
-> believe I have seen systems where udelay is marginally shorter than it
-> ought to be and it didn't upset me too much.
+On Wed, 2014-05-07 at 10:35 -0400, Steven Rostedt wrote:
+> On Wed, 7 May 2014 10:21:28 -0400 Dan Streetman <ddstreet@ieee.org> wrote:
 
-Yea,  udelay() should clearly delay for greater then or equal to the
-time requested. The worry I have is that we're measuring that time with
-two different clocks, so the larger the delay the more likely the time
-error between those two clocks will be apparent (particularly with one
-being very coarsely calibrated and the other being ntp corrected).
+> > It would be even better if the note could clarify that sometimes it is
+> > ok to use printk(KERN_DEBUG
+> 
+> Exactly. I think it's rather stupid to have to do a #define DEBUG to
+> have pr_debug() print in general.
+> 
+> I see no reason to have pr_debug() be anything different than the other
+> pr_*() functions.
 
-But these sorts of differences should be well within 0.1%.  So for most
-reasonable delays this should be mostly hidden by the measuring overhead
-and not likely a problem with your test. I just wanted to be sure we
-weren't in a situation where folks were expecting udelay to be ntp
-corrected ;)
+pr_debug is meant to be disabled and have _no_ runtime
+effect unless DEBUG is #defined.
 
+For embedded systems where printk is enabled, pr_debug
+does have some utility for code/text reduction and it
+can have a minor impact on performance.
 
+tracing is frequently a better option for development
+and is often a better runtime tool.
 
->
->> Really, I'm curious about the backstory that made you generate the test?
->> I assume something bit you where udelay was way off? Or were you using
->> udelay for some sort of accuracy sensitive use?
-> Several times we've seen cases where udelay() was pretty broken with
-> cpufreq if you were actually implementing udelay() with
-> loops_per_jiffy.  I believe it may also be broken upstream on
-> multicore systems, though now that ARM arch timers are there maybe we
-> don't care as much?
->
-> Specifically, there is a lot of confusion between the global loops per
-> jiffy and the per CPU one.  On ARM I think we always use the global
-> one and we attempt to scale it as cpufreq changes.  ...but...
->
-> * cores tend scale together and there's a single global.  That means
-> you might have started the delay loop at one freq and ended it at
-> another (if another CPU changes the freq).
+CONFIG_DYNAMIC_DEBUG is not enabled by default in most
+defconfigs.
 
-Good point. The loops based delay would clearly be broken w/ ASMP unless
-we use per-cpu values that are scaled(and as you point out, we don't
-scale the value mid-delay). Time based counters for udelay() - like the
-arch timer you mention - are a much better way to work around this.
+The _only_ reason it's possible is because dynamic debug
+is runtime patched to be fairly cost free for relatively
+larger memory/higher performance systems.
 
+> The plist code is a perfect scenario where printk(KERN_DEBUG...) is
+> appropriate, and using pr_debug() with a hard coded #define DEBUG is
+> just stupid.
 
-> * I believe there's some strange issues in terms of how the loops per
-> jiffy variable is initialized and how the "original CPU freq" is.  I
-> know we ran into issues on big.LITTLE where the LITTLE cores came up
-> and clobbered the loops_per_jiffy variable but it was still doing math
-> based on the big cores.
-
-Hrm. I don't have a theory on this right now, but clearly there are
-issues to be resolved, so having your tests included would be a good
-thing to help find these issues.
-
-So no objections from me. Thanks for the extra context!
-
-thanks
--john
-
+yup.
 
 
