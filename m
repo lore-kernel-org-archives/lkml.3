@@ -1,163 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730AbaEGWFr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 18:05:47 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:41446 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071AbaEGWFj (ORCPT
+	id S1752272AbaEGWHQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 18:07:16 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:21429 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751111AbaEGWHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 18:05:39 -0400
-Date: Wed, 7 May 2014 15:05:31 -0700
-From: josh@joshtriplett.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 27/45] rcutorture: Export RCU grace-period
- kthread wait state to rcutorture
-Message-ID: <20140507220531.GO27924@cloud>
-References: <20140429002455.GA15461@linux.vnet.ibm.com>
- <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1398731133-18925-27-git-send-email-paulmck@linux.vnet.ibm.com>
+	Wed, 7 May 2014 18:07:13 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/KFf47eFjsbERxFoxm5mr1
+Date: Wed, 7 May 2014 15:07:07 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Joel Fernandes <joelf@ti.com>
+Cc: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/26] ARM: OMAP: dmtimer: Add comments on OMAP1 clock
+ framework
+Message-ID: <20140507220706.GD19102@atomide.com>
+References: <1398375849-6017-1-git-send-email-joelf@ti.com>
+ <1398375849-6017-3-git-send-email-joelf@ti.com>
+ <20140507152004.GC9502@atomide.com>
+ <536AAA31.6080905@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398731133-18925-27-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <536AAA31.6080905@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 05:25:15PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+* Joel Fernandes <joelf@ti.com> [140507 14:49]:
+> On 05/07/2014 10:20 AM, Tony Lindgren wrote:
+> > * Joel Fernandes <joelf@ti.com> [140424 14:44]:
+> >> OMAP1 doesn't support clock framework, add a comment where needed
+> >> and correct a FIXME.
+> > 
+> > This is at least a wrong comment, the original comment seems right
+> > to me.
 > 
-> This commit allows rcutorture to print additional state for the
-> RCU grace-period kthreads in cases where RCU seems reluctant to
-> start a new grace period.
+> Can you elaborate a bit more please on the wrongness of the comment?
 > 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> I can change the comment to say "common clock" instead of "clock" if
+> that's the only problem here.
 
-Should something reset gp_state after fqs finishes?
+The original comment is just fine, no need to patch it. We do have
+clock framework support for omap1, it was the first ever Linux
+clock framework that pretty much all other clock frameworks are
+based on. Just drop this patch it's misleading.
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Regards,
 
->  include/linux/rcutiny.h |  4 ++++
->  include/linux/rcutree.h |  1 +
->  kernel/rcu/rcutorture.c |  1 +
->  kernel/rcu/tree.c       | 17 +++++++++++++++++
->  kernel/rcu/tree.h       |  8 +++++++-
->  5 files changed, 30 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-> index 425c659d54e5..d40a6a451330 100644
-> --- a/include/linux/rcutiny.h
-> +++ b/include/linux/rcutiny.h
-> @@ -119,6 +119,10 @@ static inline void rcu_sched_force_quiescent_state(void)
->  {
->  }
->  
-> +static inline void show_rcu_gp_kthreads(void)
-> +{
-> +}
-> +
->  static inline void rcu_cpu_stall_reset(void)
->  {
->  }
-> diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
-> index a59ca05fd4e3..3e2f5d432743 100644
-> --- a/include/linux/rcutree.h
-> +++ b/include/linux/rcutree.h
-> @@ -84,6 +84,7 @@ extern unsigned long rcutorture_vernum;
->  long rcu_batches_completed(void);
->  long rcu_batches_completed_bh(void);
->  long rcu_batches_completed_sched(void);
-> +void show_rcu_gp_kthreads(void);
->  
->  void rcu_force_quiescent_state(void);
->  void rcu_bh_force_quiescent_state(void);
-> diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-> index 50c26a7b6d97..15af04177e7e 100644
-> --- a/kernel/rcu/rcutorture.c
-> +++ b/kernel/rcu/rcutorture.c
-> @@ -1033,6 +1033,7 @@ rcu_torture_printk(char *page)
->  				"??? Writer stall state %d g%lu c%lu f%#x\n",
->  				rcu_torture_writer_state,
->  				gpnum, completed, flags);
-> +		show_rcu_gp_kthreads();
->  		rcutorture_trace_dump();
->  	}
->  	rtcv_snap = rcu_torture_current_version;
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index 032106df7391..3107bd935b2b 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -280,6 +280,21 @@ void rcu_bh_force_quiescent_state(void)
->  EXPORT_SYMBOL_GPL(rcu_bh_force_quiescent_state);
->  
->  /*
-> + * Show the state of the grace-period kthreads.
-> + */
-> +void show_rcu_gp_kthreads(void)
-> +{
-> +	struct rcu_state *rsp;
-> +
-> +	for_each_rcu_flavor(rsp) {
-> +		pr_info("%s: wait state: %d ->state: %#lx\n",
-> +			rsp->name, rsp->gp_state, rsp->gp_kthread->state);
-> +		/* sched_show_task(rsp->gp_kthread); */
-> +	}
-> +}
-> +EXPORT_SYMBOL_GPL(show_rcu_gp_kthreads);
-> +
-> +/*
->   * Record the number of times rcutorture tests have been initiated and
->   * terminated.  This information allows the debugfs tracing stats to be
->   * correlated to the rcutorture messages, even when the rcutorture module
-> @@ -1611,6 +1626,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
->  			trace_rcu_grace_period(rsp->name,
->  					       ACCESS_ONCE(rsp->gpnum),
->  					       TPS("reqwait"));
-> +			rsp->gp_state = RCU_GP_WAIT_GPS;
->  			wait_event_interruptible(rsp->gp_wq,
->  						 ACCESS_ONCE(rsp->gp_flags) &
->  						 RCU_GP_FLAG_INIT);
-> @@ -1638,6 +1654,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
->  			trace_rcu_grace_period(rsp->name,
->  					       ACCESS_ONCE(rsp->gpnum),
->  					       TPS("fqswait"));
-> +			rsp->gp_state = RCU_GP_WAIT_FQS;
->  			ret = wait_event_interruptible_timeout(rsp->gp_wq,
->  					((gf = ACCESS_ONCE(rsp->gp_flags)) &
->  					 RCU_GP_FLAG_FQS) ||
-> diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
-> index 75dc3c39a02a..c2fd1e722879 100644
-> --- a/kernel/rcu/tree.h
-> +++ b/kernel/rcu/tree.h
-> @@ -406,7 +406,8 @@ struct rcu_state {
->  	unsigned long completed;		/* # of last completed gp. */
->  	struct task_struct *gp_kthread;		/* Task for grace periods. */
->  	wait_queue_head_t gp_wq;		/* Where GP task waits. */
-> -	int gp_flags;				/* Commands for GP task. */
-> +	short gp_flags;				/* Commands for GP task. */
-> +	short gp_state;				/* GP kthread sleep state. */
->  
->  	/* End of fields guarded by root rcu_node's lock. */
->  
-> @@ -469,6 +470,11 @@ struct rcu_state {
->  #define RCU_GP_FLAG_INIT 0x1	/* Need grace-period initialization. */
->  #define RCU_GP_FLAG_FQS  0x2	/* Need grace-period quiescent-state forcing. */
->  
-> +/* Values for rcu_state structure's gp_flags field. */
-> +#define RCU_GP_WAIT_INIT 0	/* Initial state. */
-> +#define RCU_GP_WAIT_GPS  1	/* Wait for grace-period start. */
-> +#define RCU_GP_WAIT_FQS  2	/* Wait for force-quiescent-state time. */
-> +
->  extern struct list_head rcu_struct_flavors;
->  
->  /* Sequence through rcu_state structures for each RCU flavor. */
-> -- 
-> 1.8.1.5
-> 
+Tony
