@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933644AbaEGN0i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:26:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45541 "EHLO
+	id S933125AbaEGNOn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:14:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45525 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933063AbaEGNOo (ORCPT
+	with ESMTP id S933063AbaEGNOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:14:44 -0400
+	Wed, 7 May 2014 09:14:40 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Chew, Kean ho" <kean.ho.chew@intel.com>,
-        "Chew, Chiau Ee" <chiau.ee.chew@intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Rebecca Swee Fun Chang <rebecca.swee.fun.chang@intel.com>,
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 40/70] i2c: i801: enable Intel BayTrail SMBUS
-Date: Wed,  7 May 2014 14:12:43 +0100
-Message-Id: <1399468393-10140-41-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 37/70] usb: option: add and update a number of CMOTech devices
+Date: Wed,  7 May 2014 14:12:40 +0100
+Message-Id: <1399468393-10140-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,76 +31,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Chew, Kean ho" <kean.ho.chew@intel.com>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit 1b31e9b76ef8c62291e698dfdb973499986a7f68 upstream.
+commit 34f972d6156fe9eea2ab7bb418c71f9d1d5c8e7b upstream.
 
-Add Device ID of Intel BayTrail SMBus Controller.
+A number of older CMOTech modems are based on Qualcomm
+chips.  The blacklisted interfaces are QMI/wwan.
 
-Signed-off-by: Chew, Kean ho <kean.ho.chew@intel.com>
-Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Cc: Rebecca Swee Fun Chang <rebecca.swee.fun.chang@intel.com>
+Reported-by: Lars Melin <larsm17@gmail.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- Documentation/i2c/busses/i2c-i801 | 1 +
- drivers/i2c/busses/Kconfig        | 1 +
- drivers/i2c/busses/i2c-i801.c     | 3 +++
- 3 files changed, 5 insertions(+)
+ drivers/usb/serial/option.c | 74 ++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 70 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/i2c/busses/i2c-i801 b/Documentation/i2c/busses/i2c-i801
-index 7b0dcdb..babe2ef 100644
---- a/Documentation/i2c/busses/i2c-i801
-+++ b/Documentation/i2c/busses/i2c-i801
-@@ -26,6 +26,7 @@ Supported adapters:
-   * Intel Wellsburg (PCH)
-   * Intel Coleto Creek (PCH)
-   * Intel Wildcat Point-LP (PCH)
-+  * Intel BayTrail (SOC)
-    Datasheets: Publicly available at the Intel website
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 776c86f..f213ee9 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -234,8 +234,31 @@ static void option_instat_callback(struct urb *urb);
+ #define QUALCOMM_VENDOR_ID			0x05C6
  
- On Intel Patsburg and later chipsets, both the normal host SMBus controller
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index 701f989..0f7df9d 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -110,6 +110,7 @@ config I2C_I801
- 	    Wellsburg (PCH)
- 	    Coleto Creek (PCH)
- 	    Wildcat Point-LP (PCH)
-+	    BayTrail (SOC)
+ #define CMOTECH_VENDOR_ID			0x16d8
+-#define CMOTECH_PRODUCT_6008			0x6008
+-#define CMOTECH_PRODUCT_6280			0x6280
++#define CMOTECH_PRODUCT_6001			0x6001
++#define CMOTECH_PRODUCT_CMU_300			0x6002
++#define CMOTECH_PRODUCT_6003			0x6003
++#define CMOTECH_PRODUCT_6004			0x6004
++#define CMOTECH_PRODUCT_6005			0x6005
++#define CMOTECH_PRODUCT_CGU_628A		0x6006
++#define CMOTECH_PRODUCT_CHE_628S		0x6007
++#define CMOTECH_PRODUCT_CMU_301			0x6008
++#define CMOTECH_PRODUCT_CHU_628			0x6280
++#define CMOTECH_PRODUCT_CHU_628S		0x6281
++#define CMOTECH_PRODUCT_CDU_680			0x6803
++#define CMOTECH_PRODUCT_CDU_685A		0x6804
++#define CMOTECH_PRODUCT_CHU_720S		0x7001
++#define CMOTECH_PRODUCT_7002			0x7002
++#define CMOTECH_PRODUCT_CHU_629K		0x7003
++#define CMOTECH_PRODUCT_7004			0x7004
++#define CMOTECH_PRODUCT_7005			0x7005
++#define CMOTECH_PRODUCT_CGU_629			0x7006
++#define CMOTECH_PRODUCT_CHU_629S		0x700a
++#define CMOTECH_PRODUCT_CHU_720I		0x7211
++#define CMOTECH_PRODUCT_7212			0x7212
++#define CMOTECH_PRODUCT_7213			0x7213
++#define CMOTECH_PRODUCT_7251			0x7251
++#define CMOTECH_PRODUCT_7252			0x7252
++#define CMOTECH_PRODUCT_7253			0x7253
  
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-i801.
-diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
-index 25766b7..783fa75 100644
---- a/drivers/i2c/busses/i2c-i801.c
-+++ b/drivers/i2c/busses/i2c-i801.c
-@@ -60,6 +60,7 @@
-   Wellsburg (PCH) MS    0x8d7f     32     hard     yes     yes     yes
-   Coleto Creek (PCH)    0x23b0     32     hard     yes     yes     yes
-   Wildcat Point-LP (PCH)   0x9ca2     32     hard     yes     yes     yes
-+  BayTrail (SOC)        0x0f12     32     hard     yes     yes     yes
- 
-   Features supported by this driver:
-   Software PEC                     no
-@@ -162,6 +163,7 @@
- 				 STATUS_ERROR_FLAGS)
- 
- /* Older devices have their ID defined in <linux/pci_ids.h> */
-+#define PCI_DEVICE_ID_INTEL_BAYTRAIL_SMBUS	0x0f12
- #define PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS	0x1c22
- #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS	0x1d22
- /* Patsburg also has three 'Integrated Device Function' SMBus controllers */
-@@ -823,6 +825,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids) = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WELLSBURG_SMBUS_MS2) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_COLETOCREEK_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WILDCATPOINT_LP_SMBUS) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BAYTRAIL_SMBUS) },
- 	{ 0, }
+ #define TELIT_VENDOR_ID				0x1bc7
+ #define TELIT_PRODUCT_UC864E			0x1003
+@@ -504,6 +527,10 @@ static const struct option_blacklist_info huawei_cdc12_blacklist = {
+ 	.reserved = BIT(1) | BIT(2),
  };
  
++static const struct option_blacklist_info net_intf0_blacklist = {
++	.reserved = BIT(0),
++};
++
+ static const struct option_blacklist_info net_intf1_blacklist = {
+ 	.reserved = BIT(1),
+ };
+@@ -1037,8 +1064,47 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
+-	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6280) }, /* BP3-USB & BP3-EXT HSDPA */
+-	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6008) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6001) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CMU_300) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6003),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6004) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6005) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CGU_628A) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHE_628S),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CMU_301),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_628),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_628S) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CDU_680) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CDU_685A) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_720S),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7002),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_629K),
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7004),
++	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7005) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CGU_629),
++	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_629S),
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_720I),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7212),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7213),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7251),
++	  .driver_info = (kernel_ulong_t)&net_intf1_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7252),
++	  .driver_info = (kernel_ulong_t)&net_intf1_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7253),
++	  .driver_info = (kernel_ulong_t)&net_intf1_blacklist },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864E) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864G) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_DUAL) },
 -- 
 1.9.1
 
