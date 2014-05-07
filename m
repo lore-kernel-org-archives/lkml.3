@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933123AbaEGPhQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:37:16 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39457 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932410AbaEGPhO (ORCPT
+	id S1756635AbaEGPh1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:37:27 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:57540 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbaEGPhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:37:14 -0400
-Date: Wed, 7 May 2014 17:37:13 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Len Brown <len.brown@intel.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Sricharan R <r.sricharan@ti.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, Russ Dill <Russ.Dill@ti.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH v7 2/2] ARM hibernation / suspend-to-disk
-Message-ID: <20140507153713.GA23775@amd.pavel.ucw.cz>
-References: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org>
- <1394016605-24120-3-git-send-email-sebastian.capella@linaro.org>
- <20140416101243.GA6952@n2100.arm.linux.org.uk>
- <CADHgK6vyWU1HCueN=F5D0JxzknV==h-jOG9JmcXeOrH_RGV4JQ@mail.gmail.com>
- <CADHgK6v43=KSpe2FRG374nbHSMOt9hb+xEhO7z20vhEAQsx0tQ@mail.gmail.com>
- <CADHgK6tg=7JpYgc0LBmpQzJS-TjK5v_0FQeKRxuFNTqy=QSQzA@mail.gmail.com>
- <CADHgK6uCQT2iAfL+oQvwN7f65u4musKP-AX-E6j1i2OL6ZMJwA@mail.gmail.com>
+	Wed, 7 May 2014 11:37:22 -0400
+Date: Wed, 7 May 2014 11:37:18 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/10] workqueue: destroy worker directly in the idle
+ timeout handler
+Message-ID: <20140507153718.GA26540@htj.dyndns.org>
+References: <1398571754-12443-1-git-send-email-laijs@cn.fujitsu.com>
+ <1398571754-12443-5-git-send-email-laijs@cn.fujitsu.com>
+ <20140505143613.GD11231@htj.dyndns.org>
+ <5369DC5C.20001@cn.fujitsu.com>
+ <20140507131257.GB16702@htj.dyndns.org>
+ <CACvQF50kdodjDGnaxgQC2sW82rvkFVLtWQDOn90cohNkzG-oZw@mail.gmail.com>
+ <20140507134142.GF16702@htj.dyndns.org>
+ <CACvQF52KPp++-eMx+4sy+NeAGdTMg_L2kM9rBOToXGcVQ4TzAA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CADHgK6uCQT2iAfL+oQvwN7f65u4musKP-AX-E6j1i2OL6ZMJwA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CACvQF52KPp++-eMx+4sy+NeAGdTMg_L2kM9rBOToXGcVQ4TzAA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-04-23 09:39:48, Sebastian Capella wrote:
-> Hi Russell,
+Hello, Lai.
+
+On Wed, May 07, 2014 at 11:30:35PM +0800, Lai Jiangshan wrote:
+> > Hah?  How much extra complexity are we talking about?  It's a single
+> > if, no?
 > 
-> Ran this overnight and no failures on >1000 hibernations.
+>         DECLARE_COMPLETION_ONSTACK(completion);
+> #1
+> 
+>         ...
+> 
+>         while ((worker = first_worker(pool))) {
+>                 destroy_worker(worker);
+>                 pool->detach_completion = &completion;
+> #2
+>         }
+> 
+>         ...
+>         unlock;
+> 
+>         if (pool->detach_completion)
+>                 wait_for_completion();
+> #3
+> 
+> One thing is separated into 3 places and about 5~7lines.
+> I hope a single wait_for_completion() or single wait_event().
 
-Congratulations. Looking forward to hibernate n900 on battery low :-).
+This is negligible amount of complexity contained in a single
+function.
 
-									Pavel
+> get_unbound_pool():
+> fail:
+>     if (pool)
+>         put_unbound_pool(pool);
+> 
+> I think we can change it into:
+> 
+> fail:
+>     if (pool) {
+>         if (pool->id >= 0)
+>             idr_remove(&worker_pool_idr, pool->id);
+>         call_rcu_sched(&pool->rcu, rcu_free_pool);
+>     }
+
+This is destruction logic unnecessarily duplicated in two places,
+which is shittier to maintain when the destruction path changes.
+
+There's more to complexity than simple number of lines.  It sure is a
+minute difference here but I find the obsessions with LOC a bit
+disturbing.  That's just one aspect and involving more lines doesn't
+necessarily mean it's more complex.
+
+Thanks.
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+tejun
