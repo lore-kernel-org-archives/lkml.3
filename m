@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933994AbaEGN2J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:28:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45503 "EHLO
+	id S933977AbaEGN2F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:28:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45505 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933032AbaEGNOc (ORCPT
+	with ESMTP id S933054AbaEGNOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 May 2014 09:14:32 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
@@ -13,9 +13,9 @@ To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
 Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 32/70] usb: qcserial: add Sierra Wireless EM7355
-Date: Wed,  7 May 2014 14:12:35 +0100
-Message-Id: <1399468393-10140-33-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 33/70] usb: qcserial: add Sierra Wireless MC73xx
+Date: Wed,  7 May 2014 14:12:36 +0100
+Message-Id: <1399468393-10140-34-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -33,7 +33,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit a00986f81182a69dee4d2c48e8c19805bdf0f790 upstream.
+commit 70a3615fc07c2330ed7c1e922f3c44f4a67c0762 upstream.
 
 Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -43,19 +43,19 @@ Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
-index 968a402..6622352 100644
+index 6622352..1d1bc9b 100644
 --- a/drivers/usb/serial/qcserial.c
 +++ b/drivers/usb/serial/qcserial.c
-@@ -139,6 +139,9 @@ static const struct usb_device_id id_table[] = {
+@@ -136,6 +136,9 @@ static const struct usb_device_id id_table[] = {
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x68a2, 0)},	/* Sierra Wireless MC7710 Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x68a2, 2)},	/* Sierra Wireless MC7710 NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x68a2, 3)},	/* Sierra Wireless MC7710 Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x68c0, 0)},	/* Sierra Wireless MC73xx Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x68c0, 2)},	/* Sierra Wireless MC73xx NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x68c0, 3)},	/* Sierra Wireless MC73xx Modem */
  	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901c, 0)},	/* Sierra Wireless EM7700 Device Management */
  	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901c, 2)},	/* Sierra Wireless EM7700 NMEA */
  	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901c, 3)},	/* Sierra Wireless EM7700 Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 0)},	/* Sierra Wireless EM7355 Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 2)},	/* Sierra Wireless EM7355 NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 3)},	/* Sierra Wireless EM7355 Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 0)},	/* Netgear AirCard 340U Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 2)},	/* Netgear AirCard 340U NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 3)},	/* Netgear AirCard 340U Modem */
 -- 
 1.9.1
 
