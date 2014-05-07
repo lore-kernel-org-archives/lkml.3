@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933578AbaEGNYi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:24:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45561 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933202AbaEGNOu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933196AbaEGNOu (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 7 May 2014 09:14:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45546 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933123AbaEGNOq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 09:14:46 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
+Cc: Petr Mladek <pmladek@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 44/70] ARM: mvebu: ensure the mdio node has a clock reference on Armada 370/XP
-Date: Wed,  7 May 2014 14:12:47 +0100
-Message-Id: <1399468393-10140-45-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 41/70] ftrace/x86: One more missing sync after fixup of function modification failure
+Date: Wed,  7 May 2014 14:12:44 +0100
+Message-Id: <1399468393-10140-42-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -28,40 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Petr Mladek <pmladek@suse.cz>
 
-commit a6e03dd451c724f785277d8ecca5d1a0b886d892 upstream.
+commit 12729f14d8357fb845d75155228b21e76360272d upstream.
 
-The mvmdio driver accesses some register of the Ethernet unit. It
-therefore takes a reference and enables a clock. However, on Armada
-370/XP, no clock specification was given in the Device Tree, which
-leads the mvmdio driver to fail when being used as a module and loaded
-before the mvneta driver: it tries to access a register from a
-hardware unit that isn't clocked.
+If a failure occurs while modifying ftrace function, it bails out and will
+remove the tracepoints to be back to what the code originally was.
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Link: https://lkml.kernel.org/r/1395790439-21332-2-git-send-email-thomas.petazzoni@free-electrons.com
-Acked-by: Andrew Lunn <andrew@lunn.ch>
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
-[ luis: backported to 3.11: adjusted context ]
+There is missing the final sync run across the CPUs after the fix up is done
+and before the ftrace int3 handler flag is reset.
+
+Here's the description of the problem:
+
+	CPU0				CPU1
+	----				----
+  remove_breakpoint();
+  modifying_ftrace_code = 0;
+
+				[still sees breakpoint]
+				<takes trap>
+				[sees modifying_ftrace_code as zero]
+				[no breakpoint handler]
+				[goto failed case]
+				[trap exception - kernel breakpoint, no
+				 handler]
+				BUG()
+
+Link: http://lkml.kernel.org/r/1393258342-29978-2-git-send-email-pmladek@suse.cz
+
+Fixes: 8a4d0a687a5 "ftrace: Use breakpoint method to update ftrace caller"
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Petr Mladek <pmladek@suse.cz>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/boot/dts/armada-370-xp.dtsi | 1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/ftrace.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
-index f384baf..6516c09 100644
---- a/arch/arm/boot/dts/armada-370-xp.dtsi
-+++ b/arch/arm/boot/dts/armada-370-xp.dtsi
-@@ -101,6 +101,7 @@
- 				#size-cells = <0>;
- 				compatible = "marvell,orion-mdio";
- 				reg = <0x72004 0x4>;
-+				clocks = <&gateclk 4>;
- 			};
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index e625319..1ffc32d 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -659,8 +659,8 @@ ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
+ 		ret = -EPERM;
+ 		goto out;
+ 	}
+-	run_sync();
+  out:
++	run_sync();
+ 	return ret;
  
- 			eth0: ethernet@70000 {
+  fail_update:
 -- 
 1.9.1
 
