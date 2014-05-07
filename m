@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933074AbaEGQmd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:42:33 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45443 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932223AbaEGQmb (ORCPT
+	id S933114AbaEGQmn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:42:43 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:57255 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932223AbaEGQml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:42:31 -0400
-Date: Wed, 7 May 2014 17:41:51 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        "mm-commits@vger.kernel.org" <mm-commits@vger.kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "kay@vrfy.org" <kay@vrfy.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: +
- printk-print-initial-logbuf-contents-before-re-enabling-interrupts.patch
- added to -mm tree
-Message-ID: <20140507174151.3c28f15a@alan.etchedpixels.co.uk>
-In-Reply-To: <20140507095850.GC18456@arm.com>
-References: <53640c8c.5++0zeO0pmfqKMwm%akpm@linux-foundation.org>
-	<20140502224651.GG23636@quack.suse.cz>
-	<20140506120648.GA30234@arm.com>
-	<20140506122958.GG9291@quack.suse.cz>
-	<20140506131234.GD30234@arm.com>
-	<20140506150553.a12959fd71d83eddcb4b325d@linux-foundation.org>
-	<20140507095850.GC18456@arm.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 7 May 2014 12:42:41 -0400
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Wed, 7 May 2014 12:46:24 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf_fuzzer crash on pentium 4
+In-Reply-To: <20140506214630.GB1458@moon>
+Message-ID: <alpine.DEB.2.10.1405071244570.6340@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu> <20140506202307.GA1458@moon> <alpine.DEB.2.10.1405061729350.4849@vincent-weaver-1.umelst.maine.edu> <20140506214630.GB1458@moon>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Possibly, but I fear we'd incur the wrath of Alan after reading that other
-> thread. Having a CONFIG_ option or similar to control the amount of printing
-> we do is very similar to the command-line option Jan proposed in his series.
+On Wed, 7 May 2014, Cyrill Gorcunov wrote:
 
-I've nothing against a configuration option, and having a printk that
-queued most stuff to the serial IRQ handler on overflow and a boot option
-of printk=synchronous for debug work would be awesome in my book. Many end
-production boxes don't give a toss about losing the odd bit of data they
-just need to shift the logs somewhere for filing.
+> On Tue, May 06, 2014 at 05:30:19PM -0400, Vince Weaver wrote:
+> > On Wed, 7 May 2014, Cyrill Gorcunov wrote:
+> > 
+> > > > [   67.872274] BUG: unable to handle kernel NULL pointer dereference at 00000004
+> > > > [   67.876146] IP: [<ffffffff81013df2>] p4_pmu_schedule_events+0xa5/0x331
+> > > 
+> > > This looks like
+> > > 
+> > > p4_pmu_schedule_events:
+> > > 		...
+> > > 		bind = p4_config_get_bind(hwc->config);
+> > > 			returned bind = NULL;
+> > > 		escr_idx = p4_get_escr_idx(bind->escr_msr[thread]); NULL deref
+> > > 
+> > > If i'm right (btw it's possible to use addr2line helper?) 
+> > 
+> > Yes, the address maps to
+> > 
+> > 	escr_idx = p4_get_escr_idx(bind->escr_msr[thread]);
+> 
+> Great, now we knows the reason of the issue, only to figure out
+> why is left ;)
+> 
+> > > then hwc->config
+> > > is corrupted and p4_config_get_bind returned nil simply because proper event
+> > > was not found. And I don't understand how it could happen because before
+> > > configuration gets written into hwc->config it's validated once obtained
+> > > from user-space as a raw event. Weird...
+> > 
+> > I'll try to get some sort of trace out if it to see what event is being 
+> > tried.
+> 
+> Yeah, this would help a lot.
 
-All these "clever" approaches just seem to me to be ever more convoluted
-attempts to fail to deal with the simple reality that if you put more
-down the sewage pipe than fits it has to overflow somewhere.
+sorry for the delay, I like to compile kernels locally and it takes a 
+really long time to build a ftrace-enabled kernel on a pentium 4 it seems.
 
-Our tty drivers have a fifo, our tty drivers have an IRQ driven write
-operation. It seems silly to be adding magic to solve the problem rather
-than just using it (and in turn getting a ton of other consoles for free,
-and being able to take GregKH's current usb console hack out)
+Anyway I threw some printks in, and this is what I get:
 
-Alan
+[  447.572626] VMW: bind=NULL config=6b6b6b6b6b6b6b6b
+
+I have slab poisoning turned on.  Use after free?
+
+Vince
