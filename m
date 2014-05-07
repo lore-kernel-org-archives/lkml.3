@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019AbaEGUG6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 16:06:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56985 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658AbaEGUG5 (ORCPT
+	id S1752081AbaEGUHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 16:07:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:52711 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752169AbaEGUHM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 16:06:57 -0400
-Date: Wed, 7 May 2014 13:06:55 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mike Galbraith <mgalbraith@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] CPU hotplug: Slow down hotplug operations
-Message-Id: <20140507130655.9f7c46de8cb39726079458fb@linux-foundation.org>
-In-Reply-To: <1399492661-891-1-git-send-email-bp@alien8.de>
-References: <1399492661-891-1-git-send-email-bp@alien8.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 7 May 2014 16:07:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1006,1389772800"; 
+   d="scan'208";a="535444372"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Anvin <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>
+Subject: RE: [patch 31/32] ia64: Use irq_init_desc
+Thread-Topic: [patch 31/32] ia64: Use irq_init_desc
+Thread-Index: AQHPagtZpbZ36LbcWUak8DCuam5WLJs1i3xw
+Date: Wed, 7 May 2014 20:06:50 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F327FC5FB@ORSMSX114.amr.corp.intel.com>
+References: <20140507153622.703412101@linutronix.de>
+ <20140507154340.782586778@linutronix.de>
+In-Reply-To: <20140507154340.782586778@linutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  7 May 2014 21:57:41 +0200 Borislav Petkov <bp@alien8.de> wrote:
+> Switch over to the new interface. No functional change.
 
-> We have all those eager tester dudes which scratch up a dirty script to
-> pound on CPU hotplug senselessly and then report bugs they've managed to
-> trigger.
-> 
-> Well, first of all, most, if not all, bugs they trigger are CPU hotplug
-> related anyway. But we know hotplug is full of duct tape and brown
-> paper bags. So we end up clearly wasting too much time dealing with a
-> mechanism we know it is b0rked in the first place.
-> 
-> Oh, and I would understand if that pounding were close to some real
-> usage patterns but I've yet to receive a justification for toggling
-> cores on- and offline senselessly.
-> 
-> In any case, before this gets rewritten properly (I'm being told we
-> might get lucky after all) let's slow down hotplugging on purpose and
-> thus make it uninteresting, as a temporary brown paper bag solution
-> until the real thing gets done.
-> 
-> This way we'll save us a lot of time and efforts in chasing the wrong
-> bugs.
+ia64 parts:
 
-Well, I only yesterday merged Srivatsa's `CPU hotplug, stop-machine:
-plug race-window that leads to "IPI-to-offline-CPU"' bugfix.  That bug
-presumably wouldn't have been fixed if this patch was in place.
+Tested-by: Tony Luck <tony.luck@intel.com>
