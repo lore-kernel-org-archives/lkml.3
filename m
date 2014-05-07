@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872AbaEGPWA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:22:00 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:62527 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242AbaEGPV3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:21:29 -0400
+	id S1756266AbaEGPWp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:22:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13655 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752238AbaEGPWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 11:22:44 -0400
+Date: Wed, 7 May 2014 11:22:19 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCHSET 00/17] perf report: Add -F option for specifying
+ output fields (v4)
+Message-ID: <20140507152219.GN39568@redhat.com>
+References: <87lhuwr2pk.fsf@sejong.aot.lge.com>
+ <20140423125828.GL5328@redhat.com>
+ <1398346899.1681.18.camel@leonhard>
+ <20140424210015.GJ8488@redhat.com>
+ <20140428194642.GQ5328@redhat.com>
+ <878uqpos3k.fsf@sejong.aot.lge.com>
+ <20140429172735.GD32375@redhat.com>
+ <874n1bpuzh.fsf@sejong.aot.lge.com>
+ <20140430133554.GB61249@redhat.com>
+ <87mweunv8p.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-In-Reply-To: <536983D0.8090307@gmail.com>
-References: <536982E3.10303@gmail.com> <536983D0.8090307@gmail.com>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Wed, 7 May 2014 16:21:09 +0100
-X-Google-Sender-Auth: GqUcCWqOTslz4kzVffCXUhzoouY
-Message-ID: <CACxGe6tdOytQT5D0ykptya1gaPeMeeJ0a0K4ZvUE9RmRmGMD0g@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3] devicetree: provide hook to allow setting
- devicetree device name
-To: Frank Rowand <frowand.list@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87mweunv8p.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 7, 2014 at 1:52 AM, Frank Rowand <frowand.list@gmail.com> wrote:
-> From: Frank Rowand <frank.rowand@sonymobile.com>
->
-> Optionally push devicetree device naming into a function called dynamically by
-> of_device_alloc().
->
-> TODO:
->    Change made to of_device_alloc() could also be made to
->    of_amba_device_create()
->
-> Signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
-> ---
->  drivers/of/platform.c |    2 ++
->  include/linux/of.h    |    2 ++
->  3 files changed, 43 insertions(+)
->
-> Index: b/drivers/of/platform.c
-> ===================================================================
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -179,6 +179,8 @@ struct platform_device *of_device_alloc(
->
->         if (bus_id)
->                 dev_set_name(&dev->dev, "%s", bus_id);
-> +       else if (np->parent->of_device_make_bus_id)
-> +               np->parent->of_device_make_bus_id(&dev->dev);
+On Wed, May 07, 2014 at 12:05:58PM +0900, Namhyung Kim wrote:
+> Hi Don,
+> 
+> On Wed, 30 Apr 2014 09:35:55 -0400, Don Zickus wrote:
+> > On Wed, Apr 30, 2014 at 08:38:10AM +0900, Namhyung Kim wrote:
+> >> Hi Don,
+> >> 
+> >> On Tue, 29 Apr 2014 13:27:35 -0400, Don Zickus wrote:
+> >> > On Tue, Apr 29, 2014 at 10:13:35AM +0900, Namhyung Kim wrote:
+> >> >> >        /*
+> >> >> >         * Addresses with no major/minor numbers are assumed to be
+> >> >> >         * anonymous in userspace.  Sort those on pid then address.
+> >> >> >         *
+> >> >> >         * The kernel and non-zero major/minor mapped areas are
+> >> >> >         * assumed to be unity mapped.  Sort those on address.
+> >> >> >         */
+> >> >> >
+> >> >> >        if ((left->cpumode != PERF_RECORD_MISC_KERNEL) &&
+> >> >> >            !l_map->maj && !l_map->min && !l_map->ino &&
+> >> >> >            !l_map->ino_generation) {
+> >> >> >                /* userspace anonymous */
+> >> >> >
+> >> >> >                if (left->thread->pid_ > right->thread->pid_) return -1;
+> >> >> >                if (left->thread->pid_ < right->thread->pid_) return 1;
+> >> >> 
+> >> >> Isn't it necessary to check whether the address is in a same map in case
+> >> >> of anon pages?  I mean the daddr.al_addr is a map-relative offset so it
+> >> >> might have same value for different maps.
+> >> >
+> >> > That's why I sort on pids here.  Because the anon address might have the
+> >> > same value for different maps.  The thought was to group all the pid
+> >> > addresses together to keep things seperated.
+> >> >
+> >> > Do you see a different way to solve the problem?  I am not sure al_addr
+> >> > vs. addr will make much difference here.
+> >> 
+> >> I'm not saying to get rid of the pid check, I'm saying that it might
+> >> need to add another check for maps (i.e. start address) as there might
+> >> be many maps in a single address space.
+> >
+> > Hmm, I guess I would need to see an example.  While I agree there might be
+> > many maps in a single address space (/proc/<pid>/maps demonstrates that),
+> > I understood them to map to a unique location (ie no overlap) unless they
+> > are shared.
+> >
+> > I am willing to believe I missed scenario when sorting, I just can't think
+> > of it (so I wouldn't know how to fix it).  That's why I was looking for an
+> > example to make it more obvious to me.  Sorry for being slow..
+> 
+> I'm also sorry for being late.  Looking at the code, it seems to use
+> identity__map_ip() for anon maps so my concern is bogus.  Please just
+> forget about it and keep going.  Sorry for interrupting your work..
 
-This isn't dangerous in the way the first patch is, but I don't want
-to expose control over the naming scheme outside of the core code. It
-would be too easy to get wrong and mess up other drivers. The problem
-that is being hit is clearly a bug in the core DT code. It should be
-naming devices so that there isn't a conflict. I think Rob's suggested
-patch is the best fix.
+No worries.  Always good to have an extra pair of eyes.
 
-g.
+I am a little stuck about where to go.  I think it might make sense to
+submit this as a standalone patch (despite the possible group limitation
+we are discussing).  Thoughts?
+
+Cheers,
+Don
