@@ -1,75 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512AbaEGWL3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 18:11:29 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46277 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751337AbaEGWL1 (ORCPT
+	id S1752576AbaEGWLt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 18:11:49 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:60120 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111AbaEGWLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 18:11:27 -0400
-Message-ID: <536AAF6A.3020207@ti.com>
-Date: Wed, 7 May 2014 17:10:50 -0500
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Wed, 7 May 2014 18:11:46 -0400
+Date: Wed, 7 May 2014 15:11:39 -0700
+From: josh@joshtriplett.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 32/45] torture: Better summary diagnostics
+ for build failures
+Message-ID: <20140507221139.GP27924@cloud>
+References: <20140429002455.GA15461@linux.vnet.ibm.com>
+ <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1398731133-18925-32-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/26] ARM: OMAP: dmtimer: Add comments on OMAP1 clock
- framework
-References: <1398375849-6017-1-git-send-email-joelf@ti.com> <1398375849-6017-3-git-send-email-joelf@ti.com> <20140507152004.GC9502@atomide.com>
-In-Reply-To: <20140507152004.GC9502@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398731133-18925-32-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2014 10:20 AM, Tony Lindgren wrote:
-> * Joel Fernandes <joelf@ti.com> [140424 14:44]:
->> OMAP1 doesn't support clock framework, add a comment where needed
->> and correct a FIXME.
+On Mon, Apr 28, 2014 at 05:25:20PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> This is at least a wrong comment, the original comment seems right
-> to me.
+> The reaction of kvm-recheck.sh is obscure at best, and easy to miss
+> completely.  This commit therefore prints "BUG: Build failed" in the
+> summary at the end of a run.
 
-Ok, I've no issues dropping this patch.
+This commit also changes a dozen other things about the output that this
+commit message does not document. :)
 
--Joel
-
-
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  .../selftests/rcutorture/bin/kvm-recheck-lock.sh   |  2 +-
+>  .../selftests/rcutorture/bin/kvm-recheck-rcu.sh    |  2 +-
+>  .../selftests/rcutorture/bin/kvm-recheck.sh        | 24 ++++++++++++++++------
+>  .../selftests/rcutorture/bin/kvm-test-1-run.sh     |  1 +
+>  4 files changed, 21 insertions(+), 8 deletions(-)
 > 
-> Tony
+> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-recheck-lock.sh b/tools/testing/selftests/rcutorture/bin/kvm-recheck-lock.sh
+> index 829186e19eb1..7f1ff1a8fc4b 100755
+> --- a/tools/testing/selftests/rcutorture/bin/kvm-recheck-lock.sh
+> +++ b/tools/testing/selftests/rcutorture/bin/kvm-recheck-lock.sh
+> @@ -35,7 +35,7 @@ configfile=`echo $i | sed -e 's/^.*\///'`
+>  ncs=`grep "Writes:  Total:" $i/console.log 2> /dev/null | tail -1 | sed -e 's/^.* Total: //' -e 's/ .*$//'`
+>  if test -z "$ncs"
+>  then
+> -	echo $configfile
+> +	echo "$configfile -------"
+>  else
+>  	title="$configfile ------- $ncs acquisitions/releases"
+>  	dur=`sed -e 's/^.* locktorture.shutdown_secs=//' -e 's/ .*$//' < $i/qemu-cmd 2> /dev/null`
+> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh b/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh
+> index d75b1dc5ae53..307c4b95f325 100755
+> --- a/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh
+> +++ b/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh
+> @@ -35,7 +35,7 @@ configfile=`echo $i | sed -e 's/^.*\///'`
+>  ngps=`grep ver: $i/console.log 2> /dev/null | tail -1 | sed -e 's/^.* ver: //' -e 's/ .*$//'`
+>  if test -z "$ngps"
+>  then
+> -	echo $configfile
+> +	echo "$configfile -------"
+>  else
+>  	title="$configfile ------- $ngps grace periods"
+>  	dur=`sed -e 's/^.* rcutorture.shutdown_secs=//' -e 's/ .*$//' < $i/qemu-cmd 2> /dev/null`
+> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
+> index 26d78b7eaccf..ee1f6cae3d70 100755
+> --- a/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
+> +++ b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
+> @@ -25,6 +25,7 @@
+>  # Authors: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 >  
->> Signed-off-by: Joel Fernandes <joelf@ti.com>
->> ---
->>  arch/arm/plat-omap/dmtimer.c |    4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
->> index ecd3f97..f5a674c 100644
->> --- a/arch/arm/plat-omap/dmtimer.c
->> +++ b/arch/arm/plat-omap/dmtimer.c
->> @@ -142,8 +142,7 @@ static int omap_dm_timer_prepare(struct omap_dm_timer *timer)
->>  	int rc;
->>  
->>  	/*
->> -	 * FIXME: OMAP1 devices do not use the clock framework for dmtimers so
->> -	 * do not call clk_get() for these devices.
->> +	 * Do not call clk_get() for OMAP1 due to no clock framework support.
->>  	 */
->>  	if (!(timer->capability & OMAP_TIMER_NEEDS_RESET)) {
->>  		timer->fclk = clk_get(&timer->pdev->dev, "fck");
->> @@ -461,6 +460,7 @@ int omap_dm_timer_stop(struct omap_dm_timer *timer)
->>  	if (unlikely(!timer))
->>  		return -EINVAL;
->>  
->> +	/* OMAP1 is not converted to clk framework so avoid clk_get_rate here */
->>  	if (!(timer->capability & OMAP_TIMER_NEEDS_RESET))
->>  		rate = clk_get_rate(timer->fclk);
->>  
->> -- 
->> 1.7.9.5
->>
-
+>  PATH=`pwd`/tools/testing/selftests/rcutorture/bin:$PATH; export PATH
+> +. tools/testing/selftests/rcutorture/bin/functions.sh
+>  for rd in "$@"
+>  do
+>  	firsttime=1
+> @@ -39,13 +40,24 @@ do
+>  		fi
+>  		TORTURE_SUITE="`cat $i/../TORTURE_SUITE`"
+>  		kvm-recheck-${TORTURE_SUITE}.sh $i
+> -		configcheck.sh $i/.config $i/ConfigFragment
+> -		parse-build.sh $i/Make.out $configfile
+> -		parse-torture.sh $i/console.log $configfile
+> -		parse-console.sh $i/console.log $configfile
+> -		if test -r $i/Warnings
+> +		if test -f "$i/console.log"
+>  		then
+> -			cat $i/Warnings
+> +			configcheck.sh $i/.config $i/ConfigFragment
+> +			parse-build.sh $i/Make.out $configfile
+> +			parse-torture.sh $i/console.log $configfile
+> +			parse-console.sh $i/console.log $configfile
+> +			if test -r $i/Warnings
+> +			then
+> +				cat $i/Warnings
+> +			fi
+> +		else
+> +			if test -f "$i/qemu-cmd"
+> +			then
+> +				print_bug qemu failed
+> +			else
+> +				print_bug Build failed
+> +			fi
+> +			echo "   $i"
+>  		fi
+>  	done
+>  done
+> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> index 7a95f86cc85a..51c34a91a375 100755
+> --- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> +++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> @@ -106,6 +106,7 @@ then
+>  	fi
+>  else
+>  	cp $builddir/Make*.out $resdir
+> +	cp $builddir/.config $resdir || :
+>  	echo Build failed, not running KVM, see $resdir.
+>  	if test -f $builddir.wait
+>  	then
+> -- 
+> 1.8.1.5
+> 
