@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933047AbaEGN4S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:56:18 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:59297 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932422AbaEGN4Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:56:16 -0400
-Date: Wed, 7 May 2014 15:56:03 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 02/20] usb: ehci-orion: Add the optional PHY support
-Message-ID: <20140507155603.4496b9e0@free-electrons.com>
-In-Reply-To: <20140507132150.GA23936@lunn.ch>
-References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com>
-	<1399335255-589-3-git-send-email-gregory.clement@free-electrons.com>
-	<20140506133341.GE6503@lunn.ch>
-	<20140507114006.466347a0@free-electrons.com>
-	<20140507132150.GA23936@lunn.ch>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S933104AbaEGN6B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:58:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64523 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932243AbaEGN6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 09:58:00 -0400
+Message-ID: <536A3BD7.10804@redhat.com>
+Date: Wed, 07 May 2014 15:57:43 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Nadav Amit <namit@cs.technion.ac.il>, mtosatti@redhat.com, hpa@zytor.com
+CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] KVM: x86: Emulator does not calculate address correctly
+References: <1399465972-4026-1-git-send-email-namit@cs.technion.ac.il> <1399465972-4026-2-git-send-email-namit@cs.technion.ac.il>
+In-Reply-To: <1399465972-4026-2-git-send-email-namit@cs.technion.ac.il>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Andrew Lunn,
+Il 07/05/2014 14:32, Nadav Amit ha scritto:
+> In long-mode, when the address size is 4 bytes, the linear address is not
+> truncated as the emulator mistakenly does.  Instead, the offset within the
+> segment (the ea field) should be truncated according to the address size.
+>
+> As Intel SDM says: "In 64-bit mode, the effective address components are added
+> and the effective address is truncated ... before adding the full 64-bit
+> segment base."
+>
+> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+> ---
+>  arch/x86/kvm/emulate.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> index e8a5840..743e8e3 100644
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -631,7 +631,8 @@ static int __linearize(struct x86_emulate_ctxt *ctxt,
+>  	u16 sel;
+>  	unsigned cpl;
+>
+> -	la = seg_base(ctxt, addr.seg) + addr.ea;
+> +	la = seg_base(ctxt, addr.seg) +
+> +	    (ctxt->ad_bytes == 8 ? addr.ea : (u32)addr.ea);
 
-On Wed, 7 May 2014 15:21:50 +0200, Andrew Lunn wrote:
+I think you need "fetch || ctxt->ad_bytes == 8" here.
 
-> > Thanks to devm_phy_optional_get(), the fact of not having a PHY in the
-> > DT is not considered an error. So on any error from
-> > devm_phy_optional_get() (including -EPROBE_DEFER), we simply bail out.
-> > Does this looks good?
-> 
-> Hi Thomas
-> 
-> That looks good.
-> 
-> To avoid the SATA phy problems we had last time, i would like to test
-> this on a few systems. Please could you let me know what branch v4 is
-> in when it is ready.
+Paolo
 
-Sure. It's now up at
-https://github.com/MISL-EBU-System-SW/mainline-public/tree/USB-375-38x-3.15-rc1-V4.
+>  	switch (ctxt->mode) {
+>  	case X86EMUL_MODE_PROT64:
+>  		if (((signed long)la << 16) >> 16 != la)
+> @@ -678,7 +679,7 @@ static int __linearize(struct x86_emulate_ctxt *ctxt,
+>  		}
+>  		break;
+>  	}
+> -	if (fetch ? ctxt->mode != X86EMUL_MODE_PROT64 : ctxt->ad_bytes != 8)
+> +	if (ctxt->mode != X86EMUL_MODE_PROT64)
+>  		la &= (u32)-1;
+>  	if (insn_aligned(ctxt, size) && ((la & (size - 1)) != 0))
+>  		return emulate_gp(ctxt, 0);
+>
 
-Thanks!
-
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
