@@ -1,97 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932971AbaEGOUx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 10:20:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35671 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932935AbaEGOUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 10:20:51 -0400
-Date: Wed, 7 May 2014 16:20:47 +0200
-From: Jan Kara <jack@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, pmladek@suse.cz,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH] printk: Remove separate printk_sched buffers and use
- printk buf instead
-Message-ID: <20140507142047.GC12433@quack.suse.cz>
-References: <20140505191846.35aa6f9b@gandalf.local.home>
- <20140506094557.GA9291@quack.suse.cz>
- <20140506070446.33bde17c@gandalf.local.home>
- <20140506163714.058937e8d6ec17caca406fb7@linux-foundation.org>
- <20140506200519.69cd9112@gandalf.local.home>
+	id S933010AbaEGOVI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 10:21:08 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:54140 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932981AbaEGOVG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 10:21:06 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18nJoBu8aAWFnKsDN+hnuvF6UrSvCK5HbI=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 886BA56E46A
+Date: Wed, 7 May 2014 10:20:56 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: "Kevin's boot bot" <khilman@linaro.org>, Corey Minyard <minyard@acm.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: kernel-build-reports@lists.linaro.org, linaro-kernel@lists.linaro.org,
+        openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+Subject: IPMI misbehaving on ARM defconfigs, was [Re: stable boot: 18 pass,
+ 4 fail (v3.10.39)]
+Message-ID: <20140507142056.GD28159@titan.lakedaemon.net>
+References: <5369063f.4291420a.03aa.495e@mx.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140506200519.69cd9112@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5369063f.4291420a.03aa.495e@mx.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 06-05-14 20:05:19, Steven Rostedt wrote:
-> On Tue, 6 May 2014 16:37:14 -0700
-> Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> 
-> > What I have in -next is very different from this version of the patch. 
-> > What's happening?
-> 
-> Hmm, it looks massaged from what I originally sent in order to be
-> placed after the other patches in the series. A quick review of the
-> patch seems to be mostly the same logic, but it is a bit different.
-> 
-> Jan, did you update my patch?
-  Yes, I was carrying it for quite long and with each rebase and rewrite of
-the patch set it got massaged a bit. So in the end it's probably somewhat
-different from what you originally submitted.
+Cory, all,
 
-> > From: Steven Rostedt <rostedt@goodmis.org>
-> > Subject: printk: remove separate printk_sched buffers and use printk buf instead
-> > 
-> > To prevent deadlocks with doing a printk inside the scheduler,
-> > printk_sched() was created.  The issue is that printk has a console_sem
-> > that it can grab and release.  The release does a wake up if there's a
-> > task pending on the sem, and this wake up grabs the rq locks that is held
-> > in the scheduler.  This leads to a possible deadlock if the wake up uses
-> > the same rq as the one with the rq lock held already.
-> > 
-> > What printk_sched() does is to save the printk write in a per cpu buffer
-> > and sets the PRINTK_PENDING_SCHED flag.  On a timer tick, if this flag is
-> > set, the printk() is done against the buffer.
-> > 
-> > There's a couple of issues with this approach.
-> > 
-> > 1) If two printk_sched()s are called before the tick, the second one
-> >    will overwrite the first one.
-> > 
-> > 2) The temporary buffer is 512 bytes and is per cpu.  This is a quite a
-> >    bit of space wasted for something that is seldom used.
-> > 
-> > In order to remove this, the printk_sched() can use the printk buffer
-> > instead, and delay the console_trylock()/console_unlock() to the queued
-> > work.
-> > 
-> > Because printk_sched() would then be taking the logbuf_lock, the
-> > logbuf_lock must not be held while doing anything that may call into the
-> > scheduler functions, which includes wake ups.  Unfortunately, printk()
-> > also has a console_sem that it uses, and on release, the up(&console_sem)
-> > may do a wake up of any pending waiters.  This must be avoided while
-> > holding the logbuf_lock.
-> > 
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> Jan, if you did massage my patch, you should add here what you did.
-> Usually in [brackets]. Otherwise it puts the blame on me if something
-> breaks, or adds confusion if I happen to send out another patch like I
-> just did.
-  Yeah, sorry for that. I should have been updating the changelog with what
-I did...
+On our ARM boot farm, we've started seeing the following:
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+On Tue, May 06, 2014 at 08:56:47AM -0700, Kevin's boot bot wrote:
+> 
+> Tree/Branch: stable
+> Git describe: v3.10.39
+> Failed boot tests (console logs at the end)
+> ===========================================
+>                    da850-evm:     FAIL:    arm-davinci_all_defconfig
+>   armada-xp-openblocks-ax3-4:     FAIL:    arm-multi_v7_defconfig
+>           armada-370-mirabox:     FAIL:    arm-multi_v7_defconfig
+>         sun4i-a10-cubieboard:     FAIL:    arm-multi_v7_defconfig
+> 
+...
+> arm-multi_v7_defconfig
+> ----------------------
+> 
+> 	armada-xp-openblocks-ax3-4: FAIL: last 80 lines of boot log:
+> 	------------------------------------------------------------
+> 
+> pps_core: LinuxPPS API ver. 1 registered
+> pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+> PTP clock support registered
+> EDAC MC: Ver: 3.0.0
+> Switching to clocksource armada_370_xp_clocksource
+> bounce pool size: 64 pages
+> Block layer SCSI generic (bsg) driver version 0.4 loaded (major 251)
+> io scheduler noop registered
+> io scheduler deadline registered
+> io scheduler cfq registered (default)
+> armada-xp-pinctrl d0018000.pinctrl: registered pinctrl driver
+> ipmi message handler version 39.2
+> IPMI System Interface driver.
+> ipmi_si: Adding default-specified kcs state machine
+> ipmi_si: Trying default-specified kcs state machine at i/o address 0xca2, slave address 0x0, irq 0
+> ipmi_si: Could not set up I/O space
+> Trying to free nonexistent resource <0000000000000ca2-0000000000000ca2>
+> Trying to free nonexistent resource <0000000000000ca3-0000000000000ca3>
+> ipmi_si: Adding default-specified smic state machine
+> ipmi_si: Trying default-specified smic state machine at i/o address 0xca9, slave address 0x0, irq 0
+> ipmi_si: Could not set up I/O space
+> Trying to free nonexistent resource <0000000000000ca9-0000000000000ca9>
+> Trying to free nonexistent resource <0000000000000caa-0000000000000caa>
+> Trying to free nonexistent resource <0000000000000cab-0000000000000cab>
+> ipmi_si: Adding default-specified bt state machine
+> ipmi_si: Trying default-specified bt state machine at i/o address 0xe4, slave address 0x0, irq 0
+> ipmi_si: Could not set up I/O space
+> Trying to free nonexistent resource <00000000000000e4-00000000000000e4>
+> Trying to free nonexistent resource <00000000000000e5-00000000000000e5>
+> Trying to free nonexistent resource <00000000000000e6-00000000000000e6>
+> ipmi_si: Unable to find any System Interface(s)
+> Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+...
+
+It appears to be unrelated to the failure this original message was
+about.  However, the failure brought the above to our attention. :)
+
+Is the IPMI driver used on ARM?  Documentation/IPMI.txt indicates a
+dependency on ACPI, but that isn't reflected in the Kconfig.  At any
+rate, it seems rather unhappy.  :(
+
+thx,
+
+Jason.
