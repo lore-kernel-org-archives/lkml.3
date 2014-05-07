@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334AbaEGGHy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 02:07:54 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42301 "EHLO
+	id S932173AbaEGGHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 02:07:53 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42200 "EHLO
 	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515AbaEGGEj (ORCPT
+	with ESMTP id S1753556AbaEGGEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 02:04:39 -0400
+	Wed, 7 May 2014 02:04:40 -0400
 X-Original-SENDERIP: 10.177.220.145
 X-Original-MAILFROM: iamjoonsoo.kim@lge.com
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
@@ -16,213 +16,67 @@ Cc: Christoph Lameter <cl@linux.com>,
         David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 09/10] slab: remove a useless lockdep annotation
-Date: Wed,  7 May 2014 15:06:19 +0900
-Message-Id: <1399442780-28748-10-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 00/10] clean-up and remove lockdep annotation in SLAB
+Date: Wed,  7 May 2014 15:06:10 +0900
+Message-Id: <1399442780-28748-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1399442780-28748-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1399442780-28748-1-git-send-email-iamjoonsoo.kim@lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, there is no code to hold two lock simultaneously, since
-we don't call slab_destroy() with holding any lock. So, lockdep
-annotation is useless now. Remove it.
+This patchset does some clean-up and tries to remove lockdep annotation.
 
-v2: don't remove BAD_ALIEN_MAGIC in this patch. It will be removed
-    in the following patch.
+Patches 1~3 are just for really really minor improvement.
+Patches 4~10 are for clean-up and removing lockdep annotation.
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+There are two cases that lockdep annotation is needed in SLAB.
+1) holding two node locks
+2) holding two array cache(alien cache) locks
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 3bb5e11..4030a89 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -439,141 +439,6 @@ static struct kmem_cache kmem_cache_boot = {
- 
- #define BAD_ALIEN_MAGIC 0x01020304ul
- 
--#ifdef CONFIG_LOCKDEP
--
--/*
-- * Slab sometimes uses the kmalloc slabs to store the slab headers
-- * for other slabs "off slab".
-- * The locking for this is tricky in that it nests within the locks
-- * of all other slabs in a few places; to deal with this special
-- * locking we put on-slab caches into a separate lock-class.
-- *
-- * We set lock class for alien array caches which are up during init.
-- * The lock annotation will be lost if all cpus of a node goes down and
-- * then comes back up during hotplug
-- */
--static struct lock_class_key on_slab_l3_key;
--static struct lock_class_key on_slab_alc_key;
--
--static struct lock_class_key debugobj_l3_key;
--static struct lock_class_key debugobj_alc_key;
--
--static void slab_set_lock_classes(struct kmem_cache *cachep,
--		struct lock_class_key *l3_key, struct lock_class_key *alc_key,
--		int q)
--{
--	struct alien_cache **alc;
--	struct kmem_cache_node *n;
--	int r;
--
--	n = cachep->node[q];
--	if (!n)
--		return;
--
--	lockdep_set_class(&n->list_lock, l3_key);
--	alc = n->alien;
--	/*
--	 * FIXME: This check for BAD_ALIEN_MAGIC
--	 * should go away when common slab code is taught to
--	 * work even without alien caches.
--	 * Currently, non NUMA code returns BAD_ALIEN_MAGIC
--	 * for alloc_alien_cache,
--	 */
--	if (!alc || (unsigned long)alc == BAD_ALIEN_MAGIC)
--		return;
--	for_each_node(r) {
--		if (alc[r])
--			lockdep_set_class(&(alc[r]->lock), alc_key);
--	}
--}
--
--static void slab_set_debugobj_lock_classes_node(struct kmem_cache *cachep, int node)
--{
--	slab_set_lock_classes(cachep, &debugobj_l3_key, &debugobj_alc_key, node);
--}
--
--static void slab_set_debugobj_lock_classes(struct kmem_cache *cachep)
--{
--	int node;
--
--	for_each_online_node(node)
--		slab_set_debugobj_lock_classes_node(cachep, node);
--}
--
--static void init_node_lock_keys(int q)
--{
--	int i;
--
--	if (slab_state < UP)
--		return;
--
--	for (i = 1; i <= KMALLOC_SHIFT_HIGH; i++) {
--		struct kmem_cache_node *n;
--		struct kmem_cache *cache = kmalloc_caches[i];
--
--		if (!cache)
--			continue;
--
--		n = cache->node[q];
--		if (!n || OFF_SLAB(cache))
--			continue;
--
--		slab_set_lock_classes(cache, &on_slab_l3_key,
--				&on_slab_alc_key, q);
--	}
--}
--
--static void on_slab_lock_classes_node(struct kmem_cache *cachep, int q)
--{
--	if (!cachep->node[q])
--		return;
--
--	slab_set_lock_classes(cachep, &on_slab_l3_key,
--			&on_slab_alc_key, q);
--}
--
--static inline void on_slab_lock_classes(struct kmem_cache *cachep)
--{
--	int node;
--
--	VM_BUG_ON(OFF_SLAB(cachep));
--	for_each_node(node)
--		on_slab_lock_classes_node(cachep, node);
--}
--
--static inline void init_lock_keys(void)
--{
--	int node;
--
--	for_each_node(node)
--		init_node_lock_keys(node);
--}
--#else
--static void init_node_lock_keys(int q)
--{
--}
--
--static inline void init_lock_keys(void)
--{
--}
--
--static inline void on_slab_lock_classes(struct kmem_cache *cachep)
--{
--}
--
--static inline void on_slab_lock_classes_node(struct kmem_cache *cachep, int node)
--{
--}
--
--static void slab_set_debugobj_lock_classes_node(struct kmem_cache *cachep, int node)
--{
--}
--
--static void slab_set_debugobj_lock_classes(struct kmem_cache *cachep)
--{
--}
--#endif
--
- static DEFINE_PER_CPU(struct delayed_work, slab_reap_work);
- 
- static inline struct array_cache *cpu_cache_get(struct kmem_cache *cachep)
-@@ -1293,13 +1158,7 @@ static int cpuup_prepare(long cpu)
- 		spin_unlock_irq(&n->list_lock);
- 		kfree(shared);
- 		free_alien_cache(alien);
--		if (cachep->flags & SLAB_DEBUG_OBJECTS)
--			slab_set_debugobj_lock_classes_node(cachep, node);
--		else if (!OFF_SLAB(cachep) &&
--			 !(cachep->flags & SLAB_DESTROY_BY_RCU))
--			on_slab_lock_classes_node(cachep, node);
- 	}
--	init_node_lock_keys(node);
- 
- 	return 0;
- bad:
-@@ -1608,9 +1467,6 @@ void __init kmem_cache_init_late(void)
- 			BUG();
- 	mutex_unlock(&slab_mutex);
- 
--	/* Annotate slab for lockdep -- annotate the malloc caches */
--	init_lock_keys();
--
- 	/* Done! */
- 	slab_state = FULL;
- 
-@@ -2386,17 +2242,6 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- 		return err;
- 	}
- 
--	if (flags & SLAB_DEBUG_OBJECTS) {
--		/*
--		 * Would deadlock through slab_destroy()->call_rcu()->
--		 * debug_object_activate()->kmem_cache_alloc().
--		 */
--		WARN_ON_ONCE(flags & SLAB_DESTROY_BY_RCU);
--
--		slab_set_debugobj_lock_classes(cachep);
--	} else if (!OFF_SLAB(cachep) && !(flags & SLAB_DESTROY_BY_RCU))
--		on_slab_lock_classes(cachep);
--
- 	return 0;
- }
- 
+I looked at the code and found that we can avoid these cases without
+any negative effect.
+
+1) occurs if freeing object makes new free slab and we decide to
+destroy it. Although we don't need to hold the lock during destroying
+a slab, current code do that. Destroying a slab without holding the lock
+would help the reduction of the lock contention. To do it, I change the
+implementation that new free slab is destroyed after releasing the lock.
+
+2) occurs on similar situation. When we free object from non-local node,
+we put this object to alien cache with holding the alien cache lock.
+If alien cache is full, we try to flush alien cache to proper node cache,
+and, in this time, new free slab could be made. Destroying it would be
+started and we will free metadata object which comes from another node.
+In this case, we need another node's alien cache lock to free object.
+This forces us to hold two array cache locks and then we need lockdep
+annotation although they are always different locks and deadlock cannot
+be possible. To prevent this situation, I use same way as 1).
+
+In this way, we can avoid 1) and 2) cases, and then, can remove lockdep
+annotation. As short stat noted, this makes SLAB code much simpler.
+
+Many of this series get Ack from Christoph Lameter on previous iteration,
+but 1, 2, 9 and 10 need to get Ack. There is no big change from previous
+iteration. It is just rebased on current linux-next.
+
+Thanks.
+
+Joonsoo Kim (10):
+  slab: add unlikely macro to help compiler
+  slab: makes clear_obj_pfmemalloc() just return masked value
+  slab: move up code to get kmem_cache_node in free_block()
+  slab: defer slab_destroy in free_block()
+  slab: factor out initialization of arracy cache
+  slab: introduce alien_cache
+  slab: use the lock on alien_cache, instead of the lock on array_cache
+  slab: destroy a slab without holding any alien cache lock
+  slab: remove a useless lockdep annotation
+  slab: remove BAD_ALIEN_MAGIC
+
+ mm/slab.c |  391 ++++++++++++++++++++++---------------------------------------
+ mm/slab.h |    2 +-
+ 2 files changed, 140 insertions(+), 253 deletions(-)
+
 -- 
 1.7.9.5
 
