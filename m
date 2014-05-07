@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863AbaEGPoB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:44:01 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48521 "EHLO
+	id S1756457AbaEGPtO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:49:14 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48595 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810AbaEGPny (ORCPT
+	with ESMTP id S1756702AbaEGPoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:43:54 -0400
-Message-Id: <20140507154335.452206351@linutronix.de>
+	Wed, 7 May 2014 11:44:00 -0400
+Message-Id: <20140507154337.873477334@linutronix.de>
 User-Agent: quilt/0.60-1
-Date: Wed, 07 May 2014 15:44:08 -0000
+Date: Wed, 07 May 2014 15:44:15 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Anvin <hpa@zytor.com>,
         Tony Luck <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [patch 08/32] x86: htirq: Use irq_alloc/free_irq()
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: [patch 19/32] tile: hvc: Use irq_alloc/free_hwirq
 References: <20140507153622.703412101@linutronix.de>
-Content-Disposition: inline; filename=x86-htirq-use-irq-alloc-hwirq.patch
+Content-Disposition: inline; filename=tile-hvc-use-alloc-free-irq.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -25,58 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional change, just cleaned up a bit.
-
-This does not replace the requirement to move x86 to irq domains, but
-it limits the mess to some degree.
+No functional change. Just convert to the new interface.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: x86@kernel.org
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org
+Cc: Chris Metcalf <cmetcalf@tilera.com>
 ---
- drivers/pci/htirq.c |   13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
+ drivers/tty/hvc/hvc_tile.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Index: tip/drivers/pci/htirq.c
+Index: tip/drivers/tty/hvc/hvc_tile.c
 ===================================================================
---- tip.orig/drivers/pci/htirq.c
-+++ tip/drivers/pci/htirq.c
-@@ -87,12 +87,9 @@ void unmask_ht_irq(struct irq_data *data
- int __ht_create_irq(struct pci_dev *dev, int idx, ht_irq_update_t *update)
- {
- 	struct ht_irq_cfg *cfg;
-+	int max_irq, pos, irq;
- 	unsigned long flags;
- 	u32 data;
--	int max_irq;
--	int pos;
--	int irq;
--	int node;
+--- tip.orig/drivers/tty/hvc/hvc_tile.c
++++ tip/drivers/tty/hvc/hvc_tile.c
+@@ -133,14 +133,14 @@ static int hvc_tile_probe(struct platfor
+ 	int tile_hvc_irq;
  
- 	pos = pci_find_ht_capability(dev, HT_CAPTYPE_IRQ);
- 	if (!pos)
-@@ -120,10 +117,8 @@ int __ht_create_irq(struct pci_dev *dev,
- 	cfg->msg.address_lo = 0xffffffff;
- 	cfg->msg.address_hi = 0xffffffff;
+ 	/* Create our IRQ and register it. */
+-	tile_hvc_irq = create_irq();
+-	if (tile_hvc_irq < 0)
++	tile_hvc_irq = irq_alloc_hwirq(-1);
++	if (!tile_hvc_irq)
+ 		return -ENXIO;
  
--	node = dev_to_node(&dev->dev);
--	irq = create_irq_nr(0, node);
--
--	if (irq <= 0) {
-+	irq = irq_alloc_hwirq(dev_to_node(&dev->dev));
-+	if (!irq) {
- 		kfree(cfg);
- 		return -EBUSY;
+ 	tile_irq_activate(tile_hvc_irq, TILE_IRQ_PERCPU);
+ 	hp = hvc_alloc(0, tile_hvc_irq, &hvc_tile_get_put_ops, 128);
+ 	if (IS_ERR(hp)) {
+-		destroy_irq(tile_hvc_irq);
++		irq_free_hwirq(tile_hvc_irq);
+ 		return PTR_ERR(hp);
  	}
-@@ -166,7 +161,7 @@ void ht_destroy_irq(unsigned int irq)
- 	cfg = irq_get_handler_data(irq);
- 	irq_set_chip(irq, NULL);
- 	irq_set_handler_data(irq, NULL);
--	destroy_irq(irq);
-+	irq_free_hwirq(irq);
+ 	dev_set_drvdata(&pdev->dev, hp);
+@@ -155,7 +155,7 @@ static int hvc_tile_remove(struct platfo
  
- 	kfree(cfg);
+ 	rc = hvc_remove(hp);
+ 	if (rc == 0)
+-		destroy_irq(hp->data);
++		irq_free_hwirq(hp->data);
+ 
+ 	return rc;
  }
 
 
