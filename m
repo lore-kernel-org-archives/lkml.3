@@ -1,119 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170AbaEGTAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 15:00:45 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:43212 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaEGTAn (ORCPT
+	id S1752242AbaEGTBT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 15:01:19 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:57917 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbaEGTBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 15:00:43 -0400
+	Wed, 7 May 2014 15:01:17 -0400
+Date: Wed, 7 May 2014 21:01:11 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Jean Pihet <jean.pihet@linaro.org>
+Subject: Re: [PATCH 2/3] perf tools: Cache dso data file descriptor
+Message-ID: <20140507190111.GA21160@gmail.com>
+References: <1397756352-26694-1-git-send-email-jolsa@redhat.com>
+ <1397756352-26694-3-git-send-email-jolsa@redhat.com>
+ <1398609395.1689.17.camel@leonhard>
+ <20140428100133.GE1109@krava.brq.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOMZO5C4GiLu3sGPxuEDX+cVOvXsk=z9iqLSvZX8HzpncJuJOw@mail.gmail.com>
-References: <CAOk88BLR=nwNGdT++39vLdOt=TwZmemF-trSQPY8AdMN9tKtKQ@mail.gmail.com>
- <CAOMZO5C4GiLu3sGPxuEDX+cVOvXsk=z9iqLSvZX8HzpncJuJOw@mail.gmail.com>
-From: Brian Lilly <brian@crystalfontz.com>
-Date: Wed, 7 May 2014 12:00:02 -0700
-Message-ID: <CAOk88BJm2n2X8=pbREZWYceaDdwT47pppzdkF7mf+7cYA9yAMA@mail.gmail.com>
-Subject: Re: i.MX28 based system losing eth0 on boot
-To: Fabio Estevam <festevam@gmail.com>
-Cc: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Jim Baxter <jim_baxter@mentor.com>, Frank Li <Frank.Li@freescale.com>,
-        Fugang Duan <B38611@freescale.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140428100133.GE1109@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving forward to 3.15.0-rc4 merged with Russell's FEC patches makes it much
-more noisy  (http://pastebin.com/17TyyMPn):
 
-Populating dev cache
-Configuring network interfaces... [   26.268156] fec 800f0000.ethernet
-eth0: MDIO write timeout
-[   26.298087] fec 800f0000.ethernet eth0: MDIO read timeout
-[   26.328074] fec 800f0000.ethernet eth0: MDIO write timeout
-[   26.358077] fec 800f0000.ethernet eth0: MDIO read timeout
-[   26.388070] fec 800f0000.ethernet eth0: MDIO write timeout
-[   26.393631] fec 800f0000.ethernet eth0: could not attach to PHY
-ip: SIOCSIFFLAGS: Connection timed out
-Starting rpcbind daemon...rpcbind: cannot create socket for udp6
-rpcbind: cannot create socket for tcp6
-done.
-net.ipv4.conf.default.rp_filter = 1
-net.ipv4.conf.all.rp_filter = 1
-INIT: Entering runlevel: 5
-Starting Xserver
-Starting system message bus: dbus.
-Starting Connection Manager
-Starting wpa_supplicant
-Successfully initialized wpa_supplicant
-Starting Dropbear SSH server: dropbear.
-starting Busybox UDHCP Server: u[   31.129045] fec 800f0000.ethernet
-eth0: MDIO write timeout
-dhcpd... [   31.158388] fec 800f0000.ethernet eth0: MDIO read timeout
-[   31.188437] fec 800f0000.ethernet eth0: MDIO write timeout
-done.
-[   31.218260] fec 800f0000.ethernet eth0: MDIO read timeout
-[   31.248256] fec 800f0000.ethernet eth0: MDIO write timeout
-[   31.253830] fec 800f0000.ethernet eth0: could not attach to PHY
-Starting syslogd/klogd: done
+* Jiri Olsa <jolsa@redhat.com> wrote:
 
-from dmesg:
+> On Sun, Apr 27, 2014 at 11:36:35PM +0900, Namhyung Kim wrote:
+> > 2014-04-17 (목), 19:39 +0200, Jiri Olsa:
+> > > Keeping the data file description open for the whole life
+> > > of the dso object.
+> > 
+> > I suspect there might be an issue for reporting very large data file
+> > with this approach - like open file limit?
+> 
+> I've got as high as ~200 openned file descriptors for
+> ~2GB data of system wide monitoring
 
-[   26.268156] fec 800f0000.ethernet eth0: MDIO write timeout
-[   26.298087] fec 800f0000.ethernet eth0: MDIO read timeout
-[   26.328074] fec 800f0000.ethernet eth0: MDIO write timeout
-[   26.358077] fec 800f0000.ethernet eth0: MDIO read timeout
-[   26.388070] fec 800f0000.ethernet eth0: MDIO write timeout
-[   26.393631] fec 800f0000.ethernet eth0: could not attach to PHY
-[   31.129045] fec 800f0000.ethernet eth0: MDIO write timeout
-[   31.158388] fec 800f0000.ethernet eth0: MDIO read timeout
-[   31.188437] fec 800f0000.ethernet eth0: MDIO write timeout
-[   31.218260] fec 800f0000.ethernet eth0: MDIO read timeout
-[   31.248256] fec 800f0000.ethernet eth0: MDIO write timeout
-[   31.253830] fec 800f0000.ethernet eth0: could not attach to PHY
+Note that 200 open file descriptors in themselves are not a 
+scalability problem on Linux, as long as perf doesn't walk them 
+linearly anywhere.
 
-I can go back and cull the timeout bits in 3.12 or 3.14 and report
-back if you think that it'd be helpful ...
+I think we are reasonably fast even with a million open files in a 
+singe process, or so.
 
-Please let me know if you have any questions.
+Thanks,
 
-Thank you.
-
-Brian Lilly
-Crystalfontz America, Incorporated
-12412 East Saltese Road
-Spokane Valley, WA 99216
-brian@crystalfontz.com http://www.crystalfontz.com
-Twitter: @Crystalfontz
-US toll-free (888) 206-9720 voice (509) 892-1200
-
-
-On Tue, May 6, 2014 at 8:17 PM, Fabio Estevam <festevam@gmail.com> wrote:
-> Brian,
->
-> On Tue, May 6, 2014 at 1:44 PM, Brian Lilly <brian@crystalfontz.com> wrote:
->> Uwe:
->>
->> With commit a264b981f2c76e281ef27e7232774bf6c54ec865 we're having eth0
->> come up, then brought right back down with an MDIO rx timeout moments
->> after.  Adding back in the removed code keeps the interface alive and
->> it's working afterward without trouble.  I've tested the re-inserted
->> code in 3.12, 3.14 without issue on our boards.
->>
->> Is there something else that can be done to prevent the MDIO timeouts?
->> We are using basically the same schematic for networking as the
->> imx28evk.
->>
->> Any thoughts on how to resolve this?
->
-> Could you try the latest Russell's FEC patches available at?
->  http://ftp.arm.linux.org.uk/cgit/linux-arm.git/log/?h=fec-testing
->
-> In particular this one could help with your "MDIO timeout" issue:
-> http://ftp.arm.linux.org.uk/cgit/linux-arm.git/commit/?h=fec-testing&id=ec1fac3de70b16c69d3edc9f223e91d56b1915de
+	Ingo
