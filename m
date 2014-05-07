@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933705AbaEGPsQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:48:16 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48626 "EHLO
+	id S933741AbaEGPsd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:48:33 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48619 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756870AbaEGPoD (ORCPT
+	with ESMTP id S1756867AbaEGPoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:44:03 -0400
-Message-Id: <20140507154338.967285614@linutronix.de>
+	Wed, 7 May 2014 11:44:02 -0400
+Message-Id: <20140507154338.700598389@linutronix.de>
 User-Agent: quilt/0.60-1
-Date: Wed, 07 May 2014 15:44:18 -0000
+Date: Wed, 07 May 2014 15:44:17 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Anvin <hpa@zytor.com>,
-        Tony Luck <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 23/32] x86, irq: Remove pointless irq_reserve_irqs() call
+        Tony Luck <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: [patch 22/32] genirq: Make create/destroy_irq() ia64 private
 References: <20140507153622.703412101@linutronix.de>
 Content-Disposition: inline;
- filename=x86-remove-pointless-reserve-irq-call.patch
+ filename=irq-make-create-destroy-irq-ia64-private.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -25,27 +26,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That's a leftover from the time where x86 supported SPARSE_IRQ=n.
+No more users outside of itanic. Confine it.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: x86@kernel.org
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/kernel/apic/io_apic.c |    3 ---
- 1 file changed, 3 deletions(-)
+ arch/ia64/include/asm/irq.h |    3 +++
+ include/linux/irq.h         |    4 ----
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-Index: tip/arch/x86/kernel/apic/io_apic.c
+Index: tip/arch/ia64/include/asm/irq.h
 ===================================================================
---- tip.orig/arch/x86/kernel/apic/io_apic.c
-+++ tip/arch/x86/kernel/apic/io_apic.c
-@@ -206,9 +206,6 @@ int __init arch_early_irq_init(void)
- 	count = ARRAY_SIZE(irq_cfgx);
- 	node = cpu_to_node(0);
+--- tip.orig/arch/ia64/include/asm/irq.h
++++ tip/arch/ia64/include/asm/irq.h
+@@ -31,4 +31,7 @@ bool is_affinity_mask_valid(const struct
  
--	/* Make sure the legacy interrupts are marked in the bitmap */
--	irq_reserve_irqs(0, legacy_pic->nr_legacy_irqs);
+ #define is_affinity_mask_valid is_affinity_mask_valid
+ 
++int create_irq(void);
++void destroy_irq(unsigned int irq);
++
+ #endif /* _ASM_IA64_IRQ_H */
+Index: tip/include/linux/irq.h
+===================================================================
+--- tip.orig/include/linux/irq.h
++++ tip/include/linux/irq.h
+@@ -525,10 +525,6 @@ static inline void irq_set_percpu_devid_
+ 			     IRQ_NOPROBE | IRQ_PER_CPU_DEVID);
+ }
+ 
+-/* Handle dynamic irq creation and destruction */
+-extern int create_irq(void);
+-extern void destroy_irq(unsigned int irq);
 -
- 	for (i = 0; i < count; i++) {
- 		irq_set_chip_data(i, &cfg[i]);
- 		zalloc_cpumask_var_node(&cfg[i].domain, GFP_KERNEL, node);
+ /*
+  * Dynamic irq helper functions. Obsolete. Use irq_alloc_desc* and
+  * irq_free_desc instead.
 
 
