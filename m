@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933312AbaEGPou (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:44:50 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48708 "EHLO
+	id S1756976AbaEGPpK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:45:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48702 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756950AbaEGPoI (ORCPT
+	with ESMTP id S1756813AbaEGPoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:44:08 -0400
-Message-Id: <20140507154340.782586778@linutronix.de>
+	Wed, 7 May 2014 11:44:07 -0400
+Message-Id: <20140507154340.574437049@linutronix.de>
 User-Agent: quilt/0.60-1
 Date: Wed, 07 May 2014 15:44:22 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Anvin <hpa@zytor.com>,
-        Tony Luck <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: [patch 31/32] ia64: Use irq_init_desc
+        Tony Luck <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: [patch 30/32] genirq: Replace dynamic_irq_init/cleanup
 References: <20140507153622.703412101@linutronix.de>
-Content-Disposition: inline; filename=ia64-use-irq-init-desc.patch
+Content-Disposition: inline; filename=genirq-replace-dynamic-irq-crap.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -25,71 +24,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch over to the new interface. No functional change.
+Create a new interface and confine it with a config switch which makes
+clear that this is just legacy support and not to be used for new code.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/ia64/Kconfig           |    1 +
- arch/ia64/kernel/iosapic.c  |    2 +-
- arch/ia64/kernel/irq_ia64.c |    7 +++----
- 3 files changed, 5 insertions(+), 5 deletions(-)
+ include/linux/irq.h  |    4 ++++
+ kernel/irq/Kconfig   |    4 ++++
+ kernel/irq/irqdesc.c |    7 +++++++
+ 3 files changed, 15 insertions(+)
 
-Index: tip/arch/ia64/Kconfig
+Index: tip/include/linux/irq.h
 ===================================================================
---- tip.orig/arch/ia64/Kconfig
-+++ tip/arch/ia64/Kconfig
-@@ -32,6 +32,7 @@ config IA64
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_PENDING_IRQ if SMP
- 	select GENERIC_IRQ_SHOW
-+	select GENERIC_IRQ_LEGACY
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select GENERIC_IOMAP
-Index: tip/arch/ia64/kernel/iosapic.c
-===================================================================
---- tip.orig/arch/ia64/kernel/iosapic.c
-+++ tip/arch/ia64/kernel/iosapic.c
-@@ -735,7 +735,7 @@ iosapic_register_intr (unsigned int gsi,
- 		rte = find_rte(irq, gsi);
- 		if(iosapic_intr_info[irq].count == 0) {
- 			assign_irq_vector(irq);
--			dynamic_irq_init(irq);
-+			irq_init_desc(irq);
- 		} else if (rte->refcnt != NO_REF_RTE) {
- 			rte->refcnt++;
- 			goto unlock_iosapic_lock;
-Index: tip/arch/ia64/kernel/irq_ia64.c
-===================================================================
---- tip.orig/arch/ia64/kernel/irq_ia64.c
-+++ tip/arch/ia64/kernel/irq_ia64.c
-@@ -382,8 +382,7 @@ void destroy_and_reserve_irq(unsigned in
- {
- 	unsigned long flags;
+--- tip.orig/include/linux/irq.h
++++ tip/include/linux/irq.h
+@@ -637,6 +637,10 @@ int arch_setup_hwirq(unsigned int irq, i
+ void arch_teardown_hwirq(unsigned int irq);
+ #endif
  
--	dynamic_irq_cleanup(irq);
--
-+	irq_init_desc(irq);
- 	spin_lock_irqsave(&vector_lock, flags);
- 	__clear_irq_vector(irq);
- 	irq_status[irq] = IRQ_RSVD;
-@@ -416,13 +415,13 @@ int create_irq(void)
-  out:
- 	spin_unlock_irqrestore(&vector_lock, flags);
- 	if (irq >= 0)
--		dynamic_irq_init(irq);
-+		irq_init_desc(irq);
- 	return irq;
++#ifdef CONFIG_GENERIC_IRQ_LEGACY
++void irq_init_desc(unsigned int irq);
++#endif
++
+ #ifndef irq_reg_writel
+ # define irq_reg_writel(val, addr)	writel(val, addr)
+ #endif
+Index: tip/kernel/irq/Kconfig
+===================================================================
+--- tip.orig/kernel/irq/Kconfig
++++ tip/kernel/irq/Kconfig
+@@ -5,6 +5,10 @@ menu "IRQ subsystem"
+ config MAY_HAVE_SPARSE_IRQ
+        bool
+ 
++# Legacy support, required for itanic
++config GENERIC_IRQ_LEGACY
++       bool
++
+ # Enable the generic irq autoprobe mechanism
+ config GENERIC_IRQ_PROBE
+ 	bool
+Index: tip/kernel/irq/irqdesc.c
+===================================================================
+--- tip.orig/kernel/irq/irqdesc.c
++++ tip/kernel/irq/irqdesc.c
+@@ -306,6 +306,13 @@ void irq_mark_irq(unsigned int irq)
+ 	mutex_unlock(&sparse_irq_lock);
  }
  
- void destroy_irq(unsigned int irq)
- {
--	dynamic_irq_cleanup(irq);
-+	irq_init_desc(irq);
- 	clear_irq_vector(irq);
- }
++#ifdef CONFIG_GENERIC_IRQ_LEGACY
++void irq_init_desc(unsigned int irq)
++{
++	dynamic_irq_cleanup(irq);
++}
++#endif
++
+ #endif /* !CONFIG_SPARSE_IRQ */
  
+ /**
 
 
