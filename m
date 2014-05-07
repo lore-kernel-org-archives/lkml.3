@@ -1,167 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404AbaEGEqA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 00:46:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40128 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751077AbaEGEp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 00:45:59 -0400
-From: Bandan Das <bsd@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 3/3] KVM: x86: cache userspace address for faster fetches
-References: <1399336859-7227-1-git-send-email-bsd@redhat.com>
-	<1399336859-7227-4-git-send-email-bsd@redhat.com>
-	<5368AE21.8080208@redhat.com>
-Date: Wed, 07 May 2014 00:45:55 -0400
-In-Reply-To: <5368AE21.8080208@redhat.com> (Paolo Bonzini's message of "Tue,
-	06 May 2014 11:40:49 +0200")
-Message-ID: <jpg7g5yi4cc.fsf@nelium.bos.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1754045AbaEGEqr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 00:46:47 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:46782 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753844AbaEGEqp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 00:46:45 -0400
+Date: Wed, 7 May 2014 10:16:38 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] Input: Introduce the use of the managed version of kzalloc
+Message-ID: <20140507044638.GA3447@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo Bonzini <pbonzini@redhat.com> writes:
+This patch moves data allocated using kzalloc to managed data allocated
+using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+functions.
 
-> Il 06/05/2014 02:40, Bandan Das ha scritto:
->> On every instruction fetch, kvm_read_guest_virt_helper
->> does the gva to gpa translation followed by searching for the
->> memslot. Store the gva hva mapping so that if there's a match
->> we can directly call __copy_from_user()
->>
->> Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
->> Signed-off-by: Bandan Das <bsd@redhat.com>
->> ---
->>  arch/x86/include/asm/kvm_emulate.h |  7 ++++++-
->>  arch/x86/kvm/x86.c                 | 33 +++++++++++++++++++++++----------
->>  2 files changed, 29 insertions(+), 11 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
->> index 085d688..20ccde4 100644
->> --- a/arch/x86/include/asm/kvm_emulate.h
->> +++ b/arch/x86/include/asm/kvm_emulate.h
->> @@ -323,10 +323,11 @@ struct x86_emulate_ctxt {
->>  	int (*execute)(struct x86_emulate_ctxt *ctxt);
->>  	int (*check_perm)(struct x86_emulate_ctxt *ctxt);
->>  	/*
->> -	 * The following five fields are cleared together,
->> +	 * The following six fields are cleared together,
->>  	 * the rest are initialized unconditionally in x86_decode_insn
->>  	 * or elsewhere
->>  	 */
->> +	bool addr_cache_valid;
->
-> You can just set gfn to -1 to invalidate the fetch.
->
->>  	u8 rex_prefix;
->>  	u8 lock_prefix;
->>  	u8 rep_prefix;
->> @@ -348,6 +349,10 @@ struct x86_emulate_ctxt {
->>  	struct fetch_cache fetch;
->>  	struct read_cache io_read;
->>  	struct read_cache mem_read;
->> +	struct {
->> +		gfn_t gfn;
->> +		unsigned long uaddr;
->> +	} addr_cache;
->
-> This is not used by emulate.c, so it should be directly in struct
-> kvm_vcpu.  You could invalidate it in init_emulate_ctxt, together with
-> emulate_regs_need_sync_from_vcpu.
+The following Coccinelle semantic patch was used for making the change:
 
-Ok.
+@platform@
+identifier p, probefn, removefn;
+@@
+struct platform_driver p = {
+  .probe = probefn,
+  .remove = removefn,
+};
 
-> In the big picture, however, what we really want is to persist the
-> cache across multiple instructions, and also cache the linearization
-> of the address (where you add RIP and CS.base).  This would be a
-> bigger source of improvement.  If you do that, the cache has to be
-> indeed in x86_emulate_ctxt, but on the other hand the implementation
-> needs to be in emulate.c.
->
->>  };
->>
->>  /* Repeat String Operation Prefix */
->> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->> index cf69e3b..7afcfc7 100644
->> --- a/arch/x86/kvm/x86.c
->> +++ b/arch/x86/kvm/x86.c
->> @@ -4072,26 +4072,38 @@ static int kvm_read_guest_virt_helper(gva_t addr, void *val, unsigned int bytes,
->>  		unsigned toread = min(bytes, (unsigned)PAGE_SIZE - offset);
->>  		int ret;
->>  		unsigned long uaddr;
->> +		gfn_t gfn = addr >> PAGE_SHIFT;
->>
->> -		ret = ctxt->ops->memory_prepare(ctxt, addr, toread,
->> -						exception, false,
->> -						NULL, &uaddr);
->> -		if (ret != X86EMUL_CONTINUE)
->> -			return ret;
->> +		if (ctxt->addr_cache_valid &&
->> +		    (ctxt->addr_cache.gfn == gfn))
->> +			uaddr = (ctxt->addr_cache.uaddr << PAGE_SHIFT) +
->> +				offset_in_page(addr);
->> +		else {
->> +			ret = ctxt->ops->memory_prepare(ctxt, addr, toread,
->> +							exception, false,
->> +							NULL, &uaddr);
->
-> Did you measure the hit rate, and the speedup after every patch?  My
-> reading of the code is that the fetch is done only once per page, with
+@prb@
+identifier platform.probefn, pdev;
+expression e, e1, e2;
+@@
+probefn(struct platform_device *pdev, ...) {
+  <+...
+- e = kzalloc(e1, e2)
++ e = devm_kzalloc(&pdev->dev, e1, e2)
+  ...
+?-kfree(e);
+  ...+>
+}
 
-Yes, I did. IIRC, patch 3 actually improved the speedup compared to 2.
-A rough estimate for jmp - patch 2 reduced it to the low 600s, I guess
-around 610, but I could get a fresh set of numbers.
+@rem depends on prb@
+identifier platform.removefn;
+expression e;
+@@
+removefn(...) {
+  <...
+- kfree(e);
+  ...>
+}
 
-So, not sure where the speed up is coming from, I will try to find out.
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ drivers/input/misc/pcf50633-input.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-> the speedup coming from the microoptimization that patch 2 provides
-> for single-page reads.  Single-page reads are indeed a very common
-> case for the emulator.
->
-> I suggest to start with making patch 2 ready for inclusion.
->
-> Paolo
->
->> +			if (ret != X86EMUL_CONTINUE)
->> +				return ret;
->> +
->> +			if (unlikely(kvm_is_error_hva(uaddr))) {
->> +				r = X86EMUL_PROPAGATE_FAULT;
->> +				return r;
->> +			}
->>
->> -		if (unlikely(kvm_is_error_hva(uaddr))) {
->> -			r = X86EMUL_PROPAGATE_FAULT;
->> -			return r;
->> +			/* Cache gfn and hva */
->> +			ctxt->addr_cache.gfn = addr >> PAGE_SHIFT;
->> +			ctxt->addr_cache.uaddr = uaddr >> PAGE_SHIFT;
->> +			ctxt->addr_cache_valid = true;
->>  		}
->>
->>  		ret = __copy_from_user(data, (void __user *)uaddr, toread);
->>  		if (ret < 0) {
->>  			r = X86EMUL_IO_NEEDED;
->> +			/* Where else should we invalidate cache ? */
->> +			ctxt->ops->memory_finish(ctxt, NULL, uaddr);
->>  			return r;
->>  		}
->>
->> -		ctxt->ops->memory_finish(ctxt, NULL, uaddr);
->> -
->>  		bytes -= toread;
->>  		data += toread;
->>  		addr += toread;
->> @@ -4339,6 +4351,7 @@ static void emulator_memory_finish(struct x86_emulate_ctxt *ctxt,
->>  	struct kvm_memory_slot *memslot;
->>  	gfn_t gfn;
->>
->> +	ctxt->addr_cache_valid = false;
->>  	if (!opaque)
->>  		return;
->>
->>
+diff --git a/drivers/input/misc/pcf50633-input.c b/drivers/input/misc/pcf50633-input.c
+index db92f4f..15ae3ad 100644
+--- a/drivers/input/misc/pcf50633-input.c
++++ b/drivers/input/misc/pcf50633-input.c
+@@ -58,16 +58,13 @@ static int pcf50633_input_probe(struct platform_device *pdev)
+ 	struct input_dev *input_dev;
+ 	int ret;
+ 
+-
+-	input = kzalloc(sizeof(*input), GFP_KERNEL);
++	input = devm_kzalloc(&pdev->dev, sizeof(*input), GFP_KERNEL);
+ 	if (!input)
+ 		return -ENOMEM;
+ 
+ 	input_dev = input_allocate_device();
+-	if (!input_dev) {
+-		kfree(input);
++	if (!input_dev)
+ 		return -ENOMEM;
+-	}
+ 
+ 	platform_set_drvdata(pdev, input);
+ 	input->pcf = dev_to_pcf50633(pdev->dev.parent);
+@@ -81,7 +78,6 @@ static int pcf50633_input_probe(struct platform_device *pdev)
+ 	ret = input_register_device(input_dev);
+ 	if (ret) {
+ 		input_free_device(input_dev);
+-		kfree(input);
+ 		return ret;
+ 	}
+ 	pcf50633_register_irq(input->pcf, PCF50633_IRQ_ONKEYR,
+@@ -100,7 +96,6 @@ static int pcf50633_input_remove(struct platform_device *pdev)
+ 	pcf50633_free_irq(input->pcf, PCF50633_IRQ_ONKEYF);
+ 
+ 	input_unregister_device(input->input_dev);
+-	kfree(input);
+ 
+ 	return 0;
+ }
+-- 
+1.9.1
+
