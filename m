@@ -1,59 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932872AbaEGMyV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 08:54:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33222 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932770AbaEGMyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 08:54:20 -0400
-Date: Wed, 7 May 2014 14:54:19 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] HID
-Message-ID: <alpine.LNX.2.00.1405071451420.3969@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932885AbaEGMzl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 08:55:41 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58521 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751487AbaEGMzj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 08:55:39 -0400
+Date: Wed, 7 May 2014 14:55:36 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v3 17/20] phy: Add support for USB cluster on the Armada
+ 375 SoC
+Message-ID: <20140507145536.29003dfa@free-electrons.com>
+In-Reply-To: <20140506205330.GA27308@arch.cereza>
+References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com>
+	<1399335255-589-18-git-send-email-gregory.clement@free-electrons.com>
+	<20140506205330.GA27308@arch.cereza>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Dear Ezequiel Garcia,
 
-please pull from
+On Tue, 6 May 2014 17:53:30 -0300, Ezequiel Garcia wrote:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
+> > +#define USB2_PHY_CONFIG_ENABLE BIT(0) /* active low */
+> > +
+> 
+> I still think it's more readable to use USB2_PHY_CONFIG_DISABLE.
+> It's just a nitpick, though.
 
-to receive
+Yes, fixed.
 
-- fix a small bug in computation of report size, which might cause some
-  devices (Atmel touchpad found on the Samsung Ativ 9) to reject reports
-  with otherwise valid contents
-- a few device-ID specific quirks/additions piggy-backing on top of it
+> > +static int armada375_usb_phy_probe(struct platform_device *pdev)
+> > +{
+> > +	struct device *dev = &pdev->dev;
+> > +	struct phy *phy;
+> > +	struct device_node *np = dev->of_node;
+> > +	struct phy_provider *phy_provider;
+> > +	void __iomem *usb_cluster_base;
+> > +	struct device_node *xhci_node;
+> > +	int i;
+> > +
+> > +	usb_cluster_base = of_iomap(np, 0);
+> > +	BUG_ON(!usb_cluster_base);
+> > +
+> 
+> Isn't a bit extreme to call BUG_ON (and thus bring down the whole system)
+> in a phy driver?
 
-Thanks.
+Indeed, fixed by a more normal error return.
 
-----------------------------------------------------------------
-Benjamin Tissoires (1):
-      HID: core: fix computation of the report size
+> > +	for (i = 0; i < NB_PHY; i++) {
+> > +		phy = devm_phy_create(dev, &armada375_usb_phy_ops, NULL);
+> > +		if (IS_ERR(phy))
+> > +			dev_err(dev, "failed to create PHY n%d\n", i);
+> > +
+> 
+> I think you're missing a continue/break here.
 
-Hans de Goede (1):
-      HID: add NO_INIT_REPORTS quirk for Synaptics Touch Pad V 103S
+Indeed, fixed, I just do a return from the ->probe() function if
+creating the PHY fails.
 
-Peter F. Patel-Schneider (1):
-      HID: sensor-hub: Add in quirk for sensor hub in Lenovo Ideapad Yogas
+> > +MODULE_DESCRIPTION("Armada 375 USB cluster driver");
+> > +MODULE_AUTHOR("Gregory CLEMENT <gregory.clement@free-electrons.com>");
+> > +MODULE_LICENSE("GPL");
+> 
+> GPL v2 ?
 
-Tomas Sokorai (1):
-      HID: multitouch: add support of EliteGroup 05D8 panels
+Well, using just "GPL" seems to be the more common usage through the
+kernel:
 
- drivers/hid/hid-core.c          | 5 +++--
- drivers/hid/hid-ids.h           | 7 +++++++
- drivers/hid/hid-multitouch.c    | 5 +++++
- drivers/hid/hid-sensor-hub.c    | 3 +++
- drivers/hid/usbhid/hid-quirks.c | 1 +
- 5 files changed, 19 insertions(+), 2 deletions(-)
+linux/drivers $ git grep MODULE_LICENSE | grep "\"GPL\"" | wc -l
+4276
+linux/drivers $ git grep MODULE_LICENSE | grep "\"GPLv2\"" | wc -l
+5
+linux/drivers $ git grep MODULE_LICENSE | grep "\"GPL v2\"" | wc -l
+841
 
+Thomas
 -- 
-Jiri Kosina
-SUSE Labs
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
