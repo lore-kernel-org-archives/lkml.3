@@ -1,37 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637AbaEGTz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 15:55:28 -0400
-Received: from mout.gmx.net ([212.227.15.15]:50470 "EHLO mout.gmx.net"
+	id S1751037AbaEGTzb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 15:55:31 -0400
+Received: from mout.gmx.net ([212.227.17.21]:50901 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752198AbaEGTxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752195AbaEGTxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 May 2014 15:53:20 -0400
-Date: Wed, 7 May 2014 21:36:48 +0200
+Date: Wed, 7 May 2014 21:40:41 +0200
 From: Christian Engelmayer <cengelma@gmx.at>
 To: devel@driverdev.osuosl.org
-Cc: florian.c.schilhabel@googlemail.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
-        andriy.shevchenko@linux.intel.com, Larry.Finger@lwfinger.net
-Subject: [PATCH v2] staging: rtl8712: fix potential leak in
- r871x_wx_set_enc_ext()
-Message-ID: <20140507213648.7928e994@spike>
+Cc: Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
+        gregkh@linuxfoundation.org, linuxgeek@gmail.com,
+        alexandre.f.demers@gmail.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] staging: rtl8712: fix potential leaks in r8712_set_key()
+Message-ID: <20140507214041.7809c595@spike>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:Ii5AF00fNkSIGswxQ5g9xwfkNKXV85nkF7aEkXLsAuvp6My5DR+
- wItmM25jUKUWnzYT39vj4CBgwvHHS4+qXUnqlID+Kbh2uzSDev6hka+u7wpoIeUPa4KJ1AE
- xF77qLQSbMUSYO0yr26Fk525/bS/ehsJdyW2OAhPPLWfIIcwvqMmEpAJNBIO2CiPReTbsCI
- g96rO6KPbLcKGkOIK++zg==
+X-Provags-ID: V03:K0:GSTsmqUoLGon4NoOWpR1T9dWK2k4dmDkRjDF6w1zYwxwhFA9wLX
+ u5Y5/NpOYUhV2ehns140Zo/kNjDjjRaR0dNonjqNBY27rAc9j39f0tT1DnUQRdrpNThsgmy
+ DrQKpxcCxkTq605id5jrJvDnCQFfIIKzcdu8sVnYAK6VGAhRq5T7HncWQfJlL4gNapqEFml
+ 2NNkoMwGfHOeuQKXimDSg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a potential leak in the error path of r871x_wx_set_enc_ext(). In case the
-requested algorithm is not supported by the driver, the function returns
-without freeing the already allocated 'param' struct. Move the input
-verification to the beginning of the function so that the direct return is
-safe. Detected by Coverity - CID 144373.
+Fix potential leaks in the error paths of r8712_set_key(). In case the
+algorithm specific checks fail, the function returns without enqueuing
+or freeing the already allocated command and parameter structs. Use a
+centralized exit path and make sure that all memory is freed correctly.
+Detected by Coverity - CID 144370, 144371.
 
 Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 ---
@@ -44,43 +43,80 @@ v2: Resend after v1 failed to apply
 Compile tested and applies against branch staging-next of tree
 git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
 ---
- drivers/staging/rtl8712/rtl871x_ioctl_linux.c | 16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ drivers/staging/rtl8712/rtl871x_mlme.c | 28 ++++++++++++++++++++--------
+ 1 file changed, 20 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-index 23d539d..1eca992 100644
---- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-+++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-@@ -1801,13 +1801,6 @@ static int r871x_wx_set_enc_ext(struct net_device *dev,
- 	u32 param_len;
- 	int ret = 0;
+diff --git a/drivers/staging/rtl8712/rtl871x_mlme.c b/drivers/staging/rtl8712/rtl871x_mlme.c
+index 3ea99ae..23fd8c1 100644
+--- a/drivers/staging/rtl8712/rtl871x_mlme.c
++++ b/drivers/staging/rtl8712/rtl871x_mlme.c
+@@ -1243,14 +1243,15 @@ sint r8712_set_key(struct _adapter *adapter,
+ 	struct cmd_obj *pcmd;
+ 	struct setkey_parm *psetkeyparm;
+ 	u8 keylen;
++	sint ret = _SUCCESS;
  
--	param_len = sizeof(struct ieee_param) + pext->key_len;
--	param = (struct ieee_param *)_malloc(param_len);
--	if (param == NULL)
--		return -ENOMEM;
--	memset(param, 0, param_len);
--	param->cmd = IEEE_CMD_SET_ENCRYPTION;
--	memset(param->sta_addr, 0xff, ETH_ALEN);
- 	switch (pext->alg) {
- 	case IW_ENCODE_ALG_NONE:
- 		alg_name = "none";
-@@ -1824,6 +1817,15 @@ static int r871x_wx_set_enc_ext(struct net_device *dev,
- 	default:
- 		return -EINVAL;
+ 	pcmd = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+ 	if (pcmd == NULL)
+ 		return _FAIL;
+ 	psetkeyparm = (struct setkey_parm *)_malloc(sizeof(struct setkey_parm));
+ 	if (psetkeyparm == NULL) {
+-		kfree((unsigned char *)pcmd);
+-		return _FAIL;
++		ret = _FAIL;
++		goto err_free_cmd;
  	}
+ 	memset(psetkeyparm, 0, sizeof(struct setkey_parm));
+ 	if (psecuritypriv->AuthAlgrthm == 2) { /* 802.1X */
+@@ -1274,23 +1275,28 @@ sint r8712_set_key(struct _adapter *adapter,
+ 			psecuritypriv->DefKey[keyid].skey, keylen);
+ 		break;
+ 	case _TKIP_:
+-		if (keyid < 1 || keyid > 2)
+-			return _FAIL;
++		if (keyid < 1 || keyid > 2) {
++			ret = _FAIL;
++			goto err_free_parm;
++		}
+ 		keylen = 16;
+ 		memcpy(psetkeyparm->key,
+ 			&psecuritypriv->XGrpKey[keyid - 1], keylen);
+ 		psetkeyparm->grpkey = 1;
+ 		break;
+ 	case _AES_:
+-		if (keyid < 1 || keyid > 2)
+-			return _FAIL;
++		if (keyid < 1 || keyid > 2) {
++			ret = _FAIL;
++			goto err_free_parm;
++		}
+ 		keylen = 16;
+ 		memcpy(psetkeyparm->key,
+ 			&psecuritypriv->XGrpKey[keyid - 1], keylen);
+ 		psetkeyparm->grpkey = 1;
+ 		break;
+ 	default:
+-		return _FAIL;
++		ret = _FAIL;
++		goto err_free_parm;
+ 	}
+ 	pcmd->cmdcode = _SetKey_CMD_;
+ 	pcmd->parmbuf = (u8 *)psetkeyparm;
+@@ -1299,7 +1305,13 @@ sint r8712_set_key(struct _adapter *adapter,
+ 	pcmd->rspsz = 0;
+ 	_init_listhead(&pcmd->list);
+ 	r8712_enqueue_cmd(pcmdpriv, pcmd);
+-	return _SUCCESS;
++	return ret;
 +
-+	param_len = sizeof(struct ieee_param) + pext->key_len;
-+	param = (struct ieee_param *)_malloc(param_len);
-+	if (param == NULL)
-+		return -ENOMEM;
-+	memset(param, 0, param_len);
-+	param->cmd = IEEE_CMD_SET_ENCRYPTION;
-+	memset(param->sta_addr, 0xff, ETH_ALEN);
-+
- 	strncpy((char *)param->u.crypt.alg, alg_name, IEEE_CRYPT_ALG_NAME_LEN);
- 	if (pext->ext_flags & IW_ENCODE_EXT_GROUP_KEY)
- 		param->u.crypt.set_tx = 0;
++err_free_parm:
++	kfree(psetkeyparm);
++err_free_cmd:
++	kfree(pcmd);
++	return ret;
+ }
+ 
+ /* adjust IEs for r8712_joinbss_cmd in WMM */
 -- 
 1.9.1
 
