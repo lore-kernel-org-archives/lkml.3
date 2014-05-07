@@ -1,135 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997AbaEGBcv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 21:32:51 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:33815 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791AbaEGBct (ORCPT
+	id S1752004AbaEGB5A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 21:57:00 -0400
+Received: from denmail01-v4020.amcc.com ([192.195.68.30]:57810 "EHLO
+	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750810AbaEGB47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 21:32:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <536982E3.10303@gmail.com>
-References: <536982E3.10303@gmail.com>
-Date: Tue, 6 May 2014 20:32:48 -0500
-Message-ID: <CAL_JsqL6+i_ED+s6kODsadszefaZUcA7VHCfZ4k4yj62iXsarQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] devicetree, qcomm PMIC: fix node name conflict
-From: Rob Herring <robherring2@gmail.com>
-To: Frank Rowand <frowand.list@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 6 May 2014 21:56:59 -0400
+X-Greylist: delayed 3765 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 May 2014 21:56:59 EDT
+From: Feng Kan <fkan@apm.com>
+To: tglx@linutronix.de, catalin.marinas@arm.com, marc.zyngier@arm.com,
+        will.deacon@arm.com, linux-kernel@vger.kernel.org, patches@apm.com
+Cc: Feng Kan <fkan@apm.com>, Vinayak Kale <vkale@apm.com>
+Subject: [PATCH V4] gic: preserve gic V2 bypass bits in cpu ctrl register
+Date: Tue,  6 May 2014 17:53:45 -0700
+Message-Id: <1399424025-4199-1-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.7.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 6, 2014 at 7:48 PM, Frank Rowand <frowand.list@gmail.com> wrote:
-> An issue with the path of SPMI nodes under /sys/bus/... was reported in
-> https://lkml.org/lkml/2014/4/23/312.  The symptom is that two different
-> grandchild nodes of the spmi with the same node-name@unit-address will
-> result in attempting to create duplicate links at
-> /sys/bus/platform/devices/unit-address.node-name.  It turns out that the
-> specific example provided might not be an expected configuration for
-> current hardware, but the reported trap remains an issue.
->
-> I have been poking at the problem, trying to figure out how to cleanly
-> fix the issue without breaking devicetree device creation.
->
-> The first patch in the series is the one that may be a very bad idea.  Or
-> it may help show the way forward to deal with what I think is the major
-> underlying problem.  I have not finished investigating the possible negative
-> side effects.  And I am still thinking whether this is a conceptually good
-> approach, or whether it is simply an expediant hack that hides the underlying
-> problem.  But I am throwing this out prematurely because I have mentioned
-> it to several people, and I want to make it visible to everyone involved.
->
-> The underlying architectural problem (in my opinion) is that a lot of devices
-> are created by the device tree infrastructure as platform devices, when they
-> truly should not be platform devices.  They should not be platform devices
-> because they are not physically on a platform bus, they are instead somewhere
-> below some other bus.  The first patch in this series is a hack which
-> results in the devices still being represented by "struct platform_device"
-> objects, but with a link to their parent's "struct bus_type" instead of
-> to &platform_bus_type.
->
-> The second patch does not require the first patch.  The second patch provides
-> a mechanism to allow subsystems to provide a method of naming devices to
-> avoid name collisions.
->
-> The third patch provides an example of a subsystem using the new feature
-> provided by the second patch.
->
+This change is made to preserve the GIC v2 bypass bits in the
+GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
+This code will preserve all bits configured by the bootload regarding
+v2 bypass group bits. In the X-Gene platform (as well others), the
+bypass functionality is not generally used and bypass bits should not
+be changed by the kernel gic code as it could lead to incorrect behavior.
+Tested on X-Gene mustang board.
 
-I think the primary question to ask is there any added benefit to
-having the additional hierarchy of devices. I don't think there is
-much support to have more hierarchy from what I have seen of past
-discussions.
+Signed-off-by: Vinayak Kale <vkale@apm.com>
+Acked-by: Anup Patel <apatel@apm.com>
+Signed-off-by: Feng Kan <fkan@apm.com>
+---
+ V4: Change to use bypass mask, change to use more suitable variable name.
+ V3: Fix code not touch other bits other than bypass bits.
 
-Another approach could be to support having multiple platform bus
-instances. Then drivers can easily create a new instance for each set
-of sub-devices.
+ drivers/irqchip/irq-gic.c |   20 +++++++++++++++++---
+ 1 files changed, 17 insertions(+), 3 deletions(-)
 
-This can be solved in a much less invasive way just in the DT naming
-algorithm. This is slightly different from what I had suggested of
-just dropping the unit address. It keeps the unit address, but adds
-the unique index on untranslate-able addresses. The diff is bigger due
-to refactoring to reduce the indentation levels. It is untested and
-whitespace corrupted:
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 4300b66..50a7bb2 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -97,6 +97,8 @@ struct irq_chip gic_arch_extn = {
+ #define MAX_GIC_NR	1
+ #endif
+ 
++#define GIC_BYPASS_MASK		0x1e0
++
+ static struct gic_chip_data gic_data[MAX_GIC_NR] __read_mostly;
+ 
+ #ifdef CONFIG_GIC_NON_BANKED
+@@ -418,6 +420,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+ 	void __iomem *dist_base = gic_data_dist_base(gic);
+ 	void __iomem *base = gic_data_cpu_base(gic);
+ 	unsigned int cpu_mask, cpu = smp_processor_id();
++	unsigned int bypass;
+ 	int i;
+ 
+ 	/*
+@@ -449,13 +452,20 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+ 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
+ 
+ 	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+-	writel_relaxed(1, base + GIC_CPU_CTRL);
++
++	bypass = readl(base + GIC_CPU_CTRL);
++	bypass &= GIC_BYPASS_MASK;
++	writel_relaxed(bypass | 0x1, base + GIC_CPU_CTRL);
+ }
+ 
+ void gic_cpu_if_down(void)
+ {
+ 	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
+-	writel_relaxed(0, cpu_base + GIC_CPU_CTRL);
++	unsigned int bypass;
++
++	bypass = readl(cpu_base + GIC_CPU_CTRL);
++	bypass &= GIC_BYPASS_MASK;
++	writel_relaxed(bypass, cpu_base + GIC_CPU_CTRL);
+ }
+ 
+ #ifdef CONFIG_CPU_PM
+@@ -566,6 +576,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+ {
+ 	int i;
+ 	u32 *ptr;
++	unsigned int bypass;
+ 	void __iomem *dist_base;
+ 	void __iomem *cpu_base;
+ 
+@@ -590,7 +601,10 @@ static void gic_cpu_restore(unsigned int gic_nr)
+ 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
+ 
+ 	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
+-	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
++
++	bypass = readl(cpu_base + GIC_CPU_CTRL);
++	bypass &= GIC_BYPASS_MASK;
++	writel_relaxed(bypass | 0x1, cpu_base + GIC_CPU_CTRL);
+ }
+ 
+ static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
+-- 
+1.7.6.1
 
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 404d1da..c77dd7a 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -105,23 +105,33 @@ void of_device_make_bus_id(struct device *dev)
-         * For MMIO, get the physical address
-         */
-        reg = of_get_property(node, "reg", NULL);
--       if (reg) {
--               if (of_can_translate_address(node)) {
--                       addr = of_translate_address(node, reg);
--               } else {
--                       addrp = of_get_address(node, 0, NULL, NULL);
--                       if (addrp)
--                               addr = of_read_number(addrp, 1);
--                       else
--                               addr = OF_BAD_ADDR;
--               }
--               if (addr != OF_BAD_ADDR) {
--                       dev_set_name(dev, "%llx.%s",
--                                    (unsigned long long)addr, node->name);
--                       return;
--               }
-+       if (!reg)
-+               goto no_bus_id;
-+
-+       if (of_can_translate_address(node)) {
-+               addr = of_translate_address(node, reg);
-+               if (addr == OF_BAD_ADDR)
-+                       goto no_bus_id;
-+
-+               dev_set_name(dev, "%llx.%s",
-+                            (unsigned long long)addr, node->name);
-+               return;
-        }
-
-+       addrp = of_get_address(node, 0, NULL, NULL);
-+       if (!addrp)
-+               goto no_bus_id;
-+
-+       addr = of_read_number(addrp, 1);
-+       if (addr == OF_BAD_ADDR)
-+               goto no_bus_id;
-+
-+       magic = atomic_add_return(1, &bus_no_reg_magic);
-+       dev_set_name(dev, "%llx.%s.%d", (unsigned long long)addr,
-+                    node->name, magic - 1);
-+       return;
-+
-+no_bus_id:
-        /*
-         * No BusID, use the node name and add a globally incremented
-         * counter (and pray...)
