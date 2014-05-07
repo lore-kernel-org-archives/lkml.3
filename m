@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933496AbaEGNUu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:20:50 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:62181 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933140AbaEGNUr (ORCPT
+	id S933688AbaEGNVR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:21:17 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45019 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933140AbaEGNVP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:20:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKohpon3J7c1waqcN_sqOKw=2ahzF2tk4yT8+e8fndxKobtqiA@mail.gmail.com>
-References: <f13134fea7e7658ae3dab90faca1e6578b8f82e7.1397017662.git.viresh.kumar@linaro.org>
-	<alpine.DEB.2.02.1405071203150.6261@ionos.tec.linutronix.de>
-	<CAKohpon3J7c1waqcN_sqOKw=2ahzF2tk4yT8+e8fndxKobtqiA@mail.gmail.com>
-Date: Wed, 7 May 2014 18:50:47 +0530
-Message-ID: <CAKohpom5w=ZERxjkAyTkJFrGFu7SUMs27jHm=9dSB1dYYk-1Tg@mail.gmail.com>
-Subject: Re: [PATCH V2] clocksource: register cpu notifier to remove timer
- from dying CPU
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Arvind Chauhan <Arvind.Chauhan@arm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>
+	Wed, 7 May 2014 09:21:15 -0400
+Date: Wed, 7 May 2014 14:20:47 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "'Andi Kleen'" <andi@firstfloor.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tom.zanussi@linux.intel.com" <tom.zanussi@linux.intel.com>
+Subject: Re: A reduced Linux network stack for small systems
+Message-ID: <20140507142047.46012957@alan.etchedpixels.co.uk>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F70CFB5@AcuExch.aculab.com>
+References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
+	<063D6719AE5E284EB5DD2968C1650D6D0F70CFB5@AcuExch.aculab.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 May 2014 16:06, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> And if that's the case what do we want should we do with these
-> timers (i.e. ones added with add_timer_on or mod_timer_pinned)
-> when we try to quiesce a cpu using cpuset.quiesce [1]?
+> You may want some size reduction to run in 16MB, but it is not as problematic
+> as running in 2MB.
+> 
+> With that little memory I wouldn't want to run anything that relied on
+> dynamic memory allocation (after startup) - except for fixed size data
+> buffers.
 
-Okay, I thought again and above looked stupid :) .. During isolation
-we can't migrate any pinned timers and so these will stay as is.
-But we shouldn't change the code (which I changed in my initial
-patchset), which migrates away pinned timers as well..
+You mean like µhttpd 8) Been there, done that and Tom in fact sent me the
+patches to port it to Linux from 2.11BSD PDP/11.
 
-Probably just add a pr_warn() there and mention we are migrating
-a pinned timer. That's it.
+You can do a lot in a very small space. Heck you can run a full 2.11BSD
+on a PDP/11 in 1MB, including network stack. You used to be able to build
+a full self hosting Linux 1.x on a 4MB 386.
 
---
-viresh
+If you are using glibc and GNU tools it isn't going to work, but long ago
+tools were written which just did the job they were supposed to do at the
+time and were small and tidy. Programmers were expected to use shell
+scripts to combine them for harder jobs rather than be the one person a
+year who invoked gnu-wibble --format-sideways-while-singing
+--tune=waltzing-matilda
+
+Alan
