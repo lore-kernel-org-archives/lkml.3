@@ -1,127 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139AbaEGD5g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 23:57:36 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56127 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754886AbaEGD5e (ORCPT
+	id S1755335AbaEGD6K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 23:58:10 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:39387 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755243AbaEGD6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 23:57:34 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        kishon@ti.com, hdegoede@redhat.com
-Cc: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 6/7] ARM: sun6i: dt: Add support for the USB controllers
-Date: Tue,  6 May 2014 22:50:22 -0500
-Message-Id: <1399434623-20383-7-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399434623-20383-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1399434623-20383-1-git-send-email-maxime.ripard@free-electrons.com>
+	Tue, 6 May 2014 23:58:07 -0400
+X-Google-Original-Message-ID: <1399435056-32386-1-git-send-email-y>
+X-Google-Original-From: y
+From: navin.patidar@gmail.com
+To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        navin patidar <navin.patidar@gmail.com>
+Subject: [PATCH 00/13]staging: rtl8188eu:  Remove unused functions and variables
+Date: Wed,  7 May 2014 09:27:23 +0530
+Message-Id: <5369af4d.8482440a.284c.1d3c@mx.google.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The A31 has two ECHI/OHCI controllers, and one OHCI-only phy-less controller.
+From: navin patidar <navin.patidar@gmail.com>
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/boot/dts/sun6i-a31.dtsi | 77 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 77 insertions(+)
+Following patches remove unused functions, variables and functions with empty
+definition.
 
-diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
-index 13aa56ed5858..5e9f01af6d99 100644
---- a/arch/arm/boot/dts/sun6i-a31.dtsi
-+++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-@@ -341,6 +341,83 @@
- 			status = "disabled";
- 		};
- 
-+		usbphy: phy@01c19400 {
-+			compatible = "allwinner,sun6i-a31-usb-phy";
-+			reg = <0x01c19400 0x10>,
-+			      <0x01c1a800 0x4>,
-+			      <0x01c1b800 0x4>;
-+			reg-names = "phy_ctrl",
-+				    "pmu1",
-+				    "pmu2";
-+			clocks = <&usb_clk 8>,
-+				 <&usb_clk 9>,
-+				 <&usb_clk 10>;
-+			clock-names = "usb0_phy",
-+				      "usb1_phy",
-+				      "usb2_phy";
-+			resets = <&usb_clk 0>,
-+				 <&usb_clk 1>,
-+				 <&usb_clk 2>;
-+			reset-names = "usb0_reset",
-+				      "usb1_reset",
-+				      "usb2_reset";
-+			status = "disabled";
-+			#phy-cells = <1>;
-+		};
-+
-+		ehci0: usb@01c1a000 {
-+			compatible = "allwinner,sun6i-a31-ehci", "generic-ehci";
-+			reg = <0x01c1a000 0x100>;
-+			interrupts = <0 72 4>;
-+			clocks = <&ahb1_gates 26>;
-+			resets = <&ahb1_rst 26>;
-+			phys = <&usbphy 1>;
-+			phy-names = "usb";
-+			status = "disabled";
-+		};
-+
-+		ohci0: usb@01c1a400 {
-+			compatible = "allwinner,sun6i-a31-ohci", "generic-ohci";
-+			reg = <0x01c1a400 0x100>;
-+			interrupts = <0 73 4>;
-+			clocks = <&ahb1_gates 29>, <&usb_clk 16>;
-+			resets = <&ahb1_rst 29>;
-+			phys = <&usbphy 1>;
-+			phy-names = "usb";
-+			status = "disabled";
-+		};
-+
-+		ehci1: usb@01c1b000 {
-+			compatible = "allwinner,sun6i-a31-ehci", "generic-ehci";
-+			reg = <0x01c1b000 0x100>;
-+			interrupts = <0 74 4>;
-+			clocks = <&ahb1_gates 27>;
-+			resets = <&ahb1_rst 27>;
-+			phys = <&usbphy 2>;
-+			phy-names = "usb";
-+			status = "disabled";
-+		};
-+
-+		ohci1: usb@01c1b400 {
-+			compatible = "allwinner,sun6i-a31-ohci", "generic-ohci";
-+			reg = <0x01c1b400 0x100>;
-+			interrupts = <0 75 4>;
-+			clocks = <&ahb1_gates 30>, <&usb_clk 17>;
-+			resets = <&ahb1_rst 30>;
-+			phys = <&usbphy 2>;
-+			phy-names = "usb";
-+			status = "disabled";
-+		};
-+
-+		ohci2: usb@01c1c000 {
-+			compatible = "allwinner,sun6i-a31-ohci", "generic-ohci";
-+			reg = <0x01c1c400 0x100>;
-+			interrupts = <0 77 4>;
-+			clocks = <&ahb1_gates 31>, <&usb_clk 18>;
-+			resets = <&ahb1_rst 31>;
-+			status = "disabled";
-+		};
-+
- 		pio: pinctrl@01c20800 {
- 			compatible = "allwinner,sun6i-a31-pinctrl";
- 			reg = <0x01c20800 0x400>;
--- 
-1.9.1
+navin patidar (13):
+  staging: rtl8188eu: Remove 'semaphore allrxreturnevt' from struct
+    recv_priv
+  staging: rtl8188eu: Remove unused member variables of struct
+    recv_priv
+  staging: rtl8188eu: Remove 'spinlock_t lock' from struct recv_priv
+  staging: rtl8188eu: Remove struct zero_bulkout_context
+  staging: rtl8188eu: Remove function rtw_os_recv_resource_init()
+  staging: rtl8188eu: Remove function rtw_os_recv_resource_free()
+  staging: rtl8188eu: Remove function rtw_hostapd_mlme_rx()
+  staging: rtl8188eu: Remove function rtw_os_recvbuf_resource_free()
+  staging: rtl8188eu: Remove unused inline function recvframe_push()
+  staging: rtl8188eu: Remove unused inline function get_rx_status()
+  staging: rtl8188eu: Remove 'void  *precvbuf' from struct recv_frame
+  staging: rtl8188eu: Remove 'int frame_tag' from struct recv_frame
+  staging: rtl8188eu: Remove 'u8 fragcnt' from struct recv_frame
+
+ drivers/staging/rtl8188eu/core/rtw_mlme_ext.c    |    2 --
+ drivers/staging/rtl8188eu/core/rtw_recv.c        |    8 -----
+ drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c   |    2 +-
+ drivers/staging/rtl8188eu/hal/usb_ops_linux.c    |    1 -
+ drivers/staging/rtl8188eu/include/recv_osdep.h   |    4 ---
+ drivers/staging/rtl8188eu/include/rtw_recv.h     |   36 ----------------------
+ drivers/staging/rtl8188eu/os_dep/recv_linux.c    |   25 ---------------
+ drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c |    7 -----
+ 8 files changed, 1 insertion(+), 84 deletions(-)
+
+--
+1.7.10.4
 
