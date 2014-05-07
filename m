@@ -1,178 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374AbaEGWCx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 18:02:53 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:57873 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163AbaEGWCw (ORCPT
+	id S1752561AbaEGWC6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 18:02:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57899 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752474AbaEGWCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 18:02:52 -0400
-Date: Wed, 7 May 2014 15:02:46 -0700
-From: josh@joshtriplett.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 24/45] torture: Choose bzImage location
- based on architecture
-Message-ID: <20140507220245.GN27924@cloud>
-References: <20140429002455.GA15461@linux.vnet.ibm.com>
- <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1398731133-18925-24-git-send-email-paulmck@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398731133-18925-24-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 7 May 2014 18:02:53 -0400
+Date: Wed, 7 May 2014 15:02:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: mm: gpf in global_dirty_limits
+Message-Id: <20140507150252.243bb40c69b973f534d29e25@linux-foundation.org>
+In-Reply-To: <536A6670.5070107@oracle.com>
+References: <536A6670.5070107@oracle.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 05:25:12PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Wed, 07 May 2014 12:59:28 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
+
+> Hi all,
 > 
-> Currently, the scripts hard-code arch/x86/boot/bzImage, which does not
-> work well for other architectures.  This commit therefore provides a
-> identify_boot_image function that selects the correct bzImage location
-> relative to the top of the Linux source tree.  This commit also adds a
-> --bootimage argument that allows selecting some other file, for example,
-> "vmlinux".
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel I've stumbled on the following spew:
 > 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> [ 1139.410483] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [ 1139.413202] Dumping ftrace buffer:
+> [ 1139.414152]    (ftrace buffer empty)
+> [ 1139.415069] Modules linked in:
+> [ 1139.415846] CPU: 10 PID: 39777 Comm: kworker/u115:2 Tainted: G        W     3.15.0-rc4-next-20140506-sasha-00021-gc164334-dirty #447
+> [ 1139.418931] Workqueue: writeback bdi_writeback_workfn (flush-7:10)
+> [ 1139.420320] task: ffff880285848000 ti: ffff880282dbc000 task.ti: ffff880282dbc000
+> [ 1139.420320] RIP: global_dirty_limits (include/trace/events/writeback.h:308 mm/page-writeback.c:309)
+> [ 1139.420320] RSP: 0018:ffff880282dbdc28  EFLAGS: 00010282
+> [ 1139.420320] RAX: 6b6b6b6b6b6b6b6b RBX: 0000000000088034 RCX: 0000000000000001
+> [ 1139.420320] RDX: 0000000000110068 RSI: 0000000000088034 RDI: 6b6b6b6b6b6b6b6b
+> [ 1139.420320] RBP: ffff880282dbdc48 R08: 00000000000abad6 R09: ffff880285848cf0
+> [ 1139.420320] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000110068
+> [ 1139.420320] R13: ffff8805bc5932a8 R14: ffff880282dbdc60 R15: 0000000000001cc0
+> [ 1139.420320] FS:  0000000000000000(0000) GS:ffff880292c00000(0000) knlGS:0000000000000000
+> [ 1139.420320] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 1139.420320] CR2: 0000000000000001 CR3: 0000000025e2d000 CR4: 00000000000006a0
+> [ 1139.438692] Stack:
+> [ 1139.438692]  ffff8804e3ed0278 ffff8804e3ed0570 0000000000000000 ffff8804e3ed06c8
+> [ 1139.438692]  ffff880282dbdc78 ffffffffa1342180 0000000000088034 0000000000110068
+> [ 1139.438692]  0000000000000000 ffff8804e3ed0570 ffff880282dbdd38 ffffffffa1346f3a
+> [ 1139.438692] Call Trace:
+> [ 1139.438692] over_bground_thresh (arch/x86/include/asm/atomic64_64.h:21 include/asm-generic/atomic-long.h:31 include/linux/vmstat.h:122 fs/fs-writeback.c:772)
+> [ 1139.438692] bdi_writeback_workfn (fs/fs-writeback.c:934 fs/fs-writeback.c:1014 fs/fs-writeback.c:1043)
+> [ 1139.438692] process_one_work (kernel/workqueue.c:2227 include/linux/jump_label.h:105 include/trace/events/workqueue.h:111 kernel/workqueue.c:2232)
+> [ 1139.438692] ? process_one_work (include/linux/workqueue.h:186 kernel/workqueue.c:611 kernel/workqueue.c:638 kernel/workqueue.c:2220)
+> [ 1139.438692] worker_thread (kernel/workqueue.c:2354)
+> [ 1139.438692] ? rescuer_thread (kernel/workqueue.c:2303)
+> [ 1139.438692] kthread (kernel/kthread.c:210)
+> [ 1139.438692] ? kthread_create_on_node (kernel/kthread.c:176)
+> [ 1139.438692] ret_from_fork (arch/x86/kernel/entry_64.S:553)
+> [ 1139.438692] ? kthread_create_on_node (kernel/kthread.c:176)
+> [ 1139.438692] Code: 25 a0 da 00 00 0f 84 82 00 00 00 66 90 eb 2e 66 0f 1f 44 00 00 49 8b 45 00 0f 1f 40 00 49 8b 7d 08 4c 89 e2 49 83 c5 10 48 89 de <ff> d0 49 8b 45 00 48 85 c0 75 e7 eb c5 0f 1f 44 00 00 eb 53 66
+> [ 1139.438692] RIP global_dirty_limits (include/trace/events/writeback.h:308 mm/page-writeback.c:309)
+> [ 1139.438692]  RSP <ffff880282dbdc28>
 
-Two issues below; with those fixed,
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
->  tools/testing/selftests/rcutorture/bin/functions.sh | 21 +++++++++++++++++++++
->  .../selftests/rcutorture/bin/kvm-test-1-run.sh      | 11 +++++------
->  tools/testing/selftests/rcutorture/bin/kvm.sh       |  8 ++++++++
->  3 files changed, 34 insertions(+), 6 deletions(-)
-> 
-> diff --git a/tools/testing/selftests/rcutorture/bin/functions.sh b/tools/testing/selftests/rcutorture/bin/functions.sh
-> index 6b2adb29b073..efa95867e1cc 100644
-> --- a/tools/testing/selftests/rcutorture/bin/functions.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/functions.sh
-> @@ -76,6 +76,27 @@ configfrag_hotplug_cpu () {
->  	grep -q '^CONFIG_HOTPLUG_CPU=y$' "$1"
->  }
->  
-> +# identify_boot_image qemu-cmd
-> +#
-> +# Returns the relative path to the kernel build image.  This will be
-> +# arch/<arch>/boot/bzImage unless overridden with the TORTURE_BOOT_IMAGE
-> +# environment variable.
-> +identify_boot_image () {
-> +	if test -n "$TORTURE_BOOT_IMAGE"
-> +	then
-> +		echo $TORTURE_BOOT_IMAGE
-> +	else
-> +		case "$1" in
-> +		qemu-system-x86_64|qemu-system-i386)
-> +			echo arch/x86/boot/bzImage
-> +			;;
-> +		qemu-system-ppc64)
-> +			echo arch/powerpc/boot/bzImage
-> +			;;
-
-*)
-    (fail noisily rather than silently)
-
-> +		esac
-> +	fi
-> +}
-> +
->  # identify_qemu builddir
->  #
->  # Returns our best guess as to which qemu command is appropriate for
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-> index 7848227aa4c1..7a95f86cc85a 100755
-> --- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-> @@ -94,9 +94,11 @@ fi
->  # CONFIG_YENTA=n
->  if kvm-build.sh $config_template $builddir $T
->  then
-> +	QEMU="`identify_qemu $builddir/vmlinux`"
-> +	BOOT_IMAGE="`identify_boot_image $QEMU`"
->  	cp $builddir/Make*.out $resdir
->  	cp $builddir/.config $resdir
-> -	cp $builddir/arch/x86/boot/bzImage $resdir
-> +	cp $builddir/$BOOT_IMAGE $resdir
->  	parse-build.sh $resdir/Make.out $title
->  	if test -f $builddir.wait
->  	then
-> @@ -124,9 +126,6 @@ cd $KVM
->  kstarttime=`awk 'BEGIN { print systime() }' < /dev/null`
->  echo ' ---' `date`: Starting kernel
->  
-> -# Determine the appropriate flavor of qemu command.
-> -QEMU="`identify_qemu $builddir/vmlinux`"
-> -
-
-This change seems related but undocumented.
-
->  # Generate -smp qemu argument.
->  qemu_args="-nographic $qemu_args"
->  cpu_count=`configNR_CPUS.sh $config_template`
-> @@ -151,13 +150,13 @@ boot_args="`configfrag_boot_params "$boot_args" "$config_template"`"
->  # Generate kernel-version-specific boot parameters
->  boot_args="`per_version_boot_params "$boot_args" $builddir/.config $seconds`"
->  
-> -echo $QEMU $qemu_args -m 512 -kernel $builddir/arch/x86/boot/bzImage -append \"$qemu_append $boot_args\" > $resdir/qemu-cmd
-> +echo $QEMU $qemu_args -m 512 -kernel $builddir/$BOOT_IMAGE -append \"$qemu_append $boot_args\" > $resdir/qemu-cmd
->  if test -n "$TORTURE_BUILDONLY"
->  then
->  	echo Build-only run specified, boot/test omitted.
->  	exit 0
->  fi
-> -$QEMU $qemu_args -m 512 -kernel $builddir/arch/x86/boot/bzImage -append "$qemu_append $boot_args"; echo $? > $resdir/qemu-retval &
-> +$QEMU $qemu_args -m 512 -kernel $builddir/$BOOT_IMAGE -append "$qemu_append $boot_args"; echo $? > $resdir/qemu-retval &
->  qemu_pid=$!
->  commandcompleted=0
->  echo Monitoring qemu job at pid $qemu_pid
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> index 9b838c372698..4eed2a4f42c7 100644
-> --- a/tools/testing/selftests/rcutorture/bin/kvm.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> @@ -39,6 +39,7 @@ dryrun=""
->  KVM="`pwd`/tools/testing/selftests/rcutorture"; export KVM
->  PATH=${KVM}/bin:$PATH; export PATH
->  TORTURE_DEFCONFIG=defconfig
-> +TORTURE_BOOT_IMAGE=""
->  TORTURE_INITRD="$KVM/initrd"; export TORTURE_INITRD
->  TORTURE_KMAKE_ARG=""
->  TORTURE_SUITE=rcu
-> @@ -53,6 +54,7 @@ kversion=""
->  usage () {
->  	echo "Usage: $scriptname optional arguments:"
->  	echo "       --bootargs kernel-boot-arguments"
-> +	echo "       --bootimage relative-path-to-kernel-boot-image"
->  	echo "       --buildonly"
->  	echo "       --configs \"config-file list\""
->  	echo "       --cpus N"
-> @@ -80,6 +82,11 @@ do
->  		TORTURE_BOOTARGS="$2"
->  		shift
->  		;;
-> +	--bootimage)
-> +		checkarg --bootimage "(relative path to kernel boot image)" "$#" "$2" '[a-zA-Z0-9][a-zA-Z0-9_]*' '^--'
-> +		TORTURE_BOOT_IMAGE="$2"
-> +		shift
-> +		;;
->  	--buildonly)
->  		TORTURE_BUILDONLY=1
->  		;;
-> @@ -245,6 +252,7 @@ CONFIGFRAG="$CONFIGFRAG"; export CONFIGFRAG
->  KVM="$KVM"; export KVM
->  KVPATH="$KVPATH"; export KVPATH
->  PATH="$PATH"; export PATH
-> +TORTURE_BOOT_IMAGE="$TORTURE_BOOT_IMAGE"; export TORTURE_BOOT_IMAGE
->  TORTURE_BUILDONLY="$TORTURE_BUILDONLY"; export TORTURE_BUILDONLY
->  TORTURE_DEFCONFIG="$TORTURE_DEFCONFIG"; export TORTURE_DEFCONFIG
->  TORTURE_INITRD="$TORTURE_INITRD"; export TORTURE_INITRD
-> -- 
-> 1.8.1.5
-> 
+Did this die somewhere within trace_global_dirty_state()?
