@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757020AbaEGP74 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:59:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46941 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756285AbaEGP7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:59:54 -0400
-Message-ID: <536A586B.2060200@redhat.com>
-Date: Wed, 07 May 2014 17:59:39 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S964802AbaEGQA2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:00:28 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:58548 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933033AbaEGQAY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 12:00:24 -0400
+Date: Wed, 7 May 2014 12:00:22 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, roland@redhat.com,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: ptrace: gpf in syscall_trace_enter
+Message-ID: <20140507120022.5704e5d6@gandalf.local.home>
+In-Reply-To: <536A56C3.2070505@oracle.com>
+References: <53698021.5020108@oracle.com>
+	<53699F7C.1040308@oracle.com>
+	<20140507140422.GB17419@redhat.com>
+	<20140507114938.28e300c6@gandalf.local.home>
+	<536A56C3.2070505@oracle.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Nadav Amit <namit@cs.technion.ac.il>, mtosatti@redhat.com, hpa@zytor.com
-CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] KVM: x86: Fix wrong masking on relative jump/call
-References: <1399465972-4026-1-git-send-email-namit@cs.technion.ac.il> <1399465972-4026-6-git-send-email-namit@cs.technion.ac.il>
-In-Reply-To: <1399465972-4026-6-git-send-email-namit@cs.technion.ac.il>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 07/05/2014 14:32, Nadav Amit ha scritto:
-> Relative jumps and calls do the masking according to the operand size, and not
-> according to the address size as the KVM emulator does today.  In 64-bit mode,
-> the resulting RIP is always 64-bit. Otherwise it is masked according to the
-> instruction operand-size. Note that when 16-bit address size is used, bits
-> 63:32 are unmodified.
+On Wed, 07 May 2014 11:52:35 -0400
+Sasha Levin <sasha.levin@oracle.com> wrote:
 
-The SDM says "If the operand-size attribute is 16, the upper two bytes 
-of the EIP register are cleared, resulting in a maximum instruction 
-pointer size of 16 bits".  I'm not sure whether that should also imply 
-that 63:32 are _not_ unmodified (because you do a 32-bit write not a 
-16-bit one), but in any case it looks like masked_increment is not the 
-right function.
 
-Paolo
+> > As the objdump is just of the object files and not the vmlinux, I would
+> > need the offset from syscall_trace_leave of the RIP.
+> 
+>     2803:	41 ff 14 24          	callq  *(%r12)  <=== Here
+>     2807:	49 83 c4 10          	add    $0x10,%r12
+>     280b:	49 83 3c 24 00       	cmpq   $0x0,(%r12)
 
+Yeah, after I sent the email, I figured it out from the 
+
+  24 08 4c 89 ea 48 89 de <41> ff 14 24 49 83 c4 10 49
+
+Thanks,
+
+-- Steve
