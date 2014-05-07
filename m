@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933532AbaEGNWF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:22:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45596 "EHLO
+	id S933795AbaEGNW2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:22:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45588 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933272AbaEGNO7 (ORCPT
+	with ESMTP id S933259AbaEGNO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:14:59 -0400
+	Wed, 7 May 2014 09:14:58 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sergey Dyasly <dserrg@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        hujianyang <hujianyang@huawei.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 50/70] ARM: 7840/1: LPAE: don't reject mapping /dev/mem above 4GB
-Date: Wed,  7 May 2014 14:12:53 +0100
-Message-Id: <1399468393-10140-51-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 48/70] [SCSI] qla2xxx: fix error handling of qla2x00_mem_alloc()
+Date: Wed,  7 May 2014 14:12:51 +0100
+Message-Id: <1399468393-10140-49-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -29,45 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergey Dyasly <dserrg@gmail.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 3159f372354e8e1f5dee714663d705dd2c7e0759 upstream.
+commit b2a72ec32d0f499aaadf41264232517a12326df0 upstream.
 
-With LPAE enabled, physical address space is larger than 4GB. Allow mapping any
-part of it via /dev/mem by using PHYS_MASK to determine valid range.
+qla2x00_mem_alloc() returns 1 on success and -ENOMEM on failure.  On the
+one hand the caller assumes non-zero is success but on the other hand
+the caller also assumes that it returns an error code.
 
-PHYS_MASK covers 40 bits with LPAE enabled and 32 bits otherwise.
+I've fixed it to return zero on success and a negative error code on
+failure.  This matches the documentation as well.
 
-Reported-by: Vassili Karpov <av1474@comtv.ru>
-Signed-off-by: Sergey Dyasly <dserrg@gmail.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: hujianyang <hujianyang@huawei.com>
+[jejb: checkpatch fix]
+Fixes: e315cd28b9ef ('[SCSI] qla2xxx: Code changes for qla data structure refactoring')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mm/mmap.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/scsi/qla2xxx/qla_os.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mm/mmap.c b/arch/arm/mm/mmap.c
-index 304661d..5e85ed3 100644
---- a/arch/arm/mm/mmap.c
-+++ b/arch/arm/mm/mmap.c
-@@ -202,13 +202,11 @@ int valid_phys_addr_range(phys_addr_t addr, size_t size)
- }
+diff --git a/drivers/scsi/qla2xxx/qla_os.c b/drivers/scsi/qla2xxx/qla_os.c
+index 3e21e9f..f441a40 100644
+--- a/drivers/scsi/qla2xxx/qla_os.c
++++ b/drivers/scsi/qla2xxx/qla_os.c
+@@ -2552,7 +2552,7 @@ qla2x00_probe_one(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	    ha->flags.enable_64bit_addressing ? "enable" :
+ 	    "disable");
+ 	ret = qla2x00_mem_alloc(ha, req_length, rsp_length, &req, &rsp);
+-	if (!ret) {
++	if (ret) {
+ 		ql_log_pci(ql_log_fatal, pdev, 0x0031,
+ 		    "Failed to allocate memory for adapter, aborting.\n");
  
- /*
-- * We don't use supersection mappings for mmap() on /dev/mem, which
-- * means that we can't map the memory area above the 4G barrier into
-- * userspace.
-+ * Do not allow /dev/mem mappings beyond the supported physical range.
-  */
- int valid_mmap_phys_addr_range(unsigned long pfn, size_t size)
- {
--	return !(pfn + (size >> PAGE_SHIFT) > 0x00100000);
-+	return (pfn + (size >> PAGE_SHIFT)) <= (1 + (PHYS_MASK >> PAGE_SHIFT));
- }
+@@ -3454,10 +3454,10 @@ qla2x00_mem_alloc(struct qla_hw_data *ha, uint16_t req_len, uint16_t rsp_len,
+ 	else {
+ 		qla2x00_set_reserved_loop_ids(ha);
+ 		ql_dbg_pci(ql_dbg_init, ha->pdev, 0x0123,
+-		    "loop_id_map=%p. \n", ha->loop_id_map);
++		    "loop_id_map=%p.\n", ha->loop_id_map);
+ 	}
  
- #ifdef CONFIG_STRICT_DEVMEM
+-	return 1;
++	return 0;
+ 
+ fail_async_pd:
+ 	dma_pool_free(ha->s_dma_pool, ha->ex_init_cb, ha->ex_init_cb_dma);
 -- 
 1.9.1
 
