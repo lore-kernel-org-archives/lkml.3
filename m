@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270AbaEGQMF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:12:05 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:38112 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135AbaEGQMD (ORCPT
+	id S1755202AbaEGQN5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:13:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39040 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634AbaEGQNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:12:03 -0400
-Message-ID: <536A5B4E.4090206@gmail.com>
-Date: Wed, 07 May 2014 19:11:58 +0300
-From: Nadav Amit <nadav.amit@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 7 May 2014 12:13:55 -0400
+Date: Wed, 7 May 2014 18:13:50 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        khilman@linaro.org, tglx@linutronix.de, axboe@fb.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:timers/nohz] nohz: Move full nohz kick to its own IPI
+Message-ID: <20140507161350.GT30445@twins.programming.kicks-ass.net>
+References: <tip-72aacf0259bb7d53b7a3b5b2f7bf982acaa52b61@git.kernel.org>
+ <20140505123706.GP17778@laptop.programming.kicks-ass.net>
+ <20140505133113.GD1429@laptop.programming.kicks-ass.net>
+ <20140505150356.GB2099@localhost.localdomain>
+ <20140505151228.GR26782@laptop.programming.kicks-ass.net>
+ <20140505153405.GD2099@localhost.localdomain>
+ <20140507151735.GQ30445@twins.programming.kicks-ass.net>
+ <20140507152922.GB16694@localhost.localdomain>
+ <20140507153736.GS30445@twins.programming.kicks-ass.net>
+ <20140507160504.GC16694@localhost.localdomain>
 MIME-Version: 1.0
-To: Bandan Das <bsd@redhat.com>, Nadav Amit <namit@cs.technion.ac.il>
-CC: mtosatti@redhat.com, pbonzini@redhat.com, hpa@zytor.com, gleb@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] KVM: x86: Wrong register masking in 64-bit mode
-References: <1399465972-4026-1-git-send-email-namit@cs.technion.ac.il>	<1399465972-4026-5-git-send-email-namit@cs.technion.ac.il> <jpglhudej88.fsf@nelium.bos.redhat.com>
-In-Reply-To: <jpglhudej88.fsf@nelium.bos.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jtcAeju3WzRmRF+o"
+Content-Disposition: inline
+In-Reply-To: <20140507160504.GC16694@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/7/14, 5:50 PM, Bandan Das wrote:
-> Nadav Amit <namit@cs.technion.ac.il> writes:
->
->> 32-bit operations are zero extended in 64-bit mode. Currently, the code does
->> not handle them correctly and keeps the high bits. In 16-bit mode, the high
->> 32-bits are kept intact.
->>
->> In addition, although it is not well-documented, when address override prefix
->
-> It would be helpful to have a pointer in the SDM especially for cases
-> that are not well-documented.
->
->> is used with REP-string instruction, RCX high half is zeroed even if ECX was
->> zero on the first iteration (as if an assignment was performed to ECX).
->>
->> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
->>
 
-First, as for the different masking/zero-extending behavior in different 
-modes, I guess this behavior is documented in SDM Volume 1, Section 
-3.3.7: "Address Calculations in 64-Bit Mode". It appears (from 
-experiments on bare-metal) that it also regards ESI/EDI/ECX on 
-REP-prefix instructions and I presume it regards ESP on stack operations 
-and ECX on loop operations. I will ensure it soon.
+--jtcAeju3WzRmRF+o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Second, the behavior of zero-extending RCX even if ECX is initially zero 
-was experienced on native environment (Intel SandyBridge), and we found 
-no erratum regarding it. I actually found no documentation that 
-describes this behavior. The term "not well-documented" is probably 
-misleading, and will be clarified on v2.
+On Wed, May 07, 2014 at 06:05:08PM +0200, Frederic Weisbecker wrote:
+> So we can as well zap these commits and replace them with the irq_work_on()
+> conversion (still preparing that).
 
-Thanks,
-Nadav
+I hear you, but I think Ingo doesn't want to rebase the tree because its
+public, but maybe he can make an exception..
 
+--jtcAeju3WzRmRF+o
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTalu+AAoJEHZH4aRLwOS6vKYP/2oeT83EOJNPpi17xUEd+BQt
+k5p3aC0lSBEELDl3/fMMz7wTfh9qi5hCSB6jo13tk512GqN9acNyfAPLo30IBEuM
+M1tCvH6Hf555m8pk/W0fp8mVSNkHth1Suvrg5HHxiaWctSLBJ/92crFi3v4lhKLS
+c4uN0/HNDKifGNLyzdzXX24FEuKCum88j+BZWHZ3Jh1RDk/okvbudj3kDKmlsEFf
+3aH8zTNtcyOj/7qW5D74cZbD7N90doIzJmNZwP6fWcjGtwQQbsXGjNtwWqeIXvXN
+DJhUkDaM9e2kQe2QgjKfh7RZltVcN/v4NixdIeGW09MQel5/jW/ep5Tqesh9W/oz
+1EKMKpaTj6LdtMIZB9LQ/rp3X4YXPCQEQVndTxDpuPs8maipzXkP7/WvNJImb2Am
+uDRDys43sA7XH2NDVkN2hBfUPWgdvEri8qPE8U2ODFpqvSC8sbWAgF6hTGr0OnZV
+G1SgfUsiPToXgN0E1OdCg1Fe6TG/KHkWc1by7vZCpyG5T6PSa/EzGxfJ8E5MyWOH
+hlJmy4g3/+5G7BBhSqp7uVmt66euP8DlGXdFJ/X7UWuhhnB82YmJRM1KMFgJcD9d
+mgaO6EMxEw5m0hCNnPNN5a0Xay93UNXwKjoQ6Gbt3ZyOlifXV6zeNeXy+zZzZbQf
+8fZDrIDB/PwhMDRFa6TB
+=iS+q
+-----END PGP SIGNATURE-----
+
+--jtcAeju3WzRmRF+o--
