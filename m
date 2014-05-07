@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550AbaEGP3U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:29:20 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:62740 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaEGP3T convert rfc822-to-8bit (ORCPT
+	id S932725AbaEGP3c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:29:32 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:53989 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754473AbaEGP33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:29:19 -0400
+	Wed, 7 May 2014 11:29:29 -0400
+Date: Wed, 7 May 2014 17:29:24 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        khilman@linaro.org, tglx@linutronix.de, axboe@fb.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:timers/nohz] nohz: Move full nohz kick to its own IPI
+Message-ID: <20140507152922.GB16694@localhost.localdomain>
+References: <tip-72aacf0259bb7d53b7a3b5b2f7bf982acaa52b61@git.kernel.org>
+ <20140505123706.GP17778@laptop.programming.kicks-ass.net>
+ <20140505133113.GD1429@laptop.programming.kicks-ass.net>
+ <20140505150356.GB2099@localhost.localdomain>
+ <20140505151228.GR26782@laptop.programming.kicks-ass.net>
+ <20140505153405.GD2099@localhost.localdomain>
+ <20140507151735.GQ30445@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <20140507080650.GA28564@pengutronix.de>
-References: <1399439776-18535-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<20140507080650.GA28564@pengutronix.de>
-Date: Wed, 7 May 2014 08:29:17 -0700
-Message-ID: <CAJAp7OiVrz+epys3Ko79GmMr6ahv8ii8XphVHE77NSM+wK2mOA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: zImage: Allow DTB to override broken ATAG_MEM
-From: Bjorn Andersson <bjorn@kryo.se>
-To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140507151735.GQ30445@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 7, 2014 at 1:06 AM, Uwe Kleine-König
-<u.kleine-koenig@pengutronix.de> wrote:
-> On Tue, May 06, 2014 at 10:16:16PM -0700, Bjorn Andersson wrote:
->> Support overriding ATAG_MEM, by specifying non-zero content of the /memory/reg
->> property in the appended DTB. This is needed to work around bootloaders passing
->> broken tags.
-> This feels wrong. I think it's quite usual that the device tree
-> specifies a non-0 /memory/reg property. I checked four more or less
-> random dts files[1], and three of them have this property set with
-> actual values.
+On Wed, May 07, 2014 at 05:17:35PM +0200, Peter Zijlstra wrote:
+> On Mon, May 05, 2014 at 05:34:08PM +0200, Frederic Weisbecker wrote:
+> > On Mon, May 05, 2014 at 05:12:28PM +0200, Peter Zijlstra wrote:
+> > > > Note the current ordering:
+> > > > 
+> > > >     cmpxchg(&qsd->pending, 0, 1)       get ipi
+> > > >     csd_lock(qsd->csd)                 xchg(&qsd->pending, 1)
+> > > >     send ipi                           csd_unlock(qsd->csd)
+> > > > 
+> > > > 
+> > > > So there shouldn't be racing updaters. Also ipi sender shouldn't
+> > > > race with ipi receiver, the update shouldn't always eventually see
+> > > > the unlock happening.
+> > > 
+> > > Yeah, I've not spotted how this particular train wreck happens either.
+> > > 
+> > > The problem is reproduction, it took me 9 hours to confirm I could
+> > > reproduce the problem on my machine. So how long to I run it with this
+> > > patch reverted to show its gone..
+> > 
+> > Maybe it could be favoured cpu hotplug. Anyway converting to irq_work should
+> > fix it.
+> 
+> Ingo needs a commit msg for the revert of this patch; do you think you
+> have time to look into _why_ this patch is broken and write such a
+> thing?
 
-I thought u-boot did something like this, but after checking the code
-it seems that I
-was wrong.
+I can try but I need to reproduce it. Do you have any clue on how to do so?
+Also which HEAD were you guys using?
 
-But if that's not the case then you're right; we have to continue to
-be bug-compatible
-with all those dtbs out there.
-
->
-> So I wouldn't be surprised if this patch results in more damage than
-> it's worth. The optimal fix would be to make the bootloader do the right
-> thing. And if you trust your dtb more than your bootloader, disable
-> ARM_ATAG_DTB_COMPAT.
-
-I unfortunately have a boot loader passing information in ATAG_CMDLINE that I
-need, so I can't disable ARM_ATAG_DTB_COMPAT.
-
-
-My problem is that the boot loader on every shipped Qualcomm MSM8x60, MSM8960
-and APQ8064 based device passes ATAG_MEM with the incorrect start address. There
-is no way to update the boot loader for these.
-
-For development I have a .init_meminfo in my board file patching the
-meminfo; this looks
-really bad so I'm hoping we can find some alternative solution.
-
-The proposed solution from some of the people working on this is to
-(post build) patch the
-zImage to inject code that corrects the ATAG_MEM before jumping to the
-kernel; but I am
-hoping we can find some sane way instead...
-
-Regards,
-Bjorn
+Thanks.
