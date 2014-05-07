@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584AbaEGGuD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 02:50:03 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:39223 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251AbaEGGuB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 02:50:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140506224217.GC4185@kroah.com>
-References: <533aa1ae.qq4Hi3RBnPzgncue%fengguang.wu@intel.com>
-	<CAKv+Gu_unwqLWWn-VDegy=vF=rprC5qFhazo_sJFNm738MVgaQ@mail.gmail.com>
-	<20140401124824.GA13642@gondor.apana.org.au>
-	<CAKv+Gu9bg1AgDSb3H-tMGBq53_ySaTZAeYsQeDYKS6cTnaBGUA@mail.gmail.com>
-	<20140411160312.GB31676@kroah.com>
-	<CAKv+Gu-ZKVz7JKhW9iWuZeKiRnyS3Z4uakPn2_UMW_CpSBgXkw@mail.gmail.com>
-	<20140506224217.GC4185@kroah.com>
-Date: Wed, 7 May 2014 08:49:59 +0200
-Message-ID: <CAKv+Gu_LwiU-WvXeJjOSPJh53g+nKz9x-ZtUP3E02d8UEEyshw@mail.gmail.com>
-Subject: Re: Fwd: [crypto:master 60/60] arch/x86/crypto/ghash-clmulni-intel_glue.c:71:25:
- sparse: cast to restricted __be64
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753928AbaEGGzw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 02:55:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:26402 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753468AbaEGGzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 02:55:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1001,1389772800"; 
+   d="scan'208";a="428711213"
+Message-ID: <1399445747.2677.4.camel@smile.fi.intel.com>
+Subject: Re: [PATCH] staging: rtl8712: fix potential leak in
+ r871x_wx_set_enc_ext()
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Christian Engelmayer <cengelma@gmx.at>
+Cc: devel@driverdev.osuosl.org, Larry.Finger@lwfinger.net,
+        florian.c.schilhabel@googlemail.com, gregkh@linuxfoundation.org,
+        linuxgeek@gmail.com, paul.gortmaker@windriver.com,
+        linux-kernel@vger.kernel.org
+Date: Wed, 07 May 2014 09:55:47 +0300
+In-Reply-To: <20140501114500.756b95d0@spike>
+References: <20140501114500.756b95d0@spike>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 May 2014 00:42, gregkh@linuxfoundation.org
-<gregkh@linuxfoundation.org> wrote:
-> On Fri, Apr 11, 2014 at 09:48:42PM +0200, Ard Biesheuvel wrote:
->> On 11 April 2014 18:03, gregkh@linuxfoundation.org
->> <gregkh@linuxfoundation.org> wrote:
->> > On Fri, Apr 04, 2014 at 10:11:19AM +0200, Ard Biesheuvel wrote:
->> >> Greg,
->> >>
->> >> This pertains to commit 8ceee72808d1 (crypto: ghash-clmulni-intel -
->> >> use C implementation for setkey()) that has been pulled by Linus
->> >> during the current merge window.
->> >>
->> >> It is missing two things:
->> >> - a cc to stable annotation
->> >> - a fix for the sparse warning below (change cast from __be64 to __force __be64)
->> >>
->> >> The reason for cc'ing stable on this patch is that it fixes a
->> >> potential data corruption issue where the ghash setkey() method uses
->> >> SSE registers without calling kernel_fpu_begin() first. This issue was
->> >> introduced by 0e1227d356e9b (crypto: ghash - Add PCLMULQDQ accelerated
->> >> implementation).
->> >>
->> >> So how would you like to proceed with this? Should I propose a new
->> >> patch somewhere?
->> >
->> > No problem, I'll apply this as-is.  But it doesn't apply to the
->> > 3.4-stable tree cleanly, can you send me a backported version if it's
->> > still needed there as well?
->> >
->>
->> Yes, the code was broken from the start. 3.4 version is attached, the
->> only difference is the missing ENDPROC() at the end of the asm file.
->
-> Now applied, thanks.
->
->> In the mean time, Herbert has submitted a fix for the sparse warning,
->> but we settled on a different fix than I had suggested before.
->> https://git.kernel.org/cgit/linux/kernel/git/herbert/cryptodev-2.6.git/commit/?id=0ea481466d1c
->>
->> Note that this code has not been tested (not by me, at least), so I
->> wouldn't suggest you take it straight away, but if you care about the
->> sparse warning, we could add a cc stable to it as well, I suppose.
->
-> If it's a real bugfix that people can hit, then yse, I'll take it.  Just
-> let me know when it hits Linus's tree.
->
+On Thu, 2014-05-01 at 11:45 +0200, Christian Engelmayer wrote:
+> Fix a potential leak in the error path of r871x_wx_set_enc_ext(). In case the
+> requested algorithm is not supported by the driver, the function returns
+> without freeing the already allocated 'param' struct. Move the input
+> verification to the beginning of the function so that the direct return is
+> safe. Detected by Coverity - CID 144373.
+> 
 
-Hardly. The only thing it fixes is a diagnostic related to the use of
-be128 where u128 is more appropriate,  only this time, it changes the
-type throughout the file rather than using a __force cast when
-accessing the variable, as I did in my original fix.
+
+One comment below.
+
+
+> Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+> ---
+> Compile tested and applies against branch staging-next of tree
+> git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+> ---
+>  drivers/staging/rtl8712/rtl871x_ioctl_linux.c | 16 +++++++++-------
+>  1 file changed, 9 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> index 23d539d..1eca992 100644
+> --- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> +++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> @@ -1801,13 +1801,6 @@ static int r871x_wx_set_enc_ext(struct net_device *dev,
+>  	u32 param_len;
+>  	int ret = 0;
+>  
+> -	param_len = sizeof(struct ieee_param) + pext->key_len;
+> -	param = (struct ieee_param *)_malloc(param_len);
+> -	if (param == NULL)
+> -		return -ENOMEM;
+> -	memset(param, 0, param_len);
+> -	param->cmd = IEEE_CMD_SET_ENCRYPTION;
+> -	memset(param->sta_addr, 0xff, ETH_ALEN);
+>  	switch (pext->alg) {
+>  	case IW_ENCODE_ALG_NONE:
+>  		alg_name = "none";
+> @@ -1824,6 +1817,15 @@ static int r871x_wx_set_enc_ext(struct net_device *dev,
+>  	default:
+>  		return -EINVAL;
+>  	}
+> +
+> +	param_len = sizeof(struct ieee_param) + pext->key_len;
+> +	param = (struct ieee_param *)_malloc(param_len);
+
+While you are here could you substitute _malloc by kzalloc and remove
+explicit casting and memset?
+
+> +	if (param == NULL)
+> +		return -ENOMEM;
+> +	memset(param, 0, param_len);
+> +	param->cmd = IEEE_CMD_SET_ENCRYPTION;
+> +	memset(param->sta_addr, 0xff, ETH_ALEN);
+> +
+>  	strncpy((char *)param->u.crypt.alg, alg_name, IEEE_CRYPT_ALG_NAME_LEN);
+>  	if (pext->ext_flags & IW_ENCODE_EXT_GROUP_KEY)
+>  		param->u.crypt.set_tx = 0;
+
 
 -- 
-Ard.
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
+
