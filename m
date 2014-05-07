@@ -1,53 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaEGGEe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 02:04:34 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:35921 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399AbaEGGEc (ORCPT
+	id S1754829AbaEGGEq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 02:04:46 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42265 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753507AbaEGGEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 02:04:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGo_u6o0J_T_hnmDAiYpsDxe77iKPCjuWisZJfTjYYOVGJF96A@mail.gmail.com>
-References: <000001cf643d$69e5e350$3db1a9f0$@samsung.com>
-	<CAOh2x=m8DzmLOGqL0E_seOZMuzU=O9vQuu-JEp+E5454RmfEXw@mail.gmail.com>
-	<003901cf6664$e4e8d2a0$aeba77e0$@samsung.com>
-	<CAKohpon7W726Hxj5OJ6SnmPz3gYhAeBRr1wS3SCa3F2hSLriLQ@mail.gmail.com>
-	<5367946F.1030407@ti.com>
-	<CAKohpon-KZpSJK7PxpLjZS7sVPcYraDxb4oJHN6dxSagD+F--Q@mail.gmail.com>
-	<CAGo_u6pUVeMM9mqe5htvM1X_4pkRGEUVOA2ty4ZPfUyLcLZkrw@mail.gmail.com>
-	<CAKohpokfcptseU6ST+e_GfU6poVJxXCXMeoYCvT65060v5GJYQ@mail.gmail.com>
-	<003e01cf6984$fb950280$f2bf0780$@samsung.com>
-	<CAGo_u6o0J_T_hnmDAiYpsDxe77iKPCjuWisZJfTjYYOVGJF96A@mail.gmail.com>
-Date: Wed, 7 May 2014 11:34:32 +0530
-Message-ID: <CAKohpo=qbj9w5=wWHEG=9c2spjbbhaDaXG+F-Lhe9QffV9sDbw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] PM / OPP: Add support for descending order for
- cpufreq table
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 7 May 2014 02:04:38 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 07/10] slab: use the lock on alien_cache, instead of the lock on array_cache
+Date: Wed,  7 May 2014 15:06:17 +0900
+Message-Id: <1399442780-28748-8-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1399442780-28748-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1399442780-28748-1-git-send-email-iamjoonsoo.kim@lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 May 2014 06:30, Nishanth Menon <nm@ti.com> wrote:
-> So, we could do [2] as default as well, if it is determined to impact
-> no one else making any form of assumptions on table ordering - but it
-> might be preferable for drivers not to depend on framework ordering of
-> data as things could change in the future.
+Now, we have separate alien_cache structure, so it'd be better to hold
+the lock on alien_cache while manipulating alien_cache. After that,
+we don't need the lock on array_cache, so remove it.
 
-Exactly and that's what we discussed earlier. I don't want to change the
-default behavior at all, as somebody may request the ascending order
-tomorrow :)
+Acked-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-@Jonghwan: Please consider doing this:
-- Don't play with the order of frequencies in table.
-- Instead initialize .driver_data filed with values that you need to write
-in the registers for all frequencies. i.e. 0 for highest frequency and
-FREQ_COUNT-1 for lowest one.
+diff --git a/mm/slab.c b/mm/slab.c
+index 41b7651..889957b 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -191,7 +191,6 @@ struct array_cache {
+ 	unsigned int limit;
+ 	unsigned int batchcount;
+ 	unsigned int touched;
+-	spinlock_t lock;
+ 	void *entry[];	/*
+ 			 * Must have this definition in here for the proper
+ 			 * alignment of array_cache. Also simplifies accessing
+@@ -484,7 +483,7 @@ static void slab_set_lock_classes(struct kmem_cache *cachep,
+ 		return;
+ 	for_each_node(r) {
+ 		if (alc[r])
+-			lockdep_set_class(&(alc[r]->ac.lock), alc_key);
++			lockdep_set_class(&(alc[r]->lock), alc_key);
+ 	}
+ }
+ 
+@@ -761,7 +760,6 @@ static void init_arraycache(struct array_cache *ac, int limit, int batch)
+ 		ac->limit = limit;
+ 		ac->batchcount = batch;
+ 		ac->touched = 0;
+-		spin_lock_init(&ac->lock);
+ 	}
+ }
+ 
+@@ -957,6 +955,7 @@ static struct alien_cache *__alloc_alien_cache(int node, int entries,
+ 
+ 	alc = kmalloc_node(memsize, gfp, node);
+ 	init_arraycache(&alc->ac, entries, batch);
++	spin_lock_init(&alc->lock);
+ 	return alc;
+ }
+ 
+@@ -1033,9 +1032,9 @@ static void reap_alien(struct kmem_cache *cachep, struct kmem_cache_node *n)
+ 
+ 		if (alc) {
+ 			ac = &alc->ac;
+-			if (ac->avail && spin_trylock_irq(&ac->lock)) {
++			if (ac->avail && spin_trylock_irq(&alc->lock)) {
+ 				__drain_alien_cache(cachep, ac, node);
+-				spin_unlock_irq(&ac->lock);
++				spin_unlock_irq(&alc->lock);
+ 			}
+ 		}
+ 	}
+@@ -1053,9 +1052,9 @@ static void drain_alien_cache(struct kmem_cache *cachep,
+ 		alc = alien[i];
+ 		if (alc) {
+ 			ac = &alc->ac;
+-			spin_lock_irqsave(&ac->lock, flags);
++			spin_lock_irqsave(&alc->lock, flags);
+ 			__drain_alien_cache(cachep, ac, i);
+-			spin_unlock_irqrestore(&ac->lock, flags);
++			spin_unlock_irqrestore(&alc->lock, flags);
+ 		}
+ 	}
+ }
+@@ -1083,13 +1082,13 @@ static inline int cache_free_alien(struct kmem_cache *cachep, void *objp)
+ 	if (n->alien && n->alien[nodeid]) {
+ 		alien = n->alien[nodeid];
+ 		ac = &alien->ac;
+-		spin_lock(&ac->lock);
++		spin_lock(&alien->lock);
+ 		if (unlikely(ac->avail == ac->limit)) {
+ 			STATS_INC_ACOVERFLOW(cachep);
+ 			__drain_alien_cache(cachep, ac, nodeid);
+ 		}
+ 		ac_put_obj(cachep, ac, objp);
+-		spin_unlock(&ac->lock);
++		spin_unlock(&alien->lock);
+ 	} else {
+ 		spin_lock(&(cachep->node[nodeid])->list_lock);
+ 		free_block(cachep, &objp, 1, nodeid, &list);
+@@ -1558,10 +1557,6 @@ void __init kmem_cache_init(void)
+ 
+ 		memcpy(ptr, cpu_cache_get(kmem_cache),
+ 		       sizeof(struct arraycache_init));
+-		/*
+-		 * Do not assume that spinlocks can be initialized via memcpy:
+-		 */
+-		spin_lock_init(&ptr->lock);
+ 
+ 		kmem_cache->array[smp_processor_id()] = ptr;
+ 
+@@ -1571,10 +1566,6 @@ void __init kmem_cache_init(void)
+ 		       != &initarray_generic.cache);
+ 		memcpy(ptr, cpu_cache_get(kmalloc_caches[INDEX_AC]),
+ 		       sizeof(struct arraycache_init));
+-		/*
+-		 * Do not assume that spinlocks can be initialized via memcpy:
+-		 */
+-		spin_lock_init(&ptr->lock);
+ 
+ 		kmalloc_caches[INDEX_AC]->array[smp_processor_id()] = ptr;
+ 	}
+-- 
+1.7.9.5
+
