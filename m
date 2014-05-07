@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865AbaEGUwM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 16:52:12 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:51798 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720AbaEGUwH (ORCPT
+	id S1752125AbaEGUx4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 16:53:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57226 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351AbaEGUxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 16:52:07 -0400
-Date: Wed, 07 May 2014 16:52:04 -0400 (EDT)
-Message-Id: <20140507.165204.912551375605501069.davem@davemloft.net>
-To: hchaumette@adeneo-embedded.com
-Cc: f.fainelli@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, xobs@kosagi.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v4 0/2] net/phy: micrel: Add DT configuration support
- and documentation for KSZ9031
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1399362017-25787-1-git-send-email-hchaumette@adeneo-embedded.com>
-References: <1399362017-25787-1-git-send-email-hchaumette@adeneo-embedded.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 7 May 2014 16:53:53 -0400
+Date: Wed, 7 May 2014 13:53:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>, <hannes@cmpxchg.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm 1/2] memcg: get rid of memcg_create_cache_name
+Message-Id: <20140507135352.3790c739ae331d1f6721f3de@linux-foundation.org>
+In-Reply-To: <20140507104514.GC4757@esperanza>
+References: <a4aa62026c10fc709e8bf13542b29cf771381394.1399450112.git.vdavydov@parallels.com>
+	<20140507095127.GC9489@dhcp22.suse.cz>
+	<20140507104514.GC4757@esperanza>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 07 May 2014 13:52:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hubert Chaumette <hchaumette@adeneo-embedded.com>
-Date: Tue,  6 May 2014 09:40:15 +0200
+On Wed, 7 May 2014 14:45:16 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
 
->  - Adds DT configuration support for ksz9031
->  - Renames micrel-ksz9021.txt to micrel-ksz90x1.txt and adds ksz9031 binding
->    documentation
-> 
-> Changes since v3:
->  - Rebased on net-next
-> Changes since v2:
->  - Merged together ksz9031_load_{clk,data,ctrl}_skew_values()
->  - Added field length and number of fields prameter to account for registers
->   specificities
->  - Added binding documentation
-> Changes since v1:
->  - Removed ksz9021 and ksz9031 fixup deletions from arch/arm/mach-imx/mach-imx6q.c
+> @@ -3164,6 +3141,7 @@ void memcg_free_cache_params(struct kmem_cache *s)
+>  static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
+>  				    struct kmem_cache *root_cache)
+>  {
+> +	static char *memcg_name_buf;	/* protected by memcg_slab_mutex */
+>  	struct kmem_cache *cachep;
+>  	int id;
+>  
+> @@ -3179,7 +3157,14 @@ static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
+>  	if (cache_from_memcg_idx(root_cache, id))
+>  		return;
+>  
+> -	cachep = kmem_cache_create_memcg(memcg, root_cache);
+> +	if (!memcg_name_buf) {
+> +		memcg_name_buf = kmalloc(NAME_MAX + 1, GFP_KERNEL);
+> +		if (!memcg_name_buf)
+> +			return;
+> +	}
 
-Series applied to net-next, thanks.
+Does this have any meaningful advantage over the simpler
+
+	static char memcg_name_buf[NAME_MAX + 1];
+
+?
+
+I guess it saves a scrap of memory if the machine never uses memcg's.
