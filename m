@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933824AbaEGNXd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:23:33 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:41139 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932919AbaEGNXb (ORCPT
+	id S933866AbaEGNXx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:23:53 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:39804 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933397AbaEGNXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:23:31 -0400
-Date: Wed, 7 May 2014 09:23:28 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH cgroup/for-3.16] cgroup: remove unused CGRP_SANE_BEHAVIOR
-Message-ID: <20140507132328.GE16702@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 7 May 2014 09:23:48 -0400
+X-AuditID: cbfec7f5-b7fae6d000004d6d-7d-536a33e1558b
+Message-id: <536A32E1.7090003@samsung.com>
+Date: Wed, 07 May 2014 17:19:29 +0400
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.4.0
+MIME-version: 1.0
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, stable@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>,
+        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2] arm: put_user: fix possible data corruption in put_user
+References: <alpine.LFD.2.11.1405050950410.980@knanqh.ubzr>
+ <1399360312-13843-1-git-send-email-a.ryabinin@samsung.com>
+ <alpine.LFD.2.11.1405061610450.980@knanqh.ubzr>
+In-reply-to: <alpine.LFD.2.11.1405061610450.980@knanqh.ubzr>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGLMWRmVeSWpSXmKPExsVy+t/xq7oPjbOCDbZ8NbHY9Pgaq8XlXXPY
+	LG5f5rX49Owfu8WCjY8YLV5+PMHiwOaxZt4aRo+W5h42jzvX9rB5bF5S7/F5k1wAaxSXTUpq
+	TmZZapG+XQJXxrn3xxgLLjFW/P77gbGBcRVjFyMHh4SAicThMyVdjJxAppjEhXvr2UBsIYGl
+	jBI9u1W6GLmA7EYmiWNTTjCCJHgFtCS2Te5gA+llEVCVuL1ZHCTMJqAn8W/WdrBeUYEIiXuN
+	h1khygUlfky+xwJiiwjoSByd+ZoZZCazwCNGiT/nTzCBJIQF/CT+vf7PDrFsFaPEui+t7CAJ
+	TgEbiRevV4J1MwN172+dxgZhy0tsXvOWeQKjwCwkS2YhKZuFpGwBI/MqRtHU0uSC4qT0XCO9
+	4sTc4tK8dL3k/NxNjJCw/rqDcekxq0OMAhyMSjy8C2QygoVYE8uKK3MPMUpwMCuJ8L7TzwoW
+	4k1JrKxKLcqPLyrNSS0+xMjEwSnVwKihLzj7pU/Uh7NPj/cVyAdVnJw/K+oKf1Sv96fJZVxR
+	RflRGvZBRRaL1LjehpvHWeg/E+xeeXj7m6At6izfppTN6i+MjS68WFnTZGxpYrvv643DSd//
+	nnvz+8P9V8G+ex+lLI1YmVz14qOw1E5TvTMan41Xz5YvsI1oW21k9iD0ZdEb9vwf55VYijMS
+	DbWYi4oTAUoHlb1JAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 2b53f41fa8604845f4f7c538723694a453088b15 Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Wed, 7 May 2014 09:21:56 -0400
+On 05/07/14 00:13, Nicolas Pitre wrote:
+> Please push this patch into Russell's patch system.
+> 
+> Thanks.
+> 
 
-This cgroup flag has never been used.  Only CGRP_ROOT_SANE_BEHAVIOR is
-used.  Remove it.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
-Applied to cgroup/for-3.16.
+Done - http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=8051/1
 
 Thanks.
 
- include/linux/cgroup.h | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 2dfabb3..f482f95 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -140,8 +140,6 @@ enum {
- 	 * specified at mount time and thus is implemented here.
- 	 */
- 	CGRP_CPUSET_CLONE_CHILDREN,
--	/* see the comment above CGRP_ROOT_SANE_BEHAVIOR for details */
--	CGRP_SANE_BEHAVIOR,
- };
- 
- struct cgroup {
--- 
-1.9.0
 
