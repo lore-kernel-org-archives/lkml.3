@@ -1,94 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582AbaEGWEi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 18:04:38 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:25151 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881AbaEGWEb (ORCPT
+	id S1752597AbaEGWFK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 18:05:10 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:34252 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751777AbaEGWFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 18:04:31 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+ajmdw6jQgLFynn0WtiV7t
-Date: Wed, 7 May 2014 15:04:27 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Joel Fernandes <joelf@ti.com>
-Cc: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/26] ARM: OMAP: dmtimer: Remove setting of clk parent
- indirectly through platform hook
-Message-ID: <20140507220426.GC19102@atomide.com>
-References: <1398375849-6017-1-git-send-email-joelf@ti.com>
- <1398375849-6017-2-git-send-email-joelf@ti.com>
- <20140507151907.GB9502@atomide.com>
- <536AA900.4040200@ti.com>
+	Wed, 7 May 2014 18:05:08 -0400
+Date: Wed, 7 May 2014 17:00:49 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, kishon@ti.com,
+        hdegoede@redhat.com, Boris Brezillon <boris@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: Re: [PATCH 4/7] usb: ehci-platform: add optional reset controller
+ retrieval
+Message-ID: <20140507220049.GC7047@lukather>
+References: <1399434623-20383-5-git-send-email-maxime.ripard@free-electrons.com>
+ <Pine.LNX.4.44L0.1405071020490.1325-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7gGkHNMELEOhSGF6"
 Content-Disposition: inline
-In-Reply-To: <536AA900.4040200@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <Pine.LNX.4.44L0.1405071020490.1325-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Joel Fernandes <joelf@ti.com> [140507 14:44]:
-> On 05/07/2014 10:19 AM, Tony Lindgren wrote:
-> > * Joel Fernandes <joelf@ti.com> [140424 14:44]:
-> >> There is a platform specific hook just for OMAP1 to set its clk parent.  Remove
-> >> this hook and have OMAP1 set its parent in omap1_dm_timer_init.  If OMAP1 is
-> >> ever migrated to clock framework, the correct way to do this would be through
-> >> clk_set_parent like other platforms.
-> >>
-> >> Signed-off-by: Joel Fernandes <joelf@ti.com>
-> >> ---
-> >>  arch/arm/mach-omap1/timer.c                |    8 +++++++-
-> >>  arch/arm/plat-omap/dmtimer.c               |    8 +++-----
-> >>  include/linux/platform_data/dmtimer-omap.h |    2 --
-> >>  3 files changed, 10 insertions(+), 8 deletions(-)
-> >>
-> >> diff --git a/arch/arm/mach-omap1/timer.c b/arch/arm/mach-omap1/timer.c
-> >> index bde7a35..4b9c604 100644
-> >> --- a/arch/arm/mach-omap1/timer.c
-> >> +++ b/arch/arm/mach-omap1/timer.c
-> >> @@ -140,7 +140,13 @@ static int __init omap1_dm_timer_init(void)
-> >>  			goto err_free_pdata;
-> >>  		}
-> >>  
-> >> -		pdata->set_timer_src = omap1_dm_timer_set_src;
-> >> +		/*
-> >> +		 * Since OMAP1 doesn't support clock framework, set timer clock
-> >> +		 * source to 32KHz here instead of expecting it to be set by
-> >> +		 * dmtimer code.
-> >> +		 */
-> >> +		omap1_dm_timer_set_src(pdev, 0x01);
-> >> +
-> >>  		pdata->timer_capability = OMAP_TIMER_ALWON |
-> >>  				OMAP_TIMER_NEEDS_RESET | OMAP_TIMER_HAS_DSP_IRQ;
-> >>  
-> > 
-> > This does not sound right, omap1 does support clock framework just fine.
-> > It is not using the common clock framework though.
-> > 
-> > This breaks omap_dm_timer_set_source() for sure. Setting the source
-> > during init is not a right solution here. Probably best to keep the
-> > pdata hook around, drivers can support pdata and DT data together
-> > just fine.
-> 
-> Actually pdata hook in this case is used only in 1 place, and is OMAP1
-> specific so I felt its better to clean it up.
-> 
-> Can you elaborate a bit more on why it breaks? I have no way of testing
-> OMAP1 without hardware.
-> 
-> What difference is it to set MOD_CONF_CTRL_1 in omap1's
-> arch_initcall(omap1_dm_timer_init)  versus doing so later?
 
-You're making a driver behave in a different way for omap1
-compared to omap2+ where selecting the clock source won't work
-for omap1.
+--7gGkHNMELEOhSGF6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regards,
+On Wed, May 07, 2014 at 10:25:55AM -0400, Alan Stern wrote:
+> On Tue, 6 May 2014, Maxime Ripard wrote:
+>=20
+> > From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> >=20
+> > On the Allwinner's A31 SoC the reset line connected to the EHCI IP has =
+to
+> > be deasserted for the EHCI block to be usable.
+> >=20
+> > Add support for an optional reset controller that will be deasserted on
+> > power off and asserted on power on.
+> >=20
+> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+>=20
+> Is this really a _reset_ line?  That is, when you assert the reset=20
+> line, does it actually reset the EHCI controller, or does it merely=20
+> leave the controller in a partially powered-down state?
 
-Tony
+It actually resets the whole controller.
+
+> The difference is important.  During suspend, the controller is
+> supposed to remember the state of the port connections as well as other
+> settings.  If it doesn't, the controller and all attached USB devices
+> will have to be reinitialized every time the controller resumes, which
+> will increase the latency.
+
+So you're saying that we should move this to the probe then?
+
+Thanks,
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--7gGkHNMELEOhSGF6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTaq0RAAoJEBx+YmzsjxAgi4AP/02ZdeNJtibPjwsygnQAnJkD
+ndwlSTxAPpWn0NXQg5KltvQHNndUyI1GZmqYRT2HfHWpJn9jEWdwII+C+Ny4QpWo
+mASD5mPQSx/c0aePDibEtIQ8lAIxZcwYOx30C5WUex3h/avykBoTwN2dv6hBRWOt
+EXUmZN057pFcK9/d+b5jCbGLoY8wiSGa6SjojFb64N36iIqCSMLQyHPU6SRt9/nv
+UzMDCIEVMMfeiJ59EmmsMBfcxhP4BM7irmUH8lgwfriE2X+2pGDaZUNI/le9tiyR
+E1pTFZd1D2zS+Mq9TjMGqiAfbFkAMnRP3RFb1adjBmFmTxjgLKC7QIkQ0YZyZ7gx
+lQsy+JukpueEwh00pQp7fZs5P4wc3y/8BKDNYYSWSTORG11MztAEntoUHDq/ou7F
+CrW68Guw5GXg+OhHuEyupqUKm7KY2zWDbyxMNoq/eE9AQRFsFxOcEKotU8rtGt5I
+HKflfuHlKTNefFfLWLQIDICy1NnG+Egbo24ZP61Y7/1bStnwfae+cBUbrrAWpdhw
+xdNMkmMHaA0yqsBBL6fl7TwAvHnJHDrYlAGJH8sp+7wRbAqkugQbJgmc5vUcng5w
+VKUTJP0v5XvRo4VCfEXvZ9LA54eT+6VslL7fOrebW6SprodxumxyjtkWKCG43spy
+bCHuoc1ilh4GexJ6uwhu
+=rEfp
+-----END PGP SIGNATURE-----
+
+--7gGkHNMELEOhSGF6--
