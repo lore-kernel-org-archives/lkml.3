@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879AbaEGVvv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 17:51:51 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:43850 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100AbaEGVvq (ORCPT
+	id S1752905AbaEGVwO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 17:52:14 -0400
+Received: from mail-yh0-f45.google.com ([209.85.213.45]:38572 "EHLO
+	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512AbaEGVwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 17:51:46 -0400
-Date: Thu, 8 May 2014 01:51:44 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf_fuzzer crash on pentium 4
-Message-ID: <20140507215144.GG8607@moon>
-References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
- <20140506202307.GA1458@moon>
- <alpine.DEB.2.10.1405061729350.4849@vincent-weaver-1.umelst.maine.edu>
- <20140506214630.GB1458@moon>
- <alpine.DEB.2.10.1405071244570.6340@vincent-weaver-1.umelst.maine.edu>
- <20140507164902.GD1444@moon>
- <20140507165811.GG1444@moon>
- <alpine.DEB.2.10.1405071305010.6340@vincent-weaver-1.umelst.maine.edu>
- <20140507182410.GA8607@moon>
- <alpine.DEB.2.10.1405071713590.7020@vincent-weaver-1.umelst.maine.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1405071713590.7020@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 7 May 2014 17:52:12 -0400
+From: Dan Streetman <ddstreet@ieee.org>
+To: Seth Jennings <sjennings@variantweb.net>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>, Nitin Gupta <ngupta@vflare.org>
+Cc: Dan Streetman <ddstreet@ieee.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bob Liu <bob.liu@oracle.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCHv2 0/4] mm/zpool: add common api for zswap to use zbud/zsmalloc
+Date: Wed,  7 May 2014 17:51:32 -0400
+Message-Id: <1399499496-3216-1-git-send-email-ddstreet@ieee.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1397922764-1512-1-git-send-email-ddstreet@ieee.org>
+References: <1397922764-1512-1-git-send-email-ddstreet@ieee.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 05:17:22PM -0400, Vince Weaver wrote:
-> On Wed, 7 May 2014, Cyrill Gorcunov wrote:
-> 
-> > > I thought I was running with PeterZ's latest patch that was supposed to 
-> > > avoid the corruption.  Hmmm.  Let me reboot and try a few more things.
-> > 
-> > Thanks! Please ping me if find something new.
-> 
-> It turns out to be my fault, I was running with an incomplete version of 
-> PeterZ's patch.  We need to get the fix into the kernel as apparently I 
-> fail at manually applying patches across multiple machines.
-> 
-> So to summarize, with PeterZ's fix the various memory corruption crashes 
-> in the p4 code no longer happen.
+In order to allow zswap users to choose between zbud and zsmalloc for
+the compressed storage pool, this patch set adds a new api "zpool" that
+provides an interface to both zbud and zsmalloc.  Only a minor changes
+to zbud's interface were needed, as detailed in the first two patches.
+This does not implement zsmalloc shrinking (which will be submitted
+separately), so when using zsmalloc as the pool type, zpool_shrink()
+will always fail.
 
-Good. Thanks a lot, Vince!
+I believe Seth originally was using zsmalloc for swap, but there were
+concerns about how significant the impact of shrinking zsmalloc would
+be when zswap had to start reclaiming pages.  That still may be an
+issue, but this at least allows users to choose themselves whether
+they want a lower-density or higher-density compressed storage medium.
+At least for situations where zswap reclaim is never or rarely reached,
+it probably makes sense to use the higher density of zsmalloc.
 
-> When fuzzing on the p4 *other* things do happen.
-> 	* at least two warnings pop up almost instantly
-> 	* eventually the machine will crash in an endless NMI storm
-> 	* also I managed to get the machine wedged with an unkillable
-> 	  process, sort of like the known problem PeterZ has.
-> 
-> The NMI issue is probably the only one that is p4 related, and I do get 
-> the NMI warnings on other machines too, it's just the p4 is the only one 
-> where it brings down the machine.
+Note this patch series does not change zram to use zpool, although that
+change should be possible as well.
 
-Vince, could you please provde more details on that? Is it possible
-to somehow log which events were used by perf?
+This patchset is against git://git.cmpxchg.org/linux-mmotm.git
+commit a51cc1787cdef3f17536d6a6dc1edd0e7a85988f
+
+Changes since v1 https://lkml.org/lkml/2014/4/19/97
+ -remove zsmalloc shrinking
+ -change zbud size param type from unsigned int to size_t
+ -remove zpool fallback creation
+ -zswap manually falls back to zbud if specified type fails
+
+Dan Streetman (4):
+  mm/zbud: zbud_alloc() minor param change
+  mm/zbud: change zbud_alloc size type to size_t
+  mm/zpool: implement common zpool api to zbud/zsmalloc
+  mm/zswap: update zswap to use zpool
+
+ include/linux/zbud.h  |   2 +-
+ include/linux/zpool.h | 160 +++++++++++++++++++++++
+ mm/Kconfig            |  43 ++++---
+ mm/Makefile           |   1 +
+ mm/zbud.c             |  30 +++--
+ mm/zpool.c            | 349 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ mm/zswap.c            |  75 ++++++-----
+ 7 files changed, 596 insertions(+), 64 deletions(-)
+ create mode 100644 include/linux/zpool.h
+ create mode 100644 mm/zpool.c
+
+-- 
+1.8.3.1
+
