@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943AbaEGMKs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 08:10:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60189 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751358AbaEGMKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 08:10:47 -0400
-Message-ID: <536A22C5.6060704@suse.cz>
-Date: Wed, 07 May 2014 14:10:45 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
+	id S932611AbaEGMLH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 08:11:07 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54256 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932157AbaEGMLG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 08:11:06 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <536A22D2.5070104@roeck-us.net>
+Date: Wed, 07 May 2014 05:10:58 -0700
+From: Guenter Roeck <linux@roeck-us.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch v3 6/6] mm, compaction: terminate async compaction when
- rescheduling
-References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com> <alpine.DEB.2.02.1405061920470.18635@chino.kir.corp.google.com> <alpine.DEB.2.02.1405061922220.18635@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1405061922220.18635@chino.kir.corp.google.com>
+To: Jean Delvare <jdelvare@suse.de>
+CC: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] coretemp.0 folder contents changed
+References: <5367C6A7.5020008@linux.intel.com>	<20140505173231.GA25644@roeck-us.net>	<20140506135558.3cafd062@endymion.delvare>	<5368E45F.30301@roeck-us.net> <20140507091308.227d8152@endymion.delvare>
+In-Reply-To: <20140507091308.227d8152@endymion.delvare>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2014 04:22 AM, David Rientjes wrote:
-> Async compaction terminates prematurely when need_resched(), see
-> compact_checklock_irqsave().  This can never trigger, however, if the
-> cond_resched() in isolate_migratepages_range() always takes care of the
-> scheduling.
+On 05/07/2014 12:13 AM, Jean Delvare wrote:
+> Hi Guenter,
 >
-> If the cond_resched() actually triggers, then terminate this pageblock scan for
-> async compaction as well.
+> On Tue, 06 May 2014 06:32:15 -0700, Guenter Roeck wrote:
+>> Can we implement a similar approach to network devices and make hwmon
+>> path names (ie the /sys/class/hwmon/XXX path name) configurable via udev ?
+>> Might be worth exploring.
 >
-> Signed-off-by: David Rientjes <rientjes@google.com>
+> This is one possibility indeed. The good thing is that libsensors makes
+> no assumption on hwmon class device names, so we can change the names
+> without breaking any application which uses libsensors. Scripts
+> accessing sysfs directly may break though (pwmconfig would, for
+> example.)
+>
+> We'll have to be careful when choosing the new names, and make sure
+> there is no name space collision. Network interface renaming has caused
+> a great deal of trouble out there.
+>
+Agreed. I'll try to find some time to play with it.
 
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
+> Another approach, which I have in mind for quite some time already but
+> could never find the time to implement, would be a small helper binary
+> which would look-up hwmon devices by libsensors-like name (and the
+> other way around too.) Scripts could use it to benefit from libsensors
+> persistent names.
+>
+Still needs that binary, though.
 
-> ---
->   mm/compaction.c | 7 ++++++-
->   1 file changed, 6 insertions(+), 1 deletion(-)
->
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -500,8 +500,13 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->   			return 0;
->   	}
->
-> +	if (cond_resched()) {
-> +		/* Async terminates prematurely on need_resched() */
-> +		if (cc->mode == MIGRATE_ASYNC)
-> +			return 0;
-> +	}
-> +
->   	/* Time to isolate some pages for migration */
-> -	cond_resched();
->   	for (; low_pfn < end_pfn; low_pfn++) {
->   		/* give a chance to irqs before checking need_resched() */
->   		if (locked && !(low_pfn % SWAP_CLUSTER_MAX)) {
->
+Guenter
 
