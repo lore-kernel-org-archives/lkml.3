@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106AbaEGOdl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 10:33:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35886 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751692AbaEGOdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 10:33:39 -0400
-Date: Wed, 7 May 2014 16:33:34 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/9] mm: memcontrol: rearrange charging fast path
-Message-ID: <20140507143334.GH9489@dhcp22.suse.cz>
-References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
- <1398889543-23671-3-git-send-email-hannes@cmpxchg.org>
+	id S932419AbaEGOeG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 10:34:06 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:33049 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752169AbaEGOeE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 10:34:04 -0400
+Message-ID: <536A4454.5020404@hurleysoftware.com>
+Date: Wed, 07 May 2014 10:33:56 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398889543-23671-3-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Vincent Donnefort <vdonnefort@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: Lee Jones <lee.jones@linaro.org>,
+        Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [3.15-rc3] BUG: null ptr dereference in ichx_gpio_request_regions()
+References: <536A339D.9030606@hurleysoftware.com> <20140507140558.GA26294@ks3318809.kimsufi.com>
+In-Reply-To: <20140507140558.GA26294@ks3318809.kimsufi.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 30-04-14 16:25:36, Johannes Weiner wrote:
-> The charging path currently starts out with OOM condition checks when
-> OOM is the rarest possible case.
-> 
-> Rearrange this code to run OOM/task dying checks only after trying the
-> percpu charge and the res_counter charge and bail out before entering
-> reclaim.  Attempting a charge does not hurt an (oom-)killed task as
-> much as every charge attempt having to check OOM conditions. 
+Hi Vincent,
 
-OK, I've never considered those to be measurable but it is true that the
-numbers accumulate over time.
+On 05/07/2014 10:05 AM, Vincent Donnefort wrote:
+> Hello Peter,
 
-So yes, this makes sense.
+>> This is almost certainly caused by the uninitialized regs ptr
+>> in the ich6_desc struct (i3100_desc struct has the same problem)
+>> introduced in this commit:
+>>
+>> commit bb62a35bd5d96e506af0ea8dd145480b9172a2a6
+>> Author: Vincent Donnefort <vdonnefort@gmail.com>
+>> Date:   Fri Feb 14 15:01:56 2014 +0100
+>>
+>>      gpio: ich: Add support for multiple register addresses
+>>
+>>      This patch introduces regs and reglen pointers which allow a chipset to have
+>>      register addresses differing from ICH ones.
+>>
+>>      Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>>      Signed-off-by: Vincent Donnefort <vdonnefort@gmail.com>
+>>      Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>
+>
+> Yes indeed, this must be linked to this thread https://lkml.org/lkml/2014/4/15/292
 
-> Also, only check __GFP_NOFAIL when the charge would actually fail.
+Thanks for the link.
 
-OK, but return ENOMEM as pointed below.
+I searched through LKML but without the driver name or the offending function
+in the commit message I couldn't find it.
 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  mm/memcontrol.c | 31 ++++++++++++++++---------------
->  1 file changed, 16 insertions(+), 15 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 75dfeb8fa98b..6ce59146fec7 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2598,21 +2598,6 @@ static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
->  
->  	if (mem_cgroup_is_root(memcg))
->  		goto done;
-> -	/*
-> -	 * Unlike in global OOM situations, memcg is not in a physical
-> -	 * memory shortage.  Allow dying and OOM-killed tasks to
-> -	 * bypass the last charges so that they can exit quickly and
-> -	 * free their memory.
-> -	 */
-> -	if (unlikely(test_thread_flag(TIF_MEMDIE) ||
-> -		     fatal_signal_pending(current)))
-> -		goto bypass;
+Linus,
 
-This is missing "memcg: do not hang on OOM when killed by userspace OOM
-access to memory reserves" - trivial to resolve.
+What tree is this bug fix trapped in? I see it didn't make -rc4 either.
 
-> -
-> -	if (unlikely(task_in_memcg_oom(current)))
-> -		goto nomem;
-> -
-> -	if (gfp_mask & __GFP_NOFAIL)
-> -		oom = false;
->  retry:
->  	if (consume_stock(memcg, nr_pages))
->  		goto done;
-[...]
-> @@ -2662,6 +2660,9 @@ retry:
->  	if (mem_cgroup_wait_acct_move(mem_over_limit))
->  		goto retry;
->  
-> +	if (gfp_mask & __GFP_NOFAIL)
-> +		goto bypass;
-> +
-
-This is a behavior change because we have returned ENOMEM previously
-
->  	if (fatal_signal_pending(current))
->  		goto bypass;
->  
-	if (!oom)
-		goto nomem;
-
--- 
-Michal Hocko
-SUSE Labs
+Regards,
+Peter Hurley
