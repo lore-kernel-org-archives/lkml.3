@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681AbaEGV3n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 17:29:43 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:46867 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702AbaEGV3l (ORCPT
+	id S1752690AbaEGVaI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 17:30:08 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:56928 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702AbaEGVaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 17:29:41 -0400
-Date: Wed, 7 May 2014 14:29:37 -0700
-From: josh@joshtriplett.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 15/45] torture: Make config-fragment
- filtering RCU-independent
-Message-ID: <20140507212937.GI27924@cloud>
-References: <20140429002455.GA15461@linux.vnet.ibm.com>
- <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1398731133-18925-15-git-send-email-paulmck@linux.vnet.ibm.com>
+	Wed, 7 May 2014 17:30:04 -0400
+Date: Wed, 7 May 2014 14:30:01 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: George Spelvin <linux@horizon.com>
+cc: cl@linux.com, iamjoonsoo.kim@lge.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v2 03/10] slab: move up code to get kmem_cache_node in
+ free_block()
+In-Reply-To: <20140507212224.9085.qmail@ns.horizon.com>
+Message-ID: <alpine.DEB.2.02.1405071429310.8454@chino.kir.corp.google.com>
+References: <20140507212224.9085.qmail@ns.horizon.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398731133-18925-15-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 05:25:03PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> The torture tests need to set specific values for their respective
-> Kconfig options (e.g., CONFIG_LOCK_TORTURE_TEST), and must therefore
-> filter any conflicting definitions from the Kconfig fragment
-> file.  Unfortunately, the code in kvm-build.sh was looking only for
-> CONFIG_RCU_TORTURE_TEST.  This commit therefore handles the general case
-> of CONFIG_[A-Z]*TORTURE_TEST.
+On Wed, 7 May 2014, George Spelvin wrote:
 
-This doesn't match your code below, which includes an _ after the * .
-
-Also, one nit below.
-
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-With the commit message fixed:
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
-> ---
->  tools/testing/selftests/rcutorture/bin/kvm-build.sh | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-build.sh b/tools/testing/selftests/rcutorture/bin/kvm-build.sh
-> index e838c775f709..6d0b76d918f4 100755
-> --- a/tools/testing/selftests/rcutorture/bin/kvm-build.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm-build.sh
-> @@ -45,7 +45,7 @@ T=/tmp/test-linux.sh.$$
->  trap 'rm -rf $T' 0
->  mkdir $T
+> diff --git a/mm/slab.c b/mm/slab.c
+> index 388cb1ae6f..7fdc8df104 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -215,9 +215,9 @@ static inline void set_obj_pfmemalloc(void **objp)
+>  	return;
+>  }
 >  
-> -cat ${config_template} | grep -v CONFIG_RCU_TORTURE_TEST > $T/config
-> +cat ${config_template} | grep -v 'CONFIG_[A-Z]*_TORTURE_TEST' > $T/config
+> -static inline void clear_obj_pfmemalloc(void **objp)
+> +static inline void *clear_obj_pfmemalloc(void **objp)
+>  {
+> -	*objp = (void *)((unsigned long)*objp & ~SLAB_OBJ_PFMEMALLOC);
+> +	return *objp = (void *)((unsigned long)*objp & ~SLAB_OBJ_PFMEMALLOC);
+>  }
+>  
+>  /*
+> @@ -809,10 +809,8 @@ static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
+>  	if (unlikely(is_obj_pfmemalloc(objp))) {
+>  		struct kmem_cache_node *n;
+>  
+> -		if (gfp_pfmemalloc_allowed(flags)) {
+> -			clear_obj_pfmemalloc(&objp);
+> -			return objp;
+> -		}
+> +		if (gfp_pfmemalloc_allowed(flags))
+> +			return clear_obj_pfmemalloc(&objp);
+>  
+>  		/* The caller cannot use PFMEMALLOC objects, find another one */
+>  		for (i = 0; i < ac->avail; i++) {
+> @@ -833,9 +831,8 @@ static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
+>  		if (!list_empty(&n->slabs_free) && force_refill) {
+>  			struct page *page = virt_to_head_page(objp);
+>  			ClearPageSlabPfmemalloc(page);
+> -			clear_obj_pfmemalloc(&objp);
+>  			recheck_pfmemalloc_active(cachep, ac);
+> -			return objp;
+> +			return clear_obj_pfmemalloc(&objp);
+>  		}
+>  
+>  		/* No !PFMEMALLOC objects available */
+> @@ -3362,17 +3359,12 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int nr_objects,
+>  		       int node)
+>  {
+>  	int i;
+> -	struct kmem_cache_node *n;
+> +	struct kmem_cache_node *n = cachep->node[node];
+>  
+>  	for (i = 0; i < nr_objects; i++) {
+> -		void *objp;
+> -		struct page *page;
+> -
+> -		clear_obj_pfmemalloc(&objpp[i]);
+> -		objp = objpp[i];
+> +		void *objp = clear_obj_pfmemalloc(&objpp[i]);
+> +		struct page *page = virt_to_head_page(objp);
+>  
+> -		page = virt_to_head_page(objp);
+> -		n = cachep->node[node];
+>  		list_del(&page->lru);
+>  		check_spinlock_acquired_node(cachep, node);
+>  		slab_put_obj(cachep, page, objp, node);
 
-UUOC (useless use of cat): you can redirect from ${config_template}
-rather than catting it.
-
->  cat << ___EOF___ >> $T/config
->  CONFIG_INITRAMFS_SOURCE="$TORTURE_INITRD"
->  CONFIG_VIRTIO_PCI=y
-> -- 
-> 1.8.1.5
-> 
+I think this unnecessarily obfuscates the code.
