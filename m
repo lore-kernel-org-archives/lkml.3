@@ -1,126 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932612AbaEGQtB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:49:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60929 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932134AbaEGQs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:48:59 -0400
-Date: Wed, 7 May 2014 12:48:21 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>, ak@linux.intel.com,
-        gong.chen@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 1/5] x86, nmi:  Add new nmi type 'external'
-Message-ID: <20140507164821.GS39568@redhat.com>
-References: <1399476883-98970-1-git-send-email-dzickus@redhat.com>
- <1399476883-98970-2-git-send-email-dzickus@redhat.com>
- <20140507153854.GA14926@gmail.com>
- <20140507160251.GQ39568@redhat.com>
- <20140507162746.GA15779@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140507162746.GA15779@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933008AbaEGQtd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:49:33 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:43194 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932134AbaEGQtc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 12:49:32 -0400
+From: Maxime COQUELIN <maxime.coquelin@st.com>
+To: Mike Turquette <mturquette@linaro.org>, Fabio Estevam <festevam@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: maxime.coquelin@st.com
+Subject: [PATCH] clk: divider: Fix table round up function
+Date: Wed,  7 May 2014 18:48:52 +0200
+Message-Id: <1399481332-9550-1-git-send-email-maxime.coquelin@st.com>
+X-Mailer: git-send-email 1.9.1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-07_05:2014-05-07,2014-05-07,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 06:27:46PM +0200, Ingo Molnar wrote:
-> 
-> * Don Zickus <dzickus@redhat.com> wrote:
-> 
-> > On Wed, May 07, 2014 at 05:38:54PM +0200, Ingo Molnar wrote:
-> > > 
-> > > * Don Zickus <dzickus@redhat.com> wrote:
-> > > 
-> > > > I noticed when debugging a perf problem on a machine with GHES enabled,
-> > > > perf seemed slow.  I then realized that the GHES NMI routine was taking
-> > > > a global lock all the time to inspect the hardware.  This contended
-> > > > with all the local perf counters which did not need a lock.  So each cpu
-> > > > accidentally was synchronizing with itself when using perf.
-> > > > 
-> > > > This is because the way the nmi handler works.  It executes all the handlers
-> > > > registered to a particular subtype (to deal with nmi sharing).  As a result
-> > > > the GHES handler was executed on every PMI.
-> > > > 
-> > > > Fix this by creating a new nmi type called NMI_EXT, which is used by
-> > > > handlers that need to probe external hardware and require a global lock
-> > > > to do so.
-> > > > 
-> > > > Now the main NMI handler can check the internal NMI handlers first and
-> > > > then the external ones if nothing is found.
-> > > > 
-> > > > This makes perf a little faster again on those machines with GHES enabled.
-> > > 
-> > > So what happens if GHES asserts an NMI at the same time a PMI 
-> > > triggers?
-> > > 
-> > > If the perf PMI executes and indicates that it has handled something, 
-> > > we don't execute the GHES handler, right? Will the GHES re-trigger the 
-> > > NMI after we return?
-> > 
-> > In my head, I had thought they would be queued up and things work 
-> > out fine. [...]
-> 
-> x86 NMIs are generally edge triggered.
+Commit 1d9fe6b97 ("clk: divider: Fix best div calculation for power-of-two and
+table dividers") introduces a regression in its _table_round_up function.
 
-Right, I meant to say they would be latched.
+When the divider passed to this function is greater than the max divider
+available in the table, this function returns table's max divider.
+Problem is that it causes an infinite loop in clk_divider_bestdiv() because
+_next_div() will never return a value greater than maxdiv.
 
-> 
-> > [...]  But I guess in theory, if a PMI NMI comes in and before the 
-> > cpu can accept it and GHES NMI comes in, then it would suffice to 
-> > say it may get dropped.  That would be not be good.  Though the race 
-> > would be very small.
-> > 
-> > I don't have a good idea how to handle that.
-> 
-> Well, are GHES NMIs reasserted if they are not handled? I don't know 
-> but there's a definite answer to that hardware behavior question.
+Instead of returning table's max divider, this patch returns INT_MAX.
 
-I can dig around and find out but I would think not.
+Reported-by: Fabio Estevam <festevam@gmail.com>
+Reported-by: Shawn Guo <shawn.guo@freescale.com>
+Tested-by: Fabio Estevam <festevam@gmail.com>
+Cc: Mike Turquette <mike.turquette@linaro.org>
+Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+---
+ drivers/clk/clk-divider.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> 
-> > On the flip side, we have the same exact problem, today, with the 
-> > other common external NMIs (SERR, IO).  If a PCI SERR comes in at 
-> > the same time as a PMI, then it gets dropped.  Worse, it doesn't get 
-> > re-enabled and blocks future SERRs (just found this out two weeks 
-> > ago because of a dirty perf status register on boot).
-> > 
-> > Again, I don't have a solution to juggle between PMI performance and 
-> > reliable delivery.  We could do away with the spinlocks and go back 
-> > to single cpu delivery (like it used to be).  Then devise a 
-> > mechanism to switch delivery to another cpu upon hotplug.
-> > 
-> > Thoughts?
-> 
-> I'd say we should do a delayed timer that makes sure that all possible 
-> handlers are polled after an NMI is triggered, but never at a high 
-> rate.
-> 
-> Then simply return early the moment an NMI handler indicates that 
-> there was an event handled - and first call high-performance handlers 
-> like the perf handler.
+diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+index b3c8396..cf9114a 100644
+--- a/drivers/clk/clk-divider.c
++++ b/drivers/clk/clk-divider.c
+@@ -158,7 +158,7 @@ static bool _is_valid_div(struct clk_divider *divider, unsigned int div)
+ static int _round_up_table(const struct clk_div_table *table, int div)
+ {
+ 	const struct clk_div_table *clkt;
+-	int up = _get_table_maxdiv(table);
++	int up = INT_MAX;
+ 
+ 	for (clkt = table; clkt->div; clkt++) {
+ 		if (clkt->div == div)
+-- 
+1.9.1
 
-Ok, I can look into something like.
-
-> 
-> The proper channel for hardware errors is the #MC entry anyway, so 
-> this is mostly about legacies and weird hardware.
-
-Well, it seems most vendors are going 'firmware first' with the NMI being
-the notifying mechanism.  But that is mostly on servers.  I do deal with
-vendors that like to generate their own NMI to panic the box (though those
-come in as unknown NMIs).
-
-Cheers,
-Don
-
-> 
-> Thanks,
-> 
-> 	Ingo
