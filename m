@@ -1,96 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558AbaEGVYL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 17:24:11 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:55970 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315AbaEGVYI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 17:24:08 -0400
-Date: Wed, 7 May 2014 14:24:03 -0700
-From: josh@joshtriplett.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 10/45] torture: Rename RCU_BUILDONLY to
- TORTURE_BUILDONLY
-Message-ID: <20140507212403.GE27924@cloud>
-References: <20140429002455.GA15461@linux.vnet.ibm.com>
- <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1398731133-18925-10-git-send-email-paulmck@linux.vnet.ibm.com>
+	id S1752584AbaEGVY1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 17:24:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43435 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752270AbaEGVYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 17:24:21 -0400
+Message-ID: <536AA482.8040506@suse.de>
+Date: Wed, 07 May 2014 23:24:18 +0200
+From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398731133-18925-10-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Bjorn Andersson <bjorn@kryo.se>
+CC: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH] ARM: zImage: Allow DTB to override broken ATAG_MEM
+References: <1399439776-18535-1-git-send-email-bjorn.andersson@sonymobile.com>	<20140507080650.GA28564@pengutronix.de> <CAJAp7OiVrz+epys3Ko79GmMr6ahv8ii8XphVHE77NSM+wK2mOA@mail.gmail.com>
+In-Reply-To: <CAJAp7OiVrz+epys3Ko79GmMr6ahv8ii8XphVHE77NSM+wK2mOA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 05:24:58PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> This commit makes the torture scripts a bit more RCU-independent.
+Am 07.05.2014 17:29, schrieb Bjorn Andersson:
+> My problem is that the boot loader on every shipped Qualcomm MSM8x60, MSM8960
+> and APQ8064 based device passes ATAG_MEM with the incorrect start address. There
+> is no way to update the boot loader for these.
 
-And removes unnecessary exports; please document that.  With that
-change:
+Chaining bootloaders comes to mind. This is being done on the Exynos5
+based Chromebooks, for instance.
 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Regards,
+Andreas
 
-> ---
->  tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh | 2 +-
->  tools/testing/selftests/rcutorture/bin/kvm.sh            | 9 ++++++---
->  2 files changed, 7 insertions(+), 4 deletions(-)
-> 
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-> index e82f4f201c8c..86e6ffe6df45 100755
-> --- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-> @@ -152,7 +152,7 @@ boot_args="`configfrag_boot_params "$boot_args" "$config_template"`"
->  boot_args="`per_version_boot_params "$boot_args" $builddir/.config $seconds`"
->  
->  echo $QEMU $qemu_args -m 512 -kernel $builddir/arch/x86/boot/bzImage -append \"$qemu_append $boot_args\" > $resdir/qemu-cmd
-> -if test -n "$RCU_BUILDONLY"
-> +if test -n "$TORTURE_BUILDONLY"
->  then
->  	echo Build-only run specified, boot/test omitted.
->  	exit 0
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> index 08c90cba79d2..73c586f6bdf6 100644
-> --- a/tools/testing/selftests/rcutorture/bin/kvm.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> @@ -81,7 +81,7 @@ do
->  		shift
->  		;;
->  	--buildonly)
-> -		RCU_BUILDONLY=1; export RCU_BUILDONLY
-> +		TORTURE_BUILDONLY=1
->  		;;
->  	--configs)
->  		checkarg --configs "(list of config files)" "$#" "$2" '^[^/]*$' '^--'
-> @@ -374,7 +374,7 @@ then
->  	echo KVM="$KVM; export KVM"
->  	echo KVPATH="$KVPATH; export KVPATH"
->  	echo PATH="$PATH; export PATH"
-> -	echo RCU_BUILDONLY="$RCU_BUILDONLY; export RCU_BUILDONLY"
-> +	echo TORTURE_BUILDONLY="$TORTURE_BUILDONLY; export TORTURE_BUILDONLY"
->  	echo TORTURE_INITRD="$TORTURE_INITRD; export TORTURE_INITRD"
->  	echo TORTURE_KMAKE_ARG="$TORTURE_KMAKE_ARG; export TORTURE_KMAKE_ARG"
->  	echo RCU_QEMU_CMD="$RCU_QEMU_CMD; export RCU_QEMU_CMD"
-> @@ -402,4 +402,7 @@ echo
->  echo
->  echo " --- `date` Test summary:"
->  echo Results directory: $resdir/$ds
-> -kvm-recheck.sh $resdir/$ds
-> +if test -n "$TORTURE_BUILDONLY"
-> +then
-> +	kvm-recheck.sh $resdir/$ds
-> +fi
-> -- 
-> 1.8.1.5
-> 
+-- 
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
