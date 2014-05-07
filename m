@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934124AbaEGNfi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:35:38 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:12160 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933475AbaEGNfd (ORCPT
+	id S934148AbaEGNgP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:36:15 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:55511 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933461AbaEGNgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:35:33 -0400
-From: Liu Hua <sdu.liu@huawei.com>
-To: <linux@arm.linux.org.uk>, <kumagai-atsushi@mxc.nes.nec.co.jp>
-CC: <will.deacon@arm.com>, <kexec@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <wangnan0@huawei.com>,
-        <peifeiyue@huawei.com>, <sdu.liu@huawei.com>, <liusdu@126.com>
-Subject: [RFC PATCH 1/2] kdump: add sparse memory related values to vmcore
-Date: Wed, 7 May 2014 21:27:13 +0800
-Message-ID: <1399469234-54925-2-git-send-email-sdu.liu@huawei.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1399469234-54925-1-git-send-email-sdu.liu@huawei.com>
-References: <1399469234-54925-1-git-send-email-sdu.liu@huawei.com>
+	Wed, 7 May 2014 09:36:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+In-Reply-To: <536A3654.20201@semaphore.gr>
+References: <535AC247.3070907@semaphore.gr>
+	<5369220A.3030207@semaphore.gr>
+	<CAKohpo=3_7G+3bMF2CpWgZXvktdXBkCi4-tCxogwGcvvEEh18w@mail.gmail.com>
+	<4469396.zveA7sC36d@vostro.rjw.lan>
+	<536A3654.20201@semaphore.gr>
+Date: Wed, 7 May 2014 19:06:09 +0530
+Message-ID: <CAKohpokLnseVjuWybVTJG5v3-ATpXXbMccE+CscXGyGUnr13yA@mail.gmail.com>
+Subject: Re: [PATCH v5 0/8] Introduce new cpufreq helper macros
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Simon Horman <horms@verge.net.au>, Sekhar Nori <nsekhar@ti.com>,
+        Samuel Ortiz <samuel@sortiz.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now different platforms may have different sparse memory
-related values, such as MAX_PHYSMEM_SIZE and SECTION_SIZE_BITS.
+On 7 May 2014 19:04, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+> Do you want me to resend the entire patch set or only patch 1/8?
 
-And user tools such as makedumpfile can not get these values
-from the vmcore. It defines these value as macros. If we use
- makedumpfile to treate with vmcores with different SECTION
-size. We must recompile it. It is awaste of time.
-
-So this patch add related values to vmcore to notify the
-user space tools to deal with this situation.
-
-Signed-off-by: Liu Hua <sdu.liu@huawei.com>
----
- kernel/kexec.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index bf0b929e..96f7c5b 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -1577,6 +1577,9 @@ static int __init crash_save_vmcoreinfo_init(void)
- 	VMCOREINFO_LENGTH(mem_section, NR_SECTION_ROOTS);
- 	VMCOREINFO_STRUCT_SIZE(mem_section);
- 	VMCOREINFO_OFFSET(mem_section, section_mem_map);
-+	VMCOREINFO_NUMBER(MAX_PHYSMEM_BITS);
-+	VMCOREINFO_NUMBER(SECTION_SIZE_BITS);
-+
- #endif
- 	VMCOREINFO_STRUCT_SIZE(page);
- 	VMCOREINFO_STRUCT_SIZE(pglist_data);
--- 
-1.9.0
-
+Probably a new patch which would make it inline that's it. I don't think
+he is going to rebase his branch now..
