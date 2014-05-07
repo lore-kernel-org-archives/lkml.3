@@ -1,265 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933370AbaEGPDN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:03:13 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:10200 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933287AbaEGPDE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:03:04 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v10 19/19] pvqspinlock, x86: Enable PV qspinlock for XEN
-Date: Wed,  7 May 2014 11:01:47 -0400
-Message-Id: <1399474907-22206-20-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com>
-References: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com>
+	id S933422AbaEGPDs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:03:48 -0400
+Received: from mga03.intel.com ([143.182.124.21]:14772 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933220AbaEGPDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 11:03:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1004,1389772800"; 
+   d="scan'208";a="428913980"
+Date: Wed, 7 May 2014 18:02:40 +0300
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+To: Mathias Nyman <mathias.nyman@linux.intel.com>
+Cc: Julius Werner <jwerner@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [regression 3.15-rc3] Resume from s4 broken by
+ 1f81b6d22a5980955b01e08cf27fb745dc9b686f
+Message-ID: <20140507150240.GK18465@intel.com>
+References: <20140505180530.GA18465@intel.com>
+ <CAODwPW_57G+Lebe2Xarem9P-L6ePtAaZfy5kpNVEtgkWbc0FWw@mail.gmail.com>
+ <20140506114126.GB18465@intel.com>
+ <536A39C0.5060205@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <536A39C0.5060205@linux.intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the necessary XEN specific code to allow XEN to
-support the CPU halting and kicking operations needed by the queue
-spinlock PV code.
+On Wed, May 07, 2014 at 04:48:48PM +0300, Mathias Nyman wrote:
+> On 05/06/2014 02:41 PM, Ville Syrjälä wrote:
+> > On Mon, May 05, 2014 at 12:32:22PM -0700, Julius Werner wrote:
+> >> Hmmm... very odd. I unfortunately don't have a machine that can easily
+> >> do S4 at hand, but I did test this on an IVB with XHCI_RESET_ON_RESUME
+> >> in S3 (essentially the same code path), and I didn't run into any
+> >> problems.
+> >>
+> >> How exactly does your machine fail on resume? Is it a kernel crash or
+> >> just a hang? Can you try getting some debug output (by setting 'echo N
+> >>> /sys/module/printk/parameters/console_suspend' and trying to catch
+> >> the crash on the screen or a serial line, or maybe through pstore)? I
+> >> really don't see much that could go wrong with this patch, so without
+> >> more info it will be hard to understand your problem.
+> >>
+> >> Also, I noticed that you have two HID devices plugged in during
+> >> suspend. Does it make a difference if you have different devices (e.g.
+> >> a mass storage stick) or none at all?
+> >
+> > Looks like it doesn't like it when there's anything plugged into the
+> > "SS" ports. I tried with just a HID keyboard or with just a hub. In
+> > both cases it fails to resume. If I have nothing connected to the "SS"
+> > ports then it resumes just fine.
+> >
+> > I managed to catch something with ramoops. Looks like it's hitting
+> > POISON_FREE when trying to delete some list entry.
+> >
+> 
+> > <4>[  107.047230] xhci_hcd 0000:00:14.0: Slot 1 endpoint 2 not removed from BW list!
+> > <4>[  107.047574] general protection fault: 0000 [#1] PREEMPT SMP
+> 
+> I took a look at the xhci_mem_cleanup() function and to me it looks
+> like it tries to access a list_head that is already freed.
+> 
+> The struct list_head xhci->devs[].eps[].bw_endpoint_list is added to an endpoint 
+> list in xhci->rh_bw[].bw_table.interval_bw[].endpoints
+> 
+> xhci_mem_cleanup() frees all devices (the allocated xhci->devs[], containing the 
+> bw_endpoint_list) before it starts to loop through, and delete entries from the 
+> xhci->rh_bw[].bw_table.interval_bw[].endpoints list.
+> 
+> I can't see how this relates to Julius patch though, and I'm not sure yet why it 
+> only triggers when devices are connected to SS ports. Maybe just unlucky timing?
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- arch/x86/xen/spinlock.c |  147 +++++++++++++++++++++++++++++++++++++++++++++--
- kernel/Kconfig.locks    |    2 +-
- 2 files changed, 143 insertions(+), 6 deletions(-)
+I think the non-SS ports are connected to the EHCI controllers rather
+than the XHCI controllers. So that explains at least one detail. And I
+guess timing is as good an excuse as any why this gets exposed by the
+patch in question.
 
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index d1b6a32..2a259bb 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -17,6 +17,12 @@
- #include "xen-ops.h"
- #include "debugfs.h"
- 
-+static DEFINE_PER_CPU(int, lock_kicker_irq) = -1;
-+static DEFINE_PER_CPU(char *, irq_name);
-+static bool xen_pvspin = true;
-+
-+#ifndef CONFIG_QUEUE_SPINLOCK
-+
- enum xen_contention_stat {
- 	TAKEN_SLOW,
- 	TAKEN_SLOW_PICKUP,
-@@ -100,12 +106,9 @@ struct xen_lock_waiting {
- 	__ticket_t want;
- };
- 
--static DEFINE_PER_CPU(int, lock_kicker_irq) = -1;
--static DEFINE_PER_CPU(char *, irq_name);
- static DEFINE_PER_CPU(struct xen_lock_waiting, lock_waiting);
- static cpumask_t waiting_cpus;
- 
--static bool xen_pvspin = true;
- __visible void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- {
- 	int irq = __this_cpu_read(lock_kicker_irq);
-@@ -213,6 +216,118 @@ static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
- 	}
- }
- 
-+#else /* CONFIG_QUEUE_SPINLOCK */
-+
-+#ifdef CONFIG_XEN_DEBUG_FS
-+static u32 kick_nohlt_stats;		/* Kick but not halt count	*/
-+static u32 halt_qhead_stats;		/* Queue head halting count	*/
-+static u32 halt_qnode_stats;		/* Queue node halting count	*/
-+static u32 halt_abort_stats;		/* Halting abort count		*/
-+static u32 wake_kick_stats;		/* Wakeup by kicking count	*/
-+static u32 wake_spur_stats;		/* Spurious wakeup count	*/
-+static u64 time_blocked;		/* Total blocking time		*/
-+
-+static inline void xen_halt_stats(enum pv_lock_stats type)
-+{
-+	if (type == PV_HALT_QHEAD)
-+		add_smp(&halt_qhead_stats, 1);
-+	else if (type == PV_HALT_QNODE)
-+		add_smp(&halt_qnode_stats, 1);
-+	else /* type == PV_HALT_ABORT */
-+		add_smp(&halt_abort_stats, 1);
-+}
-+
-+static inline void xen_lock_stats(enum pv_lock_stats type)
-+{
-+	if (type == PV_WAKE_KICKED)
-+		add_smp(&wake_kick_stats, 1);
-+	else if (type == PV_WAKE_SPURIOUS)
-+		add_smp(&wake_spur_stats, 1);
-+	else /* type == PV_KICK_NOHALT */
-+		add_smp(&kick_nohlt_stats, 1);
-+}
-+
-+static inline u64 spin_time_start(void)
-+{
-+	return sched_clock();
-+}
-+
-+static inline void spin_time_accum_blocked(u64 start)
-+{
-+	u64 delta;
-+
-+	delta = sched_clock() - start;
-+	add_smp(&time_blocked, delta);
-+}
-+#else /* CONFIG_XEN_DEBUG_FS */
-+static inline void xen_halt_stats(enum pv_lock_stats type)
-+{
-+}
-+
-+static inline void xen_lock_stats(enum pv_lock_stats type)
-+{
-+}
-+
-+static inline u64 spin_time_start(void)
-+{
-+	return 0;
-+}
-+
-+static inline void spin_time_accum_blocked(u64 start)
-+{
-+}
-+#endif /* CONFIG_XEN_DEBUG_FS */
-+
-+static void xen_kick_cpu(int cpu)
-+{
-+	xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
-+}
-+
-+/*
-+ * Halt the current CPU & release it back to the host
-+ */
-+static void xen_halt_cpu(enum pv_lock_stats type, s8 *state, s8 sval)
-+{
-+	int irq = __this_cpu_read(lock_kicker_irq);
-+	unsigned long flags;
-+	u64 start;
-+
-+	/* If kicker interrupts not initialized yet, just spin */
-+	if (irq == -1)
-+		return;
-+
-+	/*
-+	 * Make sure an interrupt handler can't upset things in a
-+	 * partially setup state.
-+	 */
-+	local_irq_save(flags);
-+	start = spin_time_start();
-+
-+	xen_halt_stats(type);
-+	/* clear pending */
-+	xen_clear_irq_pending(irq);
-+
-+	/* Allow interrupts while blocked */
-+	local_irq_restore(flags);
-+	/*
-+	 * Don't halt if the CPU state has been changed.
-+	 */
-+	if (ACCESS_ONCE(*state) != sval) {
-+		xen_halt_stats(PV_HALT_ABORT);
-+		return;
-+	}
-+	/*
-+	 * If an interrupt happens here, it will leave the wakeup irq
-+	 * pending, which will cause xen_poll_irq() to return
-+	 * immediately.
-+	 */
-+
-+	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
-+	xen_poll_irq(irq);
-+	spin_time_accum_blocked(start);
-+}
-+#endif /* CONFIG_QUEUE_SPINLOCK */
-+
- static irqreturn_t dummy_handler(int irq, void *dev_id)
- {
- 	BUG();
-@@ -258,7 +373,6 @@ void xen_uninit_lock_cpu(int cpu)
- 	per_cpu(irq_name, cpu) = NULL;
- }
- 
--
- /*
-  * Our init of PV spinlocks is split in two init functions due to us
-  * using paravirt patching and jump labels patching and having to do
-@@ -275,8 +389,15 @@ void __init xen_init_spinlocks(void)
- 		return;
- 	}
- 	printk(KERN_DEBUG "xen: PV spinlocks enabled\n");
-+
-+#ifdef CONFIG_QUEUE_SPINLOCK
-+	pv_lock_ops.kick_cpu = xen_kick_cpu;
-+	pv_lock_ops.halt_cpu = xen_halt_cpu;
-+	pv_lock_ops.lockstat = xen_lock_stats;
-+#else
- 	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(xen_lock_spinning);
- 	pv_lock_ops.unlock_kick = xen_unlock_kick;
-+#endif
- }
- 
- /*
-@@ -321,6 +442,7 @@ static int __init xen_spinlock_debugfs(void)
- 
- 	d_spin_debug = debugfs_create_dir("spinlocks", d_xen);
- 
-+#ifndef CONFIG_QUEUE_SPINLOCK
- 	debugfs_create_u8("zero_stats", 0644, d_spin_debug, &zero_stats);
- 
- 	debugfs_create_u32("taken_slow", 0444, d_spin_debug,
-@@ -340,7 +462,22 @@ static int __init xen_spinlock_debugfs(void)
- 
- 	debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
- 				spinlock_stats.histo_spin_blocked, HISTO_BUCKETS + 1);
--
-+#else /* CONFIG_QUEUE_SPINLOCK */
-+	debugfs_create_u32("kick_nohlt_stats",
-+			   0644, d_spin_debug, &kick_nohlt_stats);
-+	debugfs_create_u32("halt_qhead_stats",
-+			   0644, d_spin_debug, &halt_qhead_stats);
-+	debugfs_create_u32("halt_qnode_stats",
-+			   0644, d_spin_debug, &halt_qnode_stats);
-+	debugfs_create_u32("halt_abort_stats",
-+			   0644, d_spin_debug, &halt_abort_stats);
-+	debugfs_create_u32("wake_kick_stats",
-+			   0644, d_spin_debug, &wake_kick_stats);
-+	debugfs_create_u32("wake_spur_stats",
-+			   0644, d_spin_debug, &wake_spur_stats);
-+	debugfs_create_u64("time_blocked",
-+			   0644, d_spin_debug, &time_blocked);
-+#endif /* CONFIG_QUEUE_SPINLOCK */
- 	return 0;
- }
- fs_initcall(xen_spinlock_debugfs);
-diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
-index a70fdeb..451e392 100644
---- a/kernel/Kconfig.locks
-+++ b/kernel/Kconfig.locks
-@@ -229,4 +229,4 @@ config ARCH_USE_QUEUE_SPINLOCK
- 
- config QUEUE_SPINLOCK
- 	def_bool y if ARCH_USE_QUEUE_SPINLOCK
--	depends on SMP && (!PARAVIRT_SPINLOCKS || !XEN)
-+	depends on SMP
+> 
+> Does this help?:
+
+Indeed it does. The machine just survived a dozen or so suspend+resume
+cycles without a hitch. The bug was 100% reproducible on this machine,
+so the fix seems solid.
+
+Tested-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+
+> 
+> diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+> index c089668..b1a8a5f 100644
+> --- a/drivers/usb/host/xhci-mem.c
+> +++ b/drivers/usb/host/xhci-mem.c
+> @@ -1822,6 +1822,16 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+>                  kfree(cur_cd);
+>          }
+> 
+> +       num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
+> +       for (i = 0; i < num_ports; i++) {
+> +               struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
+> +               for (j = 0; j < XHCI_MAX_INTERVAL; j++) {
+> +                       struct list_head *ep = &bwt->interval_bw[j].endpoints;
+> +                       while (!list_empty(ep))
+> +                               list_del_init(ep->next);
+> +               }
+> +       }
+> +
+>          for (i = 1; i < MAX_HC_SLOTS; ++i)
+>                  xhci_free_virt_device(xhci, i);
+> 
+> @@ -1857,16 +1867,6 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+>          if (!xhci->rh_bw)
+>                  goto no_bw;
+> 
+> -       num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
+> -       for (i = 0; i < num_ports; i++) {
+> -               struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
+> -               for (j = 0; j < XHCI_MAX_INTERVAL; j++) {
+> -                       struct list_head *ep = &bwt->interval_bw[j].endpoints;
+> -                       while (!list_empty(ep))
+> -                               list_del_init(ep->next);
+> -               }
+> -       }
+> -
+>          for (i = 0; i < num_ports; i++) {
+>                  struct xhci_tt_bw_info *tt, *n;
+>                  list_for_each_entry_safe(tt, n, &xhci->rh_bw[i].tts, tt_list) {
+
 -- 
-1.7.1
-
+Ville Syrjälä
+Intel OTC
