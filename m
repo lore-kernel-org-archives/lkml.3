@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303AbaEGWRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 18:17:48 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:41370 "EHLO
+	id S1752444AbaEGWTG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 18:19:06 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:53567 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702AbaEGWRr (ORCPT
+	with ESMTP id S1750966AbaEGWTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 18:17:47 -0400
-Date: Wed, 7 May 2014 15:17:42 -0700
+	Wed, 7 May 2014 18:19:03 -0400
+Date: Wed, 7 May 2014 15:18:58 -0700
 From: josh@joshtriplett.org
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
@@ -16,58 +16,50 @@ Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 39/45] rcutorture: Note diffs from git
- commits
-Message-ID: <20140507221742.GQ27924@cloud>
+Subject: Re: [PATCH tip/core/rcu 41/45] torture: Put qemu into the
+ background
+Message-ID: <20140507221858.GR27924@cloud>
 References: <20140429002455.GA15461@linux.vnet.ibm.com>
  <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1398731133-18925-39-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1398731133-18925-41-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398731133-18925-39-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1398731133-18925-41-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 05:25:27PM -0700, Paul E. McKenney wrote:
+On Mon, Apr 28, 2014 at 05:25:29PM -0700, Paul E. McKenney wrote:
 > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> The current scripting only keeps track of the git SHA-1 of the current
-> HEAD.  This can cause confusion in cases where testing ran in a git
-> tree where changes had not yet been checked in.  This commit therefore
-> also records the output of "git diff HEAD" to provide the information
-> needed to reconstruct the source tree that was tested.
+> Currently, qemu runs in the foreground, which prevents the script from
+> killing it in case the kernel locks up.  This commit therefore places
+> qemu into the background, allowing the script to recover from lockups.
 > 
 > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Nit below.
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+qemu originally did run in the background before this patch series;
+please merge this into the patch that introduces the echo and thus
+breaks that.
 
-> ---
->  tools/testing/selftests/rcutorture/bin/kvm.sh | 5 +++++
->  1 file changed, 5 insertions(+)
+>  tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> index 4eed2a4f42c7..91661845fdec 100644
-> --- a/tools/testing/selftests/rcutorture/bin/kvm.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> @@ -277,6 +277,11 @@ if test -d .git
->  then
->  	git status >> $resdir/$ds/testid.txt
->  	git rev-parse HEAD >> $resdir/$ds/testid.txt
-> +	git diff HEAD > $T/git-diff 2>&1
-> +	if test -s $T/git-diff
-
-You don't need test here; you can use the return value of git diff.
-
-> +	then
-> +		cp $T/git-diff $resdir/$ds
-> +	fi
+> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> index b1e85b049075..67e89f06e77f 100755
+> --- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> +++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> @@ -157,7 +157,7 @@ then
+>  	echo Build-only run specified, boot/test omitted.
+>  	exit 0
 >  fi
->  ___EOF___
->  awk < $T/cfgcpu.pack \
+> -$QEMU $qemu_args -m 512 -kernel $builddir/$BOOT_IMAGE -append "$qemu_append $boot_args"; echo $? > $resdir/qemu-retval &
+> +( $QEMU $qemu_args -m 512 -kernel $builddir/$BOOT_IMAGE -append "$qemu_append $boot_args"; echo $? > $resdir/qemu-retval ) &
+>  qemu_pid=$!
+>  commandcompleted=0
+>  echo Monitoring qemu job at pid $qemu_pid
 > -- 
 > 1.8.1.5
 > 
