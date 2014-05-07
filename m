@@ -1,20 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250AbaEGNNk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:13:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45381 "EHLO
+	id S932788AbaEGNN5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:13:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45390 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756155AbaEGNNg (ORCPT
+	with ESMTP id S932368AbaEGNNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:13:36 -0400
+	Wed, 7 May 2014 09:13:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 10/70] ahci: do not request irq for dummy port
-Date: Wed,  7 May 2014 14:12:13 +0100
-Message-Id: <1399468393-10140-11-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 11/70] genirq: Allow forcing cpu affinity of interrupts
+Date: Wed,  7 May 2014 14:12:14 +0100
+Message-Id: <1399468393-10140-12-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -27,137 +34,185 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Milburn <dmilburn@redhat.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 9ae794ac5e407d3bc3fec785db481d5a2c0fa275 upstream.
+commit 01f8fa4f01d8362358eb90e412bd7ae18a3ec1ad upstream.
 
-System may crash in ahci_hw_interrupt() or ahci_thread_fn() when
-accessing the interrupt status in a port's private_data if the port is
-actually a DUMMY port.
+The current implementation of irq_set_affinity() refuses rightfully to
+route an interrupt to an offline cpu.
 
-00:1f.2 SATA controller: Intel Corporation 82801JI (ICH10 Family) SATA AHCI Controller
+But there is a special case, where this is actually desired. Some of
+the ARM SoCs have per cpu timers which require setting the affinity
+during cpu startup where the cpu is not yet in the online mask.
 
-<snip console output for linux-3.15-rc1>
-[    9.352080] ahci 0000:00:1f.2: AHCI 0001.0200 32 slots 6 ports 3 Gbps 0x1 impl SATA mode
-[    9.352084] ahci 0000:00:1f.2: flags: 64bit ncq sntf pm led clo pio slum part ccc
-[    9.368155] Console: switching to colour frame buffer device 128x48
-[    9.439759] mgag200 0000:11:00.0: fb0: mgadrmfb frame buffer device
-[    9.446765] mgag200 0000:11:00.0: registered panic notifier
-[    9.470166] scsi1 : ahci
-[    9.479166] scsi2 : ahci
-[    9.488172] scsi3 : ahci
-[    9.497174] scsi4 : ahci
-[    9.506175] scsi5 : ahci
-[    9.515174] scsi6 : ahci
-[    9.518181] ata1: SATA max UDMA/133 abar m2048@0x95c00000 port 0x95c00100 irq 91
-[    9.526448] ata2: DUMMY
-[    9.529182] ata3: DUMMY
-[    9.531916] ata4: DUMMY
-[    9.534650] ata5: DUMMY
-[    9.537382] ata6: DUMMY
-[    9.576196] [drm] Initialized mgag200 1.0.0 20110418 for 0000:11:00.0 on minor 0
-[    9.845257] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-[    9.865161] ata1.00: ATAPI: Optiarc DVD RW AD-7580S, FX04, max UDMA/100
-[    9.891407] ata1.00: configured for UDMA/100
-[    9.900525] scsi 1:0:0:0: CD-ROM            Optiarc  DVD RW AD-7580S  FX04 PQ: 0 ANSI: 5
-[   10.247399] iTCO_vendor_support: vendor-support=0
-[   10.261572] iTCO_wdt: Intel TCO WatchDog Timer Driver v1.11
-[   10.269764] iTCO_wdt: unable to reset NO_REBOOT flag, device disabled by hardware/BIOS
-[   10.301932] sd 0:2:0:0: [sda] 570310656 512-byte logical blocks: (291 GB/271 GiB)
-[   10.317085] sd 0:2:0:0: [sda] Write Protect is off
-[   10.328326] sd 0:2:0:0: [sda] Write cache: disabled, read cache: disabled, supports DPO and FUA
-[   10.375452] BUG: unable to handle kernel NULL pointer dereference at 000000000000003c
-[   10.384217] IP: [<ffffffffa0133df0>] ahci_hw_interrupt+0x100/0x130 [libahci]
-[   10.392101] PGD 0
-[   10.394353] Oops: 0000 [#1] SMP
-[   10.397978] Modules linked in: sr_mod(+) cdrom sd_mod iTCO_wdt crc_t10dif iTCO_vendor_support crct10dif_common ahci libahci libata lpc_ich mfd_core mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit drm_kms_helper ttm drm i2c_core megaraid_sas dm_mirror dm_region_hash
-dm_log dm_mod
-[   10.426499] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.15.0-rc1 #1
-[   10.433495] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS QSSC-S4R.QCI.01.00.S013.032920111005 03/29/2011
-[   10.443886] task: ffffffff81906460 ti: ffffffff818f0000 task.ti: ffffffff818f0000
-[   10.452239] RIP: 0010:[<ffffffffa0133df0>]  [<ffffffffa0133df0>] ahci_hw_interrupt+0x100/0x130 [libahci]
-[   10.462838] RSP: 0018:ffff880033c03d98  EFLAGS: 00010046
-[   10.468767] RAX: 0000000000a400a4 RBX: ffff880029a6bc18 RCX: 00000000fffffffa
-[   10.476731] RDX: 00000000000000a4 RSI: ffff880029bb0000 RDI: ffff880029a6bc18
-[   10.484696] RBP: ffff880033c03dc8 R08: 0000000000000000 R09: ffff88002f800490
-[   10.492661] R10: 0000000000000000 R11: 0000000000000005 R12: 0000000000000000
-[   10.500625] R13: ffff880029a6bd98 R14: 0000000000000000 R15: ffffc90000194000
-[   10.508590] FS:  0000000000000000(0000) GS:ffff880033c00000(0000) knlGS:0000000000000000
-[   10.517623] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   10.524035] CR2: 000000000000003c CR3: 00000000328ff000 CR4: 00000000000007b0
-[   10.531999] Stack:
-[   10.534241]  0000000000000017 ffff880031ba7d00 000000000000005c ffff880031ba7d00
-[   10.542535]  0000000000000000 000000000000005c ffff880033c03e10 ffffffff810c2a1e
-[   10.550827]  ffff880031ae2900 000000008108fb4f ffff880031ae2900 ffff880031ae2984
-[   10.559121] Call Trace:
-[   10.561849]  <IRQ>
-[   10.563994]  [<ffffffff810c2a1e>] handle_irq_event_percpu+0x3e/0x1a0
-[   10.571309]  [<ffffffff810c2bbd>] handle_irq_event+0x3d/0x60
-[   10.577631]  [<ffffffff810c4fdd>] try_one_irq.isra.6+0x8d/0xf0
-[   10.584142]  [<ffffffff810c5313>] note_interrupt+0x173/0x1f0
-[   10.590460]  [<ffffffff810c2a8e>] handle_irq_event_percpu+0xae/0x1a0
-[   10.597554]  [<ffffffff810c2bbd>] handle_irq_event+0x3d/0x60
-[   10.603872]  [<ffffffff810c5727>] handle_edge_irq+0x77/0x130
-[   10.610199]  [<ffffffff81014b8f>] handle_irq+0xbf/0x150
-[   10.616040]  [<ffffffff8109ff4e>] ? vtime_account_idle+0xe/0x50
-[   10.622654]  [<ffffffff815fca1a>] ? atomic_notifier_call_chain+0x1a/0x20
-[   10.630140]  [<ffffffff816038cf>] do_IRQ+0x4f/0xf0
-[   10.635490]  [<ffffffff815f8aed>] common_interrupt+0x6d/0x6d
-[   10.641805]  <EOI>
-[   10.643950]  [<ffffffff8149ca9f>] ? cpuidle_enter_state+0x4f/0xc0
-[   10.650972]  [<ffffffff8149ca98>] ? cpuidle_enter_state+0x48/0xc0
-[   10.657775]  [<ffffffff8149cb47>] cpuidle_enter+0x17/0x20
-[   10.663807]  [<ffffffff810b0070>] cpu_startup_entry+0x2c0/0x3d0
-[   10.670423]  [<ffffffff815dfcc7>] rest_init+0x77/0x80
-[   10.676065]  [<ffffffff81a60f47>] start_kernel+0x40f/0x41a
-[   10.682190]  [<ffffffff81a60941>] ? repair_env_string+0x5c/0x5c
-[   10.688799]  [<ffffffff81a60120>] ? early_idt_handlers+0x120/0x120
-[   10.695699]  [<ffffffff81a605ee>] x86_64_start_reservations+0x2a/0x2c
-[   10.702889]  [<ffffffff81a60733>] x86_64_start_kernel+0x143/0x152
-[   10.709689] Code: a0 fc ff 85 c0 8b 4d d4 74 c3 48 8b 7b 08 89 ca 48 c7 c6 60 66 13 a0 31 c0 e8 9d 70 28 e1 8b 4d d4 eb aa 0f 1f 84 00 00 00 00 00 <45> 8b 64 24 3c 48 89 df e8 23 47 4c e1 41 83 fc 01 19 c0 48 83
-[   10.731470] RIP  [<ffffffffa0133df0>] ahci_hw_interrupt+0x100/0x130 [libahci]
-[   10.739441]  RSP <ffff880033c03d98>
-[   10.743333] CR2: 000000000000003c
-[   10.747032] ---[ end trace b6e82636970e2690 ]---
-[   10.760190] Kernel panic - not syncing: Fatal exception in interrupt
-[   10.767291] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
+If we can't do that, then the local timer interrupt for the about to
+become online cpu is routed to some random online cpu.
 
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>
-Signed-of-by: David Milburn <dmilburn@redhat.com>
-Fixes: 5ca72c4f7c41 ("AHCI: Support multiple MSIs")
+The developers of the affected machines tried to work around that
+issue, but that results in a massive mess in that timer code.
+
+We have a yet unused argument in the set_affinity callbacks of the irq
+chips, which I added back then for a similar reason. It was never
+required so it got not used. But I'm happy that I never removed it.
+
+That allows us to implement a sane handling of the above scenario. So
+the affected SoC drivers can add the required force handling to their
+interrupt chip, switch the timer code to irq_force_affinity() and
+things just work.
+
+This does not affect any existing user of irq_set_affinity().
+
+Tagged for stable to allow a simple fix of the affected SoC clock
+event drivers.
+
+Reported-and-tested-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Tomasz Figa <t.figa@samsung.com>,
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+Link: http://lkml.kernel.org/r/20140416143315.717251504@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/ahci.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ arch/mips/cavium-octeon/octeon-irq.c |  2 +-
+ include/linux/interrupt.h            | 35 ++++++++++++++++++++++++++++++++++-
+ include/linux/irq.h                  |  3 ++-
+ kernel/irq/manage.c                  | 17 ++++++-----------
+ 4 files changed, 43 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 75979cd..a5cf3ea 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1169,18 +1169,14 @@ int ahci_host_activate(struct ata_host *host, int irq, unsigned int n_msis)
- 		return rc;
- 
- 	for (i = 0; i < host->n_ports; i++) {
--		const char* desc;
- 		struct ahci_port_priv *pp = host->ports[i]->private_data;
- 
- 		/* pp is NULL for dummy ports */
- 		if (pp)
--			desc = pp->irq_desc;
--		else
--			desc = dev_driver_string(host->dev);
--
--		rc = devm_request_threaded_irq(host->dev,
--			irq + i, ahci_hw_interrupt, ahci_thread_fn, IRQF_SHARED,
--			desc, host->ports[i]);
-+			rc = devm_request_threaded_irq(host->dev,
-+						       irq + i, ahci_hw_interrupt,
-+						       ahci_thread_fn, IRQF_SHARED,
-+						       pp->irq_desc, host->ports[i]);
- 		if (rc)
- 			goto out_free_irqs;
+diff --git a/arch/mips/cavium-octeon/octeon-irq.c b/arch/mips/cavium-octeon/octeon-irq.c
+index 9d36774..011e704 100644
+--- a/arch/mips/cavium-octeon/octeon-irq.c
++++ b/arch/mips/cavium-octeon/octeon-irq.c
+@@ -635,7 +635,7 @@ static void octeon_irq_cpu_offline_ciu(struct irq_data *data)
+ 		cpumask_clear(&new_affinity);
+ 		cpumask_set_cpu(cpumask_first(cpu_online_mask), &new_affinity);
  	}
+-	__irq_set_affinity_locked(data, &new_affinity);
++	irq_set_affinity_locked(data, &new_affinity, false);
+ }
+ 
+ static int octeon_irq_ciu_set_affinity(struct irq_data *data,
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 5fa5afe..e8401d0 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -239,7 +239,40 @@ static inline int check_wakeup_irqs(void) { return 0; }
+ 
+ extern cpumask_var_t irq_default_affinity;
+ 
+-extern int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask);
++/* Internal implementation. Use the helpers below */
++extern int __irq_set_affinity(unsigned int irq, const struct cpumask *cpumask,
++			      bool force);
++
++/**
++ * irq_set_affinity - Set the irq affinity of a given irq
++ * @irq:	Interrupt to set affinity
++ * @mask:	cpumask
++ *
++ * Fails if cpumask does not contain an online CPU
++ */
++static inline int
++irq_set_affinity(unsigned int irq, const struct cpumask *cpumask)
++{
++	return __irq_set_affinity(irq, cpumask, false);
++}
++
++/**
++ * irq_force_affinity - Force the irq affinity of a given irq
++ * @irq:	Interrupt to set affinity
++ * @mask:	cpumask
++ *
++ * Same as irq_set_affinity, but without checking the mask against
++ * online cpus.
++ *
++ * Solely for low level cpu hotplug code, where we need to make per
++ * cpu interrupts affine before the cpu becomes online.
++ */
++static inline int
++irq_force_affinity(unsigned int irq, const struct cpumask *cpumask)
++{
++	return __irq_set_affinity(irq, cpumask, true);
++}
++
+ extern int irq_can_set_affinity(unsigned int irq);
+ extern int irq_select_affinity(unsigned int irq);
+ 
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index f04d3ba..04b979c 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -380,7 +380,8 @@ extern void remove_percpu_irq(unsigned int irq, struct irqaction *act);
+ 
+ extern void irq_cpu_online(void);
+ extern void irq_cpu_offline(void);
+-extern int __irq_set_affinity_locked(struct irq_data *data,  const struct cpumask *cpumask);
++extern int irq_set_affinity_locked(struct irq_data *data,
++				   const struct cpumask *cpumask, bool force);
+ 
+ #ifdef CONFIG_GENERIC_HARDIRQS
+ 
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 4c84746..9e31fa7 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -150,7 +150,7 @@ int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	struct irq_chip *chip = irq_data_get_irq_chip(data);
+ 	int ret;
+ 
+-	ret = chip->irq_set_affinity(data, mask, false);
++	ret = chip->irq_set_affinity(data, mask, force);
+ 	switch (ret) {
+ 	case IRQ_SET_MASK_OK:
+ 		cpumask_copy(data->affinity, mask);
+@@ -162,7 +162,8 @@ int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	return ret;
+ }
+ 
+-int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
++int irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask,
++			    bool force)
+ {
+ 	struct irq_chip *chip = irq_data_get_irq_chip(data);
+ 	struct irq_desc *desc = irq_data_to_desc(data);
+@@ -172,7 +173,7 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
+ 		return -EINVAL;
+ 
+ 	if (irq_can_move_pcntxt(data)) {
+-		ret = irq_do_set_affinity(data, mask, false);
++		ret = irq_do_set_affinity(data, mask, force);
+ 	} else {
+ 		irqd_set_move_pending(data);
+ 		irq_copy_pending(desc, mask);
+@@ -187,13 +188,7 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
+ 	return ret;
+ }
+ 
+-/**
+- *	irq_set_affinity - Set the irq affinity of a given irq
+- *	@irq:		Interrupt to set affinity
+- *	@mask:		cpumask
+- *
+- */
+-int irq_set_affinity(unsigned int irq, const struct cpumask *mask)
++int __irq_set_affinity(unsigned int irq, const struct cpumask *mask, bool force)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
+ 	unsigned long flags;
+@@ -203,7 +198,7 @@ int irq_set_affinity(unsigned int irq, const struct cpumask *mask)
+ 		return -EINVAL;
+ 
+ 	raw_spin_lock_irqsave(&desc->lock, flags);
+-	ret =  __irq_set_affinity_locked(irq_desc_get_irq_data(desc), mask);
++	ret = irq_set_affinity_locked(irq_desc_get_irq_data(desc), mask, force);
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	return ret;
+ }
 -- 
 1.9.1
 
