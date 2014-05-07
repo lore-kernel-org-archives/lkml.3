@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933761AbaEGNdf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:33:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45408 "EHLO
+	id S933771AbaEGNeE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:34:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45375 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932798AbaEGNOC (ORCPT
+	with ESMTP id S1755847AbaEGNNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:14:02 -0400
+	Wed, 7 May 2014 09:13:34 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jeff Layton <jlayton@redhat.com>, "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 14/70] nfsd: set timeparms.to_maxval in setup_callback_client
-Date: Wed,  7 May 2014 14:12:17 +0100
-Message-Id: <1399468393-10140-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 04/70] pata_at91: fix ata_host_activate() failure handling
+Date: Wed,  7 May 2014 14:12:07 +0100
+Message-Id: <1399468393-10140-5-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -27,37 +32,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-commit 3758cf7e14b753838fe754ede3862af10b35fdac upstream.
+commit 27aa64b9d1bd0d23fd692c91763a48309b694311 upstream.
 
-...otherwise the logic in the timeout handling doesn't work correctly.
+Add missing clk_put() call to ata_host_activate() failure path.
 
-Spotted-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Sergei says,
+
+  "Hm, I have once fixed that (see that *if* (!ret)) but looks like a
+   later commit 477c87e90853d136b188c50c0e4a93d01cad872e (ARM:
+   at91/pata: use gpio_is_valid to check the gpio) broke it again. :-(
+   Would be good if the changelog did mention that..."
+
+Cc: Andrew Victor <linux@maxim.org.za>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfsd/nfs4callback.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/ata/pata_at91.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
-index 7f05cd1..3eaa6e3 100644
---- a/fs/nfsd/nfs4callback.c
-+++ b/fs/nfsd/nfs4callback.c
-@@ -637,9 +637,11 @@ static struct rpc_cred *get_backchannel_cred(struct nfs4_client *clp, struct rpc
+diff --git a/drivers/ata/pata_at91.c b/drivers/ata/pata_at91.c
+index 5364f97..43a4ed9 100644
+--- a/drivers/ata/pata_at91.c
++++ b/drivers/ata/pata_at91.c
+@@ -408,12 +408,13 @@ static int pata_at91_probe(struct platform_device *pdev)
  
- static int setup_callback_client(struct nfs4_client *clp, struct nfs4_cb_conn *conn, struct nfsd4_session *ses)
- {
-+	int maxtime = max_cb_time(clp->net);
- 	struct rpc_timeout	timeparms = {
--		.to_initval	= max_cb_time(clp->net),
-+		.to_initval	= maxtime,
- 		.to_retries	= 0,
-+		.to_maxval	= maxtime,
- 	};
- 	struct rpc_create_args args = {
- 		.net		= clp->net,
+ 	host->private_data = info;
+ 
+-	return ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
+-			gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
+-			irq_flags, &pata_at91_sht);
++	ret = ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
++				gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
++				irq_flags, &pata_at91_sht);
++	if (ret)
++		goto err_put;
+ 
+-	if (!ret)
+-		return 0;
++	return 0;
+ 
+ err_put:
+ 	clk_put(info->mck);
 -- 
 1.9.1
 
