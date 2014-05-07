@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902AbaEGTw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 15:52:56 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59856 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851AbaEGTwy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 15:52:54 -0400
-Date: Wed, 7 May 2014 20:50:30 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org
-Message-ID: <20140507195030.GM22111@sirena.org.uk>
-References: <1399391081-16095-1-git-send-email-alexandre.belloni@free-electrons.com>
+	id S1751970AbaEGTxB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 15:53:01 -0400
+Received: from mout.gmx.net ([212.227.17.20]:50879 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751918AbaEGTw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 15:52:57 -0400
+Date: Wed, 7 May 2014 21:21:58 +0200
+From: Christian Engelmayer <cengelma@gmx.at>
+To: devel@driverdev.osuosl.org
+Cc: Larry.Finger@lwfinger.net, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] staging: rtl8723au: Remove unused pointer in
+ rtw_wdev_free()
+Message-ID: <20140507212158.5f5f2708@spike>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="35HXvU1qzCTR5mW7"
-Content-Disposition: inline
-In-Reply-To: <1399391081-16095-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Cookie: You are standing on my toes.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 92.40.248.116
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: atmel: fix incorrect comparison
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:hBYBI0/Vm+Rj9s+ixCprfUrdEKBf/rhCNKdfWeLftqvmi+y5f3N
+ fscsqejgyHxltis/RJWHy1QvYejvec95c7aF5adRMplyFCwq+X2LluRkmwowHvOfIhZr7Mu
+ 0ljyah+pb2UlEbWy4u2WdKT4WxEiENaosJSgVjDEG9vD14CTtt2ACtwuOGGZs90pbfBgMV9
+ qYAuKraWPTFiLOPXrgFyA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Pointer 'pwdev_priv' in function rtw_wdev_free() is unused - thus remove it.
 
---35HXvU1qzCTR5mW7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+---
+v2: Resend after v1 failed to apply
 
-On Tue, May 06, 2014 at 05:44:41PM +0200, Alexandre Belloni wrote:
-> Found using smatch:
-> drivers/spi/spi-atmel.c:878 atmel_spi_pump_pio_data() warn: unsigned
-> 'as->current_remaining_bytes' is never less than zero.
+   * rebased against staging-next - commit 09c3fbba (staging: rtl8188eu:
+     Remove 'u8 *pbuf' from struct recv_buf)
+   * fixed mua: no multipart, 7bit text/plain us-ascii
 
-Applied, thanks.
+Compile tested and applies against branch staging-next of tree
+git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+---
+ drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
---35HXvU1qzCTR5mW7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c b/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
+index ca100dc..be89741 100644
+--- a/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
++++ b/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
+@@ -3576,15 +3576,11 @@ exit:
+ 
+ void rtw_wdev_free(struct wireless_dev *wdev)
+ {
+-	struct rtw_wdev_priv *pwdev_priv;
+-
+ 	DBG_8723A("%s(wdev =%p)\n", __func__, wdev);
+ 
+ 	if (!wdev)
+ 		return;
+ 
+-	pwdev_priv = wdev_to_priv(wdev);
+-
+ 	kfree(wdev->wiphy->bands[IEEE80211_BAND_2GHZ]);
+ 	kfree(wdev->wiphy->bands[IEEE80211_BAND_5GHZ]);
+ 
+-- 
+1.9.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTao6DAAoJELSic+t+oim9qlwQAJl4blCLqm/Rqh1eEgs3luJi
-ITt6gYd2koJzm8Ah+Df08VGtaGd6ZIg7q2jF5v7NkEGN7yXXsECE3pGfhWWl+EBX
-cbpcU/9iKVpq0Jg8yWVw21Xnfb70Mu5a7lKrE6p4yub+RzJoJBjPeeScVL90fGok
-/jSR+1sHzo3lsEnFPgtRu1UhhgQFn6j+Fd13Qz2faj7CKYrm7Zpa/O7fpNu03Lna
-YDl2sdWYAuL0KhgM9bfB5JecIxJPZqrkvinDSLgr8Uc9CP7Z01QWKxjyOWFAPao3
-vYQFSC22nIXq+f3xpLuTAvmplgHPc2QuFRBlMwkvKwhnEM72TjHwb5gCy+7JaI3R
-Tl/vUHWsJgJoeZpUf9R8QdpTkQIqckPUidzGvXS/rTM7UaCGVMIbJCb7b37FTzHr
-CnuzQt6Bg9dYWwy7pS3JAlKgR3QPQk2tDpcpykxiFFnve64ZLKUN8CBMFtOkAj49
-szfj1FxUrFVW/bjFDOCbhnzxOuvYYubC7JLB77jXWike2fT2S696a8TD1ZV1y/8+
-B0tRdTr6MsJEDW1zAs/FeyyEAHEKQScZsA73NQsSuq/dyIT2H80DQgC2PJ48hRnu
-ciNG4S7D4VLf4LZHxWdyKbYlB5oMI8zJ3lcLZqO3NhGE2CenwNz7v5dOLsS5QA74
-uWsSweO/T9xP11PtnvTC
-=HOsK
------END PGP SIGNATURE-----
-
---35HXvU1qzCTR5mW7--
