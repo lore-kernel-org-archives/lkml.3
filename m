@@ -1,98 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204AbaEGJD3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:03:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55690 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751838AbaEGJD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:03:26 -0400
-Date: Wed, 7 May 2014 10:03:22 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Jan Kara <jack@suse.cz>
-Cc: Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 17/17] mm: filemap: Avoid unnecessary barries and
- waitqueue lookup in unlock_page fastpath
-Message-ID: <20140507090322.GD23991@suse.de>
-References: <1398933888-4940-1-git-send-email-mgorman@suse.de>
- <1398933888-4940-18-git-send-email-mgorman@suse.de>
- <20140505105054.GC23927@quack.suse.cz>
+	id S932250AbaEGJEF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:04:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44050 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620AbaEGJEB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 05:04:01 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: "stable\@vger.kernel.org" <stable@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "arc-linux-dev\@synopsys.com" <arc-linux-dev@synopsys.com>
+Subject: Re: ARC patches for stable 3.10
+References: <C2D7FE5348E1B147BCA15975FBA230751B1242@IN01WEMBXA.internal.synopsys.com>
+	<20140505120835.GB5869@hercules> <5369BB0A.9000503@synopsys.com>
+Date: Wed, 07 May 2014 10:03:58 +0100
+In-Reply-To: <5369BB0A.9000503@synopsys.com> (Vineet Gupta's message of "Wed,
+	7 May 2014 10:18:10 +0530")
+Message-ID: <87vbtiq7sx.fsf@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140505105054.GC23927@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 12:50:54PM +0200, Jan Kara wrote:
-> On Thu 01-05-14 09:44:48, Mel Gorman wrote:
-> > From: Nick Piggin <npiggin@suse.de>
-> > 
-> > This patch introduces a new page flag for 64-bit capable machines,
-> > PG_waiters, to signal there are processes waiting on PG_lock and uses it to
-> > avoid memory barriers and waitqueue hash lookup in the unlock_page fastpath.
-> > 
-> > This adds a few branches to the fast path but avoids bouncing a dirty
-> > cache line between CPUs. 32-bit machines always take the slow path but the
-> > primary motivation for this patch is large machines so I do not think that
-> > is a concern.
-> ...
-> >  /* 
-> > diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
-> > index 7d50f79..fb83fe0 100644
-> > --- a/kernel/sched/wait.c
-> > +++ b/kernel/sched/wait.c
-> > @@ -304,8 +304,7 @@ int wake_bit_function(wait_queue_t *wait, unsigned mode, int sync, void *arg)
-> >  		= container_of(wait, struct wait_bit_queue, wait);
-> >  
-> >  	if (wait_bit->key.flags != key->flags ||
-> > -			wait_bit->key.bit_nr != key->bit_nr ||
-> > -			test_bit(key->bit_nr, key->flags))
-> > +			wait_bit->key.bit_nr != key->bit_nr)
-> >  		return 0;
-> >  	else
-> >  		return autoremove_wake_function(wait, mode, sync, key);
->   This change seems to be really unrelated? And it would deserve a comment
-> on its own I'd think so maybe split that in a separate patch?
-> 
+Vineet Gupta <Vineet.Gupta1@synopsys.com> writes:
 
-Without it processes can sleep forever on the lock bit and hang due to
-races between when the PG_waiters is set and cleared. I'll investigate
-if this can be done a better way.
+> Hi Luis,
+>
+> On Monday 05 May 2014 05:38 PM, Luis Henriques wrote:
+>> On Wed, Apr 30, 2014 at 09:53:05AM +0000, Vineet Gupta wrote:
+>>> Hi,
+>>>
+>>> Please apply the following mainline commits to stable 3.10 as prerequisites for a
+>>> patch for 3.15/stable which will follow to Linus right after.
+>>>
+>>> 147aece29b15051173eb1e767018135361cdba89  (went in 3.11-rc1)
+>>> "ARC: Entry Handler tweaks: Simplify branch for in-kernel preemption"
+>>>
+>>> fce16bc35ae4a45634f3dc348d8d297a25c277cf  (went in 3.12-rc1)
+>>> "ARC: Entry Handler tweaks: Optimize away redundant IRQ_DISABLE_SAVE"
+>>>
+>>> Thx,
+>>> -Vineet
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe stable" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> 
+>> Thank you, I'll queue the 2nd patch for the 3.11 kernel (the 1st one
+>> is already applied).
+>> 
+>> Cheers,
+>> --
+>> Luís
+>
+> Thanks for this. FWIW, above patch(es) were just a prerequisite for cleanly
+> applying below to 3.1x
+>
+> 8aa9e85adac6 ARC: !PREEMPT: Ensure Return to kernel mode is IRQ safe
+>
+> Thx,
+> -Vineet
 
-> > diff --git a/mm/filemap.c b/mm/filemap.c
-> > index c60ed0f..93e4385 100644
-> > --- a/mm/filemap.c
-> > +++ b/mm/filemap.c
-> > +int  __wait_on_page_locked_killable(struct page *page)
-> > +{
-> > +	int ret = 0;
-> > +	wait_queue_head_t *wq = page_waitqueue(page);
-> > +	DEFINE_WAIT_BIT(wait, &page->flags, PG_locked);
-> > +
-> > +	if (!test_bit(PG_locked, &page->flags))
-> > +		return 0;
-> > +	do {
-> > +		prepare_to_wait(wq, &wait.wait, TASK_KILLABLE);
-> > +		if (!PageWaiters(page))
-> > +			SetPageWaiters(page);
-> > +		if (likely(PageLocked(page)))
-> > +			ret = sleep_on_page_killable(page);
-> > +		finish_wait(wq, &wait.wait);
-> > +	} while (PageLocked(page) && !ret);
->   So I'm somewhat wondering why this is the only page waiting variant that
-> does finish_wait() inside the loop. Everyone else does it outside the while
-> loop which seems sufficient to me even in this case...
-> 
+Yes, I understood that and this patch will also be queued for the 3.11
+kernel.  Thanks for clarifying.
 
-No reason. The finish_wait can always be outside. I'll fix it up.
-Thanks.
-
+Cheers,
 -- 
-Mel Gorman
-SUSE Labs
+Luís
