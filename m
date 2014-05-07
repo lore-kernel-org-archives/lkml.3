@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595AbaEGGjE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 02:39:04 -0400
-Received: from smtp-out-029.synserver.de ([212.40.185.29]:1042 "EHLO
-	smtp-out-016.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750969AbaEGGjC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 02:39:02 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 13621
-Message-ID: <5369D4FF.1070004@metafoo.de>
-Date: Wed, 07 May 2014 08:38:55 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	id S1752062AbaEGGnU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 02:43:20 -0400
+Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:40039
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751670AbaEGGnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 02:43:18 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <linux-mm@kvack.org>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] mm, highmem: clean up the comment
+Date: Wed, 7 May 2014 13:57:45 +0800
+Message-ID: <1399442265-22421-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(189002)(199002)(92726001)(89996001)(77982001)(19580395003)(83322001)(19580405001)(69596002)(4396001)(81342001)(68736004)(62966002)(77096999)(83072002)(85852003)(88136002)(76482001)(97736001)(2009001)(87936001)(81156002)(46102001)(86362001)(93916002)(99396002)(87286001)(92566001)(50986999)(50226001)(79102001)(84676001)(77156001)(74502001)(74662001)(31966008)(20776003)(47776003)(80022001)(64706001)(50466002)(81542001)(44976005)(6806004)(36756003)(48376002)(21056001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB501;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-To: Christopher Freeman <cfreeman@nvidia.com>
-CC: ldewangan@nvidia.com, swarren@nvidia.com, vinod.koul@intel.com,
-        dan.j.williams@intel.com, dmaengine@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 0/3] Tegra DMA residue improvements
-References: <1399411343-12222-1-git-send-email-cfreeman@nvidia.com>
-In-Reply-To: <1399411343-12222-1-git-send-email-cfreeman@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Forefront-PRVS: 0204F0BDE2
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2014 11:22 PM, Christopher Freeman wrote:
-> A collection of patches to improve Tegra's DMA residual reporting
->
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ mm/highmem.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-It would be nice if you could, while you are at it, also implement the 
-device_salve_caps callback. This will allow clients to automatically pick up 
-things like the supported granularity and other things.
+diff --git a/mm/highmem.c b/mm/highmem.c
+index b32b70c..d062c89 100644
+--- a/mm/highmem.c
++++ b/mm/highmem.c
+@@ -421,4 +421,4 @@ void __init page_address_init(void)
+ 	}
+ }
+ 
+-#endif	/* defined(CONFIG_HIGHMEM) && !defined(WANT_PAGE_VIRTUAL) */
++#endif	/* defined(CONFIG_HIGHMEM) */
+-- 
+1.8.4
 
-- Lars
