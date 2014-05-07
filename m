@@ -1,184 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932715AbaEGL70 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 07:59:26 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:56609 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755840AbaEGL7W (ORCPT
+	id S932691AbaEGMBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 08:01:24 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:35363 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755316AbaEGMBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 07:59:22 -0400
-Message-ID: <536A2013.8020609@hitachi.com>
-Date: Wed, 07 May 2014 20:59:15 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 7 May 2014 08:01:23 -0400
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
-        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
-        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
-        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
-        Kevin Hao <haokexin@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [RFT PATCH -next ] [BUGFIX] kprobes: Fix "Failed to find blacklist"
- error on ia64 and ppc64
-References: <536A16A6.5040709@hitachi.com> <20140507115551.22259.70581.stgit@ltc230.yrl.intra.hitachi.co.jp>
-In-Reply-To: <20140507115551.22259.70581.stgit@ltc230.yrl.intra.hitachi.co.jp>
+In-Reply-To: <1399429566-15587-1-git-send-email-namhyung@kernel.org>
+References: <1399429566-15587-1-git-send-email-namhyung@kernel.org>
+Date: Wed, 7 May 2014 14:01:22 +0200
+Message-ID: <CABPqkBSZCK0MBO9HB+V2giTrn7s47zntDsp0EgZD0h-W39aAbQ@mail.gmail.com>
+Subject: Re: [PATCH] perf tools: Use tid for finding thread
+From: Stephane Eranian <eranian@google.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony, Benjamin and Paul,
+On Wed, May 7, 2014 at 4:26 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+>
+> I believe that passing pid (instead of tid) as the 3rd arg of the
+> machine__find*_thread() was to find a main thread so that it can
+> search proper map group for symbols.  However with the map sharing
+> patch applied, it now can do it in any thread.
+>
+Your patch makes the code more meaningful for sure.
+The pid, pid looked like a bug to me at first, but then I realized,
+that yes, it is
+look for the main thread.
 
-I've tried to fix this bug, but since I don't have either ppc64 nor ia64,
-this patch is not tested on those archs. Please review and test it on
-those machines.
+Acked-by: Stephane Eranian <eranian@google.com>
 
-Thank you,
-
-(2014/05/07 20:55), Masami Hiramatsu wrote:
-> On ia64 and ppc64, the function pointer does not point the
-> entry address of the function, but the address of function
-> discriptor (which contains the entry address and misc
-> data.) Since the kprobes passes the function pointer stored
-> by NOKPROBE_SYMBOL() to kallsyms_lookup_size_offset() for
-> initalizing its blacklist, it fails and reports many errors
-> as below.
-> 
->   Failed to find blacklist 0001013168300000
->   Failed to find blacklist 0001013000f0a000
->   Failed to find blacklist 000101315f70a000
->   Failed to find blacklist 000101324c80a000
->   Failed to find blacklist 0001013063f0a000
->   Failed to find blacklist 000101327800a000
->   Failed to find blacklist 0001013277f0a000
->   Failed to find blacklist 000101315a70a000
->   Failed to find blacklist 0001013277e0a000
->   Failed to find blacklist 000101305a20a000
->   Failed to find blacklist 0001013277d0a000
->   Failed to find blacklist 00010130bdc0a000
->   Failed to find blacklist 00010130dc20a000
->   Failed to find blacklist 000101309a00a000
->   Failed to find blacklist 0001013277c0a000
->   Failed to find blacklist 0001013277b0a000
->   Failed to find blacklist 0001013277a0a000
->   Failed to find blacklist 000101327790a000
->   Failed to find blacklist 000101303140a000
->   Failed to find blacklist 0001013a3280a000
-> 
-> To fix this bug, this introduces function_entry() macro to
-> retrieve the entry address from the given function pointer,
-> and uses it in NOKPROBE_SYMBOL().
-> 
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Reported-by: Tony Luck <tony.luck@gmail.com>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> Cc: Kevin Hao <haokexin@gmail.com>
-> Cc: linux-ia64@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linuxppc-dev@lists.ozlabs.org
+>
+> It fixes a bug when each thread has different name, it only reports a
+> main thread for samples in other threads.
+>
+> Cc: Adrian Hunter <adrian.hunter@intel.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 > ---
->  arch/ia64/include/asm/types.h    |    2 ++
->  arch/powerpc/include/asm/types.h |   11 +++++++++++
->  include/linux/kprobes.h          |    3 ++-
->  include/linux/types.h            |    4 ++++
->  4 files changed, 19 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/ia64/include/asm/types.h b/arch/ia64/include/asm/types.h
-> index 4c351b1..6ab7b6c 100644
-> --- a/arch/ia64/include/asm/types.h
-> +++ b/arch/ia64/include/asm/types.h
-> @@ -27,5 +27,7 @@ struct fnptr {
->  	unsigned long gp;
->  };
->  
-> +#define constant_function_entry(fn) (((struct fnptr *)(fn))->ip)
-> +
->  #endif /* !__ASSEMBLY__ */
->  #endif /* _ASM_IA64_TYPES_H */
-> diff --git a/arch/powerpc/include/asm/types.h b/arch/powerpc/include/asm/types.h
-> index bfb6ded..fd297b8 100644
-> --- a/arch/powerpc/include/asm/types.h
-> +++ b/arch/powerpc/include/asm/types.h
-> @@ -25,6 +25,17 @@ typedef struct {
->  	unsigned long env;
->  } func_descr_t;
->  
-> +#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
-> +/*
-> + * On PPC64 ABIv1 the function pointer actually points to the
-> + * function's descriptor. The first entry in the descriptor is the
-> + * address of the function text.
-> + */
-> +#define constant_function_entry(fn)	(((func_descr_t *)(fn))->entry)
-> +#else
-> +#define constant_function_entry(fn)	((unsigned long)(fn))
-> +#endif
-> +
->  #endif /* __ASSEMBLY__ */
->  
->  #endif /* _ASM_POWERPC_TYPES_H */
-> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-> index e059507..637eafe 100644
-> --- a/include/linux/kprobes.h
-> +++ b/include/linux/kprobes.h
-> @@ -40,6 +40,7 @@
->  #include <linux/rcupdate.h>
->  #include <linux/mutex.h>
->  #include <linux/ftrace.h>
-> +#include <linux/types.h>
->  
->  #ifdef CONFIG_KPROBES
->  #include <asm/kprobes.h>
-> @@ -485,7 +486,7 @@ static inline int enable_jprobe(struct jprobe *jp)
->  #define __NOKPROBE_SYMBOL(fname)			\
->  static unsigned long __used				\
->  	__attribute__((section("_kprobe_blacklist")))	\
-> -	_kbl_addr_##fname = (unsigned long)fname;
-> +	_kbl_addr_##fname = constant_function_entry(fname);
->  #define NOKPROBE_SYMBOL(fname)	__NOKPROBE_SYMBOL(fname)
->  #else
->  #define NOKPROBE_SYMBOL(fname)
-> diff --git a/include/linux/types.h b/include/linux/types.h
-> index 4d118ba..78e2d7d 100644
-> --- a/include/linux/types.h
-> +++ b/include/linux/types.h
-> @@ -212,5 +212,9 @@ struct callback_head {
->  };
->  #define rcu_head callback_head
->  
-> +#ifndef constant_function_entry
-> +#define constant_function_entry(fn)	((unsigned long)(fn))
-> +#endif
-> +
->  #endif /*  __ASSEMBLY__ */
->  #endif /* _LINUX_TYPES_H */
-> 
-> 
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+>  tools/perf/builtin-inject.c     | 2 +-
+>  tools/perf/builtin-kmem.c       | 2 +-
+>  tools/perf/tests/code-reading.c | 2 +-
+>  tools/perf/util/build-id.c      | 2 +-
+>  tools/perf/util/event.c         | 2 +-
+>  5 files changed, 5 insertions(+), 5 deletions(-)
+>
+> diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+> index 3a7387551369..6a3af0013d68 100644
+> --- a/tools/perf/builtin-inject.c
+> +++ b/tools/perf/builtin-inject.c
+> @@ -209,7 +209,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
+>
+>         cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+>
+> -       thread = machine__findnew_thread(machine, sample->pid, sample->pid);
+> +       thread = machine__findnew_thread(machine, sample->pid, sample->tid);
+>         if (thread == NULL) {
+>                 pr_err("problem processing %d event, skipping it.\n",
+>                        event->header.type);
+> diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+> index f91fa4376f4b..bef3376bfaf3 100644
+> --- a/tools/perf/builtin-kmem.c
+> +++ b/tools/perf/builtin-kmem.c
+> @@ -235,7 +235,7 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+>                                 struct machine *machine)
+>  {
+>         struct thread *thread = machine__findnew_thread(machine, sample->pid,
+> -                                                       sample->pid);
+> +                                                       sample->tid);
+>
+>         if (thread == NULL) {
+>                 pr_debug("problem processing %d event, skipping it.\n",
+> diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
+> index adf3de3e38d6..67f2d6323558 100644
+> --- a/tools/perf/tests/code-reading.c
+> +++ b/tools/perf/tests/code-reading.c
+> @@ -256,7 +256,7 @@ static int process_sample_event(struct machine *machine,
+>                 return -1;
+>         }
+>
+> -       thread = machine__findnew_thread(machine, sample.pid, sample.pid);
+> +       thread = machine__findnew_thread(machine, sample.pid, sample.tid);
+>         if (!thread) {
+>                 pr_debug("machine__findnew_thread failed\n");
+>                 return -1;
+> diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
+> index 6baabe63182b..a904a4cfe7d3 100644
+> --- a/tools/perf/util/build-id.c
+> +++ b/tools/perf/util/build-id.c
+> @@ -25,7 +25,7 @@ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
+>         struct addr_location al;
+>         u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+>         struct thread *thread = machine__findnew_thread(machine, sample->pid,
+> -                                                       sample->pid);
+> +                                                       sample->tid);
+>
+>         if (thread == NULL) {
+>                 pr_err("problem processing %d event, skipping it.\n",
+> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+> index dbcaea1a8180..65795b835b39 100644
+> --- a/tools/perf/util/event.c
+> +++ b/tools/perf/util/event.c
+> @@ -788,7 +788,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
+>  {
+>         u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+>         struct thread *thread = machine__findnew_thread(machine, sample->pid,
+> -                                                       sample->pid);
+> +                                                       sample->tid);
+>
+>         if (thread == NULL)
+>                 return -1;
+> --
+> 1.9.2
+>
