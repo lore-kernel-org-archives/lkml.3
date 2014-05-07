@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934231AbaEGNj3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:39:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45342 "EHLO
+	id S934239AbaEGNjy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:39:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45330 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756118AbaEGNN0 (ORCPT
+	with ESMTP id S1756079AbaEGNNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:13:26 -0400
+	Wed, 7 May 2014 09:13:22 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Zoltan Kiss <zoltan.kiss@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
+Cc: Paolo Bonzini <pbonzini@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 01/70] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy and handle errors
-Date: Wed,  7 May 2014 14:12:04 +0100
-Message-Id: <1399468393-10140-2-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 02/70] KVM: ioapic: fix assignment of ioapic->rtc_status.pending_eoi (CVE-2014-0155)
+Date: Wed,  7 May 2014 14:12:05 +0100
+Message-Id: <1399468393-10140-3-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -30,117 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit 36d5fe6a000790f56039afe26834265db0a3ad4c upstream.
+commit 5678de3f15010b9022ee45673f33bcfc71d47b60 upstream.
 
-skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
-orphan them. Also, it doesn't handle errors, so this patch takes care of that
-as well, and modify the callers accordingly. skb_tx_error() is also added to
-the callers so they will signal the failed delivery towards the creator of the
-skb.
+QE reported that they got the BUG_ON in ioapic_service to trigger.
+I cannot reproduce it, but there are two reasons why this could happen.
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[ luis: backported to 3.11: used 3.13 backport from Josh and Ben ]
+The less likely but also easiest one, is when kvm_irq_delivery_to_apic
+does not deliver to any APIC and returns -1.
+
+Because irqe.shorthand == 0, the kvm_for_each_vcpu loop in that
+function is never reached.  However, you can target the similar loop in
+kvm_irq_delivery_to_apic_fast; just program a zero logical destination
+address into the IOAPIC, or an out-of-range physical destination address.
+
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/netfilter/nfnetlink_queue_core.c | 31 ++++++++++++++++++++++---------
- 1 file changed, 22 insertions(+), 9 deletions(-)
+ virt/kvm/ioapic.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/netfilter/nfnetlink_queue_core.c b/net/netfilter/nfnetlink_queue_core.c
-index 8a703c3..39e8935 100644
---- a/net/netfilter/nfnetlink_queue_core.c
-+++ b/net/netfilter/nfnetlink_queue_core.c
-@@ -235,22 +235,23 @@ nfqnl_flush(struct nfqnl_instance *queue, nfqnl_cmpfn cmpfn, unsigned long data)
- 	spin_unlock_bh(&queue->lock);
- }
+diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+index 2d68297..39dc5bc 100644
+--- a/virt/kvm/ioapic.c
++++ b/virt/kvm/ioapic.c
+@@ -306,7 +306,7 @@ static int ioapic_deliver(struct kvm_ioapic *ioapic, int irq, bool line_status)
+ 		BUG_ON(ioapic->rtc_status.pending_eoi != 0);
+ 		ret = kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe,
+ 				ioapic->rtc_status.dest_map);
+-		ioapic->rtc_status.pending_eoi = ret;
++		ioapic->rtc_status.pending_eoi = (ret < 0 ? 0 : ret);
+ 	} else
+ 		ret = kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe, NULL);
  
--static void
--nfqnl_zcopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
-+static int
-+nfqnl_zcopy(struct sk_buff *to, struct sk_buff *from, int len, int hlen)
- {
- 	int i, j = 0;
- 	int plen = 0; /* length of skb->head fragment */
-+	int ret;
- 	struct page *page;
- 	unsigned int offset;
- 
- 	/* dont bother with small payloads */
--	if (len <= skb_tailroom(to)) {
--		skb_copy_bits(from, 0, skb_put(to, len), len);
--		return;
--	}
-+	if (len <= skb_tailroom(to))
-+		return skb_copy_bits(from, 0, skb_put(to, len), len);
- 
- 	if (hlen) {
--		skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
-+		ret = skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
-+		if (unlikely(ret))
-+			return ret;
- 		len -= hlen;
- 	} else {
- 		plen = min_t(int, skb_headlen(from), len);
-@@ -268,6 +269,11 @@ nfqnl_zcopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
- 	to->len += len + plen;
- 	to->data_len += len + plen;
- 
-+	if (unlikely(skb_orphan_frags(from, GFP_ATOMIC))) {
-+		skb_tx_error(from);
-+		return -ENOMEM;
-+	}
-+
- 	for (i = 0; i < skb_shinfo(from)->nr_frags; i++) {
- 		if (!len)
- 			break;
-@@ -278,6 +284,8 @@ nfqnl_zcopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
- 		j++;
- 	}
- 	skb_shinfo(to)->nr_frags = j;
-+
-+	return 0;
- }
- 
- static int
-@@ -374,13 +382,16 @@ nfqnl_build_packet_message(struct nfqnl_instance *queue,
- 
- 	skb = nfnetlink_alloc_skb(&init_net, size, queue->peer_portid,
- 				  GFP_ATOMIC);
--	if (!skb)
-+	if (!skb) {
-+		skb_tx_error(entskb);
- 		return NULL;
-+	}
- 
- 	nlh = nlmsg_put(skb, 0, 0,
- 			NFNL_SUBSYS_QUEUE << 8 | NFQNL_MSG_PACKET,
- 			sizeof(struct nfgenmsg), 0);
- 	if (!nlh) {
-+		skb_tx_error(entskb);
- 		kfree_skb(skb);
- 		return NULL;
- 	}
-@@ -504,13 +515,15 @@ nfqnl_build_packet_message(struct nfqnl_instance *queue,
- 		nla->nla_type = NFQA_PAYLOAD;
- 		nla->nla_len = nla_attr_size(data_len);
- 
--		nfqnl_zcopy(skb, entskb, data_len, hlen);
-+		if (nfqnl_zcopy(skb, entskb, data_len, hlen))
-+			goto nla_put_failure;
- 	}
- 
- 	nlh->nlmsg_len = skb->len;
- 	return skb;
- 
- nla_put_failure:
-+	skb_tx_error(entskb);
- 	kfree_skb(skb);
- 	net_err_ratelimited("nf_queue: error creating packet message\n");
- 	return NULL;
 -- 
 1.9.1
 
