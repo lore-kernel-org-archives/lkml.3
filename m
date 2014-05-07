@@ -1,229 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932467AbaEGJep (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:34:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56540 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932306AbaEGJeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:34:44 -0400
-Message-ID: <5369FE33.2020908@suse.cz>
-Date: Wed, 07 May 2014 11:34:43 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S932488AbaEGJfM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:35:12 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:51318 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932306AbaEGJfJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 05:35:09 -0400
+Message-ID: <5369FE49.7040103@6wind.com>
+Date: Wed, 07 May 2014 11:35:05 +0200
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reply-To: nicolas.dichtel@6wind.com
+Organization: 6WIND
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch v3 3/6] mm, compaction: add per-zone migration pfn cache
- for async compaction
-References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com> <alpine.DEB.2.02.1405061920470.18635@chino.kir.corp.google.com> <alpine.DEB.2.02.1405061921220.18635@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1405061921220.18635@chino.kir.corp.google.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+CC: "Serge E. Hallyn" <serge@hallyn.com>, ebiederm@xmission.com,
+        containers@lists.linux-foundation.org, serge.hallyn@ubuntu.com,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com
+Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
+References: <cover.1398176489.git.rgb@redhat.com> <20140501223212.GA25669@mail.hallyn.com> <20140502142851.GC24111@madcap2.tricolour.ca> <5367587B.20801@6wind.com> <20140506211530.GB15100@madcap2.tricolour.ca>
+In-Reply-To: <20140506211530.GB15100@madcap2.tricolour.ca>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2014 04:22 AM, David Rientjes wrote:
-> Each zone has a cached migration scanner pfn for memory compaction so that
-> subsequent calls to memory compaction can start where the previous call left
-> off.
+Le 06/05/2014 23:15, Richard Guy Briggs a écrit :
+> On 14/05/05, Nicolas Dichtel wrote:
+>> Le 02/05/2014 16:28, Richard Guy Briggs a ?crit :
+>>> On 14/05/02, Serge E. Hallyn wrote:
+>>>> Quoting Richard Guy Briggs (rgb@redhat.com):
+>>>>> I saw no replies to my questions when I replied a year after Aris' posting, so
+>>>>> I don't know if it was ignored or got lost in stale threads:
+>>>>>          https://www.redhat.com/archives/linux-audit/2013-March/msg00020.html
+>>>>>          https://www.redhat.com/archives/linux-audit/2013-March/msg00033.html
+>>>>> 	(https://lists.linux-foundation.org/pipermail/containers/2013-March/032063.html)
+>>>>>          https://www.redhat.com/archives/linux-audit/2014-January/msg00180.html
+>>>>>
+>>>>> I've tried to answer a number of questions that were raised in that thread.
+>>>>>
+>>>>> The goal is not quite identical to Aris' patchset.
+>>>>>
+>>>>> The purpose is to track namespaces in use by logged processes from the
+>>>>> perspective of init_*_ns.  The first patch defines a function to list them.
+>>>>> The second patch provides an example of usage for audit_log_task_info() which
+>>>>> is used by syscall audits, among others.  audit_log_task() and
+>>>>> audit_common_recv_message() would be other potential use cases.
+>>>>>
+>>>>> Use a serial number per namespace (unique across one boot of one kernel)
+>>>>> instead of the inode number (which is claimed to have had the right to change
+>>>>> reserved and is not necessarily unique if there is more than one proc fs).  It
+>>>>> could be argued that the inode numbers have now become a defacto interface and
+>>>>> can't change now, but I'm proposing this approach to see if this helps address
+>>>>> some of the objections to the earlier patchset.
+>>>>>
+>>>>> There could also have messages added to track the creation and the destruction
+>>>>> of namespaces, listing the parent for hierarchical namespaces such as pidns,
+>>>>> userns, and listing other ids for non-hierarchical namespaces, as well as other
+>>>>> information to help identify a namespace.
+>>>>>
+>>>>> There has been some progress made for audit in net namespaces and pid
+>>>>> namespaces since this previous thread.  net namespaces are now served as peers
+>>>>> by one auditd in the init_net namespace with processes in a non-init_net
+>>>>> namespace being able to write records if they are in the init_user_ns and have
+>>>>> CAP_AUDIT_WRITE.  Processes in a non-init_pid_ns can now similarly write
+>>>>> records.  As for CAP_AUDIT_READ, I just posted a patchset to check capabilities
+>>>>> of userspace processes that try to join netlink broadcast groups.
+>>>>>
+>>>>>
+>>>>> Questions:
+>>>>> Is there a way to link serial numbers of namespaces involved in migration of a
+>>>>> container to another kernel?  (I had a brief look at CRIU.)  Is there a unique
+>>>>> identifier for each running instance of a kernel?  Or at least some identifier
+>>>>> within the container migration realm?
+>>>>
+>>>> Eric Biederman has always been adamantly opposed to adding new namespaces
+>>>> of namespaces, so the fact that you're asking this question concerns me.
+>>>
+>>> I have seen that position and I don't fully understand the justification
+>>> for it other than added complexity.
+>> Just FYI, have you seen this thread:
+>> http://thread.gmane.org/gmane.linux.network/286572/
+>>
+>> There is some explanations/examples about this topic.
 >
-> Currently, the compaction migration scanner only updates the per-zone cached pfn
-> when pageblocks were not skipped for async compaction.  This creates a
-> dependency on calling sync compaction to avoid having subsequent calls to async
-> compaction from scanning an enormous amount of non-MOVABLE pageblocks each time
-> it is called.  On large machines, this could be potentially very expensive.
->
-> This patch adds a per-zone cached migration scanner pfn only for async
-> compaction.  It is updated everytime a pageblock has been scanned in its
-> entirety and when no pages from it were successfully isolated.  The cached
-> migration scanner pfn for sync compaction is updated only when called for sync
-> compaction.
->
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
->   v3: do not update pageblock skip metadata when skipped due to async per
->       Vlastimil.
+> Thanks for that reference.  I read it through, but will need to do so
+> again to get it to sink in.
 
-Great.
+I think audit has the same problematic than x-netns netdevice: beeing able to 
+identify a peer netns, when a userland apps "read" a message from the kernel.
 
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
+The main problem with file descriptor is that you cannot use them when you
+broadcast a message from kernel to userland.
 
+Maybe we can use the local names concept (like file descriptors but without
+their constraints), ie having an identifier of a peer (net)ns which is only
+valid the current (net)ns. When the kernel needs to identify a peer (net)ns, it
+uses this identifier (or allocate it the first time). After that, the userland
+apps may reuse this identifier to configure things in the peer (net)ns.
 
->   include/linux/mmzone.h |  5 ++--
->   mm/compaction.c        | 66 ++++++++++++++++++++++++++++++--------------------
->   2 files changed, 43 insertions(+), 28 deletions(-)
->
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -360,9 +360,10 @@ struct zone {
->   	/* Set to true when the PG_migrate_skip bits should be cleared */
->   	bool			compact_blockskip_flush;
->
-> -	/* pfns where compaction scanners should start */
-> +	/* pfn where compaction free scanner should start */
->   	unsigned long		compact_cached_free_pfn;
-> -	unsigned long		compact_cached_migrate_pfn;
-> +	/* pfn where async and sync compaction migration scanner should start */
-> +	unsigned long		compact_cached_migrate_pfn[2];
->   #endif
->   #ifdef CONFIG_MEMORY_HOTPLUG
->   	/* see spanned/present_pages for more description */
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -89,7 +89,8 @@ static void __reset_isolation_suitable(struct zone *zone)
->   	unsigned long end_pfn = zone_end_pfn(zone);
->   	unsigned long pfn;
->
-> -	zone->compact_cached_migrate_pfn = start_pfn;
-> +	zone->compact_cached_migrate_pfn[0] = start_pfn;
-> +	zone->compact_cached_migrate_pfn[1] = start_pfn;
->   	zone->compact_cached_free_pfn = end_pfn;
->   	zone->compact_blockskip_flush = false;
->
-> @@ -131,9 +132,10 @@ void reset_isolation_suitable(pg_data_t *pgdat)
->    */
->   static void update_pageblock_skip(struct compact_control *cc,
->   			struct page *page, unsigned long nr_isolated,
-> -			bool migrate_scanner)
-> +			bool set_unsuitable, bool migrate_scanner)
->   {
->   	struct zone *zone = cc->zone;
-> +	unsigned long pfn;
->
->   	if (cc->ignore_skip_hint)
->   		return;
-> @@ -141,20 +143,31 @@ static void update_pageblock_skip(struct compact_control *cc,
->   	if (!page)
->   		return;
->
-> -	if (!nr_isolated) {
-> -		unsigned long pfn = page_to_pfn(page);
-> +	if (nr_isolated)
-> +		return;
-> +
-> +	/*
-> +	 * Only skip pageblocks when all forms of compaction will be known to
-> +	 * fail in the near future.
-> +	 */
-> +	if (set_unsuitable)
->   		set_pageblock_skip(page);
->
-> -		/* Update where compaction should restart */
-> -		if (migrate_scanner) {
-> -			if (!cc->finished_update_migrate &&
-> -			    pfn > zone->compact_cached_migrate_pfn)
-> -				zone->compact_cached_migrate_pfn = pfn;
-> -		} else {
-> -			if (!cc->finished_update_free &&
-> -			    pfn < zone->compact_cached_free_pfn)
-> -				zone->compact_cached_free_pfn = pfn;
-> -		}
-> +	pfn = page_to_pfn(page);
-> +
-> +	/* Update where async and sync compaction should restart */
-> +	if (migrate_scanner) {
-> +		if (cc->finished_update_migrate)
-> +			return;
-> +		if (pfn > zone->compact_cached_migrate_pfn[0])
-> +			zone->compact_cached_migrate_pfn[0] = pfn;
-> +		if (cc->sync && pfn > zone->compact_cached_migrate_pfn[1])
-> +			zone->compact_cached_migrate_pfn[1] = pfn;
-> +	} else {
-> +		if (cc->finished_update_free)
-> +			return;
-> +		if (pfn < zone->compact_cached_free_pfn)
-> +			zone->compact_cached_free_pfn = pfn;
->   	}
->   }
->   #else
-> @@ -166,7 +179,7 @@ static inline bool isolation_suitable(struct compact_control *cc,
->
->   static void update_pageblock_skip(struct compact_control *cc,
->   			struct page *page, unsigned long nr_isolated,
-> -			bool migrate_scanner)
-> +			bool set_unsuitable, bool migrate_scanner)
->   {
->   }
->   #endif /* CONFIG_COMPACTION */
-> @@ -329,7 +342,8 @@ isolate_fail:
->
->   	/* Update the pageblock-skip if the whole pageblock was scanned */
->   	if (blockpfn == end_pfn)
-> -		update_pageblock_skip(cc, valid_page, total_isolated, false);
-> +		update_pageblock_skip(cc, valid_page, total_isolated, true,
-> +				      false);
->
->   	count_compact_events(COMPACTFREE_SCANNED, nr_scanned);
->   	if (total_isolated)
-> @@ -464,7 +478,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->   	unsigned long flags;
->   	bool locked = false;
->   	struct page *page = NULL, *valid_page = NULL;
-> -	bool skipped_async_unsuitable = false;
-> +	bool set_unsuitable = true;
->   	const isolate_mode_t mode = (!cc->sync ? ISOLATE_ASYNC_MIGRATE : 0) |
->   				    (unevictable ? ISOLATE_UNEVICTABLE : 0);
->
-> @@ -541,8 +555,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->   			 */
->   			mt = get_pageblock_migratetype(page);
->   			if (!cc->sync && !migrate_async_suitable(mt)) {
-> -				cc->finished_update_migrate = true;
-> -				skipped_async_unsuitable = true;
-> +				set_unsuitable = false;
->   				goto next_pageblock;
->   			}
->   		}
-> @@ -646,11 +659,10 @@ next_pageblock:
->   	/*
->   	 * Update the pageblock-skip information and cached scanner pfn,
->   	 * if the whole pageblock was scanned without isolating any page.
-> -	 * This is not done when pageblock was skipped due to being unsuitable
-> -	 * for async compaction, so that eventual sync compaction can try.
->   	 */
-> -	if (low_pfn == end_pfn && !skipped_async_unsuitable)
-> -		update_pageblock_skip(cc, valid_page, nr_isolated, true);
-> +	if (low_pfn == end_pfn)
-> +		update_pageblock_skip(cc, valid_page, nr_isolated,
-> +				      set_unsuitable, true);
->
->   	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
->
-> @@ -877,7 +889,8 @@ static int compact_finished(struct zone *zone,
->   	/* Compaction run completes if the migrate and free scanner meet */
->   	if (cc->free_pfn <= cc->migrate_pfn) {
->   		/* Let the next compaction start anew. */
-> -		zone->compact_cached_migrate_pfn = zone->zone_start_pfn;
-> +		zone->compact_cached_migrate_pfn[0] = zone->zone_start_pfn;
-> +		zone->compact_cached_migrate_pfn[1] = zone->zone_start_pfn;
->   		zone->compact_cached_free_pfn = zone_end_pfn(zone);
->
->   		/*
-> @@ -1002,7 +1015,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
->   	 * information on where the scanners should start but check that it
->   	 * is initialised by ensuring the values are within zone boundaries.
->   	 */
-> -	cc->migrate_pfn = zone->compact_cached_migrate_pfn;
-> +	cc->migrate_pfn = zone->compact_cached_migrate_pfn[cc->sync];
->   	cc->free_pfn = zone->compact_cached_free_pfn;
->   	if (cc->free_pfn < start_pfn || cc->free_pfn > end_pfn) {
->   		cc->free_pfn = end_pfn & ~(pageblock_nr_pages-1);
-> @@ -1010,7 +1023,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
->   	}
->   	if (cc->migrate_pfn < start_pfn || cc->migrate_pfn > end_pfn) {
->   		cc->migrate_pfn = start_pfn;
-> -		zone->compact_cached_migrate_pfn = cc->migrate_pfn;
-> +		zone->compact_cached_migrate_pfn[0] = cc->migrate_pfn;
-> +		zone->compact_cached_migrate_pfn[1] = cc->migrate_pfn;
->   	}
->
->   	trace_mm_compaction_begin(start_pfn, cc->migrate_pfn, cc->free_pfn, end_pfn);
->
+Eric, any thoughts about this?
 
+Regards,
+Nicolas
