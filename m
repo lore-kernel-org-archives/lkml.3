@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933526AbaEGNPt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:15:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45697 "EHLO
+	id S1756271AbaEGNQI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:16:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45696 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933483AbaEGNPa (ORCPT
+	with ESMTP id S933449AbaEGNP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:15:30 -0400
+	Wed, 7 May 2014 09:15:29 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+Cc: Peter Hurley <peter@hurleysoftware.com>, Jiri Slaby <jslaby@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 70/70] KVM: s390: Optimize ucontrol path
-Date: Wed,  7 May 2014 14:13:13 +0100
-Message-Id: <1399468393-10140-71-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 69/70] n_tty: Fix n_tty_write crash when echoing in raw mode
+Date: Wed,  7 May 2014 14:13:12 +0100
+Message-Id: <1399468393-10140-70-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -27,39 +30,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit 2955c83f72801245afd0fe5c560cc75b82bea9aa upstream.
+commit 4291086b1f081b869c6d79e5b7441633dc3ace00 upstream.
 
-Since commit 7c470539c95630c1f2a10f109e96f249730b75eb
-(s390/kvm: avoid automatic sie reentry) we will run through the C code
-of KVM on host interrupts instead of just reentering the guest. This
-will result in additional ucontrol exits (at least HZ per second). Let
-handle a 0 intercept in the kernel and dont return to userspace,
-even if in ucontrol mode.
+The tty atomic_write_lock does not provide an exclusion guarantee for
+the tty driver if the termios settings are LECHO & !OPOST.  And since
+it is unexpected and not allowed to call TTY buffer helpers like
+tty_insert_flip_string concurrently, this may lead to crashes when
+concurrect writers call pty_write. In that case the following two
+writers:
+* the ECHOing from a workqueue and
+* pty_write from the process
+race and can overflow the corresponding TTY buffer like follows.
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-[ luis: backported to 3.11: adjusted context ]
+If we look into tty_insert_flip_string_fixed_flag, there is:
+  int space = __tty_buffer_request_room(port, goal, flags);
+  struct tty_buffer *tb = port->buf.tail;
+  ...
+  memcpy(char_buf_ptr(tb, tb->used), chars, space);
+  ...
+  tb->used += space;
+
+so the race of the two can result in something like this:
+              A                                B
+__tty_buffer_request_room
+                                  __tty_buffer_request_room
+memcpy(buf(tb->used), ...)
+tb->used += space;
+                                  memcpy(buf(tb->used), ...) ->BOOM
+
+B's memcpy is past the tty_buffer due to the previous A's tb->used
+increment.
+
+Since the N_TTY line discipline input processing can output
+concurrently with a tty write, obtain the N_TTY ldisc output_lock to
+serialize echo output with normal tty writes.  This ensures the tty
+buffer helper tty_insert_flip_string is not called concurrently and
+everything is fine.
+
+Note that this is nicely reproducible by an ordinary user using
+forkpty and some setup around that (raw termios + ECHO). And it is
+present in kernels at least after commit
+d945cb9cce20ac7143c2de8d88b187f62db99bdc (pty: Rework the pty layer to
+use the normal buffering logic) in 2.6.31-rc3.
+
+js: add more info to the commit log
+js: switch to bool
+js: lock unconditionally
+js: lock only the tty->ops->write call
+
+References: CVE-2014-0196
+Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/s390/kvm/kvm-s390.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/tty/n_tty.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
-index 34c1c9a..e13e7af 100644
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -781,7 +781,8 @@ rerun_vcpu:
- 		if (rc)
- 			break;
- 		if (kvm_is_ucontrol(vcpu->kvm))
--			rc = -EOPNOTSUPP;
-+			/* Don't exit for host interrupts. */
-+			rc = vcpu->arch.sie_block->icptcode ? -EOPNOTSUPP : 0;
- 		else
- 			rc = kvm_handle_sie_intercept(vcpu);
- 	} while (!signal_pending(current) && !rc);
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 4bf0fc0..10354a8 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -2066,8 +2066,12 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
+ 			if (tty->ops->flush_chars)
+ 				tty->ops->flush_chars(tty);
+ 		} else {
++			struct n_tty_data *ldata = tty->disc_data;
++
+ 			while (nr > 0) {
++				mutex_lock(&ldata->output_lock);
+ 				c = tty->ops->write(tty, b, nr);
++				mutex_unlock(&ldata->output_lock);
+ 				if (c < 0) {
+ 					retval = c;
+ 					goto break_out;
 -- 
 1.9.1
 
