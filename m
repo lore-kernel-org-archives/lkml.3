@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933357AbaEGPI3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:08:29 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:10011 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933002AbaEGPCp (ORCPT
+	id S932948AbaEGPCn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:02:43 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:16432 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756436AbaEGPCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:02:45 -0400
+	Wed, 7 May 2014 11:02:38 -0400
 From: Waiman Long <Waiman.Long@hp.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -25,9 +25,9 @@ Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
         Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
         Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
         Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v10 08/19] qspinlock: Make a new qnode structure to support virtualization
-Date: Wed,  7 May 2014 11:01:36 -0400
-Message-Id: <1399474907-22206-9-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v10 04/19] qspinlock: Extract out the exchange of tail code word
+Date: Wed,  7 May 2014 11:01:32 -0400
+Message-Id: <1399474907-22206-5-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com>
 References: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com>
@@ -35,122 +35,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to support additional virtualization features like unfair lock
-and para-virtualized spinlock, it is necessary to store additional
-CPU specific data into the queue node structure. As a result, a new
-qnode structure is created and the mcs_spinlock structure is now part
-of the new structure.
-
-It is also necessary to expand arch_mcs_spin_lock_contended() to the
-underlying while loop as additional code will need to be inserted
-into the loop.
+This patch extracts the logic for the exchange of new and previous tail
+code words into a new xchg_tail() function which can be optimized in a
+later patch.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- kernel/locking/qspinlock.c |   36 +++++++++++++++++++++++-------------
- 1 files changed, 23 insertions(+), 13 deletions(-)
+ include/asm-generic/qspinlock_types.h |    2 +
+ kernel/locking/qspinlock.c            |   61 +++++++++++++++++++++------------
+ 2 files changed, 41 insertions(+), 22 deletions(-)
 
+diff --git a/include/asm-generic/qspinlock_types.h b/include/asm-generic/qspinlock_types.h
+index bd25081..ed5d89a 100644
+--- a/include/asm-generic/qspinlock_types.h
++++ b/include/asm-generic/qspinlock_types.h
+@@ -61,6 +61,8 @@ typedef struct qspinlock {
+ #define _Q_TAIL_CPU_BITS	(32 - _Q_TAIL_CPU_OFFSET)
+ #define _Q_TAIL_CPU_MASK	_Q_SET_MASK(TAIL_CPU)
+ 
++#define _Q_TAIL_MASK		(_Q_TAIL_IDX_MASK | _Q_TAIL_CPU_MASK)
++
+ #define _Q_LOCKED_VAL		(1U << _Q_LOCKED_OFFSET)
+ #define _Q_PENDING_VAL		(1U << _Q_PENDING_OFFSET)
+ 
 diff --git a/kernel/locking/qspinlock.c b/kernel/locking/qspinlock.c
-index 0ee1a23..e98d7d4 100644
+index 6467bfc..a49b82b 100644
 --- a/kernel/locking/qspinlock.c
 +++ b/kernel/locking/qspinlock.c
-@@ -57,12 +57,21 @@
- #include "mcs_spinlock.h"
- 
- /*
-+ * To have additional features for better virtualization support, it is
-+ * necessary to store additional data in the queue node structure. So
-+ * a new queue node structure will have to be defined and used here.
-+ */
-+struct qnode {
-+	struct mcs_spinlock mcs;
-+};
-+
-+/*
-  * Per-CPU queue node structures; we can never have more than 4 nested
-  * contexts: task, softirq, hardirq, nmi.
-  *
-  * Exactly fits one cacheline.
-  */
--static DEFINE_PER_CPU_ALIGNED(struct mcs_spinlock, mcs_nodes[4]);
-+static DEFINE_PER_CPU_ALIGNED(struct qnode, qnodes[4]);
- 
- /*
-  * We must be able to distinguish between no-tail and the tail at 0:0,
-@@ -79,12 +88,12 @@ static inline u32 encode_tail(int cpu, int idx)
- 	return tail;
- }
- 
--static inline struct mcs_spinlock *decode_tail(u32 tail)
-+static inline struct qnode *decode_tail(u32 tail)
- {
- 	int cpu = (tail >> _Q_TAIL_CPU_OFFSET) - 1;
- 	int idx = (tail &  _Q_TAIL_IDX_MASK) >> _Q_TAIL_IDX_OFFSET;
- 
--	return per_cpu_ptr(&mcs_nodes[idx], cpu);
-+	return per_cpu_ptr(&qnodes[idx], cpu);
- }
- 
+@@ -86,6 +86,34 @@ static inline struct mcs_spinlock *decode_tail(u32 tail)
  #define _Q_LOCKED_PENDING_MASK	(_Q_LOCKED_MASK | _Q_PENDING_MASK)
-@@ -342,7 +351,7 @@ static inline int trylock_pending(struct qspinlock *lock, u32 *pval)
-  */
- void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
- {
--	struct mcs_spinlock *prev, *next, *node;
-+	struct qnode *prev, *next, *node;
- 	u32 old, tail;
- 	int idx;
  
-@@ -351,13 +360,13 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
- 	if (trylock_pending(lock, &val))
- 		return;	/* Lock acquired */
- 
--	node = this_cpu_ptr(&mcs_nodes[0]);
--	idx = node->count++;
-+	node = this_cpu_ptr(&qnodes[0]);
-+	idx = node->mcs.count++;
- 	tail = encode_tail(smp_processor_id(), idx);
- 
- 	node += idx;
--	node->locked = 0;
--	node->next = NULL;
-+	node->mcs.locked = 0;
-+	node->mcs.next = NULL;
+ /**
++ * xchg_tail - Put in the new queue tail code word & retrieve previous one
++ * @lock : Pointer to queue spinlock structure
++ * @tail : The new queue tail code word
++ * @pval : Pointer to current value of the queue spinlock 32-bit word
++ * Return: The previous queue tail code word
++ *
++ * xchg(lock, tail)
++ *
++ * p,*,* -> n,*,* ; prev = xchg(lock, node)
++ */
++static __always_inline u32
++xchg_tail(struct qspinlock *lock, u32 tail, u32 *pval)
++{
++	u32 old, new, val = *pval;
++
++	for (;;) {
++		new = (val & _Q_LOCKED_PENDING_MASK) | tail;
++		old = atomic_cmpxchg(&lock->val, val, new);
++		if (old == val)
++			break;
++
++		val = old;
++	}
++	*pval = new;
++	return old;
++}
++
++/**
+  * trylock_pending - try to acquire queue spinlock using the pending bit
+  * @lock : Pointer to queue spinlock structure
+  * @pval : Pointer to value of the queue spinlock 32-bit word
+@@ -196,36 +224,25 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
+ 	node->next = NULL;
  
  	/*
- 	 * We touched a (possibly) cold cacheline in the per-cpu queue node;
-@@ -380,9 +389,10 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
+-	 * we already touched the queueing cacheline; don't bother with pending
+-	 * stuff.
+-	 *
+-	 * trylock || xchg(lock, node)
+-	 *
+-	 * 0,0,0 -> 0,0,1 ; trylock
+-	 * p,y,x -> n,y,x ; prev = xchg(lock, node)
++	 * We touched a (possibly) cold cacheline in the per-cpu queue node;
++	 * attempt the trylock once more in the hope someone let go while we
++	 * weren't watching.
  	 */
- 	if (old & _Q_TAIL_MASK) {
+-	for (;;) {
+-		new = _Q_LOCKED_VAL;
+-		if (val)
+-			new = tail | (val & _Q_LOCKED_PENDING_MASK);
+-
+-		old = atomic_cmpxchg(&lock->val, val, new);
+-		if (old == val)
+-			break;
+-
+-		val = old;
+-	}
++	if (queue_spin_trylock(lock))
++		goto release;
+ 
+ 	/*
+-	 * we won the trylock; forget about queueing.
++	 * we already touched the queueing cacheline; don't bother with pending
++	 * stuff.
++	 *
++	 * p,*,* -> n,*,*
+ 	 */
+-	if (new == _Q_LOCKED_VAL)
+-		goto release;
++	old = xchg_tail(lock, tail, &val);
+ 
+ 	/*
+ 	 * if there was a previous node; link it and wait.
+ 	 */
+-	if (old & ~_Q_LOCKED_PENDING_MASK) {
++	if (old & _Q_TAIL_MASK) {
  		prev = decode_tail(old);
--		ACCESS_ONCE(prev->next) = node;
-+		ACCESS_ONCE(prev->mcs.next) = (struct mcs_spinlock *)node;
+ 		ACCESS_ONCE(prev->next) = node;
  
--		arch_mcs_spin_lock_contended(&node->locked);
-+		while (!smp_load_acquire(&node->mcs.locked))
-+			arch_mutex_cpu_relax();
- 	}
- 
- 	/*
-@@ -422,15 +432,15 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
- 	/*
- 	 * contended path; wait for next, release.
- 	 */
--	while (!(next = ACCESS_ONCE(node->next)))
-+	while (!(next = (struct qnode *)ACCESS_ONCE(node->mcs.next)))
- 		arch_mutex_cpu_relax();
- 
--	arch_mcs_spin_unlock_contended(&next->locked);
-+	arch_mcs_spin_unlock_contended(&next->mcs.locked);
- 
- release:
- 	/*
- 	 * release the node
- 	 */
--	this_cpu_dec(mcs_nodes[0].count);
-+	this_cpu_dec(qnodes[0].mcs.count);
- }
- EXPORT_SYMBOL(queue_spin_lock_slowpath);
 -- 
 1.7.1
 
