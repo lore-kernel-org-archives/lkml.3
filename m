@@ -1,72 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751753AbaEGCpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 22:45:30 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:23755 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116AbaEGCp3 (ORCPT
+	id S1753236AbaEGCrQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 22:47:16 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55771 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750976AbaEGCrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 22:45:29 -0400
-Message-ID: <53699E3F.4020105@oracle.com>
-Date: Tue, 06 May 2014 22:45:19 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>, axboe@kernel.dk
-CC: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: blktrace: NULL ptr deref in sysfs_blk_trace_attr_store
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 6 May 2014 22:47:14 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>, wim@iguana.be, dbaryshkov@gmail.com,
+        dwmw2@infradead.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, linux-sunxi@googlegroups.com,
+        linux@roeck-us.net, Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 2/6] power: reset: Add Allwinner A31 reset code
+Date: Tue,  6 May 2014 21:44:20 -0500
+Message-Id: <1399430664-29091-3-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+That code used to be in the machine code, but it's more fit here with other
+restart hooks.
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel I've stumbled on the following spew:
+That will allow to cleanup the machine directory, while waiting for a proper
+watchdog driver for the A31.
 
-[ 6230.740626] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[ 6230.740626] IP: __list_del_entry (lib/list_debug.c:57)
-[ 6230.740626] PGD 44d661067 PUD 44d660067 PMD 0
-[ 6230.740626] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 6230.740626] Dumping ftrace buffer:
-[ 6230.740626]    (ftrace buffer empty)
-[ 6230.740626] Modules linked in:
-[ 6230.740626] CPU: 2 PID: 23998 Comm: trinity-c257 Not tainted 3.15.0-rc4-next-20140506-sasha-00021-gc164334-dirty #447
-[ 6230.740626] task: ffff8804716db000 ti: ffff88044ca9e000 task.ti: ffff88044ca9e000
-[ 6230.740626] RIP: __list_del_entry (lib/list_debug.c:57)
-[ 6230.740626] RSP: 0018:ffff88044ca9fdd8  EFLAGS: 00010007
-[ 6230.740626] RAX: 0000000000000000 RBX: ffff88005a455948 RCX: dead000000200200
-[ 6230.740626] RDX: 0000000000000000 RSI: ffffffff938fdf78 RDI: ffff88005a455948
-[ 6230.740626] RBP: ffff88044ca9fdd8 R08: 0000000000000001 R09: ffff8804716dbdd0
-[ 6230.740626] R10: ffff8804716db000 R11: 0000000000000000 R12: 00000000000007f5
-[ 6230.740626] R13: ffff88017b880000 R14: ffff88005a4558f0 R15: ffff88036a188758
-[ 6230.740626] FS:  00007fec10273700(0000) GS:ffff8800a6c00000(0000) knlGS:0000000000000000
-[ 6230.740626] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 6230.740626] CR2: 0000000000000000 CR3: 000000044d662000 CR4: 00000000000006a0
-[ 6230.740626] DR0: 00000000006df000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 6230.740626] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-[ 6230.740626] Stack:
-[ 6230.740626]  ffff88044ca9fdf8 ffffffff8fb40441 ffff88036a188740 ffff88036a188740
-[ 6230.740626]  ffff88044ca9fe68 ffffffff8f25d75d 0000000000000000 ffff8804716db000
-[ 6230.740626]  0000000000000286 ffff880333f61330 0000000000000000 0000000000000286
-[ 6230.740626] Call Trace:
-[ 6230.740626] list_del (lib/list_debug.c:78)
-[ 6230.740626] sysfs_blk_trace_attr_store (include/linux/spinlock.h:353 kernel/trace/blktrace.c:1498 kernel/trace/blktrace.c:1740)
-[ 6230.740626] dev_attr_store (drivers/base/core.c:138)
-[ 6230.740626] sysfs_kf_write (fs/sysfs/file.c:114)
-[ 6230.740626] kernfs_fop_write (fs/kernfs/file.c:295)
-[ 6230.740626] vfs_write (fs/read_write.c:532)
-[ 6230.740626] SyS_write (fs/read_write.c:584 fs/read_write.c:576)
-[ 6230.740626] ia32_do_call (arch/x86/ia32/ia32entry.S:430)
-[ 6230.740626] Code: 7d 93 be 3e 00 00 00 48 c7 c7 d2 46 7d 93 31 c0 e8 6f fb 61 ff eb 2c 0f 1f 44 00 00 48 b9 00 02 20 00 00 00 ad de 48 39 c8 74 8c <4c> 8b 00 4c 39 c7 75 a6 4c 8b 42 08 4c 39 c7 75 bc 48 89 42 08
-[ 6230.740626] RIP __list_del_entry (lib/list_debug.c:57)
-[ 6230.740626]  RSP <ffff88044ca9fdd8>
-[ 6230.740626] CR2: 0000000000000000
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/power/reset/Kconfig        |  7 ++++
+ drivers/power/reset/Makefile       |  1 +
+ drivers/power/reset/sun6i-reboot.c | 85 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 93 insertions(+)
+ create mode 100644 drivers/power/reset/sun6i-reboot.c
 
+diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+index fa0e4e057b99..67aeb6ec08f9 100644
+--- a/drivers/power/reset/Kconfig
++++ b/drivers/power/reset/Kconfig
+@@ -43,6 +43,13 @@ config POWER_RESET_RESTART
+ 	  Instead they restart, and u-boot holds the SoC until the
+ 	  user presses a key. u-boot then boots into Linux.
+ 
++config POWER_RESET_SUN6I
++	bool "Allwinner A31 SoC reset driver"
++	depends on ARCH_SUNXI
++	depends on POWER_RESET
++	help
++	  Reboot support for the Allwinner A31 SoCs.
++
+ config POWER_RESET_VEXPRESS
+ 	bool "ARM Versatile Express power-off and reset driver"
+ 	depends on ARM || ARM64
+diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
+index a5b4a77d1a41..950fdc011c7a 100644
+--- a/drivers/power/reset/Makefile
++++ b/drivers/power/reset/Makefile
+@@ -3,5 +3,6 @@ obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
+ obj-$(CONFIG_POWER_RESET_MSM) += msm-poweroff.o
+ obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
+ obj-$(CONFIG_POWER_RESET_RESTART) += restart-poweroff.o
++obj-$(CONFIG_POWER_RESET_SUN6I) += sun6i-reboot.o
+ obj-$(CONFIG_POWER_RESET_VEXPRESS) += vexpress-poweroff.o
+ obj-$(CONFIG_POWER_RESET_XGENE) += xgene-reboot.o
+diff --git a/drivers/power/reset/sun6i-reboot.c b/drivers/power/reset/sun6i-reboot.c
+new file mode 100644
+index 000000000000..af2cd7ff2fe8
+--- /dev/null
++++ b/drivers/power/reset/sun6i-reboot.c
+@@ -0,0 +1,85 @@
++/*
++ * Allwinner A31 SoCs reset code
++ *
++ * Copyright (C) 2012-2014 Maxime Ripard
++ *
++ * Maxime Ripard <maxime.ripard@free-electrons.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/delay.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/of_address.h>
++#include <linux/platform_device.h>
++#include <linux/reboot.h>
++
++#include <asm/system_misc.h>
++
++#define SUN6I_WATCHDOG1_IRQ_REG		0x00
++#define SUN6I_WATCHDOG1_CTRL_REG	0x10
++#define SUN6I_WATCHDOG1_CTRL_RESTART		BIT(0)
++#define SUN6I_WATCHDOG1_CONFIG_REG	0x14
++#define SUN6I_WATCHDOG1_CONFIG_RESTART		BIT(0)
++#define SUN6I_WATCHDOG1_CONFIG_IRQ		BIT(1)
++#define SUN6I_WATCHDOG1_MODE_REG	0x18
++#define SUN6I_WATCHDOG1_MODE_ENABLE		BIT(0)
++
++static void __iomem *wdt_base;
++
++static void sun6i_wdt_restart(enum reboot_mode mode, const char *cmd)
++{
++	if (!wdt_base)
++		return;
++
++	/* Disable interrupts */
++	writel(0, wdt_base + SUN6I_WATCHDOG1_IRQ_REG);
++
++	/* We want to disable the IRQ and just reset the whole system */
++	writel(SUN6I_WATCHDOG1_CONFIG_RESTART,
++		wdt_base + SUN6I_WATCHDOG1_CONFIG_REG);
++
++	/* Enable timer. The default and lowest interval value is 0.5s */
++	writel(SUN6I_WATCHDOG1_MODE_ENABLE,
++		wdt_base + SUN6I_WATCHDOG1_MODE_REG);
++
++	/* Restart the watchdog. */
++	writel(SUN6I_WATCHDOG1_CTRL_RESTART,
++		wdt_base + SUN6I_WATCHDOG1_CTRL_REG);
++
++	while (1) {
++		mdelay(5);
++		writel(SUN6I_WATCHDOG1_MODE_ENABLE,
++			wdt_base + SUN6I_WATCHDOG1_MODE_REG);
++	}
++}
++
++static int sun6i_reboot_probe(struct platform_device *pdev)
++{
++	wdt_base = of_iomap(pdev->dev.of_node, 0);
++	if (!wdt_base) {
++		WARN(1, "failed to map watchdog base address");
++		return -ENODEV;
++	}
++
++	arm_pm_restart = sun6i_wdt_restart;
++
++	return 0;
++}
++
++static struct of_device_id sun6i_reboot_of_match[] = {
++	{ .compatible = "allwinner,sun6i-a31-wdt" },
++	{}
++};
++
++static struct platform_driver sun6i_reboot_driver = {
++	.probe = sun6i_reboot_probe,
++	.driver = {
++		.name = "sun6i-reboot",
++		.of_match_table = sun6i_reboot_of_match,
++	},
++};
++module_platform_driver(sun6i_reboot_driver);
+-- 
+1.9.1
 
-Thanks,
-Sasha
