@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751906AbaEGWOx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 18:14:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44899 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751111AbaEGWOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 18:14:50 -0400
-Message-ID: <536AB041.5070705@ti.com>
-Date: Wed, 7 May 2014 17:14:25 -0500
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752227AbaEGWPu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 18:15:50 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45893 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746AbaEGWPr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 18:15:47 -0400
+Date: Wed, 7 May 2014 23:15:29 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Raghavendra Ganiga <ravi23ganiga@gmail.com>, a.zummo@towertech.it,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtc: add support for maxim dallas rtc ds1343 and ds1344
+Message-ID: <20140507231529.4a3810e5@www.etchedpixels.co.uk>
+In-Reply-To: <20140507144248.cf3d5e7411186e2cd616ded8@linux-foundation.org>
+References: <1399403036-11377-1-git-send-email-ravi23ganiga@gmail.com>
+	<20140507144248.cf3d5e7411186e2cd616ded8@linux-foundation.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/26] ARM: OMAP: dmtimer: Get rid of check for mem resource
- error
-References: <1398375849-6017-1-git-send-email-joelf@ti.com> <1398375849-6017-10-git-send-email-joelf@ti.com> <20140507152426.GD9502@atomide.com> <536AAB1C.6010301@ti.com> <20140507220959.GE19102@atomide.com>
-In-Reply-To: <20140507220959.GE19102@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2014 05:10 PM, Tony Lindgren wrote:
-> * Joel Fernandes <joelf@ti.com> [140507 14:53]:
->> On 05/07/2014 10:24 AM, Tony Lindgren wrote:
->>> * Joel Fernandes <joelf@ti.com> [140424 14:44]:
->>>> The subsequent devm_ioremap_resource will catch it and print an error, let it
->>>> be checked there.
->>>>
->>>> Signed-off-by: Joel Fernandes <joelf@ti.com>
->>>> ---
->>>>  arch/arm/plat-omap/dmtimer.c |    4 ----
->>>>  1 file changed, 4 deletions(-)
->>>>
->>>> diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
->>>> index 7e806f9..1fd30fa 100644
->>>> --- a/arch/arm/plat-omap/dmtimer.c
->>>> +++ b/arch/arm/plat-omap/dmtimer.c
->>>> @@ -810,10 +810,6 @@ static int omap_dm_timer_probe(struct platform_device *pdev)
->>>>  	}
->>>>  
->>>>  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>>> -	if (unlikely(!mem)) {
->>>> -		dev_err(dev, "%s: no memory resource.\n", __func__);
->>>> -		return -ENODEV;
->>>> -	}
->>>>  
->>>>  	timer = devm_kzalloc(dev, sizeof(struct omap_dm_timer), GFP_KERNEL);
->>>>  	if (!timer) {
->>>
->>> We still need to return an error here and not try to continue though.
->>
->> We are returning an error if mem is NULL so the redundant check is
->> unnecessary:
->>
->> ...
->>         timer->io_base = devm_ioremap_resource(dev, mem);
->>         if (IS_ERR(timer->io_base))
->>                 return PTR_ERR(timer->io_base);
+On Wed, 7 May 2014 14:42:48 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
+
+> On Wed,  7 May 2014 00:33:56 +0530 Raghavendra Ganiga <ravi23ganiga@gmail.com> wrote:
 > 
-> Why would you want to even continue omap_dm_timer_probe()
-> further and allocate memory if platform_get_resource() fails?
+> > This is a patch to add support for
+> > maxim dallas rtc ds1343 and ds1344
+> > 
+> > ...
+> >
+> > +static int ds1343_ioctl(struct device *dev, unsigned int cmd, unsigned long arg)
+> > +{
+> > +	switch (cmd) {
+> > +#ifdef RTC_SET_CHARGE
+> > +	case RTC_SET_CHARGE:
+> > +	{
+> > +		int val;
+> > +
+> > +		if (copy_from_user(&val, (int __user *)arg, sizeof(int)))
+> > +			return -EFAULT;
+> > +
+> > +		return regmap_write(priv->map, DS1343_TRICKLE_REG, val);
+> > +	}
+> > +	break;
+> > +#endif
+> > +	}
 > 
+> Why is RTC_SET_CHARGE defined only for m32r?  It seems pretty generic?
+> 
+> > +	return -ENOIOCTLCMD;
+> > +}
+> 
+> It's possible that this should be -ENOTTY.  I always forget the rule,
+> but Alan never forgets anything ;)
 
-But its freed anyway on error. I just felt that extra LOC could be
-removed. Ideally we should do something like
+I forget lots 8)
 
+-ENOTTY if it will be returned to user space, -ENOIOCTLCMD is used by
+some core code internally as a way for the sub drivers to tell the core
+"I didn't handle this, maybe you have a default method ?"
 
-mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-io_base = devm_ioremap_resource(dev, mem);
-if (IS_ERR(io_base))
-	return PTR_ERR(io_base);
-
-timer = devm_kzalloc(dev, sizeof(struct omap_dm_timer), GFP_KERNEL);
-if (!timer) {
- ...
-}
-timer->io_base = io_base;
-
-
-That combines the platform_get_resource and devm_ioremap_resource error
-paths into 1 path and avoids redundant checks.. I can do it this way, or
-if you want drop the patch entirely, I'm OK with it both ways..
-
-thanks,
-
--Joel
-
+Alan
