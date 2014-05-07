@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448AbaEGEnL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 00:43:11 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:62223 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879AbaEGEnK (ORCPT
+	id S1753591AbaEGEoZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 00:44:25 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:52885 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487AbaEGEoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 00:43:10 -0400
-Date: Wed, 7 May 2014 10:13:03 +0530
+	Wed, 7 May 2014 00:44:23 -0400
+Date: Wed, 7 May 2014 10:14:18 +0530
 From: Himangi Saraogi <himangi774@gmail.com>
-To: ralf@linux-mips.org, linux-mips@linux-mips.org,
+To: m.chehab@samsung.com, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: julia.lawall@lip6.fr
-Subject: [PATCH] MIPS: Introduce the use of the managed version of kzalloc
-Message-ID: <20140507044211.GA3158@himangi-Dell>
+Subject: [PATCH] timblogiw: Introduce the use of the managed version of
+ kzalloc
+Message-ID: <20140507044418.GA3414@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,8 +25,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This patch moves data allocated using kzalloc to managed data allocated
 using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
-functions.The labels out and out_mem are also removed as they are no
-longer required.
+functions.The label err_register is removed as it is no longer required.
 
 The following Coccinelle semantic patch was used for making the change:
 
@@ -60,73 +60,49 @@ removefn(...) {
   ...>
 }
 
+
 Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 ---
- arch/mips/mti-sead3/sead3-i2c-drv.c | 37 ++++++++++++++-----------------------
- 1 file changed, 14 insertions(+), 23 deletions(-)
+ drivers/media/platform/timblogiw.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/arch/mips/mti-sead3/sead3-i2c-drv.c b/arch/mips/mti-sead3/sead3-i2c-drv.c
-index 1f787a6..4d72e0e 100644
---- a/arch/mips/mti-sead3/sead3-i2c-drv.c
-+++ b/arch/mips/mti-sead3/sead3-i2c-drv.c
-@@ -304,22 +304,18 @@ static int sead3_i2c_platform_probe(struct platform_device *pdev)
- 	int ret;
+diff --git a/drivers/media/platform/timblogiw.c b/drivers/media/platform/timblogiw.c
+index ccdadd6..fbfdada 100644
+--- a/drivers/media/platform/timblogiw.c
++++ b/drivers/media/platform/timblogiw.c
+@@ -800,7 +800,7 @@ static int timblogiw_probe(struct platform_device *pdev)
+ 	if (!pdata->encoder.module_name)
+ 		dev_info(&pdev->dev, "Running without decoder\n");
  
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!r) {
--		ret = -ENODEV;
--		goto out;
--	}
-+	if (!r)
-+		return -ENODEV;
+-	lw = kzalloc(sizeof(*lw), GFP_KERNEL);
++	lw = devm_kzalloc(&pdev->dev, sizeof(*lw), GFP_KERNEL);
+ 	if (!lw) {
+ 		err = -ENOMEM;
+ 		goto err;
+@@ -820,7 +820,7 @@ static int timblogiw_probe(struct platform_device *pdev)
+ 	strlcpy(lw->v4l2_dev.name, DRIVER_NAME, sizeof(lw->v4l2_dev.name));
+ 	err = v4l2_device_register(NULL, &lw->v4l2_dev);
+ 	if (err)
+-		goto err_register;
++		goto err;
  
--	priv = kzalloc(sizeof(struct pic32_i2c_platform_data), GFP_KERNEL);
--	if (!priv) {
--		ret = -ENOMEM;
--		goto out;
--	}
-+	priv = devm_kzalloc(&pdev->dev,
-+			    sizeof(struct pic32_i2c_platform_data),
-+			    GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
+ 	lw->video_dev.v4l2_dev = &lw->v4l2_dev;
  
- 	priv->base = r->start;
--	if (!priv->base) {
--		ret = -EBUSY;
--		goto out_mem;
--	}
-+	if (!priv->base)
-+		return -EBUSY;
+@@ -837,8 +837,6 @@ static int timblogiw_probe(struct platform_device *pdev)
  
- 	priv->xfer_timeout = 200;
- 	priv->ack_timeout = 200;
-@@ -334,15 +330,11 @@ static int sead3_i2c_platform_probe(struct platform_device *pdev)
- 	sead3_i2c_platform_setup(priv);
+ err_request:
+ 	v4l2_device_unregister(&lw->v4l2_dev);
+-err_register:
+-	kfree(lw);
+ err:
+ 	dev_err(&pdev->dev, "Failed to register: %d\n", err);
  
- 	ret = i2c_add_numbered_adapter(&priv->adap);
--	if (ret == 0) {
--		platform_set_drvdata(pdev, priv);
--		return 0;
--	}
+@@ -853,8 +851,6 @@ static int timblogiw_remove(struct platform_device *pdev)
+ 
+ 	v4l2_device_unregister(&lw->v4l2_dev);
+ 
+-	kfree(lw);
 -
--out_mem:
--	kfree(priv);
--out:
--	return ret;
-+	if (ret)
-+		return ret;
-+	
-+	platform_set_drvdata(pdev, priv);
-+	return 0;
- }
- 
- static int sead3_i2c_platform_remove(struct platform_device *pdev)
-@@ -351,7 +343,6 @@ static int sead3_i2c_platform_remove(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, NULL);
- 	i2c_del_adapter(&priv->adap);
--	kfree(priv);
  	return 0;
  }
  
