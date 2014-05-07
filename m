@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558AbaEGQTg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:19:36 -0400
-Received: from denmail01-v4020.amcc.com ([192.195.68.30]:36578 "EHLO
-	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932307AbaEGQTd (ORCPT
+	id S932974AbaEGQUz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:20:55 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60708 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932893AbaEGQUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:19:33 -0400
-From: Feng Kan <fkan@apm.com>
-To: dbaryshkov@gmail.com, catalin.marinas@arm.com, dwmw2@infradead.org,
-        arnd@arndb.de, devicetree@vger.kernel.org,
+	Wed, 7 May 2014 12:20:52 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Bryan Evenson <bevenson@melinkcorp.com>
+Cc: Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@apm.com
-Cc: Feng Kan <fkan@apm.com>
-Subject: [PATCH V6 0/5] Generic syscon reboot driver for APM X-Gene platforms
-Date: Wed,  7 May 2014 09:17:59 -0700
-Message-Id: <1399479484-2605-1-git-send-email-fkan@apm.com>
-X-Mailer: git-send-email 1.7.6.1
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH] ARM: at91: fix rtc irq mask for sam9x5 SoCs
+Date: Wed,  7 May 2014 18:20:49 +0200
+Message-Id: <1399479649-3247-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <957b209589094df48ddedbc57c6ccdfd@BLUPR05MB037.namprd05.prod.outlook.com>
+References: <957b209589094df48ddedbc57c6ccdfd@BLUPR05MB037.namprd05.prod.outlook.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable reboot driver for the X-Gene platform. Add generic syscon reboot
-driver.
+The RTC IMR register is not reliable on sam9x5 SoCs, hence why me have to
+mask all interrupts no matter what IMR claims about already masked irqs.
 
-V6 Change:
-	- Added reference in documenation for reference phandle
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
+---
+Hello Bryan,
 
-V5 Change:
-	- Documentation update, endian and access size.
+Yet another patch for you ;-).
 
-V4 Change:
-	- Remove old X-Gene reboot driver
-	- Add generic syscon reboot driver
-	- Add DTS and Kconfig for X-Gene reboot using syscon method
+As usual, could you tell me if it fixes your bug.
 
-V3 Change:
-	- Remove the reboot driver's use of acpi resource patch.
-	- Change the reboot driver to use syscon to parse out 
-	  system clock register. Remove the old method of getting
-	  register from the reboot driver directly.
-	- Remove documentation since its now simple.
+BTW, thanks for your tests.
 
-V2 Change:
-	- Add support for using ACPI resource.
+Best Regards,
 
-Feng Kan (5):
-  power: reset: Add generic SYSCON register mapped reset
-  power: reset: Remove X-Gene reboot driver
-  arm64: dts: Add X-Gene reboot driver dts node
-  arm64: Select reboot driver for X-Gene platform
-  Documentation: power: reset: Add documentation for generic SYSCON
-    reboot driver
+Boris
 
- .../bindings/power/reset/syscon-reboot.txt         |   27 +++++
- arch/arm64/Kconfig                                 |    2 +
- arch/arm64/boot/dts/apm-storm.dtsi                 |   13 +++
- drivers/power/reset/Kconfig                        |    8 +-
- drivers/power/reset/Makefile                       |    2 +-
- drivers/power/reset/syscon-reboot.c                |  100 +++++++++++++++++++
- drivers/power/reset/xgene-reboot.c                 |  103 --------------------
- 7 files changed, 147 insertions(+), 108 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
- create mode 100644 drivers/power/reset/syscon-reboot.c
- delete mode 100644 drivers/power/reset/xgene-reboot.c
+ arch/arm/mach-at91/sysirq_mask.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
+diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-at91/sysirq_mask.c
+index 2ba694f..eb3d2a5 100644
+--- a/arch/arm/mach-at91/sysirq_mask.c
++++ b/arch/arm/mach-at91/sysirq_mask.c
+@@ -37,12 +37,7 @@ void __init at91_sysirq_mask_rtc(u32 rtc_base)
+ 	if (!base)
+ 		return;
+ 
+-	mask = readl_relaxed(base + AT91_RTC_IMR);
+-	if (mask) {
+-		pr_info("AT91: Disabling rtc irq\n");
+-		writel_relaxed(mask, base + AT91_RTC_IDR);
+-		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
+-	}
++	writel_relaxed(0x1f, base + AT91_RTC_IDR);
+ 
+ 	iounmap(base);
+ }
 -- 
-1.7.6.1
+1.8.3.2
 
