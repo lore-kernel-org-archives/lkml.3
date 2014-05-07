@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656AbaEGV32 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 17:29:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57741 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702AbaEGV31 (ORCPT
+	id S1752681AbaEGV3n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 17:29:43 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:46867 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702AbaEGV3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 17:29:27 -0400
-Date: Wed, 7 May 2014 14:29:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] mm, slab: suppress out of memory warning unless debug
- is enabled
-Message-Id: <20140507142925.b0e31514d4cd8d5857b10850@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1405071418410.8389@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1405071418410.8389@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 7 May 2014 17:29:41 -0400
+Date: Wed, 7 May 2014 14:29:37 -0700
+From: josh@joshtriplett.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 15/45] torture: Make config-fragment
+ filtering RCU-independent
+Message-ID: <20140507212937.GI27924@cloud>
+References: <20140429002455.GA15461@linux.vnet.ibm.com>
+ <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1398731133-18925-15-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398731133-18925-15-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 May 2014 14:19:19 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
-
-> When the slab or slub allocators cannot allocate additional slab pages, they 
-> emit diagnostic information to the kernel log such as current number of slabs, 
-> number of objects, active objects, etc.  This is always coupled with a page 
-> allocation failure warning since it is controlled by !__GFP_NOWARN.
+On Mon, Apr 28, 2014 at 05:25:03PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> Suppress this out of memory warning if the allocator is configured without debug 
-> supported.  The page allocation failure warning will indicate it is a failed 
-> slab allocation, so this is only useful to diagnose allocator bugs.
-> 
-> Since CONFIG_SLUB_DEBUG is already enabled by default for the slub allocator, 
-> there is no functional change with this patch.  If debug is disabled, however, 
-> the warnings are now suppressed.
-> 
+> The torture tests need to set specific values for their respective
+> Kconfig options (e.g., CONFIG_LOCK_TORTURE_TEST), and must therefore
+> filter any conflicting definitions from the Kconfig fragment
+> file.  Unfortunately, the code in kvm-build.sh was looking only for
+> CONFIG_RCU_TORTURE_TEST.  This commit therefore handles the general case
+> of CONFIG_[A-Z]*TORTURE_TEST.
 
-I'm not seeing any reason for making this change.
+This doesn't match your code below, which includes an _ after the * .
 
-> @@ -1621,11 +1621,17 @@ __initcall(cpucache_init);
->  static noinline void
->  slab_out_of_memory(struct kmem_cache *cachep, gfp_t gfpflags, int nodeid)
->  {
-> +#if DEBUG
->  	struct kmem_cache_node *n;
->  	struct page *page;
->  	unsigned long flags;
->  	int node;
+Also, one nit below.
+
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+With the commit message fixed:
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+
+> ---
+>  tools/testing/selftests/rcutorture/bin/kvm-build.sh | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-build.sh b/tools/testing/selftests/rcutorture/bin/kvm-build.sh
+> index e838c775f709..6d0b76d918f4 100755
+> --- a/tools/testing/selftests/rcutorture/bin/kvm-build.sh
+> +++ b/tools/testing/selftests/rcutorture/bin/kvm-build.sh
+> @@ -45,7 +45,7 @@ T=/tmp/test-linux.sh.$$
+>  trap 'rm -rf $T' 0
+>  mkdir $T
 >  
-> +	if (gfpflags & __GFP_NOWARN)
-> +		return;
-> +	if (!printk_ratelimit())
-> +		return;
+> -cat ${config_template} | grep -v CONFIG_RCU_TORTURE_TEST > $T/config
+> +cat ${config_template} | grep -v 'CONFIG_[A-Z]*_TORTURE_TEST' > $T/config
 
-printk_ratelimit() is lame - it uses a single global state.  So if
-random net driver is using printk_ratelimit(), that driver and slab
-will interfere with each other.
+UUOC (useless use of cat): you can redirect from ${config_template}
+rather than catting it.
 
-We don't appear to presently have a handy macro to do this properly -
-you might care to add one and switch printk_ratelimited() and
-pr_debug_ratelimited() over to using it.  And various sites in
-include/linux/device.h, I guess.
-
-
+>  cat << ___EOF___ >> $T/config
+>  CONFIG_INITRAMFS_SOURCE="$TORTURE_INITRD"
+>  CONFIG_VIRTIO_PCI=y
+> -- 
+> 1.8.1.5
+> 
