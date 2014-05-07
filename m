@@ -1,103 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934160AbaEGP4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:56:39 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48505 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756165AbaEGPnw (ORCPT
+	id S1756699AbaEGP4w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:56:52 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:40656 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933739AbaEGP4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:43:52 -0400
-Message-Id: <20140507154334.008113902@linutronix.de>
-User-Agent: quilt/0.60-1
-Date: Wed, 07 May 2014 15:44:05 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Anvin <hpa@zytor.com>,
-        Tony Luck <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Jayachandran C <jchandra@broadcom.com>
-Subject: [patch 02/32] mips: Kill pointless destroy_irq() 
-References: <20140507153622.703412101@linutronix.de>
-Content-Disposition: inline; filename=mips-kill-pointless-destroy-irq.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 7 May 2014 11:56:50 -0400
+Date: Wed, 7 May 2014 11:56:47 -0400
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>
+Subject: [PATCH REPOST percpu/for-3.16 1/2] percpu-refcount: rename
+ percpu_ref_tryget() to percpu_ref_tryget_live()
+Message-ID: <20140507155647.GC26540@htj.dyndns.org>
+References: <20140507155511.GB26540@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140507155511.GB26540@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Copy and paste leftovers with no functionality at all.
+percpu_ref_tryget() is different from the usual tryget semantics in
+that it fails if the refcnt is in its dying stage even if the refcnt
+hasn't reached zero yet.  We're about to introduce the more
+conventional tryget and the current one has only one user.  Let's
+rename it to percpu_ref_tryget_live() so that it explicitly signifies
+the peculiarities of its semantics.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Jayachandran C <jchandra@broadcom.com>
-Cc: linux-mips@linux-mips.org
+This is pure rename.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Kent Overstreet <kmo@daterainc.com>
 ---
- arch/mips/pci/msi-xlp.c |   10 +---------
- arch/mips/pci/pci-xlr.c |   10 +---------
- 2 files changed, 2 insertions(+), 18 deletions(-)
+Reposting with Kent's new email address.
 
-Index: tip/arch/mips/pci/msi-xlp.c
-===================================================================
---- tip.orig/arch/mips/pci/msi-xlp.c
-+++ tip/arch/mips/pci/msi-xlp.c
-@@ -206,14 +206,8 @@ static struct irq_chip xlp_msix_chip = {
- 	.irq_unmask	= unmask_msi_irq,
- };
- 
--void destroy_irq(unsigned int irq)
--{
--	    /* nothing to do yet */
--}
--
- void arch_teardown_msi_irq(unsigned int irq)
+Thanks.
+
+ include/linux/cgroup.h          |    2 +-
+ include/linux/percpu-refcount.h |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -108,7 +108,7 @@ static inline bool css_tryget(struct cgr
  {
--	destroy_irq(irq);
+ 	if (css->flags & CSS_ROOT)
+ 		return true;
+-	return percpu_ref_tryget(&css->refcnt);
++	return percpu_ref_tryget_live(&css->refcnt);
  }
  
- /*
-@@ -298,10 +292,8 @@ static int xlp_setup_msi(uint64_t lnkbas
- 
- 	xirq = xirq + msivec;		/* msi mapped to global irq space */
- 	ret = irq_set_msi_desc(xirq, desc);
--	if (ret < 0) {
--		destroy_irq(xirq);
-+	if (ret < 0)
- 		return ret;
--	}
- 
- 	write_msi_msg(xirq, &msg);
- 	return 0;
-Index: tip/arch/mips/pci/pci-xlr.c
-===================================================================
---- tip.orig/arch/mips/pci/pci-xlr.c
-+++ tip/arch/mips/pci/pci-xlr.c
-@@ -214,14 +214,8 @@ static int get_irq_vector(const struct p
+ /**
+--- a/include/linux/percpu-refcount.h
++++ b/include/linux/percpu-refcount.h
+@@ -118,7 +118,7 @@ static inline void percpu_ref_get(struct
  }
  
- #ifdef CONFIG_PCI_MSI
--void destroy_irq(unsigned int irq)
--{
--	    /* nothing to do yet */
--}
--
- void arch_teardown_msi_irq(unsigned int irq)
+ /**
+- * percpu_ref_tryget - try to increment a percpu refcount
++ * percpu_ref_tryget_live - try to increment a live percpu refcount
+  * @ref: percpu_ref to try-get
+  *
+  * Increment a percpu refcount unless it has already been killed.  Returns
+@@ -129,7 +129,7 @@ static inline void percpu_ref_get(struct
+  * used.  After the confirm_kill callback is invoked, it's guaranteed that
+  * no new reference will be given out by percpu_ref_tryget().
+  */
+-static inline bool percpu_ref_tryget(struct percpu_ref *ref)
++static inline bool percpu_ref_tryget_live(struct percpu_ref *ref)
  {
--	destroy_irq(irq);
- }
- 
- int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
-@@ -263,10 +257,8 @@ int arch_setup_msi_irq(struct pci_dev *d
- 		MSI_DATA_DELIVERY_FIXED;
- 
- 	ret = irq_set_msi_desc(irq, desc);
--	if (ret < 0) {
--		destroy_irq(irq);
-+	if (ret < 0)
- 		return ret;
--	}
- 
- 	write_msi_msg(irq, &msg);
- 	return 0;
-
-
+ 	unsigned __percpu *pcpu_count;
+ 	int ret = false;
