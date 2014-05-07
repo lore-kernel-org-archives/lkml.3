@@ -1,63 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933455AbaEGPEe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:04:34 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:47341 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932083AbaEGPEb (ORCPT
+	id S933339AbaEGPDK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:03:10 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:32651 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933220AbaEGPC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:04:31 -0400
-Date: Wed, 7 May 2014 17:04:24 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v4 1/2] perf record: Propagate exit status of a command
- line workload
-Message-ID: <20140507150424.GP30445@twins.programming.kicks-ass.net>
-References: <1399425205-11503-1-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ik0NlRzMGhMnxrMX"
-Content-Disposition: inline
-In-Reply-To: <1399425205-11503-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 7 May 2014 11:02:59 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH v10 16/19] pvqspinlock: Enable coexistence with the unfair lock
+Date: Wed,  7 May 2014 11:01:44 -0400
+Message-Id: <1399474907-22206-17-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com>
+References: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch enables the coexistence of both the PV qspinlock and
+unfair lock.  When both are enabled, however, only the lock fastpath
+will perform lock stealing whereas the slowpath will have that disabled
+to get the best of both features.
 
---ik0NlRzMGhMnxrMX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+We also need to transition a CPU spinning too long in the pending
+bit code path back to the regular queuing code path so that it can
+be properly halted by the PV qspinlock code.
 
-On Wed, May 07, 2014 at 10:13:24AM +0900, Namhyung Kim wrote:
-> -	on_exit(record__sig_exit, rec);
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+---
+ kernel/locking/qspinlock.c |   74 ++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 64 insertions(+), 10 deletions(-)
 
-NAK!
+diff --git a/kernel/locking/qspinlock.c b/kernel/locking/qspinlock.c
+index 0c86a6f..fb05e64 100644
+--- a/kernel/locking/qspinlock.c
++++ b/kernel/locking/qspinlock.c
+@@ -72,6 +72,30 @@ struct qnode {
+ #define qhead	mcs.locked	/* The queue head flag */
+ 
+ /*
++ * Allow spinning loop count only if either PV spinlock or unfair lock is
++ * configured.
++ */
++#if defined(CONFIG_PARAVIRT_UNFAIR_LOCKS) || defined(CONFIG_PARAVIRT_SPINLOCKS)
++#define	DEF_LOOP_CNT(c)		int c = 0
++#define	INC_LOOP_CNT(c)		(c)++
++#define	LOOP_CNT(c)		c
++#else
++#define	DEF_LOOP_CNT(c)
++#define	INC_LOOP_CNT(c)
++#define	LOOP_CNT(c)		0
++#endif
++
++/*
++ * Check the pending bit spinning threshold only if PV qspinlock is enabled
++ */
++#define PSPIN_THRESHOLD		(1 << 10)
++#ifdef CONFIG_PARAVIRT_SPINLOCKS
++#define pv_qspinlock_enabled()	static_key_false(&paravirt_spinlocks_enabled)
++#else
++#define pv_qspinlock_enabled()	false
++#endif
++
++/*
+  * Per-CPU queue node structures; we can never have more than 4 nested
+  * contexts: task, softirq, hardirq, nmi.
+  *
+@@ -302,9 +326,6 @@ cmpxchg_tail(struct qspinlock *lock, u32 old, u32 new)
+  * starvation.
+  */
+ #ifdef CONFIG_PARAVIRT_UNFAIR_LOCKS
+-#define DEF_LOOP_CNT(c)		int c = 0
+-#define INC_LOOP_CNT(c)		(c)++
+-#define LOOP_CNT(c)		c
+ #define LSTEAL_MIN		(1 << 3)
+ #define LSTEAL_MAX		(1 << 10)
+ #define LSTEAL_MIN_MASK		(LSTEAL_MIN - 1)
+@@ -330,7 +351,11 @@ static inline void unfair_init_vars(struct qnode *node)
+ static inline void
+ unfair_set_vars(struct qnode *node, struct qnode *prev, u32 prev_tail)
+ {
+-	if (!static_key_false(&paravirt_unfairlocks_enabled))
++	/*
++	 * Disable waiter lock stealing if PV spinlock is enabled
++	 */
++	if (pv_qspinlock_enabled() ||
++	   !static_key_false(&paravirt_unfairlocks_enabled))
+ 		return;
+ 
+ 	node->qprev	= prev;
+@@ -356,7 +381,11 @@ unfair_set_vars(struct qnode *node, struct qnode *prev, u32 prev_tail)
+  */
+ static inline int unfair_check_and_clear_tail(struct qspinlock *lock, u32 tail)
+ {
+-	if (!static_key_false(&paravirt_unfairlocks_enabled))
++	/*
++	 * Disable waiter lock stealing if PV spinlock is enabled
++	 */
++	if (pv_qspinlock_enabled() ||
++	   !static_key_false(&paravirt_unfairlocks_enabled))
+ 		return false;
+ 
+ 	/*
+@@ -385,7 +414,11 @@ unfair_get_lock(struct qspinlock *lock, struct qnode *node, u32 tail, int count)
+ 	int	     isqhead;
+ 	struct qnode *next;
+ 
+-	if (!static_key_false(&paravirt_unfairlocks_enabled) ||
++	/*
++	 * Disable waiter lock stealing if PV spinlock is enabled
++	 */
++	if (pv_qspinlock_enabled() ||
++	   !static_key_false(&paravirt_unfairlocks_enabled) ||
+ 	   ((count & node->lsteal_mask) != node->lsteal_mask))
+ 		return false;
+ 
+@@ -463,9 +496,6 @@ unfair_get_lock(struct qspinlock *lock, struct qnode *node, u32 tail, int count)
+ }
+ 
+ #else /* CONFIG_PARAVIRT_UNFAIR_LOCKS */
+-#define	DEF_LOOP_CNT(c)
+-#define	INC_LOOP_CNT(c)
+-#define	LOOP_CNT(c)	0
+ 
+ static void unfair_init_vars(struct qnode *node)	{}
+ static void unfair_set_vars(struct qnode *node, struct qnode *prev,
+@@ -582,9 +612,28 @@ static inline int trylock_pending(struct qspinlock *lock, u32 *pval)
+ 	 * store-release that clears the locked bit and create lock
+ 	 * sequentiality; this because not all clear_pending_set_locked()
+ 	 * implementations imply full barriers.
++	 *
++	 * When PV qspinlock is enabled, exit the pending bit code path and
++	 * go back to the regular queuing path if the lock isn't available
++	 * within a certain threshold.
+ 	 */
+-	while ((val = smp_load_acquire(&lock->val.counter)) & _Q_LOCKED_MASK)
++	if (pv_qspinlock_enabled())
++		retry = PSPIN_THRESHOLD;
++	while ((val = smp_load_acquire(&lock->val.counter)) & _Q_LOCKED_MASK) {
++		if (pv_qspinlock_enabled() && (--retry == 0)) {
++			/*
++			 * Clear the pending bit and exit
++			 */
++			for (;;) {
++				new = val & ~_Q_PENDING_MASK;
++				old = atomic_cmpxchg(&lock->val, val, new);
++				if (old == val)
++					return 0;
++				val = old;
++			}
++		}
+ 		arch_mutex_cpu_relax();
++	}
+ 
+ 	/*
+ 	 * take ownership and clear the pending bit.
+@@ -646,6 +695,8 @@ static noinline void queue_spin_lock_slowerpath(struct qspinlock *lock,
+ 			}
+ 			arch_mutex_cpu_relax();
+ 		}
++	} else {
++		ACCESS_ONCE(node->qhead) = true;
+ 	}
+ 
+ 	/*
+@@ -713,6 +764,9 @@ notify_next:
+ 	while (!(next = (struct qnode *)ACCESS_ONCE(node->mcs.next)))
+ 		arch_mutex_cpu_relax();
+ 
++	/*
++	 * The next one in queue is now at the head
++	 */
+ 	arch_mcs_spin_unlock_contended(&next->qhead);
+ }
+ 
+-- 
+1.7.1
 
---ik0NlRzMGhMnxrMX
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTakt4AAoJEHZH4aRLwOS6eo8P/2KdHukmVvQ2Anxfx/lI+Xov
-ItjBkzj18xWLCnXdZuoIYnj/0U9pKFAVYfAdEwPrNIyRMhzeOR8Q9R/eG+SI+zfZ
-WqpSupfiUmbWA3JEhuwvyLbcw2sBTIn0rX+O+BG7cv7iKepWFf3aM2wYVC+AN0Hg
-3jZWW3MOjD3720HoTN/1AyKKJSQBoji9DX3hnEAwjlAp7YLzvsJy0lFWFsR/HcnQ
-IM7AiMNtcgBTbTzCb8cKqtgLJGULKO3U5tpk7VaNLR8wk8Zj9Wrjaee94sPYwPdJ
-i0dfzcTFMMhZ6+Ypg7VazRkUhri/+AwwS8di54Fs/U8YqMq9I3GtKOSaCIfHvL2b
-qOxWjhiz2bERMK6oID36fHp0ppcXHCTgGpdOHH2Ox7ijQ6tWvoMP+IUsdTNHJ6et
-wdEvLvA2FFovWxL45PjCclRvksjBul3Sii0K3TS760uVACdgdQqMs7Swn96yX7kj
-frYTZ/CvtwJKwDYA04mwJ3HXV3RZX9LMpxgFtJrtIK7r2TE24SEFaCQv6PEq9fje
-pFWxyXOXtRnKMUADOPNseJTbnYKeDNv+jmogzCWckTdUhqjGv1mWnoIygb8CWimx
-/N65OIM7IN4aJOpc3FfIN9AFSVcUhyMldGBJyUjDS1qON7ZPLYhdoo32KZEKmGje
-vAYbNpZmD0nlomB45pa0
-=XDlT
------END PGP SIGNATURE-----
-
---ik0NlRzMGhMnxrMX--
