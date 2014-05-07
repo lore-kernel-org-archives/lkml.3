@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379AbaEGVgN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 17:36:13 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:48140 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751476AbaEGVgL (ORCPT
+	id S1752596AbaEGVgk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 17:36:40 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:42813 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752474AbaEGVgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 17:36:11 -0400
-Date: Wed, 7 May 2014 14:35:51 -0700
-From: Larry Bassel <larry.bassel@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Larry Bassel <larry.bassel@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "khilman@linaro.org" <khilman@linaro.org>
-Subject: Re: [PATCH v2 2/2] arm64: enable context tracking
-Message-ID: <20140507213550.GA10142@ubuette>
-References: <1399419149-26685-1-git-send-email-larry.bassel@linaro.org>
- <1399419149-26685-3-git-send-email-larry.bassel@linaro.org>
- <20140507101709.GE18456@arm.com>
+	Wed, 7 May 2014 17:36:36 -0400
+Date: Wed, 7 May 2014 14:36:34 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] mm, slab: suppress out of memory warning unless debug
+ is enabled
+In-Reply-To: <20140507142925.b0e31514d4cd8d5857b10850@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1405071431580.8454@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1405071418410.8389@chino.kir.corp.google.com> <20140507142925.b0e31514d4cd8d5857b10850@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140507101709.GE18456@arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07 May 14 11:17, Will Deacon wrote:
-> On Wed, May 07, 2014 at 12:32:29AM +0100, Larry Bassel wrote:
-> > Make calls to ct_user_enter when the kernel is exited
-> > and ct_user_exit when the kernel is entered (in el0_da,
-> > el0_ia, el0_svc, el0_irq).
-> 
-> Why only these entry points? I can reschedule after any exception from EL0,
-> so I'd expect all exceptions from userspace to need annotating, no?
-> 
-> > These macros expand to function calls which will only work
-> > properly if el0_sync and related code has been rearranged
-> > (in a previous patch of this series).
+On Wed, 7 May 2014, Andrew Morton wrote:
+
+> > When the slab or slub allocators cannot allocate additional slab pages, they 
+> > emit diagnostic information to the kernel log such as current number of slabs, 
+> > number of objects, active objects, etc.  This is always coupled with a page 
+> > allocation failure warning since it is controlled by !__GFP_NOWARN.
 > > 
-> > In order to avoid saving registers, the slow syscall path
-> > is forced (as x86 does).
+> > Suppress this out of memory warning if the allocator is configured without debug 
+> > supported.  The page allocation failure warning will indicate it is a failed 
+> > slab allocation, so this is only useful to diagnose allocator bugs.
+> > 
+> > Since CONFIG_SLUB_DEBUG is already enabled by default for the slub allocator, 
+> > there is no functional change with this patch.  If debug is disabled, however, 
+> > the warnings are now suppressed.
+> > 
 > 
-> ... and if you decide to handle undef exceptions, I think you'll need
-> the register saving too, in case the kernel needs to perform emulation.
-
-These are excellent points, I will rework the patch and submit v3.
-
-Thanks for the feedback.
-
+> I'm not seeing any reason for making this change.
 > 
-> Will
 
-Larry
+You think the spam in http://marc.info/?l=linux-kernel&m=139927773010514 
+is meaningful?  It also looks like two different errors when in reality it 
+is a single allocation.
+
+Unless you're debugging a slab issue, all the pertinent information is 
+already available in the page allocation failure warning emitted by the 
+page allocator: we already have the order and gfp mask.  We also know it's 
+a slab allocation because of the __kmalloc in the call trace.
+
+Does this user care about that there are 207 slabs on node 0 with 207 
+objects?  Probably only if they are diagnosing a slab problem.
+
+> > @@ -1621,11 +1621,17 @@ __initcall(cpucache_init);
+> >  static noinline void
+> >  slab_out_of_memory(struct kmem_cache *cachep, gfp_t gfpflags, int nodeid)
+> >  {
+> > +#if DEBUG
+> >  	struct kmem_cache_node *n;
+> >  	struct page *page;
+> >  	unsigned long flags;
+> >  	int node;
+> >  
+> > +	if (gfpflags & __GFP_NOWARN)
+> > +		return;
+> > +	if (!printk_ratelimit())
+> > +		return;
+> 
+> printk_ratelimit() is lame - it uses a single global state.  So if
+> random net driver is using printk_ratelimit(), that driver and slab
+> will interfere with each other.
+> 
+
+Agreed, but it is a testiment to the uselessness of this information 
+already.  The page allocation failure warnings are controlled by their own 
+ratelimiter, nopage_rs, but that's local to the page allocator.  Do you 
+prefer that all these ratelimiters be moved to the global namespace for 
+generic use?
