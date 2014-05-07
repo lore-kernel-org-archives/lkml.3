@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717AbaEGBNb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 21:13:31 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:40389 "EHLO
+	id S1753282AbaEGBN3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 21:13:29 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:40404 "EHLO
 	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239AbaEGBN2 (ORCPT
+	with ESMTP id S1752264AbaEGBN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 May 2014 21:13:28 -0400
 X-Original-SENDERIP: 10.177.220.181
@@ -15,320 +15,177 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH v4 1/2] perf record: Propagate exit status of a command line workload
-Date: Wed,  7 May 2014 10:13:24 +0900
-Message-Id: <1399425205-11503-1-git-send-email-namhyung@kernel.org>
+        Stephane Eranian <eranian@google.com>,
+        Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>,
+        Irina Tirdea <irina.tirdea@intel.com>
+Subject: [PATCH v4 2/2] perf tools: Get rid of on_exit() feature test
+Date: Wed,  7 May 2014 10:13:25 +0900
+Message-Id: <1399425205-11503-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1399425205-11503-1-git-send-email-namhyung@kernel.org>
+References: <1399425205-11503-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently perf record doesn't propagate the exit status of a workload
-given by the command line.  But sometimes it'd useful if it's
-propagated so that a monitoring script can handle errors
-appropriately.
+The on_exit() function was only used in perf record but it's gone in
+previous patch.
 
-To do that, it got rid of exit handlers and run/call them directly in
-the __cmd_record().  I don't see any reason why those are in a form of
-exit handlers in the first place.  Also it cleaned up the resource
-management code in record__exit().
-
-With this change, perf record returns the child exit status in case of
-normal termination.  (Not sure what should be returned on abnormal
-cases though).
-
-Example run of Stephane's case:
-
-  $ perf record true && echo yes || echo no
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.013 MB perf.data (~589 samples) ]
-  yes
-
-  $ perf record false && echo yes || echo no
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.013 MB perf.data (~589 samples) ]
-  no
-
-And Jiri's case (error in parent):
-
-  $ perf record -m 10G true && echo yes || echo no
-  rounding mmap pages size to 17179869184 bytes (4194304 pages)
-  failed to mmap with 12 (Cannot allocate memory)
-  no
-
-Reported-by: Stephane Eranian <eranian@google.com>
 Acked-by: Stephane Eranian <eranian@google.com>
+Cc: Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>
+Cc: Irina Tirdea <irina.tirdea@intel.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-record.c | 127 ++++++++++++++++++--------------------------
- 1 file changed, 53 insertions(+), 74 deletions(-)
+ tools/perf/builtin-record.c                     | 31 -------------------------
+ tools/perf/config/Makefile                      |  8 -------
+ tools/perf/config/feature-checks/Makefile       |  4 ----
+ tools/perf/config/feature-checks/test-all.c     |  5 ----
+ tools/perf/config/feature-checks/test-on-exit.c | 16 -------------
+ 5 files changed, 64 deletions(-)
+ delete mode 100644 tools/perf/config/feature-checks/test-on-exit.c
 
 diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 8ce62ef7f6c3..e4cb53397b83 100644
+index e4cb53397b83..adaf3414c00b 100644
 --- a/tools/perf/builtin-record.c
 +++ b/tools/perf/builtin-record.c
-@@ -140,7 +140,6 @@ out:
- }
+@@ -30,37 +30,6 @@
+ #include <sched.h>
+ #include <sys/mman.h>
  
- static volatile int done = 0;
--static volatile int signr = -1;
- static volatile int child_finished = 0;
- 
- static void sig_handler(int sig)
-@@ -149,27 +148,6 @@ static void sig_handler(int sig)
- 		child_finished = 1;
- 
- 	done = 1;
--	signr = sig;
--}
+-#ifndef HAVE_ON_EXIT_SUPPORT
+-#ifndef ATEXIT_MAX
+-#define ATEXIT_MAX 32
+-#endif
+-static int __on_exit_count = 0;
+-typedef void (*on_exit_func_t) (int, void *);
+-static on_exit_func_t __on_exit_funcs[ATEXIT_MAX];
+-static void *__on_exit_args[ATEXIT_MAX];
+-static int __exitcode = 0;
+-static void __handle_on_exit_funcs(void);
+-static int on_exit(on_exit_func_t function, void *arg);
+-#define exit(x) (exit)(__exitcode = (x))
 -
--static void record__sig_exit(int exit_status __maybe_unused, void *arg)
+-static int on_exit(on_exit_func_t function, void *arg)
 -{
--	struct record *rec = arg;
--	int status;
--
--	if (rec->evlist->workload.pid > 0) {
--		if (!child_finished)
--			kill(rec->evlist->workload.pid, SIGTERM);
--
--		wait(&status);
--		if (WIFSIGNALED(status))
--			psignal(WTERMSIG(status), rec->progname);
--	}
--
--	if (signr == -1 || signr == SIGUSR1)
--		return;
--
--	signal(signr, SIG_DFL);
- }
- 
- static int record__open(struct record *rec)
-@@ -243,27 +221,6 @@ static int process_buildids(struct record *rec)
- 					      size, &build_id__mark_dso_hit_ops);
- }
- 
--static void record__exit(int status, void *arg)
--{
--	struct record *rec = arg;
--	struct perf_data_file *file = &rec->file;
--
--	if (status != 0)
--		return;
--
--	if (!file->is_pipe) {
--		rec->session->header.data_size += rec->bytes_written;
--
--		if (!rec->no_buildid)
--			process_buildids(rec);
--		perf_session__write_header(rec->session, rec->evlist,
--					   file->fd, true);
--		perf_session__delete(rec->session);
--		perf_evlist__delete(rec->evlist);
--		symbol__exit();
--	}
--}
--
- static void perf_event__synthesize_guest_os(struct machine *machine, void *data)
- {
- 	int err;
-@@ -344,18 +301,19 @@ static volatile int workload_exec_errno;
-  * if the fork fails, since we asked by setting its
-  * want_signal to true.
-  */
--static void workload_exec_failed_signal(int signo, siginfo_t *info,
-+static void workload_exec_failed_signal(int signo __maybe_unused,
-+					siginfo_t *info,
- 					void *ucontext __maybe_unused)
- {
- 	workload_exec_errno = info->si_value.sival_int;
- 	done = 1;
--	signr = signo;
- 	child_finished = 1;
- }
- 
- static int __cmd_record(struct record *rec, int argc, const char **argv)
- {
- 	int err;
-+	int status = 0;
- 	unsigned long waking = 0;
- 	const bool forks = argc > 0;
- 	struct machine *machine;
-@@ -367,7 +325,6 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 
- 	rec->progname = argv[0];
- 
--	on_exit(record__sig_exit, rec);
- 	signal(SIGCHLD, sig_handler);
- 	signal(SIGINT, sig_handler);
- 	signal(SIGTERM, sig_handler);
-@@ -394,26 +351,21 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 
- 	if (record__open(rec) != 0) {
- 		err = -1;
--		goto out_delete_session;
-+		goto out_child;
- 	}
- 
- 	if (!rec->evlist->nr_groups)
- 		perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
- 
--	/*
--	 * perf_session__delete(session) will be called at record__exit()
--	 */
--	on_exit(record__exit, rec);
--
- 	if (file->is_pipe) {
- 		err = perf_header__write_pipe(file->fd);
- 		if (err < 0)
--			goto out_delete_session;
-+			goto out_child;
- 	} else {
- 		err = perf_session__write_header(session, rec->evlist,
- 						 file->fd, false);
- 		if (err < 0)
--			goto out_delete_session;
-+			goto out_child;
- 	}
- 
- 	if (!rec->no_buildid
-@@ -421,7 +373,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 		pr_err("Couldn't generate buildids. "
- 		       "Use --no-buildid to profile anyway.\n");
- 		err = -1;
--		goto out_delete_session;
-+		goto out_child;
- 	}
- 
- 	machine = &session->machines.host;
-@@ -431,7 +383,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 						   process_synthesized_event);
- 		if (err < 0) {
- 			pr_err("Couldn't synthesize attrs.\n");
--			goto out_delete_session;
-+			goto out_child;
- 		}
- 
- 		if (have_tracepoints(&rec->evlist->entries)) {
-@@ -447,7 +399,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 								  process_synthesized_event);
- 			if (err <= 0) {
- 				pr_err("Couldn't record tracing data.\n");
--				goto out_delete_session;
-+				goto out_child;
- 			}
- 			rec->bytes_written += err;
- 		}
-@@ -475,7 +427,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 	err = __machine__synthesize_threads(machine, tool, &opts->target, rec->evlist->threads,
- 					    process_synthesized_event, opts->sample_address);
- 	if (err != 0)
--		goto out_delete_session;
-+		goto out_child;
- 
- 	if (rec->realtime_prio) {
- 		struct sched_param param;
-@@ -484,7 +436,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 		if (sched_setscheduler(0, SCHED_FIFO, &param)) {
- 			pr_err("Could not set realtime priority.\n");
- 			err = -1;
--			goto out_delete_session;
-+			goto out_child;
- 		}
- 	}
- 
-@@ -512,13 +464,15 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 
- 		if (record__mmap_read_all(rec) < 0) {
- 			err = -1;
--			goto out_delete_session;
-+			goto out_child;
- 		}
- 
- 		if (hits == rec->samples) {
- 			if (done)
- 				break;
- 			err = poll(rec->evlist->pollfd, rec->evlist->nr_fds, -1);
-+			if (err < 0 && errno == EINTR)
-+				err = 0;
- 			waking++;
- 		}
- 
-@@ -538,28 +492,52 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 		const char *emsg = strerror_r(workload_exec_errno, msg, sizeof(msg));
- 		pr_err("Workload failed: %s\n", emsg);
- 		err = -1;
--		goto out_delete_session;
-+		goto out_child;
- 	}
- 
--	if (quiet || signr == SIGUSR1)
--		return 0;
-+	if (!quiet) {
-+		fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
- 
--	fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
-+		/*
-+		 * Approximate RIP event size: 24 bytes.
-+		 */
-+		fprintf(stderr,
-+			"[ perf record: Captured and wrote %.3f MB %s (~%" PRIu64 " samples) ]\n",
-+			(double)rec->bytes_written / 1024.0 / 1024.0,
-+			file->path,
-+			rec->bytes_written / 24);
-+	}
- 
--	/*
--	 * Approximate RIP event size: 24 bytes.
--	 */
--	fprintf(stderr,
--		"[ perf record: Captured and wrote %.3f MB %s (~%" PRIu64 " samples) ]\n",
--		(double)rec->bytes_written / 1024.0 / 1024.0,
--		file->path,
--		rec->bytes_written / 24);
-+out_child:
-+	if (forks) {
-+		int exit_status;
- 
+-	if (__on_exit_count == ATEXIT_MAX)
+-		return -ENOMEM;
+-	else if (__on_exit_count == 0)
+-		atexit(__handle_on_exit_funcs);
+-	__on_exit_funcs[__on_exit_count] = function;
+-	__on_exit_args[__on_exit_count++] = arg;
 -	return 0;
-+		if (!child_finished)
-+			kill(rec->evlist->workload.pid, SIGTERM);
-+
-+		wait(&exit_status);
-+
-+		if (err < 0)
-+			status = err;
-+		else if (WIFEXITED(exit_status))
-+			status = WEXITSTATUS(exit_status);
-+		else if (WIFSIGNALED(status))
-+			psignal(WTERMSIG(status), rec->progname);
-+	} else
-+		status = err;
-+
-+	if (!err && !file->is_pipe) {
-+		rec->session->header.data_size += rec->bytes_written;
-+
-+		if (!rec->no_buildid)
-+			process_buildids(rec);
-+		perf_session__write_header(rec->session, rec->evlist,
-+					   file->fd, true);
-+	}
+-}
+-
+-static void __handle_on_exit_funcs(void)
+-{
+-	int i;
+-	for (i = 0; i < __on_exit_count; i++)
+-		__on_exit_funcs[i] (__exitcode, __on_exit_args[i]);
+-}
+-#endif
  
- out_delete_session:
- 	perf_session__delete(session);
--	return err;
-+	return status;
- }
+ struct record {
+ 	struct perf_tool	tool;
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 150c84c7416d..f2edc593a7a7 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -174,7 +174,6 @@ CORE_FEATURE_TESTS =			\
+ 	libpython-version		\
+ 	libslang			\
+ 	libunwind			\
+-	on-exit				\
+ 	stackprotector-all		\
+ 	timerfd				\
+ 	libdw-dwarf-unwind
+@@ -200,7 +199,6 @@ VF_FEATURE_TESTS =			\
+ 	libelf-getphdrnum		\
+ 	libelf-mmap			\
+ 	libpython-version		\
+-	on-exit				\
+ 	stackprotector-all		\
+ 	timerfd				\
+ 	libunwind-debug-frame		\
+@@ -571,12 +569,6 @@ ifneq ($(filter -lbfd,$(EXTLIBS)),)
+   CFLAGS += -DHAVE_LIBBFD_SUPPORT
+ endif
  
- #define BRANCH_OPT(n, m) \
-@@ -988,6 +966,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+-ifndef NO_ON_EXIT
+-  ifeq ($(feature-on-exit), 1)
+-    CFLAGS += -DHAVE_ON_EXIT_SUPPORT
+-  endif
+-endif
+-
+ ifndef NO_BACKTRACE
+   ifeq ($(feature-backtrace), 1)
+     CFLAGS += -DHAVE_BACKTRACE_SUPPORT
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 2da103c53f89..64c84e5f0514 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -24,7 +24,6 @@ FILES=					\
+ 	test-libslang.bin		\
+ 	test-libunwind.bin		\
+ 	test-libunwind-debug-frame.bin	\
+-	test-on-exit.bin		\
+ 	test-stackprotector-all.bin	\
+ 	test-timerfd.bin		\
+ 	test-libdw-dwarf-unwind.bin
+@@ -133,9 +132,6 @@ test-liberty-z.bin:
+ test-cplus-demangle.bin:
+ 	$(BUILD) -liberty
  
- 	err = __cmd_record(&record, argc, argv);
- out_symbol_exit:
-+	perf_evlist__delete(rec->evlist);
- 	symbol__exit();
- 	return err;
- }
+-test-on-exit.bin:
+-	$(BUILD)
+-
+ test-backtrace.bin:
+ 	$(BUILD)
+ 
+diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
+index fc37eb3ca17b..fe5c1e5c952f 100644
+--- a/tools/perf/config/feature-checks/test-all.c
++++ b/tools/perf/config/feature-checks/test-all.c
+@@ -69,10 +69,6 @@
+ # include "test-libbfd.c"
+ #undef main
+ 
+-#define main main_test_on_exit
+-# include "test-on-exit.c"
+-#undef main
+-
+ #define main main_test_backtrace
+ # include "test-backtrace.c"
+ #undef main
+@@ -110,7 +106,6 @@ int main(int argc, char *argv[])
+ 	main_test_gtk2(argc, argv);
+ 	main_test_gtk2_infobar(argc, argv);
+ 	main_test_libbfd();
+-	main_test_on_exit();
+ 	main_test_backtrace();
+ 	main_test_libnuma();
+ 	main_test_timerfd();
+diff --git a/tools/perf/config/feature-checks/test-on-exit.c b/tools/perf/config/feature-checks/test-on-exit.c
+deleted file mode 100644
+index 8e88b16e6ded..000000000000
+--- a/tools/perf/config/feature-checks/test-on-exit.c
++++ /dev/null
+@@ -1,16 +0,0 @@
+-#include <stdio.h>
+-#include <stdlib.h>
+-
+-static void exit_fn(int status, void *__data)
+-{
+-	printf("exit status: %d, data: %d\n", status, *(int *)__data);
+-}
+-
+-static int data = 123;
+-
+-int main(void)
+-{
+-	on_exit(exit_fn, &data);
+-
+-	return 321;
+-}
 -- 
 1.9.2
 
