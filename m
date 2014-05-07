@@ -1,187 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217AbaEGIWg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 04:22:36 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49092 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129AbaEGIWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 04:22:33 -0400
-Message-ID: <5369ED25.70101@ti.com>
-Date: Wed, 7 May 2014 13:51:57 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Marek Vasut <marex@denx.de>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <rogerq@ti.com>, <balajitk@ti.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mohit Kumar <mohit.kumar@st.com>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH 05/17] pci: host: pcie-dra7xx: add support for pcie-dra7xx
- controller
-References: <1399383244-14556-1-git-send-email-kishon@ti.com> <1399383244-14556-6-git-send-email-kishon@ti.com> <201405061544.28738.marex@denx.de>
-In-Reply-To: <201405061544.28738.marex@denx.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1755326AbaEGIWn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 04:22:43 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:11609 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129AbaEGIWi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 04:22:38 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-a3-5369ed44c2b7
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Lee Jones'" <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, "'Samuel Ortiz'" <sameo@linux.intel.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Todd Fischer'" <todd.fischer@ridgerun.com>
+References: <01f001cf69cc$8dd3b320$a97b1960$%han@samsung.com>
+In-reply-to: <01f001cf69cc$8dd3b320$a97b1960$%han@samsung.com>
+Subject: [PATCH 2/4] mfd: tps6507x: Make of_device_id array const
+Date: Wed, 07 May 2014 17:22:28 +0900
+Message-id: <01f501cf69cd$7bac3810$7304a830$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac9pzI23B3Krz2pOTtOM+cSg7C0yRwAAMVUQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t8zfV2Xt5nBBsdXillcXniJ1eL+16OM
+	Fpd3zWGzON3NavH60D5WB1aPO9f2sHnMOxnosX7RJTaPvi2rGD0+b5ILYI3isklJzcksSy3S
+	t0vgyui+08tesJ21on3bW+YGxgMsXYycHBICJhKb3k5nhbDFJC7cW8/WxcjFISSwjFHibftB
+	VpiiqzvuMUEkFjFKbL7yHcr5zSgxd0knG0gVm4CaxJcvh9lBbBEg++aeWWBFzAKzGCWuX94P
+	lhASsJU4tP4ZUIKDg1PATuL57iAQU1jAUaJ1XQ1IBYuAqsSaH1/BFvMCVc+6eoURwhaU+DH5
+	HtjVzAJaEut3HmeCsOUlNq95ywwyRkJAXeLRX12IC4wkpvw+CVUuIrHvxTtGkGskBG6xS8z7
+	tIsNYpeAxLfJh1ggemUlNh1ghvhXUuLgihssExglZiHZPAvJ5llINs9CsmIBI8sqRtHUguSC
+	4qT0IlO94sTc4tK8dL3k/NxNjJAonbiD8f4B60OMyUDrJzJLiSbnA6M8ryTe0NjMyMLUxNTY
+	yNzSjDRhJXHe9EdJQUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYDZa/28szV/zjwuxm4avb
+	1Tru7XfYnV921TAt9Ln2xgch793ZvPnYT3L9vJ9/SK6Vo/HWg7kRi17N4zmzZtKD76t5b095
+	erjmlx/np8ldr/ZsEDN1d2aOdHd7dar91jSlNVV/d+/+fWTS9fvcPCLf3Ob5XNbXTnK7vqjb
+	+8I64x3tqryR78Q1nZVYijMSDbWYi4oTASVsfIroAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEKsWRmVeSWpSXmKPExsVy+t9jAV2Xt5nBBm0XhCwuL7zEanH/61FG
+	i8u75rBZnO5mtXh9aB+rA6vHnWt72DzmnQz0WL/oEptH35ZVjB6fN8kFsEY1MNpkpCampBYp
+	pOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAO1WUihLzCkFCgUkFhcr
+	6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMWZ03+llL9jOWtG+7S1zA+MBli5GTg4JAROJqzvu
+	MUHYYhIX7q1n62Lk4hASWMQosfnKdyYI5zejxNwlnWwgVWwCahJfvhxmB7FFgOybe2aBFTEL
+	zGKUuH55P1hCSMBW4tD6Z0AJDg5OATuJ57uDQExhAUeJ1nU1IBUsAqoSa358ZQWxeYGqZ129
+	wghhC0r8mHwP7DhmAS2J9TuPM0HY8hKb17xlBhkjIaAu8eivLsQFRhJTfp+EKheR2PfiHeME
+	RqFZSCbNQjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRnAKeSe1gXNlg
+	cYhRgINRiYfX4m1GsBBrYllxZe4hRgkOZiUR3l0XM4OFeFMSK6tSi/Lji0pzUosPMSYDPTqR
+	WUo0OR+YnvJK4g2NTcyMLI3MLIxMzM1JE1YS5z3Qah0oJJCeWJKanZpakFoEs4WJg1OqgbHC
+	P69G7cGzzK1GXvf6ud+Lf1t29vDBkEzOZh3FcpvJs44q5lh9e111xWxH9rflc2dMtu7z29I4
+	IWyGyp2zLzZ8P6Y2kUm72aHb4qIu1/1PS604e2b+i5y/Z8KO7e9Sbx/maP96JP6T/w2VrStv
+	ct2V2HnvlIIu0xlu5/xfC1PmH2zavKpBeA+nEktxRqKhFnNRcSIA58TaZUUDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Make of_device_id array const, because all OF functions
+handle it as const.
 
-On Tuesday 06 May 2014 07:14 PM, Marek Vasut wrote:
-> On Tuesday, May 06, 2014 at 03:33:51 PM, Kishon Vijay Abraham I wrote:
->> Added support for pcie controller in dra7xx. This driver re-uses
->> the designware core code that is already present in kernel.
-> 
-> [...]
-> 
->> +#define to_dra7xx_pcie(x)	container_of((x), struct dra7xx_pcie, pp)
->> +
->> +static inline u32 dra7xx_pcie_readl(void __iomem *base, u32 offset)
-> 
-> Just pass struct dra7xx_pcie * instead of *base here , it will make the code 
-> below shorter.
-> 
->> +{
->> +	return readl(base + offset);
->> +}
->> +
->> +static inline void dra7xx_pcie_writel(void __iomem *base, u32 offset, u32
->> value) +{
-> 
-> DTTO.
-> 
->> +	writel(value, base + offset);
->> +}
->> +
->> +static int dra7xx_pcie_link_up(struct pcie_port *pp)
->> +{
->> +	struct dra7xx_pcie *dra7xx = to_dra7xx_pcie(pp);
->> +	u32 reg = dra7xx_pcie_readl(dra7xx->base, PCIECTRL_DRA7XX_CONF_PHY_CS);
->> +
->> +	if (reg & LINK_UP)
->> +		return true;
->> +	return false;
-> 
-> return reg & LINK_UP;
-> 
->> +}
->> +
->> +static int dra7xx_pcie_establish_link(struct pcie_port *pp)
->> +{
->> +	u32 reg;
->> +	int retries = 1000;
->> +	struct dra7xx_pcie *dra7xx = to_dra7xx_pcie(pp);
->> +
->> +	if (dw_pcie_link_up(pp)) {
->> +		dev_err(pp->dev, "link is already up\n");
-> 
-> This will spew, since the .link_up (and thus this function) can be called 
-> repeatedly. The subsystem will query if the link is up via this function.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/mfd/tps6507x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-*dra7xx_pcie_establish_link* is not the callback for link_up function, so it's
-actually called only once.
-> 
->> +		return 0;
->> +	}
->> +
->> +	reg = dra7xx_pcie_readl(dra7xx->base, PCIECTRL_DRA7XX_CONF_DEVICE_CMD);
->> +	reg |= LTSSM_EN;
->> +	dra7xx_pcie_writel(dra7xx->base, PCIECTRL_DRA7XX_CONF_DEVICE_CMD, reg);
->> +
->> +	while (--retries) {
-> 
-> Use retries--
-> 
->> +		reg = dra7xx_pcie_readl(dra7xx->base,
->> +					PCIECTRL_DRA7XX_CONF_PHY_CS);
->> +		if (reg & LINK_UP)
->> +			break;
->> +		usleep_range(10, 20);
->> +	}
->> +
->> +	if (retries <= 0) {
-> 
-> Then check if retries == 0 and retries can be unsigned int.
-> 
->> +		dev_err(pp->dev, "link is not up\n");
->> +		return -ETIMEDOUT;
->> +	}
->> +
->> +	return 0;
->> +}
-> [...]
->> +static int __init dra7xx_pcie_probe(struct platform_device *pdev)
->> +{
->> +	u32 reg;
->> +	int ret;
->> +	int irq;
->> +	struct phy *phy;
->> +	void __iomem *base;
->> +	struct resource *res;
->> +	struct dra7xx_pcie *dra7xx;
->> +	struct device *dev = &pdev->dev;
->> +
->> +	dra7xx = devm_kzalloc(&pdev->dev, sizeof(*dra7xx), GFP_KERNEL);
->> +	if (!dra7xx)
->> +		return -ENOMEM;
->> +
->> +	irq = platform_get_irq(pdev, 0);
->> +	if (irq < 0) {
->> +		dev_err(dev, "missing IRQ resource\n");
->> +		return -EINVAL;
->> +	}
->> +
->> +	ret = devm_request_irq(&pdev->dev, irq, dra7xx_pcie_irq_handler,
->> +			       IRQF_SHARED, "dra7xx-pcie-main", dra7xx);
->> +	if (ret) {
->> +		dev_err(&pdev->dev, "failed to request irq\n");
->> +		return ret;
->> +	}
->> +
->> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "ti_conf");
->> +	base = devm_ioremap_nocache(dev, res->start, resource_size(res));
->> +	if (!base)
->> +		return -ENOMEM;
->> +
->> +	phy = devm_phy_get(dev, "pcie-phy");
->> +	if (IS_ERR(phy))
->> +		return PTR_ERR(phy);
->> +
->> +	ret = phy_init(phy);
->> +	if (ret < 0)
->> +		return ret;
->> +
->> +	ret = phy_power_on(phy);
->> +	if (ret < 0)
->> +		goto err_power_on;
->> +
->> +	dra7xx->base = base;
->> +	dra7xx->phy = phy;
->> +	dra7xx->dev = dev;
->> +
->> +	pm_runtime_enable(&pdev->dev);
->> +	ret = pm_runtime_get_sync(&pdev->dev);
->> +	if (IS_ERR_VALUE(ret)) {
->> +		dev_err(dev, "pm_runtime_get_sync failed\n");
->> +		goto err_runtime_get;
->> +	}
->> +
->> +	reg = dra7xx_pcie_readl(dra7xx->base, PCIECTRL_DRA7XX_CONF_DEVICE_CMD);
->> +	reg &= ~LTSSM_EN;
->> +	dra7xx_pcie_writel(dra7xx->base, PCIECTRL_DRA7XX_CONF_DEVICE_CMD, reg);
-> 
-> platform_set_drvdata() should be here, before you add the port.
-> 
->> +	ret = add_pcie_port(dra7xx, pdev);
->> +	if (ret < 0)
->> +		goto err_add_port;
->> +
->> +	platform_set_drvdata(pdev, dra7xx);
+diff --git a/drivers/mfd/tps6507x.c b/drivers/mfd/tps6507x.c
+index 3b27482..a2e1990 100644
+--- a/drivers/mfd/tps6507x.c
++++ b/drivers/mfd/tps6507x.c
+@@ -119,7 +119,7 @@ static const struct i2c_device_id tps6507x_i2c_id[] = {
+ MODULE_DEVICE_TABLE(i2c, tps6507x_i2c_id);
+ 
+ #ifdef CONFIG_OF
+-static struct of_device_id tps6507x_of_match[] = {
++static const struct of_device_id tps6507x_of_match[] = {
+ 	{.compatible = "ti,tps6507x", },
+ 	{},
+ };
+-- 
+1.7.10.4
 
-Al-right. Will fix this and all your other comments.
 
-Thanks
-Kishon
