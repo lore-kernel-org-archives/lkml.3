@@ -1,98 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022AbaEGSAu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 14:00:50 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:44378 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880AbaEGSAs (ORCPT
+	id S1752222AbaEGSA4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 14:00:56 -0400
+Received: from smtprelay0155.hostedemail.com ([216.40.44.155]:52480 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752038AbaEGSAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 14:00:48 -0400
-Date: Wed, 7 May 2014 20:00:40 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>, Bodo Eggert <7eggert@gmx.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] x86/gart: Tidy messages and add bridge device info
-Message-ID: <20140507180040.GA17329@gmail.com>
-References: <20140425171144.312.9601.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140425171655.312.97511.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140426060130.GA1698@gmail.com>
- <CAErSpo4ttY-423De+4=TCsK0kXeZRanoEL2yUjp=GVAoZGaOLw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo4ttY-423De+4=TCsK0kXeZRanoEL2yUjp=GVAoZGaOLw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 7 May 2014 14:00:51 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3872:3874:4250:4321:5007:7652:9010:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: scent96_5deb85558ab4c
+X-Filterd-Recvd-Size: 1962
+Message-ID: <1399485643.2911.12.camel@joe-AO725>
+Subject: Re: [PATCH] MAINTAINERS: Add linux-api for review of API/ABI changes
+From: Joe Perches <joe@perches.com>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Date: Wed, 07 May 2014 11:00:43 -0700
+In-Reply-To: <5369C37A.1000001@gmail.com>
+References: <20140506205953.GA16997@jtriplet-mobl1>
+	 <5369C37A.1000001@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2014-05-07 at 07:24 +0200, Michael Kerrisk (man-pages) wrote:
+> On 05/06/2014 10:59 PM, Josh Triplett wrote:
+> > This makes it more likely that patch submitters will CC API/ABI changes
+> > to the linux-api list, and tools like get_maintainer.pl will do so
+> > automatically.
+> > 
+> > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> > Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> Every little bit helps, I guess. However, what I think would make a difference
+> is if if people constantly posted reminders to CC linux-api when they see API/API
+> changes on the lists. (And the reminders should of course CC linux-api).
+[]
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+[]
+> > +ABI/API
+> > +L:	linux-api@vger.kernel.org
+> > +F:	Documentation/ABI/
+> > +F:	include/linux/syscalls.h
+> > +F:	include/uapi/
+> > +F:	kernel/sys_ni.c
 
-* Bjorn Helgaas <bhelgaas@google.com> wrote:
+Perhaps this should have a
+	"S:	Odd Fixes"
+line too.
 
-> On Sat, Apr 26, 2014 at 12:01 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > * Bjorn Helgaas <bhelgaas@google.com> wrote:
-> >
-> >> Print the AGP bridge info the same way as the rest of the kernel, e.g.,
-> >> "0000:00:04.0" instead of "00:04:00".
-> >>
-> >> Also print the AGP aperture address range the same way we print resources,
-> >> and label it explicitly as a bus address range.
-> >>
-> >> No functional change.
-> >>
-> >> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> >> ---
-> >>  arch/x86/kernel/aperture_64.c |   20 ++++++++++++--------
-> >>  1 file changed, 12 insertions(+), 8 deletions(-)
-> >>
-> >> diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-> >> index 9fa8aa051f54..4dd76d3df056 100644
-> >> --- a/arch/x86/kernel/aperture_64.c
-> >> +++ b/arch/x86/kernel/aperture_64.c
-> >> @@ -126,10 +126,12 @@ static u32 __init read_agp(int bus, int slot, int func, int cap, u32 *order)
-> >>       u64 aper;
-> >>       u32 old_order;
-> >>
-> >> -     printk(KERN_INFO "AGP bridge at %02x:%02x:%02x\n", bus, slot, func);
-> >> +     printk(KERN_INFO "pci 0000:%02x:%02x.%d: AGP bridge\n", bus, slot,
-> >> +            func);
-> >
-> > Please leave it on a single line - checkpatch warning nonwithstanding.
-> > pr_info() is also useful.
-> > ...
-> 
-> > Also, you could add:
-> >
-> > #define PREFIX "PCI/gart: "
-> >
-> > or something like that, to define a standard prefix for these
-> > messages.
-> 
-> I converted to pr_info(), etc. and added pr_fmt for an "AGP: " prefix.
-> 
-> > Btw., this file could be moved to arch/x86/pci/?
-> 
-> Yes, I'd be glad to do this.  It looks like all the following files
-> might be candidates:
-> 
->   amd_gart_64.c  (CONFIG_GART_IOMMU)
->   aperture_64.c  (CONFIG_GART_IOMMU)
->   pci-calgary_64.c  (CONFIG_CALGARY_IOMMU)
->   tce_64.c  (CONFIG_CALGARY_IOMMU)
->   mmconf-fam10h_64.c  (CONFIG_PCI_MMCONFIG)
-> 
-> What do you think?  Move all, move none, move only aperture_64.c?
-> 
-> Thanks for your comments!
 
-Please move all of them, they are really 95% PCI bits:
-
-  Acked-by: Ingo Molnar <mingo@kernel.org>
-
-Thanks,
-
-	Ingo
