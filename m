@@ -1,83 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281AbaEGIGj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 04:06:39 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:30817 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481AbaEGIGg (ORCPT
+	id S1754726AbaEGIHF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 04:07:05 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52316 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671AbaEGIG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 04:06:36 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-0e-5369e98a36f4
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Mark Brown'" <broonie@kernel.org>
-Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>
-References: <01e101cf69c9$abd91f70$038b5e50$%han@samsung.com>
-In-reply-to: <01e101cf69c9$abd91f70$038b5e50$%han@samsung.com>
-Subject: [PATCH 2/5] regulator: max8952: Make of_device_id array const
-Date: Wed, 07 May 2014 17:06:34 +0900
-Message-id: <01ec01cf69cb$430ae9e0$c920bda0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9pyau3FkiFWFjRR4iSx3x0aUKqEQAAWn/A
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t8zfd2ul5nBBod+6VhMffiEzeLywkus
-	Fq9fGFp8u9LBZHF51xw2B1aPnbPusntsWtXJ5tG3ZRWjx+dNcgEsUVw2Kak5mWWpRfp2CVwZ
-	v76+YCpYyFqx6tJMlgbGVSxdjJwcEgImEl/fv2KGsMUkLtxbz9bFyMUhJLCMUWLljFVMMEXX
-	9t2GSkxnlJjeNYcZwvnNKHH98Xp2kCo2ATWJL18OA9kcHCICqhL/X7mD1DALLGCUWHZ+BytI
-	XEjAVuLRnnqQck4BO4mGbVPZQGxhATeJZ/c/soLYLECty64uA7uOF6h81taTjBC2oMSPyffA
-	4swCWhLrdx5ngrDlJTavecsMMl5CQF3i0V9dkLCIgJHE6redbBAlIhL7XrxjBDlHQuAau0TP
-	5c8sELsEJL5NPsQC0SsrsekANCAkJQ6uuMEygVFiFpLNs5BsnoVk8ywkKxYwsqxiFE0tSC4o
-	TkovMtUrTswtLs1L10vOz93ECInOiTsY7x+wPsSYDLR+IrOUaHI+MLrzSuINjc2MLExNTI2N
-	zC3NSBNWEudNf5QUJCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoExY7Gx5au5f4VbTPO1t3Od
-	i6let9rsC4N92KqkghzTys8P57PMev/CISWm2vbJp1uaG1dGmyxqNb0+9cjLCY6Ppz9YKvg4
-	U3d2vp92b/HTI/3ZfGZaiu8qNL0U4p+KpFcHKKzczyShKp/N4frSK1cq9nTWu7gAX9WtW+SK
-	ztmm/L13My01hlGJpTgj0VCLuag4EQDhE5685AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jQd2ul5nBBpdPa1hMffiEzeLywkus
-	Fq9fGFp8u9LBZHF51xw2B1aPnbPusntsWtXJ5tG3ZRWjx+dNcgEsUQ2MNhmpiSmpRQqpecn5
-	KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAe5UUyhJzSoFCAYnFxUr6dpgm
-	hIa46VrANEbo+oYEwfUYGaCBhHWMGb++vmAqWMhaserSTJYGxlUsXYycHBICJhLX9t1mg7DF
-	JC7cWw9kc3EICUxnlJjeNYcZwvnNKHH98Xp2kCo2ATWJL18OA9kcHCICqhL/X7mD1DALLGCU
-	WHZ+BytIXEjAVuLRnnqQck4BO4mGbVPBFggLuEk8u/+RFcRmAWpddnUZ2BG8QOWztp5khLAF
-	JX5MvgcWZxbQkli/8zgThC0vsXnNW2aQ8RIC6hKP/uqChEUEjCRWv+1kgygRkdj34h3jBEah
-	WUgmzUIyaRaSSbOQtCxgZFnFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERz7z6R3MK5qsDjE
-	KMDBqMTDa/E2I1iINbGsuDL3EKMEB7OSCO+ui5nBQrwpiZVVqUX58UWlOanFhxiTgR6dyCwl
-	mpwPTEt5JfGGxiZmRpZGZhZGJubmpAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cCY4rXH
-	/oFzRJj9TsXNtkv+TLzI9qUslz19icdJiw3J+2/X1/+VtH8nUGVU3NketMzXbtqnDabnj5Vn
-	OMatiWdRF6tfybryaK1J2Rved36/yg4q6/f8cWHxrBX1X786q9rQqOWbXl/DmdfvHfPWWX5L
-	O9Tw5uIt71XqWl+evygXvPrF5jTHIlElluKMREMt5qLiRAA4No7oQQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 7 May 2014 04:06:56 -0400
+Date: Wed, 7 May 2014 10:06:50 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: zImage: Allow DTB to override broken ATAG_MEM
+Message-ID: <20140507080650.GA28564@pengutronix.de>
+References: <1399439776-18535-1-git-send-email-bjorn.andersson@sonymobile.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1399439776-18535-1-git-send-email-bjorn.andersson@sonymobile.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make of_device_id array const, because all OF functions
-handle it as const.
+On Tue, May 06, 2014 at 10:16:16PM -0700, Bjorn Andersson wrote:
+> Support overriding ATAG_MEM, by specifying non-zero content of the /memory/reg
+> property in the appended DTB. This is needed to work around bootloaders passing
+> broken tags.
+This feels wrong. I think it's quite usual that the device tree
+specifies a non-0 /memory/reg property. I checked four more or less
+random dts files[1], and three of them have this property set with
+actual values.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/regulator/max8952.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+So I wouldn't be surprised if this patch results in more damage than
+it's worth. The optimal fix would be to make the bootloader do the right
+thing. And if you trust your dtb more than your bootloader, disable
+ARM_ATAG_DTB_COMPAT.
 
-diff --git a/drivers/regulator/max8952.c b/drivers/regulator/max8952.c
-index d920f5a..c2792f0 100644
---- a/drivers/regulator/max8952.c
-+++ b/drivers/regulator/max8952.c
-@@ -129,7 +129,7 @@ static const struct regulator_desc regulator = {
- };
- 
- #ifdef CONFIG_OF
--static struct of_device_id max8952_dt_match[] = {
-+static const struct of_device_id max8952_dt_match[] = {
- 	{ .compatible = "maxim,max8952" },
- 	{},
- };
+Best regards
+Uwe
+
+[1]
+arch/arm/boot/dts/am335x-bone-common.dtsi
+arch/arm/boot/dts/exynos5440-sd5v1.dts
+arch/arm/boot/dts/imx6q-wandboard.dts
+arch/arm/boot/dts/tegra30-cardhu.dtsi
+> 
+> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+> ---
+>  arch/arm/boot/compressed/atags_to_fdt.c |   18 +++++++++++++++++-
+>  1 file changed, 17 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/boot/compressed/atags_to_fdt.c b/arch/arm/boot/compressed/atags_to_fdt.c
+> index d1153c8..b534cd6 100644
+> --- a/arch/arm/boot/compressed/atags_to_fdt.c
+> +++ b/arch/arm/boot/compressed/atags_to_fdt.c
+> @@ -95,6 +95,22 @@ static void merge_fdt_bootargs(void *fdt, const char *fdt_cmdline)
+>  	setprop_string(fdt, "/chosen", "bootargs", cmdline);
+>  }
+>  
+> +static int fdt_overrides_atag_mem(void *fdt)
+> +{
+> +	const char *memory;
+> +	int len = 0;
+> +
+> +	memory = getprop(fdt, "/memory", "reg", &len);
+> +	if (memory) {
+> +		while (len--) {
+> +			if (*memory++ != '\0')
+[added fixup noted in follow-up-mail]
+
+> +				return 1;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>  /*
+>   * Convert and fold provided ATAGs into the provided FDT.
+>   *
+> @@ -180,7 +196,7 @@ int atags_to_fdt(void *atag_list, void *fdt, int total_space)
+>  		}
+>  	}
+>  
+> -	if (memcount) {
+> +	if (memcount && !fdt_overrides_atag_mem(fdt)) {
+>  		setprop(fdt, "/memory", "reg", mem_reg_property,
+>  			4 * memcount * memsize);
+>  	}
+> -- 
+> 1.7.9.5
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
+
 -- 
-1.7.10.4
-
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
