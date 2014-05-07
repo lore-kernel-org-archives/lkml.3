@@ -1,100 +1,401 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932711AbaEGLkT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 07:40:19 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:11674 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755316AbaEGLkP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 07:40:15 -0400
-Date: Wed, 7 May 2014 12:39:28 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        "Linux Kernel, Mailing List" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [BUG] kmemleak on __radix_tree_preload
-Message-ID: <20140507113928.GB17253@arm.com>
-References: <1398390340.4283.36.camel@kjgkr>
- <20140501170610.GB28745@arm.com>
- <20140501184112.GH23420@cmpxchg.org>
- <1399431488.13268.29.camel@kjgkr>
+	id S1755904AbaEGLk1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 07:40:27 -0400
+Received: from mail.efficios.com ([78.47.125.74]:40486 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755316AbaEGLkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 07:40:23 -0400
+Date: Wed, 7 May 2014 11:40:21 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Javi Merino <javi.merino@arm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Message-ID: <293434008.12520.1399462821986.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20140506231238.246c7d3e@gandalf.local.home>
+References: <1399377998-14870-1-git-send-email-javi.merino@arm.com> <1399377998-14870-6-git-send-email-javi.merino@arm.com> <20140506132238.22e136d1@gandalf.local.home> <484888063.12149.1399403794855.JavaMail.zimbra@efficios.com> <20140506231238.246c7d3e@gandalf.local.home>
+Subject: Re: [RFC][PATCH v2] tracing: Add __bitmask() macro to trace events
+ to cpumasks and other bitmasks
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399431488.13268.29.camel@kjgkr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF29 (Linux)/8.0.5_GA_5839)
+Thread-Topic: tracing: Add __bitmask() macro to trace events to cpumasks and other bitmasks
+Thread-Index: mBtfDvkqvissj6foBjhX22z8hrE/uw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 03:58:08AM +0100, Jaegeuk Kim wrote:
-> And then when I tested again with Catalin's patch, it still throws the
-> following warning.
-> Is it false alarm?
+----- Original Message -----
+> From: "Steven Rostedt" <rostedt@goodmis.org>
+> To: "LKML" <linux-kernel@vger.kernel.org>
+> Cc: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, "Javi Merino" <javi.merino@arm.com>, "Andrew Morton"
+> <akpm@linux-foundation.org>, "Ingo Molnar" <mingo@kernel.org>, "Namhyung Kim" <namhyung@kernel.org>, "Jiri Olsa"
+> <jolsa@redhat.com>
+> Sent: Tuesday, May 6, 2014 11:12:38 PM
+> Subject: [RFC][PATCH v2] tracing: Add __bitmask() macro to trace events to cpumasks and other bitmasks
+> 
+> 
+> Being able to show a cpumask of events can be useful as some events
+> may affect only some CPUs. There is no standard way to record the
+> cpumask and converting it to a string is rather expensive during
+> the trace as traces happen in hotpaths. It would be better to record
+> the raw event mask and be able to parse it at print time.
 
-BTW, you can try this kmemleak branch:
+Hi Steven,
 
-git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git kmemleak
+OK. Changing cpumask into bitmask helps making this more generic. Now
+I'm concerned about another topic: the type backing the bitmask, as well
+as its endianness, have an important impact when storing and reading
+the trace on different machines. This is not a problem cpumask typically
+has, because the test_bit() and set bit APIs are always used from within
+the kernel.
 
-> unreferenced object 0xffff880004226da0 (size 576):
->   comm "fsstress", pid 14590, jiffies 4295191259 (age 706.308s)
->   hex dump (first 32 bytes):
->     01 00 00 00 81 ff ff ff 00 00 00 00 00 00 00 00  ................
->     50 89 34 81 ff ff ff ff b8 6d 22 04 00 88 ff ff  P.4......m".....
->   backtrace:
->     [<ffffffff816c02e8>] kmemleak_update_trace+0x58/0x80
->     [<ffffffff81349517>] radix_tree_node_alloc+0x77/0xa0
->     [<ffffffff81349718>] __radix_tree_create+0x1d8/0x230
->     [<ffffffff8113286c>] __add_to_page_cache_locked+0x9c/0x1b0
->     [<ffffffff811329a8>] add_to_page_cache_lru+0x28/0x80
->     [<ffffffff81132f58>] grab_cache_page_write_begin+0x98/0xf0
->     [<ffffffffa02e4bf4>] f2fs_write_begin+0xb4/0x3c0 [f2fs]
->     [<ffffffff81131b77>] generic_perform_write+0xc7/0x1c0
->     [<ffffffff81133b7d>] __generic_file_aio_write+0x1cd/0x3f0
->     [<ffffffff81133dfe>] generic_file_aio_write+0x5e/0xe0
->     [<ffffffff81195c5a>] do_sync_write+0x5a/0x90
->     [<ffffffff811968d2>] vfs_write+0xc2/0x1d0
->     [<ffffffff81196daf>] SyS_write+0x4f/0xb0
->     [<ffffffff816dead2>] system_call_fastpath+0x16/0x1b
->     [<ffffffffffffffff>] 0xffffffffffffffff
+Looking at:
 
-OK, it shows that the allocation happens via add_to_page_cache_locked()
-and I guess it's page_cache_tree_insert() which calls
-__radix_tree_create() (the latter reusing the preloaded node). I'm not
-familiar enough to this code (radix-tree.c and filemap.c) to tell where
-the node should have been freed, who keeps track of it.
+/**
+ * test_bit - Determine whether a bit is set
+ * @nr: bit number to test
+ * @addr: Address to start counting from
+ */
+static inline int test_bit(int nr, const volatile unsigned long *addr)
+{
+        return 1UL & (addr[BIT_WORD(nr)] >> (nr & (BITS_PER_LONG-1)));
+}
 
-At a quick look at the hex dump (assuming that the above leak is struct
-radix_tree_node):
+We notice that the kernel's bit operations use an unsigned long
+as "backing type" for the bitfield, with a native kernel endianness.
 
-	.path = 1
-	.count = -0x7f (or 0xffffff81 as unsigned int)
-	union {
-		{
-			.parent = NULL
-			.private_data = 0xffffffff81348950
-		}
-		{
-			.rcu_head.next = NULL
-			.rcu_head.func = 0xffffffff81348950
-		}
-	}
+Therefore, the trace reader needs to take into account those two
+informations (backing type size, and endianness) in order to get the
+bit order right.
 
-The count is a bit suspicious.
+I remember that you made sure Ftrace's event description files expose
+the endianness of the kernel, which partially takes care of this
+concern, but how do you plan exposing the bitmask backing type size ?
+(unsigned long maps to 32-bit or 64-bit depending on the architecture).
 
->From the union, it looks most likely like rcu_head information. Is
-radix_tree_node_rcu_free() function at the above rcu_head.func?
+Thanks,
 
-Could you please send us your .config file?
+Mathieu
 
-Also, if you run echo scan > /sys/kernel/debug/kmemleak a few times, do
-any of the above leaks disappear (in case the above are some transient
-rcu freeing reports; normally this shouldn't happen as the objects are
-still referred but I'll look at the relevant code once I have your
-.config).
-
-Thanks.
+> 
+> The following macros were added for use with the TRACE_EVENT() macro:
+> 
+>   __bitmask()
+>   __assign_bitmask()
+>   __get_bitmask()
+> 
+> To test this, I added this to the sched_migrate_task event, which
+> looked like this:
+> 
+> TRACE_EVENT(sched_migrate_task,
+> 
+> 	TP_PROTO(struct task_struct *p, int dest_cpu, const struct cpumask *cpus),
+> 
+> 	TP_ARGS(p, dest_cpu, cpus),
+> 
+> 	TP_STRUCT__entry(
+> 		__array(	char,	comm,	TASK_COMM_LEN	)
+> 		__field(	pid_t,	pid			)
+> 		__field(	int,	prio			)
+> 		__field(	int,	orig_cpu		)
+> 		__field(	int,	dest_cpu		)
+> 		__bitmask(	cpumask, cpus			)
+> 	),
+> 
+> 	TP_fast_assign(
+> 		memcpy(__entry->comm, p->comm, TASK_COMM_LEN);
+> 		__entry->pid		= p->pid;
+> 		__entry->prio		= p->prio;
+> 		__entry->orig_cpu	= task_cpu(p);
+> 		__entry->dest_cpu	= dest_cpu;
+> 		__assign_bitmask(cpumask, cpumask_bits(cpus));
+> 	),
+> 
+> 	TP_printk("comm=%s pid=%d prio=%d orig_cpu=%d dest_cpu=%d cpumask=%s",
+> 		  __entry->comm, __entry->pid, __entry->prio,
+> 		  __entry->orig_cpu, __entry->dest_cpu,
+> 		  __get_bitmask(cpumask))
+> );
+> 
+> With the output of:
+> 
+>         ksmtuned-3613  [003] d..2   485.220508: sched_migrate_task:
+>         comm=ksmtuned pid=3615 prio=120 orig_cpu=3 dest_cpu=2
+>         cpumask=00000000,0000000f
+>      migration/1-13    [001] d..5   485.221202: sched_migrate_task:
+>      comm=ksmtuned pid=3614 prio=120 orig_cpu=1 dest_cpu=0
+>      cpumask=00000000,0000000f
+>              awk-3615  [002] d.H5   485.221747: sched_migrate_task:
+>              comm=rcu_preempt pid=7 prio=120 orig_cpu=0 dest_cpu=1
+>              cpumask=00000000,000000ff
+>      migration/2-18    [002] d..5   485.222062: sched_migrate_task:
+>      comm=ksmtuned pid=3615 prio=120 orig_cpu=2 dest_cpu=3
+>      cpumask=00000000,0000000f
+> 
+> Link:
+> http://lkml.kernel.org/r/1399377998-14870-6-git-send-email-javi.merino@arm.com
+> 
+> Suggested-by: Javi Merino <javi.merino@arm.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+> 
+> Changes since v1: Use bitmask name instead of cpumask naming.
+> 
+> ---
+>  include/linux/ftrace_event.h |  3 +++
+>  include/linux/trace_seq.h    | 10 ++++++++
+>  include/trace/ftrace.h       | 57
+>  +++++++++++++++++++++++++++++++++++++++++++-
+>  kernel/trace/trace_output.c  | 41 +++++++++++++++++++++++++++++++
+>  4 files changed, 110 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+> index d16da3e..cff3106 100644
+> --- a/include/linux/ftrace_event.h
+> +++ b/include/linux/ftrace_event.h
+> @@ -38,6 +38,9 @@ const char *ftrace_print_symbols_seq_u64(struct trace_seq
+> *p,
+>  								 *symbol_array);
+>  #endif
+>  
+> +const char *ftrace_print_bitmask_seq(struct trace_seq *p, void *bitmask_ptr,
+> +				     unsigned int bitmask_size);
+> +
+>  const char *ftrace_print_hex_seq(struct trace_seq *p,
+>  				 const unsigned char *buf, int len);
+>  
+> diff --git a/include/linux/trace_seq.h b/include/linux/trace_seq.h
+> index a32d86e..1361169 100644
+> --- a/include/linux/trace_seq.h
+> +++ b/include/linux/trace_seq.h
+> @@ -46,6 +46,9 @@ extern int trace_seq_putmem_hex(struct trace_seq *s, const
+> void *mem,
+>  extern void *trace_seq_reserve(struct trace_seq *s, size_t len);
+>  extern int trace_seq_path(struct trace_seq *s, const struct path *path);
+>  
+> +extern int trace_seq_bitmask(struct trace_seq *s, const unsigned long
+> *maskp,
+> +			     int nmaskbits);
+> +
+>  #else /* CONFIG_TRACING */
+>  static inline int trace_seq_printf(struct trace_seq *s, const char *fmt,
+>  ...)
+>  {
+> @@ -57,6 +60,13 @@ trace_seq_bprintf(struct trace_seq *s, const char *fmt,
+> const u32 *binary)
+>  	return 0;
+>  }
+>  
+> +static inline int
+> +trace_seq_bitmask(struct trace_seq *s, const unsigned long *maskp,
+> +		  int nmaskbits)
+> +{
+> +	return 0;
+> +}
+> +
+>  static inline int trace_print_seq(struct seq_file *m, struct trace_seq *s)
+>  {
+>  	return 0;
+> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+> index 0a1a4f7..d9c44af 100644
+> --- a/include/trace/ftrace.h
+> +++ b/include/trace/ftrace.h
+> @@ -53,6 +53,9 @@
+>  #undef __string
+>  #define __string(item, src) __dynamic_array(char, item, -1)
+>  
+> +#undef __bitmask
+> +#define __bitmask(item, src) __dynamic_array(char, item, -1)
+> +
+>  #undef TP_STRUCT__entry
+>  #define TP_STRUCT__entry(args...) args
+>  
+> @@ -128,6 +131,9 @@
+>  #undef __string
+>  #define __string(item, src) __dynamic_array(char, item, -1)
+>  
+> +#undef __string
+> +#define __string(item, src) __dynamic_array(unsigned long, item, -1)
+> +
+>  #undef DECLARE_EVENT_CLASS
+>  #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+>  	struct ftrace_data_offsets_##call {				\
+> @@ -200,6 +206,15 @@
+>  #undef __get_str
+>  #define __get_str(field) (char *)__get_dynamic_array(field)
+>  
+> +#undef __get_bitmask
+> +#define __get_bitmask(field)						\
+> +	({								\
+> +		void *__bitmask = __get_dynamic_array(field);		\
+> +		unsigned int __bitmask_size;				\
+> +		__bitmask_size = (__entry->__data_loc_##field >> 16) & 0xffff; \
+> +		ftrace_print_bitmask_seq(p, __bitmask, __bitmask_size);	\
+> +	})
+> +
+>  #undef __print_flags
+>  #define __print_flags(flag, delim, flag_array...)			\
+>  	({								\
+> @@ -322,6 +337,9 @@ static struct trace_event_functions
+> ftrace_event_type_funcs_##call = {	\
+>  #undef __string
+>  #define __string(item, src) __dynamic_array(char, item, -1)
+>  
+> +#undef __bitmask
+> +#define __bitmask(item, src) __dynamic_array(unsigned long, item, -1)
+> +
+>  #undef DECLARE_EVENT_CLASS
+>  #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, func, print)	\
+>  static int notrace __init						\
+> @@ -372,6 +390,29 @@ ftrace_define_fields_##call(struct ftrace_event_call
+> *event_call)	\
+>  #define __string(item, src) __dynamic_array(char, item,			\
+>  		    strlen((src) ? (const char *)(src) : "(null)") + 1)
+>  
+> +/*
+> + * __bitmask_size_in_bytes_raw is the number of bytes needed to hold
+> + * num_possible_cpus().
+> + */
+> +#define __bitmask_size_in_bytes_raw			\
+> +	((num_possible_cpus() + 7) / 8)
+> +
+> +#define __bitmask_size_in_longs						\
+> +	((__bitmask_size_in_bytes_raw + ((BITS_PER_LONG / 8) - 1))	\
+> +	 / (BITS_PER_LONG / 8))
+> +
+> +/*
+> + * __bitmask_size_in_bytes is the number of bytes needed to hold
+> + * num_possible_cpus() padded out to the nearest long. This is what
+> + * is saved in the buffer, just to be consistent.
+> + */
+> +#define __bitmask_size_in_bytes				\
+> +	(__bitmask_size_in_longs * (BITS_PER_LONG / 8))
+> +
+> +#undef __bitmask
+> +#define __bitmask(item, src) __dynamic_array(unsigned long, item,	\
+> +					     __bitmask_size_in_longs)
+> +
+>  #undef DECLARE_EVENT_CLASS
+>  #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+>  static inline notrace int ftrace_get_offsets_##call(			\
+> @@ -513,12 +554,22 @@ static inline notrace int ftrace_get_offsets_##call(
+> 			\
+>  	__entry->__data_loc_##item = __data_offsets.item;
+>  
+>  #undef __string
+> -#define __string(item, src) __dynamic_array(char, item, -1)       	\
+> +#define __string(item, src) __dynamic_array(char, item, -1)
+>  
+>  #undef __assign_str
+>  #define __assign_str(dst, src)						\
+>  	strcpy(__get_str(dst), (src) ? (const char *)(src) : "(null)");
+>  
+> +#undef __bitmask
+> +#define __bitmask(item, src) __dynamic_array(unsigned long, item, -1)
+> +
+> +#undef __get_bitmask
+> +#define __get_bitmask(field) (char *)__get_dynamic_array(field)
+> +
+> +#undef __assign_bitmask
+> +#define __assign_bitmask(dst, src)					\
+> +	memcpy(__get_bitmask(dst), (src), __bitmask_size_in_bytes)
+> +
+>  #undef TP_fast_assign
+>  #define TP_fast_assign(args...) args
+>  
+> @@ -586,6 +637,7 @@ static inline void ftrace_test_probe_##call(void)			\
+>  #undef __print_hex
+>  #undef __get_dynamic_array
+>  #undef __get_str
+> +#undef __get_bitmask
+>  
+>  #undef TP_printk
+>  #define TP_printk(fmt, args...) "\"" fmt "\", "  __stringify(args)
+> @@ -651,6 +703,9 @@ __attribute__((section("_ftrace_events")))
+> *__event_##call = &event_##call
+>  #undef __get_str
+>  #define __get_str(field) (char *)__get_dynamic_array(field)
+>  
+> +#undef __get_bitmask
+> +#define __get_bitmask(field) (char *)__get_dynamic_array(field)
+> +
+>  #undef __perf_addr
+>  #define __perf_addr(a)	(__addr = (a))
+>  
+> diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+> index a436de1..f3dad80 100644
+> --- a/kernel/trace/trace_output.c
+> +++ b/kernel/trace/trace_output.c
+> @@ -126,6 +126,34 @@ trace_seq_printf(struct trace_seq *s, const char *fmt,
+> ...)
+>  EXPORT_SYMBOL_GPL(trace_seq_printf);
+>  
+>  /**
+> + * trace_seq_bitmask - put a list of longs as a bitmask print output
+> + * @s:		trace sequence descriptor
+> + * @maskp:	points to an array of unsigned longs that represent a bitmask
+> + * @nmaskbits:	The number of bits that are valid in @maskp
+> + *
+> + * It returns 0 if the trace oversizes the buffer's free
+> + * space, 1 otherwise.
+> + *
+> + * Writes a ASCII representation of a bitmask string into @s.
+> + */
+> +int
+> +trace_seq_bitmask(struct trace_seq *s, const unsigned long *maskp,
+> +		  int nmaskbits)
+> +{
+> +	int len = (PAGE_SIZE - 1) - s->len;
+> +	int ret;
+> +
+> +	if (s->full || !len)
+> +		return 0;
+> +
+> +	ret = bitmap_scnprintf(s->buffer, len, maskp, nmaskbits);
+> +	s->len += ret;
+> +
+> +	return 1;
+> +}
+> +EXPORT_SYMBOL_GPL(trace_seq_bitmask);
+> +
+> +/**
+>   * trace_seq_vprintf - sequence printing of trace information
+>   * @s: trace sequence descriptor
+>   * @fmt: printf format string
+> @@ -399,6 +427,19 @@ EXPORT_SYMBOL(ftrace_print_symbols_seq_u64);
+>  #endif
+>  
+>  const char *
+> +ftrace_print_bitmask_seq(struct trace_seq *p, void *bitmask_ptr,
+> +			 unsigned int bitmask_size)
+> +{
+> +	const char *ret = p->buffer + p->len;
+> +
+> +	trace_seq_bitmask(p, bitmask_ptr, bitmask_size * 8);
+> +	trace_seq_putc(p, 0);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(ftrace_print_bitmask_seq);
+> +
+> +const char *
+>  ftrace_print_hex_seq(struct trace_seq *p, const unsigned char *buf, int
+>  buf_len)
+>  {
+>  	int i;
+> --
+> 1.8.1.4
+> 
+> 
+> 
+> 
 
 -- 
-Catalin
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
