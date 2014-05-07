@@ -1,105 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865AbaEGSoi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 14:44:38 -0400
-Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:30804
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751069AbaEGSoh convert rfc822-to-8bit (ORCPT
+	id S1751315AbaEGS6s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 14:58:48 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45630 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884AbaEGS6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 14:44:37 -0400
-From: Bryan Evenson <bevenson@melinkcorp.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-CC: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] ARM: at91: fix rtc irq mask for sam9x5 SoCs
-Thread-Topic: [PATCH] ARM: at91: fix rtc irq mask for sam9x5 SoCs
-Thread-Index: AQHPahBVbmZEoWtbAUypC+ZQ4uYpC5s1cRGQ
-Date: Wed, 7 May 2014 18:44:33 +0000
-Message-ID: <edaf5835a7b14b9a8c053dcd40f2b591@BLUPR05MB037.namprd05.prod.outlook.com>
-References: <957b209589094df48ddedbc57c6ccdfd@BLUPR05MB037.namprd05.prod.outlook.com>
- <1399479649-3247-1-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1399479649-3247-1-git-send-email-boris.brezillon@free-electrons.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-vipre-scanned: 018CF5AB007122018CF6F8
-x-originating-ip: [98.100.91.242]
-x-forefront-prvs: 0204F0BDE2
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(6029001)(428001)(377454003)(199002)(189002)(13464003)(51704005)(99286001)(81542001)(64706001)(83322001)(19580405001)(19580395003)(81342001)(2656002)(87936001)(99396002)(4396001)(31966008)(74502001)(74662001)(80022001)(77982001)(66066001)(20776003)(85852003)(83072002)(92566001)(86362001)(76482001)(74316001)(50986999)(101416001)(76176999)(54356999)(21056001)(33646001)(76576001)(46102001)(79102001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR05MB039;H:BLUPR05MB037.namprd05.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=bevenson@melinkcorp.com; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: melinkcorp.com
+	Wed, 7 May 2014 14:58:47 -0400
+Date: Wed, 7 May 2014 19:58:22 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "David E. Box" <david.e.box@linux.intel.com>, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, rafael.j.wysocki@intel.com,
+        linux-kernel@vger.kernel.org, kristen.c.accardi@intel.com,
+        jacob.jun.pan@linux.intel.com
+Subject: Re: [PATCH v3] x86/iosf: Make IOSF driver modular and usable by
+ more drivers
+Message-ID: <20140507195822.2d5dea58@alan.etchedpixels.co.uk>
+In-Reply-To: <536A69E8.6070707@zytor.com>
+References: <1398810789-2301-1-git-send-email-david.e.box@linux.intel.com>
+	<1399052199-8703-1-git-send-email-david.e.box@linux.intel.com>
+	<20140507174801.20fc0d67@alan.etchedpixels.co.uk>
+	<536A67B8.1080805@zytor.com>
+	<20140507181042.7b4dff18@alan.etchedpixels.co.uk>
+	<536A69E8.6070707@zytor.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Boris,
+> I guess I don't see why the module isn't removable.  Of course, any
+> driver which calls iosf_mbi_available() will depend on it, preventing
+> removal until *those* modules have been removed...
 
-> -----Original Message-----
-> From: Boris BREZILLON [mailto:boris.brezillon@free-electrons.com]
-> Sent: Wednesday, May 07, 2014 12:21 PM
-> To: Bryan Evenson
-> Cc: Andrew Victor; Nicolas Ferre; Jean-Christophe Plagniol-Villard; linux-arm-
-> kernel@lists.infradead.org; linux-kernel@vger.kernel.org; Boris BREZILLON
-> Subject: [PATCH] ARM: at91: fix rtc irq mask for sam9x5 SoCs
-> 
-> The RTC IMR register is not reliable on sam9x5 SoCs, hence why me have to
-> mask all interrupts no matter what IMR claims about already masked irqs.
-> 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
-> ---
-> Hello Bryan,
-> 
-> Yet another patch for you ;-).
-> 
-> As usual, could you tell me if it fixes your bug.
-> 
-> BTW, thanks for your tests.
-> 
-> Best Regards,
-> 
-> Boris
+Going back over the current version you could unload it but you rely upon
+the iosf_mbi_available caller locking the module in memory (which I think
+is fair) and someone not forcing a hot unplug of any kind from userspace,
+in which case life gets a bit odd as we clear mbi_pdev in the exit method
+not when the device is unplugged. Probably for the best as with a remove
+method you'd need to check the mbi_pdev pointer inside iosf_mbi_lock and
+also clear it under the lock.
 
-This fixes the issue on my system.  I disconnected my system from the network to guarantee ntp didn't adjust the time.  I power cycled my system 15 times with the RTC backup battery in place, and each time it booted without issue and the RTC kept the correct time.  Before this patch my system would never complete booting with the RTC battery installed.  I also used my previous test script for the previous patch to verify that I could not lockup access to the RTC.
-
-Tested-by: Bryan Evenson <bevenson@melinkcorp.com>
-
-Regards,
-Bryan
-
-> 
->  arch/arm/mach-at91/sysirq_mask.c | 7 +------
->  1 file changed, 1 insertion(+), 6 deletions(-)
-> 
-> diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-
-> at91/sysirq_mask.c
-> index 2ba694f..eb3d2a5 100644
-> --- a/arch/arm/mach-at91/sysirq_mask.c
-> +++ b/arch/arm/mach-at91/sysirq_mask.c
-> @@ -37,12 +37,7 @@ void __init at91_sysirq_mask_rtc(u32 rtc_base)
->  	if (!base)
->  		return;
-> 
-> -	mask = readl_relaxed(base + AT91_RTC_IMR);
-> -	if (mask) {
-> -		pr_info("AT91: Disabling rtc irq\n");
-> -		writel_relaxed(mask, base + AT91_RTC_IDR);
-> -		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
-> -	}
-> +	writel_relaxed(0x1f, base + AT91_RTC_IDR);
-> 
->  	iounmap(base);
->  }
-> --
-> 1.8.3.2
-
+Alan
