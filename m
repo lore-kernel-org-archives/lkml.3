@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596AbaEGVgk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 17:36:40 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:42813 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474AbaEGVgg (ORCPT
+	id S1752433AbaEGVho (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 17:37:44 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:38946 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaEGVhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 17:36:36 -0400
-Date: Wed, 7 May 2014 14:36:34 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] mm, slab: suppress out of memory warning unless debug
- is enabled
-In-Reply-To: <20140507142925.b0e31514d4cd8d5857b10850@linux-foundation.org>
-Message-ID: <alpine.DEB.2.02.1405071431580.8454@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1405071418410.8389@chino.kir.corp.google.com> <20140507142925.b0e31514d4cd8d5857b10850@linux-foundation.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 7 May 2014 17:37:42 -0400
+Date: Wed, 7 May 2014 14:37:36 -0700
+From: josh@joshtriplett.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 20/45] torture: Include "Stopping" string
+ to torture_kthread_stopping()
+Message-ID: <20140507213736.GL27924@cloud>
+References: <20140429002455.GA15461@linux.vnet.ibm.com>
+ <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1398731133-18925-20-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398731133-18925-20-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 May 2014, Andrew Morton wrote:
-
-> > When the slab or slub allocators cannot allocate additional slab pages, they 
-> > emit diagnostic information to the kernel log such as current number of slabs, 
-> > number of objects, active objects, etc.  This is always coupled with a page 
-> > allocation failure warning since it is controlled by !__GFP_NOWARN.
-> > 
-> > Suppress this out of memory warning if the allocator is configured without debug 
-> > supported.  The page allocation failure warning will indicate it is a failed 
-> > slab allocation, so this is only useful to diagnose allocator bugs.
-> > 
-> > Since CONFIG_SLUB_DEBUG is already enabled by default for the slub allocator, 
-> > there is no functional change with this patch.  If debug is disabled, however, 
-> > the warnings are now suppressed.
-> > 
+On Mon, Apr 28, 2014 at 05:25:08PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> I'm not seeing any reason for making this change.
+> Currently, torture_kthread_stopping() prints only the name of the
+> kthread that is stopping, which can be unedifying.  This commit therefore
+> adds "Stopping" to make things more evident.
 > 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-You think the spam in http://marc.info/?l=linux-kernel&m=139927773010514 
-is meaningful?  It also looks like two different errors when in reality it 
-is a single allocation.
+Feedback below.
 
-Unless you're debugging a slab issue, all the pertinent information is 
-already available in the page allocation failure warning emitted by the 
-page allocator: we already have the order and gfp mask.  We also know it's 
-a slab allocation because of the __kmalloc in the call trace.
-
-Does this user care about that there are 207 slabs on node 0 with 207 
-objects?  Probably only if they are diagnosing a slab problem.
-
-> > @@ -1621,11 +1621,17 @@ __initcall(cpucache_init);
-> >  static noinline void
-> >  slab_out_of_memory(struct kmem_cache *cachep, gfp_t gfpflags, int nodeid)
-> >  {
-> > +#if DEBUG
-> >  	struct kmem_cache_node *n;
-> >  	struct page *page;
-> >  	unsigned long flags;
-> >  	int node;
-> >  
-> > +	if (gfpflags & __GFP_NOWARN)
-> > +		return;
-> > +	if (!printk_ratelimit())
-> > +		return;
+>  kernel/torture.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
 > 
-> printk_ratelimit() is lame - it uses a single global state.  So if
-> random net driver is using printk_ratelimit(), that driver and slab
-> will interfere with each other.
-> 
+> diff --git a/kernel/torture.c b/kernel/torture.c
+> index acc9afc2f26e..f329848c3eee 100644
+> --- a/kernel/torture.c
+> +++ b/kernel/torture.c
+> @@ -674,8 +674,11 @@ EXPORT_SYMBOL_GPL(torture_must_stop_irq);
+>   */
+>  void torture_kthread_stopping(char *title)
+>  {
+> +	char buf[128];
+> +
+> +	snprintf(buf, sizeof(buf), "Stopping %s", title);
+>  	if (verbose)
+> -		VERBOSE_TOROUT_STRING(title);
+> +		VERBOSE_TOROUT_STRING(buf);
 
-Agreed, but it is a testiment to the uselessness of this information 
-already.  The page allocation failure warnings are controlled by their own 
-ratelimiter, nopage_rs, but that's local to the page allocator.  Do you 
-prefer that all these ratelimiters be moved to the global namespace for 
-generic use?
+This seems like a case where the macro has led to poorer code; rather
+than using sprintf into a temporary buffer, this should just print.
+Please consider fixing the output macros to allow formats, as the pr_*
+macros do.
+
+Also, why do you need "if (verbose)" if the name of the macro has
+VERBOSE_ in it; shouldn't that mean it checks verbosity itself?
+(Another good reason not to create a unique verbosity level mechanism,
+and to use the kernel mechanisms instead.)
+
+>  	while (!kthread_should_stop()) {
+>  		torture_shutdown_absorb(title);
+>  		schedule_timeout_uninterruptible(1);
+> -- 
+> 1.8.1.5
+> 
