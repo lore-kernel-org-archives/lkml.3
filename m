@@ -1,92 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562AbaEGJwv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:52:51 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:27960 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073AbaEGJwt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:52:49 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-f9-536a026fb498
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>, linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
-Subject: [RFT PATCH] regulator: s2mpa01: Use correct register for buck[36] ramp
- delay
-Date: Wed, 07 May 2014 11:52:38 +0200
-Message-id: <1399456358-12168-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLJMWRmVeSWpSXmKPExsVy+t/xy7r5TFnBBnc/aVtMffiEzeL1C0OL
-	b1c6mCwu75rDZnHyTy+jxcUVX5gsFmx8xOjA7rFz1l12j02rOtk87lzbw+bRt2UVo8fnTXIB
-	rFFcNimpOZllqUX6dglcGVN/NLEUTOermH75LXsD4x7uLkZODgkBE4mPV8+zQNhiEhfurWfr
-	YuTiEBJYyijRd3wCO4TTxyRx6sBnNpAqNgFjic3Ll4BViQhsY5R49+kqI0iCWcBT4t3fh0Ad
-	HBzCAuESt+7qgIRZBFQl7je+YAaxeQXcJTbda4TaJidx8thk1gmM3AsYGVYxiqaWJhcUJ6Xn
-	GuoVJ+YWl+al6yXn525ihATJlx2Mi49ZHWIU4GBU4uF9EZ0RLMSaWFZcmXuIUYKDWUmE1/Jv
-	ZrAQb0piZVVqUX58UWlOavEhRiYOTqkGxvyaLydbJnxJaTymbqPqvWRJfIa+qbGI0935N29P
-	51I47blpuUms8LYJvIpftriUHCpRmvByUoKJ3I/WyFOMHM/0tvxoMWjTcrq4c52xmKr9dr4N
-	i2z/7fzMFLFURs1G/1NXdP2uQOnzz6K+Ve4K4K9OOHpMUezFT2PuVdNnzvCfzij5O6cpWIml
-	OCPRUIu5qDgRANNaHt7wAQAA
+	id S932583AbaEGJxz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:53:55 -0400
+Received: from mga11.intel.com ([192.55.52.93]:60980 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932073AbaEGJxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 05:53:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1001,1389772800"; 
+   d="scan'208";a="527703175"
+Date: Wed, 7 May 2014 17:53:44 -0400
+From: Zhuang Jin Can <jin.can.zhuang@intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, liping.zhou@intel.com,
+        david.a.cohen@linux.intel.com
+Subject: [PATCH] usb: dwc3: ep0: fix delayed status is queued too early
+Message-ID: <20140507215344.GH19925@intel.com>
+Reply-To: jin.can.zhuang@intel.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Buck1 and buck6 share the field (offset 4) in ramp delay register
-(S2MPA01_REG_RAMP1). The buck3 uses its own field in S2MPA01_REG_RAMP2
-register, also at offset 4.
+A delayed status request may be queued before composite framework returns
+USB_GADGET_DELAYED_STATUS, because the thread queueing the request can run
+on a different core in parallel with the control request irq.
 
-The driver interchanged the registers for ramp delay of buck3 and buck6.
-This lead to updating ramp delay for wrong buck (buck3 instead of buck6
-and vice versa).
+SETUP XferComplete IRQ        		fsg_main_thread
+----------------------        		---------------
+	|					|
+spin_lock_irqsave(&dwc->lock)               sleeping
+	|					|
+	...					...
+dwc3_ep0_inspect_setup()			|
+	|					|
+dwc3_ep0_delegate_req() 			|
+	|					|
+	...					|
+spin_unlock(&dwc->lock);			|
+	|					|
+fsg_set_alt()   ======> Signal Wakeup ====>	|
+	| 					|
+other gadgets->set_alt() 	       handle exception
+	|					|
+	|			usb_composite_setup_continue()
+	|					|
+	|			spin_lock_irqsave(&dwc->lock)
+  	|			     __dwc3_gadget_ep0_queue()
+	|				 delay_status is false
+	|			spin_unlock_irqrestore(&dwc->lock)
+	|					|
+	|				     sleeping
+spin_lock(&dwc->lock); 				|
+	|					|
+delayed_status=true				|
+	|					|
 
-Cc: <stable@vger.kernel.org>
-Fixes: f18792714608 ("regulator: Add support for S2MPA01 regulator")
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+		STATUS XferNotReady IRQ
+		------------------------
+			|
+		dwc3_ep0_xfernotready()
+			|
+		   delayed_status is true, return;
+
+The result is the status packet will never be transferred, and
+delayed_status is not cleared.
+
+Signed-off-by: Zhuang Jin Can <jin.can.zhuang@intel.com>
+Reported-by: Zhou Liping <liping.zhou@intel.com>
 ---
- drivers/regulator/s2mpa01.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/dwc3/ep0.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
-index f19a30f0fb42..67a5ab335dae 100644
---- a/drivers/regulator/s2mpa01.c
-+++ b/drivers/regulator/s2mpa01.c
-@@ -137,17 +137,16 @@ static int s2mpa01_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
- 		enable_shift = S2MPA01_BUCK3_RAMP_EN_SHIFT;
- 		if (!ramp_delay) {
- 			ramp_enable = 0;
- 			break;
+diff --git a/drivers/usb/dwc3/ep0.c b/drivers/usb/dwc3/ep0.c
+index 21a3520..07292c0 100644
+--- a/drivers/usb/dwc3/ep0.c
++++ b/drivers/usb/dwc3/ep0.c
+@@ -1020,7 +1020,11 @@ static void dwc3_ep0_xfernotready(struct dwc3 *dwc,
+ 		if (dwc->delayed_status) {
+ 			WARN_ON_ONCE(event->endpoint_number != 1);
+ 			dev_vdbg(dwc->dev, "Mass Storage delayed status\n");
+-			return;
++
++			if (list_empty(&dwc->eps[0]->request_list))
++				return;
++			else
++				dwc->delayed_status = false;
  		}
  
- 		s2mpa01->ramp_delay3 = ramp_delay;
- 		ramp_shift = S2MPA01_BUCK3_RAMP_SHIFT;
--		ramp_reg = S2MPA01_REG_RAMP1;
- 		break;
- 	case S2MPA01_BUCK4:
- 		enable_shift = S2MPA01_BUCK4_RAMP_EN_SHIFT;
- 		if (!ramp_delay) {
- 			ramp_enable = 0;
- 			break;
- 		}
- 
-@@ -165,16 +164,17 @@ static int s2mpa01_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
- 		break;
- 	case S2MPA01_BUCK6:
- 		if (ramp_delay > s2mpa01->ramp_delay16)
- 			s2mpa01->ramp_delay16 = ramp_delay;
- 		else
- 			ramp_delay = s2mpa01->ramp_delay16;
- 
- 		ramp_shift = S2MPA01_BUCK16_RAMP_SHIFT;
-+		ramp_reg = S2MPA01_REG_RAMP1;
- 		break;
- 	case S2MPA01_BUCK7:
- 		s2mpa01->ramp_delay7 = ramp_delay;
- 		ramp_shift = S2MPA01_BUCK7_RAMP_SHIFT;
- 		break;
- 	case S2MPA01_BUCK8:
- 	case S2MPA01_BUCK9:
- 	case S2MPA01_BUCK10:
+ 		dwc3_ep0_do_control_status(dwc, event);
 -- 
-1.9.1
+1.7.9.5
 
