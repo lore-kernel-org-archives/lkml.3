@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933829AbaEGPtm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:49:42 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:23367 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756581AbaEGPtk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933790AbaEGPtk (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 7 May 2014 11:49:40 -0400
-Date: Wed, 7 May 2014 11:49:38 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, roland@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: ptrace: gpf in syscall_trace_enter
-Message-ID: <20140507114938.28e300c6@gandalf.local.home>
-In-Reply-To: <20140507140422.GB17419@redhat.com>
-References: <53698021.5020108@oracle.com>
-	<53699F7C.1040308@oracle.com>
-	<20140507140422.GB17419@redhat.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Received: from www.linutronix.de ([62.245.132.108]:48586 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756849AbaEGPoA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 11:44:00 -0400
+Message-Id: <20140507154337.643399187@linutronix.de>
+User-Agent: quilt/0.60-1
+Date: Wed, 07 May 2014 15:44:15 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Anvin <hpa@zytor.com>,
+        Tony Luck <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: [patch 18/32] tile: serial: Use irq_alloc/free_hwirq
+References: <20140507153622.703412101@linutronix.de>
+Content-Disposition: inline; filename=tile-serial-use-alloc-free-irq.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 May 2014 16:04:22 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
+No functional change. Just convert to the new interface.
 
-> On 05/06, Sasha Levin wrote:
-> >
-> > On 05/06/2014 08:36 PM, Sasha Levin wrote:
-> > > Hi all,
-> > >
-> > > While fuzzing with trinity inside a KVM tools guest running the latest -next
-> > > kernel I've stumbled on the following spew:
-> >
-> > And another similar trace:
-> 
-> Again, this looks like __DO_TRACE() trying to call it_func_ptr->func().
-> 
-> > [ 6897.628729] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> > [ 6897.629654] Dumping ftrace buffer:
-> > [ 6897.630034]    (ftrace buffer empty)
-> > [ 6897.630034] Modules linked in:
-> > [ 6897.630034] CPU: 24 PID: 23736 Comm: trinity-c148 Tainted: G    B         3.15.0-rc4-next-20140506-sasha-00021-gc164334-dirty #447
-> > [ 6897.630034] task: ffff88002a870000 ti: ffff88000ef04000 task.ti: ffff88000ef04000
-> > [ 6897.630034] RIP: syscall_trace_leave (include/trace/events/syscalls.h:42 arch/x86/kernel/ptrace.c:1517)
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+---
+ drivers/tty/serial/tilegx.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Thanks for sending the objdump, but then I just realized that this dump
-doesn't have the actual RIP. It just says syscall_trace_leave, without
-even giving me the offset.
+Index: tip/drivers/tty/serial/tilegx.c
+===================================================================
+--- tip.orig/drivers/tty/serial/tilegx.c
++++ tip/drivers/tty/serial/tilegx.c
+@@ -359,8 +359,8 @@ static int tilegx_startup(struct uart_po
+ 		}
+ 
+ 		/* Create our IRQs. */
+-		port->irq = create_irq();
+-		if (port->irq < 0)
++		port->irq = irq_alloc_hwirq(-1);
++		if (!port->irq)
+ 			goto err_uart_dest;
+ 		tile_irq_activate(port->irq, TILE_IRQ_PERCPU);
+ 
+@@ -395,7 +395,7 @@ static int tilegx_startup(struct uart_po
+ err_free_irq:
+ 	free_irq(port->irq, port);
+ err_dest_irq:
+-	destroy_irq(port->irq);
++	irq_free_hwirq(port->irq);
+ err_uart_dest:
+ 	gxio_uart_destroy(context);
+ 	ret = -ENXIO;
+@@ -435,7 +435,7 @@ static void tilegx_shutdown(struct uart_
+ 
+ 	if (port->irq > 0) {
+ 		free_irq(port->irq, port);
+-		destroy_irq(port->irq);
++		irq_free_hwirq(port->irq);
+ 		port->irq = 0;
+ 	}
+ 
 
-As the objdump is just of the object files and not the vmlinux, I would
-need the offset from syscall_trace_leave of the RIP.
-
-Thanks,
-
--- Steve
-
-> > [ 6897.630034] RSP: 0000:ffff88000ef05f20  EFLAGS: 00010286
-> > [ 6897.630034] RAX: 0000000000000000 RBX: ffff88000ef05f58 RCX: 0000000000000001
-> > [ 6897.630034] RDX: fffffffffffffff2 RSI: ffff88000ef05f58 RDI: 6b6b6b6b6b6b6b6b
-> > [ 6897.630034] RBP: ffff88000ef05f40 R08: ffff880218c3c498 R09: 0000000100290024
-> > [ 6897.630034] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8806c5d04630
-> > [ 6897.630034] R13: fffffffffffffff2 R14: 00000000000032e0 R15: 00000000000000af
-> > [ 6897.630034] FS:  00007f5541eec700(0000) GS:ffff880587000000(0000) knlGS:0000000000000000
-> > [ 6897.630034] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> > [ 6897.630034] CR2: 00007fff1ac95d78 CR3: 00000000036a0000 CR4: 00000000000006a0
-> > [ 6897.630034] DR0: 00000000006df000 DR1: 0000000000000000 DR2: 0000000000000000
-> > [ 6897.630034] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 00000000000f0602
-> > [ 6897.630034] Stack:
-> > [ 6897.630034]  00007f5541f0e2e0 00000000006e2000 00007f5541f0e2e0 0000000000000094
-> > [ 6897.630034]  0000000000000011 ffffffffb458577f 000000001008feff 00000000000000af
-> > [ 6897.630034]  00000000000032e0 0000000000000094 00007f5541f0e2e0 0000000000000011
-> > [ 6897.630034] Call Trace:
-> > [ 6897.630034] int_check_syscall_exit_work (arch/x86/kernel/entry_64.S:795)
-> > [ 6897.630034] Code: 05 d1 9d f0 05 01 e8 2d 2e 14 00 4d 85 e4 75 10 65 ff 0c 25 a0 da 00 00 0f 84 85 00 00 00 eb 1c 49 8b 7c 24 08 4c 89 ea 48 89 de <41> ff 14 24 49 83 c4 10 49 83 3c 24 00 75 e6 eb d4 0f 1f 40 00
-> > [ 6897.630034] RIP syscall_trace_leave (include/trace/events/syscalls.h:42 arch/x86/kernel/ptrace.c:1517)
-> > [ 6897.630034]  RSP <ffff88000ef05f20>
-> > 
-> > 
-> > Thanks,
-> > Sasha
-> > 
 
