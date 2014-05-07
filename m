@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaEGWFS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 18:05:18 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:34264 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752618AbaEGWFM (ORCPT
+	id S1752711AbaEGWF3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 18:05:29 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:36807 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402AbaEGWFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 18:05:12 -0400
-Date: Wed, 7 May 2014 17:03:17 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        kishon@ti.com, hdegoede@redhat.com,
-        Boris Brezillon <boris@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH 5/7] usb: ohci-platform: Enable optional use of reset
- controller
-Message-ID: <20140507220317.GD7047@lukather>
-References: <1399434623-20383-1-git-send-email-maxime.ripard@free-electrons.com>
- <1399434623-20383-6-git-send-email-maxime.ripard@free-electrons.com>
- <536A5EBF.10309@cogentembedded.com>
+	Wed, 7 May 2014 18:05:24 -0400
+Date: Wed, 7 May 2014 15:05:22 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: George Spelvin <linux@horizon.com>
+cc: cl@linux.com, iamjoonsoo.kim@lge.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v2 03/10] slab: move up code to get kmem_cache_node in
+ free_block()
+In-Reply-To: <20140507215012.11213.qmail@ns.horizon.com>
+Message-ID: <alpine.DEB.2.02.1405071502040.25024@chino.kir.corp.google.com>
+References: <20140507215012.11213.qmail@ns.horizon.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bjuZg6miEcdLYP6q"
-Content-Disposition: inline
-In-Reply-To: <536A5EBF.10309@cogentembedded.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 7 May 2014, George Spelvin wrote:
 
---bjuZg6miEcdLYP6q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > I think this unnecessarily obfuscates the code.
+> 
+> Thanks for the feedback!  (Even if it's negative, I appreciate it.)
+> 
+> To me, the confusing thing is the whole passing-a-pointer-to-a-pointer
+> business.  How about the following, which makes set_obj_pfmemalloc and
+> clear_obj_pfmemalloc take void *, not void **?  Is this better, or worse?
+> 
 
-On Wed, May 07, 2014 at 08:26:39PM +0400, Sergei Shtylyov wrote:
-> Hello.
->=20
-> On 07-05-2014 7:50, Maxime Ripard wrote:
->=20
-> >The OHCI controllers used in the Allwinner A31 are asserted in reset usi=
-ng a
->=20
->    s/asserted/powered up/?
+A function called clear_obj_pfmemalloc() doesn't indicate it's returning 
+anything, I think the vast majority of people would believe that it 
+returns void just as it does.  There's no complier generated code 
+optimization with this patch and I'm not sure it's even correct since 
+you're now clearing after doing recheck_pfmemalloc_active().
 
-No. There's an external reset controller that maintains these devices
-into reset. It's not only a power on thing, it can also be put back
-into reset later in the life of the system.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---bjuZg6miEcdLYP6q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTaq2lAAoJEBx+YmzsjxAgXB4P/isSlQDDm1vHCwWaGZtawfbH
-nxnGLvzlpbPSnccEx4q0yI/PCgpEywxbs5zOw/qw7YLSmZwgkEiWQvhYvZAuR51n
-WUHwH77muuGAXfZERA+rNZh3fZIs1Q17LRT4bPonEwryQm5cOIFgCTyqRQ5Ye7li
-g18AffA/hargu7ZBcEC9HCDQbU6uDfsV6RE9N75l13PFG0EchZVj/WfL90hpzH8I
-SFqfKnRoPdejujWPKG+6W0s0BXHqeQskzpZNulfGn37katNcMPRYnE2JU4SuF9Qg
-9BuOPDfLc5jeZ8J0YkbYs8o9wv3JeY/XZwWQ4lheP2uFEVuFKJjjuBxPniHoUFYR
-pFqkT8/ADhFsMvO4YyL3V8D5m00sUw80VC/PFl89dqROyPnZK/CPUu+ZFmczxlqB
-9qhfBahI9WSUq56EVVineDJTYNhJG9M6JWLw6oUyEdaDny2QYqKAs8ut7UpgoA3/
-e8j+xGvneWd8l0QEu8yVaKbwU/MNhwVRy7AVwHmLekxXW5wFNWQmuYBxHG+8Z74c
-yvJe/fXADrLypJ+0AoEj7CRElvvhhi3AVm+OfpJss1lj04rTVPN4zh0E5UlHWuj4
-tEAd0Xr1FrC5EKJRGk3aAuntC48oLHIEWjq1PmZhCEgFiygTmAYrHWILJJD5bDTV
-jtV77uNZdnGjcis4qOUl
-=TGas
------END PGP SIGNATURE-----
-
---bjuZg6miEcdLYP6q--
+I think it does make sense to remove the pointless "return;" in 
+set_obj_pfmemalloc(), however.  Not sure it's worth asking someone to 
+merge it, though.
