@@ -1,141 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756305AbaEGQhV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:37:21 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:48156 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756039AbaEGQhQ (ORCPT
+	id S932475AbaEGQhd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:37:33 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60677 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932116AbaEGQh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:37:16 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 5/6] workqueue: Allow modifying low level unbound workqueue cpumask
-Date: Wed,  7 May 2014 18:37:00 +0200
-Message-Id: <1399480621-19555-6-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1399480621-19555-1-git-send-email-fweisbec@gmail.com>
-References: <1399480621-19555-1-git-send-email-fweisbec@gmail.com>
+	Wed, 7 May 2014 12:37:29 -0400
+Message-ID: <536A6145.2080106@wwwdotorg.org>
+Date: Wed, 07 May 2014 10:37:25 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Christopher Freeman <cfreeman@nvidia.com>, ldewangan@nvidia.com,
+        swarren@nvidia.com, vinod.koul@intel.com, dan.j.williams@intel.com
+CC: dmaengine@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 1/3] dma: tegra: finer granularity residual for tx_status
+References: <1399411343-12222-1-git-send-email-cfreeman@nvidia.com> <1399411343-12222-2-git-send-email-cfreeman@nvidia.com>
+In-Reply-To: <1399411343-12222-2-git-send-email-cfreeman@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow to modify the low-level unbound workqueues cpumask through
-sysfs. This is performed by traversing the entire workqueue list
-and calling apply_workqueue_attrs() on the unbound workqueues.
+On 05/06/2014 03:22 PM, Christopher Freeman wrote:
+> Get word-level granularity from hardware for calculating
+> the transfer count remaining.
 
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Mike Galbraith <bitbucket@online.de>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- kernel/workqueue.c | 65 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 63 insertions(+), 2 deletions(-)
+> diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 2aa296d..5978cee 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -293,7 +293,7 @@ static DEFINE_SPINLOCK(wq_mayday_lock);	/* protects wq->maydays list */
- static LIST_HEAD(workqueues);		/* PL: list of all workqueues */
- static bool workqueue_freezing;		/* PL: have wqs started freezing? */
- 
--static cpumask_var_t wq_unbound_cpumask;
-+static cpumask_var_t wq_unbound_cpumask; /* PL: low level cpumask for all unbound wqs */
- 
- /* the per-cpu worker pools */
- static DEFINE_PER_CPU_SHARED_ALIGNED(struct worker_pool [NR_STD_WORKER_POOLS],
-@@ -4084,19 +4084,80 @@ static struct bus_type wq_subsys = {
- 	.dev_groups			= wq_sysfs_groups,
- };
- 
-+static int unbounds_cpumask_apply(cpumask_var_t cpumask)
-+{
-+	struct workqueue_struct *wq;
-+	int ret;
-+
-+	lockdep_assert_held(&wq_pool_mutex);
-+
-+	list_for_each_entry(wq, &workqueues, list) {
-+		struct workqueue_attrs *attrs;
-+
-+		if (!(wq->flags & WQ_UNBOUND))
-+			continue;
-+
-+		attrs = wq_sysfs_prep_attrs(wq);
-+		if (!attrs)
-+			return -ENOMEM;
-+
-+		ret = apply_workqueue_attrs_locked(wq, attrs, cpumask);
-+		free_workqueue_attrs(attrs);
-+		if (ret)
-+			break;
-+	}
-+
-+	return 0;
-+}
-+
-+static ssize_t unbounds_cpumask_store(struct device *dev,
-+				      struct device_attribute *attr,
-+				      const char *buf, size_t count)
-+{
-+	cpumask_var_t cpumask;
-+	int ret = -EINVAL;
-+
-+	if (!zalloc_cpumask_var(&cpumask, GFP_KERNEL))
-+		return -ENOMEM;
-+
-+	ret = cpumask_parse(buf, cpumask);
-+	if (ret)
-+		goto out;
-+
-+	get_online_cpus();
-+	if (cpumask_intersects(cpumask, cpu_online_mask)) {
-+		mutex_lock(&wq_pool_mutex);
-+		ret = unbounds_cpumask_apply(cpumask);
-+		if (ret < 0) {
-+			/* Warn if rollback itself fails */
-+			WARN_ON_ONCE(unbounds_cpumask_apply(wq_unbound_cpumask));
-+		} else {
-+			cpumask_copy(wq_unbound_cpumask, cpumask);
-+		}
-+		mutex_unlock(&wq_pool_mutex);
-+	}
-+	put_online_cpus();
-+out:
-+	free_cpumask_var(cpumask);
-+	return ret ? ret : count;
-+}
-+
- static ssize_t unbounds_cpumask_show(struct device *dev,
- 				     struct device_attribute *attr, char *buf)
- {
- 	int written;
- 
-+	mutex_lock(&wq_pool_mutex);
- 	written = cpumask_scnprintf(buf, PAGE_SIZE, wq_unbound_cpumask);
-+	mutex_unlock(&wq_pool_mutex);
-+
- 	written += scnprintf(buf + written, PAGE_SIZE - written, "\n");
- 
- 	return written;
- }
- 
- static struct device_attribute wq_sysfs_cpumask_attr =
--	__ATTR(cpumask, 0444, unbounds_cpumask_show, NULL);
-+	__ATTR(cpumask, 0644, unbounds_cpumask_show, unbounds_cpumask_store);
- 
- static int __init wq_sysfs_init(void)
- {
--- 
-1.8.3.1
+> +static int tegra_dma_wcount_in_bytes(struct dma_chan *dc)
+
+A lot of the code in this function is identical to the code in
+tegra_dma_terminate_all() which does the same thing. Can this be pulled
+out into a shared utility function?
+
+> +	tegra_dma_pause(tdc, true);
+
+Is this continual pausing/resuming of the DMA operation going to
+negatively affect performance?
+
+> +	/* in case of interrupt, handle it and don't read wcount reg */
+> +	status = tdc_read(tdc, TEGRA_APBDMA_CHAN_STATUS);
+> +	if (status & TEGRA_APBDMA_STATUS_ISE_EOC) {
+> +		tdc_write(tdc, TEGRA_APBDMA_CHAN_STATUS, status);
+> +		dev_info(tdc2dev(tdc), "%s():handling isr\n", __func__);
+
+If you swap the order of patches 1 and 2, then you can just add that
+line as dev_dbg() from the start, and you won't need to change it in the
+next patch.
+
+> +		tdc->isr_handler(tdc, false);
+> +		tegra_dma_resume(tdc);
+> +		return 0;
+
+Why resume and return here? Shouldn't those last 2 lines be removed, so
+the code can simply continue through the balance of the function and
+return the actual status. tegra_dma_terminate_all() does that.
+
+> @@ -812,9 +851,22 @@ static enum dma_status tegra_dma_tx_status(struct dma_chan *dc,
+>  	list_for_each_entry(sg_req, &tdc->pending_sg_req, node) {
+>  		dma_desc = sg_req->dma_desc;
+>  		if (dma_desc->txd.cookie == cookie) {
+> +			hw_byte_count = tegra_dma_wcount_in_bytes(dc);
+> +
+> +			if (!list_empty(&tdc->pending_sg_req))
+
+Since this code is inside a loop that iterates over tha list, I don't
+think the list can ever be empty.
+
+> +				first_entry =
+> +					list_first_entry(&tdc->pending_sg_req,
+> +						typeof(*first_entry), node);
+> +
+>  			residual =  dma_desc->bytes_requested -
+>  					(dma_desc->bytes_transferred %
+>  						dma_desc->bytes_requested);
+> +
+> +			/* hw byte count only applies to current transaction */
+> +			if (first_entry &&
+> +				first_entry->dma_desc->txd.cookie == cookie)
+> +				residual -= hw_byte_count;
+> +
+>  			dma_set_residue(txstate, residual);
+
+Why not re-order the added code so that all the new code is added in one
+place, and the hw_byte_count value is only calculated if it's used, i.e.:
+
+residual = ...;
+first_entry = ...;
+if (sg_reg == first_entry) {
+    hw_byte_count = ...;
+    residual -= hw_byte_count;
+}
 
