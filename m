@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965AbaEGMsu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 08:48:50 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:60802 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755847AbaEGMst (ORCPT
+	id S932669AbaEGMux (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 08:50:53 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58478 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751487AbaEGMuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 08:48:49 -0400
-X-IronPort-AV: E=Sophos;i="4.97,1003,1389715200"; 
-   d="scan'208";a="30199516"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: <mingo@redhat.com>, <peterz@infradead.org>
-CC: <linux-kernel@vger.kernel.org>,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH] sched/clock: cleanup, remove wrap_{max|min}().
-Date: Wed, 7 May 2014 20:48:58 +0900
-Message-ID: <1399463338-15507-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.49]
+	Wed, 7 May 2014 08:50:51 -0400
+Date: Wed, 7 May 2014 14:50:48 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        devicetree@vger.kernel.org, Nadav Haklai <nadavh@marvell.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v3 17/20] phy: Add support for USB cluster on the Armada
+ 375 SoC
+Message-ID: <20140507145048.19bd1306@free-electrons.com>
+In-Reply-To: <2511421.HV0z8e3QV0@amdc1032>
+References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com>
+	<1399335255-589-18-git-send-email-gregory.clement@free-electrons.com>
+	<2511421.HV0z8e3QV0@amdc1032>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am not sure why we need the wrap_{max|min}() in kernel/sched/clock.c.
-But I checked the implementation of max() and min() in linux/kernel.h, I think
-we can reuse them here rather than introduce a new function named
-wrap_{max|min}().
+Dear Bartlomiej Zolnierkiewicz,
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
----
- kernel/sched/clock.c | 22 ++++------------------
- 1 file changed, 4 insertions(+), 18 deletions(-)
+On Tue, 06 May 2014 13:37:04 +0200, Bartlomiej Zolnierkiewicz wrote:
 
-diff --git a/kernel/sched/clock.c b/kernel/sched/clock.c
-index 3ef6451..36c03a8 100644
---- a/kernel/sched/clock.c
-+++ b/kernel/sched/clock.c
-@@ -173,20 +173,6 @@ void sched_clock_init(void)
- }
- 
- /*
-- * min, max except they take wrapping into account
-- */
--
--static inline u64 wrap_min(u64 x, u64 y)
--{
--	return (s64)(x - y) < 0 ? x : y;
--}
--
--static inline u64 wrap_max(u64 x, u64 y)
--{
--	return (s64)(x - y) > 0 ? x : y;
--}
--
--/*
-  * update the percpu scd from the raw @now value
-  *
-  *  - filter out backward motion
-@@ -212,11 +198,11 @@ again:
- 	 */
- 
- 	clock = scd->tick_gtod + delta;
--	min_clock = wrap_max(scd->tick_gtod, old_clock);
--	max_clock = wrap_max(old_clock, scd->tick_gtod + TICK_NSEC);
-+	min_clock = max(scd->tick_gtod, old_clock);
-+	max_clock = max(old_clock, scd->tick_gtod + TICK_NSEC);
- 
--	clock = wrap_max(clock, min_clock);
--	clock = wrap_min(clock, max_clock);
-+	clock = max(clock, min_clock);
-+	clock = min(clock, max_clock);
- 
- 	if (cmpxchg64(&scd->clock, old_clock, clock) != old_clock)
- 		goto again;
+> > +config ARMADA375_USBCLUSTER_PHY
+> > +	def_bool y
+> > +	depends on OF
+> 
+> Please limit this driver to Armada 375 or compile testing, i.e. add additional
+> 
+> 	depends on (ARCH_MVEBU && MACH_ARMADA_375) || COMPILE_TEST
+
+Right, will do.
+
+Thomas
 -- 
-1.8.2.1
-
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
