@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038AbaEGSYa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 14:24:30 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:49877 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192AbaEGSY0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 14:24:26 -0400
-Date: Wed, 7 May 2014 22:24:10 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf_fuzzer crash on pentium 4
-Message-ID: <20140507182410.GA8607@moon>
-References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
- <20140506202307.GA1458@moon>
- <alpine.DEB.2.10.1405061729350.4849@vincent-weaver-1.umelst.maine.edu>
- <20140506214630.GB1458@moon>
- <alpine.DEB.2.10.1405071244570.6340@vincent-weaver-1.umelst.maine.edu>
- <20140507164902.GD1444@moon>
- <20140507165811.GG1444@moon>
- <alpine.DEB.2.10.1405071305010.6340@vincent-weaver-1.umelst.maine.edu>
+	id S1752136AbaEGSZF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 14:25:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19853 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751390AbaEGSZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 14:25:01 -0400
+Message-ID: <536A7A59.8050708@redhat.com>
+Date: Wed, 07 May 2014 20:24:25 +0200
+From: Denys Vlasenko <dvlasenk@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1405071305010.6340@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 3/4 v2] nohz: Fix idle/iowait counts going backwards
+References: <1399470094-8070-1-git-send-email-dvlasenk@redhat.com> <1399470094-8070-3-git-send-email-dvlasenk@redhat.com> <20140507142321.GA2844@laptop.programming.kicks-ass.net> <536A642B.7080309@redhat.com> <20140507165638.GU30445@twins.programming.kicks-ass.net>
+In-Reply-To: <20140507165638.GU30445@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 01:07:40PM -0400, Vince Weaver wrote:
-> > 
-> > Vince, I'm trying to figure out where it might come from, but no
-> > ideas yet.
+On 05/07/2014 06:56 PM, Peter Zijlstra wrote:
+> On Wed, May 07, 2014 at 06:49:47PM +0200, Denys Vlasenko wrote:
+>> On 05/07/2014 04:23 PM, Peter Zijlstra wrote:
+>>> On Wed, May 07, 2014 at 03:41:33PM +0200, Denys Vlasenko wrote:
+>>>> With this change, "iowait-ness" of every idle period is decided
+>>>> at the moment it starts:
+>>>> if this CPU's run-queue had tasks waiting on I/O, then this idle
+>>>> period's duration will be added to iowait_sleeptime.
+>>>>
+>>>> This fixes the bug where iowait and/or idle counts could go backwards,
+>>>> but iowait accounting is not precise (it can show more iowait
+>>>> that there really is).
+>>>>
+>>>
+>>> NAK on this, the thing going backwards is a symptom of the bug, not an
+>>> actual bug itself.
+>>
+>> This patch does fix that bug.
 > 
-> I just got this, also looks like poison (see RBX).
-
-Indeed, except ending 2b value.
-
-> This could be related to the ongoing memory corruption bug found in 
-> another thread and not p4-related at all.
+> Which bug, there's two here:
 > 
-> I thought I was running with PeterZ's latest patch that was supposed to 
-> avoid the corruption.  Hmmm.  Let me reboot and try a few more things.
+>  1) that NOHZ and !NOHZ iowait accounting aren't identical
 
-Thanks! Please ping me if find something new.
+They can hardly be identical, considering how different these modes are.
+
+And they don't have to be identical, in fact.
+It is enough if they give similar numbers for similar usage scenarios.
+E.g. if I run dd </dev/sda >/dev/null, I expect that iowait
+counter increases while idle counter almost standing still
+(on the CPU where dd runs, or course).
+
+>  2) that iowait accounting in general is a steaming pile of crap
+
+If you want to nuke iowait (for example, make its counter constant 0),
+I personally won't object. Can't guarantee others won't...
