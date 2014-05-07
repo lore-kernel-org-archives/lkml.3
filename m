@@ -1,72 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267AbaEGEmi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 00:42:38 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54934 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126AbaEGEmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 00:42:36 -0400
-Message-ID: <5369B93B.5060203@ti.com>
-Date: Wed, 7 May 2014 10:10:27 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1753448AbaEGEnL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 00:43:11 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:62223 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879AbaEGEnK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 00:43:10 -0400
+Date: Wed, 7 May 2014 10:13:03 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: ralf@linux-mips.org, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] MIPS: Introduce the use of the managed version of kzalloc
+Message-ID: <20140507044211.GA3158@himangi-Dell>
 MIME-Version: 1.0
-To: Darren Etheridge <detheridge@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
-        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
-        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <mark.rutland@arm.com>, <tglx@linutronix.de>, <galak@codeaurora.org>,
-        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>,
-        <robherring2@gmail.com>
-Subject: Re: [PATCH V5 0/3] arm: dts: dra7: Updates for adding crossbar device
-References: <1399384579-25620-1-git-send-email-r.sricharan@ti.com> <20140506214526.GF2626@ti.com>
-In-Reply-To: <20140506214526.GF2626@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 07 May 2014 03:15 AM, Darren Etheridge wrote:
-> Sricharan R <r.sricharan@ti.com> wrote on Tue [2014-May-06 19:26:16 +0530]:
->> Some socs have a large number of interrupts requests to service
->> the needs of its many peripherals and subsystems. All of the interrupt
->> requests lines from the subsystems are not needed at the same
->> time, so they have to be muxed to the controllers appropriately.
->> In such places a interrupt controllers are preceded by an
->> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
->> requests to the controller inputs.
->>
->> The dts file update to support the crossbar device and convert
->> peripheral irq numbers to crossbar number are added here.
->>
->> This is a rebase of V4 series on top of 3.15-rc4
->>
->> This series depends on crossbar-driver-fixes sent below
->> http://marc.info/?l=linux-omap&m=139929963420299&w=2
->>
->> Sricharan R (3):
->>   arm: dts: dra7: Add crossbar device binding
->>   arm: dts: dra7: Replace peripheral interrupt numbers with crossbar
->>     inputs
->>   arm: dts: dra7: Add routable-irqs property for gic node
->>
-> 
-> OK, assuming the bisectability issues discussed earlier on this thread
-> are addressed.  I have tested the earlier crossbar patch series in
-> conjunction with this dts series with VIP capture and DSS display
-> running together on DRA7.  Looks good with this combination of
-> devices. VIP is one of the modules that must have a crossbar mapping as
-> there is no default interrupt mapping for it, therefore VIP makes a good
-> test case.
-> 
-> So please feel free to add:
-> 
-> Tested-by: Darren Etheridge <detheridge@ti.com>
+This patch moves data allocated using kzalloc to managed data allocated
+using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+functions.The labels out and out_mem are also removed as they are no
+longer required.
 
-  Thanks for the testing. Will reorder and repost.
+The following Coccinelle semantic patch was used for making the change:
 
-Regards,
- Sricharan
+@platform@
+identifier p, probefn, removefn;
+@@
+struct platform_driver p = {
+  .probe = probefn,
+  .remove = removefn,
+};
+
+@prb@
+identifier platform.probefn, pdev;
+expression e, e1, e2;
+@@
+probefn(struct platform_device *pdev, ...) {
+  <+...
+- e = kzalloc(e1, e2)
++ e = devm_kzalloc(&pdev->dev, e1, e2)
+  ...
+?-kfree(e);
+  ...+>
+}
+
+@rem depends on prb@
+identifier platform.removefn;
+expression e;
+@@
+removefn(...) {
+  <...
+- kfree(e);
+  ...>
+}
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+---
+ arch/mips/mti-sead3/sead3-i2c-drv.c | 37 ++++++++++++++-----------------------
+ 1 file changed, 14 insertions(+), 23 deletions(-)
+
+diff --git a/arch/mips/mti-sead3/sead3-i2c-drv.c b/arch/mips/mti-sead3/sead3-i2c-drv.c
+index 1f787a6..4d72e0e 100644
+--- a/arch/mips/mti-sead3/sead3-i2c-drv.c
++++ b/arch/mips/mti-sead3/sead3-i2c-drv.c
+@@ -304,22 +304,18 @@ static int sead3_i2c_platform_probe(struct platform_device *pdev)
+ 	int ret;
+ 
+ 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!r) {
+-		ret = -ENODEV;
+-		goto out;
+-	}
++	if (!r)
++		return -ENODEV;
+ 
+-	priv = kzalloc(sizeof(struct pic32_i2c_platform_data), GFP_KERNEL);
+-	if (!priv) {
+-		ret = -ENOMEM;
+-		goto out;
+-	}
++	priv = devm_kzalloc(&pdev->dev,
++			    sizeof(struct pic32_i2c_platform_data),
++			    GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
+ 
+ 	priv->base = r->start;
+-	if (!priv->base) {
+-		ret = -EBUSY;
+-		goto out_mem;
+-	}
++	if (!priv->base)
++		return -EBUSY;
+ 
+ 	priv->xfer_timeout = 200;
+ 	priv->ack_timeout = 200;
+@@ -334,15 +330,11 @@ static int sead3_i2c_platform_probe(struct platform_device *pdev)
+ 	sead3_i2c_platform_setup(priv);
+ 
+ 	ret = i2c_add_numbered_adapter(&priv->adap);
+-	if (ret == 0) {
+-		platform_set_drvdata(pdev, priv);
+-		return 0;
+-	}
+-
+-out_mem:
+-	kfree(priv);
+-out:
+-	return ret;
++	if (ret)
++		return ret;
++	
++	platform_set_drvdata(pdev, priv);
++	return 0;
+ }
+ 
+ static int sead3_i2c_platform_remove(struct platform_device *pdev)
+@@ -351,7 +343,6 @@ static int sead3_i2c_platform_remove(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, NULL);
+ 	i2c_del_adapter(&priv->adap);
+-	kfree(priv);
+ 	return 0;
+ }
+ 
+-- 
+1.9.1
+
