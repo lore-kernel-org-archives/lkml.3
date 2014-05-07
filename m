@@ -1,72 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790AbaEGHEc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 03:04:32 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:60584 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754652AbaEGHEb (ORCPT
+	id S1754908AbaEGHE7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 03:04:59 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34629 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028AbaEGHE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 03:04:31 -0400
-From: Chase Southwood <chase.southwood@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@gmail.com>
-Subject: [PATCH 2/2] staging: comedi: addi_apci_1564: remove boardinfo
-Date: Wed,  7 May 2014 02:04:17 -0500
-Message-Id: <1399446257-30707-1-git-send-email-chase.southwood@gmail.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1399446163-30234-1-git-send-email-chase.southwood@gmail.com>
-References: <1399446163-30234-1-git-send-email-chase.southwood@gmail.com>
+	Wed, 7 May 2014 03:04:57 -0400
+Message-ID: <5369DAC6.6050608@ti.com>
+Date: Wed, 7 May 2014 10:03:34 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Marek Belisko <marek@goldelico.com>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rdunlap@infradead.org>, <bcousson@baylibre.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <plagnioj@jcrosoft.com>,
+        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-fbdev@vger.kernel.org>,
+        <hns@goldelico.com>
+Subject: Re: [PATCH v2 2/3] ARM: dts: oma3-gta04: Add display support
+References: <1398284120-4986-1-git-send-email-marek@goldelico.com> <1398284120-4986-3-git-send-email-marek@goldelico.com>
+In-Reply-To: <1398284120-4986-3-git-send-email-marek@goldelico.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="TA9jFC3xdJ9vTBgTJIH9luDgDtdnihQ8l"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver only supports a single board type.  Remove the boardinfo and
-its use in the driver.
+--TA9jFC3xdJ9vTBgTJIH9luDgDtdnihQ8l
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
----
- drivers/staging/comedi/drivers/addi_apci_1564.c | 13 +------------
- 1 file changed, 1 insertion(+), 12 deletions(-)
+On 23/04/14 23:15, Marek Belisko wrote:
+> This patch add support for lcd display on gta04 board. Display control
+> is connected on spi (used spi bitbang driver).
+>=20
+> Signed-off-by: Marek Belisko <marek@goldelico.com>
+> ---
+>  arch/arm/boot/dts/omap3-gta04.dts | 86 +++++++++++++++++++++++++++++++=
+++++++++
+>  1 file changed, 86 insertions(+)
 
-diff --git a/drivers/staging/comedi/drivers/addi_apci_1564.c b/drivers/staging/comedi/drivers/addi_apci_1564.c
-index d7a5c2f..cbccbb6 100644
---- a/drivers/staging/comedi/drivers/addi_apci_1564.c
-+++ b/drivers/staging/comedi/drivers/addi_apci_1564.c
-@@ -8,16 +8,6 @@
- 
- #include "addi-data/hwdrv_apci1564.c"
- 
--static const struct addi_board apci1564_boardtypes[] = {
--	{
--		.pc_DriverName		= "apci1564",
--		.i_NbrDiChannel		= 32,
--		.i_NbrDoChannel		= 32,
--		.i_DoMaxdata		= 0xffffffff,
--		.i_Timer		= 1,
--	},
--};
--
- static irqreturn_t v_ADDI_Interrupt(int irq, void *d)
- {
- 	apci1564_interrupt(irq, d);
-@@ -60,12 +50,11 @@ static int apci1564_auto_attach(struct comedi_device *dev,
- 				      unsigned long context_unused)
- {
- 	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
--	const struct addi_board *this_board = comedi_board(dev);
- 	struct addi_private *devpriv;
- 	struct comedi_subdevice *s;
- 	int ret;
- 
--	dev->board_name = this_board->pc_DriverName;
-+	dev->board_name = dev->driver->driver_name;
- 
- 	devpriv = comedi_alloc_devpriv(dev, sizeof(*devpriv));
- 	if (!devpriv)
--- 
-1.9.0
+<snip>
 
+> +&dss {
+> +	pinctrl-names =3D "default";
+> +	pinctrl-0 =3D < &dss_dpi_pins >;
+> +
+> +	status =3D "okay";
+> +
+> +	vdds_dsi-supply =3D <&vpll2>;
+> +
+> +	dpi_out: endpoint {
+> +               remote-endpoint =3D <&lcd_in>;
+> +               data-lines =3D <24>;
+> +       };
+> +
+> +};
+>=20
+
+Did you try this on 3.15-rc? The above is not right, and I don't think
+it works. You need 'port' node for the dpi_out endpoint.
+
+ Tomi
+
+
+
+--TA9jFC3xdJ9vTBgTJIH9luDgDtdnihQ8l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTadrGAAoJEPo9qoy8lh71v68QAI+/7OX3iR/NW7MTleTezIFX
+6XTvjUJR3c0afx1CrqpdEBM59E75PwSCtwvwU78kCQswVSwEBRGfTd8g8l9GoUlD
++kLOnVskRen+o1ghoKLF0ICLReSSzGY3bplfLBGTF5zidvDiwHrCeJuCsvzE4vMQ
+2Zg1kESfJWoQEAOTS6CmgqFJv6e5d22pyyDrzC9NrJRJITgWRlYDS2Q2K0VI+oV2
+GbjhllR1+VQR+3e3YswsHw9kRk2pYvDeyC+ZMWAyfyfJntY8McFXZPP1IUi5oCVU
+K4IkP+M7hvKeSSfecyxh9S4GHk8GBztrKWHnvGj94rXpulLwxSzIdSBnXDFYitAJ
+F3i05Nq4AohD6oqZ6LJyA8kyzGG+YcjTdNvwHkh5kxttlNGEb2lbYpGTm7OnjBkp
+5OVcTOCJUnqNDhV3RsyXSz2QhkeZZP2H7f6Qvc3w3RFwcOUFbWlQIYGcx4mKkRzh
+BHbBxa8iywIPVK1rOu03XwMHanqWcaT4XpBt0cAgrbyfAbO6hMxo1+8bPLoCo6bP
+uT8WOTWif1i7BMIk8XIbA8lWJZJuw8h9GBmrTHeW56NSTHdkLFGdqzqgiWRyG/UM
+jIIBkPmnUDZbgEkjFhvzh4aNTitIrbWudD4Dd5AnXqdN556MlMZQMh4hFPB/bsTM
+77e36kPMiAm8dIk7FJ/K
+=OElA
+-----END PGP SIGNATURE-----
+
+--TA9jFC3xdJ9vTBgTJIH9luDgDtdnihQ8l--
