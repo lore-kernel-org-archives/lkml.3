@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349AbaEGRp4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 13:45:56 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33138 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750884AbaEGRpy (ORCPT
+	id S1751729AbaEGRt2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 13:49:28 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:56217 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892AbaEGRtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 13:45:54 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH] ARM: at91: sam9260: fix compilation issues
-Date: Wed,  7 May 2014 19:45:48 +0200
-Message-Id: <1399484748-32718-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 7 May 2014 13:49:24 -0400
+Message-ID: <5369C37A.1000001@gmail.com>
+Date: Wed, 07 May 2014 07:24:10 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+CC: mtk.manpages@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] MAINTAINERS: Add linux-api for review of API/ABI changes
+References: <20140506205953.GA16997@jtriplet-mobl1>
+In-Reply-To: <20140506205953.GA16997@jtriplet-mobl1>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the hexadecimal values for the triggers to match what is done for the device
-tree. This also fixes compilation issues as the defines have been moved
-elsewhere.
+On 05/06/2014 10:59 PM, Josh Triplett wrote:
+> This makes it more likely that patch submitters will CC API/ABI changes
+> to the linux-api list, and tools like get_maintainer.pl will do so
+> automatically.
+> 
+> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
-I believe that at some point, we may want to reintroduce defines for those
-values but we should probably do that in a dt-bindings include and choose better
-names as the meaning differ between SoCs.
+Every little bit helps, I guess. However, what I think would make a difference
+is if if people constantly posted reminders to CC linux-api when they see API/API
+changes on the lists. (And the reminders should of course CC linux-api).
 
- arch/arm/mach-at91/at91sam9260_devices.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Acked-by: Michael Kerrisk <mtk.man-pages@gmail.com>
 
-diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
-index fffcd09ac878..a8d0d9cb1bca 100644
---- a/arch/arm/mach-at91/at91sam9260_devices.c
-+++ b/arch/arm/mach-at91/at91sam9260_devices.c
-@@ -1307,19 +1307,19 @@ static struct platform_device at91_adc_device = {
- static struct at91_adc_trigger at91_adc_triggers[] = {
- 	[0] = {
- 		.name = "timer-counter-0",
--		.value = AT91_ADC_TRGSEL_TC0 | AT91_ADC_TRGEN,
-+		.value = 0x1,
- 	},
- 	[1] = {
- 		.name = "timer-counter-1",
--		.value = AT91_ADC_TRGSEL_TC1 | AT91_ADC_TRGEN,
-+		.value = 0x3,
- 	},
- 	[2] = {
- 		.name = "timer-counter-2",
--		.value = AT91_ADC_TRGSEL_TC2 | AT91_ADC_TRGEN,
-+		.value = 0x5,
- 	},
- 	[3] = {
- 		.name = "external",
--		.value = AT91_ADC_TRGSEL_EXTERNAL | AT91_ADC_TRGEN,
-+		.value = 0xd,
- 		.is_external = true,
- 	},
- };
+> ---
+>  MAINTAINERS | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 7578deb..52a282b 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -210,6 +210,13 @@ S:	Supported
+>  F:	Documentation/scsi/aacraid.txt
+>  F:	drivers/scsi/aacraid/
+>  
+> +ABI/API
+> +L:	linux-api@vger.kernel.org
+> +F:	Documentation/ABI/
+> +F:	include/linux/syscalls.h
+> +F:	include/uapi/
+> +F:	kernel/sys_ni.c
+> +
+>  ABIT UGURU 1,2 HARDWARE MONITOR DRIVER
+>  M:	Hans de Goede <hdegoede@redhat.com>
+>  L:	lm-sensors@lm-sensors.org
+> 
+
+
 -- 
-1.9.1
-
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
