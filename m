@@ -1,107 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaEGB5A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 21:57:00 -0400
-Received: from denmail01-v4020.amcc.com ([192.195.68.30]:57810 "EHLO
-	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750810AbaEGB47 (ORCPT
+	id S1752910AbaEGCWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 22:22:45 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:41404 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaEGCWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 21:56:59 -0400
-X-Greylist: delayed 3765 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 May 2014 21:56:59 EDT
-From: Feng Kan <fkan@apm.com>
-To: tglx@linutronix.de, catalin.marinas@arm.com, marc.zyngier@arm.com,
-        will.deacon@arm.com, linux-kernel@vger.kernel.org, patches@apm.com
-Cc: Feng Kan <fkan@apm.com>, Vinayak Kale <vkale@apm.com>
-Subject: [PATCH V4] gic: preserve gic V2 bypass bits in cpu ctrl register
-Date: Tue,  6 May 2014 17:53:45 -0700
-Message-Id: <1399424025-4199-1-git-send-email-fkan@apm.com>
-X-Mailer: git-send-email 1.7.6.1
+	Tue, 6 May 2014 22:22:44 -0400
+Date: Tue, 6 May 2014 19:22:41 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [patch v3 1/6] mm, migration: add destination page freeing
+ callback
+In-Reply-To: <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.02.1405061920470.18635@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change is made to preserve the GIC v2 bypass bits in the
-GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
-This code will preserve all bits configured by the bootload regarding
-v2 bypass group bits. In the X-Gene platform (as well others), the
-bypass functionality is not generally used and bypass bits should not
-be changed by the kernel gic code as it could lead to incorrect behavior.
-Tested on X-Gene mustang board.
+Memory migration uses a callback defined by the caller to determine how to
+allocate destination pages.  When migration fails for a source page, however, it 
+frees the destination page back to the system.
 
-Signed-off-by: Vinayak Kale <vkale@apm.com>
-Acked-by: Anup Patel <apatel@apm.com>
-Signed-off-by: Feng Kan <fkan@apm.com>
+This patch adds a memory migration callback defined by the caller to determine 
+how to free destination pages.  If a caller, such as memory compaction, builds 
+its own freelist for migration targets, this can reuse already freed memory 
+instead of scanning additional memory.
+
+If the caller provides a function to handle freeing of destination pages, it is 
+called when page migration fails.  Otherwise, it may pass NULL and freeing back 
+to the system will be handled as usual.  This patch introduces no functional 
+change.
+
+Acked-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- V4: Change to use bypass mask, change to use more suitable variable name.
- V3: Fix code not touch other bits other than bypass bits.
+ include/linux/migrate.h | 11 ++++++----
+ mm/compaction.c         |  2 +-
+ mm/memory-failure.c     |  4 ++--
+ mm/memory_hotplug.c     |  2 +-
+ mm/mempolicy.c          |  4 ++--
+ mm/migrate.c            | 55 +++++++++++++++++++++++++++++++++++--------------
+ mm/page_alloc.c         |  2 +-
+ 7 files changed, 53 insertions(+), 27 deletions(-)
 
- drivers/irqchip/irq-gic.c |   20 +++++++++++++++++---
- 1 files changed, 17 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 4300b66..50a7bb2 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -97,6 +97,8 @@ struct irq_chip gic_arch_extn = {
- #define MAX_GIC_NR	1
- #endif
+diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -5,7 +5,9 @@
+ #include <linux/mempolicy.h>
+ #include <linux/migrate_mode.h>
  
-+#define GIC_BYPASS_MASK		0x1e0
+-typedef struct page *new_page_t(struct page *, unsigned long private, int **);
++typedef struct page *new_page_t(struct page *page, unsigned long private,
++				int **reason);
++typedef void free_page_t(struct page *page, unsigned long private);
+ 
+ /*
+  * Return values from addresss_space_operations.migratepage():
+@@ -38,7 +40,7 @@ enum migrate_reason {
+ extern void putback_movable_pages(struct list_head *l);
+ extern int migrate_page(struct address_space *,
+ 			struct page *, struct page *, enum migrate_mode);
+-extern int migrate_pages(struct list_head *l, new_page_t x,
++extern int migrate_pages(struct list_head *l, new_page_t new, free_page_t free,
+ 		unsigned long private, enum migrate_mode mode, int reason);
+ 
+ extern int migrate_prep(void);
+@@ -56,8 +58,9 @@ extern int migrate_page_move_mapping(struct address_space *mapping,
+ #else
+ 
+ static inline void putback_movable_pages(struct list_head *l) {}
+-static inline int migrate_pages(struct list_head *l, new_page_t x,
+-		unsigned long private, enum migrate_mode mode, int reason)
++static inline int migrate_pages(struct list_head *l, new_page_t new,
++		free_page_t free, unsigned long private, enum migrate_mode mode,
++		int reason)
+ 	{ return -ENOSYS; }
+ 
+ static inline int migrate_prep(void) { return -ENOSYS; }
+diff --git a/mm/compaction.c b/mm/compaction.c
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -1023,7 +1023,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 		}
+ 
+ 		nr_migrate = cc->nr_migratepages;
+-		err = migrate_pages(&cc->migratepages, compaction_alloc,
++		err = migrate_pages(&cc->migratepages, compaction_alloc, NULL,
+ 				(unsigned long)cc,
+ 				cc->sync ? MIGRATE_SYNC_LIGHT : MIGRATE_ASYNC,
+ 				MR_COMPACTION);
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1500,7 +1500,7 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 
+ 	/* Keep page count to indicate a given hugepage is isolated. */
+ 	list_move(&hpage->lru, &pagelist);
+-	ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
++	ret = migrate_pages(&pagelist, new_page, NULL, MPOL_MF_MOVE_ALL,
+ 				MIGRATE_SYNC, MR_MEMORY_FAILURE);
+ 	if (ret) {
+ 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+@@ -1581,7 +1581,7 @@ static int __soft_offline_page(struct page *page, int flags)
+ 		inc_zone_page_state(page, NR_ISOLATED_ANON +
+ 					page_is_file_cache(page));
+ 		list_add(&page->lru, &pagelist);
+-		ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
++		ret = migrate_pages(&pagelist, new_page, NULL, MPOL_MF_MOVE_ALL,
+ 					MIGRATE_SYNC, MR_MEMORY_FAILURE);
+ 		if (ret) {
+ 			if (!list_empty(&pagelist)) {
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1332,7 +1332,7 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
+ 		 * alloc_migrate_target should be improooooved!!
+ 		 * migrate_pages returns # of failed pages.
+ 		 */
+-		ret = migrate_pages(&source, alloc_migrate_target, 0,
++		ret = migrate_pages(&source, alloc_migrate_target, NULL, 0,
+ 					MIGRATE_SYNC, MR_MEMORY_HOTPLUG);
+ 		if (ret)
+ 			putback_movable_pages(&source);
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1028,7 +1028,7 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
+ 			flags | MPOL_MF_DISCONTIG_OK, &pagelist);
+ 
+ 	if (!list_empty(&pagelist)) {
+-		err = migrate_pages(&pagelist, new_node_page, dest,
++		err = migrate_pages(&pagelist, new_node_page, NULL, dest,
+ 					MIGRATE_SYNC, MR_SYSCALL);
+ 		if (err)
+ 			putback_movable_pages(&pagelist);
+@@ -1277,7 +1277,7 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 		if (!list_empty(&pagelist)) {
+ 			WARN_ON_ONCE(flags & MPOL_MF_LAZY);
+ 			nr_failed = migrate_pages(&pagelist, new_vma_page,
+-					(unsigned long)vma,
++					NULL, (unsigned long)vma,
+ 					MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
+ 			if (nr_failed)
+ 				putback_movable_pages(&pagelist);
+diff --git a/mm/migrate.c b/mm/migrate.c
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -938,8 +938,9 @@ out:
+  * Obtain the lock on page, remove all ptes and migrate the page
+  * to the newly allocated page in newpage.
+  */
+-static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+-			struct page *page, int force, enum migrate_mode mode)
++static int unmap_and_move(new_page_t get_new_page, free_page_t put_new_page,
++			unsigned long private, struct page *page, int force,
++			enum migrate_mode mode)
+ {
+ 	int rc = 0;
+ 	int *result = NULL;
+@@ -983,11 +984,17 @@ out:
+ 				page_is_file_cache(page));
+ 		putback_lru_page(page);
+ 	}
 +
- static struct gic_chip_data gic_data[MAX_GIC_NR] __read_mostly;
- 
- #ifdef CONFIG_GIC_NON_BANKED
-@@ -418,6 +420,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
- 	void __iomem *dist_base = gic_data_dist_base(gic);
- 	void __iomem *base = gic_data_cpu_base(gic);
- 	unsigned int cpu_mask, cpu = smp_processor_id();
-+	unsigned int bypass;
- 	int i;
- 
  	/*
-@@ -449,13 +452,20 @@ static void gic_cpu_init(struct gic_chip_data *gic)
- 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
- 
- 	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
--	writel_relaxed(1, base + GIC_CPU_CTRL);
+-	 * Move the new page to the LRU. If migration was not successful
+-	 * then this will free the page.
++	 * If migration was not successful and there's a freeing callback, use
++	 * it.  Otherwise, putback_lru_page() will drop the reference grabbed
++	 * during isolation.
+ 	 */
+-	putback_lru_page(newpage);
++	if (rc != MIGRATEPAGE_SUCCESS && put_new_page)
++		put_new_page(newpage, private);
++	else
++		putback_lru_page(newpage);
 +
-+	bypass = readl(base + GIC_CPU_CTRL);
-+	bypass &= GIC_BYPASS_MASK;
-+	writel_relaxed(bypass | 0x1, base + GIC_CPU_CTRL);
- }
- 
- void gic_cpu_if_down(void)
+ 	if (result) {
+ 		if (rc)
+ 			*result = rc;
+@@ -1016,8 +1023,9 @@ out:
+  * will wait in the page fault for migration to complete.
+  */
+ static int unmap_and_move_huge_page(new_page_t get_new_page,
+-				unsigned long private, struct page *hpage,
+-				int force, enum migrate_mode mode)
++				free_page_t put_new_page, unsigned long private,
++				struct page *hpage, int force,
++				enum migrate_mode mode)
  {
- 	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
--	writel_relaxed(0, cpu_base + GIC_CPU_CTRL);
-+	unsigned int bypass;
-+
-+	bypass = readl(cpu_base + GIC_CPU_CTRL);
-+	bypass &= GIC_BYPASS_MASK;
-+	writel_relaxed(bypass, cpu_base + GIC_CPU_CTRL);
- }
+ 	int rc = 0;
+ 	int *result = NULL;
+@@ -1056,20 +1064,30 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+ 	if (!page_mapped(hpage))
+ 		rc = move_to_new_page(new_hpage, hpage, 1, mode);
  
- #ifdef CONFIG_CPU_PM
-@@ -566,6 +576,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+-	if (rc)
++	if (rc != MIGRATEPAGE_SUCCESS)
+ 		remove_migration_ptes(hpage, hpage);
+ 
+ 	if (anon_vma)
+ 		put_anon_vma(anon_vma);
+ 
+-	if (!rc)
++	if (rc == MIGRATEPAGE_SUCCESS)
+ 		hugetlb_cgroup_migrate(hpage, new_hpage);
+ 
+ 	unlock_page(hpage);
+ out:
+ 	if (rc != -EAGAIN)
+ 		putback_active_hugepage(hpage);
+-	put_page(new_hpage);
++
++	/*
++	 * If migration was not successful and there's a freeing callback, use
++	 * it.  Otherwise, put_page() will drop the reference grabbed during
++	 * isolation.
++	 */
++	if (rc != MIGRATEPAGE_SUCCESS && put_new_page)
++		put_new_page(new_hpage, private);
++	else
++		put_page(new_hpage);
++
+ 	if (result) {
+ 		if (rc)
+ 			*result = rc;
+@@ -1086,6 +1104,8 @@ out:
+  * @from:		The list of pages to be migrated.
+  * @get_new_page:	The function used to allocate free pages to be used
+  *			as the target of the page migration.
++ * @put_new_page:	The function used to free target pages if migration
++ *			fails, or NULL if no special handling is necessary.
+  * @private:		Private data to be passed on to get_new_page()
+  * @mode:		The migration mode that specifies the constraints for
+  *			page migration, if any.
+@@ -1099,7 +1119,8 @@ out:
+  * Returns the number of pages that were not migrated, or an error code.
+  */
+ int migrate_pages(struct list_head *from, new_page_t get_new_page,
+-		unsigned long private, enum migrate_mode mode, int reason)
++		free_page_t put_new_page, unsigned long private,
++		enum migrate_mode mode, int reason)
  {
- 	int i;
- 	u32 *ptr;
-+	unsigned int bypass;
- 	void __iomem *dist_base;
- 	void __iomem *cpu_base;
+ 	int retry = 1;
+ 	int nr_failed = 0;
+@@ -1121,10 +1142,11 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
  
-@@ -590,7 +601,10 @@ static void gic_cpu_restore(unsigned int gic_nr)
- 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
+ 			if (PageHuge(page))
+ 				rc = unmap_and_move_huge_page(get_new_page,
+-						private, page, pass > 2, mode);
++						put_new_page, private, page,
++						pass > 2, mode);
+ 			else
+-				rc = unmap_and_move(get_new_page, private,
+-						page, pass > 2, mode);
++				rc = unmap_and_move(get_new_page, put_new_page,
++						private, page, pass > 2, mode);
  
- 	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
--	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
-+
-+	bypass = readl(cpu_base + GIC_CPU_CTRL);
-+	bypass &= GIC_BYPASS_MASK;
-+	writel_relaxed(bypass | 0x1, cpu_base + GIC_CPU_CTRL);
- }
+ 			switch(rc) {
+ 			case -ENOMEM:
+@@ -1273,7 +1295,7 @@ set_status:
  
- static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
--- 
-1.7.6.1
-
+ 	err = 0;
+ 	if (!list_empty(&pagelist)) {
+-		err = migrate_pages(&pagelist, new_page_node,
++		err = migrate_pages(&pagelist, new_page_node, NULL,
+ 				(unsigned long)pm, MIGRATE_SYNC, MR_SYSCALL);
+ 		if (err)
+ 			putback_movable_pages(&pagelist);
+@@ -1729,7 +1751,8 @@ int migrate_misplaced_page(struct page *page, struct vm_area_struct *vma,
+ 
+ 	list_add(&page->lru, &migratepages);
+ 	nr_remaining = migrate_pages(&migratepages, alloc_misplaced_dst_page,
+-				     node, MIGRATE_ASYNC, MR_NUMA_MISPLACED);
++				     NULL, node, MIGRATE_ASYNC,
++				     MR_NUMA_MISPLACED);
+ 	if (nr_remaining) {
+ 		if (!list_empty(&migratepages)) {
+ 			list_del(&page->lru);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6215,7 +6215,7 @@ static int __alloc_contig_migrate_range(struct compact_control *cc,
+ 		cc->nr_migratepages -= nr_reclaimed;
+ 
+ 		ret = migrate_pages(&cc->migratepages, alloc_migrate_target,
+-				    0, MIGRATE_SYNC, MR_CMA);
++				    NULL, 0, MIGRATE_SYNC, MR_CMA);
+ 	}
+ 	if (ret < 0) {
+ 		putback_movable_pages(&cc->migratepages);
