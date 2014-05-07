@@ -1,72 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751813AbaEGQ7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:59:46 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:27997 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762AbaEGQ7o (ORCPT
+	id S1751865AbaEGRAS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 13:00:18 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:39350 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751762AbaEGRAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:59:44 -0400
-Message-ID: <536A6670.5070107@oracle.com>
-Date: Wed, 07 May 2014 12:59:28 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 7 May 2014 13:00:15 -0400
+Date: Wed, 7 May 2014 13:00:12 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ranil Raveendran <ranillal.r@hcl.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: bluez/ofono1.13/ pulseaudio
+Message-ID: <20140507130012.0df7d2e8@gandalf.local.home>
+In-Reply-To: <91DCB1C9E1DD30478E4BBA849B2C2E6707F0C553@chn-hclt-mbs04.HCLT.CORP.HCL.IN>
+References: <91DCB1C9E1DD30478E4BBA849B2C2E6707F0C553@chn-hclt-mbs04.HCLT.CORP.HCL.IN>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: mm: gpf in global_dirty_limits
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel I've stumbled on the following spew:
+Massive WTF!
 
-[ 1139.410483] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1139.413202] Dumping ftrace buffer:
-[ 1139.414152]    (ftrace buffer empty)
-[ 1139.415069] Modules linked in:
-[ 1139.415846] CPU: 10 PID: 39777 Comm: kworker/u115:2 Tainted: G        W     3.15.0-rc4-next-20140506-sasha-00021-gc164334-dirty #447
-[ 1139.418931] Workqueue: writeback bdi_writeback_workfn (flush-7:10)
-[ 1139.420320] task: ffff880285848000 ti: ffff880282dbc000 task.ti: ffff880282dbc000
-[ 1139.420320] RIP: global_dirty_limits (include/trace/events/writeback.h:308 mm/page-writeback.c:309)
-[ 1139.420320] RSP: 0018:ffff880282dbdc28  EFLAGS: 00010282
-[ 1139.420320] RAX: 6b6b6b6b6b6b6b6b RBX: 0000000000088034 RCX: 0000000000000001
-[ 1139.420320] RDX: 0000000000110068 RSI: 0000000000088034 RDI: 6b6b6b6b6b6b6b6b
-[ 1139.420320] RBP: ffff880282dbdc48 R08: 00000000000abad6 R09: ffff880285848cf0
-[ 1139.420320] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000110068
-[ 1139.420320] R13: ffff8805bc5932a8 R14: ffff880282dbdc60 R15: 0000000000001cc0
-[ 1139.420320] FS:  0000000000000000(0000) GS:ffff880292c00000(0000) knlGS:0000000000000000
-[ 1139.420320] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1139.420320] CR2: 0000000000000001 CR3: 0000000025e2d000 CR4: 00000000000006a0
-[ 1139.438692] Stack:
-[ 1139.438692]  ffff8804e3ed0278 ffff8804e3ed0570 0000000000000000 ffff8804e3ed06c8
-[ 1139.438692]  ffff880282dbdc78 ffffffffa1342180 0000000000088034 0000000000110068
-[ 1139.438692]  0000000000000000 ffff8804e3ed0570 ffff880282dbdd38 ffffffffa1346f3a
-[ 1139.438692] Call Trace:
-[ 1139.438692] over_bground_thresh (arch/x86/include/asm/atomic64_64.h:21 include/asm-generic/atomic-long.h:31 include/linux/vmstat.h:122 fs/fs-writeback.c:772)
-[ 1139.438692] bdi_writeback_workfn (fs/fs-writeback.c:934 fs/fs-writeback.c:1014 fs/fs-writeback.c:1043)
-[ 1139.438692] process_one_work (kernel/workqueue.c:2227 include/linux/jump_label.h:105 include/trace/events/workqueue.h:111 kernel/workqueue.c:2232)
-[ 1139.438692] ? process_one_work (include/linux/workqueue.h:186 kernel/workqueue.c:611 kernel/workqueue.c:638 kernel/workqueue.c:2220)
-[ 1139.438692] worker_thread (kernel/workqueue.c:2354)
-[ 1139.438692] ? rescuer_thread (kernel/workqueue.c:2303)
-[ 1139.438692] kthread (kernel/kthread.c:210)
-[ 1139.438692] ? kthread_create_on_node (kernel/kthread.c:176)
-[ 1139.438692] ret_from_fork (arch/x86/kernel/entry_64.S:553)
-[ 1139.438692] ? kthread_create_on_node (kernel/kthread.c:176)
-[ 1139.438692] Code: 25 a0 da 00 00 0f 84 82 00 00 00 66 90 eb 2e 66 0f 1f 44 00 00 49 8b 45 00 0f 1f 40 00 49 8b 7d 08 4c 89 e2 49 83 c5 10 48 89 de <ff> d0 49 8b 45 00 48 85 c0 75 e7 eb c5 0f 1f 44 00 00 eb 53 66
-[ 1139.438692] RIP global_dirty_limits (include/trace/events/writeback.h:308 mm/page-writeback.c:309)
-[ 1139.438692]  RSP <ffff880282dbdc28>
+-- Steve
 
 
-Thanks,
-Sasha
+On Wed, 7 May 2014 16:47:44 +0000
+Ranil Raveendran <ranillal.r@hcl.com> wrote:
+
+> Hi All,
+> 
+> I am using this combination to work with HFP profile. I have gone through many documents and understand that Bluez5 removed the support to HFP profile. Inorder to work with HFP profile we need to make use of Ofono demon which will take care of registering the HFP profile with bluez demon and SCO connection.
+> 
+> What my problem is very strange.
+> 
+> I am using bluez5.14  and ofono1.14 demon which is running in my ubuntu mechine.Bluetooth Dongle is connected with ubuntu mechine. Strange thing is dongle adapter path is not listing in ofono demon log.  below is the demon log.
+> 
+> ofonod[6152]: src/modem.c:ofono_modem_driver_register() driver: 0x8194aa0, name: isiusb
+> ofonod[6152]: src/modem.c:ofono_devinfo_driver_register() driver: 0x8194790, name: isimodem
+> ofonod[6152]: src/phonebook.c:ofono_phonebook_driver_register() driver: 0x8194780, name: isimodem
+> ofonod[6152]: src/network.c:ofono_netreg_driver_register() driver: 0x81947c0, name: isimodem
+> ofonod[6152]: src/voicecall.c:ofono_voicecall_driver_register() driver: 0x8194800, name: isimodem
+> ofonod[6152]: src/sms.c:ofono_sms_driver_register() driver: 0x8194860, name: isimodem
+> ofonod[6152]: src/cbs.c:ofono_cbs_driver_register() driver: 0x8194880, name: isimodem
+> ofonod[6152]: src/sim.c:ofono_sim_driver_register() driver: 0x81948a0, name: isimodem
+> ofonod[6152]: src/ussd.c:ofono_ussd_driver_register() driver: 0x81948e8, name: isimodem
+> ofonod[6152]: src/call-forwarding.c:ofono_call_forwarding_driver_register() driver: 0x8194900, name: isimodem
+> ofonod[6152]: src/call-settings.c:ofono_call_settings_driver_register() driver: 0x8194920, name: isimodem
+> ofonod[6152]: src/call-barring.c:ofono_call_barring_driver_register() driver: 0x8194950, name: isimodem
+> ofonod[6152]: src/call-meter.c:ofono_call_meter_driver_register() driver: 0x8194980, name: isimodem
+> ofonod[6152]: src/radio-settings.c:ofono_radio_settings_driver_register() driver: 0x81949c0, name: isimodem
+> ofonod[6152]: src/gprs.c:ofono_gprs_driver_register() driver: 0x81949e4, name: isimodem
+> ofonod[6152]: src/gprs.c:ofono_gprs_context_driver_register() driver: 0x81949f8, name: isimodem
+> ofonod[6152]: src/audio-settings.c:ofono_audio_settings_driver_register() driver: 0x8194a10, name: isimodem
+> ofonod[6152]: src/sim.c:ofono_sim_driver_register() driver: 0x8194a20, name: wgmodem2.5
+> ofonod[6152]: plugins/udevng.c:udev_start()
+> ofonod[6152]: plugins/udevng.c:enumerate_devices()
+> ofonod[6152]: plugins/udevng.c:check_usb_device() hub [(null):(null)]
+> ofonod[6152]: plugins/udevng.c:check_usb_device() usb [8087:0024]
+> ofonod[6152]: plugins/udevng.c:check_usb_device() usb [04ca:0022]
+> ofonod[6152]: plugins/udevng.c:check_usb_device() usbhid [(null):(null)]
+> ofonod[6152]: plugins/udevng.c:check_usb_device() hub [(null):(null)]
+> ofonod[6152]: plugins/udevng.c:check_usb_device() hub [(null):(null)]
+> ofonod[6152]: plugins/udevng.c:check_usb_device() usb [8087:0024]
+> ofonod[6152]: plugins/udevng.c:check_usb_device() usb [0a12:0001]
+> ofonod[6152]: plugins/udevng.c:check_usb_device() btusb [(null):(null)]
+> ofonod[6152]: plugins/udevng.c:check_usb_device() btusb [(null):(null)]
+> ofonod[6152]: plugins/udevng.c:check_usb_device() usb [(null):(null)]
+> ofonod[6152]: plugins/udevng.c:check_usb_device() usb [(null):(null)]
+> ofonod[6152]: plugins/udevng.c:check_usb_device() hub [(null):(null)]
+> it is waiting after this.
+> 
+> I have paired my mobile phone with ubuntu mechine. And pairing was succesful and bluez demon listed the new device mac in his log. But there is no communication happening between ofono and bluez5 demon. Not sure Why this is happening i am not sure i am doing any thing wrong.
+> 
+> But i am not seeing any communication between ofono and bluez , As a result my mobile AG is not listed in the ofono modem list.
+> 
+> Please help on this......
+> 
+> I have configured ofofno in /usr/   .... ./configure --enable-test ...    then make ....make install
+> 
+> Plese let me know why ofono not communication with bluez5
+> ________________________________________
+> From: linux-kernel-owner@vger.kernel.org [linux-kernel-owner@vger.kernel.org] on behalf of Peter Zijlstra [peterz@infradead.org]
+> Sent: Wednesday, May 07, 2014 10:15 PM
+> To: Vince Weaver
+> Cc: Thomas Gleixner; Ingo Molnar; linux-kernel@vger.kernel.org; Steven Rostedt
+> Subject: Re: [perf] more perf_fuzzer memory corruption
+> 
+> On Tue, May 06, 2014 at 12:57:08PM -0400, Vince Weaver wrote:
+> > On Mon, 5 May 2014, Vince Weaver wrote:
+> >
+> > > On Mon, 5 May 2014, Vince Weaver wrote:
+> > >
+> > > > Meanwhile the haswell and AMD machines have been fuzzing away without
+> > > > issue, I don't know why the core2 machine is always the trouble maker.
+> > >
+> > > The haswell has been fuzzing 12 hours with only a NMI dazed/confused
+> > > message.
+> >
+> > So the Haswell seemed to still be going strong after 24-hours, but then I
+> > killed the fuzzer with control-C and got this.
+> >
+> > ^C
+> > [87536.479011] ------------[ cut here ]------------
+> > [87536.484553] WARNING: CPU: 1 PID: 11978 at lib/list_debug.c:59 __list_del_entry+0xa1/0xd0()
+> > [87536.493994] list_del corruption. prev->next should be ffff8800ce684810, but was 6b6b6b6b6b6b6b6b
+> > [87536.503915] Modules linked in: fuse x86_pkg_temp_thermal intel_powerclamp coretemp kvm snd_hda_codec_hdmi crct10dif_pclmul crc32_pclmul ghash_clmulni_intel snd_hda_codec_realtek snd_hda_codec_generic i915 aesni_intel snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_pcm snd_seq snd_timer snd_seq_device tpm_tis ppdev snd aes_x86_64 parport_pc tpm evdev mei_me drm_kms_helper iTCO_wdt drm soundcore lrw gf128mul glue_helper iTCO_vendor_support wmi ablk_helper i2c_algo_bit button battery processor mei psmouse parport pcspkr serio_raw cryptd i2c_i801 video i2c_core lpc_ich mfd_core sd_mod sr_mod crc_t10dif cdrom crct10dif_common ahci libahci ehci_pci e1000e libata xhci_hcd ehci_hcd ptp crc32c_intel usbcore scsi_mod pps_core usb_common fan thermal thermal_sys
+> > [87536.581372] CPU: 1 PID: 11978 Comm: perf_fuzzer Tainted: G        W     3.15.0-rc1+ #104
+> > [87536.590762] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
+> > [87536.599435]  0000000000000009 ffff880117b57ad8 ffffffff81649ca0 ffff880117b57b20
+> > [87536.608228]  ffff880117b57b10 ffffffff810646ad ffff8800ce684800 ffff880036a64000
+> > [87536.616970]  ffff8800ce684810 ffff8800ce684800 0000000000000001 ffff880117b57b70
+> > [87536.625688] Call Trace:
+> > [87536.629039]  [<ffffffff81649ca0>] dump_stack+0x45/0x56
+> > [87536.635247]  [<ffffffff810646ad>] warn_slowpath_common+0x7d/0xa0
+> > [87536.642374]  [<ffffffff8106471c>] warn_slowpath_fmt+0x4c/0x50
+> > [87536.649211]  [<ffffffff813c9fe1>] __list_del_entry+0xa1/0xd0
+> > [87536.655953]  [<ffffffff81131ec4>] list_del_event+0xe4/0xf0
+> > [87536.662477]  [<ffffffff811326c0>] perf_remove_from_context+0xb0/0x120
+> > [87536.670005]  [<ffffffff81133d8f>] perf_event_release_kernel+0x3f/0x80
+> > [87536.677530]  [<ffffffff81133ea3>] put_event+0xd3/0x100
+> > [87536.683702]  [<ffffffff81133e00>] ? put_event+0x30/0x100
+> > [87536.690047]  [<ffffffff81133ee5>] perf_release+0x15/0x20
+> > [87536.696292]  [<ffffffff811b69fc>] __fput+0xdc/0x1e0
+> > [87536.702191]  [<ffffffff811b6b4e>] ____fput+0xe/0x10
+> > [87536.708038]  [<ffffffff81085154>] task_work_run+0xc4/0xe0
+> > [87536.714503]  [<ffffffff81066d5c>] do_exit+0x2cc/0xa50
+> > [87536.720546]  [<ffffffff81076949>] ? get_signal_to_deliver+0x249/0x650
+> > [87536.728117]  [<ffffffff8106756c>] do_group_exit+0x4c/0xc0
+> > [87536.734480]  [<ffffffff81076991>] get_signal_to_deliver+0x291/0x650
+> > [87536.741814]  [<ffffffff81012438>] do_signal+0x48/0x990
+> > [87536.747877]  [<ffffffff81090c4d>] ? finish_task_switch+0x7d/0x120
+> > [87536.754994]  [<ffffffff81651437>] ? _raw_spin_unlock_irq+0x27/0x40
+> > [87536.762243]  [<ffffffff81090c4d>] ? finish_task_switch+0x7d/0x120
+> > [87536.769465]  [<ffffffff81090c0f>] ? finish_task_switch+0x3f/0x120
+> > [87536.776622]  [<ffffffff81012df0>] do_notify_resume+0x70/0xa0
+> > [87536.783323]  [<ffffffff81651fbc>] retint_signal+0x48/0x8c
+> > [87536.789726] ---[ end trace 2b5a3d32e8d767a7 ]---
+> > [87537.231116] ------------[ cut here ]------------
+> 
+> Of course it did :/ This thing can't ever _just_ work..
+> 
+> My WSM is playing silly buggers and prefers the endless loop (which you
+> saw on Core2 iirc) when I press ^C.
+> 
+> I'll see if I can make it do something useful.. No immediate ideas
+> though.
+> 
+> 
+> ::DISCLAIMER::
+> ----------------------------------------------------------------------------------------------------------------------------------------------------
+> 
+> The contents of this e-mail and any attachment(s) are confidential and intended for the named recipient(s) only.
+> E-mail transmission is not guaranteed to be secure or error-free as information could be intercepted, corrupted,
+> lost, destroyed, arrive late or incomplete, or may contain viruses in transmission. The e mail and its contents
+> (with or without referred errors) shall therefore not attach any liability on the originator or HCL or its affiliates.
+> Views or opinions, if any, presented in this email are solely those of the author and may not necessarily reflect the
+> views or opinions of HCL or its affiliates. Any form of reproduction, dissemination, copying, disclosure, modification,
+> distribution and / or publication of this message without the prior written consent of authorized representative of
+> HCL is strictly prohibited. If you have received this email in error please delete it and notify the sender immediately.
+> Before opening any email and/or attachments, please check them for viruses and other defects.
+> 
+> ----------------------------------------------------------------------------------------------------------------------------------------------------
+
