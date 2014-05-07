@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932725AbaEGML5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 08:11:57 -0400
-Received: from static-217-195-193-45.fibersunucu.com.tr ([217.195.193.45]:38123
-	"EHLO lin5.fiberserver.com.tr" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932157AbaEGML4 (ORCPT
+	id S932681AbaEGMRu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 08:17:50 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:59419 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190AbaEGMRs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 08:11:56 -0400
-X-Greylist: delayed 13199 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 May 2014 08:11:55 EDT
-Message-ID: <5d43925b933a4ebba3d58aa119cefbd1.squirrel@genc-tekstil.com>
-Date: Wed, 7 May 2014 11:28:04 +0300
-Subject: Estimado E-mail del usuario;
-From: "Webmail Administrador 2014" <infoe463@genc-tekstil.com>
-User-Agent: SquirrelMail/1.5.2 [SVN]
+	Wed, 7 May 2014 08:17:48 -0400
+Date: Wed, 7 May 2014 14:17:43 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>, Preeti Murthy <preeti.lkml@gmail.com>,
+        umgwanakikbuti@gmail.com, LKML <linux-kernel@vger.kernel.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        george.mccollister@gmail.com, ktkhai@parallels.com,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
+Message-ID: <20140507121743.GA12190@gmail.com>
+References: <20140502004237.79dd3de6@annuminas.surriel.com>
+ <1399011219.5233.55.camel@marge.simpson.net>
+ <53633B81.1080403@redhat.com>
+ <CAM4v1pPwe4B0K8MPpf183LqabRoRKRPi_R7n8-Y02aR43M8iQQ@mail.gmail.com>
+ <53663565.9080306@redhat.com>
+ <20140506132516.GJ11096@twins.programming.kicks-ass.net>
+ <5369442B.9010505@redhat.com>
+ <20140506204117.GR17778@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - lin5.fiberserver.com.tr
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - genc-tekstil.com
-X-Get-Message-Sender-Via: lin5.fiberserver.com.tr: authenticated_id: infoe463@genc-tekstil.com
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140506204117.GR17778@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Estimado E-mail del usuario;
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-Se ha superado 23.432 Repositorio para el conjunto buzón
-Servicios Web / Administrador, y habrás problemas al enviar y
-recepción de correo, mientras que volver a verificar. Debe actualizar
-haciendo clic en enlace de abajo y complete la información para verificar
-su cuenta.
+> On Tue, May 06, 2014 at 04:20:59PM -0400, Rik van Riel wrote:
+> > On 05/06/2014 09:25 AM, Peter Zijlstra wrote:
+> > > On Sun, May 04, 2014 at 08:41:09AM -0400, Rik van Riel wrote:
+> > >> Even on 8-node DL980 systems, the NUMA distance in the
+> > >> SLIT table is less than RECLAIM_DISTANCE, and we will
+> > >> do wake_affine across the entire system.
+> > > 
+> > > Yeah, so the problem is that (AFAIK) ACPI doesn't actually specify a
+> > > metric for the SLIT distance. This (in as far as BIOS people would care
+> > > to stick to specs anyhow) has lead to the 'fun' situation where BIOS
+> > > engineers tweak SLIT table values to make OSes behave as they thing it
+> > > should.
+> > > 
+> > > So if the BIOS engineer finds that this system should have <
+> > > RECLAIM_DISTANCE it will simply make the table such that the max SLIT
+> > > value is below that.
+> > > 
+> > > And yes, I've seen this :-(
+> > 
+> > It appears to be the case on the vast majority of the NUMA systems 
+> > that are actually in use.
+> > 
+> > To me, this suggests that we should probably deal with it.
+> 
+> What we could do is redefine this distance in hops, that'll force 
+> them to lie more blatantly and actually miss represent the topology.
 
-http://arafayleather.com/good/public_html/webmail/webmail/index.php
+and we should make sure we reduce any graph they represent, so that 
+they can lie only through very heavy misrepresentation of the topology 
+(i.e. not just weight tweaks) which will bite them in other areas 
+(like the mm).
 
-Por favor, haga clic en el siguiente enlace para actualizar la bandeja de
-entrada.
-¡Atención!
-De no hacerlo, tendrá acceso limitado a su buzón de correo.
-Si no actualiza su cuenta dentro de los tres días posteriores a la
-actualización
-aviso, su cuenta será cerrada permanentemente.
+Thanks,
 
+	Ingo
