@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056AbaEGRug (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 13:50:36 -0400
-Received: from mail.codeweavers.com ([216.251.189.131]:38210 "EHLO
-	mail.codeweavers.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924AbaEGRub (ORCPT
+	id S1751560AbaEGRyu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 13:54:50 -0400
+Received: from smtprelay0236.hostedemail.com ([216.40.44.236]:60611 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751074AbaEGRyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 13:50:31 -0400
-From: Alexandre Julliard <julliard@winehq.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Sven Joachim <svenjoac@gmx.de>, Brian Gerst <brgerst@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org>
-	<CAMzpN2jx4H4p8fQr-WHxVyCHhWi0iO3WZZKyxYD7Dfa7pWkEgg@mail.gmail.com>
-	<CA+55aFwzvSiAGYfFb2R3JeVvh8_PQuOKJDrYP5C_3VQz2zhnBw@mail.gmail.com>
-	<CAMzpN2jj3dwQG7qC__8zLPhkg_ER6n4CcNxa5eg7okRN+k_VUA@mail.gmail.com>
-	<CA+55aFxr_dz3vhko1FPXhZd0ZNeGveX0oSLqUo_wyiVbxatLQw@mail.gmail.com>
-	<87k3aspd1h.fsf@wine.dyndns.org> <87zjiuymiu.fsf@turtle.gmx.de>
-	<CA+55aFw9BPoD10U1LfHbOMpHWZkvJTkMcfCs9s3urPr1YyWBxw@mail.gmail.com>
-	<536A68B1.6070500@zytor.com>
-Date: Wed, 07 May 2014 19:50:18 +0200
-In-Reply-To: <536A68B1.6070500@zytor.com> (H. Peter Anvin's message of "Wed,
-	07 May 2014 10:09:05 -0700")
-Message-ID: <87eh05fpgl.fsf@wine.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Spam-Score: -2.9
+	Wed, 7 May 2014 13:54:49 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3871:4321:5007:7652:7904:9010:10004:10400:10848:11026:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: hall47_29db2e3bd7055
+X-Filterd-Recvd-Size: 1945
+Message-ID: <1399485286.2911.9.camel@joe-AO725>
+Subject: Re: [PATCH 1/1] kernel/kprobes.c: convert printk to pr_foo()
+From: Joe Perches <joe@perches.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        akpm <akpm@linux-foundation.org>
+Date: Wed, 07 May 2014 10:54:46 -0700
+In-Reply-To: <20140506191205.49ca307736c06fa89c6b19cc@skynet.be>
+References: <20140506191205.49ca307736c06fa89c6b19cc@skynet.be>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"H. Peter Anvin" <hpa@zytor.com> writes:
+On Tue, 2014-05-06 at 19:12 +0200, Fabian Frederick wrote:
 
-> On 05/07/2014 09:57 AM, Linus Torvalds wrote:
->> 
->> Afaik, 16-bit programs under wine already need
->> 
->>   echo 0 > /proc/sys/vm/mmap_min_addr
->> 
->> because they want to map things at address 0, so this isn't a new concept.
->> 
->
-> I think that applies to DOSEMU, but not to Wine.
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+[]
+> @@ -1385,7 +1387,7 @@ static struct kprobe * __kprobes __get_valid_kprobe(struct kprobe *p)
+>  	if (p != ap) {
+>  		list_for_each_entry_rcu(list_p, &ap->list, list)
+>  			if (list_p == p)
+> -			/* kprobe p is a valid probe */
+> +				/* kprobe p is a valid probe */
+>  				goto valid;
+>  		return NULL;
+>  	}
 
-Yes, there are a few exceptions, but most Win16 apps run fine without
-mapping address 0.
+Perhaps this would be more readable as:
 
-> I'm somewhat curious if this program you have is actually a 32-bit
-> program or if it is really a 16-bit program wrapped in a 32-bit
-> installer of some kind.  Hard to know without seeing the program in
-> question.
+	/* Make sure p is a valid probe */
+	if (p != ap) {
+		list_for_each_entry_rcu(list_p, &ap->list, list) {
+			if (list_p == p)
+				goto valid;
+		}
+		return NULL;
+	}
 
-It could be a mix of both, there are various thunking mechanisms that
-allow 32-bit binaries to use 16-bit components. This was pretty common
-in the Win95 days.
+or maybe the function could be written
+without the goto. something like:
 
--- 
-Alexandre Julliard
-julliard@winehq.org
+static struct kprobe *__get_valid_kprobe(struct kprobe *p)
+{
+	struct kprobe *ap, *list_p;
+
+	ap = get_kprobe(p->addr);
+	if (unlikely(!ap))
+		return NULL;
+
+	if (p == ap)
+		return ap;
+
+	/* Make sure p is a valid probe */
+	list_for_each_entry_rcu(list_p, &ap->list, list) {
+		if (list_p == p)
+			return ap;
+	}
+
+	return NULL;
+}
+
+
