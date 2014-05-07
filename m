@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202AbaEGQN5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:13:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39040 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634AbaEGQNz (ORCPT
+	id S1755364AbaEGQPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:15:39 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45395 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946AbaEGQPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:13:55 -0400
-Date: Wed, 7 May 2014 18:13:50 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        khilman@linaro.org, tglx@linutronix.de, axboe@fb.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:timers/nohz] nohz: Move full nohz kick to its own IPI
-Message-ID: <20140507161350.GT30445@twins.programming.kicks-ass.net>
-References: <tip-72aacf0259bb7d53b7a3b5b2f7bf982acaa52b61@git.kernel.org>
- <20140505123706.GP17778@laptop.programming.kicks-ass.net>
- <20140505133113.GD1429@laptop.programming.kicks-ass.net>
- <20140505150356.GB2099@localhost.localdomain>
- <20140505151228.GR26782@laptop.programming.kicks-ass.net>
- <20140505153405.GD2099@localhost.localdomain>
- <20140507151735.GQ30445@twins.programming.kicks-ass.net>
- <20140507152922.GB16694@localhost.localdomain>
- <20140507153736.GS30445@twins.programming.kicks-ass.net>
- <20140507160504.GC16694@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jtcAeju3WzRmRF+o"
-Content-Disposition: inline
-In-Reply-To: <20140507160504.GC16694@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 7 May 2014 12:15:38 -0400
+Date: Wed, 7 May 2014 17:15:23 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Takashi Iwai <tiwai@suse.de>, dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: Re: Atomicity in KMS panic notifier
+Message-ID: <20140507171523.48990630@alan.etchedpixels.co.uk>
+In-Reply-To: <CAKMK7uHcYvuViEeyxLc75+kMVPPaKMr8svJQysk124--cjGL+g@mail.gmail.com>
+References: <s5htx94fkfi.wl%tiwai@suse.de>
+	<CAKMK7uHcYvuViEeyxLc75+kMVPPaKMr8svJQysk124--cjGL+g@mail.gmail.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Imo trying to fix the current mess and making ->set_config work in
+> atomic contexts is pointless. drm_can_sleep is trying to make that
+> possible in some ways, and it's horrible since using it means
+> busy-loops in atomic contexts outside of panic handlers won't get
+> reported any more. Also the interactions with the console_lock (which
+> due to some bonghits is protecting almost everything in fbcon/fbdev
+> nowadays) would also be almost completely removed.
 
---jtcAeju3WzRmRF+o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Unfortunately years ago some Finnish student didn't design his console
+driver to be lock friendly and then fbcon/fbdev inherited it.
 
-On Wed, May 07, 2014 at 06:05:08PM +0200, Frederic Weisbecker wrote:
-> So we can as well zap these commits and replace them with the irq_work_on()
-> conversion (still preparing that).
+If you are writing a new console driver please don't use fbcon, use a
+text console that writes to a simple n x m text framebuffer with dirty
+bits and wakes a waitqueue or work queue of some sort when it changes.
+Then just redraw updated bits every vblank frame if its actually changed.
 
-I hear you, but I think Ingo doesn't want to rebase the tree because its
-public, but maybe he can make an exception..
+Not only will the lock problems go away it'll blow away the existing
+scrolling text performance on any DRM driver except gma500.
 
---jtcAeju3WzRmRF+o
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTalu+AAoJEHZH4aRLwOS6vKYP/2oeT83EOJNPpi17xUEd+BQt
-k5p3aC0lSBEELDl3/fMMz7wTfh9qi5hCSB6jo13tk512GqN9acNyfAPLo30IBEuM
-M1tCvH6Hf555m8pk/W0fp8mVSNkHth1Suvrg5HHxiaWctSLBJ/92crFi3v4lhKLS
-c4uN0/HNDKifGNLyzdzXX24FEuKCum88j+BZWHZ3Jh1RDk/okvbudj3kDKmlsEFf
-3aH8zTNtcyOj/7qW5D74cZbD7N90doIzJmNZwP6fWcjGtwQQbsXGjNtwWqeIXvXN
-DJhUkDaM9e2kQe2QgjKfh7RZltVcN/v4NixdIeGW09MQel5/jW/ep5Tqesh9W/oz
-1EKMKpaTj6LdtMIZB9LQ/rp3X4YXPCQEQVndTxDpuPs8maipzXkP7/WvNJImb2Am
-uDRDys43sA7XH2NDVkN2hBfUPWgdvEri8qPE8U2ODFpqvSC8sbWAgF6hTGr0OnZV
-G1SgfUsiPToXgN0E1OdCg1Fe6TG/KHkWc1by7vZCpyG5T6PSa/EzGxfJ8E5MyWOH
-hlJmy4g3/+5G7BBhSqp7uVmt66euP8DlGXdFJ/X7UWuhhnB82YmJRM1KMFgJcD9d
-mgaO6EMxEw5m0hCNnPNN5a0Xay93UNXwKjoQ6Gbt3ZyOlifXV6zeNeXy+zZzZbQf
-8fZDrIDB/PwhMDRFa6TB
-=iS+q
------END PGP SIGNATURE-----
-
---jtcAeju3WzRmRF+o--
+Alan
