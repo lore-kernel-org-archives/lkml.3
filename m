@@ -1,98 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933115AbaEGPoS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:44:18 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:17329 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932422AbaEGPoQ (ORCPT
+	id S1752287AbaEGPog (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:44:36 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48714 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756952AbaEGPoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:44:16 -0400
-Message-ID: <536A54C5.9070803@oracle.com>
-Date: Wed, 07 May 2014 11:44:05 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: axboe@kernel.dk, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: blktrace: NULL ptr deref in sysfs_blk_trace_attr_store
-References: <53699E3F.4020105@oracle.com> <20140507154144.GE12433@quack.suse.cz>
-In-Reply-To: <20140507154144.GE12433@quack.suse.cz>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 7 May 2014 11:44:08 -0400
+Message-Id: <20140507154341.012847637@linutronix.de>
+User-Agent: quilt/0.60-1
+Date: Wed, 07 May 2014 15:44:23 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Anvin <hpa@zytor.com>,
+        Tony Luck <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: [patch 32/32] genirq: Remove dynamic_irq mess
+References: <20140507153622.703412101@linutronix.de>
+Content-Disposition: inline; filename=genirq-remove-dynamic-irq-mess.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2014 11:41 AM, Jan Kara wrote:
->   Hello,
-> 
-> On Tue 06-05-14 22:45:19, Sasha Levin wrote:
->> While fuzzing with trinity inside a KVM tools guest running the latest -next
->> kernel I've stumbled on the following spew:
->>
->> [ 6230.740626] BUG: unable to handle kernel NULL pointer dereference at           (null)
->> [ 6230.740626] IP: __list_del_entry (lib/list_debug.c:57)
->> [ 6230.740626] PGD 44d661067 PUD 44d660067 PMD 0
->> [ 6230.740626] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->> [ 6230.740626] Dumping ftrace buffer:
->> [ 6230.740626]    (ftrace buffer empty)
->> [ 6230.740626] Modules linked in:
->> [ 6230.740626] CPU: 2 PID: 23998 Comm: trinity-c257 Not tainted 3.15.0-rc4-next-20140506-sasha-00021-gc164334-dirty #447
->> [ 6230.740626] task: ffff8804716db000 ti: ffff88044ca9e000 task.ti: ffff88044ca9e000
->> [ 6230.740626] RIP: __list_del_entry (lib/list_debug.c:57)
->> [ 6230.740626] RSP: 0018:ffff88044ca9fdd8  EFLAGS: 00010007
->> [ 6230.740626] RAX: 0000000000000000 RBX: ffff88005a455948 RCX: dead000000200200
->> [ 6230.740626] RDX: 0000000000000000 RSI: ffffffff938fdf78 RDI: ffff88005a455948
->> [ 6230.740626] RBP: ffff88044ca9fdd8 R08: 0000000000000001 R09: ffff8804716dbdd0
->> [ 6230.740626] R10: ffff8804716db000 R11: 0000000000000000 R12: 00000000000007f5
->> [ 6230.740626] R13: ffff88017b880000 R14: ffff88005a4558f0 R15: ffff88036a188758
->> [ 6230.740626] FS:  00007fec10273700(0000) GS:ffff8800a6c00000(0000) knlGS:0000000000000000
->> [ 6230.740626] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->> [ 6230.740626] CR2: 0000000000000000 CR3: 000000044d662000 CR4: 00000000000006a0
->> [ 6230.740626] DR0: 00000000006df000 DR1: 0000000000000000 DR2: 0000000000000000
->> [ 6230.740626] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
->> [ 6230.740626] Stack:
->> [ 6230.740626]  ffff88044ca9fdf8 ffffffff8fb40441 ffff88036a188740 ffff88036a188740
->> [ 6230.740626]  ffff88044ca9fe68 ffffffff8f25d75d 0000000000000000 ffff8804716db000
->> [ 6230.740626]  0000000000000286 ffff880333f61330 0000000000000000 0000000000000286
->> [ 6230.740626] Call Trace:
->> [ 6230.740626] list_del (lib/list_debug.c:78)
->> [ 6230.740626] sysfs_blk_trace_attr_store (include/linux/spinlock.h:353 kernel/trace/blktrace.c:1498 kernel/trace/blktrace.c:1740)
->> [ 6230.740626] dev_attr_store (drivers/base/core.c:138)
->> [ 6230.740626] sysfs_kf_write (fs/sysfs/file.c:114)
->> [ 6230.740626] kernfs_fop_write (fs/kernfs/file.c:295)
->> [ 6230.740626] vfs_write (fs/read_write.c:532)
->> [ 6230.740626] SyS_write (fs/read_write.c:584 fs/read_write.c:576)
->> [ 6230.740626] ia32_do_call (arch/x86/ia32/ia32entry.S:430)
->> [ 6230.740626] Code: 7d 93 be 3e 00 00 00 48 c7 c7 d2 46 7d 93 31 c0 e8 6f fb 61 ff eb 2c 0f 1f 44 00 00 48 b9 00 02 20 00 00 00 ad de 48 39 c8 74 8c <4c> 8b 00 4c 39 c7 75 a6 4c 8b 42 08 4c 39 c7 75 bc 48 89 42 08
->> [ 6230.740626] RIP __list_del_entry (lib/list_debug.c:57)
->> [ 6230.740626]  RSP <ffff88044ca9fdd8>
->> [ 6230.740626] CR2: 0000000000000000
->   Hum, interesting. So it seems that blk_trace_remove_queue() got struct
-> blk_trace which isn't healthy - list_head has been zeroed out and since
-> this is the first thing we touch in the structure we don't really know what
-> else is in there. But I don't see how such structure could get there since
-> all places that modify q->blk_trace seem to hold bdev->bd_mutex.
-> 
-> OTOH the code in blk_trace_setup_queue() does:
->         old_bt = xchg(&q->blk_trace, bt);
->         if (old_bt != NULL) {
->                 (void)xchg(&q->blk_trace, old_bt);
->                 ret = -EBUSY;
->                 goto free_bt;
->         }
-> 
-> Which looks somewhat strange if modifications of q->blk_trace are really
-> guarded by bd_mutex. Jens?
+No more users. Get rid of the cruft.
 
-I probably should have mentioned that initially, but I've added some scripting to
-stress CPU and memory hotplugging recently, so there's a good chance that this somehow
-occurred as a result of a CPU going away/coming back.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/irq.h  |   10 ----------
+ kernel/irq/irqdesc.c |   23 +++++++----------------
+ 2 files changed, 7 insertions(+), 26 deletions(-)
 
+Index: tip/include/linux/irq.h
+===================================================================
+--- tip.orig/include/linux/irq.h
++++ tip/include/linux/irq.h
+@@ -525,16 +525,6 @@ static inline void irq_set_percpu_devid_
+ 			     IRQ_NOPROBE | IRQ_PER_CPU_DEVID);
+ }
+ 
+-/*
+- * Dynamic irq helper functions. Obsolete. Use irq_alloc_desc* and
+- * irq_free_desc instead.
+- */
+-extern void dynamic_irq_cleanup(unsigned int irq);
+-static inline void dynamic_irq_init(unsigned int irq)
+-{
+-	dynamic_irq_cleanup(irq);
+-}
+-
+ /* Set/get chip/data for an IRQ: */
+ extern int irq_set_chip(unsigned int irq, struct irq_chip *chip);
+ extern int irq_set_handler_data(unsigned int irq, void *data);
+Index: tip/kernel/irq/irqdesc.c
+===================================================================
+--- tip.orig/kernel/irq/irqdesc.c
++++ tip/kernel/irq/irqdesc.c
+@@ -278,7 +278,12 @@ EXPORT_SYMBOL(irq_to_desc);
+ 
+ static void free_desc(unsigned int irq)
+ {
+-	dynamic_irq_cleanup(irq);
++	struct irq_desc *desc = irq_to_desc(irq);
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&desc->lock, flags);
++	desc_set_defaults(irq, desc, desc_node(desc), NULL);
++	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ }
+ 
+ static inline int alloc_descs(unsigned int start, unsigned int cnt, int node,
+@@ -309,7 +314,7 @@ void irq_mark_irq(unsigned int irq)
+ #ifdef CONFIG_GENERIC_IRQ_LEGACY
+ void irq_init_desc(unsigned int irq)
+ {
+-	dynamic_irq_cleanup(irq);
++	free_desc(irq);
+ }
+ #endif
+ 
+@@ -522,20 +527,6 @@ int irq_set_percpu_devid(unsigned int ir
+ 	return 0;
+ }
+ 
+-/**
+- * dynamic_irq_cleanup - cleanup a dynamically allocated irq
+- * @irq:	irq number to initialize
+- */
+-void dynamic_irq_cleanup(unsigned int irq)
+-{
+-	struct irq_desc *desc = irq_to_desc(irq);
+-	unsigned long flags;
+-
+-	raw_spin_lock_irqsave(&desc->lock, flags);
+-	desc_set_defaults(irq, desc, desc_node(desc), NULL);
+-	raw_spin_unlock_irqrestore(&desc->lock, flags);
+-}
+-
+ void kstat_incr_irq_this_cpu(unsigned int irq)
+ {
+ 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
 
-Thanks,
-Sasha
 
