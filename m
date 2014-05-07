@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494AbaEGVWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 17:22:31 -0400
-Received: from ns.horizon.com ([71.41.210.147]:39290 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751420AbaEGVWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 17:22:25 -0400
-Date: 7 May 2014 17:22:24 -0400
-Message-ID: <20140507212224.9085.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: cl@linux.com, iamjoonsoo.kim@lge.com
-Subject: Re: [PATCH v2 03/10] slab: move up code to get kmem_cache_node in free_block()
-Cc: linux@horizon.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+	id S1752531AbaEGVWj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 17:22:39 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52332 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420AbaEGVWc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 17:22:32 -0400
+Date: Wed, 7 May 2014 23:22:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v1 03/11] perf: Allow for multiple ring buffers per event
+Message-ID: <20140507212224.GC2844@laptop.programming.kicks-ass.net>
+References: <1391683834-29868-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1391683834-29868-4-git-send-email-alexander.shishkin@linux.intel.com>
+ <20140507152640.GR30445@twins.programming.kicks-ass.net>
+ <20140507210843.GS19657@tassilo.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140507210843.GS19657@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seeing this patch made me think of a larger cleanup.
-Would this be worth adding to the series?
-(I incorporated your patch, as I couldn't decide whether
-to write mine before or after; I assume it's no problem
-to separate whichever way you want to order it.)
+On Wed, May 07, 2014 at 02:08:43PM -0700, Andi Kleen wrote:
+> > Then, when data inside that aux data store changes they should inject an
+> > PERF_RECORD_AUX to indicate this did happen, which ties it back into the
+> > normal event flow.
+> 
+> What happens when the aux buffer wraps? How would the client know
+> if the data belongs to this _AUX entry or some later one?
 
-Commit comment something like:
+It belongs to the last one. Rewind them from 'now' until you hit
+collisions in AUX space, then you're done.
 
-Subject: Let clear_obj_pfmemalloc return the modified pointer
+> May need some extra sequence numbers in the mmap header and the aux
+> entry to handle this.
 
-All callers fetch it immediately after, so just return the written
-value for convenience.
+You're thinking of overwrite mode, right? We should update the tail in
+that case, I've not thought about how to do that for the AUX buffer.
 
-Signed-off-by: George Spelvin <linux@horizon.com>
----
- mm/slab.c | 24 ++++++++----------------
- 1 file changed, 8 insertions(+), 16 deletions(-)
+There have been some patches for the normal buffer, but they stalled;
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 388cb1ae6f..7fdc8df104 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -215,9 +215,9 @@ static inline void set_obj_pfmemalloc(void **objp)
- 	return;
- }
- 
--static inline void clear_obj_pfmemalloc(void **objp)
-+static inline void *clear_obj_pfmemalloc(void **objp)
- {
--	*objp = (void *)((unsigned long)*objp & ~SLAB_OBJ_PFMEMALLOC);
-+	return *objp = (void *)((unsigned long)*objp & ~SLAB_OBJ_PFMEMALLOC);
- }
- 
- /*
-@@ -809,10 +809,8 @@ static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
- 	if (unlikely(is_obj_pfmemalloc(objp))) {
- 		struct kmem_cache_node *n;
- 
--		if (gfp_pfmemalloc_allowed(flags)) {
--			clear_obj_pfmemalloc(&objp);
--			return objp;
--		}
-+		if (gfp_pfmemalloc_allowed(flags))
-+			return clear_obj_pfmemalloc(&objp);
- 
- 		/* The caller cannot use PFMEMALLOC objects, find another one */
- 		for (i = 0; i < ac->avail; i++) {
-@@ -833,9 +831,8 @@ static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
- 		if (!list_empty(&n->slabs_free) && force_refill) {
- 			struct page *page = virt_to_head_page(objp);
- 			ClearPageSlabPfmemalloc(page);
--			clear_obj_pfmemalloc(&objp);
- 			recheck_pfmemalloc_active(cachep, ac);
--			return objp;
-+			return clear_obj_pfmemalloc(&objp);
- 		}
- 
- 		/* No !PFMEMALLOC objects available */
-@@ -3362,17 +3359,12 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int nr_objects,
- 		       int node)
- {
- 	int i;
--	struct kmem_cache_node *n;
-+	struct kmem_cache_node *n = cachep->node[node];
- 
- 	for (i = 0; i < nr_objects; i++) {
--		void *objp;
--		struct page *page;
--
--		clear_obj_pfmemalloc(&objpp[i]);
--		objp = objpp[i];
-+		void *objp = clear_obj_pfmemalloc(&objpp[i]);
-+		struct page *page = virt_to_head_page(objp);
- 
--		page = virt_to_head_page(objp);
--		n = cachep->node[node];
- 		list_del(&page->lru);
- 		check_spinlock_acquired_node(cachep, node);
- 		slab_put_obj(cachep, page, objp, node);
+https://lkml.org/lkml/2013/7/8/154
+
+I'm all for merging that patch (or a fixed on, since it has fail in) if
+we can show the current !overwrite case doesn't regress.
+
+Also, would anybody want different mode for the data and aux parts? In
+that case we do need to add some extra state to the control page to
+indicate such.
