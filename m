@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933426AbaEGNPW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:15:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45635 "EHLO
+	id S933562AbaEGNRY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:17:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45670 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933345AbaEGNPM (ORCPT
+	with ESMTP id S933345AbaEGNPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:15:12 -0400
+	Wed, 7 May 2014 09:15:22 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tyler Stachecki <tstache1@binghamton.edu>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Vineet Gupta <vgupta@synopsys.com>,
+        Anton Kolesov <Anton.Kolesov@synopsys.com>,
+        Francois Bedard <Francois.Bedard@synopsys.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 58/70] [SCSI] mpt2sas: Don't disable device twice at suspend.
-Date: Wed,  7 May 2014 14:13:01 +0100
-Message-Id: <1399468393-10140-59-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 65/70] ARC: !PREEMPT: Ensure Return to kernel mode is IRQ safe
+Date: Wed,  7 May 2014 14:13:08 +0100
+Message-Id: <1399468393-10140-66-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -28,39 +30,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Stachecki <tstache1@binghamton.edu>
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 
-commit af61e27c3f77c7623b5335590ae24b6a5c323e22 upstream.
+commit 8aa9e85adac609588eeec356e5a85059b3b819ba upstream.
 
-On suspend, _scsih_suspend calls mpt2sas_base_free_resources, which
-in turn calls pci_disable_device if the device is enabled prior to
-suspending. However, _scsih_suspend also calls pci_disable_device
-itself.
+There was a very small race window where resume to kernel mode from a
+Exception Path (or pure kernel mode which is true for most of ARC
+exceptions anyways), was not disabling interrupts in restore_regs,
+clobbering the exception regs
 
-Thus, in the event that the device is enabled prior to suspending,
-pci_disable_device will be called twice. This patch removes the
-duplicate call to pci_disable_device in _scsi_suspend as it is both
-unnecessary and results in a kernel oops.
+Anton found the culprit call flow (after many sleepless nights)
 
-Signed-off-by: Tyler Stachecki <tstache1@binghamton.edu>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+| 1. we got a Trap from user land
+| 2. started to service it.
+| 3. While doing some stuff on user-land memory (I think it is padzero()),
+|     we got a DataTlbMiss
+| 4. On return from it we are taking "resume_kernel_mode" path
+| 5. NEED_RESHED is not set, so we go to "return from exception" path in
+|     restore regs.
+| 6. there seems to be IRQ happening
+
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Anton Kolesov <Anton.Kolesov@synopsys.com>
+Cc: Francois Bedard <Francois.Bedard@synopsys.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/scsi/mpt2sas/mpt2sas_scsih.c | 1 -
- 1 file changed, 1 deletion(-)
+ arch/arc/kernel/entry.S | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-index 5100476..029dbbb 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -8287,7 +8287,6 @@ _scsih_suspend(struct pci_dev *pdev, pm_message_t state)
+diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
+index 89f7961..ca6e48b 100644
+--- a/arch/arc/kernel/entry.S
++++ b/arch/arc/kernel/entry.S
+@@ -640,11 +640,13 @@ resume_user_mode_begin:
  
- 	mpt2sas_base_free_resources(ioc);
- 	pci_save_state(pdev);
--	pci_disable_device(pdev);
- 	pci_set_power_state(pdev, device_state);
- 	return 0;
- }
+ resume_kernel_mode:
+ 
+-#ifdef CONFIG_PREEMPT
+-
+-	; This is a must for preempt_schedule_irq()
++	; Disable Interrupts from this point on
++	; CONFIG_PREEMPT: This is a must for preempt_schedule_irq()
++	; !CONFIG_PREEMPT: To ensure restore_regs is intr safe
+ 	IRQ_DISABLE	r9
+ 
++#ifdef CONFIG_PREEMPT
++
+ 	; Can't preempt if preemption disabled
+ 	GET_CURR_THR_INFO_FROM_SP   r10
+ 	ld  r8, [r10, THREAD_INFO_PREEMPT_COUNT]
 -- 
 1.9.1
 
