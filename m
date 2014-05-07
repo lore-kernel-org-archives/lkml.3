@@ -1,81 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932348AbaEGJWL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:22:11 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:37936 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932265AbaEGJWH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:22:07 -0400
-Message-ID: <5369FB36.7040404@gmail.com>
-Date: Wed, 07 May 2014 11:21:58 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-To: Hans de Goede <hdegoede@redhat.com>
-CC: linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux ARM <linux-arm-kernel@lists.infradead.org>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v3 00/20] USB support for Armada 38x and Armada 375
-References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com> <loom.20140507T102941-222@post.gmane.org>
-In-Reply-To: <loom.20140507T102941-222@post.gmane.org>
+	id S932363AbaEGJXE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:23:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56295 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932265AbaEGJXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 05:23:01 -0400
+Message-ID: <5369FB73.3080103@suse.cz>
+Date: Wed, 07 May 2014 11:22:59 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        gthelen@google.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        minchan@kernel.org, Mel Gorman <mgorman@suse.de>,
+        iamjoonsoo.kim@lge.com, cl@linux.com, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] mm/compaction: avoid rescanning pageblocks in isolate_freepages
+References: <5363B854.3010401@suse.cz> <1399044475-3154-1-git-send-email-vbabka@suse.cz> <1399414778-xakujfb3@n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1399414778-xakujfb3@n-horiguchi@ah.jp.nec.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Adding back the original Cc-List]
-
-On 05/07/2014 10:33 AM, Hans de Goede wrote:
-> Hi Gregory,
+On 05/07/2014 12:19 AM, Naoya Horiguchi wrote:
+> On Fri, May 02, 2014 at 05:27:55PM +0200, Vlastimil Babka wrote:
+>> The compaction free scanner in isolate_freepages() currently remembers PFN of
+>> the highest pageblock where it successfully isolates, to be used as the
+>> starting pageblock for the next invocation. The rationale behind this is that
+>> page migration might return free pages to the allocator when migration fails
+>> and we don't want to skip them if the compaction continues.
+>>
+>> Since migration now returns free pages back to compaction code where they can
+>> be reused, this is no longer a concern. This patch changes isolate_freepages()
+>> so that the PFN for restarting is updated with each pageblock where isolation
+>> is attempted. Using stress-highalloc from mmtests, this resulted in 10%
+>> reduction of the pages scanned by the free scanner.
+>>
+>> Note that the somewhat similar functionality that records highest successful
+>> pageblock in zone->compact_cached_free_pfn, remains unchanged. This cache is
+>> used when the whole compaction is restarted, not for multiple invocations of
+>> the free scanner during single compaction.
+>>
+>> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+>> Cc: Minchan Kim <minchan@kernel.org>
+>> Cc: Mel Gorman <mgorman@suse.de>
+>> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+>> Cc: Christoph Lameter <cl@linux.com>
+>> Cc: Rik van Riel <riel@redhat.com>
+>> ---
+>>   mm/compaction.c | 18 ++++++------------
+>>   1 file changed, 6 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/mm/compaction.c b/mm/compaction.c
+>> index 873d7de..1967850 100644
+>> --- a/mm/compaction.c
+>> +++ b/mm/compaction.c
+>> @@ -686,12 +686,6 @@ static void isolate_freepages(struct zone *zone,
+>>   	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
+>>
+>>   	/*
+>> -	 * If no pages are isolated, the block_start_pfn < low_pfn check
+>> -	 * will kick in.
+>> -	 */
+>> -	next_free_pfn = 0;
+>> -
+>> -	/*
+>>   	 * Isolate free pages until enough are available to migrate the
+>>   	 * pages on cc->migratepages. We stop searching if the migrate
+>>   	 * and free page scanners meet or enough free pages are isolated.
+>> @@ -731,19 +725,19 @@ static void isolate_freepages(struct zone *zone,
+>>   			continue;
+>>
+>>   		/* Found a block suitable for isolating free pages from */
+>> +		next_free_pfn = block_start_pfn;
+>>   		isolated = isolate_freepages_block(cc, block_start_pfn,
+>>   					block_end_pfn, freelist, false);
+>>   		nr_freepages += isolated;
+>>
+>>   		/*
+>> -		 * Record the highest PFN we isolated pages from. When next
+>> -		 * looking for free pages, the search will restart here as
+>> -		 * page migration may have returned some pages to the allocator
+>> +		 * Set a flag that we successfully isolated in this pageblock.
+>> +		 * In the next loop iteration, zone->compact_cached_free_pfn
+>> +		 * will not be updated and thus it will effectively contain the
+>> +		 * highest pageblock we isolated pages from.
+>>   		 */
+>> -		if (isolated && next_free_pfn == 0) {
+>> +		if (isolated)
+>>   			cc->finished_update_free = true;
+>> -			next_free_pfn = block_start_pfn;
+>> -		}
 >
-> Gregory CLEMENT <gregory.clement <at> free-electrons.com> writes:
+> Why don't you completely remove next_free_pfn and update cc->free_pfn directly?
+
+Hi,
+
+well you could ask the same about the nr_freepages variable. For me 
+personally local variable (now with a comment for next_free_pfn) looks 
+more readable. The function currently received cleanup from several 
+people (including me), so I wouldn't want to change it again, unless 
+others also think it would be better. From compiler standpoint both 
+variants should be the same I guess.
+
+Vlastimil
+
+> Thanks,
+> Naoya Horiguchi
 >
->> This patch set adds the USB support for the Armada 38x Armada
->> 375. These SoCs use an xHCI but still need specific initialization,
->> mainly to setup the windows memory on the mbus. They also use the same
->> controller that the other mvebu SoC for EHCI.
->
-> <snip>
->
->> Gregory CLEMENT (20):
->>    usb: ehci-orion: Fix clock reference leaking
->>    usb: ehci-orion: Add the optional PHY support
->
-> If you're using a proper phy driver, do you really need a soc specific ehci
-> driver? I've spend a lot of time during the last release cycle to make
-> ehci-platform a lot more generic, including adding (optional) phy support to
-> it. It would be great if the new Armada SoCs could use ehci-platform instead
-> of extending ehci-orion to cover more models (ideally most ehci-foo drivers
-> would go away completely). I've no idea how feasible it is to use
-> ehci-platform in your case, but IMHO it should at least be considered.
-
-Hans,
-
-unfortunately we currently have no USB-PHY driver for the other mvebu
-SoCs. I have started some code grabbing for barebox bootloader and plan
-to add proper USB-PHYs for Linux later.
-
-There is one thing very specific to mvebu SoCs, which is the mbus:
-you need to setup upstream memory windows for the usb bus master.
- From my current understanding, that will require at least a minimal
-stub to remain for ehci-orion.
-
-I do think that most of the stuff in ehci-orion can (and should) be
-replaced with ehci-platform then. So, we definitely consider reusing
-the generic foo-platform drivers on all opportunities but IMHO we are
-not yet ready for it.
-
-Sebastian
 
