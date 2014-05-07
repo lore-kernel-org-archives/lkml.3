@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933163AbaEGOAH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 10:00:07 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45106 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932243AbaEGOAF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 10:00:05 -0400
-Date: Wed, 7 May 2014 14:59:38 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: David Miller <davem@davemloft.net>, andi@firstfloor.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
-Message-ID: <20140507145938.79110827@alan.etchedpixels.co.uk>
-In-Reply-To: <1399351148.8767.84.camel@empanada>
-References: <1399328773-6531-9-git-send-email-andi@firstfloor.org>
-	<20140505.231229.136734008603421707.davem@davemloft.net>
-	<20140506032114.GP2382@two.firstfloor.org>
-	<20140505.232327.578134514220748085.davem@davemloft.net>
-	<1399351148.8767.84.camel@empanada>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933243AbaEGOBB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 10:01:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21794 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932243AbaEGOBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 10:01:00 -0400
+Date: Wed, 7 May 2014 16:00:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Sasha Levin <sasha.levin@oracle.com>, Steven Rostedt <rostedt@goodmis.org>
+Cc: roland@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: ptrace: gpf in syscall_trace_enter
+Message-ID: <20140507140006.GA17419@redhat.com>
+References: <53698021.5020108@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53698021.5020108@oracle.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> But why go to all that trouble when there's a perfectly good networking
-> stack in the kernel?  Even if most of these options aren't things that
-> would be useful to most systems, being able to turn them off and save
-> 1/3 of the kernel text size for tiny systems like this does makes a big
-> difference...
+Hi,
 
-There are a vast number of low memory devices for various platforms and
-FPGA devices. I've also been looking at this for some other projects and
-there is a reason I went back and started playing with 2.11BSD. 
+On 05/06, Sasha Levin wrote:
+>
+> Hi all,
+>
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel I've stumbled on the following spew:
 
-> So why bothers 3.15+ Linux kernel? Why not use an old kernel e.g. 2.4.x?
-> 2.4.x kernel doesn't have so many new features you want to get rid of here.
+This is not ptrace ;)
 
-Simple answer. 2.11BSD is vastly superior on a small system to 2.4.x
-Linux. Also 2.4 is old and lightly maintained. Even forking 3.15 into
-bloatix and embedded Linux (ELKS2 ;-)) would make more sense.
+At first glance, tracepoint->funcs corruption. Add Steven.
 
-2/11BSD has the advantage that you don't need virtual memory and you
-don't have the cost of page tables which are mostly useless on a device
-that small these days because I/O speeds are so much higher. It has a
-bloatfree userspace, although it does need chunks of the openbsd security
-work backporting.
+> [ 3029.100936] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [ 3029.102198] Dumping ftrace buffer:
+> [ 3029.102928]    (ftrace buffer empty)
+> [ 3029.103644] Modules linked in:
+> [ 3029.104732] CPU: 16 PID: 4959 Comm: sleep Tainted: G    B         3.15.0-rc4-next-20140506-sasha-00021-gc164334-dirty #447
+> [ 3029.108662] task: ffff8805472f8000 ti: ffff880547e3e000 task.ti: ffff880547e3e000
+> [ 3029.109900] RIP: syscall_trace_enter (include/trace/events/syscalls.h:16 arch/x86/kernel/ptrace.c:1488)
+> [ 3029.110064] RSP: 0018:ffff880547e3ff28  EFLAGS: 00010286
+> [ 3029.110064] RAX: 0000000000000000 RBX: ffff880547e3ff58 RCX: 0000000000000001
+> [ 3029.110064] RDX: 000000000000000c RSI: ffff880547e3ff58 RDI: 6b6b6b6b6b6b6b6b
+> [ 3029.110064] RBP: ffff880547e3ff48 R08: 0000000000000000 R09: 0000000000000001
+> [ 3029.110064] R10: 0000000000000000 R11: 0000000000000000 R12: 000000000000000c
+> [ 3029.110064] R13: 0000000000000000 R14: ffff880039583d50 R15: 0000000000001000
+> [ 3029.110064] FS:  0000000000000000(0000) GS:ffff8803d6e00000(0000) knlGS:0000000000000000
+> [ 3029.110064] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 3029.110064] CR2: 00007fe08b205130 CR3: 000000061d271000 CR4: 00000000000006a0
+> [ 3029.110064] DR0: 00000000006df000 DR1: 0000000000000000 DR2: 0000000000000000
+> [ 3029.110064] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+> [ 3029.110064] Stack:
+> [ 3029.110064]  0000000000400040 0000000000000009 00007fffe95ab4b9 0000000000000000
+> [ 3029.110064]  00007fe08afe64e0 ffffffffaa585625 0000000000001000 0000000000000000
+> [ 3029.110064]  00007fffe95ab4b9 0000000000000009 00007fe08afe64e0 0000000000400040
+> [ 3029.110064] Call Trace:
+> [ 3029.110064] tracesys (arch/x86/kernel/entry_64.S:736)
+> [ 3029.110064] Code: c6 05 e0 9f f0 05 01 e8 3d 30 14 00 4d 85 f6 75 10 65 ff 0c 25 a0 da 00 00 0f 84 ca 00 00 00 eb 19 49 8b 7e 08 4c 89 e2 48 89 de <41> ff 16 49 83 c6 10 49 83 3e 00 75 e9 eb d7 4c 8b 63 78 0f 1f
+> [ 3029.110064] RIP syscall_trace_enter (include/trace/events/syscalls.h:16 arch/x86/kernel/ptrace.c:1488)
+> [ 3029.110064]  RSP <ffff880547e3ff28>
+> 
+> 
+> Thanks,
+> Sasha
 
-Forking a current Linux would give you all the modern stuff wanted like
-USB, SPI, eMMC etc but comes with all the debloating work and some
-annoying assumptions about memory. Do the fork off GregKH's next long
-term kernel and it wouldn't be that horrific to maintain until there is a
-clear picture about uses and whether it justifies merging ?
-
-> Another poster commented that 16MB of DRAM would be cheaper than
-> the 2MB of ram you have on these boards, probably one that fits
-> your size profile is available as well.
-
-16MB of DRAM means adding a chip to your system. You've just exceeded the
-space, power and cost budget on the very low end. In many cases like FPGA
-systems you can't even add DRAM without major hoop jumping.
-
-On the Linux side there's also a ton of other stuff with vm handling that
-could be done far better for a small x86 device if the kernel was split
-(for now anyway). If it gets a lot of users then DaveM's arguments about
-unjustified maintenance hassle go away and it an then get re-merged.
-
-> 2MB is just a rediculous restriction.
-
-Linux used to run fine in 2MB ;-)
-
-> And last time I checked Linux wasn't a special purpose operating
-> system, but lucky for you I hear there are lots of those around.
-
-Server, desktop, tablet and even phone main OS devices are "special
-purpose" in the big picture of processor use. Even today 2MB is "big
-computer" to an awful lot of people!
-
-Alan
