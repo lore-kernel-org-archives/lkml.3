@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137AbaEGDzR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 23:55:17 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56074 "EHLO
+	id S1754140AbaEGD50 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 23:57:26 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56099 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752299AbaEGDzM (ORCPT
+	with ESMTP id S1751129AbaEGD5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 23:55:12 -0400
+	Tue, 6 May 2014 23:57:25 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Emilio Lopez <emilio@elopez.com.ar>,
         Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
@@ -16,10 +16,11 @@ Cc: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
         kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
         shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
         linux-sunxi@googlegroups.com,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 2/7] ARM: sun6i: Add the USB clocks to the DTSI.
-Date: Tue,  6 May 2014 22:50:18 -0500
-Message-Id: <1399434623-20383-3-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 4/7] usb: ehci-platform: add optional reset controller retrieval
+Date: Tue,  6 May 2014 22:50:20 -0500
+Message-Id: <1399434623-20383-5-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399434623-20383-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1399434623-20383-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -27,36 +28,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The USB clocks of the A31 seems to be parented to the 24MHz oscillator, and
-handle the clocks for the USB phys and OHCI devices.
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
+On the Allwinner's A31 SoC the reset line connected to the EHCI IP has to
+be deasserted for the EHCI block to be usable.
+
+Add support for an optional reset controller that will be deasserted on
+power off and asserted on power on.
+
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/boot/dts/sun6i-a31.dtsi | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ Documentation/devicetree/bindings/usb/usb-ehci.txt |  1 +
+ drivers/usb/host/ehci-platform.c                   | 25 +++++++++++++++++++++-
+ 2 files changed, 25 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
-index eec1afa257a5..13aa56ed5858 100644
---- a/arch/arm/boot/dts/sun6i-a31.dtsi
-+++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-@@ -269,6 +269,17 @@
- 			clocks = <&osc24M>, <&pll6>;
- 			clock-output-names = "spi3";
- 		};
-+
-+		usb_clk: clk@01c200cc {
-+			#clock-cells = <1>;
-+		        #reset-cells = <1>;
-+			compatible = "allwinner,sun6i-a31-usb-clk";
-+			reg = <0x01c200cc 0x4>;
-+			clocks = <&osc24M>;
-+			clock-output-names = "usb_phy0", "usb_phy1", "usb_phy2",
-+					     "usb_ohci0", "usb_ohci1",
-+					     "usb_ohci2";
-+		};
- 	};
+diff --git a/Documentation/devicetree/bindings/usb/usb-ehci.txt b/Documentation/devicetree/bindings/usb/usb-ehci.txt
+index ff151ec084c4..43c1a4e06767 100644
+--- a/Documentation/devicetree/bindings/usb/usb-ehci.txt
++++ b/Documentation/devicetree/bindings/usb/usb-ehci.txt
+@@ -15,6 +15,7 @@ Optional properties:
+  - clocks : a list of phandle + clock specifier pairs
+  - phys : phandle + phy specifier pair
+  - phy-names : "usb"
++ - resets : phandle + reset specifier pair
  
- 	soc@01c00000 {
+ Example (Sequoia 440EPx):
+     ehci@e0000300 {
+diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-platform.c
+index c7dd93aad20c..4ee67728e443 100644
+--- a/drivers/usb/host/ehci-platform.c
++++ b/drivers/usb/host/ehci-platform.c
+@@ -29,6 +29,7 @@
+ #include <linux/of.h>
+ #include <linux/phy/phy.h>
+ #include <linux/platform_device.h>
++#include <linux/reset.h>
+ #include <linux/usb.h>
+ #include <linux/usb/hcd.h>
+ #include <linux/usb/ehci_pdriver.h>
+@@ -41,6 +42,7 @@
+ 
+ struct ehci_platform_priv {
+ 	struct clk *clks[EHCI_MAX_CLKS];
++	struct reset_control *rst;
+ 	struct phy *phy;
+ };
+ 
+@@ -84,10 +86,16 @@ static int ehci_platform_power_on(struct platform_device *dev)
+ 			goto err_disable_clks;
+ 	}
+ 
++	if (priv->rst) {
++		ret = reset_control_deassert(priv->rst);
++		if (ret)
++			goto err_disable_clks;
++	}
++
+ 	if (priv->phy) {
+ 		ret = phy_init(priv->phy);
+ 		if (ret)
+-			goto err_disable_clks;
++			goto err_assert_rst;
+ 
+ 		ret = phy_power_on(priv->phy);
+ 		if (ret)
+@@ -98,6 +106,9 @@ static int ehci_platform_power_on(struct platform_device *dev)
+ 
+ err_exit_phy:
+ 	phy_exit(priv->phy);
++err_assert_rst:
++	if (priv->rst)
++		reset_control_assert(priv->rst);
+ err_disable_clks:
+ 	while (--clk >= 0)
+ 		clk_disable_unprepare(priv->clks[clk]);
+@@ -119,6 +130,9 @@ static void ehci_platform_power_off(struct platform_device *dev)
+ 	for (clk = EHCI_MAX_CLKS - 1; clk >= 0; clk--)
+ 		if (priv->clks[clk])
+ 			clk_disable_unprepare(priv->clks[clk]);
++
++	if (priv->rst)
++		reset_control_assert(priv->rst);
+ }
+ 
+ static struct hc_driver __read_mostly ehci_platform_hc_driver;
+@@ -206,6 +220,15 @@ static int ehci_platform_probe(struct platform_device *dev)
+ 				break;
+ 			}
+ 		}
++
++		priv->rst = devm_reset_control_get_optional(&dev->dev,
++							    NULL);
++		if (IS_ERR(priv->rst)) {
++			err = PTR_ERR(priv->rst);
++			if (err ==  -EPROBE_DEFER)
++				goto err_put_clks;
++			priv->rst = NULL;
++		}
+ 	}
+ 
+ 	if (pdata->big_endian_desc)
 -- 
 1.9.1
 
