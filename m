@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186AbaEGNNd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:13:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45362 "EHLO
+	id S934054AbaEGNe5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:34:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45373 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755847AbaEGNN3 (ORCPT
+	with ESMTP id S1756158AbaEGNNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:13:29 -0400
+	Wed, 7 May 2014 09:13:32 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Roger Quadros <rogerq@ti.com>, Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 07/70] ext4: use i_size_read in ext4_unaligned_aio()
-Date: Wed,  7 May 2014 14:12:10 +0100
-Message-Id: <1399468393-10140-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 09/70] usb: gadget: zero: Fix SuperSpeed enumeration for alternate setting 1
+Date: Wed,  7 May 2014 14:12:12 +0100
+Message-Id: <1399468393-10140-10-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -27,31 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Roger Quadros <rogerq@ti.com>
 
-commit 6e6358fc3c3c862bfe9a5bc029d3f8ce43dc9765 upstream.
+commit 9c1b70361e0b38e4acb8e62b54da66538cb77ff2 upstream.
 
-We haven't taken i_mutex yet, so we need to use i_size_read().
+It was impossible to enumerate on a SuperSpeed (XHCI) host
+with alternate setting = 1 due to the wrongly set 'bMaxBurst'
+field in the SuperSpeed Endpoint Companion descriptor.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Testcase:
+<host> modprobe -r usbtest; modprobe usbtest alt=1
+<device> modprobe g_zero
+plug device to SuperSpeed port on the host.
+
+Without this patch the host always complains like so
+"usb 12-2: Not enough bandwidth for new device state.
+ usb 12-2: Not enough bandwidth for altsetting 1"
+
+Bug was introduced by commit cf9a08ae in v3.9
+
+Fixes: cf9a08ae5aec (usb: gadget: convert source sink and loopback to
+new function interface)
+
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/file.c | 2 +-
+ drivers/usb/gadget/zero.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index 319c9d2..eb48bea 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -82,7 +82,7 @@ ext4_unaligned_aio(struct inode *inode, const struct iovec *iov,
- 	size_t count = iov_length(iov, nr_segs);
- 	loff_t final_size = pos + count;
+diff --git a/drivers/usb/gadget/zero.c b/drivers/usb/gadget/zero.c
+index 0deb9d6..d31814c 100644
+--- a/drivers/usb/gadget/zero.c
++++ b/drivers/usb/gadget/zero.c
+@@ -280,7 +280,7 @@ static int __init zero_bind(struct usb_composite_dev *cdev)
+ 	ss_opts->isoc_interval = gzero_options.isoc_interval;
+ 	ss_opts->isoc_maxpacket = gzero_options.isoc_maxpacket;
+ 	ss_opts->isoc_mult = gzero_options.isoc_mult;
+-	ss_opts->isoc_maxburst = gzero_options.isoc_maxpacket;
++	ss_opts->isoc_maxburst = gzero_options.isoc_maxburst;
+ 	ss_opts->bulk_buflen = gzero_options.bulk_buflen;
  
--	if (pos >= inode->i_size)
-+	if (pos >= i_size_read(inode))
- 		return 0;
- 
- 	if ((pos & blockmask) || (final_size & blockmask))
+ 	func_ss = usb_get_function(func_inst_ss);
 -- 
 1.9.1
 
