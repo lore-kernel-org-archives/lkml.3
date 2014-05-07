@@ -1,127 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613AbaEGLxw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 07:53:52 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39720 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755574AbaEGLxv (ORCPT
+	id S932698AbaEGL4E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 07:56:04 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:56347 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755364AbaEGL4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 07:53:51 -0400
-Message-ID: <1399463549.4536.10.camel@weser.hi.pengutronix.de>
-Subject: Re: [RFC PATCH 1/5] watchdog: Add API to trigger reboots
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-watchdog@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-arm-kernel@lists.infradead.org
-Date: Wed, 07 May 2014 13:52:29 +0200
-In-Reply-To: <20140503042925.GB5882@roeck-us.net>
-References: <1398958893-30049-1-git-send-email-linux@roeck-us.net>
-	 <1398958893-30049-2-git-send-email-linux@roeck-us.net>
-	 <20140503012243.GG4090@lukather> <20140503042925.GB5882@roeck-us.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
+	Wed, 7 May 2014 07:56:01 -0400
+Subject: [RFT PATCH -next ] [BUGFIX] kprobes: Fix "Failed to find blacklist"
+ error on ia64 and ppc64
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Wed, 07 May 2014 20:55:51 +0900
+Message-ID: <20140507115551.22259.70581.stgit@ltc230.yrl.intra.hitachi.co.jp>
+In-Reply-To: <536A16A6.5040709@hitachi.com>
+References: <536A16A6.5040709@hitachi.com>
+User-Agent: StGit/0.17-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+On ia64 and ppc64, the function pointer does not point the
+entry address of the function, but the address of function
+discriptor (which contains the entry address and misc
+data.) Since the kprobes passes the function pointer stored
+by NOKPROBE_SYMBOL() to kallsyms_lookup_size_offset() for
+initalizing its blacklist, it fails and reports many errors
+as below.
 
-Am Freitag, den 02.05.2014, 21:29 -0700 schrieb Guenter Roeck:
-> On Fri, May 02, 2014 at 06:22:43PM -0700, Maxime Ripard wrote:
-> > Hi Guenter,
-> > 
-> > On Thu, May 01, 2014 at 08:41:29AM -0700, Guenter Roeck wrote:
-> > > Some hardware implements reboot through its watchdog hardware,
-> > > for example by triggering a watchdog timeout. Platform specific
-> > > code starts to spread into watchdog drivers, typically by setting
-> > > pointers to a callback functions which is then called from the
-> > > platform reset handler.
-> > > 
-> > > To simplify code and provide a unified API to trigger reboots by
-> > > watchdog drivers, provide a single API to trigger such reboots
-> > > through the watchdog subsystem.
-> > > 
-> > > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > > ---
-> > >  drivers/watchdog/watchdog_core.c |   17 +++++++++++++++++
-> > >  include/linux/watchdog.h         |   11 +++++++++++
-> > >  2 files changed, 28 insertions(+)
-> > > 
-> > > diff --git a/drivers/watchdog/watchdog_core.c b/drivers/watchdog/watchdog_core.c
-> > > index cec9b55..4ec6e2f 100644
-> > > --- a/drivers/watchdog/watchdog_core.c
-> > > +++ b/drivers/watchdog/watchdog_core.c
-> > > @@ -43,6 +43,17 @@
-> > >  static DEFINE_IDA(watchdog_ida);
-> > >  static struct class *watchdog_class;
-> > >  
-> > > +static struct watchdog_device *wdd_reboot_dev;
-> > > +
-> > > +void watchdog_do_reboot(enum reboot_mode mode, const char *cmd)
-> > > +{
-> > > +	if (wdd_reboot_dev) {
-> > > +		if (wdd_reboot_dev->ops->reboot)
-> > > +			wdd_reboot_dev->ops->reboot(wdd_reboot_dev, mode, cmd);
-> > > +	}
-> > > +}
-> > > +EXPORT_SYMBOL(watchdog_do_reboot);
-> > > +
-> > >  static void watchdog_check_min_max_timeout(struct watchdog_device *wdd)
-> > >  {
-> > >  	/*
-> > > @@ -162,6 +173,9 @@ int watchdog_register_device(struct watchdog_device *wdd)
-> > >  		return ret;
-> > >  	}
-> > >  
-> > > +	if (wdd->ops->reboot)
-> > > +		wdd_reboot_dev = wdd;
-> > > +
-> > 
-> > Overall, it looks really great, but I guess we can make it a
-> > list. Otherwise, we might end up in a situation where we could not
-> > reboot anymore, like this one for example:
-> >   - a first watchdog is probed, registers a reboot function
-> >   - a second watchdog is probed, registers a reboot function that
-> >     overwrites the first one.
-> >   - then, the second watchdog disappears for some reason, and the
-> >     reboot is set to NULL
-> > 
-> I thought about that, but how likely (or unlikely) is that to ever happen ?
-> So I figured it is not worth the effort, and would just add complexity without
-> real gain. We could always add the list later if we ever encounter a situation
-> where two watchdogs in the same system provide a reboot callback.
-> 
+  Failed to find blacklist 0001013168300000
+  Failed to find blacklist 0001013000f0a000
+  Failed to find blacklist 000101315f70a000
+  Failed to find blacklist 000101324c80a000
+  Failed to find blacklist 0001013063f0a000
+  Failed to find blacklist 000101327800a000
+  Failed to find blacklist 0001013277f0a000
+  Failed to find blacklist 000101315a70a000
+  Failed to find blacklist 0001013277e0a000
+  Failed to find blacklist 000101305a20a000
+  Failed to find blacklist 0001013277d0a000
+  Failed to find blacklist 00010130bdc0a000
+  Failed to find blacklist 00010130dc20a000
+  Failed to find blacklist 000101309a00a000
+  Failed to find blacklist 0001013277c0a000
+  Failed to find blacklist 0001013277b0a000
+  Failed to find blacklist 0001013277a0a000
+  Failed to find blacklist 000101327790a000
+  Failed to find blacklist 000101303140a000
+  Failed to find blacklist 0001013a3280a000
 
-While this is not directly related to the issue you are fixing with this
-series, I would like to have it considered when talking about a watchdog
-system reboot API.
+To fix this bug, this introduces function_entry() macro to
+retrieve the entry address from the given function pointer,
+and uses it in NOKPROBE_SYMBOL().
 
-On i.MX we have the same situation where we have to reboot through the
-SoC watchdog. This works, but may leave the external components of the
-system (those not integrated in the SoC) in an undefined state. So if we
-have a PMIC with integrated watchdog we would rather like to this one to
-reboot the system, as it the reset is then much more closer to a
-power-on-reset.
 
-This means we could have multiple watchdogs in the system, where we
-really want a specific one (maybe designated through a DT property) to
-do the reset. This isn't compatible with the "last watchdog that
-registers a handler wins the system reset" logic in your patch.
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Reported-by: Tony Luck <tony.luck@gmail.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Kevin Hao <haokexin@gmail.com>
+Cc: linux-ia64@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
+---
+ arch/ia64/include/asm/types.h    |    2 ++
+ arch/powerpc/include/asm/types.h |   11 +++++++++++
+ include/linux/kprobes.h          |    3 ++-
+ include/linux/types.h            |    4 ++++
+ 4 files changed, 19 insertions(+), 1 deletion(-)
 
-Regards,
-Lucas
--- 
-Pengutronix e.K.             | Lucas Stach                 |
-Industrial Linux Solutions   | http://www.pengutronix.de/  |
+diff --git a/arch/ia64/include/asm/types.h b/arch/ia64/include/asm/types.h
+index 4c351b1..6ab7b6c 100644
+--- a/arch/ia64/include/asm/types.h
++++ b/arch/ia64/include/asm/types.h
+@@ -27,5 +27,7 @@ struct fnptr {
+ 	unsigned long gp;
+ };
+ 
++#define constant_function_entry(fn) (((struct fnptr *)(fn))->ip)
++
+ #endif /* !__ASSEMBLY__ */
+ #endif /* _ASM_IA64_TYPES_H */
+diff --git a/arch/powerpc/include/asm/types.h b/arch/powerpc/include/asm/types.h
+index bfb6ded..fd297b8 100644
+--- a/arch/powerpc/include/asm/types.h
++++ b/arch/powerpc/include/asm/types.h
+@@ -25,6 +25,17 @@ typedef struct {
+ 	unsigned long env;
+ } func_descr_t;
+ 
++#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
++/*
++ * On PPC64 ABIv1 the function pointer actually points to the
++ * function's descriptor. The first entry in the descriptor is the
++ * address of the function text.
++ */
++#define constant_function_entry(fn)	(((func_descr_t *)(fn))->entry)
++#else
++#define constant_function_entry(fn)	((unsigned long)(fn))
++#endif
++
+ #endif /* __ASSEMBLY__ */
+ 
+ #endif /* _ASM_POWERPC_TYPES_H */
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index e059507..637eafe 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -40,6 +40,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/mutex.h>
+ #include <linux/ftrace.h>
++#include <linux/types.h>
+ 
+ #ifdef CONFIG_KPROBES
+ #include <asm/kprobes.h>
+@@ -485,7 +486,7 @@ static inline int enable_jprobe(struct jprobe *jp)
+ #define __NOKPROBE_SYMBOL(fname)			\
+ static unsigned long __used				\
+ 	__attribute__((section("_kprobe_blacklist")))	\
+-	_kbl_addr_##fname = (unsigned long)fname;
++	_kbl_addr_##fname = constant_function_entry(fname);
+ #define NOKPROBE_SYMBOL(fname)	__NOKPROBE_SYMBOL(fname)
+ #else
+ #define NOKPROBE_SYMBOL(fname)
+diff --git a/include/linux/types.h b/include/linux/types.h
+index 4d118ba..78e2d7d 100644
+--- a/include/linux/types.h
++++ b/include/linux/types.h
+@@ -212,5 +212,9 @@ struct callback_head {
+ };
+ #define rcu_head callback_head
+ 
++#ifndef constant_function_entry
++#define constant_function_entry(fn)	((unsigned long)(fn))
++#endif
++
+ #endif /*  __ASSEMBLY__ */
+ #endif /* _LINUX_TYPES_H */
+
 
