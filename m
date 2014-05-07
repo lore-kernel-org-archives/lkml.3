@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755684AbaEGIjh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 04:39:37 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:52585 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754819AbaEGIje (ORCPT
+	id S1755570AbaEGIle (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 04:41:34 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:42516 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753889AbaEGIlc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 04:39:34 -0400
+	Wed, 7 May 2014 04:41:32 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'josh@joshtriplett.org'" <josh@joshtriplett.org>,
+        David Miller <davem@davemloft.net>
+CC: "andi@firstfloor.org" <andi@firstfloor.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tom.zanussi@linux.intel.com" <tom.zanussi@linux.intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: RE: [PATCH 08/24] net, diet: Make TCP metrics optional
+Thread-Topic: [PATCH 08/24] net, diet: Make TCP metrics optional
+Thread-Index: AQHPaUm7pnbijwvGKES/wM+DbrX4rps0y/dw
+Date: Wed, 7 May 2014 08:39:09 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F70DE29@AcuExch.aculab.com>
+References: <20140506032114.GP2382@two.firstfloor.org>
+ <20140505.232327.578134514220748085.davem@davemloft.net>
+ <20140506155703.GA20391@cloud>
+ <20140506.115941.428706504757835279.davem@davemloft.net>
+ <20140506164108.GA20536@cloud>
+In-Reply-To: <20140506164108.GA20536@cloud>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140507081850.GB6362@ulmo>
-References: <1393480414-19473-1-git-send-email-acourbot@nvidia.com>
- <1393480414-19473-3-git-send-email-acourbot@nvidia.com> <20140507081850.GB6362@ulmo>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Wed, 7 May 2014 17:39:13 +0900
-Message-ID: <CAAVeFuKWoom82aMmPipkeqeAoNfz35bNTOs3deoYeNXZ0jq0cQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] pwm-backlight: switch to gpiod interface
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>, Jingoo Han <jg1.han@samsung.com>,
-        Bryan Wu <cooloney@gmail.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 7, 2014 at 5:18 PM, Thierry Reding <thierry.reding@gmail.com> wrote:
-> On Thu, Feb 27, 2014 at 02:53:34PM +0900, Alexandre Courbot wrote:
->> Switch to the new gpiod interface, which allows to handle GPIO
->> properties such as active low transparently and removes a whole bunch of
->> code.
->>
->> There are still a couple of users of this driver that rely on passing
->> the enable GPIO number through platform data, so a fallback mechanism
->> using a GPIO number is still available to avoid breaking them. It will
->> be removed once current users have switched to the GPIO lookup tables
->> provided by the gpiod interface.
->>
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> ---
->>  drivers/video/backlight/pwm_bl.c | 72 +++++++++++++++++-----------------------
->>  include/linux/pwm_backlight.h    |  5 +--
->>  2 files changed, 32 insertions(+), 45 deletions(-)
->
-> I've applied this with two tiny changes, see below. Please shout if you
-> think that's a bad idea.
+From: josh@joshtriplett.org
+...
+> Every KB of RAM costs real money and SoC die area (for eDRAM/eSRAM).
+> Look at how much cache low-end processors have, and imagine running
+> entirely out of *that*.  Let's not surrender that entire class of
+> devices to VxWorks, FreeRTOS, and other painfully non-Linux systems,
+> when we already know it's possible to run Linux on them successfully.
 
-I'm fine with both changes. Thanks for picking these two guys!
+Have you considered running (say) NetBSD instead of Linux?
+You'll get more support there for running on 'small memory' systems.
+You can also make your own changes with having issues with the GPL.
 
-Alex.
+	David
 
->
->> diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-> [...]
->> @@ -256,8 +238,6 @@ static int pwm_backlight_probe(struct platform_device *pdev)
-> [...]
->> +     pb->enable_gpio = devm_gpiod_get(&pdev->dev, "enable");
->> +     if (IS_ERR(pb->enable_gpio)) {
->> +             ret = PTR_ERR(pb->enable_gpio);
->> +             if (ret == -ENOENT) {
->> +                     pb->enable_gpio = NULL;
->> +                     ret = 0;
->> +             } else {
->> +                     goto err_alloc;
->> +             }
->
-> I dropped the ret = 0 here because all error paths set it explicitly and
-> the non-error path never uses it. Now all branches have a single
-> statement and therefore the braces can be dropped.
->
->> +     /*
->> +      * Compatibility fallback for drivers still using the integer GPIO
->> +      * platform data. Must go away soon.
->> +      */
->> +     if (pb->enable_gpio == NULL && gpio_is_valid(data->enable_gpio)) {
->
-> Changed the first condition to !pb->enable_gpio for consistency.
->
-> Thierry
+
+
