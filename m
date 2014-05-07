@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752353AbaEGV0R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 17:26:17 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:42671 "EHLO
+	id S1752429AbaEGV1N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 17:27:13 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:34986 "EHLO
 	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565AbaEGV0P (ORCPT
+	with ESMTP id S1750966AbaEGV1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 17:26:15 -0400
-Date: Wed, 7 May 2014 14:26:09 -0700
+	Wed, 7 May 2014 17:27:12 -0400
+Date: Wed, 7 May 2014 14:27:08 -0700
 From: josh@joshtriplett.org
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
@@ -18,7 +18,7 @@ Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
         oleg@redhat.com, sbw@mit.edu
 Subject: Re: [PATCH tip/core/rcu 11/45] torture: Rename
  RCU_QEMU_INTERACTIVE to TORTURE_QEMU_INTERACTIVE
-Message-ID: <20140507212609.GF27924@cloud>
+Message-ID: <20140507212708.GG27924@cloud>
 References: <20140429002455.GA15461@linux.vnet.ibm.com>
  <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
  <1398731133-18925-11-git-send-email-paulmck@linux.vnet.ibm.com>
@@ -32,24 +32,17 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, Apr 28, 2014 at 05:24:59PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> This commit makes the torture scripts a bit more RCU-independent.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> -		if test -n "$RCU_QEMU_INTERACTIVE" -a -n "$RCU_QEMU_MAC"
+> +		if test -n "$TORTURE_QEMU_INTERACTIVE" -a -n "$RCU_QEMU_MAC"
+>  		then
+>  			echo -device spapr-vlan,netdev=net0,mac=$RCU_QEMU_MAC
+>  			echo -netdev bridge,br=br0,id=net0
+> -		elif test -n "$RCU_QEMU_INTERACTIVE"
+> +		elif test -n "$TORTURE_QEMU_INTERACTIVE"
+>  		then
+>  			echo -net nic -net user
 
-Bug below; with that fixed,
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Not related to this patch, but: qemu defaults to -net nic -net user, so
+you don't need to specify it.
 
-> --- a/tools/testing/selftests/rcutorture/bin/kvm.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
-[...]
-> @@ -378,7 +378,8 @@ then
->  	echo TORTURE_INITRD="$TORTURE_INITRD; export TORTURE_INITRD"
->  	echo TORTURE_KMAKE_ARG="$TORTURE_KMAKE_ARG; export TORTURE_KMAKE_ARG"
->  	echo RCU_QEMU_CMD="$RCU_QEMU_CMD; export RCU_QEMU_CMD"
-> -	echo RCU_QEMU_INTERACTIVE="$RCU_QEMU_INTERACTIVE; export RCU_QEMU_INTERACTIVE"
-> +	echo TORTURE_QEMU_INTERACTIVE="$TORTURE_QEMU_INTERACTIVE;
-> +		export TORTURE_QEMU_INTERACTIVE"
-
-Don't break this line in the middle of your quoted string.
+- Josh Triplett
