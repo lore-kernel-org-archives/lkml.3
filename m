@@ -1,121 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934211AbaEGNim (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:38:42 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:35739 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933123AbaEGNij (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:38:39 -0400
+	id S934225AbaEGNi7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:38:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46115 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932959AbaEGNi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 09:38:57 -0400
+Message-ID: <536A3747.5040506@redhat.com>
+Date: Wed, 07 May 2014 15:38:15 +0200
+From: Denys Vlasenko <dvlasenk@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140507131257.GB16702@htj.dyndns.org>
-References: <1398571754-12443-1-git-send-email-laijs@cn.fujitsu.com>
-	<1398571754-12443-5-git-send-email-laijs@cn.fujitsu.com>
-	<20140505143613.GD11231@htj.dyndns.org>
-	<5369DC5C.20001@cn.fujitsu.com>
-	<20140507131257.GB16702@htj.dyndns.org>
-Date: Wed, 7 May 2014 21:38:39 +0800
-X-Google-Sender-Auth: Y2Wxsf7PMfJI8dwgWpv8M-07Fhs
-Message-ID: <CACvQF50kdodjDGnaxgQC2sW82rvkFVLtWQDOn90cohNkzG-oZw@mail.gmail.com>
-Subject: Re: [PATCH 04/10] workqueue: destroy worker directly in the idle
- timeout handler
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: linux-kernel@vger.kernel.org,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 4/4] nohz: Fix iowait overcounting if iowait task migrates
+References: <1398365158-12568-1-git-send-email-dvlasenk@redhat.com> <1398365158-12568-4-git-send-email-dvlasenk@redhat.com> <20140429144727.GB6129@localhost.localdomain> <5367D30E.9020901@redhat.com>
+In-Reply-To: <5367D30E.9020901@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 7, 2014 at 9:12 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Lai.
->
-> On Wed, May 07, 2014 at 03:10:20PM +0800, Lai Jiangshan wrote:
->> 1) complete() can't be called inside attach_mutex due to the worker
->>    shouldn't access to the pool after complete().
->
-> Sure, complete it after releasing the lock.  Shutdown can't complete
-> before the completion gets completed, right?
->
->> 2) put_unbound_pool() may called from get_unbound_pool(), we need to add
->>    an additional check and avoid the wait_for_completion() if so.
-
-Do you accept if I remove put_unbound_pool() from get_unbound_pool()
-and use several freeing code instead?
-
+On 05/05/2014 08:06 PM, Denys Vlasenko wrote:
+> On 04/29/2014 04:47 PM, Frederic Weisbecker wrote:
+>> On Thu, Apr 24, 2014 at 08:45:58PM +0200, Denys Vlasenko wrote:
+>>> +void tick_nohz_iowait_to_idle(int cpu)
+>>> +{
+>>> +	struct tick_sched *ts = tick_get_tick_sched(cpu);
+>>> +	ktime_t now = ktime_get();
+>>> +
+>>> +	write_seqcount_begin(&ts->idle_sleeptime_seq);
+>>> +	ts->iowait_exittime = now;
+>>> +	write_seqcount_end(&ts->idle_sleeptime_seq);
 >>
->> +static void worker_detach_from_pool(struct worker *worker, struct worker_pool *pool)
->> +{
->> +     bool is_last;
->> +
->> +     mutex_lock(&pool->bind_mutex);
->> +     list_del(&worker->bind_entry);
->> +     is_last = list_empty(&worker->bind_entry);
->> +     mutex_unlock(&pool->bind_mutex);
->> +
->> +     /* need some comments here */
->> +     if (is_last)
->> +             complete(&pool->workers_detached);
->> +}
+>> So now you have two concurrent updaters using the seqcount, which is
+>> very dangerous as the counters aren't updated atomically.
 >>
+>> seqcount is only suitable when there is a single sequential updater.
+>> Once you deal with concurrent updaters you need seqlock.
 >>
->> @@ -3588,6 +3587,7 @@ static void put_unbound_pool(struct worker_pool *pool)
->>       mutex_lock(&pool->manager_mutex);
->>       spin_lock_irq(&pool->lock);
->>
->> +     need_to_wait = pool->nr_workers != 0; /* it may be called from get_unbound_pool() */
->>       while ((worker = first_worker(pool)))
->>               destroy_worker(worker);
->>       WARN_ON(pool->nr_workers || pool->nr_idle);
->> @@ -3596,6 +3596,8 @@ static void put_unbound_pool(struct worker_pool *pool)
->>       mutex_unlock(&pool->manager_mutex);
->>       mutex_unlock(&pool->manager_arb);
->>
->> +     if (need_to_wait)
->> +             wait_for_completion(&pool->workers_detached);
->
-> Shouldn't it be able to wait whenever it's about to destroy non-empty
-> pool?
->
->         DECLARE_COMPLETION_ONSTACK(completion);
->
->         ...
->
->         while ((worker = first_worker(pool))) {
->                 destroy_worker(worker);
->                 pool->detach_completion = &completion;
->         }
->
->         ...
->         unlock;
->
->         if (pool->detach_completion)
->                 wait_for_completion();
+>> And once you add seqlock in the hot scheduler path, you're hitting
+>> a big scalability issue.
+> 
+> What I need here is merely an atomic store.
+> The complication is, of course, that, ktime_t is not atomic[64]_t.
+> 
+> How do you think I can do an atomic store?
 
-it is more complex than wait_queue.
-if put_unbound_pool() is removed out from get_unbound_pool(),
-a simple wait_for_completion() is enough.
+Ok, I think a have a version which uses atomic64_t
+and is not looking ugly. Sending new patchset now...
 
->         ...
->
-> And the worker side can simply do,
->
->         struct completion *completion;
->
->         if (I'm the last worker exiting)
->                 completion = pool->detach_completion;
->         unlock;
->
-
-if(completion)
->         complete(completion);
->
-> Thanks.
->
-> --
-> tejun
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
