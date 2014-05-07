@@ -1,43 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaEGVtD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 17:49:03 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55606 "EHLO arroyo.ext.ti.com"
+	id S1752816AbaEGVtw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 17:49:52 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:45646
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752300AbaEGVs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 17:48:58 -0400
-Message-ID: <536AAA31.6080905@ti.com>
-Date: Wed, 7 May 2014 16:48:33 -0500
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/26] ARM: OMAP: dmtimer: Add comments on OMAP1 clock
- framework
-References: <1398375849-6017-1-git-send-email-joelf@ti.com> <1398375849-6017-3-git-send-email-joelf@ti.com> <20140507152004.GC9502@atomide.com>
-In-Reply-To: <20140507152004.GC9502@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1752700AbaEGVtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 17:49:01 -0400
+x-originating-ip: 72.167.245.219
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: [PATCH net-next] Add support for netvsc build without CONFIG_SYSFS flag
+Date: Wed,  7 May 2014 15:45:04 -0700
+Message-Id: <1399502704-18495-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2014 10:20 AM, Tony Lindgren wrote:
-> * Joel Fernandes <joelf@ti.com> [140424 14:44]:
->> OMAP1 doesn't support clock framework, add a comment where needed
->> and correct a FIXME.
-> 
-> This is at least a wrong comment, the original comment seems right
-> to me.
+This change ensures the driver can be built successfully without the
+CONFIG_SYSFS flag.
+MS-TFS: 182270
 
-Can you elaborate a bit more please on the wrongness of the comment?
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/net/hyperv/hyperv_net.h   |    2 ++
+ drivers/net/hyperv/netvsc_drv.c   |   12 +++++++++++-
+ drivers/net/hyperv/rndis_filter.c |    4 ++--
+ 3 files changed, 15 insertions(+), 3 deletions(-)
 
-I can change the comment to say "common clock" instead of "clock" if
-that's the only problem here.
+diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
+index 4b7df5a..23b96bc 100644
+--- a/drivers/net/hyperv/hyperv_net.h
++++ b/drivers/net/hyperv/hyperv_net.h
+@@ -87,6 +87,8 @@ struct ndis_recv_scale_cap { /* NDIS_RECEIVE_SCALE_CAPABILITIES */
+ #define HASH_KEYLEN NDIS_RSS_HASH_SECRET_KEY_MAX_SIZE_REVISION_2
+ extern u8 netvsc_hash_key[];
+ 
++extern unsigned int netvsc_num_queue;
++
+ struct ndis_recv_scale_param { /* NDIS_RECEIVE_SCALE_PARAMETERS */
+ 	struct ndis_obj_header hdr;
+ 
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index 939e3af..07896f3 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -52,6 +52,8 @@ static int ring_size = 128;
+ module_param(ring_size, int, S_IRUGO);
+ MODULE_PARM_DESC(ring_size, "Ring buffer size (# of pages)");
+ 
++unsigned int netvsc_num_queue = 1;
++
+ static void do_set_multicast(struct work_struct *w)
+ {
+ 	struct net_device_context *ndevctx =
+@@ -639,9 +641,11 @@ int netvsc_recv_callback(struct hv_device *device_obj,
+ 		__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q),
+ 				       packet->vlan_tci);
+ 
++#ifdef CONFIG_SYSFS
+ 	skb_record_rx_queue(skb, packet->channel->
+ 			    offermsg.offer.sub_channel_index %
+ 			    net->real_num_rx_queues);
++#endif
+ 
+ 	net->stats.rx_packets++;
+ 	net->stats.rx_bytes += packet->total_data_buflen;
+@@ -788,7 +792,7 @@ static int netvsc_probe(struct hv_device *dev,
+ 	int ret;
+ 
+ 	net = alloc_etherdev_mq(sizeof(struct net_device_context),
+-				num_online_cpus());
++				netvsc_num_queue);
+ 	if (!net)
+ 		return -ENOMEM;
+ 
+@@ -824,8 +828,10 @@ static int netvsc_probe(struct hv_device *dev,
+ 	nvdev = hv_get_drvdata(dev);
+ 	netif_set_real_num_tx_queues(net, nvdev->num_chn);
+ 	netif_set_real_num_rx_queues(net, nvdev->num_chn);
++#ifdef CONFIG_SYSFS
+ 	dev_info(&dev->device, "real num tx,rx queues:%u, %u\n",
+ 		 net->real_num_tx_queues, net->real_num_rx_queues);
++#endif
+ 
+ 	ret = register_netdev(net);
+ 	if (ret != 0) {
+@@ -897,6 +903,10 @@ static void __exit netvsc_drv_exit(void)
+ 
+ static int __init netvsc_drv_init(void)
+ {
++#ifdef CONFIG_SYSFS
++	netvsc_num_queue = num_online_cpus();
++#endif
++
+ 	if (ring_size < RING_SIZE_MIN) {
+ 		ring_size = RING_SIZE_MIN;
+ 		pr_info("Increased ring_size to %d (min allowed)\n",
+diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
+index 99c527a..9db163c 100644
+--- a/drivers/net/hyperv/rndis_filter.c
++++ b/drivers/net/hyperv/rndis_filter.c
+@@ -1094,8 +1094,8 @@ int rndis_filter_device_add(struct hv_device *dev,
+ 	if (ret || rsscap.num_recv_que < 2)
+ 		goto out;
+ 
+-	net_device->num_chn = (num_online_cpus() < rsscap.num_recv_que) ?
+-			       num_online_cpus() : rsscap.num_recv_que;
++	net_device->num_chn = (netvsc_num_queue < rsscap.num_recv_que) ?
++			       netvsc_num_queue : rsscap.num_recv_que;
+ 	if (net_device->num_chn == 1)
+ 		goto out;
+ 
+-- 
+1.7.4.1
 
- thanks,
-
--Joel
