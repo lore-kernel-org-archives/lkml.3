@@ -1,115 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502AbaEGC0Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 22:26:16 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:41121 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140AbaEGC0O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 22:26:14 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH] perf tools: Use tid for finding thread
-Date: Wed,  7 May 2014 11:26:06 +0900
-Message-Id: <1399429566-15587-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.9.2
+	id S1752332AbaEGCaz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 22:30:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24726 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751255AbaEGCax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 22:30:53 -0400
+From: Bandan Das <bsd@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [RFC PATCH 1/4] KVM: emulate: speed up do_insn_fetch
+References: <1399400175-23754-1-git-send-email-pbonzini@redhat.com>
+	<1399400175-23754-2-git-send-email-pbonzini@redhat.com>
+Date: Tue, 06 May 2014 22:30:30 -0400
+In-Reply-To: <1399400175-23754-2-git-send-email-pbonzini@redhat.com> (Paolo
+	Bonzini's message of "Tue, 6 May 2014 20:16:12 +0200")
+Message-ID: <jpgk39yiam1.fsf@nelium.bos.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I believe that passing pid (instead of tid) as the 3rd arg of the
-machine__find*_thread() was to find a main thread so that it can
-search proper map group for symbols.  However with the map sharing
-patch applied, it now can do it in any thread.
+Ok! Now that you posted your changes, I am getting to understand this
+a little :)
+ 
+Paolo Bonzini <pbonzini@redhat.com> writes:
 
-It fixes a bug when each thread has different name, it only reports a
-main thread for samples in other threads.
+> Hoist the common case up from do_insn_fetch_byte to do_insn_fetch,
+> and prime the fetch_cache in x86_decode_insn.  This helps both the
+> compiler and the branch predictor.
+>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  arch/x86/kvm/emulate.c | 67 +++++++++++++++++++++++++++-----------------------
+>  1 file changed, 36 insertions(+), 31 deletions(-)
+>
+> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> index 42820f5fdd04..c7b625bf0b5d 100644
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -703,51 +703,51 @@ static int segmented_read_std(struct x86_emulate_ctxt *ctxt,
+>  }
+>  
+>  /*
+> - * Fetch the next byte of the instruction being emulated which is pointed to
+> - * by ctxt->_eip, then increment ctxt->_eip.
+> - *
+> - * Also prefetch the remaining bytes of the instruction without crossing page
+> + * Prefetch the remaining bytes of the instruction without crossing page
+>   * boundary if they are not in fetch_cache yet.
+>   */
+> -static int do_insn_fetch_byte(struct x86_emulate_ctxt *ctxt, u8 *dest)
+> +static int do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt)
+>  {
+>  	struct fetch_cache *fc = &ctxt->fetch;
+>  	int rc;
+>  	int size, cur_size;
+> -
+> -	if (ctxt->_eip == fc->end) {
+> -		unsigned long linear;
+> -		struct segmented_address addr = { .seg = VCPU_SREG_CS,
+> -						  .ea  = ctxt->_eip };
+> -		cur_size = fc->end - fc->start;
+> -		size = min(15UL - cur_size,
+> -			   PAGE_SIZE - offset_in_page(ctxt->_eip));
+> -		rc = __linearize(ctxt, addr, size, false, true, &linear);
+> -		if (unlikely(rc != X86EMUL_CONTINUE))
+> -			return rc;
+> -		rc = ctxt->ops->fetch(ctxt, linear, fc->data + cur_size,
+> -				      size, &ctxt->exception);
+> -		if (unlikely(rc != X86EMUL_CONTINUE))
+> -			return rc;
+> -		fc->end += size;
+> -	}
+> -	*dest = fc->data[ctxt->_eip - fc->start];
+> -	ctxt->_eip++;
+> +	unsigned long linear;
+> +
+> +	struct segmented_address addr = { .seg = VCPU_SREG_CS,
+> +					  .ea  = fc->end };
+> +	cur_size = fc->end - fc->start;
+> +	size = min(15UL - cur_size,
+> +		   PAGE_SIZE - offset_in_page(fc->end));
+> +	if (unlikely(size == 0))
+> +		return X86EMUL_UNHANDLEABLE;
+> +	rc = __linearize(ctxt, addr, size, false, true, &linear);
+> +	if (unlikely(rc != X86EMUL_CONTINUE))
+> +		return rc;
+> +	rc = ctxt->ops->fetch(ctxt, linear, fc->data + cur_size,
+> +			      size, &ctxt->exception);
+> +	if (unlikely(rc != X86EMUL_CONTINUE))
+> +		return rc;
+> +	fc->end += size;
+>  	return X86EMUL_CONTINUE;
+>  }
+>  
+>  static int do_insn_fetch(struct x86_emulate_ctxt *ctxt,
+> -			 void *dest, unsigned size)
+> +			 void *__dest, unsigned size)
+>  {
+>  	int rc;
+> +	struct fetch_cache *fc = &ctxt->fetch;
+> +	u8 *dest = __dest;
+> +	u8 *src = &fc->data[ctxt->_eip - fc->start];
+>  
+> -	/* x86 instructions are limited to 15 bytes. */
+> -	if (unlikely(ctxt->_eip + size - ctxt->eip > 15))
+> -		return X86EMUL_UNHANDLEABLE;
+>  	while (size--) {
+> -		rc = do_insn_fetch_byte(ctxt, dest++);
+> -		if (rc != X86EMUL_CONTINUE)
+> -			return rc;
+> +		if (unlikely(ctxt->_eip == fc->end)) {
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-inject.c     | 2 +-
- tools/perf/builtin-kmem.c       | 2 +-
- tools/perf/tests/code-reading.c | 2 +-
- tools/perf/util/build-id.c      | 2 +-
- tools/perf/util/event.c         | 2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+Is this really going to be unlikely ?
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 3a7387551369..6a3af0013d68 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -209,7 +209,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
- 
- 	cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 
--	thread = machine__findnew_thread(machine, sample->pid, sample->pid);
-+	thread = machine__findnew_thread(machine, sample->pid, sample->tid);
- 	if (thread == NULL) {
- 		pr_err("problem processing %d event, skipping it.\n",
- 		       event->header.type);
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index f91fa4376f4b..bef3376bfaf3 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -235,7 +235,7 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- 				struct machine *machine)
- {
- 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
--							sample->pid);
-+							sample->tid);
- 
- 	if (thread == NULL) {
- 		pr_debug("problem processing %d event, skipping it.\n",
-diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
-index adf3de3e38d6..67f2d6323558 100644
---- a/tools/perf/tests/code-reading.c
-+++ b/tools/perf/tests/code-reading.c
-@@ -256,7 +256,7 @@ static int process_sample_event(struct machine *machine,
- 		return -1;
- 	}
- 
--	thread = machine__findnew_thread(machine, sample.pid, sample.pid);
-+	thread = machine__findnew_thread(machine, sample.pid, sample.tid);
- 	if (!thread) {
- 		pr_debug("machine__findnew_thread failed\n");
- 		return -1;
-diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
-index 6baabe63182b..a904a4cfe7d3 100644
---- a/tools/perf/util/build-id.c
-+++ b/tools/perf/util/build-id.c
-@@ -25,7 +25,7 @@ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
- 	struct addr_location al;
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
--							sample->pid);
-+							sample->tid);
- 
- 	if (thread == NULL) {
- 		pr_err("problem processing %d event, skipping it.\n",
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index dbcaea1a8180..65795b835b39 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -788,7 +788,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
- {
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
--							sample->pid);
-+							sample->tid);
- 
- 	if (thread == NULL)
- 		return -1;
--- 
-1.9.2
-
+> +			rc = do_insn_fetch_bytes(ctxt);
+> +			if (rc != X86EMUL_CONTINUE)
+> +				return rc;
+> +		}
+> +		*dest++ = *src++;
+> +		ctxt->_eip++;
+> +		continue;
+>  	}
+>  	return X86EMUL_CONTINUE;
+>  }
+> @@ -4272,6 +4272,11 @@ int x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len)
+>  	ctxt->opcode_len = 1;
+>  	if (insn_len > 0)
+>  		memcpy(ctxt->fetch.data, insn, insn_len);
+> +	else {
+> +		rc = do_insn_fetch_bytes(ctxt);
+> +		if (rc != X86EMUL_CONTINUE)
+> +			return rc;
+> +	}
+>  
+>  	switch (mode) {
+>  	case X86EMUL_MODE_REAL:
