@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412AbaEGUjy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 16:39:54 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:53287 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750786AbaEGUjw (ORCPT
+	id S1751590AbaEGUlx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 16:41:53 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:35650 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750904AbaEGUlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 16:39:52 -0400
+	Wed, 7 May 2014 16:41:52 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AocXALaZalNXQBiQ/2dsb2JhbABagwaDPahrCgUBmgoCAoEdF3SCZhwjGIECJBOIRQHQNoVWiHyERgEDjxuKGwGSe4M2Ow
-Date: Wed, 7 May 2014 22:39:45 +0200
+X-IronPort-Anti-Spam-Result: ApQXAIKZalNXQBiQ/2dsb2JhbABagwaCQXyoawoFAZoKAgKBHRd0gmYcIxiBAiQTiEUB0DaFVoh8hEYBA48bihsBiwCHe4M2Ow
+Date: Wed, 7 May 2014 22:41:42 +0200
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] kernel/seccomp.c: kernel-doc warning fix
-Message-Id: <20140507223945.c4fbf82c3430fe5e43d97c08@skynet.be>
+Cc: akpm <akpm@linux-foundation.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 1/2] kernel/stop_machine.c: kernel-doc warning fix
+Message-Id: <20140507224142.084f4d778591d9ffd9138409@skynet.be>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -24,37 +24,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ fix small typo
 
-Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- kernel/seccomp.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/stop_machine.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index b35c215..f6d76be 100644
---- a/kernel/seccomp.c
-+++ b/kernel/seccomp.c
-@@ -39,7 +39,7 @@
-  *         is only needed for handling filters shared across tasks.
-  * @prev: points to a previously installed, or inherited, filter
-  * @len: the number of instructions in the program
-- * @insns: the BPF program instructions to evaluate
-+ * @insnsi: the BPF program instructions to evaluate
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index 01fbae5..695f0c6 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -307,6 +307,7 @@ int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *
+  * @cpu: cpu to stop
+  * @fn: function to execute
+  * @arg: argument to @fn
++ * @work_buf: pointer to cpu_stop_work structure
   *
-  * seccomp_filter objects are organized in a tree linked via the @prev
-  * pointer.  For any task, it appears to be a singly-linked list starting
-@@ -220,7 +220,7 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
- 		return -ENOMEM;
- 
- 	/*
--	 * Installing a seccomp filter requires that the task have
-+	 * Installing a seccomp filter requires that the task has
- 	 * CAP_SYS_ADMIN in its namespace or be running with no_new_privs.
- 	 * This avoids scenarios where unprivileged tasks can affect the
- 	 * behavior of privileged children.
+  * Similar to stop_one_cpu() but doesn't wait for completion.  The
+  * caller is responsible for ensuring @work_buf is currently unused
 -- 
 1.8.4.5
 
