@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307AbaEGVj1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 17:39:27 -0400
-Received: from mail-ie0-f202.google.com ([209.85.223.202]:46990 "EHLO
-	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553AbaEGVj0 (ORCPT
+	id S1752145AbaEGVmu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 17:42:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57763 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaEGVmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 17:39:26 -0400
-References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com> <alpine.DEB.2.02.1405061920470.18635@chino.kir.corp.google.com> <alpine.DEB.2.02.1405061921040.18635@chino.kir.corp.google.com> <20140507141534.d4def933b3a9999e7826df5c@linux-foundation.org>
-User-agent: mu4e 0.9.9.6pre2; emacs 24.3.1
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch v3 2/6] mm, compaction: return failed migration target pages back to freelist
-In-reply-to: <20140507141534.d4def933b3a9999e7826df5c@linux-foundation.org>
-Date: Wed, 07 May 2014 14:39:24 -0700
-Message-ID: <xr93ha512rqr.fsf@gthelen.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 7 May 2014 17:42:49 -0400
+Date: Wed, 7 May 2014 14:42:48 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Raghavendra Ganiga <ravi23ganiga@gmail.com>
+Cc: a.zummo@towertech.it, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] rtc: add support for maxim dallas rtc ds1343 and ds1344
+Message-Id: <20140507144248.cf3d5e7411186e2cd616ded8@linux-foundation.org>
+In-Reply-To: <1399403036-11377-1-git-send-email-ravi23ganiga@gmail.com>
+References: <1399403036-11377-1-git-send-email-ravi23ganiga@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed,  7 May 2014 00:33:56 +0530 Raghavendra Ganiga <ravi23ganiga@gmail.com> wrote:
 
-On Wed, May 07 2014, Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Tue, 6 May 2014 19:22:43 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
+> This is a patch to add support for
+> maxim dallas rtc ds1343 and ds1344
+> 
+> ...
 >
->> Memory compaction works by having a "freeing scanner" scan from one end of a 
->> zone which isolates pages as migration targets while another "migrating scanner" 
->> scans from the other end of the same zone which isolates pages for migration.
->> 
->> When page migration fails for an isolated page, the target page is returned to 
->> the system rather than the freelist built by the freeing scanner.  This may 
->> require the freeing scanner to continue scanning memory after suitable migration 
->> targets have already been returned to the system needlessly.
->> 
->> This patch returns destination pages to the freeing scanner freelist when page 
->> migration fails.  This prevents unnecessary work done by the freeing scanner but 
->> also encourages memory to be as compacted as possible at the end of the zone.
->> 
->> Reported-by: Greg Thelen <gthelen@google.com>
->
-> What did Greg actually report?  IOW, what if any observable problem is
-> being fixed here?
+> +static int ds1343_ioctl(struct device *dev, unsigned int cmd, unsigned long arg)
+> +{
+> +	switch (cmd) {
+> +#ifdef RTC_SET_CHARGE
+> +	case RTC_SET_CHARGE:
+> +	{
+> +		int val;
+> +
+> +		if (copy_from_user(&val, (int __user *)arg, sizeof(int)))
+> +			return -EFAULT;
+> +
+> +		return regmap_write(priv->map, DS1343_TRICKLE_REG, val);
+> +	}
+> +	break;
+> +#endif
+> +	}
 
-I detected the problem at runtime seeing that ext4 metadata pages (esp
-the ones read by "sbi->s_group_desc[i] = sb_bread(sb, block)") were
-constantly visited by compaction calls of migrate_pages().  These pages
-had a non-zero b_count which caused fallback_migrate_page() ->
-try_to_release_page() -> try_to_free_buffers() to fail.
+Why is RTC_SET_CHARGE defined only for m32r?  It seems pretty generic?
+
+> +	return -ENOIOCTLCMD;
+> +}
+
+It's possible that this should be -ENOTTY.  I always forget the rule,
+but Alan never forgets anything ;)
+
