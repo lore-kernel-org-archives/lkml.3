@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932621AbaEGKVa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 06:21:30 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:42599 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932308AbaEGKV1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 06:21:27 -0400
+	id S932651AbaEGKVh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 06:21:37 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54783 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932308AbaEGKVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 06:21:33 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: <mturquette@linaro.org>, <grant.likely@linaro.org>, <tony@atomide.com>,
         <t-kristo@ti.com>
@@ -14,9 +13,9 @@ CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         <robh+dt@kernel.org>, <bcousson@baylibre.com>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v2 2/4] dt:/bindings: DRA7 ATL (Audio Tracking Logic) clock bindings
-Date: Wed, 7 May 2014 13:20:46 +0300
-Message-ID: <1399458048-28213-3-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 4/4] ARM: DTS: dra7/dra7xx-clocks: ATL related changes
+Date: Wed, 7 May 2014 13:20:48 +0300
+Message-ID: <1399458048-28213-5-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1399458048-28213-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1399458048-28213-1-git-send-email-peter.ujfalusi@ti.com>
@@ -26,184 +25,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Audio Tracking Logic is designed to be used by HD Radio applications to
-synchronize the audio output clocks to the baseband clock. ATL can be also
-used to track errors between two reference clocks (BWS, AWS) and generate a modulated
-clock output which averages to some desired frequency.
-In essence ATL is generating a clock to be used by an audio codec and also
-to be used by the SoC as MCLK.
+Modify the clock nodes for the ATL clocks to use the ATL clock driver to
+handle them.
 
-To be able to integrate the ATL provided clocks to the clock tree we need
-two types of DT binding:
-- DT clock nodes to represent the ATL clocks towards the CCF
-- binding for the ATL IP itself which is going to handle the hw
-  configuration
-
-The reason for this type of setup is that ATL itself is a separate device
-in the SoC, it has it's own address space and clock domain. Other IPs can
-use the ATL generated clock as their functional clock (McASPs for example)
-and external components like audio codecs can also use the very same clock
-as their MCLK.
-
-The ATL IP in DRA7 contains 4 ATL instences.
+Add the ATL device node at the same time for DRA7.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- .../devicetree/bindings/clock/ti/dra7-atl.txt      | 97 ++++++++++++++++++++++
- include/dt-bindings/clk/ti-dra7-atl.h              | 40 +++++++++
- 2 files changed, 137 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/ti/dra7-atl.txt
- create mode 100644 include/dt-bindings/clk/ti-dra7-atl.h
+ arch/arm/boot/dts/dra7.dtsi          | 11 +++++++++++
+ arch/arm/boot/dts/dra7xx-clocks.dtsi | 16 ++++++++--------
+ 2 files changed, 19 insertions(+), 8 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/clock/ti/dra7-atl.txt b/Documentation/devicetree/bindings/clock/ti/dra7-atl.txt
-new file mode 100644
-index 000000000000..c90e63c443ef
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/ti/dra7-atl.txt
-@@ -0,0 +1,97 @@
-+Device Tree Clock bindings for ATL (Audio Tracking Logic) of DRA7 SoC.
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index 149b55099935..84071423016e 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -789,6 +789,17 @@
+ 			dma-names = "tx0", "rx0";
+ 			status = "disabled";
+ 		};
 +
-+The ATL IP is used to generate clock to be used to synchronize baseband and
-+audio codec. A single ATL IP provides four ATL clock instances sharing the same
-+functional clock but can be configured to provide different clocks.
-+ATL can maintain a clock averages to some desired frequency based on the bws/aws
-+signals - can compensate the drift between the two ws signal.
-+
-+In order to provide the support for ATL and it's output clocks (which can be used
-+internally within the SoC or external components) two sets of bindings is needed:
-+
-+Clock tree binding:
-+This binding uses the common clock binding[1].
-+To be able to integrate the ATL clocks with DT clock tree.
-+Provides ccf level representation of the ATL clocks to be used by drivers.
-+Since the clock instances are part of a single IP this binding is used as a node
-+for the DT clock tree, the IP driver is needed to handle the actual configuration
-+of the IP.
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+Required properties:
-+- compatible : shall be "ti,dra7-atl-clock"
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- clocks : link phandles to functional clock of ATL
-+
-+Binding for the IP driver:
-+This binding is used to configure the IP driver which is going to handle the
-+configuration of the IP for the ATL clock instances.
-+
-+Required properties:
-+- compatible : shall be "ti,dra7-atl"
-+- reg : base address for the ATL IP
-+- ti,provided-clocks : List of phandles to the clocks associated with the ATL
-+- clocks : link phandles to functional clock of ATL
-+- clock-names : Shall be set to "fck"
-+- ti,hwmods : Shall be set to "atl"
-+
-+Optional properties:
-+Configuration of ATL instances:
-+- atl{0/1/2/3} {
-+	- bws : Baseband word select signal selection
-+	- aws : Audio word select signal selection
-+};
-+
-+For valid word select signals, see the dt-bindings/clk/ti-dra7-atl.h include
-+file.
-+
-+Examples:
-+/* clock bindings for atl provided clocks */
-+atl_clkin0_ck: atl_clkin0_ck {
-+	#clock-cells = <0>;
-+	compatible = "ti,dra7-atl-clock";
-+	clocks = <&atl_gfclk_mux>;
-+};
-+
-+atl_clkin1_ck: atl_clkin1_ck {
-+	#clock-cells = <0>;
-+	compatible = "ti,dra7-atl-clock";
-+	clocks = <&atl_gfclk_mux>;
-+};
-+
-+atl_clkin2_ck: atl_clkin2_ck {
-+	#clock-cells = <0>;
-+	compatible = "ti,dra7-atl-clock";
-+	clocks = <&atl_gfclk_mux>;
-+};
-+
-+atl_clkin3_ck: atl_clkin3_ck {
-+	#clock-cells = <0>;
-+	compatible = "ti,dra7-atl-clock";
-+	clocks = <&atl_gfclk_mux>;
-+};
-+
-+/* binding for the IP */
-+atl: atl@4843c000 {
-+	compatible = "ti,dra7-atl";
-+	reg = <0x4843c000 0x3ff>;
-+	ti,hwmods = "atl";
-+	ti,provided-clocks = <&atl_clkin0_ck>, <&atl_clkin1_ck>,
-+				<&atl_clkin2_ck>, <&atl_clkin3_ck>;
-+	clocks = <&atl_gfclk_mux>;
-+	clock-names = "fck";
-+	status = "disabled";
-+};
-+
-+#include <dt-bindings/clk/ti-dra7-atl.h>
-+
-+&atl {
-+	status = "okay";
-+
-+	atl2 {
-+		bws = <DRA7_ATL_WS_MCASP2_FSX>;
-+		aws = <DRA7_ATL_WS_MCASP3_FSX>;
-+	};
-+};
-+
-diff --git a/include/dt-bindings/clk/ti-dra7-atl.h b/include/dt-bindings/clk/ti-dra7-atl.h
-new file mode 100644
-index 000000000000..42dd4164f6f4
---- /dev/null
-+++ b/include/dt-bindings/clk/ti-dra7-atl.h
-@@ -0,0 +1,40 @@
-+/*
-+ * This header provides constants for DRA7 ATL (Audio Tracking Logic)
-+ *
-+ * The constants defined in this header are used in dts files
-+ *
-+ * Copyright (C) 2013 Texas Instruments, Inc.
-+ *
-+ * Peter Ujfalusi <peter.ujfalusi@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef _DT_BINDINGS_CLK_DRA7_ATL_H
-+#define _DT_BINDINGS_CLK_DRA7_ATL_H
-+
-+#define DRA7_ATL_WS_MCASP1_FSR		0
-+#define DRA7_ATL_WS_MCASP1_FSX		1
-+#define DRA7_ATL_WS_MCASP2_FSR		2
-+#define DRA7_ATL_WS_MCASP2_FSX		3
-+#define DRA7_ATL_WS_MCASP3_FSX		4
-+#define DRA7_ATL_WS_MCASP4_FSX		5
-+#define DRA7_ATL_WS_MCASP5_FSX		6
-+#define DRA7_ATL_WS_MCASP6_FSX		7
-+#define DRA7_ATL_WS_MCASP7_FSX		8
-+#define DRA7_ATL_WS_MCASP8_FSX		9
-+#define DRA7_ATL_WS_MCASP8_AHCLKX	10
-+#define DRA7_ATL_WS_XREF_CLK3		11
-+#define DRA7_ATL_WS_XREF_CLK0		12
-+#define DRA7_ATL_WS_XREF_CLK1		13
-+#define DRA7_ATL_WS_XREF_CLK2		14
-+#define DRA7_ATL_WS_OSC1_X1		15
-+
-+#endif
++		atl: atl@4843c000 {
++			compatible = "ti,dra7-atl";
++			reg = <0x4843c000 0x3ff>;
++			ti,hwmods = "atl";
++			ti,provided-clocks = <&atl_clkin0_ck>, <&atl_clkin1_ck>,
++					     <&atl_clkin2_ck>, <&atl_clkin3_ck>;
++			clocks = <&atl_gfclk_mux>;
++			clock-names = "fck";
++			status = "disabled";
++		};
+ 	};
+ };
+ 
+diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
+index 30160348934c..789e92cd5595 100644
+--- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
++++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
+@@ -10,26 +10,26 @@
+ &cm_core_aon_clocks {
+ 	atl_clkin0_ck: atl_clkin0_ck {
+ 		#clock-cells = <0>;
+-		compatible = "fixed-clock";
+-		clock-frequency = <0>;
++		compatible = "ti,dra7-atl-clock";
++		clocks = <&atl_gfclk_mux>;
+ 	};
+ 
+ 	atl_clkin1_ck: atl_clkin1_ck {
+ 		#clock-cells = <0>;
+-		compatible = "fixed-clock";
+-		clock-frequency = <0>;
++		compatible = "ti,dra7-atl-clock";
++		clocks = <&atl_gfclk_mux>;
+ 	};
+ 
+ 	atl_clkin2_ck: atl_clkin2_ck {
+ 		#clock-cells = <0>;
+-		compatible = "fixed-clock";
+-		clock-frequency = <0>;
++		compatible = "ti,dra7-atl-clock";
++		clocks = <&atl_gfclk_mux>;
+ 	};
+ 
+ 	atl_clkin3_ck: atl_clkin3_ck {
+ 		#clock-cells = <0>;
+-		compatible = "fixed-clock";
+-		clock-frequency = <0>;
++		compatible = "ti,dra7-atl-clock";
++		clocks = <&atl_gfclk_mux>;
+ 	};
+ 
+ 	hdmi_clkin_ck: hdmi_clkin_ck {
 -- 
 1.9.2
 
