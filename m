@@ -1,135 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576AbaEGWLt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 18:11:49 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:60120 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111AbaEGWLq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 18:11:46 -0400
-Date: Wed, 7 May 2014 15:11:39 -0700
-From: josh@joshtriplett.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 32/45] torture: Better summary diagnostics
- for build failures
-Message-ID: <20140507221139.GP27924@cloud>
-References: <20140429002455.GA15461@linux.vnet.ibm.com>
- <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1398731133-18925-32-git-send-email-paulmck@linux.vnet.ibm.com>
+	id S1751906AbaEGWOx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 18:14:53 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44899 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751111AbaEGWOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 18:14:50 -0400
+Message-ID: <536AB041.5070705@ti.com>
+Date: Wed, 7 May 2014 17:14:25 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398731133-18925-32-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tony Lindgren <tony@atomide.com>
+CC: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/26] ARM: OMAP: dmtimer: Get rid of check for mem resource
+ error
+References: <1398375849-6017-1-git-send-email-joelf@ti.com> <1398375849-6017-10-git-send-email-joelf@ti.com> <20140507152426.GD9502@atomide.com> <536AAB1C.6010301@ti.com> <20140507220959.GE19102@atomide.com>
+In-Reply-To: <20140507220959.GE19102@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 05:25:20PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On 05/07/2014 05:10 PM, Tony Lindgren wrote:
+> * Joel Fernandes <joelf@ti.com> [140507 14:53]:
+>> On 05/07/2014 10:24 AM, Tony Lindgren wrote:
+>>> * Joel Fernandes <joelf@ti.com> [140424 14:44]:
+>>>> The subsequent devm_ioremap_resource will catch it and print an error, let it
+>>>> be checked there.
+>>>>
+>>>> Signed-off-by: Joel Fernandes <joelf@ti.com>
+>>>> ---
+>>>>  arch/arm/plat-omap/dmtimer.c |    4 ----
+>>>>  1 file changed, 4 deletions(-)
+>>>>
+>>>> diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
+>>>> index 7e806f9..1fd30fa 100644
+>>>> --- a/arch/arm/plat-omap/dmtimer.c
+>>>> +++ b/arch/arm/plat-omap/dmtimer.c
+>>>> @@ -810,10 +810,6 @@ static int omap_dm_timer_probe(struct platform_device *pdev)
+>>>>  	}
+>>>>  
+>>>>  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>>> -	if (unlikely(!mem)) {
+>>>> -		dev_err(dev, "%s: no memory resource.\n", __func__);
+>>>> -		return -ENODEV;
+>>>> -	}
+>>>>  
+>>>>  	timer = devm_kzalloc(dev, sizeof(struct omap_dm_timer), GFP_KERNEL);
+>>>>  	if (!timer) {
+>>>
+>>> We still need to return an error here and not try to continue though.
+>>
+>> We are returning an error if mem is NULL so the redundant check is
+>> unnecessary:
+>>
+>> ...
+>>         timer->io_base = devm_ioremap_resource(dev, mem);
+>>         if (IS_ERR(timer->io_base))
+>>                 return PTR_ERR(timer->io_base);
 > 
-> The reaction of kvm-recheck.sh is obscure at best, and easy to miss
-> completely.  This commit therefore prints "BUG: Build failed" in the
-> summary at the end of a run.
+> Why would you want to even continue omap_dm_timer_probe()
+> further and allocate memory if platform_get_resource() fails?
+> 
 
-This commit also changes a dozen other things about the output that this
-commit message does not document. :)
+But its freed anyway on error. I just felt that extra LOC could be
+removed. Ideally we should do something like
 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> ---
->  .../selftests/rcutorture/bin/kvm-recheck-lock.sh   |  2 +-
->  .../selftests/rcutorture/bin/kvm-recheck-rcu.sh    |  2 +-
->  .../selftests/rcutorture/bin/kvm-recheck.sh        | 24 ++++++++++++++++------
->  .../selftests/rcutorture/bin/kvm-test-1-run.sh     |  1 +
->  4 files changed, 21 insertions(+), 8 deletions(-)
-> 
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-recheck-lock.sh b/tools/testing/selftests/rcutorture/bin/kvm-recheck-lock.sh
-> index 829186e19eb1..7f1ff1a8fc4b 100755
-> --- a/tools/testing/selftests/rcutorture/bin/kvm-recheck-lock.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm-recheck-lock.sh
-> @@ -35,7 +35,7 @@ configfile=`echo $i | sed -e 's/^.*\///'`
->  ncs=`grep "Writes:  Total:" $i/console.log 2> /dev/null | tail -1 | sed -e 's/^.* Total: //' -e 's/ .*$//'`
->  if test -z "$ncs"
->  then
-> -	echo $configfile
-> +	echo "$configfile -------"
->  else
->  	title="$configfile ------- $ncs acquisitions/releases"
->  	dur=`sed -e 's/^.* locktorture.shutdown_secs=//' -e 's/ .*$//' < $i/qemu-cmd 2> /dev/null`
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh b/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh
-> index d75b1dc5ae53..307c4b95f325 100755
-> --- a/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh
-> @@ -35,7 +35,7 @@ configfile=`echo $i | sed -e 's/^.*\///'`
->  ngps=`grep ver: $i/console.log 2> /dev/null | tail -1 | sed -e 's/^.* ver: //' -e 's/ .*$//'`
->  if test -z "$ngps"
->  then
-> -	echo $configfile
-> +	echo "$configfile -------"
->  else
->  	title="$configfile ------- $ngps grace periods"
->  	dur=`sed -e 's/^.* rcutorture.shutdown_secs=//' -e 's/ .*$//' < $i/qemu-cmd 2> /dev/null`
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
-> index 26d78b7eaccf..ee1f6cae3d70 100755
-> --- a/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
-> @@ -25,6 +25,7 @@
->  # Authors: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->  
->  PATH=`pwd`/tools/testing/selftests/rcutorture/bin:$PATH; export PATH
-> +. tools/testing/selftests/rcutorture/bin/functions.sh
->  for rd in "$@"
->  do
->  	firsttime=1
-> @@ -39,13 +40,24 @@ do
->  		fi
->  		TORTURE_SUITE="`cat $i/../TORTURE_SUITE`"
->  		kvm-recheck-${TORTURE_SUITE}.sh $i
-> -		configcheck.sh $i/.config $i/ConfigFragment
-> -		parse-build.sh $i/Make.out $configfile
-> -		parse-torture.sh $i/console.log $configfile
-> -		parse-console.sh $i/console.log $configfile
-> -		if test -r $i/Warnings
-> +		if test -f "$i/console.log"
->  		then
-> -			cat $i/Warnings
-> +			configcheck.sh $i/.config $i/ConfigFragment
-> +			parse-build.sh $i/Make.out $configfile
-> +			parse-torture.sh $i/console.log $configfile
-> +			parse-console.sh $i/console.log $configfile
-> +			if test -r $i/Warnings
-> +			then
-> +				cat $i/Warnings
-> +			fi
-> +		else
-> +			if test -f "$i/qemu-cmd"
-> +			then
-> +				print_bug qemu failed
-> +			else
-> +				print_bug Build failed
-> +			fi
-> +			echo "   $i"
->  		fi
->  	done
->  done
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-> index 7a95f86cc85a..51c34a91a375 100755
-> --- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
-> @@ -106,6 +106,7 @@ then
->  	fi
->  else
->  	cp $builddir/Make*.out $resdir
-> +	cp $builddir/.config $resdir || :
->  	echo Build failed, not running KVM, see $resdir.
->  	if test -f $builddir.wait
->  	then
-> -- 
-> 1.8.1.5
-> 
+
+mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+io_base = devm_ioremap_resource(dev, mem);
+if (IS_ERR(io_base))
+	return PTR_ERR(io_base);
+
+timer = devm_kzalloc(dev, sizeof(struct omap_dm_timer), GFP_KERNEL);
+if (!timer) {
+ ...
+}
+timer->io_base = io_base;
+
+
+That combines the platform_get_resource and devm_ioremap_resource error
+paths into 1 path and avoids redundant checks.. I can do it this way, or
+if you want drop the patch entirely, I'm OK with it both ways..
+
+thanks,
+
+-Joel
+
