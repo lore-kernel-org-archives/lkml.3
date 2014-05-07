@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820AbaEGAZg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 20:25:36 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:61805 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999AbaEGAZf (ORCPT
+	id S1754843AbaEGA24 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 20:28:56 -0400
+Received: from mail0.toppoint.de ([217.70.197.20]:41425 "EHLO
+	mail0.toppoint.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753458AbaEGA2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 20:25:35 -0400
-Message-ID: <53697D7D.4020908@linaro.org>
-Date: Tue, 06 May 2014 17:25:33 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 6 May 2014 20:28:54 -0400
+X-Greylist: delayed 541 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 May 2014 20:28:54 EDT
+Date: Wed, 7 May 2014 00:18:30 +0000
+From: Wilfried Klaebe <w-lkml@lebenslange-mailadresse.de>
+To: David Miller <davem@davemloft.net>
+Cc: nicolas.palix@imag.fr, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com,
+        ak@linux.intel.com, Julia.Lawall@lip6.fr, Gilles.Muller@lip6.fr
+Subject: Re: [PATCH 23/24] net, diet: Add coccinelle script to convert
+ drivers to ETHTOOL_OPS
+Message-ID: <20140507001830.GA7875@kaos.lebenslange-mailadresse.de>
+Mail-Followup-To: David Miller <davem@davemloft.net>, nicolas.palix@imag.fr,
+	netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+	tom.zanussi@linux.intel.com, ak@linux.intel.com,
+	Julia.Lawall@lip6.fr, Gilles.Muller@lip6.fr
+References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
+ <1399328773-6531-24-git-send-email-andi@firstfloor.org>
+ <CAAxaTiOYTEQgibnpDBXdhNpJUAVrLFwxz0roq8Bin1rNnnsxgg@mail.gmail.com>
+ <20140506.110504.2135392385828482331.davem@davemloft.net>
 MIME-Version: 1.0
-To: David Riley <davidriley@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Add test to validate udelay
-References: <1399421543-7751-1-git-send-email-davidriley@chromium.org>
-In-Reply-To: <1399421543-7751-1-git-send-email-davidriley@chromium.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140506.110504.2135392385828482331.davem@davemloft.net>
+X-message-flag: Get yourself a real email client. http://www.mutt.org/
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2014 05:12 PM, David Riley wrote:
-> This change adds a module and a script that makes use of it to
-> validate that udelay delays for at least as long as requested
-> (as compared to ktime).
+Am Tue, May 06, 2014 at 11:05:04AM -0400 schrieb David Miller:
+> SET_ETHTOOL_OPS only exists so that drivers could be compiled
+> on "older" kernels.
+> 
+> But the usefulness of that is long gone, we've had netdev->ethtool_ops
+> since way before we started using GIT.
+> 
+> I'd rather see a patch which removes it, to be honest.
 
-Interesting.
+Something like this?
 
-So fundamentally, udelay is a good bit fuzzier accuracy wise then
-ktime_get(), as it may be backed by relatively coarsely calibrated delay
-loops, or very rough tsc freq estimates.
-
-ktime_get on the other hand is as fine grained as we can be, and is ntp
-corrected, so that a second can really be a second.
-
-So your comparing the fast and loose interface so we can delay a bit
-before hitting some hardware again with a fairly precise interface.
-Thus  I'd not be surprised if your test failed on various hardware. I'd
-really only trust udelay to be roughly accurate, so you might want to
-consider adding some degree of acceptable error to the test.
-
-Really, I'm curious about the backstory that made you generate the test?
-I assume something bit you where udelay was way off? Or were you using
-udelay for some sort of accuracy sensitive use?
-
-thanks
--john
+https://www.lebenslange-mailadresse.de/lkml/remove-SET_ETHTOOL_OPS.patch
 
