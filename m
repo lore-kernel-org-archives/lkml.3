@@ -1,77 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002AbaEGV7S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 17:59:18 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:39119 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966AbaEGV7R (ORCPT
+	id S1752144AbaEGWAM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 18:00:12 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:34218 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751351AbaEGWAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 17:59:17 -0400
-Date: Wed, 7 May 2014 14:59:11 -0700
-From: josh@joshtriplett.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 21/45] torture: Report diagnostics from
- qemu
-Message-ID: <20140507215911.GM27924@cloud>
-References: <20140429002455.GA15461@linux.vnet.ibm.com>
- <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1398731133-18925-21-git-send-email-paulmck@linux.vnet.ibm.com>
+	Wed, 7 May 2014 18:00:10 -0400
+Date: Wed, 7 May 2014 16:57:39 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
+        hdegoede@redhat.com, Boris Brezillon <boris@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com
+Subject: Re: [PATCH 3/7] phy: usb: sunxi: Introduce Allwinner A31 USB PHY
+ support
+Message-ID: <20140507215739.GB7047@lukather>
+References: <1399434623-20383-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1399434623-20383-4-git-send-email-maxime.ripard@free-electrons.com>
+ <536A36A2.5030109@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DBIVS5p969aUjpLe"
 Content-Disposition: inline
-In-Reply-To: <1398731133-18925-21-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <536A36A2.5030109@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 05:25:09PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> The current script does record qemu diagnostics, but the user has to
-> know where to look for them.  This commit therefore puts them into the
-> Warnings file so that kvm-recheck.sh will display them.  This change is
-> especially useful if you are in the habit of killing the qemu process
-> when you realize that you messed something up, but then later on wonder
-> why the process terminated early.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-A couple of issues below.
+--DBIVS5p969aUjpLe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> @@ -172,6 +172,14 @@ do
->  		if test $kruntime -lt $seconds
->  		then
->  			echo Completed in $kruntime vs. $seconds >> $resdir/Warnings 2>&1
-> +			grep "^(qemu) qemu:" $resdir/kvm-test-1-run.sh.out >> $resdir/Warnings 2>&1
-> +			killpid="`grep "^(qemu) qemu: terminating on signal [0-9]* from pid" $resdir/kvm-test-1-run.sh.out`"
+On Wed, May 07, 2014 at 07:05:30PM +0530, Kishon Vijay Abraham I wrote:
+> Hi,
+>=20
+> On Wednesday 07 May 2014 09:20 AM, Maxime Ripard wrote:
+> > The USB phy controller in the A31 differs mostly from the older control=
+lers
+> > because it has a clock dedicated for each phy, while the older ones wer=
+e having
+> > a single clock for all the phys.
+> >=20
+> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > ---
+> >  drivers/phy/phy-sun4i-usb.c | 35 ++++++++++++++++++++++++++---------
+> >  1 file changed, 26 insertions(+), 9 deletions(-)
+> >=20
+> > diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
+> > index e6e6c4ba7145..1d83abe07a29 100644
+> > --- a/drivers/phy/phy-sun4i-usb.c
+> > +++ b/drivers/phy/phy-sun4i-usb.c
+> > @@ -61,16 +61,17 @@
+> >  #define MAX_PHYS			3
+> > =20
+> >  struct sun4i_usb_phy_data {
+> > -	struct clk *clk;
+> >  	void __iomem *base;
+> >  	struct mutex mutex;
+> >  	int num_phys;
+> >  	u32 disc_thresh;
+> > +	bool dedicated_clocks;
+>=20
+> Don't think we need this structure member as it's been used only in probe.
 
-You already searched for lines like this and put them in Warnings in the
-previous line, so you don't need to search the entire output.  Also, you
-use grep here and sed below; you could just use sed here to directly
-obtain the PID:
+Ah, right.
 
-killpid="$(sed -n "s/^(qemu) qemu: terminating on signal [0-9]* from pid \([0-9]*\).*$/\1/p" $resdir/Warnings)"
+I'll change this in the next version.
 
-> +			if test -n "$killpid"
-> +			then
-> +				pscmd="`echo $killpid | sed -e 's/^.*from pid/ps -ef | grep/'`"
-> +				echo $pscmd >> $resdir/Warnings
-> +				echo $pscmd | sh >> $resdir/Warnings 2>&1
-> +			fi
+Thanks!
+Maxime
 
-Grepping for a PID is a bad idea; it'll turn up anything that contains
-that PID anywhere on the line, including as a substring.  Given the
-above change to obtain a numeric $killpid, you can instead pass the PID
-to ps directly:
-			if test -n "$killpid"
-			then
-				ps -fp $killpid >> $resdir/Warnings 2>&1
-			fi
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
+--DBIVS5p969aUjpLe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTaqxTAAoJEBx+YmzsjxAgNdkQAICNJU5W4AmWZdwMlRV7wPgo
+mNpuBMo7MiJe5f6MYGChADx6wZUiKhC4rjtpl+tnPoD02PoRqx7ScMm6uEWt6jW4
+y1AgLZhqjcQuLOjG/w34iz4jI3Nmndz5pIeAbwI1a4vh8C2Qd7wud5XATYwxPwa1
+mnAcNdCiDLvtB55EpMpDuIAI/huHBj4GHL3EM0wfqbJV2x0VpVWKcbsl942WRrKl
+HsOL4pIZ5tB/PVk8Ug77sHbT6YSGxu0DIJBLSGv+zN3wdeSD9JMwmlewDf2jOePL
+jvJrs0sCVp2NckreIJUZsabUaRwAKkgxK40tHR+84F3YVX4CZgcY5M3kPcMXQB8s
+jhXQe2J2P0VY0VV/HvcRpgxPBxQpUqmyvUNw0WXhk8E8M70RBlYStLZaM1w0JSJv
+D4k6tEx9T/fE3DJTM0ir1apyOmuQHyvlponeEJVv/h22USGm2j+Ma8Wz35t2jRJ7
+MVE91QzViNQiBGgsDvIKFAoTXTb7LWMWWh+cYb0xP0PkWQxas4cKGpkg9rWJiXF8
+gXWnN5K06ZAp38FgGgRPp0ej4rqh3D9FKAoVHBI+77tFcymrzX1D+5nDbqHPXLYc
+lQnRuca0Uio4N6B5CnsZuhJy1eRBncop6gP4zqbUn5hv1XCrlWsKSKIc3dE6N2lO
+21w6+qNZHkCPtCSqjs96
+=Fe6F
+-----END PGP SIGNATURE-----
+
+--DBIVS5p969aUjpLe--
