@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874AbaEGRCE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 13:02:04 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:33388 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768AbaEGRCA (ORCPT
+	id S1751230AbaEGRCp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 13:02:45 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:34597 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898AbaEGRCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 13:02:00 -0400
-Date: Wed, 7 May 2014 19:01:55 +0200
-From: Robert Richter <rric@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Jean Pihet <jean.pihet@linaro.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: Re: [PATCH v4 00/16] perf, persistent: Add persistent events
-Message-ID: <20140507170155.GH32718@rric.localhost>
-References: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
- <20140506123907.GV32718@rric.localhost>
- <20140506185826.GF25013@pd.tnic>
+	Wed, 7 May 2014 13:02:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140506185826.GF25013@pd.tnic>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAD=FV=VqPFcAFMfRi2L=QiRJ1qP8fokycmPxrjOi4mPv2W9NMA@mail.gmail.com>
+References: <1399421543-7751-1-git-send-email-davidriley@chromium.org>
+	<53697D7D.4020908@linaro.org>
+	<CAD=FV=VqPFcAFMfRi2L=QiRJ1qP8fokycmPxrjOi4mPv2W9NMA@mail.gmail.com>
+Date: Wed, 7 May 2014 10:02:42 -0700
+Message-ID: <CAASgrz25gw5LzNNNO=KisANzOMbOBcRJi-2sTXyujnZrV-fmyw@mail.gmail.com>
+Subject: Re: [PATCH 0/2] Add test to validate udelay
+From: David Riley <davidriley@google.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.05.14 20:58:26, Borislav Petkov wrote:
-> On Tue, May 06, 2014 at 02:39:07PM +0200, Robert Richter wrote:
-> > I rather would change the ioctl to
-> > 
-> >  id = ioctl(PERF_EVENT_IOC_SET_PERSIST, arg);
-> > 
-> >  arg != 0:	create persistent event (unclaim)
-> >  arg == 0:	delete persistent event (claim)
-> > 
-> > This has the advantage that the naming is better and arg can be used
-> > as parameter (e.g. event id to share a namespace).
-> 
-> Yep, this is better than the CLAIM/UNCLAIM thing.
+On Tue, May 6, 2014 at 9:19 PM, Doug Anderson <dianders@chromium.org> wrote:
+> John,
+>
+> On Tue, May 6, 2014 at 5:25 PM, John Stultz <john.stultz@linaro.org> wrote:
+>> On 05/06/2014 05:12 PM, David Riley wrote:
+>>> This change adds a module and a script that makes use of it to
+>>> validate that udelay delays for at least as long as requested
+>>> (as compared to ktime).
+>>
+>> Interesting.
+>>
+>> So fundamentally, udelay is a good bit fuzzier accuracy wise then
+>> ktime_get(), as it may be backed by relatively coarsely calibrated delay
+>> loops, or very rough tsc freq estimates.
+>>
+>> ktime_get on the other hand is as fine grained as we can be, and is ntp
+>> corrected, so that a second can really be a second.
+>>
+>> So your comparing the fast and loose interface so we can delay a bit
+>> before hitting some hardware again with a fairly precise interface.
+>> Thus  I'd not be surprised if your test failed on various hardware. I'd
+>> really only trust udelay to be roughly accurate, so you might want to
+>> consider adding some degree of acceptable error to the test.
+>
+> My understanding is that udelay should be >= the true delay.
+> Specifically it tends to be used when talking to hardware.  We used it
+> to ensure a minimum delay between SPI transactions when talking to a
+> slow embedded controller.  I think the regulator code uses udelay() to
+> wait for voltage to ramp up, for instance.  Waiting too long isn't
+> terrible, but too short is bad.
+>
+> That being said, I think if udelay was within 1% we're probably OK.  I
+> believe I have seen systems where udelay is marginally shorter than it
+> ought to be and it didn't upset me too much.
 
-Yeah, I am wondering why we didn't get this earlier. ;)
+This message from Thomas Gleixner seems to back up udelay guaranteeing
+a minimum delay (as compared to ktime_get) :
+http://lkml.iu.edu//hypermail/linux/kernel/1203.1/01034.html  So it
+feels right that that anything shorter should be considered a failure.
+ If the system still works, that's fine, but udelay() isn't meeting
+it's guarantees.
 
-> > The unclaim ioctl *creates* a buffer with 512kB default size. The
-> > reopening process must mmap with the same buffer size. This is a
-> > problem as in this implementation the buffer size is fix and can not
-> > be adjusted.
-> 
-> Why do we need it to be adjustable?
-
-I am fine with a fixed size. But this design might not be changable in
-the future without breaking the API. So its worth to think about this.
-Maybe we allow the process also to create the buffer, there are 2
-variants then:
-
- perf_event_open(...);
- mmap(..., fd, ...);
- ioctl(fd, set_persistent, 1);   /* Use existing buffer. */
- close();
-
- fd = perf_event_open(...);
- ioctl(fd, set_persistent, 1);   /* Create buffer with default size. */
- close();
-
-This would solve the problem how we adjust buffer size.
-
-This requires a way to detect buffer size. See my mail how this could
-be done.
-
-> 
-> > We could let create the process the buffers and make the
-> > event persistent including the current buffers.
-> > 
-> > Variable buffer size is a must,
-> 
-> Yeah, why? I'm just asking for my own understanding.
-
-For general-purpose... Why 512k buffers are ok? Depending on the
-event, smaller buffers are maybe good enough, esp. since they are
-permanently enabled and use system resources. Or, at some point, 512k
-is not sufficient anymore. You don't want 512k be carved in stone.
-
-> > so the reopening process also must be
-> > able to detect buffer size. Mmap buffer size could be detected by
-> > mmap'ing only the header page, reading the buffer size from the header
-> > and then remapping the buffer with adjusted size.
-> > 
-> > It would be good to have a perf tool option -P that puts events in
-> > persistent state instead of starting a command:
-> > 
-> >  # perf record -e ... -a -P <namespace>		# create pers. events
-> >  # perf record -e persistent/<namespace>/ -a	# read existing buffers
-> >  # perf record -e persistent/<namespace>/ -a -k	# read and kill existing events
-> > 
-> > Note that no args for a command are given.
-> 
-> Yep, looks sane to me.
-
-Ok.
-
-Thanks for your commments.
-
--Robert
+>
+>
+>> Really, I'm curious about the backstory that made you generate the test?
+>> I assume something bit you where udelay was way off? Or were you using
+>> udelay for some sort of accuracy sensitive use?
+>
+> Several times we've seen cases where udelay() was pretty broken with
+> cpufreq if you were actually implementing udelay() with
+> loops_per_jiffy.  I believe it may also be broken upstream on
+> multicore systems, though now that ARM arch timers are there maybe we
+> don't care as much?
+>
+> Specifically, there is a lot of confusion between the global loops per
+> jiffy and the per CPU one.  On ARM I think we always use the global
+> one and we attempt to scale it as cpufreq changes.  ...but...
+>
+> * cores tend scale together and there's a single global.  That means
+> you might have started the delay loop at one freq and ended it at
+> another (if another CPU changes the freq).
+>
+> * I believe there's some strange issues in terms of how the loops per
+> jiffy variable is initialized and how the "original CPU freq" is.  I
+> know we ran into issues on big.LITTLE where the LITTLE cores came up
+> and clobbered the loops_per_jiffy variable but it was still doing math
+> based on the big cores.
+>
+>
+> -Doug
