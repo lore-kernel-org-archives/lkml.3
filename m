@@ -1,281 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927AbaEGBcU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 21:32:20 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62428 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752562AbaEGBcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 21:32:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,999,1389772800"; 
-   d="scan'208";a="534875626"
-Date: Wed, 7 May 2014 09:30:38 +0800
-From: Liu ShuoX <shuox.liu@intel.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, yanmin_zhang@linux.intel.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
-        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Dave Young <dyoung@redhat.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        Linn Crosetto <linn@hp.com>
-Subject: Re: [PATCH] [NOMERGE] reserved ram for pstore on PC (applied on top
- of new pstore patch)
-Message-ID: <20140507013038.GA28863@lskakaxi-intel>
-References: <1399352628-13308-1-git-send-email-shuox.liu@intel.com>
- <1399352628-13308-5-git-send-email-shuox.liu@intel.com>
- <5368F620.5000306@windriver.com>
+	id S1754997AbaEGBcv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 21:32:51 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:33815 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791AbaEGBct (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 21:32:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <5368F620.5000306@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <536982E3.10303@gmail.com>
+References: <536982E3.10303@gmail.com>
+Date: Tue, 6 May 2014 20:32:48 -0500
+Message-ID: <CAL_JsqL6+i_ED+s6kODsadszefaZUcA7VHCfZ4k4yj62iXsarQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] devicetree, qcomm PMIC: fix node name conflict
+From: Rob Herring <robherring2@gmail.com>
+To: Frank Rowand <frowand.list@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue  6.May'14 at 10:48:00 -0400, Paul Gortmaker wrote:
->On 14-05-06 01:03 AM, Liu ShuoX wrote:
->> for pstore record test.
+On Tue, May 6, 2014 at 7:48 PM, Frank Rowand <frowand.list@gmail.com> wrote:
+> An issue with the path of SPMI nodes under /sys/bus/... was reported in
+> https://lkml.org/lkml/2014/4/23/312.  The symptom is that two different
+> grandchild nodes of the spmi with the same node-name@unit-address will
+> result in attempting to create duplicate links at
+> /sys/bus/platform/devices/unit-address.node-name.  It turns out that the
+> specific example provided might not be an expected configuration for
+> current hardware, but the reported trap remains an issue.
 >
->I don't know what kind of cc mechanism you were manually deploying
->when using git send-email here, but it is customary to actually
-Sorry. This is my first time to send out test patch.
-I used --cc-cmd=./scripts/get_maintainer.pl for my
-patchset(include this NOMERGE one).
-Actually, this one is for testing and verifying. Because of the x86 arch
-code changing in the patch, get_maintainer.pl involves more guys.
-BTW, what's the right/good approach to send out test patch?
-Need i send it by deploying cc-list manually?
+> I have been poking at the problem, trying to figure out how to cleanly
+> fix the issue without breaking devicetree device creation.
+>
+> The first patch in the series is the one that may be a very bad idea.  Or
+> it may help show the way forward to deal with what I think is the major
+> underlying problem.  I have not finished investigating the possible negative
+> side effects.  And I am still thinking whether this is a conceptually good
+> approach, or whether it is simply an expediant hack that hides the underlying
+> problem.  But I am throwing this out prematurely because I have mentioned
+> it to several people, and I want to make it visible to everyone involved.
+>
+> The underlying architectural problem (in my opinion) is that a lot of devices
+> are created by the device tree infrastructure as platform devices, when they
+> truly should not be platform devices.  They should not be platform devices
+> because they are not physically on a platform bus, they are instead somewhere
+> below some other bus.  The first patch in this series is a hack which
+> results in the devices still being represented by "struct platform_device"
+> objects, but with a link to their parent's "struct bus_type" instead of
+> to &platform_bus_type.
+>
+> The second patch does not require the first patch.  The second patch provides
+> a mechanism to allow subsystems to provide a method of naming devices to
+> avoid name collisions.
+>
+> The third patch provides an example of a subsystem using the new feature
+> provided by the second patch.
+>
 
-Thanks.
->ensure that the 0/N summary also appears in the inbox of anyone
->who is cc'd on any of the patches, so they have some context.
->
->Not writing a four line commit log is also a good way to add
->extra context too.
->
->Paul.
->--
->
->>
->> Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
->> ---
->>  arch/x86/kernel/setup.c |   2 +
->>  fs/pstore/Makefile      |   2 +-
->>  fs/pstore/test.c        | 170 ++++++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 173 insertions(+), 1 deletion(-)
->>  create mode 100644 fs/pstore/test.c
->>
->> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
->> index 09c76d2..021b17a 100644
->> --- a/arch/x86/kernel/setup.c
->> +++ b/arch/x86/kernel/setup.c
->> @@ -854,6 +854,7 @@ dump_kernel_offset(struct notifier_block *self, unsigned long v, void *p)
->>   * Note: On x86_64, fixmaps are ready for use even before this is called.
->>   */
->>
->> +extern void pstore_ram_reserved_memory(void);
->>  void __init setup_arch(char **cmdline_p)
->>  {
->>  	memblock_reserve(__pa_symbol(_text),
->> @@ -1217,6 +1218,7 @@ void __init setup_arch(char **cmdline_p)
->>
->>  	x86_init.resources.reserve_resources();
->>
->> +	pstore_ram_reserved_memory();
->>  	e820_setup_gap();
->>
->>  #ifdef CONFIG_VT
->> diff --git a/fs/pstore/Makefile b/fs/pstore/Makefile
->> index 4c9095c..b2a961b 100644
->> --- a/fs/pstore/Makefile
->> +++ b/fs/pstore/Makefile
->> @@ -7,5 +7,5 @@ obj-y += pstore.o
->>  pstore-objs += inode.o platform.o
->>  obj-$(CONFIG_PSTORE_FTRACE)	+= ftrace.o
->>
->> -ramoops-objs += ram.o ram_core.o
->> +ramoops-objs += ram.o ram_core.o test.o
->>  obj-$(CONFIG_PSTORE_RAM)	+= ramoops.o
->> diff --git a/fs/pstore/test.c b/fs/pstore/test.c
->> new file mode 100644
->> index 0000000..109c5a8
->> --- /dev/null
->> +++ b/fs/pstore/test.c
->> @@ -0,0 +1,170 @@
->> +#include <linux/module.h>
->> +#include <linux/init.h>
->> +#include <linux/string.h>
->> +#include <linux/cpufreq.h>
->> +#include <linux/seq_file.h>
->> +#include <linux/pstore_ramoops.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/memblock.h>
->> +#include <linux/bootmem.h>
->> +#include <linux/debugfs.h>
->> +
->> +struct norm_zone_test_record {
->> +	unsigned long val;
->> +	char str[32];
->> +};
->> +
->> +static void print_record(struct seq_file *s, void *rec)
->> +{
->> +	struct norm_zone_test_record *record = rec;
->> +	pstore_print(s, "%s: %ld\n",
->> +		record->str, record->val);
->> +}
->> +
->> +DEFINE_PSTORE_RAMZONE(test_zone) = {
->> +	.size = 4096,
->> +	.name = "test_zone",
->> +	.item_size = sizeof(struct norm_zone_test_record),
->> +	.print_record = print_record,
->> +};
->> +
->> +DEFINE_PSTORE_RAMZONE(test_zone1) = {
->> +	.size = 4096,
->> +	.name = "test_zone1",
->> +	.item_size = sizeof(struct norm_zone_test_record),
->> +	.print_record = print_record,
->> +};
->> +
->> +static void add_test_record(char *str, unsigned long val)
->> +{
->> +	struct norm_zone_test_record *record;
->> +	record = persistent_ram_new_record(test_zone.prz);
->> +	if (record) {
->> +		record->val = val;
->> +		strcpy(record->str, str);
->> +	}
->> +	record = persistent_ram_new_record(test_zone1.prz);
->> +	if (record) {
->> +		record->val = val;
->> +		strcpy(record->str, str);
->> +	}
->> +}
->> +
->> +static int test_cpufreq_transition(struct notifier_block *nb,
->> +		unsigned long event, void *data)
->> +{
->> +	add_test_record("cpufreq transition", event);
->> +	return 0;
->> +}
->> +
->> +static struct notifier_block freq_transition = {
->> +	.notifier_call = test_cpufreq_transition,
->> +};
->> +
->> +#define SZ_4K   0x00001000
->> +#define SZ_2M   0x00200000
->> +#define SZ_2_1M 0x00219000
->> +#define SZ_16M  0x01000000
->> +
->> +#define PSTORE_RAM_START_DEFAULT        SZ_16M
->> +#define PSTORE_RAM_SIZE_DEFAULT         SZ_2_1M
->> +
->> +#ifdef CONFIG_X86_32
->> +#define RAM_MAX_MEM (max_low_pfn << PAGE_SHIFT)
->> +#else
->> +#define RAM_MAX_MEM (1 << 28)
->> +#endif
->> +
->> +static struct ramoops_platform_data pstore_ram_data = {
->> +	.mem_size       = PSTORE_RAM_SIZE_DEFAULT,
->> +	.mem_address    = PSTORE_RAM_START_DEFAULT,
->> +	.record_size    = SZ_4K,
->> +	.console_size   = SZ_2M,
->> +	.dump_oops      = 1,
->> +};
->> +
->> +static struct platform_device pstore_ram_dev = {
->> +	.name = "ramoops",
->> +	.dev = {
->> +		.platform_data = &pstore_ram_data,
->> +	},
->> +};
->> +
->> +static int __init pstore_ram_register(void)
->> +{
->> +	int ret;
->> +
->> +	ret = platform_device_register(&pstore_ram_dev);
->> +	if (ret) {
->> +		pr_err("%s: unable to register pstore_ram device: "
->> +			"start=0x%llx, size=0x%lx, ret=%d\n", __func__,
->> +			(unsigned long long)pstore_ram_data.mem_address,
->> +			pstore_ram_data.mem_size, ret);
->> +	}
->> +
->> +	return ret;
->> +}
->> +postcore_initcall(pstore_ram_register);
->> +
->> +void __init pstore_ram_reserved_memory(void)
->> +{
->> +	phys_addr_t mem;
->> +	size_t size;
->> +	int ret;
->> +
->> +	size = PSTORE_RAM_SIZE_DEFAULT;
->> +	size += pstore_norm_zones_size(NULL);
->> +	size = ALIGN(size, PAGE_SIZE);
->> +	mem = memblock_find_in_range(0, RAM_MAX_MEM, size, PAGE_SIZE);
->> +	if (!mem) {
->> +		pr_err("Cannot find memblock range for pstore_ram\n");
->> +		return;
->> +	}
->> +
->> +	ret = memblock_reserve(mem, size);
->> +	if (ret) {
->> +		pr_err("Failed to reserve memory from 0x%llx-0x%llx\n",
->> +				(unsigned long long)mem,
->> +				(unsigned long long)(mem + size - 1));
->> +		return;
->> +	}
->> +
->> +	pstore_ram_data.mem_address = mem;
->> +	pstore_ram_data.mem_size = size;
->> +
->> +	pr_info("reserved RAM buffer (0x%zx@0x%llx)\n",
->> +			size, (unsigned long long)mem);
->> +}
->> +
->> +static ssize_t pstore_ramoops_write(struct file *f, const char __user *buf,
->> +		size_t count, loff_t *ppos)
->> +{
->> +	return 0;
->> +}
->> +
->> +static ssize_t pstore_ramoops_read(struct file *f, char __user *buf,
->> +		size_t count, loff_t *ppos)
->> +{
->> +	struct ramoops_zone *zone = (struct ramoops_zone *)f->private_data;
->> +
->> +	pstore_dump_records(zone);
->> +	return 0;
->> +}
->> +
->> +static const struct file_operations pstore_ramoops_fops = {
->> +	.open   = simple_open,
->> +	.read   = pstore_ramoops_read,
->> +	.write  = pstore_ramoops_write,
->> +};
->> +
->> +
->> +static int __init norm_zone_test_init(void)
->> +{
->> +	cpufreq_register_notifier(&freq_transition,
->> +			CPUFREQ_TRANSITION_NOTIFIER);
->> +	debugfs_create_file("zone_dump", 0660, NULL, (void *)&test_zone, &pstore_ramoops_fops);
->> +	debugfs_create_file("zone1_dump", 0660, NULL, (void *)&test_zone1, &pstore_ramoops_fops);
->> +
->> +	return 0;
->> +}
->> +module_init(norm_zone_test_init);
->>
+I think the primary question to ask is there any added benefit to
+having the additional hierarchy of devices. I don't think there is
+much support to have more hierarchy from what I have seen of past
+discussions.
+
+Another approach could be to support having multiple platform bus
+instances. Then drivers can easily create a new instance for each set
+of sub-devices.
+
+This can be solved in a much less invasive way just in the DT naming
+algorithm. This is slightly different from what I had suggested of
+just dropping the unit address. It keeps the unit address, but adds
+the unique index on untranslate-able addresses. The diff is bigger due
+to refactoring to reduce the indentation levels. It is untested and
+whitespace corrupted:
+
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 404d1da..c77dd7a 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -105,23 +105,33 @@ void of_device_make_bus_id(struct device *dev)
+         * For MMIO, get the physical address
+         */
+        reg = of_get_property(node, "reg", NULL);
+-       if (reg) {
+-               if (of_can_translate_address(node)) {
+-                       addr = of_translate_address(node, reg);
+-               } else {
+-                       addrp = of_get_address(node, 0, NULL, NULL);
+-                       if (addrp)
+-                               addr = of_read_number(addrp, 1);
+-                       else
+-                               addr = OF_BAD_ADDR;
+-               }
+-               if (addr != OF_BAD_ADDR) {
+-                       dev_set_name(dev, "%llx.%s",
+-                                    (unsigned long long)addr, node->name);
+-                       return;
+-               }
++       if (!reg)
++               goto no_bus_id;
++
++       if (of_can_translate_address(node)) {
++               addr = of_translate_address(node, reg);
++               if (addr == OF_BAD_ADDR)
++                       goto no_bus_id;
++
++               dev_set_name(dev, "%llx.%s",
++                            (unsigned long long)addr, node->name);
++               return;
+        }
+
++       addrp = of_get_address(node, 0, NULL, NULL);
++       if (!addrp)
++               goto no_bus_id;
++
++       addr = of_read_number(addrp, 1);
++       if (addr == OF_BAD_ADDR)
++               goto no_bus_id;
++
++       magic = atomic_add_return(1, &bus_no_reg_magic);
++       dev_set_name(dev, "%llx.%s.%d", (unsigned long long)addr,
++                    node->name, magic - 1);
++       return;
++
++no_bus_id:
+        /*
+         * No BusID, use the node name and add a globally incremented
+         * counter (and pray...)
