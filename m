@@ -1,106 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085AbaEGOdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 10:33:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35876 "EHLO mx2.suse.de"
+	id S1756106AbaEGOdl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 10:33:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35886 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751942AbaEGOdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 10:33:23 -0400
-Date: Wed, 7 May 2014 16:33:20 +0200
-From: Jan Kara <jack@suse.cz>
-To: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH] printk: Remove separate printk_sched buffers and use
- printk buf instead
-Message-ID: <20140507143320.GD12433@quack.suse.cz>
-References: <20140505191846.35aa6f9b@gandalf.local.home>
- <20140507091356.GE23108@pathway.suse.cz>
+	id S1751692AbaEGOdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 10:33:39 -0400
+Date: Wed, 7 May 2014 16:33:34 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/9] mm: memcontrol: rearrange charging fast path
+Message-ID: <20140507143334.GH9489@dhcp22.suse.cz>
+References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
+ <1398889543-23671-3-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140507091356.GE23108@pathway.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1398889543-23671-3-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 07-05-14 11:13:56, Petr Mládek wrote:
-> On Mon 2014-05-05 19:18:46, Steven Rostedt wrote:
-> > To prevent deadlocks with doing a printk inside the scheduler,
-> > printk_sched() was created. The issue is that printk has a console_sem
-> > that it can grab and release. The release does a wake up if there's a
-> > task pending on the sem, and this wake up grabs the rq locks that is
-> > held in the scheduler. This leads to a possible deadlock if the wake up
-> > uses the same rq as the one with the rq lock held already.
-> > 
-> > What printk_sched() does is to save the printk write in a per cpu buffer
-> > and sets the PRINTK_PENDING_SCHED flag. On a timer tick, if this flag is
-> > set, the printk() is done against the buffer.
-> > 
-> > There's a couple of issues with this approach.
-> > 
-> > 1) If two printk_sched()s are called before the tick, the second one
-> > will overwrite the first one.
-> > 
-> > 2) The temporary buffer is 512 bytes and is per cpu. This is a quite a
-> > bit of space wasted for something that is seldom used.
-> > 
-> > In order to remove this, the printk_sched() can use the printk buffer
-> > instead, and delay the console_trylock()/console_unlock() to the queued
-> > work.
-> > 
-> > Because printk_sched() would then be taking the logbuf_lock, the
-> > logbuf_lock must not be held while doing anything that may call into the
-> > scheduler functions, which includes wake ups. Unfortunately, printk()
-> > also has a console_sem that it uses, and on release, the
-> > up(&console_sem) may do a wake up of any pending waiters. This must be
-> > avoided while holding the logbuf_lock.
-> > 
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > ---
-> > This version has been forward ported to the 3.15-rc releases.
-> > ---
-...
-> > @@ -2440,18 +2470,20 @@
-> >  #define PRINTK_BUF_SIZE		512
-> >  
-> >  #define PRINTK_PENDING_WAKEUP	0x01
-> > -#define PRINTK_PENDING_SCHED	0x02
-> > +#define PRINTK_PENDING_OUTPUT	0x02
-> >  
-> >  static DEFINE_PER_CPU(int, printk_pending);
-> > -static DEFINE_PER_CPU(char [PRINTK_BUF_SIZE], printk_sched_buf);
-> >  
-> >  static void wake_up_klogd_work_func(struct irq_work *irq_work)
-> >  {
-> >  	int pending = __this_cpu_xchg(printk_pending, 0);
-> >  
-> > -	if (pending & PRINTK_PENDING_SCHED) {
-> > -		char *buf = __get_cpu_var(printk_sched_buf);
-> > -		pr_warn("[sched_delayed] %s", buf);
-> > +	if (pending & PRINTK_PENDING_OUTPUT) {
-> > +		if (console_trylock())
-> > +			console_unlock();
+On Wed 30-04-14 16:25:36, Johannes Weiner wrote:
+> The charging path currently starts out with OOM condition checks when
+> OOM is the rarest possible case.
 > 
-> I wonder if we should call here console_trylock_for_printk() which checks
-> whether the console is really usable.
-  So Stephen couldn't use console_trylock_for_printk() because that expects
-logbuf_lock to be locked in vanilla kernel. Only after locking changes I
-did it would be usable.
- 
-> The check for usable console was introduced in the commit
-> 76a8ad293912cd2f (Make printk work for really early debugging).
-> I think that this IRQ work could get called during early boot,
-> so the check would make sense here as well. Or have I missed something?
-  I'm not really sure if IRQ work can be run on CPU which is not online.
+> Rearrange this code to run OOM/task dying checks only after trying the
+> percpu charge and the res_counter charge and bail out before entering
+> reclaim.  Attempting a charge does not hurt an (oom-)killed task as
+> much as every charge attempt having to check OOM conditions. 
 
-								Honza
+OK, I've never considered those to be measurable but it is true that the
+numbers accumulate over time.
+
+So yes, this makes sense.
+
+> Also, only check __GFP_NOFAIL when the charge would actually fail.
+
+OK, but return ENOMEM as pointed below.
+
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  mm/memcontrol.c | 31 ++++++++++++++++---------------
+>  1 file changed, 16 insertions(+), 15 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 75dfeb8fa98b..6ce59146fec7 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2598,21 +2598,6 @@ static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
+>  
+>  	if (mem_cgroup_is_root(memcg))
+>  		goto done;
+> -	/*
+> -	 * Unlike in global OOM situations, memcg is not in a physical
+> -	 * memory shortage.  Allow dying and OOM-killed tasks to
+> -	 * bypass the last charges so that they can exit quickly and
+> -	 * free their memory.
+> -	 */
+> -	if (unlikely(test_thread_flag(TIF_MEMDIE) ||
+> -		     fatal_signal_pending(current)))
+> -		goto bypass;
+
+This is missing "memcg: do not hang on OOM when killed by userspace OOM
+access to memory reserves" - trivial to resolve.
+
+> -
+> -	if (unlikely(task_in_memcg_oom(current)))
+> -		goto nomem;
+> -
+> -	if (gfp_mask & __GFP_NOFAIL)
+> -		oom = false;
+>  retry:
+>  	if (consume_stock(memcg, nr_pages))
+>  		goto done;
+[...]
+> @@ -2662,6 +2660,9 @@ retry:
+>  	if (mem_cgroup_wait_acct_move(mem_over_limit))
+>  		goto retry;
+>  
+> +	if (gfp_mask & __GFP_NOFAIL)
+> +		goto bypass;
+> +
+
+This is a behavior change because we have returned ENOMEM previously
+
+>  	if (fatal_signal_pending(current))
+>  		goto bypass;
+>  
+	if (!oom)
+		goto nomem;
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Michal Hocko
+SUSE Labs
