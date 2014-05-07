@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788AbaEGC5a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 22:57:30 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55874 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751149AbaEGC52 (ORCPT
+	id S1754147AbaEGC6u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 22:58:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13886 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751222AbaEGC6t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 22:57:28 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>, wim@iguana.be, dbaryshkov@gmail.com,
-        dwmw2@infradead.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, linux-sunxi@googlegroups.com,
-        linux@roeck-us.net, Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v2 4/6] ARM: sunxi: Remove init_machine callback
-Date: Tue,  6 May 2014 21:44:22 -0500
-Message-Id: <1399430664-29091-5-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
+	Tue, 6 May 2014 22:58:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1000,1389772800"; 
+   d="scan'208";a="507352009"
+From: "Ma, Xindong" <xindong.ma@intel.com>
+To: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "iamjoonsoo.kim@lge.com" <iamjoonsoo.kim@lge.com>,
+        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
+        "kirill.shutemov@linux.intel.com" <kirill.shutemov@linux.intel.com>,
+        "gorcunov@gmail.com" <gorcunov@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] rmap: validate pointer in anon_vma_clone
+Thread-Topic: [PATCH] rmap: validate pointer in anon_vma_clone
+Thread-Index: AQHPaZ0nPCoUxM3/t0SrSbaCvPJA5Zs0bKcA
+Date: Wed, 7 May 2014 02:58:46 +0000
+Message-ID: <3917C05D9F83184EAA45CE249FF1B1DD025C8840@SHSMSX103.ccr.corp.intel.com>
+References: <1399429930-5073-1-git-send-email-xindong.ma@intel.com>
+In-Reply-To: <1399429930-5073-1-git-send-email-xindong.ma@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The init_machine hook is now at its default value. We can remove it.
+Sorry, my fault. It's already validated in unlock_anon_vma_root().
 
-Even though the sun4i and sun7i machines are nothing more than generic machines
-now, leave them in so that we won't have to add them back if needed, and so
-that the machine is still displayed in /proc/cpuinfo.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+BR
+Leon
+
+
+-----Original Message-----
+From: Ma, Xindong 
+Sent: Wednesday, May 07, 2014 10:32 AM
+To: akpm@linux-foundation.org; iamjoonsoo.kim@lge.com; n-horiguchi@ah.jp.nec.com; kirill.shutemov@linux.intel.com; gorcunov@gmail.com; linux-mm@kvack.org; linux-kernel@vger.kernel.org
+Cc: Ma, Xindong
+Subject: [PATCH] rmap: validate pointer in anon_vma_clone
+
+If memory allocation failed in first loop, root will be NULL and will lead to kernel panic.
+
+Signed-off-by: Leon Ma <xindong.ma@intel.com>
 ---
- arch/arm/mach-sunxi/sunxi.c | 9 ---------
- 1 file changed, 9 deletions(-)
+ mm/rmap.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
-index 1c62a0a021d7..efb2f93b02e6 100644
---- a/arch/arm/mach-sunxi/sunxi.c
-+++ b/arch/arm/mach-sunxi/sunxi.c
-@@ -12,17 +12,11 @@
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 9c3e773..6e53aed 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -246,8 +246,10 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
  
- #include <linux/clk-provider.h>
- #include <linux/clocksource.h>
--#include <linux/of_platform.h>
- 
- #include <asm/mach/arch.h>
- 
- #include "common.h"
- 
--static void __init sunxi_dt_init(void)
--{
--	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
--}
--
- static const char * const sunxi_board_dt_compat[] = {
- 	"allwinner,sun4i-a10",
- 	"allwinner,sun5i-a10s",
-@@ -31,7 +25,6 @@ static const char * const sunxi_board_dt_compat[] = {
- };
- 
- DT_MACHINE_START(SUNXI_DT, "Allwinner A1X (Device Tree)")
--	.init_machine	= sunxi_dt_init,
- 	.dt_compat	= sunxi_board_dt_compat,
- MACHINE_END
- 
-@@ -49,7 +42,6 @@ static void __init sun6i_timer_init(void)
- }
- 
- DT_MACHINE_START(SUN6I_DT, "Allwinner sun6i (A31) Family")
--	.init_machine	= sunxi_dt_init,
- 	.init_time	= sun6i_timer_init,
- 	.dt_compat	= sun6i_board_dt_compat,
- 	.smp		= smp_ops(sun6i_smp_ops),
-@@ -61,6 +53,5 @@ static const char * const sun7i_board_dt_compat[] = {
- };
- 
- DT_MACHINE_START(SUN7I_DT, "Allwinner sun7i (A20) Family")
--	.init_machine	= sunxi_dt_init,
- 	.dt_compat	= sun7i_board_dt_compat,
- MACHINE_END
--- 
-1.9.1
+ 		avc = anon_vma_chain_alloc(GFP_NOWAIT | __GFP_NOWARN);
+ 		if (unlikely(!avc)) {
+-			unlock_anon_vma_root(root);
+-			root = NULL;
++			if (!root) {
++				unlock_anon_vma_root(root);
++				root = NULL;
++			}
+ 			avc = anon_vma_chain_alloc(GFP_KERNEL);
+ 			if (!avc)
+ 				goto enomem_failure;
+--
+1.7.9.5
 
