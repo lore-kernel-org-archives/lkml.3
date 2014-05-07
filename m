@@ -1,74 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181AbaEGINZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 04:13:25 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:52142 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753928AbaEGINV (ORCPT
+	id S932104AbaEGIPA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 04:15:00 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:37429 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754642AbaEGIO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 04:13:21 -0400
-Date: Wed, 7 May 2014 01:13:16 -0700
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Jungseok Lee <jays.lee@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        Catalin.Marinas@arm.com, "'Marc Zyngier'" <Marc.Zyngier@arm.com>,
-        linux-kernel@vger.kernel.org,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        steve.capper@linaro.org, sungjinn.chung@samsung.com,
-        "'Arnd Bergmann'" <arnd@arndb.de>, kgene.kim@samsung.com,
-        ilho215.lee@samsung.com
-Subject: Re: [PATCH v5 5/6] arm64: mm: Implement 4 levels of translation
- tables
-Message-ID: <20140507081316.GI3066@lvm>
-References: <000501cf64e5$d92ae870$8b80b950$@samsung.com>
- <20140506104907.GB3066@lvm>
- <001c01cf69ac$01be8bf0$053ba3d0$@samsung.com>
+	Wed, 7 May 2014 04:14:57 -0400
+Message-ID: <5369EB78.7080105@ti.com>
+Date: Wed, 7 May 2014 11:14:48 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <001c01cf69ac$01be8bf0$053ba3d0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <tony@atomide.com>
+CC: <kishon@ti.com>, <george.cherian@ti.com>, <balbi@ti.com>,
+        <balajitk@ti.com>, <hdegoede@redhat.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        R Sricharan <r.sricharan@ti.com>, "Menon, Nishanth" <nm@ti.com>
+Subject: Re: [PATCH v4 4/4] ARM: dts: dra7: add OCP2SCP3 and SATA nodes
+References: <1398274237-24510-1-git-send-email-rogerq@ti.com> <1398274575-24818-1-git-send-email-rogerq@ti.com>
+In-Reply-To: <1398274575-24818-1-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 01:22:50PM +0900, Jungseok Lee wrote:
-> On Tuesday, May 06, 2014 7:49 PM, Christoffer Dall wrote:
-> > On Thu, May 01, 2014 at 11:34:16AM +0900, Jungseok Lee wrote:
-> > > This patch implements 4 levels of translation tables since 3 levels of
-> > > page tables with 4KB pages cannot support 40-bit physical address
-> > > space described in [1] due to the following issue.
-> > >
-> > > It is a restriction that kernel logical memory map with 4KB + 3 levels
-> > > (0xffffffc000000000-0xffffffffffffffff) cannot cover RAM region from
-> > > 544GB to 1024GB in [1]. Specifically, ARM64 kernel fails to create
-> > > mapping for this region in map_mem function since __phys_to_virt for
-> > > this region reaches to address overflow.
-> > >
-> > > If SoC design follows the document, [1], over 32GB RAM would be placed
-> > > from 544GB. Even 64GB system is supposed to use the region from 544GB
-> > > to 576GB for only 32GB RAM. Naturally, it would reach to enable 4
-> > > levels of page tables to avoid hacking __virt_to_phys and __phys_to_virt.
-> > >
-> > > However, it is recommended 4 levels of page table should be only
-> > > enabled if memory map is too sparse or there is about 512GB RAM.
-> > 
-> > Who recommends this then?  This paragraph just confuses me.
-> 
-> It is a paraphrase of Catalin's comment:
-> "I agree, we should only enable 4-levels of page table if we have close
-> to 512GB of RAM or the range is too sparse but I would actually push
-> back on the hardware guys to keep it tighter."
-> 
-> The above message comes from the discussion on 4 levels.
-> http://www.spinics.net/linux/lists/arm-kernel/msg319055.html
-> 
-Hmm, I find it just confusing in the commit message and think it's more
-clear if you take it out.  The only relevant bits here are that if you
-want to be able to address an address map of a certain size, you need
-this feature.  It should be enabled on all systems that have such
-address maps to take advantage of the available hardware - arguing to
-hardware vendors on which systems to produce is fine, but a Linux commit
-message doesn't have to iterate on it - IMHO.
+Tony,
 
--Christoffer
+On 04/23/2014 08:36 PM, Roger Quadros wrote:
+> From: Balaji T K <balajitk@ti.com>
+> 
+> Add nodes for OCP2SCP3 bus, SATA controller and SATA PHY.
+> 
+> [Roger Q] Clean up.
+> 
+> CC: Benoit Cousson <bcousson@baylibre.com>
+> Signed-off-by: Balaji T K <balajitk@ti.com>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  arch/arm/boot/dts/dra7.dtsi | 39 +++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 39 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+> index 1c0f8e1..084f42e 100644
+> --- a/arch/arm/boot/dts/dra7.dtsi
+> +++ b/arch/arm/boot/dts/dra7.dtsi
+> @@ -789,6 +789,45 @@
+>  			dma-names = "tx0", "rx0";
+>  			status = "disabled";
+>  		};
+> +
+> +		omap_control_sata: control-phy@4a002374 {
+> +			compatible = "ti,control-phy-pipe3";
+> +			reg = <0x4a002374 0x4>;
+> +			reg-names = "power";
+> +			clocks = <&sys_clkin1>;
+> +			clock-names = "sysclk";
+> +		};
+> +
+> +		/* OCP2SCP3 */
+> +		ocp2scp@4a090000 {
+> +			compatible = "ti,omap-ocp2scp";
+> +			#address-cells = <1>;
+> +			#size-cells = <1>;
+> +			ranges;
+> +			reg = <0x4a090000 0x20>;
+> +			ti,hwmods = "ocp2scp3";
+> +			sata_phy: phy@4A096000 {
+> +				compatible = "ti,phy-pipe3-sata";
+> +				reg = <0x4A096000 0x80>, /* phy_rx */
+> +				      <0x4A096400 0x64>, /* phy_tx */
+> +				      <0x4A096800 0x40>; /* pll_ctrl */
+> +				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
+> +				ctrl-module = <&omap_control_sata>;
+> +				clocks = <&sys_clkin1>;
+> +				clock-names = "sysclk";
+> +				#phy-cells = <0>;
+> +			};
+> +		};
+> +
+> +		sata: sata@4a141100 {
+> +			compatible = "snps,dwc-ahci";
+> +			reg = <0x4a140000 0x1100>, <0x4a141100 0x7>;
+> +			interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_HIGH>;
+
+This will need to be changed like so if the IRQ crossbar changes [1] go in 
+
++			interrupts = <GIC_SPI 49 IRQ_TYPE_LEVEL_HIGH>;
+
+cheers,
+-roger
+
+[1] - http://article.gmane.org/gmane.linux.documentation/23293
+
+> +			phys = <&sata_phy>;
+> +			phy-names = "sata-phy";
+> +			clocks = <&sata_ref_clk>;
+> +			ti,hwmods = "sata";
+> +		};
+>  	};
+>  };
+>  
+> 
+
