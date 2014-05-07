@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933743AbaEGNb5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:31:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45438 "EHLO
+	id S932905AbaEGNOJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:14:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45417 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932912AbaEGNOM (ORCPT
+	with ESMTP id S932368AbaEGNOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:14:12 -0400
+	Wed, 7 May 2014 09:14:06 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>, airlied@gmail.com,
+Cc: Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-ide@vger.kernel.org,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 20/70] drm/radeon: fix ATPX detection on non-VGA GPUs
-Date: Wed,  7 May 2014 14:12:23 +0100
-Message-Id: <1399468393-10140-21-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 15/70] ahci: Do not receive interrupts sent by dummy ports
+Date: Wed,  7 May 2014 14:12:18 +0100
+Message-Id: <1399468393-10140-16-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,41 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Alexander Gordeev <agordeev@redhat.com>
 
-commit e9a4099a59cc598a44006059dd775c25e422b772 upstream.
+commit 2cf532f5e67c0cfe38c8c100e49280cdadacd2be upstream.
 
-Some newer PX laptops have the pci device class
-set to DISPLAY_OTHER rather than DISPLAY_VGA.  This
-properly detects ATPX on those laptops.
+In multiple MSI mode all AHCI ports (including dummy) get assigned
+separate MSI vectors and (as result of execution
+pci_enable_msi_exact() function) separate IRQ numbers, (mapped to the
+MSI vectors).
 
-Based on a patch from: Pali Rohár <pali.rohar@gmail.com>
+Therefore, although interrupts from dummy ports are not desired they
+are still enabled. We do not request IRQs for dummy ports, but that
+only means we do not assign AHCI-specific ISRs to corresponding IRQ
+numbers.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Cc: airlied@gmail.com
+As result, dummy port interrupts still could come and traverse all the
+way from the PCI device to the kernel, causing unnecessary overhead.
+
+This update disables IRQs for dummy ports and prevents the described
+issue.
+
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Tested-by: David Milburn <dmilburn@redhat.com>
+Cc: linux-ide@vger.kernel.org
+Fixes: 5ca72c4f7c41 ("AHCI: Support multiple MSIs")
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_atpx_handler.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/ata/ahci.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_atpx_handler.c b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-index cbb06d7..8c44ef5 100644
---- a/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-+++ b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-@@ -523,6 +523,13 @@ static bool radeon_atpx_detect(void)
- 		has_atpx |= (radeon_atpx_pci_probe_handle(pdev) == true);
- 	}
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index a5cf3ea..9d13ab1 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -1171,12 +1171,16 @@ int ahci_host_activate(struct ata_host *host, int irq, unsigned int n_msis)
+ 	for (i = 0; i < host->n_ports; i++) {
+ 		struct ahci_port_priv *pp = host->ports[i]->private_data;
  
-+	/* some newer PX laptops mark the dGPU as a non-VGA display device */
-+	while ((pdev = pci_get_class(PCI_CLASS_DISPLAY_OTHER << 8, pdev)) != NULL) {
-+		vga_count++;
+-		/* pp is NULL for dummy ports */
+-		if (pp)
+-			rc = devm_request_threaded_irq(host->dev,
+-						       irq + i, ahci_hw_interrupt,
+-						       ahci_thread_fn, IRQF_SHARED,
+-						       pp->irq_desc, host->ports[i]);
++		/* Do not receive interrupts sent by dummy ports */
++		if (!pp) {
++			disable_irq(irq + i);
++			continue;
++		}
 +
-+		has_atpx |= (radeon_atpx_pci_probe_handle(pdev) == true);
-+	}
-+
- 	if (has_atpx && vga_count == 2) {
- 		acpi_get_name(radeon_atpx_priv.atpx.handle, ACPI_FULL_PATHNAME, &buffer);
- 		printk(KERN_INFO "VGA switcheroo: detected switching method %s handle\n",
++		rc = devm_request_threaded_irq(host->dev, irq + i,
++					       ahci_hw_interrupt,
++					       ahci_thread_fn, IRQF_SHARED,
++					       pp->irq_desc, host->ports[i]);
+ 		if (rc)
+ 			goto out_free_irqs;
+ 	}
 -- 
 1.9.1
 
