@@ -1,99 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbaEGT55 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 15:57:57 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47817 "EHLO mail.skyhub.de"
+	id S1752792AbaEGT6X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 15:58:23 -0400
+Received: from mout.gmx.net ([212.227.17.22]:57293 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751420AbaEGT5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 15:57:47 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mike Galbraith <mgalbraith@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] CPU hotplug: Slow down hotplug operations
-Date: Wed,  7 May 2014 21:57:41 +0200
-Message-Id: <1399492661-891-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.9.0
+	id S1752005AbaEGTxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 15:53:07 -0400
+Date: Wed, 7 May 2014 21:28:25 +0200
+From: Christian Engelmayer <cengelma@gmx.at>
+To: devel@driverdev.osuosl.org
+Cc: w-lkml@lebenslange-mailadresse.de, gregkh@linuxfoundation.org,
+        peter.p.waskiewicz.jr@intel.com, oat.elena@gmail.com,
+        linux-kernel@vger.kernel.org, teobaluta@gmail.com,
+        dan.carpenter@oracle.com, Larry.Finger@lwfinger.net
+Subject: [PATCH v2 0/5] staging: rtl8188eu: fix Coverity defects in
+ os_dep/ioctl_linux.c
+Message-ID: <20140507212825.2289e00e@spike>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:oTtX51g2tzPvF/kK3a+ZfHcblUhaO+ZIwOkD2QCXrn6hUYSILLp
+ Y35cBYbCAszHtCEaY35eDnvIdf6Ae3X4VghyZy6eieMJ0I77bdYfBUlzT4GIlYt+9oBryqf
+ xgfRnrQBVmIs7TuWmSFcW2+wbj9NMhBa5favTAvUHDR3d5+gK9FQ4tMynsHTbmvqfaSRx6q
+ 7OEsT+dnOY+gwcYEuBpZA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+This is a cleanup of staging/rtl8188eu/os_dep/ioctl_linux.c regarding Coverity
+resource leak findings.
 
-We have all those eager tester dudes which scratch up a dirty script to
-pound on CPU hotplug senselessly and then report bugs they've managed to
-trigger.
+The changes leave the current implementation intact and just attack the problems
+in the error paths, however, it seems that we could get easily rid of some of
+the mallocs altogether.
 
-Well, first of all, most, if not all, bugs they trigger are CPU hotplug
-related anyway. But we know hotplug is full of duct tape and brown
-paper bags. So we end up clearly wasting too much time dealing with a
-mechanism we know it is b0rked in the first place.
+   char *input = kmalloc(wrqu->data.length, GFP_KERNEL);
+   copy_from_user(input, wrqu->data.pointer, wrqu->data.length);
+   qAutoLoad = strncmp(input, "autoload", 8);
 
-Oh, and I would understand if that pounding were close to some real
-usage patterns but I've yet to receive a justification for toggling
-cores on- and offline senselessly.
+v2: Resend after v1 failed to apply
 
-In any case, before this gets rewritten properly (I'm being told we
-might get lucky after all) let's slow down hotplugging on purpose and
-thus make it uninteresting, as a temporary brown paper bag solution
-until the real thing gets done.
+   * rebased against staging-next - commit 09c3fbba (staging: rtl8188eu:
+     Remove 'u8 *pbuf' from struct recv_buf)
+   * fixed mua: no multipart, 7bit text/plain us-ascii
 
-This way we'll save us a lot of time and efforts in chasing the wrong
-bugs.
+The series is compile tested and applies against branch staging-next of tree
+git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
 
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mike Galbraith <mgalbraith@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- drivers/base/cpu.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+Christian Engelmayer (5):
+  staging: rtl8188eu: fix potential leak in rtw_wx_read32()
+  staging: rtl8188eu: fix potential leak in rtw_wx_set_enc_ext()
+  staging: rtl8188eu: fix potential leak in rtw_mp_QueryDrv()
+  staging: rtl8188eu: fix potential leak in rtw_mp_SetRFPath()
+  staging: rtl8188eu: fix potential leak in rtw_mp_pwrtrk()
 
-diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-index 006b1bc5297d..615c7af767ed 100644
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -40,6 +40,11 @@ static void change_cpu_under_node(struct cpu *cpu,
- 	cpu->node_id = to_nid;
- }
- 
-+static void delay_hotplug(void)
-+{
-+	schedule_timeout_uninterruptible(msecs_to_jiffies(MSEC_PER_SEC));
-+}
-+
- static int __ref cpu_subsys_online(struct device *dev)
- {
- 	struct cpu *cpu = container_of(dev, struct cpu, dev);
-@@ -47,6 +52,8 @@ static int __ref cpu_subsys_online(struct device *dev)
- 	int from_nid, to_nid;
- 	int ret;
- 
-+	delay_hotplug();
-+
- 	from_nid = cpu_to_node(cpuid);
- 	if (from_nid == NUMA_NO_NODE)
- 		return -ENODEV;
-@@ -65,6 +72,8 @@ static int __ref cpu_subsys_online(struct device *dev)
- 
- static int cpu_subsys_offline(struct device *dev)
- {
-+	delay_hotplug();
-+
- 	return cpu_down(dev->id);
- }
- 
+ drivers/staging/rtl8188eu/os_dep/ioctl_linux.c | 69 +++++++++++++++++---------
+ 1 file changed, 45 insertions(+), 24 deletions(-)
+
 -- 
-1.9.0
+1.9.1
 
