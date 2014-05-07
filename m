@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755787AbaEGJ5h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:57:37 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:27461 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755370AbaEGJ5g (ORCPT
+	id S1755820AbaEGJ7R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:59:17 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61720 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753991AbaEGJ7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:57:36 -0400
-Message-ID: <1399456656.3706.10.camel@hornet>
-Subject: Re: [PATCH 04/12] clocksource: Sched clock source for Versatile
- Express
-From: Pawel Moll <pawel.moll@arm.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "arm@kernel.org" <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 07 May 2014 10:57:36 +0100
-In-Reply-To: <CACRpkdZ2Chwm0xu+bf8UAEi_5DR8WhMTv0gDJ6NC+6bQwHeB6Q@mail.gmail.com>
-References: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
-	 <1392138636-29240-5-git-send-email-pawel.moll@arm.com>
-	 <CACRpkdZ2Chwm0xu+bf8UAEi_5DR8WhMTv0gDJ6NC+6bQwHeB6Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 7 May 2014 05:59:16 -0400
+Date: Wed, 7 May 2014 10:58:50 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>,
+        "mm-commits@vger.kernel.org" <mm-commits@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "kay@vrfy.org" <kay@vrfy.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: +
+ printk-print-initial-logbuf-contents-before-re-enabling-interrupts.patch
+ added to -mm tree
+Message-ID: <20140507095850.GC18456@arm.com>
+References: <53640c8c.5++0zeO0pmfqKMwm%akpm@linux-foundation.org>
+ <20140502224651.GG23636@quack.suse.cz>
+ <20140506120648.GA30234@arm.com>
+ <20140506122958.GG9291@quack.suse.cz>
+ <20140506131234.GD30234@arm.com>
+ <20140506150553.a12959fd71d83eddcb4b325d@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140506150553.a12959fd71d83eddcb4b325d@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-02 at 23:14 +0100, Linus Walleij wrote:
-> On Tue, Feb 11, 2014 at 9:10 AM, Pawel Moll <pawel.moll@arm.com> wrote:
+On Tue, May 06, 2014 at 11:05:53PM +0100, Andrew Morton wrote:
+> On Tue, 6 May 2014 14:12:34 +0100 Will Deacon <will.deacon@arm.com> wrote:
+> > > > > My opinion is that when you are printing from each and every interrupt
+> > > > > which happens so often, then you have a problem and disabling IRQs in
+> > > > > printk so that your interrupt doesn't happen that often seems like a poor
+> > > > > solution to me. You could as well just ratelimit your debug messages,
+> > > > > couldn't you?
+> > > > 
+> > > > My use-case was basically using printk as a debug trace during early boot
+> > > > when bringing up Linux on a new CPU core. I don't think ratelimiting would
+> > > > be the right thing there, since I really did want as many messages to
+> > > > reach the console as possible (which is also why I wrote this patch, not
+> > > > just the other one in the series).
+> > >   OK, I understand. It just seems wrong to me to throttle all interrupts on
+> > > the cpu while doing printing just because someone might be doing debug
+> > > printing from the interrupt. Sure it's fine as a debug hack but on a
+> > > production machine that seems rather counterproductive.
+> > 
+> > Perhaps, but the one time I *really* want printk to be reliable is when I'm
+> > using it to debug a problem.
 > 
-> > This patch adds a trival sched clock source using free
-> > running, 24MHz clocked counter present in the ARM Ltd.
-> > Versatile Express platform's System Registers block.
-> >
-> > This code replaces the call in the VE machine code.
-> >
-> > Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-> 
-> Even the Integrator is very similar, albeit using register 0x28 instead
-> of register 0x5c. cd commit
-> a79528e9d849803457b6235ddb1a1cfd4e11c6cd
-> 
-> It's one of these things where writing a device driver results in
-> more code than just registering this counter with the sched_clock
-> guts :-/
-> 
-> Getting the clock from the DT gives this nice feeling of having it all
-> complete, and sched_clock cannot really change frequency anyway
-> so I'm happy with this thing.
-> 
-> I'll augment it for Integrator when/if I find time.
+> If you're debugging a problem, you're able to alter printk!  So perhaps
+> one way out of this is some developer-only ifdef to robustify printk
+> for particular usage patterns.
 
-Can I consider this as Reviewed-by? :-)
+Possibly, but I fear we'd incur the wrath of Alan after reading that other
+thread. Having a CONFIG_ option or similar to control the amount of printing
+we do is very similar to the command-line option Jan proposed in his series.
 
-Pawel
+So, sadly, I think we may as well drop this patch for the time being. The
+second patch in the series still applies fine without it and means we can
+at least detect when we're dropping messages.
 
+Will
