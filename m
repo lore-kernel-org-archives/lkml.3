@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932467AbaEGJpo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:45:44 -0400
-Received: from mailapp01.imgtec.com ([195.89.28.114]:28895 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932169AbaEGJpm (ORCPT
+	id S1755574AbaEGJqJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:46:09 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:47859 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629AbaEGJqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:45:42 -0400
-Message-ID: <536A00C3.9020701@imgtec.com>
-Date: Wed, 7 May 2014 10:45:39 +0100
-From: Markos Chandras <Markos.Chandras@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 7 May 2014 05:46:07 -0400
+Date: Wed, 7 May 2014 11:46:02 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/8] irq: core changes for x86 ioapic hotplug
+Message-ID: <20140507094602.GA17560@gmail.com>
+References: <1399340006-31550-1-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-To: Himangi Saraogi <himangi774@gmail.com>, <ralf@linux-mips.org>,
-        <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
-CC: <julia.lawall@lip6.fr>
-Subject: Re: [PATCH] MIPS: Introduce the use of the managed version of kzalloc
-References: <20140507044211.GA3158@himangi-Dell>
-In-Reply-To: <20140507044211.GA3158@himangi-Dell>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.35]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399340006-31550-1-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On 05/07/2014 05:43 AM, Himangi Saraogi wrote:
-> This patch moves data allocated using kzalloc to managed data allocated
-> using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
-> functions.The labels out and out_mem are also removed as they are no
-> longer required.
+* Yinghai Lu <yinghai@kernel.org> wrote:
+
+> Hi,
 > 
-> The following Coccinelle semantic patch was used for making the change:
-> [..]
+> These patches are core changes for x86 ioapic hotplug support.
 > 
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> ---
->  arch/mips/mti-sead3/sead3-i2c-drv.c | 37 ++++++++++++++-----------------------
->  1 file changed, 14 insertions(+), 23 deletions(-)
+> First part for kill old irq_reserve_irqs:
+> During reviewing ioapic hotplug patchset, Thomas pointed out that
+> should not extend irq_reserve_irq for that purpose as that is not
+> actually reserve.
+> Neet to clean up old irq_reserve_irq before introduce reserve/alloc_reserved
+> method for ioapic hotplug.
+> So here patchset that kill irq_reserve_irq that actually set allocated_irqs.
+> First remove irq_reserve_irqs for x86, and remove irq_reserve_irq
+> for sh.
+> Then in set_irq_chip use irq_alloc_desc instead of irq_reserve_irq.
+> Next will mark bits in allocated_irqs early for init irqs in !SPARSE_IRQ
 > 
-> diff --git a/arch/mips/mti-sead3/sead3-i2c-drv.c b/arch/mips/mti-sead3/sead3-i2c-drv.c
-> index 1f787a6..4d72e0e 100644
-> --- a/arch/mips/mti-sead3/sead3-i2c-drv.c
-> +++ b/arch/mips/mti-sead3/sead3-i2c-drv.c
-> @@ -304,22 +304,18 @@ static int sead3_i2c_platform_probe(struct platform_device *pdev)
->  	int ret;
->[...]
-> -	return ret;
-> +	if (ret)
-> +		return ret;
-> +	
-     ^^^^ trailing whitespace
+> Second parts are new reserve/alloc_reserved functions:
+> It will introduce reserved_irqs bit maps to track reserved irqs.
+> New irq_alloc_reserved_desc() will only allocate desc when that irq
+> is reserved, at the same time irq_alloc_desc will only allocate desc
+> when irq is not reserved.
 
-Apart from that, the patch seems to be ok. Thanks!
+That's not a proper description of the problem and the solution. The 
+same problem of lack of proper explanation permeates most of your 
+patches as well and that's very far from the quality threshold that 
+core IRQ patches need to meet.
 
-Tested-by: Markos Chandras <markos.chandras@imgtec.com>
-Reviewed-by: Markos Chandras <markos.chandras@imgtec.com>
+Crappy descriptions and passive-aggressive responses where you pretend 
+you don't understand our complaints and just minimally address the 
+problems are not acceptable.
 
--- 
-markos
+So I concur with Thomas and this series earns a big fat NAK from me. 
+(Please Cc: me to all (if any) future resubmissions so I can track 
+progress (or the lack thereof) and see whether I can lift my NAK.)
+
+Thanks,
+
+	Ingo
