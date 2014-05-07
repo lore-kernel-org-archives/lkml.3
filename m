@@ -1,175 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029AbaEGRc2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 13:32:28 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:34967 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878AbaEGRc0 (ORCPT
+	id S1751796AbaEGReJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 13:34:09 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:31317 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878AbaEGReF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 13:32:26 -0400
+	Wed, 7 May 2014 13:34:05 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <alexandre.belloni@free-electrons.com>,
+        <boris.brezillon@free-electrons.com>, <linus.walleij@linaro.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: cleanup for 3.16 #1
+Date: Wed, 7 May 2014 19:34:02 +0200
+Message-ID: <1399484042-27432-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-In-Reply-To: <1399362017-25787-3-git-send-email-hchaumette@adeneo-embedded.com>
-References: <1399362017-25787-1-git-send-email-hchaumette@adeneo-embedded.com> <1399362017-25787-3-git-send-email-hchaumette@adeneo-embedded.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Wed, 7 May 2014 10:31:45 -0700
-Message-ID: <CAGVrzcb6MP-LMrQDmeP8EcpN9y_RZe=_3hTYP6zZD_U5cJgdHw@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] ARM: i.MX6: Add OF configuration support for ksz9031
-To: Hubert Chaumette <hchaumette@adeneo-embedded.com>
-Cc: netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>, xobs@kosagi.com,
-        David Miller <davem@davemloft.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-06 0:40 GMT-07:00 Hubert Chaumette <hchaumette@adeneo-embedded.com>:
-> Adds support for ksz9031 PAD skew configuration over devicetree.
->
-> Signed-off-by: Hubert Chaumette <hchaumette@adeneo-embedded.com>
+Arnd, Olof, Kevin,
 
-Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+This is the first cleanup pull-request for 3.16. It is pretty big because it
+integrates the work from Boris about CCF and Alexandre about IIO/ADC. I
+integrated them in this cleanup topic because they both touch the core at91
+code, the clk and IIO drivers as well as the DT. The concerned maintainers
+added their tags.
 
-> ---
->  drivers/net/phy/micrel.c | 106 ++++++++++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 105 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
-> index d849684..bc7c7d2 100644
-> --- a/drivers/net/phy/micrel.c
-> +++ b/drivers/net/phy/micrel.c
-> @@ -283,6 +283,110 @@ static int ksz9021_config_init(struct phy_device *phydev)
->         return 0;
->  }
->
-> +#define MII_KSZ9031RN_MMD_CTRL_REG     0x0d
-> +#define MII_KSZ9031RN_MMD_REGDATA_REG  0x0e
-> +#define OP_DATA                                1
-> +#define KSZ9031_PS_TO_REG              60
-> +
-> +/* Extended registers */
-> +#define MII_KSZ9031RN_CONTROL_PAD_SKEW 4
-> +#define MII_KSZ9031RN_RX_DATA_PAD_SKEW 5
-> +#define MII_KSZ9031RN_TX_DATA_PAD_SKEW 6
-> +#define MII_KSZ9031RN_CLK_PAD_SKEW     8
-> +
-> +static int ksz9031_extended_write(struct phy_device *phydev,
-> +                                 u8 mode, u32 dev_addr, u32 regnum, u16 val)
-> +{
-> +       phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, dev_addr);
-> +       phy_write(phydev, MII_KSZ9031RN_MMD_REGDATA_REG, regnum);
-> +       phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, (mode << 14) | dev_addr);
-> +       return phy_write(phydev, MII_KSZ9031RN_MMD_REGDATA_REG, val);
-> +}
-> +
-> +static int ksz9031_extended_read(struct phy_device *phydev,
-> +                                u8 mode, u32 dev_addr, u32 regnum)
-> +{
-> +       phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, dev_addr);
-> +       phy_write(phydev, MII_KSZ9031RN_MMD_REGDATA_REG, regnum);
-> +       phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, (mode << 14) | dev_addr);
-> +       return phy_read(phydev, MII_KSZ9031RN_MMD_REGDATA_REG);
-> +}
-> +
-> +static int ksz9031_of_load_skew_values(struct phy_device *phydev,
-> +                                      struct device_node *of_node,
-> +                                      u16 reg, size_t field_sz,
-> +                                      char *field[], u8 numfields)
-> +{
-> +       int val[4] = {-1, -2, -3, -4};
-> +       int matches = 0;
-> +       u16 mask;
-> +       u16 maxval;
-> +       u16 newval;
-> +       int i;
-> +
-> +       for (i = 0; i < numfields; i++)
-> +               if (!of_property_read_u32(of_node, field[i], val + i))
-> +                       matches++;
-> +
-> +       if (!matches)
-> +               return 0;
-> +
-> +       if (matches < numfields)
-> +               newval = ksz9031_extended_read(phydev, OP_DATA, 2, reg);
-> +       else
-> +               newval = 0;
-> +
-> +       maxval = (field_sz == 4) ? 0xf : 0x1f;
-> +       for (i = 0; i < numfields; i++)
-> +               if (val[i] != -(i + 1)) {
-> +                       mask = 0xffff;
-> +                       mask ^= maxval << (field_sz * i);
-> +                       newval = (newval & mask) |
-> +                               (((val[i] / KSZ9031_PS_TO_REG) & maxval)
-> +                                       << (field_sz * i));
-> +               }
-> +
-> +       return ksz9031_extended_write(phydev, OP_DATA, 2, reg, newval);
-> +}
-> +
-> +static int ksz9031_config_init(struct phy_device *phydev)
-> +{
-> +       struct device *dev = &phydev->dev;
-> +       struct device_node *of_node = dev->of_node;
-> +       char *clk_skews[2] = {"rxc-skew-ps", "txc-skew-ps"};
-> +       char *rx_data_skews[4] = {
-> +               "rxd0-skew-ps", "rxd1-skew-ps",
-> +               "rxd2-skew-ps", "rxd3-skew-ps"
-> +       };
-> +       char *tx_data_skews[4] = {
-> +               "txd0-skew-ps", "txd1-skew-ps",
-> +               "txd2-skew-ps", "txd3-skew-ps"
-> +       };
-> +       char *control_skews[2] = {"txen-skew-ps", "rxdv-skew-ps"};
-> +
-> +       if (!of_node && dev->parent->of_node)
-> +               of_node = dev->parent->of_node;
-> +
-> +       if (of_node) {
-> +               ksz9031_of_load_skew_values(phydev, of_node,
-> +                               MII_KSZ9031RN_CLK_PAD_SKEW, 5,
-> +                               clk_skews, 2);
-> +
-> +               ksz9031_of_load_skew_values(phydev, of_node,
-> +                               MII_KSZ9031RN_CONTROL_PAD_SKEW, 4,
-> +                               control_skews, 2);
-> +
-> +               ksz9031_of_load_skew_values(phydev, of_node,
-> +                               MII_KSZ9031RN_RX_DATA_PAD_SKEW, 4,
-> +                               rx_data_skews, 4);
-> +
-> +               ksz9031_of_load_skew_values(phydev, of_node,
-> +                               MII_KSZ9031RN_TX_DATA_PAD_SKEW, 4,
-> +                               tx_data_skews, 4);
-> +       }
-> +       return 0;
-> +}
-> +
->  #define KSZ8873MLL_GLOBAL_CONTROL_4    0x06
->  #define KSZ8873MLL_GLOBAL_CONTROL_4_DUPLEX     (1 << 6)
->  #define KSZ8873MLL_GLOBAL_CONTROL_4_SPEED      (1 << 4)
-> @@ -469,7 +573,7 @@ static struct phy_driver ksphy_driver[] = {
->         .features       = (PHY_GBIT_FEATURES | SUPPORTED_Pause
->                                 | SUPPORTED_Asym_Pause),
->         .flags          = PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
-> -       .config_init    = kszphy_config_init,
-> +       .config_init    = ksz9031_config_init,
->         .config_aneg    = genphy_config_aneg,
->         .read_status    = genphy_read_status,
->         .ack_interrupt  = kszphy_ack_interrupt,
-> --
-> 2.0.0.rc0
->
+The patch by Linus is a move of at91 specific GPIO definitions out of the
+include/mach directory which is an step towards single zImage.
 
+Thanks, best regards,
 
+The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
+
+  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
+
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-cleanup
+
+for you to fetch changes up to 138e8f1c4e99cd349e50fd8b18aebbd2716ceb87:
+
+  ARM: at91/dt: at91-cosino_mega2560 remove useless tsadcc node (2014-05-07 18:28:41 +0200)
+
+----------------------------------------------------------------
+First cleanup series for 3.15
+- localize GPIO header in mach-at91 directory
+- big update on the CCF front with main and slow clocks
+- a cleanup of ADC and touchscreen driver with unification on IIO and
+  removal of old driver
+
+----------------------------------------------------------------
+Alexandre Belloni (15):
+      ARM: at91: sam9g45: remove unused platform_data
+      ARM: at91: sam9260: remove unused platform_data
+      iio: adc: at91: cleanup platform_data
+      iio: adc: at91_adc: Add support for touchscreens without TSMR
+      ARM: at91: sam9m10g45ek: Add touchscreen support through at91_adc
+      iio: adc: at91: remove unused include from include/mach
+      iio: adc: at91: add sam9rl support
+      ARM: at91: sam9rl: add at91_adc to support adc and touchscreen
+      ARM: at91: sam9rlek add touchscreen support through at91_adc
+      ARM: at91: sam9g45: switch from atmel_tsadcc to at91_adc
+      ARM: at91: sam9rl: switch from atmel_tsadcc to at91_adc
+      ARM: at91: remove atmel_tsadcc from sama5_defconfig
+      Input: atmel_tsadcc: remove driver
+      ARM: at91: remove atmel_tsadcc platform_data
+      ARM: at91/dt: at91-cosino_mega2560 remove useless tsadcc node
+
+Boris BREZILLON (11):
+      clk: at91: rework main clk implementation
+      clk: at91: update main clk documentation
+      clk: at91: add slow clks driver
+      clk: at91: add slow clk documentation
+      ARM: at91/dt: move sama5d3 SoC to the new main/slow clk model
+      ARM: at91/dt: add xtal frequencies to sama5d3xcm boards
+      ARM: at91/dt: add xtal frequencies to sama5d3 xplained board
+      ARM: at91/dt: move at91sam9261 SoC to the new main clock model
+      ARM: at91/dt: define main xtal frequency of the at91sam9261ek board
+      ARM: at91/dt: move at91sam9rl SoC to the new slow/main clock models
+      ARM: at91/dt: define sam9rlek crystal frequencies
+
+Linus Walleij (1):
+      ARM: at91: localize GPIO header
+
+Nicolas Ferre (1):
+      ASoC: sam9g20_wm8731: remove useless mach/gpio.h
+
+ .../devicetree/bindings/clock/at91-clock.txt       | 128 ++++-
+ MAINTAINERS                                        |   6 -
+ arch/arm/Kconfig                                   |   1 -
+ arch/arm/boot/dts/at91-cosino_mega2560.dts         |   5 -
+ arch/arm/boot/dts/at91-sama5d3_xplained.dts        |   8 +
+ arch/arm/boot/dts/at91sam9261.dtsi                 |  23 +-
+ arch/arm/boot/dts/at91sam9261ek.dts                |   4 +
+ arch/arm/boot/dts/at91sam9rl.dtsi                  |  46 +-
+ arch/arm/boot/dts/at91sam9rlek.dts                 |   9 +
+ arch/arm/boot/dts/sama5d3.dtsi                     |  61 ++-
+ arch/arm/boot/dts/sama5d3xcm.dtsi                  |   8 +
+ arch/arm/configs/at91sam9g45_defconfig             |   3 +-
+ arch/arm/configs/at91sam9rl_defconfig              |   3 +-
+ arch/arm/configs/sama5_defconfig                   |   1 -
+ arch/arm/mach-at91/at91rm9200_devices.c            |   1 +
+ arch/arm/mach-at91/at91sam9260_devices.c           |  12 +-
+ arch/arm/mach-at91/at91sam9261_devices.c           |   2 +-
+ arch/arm/mach-at91/at91sam9263_devices.c           |   1 +
+ arch/arm/mach-at91/at91sam9g45.c                   |   2 +-
+ arch/arm/mach-at91/at91sam9g45_devices.c           |  64 +--
+ arch/arm/mach-at91/at91sam9rl.c                    |   7 +
+ arch/arm/mach-at91/at91sam9rl_devices.c            |  84 ++-
+ arch/arm/mach-at91/board-1arm.c                    |   2 +-
+ arch/arm/mach-at91/board-afeb-9260v1.c             |   1 +
+ arch/arm/mach-at91/board-cam60.c                   |   1 +
+ arch/arm/mach-at91/board-carmeva.c                 |   1 +
+ arch/arm/mach-at91/board-cpu9krea.c                |   1 +
+ arch/arm/mach-at91/board-cpuat91.c                 |   2 +
+ arch/arm/mach-at91/board-csb337.c                  |   2 +-
+ arch/arm/mach-at91/board-csb637.c                  |   1 +
+ arch/arm/mach-at91/board-eb9200.c                  |   1 +
+ arch/arm/mach-at91/board-ecbat91.c                 |   1 +
+ arch/arm/mach-at91/board-eco920.c                  |   2 +
+ arch/arm/mach-at91/board-flexibity.c               |   1 +
+ arch/arm/mach-at91/board-foxg20.c                  |   1 +
+ arch/arm/mach-at91/board-gsia18s.c                 |   1 +
+ arch/arm/mach-at91/board-kafa.c                    |   1 +
+ arch/arm/mach-at91/board-kb9202.c                  |   1 +
+ arch/arm/mach-at91/board-pcontrol-g20.c            |   1 +
+ arch/arm/mach-at91/board-picotux200.c              |   1 +
+ arch/arm/mach-at91/board-rm9200ek.c                |   1 +
+ arch/arm/mach-at91/board-rsi-ews.c                 |   1 +
+ arch/arm/mach-at91/board-sam9-l9260.c              |   1 +
+ arch/arm/mach-at91/board-sam9260ek.c               |   1 +
+ arch/arm/mach-at91/board-sam9261ek.c               |   1 +
+ arch/arm/mach-at91/board-sam9263ek.c               |   1 +
+ arch/arm/mach-at91/board-sam9g20ek.c               |   1 +
+ arch/arm/mach-at91/board-sam9m10g45ek.c            |  17 +-
+ arch/arm/mach-at91/board-sam9rlek.c                |  17 +-
+ arch/arm/mach-at91/board-snapper9260.c             |   1 +
+ arch/arm/mach-at91/board-stamp9g20.c               |   1 +
+ arch/arm/mach-at91/board-yl-9200.c                 |   1 +
+ arch/arm/mach-at91/board.h                         |   3 -
+ arch/arm/mach-at91/gpio.c                          |   1 +
+ arch/arm/mach-at91/{include/mach => }/gpio.h       |   8 -
+ arch/arm/mach-at91/include/mach/at91_adc.h         | 107 ----
+ arch/arm/mach-at91/include/mach/hardware.h         |  15 +
+ arch/arm/mach-at91/leds.c                          |   1 +
+ arch/arm/mach-at91/pm.c                            |   1 +
+ drivers/clk/at91/Makefile                          |   4 +-
+ drivers/clk/at91/clk-main.c                        | 577 ++++++++++++++++++---
+ drivers/clk/at91/clk-slow.c                        | 467 +++++++++++++++++
+ drivers/clk/at91/pmc.c                             |  17 +
+ drivers/clk/at91/pmc.h                             |   9 +
+ drivers/clk/at91/sckc.c                            |  57 ++
+ drivers/clk/at91/sckc.h                            |  22 +
+ drivers/iio/adc/at91_adc.c                         | 340 ++++++++++--
+ drivers/input/touchscreen/Kconfig                  |  12 -
+ drivers/input/touchscreen/Makefile                 |   1 -
+ drivers/input/touchscreen/atmel_tsadcc.c           | 358 -------------
+ include/linux/clk/at91_pmc.h                       |   1 +
+ include/linux/platform_data/at91_adc.h             |  27 +-
+ include/linux/platform_data/atmel.h                |   7 -
+ sound/soc/atmel/sam9g20_wm8731.c                   |   1 -
+ 74 files changed, 1790 insertions(+), 791 deletions(-)
+ rename arch/arm/mach-at91/{include/mach => }/gpio.h (96%)
+ delete mode 100644 arch/arm/mach-at91/include/mach/at91_adc.h
+ create mode 100644 drivers/clk/at91/clk-slow.c
+ create mode 100644 drivers/clk/at91/sckc.c
+ create mode 100644 drivers/clk/at91/sckc.h
+ delete mode 100644 drivers/input/touchscreen/atmel_tsadcc.c
 
 -- 
-Florian
+Nicolas Ferre
