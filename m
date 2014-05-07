@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493AbaEGPG4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:06:56 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:32482 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756443AbaEGPCw (ORCPT
+	id S1756591AbaEGPHs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:07:48 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:10047 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932993AbaEGPCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:02:52 -0400
+	Wed, 7 May 2014 11:02:47 -0400
 From: Waiman Long <Waiman.Long@hp.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -25,9 +25,9 @@ Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
         Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
         Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
         Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v10 12/19] unfair qspinlock: Variable frequency lock stealing mechanism
-Date: Wed,  7 May 2014 11:01:40 -0400
-Message-Id: <1399474907-22206-13-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v10 09/19] qspinlock: Prepare for unfair lock support
+Date: Wed,  7 May 2014 11:01:37 -0400
+Message-Id: <1399474907-22206-10-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com>
 References: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com>
@@ -35,214 +35,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to fully resolve the lock waiter preemption problem in virtual
-guests, it is necessary to enable lock stealing in the lock waiters.
-A simple test-and-set lock, however, has 2 main problems:
+If unfair lock is supported, the lock acquisition loop at the end of
+the queue_spin_lock_slowpath() function may need to detect the fact
+the lock can be stolen. Code are added for the stolen lock detection.
 
- 1) The constant spinning on the lock word put a lot of cacheline
-    contention traffic on the affected cacheline, thus slowing tasks
-    that need to access the cacheline.
- 2) Lock starvation is a real possibility especially if the number of
-    virtual CPUs is large.
-
-To alleviate these problems, this patch implements a variable frequency
-(from 1/8 to 1/1024) lock stealing mechanism for the lock waiters
-in the queue. The node next to the queue head try to steal lock once
-every 8 iterations of the pause loop. The next one in the queue has
-half the lock stealing frequency (once every 16 iterations) and so
-on until it reaches a maximum of once every 1024 iterations.
-
-This mechanism reduces the cacheline contention problem on the lock
-word while trying to maintain as much of a FIFO order as possible.
+A new qhead macro is also defined as a shorthand for mcs.locked.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- kernel/locking/qspinlock.c |  147 +++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 146 insertions(+), 1 deletions(-)
+ kernel/locking/qspinlock.c |   26 +++++++++++++++++++-------
+ 1 files changed, 19 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/locking/qspinlock.c b/kernel/locking/qspinlock.c
-index a14241e..06dd486 100644
+index e98d7d4..9e7659e 100644
 --- a/kernel/locking/qspinlock.c
 +++ b/kernel/locking/qspinlock.c
-@@ -63,6 +63,11 @@
-  */
+@@ -64,6 +64,7 @@
  struct qnode {
  	struct mcs_spinlock mcs;
-+#ifdef CONFIG_PARAVIRT_UNFAIR_LOCKS
-+	int		lsteal_mask;	/* Lock stealing frequency mask	*/
-+	u32		prev_tail;	/* Tail code of previous node	*/
-+	struct qnode   *qprev;		/* Previous queue node addr	*/
-+#endif
  };
- #define qhead	mcs.locked	/* The queue head flag */
++#define qhead	mcs.locked	/* The queue head flag */
  
-@@ -215,6 +220,139 @@ xchg_tail(struct qspinlock *lock, u32 tail, u32 *pval)
- }
- #endif /* _Q_PENDING_BITS == 8 */
+ /*
+  * Per-CPU queue node structures; we can never have more than 4 nested
+@@ -216,18 +217,20 @@ xchg_tail(struct qspinlock *lock, u32 tail, u32 *pval)
  
-+/*
-+ ************************************************************************
-+ * Inline functions for supporting unfair queue lock			*
-+ ************************************************************************
-+ */
-+/*
-+ * Unfair lock support in a virtualized guest
-+ *
-+ * An unfair lock can be implemented using a simple test-and-set lock like
-+ * what is being done in a read-write lock. This simple scheme has 2 major
-+ * problems:
-+ *  1) It needs constant reading and occasionally writing to the lock word
-+ *     thus putting a lot of cacheline contention traffic on the affected
-+ *     cacheline.
-+ *  2) Lock starvation is a real possibility especially if the number of
-+ *     virtual CPUs is large.
-+ *
-+ * To reduce the undesirable side effects of an unfair lock, the queue
-+ * unfair spinlock implements a more elaborate scheme.  Lock stealing is
-+ * allowed in the following places:
-+ *  1) In the spin_lock and spin_trylock fastpaths
-+ *  2) When spinning in the waiter queue before becoming the queue head
-+ *
-+ * A lock acquirer has only one chance of stealing the lock in the spin_lock
-+ * and spin_trylock fastpath. If the attempt fails for spin_lock, the task
-+ * will be queued in the wait queue.
-+ *
-+ * Even in the wait queue, the task can still attempt to steal the lock
-+ * periodically at a frequency about inversely and logarithmically proportional
-+ * to its distance from the queue head. In other word, the closer it is to
-+ * the queue head, the higher a chance it has of stealing the lock. This
-+ * scheme reduces the load on the lock cacheline while trying to maintain
-+ * a somewhat FIFO way of getting the lock so as to reduce the chance of lock
-+ * starvation.
-+ */
-+#ifdef CONFIG_PARAVIRT_UNFAIR_LOCKS
-+#define DEF_LOOP_CNT(c)		int c = 0
-+#define INC_LOOP_CNT(c)		(c)++
-+#define LOOP_CNT(c)		c
-+#define LSTEAL_MIN		(1 << 3)
-+#define LSTEAL_MAX		(1 << 10)
-+#define LSTEAL_MIN_MASK		(LSTEAL_MIN - 1)
-+#define LSTEAL_MAX_MASK		(LSTEAL_MAX - 1)
-+
-+/**
-+ * unfair_init_vars - initialize unfair relevant fields in queue node structure
-+ * @node: Current queue node address
-+ */
-+static inline void unfair_init_vars(struct qnode *node)
-+{
-+	node->qprev	  = NULL;
-+	node->prev_tail   = 0;
-+	node->lsteal_mask = LSTEAL_MIN_MASK;
-+}
-+
-+/**
-+ * unfair_set_vars - set unfair related fields in the queue node structure
-+ * @node     : Current queue node address
-+ * @prev     : Previous queue node address
-+ * @prev_tail: Previous tail code
-+ */
-+static inline void
-+unfair_set_vars(struct qnode *node, struct qnode *prev, u32 prev_tail)
-+{
-+	if (!static_key_false(&paravirt_unfairlocks_enabled))
-+		return;
-+
-+	node->qprev	= prev;
-+	node->prev_tail = prev_tail;
-+	/*
-+	 * This node will spin double the number of time of the previous node
-+	 * before attempting to steal the lock until it reaches a maximum.
-+	 */
-+	node->lsteal_mask = prev->qhead ? LSTEAL_MIN_MASK :
-+			    (prev->lsteal_mask << 1) + 1;
-+	if (node->lsteal_mask > LSTEAL_MAX_MASK)
-+		node->lsteal_mask = LSTEAL_MAX_MASK;
-+	/* Make sure the new fields are visible to others */
-+	smp_wmb();
-+}
-+
-+/**
-+ * unfair_get_lock - try to steal the lock periodically
-+ * @lock : Pointer to queue spinlock structure
-+ * @node : Current queue node address
-+ * @tail : My tail code value
-+ * @count: Loop count
-+ * Return: true if the lock has been stolen, false otherwise
-+ *
-+ * When a true value is returned, the caller will have to notify the next
-+ * node only if the qhead flag is set and the next pointer in the queue
-+ * node is not NULL.
-+ */
-+static noinline int
-+unfair_get_lock(struct qspinlock *lock, struct qnode *node, u32 tail, int count)
-+{
-+	u32	     prev_tail;
-+	int	     isqhead;
-+	struct qnode *next;
-+
-+	if (!static_key_false(&paravirt_unfairlocks_enabled) ||
-+	   ((count & node->lsteal_mask) != node->lsteal_mask))
-+		return false;
-+
-+	if (!queue_spin_trylock_unfair(lock)) {
-+		/*
-+		 * Lock stealing fails, re-adjust the lsteal mask so that
-+		 * it is about double of the previous node.
-+		 */
-+		struct qnode *prev = node->qprev;
-+
-+		node->lsteal_mask = prev->qhead ? LSTEAL_MIN_MASK :
-+				    (prev->lsteal_mask << 1) + 1;
-+		if (node->lsteal_mask > LSTEAL_MAX_MASK)
-+			node->lsteal_mask = LSTEAL_MAX_MASK;
-+		return false;
-+	}
-+	queue_spin_unlock(lock);
-+	return false;
-+}
-+
-+#else /* CONFIG_PARAVIRT_UNFAIR_LOCKS */
-+#define	DEF_LOOP_CNT(c)
-+#define	INC_LOOP_CNT(c)
-+#define	LOOP_CNT(c)	0
-+
-+static void unfair_init_vars(struct qnode *node)	{}
-+static void unfair_set_vars(struct qnode *node, struct qnode *prev,
-+		u32 prev_tail)				{}
-+static int unfair_get_lock(struct qspinlock *lock, struct qnode *node,
-+		u32 tail, int count)			{ return false; }
-+#endif /* CONFIG_PARAVIRT_UNFAIR_LOCKS */
-+
  /**
   * get_qlock - Set the lock bit and own the lock
-  * @lock : Pointer to queue spinlock structure
-@@ -365,11 +503,17 @@ static noinline void queue_spin_lock_slowerpath(struct qspinlock *lock,
- 	 * if there was a previous node; link it and wait.
- 	 */
- 	if (old & _Q_TAIL_MASK) {
-+		DEF_LOOP_CNT(cnt);
-+
+- * @lock: Pointer to queue spinlock structure
++ * @lock : Pointer to queue spinlock structure
++ * Return: 1 if lock acquired, 0 otherwise
+  *
+  * This routine should only be called when the caller is the only one
+  * entitled to acquire the lock.
+  */
+-static __always_inline void get_qlock(struct qspinlock *lock)
++static __always_inline int get_qlock(struct qspinlock *lock)
+ {
+ 	struct __qspinlock *l = (void *)lock;
+ 
+ 	barrier();
+ 	ACCESS_ONCE(l->locked) = _Q_LOCKED_VAL;
+ 	barrier();
++	return 1;
+ }
+ 
+ /**
+@@ -365,7 +368,7 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
+ 	tail = encode_tail(smp_processor_id(), idx);
+ 
+ 	node += idx;
+-	node->mcs.locked = 0;
++	node->qhead = 0;
+ 	node->mcs.next = NULL;
+ 
+ 	/*
+@@ -391,7 +394,7 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
  		prev = decode_tail(old);
-+		unfair_set_vars(node, prev, old);
  		ACCESS_ONCE(prev->mcs.next) = (struct mcs_spinlock *)node;
  
--		while (!smp_load_acquire(&node->qhead))
-+		while (!smp_load_acquire(&node->qhead)) {
-+			INC_LOOP_CNT(cnt);
-+			unfair_get_lock(lock, node, tail, LOOP_CNT(cnt));
+-		while (!smp_load_acquire(&node->mcs.locked))
++		while (!smp_load_acquire(&node->qhead))
  			arch_mutex_cpu_relax();
-+		}
  	}
  
- 	/*
-@@ -469,6 +613,7 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
- 	node += idx;
- 	node->qhead = 0;
- 	node->mcs.next = NULL;
-+	unfair_init_vars(node);
+@@ -403,6 +406,7 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
+ 	 *
+ 	 * *,x,y -> *,0,0
+ 	 */
++retry_queue_wait:
+ 	while ((val = smp_load_acquire(&lock->val.counter))
+ 				       & _Q_LOCKED_PENDING_MASK)
+ 		arch_mutex_cpu_relax();
+@@ -419,12 +423,20 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
+ 	 */
+ 	for (;;) {
+ 		if (val != tail) {
+-			get_qlock(lock);
+-			break;
++			/*
++			 * The get_qlock function will only failed if the
++			 * lock was stolen.
++			 */
++			if (get_qlock(lock))
++				break;
++			else
++				goto retry_queue_wait;
+ 		}
+ 		old = atomic_cmpxchg(&lock->val, val, _Q_LOCKED_VAL);
+ 		if (old == val)
+ 			goto release;	/* No contention */
++		else if (old & _Q_LOCKED_MASK)
++			goto retry_queue_wait;
  
+ 		val = old;
+ 	}
+@@ -435,7 +447,7 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
+ 	while (!(next = (struct qnode *)ACCESS_ONCE(node->mcs.next)))
+ 		arch_mutex_cpu_relax();
+ 
+-	arch_mcs_spin_unlock_contended(&next->mcs.locked);
++	arch_mcs_spin_unlock_contended(&next->qhead);
+ 
+ release:
  	/*
- 	 * We touched a (possibly) cold cacheline in the per-cpu queue node;
 -- 
 1.7.1
 
