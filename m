@@ -1,182 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330AbaEGJQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:16:56 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:63690 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932217AbaEGJQx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:16:53 -0400
+	id S1755503AbaEGJSZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:18:25 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38096 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754886AbaEGJSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 05:18:23 -0400
+Message-ID: <5369FA56.1070802@ti.com>
+Date: Wed, 7 May 2014 12:18:14 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140507085743.GA31680@bbox>
-References: <000001cf6816$d538c370$7faa4a50$%yang@samsung.com>
-	<20140505152014.GA8551@cerebellum.variantweb.net>
-	<1399312844.2570.28.camel@buesod1.americas.hpqcorp.net>
-	<20140505134615.04cb627bb2784cabcb844655@linux-foundation.org>
-	<1399328550.2646.5.camel@buesod1.americas.hpqcorp.net>
-	<000001cf69c9$5776f330$0664d990$%yang@samsung.com>
-	<20140507085743.GA31680@bbox>
-Date: Wed, 7 May 2014 17:16:52 +0800
-Message-ID: <CAL1ERfOXNrfKqMVs-Yz8yJjKKU3L5fjUEOb0Aeyqc37py-BWEg@mail.gmail.com>
-Subject: Re: [PATCH] zram: remove global tb_lock by using lock-free CAS
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Weijie Yang <weijie.yang@samsung.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Bob Liu <bob.liu@oracle.com>, Dan Streetman <ddstreet@ieee.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Griffin <peter.griffin@linaro.org>, <linux-kernel@vger.kernel.org>
+CC: <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH 00/13] video: Arnds randconfig fixes for video
+References: <1398342509-10243-1-git-send-email-peter.griffin@linaro.org>
+In-Reply-To: <1398342509-10243-1-git-send-email-peter.griffin@linaro.org>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="XJ9X1xP7s9gC39uwr7aATQlBFkqCtAVve"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 7, 2014 at 4:57 PM, Minchan Kim <minchan@kernel.org> wrote:
-> On Wed, May 07, 2014 at 03:51:35PM +0800, Weijie Yang wrote:
->> On Tue, May 6, 2014 at 6:22 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
->> > On Mon, 2014-05-05 at 13:46 -0700, Andrew Morton wrote:
->> >> On Mon, 05 May 2014 11:00:44 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
->> >>
->> >> > > > @@ -339,12 +338,14 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
->> >> > > >         unsigned long handle;
->> >> > > >         u16 size;
->> >> > > >
->> >> > > > -       read_lock(&meta->tb_lock);
->> >> > > > +       while(atomic_cmpxchg(&meta->table[index].state, IDLE, ACCESS) != IDLE)
->> >> > > > +               cpu_relax();
->> >> > > > +
->> >> > >
->> >> > > So... this might be dumb question, but this looks like a spinlock
->> >> > > implementation.
->> >> > >
->> >> > > What advantage does this have over a standard spinlock?
->> >> >
->> >> > I was wondering the same thing. Furthermore by doing this you'll loose
->> >> > the benefits of sharing the lock... your numbers do indicate that it is
->> >> > for the better. Also, note that hopefully rwlock_t will soon be updated
->> >> > to be fair and perform up to par with spinlocks, something which is long
->> >> > overdue. So you could reduce the critical region by implementing the
->> >> > same granularity, just don't implement your own locking schemes, like
->> >> > this.
->>
->> Actually, the main reason I use a CAS rather than a standard lock here is
->> that I want to minimize the meta table memory overhead. A tiny reason is
->> my fuzzy memory that CAS is more efficient than spinlock (please correct me
->> if I am wrong).
->>
->> Anyway, I changed the CAS to spinlock and rwlock, re-test them:
->>
->>       Test       lock-free       spinlock     rwlock
->> ------------------------------------------------------
->>  Initial write   1424141.62   1426372.84   1423019.21
->>        Rewrite   1652504.81   1623307.14   1653682.04
->>           Read  11404668.35  11242885.05  10938125.00
->>        Re-read  11555483.75   11253906.6  10837773.50
->>   Reverse Read   8394478.17   8277250.34   7768057.39
->>    Stride read   9372229.95   9010498.53   8692871.77
->>    Random read   9187221.90   8988080.55   8661184.60
->> Mixed workload   5843370.85   5414729.54   5451055.03
->>   Random write   1608947.04   1572276.64   1588866.51
->>         Pwrite   1311055.32   1302463.04   1302001.06
->>          Pread   4652056.11   4555802.18   4469672.34
->
-> I'd like to clear it out.
-> The spinlock and rwlock you mentioned is per-meta entry lock like state
-> you added or global lock for meta? If it's latter, rwlock means base?
+--XJ9X1xP7s9gC39uwr7aATQlBFkqCtAVve
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-The spinlock and rwlock is per-meta entry lock like state.
-Because the base data is added in the first mail, I don't mention
-them here.
+On 24/04/14 15:28, Peter Griffin wrote:
+> This patchset series addresses various bugs found and fixed by Arnd Ber=
+gmann=20
+> whilst doing randconfig builds.
+>=20
+> My involvement has been to review, add/check the maintainers are correc=
+t
+> and submit upstream to try and reduce the backlog.
 
->>
->> And I cann't say which one is the best, they have the similar performance.
->
-> Most popular use of zram is the in-memory swap for small embedded system
-> so I don't want to increase memory footprint without good reason although
-> it makes synthetic benchmark. Alhought it's 1M for 1G, it isn't small if we
-> consider compression ratio and real free memory after boot(But data I have
-> an interest is mixed workload enhancement. It would be important for heavy
-> memory pressure for latency so it attractives me a lot. Anyway, I need number
-> for back up the justification with real swap usecase rather than zram-blk.
-> Recently, I have considered per-process reclaim  based on zram so maybe I will
-> have a test for that).
-> But recently, I have received private mail from some server folks to use
-> zram-blk, not zram-swap so in case of that, such enhancement would be
-> desirable so my point is I'm not saying the drop of the patch and let's
-> find proper solution to meet both and gather more data.
->
->>
->> Wait, iozone will create temporary files for every test thread, so there is no
->> possibility that these threads access the same table[index] concurrenctly.
->> So, I use fio to test the raw zram block device.
->> To enhance the possibility of access the same table[index] conflictly, I set zram
->> with a small disksize(10M) and let thread run with large loop count.
->>
->> On the same test machine, the fio test command is:
->> fio --bs=32k --randrepeat=1 --randseed=100 --refill_buffers
->> --scramble_buffers=1 --direct=1 --loops=3000 --numjobs=4
->> --filename=/dev/zram0 --name=seq-write --rw=write --stonewall
->> --name=seq-read --rw=read --stonewall --name=seq-readwrite
->> --rw=rw --stonewall --name=rand-readwrite --rw=randrw --stonewall
->>
->>     Test      base    lock-free   spinlock   rwlock
->> ------------------------------------------------------
->> seq-write   935109.2   999580.5   998134.8   994384.6
->>  seq-read  5598064.6  6444011.5  6243184.6  6197514.2
->>    seq-rw  1403963.0  1635673.0  1633823.0  1635972.2
->>   rand-rw  1389864.4  1612520.4  1613403.6  1612129.8
->
-> What's the difference between base and rwlock?
-> Base means global rwlock while rwlock means per-meta entry rwlock?
->
+I've applied patches 1, 2, 3, 4, 5, 6, 7, 11 to fbdev tree. I'll apply
+13 later if someone is able to test it.
 
-Base means  global rwlock, it is the 3.15.0-rc3 code.
-rwlock means per-meta entry rwlock.
+ Tomi
 
-Sorry to confuse you.
 
->>
->> This result(KB/s, average of 5 tests) shows the performance improvement
->> on base version, however, I cann't say which method is the best.
->>
->> >>
->> >> It sounds like seqlocks will match this access pattern pretty well?
->> >
->> > Indeed. And after a closer look, except for zram_slot_free_notify(),
->> > that lock is always shared. So, unless fine graining it implies taking
->> > the lock exclusively like in this patch (if so, that needs to be
->> > explicitly documented in the changelog), we would ideally continue to
->> > share it. That _should_ provide nicer performance numbers when using the
->> > correct lock.
->> >
->>
->> Andrew mentioned seqlocks, however, I think it is hard the use seqlocks here
->> after I recheck the codes. No matter use it as a meta global lock or a
->> table[index] lock. The main reason is the writer will free the handle rather than
->> just change some value.
->> If I misunderstand you, please let me know.
->>
->> Now, I am in a delimma. For minimizing the memory overhead, I like to use CAS.
->> However, it is not a standard way.
->>
->> Any complaint or suggestions are welcomed.
->>
->> Regards,
->>
->> >
->> >
->>
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-> --
-> Kind regards,
-> Minchan Kim
+
+--XJ9X1xP7s9gC39uwr7aATQlBFkqCtAVve
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTafpWAAoJEPo9qoy8lh71jmwQAKifJN3yMDOYqJduXT11aLCF
+oCUKQN+YAlu5JD8vRiYzlcYXjwRViLYSYVSrrF+3EvOOFzV7Rz6nAltUXTUJHkRN
+9cfcp/tg6J8KejJIoLtGc/uv/aUp3vzohvp+KLyHr4Vuv0P6R2Jp/RF3ZAwIZw2C
+Rb5t8NwTf9PEz28stwkOpqqJaYPxvuEi4OorbZ53hqjjlTUYyTS+gtbdh70ctBiB
+T5MTkSSQVJionex3AhK+k3RGaTQ/WVKfa7UQMwnzWwo3Eot0CDUHIOQBHI4GujKE
+oD1in7tpsQjMLApHlrZATQGUD/Np7pGngJzRXl4aNncNWVll5ObQUWQm2LAQPhrP
+Dl4Vv+L9Hl+UAUd87pYo4LwUmAVFg+UZkHtMdGgNSQ840zZaxrJ0TsBXr7yDSDRs
+M8HjCyuFpTpTTguurp4WSb9sduhNzto6cgQFYyq8AHoLew2WhwVPHzFDxgtdtist
+s1PcV4/qR9u41iR0xbdmvCoZeJoWszyvBbYwIZzty1uCFYcxyoYfy3/vsps6uju/
+U4ugdRGXekNqrb643MbUzFgsveT5BMnatAc2bNcIErwUFK4NgQlrStjLJq9ni3Nz
+faCc0D/GbbfZvPyVsp9LL9VKQ0LYXStCP2vnJA/uvIuFBJLxx5NM3EXK23kYTImQ
+IsgRwNwtB044LF53B3Mp
+=fi+e
+-----END PGP SIGNATURE-----
+
+--XJ9X1xP7s9gC39uwr7aATQlBFkqCtAVve--
