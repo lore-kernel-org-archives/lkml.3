@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720AbaEGCzK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 22:55:10 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55848 "EHLO
+	id S1752788AbaEGC5a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 22:57:30 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55874 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751105AbaEGCzI (ORCPT
+	with ESMTP id S1751149AbaEGC52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 22:55:08 -0400
+	Tue, 6 May 2014 22:57:28 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Arnd Bergmann <arnd@arndb.de>, wim@iguana.be, dbaryshkov@gmail.com,
         dwmw2@infradead.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-watchdog@vger.kernel.org, linux-sunxi@googlegroups.com,
         linux@roeck-us.net, Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v2 1/6] wdt: sunxi: Move restart code to the watchdog driver
-Date: Tue,  6 May 2014 21:44:19 -0500
-Message-Id: <1399430664-29091-2-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 4/6] ARM: sunxi: Remove init_machine callback
+Date: Tue,  6 May 2014 21:44:22 -0500
+Message-Id: <1399430664-29091-5-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -23,87 +23,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of the watchdog code is duplicated between the machine restart code and
-the watchdog driver. Add the restart hook to the watchdog driver, to be able to
-remove it from the machine code eventually.
+The init_machine hook is now at its default value. We can remove it.
+
+Even though the sun4i and sun7i machines are nothing more than generic machines
+now, leave them in so that we won't have to add them back if needed, and so
+that the machine is still displayed in /proc/cpuinfo.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/watchdog/sunxi_wdt.c | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ arch/arm/mach-sunxi/sunxi.c | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-diff --git a/drivers/watchdog/sunxi_wdt.c b/drivers/watchdog/sunxi_wdt.c
-index cd00a7836cdc..0d07855bc88a 100644
---- a/drivers/watchdog/sunxi_wdt.c
-+++ b/drivers/watchdog/sunxi_wdt.c
-@@ -14,6 +14,7 @@
-  */
+diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
+index 1c62a0a021d7..efb2f93b02e6 100644
+--- a/arch/arm/mach-sunxi/sunxi.c
++++ b/arch/arm/mach-sunxi/sunxi.c
+@@ -12,17 +12,11 @@
  
- #include <linux/clk.h>
-+#include <linux/delay.h>
- #include <linux/err.h>
- #include <linux/init.h>
- #include <linux/io.h>
-@@ -22,9 +23,12 @@
- #include <linux/moduleparam.h>
- #include <linux/of.h>
- #include <linux/platform_device.h>
-+#include <linux/reboot.h>
- #include <linux/types.h>
- #include <linux/watchdog.h>
+ #include <linux/clk-provider.h>
+ #include <linux/clocksource.h>
+-#include <linux/of_platform.h>
  
-+#include <asm/system_misc.h>
-+
- #define WDT_MAX_TIMEOUT         16
- #define WDT_MIN_TIMEOUT         1
- #define WDT_MODE_TIMEOUT(n)     ((n) << 3)
-@@ -70,6 +74,26 @@ static const int wdt_timeout_map[] = {
- 	[16] = 0b1011, /* 16s */
+ #include <asm/mach/arch.h>
+ 
+ #include "common.h"
+ 
+-static void __init sunxi_dt_init(void)
+-{
+-	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+-}
+-
+ static const char * const sunxi_board_dt_compat[] = {
+ 	"allwinner,sun4i-a10",
+ 	"allwinner,sun5i-a10s",
+@@ -31,7 +25,6 @@ static const char * const sunxi_board_dt_compat[] = {
  };
  
-+static void __iomem *reboot_wdt_base;
-+
-+static void sun4i_wdt_restart(enum reboot_mode mode, const char *cmd)
-+{
-+	/* Enable timer and set reset bit in the watchdog */
-+	writel(WDT_MODE_EN | WDT_MODE_RST_EN, reboot_wdt_base + WDT_MODE);
-+
-+	/*
-+	 * Restart the watchdog. The default (and lowest) interval
-+	 * value for the watchdog is 0.5s.
-+	 */
-+	writel(WDT_CTRL_RELOAD, reboot_wdt_base + WDT_CTRL);
-+
-+	while (1) {
-+		mdelay(5);
-+		writel(WDT_MODE_EN | WDT_MODE_RST_EN,
-+		       reboot_wdt_base + WDT_MODE);
-+	}
-+}
-+
- static int sunxi_wdt_ping(struct watchdog_device *wdt_dev)
- {
- 	struct sunxi_wdt_dev *sunxi_wdt = watchdog_get_drvdata(wdt_dev);
-@@ -181,6 +205,9 @@ static int sunxi_wdt_probe(struct platform_device *pdev)
- 	if (unlikely(err))
- 		return err;
+ DT_MACHINE_START(SUNXI_DT, "Allwinner A1X (Device Tree)")
+-	.init_machine	= sunxi_dt_init,
+ 	.dt_compat	= sunxi_board_dt_compat,
+ MACHINE_END
  
-+	reboot_wdt_base = sunxi_wdt->wdt_base;
-+	arm_pm_restart = sun4i_wdt_restart;
-+
- 	dev_info(&pdev->dev, "Watchdog enabled (timeout=%d sec, nowayout=%d)",
- 			sunxi_wdt->wdt_dev.timeout, nowayout);
+@@ -49,7 +42,6 @@ static void __init sun6i_timer_init(void)
+ }
  
-@@ -191,6 +218,8 @@ static int sunxi_wdt_remove(struct platform_device *pdev)
- {
- 	struct sunxi_wdt_dev *sunxi_wdt = platform_get_drvdata(pdev);
+ DT_MACHINE_START(SUN6I_DT, "Allwinner sun6i (A31) Family")
+-	.init_machine	= sunxi_dt_init,
+ 	.init_time	= sun6i_timer_init,
+ 	.dt_compat	= sun6i_board_dt_compat,
+ 	.smp		= smp_ops(sun6i_smp_ops),
+@@ -61,6 +53,5 @@ static const char * const sun7i_board_dt_compat[] = {
+ };
  
-+	arm_pm_restart = NULL;
-+
- 	watchdog_unregister_device(&sunxi_wdt->wdt_dev);
- 	watchdog_set_drvdata(&sunxi_wdt->wdt_dev, NULL);
- 
+ DT_MACHINE_START(SUN7I_DT, "Allwinner sun7i (A20) Family")
+-	.init_machine	= sunxi_dt_init,
+ 	.dt_compat	= sun7i_board_dt_compat,
+ MACHINE_END
 -- 
 1.9.1
 
