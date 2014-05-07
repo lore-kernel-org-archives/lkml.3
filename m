@@ -1,83 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933632AbaEGNSf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:18:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45655 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933384AbaEGNPS (ORCPT
+	id S933651AbaEGNSo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:18:44 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:41315 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933384AbaEGNSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:15:18 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Leon Ma <xindong.ma@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 62/70] hrtimer: Prevent remote enqueue of leftmost timers
-Date: Wed,  7 May 2014 14:13:05 +0100
-Message-Id: <1399468393-10140-63-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
-References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Wed, 7 May 2014 09:18:40 -0400
+Date: Wed, 7 May 2014 09:18:36 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Levente Kurusa <levex@linux.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux ATA/IDE <linux-ide@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Joe Thomas <Joe.Thomas@dothill.com>
+Subject: Re: [PATCH] libata: clean up ZPODD when a port is detached
+Message-ID: <20140507131836.GD16702@htj.dyndns.org>
+References: <1399384668-20394-1-git-send-email-levex@linux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399384668-20394-1-git-send-email-levex@linux.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.10 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, May 06, 2014 at 03:57:48PM +0200, Levente Kurusa wrote:
+> When a ZPODD device is unbound via sysfs, the ACPI notify handler
+> is not removed. This causes panics as observed in Bug #74601. The
+> panic only happens when the wake happens from outside the kernel
+> (i.e. inserting a media or pressing a button). Add a loop to
+> ata_port_detach which loops through the port's devices and checks
+> if zpodd is enabled, if so call zpodd_exit.
+> 
+> Cc: stable@vger.kernel.org
+> Reviewed-by: Aaron Lu <aaron.lu@intel.com>
+> Signed-off-by: Levente Kurusa <levex@linux.com>
 
-------------------
+Applied to libata/for-3.15-fixes.
 
-From: Leon Ma <xindong.ma@intel.com>
+Thanks.
 
-commit 012a45e3f4af68e86d85cce060c6c2fed56498b2 upstream.
-
-If a cpu is idle and starts an hrtimer which is not pinned on that
-same cpu, the nohz code might target the timer to a different cpu.
-
-In the case that we switch the cpu base of the timer we already have a
-sanity check in place, which determines whether the timer is earlier
-than the current leftmost timer on the target cpu. In that case we
-enqueue the timer on the current cpu because we cannot reprogram the
-clock event device on the target.
-
-If the timers base is already the target CPU we do not have this
-sanity check in place so we enqueue the timer as the leftmost timer in
-the target cpus rb tree, but we cannot reprogram the clock event
-device on the target cpu. So the timer expires late and subsequently
-prevents the reprogramming of the target cpu clock event device until
-the previously programmed event fires or a timer with an earlier
-expiry time gets enqueued on the target cpu itself.
-
-Add the same target check as we have for the switch base case and
-start the timer on the current cpu if it would become the leftmost
-timer on the target.
-
-[ tglx: Rewrote subject and changelog ]
-
-Signed-off-by: Leon Ma <xindong.ma@intel.com>
-Link: http://lkml.kernel.org/r/1398847391-5994-1-git-send-email-xindong.ma@intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- kernel/hrtimer.c | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 0d6df7b..6de65d8 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -246,6 +246,11 @@ again:
- 			goto again;
- 		}
- 		timer->base = new_base;
-+	} else {
-+		if (cpu != this_cpu && hrtimer_check_target(timer, new_base)) {
-+			cpu = this_cpu;
-+			goto again;
-+		}
- 	}
- 	return new_base;
- }
 -- 
-1.9.1
-
+tejun
