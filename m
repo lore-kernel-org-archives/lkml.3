@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681AbaEGMRu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 08:17:50 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:59419 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190AbaEGMRs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 08:17:48 -0400
-Date: Wed, 7 May 2014 14:17:43 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Rik van Riel <riel@redhat.com>, Preeti Murthy <preeti.lkml@gmail.com>,
-        umgwanakikbuti@gmail.com, LKML <linux-kernel@vger.kernel.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        george.mccollister@gmail.com, ktkhai@parallels.com,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
-Message-ID: <20140507121743.GA12190@gmail.com>
-References: <20140502004237.79dd3de6@annuminas.surriel.com>
- <1399011219.5233.55.camel@marge.simpson.net>
- <53633B81.1080403@redhat.com>
- <CAM4v1pPwe4B0K8MPpf183LqabRoRKRPi_R7n8-Y02aR43M8iQQ@mail.gmail.com>
- <53663565.9080306@redhat.com>
- <20140506132516.GJ11096@twins.programming.kicks-ass.net>
- <5369442B.9010505@redhat.com>
- <20140506204117.GR17778@laptop.programming.kicks-ass.net>
+	id S932760AbaEGMSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 08:18:47 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57904 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755645AbaEGMSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 08:18:45 -0400
+From: Sricharan R <r.sricharan@ti.com>
+To: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
+        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
+        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <mark.rutland@arm.com>, <tglx@linutronix.de>, <galak@codeaurora.org>,
+        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>,
+        <robherring2@gmail.com>
+CC: Sricharan R <r.sricharan@ti.com>
+Subject: [PATCH V6 0/2] arm: dts: dra7: Updates for adding crossbar device
+Date: Wed, 7 May 2014 17:46:36 +0530
+Message-ID: <1399464998-23216-1-git-send-email-r.sricharan@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140506204117.GR17778@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some socs have a large number of interrupts requests to service
+the needs of its many peripherals and subsystems. All of the interrupt
+requests lines from the subsystems are not needed at the same
+time, so they have to be muxed to the controllers appropriately.
+In such places a interrupt controllers are preceded by an
+IRQ CROSSBAR that provides flexibility in muxing the device interrupt
+requests to the controller inputs.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+The dts file update to support the crossbar device and convert
+peripheral irq numbers to crossbar number are added here.
 
-> On Tue, May 06, 2014 at 04:20:59PM -0400, Rik van Riel wrote:
-> > On 05/06/2014 09:25 AM, Peter Zijlstra wrote:
-> > > On Sun, May 04, 2014 at 08:41:09AM -0400, Rik van Riel wrote:
-> > >> Even on 8-node DL980 systems, the NUMA distance in the
-> > >> SLIT table is less than RECLAIM_DISTANCE, and we will
-> > >> do wake_affine across the entire system.
-> > > 
-> > > Yeah, so the problem is that (AFAIK) ACPI doesn't actually specify a
-> > > metric for the SLIT distance. This (in as far as BIOS people would care
-> > > to stick to specs anyhow) has lead to the 'fun' situation where BIOS
-> > > engineers tweak SLIT table values to make OSes behave as they thing it
-> > > should.
-> > > 
-> > > So if the BIOS engineer finds that this system should have <
-> > > RECLAIM_DISTANCE it will simply make the table such that the max SLIT
-> > > value is below that.
-> > > 
-> > > And yes, I've seen this :-(
-> > 
-> > It appears to be the case on the vast majority of the NUMA systems 
-> > that are actually in use.
-> > 
-> > To me, this suggests that we should probably deal with it.
-> 
-> What we could do is redefine this distance in hops, that'll force 
-> them to lie more blatantly and actually miss represent the topology.
+This is a rebase on top of 3.15-rc4
 
-and we should make sure we reduce any graph they represent, so that 
-they can lie only through very heavy misrepresentation of the topology 
-(i.e. not just weight tweaks) which will bite them in other areas 
-(like the mm).
+This series depends on crossbar-driver-fixes sent below
+http://marc.info/?l=linux-omap&m=139929963420299&w=2
 
-Thanks,
+[V6] Reordered patch 3 to patch 1 and
+     squashed patch 2 and 3 from V5 in to patch 2
 
-	Ingo
+Sricharan R (2):
+  arm: dts: dra7: Add routable-irqs property for gic node
+  arm: dts: dra7: Add crossbar device binding
+
+ arch/arm/boot/dts/dra7.dtsi |  109 +++++++++++++++++++++++++------------------
+ 1 file changed, 63 insertions(+), 46 deletions(-)
+
+-- 
+1.7.9.5
+
