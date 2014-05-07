@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761AbaEGFfa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 01:35:30 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:41310 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905AbaEGFf1 (ORCPT
+	id S1752096AbaEGFkg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 01:40:36 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:34396 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546AbaEGFke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 01:35:27 -0400
+	Wed, 7 May 2014 01:40:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <1398284120-4986-1-git-send-email-marek@goldelico.com>
-References: <1398284120-4986-1-git-send-email-marek@goldelico.com>
-Date: Wed, 7 May 2014 07:35:26 +0200
-Message-ID: <CAAfyv34a3FfKUzwz7UDt-77V692eLdJL+h4c0pve2V+g351Weg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] Add display support for gta04 device
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, rdunlap@infradead.org,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-fbdev@vger.kernel.org,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        Marek Belisko <marek@goldelico.com>
+In-Reply-To: <20140506163559.GA5308@localhost>
+References: <20140506163559.GA5308@localhost>
+Date: Wed, 7 May 2014 11:10:34 +0530
+Message-ID: <CAKohpokYEvazxm0-JJXPzq-4OgLXmROfaCMcgHDZwugChOxtsQ@mail.gmail.com>
+Subject: Re: Performance regression in v3.14
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Johan Hovold <jhovold@gmail.com>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tomi,
+Cc'ing Dirk who is taking care of intel-pstate driver.
 
-any objections to this patch set? If not can you please take it? Thanks.
-
-On Wed, Apr 23, 2014 at 10:15 PM, Marek Belisko <marek@goldelico.com> wrote:
-> This 3 patches adding display support for openmoko gta04 device.
-> First patch add DT bindings for topolly td028 panel. Second add description for
-> dss + panel and third fix panel probing when panel is compiled as module.
+On 6 May 2014 22:05, Johan Hovold <jhovold@gmail.com> wrote:
+> After updating my main system from v3.13 to v3.14.2, I found that the
+> git bash-completion was extremely sluggish. Completing a file name would
+> take roughly six rather than one second on this Haswell machine
+> (i7-4770). (Other things, such as git rebase, also felt slower, but
+> the completion issue was much more obvious and easy to measure).
 >
-> Changes from v1:
-> - extend panel compatible string by 'omapdss'
-> - add tpo-td028 panel to dss_compat_conv_list
-> - add MODULE_ALIAS macro to properly probe panel when is compiled as module
+> I managed to reproduce the problem using the following minimal construct
 >
-> Marek Belisko (3):
->   omapdss: panel-tpo-td028ec1: Add DT support.
->   ARM: dts: oma3-gta04: Add display support
->   omapdss: panel-tpo-td028ec1: Add module alias
+>         cat dmesg.repeat | while read x; do true; done
 >
->  .../bindings/video/toppoly,td028ttec1.txt          | 30 ++++++++
->  arch/arm/boot/dts/omap3-gta04.dts                  | 86 ++++++++++++++++++++++
->  arch/arm/mach-omap2/display.c                      |  1 +
->  .../omap2/displays-new/panel-tpo-td028ttec1.c      | 33 ++++++++-
->  4 files changed, 149 insertions(+), 1 deletion(-)
->  create mode 100644 Documentation/devicetree/bindings/video/toppoly,td028ttec1.txt
+> where dmesg.repeat is simply dmesg concatenated together to an
+> equivalent number of lines as produced by git ls-files in the
+> kernel-source tree root (45k), and where the actual processing of each
+> line has been removed.
 >
-> --
-> 1.8.3.2
+> Most of the time I get:
 >
+>         $ time cat dmesg.repeat | while read x; do true; done
+>
+>         real    0m6.091s
+>         user    0m3.674s
+>         sys     0m2.447s
+>
+> but sometimes it only takes one second.
+>
+>         $ time cat dmesg.repeat | while read x; do true; done
+>
+>         real    0m1.100s
+>         user    0m0.544s
+>         sys     0m0.570s
+>
+> I don't seem to be able to reproduce the problem on 3.13 where the pipe
+> always takes about one second to finish.
+>
+> Taking all but one core offline seems to make the problem go away, and so
+> does using the performance rather than powersave governor of the
+> intel_pstate cpufreq driver (on at least one of two online cores).
+>
+> Moving the mouse cursor makes to loop finish faster, and so does
+> switching to a another terminal to print cpufreq/cpuinfo_cur_freq which
+> was around cpuinfo_min_freq several times (when tracing, see below).
+>
+> I could not reproduce the problem when using perf record, but I can get
+> function-profile traces using ftrace (in which case the loop takes about
+> 60 seconds instead of six seconds to finish).
+>
+> Comparing the traces I see a lot of functions taking ten times longer to
+> finish, but I guess that's expected if this is indeed a cpufreq issue.
+>
+> Since this is my main machine (and only multi-core machine at the
+> moment) I'm not able to bisect this myself. And for the same reason I
+> have not verified that the problem persists in v3.15-rc.
+>
+> I don't see any cpufreq patches in the v3.14.3 stable queue nor anything
+> obviously related and marked for stable in v3.15-rc.
+>
+> Any ideas about what might be going on?
 
-BR,
+I tried to take a look at the diff for cpufreq between 3.13 and 3.14.2 and
+couldn't pin point on any change which might cause it. Don't have a clue
+of what's going on. I don't know how to help you on this.
 
-marek
+Normally I test my stuff on a ARM board and I don't remember facing
+any such behavior there. There might be something wrong with intel-pstate
+as well..
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+Also, can you try to use acpi-cpufreq instead? And see how that is behaving?
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
+--
+viresh
