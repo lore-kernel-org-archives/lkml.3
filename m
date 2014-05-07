@@ -1,101 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641AbaEGV2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 17:28:04 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:44918 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487AbaEGV2C (ORCPT
+	id S1752487AbaEGV2m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 17:28:42 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:53726 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100AbaEGV2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 17:28:02 -0400
-Date: Wed, 7 May 2014 14:27:56 -0700
-From: josh@joshtriplett.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 12/45] torture: Rename RCU_QEMU_MAC to
- TORTURE_QEMU_MAC
-Message-ID: <20140507212756.GH27924@cloud>
-References: <20140429002455.GA15461@linux.vnet.ibm.com>
- <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1398731133-18925-12-git-send-email-paulmck@linux.vnet.ibm.com>
+	Wed, 7 May 2014 17:28:41 -0400
+Date: Wed, 7 May 2014 14:28:39 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch v3 6/6] mm, compaction: terminate async compaction when
+ rescheduling
+In-Reply-To: <20140507142033.1ec148fe35059121db547f25@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1405071421580.8454@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com> <alpine.DEB.2.02.1405061920470.18635@chino.kir.corp.google.com> <alpine.DEB.2.02.1405061922220.18635@chino.kir.corp.google.com>
+ <20140507142033.1ec148fe35059121db547f25@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398731133-18925-12-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 05:25:00PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> This commit makes the torture scripts a bit more RCU-independent.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On Wed, 7 May 2014, Andrew Morton wrote:
 
-One comment below; with or without that change:
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
-> ---
->  tools/testing/selftests/rcutorture/bin/functions.sh | 6 +++---
->  tools/testing/selftests/rcutorture/bin/kvm.sh       | 4 ++--
->  2 files changed, 5 insertions(+), 5 deletions(-)
+> > --- a/mm/compaction.c
+> > +++ b/mm/compaction.c
+> > @@ -500,8 +500,13 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+> >  			return 0;
+> >  	}
+> >  
+> > +	if (cond_resched()) {
+> > +		/* Async terminates prematurely on need_resched() */
+> > +		if (cc->mode == MIGRATE_ASYNC)
+> > +			return 0;
+> > +	}
 > 
-> diff --git a/tools/testing/selftests/rcutorture/bin/functions.sh b/tools/testing/selftests/rcutorture/bin/functions.sh
-> index 623939cf814e..41fb52b805e4 100644
-> --- a/tools/testing/selftests/rcutorture/bin/functions.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/functions.sh
-> @@ -124,7 +124,7 @@ identify_qemu_append () {
->  
->  # identify_qemu_args qemu-cmd serial-file
->  #
-> -# Output arguments for qemu arguments based on the RCU_QEMU_MAC
-> +# Output arguments for qemu arguments based on the TORTURE_QEMU_MAC
->  # and TORTURE_QEMU_INTERACTIVE environment variables.
->  identify_qemu_args () {
->  	case "$1" in
-> @@ -133,9 +133,9 @@ identify_qemu_args () {
->  	qemu-system-ppc64)
->  		echo -enable-kvm -M pseries -cpu POWER7 -nodefaults
->  		echo -device spapr-vscsi
-> -		if test -n "$TORTURE_QEMU_INTERACTIVE" -a -n "$RCU_QEMU_MAC"
-> +		if test -n "$TORTURE_QEMU_INTERACTIVE" -a -n "$TORTURE_QEMU_MAC"
->  		then
-> -			echo -device spapr-vlan,netdev=net0,mac=$RCU_QEMU_MAC
-> +			echo -device spapr-vlan,netdev=net0,mac=$TORTURE_QEMU_MAC
->  			echo -netdev bridge,br=br0,id=net0
->  		elif test -n "$TORTURE_QEMU_INTERACTIVE"
->  		then
-> diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> index 2f9605ed5b58..1a4a68c76914 100644
-> --- a/tools/testing/selftests/rcutorture/bin/kvm.sh
-> +++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> @@ -128,7 +128,7 @@ do
->  		;;
->  	--mac)
->  		checkarg --mac "(MAC address)" $# "$2" '^\([0-9a-fA-F]\{2\}:\)\{5\}[0-9a-fA-F]\{2\}$' error
-> -		RCU_QEMU_MAC=$2; export RCU_QEMU_MAC
-> +		TORTURE_QEMU_MAC=$2; export TORTURE_QEMU_MAC
-
-Can't you drop this export the same way you did previous exports?
-
->  		shift
->  		;;
->  	--no-initrd)
-> @@ -380,7 +380,7 @@ then
->  	echo RCU_QEMU_CMD="$RCU_QEMU_CMD; export RCU_QEMU_CMD"
->  	echo TORTURE_QEMU_INTERACTIVE="$TORTURE_QEMU_INTERACTIVE;
->  		export TORTURE_QEMU_INTERACTIVE"
-> -	echo RCU_QEMU_MAC="$RCU_QEMU_MAC; export RCU_QEMU_MAC"
-> +	echo TORTURE_QEMU_MAC="$TORTURE_QEMU_MAC; export TORTURE_QEMU_MAC"
->  	echo "mkdir -p "$resdir" || :"
->  	echo "mkdir $resdir/$ds"
->  	cat $T/script
-> -- 
-> 1.8.1.5
+> Comment comments the obvious.  What is less obvious is *why* we do this.
 > 
+
+Async compaction is most prevalent for thp pagefaults and without 
+zone->lru_lock contention we have no other termination criteria.  Without 
+this, we would scan a potentially very long zone (zones 64GB in length in 
+my testing) and it would be very expensive for pagefault.  Async is best 
+effort, so if it is becoming too expensive then it's better to just 
+fallback to PAGE_SIZE pages instead and rely on khugepaged to collapse 
+later.
+
+> Someone please remind my why sync and async compaction use different
+> scanning cursors?
+> 
+
+It's introduced in this patchset.  Async compaction does not consider 
+pageblocks unless it is MIGRATE_MOVABLE since it is best effort, sync 
+compaction considers all pageblocks.  In the past, we only updated the 
+cursor for sync compaction since it would be wrong to update it for async 
+compaction if it can skip certain pageblocks.  Unfortunately, if async 
+compaction is relied upon solely for certain allocations (such as thp 
+pagefaults), it is possible to scan an enormous amount of a 64GB zone, for 
+example, pointlessly every time if none of the memory can be isolated.
+
+The result is that sync compaction always updates both scanners and async 
+compaction only updates its own scanner.  Either scanner is only updated 
+if the new cursor is "beyond" the previous cursor.  ("Beyond" is _after_ 
+the previous migration scanner pfn and _before_ the previous free scanner 
+pfn.)
