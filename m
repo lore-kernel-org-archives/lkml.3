@@ -1,116 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899AbaEGSWt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 14:22:49 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:17364 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaEGSWr (ORCPT
+	id S1752038AbaEGSYa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 14:24:30 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:49877 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192AbaEGSY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 14:22:47 -0400
-Message-ID: <1399486965.4567.9.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 0/4] ipc/shm.c: increase the limits for SHMMAX, SHMALL
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, aswin@hp.com,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Date: Wed, 07 May 2014 11:22:45 -0700
-In-Reply-To: <5369C43D.1000206@gmail.com>
-References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
-		 <CAKgNAkjuU68hgyMOVGBVoBTOhhGdBytQh6H0ExiLoXfujKyP_w@mail.gmail.com>
-		 <1399406800.13799.20.camel@buesod1.americas.hpqcorp.net>
-		 <CAKgNAkjOKP7P9veOpnokNkVXSszVZt5asFsNp7rm7AXJdjcLLA@mail.gmail.com>
-	 <1399414081.30629.2.camel@buesod1.americas.hpqcorp.net>
-	 <5369C43D.1000206@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 7 May 2014 14:24:26 -0400
+Date: Wed, 7 May 2014 22:24:10 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf_fuzzer crash on pentium 4
+Message-ID: <20140507182410.GA8607@moon>
+References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
+ <20140506202307.GA1458@moon>
+ <alpine.DEB.2.10.1405061729350.4849@vincent-weaver-1.umelst.maine.edu>
+ <20140506214630.GB1458@moon>
+ <alpine.DEB.2.10.1405071244570.6340@vincent-weaver-1.umelst.maine.edu>
+ <20140507164902.GD1444@moon>
+ <20140507165811.GG1444@moon>
+ <alpine.DEB.2.10.1405071305010.6340@vincent-weaver-1.umelst.maine.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1405071305010.6340@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-07 at 07:27 +0200, Michael Kerrisk (man-pages) wrote:
-> On 05/07/2014 12:08 AM, Davidlohr Bueso wrote:
-> > On Tue, 2014-05-06 at 22:40 +0200, Michael Kerrisk (man-pages) wrote:
-> >> Hi Davidlohr,
-> >>
-> >> On Tue, May 6, 2014 at 10:06 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> >>> On Fri, 2014-05-02 at 15:16 +0200, Michael Kerrisk (man-pages) wrote:
-> >>>> Hi Manfred,
-> >>>>
-> >>>> On Mon, Apr 21, 2014 at 4:26 PM, Manfred Spraul
-> >>>> <manfred@colorfullife.com> wrote:
-> >>>>> Hi all,
-> >>>>>
-> >>>>> the increase of SHMMAX/SHMALL is now a 4 patch series.
-> >>>>> I don't have ideas how to improve it further.
-> >>>>
-> >>>> On the assumption that your patches are heading to mainline, could you
-> >>>> send me a man-pages patch for the changes?
-> >>>
-> >>> Btw, I think that the code could still use some love wrt documentation.
-> >>
-> >> (Agreed.)
-> >>
-> >>> Andrew, please consider this for -next if folks agree. Thanks.
-> >>>
-> >>> 8<----------------------------------------------------------
-> >>>
-> >>> From: Davidlohr Bueso <davidlohr@hp.com>
-> >>> Subject: [PATCH] ipc,shm: document new limits in the uapi header
-> >>>
-> >>> This is useful in the future and allows users to
-> >>> better understand the reasoning behind the changes.
-> >>>
-> >>> Also use UL as we're dealing with it anyways.
-> >>>
-> >>> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> >>> ---
-> >>>  include/uapi/linux/shm.h | 14 ++++++++------
-> >>>  1 file changed, 8 insertions(+), 6 deletions(-)
-> >>>
-> >>> diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
-> >>> index 74e786d..e37fb08 100644
-> >>> --- a/include/uapi/linux/shm.h
-> >>> +++ b/include/uapi/linux/shm.h
-> >>> @@ -8,17 +8,19 @@
-> >>>  #endif
-> >>>
-> >>>  /*
-> >>> - * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
-> >>
-> >> Something is wrong in the line above (missing word(s)?) ("are upper
-> >> limits are defaults")
-> >>
-> >>> - * be modified by sysctl.
-> >>> + * SHMMNI, SHMMAX and SHMALL are the default upper limits which can be
-> >>> + * modified by sysctl. Both SHMMAX and SHMALL have their default values
-> >>> + * to the maximum limit which is as large as it can be without helping
-> >>> + * userspace overflow the values. There is really nothing the kernel
-> >>> + * can do to avoid this any variables. It is therefore not advised to
-> >>
-> >> Something is missing in that last line.
-> >>
-> >>> + * make them any larger. This is suitable for both 32 and 64-bit systems.
-> >>
-> >> "This" is not so clear. I suggest replacing with an actual noun.
+On Wed, May 07, 2014 at 01:07:40PM -0400, Vince Weaver wrote:
 > > 
-> > Good point. Perhaps 'These values are ...' would do instead. 
+> > Vince, I'm trying to figure out where it might come from, but no
+> > ideas yet.
 > 
-> That's better.
+> I just got this, also looks like poison (see RBX).
+
+Indeed, except ending 2b value.
+
+> This could be related to the ongoing memory corruption bug found in 
+> another thread and not p4-related at all.
 > 
-> Did you miss the first point I raised above?
+> I thought I was running with PeterZ's latest patch that was supposed to 
+> avoid the corruption.  Hmmm.  Let me reboot and try a few more things.
 
-No, actually our emails crossed paths and I had sent a suggestion before
-I replied to yours: https://lkml.org/lkml/2014/5/6/613
-
-Thanks.
-Davidlohr
-
+Thanks! Please ping me if find something new.
