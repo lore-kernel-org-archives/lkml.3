@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222AbaEGI4d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 04:56:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28779 "EHLO mx1.redhat.com"
+	id S1755664AbaEGI6e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 04:58:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16364 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932164AbaEGI4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 04:56:31 -0400
-Message-ID: <5369F167.5000005@redhat.com>
-Date: Wed, 07 May 2014 10:40:07 +0200
+	id S1752675AbaEGI6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 04:58:32 -0400
+Message-ID: <5369F5B0.7050307@redhat.com>
+Date: Wed, 07 May 2014 10:58:24 +0200
 From: Paolo Bonzini <pbonzini@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Bandan Das <bsd@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [RFC PATCH 3/4] KVM: emulate: avoid per-byte copying in instruction
- fetches
-References: <1399400175-23754-1-git-send-email-pbonzini@redhat.com>	<1399400175-23754-4-git-send-email-pbonzini@redhat.com> <jpgbnvai4ry.fsf@nelium.bos.redhat.com>
-In-Reply-To: <jpgbnvai4ry.fsf@nelium.bos.redhat.com>
+To: Hu Yaohui <loki2441@gmail.com>, Abel Gordon <abel@stratoscale.com>
+CC: Bandan Das <bsd@redhat.com>, kvm <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Muli Ben-Yehuda <muli@stratoscale.com>
+Subject: Re: KVM Nested L2 guest startup problems
+References: <CAHqbYQv+ZekSRQBbdEdfo+pXrM4ErjVDcj1T4oxHSP8Tc+322A@mail.gmail.com>	<53636B1D.8030405@redhat.com>	<CAHqbYQsTnJifwQMnhzaBEBYNpN9aHaZ4Vr0GhNkQZuN+o2vNtA@mail.gmail.com>	<5363BF42.9020505@redhat.com>	<CAHqbYQvjBmeu2_WzrSesGA=PH+8-ZfYxdmKxvsPfHRYNEcObAg@mail.gmail.com>	<jpgzjj0xbxl.fsf@nelium.bos.redhat.com>	<CAHqbYQuaaUaGTahryghh0nX99msMgeNQr=yv34mbgDJbFeSCbw@mail.gmail.com>	<CAESbUUzDm0REihDHinZ+fmQL8MWqn4kYCY8mQaVEnmVr4hh7NA@mail.gmail.com> <CAHqbYQuv73Wm_9p-_yhYn5C5K9Ag+8Az+sJ_-WEnk9u9Z586Ww@mail.gmail.com>
+In-Reply-To: <CAHqbYQuv73Wm_9p-_yhYn5C5K9Ag+8Az+sJ_-WEnk9u9Z586Ww@mail.gmail.com>
 X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 07/05/2014 06:36, Bandan Das ha scritto:
->> > +	_x = *(_type __aligned(1) *) &_fc->data[ctxt->_eip - _fc->start]; \
-> For my own understanding, how does the __aligned help here ?
+Il 04/05/2014 18:33, Hu Yaohui ha scritto:
+>> I experienced a similar problem that was related to nested code
+>> having some bugs related to apicv and other new vmx features.
+>>
+>> For example, the code enabled posted interrupts to run L2 even when the
+>> feature was not exposed to L1 and L1 didn't use it.
+>>
+>> Try changing prepare_vmcs02  to force disabling posted_interrupts,
+>> code should looks like:
+>>
+>> ....
+>> ....
+>> exec_control = vmcs12->pin_based_vm_exec_control;
+>> exec_control |= vmcs_config.pin_based_exec_ctrl;
+>> exec_control &= ~(PIN_BASED_VMX_PREEMPTION_TIMER|PIN_BASED_POSTED_INTR);
+>> vmcs_write32(PIN_BASED_VM_EXEC_CONTROL, exec_control);
+>> ....
+>> ...
+>>
+>> and also
+>>
+>> ...
+>> ...
+>> exec_control &= ~(SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
+>>      SECONDARY_EXEC_VIRTUAL_INTR_DELIVERY |
+>>      SECONDARY_EXEC_APIC_REGISTER_VIRT |
+>>      SECONDARY_EXEC_PAUSE_LOOP_EXITING);
 
-Except for 16-byte SSE accesses, x86 doesn't distinguish aligned and 
-unaligned accesses.  You can read 4 bytes at 0x2345 and the processor 
-will do the right thing.  Still it's better to tell the compiler what 
-we're doing.
+PLE should be left enabled, I think.
 
-> Wouldn't
-> that result in unaligned accesses that will actually impact performance ?
+Apart from that, I'll change the suggestion into a patch.
 
-These accesses *can* and will in fact be unaligned.  For example, say 
-you have "mov ax,0x1234" which is 0xb8 0x34 0x12.  When you read it into 
-the fetch cache, you will have data[0] == 0xb8, data[1] == 0x34, data[2] 
-== 0x12.  Fetching the 16-bit immediate from data[1] will then be an 
-unaligned access.
+Thanks!
 
 Paolo
+
