@@ -1,113 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934199AbaEGNhi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:37:38 -0400
-Received: from mga03.intel.com ([143.182.124.21]:16929 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933215AbaEGNhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:37:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1003,1389772800"; 
-   d="scan'208";a="428870219"
-Message-ID: <536A39C0.5060205@linux.intel.com>
-Date: Wed, 07 May 2014 16:48:48 +0300
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
-        Julius Werner <jwerner@chromium.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [regression 3.15-rc3] Resume from s4 broken by 1f81b6d22a5980955b01e08cf27fb745dc9b686f
-References: <20140505180530.GA18465@intel.com> <CAODwPW_57G+Lebe2Xarem9P-L6ePtAaZfy5kpNVEtgkWbc0FWw@mail.gmail.com> <20140506114126.GB18465@intel.com>
-In-Reply-To: <20140506114126.GB18465@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S934067AbaEGNfS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:35:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45356 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756141AbaEGNN2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 09:13:28 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 06/70] ext4: fix jbd2 warning under heavy xattr load
+Date: Wed,  7 May 2014 14:12:09 +0100
+Message-Id: <1399468393-10140-7-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
+References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2014 02:41 PM, Ville Syrjälä wrote:
-> On Mon, May 05, 2014 at 12:32:22PM -0700, Julius Werner wrote:
->> Hmmm... very odd. I unfortunately don't have a machine that can easily
->> do S4 at hand, but I did test this on an IVB with XHCI_RESET_ON_RESUME
->> in S3 (essentially the same code path), and I didn't run into any
->> problems.
->>
->> How exactly does your machine fail on resume? Is it a kernel crash or
->> just a hang? Can you try getting some debug output (by setting 'echo N
->>> /sys/module/printk/parameters/console_suspend' and trying to catch
->> the crash on the screen or a serial line, or maybe through pstore)? I
->> really don't see much that could go wrong with this patch, so without
->> more info it will be hard to understand your problem.
->>
->> Also, I noticed that you have two HID devices plugged in during
->> suspend. Does it make a difference if you have different devices (e.g.
->> a mass storage stick) or none at all?
->
-> Looks like it doesn't like it when there's anything plugged into the
-> "SS" ports. I tried with just a HID keyboard or with just a hub. In
-> both cases it fails to resume. If I have nothing connected to the "SS"
-> ports then it resumes just fine.
->
-> I managed to catch something with ramoops. Looks like it's hitting
-> POISON_FREE when trying to delete some list entry.
->
+3.11.10.10 -stable review patch.  If anyone has any objections, please let me know.
 
-> <4>[  107.047230] xhci_hcd 0000:00:14.0: Slot 1 endpoint 2 not removed from BW list!
-> <4>[  107.047574] general protection fault: 0000 [#1] PREEMPT SMP
+------------------
 
-I took a look at the xhci_mem_cleanup() function and to me it looks
-like it tries to access a list_head that is already freed.
+From: Jan Kara <jack@suse.cz>
 
-The struct list_head xhci->devs[].eps[].bw_endpoint_list is added to an endpoint 
-list in xhci->rh_bw[].bw_table.interval_bw[].endpoints
+commit ec4cb1aa2b7bae18dd8164f2e9c7c51abcf61280 upstream.
 
-xhci_mem_cleanup() frees all devices (the allocated xhci->devs[], containing the 
-bw_endpoint_list) before it starts to loop through, and delete entries from the 
-xhci->rh_bw[].bw_table.interval_bw[].endpoints list.
+When heavily exercising xattr code the assertion that
+jbd2_journal_dirty_metadata() shouldn't return error was triggered:
 
-I can't see how this relates to Julius patch though, and I'm not sure yet why it 
-only triggers when devices are connected to SS ports. Maybe just unlucky timing?
+WARNING: at /srv/autobuild-ceph/gitbuilder.git/build/fs/jbd2/transaction.c:1237
+jbd2_journal_dirty_metadata+0x1ba/0x260()
 
-Does this help?:
+CPU: 0 PID: 8877 Comm: ceph-osd Tainted: G    W 3.10.0-ceph-00049-g68d04c9 #1
+Hardware name: Dell Inc. PowerEdge R410/01V648, BIOS 1.6.3 02/07/2011
+ ffffffff81a1d3c8 ffff880214469928 ffffffff816311b0 ffff880214469968
+ ffffffff8103fae0 ffff880214469958 ffff880170a9dc30 ffff8802240fbe80
+ 0000000000000000 ffff88020b366000 ffff8802256e7510 ffff880214469978
+Call Trace:
+ [<ffffffff816311b0>] dump_stack+0x19/0x1b
+ [<ffffffff8103fae0>] warn_slowpath_common+0x70/0xa0
+ [<ffffffff8103fb2a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff81267c2a>] jbd2_journal_dirty_metadata+0x1ba/0x260
+ [<ffffffff81245093>] __ext4_handle_dirty_metadata+0xa3/0x140
+ [<ffffffff812561f3>] ext4_xattr_release_block+0x103/0x1f0
+ [<ffffffff81256680>] ext4_xattr_block_set+0x1e0/0x910
+ [<ffffffff8125795b>] ext4_xattr_set_handle+0x38b/0x4a0
+ [<ffffffff810a319d>] ? trace_hardirqs_on+0xd/0x10
+ [<ffffffff81257b32>] ext4_xattr_set+0xc2/0x140
+ [<ffffffff81258547>] ext4_xattr_user_set+0x47/0x50
+ [<ffffffff811935ce>] generic_setxattr+0x6e/0x90
+ [<ffffffff81193ecb>] __vfs_setxattr_noperm+0x7b/0x1c0
+ [<ffffffff811940d4>] vfs_setxattr+0xc4/0xd0
+ [<ffffffff8119421e>] setxattr+0x13e/0x1e0
+ [<ffffffff811719c7>] ? __sb_start_write+0xe7/0x1b0
+ [<ffffffff8118f2e8>] ? mnt_want_write_file+0x28/0x60
+ [<ffffffff8118c65c>] ? fget_light+0x3c/0x130
+ [<ffffffff8118f2e8>] ? mnt_want_write_file+0x28/0x60
+ [<ffffffff8118f1f8>] ? __mnt_want_write+0x58/0x70
+ [<ffffffff811946be>] SyS_fsetxattr+0xbe/0x100
+ [<ffffffff816407c2>] system_call_fastpath+0x16/0x1b
 
-diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-index c089668..b1a8a5f 100644
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -1822,6 +1822,16 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
-                 kfree(cur_cd);
-         }
+The reason for the warning is that buffer_head passed into
+jbd2_journal_dirty_metadata() didn't have journal_head attached. This is
+caused by the following race of two ext4_xattr_release_block() calls:
 
-+       num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
-+       for (i = 0; i < num_ports; i++) {
-+               struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
-+               for (j = 0; j < XHCI_MAX_INTERVAL; j++) {
-+                       struct list_head *ep = &bwt->interval_bw[j].endpoints;
-+                       while (!list_empty(ep))
-+                               list_del_init(ep->next);
-+               }
-+       }
-+
-         for (i = 1; i < MAX_HC_SLOTS; ++i)
-                 xhci_free_virt_device(xhci, i);
+CPU1                                CPU2
+ext4_xattr_release_block()          ext4_xattr_release_block()
+lock_buffer(bh);
+/* False */
+if (BHDR(bh)->h_refcount == cpu_to_le32(1))
+} else {
+  le32_add_cpu(&BHDR(bh)->h_refcount, -1);
+  unlock_buffer(bh);
+                                    lock_buffer(bh);
+                                    /* True */
+                                    if (BHDR(bh)->h_refcount == cpu_to_le32(1))
+                                      get_bh(bh);
+                                      ext4_free_blocks()
+                                        ...
+                                        jbd2_journal_forget()
+                                          jbd2_journal_unfile_buffer()
+                                          -> JH is gone
+  error = ext4_handle_dirty_xattr_block(handle, inode, bh);
+  -> triggers the warning
 
-@@ -1857,16 +1867,6 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
-         if (!xhci->rh_bw)
-                 goto no_bw;
+We fix the problem by moving ext4_handle_dirty_xattr_block() under the
+buffer lock. Sadly this cannot be done in nojournal mode as that
+function can call sync_dirty_buffer() which would deadlock. Luckily in
+nojournal mode the race is harmless (we only dirty already freed buffer)
+and thus for nojournal mode we leave the dirtying outside of the buffer
+lock.
 
--       num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
--       for (i = 0; i < num_ports; i++) {
--               struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
--               for (j = 0; j < XHCI_MAX_INTERVAL; j++) {
--                       struct list_head *ep = &bwt->interval_bw[j].endpoints;
--                       while (!list_empty(ep))
--                               list_del_init(ep->next);
--               }
--       }
--
-         for (i = 0; i < num_ports; i++) {
-                 struct xhci_tt_bw_info *tt, *n;
-                 list_for_each_entry_safe(tt, n, &xhci->rh_bw[i].tts, tt_list) {
+Reported-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/ext4/xattr.c | 23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
+index 1423c48..298e9c8 100644
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -517,8 +517,8 @@ static void ext4_xattr_update_super_block(handle_t *handle,
+ }
+ 
+ /*
+- * Release the xattr block BH: If the reference count is > 1, decrement
+- * it; otherwise free the block.
++ * Release the xattr block BH: If the reference count is > 1, decrement it;
++ * otherwise free the block.
+  */
+ static void
+ ext4_xattr_release_block(handle_t *handle, struct inode *inode,
+@@ -538,16 +538,31 @@ ext4_xattr_release_block(handle_t *handle, struct inode *inode,
+ 		if (ce)
+ 			mb_cache_entry_free(ce);
+ 		get_bh(bh);
++		unlock_buffer(bh);
+ 		ext4_free_blocks(handle, inode, bh, 0, 1,
+ 				 EXT4_FREE_BLOCKS_METADATA |
+ 				 EXT4_FREE_BLOCKS_FORGET);
+-		unlock_buffer(bh);
+ 	} else {
+ 		le32_add_cpu(&BHDR(bh)->h_refcount, -1);
+ 		if (ce)
+ 			mb_cache_entry_release(ce);
++		/*
++		 * Beware of this ugliness: Releasing of xattr block references
++		 * from different inodes can race and so we have to protect
++		 * from a race where someone else frees the block (and releases
++		 * its journal_head) before we are done dirtying the buffer. In
++		 * nojournal mode this race is harmless and we actually cannot
++		 * call ext4_handle_dirty_xattr_block() with locked buffer as
++		 * that function can call sync_dirty_buffer() so for that case
++		 * we handle the dirtying after unlocking the buffer.
++		 */
++		if (ext4_handle_valid(handle))
++			error = ext4_handle_dirty_xattr_block(handle, inode,
++							      bh);
+ 		unlock_buffer(bh);
+-		error = ext4_handle_dirty_xattr_block(handle, inode, bh);
++		if (!ext4_handle_valid(handle))
++			error = ext4_handle_dirty_xattr_block(handle, inode,
++							      bh);
+ 		if (IS_SYNC(inode))
+ 			ext4_handle_sync(handle);
+ 		dquot_free_block(inode, EXT4_C2B(EXT4_SB(inode->i_sb), 1));
+-- 
+1.9.1
+
