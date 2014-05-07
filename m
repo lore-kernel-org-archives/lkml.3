@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932735AbaEGMGx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 08:06:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32895 "EHLO mx1.redhat.com"
+	id S932763AbaEGMHT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 08:07:19 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58475 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932181AbaEGMGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 08:06:52 -0400
-Date: Wed, 7 May 2014 14:06:03 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, will.deacon@arm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 2/3] perf tests: Add dwarf unwind test on ARM
-Message-ID: <20140507120603.GC2019@krava.brq.redhat.com>
-References: <1399389979-11279-1-git-send-email-jean.pihet@linaro.org>
- <1399389979-11279-3-git-send-email-jean.pihet@linaro.org>
+	id S932745AbaEGMHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 08:07:17 -0400
+Message-ID: <536A21B6.9040900@ti.com>
+Date: Wed, 7 May 2014 15:06:14 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399389979-11279-3-git-send-email-jean.pihet@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sricharan R <r.sricharan@ti.com>, <tony@atomide.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
+        <linux@arm.linux.org.uk>, <rnayak@ti.com>, <marc.zyngier@arm.com>,
+        <grant.likely@linaro.org>, <mark.rutland@arm.com>,
+        <tglx@linutronix.de>, <galak@codeaurora.org>,
+        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>,
+        <robherring2@gmail.com>
+Subject: Re: [PATCH V5 0/3] arm: dts: dra7: Updates for adding crossbar device
+References: <1399384579-25620-1-git-send-email-r.sricharan@ti.com>
+In-Reply-To: <1399384579-25620-1-git-send-email-r.sricharan@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 05:26:18PM +0200, Jean Pihet wrote:
+On 05/06/2014 04:56 PM, Sricharan R wrote:
+> Some socs have a large number of interrupts requests to service
+> the needs of its many peripherals and subsystems. All of the interrupt
+> requests lines from the subsystems are not needed at the same
+> time, so they have to be muxed to the controllers appropriately.
+> In such places a interrupt controllers are preceded by an
+> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
+> requests to the controller inputs.
+> 
+> The dts file update to support the crossbar device and convert
+> peripheral irq numbers to crossbar number are added here.
+> 
+> This is a rebase of V4 series on top of 3.15-rc4
+> 
+> This series depends on crossbar-driver-fixes sent below
+> http://marc.info/?l=linux-omap&m=139929963420299&w=2
 
-SNIP
+For USB and SATA
 
-> diff --git a/tools/perf/arch/arm/tests/dwarf-unwind.c b/tools/perf/arch/arm/tests/dwarf-unwind.c
-> new file mode 100644
-> index 0000000..d618f5f
-> --- /dev/null
-> +++ b/tools/perf/arch/arm/tests/dwarf-unwind.c
-> @@ -0,0 +1,59 @@
-> +#include <string.h>
-> +#include "perf_regs.h"
-> +#include "thread.h"
-> +#include "map.h"
-> +#include "event.h"
-> +#include "tests/tests.h"
-> +
-> +#define STACK_SIZE 8192
-> +
-> +static int sample_ustack(struct perf_sample *sample,
-> +			 struct thread *thread, u64 *regs)
-> +{
-> +	struct stack_dump *stack = &sample->user_stack;
-> +	struct map *map;
-> +	unsigned long sp;
-> +	u64 stack_size, *buf;
-> +
-> +	buf = malloc(STACK_SIZE);
-> +	if (!buf) {
-> +		pr_debug("failed to allocate sample uregs data\n");
-> +		return -1;
-> +	}
-> +
-> +	sp = (unsigned long) regs[PERF_REG_ARM_SP];
-> +
-> +	map = map_groups__find(&thread->mg, MAP__FUNCTION, (u64) sp);
-> +	if (!map) {
-> +		pr_debug("failed to get stack map\n");
-> +		return -1;
-> +	}
+Tested-by: Roger Quadros <rogerq@ti.com>
 
-there's a memory leak of 'buf' already fixed fox x86:
+NOTE: I've updated the USB and SATA patches on l-o list to work with this series.
 
-  perf tests x86: Fix memory leak in sample_ustack()
-  commit 763d7f5f2718f085bab5a9e63308349728f3ad12
-  Author: Masanari Iida <standby24x7@gmail.com>
-  Date:   Sun Apr 20 00:16:41 2014 +0900
+cheers,
+-roger
 
-jirka
+> 
+> Sricharan R (3):
+>   arm: dts: dra7: Add crossbar device binding
+>   arm: dts: dra7: Replace peripheral interrupt numbers with crossbar
+>     inputs
+>   arm: dts: dra7: Add routable-irqs property for gic node
+> 
+>  arch/arm/boot/dts/dra7.dtsi |  109 +++++++++++++++++++++++++------------------
+>  1 file changed, 63 insertions(+), 46 deletions(-)
+> 
+
