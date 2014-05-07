@@ -1,110 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204AbaEGAx4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 20:53:56 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:50805 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754093AbaEGAxy (ORCPT
+	id S1754755AbaEGBAI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 21:00:08 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:45933 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188AbaEGBAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 20:53:54 -0400
-Message-ID: <5369841F.5060805@gmail.com>
-Date: Tue, 06 May 2014 17:53:51 -0700
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 6 May 2014 21:00:06 -0400
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [RFC PATCH 3/3] devicetree, qcomm PMIC: use new hook to make PMIC
- device names unique
-References: <536982E3.10303@gmail.com>
-In-Reply-To: <536982E3.10303@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <003e01cf6984$fb950280$f2bf0780$@samsung.com>
+References: <000001cf643d$69e5e350$3db1a9f0$@samsung.com>
+	<CAOh2x=m8DzmLOGqL0E_seOZMuzU=O9vQuu-JEp+E5454RmfEXw@mail.gmail.com>
+	<003901cf6664$e4e8d2a0$aeba77e0$@samsung.com>
+	<CAKohpon7W726Hxj5OJ6SnmPz3gYhAeBRr1wS3SCa3F2hSLriLQ@mail.gmail.com>
+	<5367946F.1030407@ti.com>
+	<CAKohpon-KZpSJK7PxpLjZS7sVPcYraDxb4oJHN6dxSagD+F--Q@mail.gmail.com>
+	<CAGo_u6pUVeMM9mqe5htvM1X_4pkRGEUVOA2ty4ZPfUyLcLZkrw@mail.gmail.com>
+	<CAKohpokfcptseU6ST+e_GfU6poVJxXCXMeoYCvT65060v5GJYQ@mail.gmail.com>
+	<003e01cf6984$fb950280$f2bf0780$@samsung.com>
+Date: Tue, 6 May 2014 20:00:03 -0500
+X-Google-Sender-Auth: LKt70elXBd6EWzr9u1Mm1TNM0-s
+Message-ID: <CAGo_u6o0J_T_hnmDAiYpsDxe77iKPCjuWisZJfTjYYOVGJF96A@mail.gmail.com>
+Subject: Re: [PATCH 1/3] PM / OPP: Add support for descending order for
+ cpufreq table
+From: Nishanth Menon <nm@ti.com>
+To: Jonghwan Choi <jhbird.choi@samsung.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frank Rowand <frank.rowand@sonymobile.com>
+On Tue, May 6, 2014 at 6:43 PM, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
+> Hi
 
-The previous patch in the series does:
+Please dont top post. it is usually frowned upon.
 
-   Optionally push device naming into a function called dynamically by
-   of_device_alloc().
+>
+> My holiday is finished.
+>
+> I implemented another cpufreq driver. And that driver also have to use exynos_sort_descend_freq_table().
+> Then exynos5440 and new cpufreq have a duplicate function.(exynos_sort_descend_freq_table().
+> So I want to solve it.
 
-This patch adds an example of using that capability.
+As discussed in the thread, creating stuff that are common into a
+common file, and even isolating this into cpufreq specific solution
+might be good.
 
-Signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
----
- drivers/mfd/pm8x41.c |   39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
+[1] now moves that entire logic of table creation to be cpufreq
+specific - we could consider modifier functions to them.
 
-Index: b/drivers/mfd/pm8x41.c
-===================================================================
---- a/drivers/mfd/pm8x41.c
-+++ b/drivers/mfd/pm8x41.c
-@@ -13,6 +13,7 @@
- #include <linux/module.h>
- #include <linux/spmi.h>
- #include <linux/regmap.h>
-+#include <linux/of_address.h>
- #include <linux/of_platform.h>
- 
- static const struct regmap_config pm8x41_regmap_config = {
-@@ -32,6 +33,43 @@ static void pm8x41_remove(struct spmi_de
- 	device_for_each_child(&sdev->dev, NULL, pm8x41_remove_child);
- }
- 
-+static void spmi_of_device_make_bus_id(struct device *dev)
-+{
-+	struct device_node *node = dev->of_node;
-+	const __be32 *reg;
-+	u64 addr;
-+	const __be32 *addrp;
-+	struct spmi_device *sdev;
-+
-+	sdev = container_of(dev->parent, struct spmi_device, dev);
-+
-+	/*
-+	 * For MMIO, get the physical address
-+	 */
-+	reg = of_get_property(node, "reg", NULL);
-+	if (reg) {
-+		if (of_can_translate_address(node)) {
-+			addr = of_translate_address(node, reg);
-+		} else {
-+			addrp = of_get_address(node, 0, NULL, NULL);
-+			if (addrp)
-+				addr = of_read_number(addrp, 1);
-+			else
-+				addr = OF_BAD_ADDR;
-+		}
-+		if (addr != OF_BAD_ADDR) {
-+			dev_set_name(dev, "%d-%02x:%llx.%s",
-+				     sdev->ctrl->nr, sdev->usid,
-+				     (unsigned long long)addr, node->name);
-+			return;
-+		}
-+	}
-+
-+	dev_set_name(dev, "%d-%02x:%s",
-+		     sdev->ctrl->nr, sdev->usid,
-+		     node->name);
-+}
-+
- static int pm8x41_probe(struct spmi_device *sdev)
- {
- 	struct regmap *regmap;
-@@ -42,6 +80,7 @@ static int pm8x41_probe(struct spmi_devi
- 		return PTR_ERR(regmap);
- 	}
- 
-+	sdev->dev.of_node->of_device_make_bus_id = spmi_of_device_make_bus_id;
- 	return of_platform_populate(sdev->dev.of_node, NULL, NULL, &sdev->dev);
- }
- 
+In some quick tests by reversing table [2], I cant see any difference
+in behavior in ascending[3] or descending[4] order of the cpufreq
+table.
+
+So, we could do [2] as default as well, if it is determined to impact
+no one else making any form of assumptions on table ordering - but it
+might be preferable for drivers not to depend on framework ordering of
+data as things could change in the future.
+
+[1] https://patchwork.kernel.org/patch/4115141/ +
+https://patchwork.kernel.org/patch/4115101/
+[2] http://slexy.org/view/s21HyCUhXK
+[3] http://slexy.org/view/s202xTUG59
+[4] http://slexy.org/view/s20ewFa6PW
+
+
+Regards,
+Nishanth Menon
