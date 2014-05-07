@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658AbaEGTlS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 15:41:18 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:16662 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751315AbaEGTlO (ORCPT
+	id S1751100AbaEGTnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 15:43:37 -0400
+Received: from smtprelay0083.hostedemail.com ([216.40.44.83]:49413 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750866AbaEGTng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 15:41:14 -0400
-Date: Wed, 7 May 2014 15:41:11 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Romain Izard <romain.izard.pro@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] trace: module: Maintain a valid user count
-Message-ID: <20140507154111.6ba752cb@gandalf.local.home>
-In-Reply-To: <20140507192335.GA23409@gmail.com>
-References: <20140303133330.7031b2cb@gandalf.local.home>
-	<1393924179-9147-1-git-send-email-romain.izard.pro@gmail.com>
-	<20140306123403.5f29c071@gandalf.local.home>
-	<20140507192335.GA23409@gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 7 May 2014 15:43:36 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:4321:5007:7652:10004:10400:10848:11232:11657:11658:11914:12043:12517:12519:12740:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: rule05_7690d08047c15
+X-Filterd-Recvd-Size: 1754
+Message-ID: <1399491811.6345.3.camel@joe-AO725>
+Subject: Re: [PATCH] Fixing Coding style Warnings in file
+ drivers/staging/comedi/drivers/das08.h
+From: Joe Perches <joe@perches.com>
+To: Sheetal Tigadoli <sheetal.tigadoli@gmail.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Date: Wed, 07 May 2014 12:43:31 -0700
+In-Reply-To: <1399368273-1632-1-git-send-email-sheetal.tigadoli@gmail.com>
+References: <1399368273-1632-1-git-send-email-sheetal.tigadoli@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 May 2014 21:23:36 +0200
-Ingo Molnar <mingo@kernel.org> wrote:
+On Tue, 2014-05-06 at 14:54 +0530, Sheetal Tigadoli wrote:
+>  This patch fixes coding style warnings such as 'lines exceeding 80 characters limit' & 
+>  'lines begining with space character', in file drivers/staging/comedi/drivers/das08.h
 
-> 
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> > Ingo,
-> > 
-> > You want to push this to Linus?
-> > 
-> > Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> I think it would be more natural through the tracing tree, through 
-> which most tracepoint fixes go, agreed?
-> 
+This is poor patch subject style.
+Please use "[PATCH] subsystem: description" style.
 
-Hmm, yeah. Not sure why I pushed it off to you :-/
+>  This patch is sent to complete one of Eudyptula Challenges
 
-Looks like this should be marked as stable and incorporated in 3.15 as
-well.
+Please do not include any "Eudyptula Challenge" line
+in the commit log.
 
-Thanks,
+> diff --git a/drivers/staging/comedi/drivers/das08.h b/drivers/staging/comedi/drivers/das08.h
+[]
+> @@ -50,7 +49,8 @@ struct das08_board_struct {
+>  struct i8254_struct {
+> -	int channels;		/*  available channels. Some could be used internally. */
+> +	int channels;		/*  available channels. Some could be used
+> +				    internally. */
 
--- Steve
+Multiline comment style should use
+	/*
+	 * comment lines
+	 * ...
+	 */
+
+
