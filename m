@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753AbaEGPnz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:43:55 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48485 "EHLO
+	id S933936AbaEGPx6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:53:58 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48533 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076AbaEGPnu (ORCPT
+	with ESMTP id S1756746AbaEGPnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:43:50 -0400
-Message-Id: <20140507153622.703412101@linutronix.de>
+	Wed, 7 May 2014 11:43:55 -0400
+Message-Id: <20140507154335.959870037@linutronix.de>
 User-Agent: quilt/0.60-1
-Date: Wed, 07 May 2014 15:44:03 -0000
+Date: Wed, 07 May 2014 15:44:10 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Anvin <hpa@zytor.com>,
-        Tony Luck <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 00/32] genirq: Another round of tree wide cleanups
+        Tony Luck <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [patch 10/32] x86: Get rid of get_nr_irqs_gsi()
+References: <20140507153622.703412101@linutronix.de>
+Content-Disposition: inline; filename=x86-get-rid-of-get-nr-irqs-gsi.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -22,93 +25,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This cleanup series addresses a few histerical leftovers:
+No need to expose this outside of the ioapic code. The dynamic
+allocations are guaranteed not to happen in the gsi space. See commit
+62a08ae2a.
 
-1) irq_reserve_irq()
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: x86@kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xenproject.org
 
-   The remaining callsites are pointless except s390, but we have a
-   better way to protect the lower interrupt space there.
-
-   It's gone for good and it will never come back. Use irq domains, if
-   you want hot pluggable irq chips.
-
-2) create/destroy_irq and their variants
-
-   Designed in different circles of hell we have an incompatible zoo
-   of those.
-
-   Three different implementations with different semantics vs. the
-   return values. Two use cases which are just reusing the global
-   namespace. And they come along with four different flavours of
-   dynamic irq allocation.
-
-   I created a core implementation for that and put it under
-   GENERIC_IRQ_LEGACY_ALLOC_HWIRQ to make clear that this is not for
-   new code. That implementation is used by x86 and tile. I gave up on
-   converting ia64 over, so I moved the create/destroy_irq prototypes
-   into ia64 headers and provided a wrapper for the shared dmar driver.
-
-   The core implementation is a very basic allocator and that's
-   deliberately so. I don't want more users and every more complex
-   than that wants to use irq domains.
-
-3) dynamic_irq_init/cleanup
-
-   Another leftover from the past. By moving tile and iop13xx to
-   sparse irq there is only ia64 left. I simplified the code and made
-   this available only under a legacy config option to avoid that more
-   people think they need this.
-
-Full diffstat below.
-
-Thanks,
-
-	tglx
 ---
- arch/arm/Kconfig                          |    1 
- arch/arm/mach-iop13xx/include/mach/irqs.h |    2 
- arch/arm/mach-iop13xx/include/mach/time.h |    3 
- arch/arm/mach-iop13xx/iq81340mc.c         |    1 
- arch/arm/mach-iop13xx/iq81340sc.c         |    1 
- arch/arm/mach-iop13xx/msi.c               |   51 ++---------
- arch/arm/mach-iop13xx/setup.c             |    1 
- arch/arm/mach-iop13xx/tpmi.c              |    1 
- arch/ia64/Kconfig                         |    1 
- arch/ia64/include/asm/hw_irq.h            |    1 
- arch/ia64/include/asm/irq.h               |    3 
- arch/ia64/include/asm/irq_remapping.h     |    2 
- arch/ia64/kernel/iosapic.c                |    2 
- arch/ia64/kernel/irq_ia64.c               |   15 ---
- arch/mips/pci/msi-xlp.c                   |   10 --
- arch/mips/pci/pci-xlr.c                   |   10 --
- arch/s390/kernel/irq.c                    |    5 -
- arch/s390/pci/pci.c                       |    6 -
- arch/tile/Kconfig                         |    2 
- arch/tile/include/asm/irq.h               |    6 -
- arch/tile/kernel/irq.c                    |   40 ---------
- arch/tile/kernel/pci_gx.c                 |   17 +--
- arch/x86/Kconfig                          |    1 
- arch/x86/include/asm/io_apic.h            |    2 
- arch/x86/include/asm/irq_remapping.h      |    3 
- arch/x86/kernel/apic/io_apic.c            |  130 +++++-------------------------
- arch/x86/kernel/hpet.c                    |    5 -
- arch/x86/platform/uv/uv_irq.c             |   10 --
- drivers/iommu/dmar.c                      |    8 -
- drivers/iommu/irq_remapping.c             |   12 +-
- drivers/net/ethernet/tile/tilegx.c        |    6 -
- drivers/pci/htirq.c                       |   13 ---
- drivers/sh/intc/core.c                    |    6 -
- drivers/tty/hvc/hvc_tile.c                |    8 -
- drivers/tty/serial/tilegx.c               |    8 -
- drivers/usb/host/ehci-tilegx.c            |    8 -
- drivers/usb/host/ohci-tilegx.c            |    8 -
- drivers/xen/events/events_base.c          |   17 ---
- include/linux/irq.h                       |   38 +++-----
- kernel/irq/Kconfig                        |    9 ++
- kernel/irq/chip.c                         |    5 -
- kernel/irq/internals.h                    |    6 +
- kernel/irq/irqdesc.c                      |   95 ++++++++++++++-------
- 43 files changed, 216 insertions(+), 363 deletions(-)
+ arch/x86/include/asm/io_apic.h   |    2 --
+ arch/x86/kernel/apic/io_apic.c   |    5 -----
+ drivers/xen/events/events_base.c |   17 +----------------
+ 3 files changed, 1 insertion(+), 23 deletions(-)
 
+Index: tip/arch/x86/include/asm/io_apic.h
+===================================================================
+--- tip.orig/arch/x86/include/asm/io_apic.h
++++ tip/arch/x86/include/asm/io_apic.h
+@@ -168,8 +168,6 @@ extern int save_ioapic_entries(void);
+ extern void mask_ioapic_entries(void);
+ extern int restore_ioapic_entries(void);
+ 
+-extern int get_nr_irqs_gsi(void);
+-
+ extern void setup_ioapic_ids_from_mpc(void);
+ extern void setup_ioapic_ids_from_mpc_nocheck(void);
+ 
+Index: tip/arch/x86/kernel/apic/io_apic.c
+===================================================================
+--- tip.orig/arch/x86/kernel/apic/io_apic.c
++++ tip/arch/x86/kernel/apic/io_apic.c
+@@ -3450,11 +3450,6 @@ static void __init probe_nr_irqs_gsi(voi
+ 	printk(KERN_DEBUG "nr_irqs_gsi: %d\n", nr_irqs_gsi);
+ }
+ 
+-int get_nr_irqs_gsi(void)
+-{
+-	return nr_irqs_gsi;
+-}
+-
+ unsigned int arch_dynirq_lower_bound(unsigned int from)
+ {
+ 	return from < nr_irqs_gsi ? nr_irqs_gsi : from;
+Index: tip/drivers/xen/events/events_base.c
+===================================================================
+--- tip.orig/drivers/xen/events/events_base.c
++++ tip/drivers/xen/events/events_base.c
+@@ -390,22 +390,7 @@ static void xen_irq_init(unsigned irq)
+ 
+ static int __must_check xen_allocate_irqs_dynamic(int nvec)
+ {
+-	int first = 0;
+-	int i, irq;
+-
+-#ifdef CONFIG_X86_IO_APIC
+-	/*
+-	 * For an HVM guest or domain 0 which see "real" (emulated or
+-	 * actual respectively) GSIs we allocate dynamic IRQs
+-	 * e.g. those corresponding to event channels or MSIs
+-	 * etc. from the range above those "real" GSIs to avoid
+-	 * collisions.
+-	 */
+-	if (xen_initial_domain() || xen_hvm_domain())
+-		first = get_nr_irqs_gsi();
+-#endif
+-
+-	irq = irq_alloc_descs_from(first, nvec, -1);
++	int i, irq = irq_alloc_descs(-1, 0, nvec, -1);
+ 
+ 	if (irq >= 0) {
+ 		for (i = 0; i < nvec; i++)
 
 
