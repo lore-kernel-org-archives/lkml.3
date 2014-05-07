@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933051AbaEGNOb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:14:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45479 "EHLO
+	id S933998AbaEGN2w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:28:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45495 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933032AbaEGNO0 (ORCPT
+	with ESMTP id S933037AbaEGNO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:14:26 -0400
+	Wed, 7 May 2014 09:14:29 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Julius Werner <jwerner@chromium.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
+Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 28/70] usb: xhci: Prefer endpoint context dequeue pointer over stopped_trb
-Date: Wed,  7 May 2014 14:12:31 +0100
-Message-Id: <1399468393-10140-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 31/70] USB: io_ti: fix firmware download on big-endian machines
+Date: Wed,  7 May 2014 14:12:34 +0100
+Message-Id: <1399468393-10140-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -29,223 +28,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julius Werner <jwerner@chromium.org>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 1f81b6d22a5980955b01e08cf27fb745dc9b686f upstream.
+commit 5509076d1b4485ce9fb07705fcbcd2695907ab5b upstream.
 
-We have observed a rare cycle state desync bug after Set TR Dequeue
-Pointer commands on Intel LynxPoint xHCs (resulting in an endpoint that
-doesn't fetch new TRBs and thus an unresponsive USB device). It always
-triggers when a previous Set TR Dequeue Pointer command has set the
-pointer to the final Link TRB of a segment, and then another URB gets
-enqueued and cancelled again before it can be completed. Further
-investigation showed that the xHC had returned the Link TRB in the TRB
-Pointer field of the Transfer Event (CC == Stopped -- Length Invalid),
-but when xhci_find_new_dequeue_state() later accesses the Endpoint
-Context's TR Dequeue Pointer field it is set to the first TRB of the
-next segment.
+During firmware download the device expects memory addresses in
+big-endian byte order. As the wIndex parameter which hold the address is
+sent in little-endian byte order regardless of host byte order, we need
+to use swab16 rather than cpu_to_be16.
 
-The driver expects those two values to be the same in this situation,
-and uses the cycle state of the latter together with the address of the
-former. This should be fine according to the XHCI specification, since
-the endpoint ring should be stopped when returning the Transfer Event
-and thus should not advance over the Link TRB before it gets restarted.
-However, real-world XHCI implementations apparently don't really care
-that much about these details, so the driver should follow a more
-defensive approach to try to work around HC spec violations.
+Also make sure to handle the struct ti_i2c_desc size parameter which is
+returned in little-endian byte order.
 
-This patch removes the stopped_trb variable that had been used to store
-the TRB Pointer from the last Transfer Event of a stopped TRB. Instead,
-xhci_find_new_dequeue_state() now relies only on the Endpoint Context,
-requiring a small amount of additional processing to find the virtual
-address corresponding to the TR Dequeue Pointer. Some other parts of the
-function were slightly rearranged to better fit into this model.
-
-This patch should be backported to kernels as old as 2.6.31 that contain
-the commit ae636747146ea97efa18e04576acd3416e2514f5 "USB: xhci: URB
-cancellation support."
-
-Signed-off-by: Julius Werner <jwerner@chromium.org>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Reported-by: Ludovic Drolez <ldrolez@debian.org>
+Tested-by: Ludovic Drolez <ldrolez@debian.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/xhci-ring.c | 64 +++++++++++++++++++++-----------------------
- drivers/usb/host/xhci.c      |  1 -
- drivers/usb/host/xhci.h      |  2 --
- 3 files changed, 30 insertions(+), 37 deletions(-)
+ drivers/usb/serial/io_ti.c | 50 ++++++++++++++++++++++++++++++----------------
+ 1 file changed, 33 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 289e481..1cef7b3 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -555,6 +555,7 @@ void xhci_find_new_dequeue_state(struct xhci_hcd *xhci,
- 	struct xhci_generic_trb *trb;
- 	struct xhci_ep_ctx *ep_ctx;
- 	dma_addr_t addr;
-+	u64 hw_dequeue;
+diff --git a/drivers/usb/serial/io_ti.c b/drivers/usb/serial/io_ti.c
+index 60054e7..95dd149 100644
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -29,6 +29,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/mutex.h>
+ #include <linux/serial.h>
++#include <linux/swab.h>
+ #include <linux/kfifo.h>
+ #include <linux/ioctl.h>
+ #include <linux/firmware.h>
+@@ -284,7 +285,7 @@ static int read_download_mem(struct usb_device *dev, int start_address,
+ {
+ 	int status = 0;
+ 	__u8 read_length;
+-	__be16 be_start_address;
++	u16 be_start_address;
  
- 	ep_ring = xhci_triad_to_transfer_ring(xhci, slot_id,
- 			ep_index, stream_id);
-@@ -564,52 +565,54 @@ void xhci_find_new_dequeue_state(struct xhci_hcd *xhci,
- 				stream_id);
- 		return;
- 	}
--	state->new_cycle_state = 0;
--	xhci_dbg(xhci, "Finding segment containing stopped TRB.\n");
--	state->new_deq_seg = find_trb_seg(cur_td->start_seg,
--			dev->eps[ep_index].stopped_trb,
--			&state->new_cycle_state);
--	if (!state->new_deq_seg) {
--		WARN_ON(1);
--		return;
--	}
+ 	dev_dbg(&dev->dev, "%s - @ %x for %d\n", __func__, start_address, length);
  
- 	/* Dig out the cycle state saved by the xHC during the stop ep cmd */
- 	xhci_dbg(xhci, "Finding endpoint context\n");
- 	ep_ctx = xhci_get_ep_ctx(xhci, dev->out_ctx, ep_index);
--	state->new_cycle_state = 0x1 & le64_to_cpu(ep_ctx->deq);
-+	hw_dequeue = le64_to_cpu(ep_ctx->deq);
-+
-+	/* Find virtual address and segment of hardware dequeue pointer */
-+	state->new_deq_seg = ep_ring->deq_seg;
-+	state->new_deq_ptr = ep_ring->dequeue;
-+	while (xhci_trb_virt_to_dma(state->new_deq_seg, state->new_deq_ptr)
-+			!= (dma_addr_t)(hw_dequeue & ~0xf)) {
-+		next_trb(xhci, ep_ring, &state->new_deq_seg,
-+					&state->new_deq_ptr);
-+		if (state->new_deq_ptr == ep_ring->dequeue) {
-+			WARN_ON(1);
-+			return;
-+		}
-+	}
+@@ -300,10 +301,14 @@ static int read_download_mem(struct usb_device *dev, int start_address,
+ 		if (read_length > 1) {
+ 			dev_dbg(&dev->dev, "%s - @ %x for %d\n", __func__, start_address, read_length);
+ 		}
+-		be_start_address = cpu_to_be16(start_address);
++		/*
++		 * NOTE: Must use swab as wIndex is sent in little-endian
++		 *       byte order regardless of host byte order.
++		 */
++		be_start_address = swab16((u16)start_address);
+ 		status = ti_vread_sync(dev, UMPC_MEMORY_READ,
+ 					(__u16)address_type,
+-					(__force __u16)be_start_address,
++					be_start_address,
+ 					buffer, read_length);
+ 
+ 		if (status) {
+@@ -400,7 +405,7 @@ static int write_i2c_mem(struct edgeport_serial *serial,
+ 	struct device *dev = &serial->serial->dev->dev;
+ 	int status = 0;
+ 	int write_length;
+-	__be16 be_start_address;
++	u16 be_start_address;
+ 
+ 	/* We can only send a maximum of 1 aligned byte page at a time */
+ 
+@@ -415,11 +420,16 @@ static int write_i2c_mem(struct edgeport_serial *serial,
+ 		__func__, start_address, write_length);
+ 	usb_serial_debug_data(dev, __func__, write_length, buffer);
+ 
+-	/* Write first page */
+-	be_start_address = cpu_to_be16(start_address);
 +	/*
-+	 * Find cycle state for last_trb, starting at old cycle state of
-+	 * hw_dequeue. If there is only one segment ring, find_trb_seg() will
-+	 * return immediately and cannot toggle the cycle state if this search
-+	 * wraps around, so add one more toggle manually in that case.
++	 * Write first page.
++	 *
++	 * NOTE: Must use swab as wIndex is sent in little-endian byte order
++	 *       regardless of host byte order.
 +	 */
-+	state->new_cycle_state = hw_dequeue & 0x1;
-+	if (ep_ring->first_seg == ep_ring->first_seg->next &&
-+			cur_td->last_trb < state->new_deq_ptr)
-+		state->new_cycle_state ^= 0x1;
++	be_start_address = swab16((u16)start_address);
+ 	status = ti_vsend_sync(serial->serial->dev,
+ 				UMPC_MEMORY_WRITE, (__u16)address_type,
+-				(__force __u16)be_start_address,
++				be_start_address,
+ 				buffer,	write_length);
+ 	if (status) {
+ 		dev_dbg(dev, "%s - ERROR %d\n", __func__, status);
+@@ -442,11 +452,16 @@ static int write_i2c_mem(struct edgeport_serial *serial,
+ 			__func__, start_address, write_length);
+ 		usb_serial_debug_data(dev, __func__, write_length, buffer);
  
- 	state->new_deq_ptr = cur_td->last_trb;
- 	xhci_dbg(xhci, "Finding segment containing last TRB in TD.\n");
- 	state->new_deq_seg = find_trb_seg(state->new_deq_seg,
--			state->new_deq_ptr,
--			&state->new_cycle_state);
-+			state->new_deq_ptr, &state->new_cycle_state);
- 	if (!state->new_deq_seg) {
- 		WARN_ON(1);
- 		return;
- 	}
+-		/* Write next page */
+-		be_start_address = cpu_to_be16(start_address);
++		/*
++		 * Write next page.
++		 *
++		 * NOTE: Must use swab as wIndex is sent in little-endian byte
++		 *       order regardless of host byte order.
++		 */
++		be_start_address = swab16((u16)start_address);
+ 		status = ti_vsend_sync(serial->serial->dev, UMPC_MEMORY_WRITE,
+ 				(__u16)address_type,
+-				(__force __u16)be_start_address,
++				be_start_address,
+ 				buffer, write_length);
+ 		if (status) {
+ 			dev_err(dev, "%s - ERROR %d\n", __func__, status);
+@@ -593,8 +608,8 @@ static int get_descriptor_addr(struct edgeport_serial *serial,
+ 		if (rom_desc->Type == desc_type)
+ 			return start_address;
  
-+	/* Increment to find next TRB after last_trb. Cycle if appropriate. */
- 	trb = &state->new_deq_ptr->generic;
- 	if (TRB_TYPE_LINK_LE32(trb->field[3]) &&
- 	    (trb->field[3] & cpu_to_le32(LINK_TOGGLE)))
- 		state->new_cycle_state ^= 0x1;
- 	next_trb(xhci, ep_ring, &state->new_deq_seg, &state->new_deq_ptr);
+-		start_address = start_address + sizeof(struct ti_i2c_desc)
+-							+ rom_desc->Size;
++		start_address = start_address + sizeof(struct ti_i2c_desc) +
++						le16_to_cpu(rom_desc->Size);
  
--	/*
--	 * If there is only one segment in a ring, find_trb_seg()'s while loop
--	 * will not run, and it will return before it has a chance to see if it
--	 * needs to toggle the cycle bit.  It can't tell if the stalled transfer
--	 * ended just before the link TRB on a one-segment ring, or if the TD
--	 * wrapped around the top of the ring, because it doesn't have the TD in
--	 * question.  Look for the one-segment case where stalled TRB's address
--	 * is greater than the new dequeue pointer address.
--	 */
--	if (ep_ring->first_seg == ep_ring->first_seg->next &&
--			state->new_deq_ptr < dev->eps[ep_index].stopped_trb)
--		state->new_cycle_state ^= 0x1;
-+	/* Don't update the ring cycle state for the producer (us). */
- 	xhci_dbg(xhci, "Cycle state = 0x%x\n", state->new_cycle_state);
+ 	} while ((start_address < TI_MAX_I2C_SIZE) && rom_desc->Type);
  
--	/* Don't update the ring cycle state for the producer (us). */
- 	xhci_dbg(xhci, "New dequeue segment = %p (virtual)\n",
- 			state->new_deq_seg);
- 	addr = xhci_trb_virt_to_dma(state->new_deq_seg, state->new_deq_ptr);
-@@ -791,7 +794,6 @@ static void handle_stopped_endpoint(struct xhci_hcd *xhci,
- 	if (list_empty(&ep->cancelled_td_list)) {
- 		xhci_stop_watchdog_timer_in_irq(xhci, ep);
- 		ep->stopped_td = NULL;
--		ep->stopped_trb = NULL;
- 		ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
- 		return;
- 	}
-@@ -858,11 +860,9 @@ remove_finished_td:
- 		ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
- 	}
+@@ -607,7 +622,7 @@ static int valid_csum(struct ti_i2c_desc *rom_desc, __u8 *buffer)
+ 	__u16 i;
+ 	__u8 cs = 0;
  
--	/* Clear stopped_td and stopped_trb if endpoint is not halted */
--	if (!(ep->ep_state & EP_HALTED)) {
-+	/* Clear stopped_td if endpoint is not halted */
-+	if (!(ep->ep_state & EP_HALTED))
- 		ep->stopped_td = NULL;
--		ep->stopped_trb = NULL;
--	}
+-	for (i = 0; i < rom_desc->Size; i++)
++	for (i = 0; i < le16_to_cpu(rom_desc->Size); i++)
+ 		cs = (__u8)(cs + buffer[i]);
  
- 	/*
- 	 * Drop the lock and complete the URBs in the cancelled TD list.
-@@ -1830,14 +1830,12 @@ static void xhci_cleanup_halted_endpoint(struct xhci_hcd *xhci,
- 	struct xhci_virt_ep *ep = &xhci->devs[slot_id]->eps[ep_index];
- 	ep->ep_state |= EP_HALTED;
- 	ep->stopped_td = td;
--	ep->stopped_trb = event_trb;
- 	ep->stopped_stream = stream_id;
+ 	if (cs != rom_desc->CheckSum) {
+@@ -661,7 +676,7 @@ static int check_i2c_image(struct edgeport_serial *serial)
+ 			break;
  
- 	xhci_queue_reset_ep(xhci, slot_id, ep_index);
- 	xhci_cleanup_stalled_ring(xhci, td->urb->dev, ep_index);
+ 		if ((start_address + sizeof(struct ti_i2c_desc) +
+-					rom_desc->Size) > TI_MAX_I2C_SIZE) {
++			le16_to_cpu(rom_desc->Size)) > TI_MAX_I2C_SIZE) {
+ 			status = -ENODEV;
+ 			dev_dbg(dev, "%s - structure too big, erroring out.\n", __func__);
+ 			break;
+@@ -676,7 +691,8 @@ static int check_i2c_image(struct edgeport_serial *serial)
+ 			/* Read the descriptor data */
+ 			status = read_rom(serial, start_address +
+ 						sizeof(struct ti_i2c_desc),
+-						rom_desc->Size, buffer);
++						le16_to_cpu(rom_desc->Size),
++						buffer);
+ 			if (status)
+ 				break;
  
- 	ep->stopped_td = NULL;
--	ep->stopped_trb = NULL;
- 	ep->stopped_stream = 0;
+@@ -685,7 +701,7 @@ static int check_i2c_image(struct edgeport_serial *serial)
+ 				break;
+ 		}
+ 		start_address = start_address + sizeof(struct ti_i2c_desc) +
+-								rom_desc->Size;
++						le16_to_cpu(rom_desc->Size);
  
- 	xhci_ring_cmd_db(xhci);
-@@ -1919,7 +1917,6 @@ static int finish_td(struct xhci_hcd *xhci, struct xhci_td *td,
- 		 * the ring dequeue pointer or take this TD off any lists yet.
- 		 */
- 		ep->stopped_td = td;
--		ep->stopped_trb = event_trb;
- 		return 0;
- 	} else {
- 		if (trb_comp_code == COMP_STALL) {
-@@ -1931,7 +1928,6 @@ static int finish_td(struct xhci_hcd *xhci, struct xhci_td *td,
- 			 * USB class driver clear the stall later.
- 			 */
- 			ep->stopped_td = td;
--			ep->stopped_trb = event_trb;
- 			ep->stopped_stream = ep_ring->stream_id;
- 		} else if (xhci_requires_manual_halt_cleanup(xhci,
- 					ep_ctx, trb_comp_code)) {
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 920e14b..2fd5806 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2962,7 +2962,6 @@ void xhci_endpoint_reset(struct usb_hcd *hcd,
- 		xhci_ring_cmd_db(xhci);
- 	}
- 	virt_ep->stopped_td = NULL;
--	virt_ep->stopped_trb = NULL;
- 	virt_ep->stopped_stream = 0;
- 	spin_unlock_irqrestore(&xhci->lock, flags);
+ 	} while ((rom_desc->Type != I2C_DESC_TYPE_ION) &&
+ 				(start_address < TI_MAX_I2C_SIZE));
+@@ -724,7 +740,7 @@ static int get_manuf_info(struct edgeport_serial *serial, __u8 *buffer)
  
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index a2bc934..d47a045 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -864,8 +864,6 @@ struct xhci_virt_ep {
- #define EP_GETTING_NO_STREAMS	(1 << 5)
- 	/* ----  Related to URB cancellation ---- */
- 	struct list_head	cancelled_td_list;
--	/* The TRB that was last reported in a stopped endpoint ring */
--	union xhci_trb		*stopped_trb;
- 	struct xhci_td		*stopped_td;
- 	unsigned int		stopped_stream;
- 	/* Watchdog timer for stop endpoint command to cancel URBs */
+ 	/* Read the descriptor data */
+ 	status = read_rom(serial, start_address+sizeof(struct ti_i2c_desc),
+-						rom_desc->Size, buffer);
++					le16_to_cpu(rom_desc->Size), buffer);
+ 	if (status)
+ 		goto exit;
+ 
 -- 
 1.9.1
 
