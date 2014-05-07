@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623AbaEGWTT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 18:19:19 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:61058 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219AbaEGWTE (ORCPT
+	id S1752663AbaEGWUv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 18:20:51 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62352 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750966AbaEGWUs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 18:19:04 -0400
+	Wed, 7 May 2014 18:20:48 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Simon Horman <horms@verge.net.au>, Sekhar Nori <nsekhar@ti.com>,
+        Samuel Ortiz <samuel@sortiz.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Subject: Re: [PATCH v5 0/8] Introduce new cpufreq helper macros
+Date: Thu, 08 May 2014 00:37:27 +0200
+Message-ID: <1628906.bvqGfBpWxn@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <536A3654.20201@semaphore.gr>
+References: <535AC247.3070907@semaphore.gr> <4469396.zveA7sC36d@vostro.rjw.lan> <536A3654.20201@semaphore.gr>
 MIME-Version: 1.0
-In-Reply-To: <20140507.132021.591444790908478214.davem@davemloft.net>
-References: <20140505.232327.578134514220748085.davem@davemloft.net>
-	<1399351148.8767.84.camel@empanada>
-	<20140507145938.79110827@alan.etchedpixels.co.uk>
-	<20140507.132021.591444790908478214.davem@davemloft.net>
-Date: Wed, 7 May 2014 15:19:03 -0700
-Message-ID: <CA+bK7J78WdJmH7omCKgOBDwr_qQV83xezoar89MQE=LYSeEthQ@mail.gmail.com>
-Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
-From: Tim Bird <tbird20d@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: gnomes@lxorguk.ukuu.org.uk, tom.zanussi@linux.intel.com,
-        andi@firstfloor.org, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 7, 2014 at 10:20 AM, David Miller <davem@davemloft.net> wrote:
-> From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-> Date: Wed, 7 May 2014 14:59:38 +0100
->
->> 16MB of DRAM means adding a chip to your system. You've just exceeded the
->> space, power and cost budget on the very low end. In many cases like FPGA
->> systems you can't even add DRAM without major hoop jumping.
->
-> A year or so for now this may not be true, which makes these kinds of changes
-> very nearly in the "point in time solution" category.
->
-> My main point in all of this is that whilst Linux should work on a braod range
-> of system types, there has to be a limit somewhere and I think 2MB is off
-> the deep end.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Wednesday, May 07, 2014 04:34:12 PM Stratos Karafotis wrote:
+> Hi Rafael,
+> 
+> On 07/05/2014 04:13 μμ, Rafael J. Wysocki wrote:
+> > On Wednesday, May 07, 2014 10:53:16 AM Viresh Kumar wrote:
+> >> On 6 May 2014 23:25, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+> >>> My bad. I'm sorry for this. :(
+> >>>
+> >>> Rafael,
+> >>> A solution could be to make cpufreq_next_valid an inline function in cpufreq.h,
+> >>> but as Viresh mentioned this would be very inefficient because of multiple copies.
+> >>
+> >> That statement was true when we didn't had this problem..
+> >>
+> >>> So, maybe it's better to revert the 2 patches that don't depend on CONFIG_CPU_FREQ:
+> >>>
+> >>> 4229e1c61a4a ("sh: clk: Use cpufreq_for_each_valid_entry macro for iteration") and
+> >>> 04ae58645afa ("irda: sh_sir: Use cpufreq_for_each_valid_entry macro for iteration").
+> >>
+> >> This doesn't look right. It can happen to some other drivers as well in future.
+> >> So, there are two solutions I can think of:
+> >> 1. move cpufreq_next_valid and rename it to __cpufreq_next_valid(). Also make it
+> >> inline. Then create two versions of cpufreq_next_valid(), one inlined (only when
+> >> CONFIG_CPU_FREQ=n) and other one in cpufreq.c (non- inlined)..
+> >>
+> >> But probably that would be called ugly by some people :)
+> >>
+> >> 2. Make cpufreq_next_valid() inline and forget about extra space it takes :)
+> >>
+> >> @Rafel: Let me know which one you like :)
+> > 
+> > 2.
+> > 
+> > 
+> 
+> Do you want me to resend the entire patch set or only patch 1/8?
 
-Linux 2.6.33 is currently running on a microcontroller with 2MB of flash
-and 256K of RAM.  See Vitaly Wool's presentation from ELC about
-this here:
-http://elinux.org/images/c/ca/Spreading.pdf.
-It might be off the deep end, but I think that's pretty exciting.
+It's already on a branch that cannot be rebased.  Please send me a fix on top of it.
 
-That's not a super-recent kernel, but I think current kernels could get
-to 512K RAM and 2MB flash with some elbow grease.  That hits the
-sweet spot for where the deep embedded processors (everything on-die,
-at really aggressive price per unit) are heading in the next few years.
 
-I sympathize with the arguments about increasing configuration complexity,
-and the possibility of introducing bugs. "big switches" and LTO should both
-help with the config complexity problem.  With regard to bugs, I think some
-of  the patches may be a problem, and that's where the help of the
-networking experts would be great in helping to avoid problems.  Dropping
-optional features is going to happen on these devices whether it's Linux
-running there or some RTOS.  Linux will certainly be talking to these
-devices, if not running in them.  So your life on the host side might be
-improved if you have some say what the stack looks like on the device
-side.
-
-If you don't want to help avoid problems, I understand.  All the kernel
-maintainers are extremely busy.  But the use cases are pretty interesting,
-and it would be nice to have you on board.
-
- -- Tim Bird
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
