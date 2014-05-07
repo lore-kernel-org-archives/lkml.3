@@ -1,143 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783AbaEGPdv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:33:51 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:46624 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792AbaEGPdt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:33:49 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-94-536a525aa0b7
-Message-id: <536A5258.3080104@samsung.com>
-Date: Wed, 07 May 2014 17:33:44 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Rahul Sharma <rahul.sharma@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        sunil joshi <joshi@samsung.com>, Andrzej Hajda <a.hajda@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <Pawel.Moll@arm.com>
-Subject: Re: [PATCHv2 1/3] phy: Add exynos-simple-phy driver
-References: <1396967856-27470-1-git-send-email-t.stanislaws@samsung.com>
- <1396967856-27470-2-git-send-email-t.stanislaws@samsung.com>
- <534506B1.4040908@samsung.com>
- <CAPdUM4M109_kzY6cUMJQPSwgazvWmNDWL1JeXgiqnzvH8dhK2Q@mail.gmail.com>
- <53451A60.4050803@samsung.com> <53675D72.70103@ti.com>
- <CAPdUM4N+2VXpiFSiWW9gKfbte1zkpDbCOSF+KvEo4T1KLqqwjw@mail.gmail.com>
- <536A36F5.5080303@samsung.com>
- <CAPdUM4M6uk2KN_L487_cRkOqbgJrhhMRx9zpczA6-3LzSM3FSg@mail.gmail.com>
-In-reply-to: <CAPdUM4M6uk2KN_L487_cRkOqbgJrhhMRx9zpczA6-3LzSM3FSg@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJIsWRmVeSWpSXmKPExsVy+t/xy7pRQVnBBkdXiVjcWneO1WL+ESBx
-	5et7Nov+NwtZLQ782cFoce7VSkaL77u+sFv0LrjKZnHhaQ+bxdmmN+wWl3fNYbPo2bCV1WLG
-	+X1MFkuvX2SymDB9LYvFlEWHWS1a9x5htzj8pp3VYl77S1YHYY8189Ywelzu62XyWLn8C5vH
-	plWdbB53ru1h87jffZzJo2/LKkaP4ze2M3l83iQXwBnFZZOSmpNZllqkb5fAlbHm3CfGgkMi
-	FYtvXmZsYHwo0MXIwSEhYCLx8K1CFyMnkCkmceHeejYQW0hgKaPEsU3SXYxcQPZnRonzN3pY
-	QRK8AloSpyYsYAexWQRUJRZP3cAIYrMJqEl8bngE1swPVLOm6ToLiC0qECFxr/EwVK+gxI/J
-	91hA9ooIxErseSoDMp9ZYBabxLKF55lAaoQFbCT2XT7NArH4OrPEzBMHmEESnALBEi9vnwZb
-	xiygI7G/dRobhC0vsXnNW+YJjIKzkOyYhaRsFpKyBYzMqxhFU0uTC4qT0nMN9YoTc4tL89L1
-	kvNzNzFCovPLDsbFx6wOMQpwMCrx8L6IzggWYk0sK67MPcQowcGsJMIb6ZUVLMSbklhZlVqU
-	H19UmpNafIiRiYNTqoFRKlwnfNo0la1LD1ZF769ny7W4P3ePpG7S8Z13NdfsO/df7ebBil6F
-	D3HHnHdOY5U45x7XxnFnt5Mrk3DOvrdVktZ1wnplT3hDWHhbTorZGG2t5djEopclUimn06By
-	SCKu3XmBrqa/aM6dZxe4lX8xVJ2+6a0R9zXtmcmHz8GiT9/3FjF/nqPEUpyRaKjFXFScCAAj
-	ogdxrAIAAA==
+	id S1756545AbaEGPfU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:35:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8454 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755585AbaEGPfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 11:35:16 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: x86@kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>, ak@linux.intel.com,
+        gong.chen@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 1/5] x86, nmi:  Add new nmi type 'external'
+Date: Wed,  7 May 2014 11:34:39 -0400
+Message-Id: <1399476883-98970-2-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1399476883-98970-1-git-send-email-dzickus@redhat.com>
+References: <1399476883-98970-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CCing more DT-folks :)]
+I noticed when debugging a perf problem on a machine with GHES enabled,
+perf seemed slow.  I then realized that the GHES NMI routine was taking
+a global lock all the time to inspect the hardware.  This contended
+with all the local perf counters which did not need a lock.  So each cpu
+accidentally was synchronizing with itself when using perf.
 
-On 07.05.2014 16:19, Rahul Sharma wrote:
-> On 7 May 2014 19:06, Tomasz Stanislawski <t.stanislaws@samsung.com> wrote:
->> On 05/07/2014 12:38 PM, Rahul Sharma wrote:
->>> On 5 May 2014 15:14, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->>>> Hi,
->>>>
->>>> On Wednesday 09 April 2014 03:31 PM, Sylwester Nawrocki wrote:
->>>>> Hi,
->>>>>
->>>>> On 09/04/14 11:12, Rahul Sharma wrote:
->>>>>> Idea looks good. How about keeping compatible which is independent
->>>>>> of SoC, something like "samsung,exynos-simple-phy" and provide Reg
->>>>>> and Bit through phy provider node. This way we can avoid SoC specific
->>>>>> hardcoding in phy driver and don't need to look into dt bindings for
->>>>>> each new SoC.
->>>>>
->>>>> I believe it is a not recommended approach.
->>>>
->>>> Why not? We should try to avoid hard coding in the driver code. Moreover by
->>>> avoiding hardcoding we can make it a generic driver for single bit PHYs.
->>>>
->>>
->>> +1.
->>>
->>> @Tomasz, any plans to consider this approach for simple phy driver?
->>>
->>> Regards,
->>> Rahul Sharma.
->>>
->>
->> Hi Rahul,
->> Initially, I wanted to make a very generic driver and to add bit and
->> register (or its offset) attribute to the PHY node.
->> However, there was a very strong opposition from DT maintainers
->> to adding any bit related configuration to DT.
->> The current solution was designed to be a trade-off between
->> being generic and being accepted :).
->>
-> 
-> Thanks Tomasz,
-> Ok got it. lets discuss it again and conclude it.
-> 
-> @Kishon, DT-folks,
-> 
-> The original RFC patch from Tomasz (at https://lkml.org/lkml/2013/10/21/313)
-> added simple phy driver as "Generic-simple-phy" with these properties:
-> 
-> + of_property_read_u32(dev->of_node, "mask", &sphy->mask);
-> + of_property_read_u32(dev->of_node, "on-value", &sphy->on_value);
-> + of_property_read_u32(dev->of_node, "off-value", &sphy->off_value);
-> 
-> Shall we consider the same solution again for generic simple phy
-> driver which just expose on/off control through register bit.
-> 
-> Regards,
-> Rahul Sharma
-> 
->> Regards,
->> Tomasz Stanislawski
->>
->>
->>
->>>> Cheers
->>>> Kishon
->>>
->>
->> _______________________________________________
->> dri-devel mailing list
->> dri-devel@lists.freedesktop.org
->> http://lists.freedesktop.org/mailman/listinfo/dri-devel
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+This is because the way the nmi handler works.  It executes all the handlers
+registered to a particular subtype (to deal with nmi sharing).  As a result
+the GHES handler was executed on every PMI.
 
-Best regards,
-Tomasz
+Fix this by creating a new nmi type called NMI_EXT, which is used by
+handlers that need to probe external hardware and require a global lock
+to do so.
+
+Now the main NMI handler can check the internal NMI handlers first and
+then the external ones if nothing is found.
+
+This makes perf a little faster again on those machines with GHES enabled.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ arch/x86/include/asm/nmi.h |    1 +
+ arch/x86/kernel/nmi.c      |   41 ++++++++++++++++++++++++++---------------
+ drivers/acpi/apei/ghes.c   |    4 ++--
+ drivers/watchdog/hpwdt.c   |   10 ++--------
+ 4 files changed, 31 insertions(+), 25 deletions(-)
+
+diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
+index 86f9301..d6d26fa 100644
+--- a/arch/x86/include/asm/nmi.h
++++ b/arch/x86/include/asm/nmi.h
+@@ -24,6 +24,7 @@ extern int unknown_nmi_panic;
+ 
+ enum {
+ 	NMI_LOCAL=0,
++	NMI_EXT,
+ 	NMI_UNKNOWN,
+ 	NMI_SERR,
+ 	NMI_IO_CHECK,
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index 6fcb49c..72fcff7 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -34,29 +34,32 @@
+ #include <trace/events/nmi.h>
+ 
+ struct nmi_desc {
+-	spinlock_t lock;
+-	struct list_head head;
++	spinlock_t		lock;
++	struct list_head	head;
+ };
+ 
+ static struct nmi_desc nmi_desc[NMI_MAX] = 
+ {
+-	{
+-		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[0].lock),
+-		.head = LIST_HEAD_INIT(nmi_desc[0].head),
++	[NMI_LOCAL] = {
++		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[NMI_LOCAL].lock),
++		.head = LIST_HEAD_INIT(nmi_desc[NMI_LOCAL].head),
+ 	},
+-	{
+-		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[1].lock),
+-		.head = LIST_HEAD_INIT(nmi_desc[1].head),
++	[NMI_EXT] = {
++		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[NMI_EXT].lock),
++		.head = LIST_HEAD_INIT(nmi_desc[NMI_EXT].head),
+ 	},
+-	{
+-		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[2].lock),
+-		.head = LIST_HEAD_INIT(nmi_desc[2].head),
++	[NMI_UNKNOWN] = {
++		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[NMI_UNKNOWN].lock),
++		.head = LIST_HEAD_INIT(nmi_desc[NMI_UNKNOWN].head),
+ 	},
+-	{
+-		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[3].lock),
+-		.head = LIST_HEAD_INIT(nmi_desc[3].head),
++	[NMI_SERR] = {
++		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[NMI_SERR].lock),
++		.head = LIST_HEAD_INIT(nmi_desc[NMI_SERR].head),
++	},
++	[NMI_IO_CHECK] = {
++		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[NMI_IO_CHECK].lock),
++		.head = LIST_HEAD_INIT(nmi_desc[NMI_IO_CHECK].head),
+ 	},
+-
+ };
+ 
+ struct nmi_stats {
+@@ -317,8 +320,16 @@ static __kprobes void default_do_nmi(struct pt_regs *regs)
+ 
+ 	__this_cpu_write(last_nmi_rip, regs->ip);
+ 
++	/* try local NMIs first */
+ 	handled = nmi_handle(NMI_LOCAL, regs, b2b);
+ 	__this_cpu_add(nmi_stats.normal, handled);
++
++	/* if unclaimed, try external NMIs next */
++	if (!handled) {
++		handled = nmi_handle(NMI_EXT, regs, b2b);
++		__this_cpu_add(nmi_stats.external, handled);
++	}
++
+ 	if (handled) {
+ 		/*
+ 		 * There are cases when a NMI handler handles multiple
+diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+index dab7cb7..8b78bf5 100644
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -976,7 +976,7 @@ static int ghes_probe(struct platform_device *ghes_dev)
+ 		ghes_estatus_pool_expand(len);
+ 		mutex_lock(&ghes_list_mutex);
+ 		if (list_empty(&ghes_nmi))
+-			register_nmi_handler(NMI_LOCAL, ghes_notify_nmi, 0,
++			register_nmi_handler(NMI_EXT, ghes_notify_nmi, 0,
+ 						"ghes");
+ 		list_add_rcu(&ghes->list, &ghes_nmi);
+ 		mutex_unlock(&ghes_list_mutex);
+@@ -1025,7 +1025,7 @@ static int ghes_remove(struct platform_device *ghes_dev)
+ 		mutex_lock(&ghes_list_mutex);
+ 		list_del_rcu(&ghes->list);
+ 		if (list_empty(&ghes_nmi))
+-			unregister_nmi_handler(NMI_LOCAL, "ghes");
++			unregister_nmi_handler(NMI_EXT, "ghes");
+ 		mutex_unlock(&ghes_list_mutex);
+ 		/*
+ 		 * To synchronize with NMI handler, ghes can only be
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index 2b75e8b..9617a4d 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -737,12 +737,9 @@ static int hpwdt_init_nmi_decoding(struct pci_dev *dev)
+ 	retval = register_nmi_handler(NMI_UNKNOWN, hpwdt_pretimeout, 0, "hpwdt");
+ 	if (retval)
+ 		goto error;
+-	retval = register_nmi_handler(NMI_SERR, hpwdt_pretimeout, 0, "hpwdt");
++	retval = register_nmi_handler(NMI_EXT, hpwdt_pretimeout, 0, "hpwdt");
+ 	if (retval)
+ 		goto error1;
+-	retval = register_nmi_handler(NMI_IO_CHECK, hpwdt_pretimeout, 0, "hpwdt");
+-	if (retval)
+-		goto error2;
+ 
+ 	dev_info(&dev->dev,
+ 			"HP Watchdog Timer Driver: NMI decoding initialized"
+@@ -750,8 +747,6 @@ static int hpwdt_init_nmi_decoding(struct pci_dev *dev)
+ 			(allow_kdump == 0) ? "OFF" : "ON");
+ 	return 0;
+ 
+-error2:
+-	unregister_nmi_handler(NMI_SERR, "hpwdt");
+ error1:
+ 	unregister_nmi_handler(NMI_UNKNOWN, "hpwdt");
+ error:
+@@ -766,8 +761,7 @@ error:
+ static void hpwdt_exit_nmi_decoding(void)
+ {
+ 	unregister_nmi_handler(NMI_UNKNOWN, "hpwdt");
+-	unregister_nmi_handler(NMI_SERR, "hpwdt");
+-	unregister_nmi_handler(NMI_IO_CHECK, "hpwdt");
++	unregister_nmi_handler(NMI_EXT, "hpwdt");
+ 	if (cru_rom_addr)
+ 		iounmap(cru_rom_addr);
+ }
+-- 
+1.7.1
+
