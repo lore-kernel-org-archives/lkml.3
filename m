@@ -1,76 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947AbaEGOmz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 10:42:55 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:54462 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933AbaEGOmy (ORCPT
+	id S1754754AbaEGOnK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 10:43:10 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:64537 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753281AbaEGOnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 10:42:54 -0400
-Date: Wed, 7 May 2014 16:43:06 +0200
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH] mmc: atmel: don't test host->data
-Message-ID: <20140507144306.GO7438@ldesroches-Latitude-E6320>
-Mail-Followup-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-	Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-	linux-mmc@vger.kernel.org
-References: <1399391006-16007-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Wed, 7 May 2014 10:43:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1399391006-16007-1-git-send-email-alexandre.belloni@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5369F0D6.3080503@st.com>
+References: <1399408005-4209-1-git-send-email-festevam@gmail.com>
+	<5369F0D6.3080503@st.com>
+Date: Wed, 7 May 2014 11:43:05 -0300
+Message-ID: <CAOMZO5CoSJB1kqBMoE6_8WL_WektBC0RXWbk60wPi=tbYJK_Og@mail.gmail.com>
+Subject: Re: [PATCH] clk: clk-divider: Fix infinite loop for table divider
+From: Fabio Estevam <festevam@gmail.com>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 05:43:26PM +0200, Alexandre Belloni wrote:
-> Found using smatch:
-> drivers/mmc/host/atmel-mci.c:827 atmci_pdc_complete() warn: variable
-> dereferenced before check 'host->data' (see line 807)
-> 
-> Stop testing host->data as it is not NULL at that point.
+On Wed, May 7, 2014 at 5:37 AM, Maxime Coquelin <maxime.coquelin@st.com> wrote:
 
-I agree
+> Couldn't we initialize "up" variable to INT_MAX in _round_up_table() as I
+> just proposed in mail thread reporting the regression?
 
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Yes, it works fine. Please submit your version.
 
-> ---
->  drivers/mmc/host/atmel-mci.c | 13 +++----------
->  1 file changed, 3 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-> index 42706ea0ba85..aece7cafbb97 100644
-> --- a/drivers/mmc/host/atmel-mci.c
-> +++ b/drivers/mmc/host/atmel-mci.c
-> @@ -820,16 +820,9 @@ static void atmci_pdc_complete(struct atmel_mci *host)
->  
->  	atmci_pdc_cleanup(host);
->  
-> -	/*
-> -	 * If the card was removed, data will be NULL. No point trying
-> -	 * to send the stop command or waiting for NBUSY in this case.
-> -	 */
-> -	if (host->data) {
-> -		dev_dbg(&host->pdev->dev,
-> -		        "(%s) set pending xfer complete\n", __func__);
-> -		atmci_set_pending(host, EVENT_XFER_COMPLETE);
-> -		tasklet_schedule(&host->tasklet);
-> -	}
-> +	dev_dbg(&host->pdev->dev, "(%s) set pending xfer complete\n", __func__);
-> +	atmci_set_pending(host, EVENT_XFER_COMPLETE);
-> +	tasklet_schedule(&host->tasklet);
->  }
->  
->  static void atmci_dma_cleanup(struct atmel_mci *host)
-> -- 
-> 1.9.1
-> 
+Thanks
