@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933771AbaEGNeE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:34:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45375 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755847AbaEGNNe (ORCPT
+	id S933955AbaEGNeV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:34:21 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:53096 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932919AbaEGNeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:13:34 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tejun Heo <tj@kernel.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 04/70] pata_at91: fix ata_host_activate() failure handling
-Date: Wed,  7 May 2014 14:12:07 +0100
-Message-Id: <1399468393-10140-5-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
-References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Wed, 7 May 2014 09:34:18 -0400
+Message-ID: <536A3654.20201@semaphore.gr>
+Date: Wed, 07 May 2014 16:34:12 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Simon Horman <horms@verge.net.au>, Sekhar Nori <nsekhar@ti.com>,
+        Samuel Ortiz <samuel@sortiz.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Subject: Re: [PATCH v5 0/8] Introduce new cpufreq helper macros
+References: <535AC247.3070907@semaphore.gr> <5369220A.3030207@semaphore.gr> <CAKohpo=3_7G+3bMF2CpWgZXvktdXBkCi4-tCxogwGcvvEEh18w@mail.gmail.com> <4469396.zveA7sC36d@vostro.rjw.lan>
+In-Reply-To: <4469396.zveA7sC36d@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.10 -stable review patch.  If anyone has any objections, please let me know.
+Hi Rafael,
 
-------------------
+On 07/05/2014 04:13 μμ, Rafael J. Wysocki wrote:
+> On Wednesday, May 07, 2014 10:53:16 AM Viresh Kumar wrote:
+>> On 6 May 2014 23:25, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+>>> My bad. I'm sorry for this. :(
+>>>
+>>> Rafael,
+>>> A solution could be to make cpufreq_next_valid an inline function in cpufreq.h,
+>>> but as Viresh mentioned this would be very inefficient because of multiple copies.
+>>
+>> That statement was true when we didn't had this problem..
+>>
+>>> So, maybe it's better to revert the 2 patches that don't depend on CONFIG_CPU_FREQ:
+>>>
+>>> 4229e1c61a4a ("sh: clk: Use cpufreq_for_each_valid_entry macro for iteration") and
+>>> 04ae58645afa ("irda: sh_sir: Use cpufreq_for_each_valid_entry macro for iteration").
+>>
+>> This doesn't look right. It can happen to some other drivers as well in future.
+>> So, there are two solutions I can think of:
+>> 1. move cpufreq_next_valid and rename it to __cpufreq_next_valid(). Also make it
+>> inline. Then create two versions of cpufreq_next_valid(), one inlined (only when
+>> CONFIG_CPU_FREQ=n) and other one in cpufreq.c (non- inlined)..
+>>
+>> But probably that would be called ugly by some people :)
+>>
+>> 2. Make cpufreq_next_valid() inline and forget about extra space it takes :)
+>>
+>> @Rafel: Let me know which one you like :)
+> 
+> 2.
+> 
+> 
 
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Do you want me to resend the entire patch set or only patch 1/8?
 
-commit 27aa64b9d1bd0d23fd692c91763a48309b694311 upstream.
 
-Add missing clk_put() call to ata_host_activate() failure path.
-
-Sergei says,
-
-  "Hm, I have once fixed that (see that *if* (!ret)) but looks like a
-   later commit 477c87e90853d136b188c50c0e4a93d01cad872e (ARM:
-   at91/pata: use gpio_is_valid to check the gpio) broke it again. :-(
-   Would be good if the changelog did mention that..."
-
-Cc: Andrew Victor <linux@maxim.org.za>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/ata/pata_at91.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/ata/pata_at91.c b/drivers/ata/pata_at91.c
-index 5364f97..43a4ed9 100644
---- a/drivers/ata/pata_at91.c
-+++ b/drivers/ata/pata_at91.c
-@@ -408,12 +408,13 @@ static int pata_at91_probe(struct platform_device *pdev)
- 
- 	host->private_data = info;
- 
--	return ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
--			gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
--			irq_flags, &pata_at91_sht);
-+	ret = ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
-+				gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
-+				irq_flags, &pata_at91_sht);
-+	if (ret)
-+		goto err_put;
- 
--	if (!ret)
--		return 0;
-+	return 0;
- 
- err_put:
- 	clk_put(info->mck);
--- 
-1.9.1
-
+Thanks,
+Stratos
