@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932292AbaEGJOp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:14:45 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51318 "EHLO arroyo.ext.ti.com"
+	id S932313AbaEGJPT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:15:19 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:39829 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932246AbaEGJOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:14:43 -0400
-Message-ID: <5369F973.10803@ti.com>
-Date: Wed, 7 May 2014 12:14:27 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S932213AbaEGJPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 05:15:16 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH 2/5] rtc: rtc-hym8563: Make of_device_id array const
+Date: Wed, 07 May 2014 11:15:50 +0200
+Message-ID: <1450231.VoSW87CxnX@diego>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <021301cf69cf$316ff000$944fd000$%han@samsung.com>
+References: <020f01cf69ce$bf617b50$3e2471f0$%han@samsung.com> <021301cf69cf$316ff000$944fd000$%han@samsung.com>
 MIME-Version: 1.0
-To: Peter Griffin <peter.griffin@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Lindgren <tony@atomide.com>
-CC: <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 13/13] video: omap: allow building on !MMU
-References: <1398342509-10243-1-git-send-email-peter.griffin@linaro.org> <1398342509-10243-14-git-send-email-peter.griffin@linaro.org>
-In-Reply-To: <1398342509-10243-14-git-send-email-peter.griffin@linaro.org>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="dEWaKqBDIhpEP6uWPfrVghDeIlpxe7XL0"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---dEWaKqBDIhpEP6uWPfrVghDeIlpxe7XL0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Am Mittwoch, 7. Mai 2014, 17:34:42 schrieb Jingoo Han:
+> Make of_device_id array const, because all OF functions
+> handle it as const.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-On 24/04/14 15:28, Peter Griffin wrote:
-> From: Arnd Bergmann <arnd@arndb.de>
->=20
-> The omap lcdc driver has an elaborate mmap_kern function
-> to map the frame buffer into kernel address space as
-> write-combined. This uses functions that are only available
-> on MMU-enabled builds.
->=20
-> It does seem equivalent to ioremap_wc though, so we should
-> be able to just use that instead.
->=20
-> This patch is build-tested only, it needs to be run on real
-> hardware before applying.
+Acked-by: Heiko Stuebner <heiko@sntech.de>
 
-I don't have omap1 boards, and I don't know anyone that has. I don't
-even know if the omap1 fb is working or not...
+> ---
+>  drivers/rtc/rtc-hym8563.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/rtc/rtc-hym8563.c b/drivers/rtc/rtc-hym8563.c
+> index bd628a6..5620c24 100644
+> --- a/drivers/rtc/rtc-hym8563.c
+> +++ b/drivers/rtc/rtc-hym8563.c
+> @@ -582,7 +582,7 @@ static const struct i2c_device_id hym8563_id[] = {
+>  };
+>  MODULE_DEVICE_TABLE(i2c, hym8563_id);
+> 
+> -static struct of_device_id hym8563_dt_idtable[] = {
+> +static const struct of_device_id hym8563_dt_idtable[] = {
+>  	{ .compatible = "haoyu,hym8563" },
+>  	{},
+>  };
 
-Tony, any idea of omap1's fb? Are you able to test this?
-
- Tomi
-
-
-
---dEWaKqBDIhpEP6uWPfrVghDeIlpxe7XL0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTaflzAAoJEPo9qoy8lh71mwEP/ixwXorGiw6rNjAy3+rQ/Ht3
-d1rWch/w3Xtu+eSjKLKRDBcIKdo0FjU839RrPvFXd48ooo256tJn1hR/DKiysX2T
-52uCv/FBJRHHdVvc7ujtwcKSzxL8y/xa9YYL7N3jFlGxbLUqWOJqKiji5fAR408H
-PV55iIV8sANH2RoWY5u8JL+UebSkj8GMsapRnf4+Pl30/H+oGRExD+xHEcT5e07/
-6F3P6b/FTkG/esI2XQIFx3df7vqpLf/myW3RtjOPd4yQZW3lW5LNZz4XZOuqunzG
-MeIX6e+6zFH/JiG/WR/xmeES/gEhTSx9gcOYykbWUDVZZGOp8R6TpsMZFSeLHama
-6qNHtS7sYJfupZlyNUHQFvJiQiSe2rIOLIa3MQITuWCvh5vxoNQvGlElpumVIN7+
-817hmLIf5bQsQfOWTM6RwEuqnSA++2DKwOhkA0E+9sWT+ChZJ8AyVQhW0Jq5NrnW
-34w17sJZFgXHdYkaDmwQb0TWlITJ3D0CKOpiCWEjo24Z5gAyP/pn/QTNAQQ8iVGD
-O35y4qDzQnPX6KSaalQMa/HystgqjuKITPmVmfzerxgCFpmjGgwQeIjKKqkrfv4h
-7ZeZ8r8TsBLz8+aOPeJro6/cDrf3Z04f/a9s4czesat6F0kfQqi+PDGaH1r+4+XI
-5kgARnLt/C5OSbEE+1sw
-=N6bJ
------END PGP SIGNATURE-----
-
---dEWaKqBDIhpEP6uWPfrVghDeIlpxe7XL0--
