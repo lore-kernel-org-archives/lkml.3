@@ -1,69 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035AbaEGCXn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 22:23:43 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:38530 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812AbaEGCWw (ORCPT
+	id S1752502AbaEGC0Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 22:26:16 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:41121 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140AbaEGC0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 22:22:52 -0400
-Date: Tue, 6 May 2014 19:22:50 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [patch v3 5/6] mm, thp: avoid excessive compaction latency during
- fault
-In-Reply-To: <alpine.DEB.2.02.1405061920470.18635@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1405061922010.18635@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com> <alpine.DEB.2.02.1405061920470.18635@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 6 May 2014 22:26:14 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: [PATCH] perf tools: Use tid for finding thread
+Date: Wed,  7 May 2014 11:26:06 +0900
+Message-Id: <1399429566-15587-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Synchronous memory compaction can be very expensive: it can iterate an enormous 
-amount of memory without aborting, constantly rescheduling, waiting on page
-locks and lru_lock, etc, if a pageblock cannot be defragmented.
+I believe that passing pid (instead of tid) as the 3rd arg of the
+machine__find*_thread() was to find a main thread so that it can
+search proper map group for symbols.  However with the map sharing
+patch applied, it now can do it in any thread.
 
-Unfortunately, it's too expensive for transparent hugepage page faults and 
-it's much better to simply fallback to pages.  On 128GB machines, we find that 
-synchronous memory compaction can take O(seconds) for a single thp fault.
+It fixes a bug when each thread has different name, it only reports a
+main thread for samples in other threads.
 
-Now that async compaction remembers where it left off without strictly relying
-on sync compaction, this makes thp allocations best-effort without causing
-egregious latency during fault.  We still need to retry async compaction after
-reclaim, but this won't stall for seconds.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- mm/page_alloc.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ tools/perf/builtin-inject.c     | 2 +-
+ tools/perf/builtin-kmem.c       | 2 +-
+ tools/perf/tests/code-reading.c | 2 +-
+ tools/perf/util/build-id.c      | 2 +-
+ tools/perf/util/event.c         | 2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2584,7 +2584,17 @@ rebalance:
- 					&did_some_progress);
- 	if (page)
- 		goto got_pg;
--	migration_mode = MIGRATE_SYNC_LIGHT;
-+
-+	if (gfp_mask & __GFP_NO_KSWAPD) {
-+		/*
-+		 * Khugepaged is allowed to try MIGRATE_SYNC_LIGHT, the latency
-+		 * of this allocation isn't critical.  Everything else, however,
-+		 * should only be allowed to do MIGRATE_ASYNC to avoid excessive
-+		 * stalls during fault.
-+		 */
-+		if ((current->flags & (PF_KTHREAD | PF_KSWAPD)) == PF_KTHREAD)
-+			migration_mode = MIGRATE_SYNC_LIGHT;
-+	}
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 3a7387551369..6a3af0013d68 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -209,7 +209,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
  
- 	/*
- 	 * If compaction is deferred for high-order allocations, it is because
+ 	cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 
+-	thread = machine__findnew_thread(machine, sample->pid, sample->pid);
++	thread = machine__findnew_thread(machine, sample->pid, sample->tid);
+ 	if (thread == NULL) {
+ 		pr_err("problem processing %d event, skipping it.\n",
+ 		       event->header.type);
+diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+index f91fa4376f4b..bef3376bfaf3 100644
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -235,7 +235,7 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 				struct machine *machine)
+ {
+ 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
+-							sample->pid);
++							sample->tid);
+ 
+ 	if (thread == NULL) {
+ 		pr_debug("problem processing %d event, skipping it.\n",
+diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
+index adf3de3e38d6..67f2d6323558 100644
+--- a/tools/perf/tests/code-reading.c
++++ b/tools/perf/tests/code-reading.c
+@@ -256,7 +256,7 @@ static int process_sample_event(struct machine *machine,
+ 		return -1;
+ 	}
+ 
+-	thread = machine__findnew_thread(machine, sample.pid, sample.pid);
++	thread = machine__findnew_thread(machine, sample.pid, sample.tid);
+ 	if (!thread) {
+ 		pr_debug("machine__findnew_thread failed\n");
+ 		return -1;
+diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
+index 6baabe63182b..a904a4cfe7d3 100644
+--- a/tools/perf/util/build-id.c
++++ b/tools/perf/util/build-id.c
+@@ -25,7 +25,7 @@ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
+ 	struct addr_location al;
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
+-							sample->pid);
++							sample->tid);
+ 
+ 	if (thread == NULL) {
+ 		pr_err("problem processing %d event, skipping it.\n",
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index dbcaea1a8180..65795b835b39 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -788,7 +788,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ {
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
+-							sample->pid);
++							sample->tid);
+ 
+ 	if (thread == NULL)
+ 		return -1;
+-- 
+1.9.2
+
