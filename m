@@ -1,53 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932540AbaEGJwL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:52:11 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:64573 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755434AbaEGJwG (ORCPT
+	id S932562AbaEGJwv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:52:51 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:27960 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073AbaEGJwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:52:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140506175616.GH13677@arm.com>
-References: <1399389979-11279-1-git-send-email-jean.pihet@linaro.org>
-	<1399389979-11279-4-git-send-email-jean.pihet@linaro.org>
-	<20140506175616.GH13677@arm.com>
-Date: Wed, 7 May 2014 11:52:05 +0200
-Message-ID: <CAFrcx1=aS+dmM05Zk_ioL_0vE+ot+9=LJ=WsmExRtDyZgMtetA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] perf tools: Add libdw DWARF post unwind support for ARM
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Will Deacon <will.deacon@arm.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Ahern <dsahern@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 7 May 2014 05:52:49 -0400
+X-AuditID: cbfec7f4-b7fb36d000006ff7-f9-536a026fb498
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
+Subject: [RFT PATCH] regulator: s2mpa01: Use correct register for buck[36] ramp
+ delay
+Date: Wed, 07 May 2014 11:52:38 +0200
+Message-id: <1399456358-12168-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLJMWRmVeSWpSXmKPExsVy+t/xy7r5TFnBBnc/aVtMffiEzeL1C0OL
+	b1c6mCwu75rDZnHyTy+jxcUVX5gsFmx8xOjA7rFz1l12j02rOtk87lzbw+bRt2UVo8fnTXIB
+	rFFcNimpOZllqUX6dglcGVN/NLEUTOermH75LXsD4x7uLkZODgkBE4mPV8+zQNhiEhfurWfr
+	YuTiEBJYyijRd3wCO4TTxyRx6sBnNpAqNgFjic3Ll4BViQhsY5R49+kqI0iCWcBT4t3fh0Ad
+	HBzCAuESt+7qgIRZBFQl7je+YAaxeQXcJTbda4TaJidx8thk1gmM3AsYGVYxiqaWJhcUJ6Xn
+	GuoVJ+YWl+al6yXn525ihATJlx2Mi49ZHWIU4GBU4uF9EZ0RLMSaWFZcmXuIUYKDWUmE1/Jv
+	ZrAQb0piZVVqUX58UWlOavEhRiYOTqkGxvyaLydbJnxJaTymbqPqvWRJfIa+qbGI0935N29P
+	51I47blpuUms8LYJvIpftriUHCpRmvByUoKJ3I/WyFOMHM/0tvxoMWjTcrq4c52xmKr9dr4N
+	i2z/7fzMFLFURs1G/1NXdP2uQOnzz6K+Ve4K4K9OOHpMUezFT2PuVdNnzvCfzij5O6cpWIml
+	OCPRUIu5qDgRANNaHt7wAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 May 2014 19:56, Will Deacon <will.deacon@arm.com> wrote:
-> On Tue, May 06, 2014 at 04:26:19PM +0100, Jean Pihet wrote:
->> Adding libdw DWARF post unwind support, which is part
->> of elfutils-devel/libdw-dev package from version 0.158.
->>
->> The new code is contained in unwin-libdw.c object, and
->> implements unwind__get_entries unwind interface function.
->
->   Reviewed-by: Will Deacon <will.deacon@arm.com>
+Buck1 and buck6 share the field (offset 4) in ramp delay register
+(S2MPA01_REG_RAMP1). The buck3 uses its own field in S2MPA01_REG_RAMP2
+register, also at offset 4.
 
-Ok, thx!
+The driver interchanged the registers for ramp delay of buck3 and buck6.
+This lead to updating ramp delay for wrong buck (buck3 instead of buck6
+and vice versa).
 
-Jiri, Arnaldo,
-Can you take the series for ARM and ARM64?
+Cc: <stable@vger.kernel.org>
+Fixes: f18792714608 ("regulator: Add support for S2MPA01 regulator")
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/regulator/s2mpa01.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Jean
->
-> Will
+diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
+index f19a30f0fb42..67a5ab335dae 100644
+--- a/drivers/regulator/s2mpa01.c
++++ b/drivers/regulator/s2mpa01.c
+@@ -137,17 +137,16 @@ static int s2mpa01_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
+ 		enable_shift = S2MPA01_BUCK3_RAMP_EN_SHIFT;
+ 		if (!ramp_delay) {
+ 			ramp_enable = 0;
+ 			break;
+ 		}
+ 
+ 		s2mpa01->ramp_delay3 = ramp_delay;
+ 		ramp_shift = S2MPA01_BUCK3_RAMP_SHIFT;
+-		ramp_reg = S2MPA01_REG_RAMP1;
+ 		break;
+ 	case S2MPA01_BUCK4:
+ 		enable_shift = S2MPA01_BUCK4_RAMP_EN_SHIFT;
+ 		if (!ramp_delay) {
+ 			ramp_enable = 0;
+ 			break;
+ 		}
+ 
+@@ -165,16 +164,17 @@ static int s2mpa01_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
+ 		break;
+ 	case S2MPA01_BUCK6:
+ 		if (ramp_delay > s2mpa01->ramp_delay16)
+ 			s2mpa01->ramp_delay16 = ramp_delay;
+ 		else
+ 			ramp_delay = s2mpa01->ramp_delay16;
+ 
+ 		ramp_shift = S2MPA01_BUCK16_RAMP_SHIFT;
++		ramp_reg = S2MPA01_REG_RAMP1;
+ 		break;
+ 	case S2MPA01_BUCK7:
+ 		s2mpa01->ramp_delay7 = ramp_delay;
+ 		ramp_shift = S2MPA01_BUCK7_RAMP_SHIFT;
+ 		break;
+ 	case S2MPA01_BUCK8:
+ 	case S2MPA01_BUCK9:
+ 	case S2MPA01_BUCK10:
+-- 
+1.9.1
+
