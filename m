@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503AbaEGJSZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:18:25 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38096 "EHLO bear.ext.ti.com"
+	id S932335AbaEGJTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:19:15 -0400
+Received: from mout.gmx.net ([212.227.17.21]:56521 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754886AbaEGJSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:18:23 -0400
-Message-ID: <5369FA56.1070802@ti.com>
-Date: Wed, 7 May 2014 12:18:14 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751886AbaEGJTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 05:19:12 -0400
+From: Sven Joachim <svenjoac@gmx.de>
+To: Alexandre Julliard <julliard@winehq.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Brian Gerst <brgerst@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
+References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org>
+	<CAMzpN2jx4H4p8fQr-WHxVyCHhWi0iO3WZZKyxYD7Dfa7pWkEgg@mail.gmail.com>
+	<CA+55aFwzvSiAGYfFb2R3JeVvh8_PQuOKJDrYP5C_3VQz2zhnBw@mail.gmail.com>
+	<CAMzpN2jj3dwQG7qC__8zLPhkg_ER6n4CcNxa5eg7okRN+k_VUA@mail.gmail.com>
+	<CA+55aFxr_dz3vhko1FPXhZd0ZNeGveX0oSLqUo_wyiVbxatLQw@mail.gmail.com>
+	<87k3aspd1h.fsf@wine.dyndns.org>
+Date: Wed, 07 May 2014 11:18:49 +0200
+In-Reply-To: <87k3aspd1h.fsf@wine.dyndns.org> (Alexandre Julliard's message of
+	"Mon, 14 Apr 2014 09:48:10 +0200")
+Message-ID: <87zjiuymiu.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.90 (gnu/linux)
 MIME-Version: 1.0
-To: Peter Griffin <peter.griffin@linaro.org>, <linux-kernel@vger.kernel.org>
-CC: <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH 00/13] video: Arnds randconfig fixes for video
-References: <1398342509-10243-1-git-send-email-peter.griffin@linaro.org>
-In-Reply-To: <1398342509-10243-1-git-send-email-peter.griffin@linaro.org>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="XJ9X1xP7s9gC39uwr7aATQlBFkqCtAVve"
+Content-Type: text/plain
+X-Provags-ID: V03:K0:QsFGenef/ULkhGxiYzWAx47lNYhcg5RCwgw/eq/c+1hyD4nqv5b
+ /gjwLV4UutxhgOyxD9/lfIUnK9nxsiJGF1kuBpH8Mm1qAkmn+xWG9W8I1qDdQw46OwwnIWe
+ r/51V4zZIjrqFLqJYTslOBx0szBmLjnZmL5FXQmCdfCJ2uWSGYHEsOjMi4LBNJl515p8LFF
+ DJrYZFqgN3qEfQgOfiY/w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---XJ9X1xP7s9gC39uwr7aATQlBFkqCtAVve
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 2014-04-14 09:48 +0200, Alexandre Julliard wrote:
 
-On 24/04/14 15:28, Peter Griffin wrote:
-> This patchset series addresses various bugs found and fixed by Arnd Ber=
-gmann=20
-> whilst doing randconfig builds.
->=20
-> My involvement has been to review, add/check the maintainers are correc=
-t
-> and submit upstream to try and reduce the backlog.
+> Linus Torvalds <torvalds@linux-foundation.org> writes:
+>
+>> On Fri, Apr 11, 2014 at 11:45 AM, Brian Gerst <brgerst@gmail.com> wrote:
+>>>
+>>> I haven't tested it recently but I do know it has worked on 64-bit
+>>> kernels.  There is no reason for it not to, the only thing not
+>>> supported in long mode is vm86.  16-bit protected mode is unchanged.
+>>
+>> Afaik 64-bit windows doesn't support 16-bit binaries, so I just
+>> assumed Wine wouldn't do it either on x86-64. Not for any real
+>> technical reasons, though.
+>>
+>> HOWEVER. I'd like to hear something more definitive than "I haven't
+>> tested recently". The "we don't break user space" is about having
+>> actual real *users*, not about test programs.
+>>
+>> Are there people actually using 16-bit old windows programs under
+>> wine? That's what matters.
 
-I've applied patches 1, 2, 3, 4, 5, 6, 7, 11 to fbdev tree. I'll apply
-13 later if someone is able to test it.
+It seems that at least some 32-bit programs are also broken, since after
+upgrading the kernel to 3.14.3 I can no longer start my old chess
+database program:
 
- Tomi
+,----
+| % file CB70.exe 
+| CB70.exe: PE32 executable (GUI) Intel 80386, for MS Windows
+| % LANG=C wine CB70.exe
+| modify_ldt: Invalid argument
+| modify_ldt: Invalid argument
+| modify_ldt: Invalid argument
+| modify_ldt: Invalid argument
+| modify_ldt: Invalid argument
+`----
 
+And here it just hangs, with wineboot.exe taking 100% CPU.  I had to
+kill first wineboot.exe and then CB70.exe. :-(
 
+> Yes, there is still a significant number of users, and we still
+> regularly get bug reports about specific 16-bit apps. It would be really
+> nice if we could continue to support them on x86-64, particularly since
+> Microsoft doesn't ;-)
 
---XJ9X1xP7s9gC39uwr7aATQlBFkqCtAVve
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+I would rather not set up a virtual machine just for wine (I don't have
+Windows anymore).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTafpWAAoJEPo9qoy8lh71jmwQAKifJN3yMDOYqJduXT11aLCF
-oCUKQN+YAlu5JD8vRiYzlcYXjwRViLYSYVSrrF+3EvOOFzV7Rz6nAltUXTUJHkRN
-9cfcp/tg6J8KejJIoLtGc/uv/aUp3vzohvp+KLyHr4Vuv0P6R2Jp/RF3ZAwIZw2C
-Rb5t8NwTf9PEz28stwkOpqqJaYPxvuEi4OorbZ53hqjjlTUYyTS+gtbdh70ctBiB
-T5MTkSSQVJionex3AhK+k3RGaTQ/WVKfa7UQMwnzWwo3Eot0CDUHIOQBHI4GujKE
-oD1in7tpsQjMLApHlrZATQGUD/Np7pGngJzRXl4aNncNWVll5ObQUWQm2LAQPhrP
-Dl4Vv+L9Hl+UAUd87pYo4LwUmAVFg+UZkHtMdGgNSQ840zZaxrJ0TsBXr7yDSDRs
-M8HjCyuFpTpTTguurp4WSb9sduhNzto6cgQFYyq8AHoLew2WhwVPHzFDxgtdtist
-s1PcV4/qR9u41iR0xbdmvCoZeJoWszyvBbYwIZzty1uCFYcxyoYfy3/vsps6uju/
-U4ugdRGXekNqrb643MbUzFgsveT5BMnatAc2bNcIErwUFK4NgQlrStjLJq9ni3Nz
-faCc0D/GbbfZvPyVsp9LL9VKQ0LYXStCP2vnJA/uvIuFBJLxx5NM3EXK23kYTImQ
-IsgRwNwtB044LF53B3Mp
-=fi+e
------END PGP SIGNATURE-----
-
---XJ9X1xP7s9gC39uwr7aATQlBFkqCtAVve--
+Cheers,
+       Sven
