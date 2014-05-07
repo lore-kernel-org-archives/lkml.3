@@ -1,100 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266AbaEGPWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:22:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13655 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752238AbaEGPWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:22:44 -0400
-Date: Wed, 7 May 2014 11:22:19 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCHSET 00/17] perf report: Add -F option for specifying
- output fields (v4)
-Message-ID: <20140507152219.GN39568@redhat.com>
-References: <87lhuwr2pk.fsf@sejong.aot.lge.com>
- <20140423125828.GL5328@redhat.com>
- <1398346899.1681.18.camel@leonhard>
- <20140424210015.GJ8488@redhat.com>
- <20140428194642.GQ5328@redhat.com>
- <878uqpos3k.fsf@sejong.aot.lge.com>
- <20140429172735.GD32375@redhat.com>
- <874n1bpuzh.fsf@sejong.aot.lge.com>
- <20140430133554.GB61249@redhat.com>
- <87mweunv8p.fsf@sejong.aot.lge.com>
+	id S1756354AbaEGPXp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:23:45 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38786 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108AbaEGPXn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 11:23:43 -0400
+Message-ID: <536A4FF8.4090003@oracle.com>
+Date: Wed, 07 May 2014 11:23:36 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87mweunv8p.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>
+CC: roland@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: ptrace: gpf in syscall_trace_enter
+References: <53698021.5020108@oracle.com>	<53699F7C.1040308@oracle.com>	<20140507140422.GB17419@redhat.com> <20140507103109.77063896@gandalf.local.home>
+In-Reply-To: <20140507103109.77063896@gandalf.local.home>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 12:05:58PM +0900, Namhyung Kim wrote:
-> Hi Don,
+On 05/07/2014 10:31 AM, Steven Rostedt wrote:
+> On Wed, 7 May 2014 16:04:22 +0200
+> Oleg Nesterov <oleg@redhat.com> wrote:
 > 
-> On Wed, 30 Apr 2014 09:35:55 -0400, Don Zickus wrote:
-> > On Wed, Apr 30, 2014 at 08:38:10AM +0900, Namhyung Kim wrote:
-> >> Hi Don,
-> >> 
-> >> On Tue, 29 Apr 2014 13:27:35 -0400, Don Zickus wrote:
-> >> > On Tue, Apr 29, 2014 at 10:13:35AM +0900, Namhyung Kim wrote:
-> >> >> >        /*
-> >> >> >         * Addresses with no major/minor numbers are assumed to be
-> >> >> >         * anonymous in userspace.  Sort those on pid then address.
-> >> >> >         *
-> >> >> >         * The kernel and non-zero major/minor mapped areas are
-> >> >> >         * assumed to be unity mapped.  Sort those on address.
-> >> >> >         */
-> >> >> >
-> >> >> >        if ((left->cpumode != PERF_RECORD_MISC_KERNEL) &&
-> >> >> >            !l_map->maj && !l_map->min && !l_map->ino &&
-> >> >> >            !l_map->ino_generation) {
-> >> >> >                /* userspace anonymous */
-> >> >> >
-> >> >> >                if (left->thread->pid_ > right->thread->pid_) return -1;
-> >> >> >                if (left->thread->pid_ < right->thread->pid_) return 1;
-> >> >> 
-> >> >> Isn't it necessary to check whether the address is in a same map in case
-> >> >> of anon pages?  I mean the daddr.al_addr is a map-relative offset so it
-> >> >> might have same value for different maps.
-> >> >
-> >> > That's why I sort on pids here.  Because the anon address might have the
-> >> > same value for different maps.  The thought was to group all the pid
-> >> > addresses together to keep things seperated.
-> >> >
-> >> > Do you see a different way to solve the problem?  I am not sure al_addr
-> >> > vs. addr will make much difference here.
-> >> 
-> >> I'm not saying to get rid of the pid check, I'm saying that it might
-> >> need to add another check for maps (i.e. start address) as there might
-> >> be many maps in a single address space.
-> >
-> > Hmm, I guess I would need to see an example.  While I agree there might be
-> > many maps in a single address space (/proc/<pid>/maps demonstrates that),
-> > I understood them to map to a unique location (ie no overlap) unless they
-> > are shared.
-> >
-> > I am willing to believe I missed scenario when sorting, I just can't think
-> > of it (so I wouldn't know how to fix it).  That's why I was looking for an
-> > example to make it more obvious to me.  Sorry for being slow..
+>> On 05/06, Sasha Levin wrote:
+>>>
+>>> On 05/06/2014 08:36 PM, Sasha Levin wrote:
+>>>> Hi all,
+>>>>
+>>>> While fuzzing with trinity inside a KVM tools guest running the latest -next
+>>>> kernel I've stumbled on the following spew:
+>>>
+>>> And another similar trace:
+>>
+>> Again, this looks like __DO_TRACE() trying to call it_func_ptr->func().
 > 
-> I'm also sorry for being late.  Looking at the code, it seems to use
-> identity__map_ip() for anon maps so my concern is bogus.  Please just
-> forget about it and keep going.  Sorry for interrupting your work..
+> Really? Can I see an objdump of the location of the crash. Preferably
+> the entire function.
 
-No worries.  Always good to have an extra pair of eyes.
+0000000000002740 <syscall_trace_leave>:
+    2740:	e8 00 00 00 00       	callq  2745 <syscall_trace_leave+0x5>
+			2741: R_X86_64_PC32	__fentry__-0x4
+    2745:	55                   	push   %rbp
+    2746:	48 89 e5             	mov    %rsp,%rbp
+    2749:	48 83 ec 20          	sub    $0x20,%rsp
+    274d:	48 89 5d e8          	mov    %rbx,-0x18(%rbp)
+    2751:	48 89 fb             	mov    %rdi,%rbx
+    2754:	4c 89 65 f0          	mov    %r12,-0x10(%rbp)
+    2758:	4c 89 6d f8          	mov    %r13,-0x8(%rbp)
+    275c:	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)
+    2761:	65 48 8b 04 25 00 00 	mov    %gs:0x0,%rax
+    2768:	00 00
+			2766: R_X86_64_32S	current_task
+    276a:	48 83 b8 b8 0b 00 00 	cmpq   $0x0,0xbb8(%rax)
+    2771:	00
+    2772:	74 1c                	je     2790 <syscall_trace_leave+0x50>
+    2774:	48 8b 73 50          	mov    0x50(%rbx),%rsi
+    2778:	31 ff                	xor    %edi,%edi
+    277a:	48 81 fe 00 f0 ff ff 	cmp    $0xfffffffffffff000,%rsi
+    2781:	40 0f 96 c7          	setbe  %dil
+    2785:	e8 00 00 00 00       	callq  278a <syscall_trace_leave+0x4a>
+			2786: R_X86_64_PC32	__audit_syscall_exit-0x4
+    278a:	66 0f 1f 44 00 00    	nopw   0x0(%rax,%rax,1)
+    2790:	65 48 8b 04 25 00 00 	mov    %gs:0x0,%rax
+    2797:	00 00
+			2795: R_X86_64_32S	kernel_stack
+    2799:	48 8b 80 38 e0 ff ff 	mov    -0x1fc8(%rax),%rax
+    27a0:	a9 00 00 00 10       	test   $0x10000000,%eax
+    27a5:	74 71                	je     2818 <syscall_trace_leave+0xd8>
+    27a7:	4c 8b 6b 50          	mov    0x50(%rbx),%r13
+    27ab:	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)
+    27b0:	eb 62                	jmp    2814 <syscall_trace_leave+0xd4>
+    27b2:	80 3d 00 00 00 00 00 	cmpb   $0x0,0x0(%rip)        # 27b9 <syscall_trace_leave+0x79>
+			27b4: R_X86_64_PC32	.data.unlikely-0x4
+    27b9:	75 28                	jne    27e3 <syscall_trace_leave+0xa3>
+    27bb:	e8 00 00 00 00       	callq  27c0 <syscall_trace_leave+0x80>
+			27bc: R_X86_64_PC32	.text.unlikely-0x4
+    27c0:	85 c0                	test   %eax,%eax
+    27c2:	75 1f                	jne    27e3 <syscall_trace_leave+0xa3>
+    27c4:	48 c7 c2 00 00 00 00 	mov    $0x0,%rdx
+			27c7: R_X86_64_32S	.rodata.str1.8+0x60
+    27cb:	be 3e 00 00 00       	mov    $0x3e,%esi
+    27d0:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+			27d3: R_X86_64_32S	.rodata.str1.8+0x90
+    27d7:	c6 05 00 00 00 00 01 	movb   $0x1,0x0(%rip)        # 27de <syscall_trace_leave+0x9e>
+			27d9: R_X86_64_PC32	.data.unlikely-0x4
+    27de:	e8 00 00 00 00       	callq  27e3 <syscall_trace_leave+0xa3>
+			27df: R_X86_64_PC32	lockdep_rcu_suspicious-0x4
+    27e3:	4d 85 e4             	test   %r12,%r12
+    27e6:	75 10                	jne    27f8 <syscall_trace_leave+0xb8>
+    27e8:	65 ff 0c 25 00 00 00 	decl   %gs:0x0
+    27ef:	00
+			27ec: R_X86_64_32S	__preempt_count
+    27f0:	0f 84 85 00 00 00    	je     287b <syscall_trace_leave+0x13b>
+    27f6:	eb 1c                	jmp    2814 <syscall_trace_leave+0xd4>
+    27f8:	49 8b 7c 24 08       	mov    0x8(%r12),%rdi
+    27fd:	4c 89 ea             	mov    %r13,%rdx
+    2800:	48 89 de             	mov    %rbx,%rsi
+    2803:	41 ff 14 24          	callq  *(%r12)
+    2807:	49 83 c4 10          	add    $0x10,%r12
+    280b:	49 83 3c 24 00       	cmpq   $0x0,(%r12)
+    2810:	75 e6                	jne    27f8 <syscall_trace_leave+0xb8>
+    2812:	eb d4                	jmp    27e8 <syscall_trace_leave+0xa8>
+    2814:	0f 1f 40 00          	nopl   0x0(%rax)
+    2818:	65 48 8b 04 25 00 00 	mov    %gs:0x0,%rax
+    281f:	00 00
+			281d: R_X86_64_32S	kernel_stack
+    2821:	48 8b 90 38 e0 ff ff 	mov    -0x1fc8(%rax),%rdx
+    2828:	83 e2 10             	and    $0x10,%edx
+    282b:	74 5b                	je     2888 <syscall_trace_leave+0x148>
+    282d:	48 8b 80 38 e0 ff ff 	mov    -0x1fc8(%rax),%rax
+    2834:	a8 40                	test   $0x40,%al
+    2836:	75 50                	jne    2888 <syscall_trace_leave+0x148>
+    2838:	be 01 00 00 00       	mov    $0x1,%esi
+    283d:	0f 1f 00             	nopl   (%rax)
+    2840:	48 89 df             	mov    %rbx,%rdi
+    2843:	e8 f8 fa ff ff       	callq  2340 <tracehook_report_syscall_exit>
+    2848:	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)
+    284d:	eb 56                	jmp    28a5 <syscall_trace_leave+0x165>
+    284f:	90                   	nop
+    2850:	e8 00 00 00 00       	callq  2855 <syscall_trace_leave+0x115>
+			2851: R_X86_64_PC32	context_tracking_user_exit-0x4
+    2855:	e9 07 ff ff ff       	jmpq   2761 <syscall_trace_leave+0x21>
+    285a:	65 ff 04 25 00 00 00 	incl   %gs:0x0
+    2861:	00
+			285e: R_X86_64_32S	__preempt_count
+    2862:	4c 8b 25 00 00 00 00 	mov    0x0(%rip),%r12        # 2869 <syscall_trace_leave+0x129>
+			2865: R_X86_64_PC32	__tracepoint_sys_exit+0x2c
+    2869:	e8 00 00 00 00       	callq  286e <syscall_trace_leave+0x12e>
+			286a: R_X86_64_PC32	debug_lockdep_rcu_enabled-0x4
+    286e:	85 c0                	test   %eax,%eax
+    2870:	0f 85 3c ff ff ff    	jne    27b2 <syscall_trace_leave+0x72>
+    2876:	e9 68 ff ff ff       	jmpq   27e3 <syscall_trace_leave+0xa3>
+    287b:	e8 00 00 00 00       	callq  2880 <syscall_trace_leave+0x140>
+			287c: R_X86_64_PC32	___preempt_schedule_context-0x4
+    2880:	eb 96                	jmp    2818 <syscall_trace_leave+0xd8>
+    2882:	66 0f 1f 44 00 00    	nopw   0x0(%rax,%rax,1)
+    2888:	65 48 8b 04 25 00 00 	mov    %gs:0x0,%rax
+    288f:	00 00
+			288d: R_X86_64_32S	kernel_stack
+    2891:	48 8b 80 38 e0 ff ff 	mov    -0x1fc8(%rax),%rax
+    2898:	31 f6                	xor    %esi,%esi
+    289a:	a8 01                	test   $0x1,%al
+    289c:	75 a2                	jne    2840 <syscall_trace_leave+0x100>
+    289e:	eb a8                	jmp    2848 <syscall_trace_leave+0x108>
+    28a0:	e8 00 00 00 00       	callq  28a5 <syscall_trace_leave+0x165>
+			28a1: R_X86_64_PC32	context_tracking_user_enter-0x4
+    28a5:	48 8b 5d e8          	mov    -0x18(%rbp),%rbx
+    28a9:	4c 8b 65 f0          	mov    -0x10(%rbp),%r12
+    28ad:	4c 8b 6d f8          	mov    -0x8(%rbp),%r13
+    28b1:	c9                   	leaveq
+    28b2:	c3                   	retq
 
-I am a little stuck about where to go.  I think it might make sense to
-submit this as a standalone patch (despite the possible group limitation
-we are discussing).  Thoughts?
 
-Cheers,
-Don
+Thanks,
+Sasha
+
