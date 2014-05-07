@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796AbaEGXgB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 19:36:01 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35882 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568AbaEGXf5 (ORCPT
+	id S1752830AbaEGXnL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 19:43:11 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:49196 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaEGXnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 19:35:57 -0400
-Message-ID: <536AC35A.3000103@wwwdotorg.org>
-Date: Wed, 07 May 2014 17:35:54 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 7 May 2014 19:43:08 -0400
+Date: Thu, 8 May 2014 05:12:56 +0530
+From: Afzal Mohammed <afzal.mohd.ma@gmail.com>
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: linux@arm.linux.org.uk, open list <linux-kernel@vger.kernel.org>,
+        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm: memset: zero out upper bytes in r1
+Message-ID: <20140507234255.GA2050@afzal-ThinkPad-R50e>
+References: <1399273875-8403-1-git-send-email-a.ryabinin@samsung.com>
 MIME-Version: 1.0
-To: Alex Courbot <acourbot@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: tegra: enable console framebuffer rotation
-References: <1399432682-677-1-git-send-email-acourbot@nvidia.com> <536A57FA.2090608@wwwdotorg.org> <536AC45F.6080608@nvidia.com>
-In-Reply-To: <536AC45F.6080608@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399273875-8403-1-git-send-email-a.ryabinin@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2014 05:40 PM, Alex Courbot wrote:
-> On 05/08/2014 12:57 AM, Stephen Warren wrote:
->> On 05/06/2014 09:18 PM, Alexandre Courbot wrote:
->>> Console rotation is needed for devices like Tegra Note 7 and NVIDIA
->>> SHIELD to get the boot console in the expected orientation.
->>
->> I've squashed this into Tegra's for-3.16/defconfig branch.
->>
->> Can you please also update multi_v7_defconfig, and send that change to
->> arm-soc (arm@kernel.org) to be applied. Thanks.
-> 
-> I omitted doing this for now because the devices that require this
-> option (TN7/SHIELD) need a custom build with appended DTB and/or
-> command-line anyway. Therefore they cannot use a multi-mach kernel and
-> might as well be built against Tegra's defconfig. Does your remark above
-> still apply in spite of this?
+Hi Andrey,
 
-Ah right, I guess we don't need it there then.
+On Mon, May 05, 2014 at 11:11:13AM +0400, Andrey Ryabinin wrote:
+
+> memset doesn't work right for following example:
+> 
+> 	signed char c = 0xF0;
+> 	memset(addr, c, size);
+> 
+> Variable c is signed, so after typcasting to int the value will be 0xFFFFFFF0.
+> This value will be passed through r1 regitster to memset function.
+> memset doesn't zero out upper bytes in r1, so memory will be filled
+> with 0xFFFFFFF0 instead of expected 0xF0F0F0F0.
+
+> --- a/arch/arm/lib/memset.S
+> +++ b/arch/arm/lib/memset.S
+> @@ -22,7 +22,8 @@ ENTRY(memset)
+>  /*
+>   * we know that the pointer in ip is aligned to a word boundary.
+>   */
+> -1:	orr	r1, r1, r1, lsl #8
+> +1:	and	r1, r1, #0xff
+> +	orr	r1, r1, r1, lsl #8
+
+int is to be converted to unsigned char in memset, would having above
+change immediately upon entry to memset rather than at a place where it
+won't always execute make intention clearer ? (although it doesn't make
+difference)
+
+ubfx r1, r1, #0, #8 would have given the needed typecasting, but seems
+it is available only on ARMv6T2 & above.
+
+Regards
+Afzal
