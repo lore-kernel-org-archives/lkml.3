@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053AbaEGNTn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:19:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45640 "EHLO
+	id S933342AbaEGNPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:15:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45603 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933355AbaEGNPO (ORCPT
+	with ESMTP id S933287AbaEGNPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:15:14 -0400
+	Wed, 7 May 2014 09:15:03 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Fam Zheng <famz@redhat.com>, James Bottomley <JBottomley@Parallels.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 59/70] [SCSI] virtio-scsi: Skip setting affinity on uninitialized vq
-Date: Wed,  7 May 2014 14:13:02 +0100
-Message-Id: <1399468393-10140-60-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 52/70] drm/i915: Don't check gmch state on inherited configs
+Date: Wed,  7 May 2014 14:12:55 +0100
+Message-Id: <1399468393-10140-53-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -27,105 +29,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fam Zheng <famz@redhat.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 0c8482ac92db5ac15792caf23b7f7df9e4f48ae1 upstream.
+commit 9953599bc02dbc1d3330e6a0bfc6c50e9dffcac6 upstream.
 
-virtscsi_init calls virtscsi_remove_vqs on err, even before initializing
-the vqs. The latter calls virtscsi_set_affinity, so let's check the
-pointer there before setting affinity on it.
+... our current modeset code isn't good enough yet to handle this. The
+scenario is:
 
-This fixes a panic when setting device's num_queues=2 on RHEL 6.5:
+1. BIOS sets up a cloned config with lvds+external screen on the same
+pipe, e.g. pipe B.
 
-qemu-system-x86_64 ... \
--device virtio-scsi-pci,id=scsi0,addr=0x13,...,num_queues=2 \
--drive file=/stor/vm/dummy.raw,id=drive-scsi-disk,... \
--device scsi-hd,drive=drive-scsi-disk,...
+2. We read out that state for pipe B and assign the gmch_pfit state to
+it.
 
-[    0.354734] scsi0 : Virtio SCSI HBA
-[    0.379504] BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
-[    0.380141] IP: [<ffffffff814741ef>] __virtscsi_set_affinity+0x4f/0x120
-[    0.380141] PGD 0
-[    0.380141] Oops: 0000 [#1] SMP
-[    0.380141] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.0+ #5
-[    0.380141] Hardware name: Red Hat KVM, BIOS 0.5.1 01/01/2007
-[    0.380141] task: ffff88003c9f0000 ti: ffff88003c9f8000 task.ti: ffff88003c9f8000
-[    0.380141] RIP: 0010:[<ffffffff814741ef>]  [<ffffffff814741ef>] __virtscsi_set_affinity+0x4f/0x120
-[    0.380141] RSP: 0000:ffff88003c9f9c08  EFLAGS: 00010256
-[    0.380141] RAX: 0000000000000000 RBX: ffff88003c3a9d40 RCX: 0000000000001070
-[    0.380141] RDX: 0000000000000002 RSI: 0000000000000000 RDI: 0000000000000000
-[    0.380141] RBP: ffff88003c9f9c28 R08: 00000000000136c0 R09: ffff88003c801c00
-[    0.380141] R10: ffffffff81475229 R11: 0000000000000008 R12: 0000000000000000
-[    0.380141] R13: ffffffff81cc7ca8 R14: ffff88003cac3d40 R15: ffff88003cac37a0
-[    0.380141] FS:  0000000000000000(0000) GS:ffff88003e400000(0000) knlGS:0000000000000000
-[    0.380141] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[    0.380141] CR2: 0000000000000020 CR3: 0000000001c0e000 CR4: 00000000000006f0
-[    0.380141] Stack:
-[    0.380141]  ffff88003c3a9d40 0000000000000000 ffff88003cac3d80 ffff88003cac3d40
-[    0.380141]  ffff88003c9f9c48 ffffffff814742e8 ffff88003c26d000 ffff88003c26d000
-[    0.380141]  ffff88003c9f9c68 ffffffff81474321 ffff88003c26d000 ffff88003c3a9d40
-[    0.380141] Call Trace:
-[    0.380141]  [<ffffffff814742e8>] virtscsi_set_affinity+0x28/0x40
-[    0.380141]  [<ffffffff81474321>] virtscsi_remove_vqs+0x21/0x50
-[    0.380141]  [<ffffffff81475231>] virtscsi_init+0x91/0x240
-[    0.380141]  [<ffffffff81365290>] ? vp_get+0x50/0x70
-[    0.380141]  [<ffffffff81475544>] virtscsi_probe+0xf4/0x280
-[    0.380141]  [<ffffffff81363ea5>] virtio_dev_probe+0xe5/0x140
-[    0.380141]  [<ffffffff8144c669>] driver_probe_device+0x89/0x230
-[    0.380141]  [<ffffffff8144c8ab>] __driver_attach+0x9b/0xa0
-[    0.380141]  [<ffffffff8144c810>] ? driver_probe_device+0x230/0x230
-[    0.380141]  [<ffffffff8144c810>] ? driver_probe_device+0x230/0x230
-[    0.380141]  [<ffffffff8144ac1c>] bus_for_each_dev+0x8c/0xb0
-[    0.380141]  [<ffffffff8144c499>] driver_attach+0x19/0x20
-[    0.380141]  [<ffffffff8144bf28>] bus_add_driver+0x198/0x220
-[    0.380141]  [<ffffffff8144ce9f>] driver_register+0x5f/0xf0
-[    0.380141]  [<ffffffff81d27c91>] ? spi_transport_init+0x79/0x79
-[    0.380141]  [<ffffffff8136403b>] register_virtio_driver+0x1b/0x30
-[    0.380141]  [<ffffffff81d27d19>] init+0x88/0xd6
-[    0.380141]  [<ffffffff81d27c18>] ? scsi_init_procfs+0x5b/0x5b
-[    0.380141]  [<ffffffff81ce88a7>] do_one_initcall+0x7f/0x10a
-[    0.380141]  [<ffffffff81ce8aa7>] kernel_init_freeable+0x14a/0x1de
-[    0.380141]  [<ffffffff81ce8b3b>] ? kernel_init_freeable+0x1de/0x1de
-[    0.380141]  [<ffffffff817dec20>] ? rest_init+0x80/0x80
-[    0.380141]  [<ffffffff817dec29>] kernel_init+0x9/0xf0
-[    0.380141]  [<ffffffff817e68fc>] ret_from_fork+0x7c/0xb0
-[    0.380141]  [<ffffffff817dec20>] ? rest_init+0x80/0x80
-[    0.380141] RIP  [<ffffffff814741ef>] __virtscsi_set_affinity+0x4f/0x120
-[    0.380141]  RSP <ffff88003c9f9c08>
-[    0.380141] CR2: 0000000000000020
-[    0.380141] ---[ end trace 8074b70c3d5e1d73 ]---
-[    0.475018] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
-[    0.475018]
-[    0.475068] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
-[    0.475068] ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
+3. The initial modeset switches the lvds to pipe A but due to lack of
+atomic modeset we don't recompute the config of pipe B.
 
-[jejb: checkpatch fixes]
-Signed-off-by: Fam Zheng <famz@redhat.com>
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+-> both pipes now claim (in the sw pipe config structure) to use the
+gmch_pfit, which just won't work.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=74081
+Tested-by: max <manikulin@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/scsi/virtio_scsi.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_display.c | 23 ++++++++++++++++++-----
+ drivers/gpu/drm/i915/intel_drv.h     |  3 ++-
+ 2 files changed, 20 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index b26f1a5..95a5d73 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -751,8 +751,12 @@ static void __virtscsi_set_affinity(struct virtio_scsi *vscsi, bool affinity)
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index a61290e..91cbf6f 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -8184,11 +8184,22 @@ intel_pipe_config_compare(struct drm_device *dev,
+ 	PIPE_CONF_CHECK_I(requested_mode.hdisplay);
+ 	PIPE_CONF_CHECK_I(requested_mode.vdisplay);
  
- 		vscsi->affinity_hint_set = true;
- 	} else {
--		for (i = 0; i < vscsi->num_queues; i++)
-+		for (i = 0; i < vscsi->num_queues; i++) {
-+			if (!vscsi->req_vqs[i].vq)
-+				continue;
+-	PIPE_CONF_CHECK_I(gmch_pfit.control);
+-	/* pfit ratios are autocomputed by the hw on gen4+ */
+-	if (INTEL_INFO(dev)->gen < 4)
+-		PIPE_CONF_CHECK_I(gmch_pfit.pgm_ratios);
+-	PIPE_CONF_CHECK_I(gmch_pfit.lvds_border_bits);
++	/*
++	 * FIXME: BIOS likes to set up a cloned config with lvds+external
++	 * screen. Since we don't yet re-compute the pipe config when moving
++	 * just the lvds port away to another pipe the sw tracking won't match.
++	 *
++	 * Proper atomic modesets with recomputed global state will fix this.
++	 * Until then just don't check gmch state for inherited modes.
++	 */
++	if (!PIPE_CONF_QUIRK(PIPE_CONFIG_QUIRK_INHERITED_MODE)) {
++		PIPE_CONF_CHECK_I(gmch_pfit.control);
++		/* pfit ratios are autocomputed by the hw on gen4+ */
++		if (INTEL_INFO(dev)->gen < 4)
++			PIPE_CONF_CHECK_I(gmch_pfit.pgm_ratios);
++		PIPE_CONF_CHECK_I(gmch_pfit.lvds_border_bits);
++	}
 +
- 			virtqueue_set_affinity(vscsi->req_vqs[i].vq, -1);
-+		}
+ 	PIPE_CONF_CHECK_I(pch_pfit.pos);
+ 	PIPE_CONF_CHECK_I(pch_pfit.size);
  
- 		vscsi->affinity_hint_set = false;
- 	}
+@@ -9875,6 +9886,8 @@ static void intel_modeset_readout_hw_state(struct drm_device *dev)
+ 			    base.head) {
+ 		memset(&crtc->config, 0, sizeof(crtc->config));
+ 
++		crtc->config.quirks |= PIPE_CONFIG_QUIRK_INHERITED_MODE;
++
+ 		crtc->active = dev_priv->display.get_pipe_config(crtc,
+ 								 &crtc->config);
+ 
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index ddf7e2f..54e6a2f 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -203,7 +203,8 @@ struct intel_crtc_config {
+ 	 * tracked with quirk flags so that fastboot and state checker can act
+ 	 * accordingly.
+ 	 */
+-#define PIPE_CONFIG_QUIRK_MODE_SYNC_FLAGS (1<<0) /* unreliable sync mode.flags */
++#define PIPE_CONFIG_QUIRK_MODE_SYNC_FLAGS	(1<<0) /* unreliable sync mode.flags */
++#define PIPE_CONFIG_QUIRK_INHERITED_MODE	(1<<1) /* mode inherited from firmware */
+ 	unsigned long quirks;
+ 
+ 	struct drm_display_mode requested_mode;
 -- 
 1.9.1
 
