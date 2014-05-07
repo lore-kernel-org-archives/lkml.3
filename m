@@ -1,105 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751222AbaEGWWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 18:22:45 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:49117 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750862AbaEGWWo (ORCPT
+	id S1751662AbaEGW0A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 18:26:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58019 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaEGWZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 18:22:44 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19okkZZ3SlApKmh10MK5CDb
-Date: Wed, 7 May 2014 15:22:39 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Joel Fernandes <joelf@ti.com>
-Cc: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/26] ARM: OMAP: dmtimer: Get rid of check for mem
- resource error
-Message-ID: <20140507222238.GF19102@atomide.com>
-References: <1398375849-6017-1-git-send-email-joelf@ti.com>
- <1398375849-6017-10-git-send-email-joelf@ti.com>
- <20140507152426.GD9502@atomide.com>
- <536AAB1C.6010301@ti.com>
- <20140507220959.GE19102@atomide.com>
- <536AB041.5070705@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <536AB041.5070705@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 7 May 2014 18:25:58 -0400
+Date: Wed, 7 May 2014 15:25:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 1/1] KERNEL: add __attribute__  in c file
+Message-Id: <20140507152557.7bf8998f900c5f2054295e68@linux-foundation.org>
+In-Reply-To: <20140507223339.3dccf63d066edbcac207e6f3@skynet.be>
+References: <20140507223339.3dccf63d066edbcac207e6f3@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Joel Fernandes <joelf@ti.com> [140507 15:15]:
-> On 05/07/2014 05:10 PM, Tony Lindgren wrote:
-> > * Joel Fernandes <joelf@ti.com> [140507 14:53]:
-> >> On 05/07/2014 10:24 AM, Tony Lindgren wrote:
-> >>> * Joel Fernandes <joelf@ti.com> [140424 14:44]:
-> >>>> The subsequent devm_ioremap_resource will catch it and print an error, let it
-> >>>> be checked there.
-> >>>>
-> >>>> Signed-off-by: Joel Fernandes <joelf@ti.com>
-> >>>> ---
-> >>>>  arch/arm/plat-omap/dmtimer.c |    4 ----
-> >>>>  1 file changed, 4 deletions(-)
-> >>>>
-> >>>> diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-> >>>> index 7e806f9..1fd30fa 100644
-> >>>> --- a/arch/arm/plat-omap/dmtimer.c
-> >>>> +++ b/arch/arm/plat-omap/dmtimer.c
-> >>>> @@ -810,10 +810,6 @@ static int omap_dm_timer_probe(struct platform_device *pdev)
-> >>>>  	}
-> >>>>  
-> >>>>  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> >>>> -	if (unlikely(!mem)) {
-> >>>> -		dev_err(dev, "%s: no memory resource.\n", __func__);
-> >>>> -		return -ENODEV;
-> >>>> -	}
-> >>>>  
-> >>>>  	timer = devm_kzalloc(dev, sizeof(struct omap_dm_timer), GFP_KERNEL);
-> >>>>  	if (!timer) {
-> >>>
-> >>> We still need to return an error here and not try to continue though.
-> >>
-> >> We are returning an error if mem is NULL so the redundant check is
-> >> unnecessary:
-> >>
-> >> ...
-> >>         timer->io_base = devm_ioremap_resource(dev, mem);
-> >>         if (IS_ERR(timer->io_base))
-> >>                 return PTR_ERR(timer->io_base);
-> > 
-> > Why would you want to even continue omap_dm_timer_probe()
-> > further and allocate memory if platform_get_resource() fails?
-> > 
-> 
-> But its freed anyway on error. I just felt that extra LOC could be
-> removed. Ideally we should do something like
-> 
-> 
-> mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> io_base = devm_ioremap_resource(dev, mem);
-> if (IS_ERR(io_base))
-> 	return PTR_ERR(io_base);
-> 
-> timer = devm_kzalloc(dev, sizeof(struct omap_dm_timer), GFP_KERNEL);
-> if (!timer) {
->  ...
-> }
-> timer->io_base = io_base;
-> 
-> 
-> That combines the platform_get_resource and devm_ioremap_resource error
-> paths into 1 path and avoids redundant checks.. I can do it this way, or
-> if you want drop the patch entirely, I'm OK with it both ways..
+On Wed, 7 May 2014 22:33:39 +0200 Fabian Frederick <fabf@skynet.be> wrote:
 
-Just drop the dev_err if anything. Removing error checking from
-function calls is always going to cause people to wonder what's
-going on.
+> This patch fixes a sparse warning about noreturn attribute only
+> featuring in module.h
+> 
+> kernel/module.c:212:6: error: symbol '__module_put_and_exit' redeclared with
+> different type (originally declared at include/linux/module.h:449)-
+> different modifiers
+> 
+> ...
+>
+> --- a/include/linux/module.h
+> +++ b/include/linux/module.h
+> @@ -446,8 +446,8 @@ int module_kallsyms_on_each_symbol(int (*fn)(void *, const char *,
+>  					     struct module *, unsigned long),
+>  				   void *data);
+>  
+> -extern void __module_put_and_exit(struct module *mod, long code)
+> -	__attribute__((noreturn));
+> +extern void __attribute__((noreturn)) __module_put_and_exit(struct module *mod,
+> +							    long code);
+>  #define module_put_and_exit(code) __module_put_and_exit(THIS_MODULE, code)
+>  
+>  #ifdef CONFIG_MODULE_UNLOAD
+> diff --git a/kernel/module.c b/kernel/module.c
+> index 079c461..7d78872 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -209,7 +209,8 @@ static inline void add_taint_module(struct module *mod, unsigned flag,
+>   * A thread that wants to hold a reference to a module only while it
+>   * is running can call this to safely exit.  nfsd and lockd use this.
+>   */
+> -void __module_put_and_exit(struct module *mod, long code)
+> +void __attribute__((noreturn)) __module_put_and_exit(struct module *mod,
+> +						     long code)
+>  {
 
-Tony
+Can we use __noreturn here?
