@@ -1,94 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932567AbaEGL7W (ORCPT <rfc822;w@1wt.eu>);
+	id S932715AbaEGL70 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 07:59:26 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:56609 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755840AbaEGL7W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 May 2014 07:59:22 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44112 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751834AbaEGL7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 07:59:20 -0400
-Message-ID: <536A2002.4020603@ti.com>
-Date: Wed, 7 May 2014 14:58:58 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+Message-ID: <536A2013.8020609@hitachi.com>
+Date: Wed, 07 May 2014 20:59:15 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: <tony@atomide.com>
-CC: <kishon@ti.com>, <george.cherian@ti.com>, <balbi@ti.com>,
-        <balajitk@ti.com>, <hdegoede@redhat.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>
-Subject: [PATCH v5 4/4] ARM: dts: dra7: add OCP2SCP3 and SATA nodes
-References: <1398274237-24510-1-git-send-email-rogerq@ti.com> <1398274575-24818-1-git-send-email-rogerq@ti.com>
-In-Reply-To: <1398274575-24818-1-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFT PATCH -next ] [BUGFIX] kprobes: Fix "Failed to find blacklist"
+ error on ia64 and ppc64
+References: <536A16A6.5040709@hitachi.com> <20140507115551.22259.70581.stgit@ltc230.yrl.intra.hitachi.co.jp>
+In-Reply-To: <20140507115551.22259.70581.stgit@ltc230.yrl.intra.hitachi.co.jp>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Balaji T K <balajitk@ti.com>
+Hi Tony, Benjamin and Paul,
 
-Add nodes for OCP2SCP3 bus, SATA controller and SATA PHY.
+I've tried to fix this bug, but since I don't have either ppc64 nor ia64,
+this patch is not tested on those archs. Please review and test it on
+those machines.
 
-[Roger Q] Clean up. Updated IRQ for interrupt crossbar.
+Thank you,
 
-CC: Benoit Cousson <bcousson@baylibre.com>
-Signed-off-by: Balaji T K <balajitk@ti.com>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/boot/dts/dra7.dtsi | 39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
+(2014/05/07 20:55), Masami Hiramatsu wrote:
+> On ia64 and ppc64, the function pointer does not point the
+> entry address of the function, but the address of function
+> discriptor (which contains the entry address and misc
+> data.) Since the kprobes passes the function pointer stored
+> by NOKPROBE_SYMBOL() to kallsyms_lookup_size_offset() for
+> initalizing its blacklist, it fails and reports many errors
+> as below.
+> 
+>   Failed to find blacklist 0001013168300000
+>   Failed to find blacklist 0001013000f0a000
+>   Failed to find blacklist 000101315f70a000
+>   Failed to find blacklist 000101324c80a000
+>   Failed to find blacklist 0001013063f0a000
+>   Failed to find blacklist 000101327800a000
+>   Failed to find blacklist 0001013277f0a000
+>   Failed to find blacklist 000101315a70a000
+>   Failed to find blacklist 0001013277e0a000
+>   Failed to find blacklist 000101305a20a000
+>   Failed to find blacklist 0001013277d0a000
+>   Failed to find blacklist 00010130bdc0a000
+>   Failed to find blacklist 00010130dc20a000
+>   Failed to find blacklist 000101309a00a000
+>   Failed to find blacklist 0001013277c0a000
+>   Failed to find blacklist 0001013277b0a000
+>   Failed to find blacklist 0001013277a0a000
+>   Failed to find blacklist 000101327790a000
+>   Failed to find blacklist 000101303140a000
+>   Failed to find blacklist 0001013a3280a000
+> 
+> To fix this bug, this introduces function_entry() macro to
+> retrieve the entry address from the given function pointer,
+> and uses it in NOKPROBE_SYMBOL().
+> 
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Reported-by: Tony Luck <tony.luck@gmail.com>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> Cc: Kevin Hao <haokexin@gmail.com>
+> Cc: linux-ia64@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linuxppc-dev@lists.ozlabs.org
+> ---
+>  arch/ia64/include/asm/types.h    |    2 ++
+>  arch/powerpc/include/asm/types.h |   11 +++++++++++
+>  include/linux/kprobes.h          |    3 ++-
+>  include/linux/types.h            |    4 ++++
+>  4 files changed, 19 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/ia64/include/asm/types.h b/arch/ia64/include/asm/types.h
+> index 4c351b1..6ab7b6c 100644
+> --- a/arch/ia64/include/asm/types.h
+> +++ b/arch/ia64/include/asm/types.h
+> @@ -27,5 +27,7 @@ struct fnptr {
+>  	unsigned long gp;
+>  };
+>  
+> +#define constant_function_entry(fn) (((struct fnptr *)(fn))->ip)
+> +
+>  #endif /* !__ASSEMBLY__ */
+>  #endif /* _ASM_IA64_TYPES_H */
+> diff --git a/arch/powerpc/include/asm/types.h b/arch/powerpc/include/asm/types.h
+> index bfb6ded..fd297b8 100644
+> --- a/arch/powerpc/include/asm/types.h
+> +++ b/arch/powerpc/include/asm/types.h
+> @@ -25,6 +25,17 @@ typedef struct {
+>  	unsigned long env;
+>  } func_descr_t;
+>  
+> +#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
+> +/*
+> + * On PPC64 ABIv1 the function pointer actually points to the
+> + * function's descriptor. The first entry in the descriptor is the
+> + * address of the function text.
+> + */
+> +#define constant_function_entry(fn)	(((func_descr_t *)(fn))->entry)
+> +#else
+> +#define constant_function_entry(fn)	((unsigned long)(fn))
+> +#endif
+> +
+>  #endif /* __ASSEMBLY__ */
+>  
+>  #endif /* _ASM_POWERPC_TYPES_H */
+> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+> index e059507..637eafe 100644
+> --- a/include/linux/kprobes.h
+> +++ b/include/linux/kprobes.h
+> @@ -40,6 +40,7 @@
+>  #include <linux/rcupdate.h>
+>  #include <linux/mutex.h>
+>  #include <linux/ftrace.h>
+> +#include <linux/types.h>
+>  
+>  #ifdef CONFIG_KPROBES
+>  #include <asm/kprobes.h>
+> @@ -485,7 +486,7 @@ static inline int enable_jprobe(struct jprobe *jp)
+>  #define __NOKPROBE_SYMBOL(fname)			\
+>  static unsigned long __used				\
+>  	__attribute__((section("_kprobe_blacklist")))	\
+> -	_kbl_addr_##fname = (unsigned long)fname;
+> +	_kbl_addr_##fname = constant_function_entry(fname);
+>  #define NOKPROBE_SYMBOL(fname)	__NOKPROBE_SYMBOL(fname)
+>  #else
+>  #define NOKPROBE_SYMBOL(fname)
+> diff --git a/include/linux/types.h b/include/linux/types.h
+> index 4d118ba..78e2d7d 100644
+> --- a/include/linux/types.h
+> +++ b/include/linux/types.h
+> @@ -212,5 +212,9 @@ struct callback_head {
+>  };
+>  #define rcu_head callback_head
+>  
+> +#ifndef constant_function_entry
+> +#define constant_function_entry(fn)	((unsigned long)(fn))
+> +#endif
+> +
+>  #endif /*  __ASSEMBLY__ */
+>  #endif /* _LINUX_TYPES_H */
+> 
+> 
+> 
 
-diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-index cec826f..1f42e72 100644
---- a/arch/arm/boot/dts/dra7.dtsi
-+++ b/arch/arm/boot/dts/dra7.dtsi
-@@ -798,6 +798,45 @@
- 			dma-names = "tx0", "rx0";
- 			status = "disabled";
- 		};
-+
-+		omap_control_sata: control-phy@4a002374 {
-+			compatible = "ti,control-phy-pipe3";
-+			reg = <0x4a002374 0x4>;
-+			reg-names = "power";
-+			clocks = <&sys_clkin1>;
-+			clock-names = "sysclk";
-+		};
-+
-+		/* OCP2SCP3 */
-+		ocp2scp@4a090000 {
-+			compatible = "ti,omap-ocp2scp";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			ranges;
-+			reg = <0x4a090000 0x20>;
-+			ti,hwmods = "ocp2scp3";
-+			sata_phy: phy@4A096000 {
-+				compatible = "ti,phy-pipe3-sata";
-+				reg = <0x4A096000 0x80>, /* phy_rx */
-+				      <0x4A096400 0x64>, /* phy_tx */
-+				      <0x4A096800 0x40>; /* pll_ctrl */
-+				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
-+				ctrl-module = <&omap_control_sata>;
-+				clocks = <&sys_clkin1>;
-+				clock-names = "sysclk";
-+				#phy-cells = <0>;
-+			};
-+		};
-+
-+		sata: sata@4a141100 {
-+			compatible = "snps,dwc-ahci";
-+			reg = <0x4a140000 0x1100>, <0x4a141100 0x7>;
-+			interrupts = <GIC_SPI 49 IRQ_TYPE_LEVEL_HIGH>;
-+			phys = <&sata_phy>;
-+			phy-names = "sata-phy";
-+			clocks = <&sata_ref_clk>;
-+			ti,hwmods = "sata";
-+		};
- 	};
- 
- 	crossbar_mpu: crossbar@4a020000 {
+
 -- 
-1.8.3.2
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
