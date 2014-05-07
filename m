@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932497AbaEGJs7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:48:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11280 "EHLO mga09.intel.com"
+	id S932452AbaEGJue (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:50:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:6093 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755389AbaEGJs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:48:57 -0400
+	id S1755204AbaEGJuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 05:50:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1001,1389772800"; 
-   d="scan'208";a="507545194"
-Message-ID: <1399456133.2458.52.camel@acox1-desk.ger.corp.intel.com>
-Subject: Re: [PATCH] [linux-next] pwm: lpss: fix const qualifier discard
- warning
+   d="scan'208";a="507545804"
+Message-ID: <1399456196.2458.53.camel@acox1-desk.ger.corp.intel.com>
+Subject: Re: [PATCH] libata-sff: remove dead code
 From: Alan Cox <alan@linux.intel.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Jan Moskyto Matejka <mq@suse.cz>, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 07 May 2014 10:48:53 +0100
-In-Reply-To: <20140507084137.GD6362@ulmo>
-References: <1399044179-17912-1-git-send-email-mq@suse.cz>
-	 <20140507084137.GD6362@ulmo>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: David Howells <dhowells@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 07 May 2014 10:49:56 +0100
+In-Reply-To: <1399454604.6659.13.camel@x220>
+References: <1399204229.8729.15.camel@x220>
+	 <1399411616.2458.45.camel@acox1-desk.ger.corp.intel.com>
+	 <1399454604.6659.13.camel@x220>
 Organization: Intel Corporation
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-07 at 10:41 +0200, Thierry Reding wrote:
-> On Fri, May 02, 2014 at 05:22:59PM +0200, Jan Moskyto Matejka wrote:
-> > Fixing this warning:
-> > drivers/pwm/pwm-lpss.c: In function ‘pwm_lpss_probe_pci’:
-> > drivers/pwm/pwm-lpss.c:192:2: warning: passing argument 3 of ‘pwm_lpss_probe’ discards ‘const’ qualifier from pointer target type [enabled by default]
-> >   lpwm = pwm_lpss_probe(&pdev->dev, &pdev->resource[0], info);
-> >   ^
-> > drivers/pwm/pwm-lpss.c:130:30: note: expected ‘struct pwm_lpss_boardinfo *’ but argument is of type ‘const struct pwm_lpss_boardinfo *’
-> >  static struct pwm_lpss_chip *pwm_lpss_probe(struct device *dev,
-> > 
-> > That warning was introduced in commit 093e00bb3f82f3c67e2d1682e316fc012bcd0d92
-> > ("pwm: lpss: Add support for PCI devices").
-> > 
-> > Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
-> > ---
-> >  drivers/pwm/pwm-lpss.c | 1 +
-> >  1 file changed, 1 insertion(+)
+> > It was needed for some of the FRV devices I belive. Please check with
+> > David Howells if it's still relevant
 > 
-> This was reported over a week ago by the kbuild test robot and I've had
-> fixes for this (and an additional sparse warning) in my tree for a while
-> now. Interestingly everybody at Intel seems to have forgotten about this
-> driver after their patches got merged since nobody cared to respond.
+> This code has been behind (effectively) an "#if 0" check for seven
+> years. So either there was no problem to begin with, the problem is
+> fixed somewhere else, or no one is actually using the affected devices.
+> So I doubt this is still relevant. But maybe David thinks otherwise...
+> 
+> > (even if its not used in the default configs)
+> 
+> It's not used (and has never been used) regardless which config one
+> tries.
 
-No - like everyone else we're all juggling multiple things. Also
-remember there have just been a bunch of public holidays on large parts
-of the planet.
-
-I did see Jan's email but I didn't realise it needed a response, it was
-clearly and obviously correct.
+Unless you are editing the config with out of tree changes. Which is
+possible which is why I said ask Dave. It's probably fine but best to be
+safe.
 
 Alan
 
