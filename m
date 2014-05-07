@@ -1,260 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590AbaEGXK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 19:10:29 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:36749 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470AbaEGXJp (ORCPT
+	id S1751923AbaEGXO5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 19:14:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51048 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950AbaEGXO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 19:09:45 -0400
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Heiko Stuebner <heiko@sntech.de>, linux-pwm@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH 1/3] pwm: add Rockchip SoC PWM support
-Date: Thu,  8 May 2014 01:08:33 +0200
-Message-Id: <1399504115-16257-2-git-send-email-b.galvani@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1399504115-16257-1-git-send-email-b.galvani@gmail.com>
-References: <1399504115-16257-1-git-send-email-b.galvani@gmail.com>
+	Wed, 7 May 2014 19:14:56 -0400
+Date: Thu, 8 May 2014 01:15:06 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Tony Lu <zlu@tilera.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Anvin <hpa@zytor.com>,
+        Tony Luck <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [patch 03/32] genirq: Provide generic hwirq allocation
+ facility
+In-Reply-To: <536A998A.4000307@tilera.com>
+Message-ID: <alpine.DEB.2.02.1405072259230.6261@ionos.tec.linutronix.de>
+References: <20140507153622.703412101@linutronix.de> <20140507154334.208629358@linutronix.de> <536A998A.4000307@tilera.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds a driver for the PWM controller found on Rockchip
-RK29, RK30 and RK31 SoCs.
+On Wed, 7 May 2014, Chris Metcalf wrote:
 
-Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
----
- drivers/pwm/Kconfig        |    8 ++
- drivers/pwm/Makefile       |    1 +
- drivers/pwm/pwm-rockchip.c |  180 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 189 insertions(+)
- create mode 100644 drivers/pwm/pwm-rockchip.c
+> On 5/7/2014 11:44 AM, Thomas Gleixner wrote:
+> > Not really the solution to the problem, but at least it confines the
+> > mess in the core code and allows to get rid of the create/destroy_irq
+> > variants from hell, i.e. 3 implementations with different semantics
+> > plus the x86 specific variants __create_irqs and create_irq_nr
+> > which have been invented in another circle of hell.
+> >
+> > [...]
+> >
+> > tile: Might use irq domains as well, but it has a very limited
+> >       interrupt space, so handling it via this functionality might be
+> >       the right thing to do even in the long run.
+> 
+> We have an internal change that we haven't upstreamed yet that makes
+> irqs actually (cpu,ipi) pairs, so that more irqs can be allocated.
+> As a result we allocate some irqs as bound to a specific IPI on a single
+> cpu, and some irqs get bound to a particular IPI registered on every cpu.
+>
+> I'll have to set aside a bit of time to look more closely at how your
+> change interacts with the work we've done internally.  I've appended the
+> per-cpu IRQ change from our internal tree here (and cc'ed the author).
+> The API change is in the <asm/irq.h> diff at the very start.
 
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 5b34ff2..2e92245 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -197,6 +197,14 @@ config PWM_RENESAS_TPU
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-renesas-tpu.
- 
-+config PWM_ROCKCHIP
-+	tristate "Rockchip PWM support"
-+	depends on ARCH_ROCKCHIP
-+	depends on OF
-+	help
-+	  Generic PWM framework driver for the PWM controller found on
-+	  Rockchip SoCs.
-+
- config PWM_SAMSUNG
- 	tristate "Samsung PWM support"
- 	depends on PLAT_SAMSUNG
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index e57d2c3..2e347f7 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -17,6 +17,7 @@ obj-$(CONFIG_PWM_PCA9685)	+= pwm-pca9685.o
- obj-$(CONFIG_PWM_PUV3)		+= pwm-puv3.o
- obj-$(CONFIG_PWM_PXA)		+= pwm-pxa.o
- obj-$(CONFIG_PWM_RENESAS_TPU)	+= pwm-renesas-tpu.o
-+obj-$(CONFIG_PWM_ROCKCHIP)	+= pwm-rockchip.o
- obj-$(CONFIG_PWM_SAMSUNG)	+= pwm-samsung.o
- obj-$(CONFIG_PWM_SPEAR)		+= pwm-spear.o
- obj-$(CONFIG_PWM_TEGRA)		+= pwm-tegra.o
-diff --git a/drivers/pwm/pwm-rockchip.c b/drivers/pwm/pwm-rockchip.c
-new file mode 100644
-index 0000000..9b51828
---- /dev/null
-+++ b/drivers/pwm/pwm-rockchip.c
-@@ -0,0 +1,180 @@
-+/*
-+ * PWM driver for Rockchip SoCs
-+ *
-+ * Copyright (C) 2014 Beniamino Galvani <b.galvani@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+
-+#define PWM_CNTR		0x00		/* Counter register */
-+#define PWM_HRC			0x04		/* High reference register */
-+#define PWM_LRC			0x08		/* Low reference register */
-+#define PWM_CTRL		0x0c		/* Control register */
-+#define PWM_CTRL_TIMER_EN	(1 << 0)
-+#define PWM_CTRL_OUTPUT_EN	(1 << 3)
-+
-+#define PRESCALER		2
-+#define NSECS_PER_SEC		1000000000
-+
-+struct rockchip_pwm_chip {
-+	struct pwm_chip	chip;
-+	struct clk	*clk;
-+	void __iomem	*base;
-+};
-+
-+static inline struct rockchip_pwm_chip *to_rockchip_pwm_chip(struct pwm_chip *c)
-+{
-+	return container_of(c, struct rockchip_pwm_chip, chip);
-+}
-+
-+static int rockchip_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-+			       int duty_ns, int period_ns)
-+{
-+	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
-+	unsigned long clk_rate, period, duty;
-+	u64 div;
-+	int ret;
-+
-+	clk_rate = clk_get_rate(pc->clk);
-+
-+	/*
-+	 * Since period and duty cycle registers have a width of 32
-+	 * bits, every possible input period can be obtained using the
-+	 * default prescaler value for all practical clock rate values.
-+	 */
-+	div = clk_rate;
-+	div *= period_ns;
-+	do_div(div, PRESCALER * NSECS_PER_SEC);
-+	period = div;
-+
-+	div = clk_rate;
-+	div *= duty_ns;
-+	do_div(div, PRESCALER * NSECS_PER_SEC);
-+	duty = div;
-+
-+	ret = clk_enable(pc->clk);
-+	if (ret)
-+		return ret;
-+
-+	writel(period, pc->base + PWM_LRC);
-+	writel(duty, pc->base + PWM_HRC);
-+	writel(0, pc->base + PWM_CNTR);
-+
-+	clk_disable(pc->clk);
-+
-+	return 0;
-+}
-+
-+static int rockchip_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
-+	int ret;
-+	u32 val;
-+
-+	ret = clk_enable(pc->clk);
-+	if (ret)
-+		return ret;
-+
-+	val = readl_relaxed(pc->base + PWM_CTRL);
-+	val |= PWM_CTRL_OUTPUT_EN | PWM_CTRL_TIMER_EN;
-+	writel_relaxed(val, pc->base + PWM_CTRL);
-+
-+	return 0;
-+}
-+
-+static void rockchip_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
-+	u32 val;
-+
-+	val = readl_relaxed(pc->base + PWM_CTRL);
-+	val &= ~(PWM_CTRL_OUTPUT_EN | PWM_CTRL_TIMER_EN);
-+	writel_relaxed(val, pc->base + PWM_CTRL);
-+
-+	clk_disable(pc->clk);
-+}
-+
-+static struct pwm_ops rockchip_pwm_ops = {
-+	.config	= rockchip_pwm_config,
-+	.enable = rockchip_pwm_enable,
-+	.disable = rockchip_pwm_disable,
-+	.owner = THIS_MODULE,
-+};
-+
-+static int rockchip_pwm_probe(struct platform_device *pdev)
-+{
-+	struct rockchip_pwm_chip *pc;
-+	struct resource *r;
-+	int ret;
-+
-+	pc = devm_kzalloc(&pdev->dev, sizeof(*pc), GFP_KERNEL);
-+	if (!pc)
-+		return -ENOMEM;
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	pc->base = devm_ioremap_resource(&pdev->dev, r);
-+	if (IS_ERR(pc->base))
-+		return PTR_ERR(pc->base);
-+
-+	pc->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(pc->clk))
-+		return PTR_ERR(pc->clk);
-+
-+	ret = clk_prepare(pc->clk);
-+	if (ret)
-+		return ret;
-+
-+	platform_set_drvdata(pdev, pc);
-+
-+	pc->chip.dev = &pdev->dev;
-+	pc->chip.ops = &rockchip_pwm_ops;
-+	pc->chip.base = -1;
-+	pc->chip.npwm = 1;
-+
-+	ret = pwmchip_add(&pc->chip);
-+	if (ret < 0) {
-+		clk_unprepare(pc->clk);
-+		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
-+	}
-+
-+	return ret;
-+}
-+
-+static int rockchip_pwm_remove(struct platform_device *pdev)
-+{
-+	struct rockchip_pwm_chip *pc = platform_get_drvdata(pdev);
-+
-+	clk_unprepare(pc->clk);
-+
-+	return pwmchip_remove(&pc->chip);
-+}
-+
-+static const struct of_device_id rockchip_pwm_dt_ids[] = {
-+	{ .compatible = "rockchip,rk2928-pwm" },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, rockchip_pwm_id_ids);
-+
-+static struct platform_driver rockchip_pwm_driver = {
-+	.driver = {
-+		.name = "rockchip-pwm",
-+		.owner = THIS_MODULE,
-+		.of_match_table = rockchip_pwm_dt_ids,
-+	},
-+	.probe	= rockchip_pwm_probe,
-+	.remove = rockchip_pwm_remove,
-+};
-+module_platform_driver(rockchip_pwm_driver);
-+
-+MODULE_AUTHOR("Beniamino Galvani <b.galvani@gmail.com>");
-+MODULE_DESCRIPTION("Rockchip PWM driver");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.10.4
+Sure it'll break it. And I said clearly it's only designed for simple
+allocations.
 
+And no, we really can do without
+
+> +int create_irq_on(int cpu);
+> +static inline int create_irq_on_any(void)
+> +int create_irq(void);
+
+or any other new abomination of this coming along with another private
+allocation mechanism.
+
+The issue you are describing is very similar to what x86 needs for
+handling the hardware vector space and that's existing x86 private
+horror which needs a replacement. Itanic could use something like that
+as well, but I doubt that anyone is masochistic enough to tackle the
+never sinking ship :)
+
+So the right thing to do is to provide a generic infrastructure for
+handling a matrix mapping.
+
+So basically we need something like this:
+
+   bitmap __percpu *vector_map;
+
+   vector_map = alloc_percpu(sizeof bitmap);
+
+And an allocation function, which takes a cpumask and not a single
+cpu. With your approach you are going to add create_irq_mask() faster
+than you can mainline the first cruft. That wants to be an algorithm
+which searches for a free slot in some intelligent way, i.e. using
+free slots which are already occupied on at least one cpu instead of
+using up the globaly free slots right away. It's not that hard to do
+if you have bitmaps.
+
+Plus the corresponding free and supporting helpers.
+
+Now on top of that we need irq domain support for this kind of matrix
+mappings down to the vector level and everything else falls in
+place. I have not thought through the irq domain angle, but maybe
+Grant/Ben can give some input on that.
+
+Sorry for spoiling your plans. I went a long way in the past 10 years
+to consolidate all that as far as it goes, and I'm not willing to
+accept any new arch specific interrupt infrastructure which goes
+beyond the low level hardware requirements.
+
+Thanks,
+
+	tglx
