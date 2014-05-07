@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932756AbaEGQii (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:38:38 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:56425 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756016AbaEGQhO (ORCPT
+	id S1755779AbaEGQhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:37:09 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53611 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751925AbaEGQhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:37:14 -0400
+	Wed, 7 May 2014 12:37:08 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
@@ -15,168 +15,52 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
         Mike Galbraith <bitbucket@online.de>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 4/6] workqueue: Split apply attrs code from its locking
-Date: Wed,  7 May 2014 18:36:59 +0200
-Message-Id: <1399480621-19555-5-git-send-email-fweisbec@gmail.com>
+Subject: [RFC PATCH 0/6] workqueue: Introduce low-level unbound wq sysfs cpumask v2
+Date: Wed,  7 May 2014 18:36:55 +0200
+Message-Id: <1399480621-19555-1-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1399480621-19555-1-git-send-email-fweisbec@gmail.com>
-References: <1399480621-19555-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to allow overriding the unbound wqs low-level cpumask, we
-need to be able to call apply_workqueue_attr() on all workqueues in
-the pool list.
+Hi,
 
-Now since traversing the pool list require to lock it, we can't currently
-call apply_workqueue_attr() under the pool traversal.
+This is the 2nd version of https://lkml.org/lkml/2014/4/24/427
 
-So lets provide a version of apply_workqueue_attrs() that can be
-called when the pool is already locked.
+Changes in this version include:
 
-Suggested-by: Tejun Heo <tj@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Mike Galbraith <bitbucket@online.de>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+* Allow to call apply_workqueue_attrs() on ordered workqueues and remove
+the associated special cases (thanks Lai!)
+
+* Improve error handling
+
+* Add some lockdep_assert_held() to check locking requirements
+
+* Rename unbounds_cpumask file to cpumask (some prefix still in discusion
+with Tejun).
+
+* Better handle widening of cpumask (see 6th patch), but need to be done
+more properly, see changelog.
+
+* Rebase on top of Tejun's workqueue next branch
+
+Thanks,
+	Frederic
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	core/workqueue-v4
 ---
- kernel/workqueue.c | 77 +++++++++++++++++++++++++++++++-----------------------
- 1 file changed, 44 insertions(+), 33 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 1252a8c..2aa296d 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3637,24 +3637,9 @@ static struct pool_workqueue *numa_pwq_tbl_install(struct workqueue_struct *wq,
- 	return old_pwq;
- }
- 
--/**
-- * apply_workqueue_attrs - apply new workqueue_attrs to an unbound workqueue
-- * @wq: the target workqueue
-- * @attrs: the workqueue_attrs to apply, allocated with alloc_workqueue_attrs()
-- *
-- * Apply @attrs to an unbound workqueue @wq.  Unless disabled, on NUMA
-- * machines, this function maps a separate pwq to each NUMA node with
-- * possibles CPUs in @attrs->cpumask so that work items are affine to the
-- * NUMA node it was issued on.  Older pwqs are released as in-flight work
-- * items finish.  Note that a work item which repeatedly requeues itself
-- * back-to-back will stay on its current pwq.
-- *
-- * Performs GFP_KERNEL allocations.
-- *
-- * Return: 0 on success and -errno on failure.
-- */
--int apply_workqueue_attrs(struct workqueue_struct *wq,
--			  const struct workqueue_attrs *attrs)
-+static int apply_workqueue_attrs_locked(struct workqueue_struct *wq,
-+					const struct workqueue_attrs *attrs,
-+					cpumask_var_t unbounds_cpumask)
- {
- 	struct workqueue_attrs *new_attrs, *tmp_attrs;
- 	struct pool_workqueue **pwq_tbl, *dfl_pwq;
-@@ -3676,7 +3661,7 @@ int apply_workqueue_attrs(struct workqueue_struct *wq,
- 
- 	/* make a copy of @attrs and sanitize it */
- 	copy_workqueue_attrs(new_attrs, attrs);
--	cpumask_and(new_attrs->cpumask, new_attrs->cpumask, wq_unbound_cpumask);
-+	cpumask_and(new_attrs->cpumask, new_attrs->cpumask, unbounds_cpumask);
- 
- 	/*
- 	 * We may create multiple pwqs with differing cpumasks.  Make a
-@@ -3686,15 +3671,6 @@ int apply_workqueue_attrs(struct workqueue_struct *wq,
- 	copy_workqueue_attrs(tmp_attrs, new_attrs);
- 
- 	/*
--	 * CPUs should stay stable across pwq creations and installations.
--	 * Pin CPUs, determine the target cpumask for each node and create
--	 * pwqs accordingly.
--	 */
--	get_online_cpus();
--
--	mutex_lock(&wq_pool_mutex);
--
--	/*
- 	 * If something goes wrong during CPU up/down, we'll fall back to
- 	 * the default pwq covering whole @attrs->cpumask.  Always create
- 	 * it even if we don't use it immediately.
-@@ -3714,8 +3690,6 @@ int apply_workqueue_attrs(struct workqueue_struct *wq,
- 		}
- 	}
- 
--	mutex_unlock(&wq_pool_mutex);
--
- 	/* all pwqs have been created successfully, let's install'em */
- 	mutex_lock(&wq->mutex);
- 
-@@ -3736,7 +3710,6 @@ int apply_workqueue_attrs(struct workqueue_struct *wq,
- 		put_pwq_unlocked(pwq_tbl[node]);
- 	put_pwq_unlocked(dfl_pwq);
- 
--	put_online_cpus();
- 	ret = 0;
- 	/* fall through */
- out_free:
-@@ -3750,14 +3723,52 @@ enomem_pwq:
- 	for_each_node(node)
- 		if (pwq_tbl && pwq_tbl[node] != dfl_pwq)
- 			free_unbound_pwq(pwq_tbl[node]);
--	mutex_unlock(&wq_pool_mutex);
--	put_online_cpus();
- enomem:
- 	ret = -ENOMEM;
- 	goto out_free;
- }
- 
- /**
-+ * apply_workqueue_attrs - apply new workqueue_attrs to an unbound workqueue
-+ * @wq: the target workqueue
-+ * @attrs: the workqueue_attrs to apply, allocated with alloc_workqueue_attrs()
-+ *
-+ * Apply @attrs to an unbound workqueue @wq.  Unless disabled, on NUMA
-+ * machines, this function maps a separate pwq to each NUMA node with
-+ * possibles CPUs in @attrs->cpumask so that work items are affine to the
-+ * NUMA node it was issued on.  Older pwqs are released as in-flight work
-+ * items finish.  Note that a work item which repeatedly requeues itself
-+ * back-to-back will stay on its current pwq.
-+ *
-+ * Performs GFP_KERNEL allocations.
-+ *
-+ * Return: 0 on success and -errno on failure.
-+ */
-+int apply_workqueue_attrs(struct workqueue_struct *wq,
-+			  const struct workqueue_attrs *attrs)
-+{
-+	int ret;
-+
-+	/*
-+	 * CPUs should stay stable across pwq creations and installations.
-+	 * Pin CPUs, determine the target cpumask for each node and create
-+	 * pwqs accordingly.
-+	 */
-+
-+	get_online_cpus();
-+	/*
-+	 * Lock for alloc_unbound_pwq()
-+	 */
-+	mutex_lock(&wq_pool_mutex);
-+	ret = apply_workqueue_attrs_locked(wq, attrs, wq_unbound_cpumask);
-+	mutex_unlock(&wq_pool_mutex);
-+	put_online_cpus();
-+
-+	return ret;
-+}
-+
-+
-+/**
-  * wq_update_unbound_numa - update NUMA affinity of a wq for CPU hot[un]plug
-  * @wq: the target workqueue
-  * @cpu: the CPU coming up or going down
--- 
-1.8.3.1
+Frederic Weisbecker (5):
+      workqueue: Reorder sysfs code
+      workqueue: Create low-level unbound workqueues cpumask
+      workqueue: Split apply attrs code from its locking
+      workqueue: Allow modifying low level unbound workqueue cpumask
+      workqueue: Record real per-workqueue cpumask
 
+Lai Jiangshan (1):
+      workqueue: Allow changing attributions of ordered workqueues
+
+
+ kernel/workqueue.c | 1672 ++++++++++++++++++++++++++++------------------------
+ 1 file changed, 896 insertions(+), 776 deletions(-)
