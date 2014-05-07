@@ -1,107 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932488AbaEGJfM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:35:12 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:51318 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932306AbaEGJfJ (ORCPT
+	id S932369AbaEGJgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:36:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46428 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754652AbaEGJgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:35:09 -0400
-Message-ID: <5369FE49.7040103@6wind.com>
-Date: Wed, 07 May 2014 11:35:05 +0200
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reply-To: nicolas.dichtel@6wind.com
-Organization: 6WIND
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 7 May 2014 05:36:49 -0400
+Date: Wed, 7 May 2014 02:31:06 -0700
+From: tip-bot for Christian Gmeiner <tipbot@zytor.com>
+Message-ID: <tip-aadca6fa4068ad1f92c492bc8507b7ed350825a2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, mjg59@srcf.ucam.org, davej@redhat.com,
+        aubrey.li@linux.intel.com, akpm@linux-foundation.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, christian.gmeiner@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, mjg59@srcf.ucam.org, davej@redhat.com,
+        aubrey.li@linux.intel.com, akpm@linux-foundation.org,
+        fenghua.yu@intel.com, christian.gmeiner@gmail.com, tglx@linutronix.de
+In-Reply-To: <1399446114-2147-1-git-send-email-christian.gmeiner@gmail.com>
+References: <1399446114-2147-1-git-send-email-christian.gmeiner@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/reboot: Add reboot quirk for Certec BPC600
+Git-Commit-ID: aadca6fa4068ad1f92c492bc8507b7ed350825a2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Richard Guy Briggs <rgb@redhat.com>
-CC: "Serge E. Hallyn" <serge@hallyn.com>, ebiederm@xmission.com,
-        containers@lists.linux-foundation.org, serge.hallyn@ubuntu.com,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com
-Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
-References: <cover.1398176489.git.rgb@redhat.com> <20140501223212.GA25669@mail.hallyn.com> <20140502142851.GC24111@madcap2.tricolour.ca> <5367587B.20801@6wind.com> <20140506211530.GB15100@madcap2.tricolour.ca>
-In-Reply-To: <20140506211530.GB15100@madcap2.tricolour.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 06/05/2014 23:15, Richard Guy Briggs a écrit :
-> On 14/05/05, Nicolas Dichtel wrote:
->> Le 02/05/2014 16:28, Richard Guy Briggs a ?crit :
->>> On 14/05/02, Serge E. Hallyn wrote:
->>>> Quoting Richard Guy Briggs (rgb@redhat.com):
->>>>> I saw no replies to my questions when I replied a year after Aris' posting, so
->>>>> I don't know if it was ignored or got lost in stale threads:
->>>>>          https://www.redhat.com/archives/linux-audit/2013-March/msg00020.html
->>>>>          https://www.redhat.com/archives/linux-audit/2013-March/msg00033.html
->>>>> 	(https://lists.linux-foundation.org/pipermail/containers/2013-March/032063.html)
->>>>>          https://www.redhat.com/archives/linux-audit/2014-January/msg00180.html
->>>>>
->>>>> I've tried to answer a number of questions that were raised in that thread.
->>>>>
->>>>> The goal is not quite identical to Aris' patchset.
->>>>>
->>>>> The purpose is to track namespaces in use by logged processes from the
->>>>> perspective of init_*_ns.  The first patch defines a function to list them.
->>>>> The second patch provides an example of usage for audit_log_task_info() which
->>>>> is used by syscall audits, among others.  audit_log_task() and
->>>>> audit_common_recv_message() would be other potential use cases.
->>>>>
->>>>> Use a serial number per namespace (unique across one boot of one kernel)
->>>>> instead of the inode number (which is claimed to have had the right to change
->>>>> reserved and is not necessarily unique if there is more than one proc fs).  It
->>>>> could be argued that the inode numbers have now become a defacto interface and
->>>>> can't change now, but I'm proposing this approach to see if this helps address
->>>>> some of the objections to the earlier patchset.
->>>>>
->>>>> There could also have messages added to track the creation and the destruction
->>>>> of namespaces, listing the parent for hierarchical namespaces such as pidns,
->>>>> userns, and listing other ids for non-hierarchical namespaces, as well as other
->>>>> information to help identify a namespace.
->>>>>
->>>>> There has been some progress made for audit in net namespaces and pid
->>>>> namespaces since this previous thread.  net namespaces are now served as peers
->>>>> by one auditd in the init_net namespace with processes in a non-init_net
->>>>> namespace being able to write records if they are in the init_user_ns and have
->>>>> CAP_AUDIT_WRITE.  Processes in a non-init_pid_ns can now similarly write
->>>>> records.  As for CAP_AUDIT_READ, I just posted a patchset to check capabilities
->>>>> of userspace processes that try to join netlink broadcast groups.
->>>>>
->>>>>
->>>>> Questions:
->>>>> Is there a way to link serial numbers of namespaces involved in migration of a
->>>>> container to another kernel?  (I had a brief look at CRIU.)  Is there a unique
->>>>> identifier for each running instance of a kernel?  Or at least some identifier
->>>>> within the container migration realm?
->>>>
->>>> Eric Biederman has always been adamantly opposed to adding new namespaces
->>>> of namespaces, so the fact that you're asking this question concerns me.
->>>
->>> I have seen that position and I don't fully understand the justification
->>> for it other than added complexity.
->> Just FYI, have you seen this thread:
->> http://thread.gmane.org/gmane.linux.network/286572/
->>
->> There is some explanations/examples about this topic.
->
-> Thanks for that reference.  I read it through, but will need to do so
-> again to get it to sink in.
+Commit-ID:  aadca6fa4068ad1f92c492bc8507b7ed350825a2
+Gitweb:     http://git.kernel.org/tip/aadca6fa4068ad1f92c492bc8507b7ed350825a2
+Author:     Christian Gmeiner <christian.gmeiner@gmail.com>
+AuthorDate: Wed, 7 May 2014 09:01:54 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 7 May 2014 11:22:10 +0200
 
-I think audit has the same problematic than x-netns netdevice: beeing able to 
-identify a peer netns, when a userland apps "read" a message from the kernel.
+x86/reboot: Add reboot quirk for Certec BPC600
 
-The main problem with file descriptor is that you cannot use them when you
-broadcast a message from kernel to userland.
+Certec BPC600 needs reboot=pci to actually reboot.
 
-Maybe we can use the local names concept (like file descriptors but without
-their constraints), ie having an identifier of a peer (net)ns which is only
-valid the current (net)ns. When the kernel needs to identify a peer (net)ns, it
-uses this identifier (or allocate it the first time). After that, the userland
-apps may reuse this identifier to configure things in the peer (net)ns.
+Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Li Aubrey <aubrey.li@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1399446114-2147-1-git-send-email-christian.gmeiner@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/reboot.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-Eric, any thoughts about this?
-
-Regards,
-Nicolas
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 3399d3a..52b1157 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -191,6 +191,16 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+ 		},
+ 	},
+ 
++	/* Certec */
++	{       /* Handle problems with rebooting on Certec BPC600 */
++		.callback = set_pci_reboot,
++		.ident = "Certec BPC600",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Certec"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "BPC600"),
++		},
++	},
++
+ 	/* Dell */
+ 	{	/* Handle problems with rebooting on Dell DXP061 */
+ 		.callback = set_bios_reboot,
