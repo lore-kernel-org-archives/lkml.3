@@ -1,159 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934067AbaEGNfS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:35:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45356 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756141AbaEGNN2 (ORCPT
+	id S933574AbaEGNid (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:38:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38089 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933123AbaEGNia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:13:28 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 06/70] ext4: fix jbd2 warning under heavy xattr load
-Date: Wed,  7 May 2014 14:12:09 +0100
-Message-Id: <1399468393-10140-7-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
-References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Wed, 7 May 2014 09:38:30 -0400
+Date: Wed, 7 May 2014 15:38:23 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched/clock: cleanup, remove wrap_{max|min}().
+Message-ID: <20140507133823.GN30445@twins.programming.kicks-ass.net>
+References: <1399463338-15507-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+ <20140507125548.GL30445@twins.programming.kicks-ass.net>
+ <536A2143.5090106@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gdTfX7fkYsEEjebm"
+Content-Disposition: inline
+In-Reply-To: <536A2143.5090106@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.10 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--gdTfX7fkYsEEjebm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Jan Kara <jack@suse.cz>
+On Wed, May 07, 2014 at 09:04:19PM +0900, Dongsheng Yang wrote:
+> On 05/07/2014 09:55 PM, Peter Zijlstra wrote:
+> >On Wed, May 07, 2014 at 08:48:58PM +0900, Dongsheng Yang wrote:
+> >>I am not sure why we need the wrap_{max|min}() in kernel/sched/clock.c.
+> >>But I checked the implementation of max() and min() in linux/kernel.h, =
+I think
+> >>we can reuse them here rather than introduce a new function named
+> >>wrap_{max|min}().
+> >wrap is a good hint there.. they're supposed to deal with the clock
+> >wrapping. Of course 2^64 ns is a rather long time (~584 years in fact),
+> >but that doesn't mean we shouldn't care.
+> >
+> >And no, min/max don't do the right thing.
+>=20
+> IMMO,  max() in kernel.h is checking and returning the u64 with typeof() =
+if
+> we are passing a u64 parameter to max(). And I checked current callers of
+> wrap_max(),
+> they are all passing parameters of u64 type. So I think max/min works well
+> at
+> the place of wrap_max/min().
+>=20
+> Maybe I am missing something here, please correct me if I understand it
+> incorrectly.
 
-commit ec4cb1aa2b7bae18dd8164f2e9c7c51abcf61280 upstream.
+Trivial test prog; you really should do these things yourself.
 
-When heavily exercising xattr code the assertion that
-jbd2_journal_dirty_metadata() shouldn't return error was triggered:
+$ ./wrap
+wrap_min: 18446744073709551615 wrap_max: 0
+min:      0 max:      18446744073709551615
 
-WARNING: at /srv/autobuild-ceph/gitbuilder.git/build/fs/jbd2/transaction.c:1237
-jbd2_journal_dirty_metadata+0x1ba/0x260()
 
-CPU: 0 PID: 8877 Comm: ceph-osd Tainted: G    W 3.10.0-ceph-00049-g68d04c9 #1
-Hardware name: Dell Inc. PowerEdge R410/01V648, BIOS 1.6.3 02/07/2011
- ffffffff81a1d3c8 ffff880214469928 ffffffff816311b0 ffff880214469968
- ffffffff8103fae0 ffff880214469958 ffff880170a9dc30 ffff8802240fbe80
- 0000000000000000 ffff88020b366000 ffff8802256e7510 ffff880214469978
-Call Trace:
- [<ffffffff816311b0>] dump_stack+0x19/0x1b
- [<ffffffff8103fae0>] warn_slowpath_common+0x70/0xa0
- [<ffffffff8103fb2a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff81267c2a>] jbd2_journal_dirty_metadata+0x1ba/0x260
- [<ffffffff81245093>] __ext4_handle_dirty_metadata+0xa3/0x140
- [<ffffffff812561f3>] ext4_xattr_release_block+0x103/0x1f0
- [<ffffffff81256680>] ext4_xattr_block_set+0x1e0/0x910
- [<ffffffff8125795b>] ext4_xattr_set_handle+0x38b/0x4a0
- [<ffffffff810a319d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff81257b32>] ext4_xattr_set+0xc2/0x140
- [<ffffffff81258547>] ext4_xattr_user_set+0x47/0x50
- [<ffffffff811935ce>] generic_setxattr+0x6e/0x90
- [<ffffffff81193ecb>] __vfs_setxattr_noperm+0x7b/0x1c0
- [<ffffffff811940d4>] vfs_setxattr+0xc4/0xd0
- [<ffffffff8119421e>] setxattr+0x13e/0x1e0
- [<ffffffff811719c7>] ? __sb_start_write+0xe7/0x1b0
- [<ffffffff8118f2e8>] ? mnt_want_write_file+0x28/0x60
- [<ffffffff8118c65c>] ? fget_light+0x3c/0x130
- [<ffffffff8118f2e8>] ? mnt_want_write_file+0x28/0x60
- [<ffffffff8118f1f8>] ? __mnt_want_write+0x58/0x70
- [<ffffffff811946be>] SyS_fsetxattr+0xbe/0x100
- [<ffffffff816407c2>] system_call_fastpath+0x16/0x1b
-
-The reason for the warning is that buffer_head passed into
-jbd2_journal_dirty_metadata() didn't have journal_head attached. This is
-caused by the following race of two ext4_xattr_release_block() calls:
-
-CPU1                                CPU2
-ext4_xattr_release_block()          ext4_xattr_release_block()
-lock_buffer(bh);
-/* False */
-if (BHDR(bh)->h_refcount == cpu_to_le32(1))
-} else {
-  le32_add_cpu(&BHDR(bh)->h_refcount, -1);
-  unlock_buffer(bh);
-                                    lock_buffer(bh);
-                                    /* True */
-                                    if (BHDR(bh)->h_refcount == cpu_to_le32(1))
-                                      get_bh(bh);
-                                      ext4_free_blocks()
-                                        ...
-                                        jbd2_journal_forget()
-                                          jbd2_journal_unfile_buffer()
-                                          -> JH is gone
-  error = ext4_handle_dirty_xattr_block(handle, inode, bh);
-  -> triggers the warning
-
-We fix the problem by moving ext4_handle_dirty_xattr_block() under the
-buffer lock. Sadly this cannot be done in nojournal mode as that
-function can call sync_dirty_buffer() which would deadlock. Luckily in
-nojournal mode the race is harmless (we only dirty already freed buffer)
-and thus for nojournal mode we leave the dirtying outside of the buffer
-lock.
-
-Reported-by: Sage Weil <sage@inktank.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/xattr.c | 23 +++++++++++++++++++----
- 1 file changed, 19 insertions(+), 4 deletions(-)
+#include <stdint.h>
+#include <stdio.h>
 
-diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-index 1423c48..298e9c8 100644
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -517,8 +517,8 @@ static void ext4_xattr_update_super_block(handle_t *handle,
- }
- 
- /*
-- * Release the xattr block BH: If the reference count is > 1, decrement
-- * it; otherwise free the block.
-+ * Release the xattr block BH: If the reference count is > 1, decrement it;
-+ * otherwise free the block.
-  */
- static void
- ext4_xattr_release_block(handle_t *handle, struct inode *inode,
-@@ -538,16 +538,31 @@ ext4_xattr_release_block(handle_t *handle, struct inode *inode,
- 		if (ce)
- 			mb_cache_entry_free(ce);
- 		get_bh(bh);
-+		unlock_buffer(bh);
- 		ext4_free_blocks(handle, inode, bh, 0, 1,
- 				 EXT4_FREE_BLOCKS_METADATA |
- 				 EXT4_FREE_BLOCKS_FORGET);
--		unlock_buffer(bh);
- 	} else {
- 		le32_add_cpu(&BHDR(bh)->h_refcount, -1);
- 		if (ce)
- 			mb_cache_entry_release(ce);
-+		/*
-+		 * Beware of this ugliness: Releasing of xattr block references
-+		 * from different inodes can race and so we have to protect
-+		 * from a race where someone else frees the block (and releases
-+		 * its journal_head) before we are done dirtying the buffer. In
-+		 * nojournal mode this race is harmless and we actually cannot
-+		 * call ext4_handle_dirty_xattr_block() with locked buffer as
-+		 * that function can call sync_dirty_buffer() so for that case
-+		 * we handle the dirtying after unlocking the buffer.
-+		 */
-+		if (ext4_handle_valid(handle))
-+			error = ext4_handle_dirty_xattr_block(handle, inode,
-+							      bh);
- 		unlock_buffer(bh);
--		error = ext4_handle_dirty_xattr_block(handle, inode, bh);
-+		if (!ext4_handle_valid(handle))
-+			error = ext4_handle_dirty_xattr_block(handle, inode,
-+							      bh);
- 		if (IS_SYNC(inode))
- 			ext4_handle_sync(handle);
- 		dquot_free_block(inode, EXT4_C2B(EXT4_SB(inode->i_sb), 1));
--- 
-1.9.1
+typedef uint64_t u64;
+typedef int64_t  s64;
 
+static inline u64 wrap_min(u64 x, u64 y)
+{
+        return (s64)(x - y) < 0 ? x : y;
+}
+
+static inline u64 wrap_max(u64 x, u64 y)
+{
+        return (s64)(x - y) > 0 ? x : y;
+}
+
+#define min(x, y) ({                            \
+        typeof(x) _min1 =3D (x);                  \
+        typeof(y) _min2 =3D (y);                  \
+        (void) (&_min1 =3D=3D &_min2);              \
+        _min1 < _min2 ? _min1 : _min2; })
+
+#define max(x, y) ({                            \
+        typeof(x) _max1 =3D (x);                  \
+        typeof(y) _max2 =3D (y);                  \
+        (void) (&_max1 =3D=3D &_max2);              \
+        _max1 > _max2 ? _max1 : _max2; })
+
+void main (void)
+{
+        u64 a =3D UINT64_MAX, b =3D a + 1;
+
+        printf("wrap_min: %lu wrap_max: %lu\n", wrap_min(a, b), wrap_max(a,=
+b));
+        printf("min:      %lu max:      %lu\n", min(a, b), max(a,b));
+}
+
+--gdTfX7fkYsEEjebm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTajdPAAoJEHZH4aRLwOS6VPYP/332bY53AUii89uemAwUghQW
+9agTsE4o84wtVm8v7M5Qj62bAboCI8kO2hz73t8oPQ1q5JsDIsqEri3fZeBKabtq
+WyyEZ3ZYnfTr92CYt//9bRRfszE0Tm+ccMUGzCNmHGtrTAFslgbSu950LlqHJyGT
+YinpGW9GaPx6PSzLDBg7N3jvI4aFtEb5FZFZdJAs1jaGezygAnijQXqSi2SjVBmH
+a6ryavlDrpkzVaEOHHO52D/rWvSDlJwzWXUGpK7TDuoo6ylycsx2hFjetajPyFue
+O08vqyCW1TOSA26BdeqfZoAkhg6/WAEFu+SFPPNEuvV+/unsjNHp38uqJ3CQOQSt
+MdFNMnJ/911FjtzP6qcj2QFc/16YJ/vJt6Ip2e7DF21me7zIynskEqTw9wMlbZnQ
+1J+R9rFsdU1WP8LTuMFtjBSnb82zuT5fv76Mnv5zjjgMAapkyrQTsY6CmODwb7JL
+inEIo73xnEx+xTa914vop681S7OFCYYXZC2rXc0woVgssrkuxacHSpRAu9txZn0K
+J17Qm52fMavS87Jf12UyS+DCLOaYY9/vfRIBQ/294cH1WkH6HP4O1wQiJLKhKIIP
+XD2d6dCpaQXs0vRThJTqGSyen9gBxXKDfGh6WJLSqEzZ1jiDEVvC91B+6rY5+iCK
+i5hEQ6yoP15mnSdQEkJ2
+=FRtb
+-----END PGP SIGNATURE-----
+
+--gdTfX7fkYsEEjebm--
