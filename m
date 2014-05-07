@@ -1,107 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932858AbaEGMwp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 08:52:45 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58495 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755585AbaEGMwn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 08:52:43 -0400
-Date: Wed, 7 May 2014 14:52:39 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 17/20] phy: Add support for USB cluster on the Armada
- 375 SoC
-Message-ID: <20140507145239.433acdf4@free-electrons.com>
-In-Reply-To: <20140506135427.GG6503@lunn.ch>
-References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com>
-	<1399335255-589-18-git-send-email-gregory.clement@free-electrons.com>
-	<20140506135427.GG6503@lunn.ch>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932872AbaEGMyV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 08:54:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33222 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932770AbaEGMyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 08:54:20 -0400
+Date: Wed, 7 May 2014 14:54:19 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] HID
+Message-ID: <alpine.LNX.2.00.1405071451420.3969@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Andrew Lunn,
+Linus,
 
-On Tue, 6 May 2014 15:54:27 +0200, Andrew Lunn wrote:
+please pull from
 
-> > +enum {
-> > +	PHY_USB2 = 0,
-> > +	PHY_USB3 = 1,
-> > +};
-> > +
-> > +struct armada375_cluster_phy {
-> > +	struct phy *phy;
-> > +	void __iomem *reg;
-> > +	bool enable;
-> > +	bool use_usb3;
-> 
-> Hi Gregory
-> 
-> nit: How about using the enum you just defined?
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
 
-Nope, I don't think it's a good idea, because they mean different
-things. The enum is used to index the arrays of two PHYs: PHY_USB2 is
-the first one, PHY_USB3 is the second one.
+to receive
 
-On the other hand, the 'use_usb3' field indicates in which mode is a
-particular PHY. So it could apply on either of the PHYs, and is
-therefore not related to the index of the PHYs in the array.
+- fix a small bug in computation of report size, which might cause some
+  devices (Atmel touchpad found on the Samsung Ativ 9) to reject reports
+  with otherwise valid contents
+- a few device-ID specific quirks/additions piggy-backing on top of it
 
+Thanks.
 
-> > +	usb_cluster_base = of_iomap(np, 0);
-> 
-> devm_ API?
-> 
-> Check the return value for an error?
+----------------------------------------------------------------
+Benjamin Tissoires (1):
+      HID: core: fix computation of the report size
 
-Indeed, I'll use devm_ioremap_resource() here.
+Hans de Goede (1):
+      HID: add NO_INIT_REPORTS quirk for Synaptics Touch Pad V 103S
 
-> > +	BUG_ON(!usb_cluster_base);
-> > +
-> > +	for (i = 0; i < NB_PHY; i++) {
-> > +		phy = devm_phy_create(dev, &armada375_usb_phy_ops, NULL);
-> > +		if (IS_ERR(phy))
-> > +			dev_err(dev, "failed to create PHY n%d\n", i);
-> > +
-> > +		usb_cluster_phy[i].phy = phy;
-> > +		usb_cluster_phy[i].reg = usb_cluster_base;
-> > +		usb_cluster_phy[i].enable = false;
-> > +		phy_set_drvdata(phy, &usb_cluster_phy[i]);
-> > +	}
-> > +
-> > +	usb_cluster_phy[PHY_USB2].use_usb3 = false;
-> > +	usb_cluster_phy[PHY_USB3].use_usb3 = true;
-> > +
-> > +	/*
-> > +	 * We can't use the first usb2 unit and usb3 at the same time
-> > +	 * to manage a USB2 device, so let's disable usb2 if usb3 is
-> > +	 * slelected. In this case USB2 device will be managed by the
-> 
-> selected
+Peter F. Patel-Schneider (1):
+      HID: sensor-hub: Add in quirk for sensor hub in Lenovo Ideapad Yogas
 
-Fixed.
+Tomas Sokorai (1):
+      HID: multitouch: add support of EliteGroup 05D8 panels
 
-Thanks,
+ drivers/hid/hid-core.c          | 5 +++--
+ drivers/hid/hid-ids.h           | 7 +++++++
+ drivers/hid/hid-multitouch.c    | 5 +++++
+ drivers/hid/hid-sensor-hub.c    | 3 +++
+ drivers/hid/usbhid/hid-quirks.c | 1 +
+ 5 files changed, 19 insertions(+), 2 deletions(-)
 
-Thomas
 -- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Jiri Kosina
+SUSE Labs
