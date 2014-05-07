@@ -1,129 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756316AbaEGO4J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 10:56:09 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:47533 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349AbaEGO4F (ORCPT
+	id S932985AbaEGO5L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 10:57:11 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:27515 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852AbaEGO5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 10:56:05 -0400
-Date: Wed, 7 May 2014 07:55:57 -0700
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Kim Phillips <kim.phillips@linaro.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Eric Auger <eric.auger@linaro.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Kim Phillips <kim.phillips@freescale.com>
-Subject: Re: [PATCH 2/2] ARM: KVM: user_mem_abort: support stage 2 MMIO page
- mapping
-Message-ID: <20140507145557.GJ3066@lvm>
-References: <1395785294-2545-1-git-send-email-kim.phillips@linaro.org>
- <1395785294-2545-2-git-send-email-kim.phillips@linaro.org>
- <20140506180448.GH3066@lvm>
- <87bnvaotei.fsf@approximate.cambridge.arm.com>
+	Wed, 7 May 2014 10:57:08 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/fG/9meFk+b6LxL8499NDryMo8b7FNByo=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 68D9C56E51C
+Date: Wed, 7 May 2014 10:56:56 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linaro-kernel@lists.linaro.org, "Kevin's boot bot" <khilman@linaro.org>,
+        Corey Minyard <minyard@acm.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, kernel-build-reports@lists.linaro.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        linux-kernel@vger.kernel.org, openipmi-developer@lists.sourceforge.net
+Subject: Re: IPMI misbehaving on ARM defconfigs, was [Re: stable boot: 18
+ pass, 4 fail (v3.10.39)]
+Message-ID: <20140507145656.GE28159@titan.lakedaemon.net>
+References: <5369063f.4291420a.03aa.495e@mx.google.com>
+ <20140507142056.GD28159@titan.lakedaemon.net>
+ <10890279.Lp5U737Dmi@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87bnvaotei.fsf@approximate.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <10890279.Lp5U737Dmi@wuerfel>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 10:00:21AM +0100, Marc Zyngier wrote:
-> Kim, Christoffer,
+On Wed, May 07, 2014 at 04:44:42PM +0200, Arnd Bergmann wrote:
+> On Wednesday 07 May 2014 10:20:56 Jason Cooper wrote:
+> > > ipmi message handler version 39.2
+> > > IPMI System Interface driver.
+> > > ipmi_si: Adding default-specified kcs state machine
+> > > ipmi_si: Trying default-specified kcs state machine at i/o address 0xca2, slave address 0x0, irq 0
+> > > ipmi_si: Could not set up I/O space
+> > > Trying to free nonexistent resource <0000000000000ca2-0000000000000ca2>
+> > > Trying to free nonexistent resource <0000000000000ca3-0000000000000ca3>
+> > > ipmi_si: Adding default-specified smic state machine
+> > > ipmi_si: Trying default-specified smic state machine at i/o address 0xca9, slave address 0x0, irq 0
+> > > ipmi_si: Could not set up I/O space
+> > > Trying to free nonexistent resource <0000000000000ca9-0000000000000ca9>
+> > > Trying to free nonexistent resource <0000000000000caa-0000000000000caa>
+> > > Trying to free nonexistent resource <0000000000000cab-0000000000000cab>
+> > > ipmi_si: Adding default-specified bt state machine
+> > > ipmi_si: Trying default-specified bt state machine at i/o address 0xe4, slave address 0x0, irq 0
+> > > ipmi_si: Could not set up I/O space
+> > > Trying to free nonexistent resource <00000000000000e4-00000000000000e4>
+> > > Trying to free nonexistent resource <00000000000000e5-00000000000000e5>
+> > > Trying to free nonexistent resource <00000000000000e6-00000000000000e6>
+> > > ipmi_si: Unable to find any System Interface(s)
+> > > Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+> > ...
+> > 
+> > It appears to be unrelated to the failure this original message was
+> > about.  However, the failure brought the above to our attention. 
+> > 
+> > Is the IPMI driver used on ARM?  Documentation/IPMI.txt indicates a
+> > dependency on ACPI, but that isn't reflected in the Kconfig.  At any
+> > rate, it seems rather unhappy.  :(
 > 
-> On Tue, May 06 2014 at  7:04:48 pm BST, Christoffer Dall <christoffer.dall@linaro.org> wrote:
-> > On Tue, Mar 25, 2014 at 05:08:14PM -0500, Kim Phillips wrote:
-> >> Use the correct memory type for device MMIO mappings: PAGE_S2_DEVICE.
-> >> 
-> >> Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
-> >> ---
-> >>  arch/arm/kvm/mmu.c | 11 ++++++++---
-> >>  1 file changed, 8 insertions(+), 3 deletions(-)
-> >> 
-> >> diff --git a/arch/arm/kvm/mmu.c b/arch/arm/kvm/mmu.c
-> >> index 7789857..a354610 100644
-> >> --- a/arch/arm/kvm/mmu.c
-> >> +++ b/arch/arm/kvm/mmu.c
-> >> @@ -652,6 +652,7 @@ static int user_mem_abort(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
-> >>  	struct kvm_mmu_memory_cache *memcache = &vcpu->arch.mmu_page_cache;
-> >>  	struct vm_area_struct *vma;
-> >>  	pfn_t pfn;
-> >> +	pgprot_t mem_type = PAGE_S2;
-> >>  
-> >>  	write_fault = kvm_is_write_fault(kvm_vcpu_get_hsr(vcpu));
-> >>  	if (fault_status == FSC_PERM && !write_fault) {
-> >> @@ -702,6 +703,9 @@ static int user_mem_abort(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
-> >>  	if (is_error_pfn(pfn))
-> >>  		return -EFAULT;
-> >>  
-> >> +	if (kvm_is_mmio_pfn(pfn))
-> >> +		mem_type = PAGE_S2_DEVICE;
-> >> +
-> >>  	spin_lock(&kvm->mmu_lock);
-> >>  	if (mmu_notifier_retry(kvm, mmu_seq))
-> >>  		goto out_unlock;
-> >> @@ -709,7 +713,7 @@ static int user_mem_abort(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
-> >>  		hugetlb = transparent_hugepage_adjust(&pfn, &fault_ipa);
-> >>  
-> >>  	if (hugetlb) {
-> >> -		pmd_t new_pmd = pfn_pmd(pfn, PAGE_S2);
-> >> +		pmd_t new_pmd = pfn_pmd(pfn, mem_type);
-> >>  		new_pmd = pmd_mkhuge(new_pmd);
-> >>  		if (writable) {
-> >>  			kvm_set_s2pmd_writable(&new_pmd);
-> >> @@ -718,13 +722,14 @@ static int user_mem_abort(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
-> >>  		coherent_icache_guest_page(kvm, hva & PMD_MASK, PMD_SIZE);
-> >>  		ret = stage2_set_pmd_huge(kvm, memcache, fault_ipa, &new_pmd);
-> >>  	} else {
-> >> -		pte_t new_pte = pfn_pte(pfn, PAGE_S2);
-> >> +		pte_t new_pte = pfn_pte(pfn, mem_type);
-> >>  		if (writable) {
-> >>  			kvm_set_s2pte_writable(&new_pte);
-> >>  			kvm_set_pfn_dirty(pfn);
-> >>  		}
-> >>  		coherent_icache_guest_page(kvm, hva, PAGE_SIZE);
-> >> -		ret = stage2_set_pte(kvm, memcache, fault_ipa, &new_pte, false);
-> >> +		ret = stage2_set_pte(kvm, memcache, fault_ipa, &new_pte,
-> >> +				     mem_type == PAGE_S2_DEVICE);
-> >>  	}
-> >>  
-> >>  
-> >> -- 
-> >> 1.9.1
-> >> 
-> >
-> > I think this looks reasonable.
-> >
-> > Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
+> It certainly can be used, and it can be probed through a known PC-style
+> port number or through the DT binding.
 > 
-> I feel like I'm missing some context here, and the commit message is way
-> too terse for me to make sense of it.
-> 
-> So far, we can only get into user_mem_abort on a Stage-2 fault
-> (translation or permission) for memory. How can we suddenly get here for
-> a *device* fault? Do we get a special kind of memslot?
-> 
-> I'm not saying the patch does anything wrong, but I'd like to understand
-> the rationale behind it. On its own, it doesn't make much sense.
-> 
-Think device passthrough.  There's nothing preventing user space from
-setting up a memory region to point to device memory (through VFIO or
-/dev/mem).  If that's done, we should enforce device memory properties
-so writes don't linger around in the cache to be written some time later
-when that device memory potentially doesn't belong to the VM anymore.
+> However, we don't normally want it to try the PC style addresses, which
+> appear to be used in this case. This should only happen if
+> CONFIG_IPMI_SI_PROBE_DEFAULTS is set, as far as I can tell. Is that
+> set in your configuration?
 
-This is just one tiny piece of all of them to make device passthrough
-work, and we could hold off with this patch until we have something more
-complete.  On the other hand, we need to start somewhere, and this is
-hardly intrusive and is functionally correct even though you don't have
-a full device passthrough setup.
+It's not set in multi_v7_defconfig, which is the config this failed
+under.  At least not on linux-3.10.y.
 
--Christoffer
+Kevin, do you still have the full config from this build?  Could you
+send us the IPMI related settings?
+
+thx,
+
+Jason.
