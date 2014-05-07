@@ -1,238 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885AbaEGXSA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 19:18:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6377 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751470AbaEGXR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 19:17:56 -0400
-Subject: [RFC PATCH 2/2] iommu/intel: Make use of IOMMU sysfs support
-From: Alex Williamson <alex.williamson@redhat.com>
-To: iommu@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 07 May 2014 17:17:54 -0600
-Message-ID: <20140507231753.3124.52784.stgit@bling.home>
-In-Reply-To: <20140507230308.3124.90856.stgit@bling.home>
-References: <20140507230308.3124.90856.stgit@bling.home>
-User-Agent: StGit/0.17-dirty
+	id S1752917AbaEGXSa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 19:18:30 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:60939 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752891AbaEGXSZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 19:18:25 -0400
+Date: Wed, 7 May 2014 17:18:22 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-doc@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joerg Roedel <joro@8bytes.org>, Randy Dunlap <rdunlap@infradead.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, linux-kernel@vger.kernel.org,
+        James Bottomley <jbottomley@parallels.com>, linux-pci@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>,
+        Magnus Damm <damm@opensource.se>, linux-sh@vger.kernel.org
+Subject: Re: [PATCH v2 3/5] sh/PCI: Pass GAPSPCI_DMA_BASE CPU address to
+ dma_declare_coherent_memory()
+Message-ID: <20140507231822.GA4951@google.com>
+References: <20140506223250.17968.27054.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140506224833.17968.87108.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <6994558.Q3OYh8PWMa@wuerfel>
+ <4271645.KYLAoYxC5v@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4271645.KYLAoYxC5v@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register our DRHD IOMMUs, cross link devices, and provide a base set
-of attributes for the IOMMU.  Note that IRQ remapping support parses
-the DMAR table very early in boot, well before the iommu_class can
-reasonably be setup, so our registration is split between
-intel_iommu_init(), which occurs later, and alloc_iommu(), which
-typically occurs much earlier, but may happen at any time later
-with IOMMU hot-add support.
+[+cc Magnus, linux-sh (sorry, I forgot to tell stgit to cc you)]
 
-On a typical desktop system, this provides the following (pruned):
+On Wed, May 07, 2014 at 10:15:10AM +0200, Arnd Bergmann wrote:
+> On Wednesday 07 May 2014 09:55:16 Arnd Bergmann wrote:
+> > On Tuesday 06 May 2014 16:48:33 Bjorn Helgaas wrote:
+> > > @@ -51,8 +53,12 @@ static void gapspci_fixup_resources(struct pci_dev *dev)
+> > >                 /*
+> > >                  * Redirect dma memory allocations to special memory window.
+> > >                  */
+> > > +               region.start = GAPSPCI_DMA_BASE;
+> > > +               region.end = GAPSPCI_DMA_BASE + GAPSPCI_DMA_SIZE - 1;
+> > > +               res.flags = IORESOURCE_MEM;
+> > > +               pcibios_bus_to_resource(dev->bus, &res, &region);
+> > >                 BUG_ON(!dma_declare_coherent_memory(&dev->dev,
+> > > -                                               GAPSPCI_DMA_BASE,
+> > > +                                               res->start,
+> > >                                                 GAPSPCI_DMA_BASE,
+> > >                                                 GAPSPCI_DMA_SIZE,
+> > >                                                 DMA_MEMORY_MAP |
+> > 
+> > Not sure if this is an improvement. I understand the intention, but
+> > it's actually possible for the offset to be different both ways:
+> > 
+> > Your patch applies the outbound mem_offset that was provided when
+> > registering the MMIO resource for the PCI host bridge. What the driver
+> > needs instead is the inbound DMA offset that gets applied by some
+> > host bridges that don't have a 1:1 mapping but also don't have an
+> > IOMMU.
 
-$ find /sys | grep dmar
-/sys/devices/virtual/iommu/dmar0
-/sys/devices/virtual/iommu/dmar0/devices
-/sys/devices/virtual/iommu/dmar0/devices/0000:00:02.0
-/sys/devices/virtual/iommu/dmar0/intel-iommu
-/sys/devices/virtual/iommu/dmar0/intel-iommu/cap
-/sys/devices/virtual/iommu/dmar0/intel-iommu/ecap
-/sys/devices/virtual/iommu/dmar0/intel-iommu/address
-/sys/devices/virtual/iommu/dmar0/intel-iommu/version
-/sys/devices/virtual/iommu/dmar1
-/sys/devices/virtual/iommu/dmar1/devices
-/sys/devices/virtual/iommu/dmar1/devices/0000:00:00.0
-/sys/devices/virtual/iommu/dmar1/devices/0000:00:01.0
-/sys/devices/virtual/iommu/dmar1/devices/0000:00:16.0
-/sys/devices/virtual/iommu/dmar1/devices/0000:00:1a.0
-/sys/devices/virtual/iommu/dmar1/devices/0000:00:1b.0
-/sys/devices/virtual/iommu/dmar1/devices/0000:00:1c.0
-...
-/sys/devices/virtual/iommu/dmar1/intel-iommu
-/sys/devices/virtual/iommu/dmar1/intel-iommu/cap
-/sys/devices/virtual/iommu/dmar1/intel-iommu/ecap
-/sys/devices/virtual/iommu/dmar1/intel-iommu/address
-/sys/devices/virtual/iommu/dmar1/intel-iommu/version
-/sys/class/iommu/dmar0
-/sys/class/iommu/dmar1
+I don't understand where the inbound DMA offset comes into play.  As I
+understand it, we're talking about a region of memory on the PCI bus,
+not in system RAM, and there are two ways to access it: (1) the CPU
+makes MMIO accesses to it, and (2) the device makes DMA accesses to
+it.
 
-(devices also link back to the dmar units)
+The CPU accesses go through the host bridge MMIO aperture and will
+have the outbound mem_offset applied to them.  The DMA accesses are
+handled by the device itself and there's no host bridge or IOMMU or
+inbound DMA offset involved.
 
-Putting these under the "virtual" directory may not be correct since
-these are physical devices, maybe under /sys/devices/system?  Virtual
-is simply the default for NULL parent.
+I think there are two reasonable ways a PCI driver could use
+dma_declare_coherent_memory():
 
-This makes address, version, capabilities, and extended capabilities
-available, just like printed on boot.  Nearly everything we might
-want can be parsed from cap/ecap, but I expect we'll want to make
-some human friendly entries for things that we care about.
+  1) The bus address of the region might be in a BAR.  In that case,
+  it should pass pci_resource_start() (the CPU phys_addr_t) as the
+  first address, and pci_bus_address(pci_resource_start()) (the bus
+  dma_addr_t) as the second.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+  2) The bus address of the region might be discovered from the device
+  in some non-standard way.  In this case, the driver reads the bus
+  address dma_addr_t directly from the device, and it should use
+  something like the pcibios_bus_to_resource() code I proposed to find
+  the CPU phys_addr_t.
+
+For this platform, all the addresses are hard-coded and there is no
+outbound MMIO offset, so we can't tell which to use and in this
+system, it doesn't matter if we do anything at all.
+
+The only reason I would make a change here is because the current code
+cannot be safely copied (another driver might be used in systems where
+the host bridge does have an outbound MMIO offset).  If we make this
+code use either strategy, it would be a clue to future users that they
+should not assume the physical address is the same as the bus address.
+
+I changed the patch (below) to add a comment and to use the first
+strategy (though there isn't an actual BAR, so we can't do it exactly
+that way).
+
+> > We know that on this particular platform, both are zero, so
+> > the original code works and it will keep working with your change,
+> > but I think it's a mistake anyway. I have seen both kinds of offsets
+> > in the past on real machines, but I am not aware of any where they
+> > are both nonzero and have the same value.
+> 
+> Hmm, looking at it again, it seem even weirder: the address we register
+> for DMA allocations is the same that gets passed into the PCI host
+> for MMIO resources. Something is very strange here. Still, I'd rather
+> not touch it at all, whatever it does.
+
+It's definitely strange.  It looks to me like the memory on the device
+takes up the entire 32KB host bridge MMIO aperture.  I don't know what
+driver uses this, but the device must be programmed via I/O ports,
+which sort of makes sense given the previous lines in this quirk that
+set the BAR1 resource to be in the I/O aperture.
+
+Bjorn
+
+
+
+sh/PCI: Pass GAPSPCI_DMA_BASE CPU & bus address to dma_declare_coherent_memory()
+
+From: Bjorn Helgaas <bhelgaas@google.com>
+
+dma_declare_coherent_memory() needs both the CPU physical address and the
+bus address of the device memory.  They are the same on this platform, but
+in general we should use pcibios_resource_to_bus() to account for any
+address translation done by the PCI host bridge.
+
+This makes no difference on Dreamcast, but is safer if the usage is copied
+to future drivers.
+
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Magnus Damm <damm@opensource.se>
+CC: linux-sh@vger.kernel.org
 ---
- drivers/iommu/dmar.c        |    8 +++++
- drivers/iommu/intel-iommu.c |   75 ++++++++++++++++++++++++++++++++++++++++++-
- include/linux/intel-iommu.h |    2 +
- 3 files changed, 84 insertions(+), 1 deletion(-)
+ arch/sh/drivers/pci/fixups-dreamcast.c |   18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 39f8b71..68b3d07 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -38,6 +38,7 @@
- #include <linux/tboot.h>
- #include <linux/dmi.h>
- #include <linux/slab.h>
-+#include <linux/iommu.h>
- #include <asm/irq_remapping.h>
- #include <asm/iommu_table.h>
- 
-@@ -980,6 +981,11 @@ static int alloc_iommu(struct dmar_drhd_unit *drhd)
- 	raw_spin_lock_init(&iommu->register_lock);
- 
- 	drhd->iommu = iommu;
-+
-+	if (intel_iommu_enabled)
-+		iommu_register_device(NULL, iommu->name,
-+				      intel_iommu_groups, iommu);
-+
- 	return 0;
- 
-  err_unmap:
-@@ -991,6 +997,8 @@ static int alloc_iommu(struct dmar_drhd_unit *drhd)
- 
- static void free_iommu(struct intel_iommu *iommu)
+diff --git a/arch/sh/drivers/pci/fixups-dreamcast.c b/arch/sh/drivers/pci/fixups-dreamcast.c
+index d6cde700e316..f22127f966ce 100644
+--- a/arch/sh/drivers/pci/fixups-dreamcast.c
++++ b/arch/sh/drivers/pci/fixups-dreamcast.c
+@@ -31,6 +31,8 @@
+ static void gapspci_fixup_resources(struct pci_dev *dev)
  {
-+	iommu_unregister_device(iommu);
-+
- 	if (iommu->irq) {
- 		free_irq(iommu->irq, iommu);
- 		irq_set_handler_data(iommu->irq, NULL);
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index d87b3c9..f8d779c 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -3930,6 +3930,63 @@ static struct notifier_block intel_iommu_memory_nb = {
- 	.priority = 0
- };
+ 	struct pci_channel *p = dev->sysdata;
++	struct resource res;
++	struct pci_bus_region region;
  
-+
-+static ssize_t intel_iommu_show_version(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct intel_iommu *iommu = dev->platform_data;
-+	u32 ver = readl(iommu->reg + DMAR_VER_REG);
-+	return sprintf(buf, "%d:%d\n",
-+		       DMAR_VER_MAJOR(ver), DMAR_VER_MINOR(ver));
-+}
-+static DEVICE_ATTR(version, S_IRUGO, intel_iommu_show_version, NULL);
-+
-+static ssize_t intel_iommu_show_address(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct intel_iommu *iommu = dev->platform_data;
-+	return sprintf(buf, "%llx\n", iommu->reg_phys);
-+}
-+static DEVICE_ATTR(address, S_IRUGO, intel_iommu_show_address, NULL);
-+
-+static ssize_t intel_iommu_show_cap(struct device *dev,
-+				    struct device_attribute *attr,
-+				    char *buf)
-+{
-+	struct intel_iommu *iommu = dev->platform_data;
-+	return sprintf(buf, "%llx\n", iommu->cap);
-+}
-+static DEVICE_ATTR(cap, S_IRUGO, intel_iommu_show_cap, NULL);
-+
-+static ssize_t intel_iommu_show_ecap(struct device *dev,
-+				    struct device_attribute *attr,
-+				    char *buf)
-+{
-+	struct intel_iommu *iommu = dev->platform_data;
-+	return sprintf(buf, "%llx\n", iommu->ecap);
-+}
-+static DEVICE_ATTR(ecap, S_IRUGO, intel_iommu_show_ecap, NULL);
-+
-+static struct attribute *intel_iommu_attrs[] = {
-+	&dev_attr_version.attr,
-+	&dev_attr_address.attr,
-+	&dev_attr_cap.attr,
-+	&dev_attr_ecap.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group intel_iommu_group = {
-+	.name = "intel-iommu",
-+	.attrs = intel_iommu_attrs,
-+};
-+
-+const struct attribute_group *intel_iommu_groups[] = {
-+	&intel_iommu_group,
-+	NULL,
-+};
-+
- int __init intel_iommu_init(void)
- {
- 	int ret = -ENODEV;
-@@ -4001,6 +4058,10 @@ int __init intel_iommu_init(void)
+ 	printk(KERN_NOTICE "PCI: Fixing up device %s\n", pci_name(dev));
  
- 	init_iommu_pm_ops();
+@@ -50,11 +52,21 @@ static void gapspci_fixup_resources(struct pci_dev *dev)
  
-+	for_each_iommu(iommu, drhd)
-+		iommu_register_device(NULL, iommu->name,
-+				      intel_iommu_groups, iommu);
-+
- 	bus_set_iommu(&pci_bus_type, &intel_iommu_ops);
- 	bus_register_notifier(&pci_bus_type, &device_nb);
- 	if (si_domain && !hw_pass_through)
-@@ -4338,14 +4399,18 @@ static int intel_iommu_domain_has_cap(struct iommu_domain *domain,
- 
- static int intel_iommu_add_device(struct device *dev)
- {
-+	struct intel_iommu *iommu;
- 	struct pci_dev *pdev;
- 	struct iommu_group *group;
- 	int ret;
- 	u8 bus, devfn;
- 
--	if (!device_to_iommu(dev, &bus, &devfn))
-+	iommu = device_to_iommu(dev, &bus, &devfn);
-+	if (!iommu)
- 		return -ENODEV;
- 
-+	iommu_device_link(iommu, dev);
-+
- 	group = iommu_group_get(dev);
- 	if (group) {
- 		iommu_group_put(group);
-@@ -4371,7 +4436,15 @@ static int intel_iommu_add_device(struct device *dev)
- 
- static void intel_iommu_remove_device(struct device *dev)
- {
-+	struct intel_iommu *iommu;
-+	u8 bus, devfn;
-+
-+	iommu = device_to_iommu(dev, &bus, &devfn);
-+	if (!iommu)
-+		return;
-+
- 	iommu_group_remove_device(dev);
-+	iommu_device_unlink(iommu, dev);
- }
- 
- static struct iommu_ops intel_iommu_ops = {
-diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
-index 0a2da51..aa6905e 100644
---- a/include/linux/intel-iommu.h
-+++ b/include/linux/intel-iommu.h
-@@ -365,4 +365,6 @@ extern int qi_submit_sync(struct qi_desc *desc, struct intel_iommu *iommu);
- 
- extern int dmar_ir_support(void);
- 
-+extern const struct attribute_group *intel_iommu_groups[];
-+
- #endif
-
+ 		/*
+ 		 * Redirect dma memory allocations to special memory window.
++		 *
++		 * If this GAPSPCI region were mapped by a BAR, the CPU
++		 * phys_addr_t would be pci_resource_start(), and the bus
++		 * address would be pci_bus_address(pci_resource_start()).
++		 * But apparently there's no BAR mapping it, so we just
++		 * "know" its CPU address is GAPSPCI_DMA_BASE.
+ 		 */
++		res.start = GAPSPCI_DMA_BASE;
++		res.end = GAPSPCI_DMA_BASE + GAPSPCI_DMA_SIZE - 1;
++		res.flags = IORESOURCE_MEM;
++		pcibios_resource_to_bus(dev, &region, &resource);
+ 		BUG_ON(!dma_declare_coherent_memory(&dev->dev,
+-						GAPSPCI_DMA_BASE,
+-						GAPSPCI_DMA_BASE,
+-						GAPSPCI_DMA_SIZE,
++						res.start,
++						region.start,
++						resource_size(&res),
+ 						DMA_MEMORY_MAP |
+ 						DMA_MEMORY_EXCLUSIVE));
+ 		break;
