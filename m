@@ -1,113 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751505AbaEGP5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:57:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38052 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933178AbaEGP5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:57:05 -0400
-Date: Wed, 7 May 2014 17:57:03 +0200
-From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-To: Jan Kara <jack@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH] printk: Remove separate printk_sched buffers and use
- printk buf instead
-Message-ID: <20140507155703.GF23108@pathway.suse.cz>
-References: <20140505191846.35aa6f9b@gandalf.local.home>
- <20140507091356.GE23108@pathway.suse.cz>
- <20140507143320.GD12433@quack.suse.cz>
+	id S1756997AbaEGP5c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:57:32 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:36573 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756969AbaEGP5a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 11:57:30 -0400
+Message-ID: <536A57E4.10704@gmail.com>
+Date: Wed, 07 May 2014 18:57:24 +0300
+From: Nadav Amit <nadav.amit@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140507143320.GD12433@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bandan Das <bsd@redhat.com>, Nadav Amit <namit@cs.technion.ac.il>
+CC: mtosatti@redhat.com, pbonzini@redhat.com, hpa@zytor.com, gleb@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] KVM: x86: Fix wrong masking on relative jump/call
+References: <1399465972-4026-1-git-send-email-namit@cs.technion.ac.il>	<1399465972-4026-6-git-send-email-namit@cs.technion.ac.il> <jpgppjpejix.fsf@nelium.bos.redhat.com>
+In-Reply-To: <jpgppjpejix.fsf@nelium.bos.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-05-07 16:33:20, Jan Kara wrote:
-> On Wed 07-05-14 11:13:56, Petr Mládek wrote:
-> > On Mon 2014-05-05 19:18:46, Steven Rostedt wrote:
-> > > To prevent deadlocks with doing a printk inside the scheduler,
-> > > printk_sched() was created. The issue is that printk has a console_sem
-> > > that it can grab and release. The release does a wake up if there's a
-> > > task pending on the sem, and this wake up grabs the rq locks that is
-> > > held in the scheduler. This leads to a possible deadlock if the wake up
-> > > uses the same rq as the one with the rq lock held already.
-> > > 
-> > > What printk_sched() does is to save the printk write in a per cpu buffer
-> > > and sets the PRINTK_PENDING_SCHED flag. On a timer tick, if this flag is
-> > > set, the printk() is done against the buffer.
-> > > 
-> > > There's a couple of issues with this approach.
-> > > 
-> > > 1) If two printk_sched()s are called before the tick, the second one
-> > > will overwrite the first one.
-> > > 
-> > > 2) The temporary buffer is 512 bytes and is per cpu. This is a quite a
-> > > bit of space wasted for something that is seldom used.
-> > > 
-> > > In order to remove this, the printk_sched() can use the printk buffer
-> > > instead, and delay the console_trylock()/console_unlock() to the queued
-> > > work.
-> > > 
-> > > Because printk_sched() would then be taking the logbuf_lock, the
-> > > logbuf_lock must not be held while doing anything that may call into the
-> > > scheduler functions, which includes wake ups. Unfortunately, printk()
-> > > also has a console_sem that it uses, and on release, the
-> > > up(&console_sem) may do a wake up of any pending waiters. This must be
-> > > avoided while holding the logbuf_lock.
-> > > 
-> > > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > > ---
-> > > This version has been forward ported to the 3.15-rc releases.
-> > > ---
-> ...
-> > > @@ -2440,18 +2470,20 @@
-> > >  #define PRINTK_BUF_SIZE		512
-> > >  
-> > >  #define PRINTK_PENDING_WAKEUP	0x01
-> > > -#define PRINTK_PENDING_SCHED	0x02
-> > > +#define PRINTK_PENDING_OUTPUT	0x02
-> > >  
-> > >  static DEFINE_PER_CPU(int, printk_pending);
-> > > -static DEFINE_PER_CPU(char [PRINTK_BUF_SIZE], printk_sched_buf);
-> > >  
-> > >  static void wake_up_klogd_work_func(struct irq_work *irq_work)
-> > >  {
-> > >  	int pending = __this_cpu_xchg(printk_pending, 0);
-> > >  
-> > > -	if (pending & PRINTK_PENDING_SCHED) {
-> > > -		char *buf = __get_cpu_var(printk_sched_buf);
-> > > -		pr_warn("[sched_delayed] %s", buf);
-> > > +	if (pending & PRINTK_PENDING_OUTPUT) {
-> > > +		if (console_trylock())
-> > > +			console_unlock();
-> > 
-> > I wonder if we should call here console_trylock_for_printk() which checks
-> > whether the console is really usable.
->   So Stephen couldn't use console_trylock_for_printk() because that expects
-> logbuf_lock to be locked in vanilla kernel. Only after locking changes I
-> did it would be usable.
+On 5/7/14, 5:43 PM, Bandan Das wrote:
+> Nadav Amit <namit@cs.technion.ac.il> writes:
+>
+>> Relative jumps and calls do the masking according to the operand size, and not
+>> according to the address size as the KVM emulator does today.  In 64-bit mode,
+>> the resulting RIP is always 64-bit. Otherwise it is masked according to the
+>> instruction operand-size. Note that when 16-bit address size is used, bits
+>> 63:32 are unmodified.
+>>
+>> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+>> ---
+>>   arch/x86/kvm/emulate.c | 4 +++-
+>>   1 file changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+>> index 6833b41..e406705 100644
+>> --- a/arch/x86/kvm/emulate.c
+>> +++ b/arch/x86/kvm/emulate.c
+>> @@ -506,7 +506,9 @@ static void rsp_increment(struct x86_emulate_ctxt *ctxt, int inc)
+>>
+>>   static inline void jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
+>>   {
+>> -	register_address_increment(ctxt, &ctxt->_eip, rel);
+>> +	/* 64-bit mode relative jumps are always 64-bit; otherwise mask */
+>> +	int op_bytes = ctxt->mode == X86EMUL_MODE_PROT64 ? 8 : ctxt->op_bytes;
+>
+> Just a nit, probably break this up for readability ?
+>
+I will make it more readable on the next version.
 
-Ah yes, I meant to use console_trylock_for_printk() from current
-linux-next git tree. I am sorry, I should have been more explicit.
-
-
-> > The check for usable console was introduced in the commit
-> > 76a8ad293912cd2f (Make printk work for really early debugging).
-> > I think that this IRQ work could get called during early boot,
-> > so the check would make sense here as well. Or have I missed something?
->   I'm not really sure if IRQ work can be run on CPU which is not online.
-
-It would make sense. I was just curious because
-console_trylock_for_printk() was previously indirectly used via pr_warn().
-
-Best Regards,
-Petr
+Thanks,
+Nadav
