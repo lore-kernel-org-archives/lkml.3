@@ -1,183 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751796AbaEGReJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 13:34:09 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:31317 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878AbaEGReF (ORCPT
+	id S1751725AbaEGRfk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 13:35:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39516 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898AbaEGRfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 13:34:05 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <alexandre.belloni@free-electrons.com>,
-        <boris.brezillon@free-electrons.com>, <linus.walleij@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: cleanup for 3.16 #1
-Date: Wed, 7 May 2014 19:34:02 +0200
-Message-ID: <1399484042-27432-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-Organization: atmel
+	Wed, 7 May 2014 13:35:37 -0400
+Date: Wed, 7 May 2014 19:35:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH v3 2/3] perf record: Propagate exit status of a command
+ line workload
+Message-ID: <20140507173532.GV30445@twins.programming.kicks-ass.net>
+References: <1398346054-3322-1-git-send-email-namhyung@kernel.org>
+ <1398346054-3322-2-git-send-email-namhyung@kernel.org>
+ <20140429105654.GB1148@krava.brq.redhat.com>
+ <20140429111939.GP11096@twins.programming.kicks-ass.net>
+ <20140429113747.GD1148@krava.brq.redhat.com>
+ <87tx9boeaf.fsf@sejong.aot.lge.com>
+ <20140507150404.GO30445@twins.programming.kicks-ass.net>
+ <CABPqkBTC-MjMB0U0+NjqrdKFFuoQt-N7MZJikcbcWJpLLgVRRg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="K4LMwn8CgX2KMboP"
+Content-Disposition: inline
+In-Reply-To: <CABPqkBTC-MjMB0U0+NjqrdKFFuoQt-N7MZJikcbcWJpLLgVRRg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
 
-This is the first cleanup pull-request for 3.16. It is pretty big because it
-integrates the work from Boris about CCF and Alexandre about IIO/ADC. I
-integrated them in this cleanup topic because they both touch the core at91
-code, the clk and IIO drivers as well as the DT. The concerned maintainers
-added their tags.
+--K4LMwn8CgX2KMboP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The patch by Linus is a move of at91 specific GPIO definitions out of the
-include/mach directory which is an step towards single zImage.
+On Wed, May 07, 2014 at 07:19:14PM +0200, Stephane Eranian wrote:
+> > $ while :; do ./foo /bin/sleep 5 ; done
+> >
+> > and try and break out using ^C
+> >
+> What I usually do here is hit ^Z, then kill the job.
+> But I agree it would be nicer to handle this case automatically.
 
-Thanks, best regards,
+So that used to work. And note that if you take out the signal(SIGINT,
+SIG_IGN) from the proglet, it will actually propagate the SIGINT and
+work as expected.
 
-The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
+So its only because perf handles SIGINT -- to be able to finish the
+stat/data record, that it doesn't. Which is why I propagated the signal
+the child got killed with.
 
-  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
+Now apparently someone broke that again.
 
-are available in the git repository at:
+--K4LMwn8CgX2KMboP
+Content-Type: application/pgp-signature
 
-  git://github.com/at91linux/linux-at91.git tags/at91-cleanup
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-for you to fetch changes up to 138e8f1c4e99cd349e50fd8b18aebbd2716ceb87:
+iQIcBAEBAgAGBQJTam7kAAoJEHZH4aRLwOS6ZbkQAKJCOUGeU2YE8Dzi3Zy8oano
+qFAMgp4c30ftEGcaitP/hlZFlEtXBaSTIMuI671rxWTDs3SXBqFdb+bwwLdHJcaF
+p2HkgoTi6WTTIUO7oSeF5hV5BWcwkQpc4je5mdjslZ0XnG7b3DNZZLHn0jmCNquJ
+02rz04QmBOgZeHA3O2SirPSw33Ygp14AuOQuIcF8Fd8nNlqegv207D5qs6PTWokD
+6v5G65IjJvZlkxQv+0mXUvFu2jRi99+dS7a7oHDc120nD8mkzBq79vgGthx8X9G/
+gi0QyKgHqmqPrVdA6SXn/cUQ/t4OGb+alcZSpqP3KMhufwV3cfzQu3uDtP168NKc
++0vW/UtsP4tM7jrv0mQywkMf9imo16YR14ZtufQ2GqdGyNxlXG/8YHynqA7BxzlV
+Vbm8CVTz8ZQHqKjEcZAYgn9RSpxCi4VMXHy70JbDHCj6Lwuwyxip4lETAjFHF5xF
+twGEG6JxZkNJHRRmcLp/C7w7wwc94P37fO1QsNNCD39RWFZvNgkFTXfP9+h1uKdQ
+QLEEFdLVTdKo2DpWqAxAY6ehwx5YBIryTc7D7rvEFSdzft5uue/RGJvXFR520iG0
+n+gRxDrSA43Xs3RtbhfsP6ct2CqOvuNjC/vwk8uGR+hv2DJtrxh4HG9a5PsEDCzW
+D374Gto5l7EunTtDI9ip
+=XOSr
+-----END PGP SIGNATURE-----
 
-  ARM: at91/dt: at91-cosino_mega2560 remove useless tsadcc node (2014-05-07 18:28:41 +0200)
-
-----------------------------------------------------------------
-First cleanup series for 3.15
-- localize GPIO header in mach-at91 directory
-- big update on the CCF front with main and slow clocks
-- a cleanup of ADC and touchscreen driver with unification on IIO and
-  removal of old driver
-
-----------------------------------------------------------------
-Alexandre Belloni (15):
-      ARM: at91: sam9g45: remove unused platform_data
-      ARM: at91: sam9260: remove unused platform_data
-      iio: adc: at91: cleanup platform_data
-      iio: adc: at91_adc: Add support for touchscreens without TSMR
-      ARM: at91: sam9m10g45ek: Add touchscreen support through at91_adc
-      iio: adc: at91: remove unused include from include/mach
-      iio: adc: at91: add sam9rl support
-      ARM: at91: sam9rl: add at91_adc to support adc and touchscreen
-      ARM: at91: sam9rlek add touchscreen support through at91_adc
-      ARM: at91: sam9g45: switch from atmel_tsadcc to at91_adc
-      ARM: at91: sam9rl: switch from atmel_tsadcc to at91_adc
-      ARM: at91: remove atmel_tsadcc from sama5_defconfig
-      Input: atmel_tsadcc: remove driver
-      ARM: at91: remove atmel_tsadcc platform_data
-      ARM: at91/dt: at91-cosino_mega2560 remove useless tsadcc node
-
-Boris BREZILLON (11):
-      clk: at91: rework main clk implementation
-      clk: at91: update main clk documentation
-      clk: at91: add slow clks driver
-      clk: at91: add slow clk documentation
-      ARM: at91/dt: move sama5d3 SoC to the new main/slow clk model
-      ARM: at91/dt: add xtal frequencies to sama5d3xcm boards
-      ARM: at91/dt: add xtal frequencies to sama5d3 xplained board
-      ARM: at91/dt: move at91sam9261 SoC to the new main clock model
-      ARM: at91/dt: define main xtal frequency of the at91sam9261ek board
-      ARM: at91/dt: move at91sam9rl SoC to the new slow/main clock models
-      ARM: at91/dt: define sam9rlek crystal frequencies
-
-Linus Walleij (1):
-      ARM: at91: localize GPIO header
-
-Nicolas Ferre (1):
-      ASoC: sam9g20_wm8731: remove useless mach/gpio.h
-
- .../devicetree/bindings/clock/at91-clock.txt       | 128 ++++-
- MAINTAINERS                                        |   6 -
- arch/arm/Kconfig                                   |   1 -
- arch/arm/boot/dts/at91-cosino_mega2560.dts         |   5 -
- arch/arm/boot/dts/at91-sama5d3_xplained.dts        |   8 +
- arch/arm/boot/dts/at91sam9261.dtsi                 |  23 +-
- arch/arm/boot/dts/at91sam9261ek.dts                |   4 +
- arch/arm/boot/dts/at91sam9rl.dtsi                  |  46 +-
- arch/arm/boot/dts/at91sam9rlek.dts                 |   9 +
- arch/arm/boot/dts/sama5d3.dtsi                     |  61 ++-
- arch/arm/boot/dts/sama5d3xcm.dtsi                  |   8 +
- arch/arm/configs/at91sam9g45_defconfig             |   3 +-
- arch/arm/configs/at91sam9rl_defconfig              |   3 +-
- arch/arm/configs/sama5_defconfig                   |   1 -
- arch/arm/mach-at91/at91rm9200_devices.c            |   1 +
- arch/arm/mach-at91/at91sam9260_devices.c           |  12 +-
- arch/arm/mach-at91/at91sam9261_devices.c           |   2 +-
- arch/arm/mach-at91/at91sam9263_devices.c           |   1 +
- arch/arm/mach-at91/at91sam9g45.c                   |   2 +-
- arch/arm/mach-at91/at91sam9g45_devices.c           |  64 +--
- arch/arm/mach-at91/at91sam9rl.c                    |   7 +
- arch/arm/mach-at91/at91sam9rl_devices.c            |  84 ++-
- arch/arm/mach-at91/board-1arm.c                    |   2 +-
- arch/arm/mach-at91/board-afeb-9260v1.c             |   1 +
- arch/arm/mach-at91/board-cam60.c                   |   1 +
- arch/arm/mach-at91/board-carmeva.c                 |   1 +
- arch/arm/mach-at91/board-cpu9krea.c                |   1 +
- arch/arm/mach-at91/board-cpuat91.c                 |   2 +
- arch/arm/mach-at91/board-csb337.c                  |   2 +-
- arch/arm/mach-at91/board-csb637.c                  |   1 +
- arch/arm/mach-at91/board-eb9200.c                  |   1 +
- arch/arm/mach-at91/board-ecbat91.c                 |   1 +
- arch/arm/mach-at91/board-eco920.c                  |   2 +
- arch/arm/mach-at91/board-flexibity.c               |   1 +
- arch/arm/mach-at91/board-foxg20.c                  |   1 +
- arch/arm/mach-at91/board-gsia18s.c                 |   1 +
- arch/arm/mach-at91/board-kafa.c                    |   1 +
- arch/arm/mach-at91/board-kb9202.c                  |   1 +
- arch/arm/mach-at91/board-pcontrol-g20.c            |   1 +
- arch/arm/mach-at91/board-picotux200.c              |   1 +
- arch/arm/mach-at91/board-rm9200ek.c                |   1 +
- arch/arm/mach-at91/board-rsi-ews.c                 |   1 +
- arch/arm/mach-at91/board-sam9-l9260.c              |   1 +
- arch/arm/mach-at91/board-sam9260ek.c               |   1 +
- arch/arm/mach-at91/board-sam9261ek.c               |   1 +
- arch/arm/mach-at91/board-sam9263ek.c               |   1 +
- arch/arm/mach-at91/board-sam9g20ek.c               |   1 +
- arch/arm/mach-at91/board-sam9m10g45ek.c            |  17 +-
- arch/arm/mach-at91/board-sam9rlek.c                |  17 +-
- arch/arm/mach-at91/board-snapper9260.c             |   1 +
- arch/arm/mach-at91/board-stamp9g20.c               |   1 +
- arch/arm/mach-at91/board-yl-9200.c                 |   1 +
- arch/arm/mach-at91/board.h                         |   3 -
- arch/arm/mach-at91/gpio.c                          |   1 +
- arch/arm/mach-at91/{include/mach => }/gpio.h       |   8 -
- arch/arm/mach-at91/include/mach/at91_adc.h         | 107 ----
- arch/arm/mach-at91/include/mach/hardware.h         |  15 +
- arch/arm/mach-at91/leds.c                          |   1 +
- arch/arm/mach-at91/pm.c                            |   1 +
- drivers/clk/at91/Makefile                          |   4 +-
- drivers/clk/at91/clk-main.c                        | 577 ++++++++++++++++++---
- drivers/clk/at91/clk-slow.c                        | 467 +++++++++++++++++
- drivers/clk/at91/pmc.c                             |  17 +
- drivers/clk/at91/pmc.h                             |   9 +
- drivers/clk/at91/sckc.c                            |  57 ++
- drivers/clk/at91/sckc.h                            |  22 +
- drivers/iio/adc/at91_adc.c                         | 340 ++++++++++--
- drivers/input/touchscreen/Kconfig                  |  12 -
- drivers/input/touchscreen/Makefile                 |   1 -
- drivers/input/touchscreen/atmel_tsadcc.c           | 358 -------------
- include/linux/clk/at91_pmc.h                       |   1 +
- include/linux/platform_data/at91_adc.h             |  27 +-
- include/linux/platform_data/atmel.h                |   7 -
- sound/soc/atmel/sam9g20_wm8731.c                   |   1 -
- 74 files changed, 1790 insertions(+), 791 deletions(-)
- rename arch/arm/mach-at91/{include/mach => }/gpio.h (96%)
- delete mode 100644 arch/arm/mach-at91/include/mach/at91_adc.h
- create mode 100644 drivers/clk/at91/clk-slow.c
- create mode 100644 drivers/clk/at91/sckc.c
- create mode 100644 drivers/clk/at91/sckc.h
- delete mode 100644 drivers/input/touchscreen/atmel_tsadcc.c
-
--- 
-Nicolas Ferre
+--K4LMwn8CgX2KMboP--
