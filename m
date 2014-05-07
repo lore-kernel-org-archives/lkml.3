@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570AbaEGIle (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 04:41:34 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:42516 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753889AbaEGIlc convert rfc822-to-8bit (ORCPT
+	id S1755656AbaEGImR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 04:42:17 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:30098 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755104AbaEGImP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 04:41:32 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'josh@joshtriplett.org'" <josh@joshtriplett.org>,
-        David Miller <davem@davemloft.net>
-CC: "andi@firstfloor.org" <andi@firstfloor.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tom.zanussi@linux.intel.com" <tom.zanussi@linux.intel.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: RE: [PATCH 08/24] net, diet: Make TCP metrics optional
-Thread-Topic: [PATCH 08/24] net, diet: Make TCP metrics optional
-Thread-Index: AQHPaUm7pnbijwvGKES/wM+DbrX4rps0y/dw
-Date: Wed, 7 May 2014 08:39:09 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F70DE29@AcuExch.aculab.com>
-References: <20140506032114.GP2382@two.firstfloor.org>
- <20140505.232327.578134514220748085.davem@davemloft.net>
- <20140506155703.GA20391@cloud>
- <20140506.115941.428706504757835279.davem@davemloft.net>
- <20140506164108.GA20536@cloud>
-In-Reply-To: <20140506164108.GA20536@cloud>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Wed, 7 May 2014 04:42:15 -0400
+Date: Wed, 7 May 2014 11:41:56 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: John Church <j.church@ymail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, georgiana.chelu93@gmail.com,
+        waydi1@gmail.com
+Subject: Re: [PATCH] Staging: android: fix coding style issue in timed_gpio.c
+Message-ID: <20140507084156.GX26890@mwanda>
+References: <5369D165.1080400@ymail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5369D165.1080400@ymail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: josh@joshtriplett.org
-...
-> Every KB of RAM costs real money and SoC die area (for eDRAM/eSRAM).
-> Look at how much cache low-end processors have, and imagine running
-> entirely out of *that*.  Let's not surrender that entire class of
-> devices to VxWorks, FreeRTOS, and other painfully non-Linux systems,
-> when we already know it's possible to run Linux on them successfully.
+On Wed, May 07, 2014 at 07:23:33AM +0100, John Church wrote:
+> This patch fixes a coding style issue. It modifies a single line
+> that was over 80 characters long.
+> 
+> Thanks,
+> John
 
-Have you considered running (say) NetBSD instead of Linux?
-You'll get more support there for running on 'small memory' systems.
-You can also make your own changes with having issues with the GPL.
+> Signed-off-by: John Church <j.church@ymail.com>
 
-	David
+This patch isn't sent in the correct way.  Use git send-email or
+read Documentation/email-clients.txt.  Send the patch to yourself.
+Save it as raw text including headers and everything.
+`cat raw_email.txt | git am`.  Review the log with "git log -p".  When
+that looks good then resend it to the list.
 
+> 
+> --- linux-next/drivers/staging/android/timed_gpio.c.orig	2014-05-07 00:20:50.429090320 +0100
+> +++ linux-next/drivers/staging/android/timed_gpio.c	2014-05-07 00:22:09.204795052 +0100
+> @@ -92,7 +92,7 @@ static int timed_gpio_probe(struct platf
+>  		return -EBUSY;
+>  
+>  	gpio_data = devm_kzalloc(&pdev->dev,
+> -				sizeof(struct timed_gpio_data) * pdata->num_gpios,
+> +			sizeof(struct timed_gpio_data) * pdata->num_gpios,
+>  				GFP_KERNEL);
 
+To be honest, I prefered the original because everything lined up nicely
+in the original.  Now it just looks whacky.
+
+regards,
+dan carpenter
+
+>  	if (!gpio_data)
+>  		return -ENOMEM;
 
