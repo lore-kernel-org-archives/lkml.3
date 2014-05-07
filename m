@@ -1,145 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255AbaEGUBK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 16:01:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56942 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279AbaEGUBI (ORCPT
+	id S1752438AbaEGUDr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 16:03:47 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45681 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892AbaEGUDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 16:01:08 -0400
-Date: Wed, 7 May 2014 13:01:06 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RTC linux <rtc-linux@googlegroups.com>
-Subject: Re: [RESEND] [PATCH V1 2/2] rtc: da9063: RTC driver
-Message-Id: <20140507130106.409f65f673317710104d7681@linux-foundation.org>
-In-Reply-To: <3cca26c6dedcfd95df75d44e10a27447350c6e35.1399465372.git.stwiss.opensource@diasemi.com>
-References: <cover.1399465372.git.stwiss.opensource@diasemi.com>
-	<3cca26c6dedcfd95df75d44e10a27447350c6e35.1399465372.git.stwiss.opensource@diasemi.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 7 May 2014 16:03:43 -0400
+Date: Wed, 7 May 2014 13:03:41 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Trond Myklebust <trond.myklebust@primarydata.com>,
+        David Miller <davem@davemloft.net>
+cc: Jeff Layton <jlayton@poochiereds.net>, Marc Dietrich <marvin24@gmx.de>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>
+Subject: [patch] net, sunrpc: suppress allocation warning in rpc_malloc()
+In-Reply-To: <20140505070812.470c66bd@tlielax.poochiereds.net>
+Message-ID: <alpine.DEB.2.02.1405071257320.25707@chino.kir.corp.google.com>
+References: <2562595.ix17LO7uqe@fb07-iapwap2> <alpine.DEB.2.02.1405050241180.11071@chino.kir.corp.google.com> <20140505070812.470c66bd@tlielax.poochiereds.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 May 2014 13:22:52 +0100 "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com> wrote:
+rpc_malloc() allocates with GFP_NOWAIT without making any attempt at 
+reclaim so it easily fails when low on memory.  This ends up spamming the 
+kernel log:
 
-> Add the RTC driver for DA9063.
+SLAB: Unable to allocate memory on node 0 (gfp=0x4000)
+  cache: kmalloc-8192, object size: 8192, order: 1
+  node 0: slabs: 207/207, objs: 207/207, free: 0
+rekonq: page allocation failure: order:1, mode:0x204000
+CPU: 2 PID: 14321 Comm: rekonq Tainted: G           O  3.15.0-rc3-12.gfc9498b-desktop+ #6
+Hardware name: System manufacturer System Product Name/M4A785TD-V EVO, BIOS 2105    07/23/2010
+ 0000000000000000 ffff880010ff17d0 ffffffff815e693c 0000000000204000
+ ffff880010ff1858 ffffffff81137bd2 0000000000000000 0000001000000000
+ ffff88011ffebc38 0000000000000001 0000000000204000 ffff88011ffea000
+Call Trace:
+ [<ffffffff815e693c>] dump_stack+0x4d/0x6f
+ [<ffffffff81137bd2>] warn_alloc_failed+0xd2/0x140
+ [<ffffffff8113be19>] __alloc_pages_nodemask+0x7e9/0xa30
+ [<ffffffff811824a8>] kmem_getpages+0x58/0x140
+ [<ffffffff81183de6>] fallback_alloc+0x1d6/0x210
+ [<ffffffff81183be3>] ____cache_alloc_node+0x123/0x150
+ [<ffffffff81185953>] __kmalloc+0x203/0x490
+ [<ffffffffa06b0ee2>] rpc_malloc+0x32/0xa0 [sunrpc]
+ [<ffffffffa06a6999>] call_allocate+0xb9/0x170 [sunrpc]
+ [<ffffffffa06b19d8>] __rpc_execute+0x88/0x460 [sunrpc]
+ [<ffffffffa06b2da9>] rpc_execute+0x59/0xc0 [sunrpc]
+ [<ffffffffa06a932b>] rpc_run_task+0x6b/0x90 [sunrpc]
+ [<ffffffffa077b5c1>] nfs4_call_sync_sequence+0x51/0x80 [nfsv4]
+ [<ffffffffa077d45d>] _nfs4_do_setattr+0x1ed/0x280 [nfsv4]
+ [<ffffffffa0782a72>] nfs4_do_setattr+0x72/0x180 [nfsv4]
+ [<ffffffffa078334c>] nfs4_proc_setattr+0xbc/0x140 [nfsv4]
+ [<ffffffffa074a7e8>] nfs_setattr+0xd8/0x240 [nfs]
+ [<ffffffff811baa71>] notify_change+0x231/0x380
+ [<ffffffff8119cf5c>] chmod_common+0xfc/0x120
+ [<ffffffff8119df80>] SyS_chmod+0x40/0x90
+ [<ffffffff815f4cfd>] system_call_fastpath+0x1a/0x1f
+...
 
-A few minor things:
+If the allocation fails, simply return NULL and avoid spamming the kernel 
+log.
 
->
-> ...
->
-> +static int da9063_rtc_stop_alarm(struct device *dev)
-> +{
-> +	struct da9063_rtc *rtc = dev_get_drvdata(dev);
-> +	return regmap_update_bits(rtc->hw->regmap, DA9063_REG_ALARM_Y,
-> +				  DA9063_ALARM_ON, 0);
-> +}
-> +
-> +static int da9063_rtc_start_alarm(struct device *dev)
-> +{
-> +	struct da9063_rtc *rtc = dev_get_drvdata(dev);
-> +	return regmap_update_bits(rtc->hw->regmap, DA9063_REG_ALARM_Y,
-> +				  DA9063_ALARM_ON, DA9063_ALARM_ON);
-> +}
+Reported-by: Marc Dietrich <marvin24@gmx.de>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ net/sunrpc/sched.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-It's conventional to put a newline between end-of-locals and
-start-of-code.  My version of checkpatch warns about this and soon
-everyone's will.
-
-> +static int da9063_rtc_read_time(struct device *dev, struct rtc_time *tm)
-> +{
-> +	struct da9063_rtc *rtc = dev_get_drvdata(dev);
-> +	unsigned long tm_secs;
-> +	unsigned long al_secs;
-> +	u8 data[RTC_DATA_LEN];
-> +	int ret;
-> +
-> +	ret = regmap_bulk_read(rtc->hw->regmap, DA9063_REG_COUNT_S,
-> +			       data, RTC_DATA_LEN);
-> +	if (ret < 0) {
-> +		dev_err(dev, "Failed to read RTC time data: %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	if (!(data[RTC_SEC] & DA9063_RTC_READ)) {
-> +		dev_dbg(dev, "RTC not yet ready to be read by the host\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	da9063_data_to_tm(data, tm);
-> +
-> +	(void)rtc_tm_to_time(tm, &tm_secs);
-> +	(void)rtc_tm_to_time(&rtc->alarm_time, &al_secs);
-
-The void casts are a bit useful - they tell the reader that the author
-deliberately chose to ignore the return value.  But kernel code
-generally doesn't do this trick.
-
-
-> +	/* handle the rtc synchronisation delay */
-> +	if (rtc->rtc_sync == true && al_secs - tm_secs == 1)
-> +		(void)memcpy((void *)tm, (const void *)&rtc->alarm_time,
-> +			     sizeof(struct rtc_time));
-
-And all three casts here are unneeded.
-
-And they're actually a bit harmful.  If rtc->alarm_time has type `int'
-then we really want the warning, but this cast will suppress it.
-
-> +	else
-> +		rtc->rtc_sync = false;
-> +
-> +	return rtc_valid_tm(tm);
-> +}
-
-
-So how does this look?
-
---- a/drivers/rtc/rtc-da9063.c~rtc-da9063-rtc-driver-fix
-+++ a/drivers/rtc/rtc-da9063.c
-@@ -82,6 +82,7 @@ static void da9063_tm_to_data(struct rtc
- static int da9063_rtc_stop_alarm(struct device *dev)
+diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
+--- a/net/sunrpc/sched.c
++++ b/net/sunrpc/sched.c
+@@ -832,7 +832,8 @@ static void rpc_async_schedule(struct work_struct *work)
+  * @size: requested byte size
+  *
+  * To prevent rpciod from hanging, this allocator never sleeps,
+- * returning NULL if the request cannot be serviced immediately.
++ * returning NULL and suppressing warning if the request cannot be serviced
++ * immediately.
+  * The caller can arrange to sleep in a way that is safe for rpciod.
+  *
+  * Most requests are 'small' (under 2KiB) and can be serviced from a
+@@ -845,7 +846,7 @@ static void rpc_async_schedule(struct work_struct *work)
+ void *rpc_malloc(struct rpc_task *task, size_t size)
  {
- 	struct da9063_rtc *rtc = dev_get_drvdata(dev);
-+
- 	return regmap_update_bits(rtc->hw->regmap, DA9063_REG_ALARM_Y,
- 				  DA9063_ALARM_ON, 0);
- }
-@@ -89,6 +90,7 @@ static int da9063_rtc_stop_alarm(struct
- static int da9063_rtc_start_alarm(struct device *dev)
- {
- 	struct da9063_rtc *rtc = dev_get_drvdata(dev);
-+
- 	return regmap_update_bits(rtc->hw->regmap, DA9063_REG_ALARM_Y,
- 				  DA9063_ALARM_ON, DA9063_ALARM_ON);
- }
-@@ -115,13 +117,12 @@ static int da9063_rtc_read_time(struct d
+ 	struct rpc_buffer *buf;
+-	gfp_t gfp = GFP_NOWAIT;
++	gfp_t gfp = GFP_NOWAIT | __GFP_NOWARN;
  
- 	da9063_data_to_tm(data, tm);
- 
--	(void)rtc_tm_to_time(tm, &tm_secs);
--	(void)rtc_tm_to_time(&rtc->alarm_time, &al_secs);
-+	rtc_tm_to_time(tm, &tm_secs);
-+	rtc_tm_to_time(&rtc->alarm_time, &al_secs);
- 
- 	/* handle the rtc synchronisation delay */
- 	if (rtc->rtc_sync == true && al_secs - tm_secs == 1)
--		(void)memcpy((void *)tm, (const void *)&rtc->alarm_time,
--			     sizeof(struct rtc_time));
-+		memcpy(tm, &rtc->alarm_time, sizeof(struct rtc_time));
- 	else
- 		rtc->rtc_sync = false;
- 
-_
-
+ 	if (RPC_IS_SWAPPER(task))
+ 		gfp |= __GFP_MEMALLOC;
