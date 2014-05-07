@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529AbaEGP1c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 11:27:32 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:39906 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359AbaEGP1a (ORCPT
+	id S1752550AbaEGP3U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 11:29:20 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:62740 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbaEGP3T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 11:27:30 -0400
+	Wed, 7 May 2014 11:29:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140507111422.GA8410@gmail.com>
-References: <e94ab903e725eaf9d98e56f3043878bde7fc1b58.1399408110.git.luto@amacapital.net>
- <CA+55aFy6NzQOfyne4xLqQQCvuhpi-KSXnJNLjXTRc7+4ChPAnQ@mail.gmail.com>
- <CA+55aFw_Dj7Lx_bE0B3mDxMUNz_K1yc=saziC9dmA_dKSkFWiw@mail.gmail.com>
- <CA+55aFwix8dSDQ1N1Qu2-9rzGxWeeGAv4fSPVQWGo1YNzJoCoA@mail.gmail.com>
- <CALCETrVHj1rd=ma-dW8C9RNyQNj3smRAyevWJSQXmvgshbQb6w@mail.gmail.com> <20140507111422.GA8410@gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 7 May 2014 08:27:09 -0700
-Message-ID: <CALCETrXS=U159bRLKGwrz0ab_VYH8gXGu1mCPDHJ_oM=iAaiow@mail.gmail.com>
-Subject: Re: [ABOMINATION] x86: Fast interrupt return to userspace
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
+In-Reply-To: <20140507080650.GA28564@pengutronix.de>
+References: <1399439776-18535-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<20140507080650.GA28564@pengutronix.de>
+Date: Wed, 7 May 2014 08:29:17 -0700
+Message-ID: <CAJAp7OiVrz+epys3Ko79GmMr6ahv8ii8XphVHE77NSM+wK2mOA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: zImage: Allow DTB to override broken ATAG_MEM
+From: Bjorn Andersson <bjorn@kryo.se>
+To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 7, 2014 at 4:14 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Andy Lutomirski <luto@amacapital.net> wrote:
->
->> > Whatever. I got enough profile data to say that it seems to have
->> > cut 'iret' overhead by at least two thirds. So it may not *work*,
->> > but from a "hey look, some random numbers" standpoint it is worth
->> > playing with.
->>
->> :)
->>
->> Is there actual interest in turning something like this into a real
->> patch?  It would almost certainly have to default off and no one
->> sane would ever use it except for special-purpose machines.
->
-> The macro speedup looks rather impressive, and we've done ugly things
-> for far smaller speedups.
->
-> But I don't think it should be a 'special mode'. It either is made to
-> work unconditionally and can be a prime speedup to be proud of in a
-> politely disgusted fashion, or we don't want the complexity (and
-> future bitrot) of some special switch.
+On Wed, May 7, 2014 at 1:06 AM, Uwe Kleine-König
+<u.kleine-koenig@pengutronix.de> wrote:
+> On Tue, May 06, 2014 at 10:16:16PM -0700, Bjorn Andersson wrote:
+>> Support overriding ATAG_MEM, by specifying non-zero content of the /memory/reg
+>> property in the appended DTB. This is needed to work around bootloaders passing
+>> broken tags.
+> This feels wrong. I think it's quite usual that the device tree
+> specifies a non-0 /memory/reg property. I checked four more or less
+> random dts files[1], and three of them have this property set with
+> actual values.
 
-The problem is that we'll break anything that expects to be able to
-use more than the specified 128-byte redzone.  Doing that is currently
-safe as long as no signals are delivered.
+I thought u-boot did something like this, but after checking the code
+it seems that I
+was wrong.
 
-I could imagine something like Go blowing up badly.
+But if that's not the case then you're right; we have to continue to
+be bug-compatible
+with all those dtbs out there.
 
-We might be able to get away with automatically disabling this thing
-if sigaltstack is enabled.
+>
+> So I wouldn't be surprised if this patch results in more damage than
+> it's worth. The optimal fix would be to make the bootloader do the right
+> thing. And if you trust your dtb more than your bootloader, disable
+> ARM_ATAG_DTB_COMPAT.
 
---Andy
+I unfortunately have a boot loader passing information in ATAG_CMDLINE that I
+need, so I can't disable ARM_ATAG_DTB_COMPAT.
+
+
+My problem is that the boot loader on every shipped Qualcomm MSM8x60, MSM8960
+and APQ8064 based device passes ATAG_MEM with the incorrect start address. There
+is no way to update the boot loader for these.
+
+For development I have a .init_meminfo in my board file patching the
+meminfo; this looks
+really bad so I'm hoping we can find some alternative solution.
+
+The proposed solution from some of the people working on this is to
+(post build) patch the
+zImage to inject code that corrects the ATAG_MEM before jumping to the
+kernel; but I am
+hoping we can find some sane way instead...
+
+Regards,
+Bjorn
