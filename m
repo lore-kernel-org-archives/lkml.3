@@ -1,107 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630AbaEGXvP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 19:51:15 -0400
-Received: from mail-ob0-f201.google.com ([209.85.214.201]:36109 "EHLO
-	mail-ob0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318AbaEGXvO (ORCPT
+	id S1752846AbaEGXwr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 19:52:47 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:34903 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300AbaEGXwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 19:51:14 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: John Stultz <john.stultz@linaro.org>,
-        David Riley <davidriley@chromium.org>,
-        Will Deacon <Will.Deacon@arm.com>, olof@lixom.net,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] init: Don't decrease loops_per_jiffy when a CPU comes up
-Date: Wed,  7 May 2014 16:50:51 -0700
-Message-Id: <1399506651-20031-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
+	Wed, 7 May 2014 19:52:45 -0400
+Date: Wed, 7 May 2014 16:52:40 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: josh@joshtriplett.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 07/45] torture: Allow variations of
+ "defconfig" to be specified
+Message-ID: <20140507235240.GQ8754@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140429002455.GA15461@linux.vnet.ibm.com>
+ <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1398731133-18925-7-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140507212219.GC27924@cloud>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140507212219.GC27924@cloud>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050723-3532-0000-0000-00000197929E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The loops_per_jiffy count continues to be updated as each CPU is
-brought up.  This causes problems when we've got an HMP system and
-different CPUs have different loops per jiffy.  On exynos 542x
-systems, for instance, the A7s will have significantly lower loops per
-jiffy than their big brothers.
+On Wed, May 07, 2014 at 02:22:19PM -0700, josh@joshtriplett.org wrote:
+> On Mon, Apr 28, 2014 at 05:24:55PM -0700, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > Some environments require some variation on "make defconfig" to initialize
+> > the .config file.  This commit therefore adds a --defconfig argument to
+> > allow this to be specified.  The default value is of course "defconfig".
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> <bikeshed color="blue">
+> "--defconfig randconfig" or "--defconfig allyesconfig" or similar seems
+> rather odd; how about calling it --kconfig or similar?
+> </bikeshed>
 
-We should always set the loops_per_jiffy the first time through, then
-use the max.
+Some day I am going to have to feed that to a browser and see what
+happens.  ;-)
 
-One could argue that complex HMP systems should really be completely
-ignoring the global loops_per_jiffy variable anyway.  That's probably
-why nobody has fixed this before.  With that argument you could say
-that while this change isn't incorrect, it's a bit misguided.  Still,
-it doesn't hurt and provides a better fallback than we had without
-this.
+I must confess that I hadn't considered feeding randconfig or allyesconfig
+to that argument, partly because I figured that I would have to also
+supply Kconfig constraints in those cases in order to ensure that the
+resulting kernel would actually run under qemu.  I was instead thinking
+in terms of a --configs option beginning with "RAND", which would pick
+up the Kconfig constraints from the appropriate configs directory,
+for example:
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- init/calibrate.c | 22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
+	tools/testing/selftests/rcutorture/configs/rcu/RAND1
 
-diff --git a/init/calibrate.c b/init/calibrate.c
-index 520702d..073bf9b 100644
---- a/init/calibrate.c
-+++ b/init/calibrate.c
-@@ -265,40 +265,44 @@ unsigned long __attribute__((weak)) calibrate_delay_is_known(void)
- void calibrate_delay(void)
- {
- 	unsigned long lpj;
--	static bool printed;
-+	static bool already_ran;
- 	int this_cpu = smp_processor_id();
- 
- 	if (per_cpu(cpu_loops_per_jiffy, this_cpu)) {
- 		lpj = per_cpu(cpu_loops_per_jiffy, this_cpu);
--		if (!printed)
-+		if (!already_ran)
- 			pr_info("Calibrating delay loop (skipped) "
- 				"already calibrated this CPU");
- 	} else if (preset_lpj) {
- 		lpj = preset_lpj;
--		if (!printed)
-+		if (!already_ran)
- 			pr_info("Calibrating delay loop (skipped) "
- 				"preset value.. ");
--	} else if ((!printed) && lpj_fine) {
-+	} else if ((!already_ran) && lpj_fine) {
- 		lpj = lpj_fine;
- 		pr_info("Calibrating delay loop (skipped), "
- 			"value calculated using timer frequency.. ");
- 	} else if ((lpj = calibrate_delay_is_known())) {
- 		;
- 	} else if ((lpj = calibrate_delay_direct()) != 0) {
--		if (!printed)
-+		if (!already_ran)
- 			pr_info("Calibrating delay using timer "
- 				"specific routine.. ");
- 	} else {
--		if (!printed)
-+		if (!already_ran)
- 			pr_info("Calibrating delay loop... ");
- 		lpj = calibrate_delay_converge();
- 	}
- 	per_cpu(cpu_loops_per_jiffy, this_cpu) = lpj;
--	if (!printed)
-+	if (!already_ran) {
- 		pr_cont("%lu.%02lu BogoMIPS (lpj=%lu)\n",
- 			lpj/(500000/HZ),
- 			(lpj/(5000/HZ)) % 100, lpj);
- 
--	loops_per_jiffy = lpj;
--	printed = true;
-+		loops_per_jiffy = lpj;
-+	} else {
-+		loops_per_jiffy = max(loops_per_jiffy, lpj);
-+	}
-+
-+	already_ran = true;
- }
--- 
-1.9.1.423.g4596e3a
+That said, I haven't thought that far down that path.
+
+So for the --defconfig argument, I was thinking more in terms of things
+like pseries_defconfig or versatile_defconfig.
+
+							Thanx, Paul
+
+> >  tools/testing/selftests/rcutorture/bin/configinit.sh | 2 +-
+> >  tools/testing/selftests/rcutorture/bin/kvm.sh        | 8 ++++++++
+> >  2 files changed, 9 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/tools/testing/selftests/rcutorture/bin/configinit.sh b/tools/testing/selftests/rcutorture/bin/configinit.sh
+> > index a1be6e62add1..9c3f3d39b934 100755
+> > --- a/tools/testing/selftests/rcutorture/bin/configinit.sh
+> > +++ b/tools/testing/selftests/rcutorture/bin/configinit.sh
+> > @@ -62,7 +62,7 @@ grep '^grep' < $T/u.sh > $T/upd.sh
+> >  echo "cat - $c" >> $T/upd.sh
+> >  make mrproper
+> >  make $buildloc distclean > $builddir/Make.distclean 2>&1
+> > -make $buildloc defconfig > $builddir/Make.defconfig.out 2>&1
+> > +make $buildloc $TORTURE_DEFCONFIG > $builddir/Make.defconfig.out 2>&1
+> >  mv $builddir/.config $builddir/.config.sav
+> >  sh $T/upd.sh < $builddir/.config.sav > $builddir/.config
+> >  cp $builddir/.config $builddir/.config.new
+> > diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
+> > index a52a077ee258..59945b7793d9 100644
+> > --- a/tools/testing/selftests/rcutorture/bin/kvm.sh
+> > +++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
+> > @@ -38,6 +38,7 @@ dur=30
+> >  dryrun=""
+> >  KVM="`pwd`/tools/testing/selftests/rcutorture"; export KVM
+> >  PATH=${KVM}/bin:$PATH; export PATH
+> > +TORTURE_DEFCONFIG=defconfig
+> >  TORTURE_INITRD="$KVM/initrd"; export TORTURE_INITRD
+> >  RCU_KMAKE_ARG=""; export RCU_KMAKE_ARG
+> >  TORTURE_SUITE=rcu
+> > @@ -56,6 +57,7 @@ usage () {
+> >  	echo "       --configs \"config-file list\""
+> >  	echo "       --cpus N"
+> >  	echo "       --datestamp string"
+> > +	echo "       --defconfig string"
+> >  	echo "       --dryrun sched|script"
+> >  	echo "       --duration minutes"
+> >  	echo "       --interactive"
+> > @@ -96,6 +98,11 @@ do
+> >  		ds=$2
+> >  		shift
+> >  		;;
+> > +	--defconfig)
+> > +		checkarg --defconfig "defconfigtype" "$#" "$2" '^[^/][^/]*$' '^--'
+> > +		TORTURE_DEFCONFIG=$2
+> > +		shift
+> > +		;;
+> >  	--dryrun)
+> >  		checkarg --dryrun "sched|script" $# "$2" 'sched\|script' '^--'
+> >  		dryrun=$2
+> > @@ -259,6 +266,7 @@ END {
+> >  # Generate a script to execute the tests in appropriate batches.
+> >  cat << ___EOF___ > $T/script
+> >  TORTURE_SUITE="$TORTURE_SUITE"; export TORTURE_SUITE
+> > +TORTURE_DEFCONFIG="$TORTURE_DEFCONFIG"; export TORTURE_DEFCONFIG
+> >  ___EOF___
+> >  awk < $T/cfgcpu.pack \
+> >  	-v CONFIGDIR="$CONFIGFRAG/$kversion/" \
+> > -- 
+> > 1.8.1.5
+> > 
+> 
 
