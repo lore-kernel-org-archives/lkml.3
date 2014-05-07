@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932813AbaEGQTk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:19:40 -0400
-Received: from denmail01-v4020.amcc.com ([192.195.68.30]:36582 "EHLO
+	id S932726AbaEGQTj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:19:39 -0400
+Received: from denmail01-v4020.amcc.com ([192.195.68.30]:36580 "EHLO
 	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932387AbaEGQTe (ORCPT
+	with ESMTP id S932324AbaEGQTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:19:34 -0400
+	Wed, 7 May 2014 12:19:33 -0400
 From: Feng Kan <fkan@apm.com>
 To: dbaryshkov@gmail.com, catalin.marinas@arm.com, dwmw2@infradead.org,
         arnd@arndb.de, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         patches@apm.com
 Cc: Feng Kan <fkan@apm.com>
-Subject: [PATCH V6 1/5] power: reset: Add generic SYSCON register mapped reset
-Date: Wed,  7 May 2014 09:18:00 -0700
-Message-Id: <1399479484-2605-2-git-send-email-fkan@apm.com>
+Subject: [PATCH V6 3/5] Documentation: power: reset: Add documentation for generic SYSCON reboot driver
+Date: Wed,  7 May 2014 09:18:02 -0700
+Message-Id: <1399479484-2605-4-git-send-email-fkan@apm.com>
 X-Mailer: git-send-email 1.7.6.1
 In-Reply-To: <1399479484-2605-1-git-send-email-fkan@apm.com>
 References: <1399479484-2605-1-git-send-email-fkan@apm.com>
@@ -23,146 +23,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a generic SYSCON register mapped reset mechanism.
+Add documentation for generic SYSCON reboot driver.
 
 Signed-off-by: Feng Kan <fkan@apm.com>
 ---
- drivers/power/reset/Kconfig         |    7 +++
- drivers/power/reset/Makefile        |    1 +
- drivers/power/reset/syscon-reboot.c |  100 +++++++++++++++++++++++++++++++++++
- 3 files changed, 108 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/reset/syscon-reboot.c
+ .../bindings/power/reset/syscon-reboot.txt         |   27 ++++++++++++++++++++
+ 1 files changed, 27 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
 
-diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-index fa0e4e0..9931b61 100644
---- a/drivers/power/reset/Kconfig
-+++ b/drivers/power/reset/Kconfig
-@@ -57,3 +57,10 @@ config POWER_RESET_XGENE
- 	depends on POWER_RESET
- 	help
- 	  Reboot support for the APM SoC X-Gene Eval boards.
-+
-+config POWER_RESET_SYSCON
-+	bool "Generic SYSCON regmap reset driver"
-+	depends on MFD_SYSCON
-+	depends on POWER_RESET
-+	help
-+	  Reboot support for generic SYSCON mapped register reset.
-diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-index a5b4a77..94883ed 100644
---- a/drivers/power/reset/Makefile
-+++ b/drivers/power/reset/Makefile
-@@ -5,3 +5,4 @@ obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
- obj-$(CONFIG_POWER_RESET_RESTART) += restart-poweroff.o
- obj-$(CONFIG_POWER_RESET_VEXPRESS) += vexpress-poweroff.o
- obj-$(CONFIG_POWER_RESET_XGENE) += xgene-reboot.o
-+obj-$(CONFIG_POWER_RESET_SYSCON) += syscon-reboot.o
-diff --git a/drivers/power/reset/syscon-reboot.c b/drivers/power/reset/syscon-reboot.c
+diff --git a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
 new file mode 100644
-index 0000000..29ed908
+index 0000000..79942a3
 --- /dev/null
-+++ b/drivers/power/reset/syscon-reboot.c
-@@ -0,0 +1,100 @@
-+/*
-+ * Generic Syscon Reboot Driver
-+ *
-+ * Copyright (c) 2013, Applied Micro Circuits Corporation
-+ * Author: Feng Kan <fkan@apm.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-+ * MA 02111-1307 USA
-+ *
-+ * This driver provides system reboot functionality for APM X-Gene SoC.
-+ * For system shutdown, this is board specify. If a board designer
-+ * implements GPIO shutdown, use the gpio-poweroff.c driver.
-+ */
-+#include <linux/io.h>
-+#include <linux/of_device.h>
-+#include <linux/of_address.h>
-+#include <linux/platform_device.h>
-+#include <linux/stat.h>
-+#include <linux/slab.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/regmap.h>
-+#include <linux/reboot.h>
-+#include <asm/system_misc.h>
++++ b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+@@ -0,0 +1,27 @@
++Generic SYSCON mapped register reset driver
 +
-+struct syscon_reboot_context {
-+	struct regmap *map;
-+	u32 offset;
-+	u32 mask;
-+};
++This is a generic reset driver using syscon to map the reset register.
++The reset is generally performed with a write to the reset register
++defined by the register map pointed by syscon reference plus the offset
++with the mask defined in the reboot node.
 +
-+static struct syscon_reboot_context *syscon_reboot_ctx;
++Required properties:
++- compatible: should contain "syscon-reboot"
++- regmap: this is phandle to the register map node 
++- offset: offset in the register map for the reboot register (in bytes)
++- mask: the reset value written to the reboot register (32 bit access)
 +
-+static void syscon_restart(enum reboot_mode reboot_mode, const char *cmd)
-+{
-+	struct syscon_reboot_context *ctx = syscon_reboot_ctx;
-+	unsigned long timeout;
++Default will be little endian mode, 32 bit access only.
 +
-+	/* Issue the reboot */
-+	if (ctx->map)
-+		regmap_write(ctx->map, ctx->offset, ctx->mask);
-+
-+	timeout = jiffies + HZ;
-+	while (time_before(jiffies, timeout))
-+		cpu_relax();
-+
-+	pr_emerg("Unable to restart system\n");
-+}
-+
-+static int syscon_reboot_probe(struct platform_device *pdev)
-+{
-+	struct syscon_reboot_context *ctx;
-+	struct device *dev = &pdev->dev;
-+
-+	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
-+	if (!ctx) {
-+		dev_err(&pdev->dev, "out of memory for context\n");
-+		return -ENOMEM;
++Examples:
++	regmapnode {
++		compatible = "apm,xgene-scu","syscon";
++		reg = <0xXXXXXXXX 0xXXXXXXXX>;
 +	}
 +
-+	ctx->map = syscon_regmap_lookup_by_phandle(dev->of_node, "regmap");
-+	if (IS_ERR(ctx->map))
-+		return PTR_ERR(ctx->map);
-+
-+	if (of_property_read_u32(pdev->dev.of_node, "offset", &ctx->offset))
-+		return -EINVAL;
-+
-+	if (of_property_read_u32(pdev->dev.of_node, "mask", &ctx->mask))
-+		return -EINVAL;
-+
-+	arm_pm_restart = syscon_restart;
-+	syscon_reboot_ctx = ctx;
-+
-+	return 0;
-+}
-+
-+static struct of_device_id syscon_reboot_of_match[] = {
-+	{ .compatible = "syscon-reboot" },
-+	{}
-+};
-+
-+static struct platform_driver syscon_reboot_driver = {
-+	.probe = syscon_reboot_probe,
-+	.driver = {
-+		.name = "syscon-reboot",
-+		.of_match_table = syscon_reboot_of_match,
-+	},
-+};
-+module_platform_driver(syscon_reboot_driver);
++	reboot {
++	   compatible = "syscon-reboot";
++	   regmap = <&regmapnode>;
++	   offset = <0x0>;
++	   mask = <0x1>;
++	};
 -- 
 1.7.6.1
 
