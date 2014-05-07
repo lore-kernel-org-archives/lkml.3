@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934AbaEGMTA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 08:19:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46740 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932243AbaEGMSq (ORCPT
+	id S932782AbaEGMTc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 08:19:32 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35987 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932594AbaEGMTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 08:18:46 -0400
-From: Sricharan R <r.sricharan@ti.com>
-To: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
-        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
-        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <mark.rutland@arm.com>, <tglx@linutronix.de>, <galak@codeaurora.org>,
-        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>,
-        <robherring2@gmail.com>
-CC: Sricharan R <r.sricharan@ti.com>
-Subject: [PATCH V6 1/2] arm: dts: dra7: Add routable-irqs property for gic node
-Date: Wed, 7 May 2014 17:46:37 +0530
-Message-ID: <1399464998-23216-2-git-send-email-r.sricharan@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1399464998-23216-1-git-send-email-r.sricharan@ti.com>
-References: <1399464998-23216-1-git-send-email-r.sricharan@ti.com>
+	Wed, 7 May 2014 08:19:30 -0400
+Date: Wed, 7 May 2014 14:19:25 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Josh Poimboeuf <jpoimboe@redhat.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, David Lang <david@lang.hm>,
+        Seth Jennings <sjenning@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+Message-ID: <20140507121924.GA12234@gmail.com>
+References: <cover.1398958771.git.jpoimboe@redhat.com>
+ <alpine.LRH.2.00.1405021504320.22053@twin.jikos.cz>
+ <alpine.DEB.2.02.1405051633080.14881@nftneq.ynat.uz>
+ <alpine.LNX.2.00.1405060147190.3969@pobox.suse.cz>
+ <20140506073228.GA26271@gmail.com>
+ <20140506122302.GC4125@treble.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140506122302.GC4125@treble.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a IRQ crossbar device in the soc, which maps the
-irq requests from the peripherals to the mpu interrupt
-controller's inputs. The gic provides the support for such
-IPs in the form of routable-irqs. So adding the property
-here to gic node.
 
-Signed-off-by: Sricharan R <r.sricharan@ti.com>
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Cc: Benoit Cousson <bcousson@baylibre.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Rajendra Nayak <rnayak@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Tested-by: Darren Etheridge <detheridge@ti.com>
-Tested-by: Roger Quadros <rogerq@ti.com>
----
-[V6] Reordered patch 3 from V5 to patch 1
+* Josh Poimboeuf <jpoimboe@redhat.com> wrote:
 
- arch/arm/boot/dts/dra7.dtsi |    1 +
- 1 file changed, 1 insertion(+)
+> On Tue, May 06, 2014 at 09:32:28AM +0200, Ingo Molnar wrote:
+> > 
+> > * Jiri Kosina <jkosina@suse.cz> wrote:
+> > 
+> > > On Mon, 5 May 2014, David Lang wrote:
+> > > 
+> > > > how would you know that all instances of the datastructure in memory 
+> > > > have= been touched? just because all tasks have run and are outside the 
+> > > > function in question doesn't tell you data structures have been 
+> > > > converted. You have n= o way of knowing when (or if) the next call to 
+> > > > the modified function will take place on any potential in-memory 
+> > > > structure.
+> > > 
+> > > The problem you are trying to avoid here is functions expecting to read 
+> > > "v2" format of the data from memory, while there are still tasks that are 
+> > > unpredictably writing "v1" format of the data to the memory.
+> > > 
+> > > There are several ways to attack this problem:
+> > > 
+> > > - stop the whole system, convert all the existing data structures to new 
+> > >   format (which might potentially be non-trivial, mostly because you 
+> > >   have to *know* where all the data structures have been allocated), apply 
+> > >   patch, resume operation [ksplice, probably kpatch in future]
+> > > - restrict the data format to be backwards compatible [to be done 
+> > >   manually during patch creation, currently what kGraft needs to do in 
+> > >   such case]
+> > > - have a proxy code which can read both "v1" and "v2" formats, and writes 
+> > >   back in the same format it has seen the data structure on input
+> > > - once all the *code* has been converted, it still has to understand "v1" 
+> > >   and "v2", but it can now start writing out "v2" format only [possible 
+> > >   with kGraft, not implemented in automated fashion]
+> > > 
+> > > Ideas are of course more than welcome.
+> > 
+> > So what I'm curious about, what is the actual 'in the field' distro 
+> > experience, about the type of live-patches that get pushed with 
+> > urgency?
+> > 
+> > My guess would be that the overwhelming majority of live-patches don't 
+> > change data structures - and hence the right initial model would be to 
+> > ensure (via tooling, and via review) that 'v1' and 'v2' data is 
+> > exactly the same.
+> 
+> Yes, in general we want to avoid data changes.  In practice, we expect
+> most patches to be small, localized security fixes, so it shouldn't be
+> an issue in most cases.
+> 
+> Currently the kpatch tooling detects any compile-time changes to 
+> static data and refuses to build the patch module in that case.
+> 
+> But there's no way to programmatically detect changes to dynamic 
+> data. Which is why the user always has to be very careful when 
+> selecting a patch.
 
-diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-index 149b550..52df16a 100644
---- a/arch/arm/boot/dts/dra7.dtsi
-+++ b/arch/arm/boot/dts/dra7.dtsi
-@@ -72,6 +72,7 @@
- 		compatible = "arm,cortex-a15-gic";
- 		interrupt-controller;
- 		#interrupt-cells = <3>;
-+		arm,routable-irqs = <192>;
- 		reg = <0x48211000 0x1000>,
- 		      <0x48212000 0x1000>,
- 		      <0x48214000 0x2000>,
--- 
-1.7.9.5
+And since this is about the system kernel it's dead easy to mess up a 
+new kernel function and make the system unbootable - so it's not like 
+'be careful' isn't something implied already.
 
+Thanks,
+
+	Ingo
