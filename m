@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933711AbaEGNbf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:31:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45442 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932931AbaEGNON (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932935AbaEGNON (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 7 May 2014 09:14:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45433 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932368AbaEGNOK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 09:14:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 21/70] mm: make fixup_user_fault() check the vma access rights too
-Date: Wed,  7 May 2014 14:12:24 +0100
-Message-Id: <1399468393-10140-22-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 19/70] drm/radeon/pm: don't walk the crtc list before it has been initialized (v2)
+Date: Wed,  7 May 2014 14:12:22 +0100
+Message-Id: <1399468393-10140-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -27,57 +27,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 1b17844b29ae042576bea588164f2f1e9590a8bc upstream.
+commit 3ed9a335cfc64b2c83545f341cdddf2347b12b97 upstream.
 
-fixup_user_fault() is used by the futex code when the direct user access
-fails, and the futex code wants it to either map in the page in a usable
-form or return an error.  It relied on handle_mm_fault() to map the
-page, and correctly checked the error return from that, but while that
-does map the page, it doesn't actually guarantee that the page will be
-mapped with sufficient permissions to be then accessed.
+Avoids a crash in certain cases when thermal irqs are generated
+before the display structures have been initialized.
 
-So do the appropriate tests of the vma access rights by hand.
+v2: fix the vblank and vrefresh helpers as well
 
-[ Side note: arguably handle_mm_fault() could just do that itself, but
-  we have traditionally done it in the caller, because some callers -
-  notably get_user_pages() - have been able to access pages even when
-  they are mapped with PROT_NONE.  Maybe we should re-visit that design
-  decision, but in the meantime this is the minimal patch. ]
+bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=73931
 
-Found by Dave Jones running his trinity tool.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ luis: backported to 3.11:
+  - dropped changes to r600_dpm_get_vrefresh() ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/memory.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/gpu/drm/radeon/r600_dpm.c  | 22 ++++++++++++----------
+ drivers/gpu/drm/radeon/radeon_pm.c | 28 ++++++++++++++++------------
+ 2 files changed, 28 insertions(+), 22 deletions(-)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 168a090..3d64ffa 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1940,12 +1940,17 @@ int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
- 		     unsigned long address, unsigned int fault_flags)
- {
- 	struct vm_area_struct *vma;
-+	vm_flags_t vm_flags;
- 	int ret;
+diff --git a/drivers/gpu/drm/radeon/r600_dpm.c b/drivers/gpu/drm/radeon/r600_dpm.c
+index e5c860f..23db5bd 100644
+--- a/drivers/gpu/drm/radeon/r600_dpm.c
++++ b/drivers/gpu/drm/radeon/r600_dpm.c
+@@ -158,16 +158,18 @@ u32 r600_dpm_get_vblank_time(struct radeon_device *rdev)
+ 	u32 line_time_us, vblank_lines;
+ 	u32 vblank_time_us = 0xffffffff; /* if the displays are off, vblank time is max */
  
- 	vma = find_extend_vma(mm, address);
- 	if (!vma || address < vma->vm_start)
- 		return -EFAULT;
+-	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
+-		radeon_crtc = to_radeon_crtc(crtc);
+-		if (crtc->enabled && radeon_crtc->enabled && radeon_crtc->hw_mode.clock) {
+-			line_time_us = (radeon_crtc->hw_mode.crtc_htotal * 1000) /
+-				radeon_crtc->hw_mode.clock;
+-			vblank_lines = radeon_crtc->hw_mode.crtc_vblank_end -
+-				radeon_crtc->hw_mode.crtc_vdisplay +
+-				(radeon_crtc->v_border * 2);
+-			vblank_time_us = vblank_lines * line_time_us;
+-			break;
++	if (rdev->num_crtc && rdev->mode_info.mode_config_initialized) {
++		list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
++			radeon_crtc = to_radeon_crtc(crtc);
++			if (crtc->enabled && radeon_crtc->enabled && radeon_crtc->hw_mode.clock) {
++				line_time_us = (radeon_crtc->hw_mode.crtc_htotal * 1000) /
++					radeon_crtc->hw_mode.clock;
++				vblank_lines = radeon_crtc->hw_mode.crtc_vblank_end -
++					radeon_crtc->hw_mode.crtc_vdisplay +
++					(radeon_crtc->v_border * 2);
++				vblank_time_us = vblank_lines * line_time_us;
++				break;
++			}
+ 		}
+ 	}
  
-+	vm_flags = (fault_flags & FAULT_FLAG_WRITE) ? VM_WRITE : VM_READ;
-+	if (!(vm_flags & vma->vm_flags))
-+		return -EFAULT;
-+
- 	ret = handle_mm_fault(mm, vma, address, fault_flags);
- 	if (ret & VM_FAULT_ERROR) {
- 		if (ret & VM_FAULT_OOM)
+diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
+index 418ca53..04b94ae 100644
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -1272,12 +1272,14 @@ static void radeon_pm_compute_clocks_old(struct radeon_device *rdev)
+ 
+ 	rdev->pm.active_crtcs = 0;
+ 	rdev->pm.active_crtc_count = 0;
+-	list_for_each_entry(crtc,
+-		&ddev->mode_config.crtc_list, head) {
+-		radeon_crtc = to_radeon_crtc(crtc);
+-		if (radeon_crtc->enabled) {
+-			rdev->pm.active_crtcs |= (1 << radeon_crtc->crtc_id);
+-			rdev->pm.active_crtc_count++;
++	if (rdev->num_crtc && rdev->mode_info.mode_config_initialized) {
++		list_for_each_entry(crtc,
++				    &ddev->mode_config.crtc_list, head) {
++			radeon_crtc = to_radeon_crtc(crtc);
++			if (radeon_crtc->enabled) {
++				rdev->pm.active_crtcs |= (1 << radeon_crtc->crtc_id);
++				rdev->pm.active_crtc_count++;
++			}
+ 		}
+ 	}
+ 
+@@ -1341,12 +1343,14 @@ static void radeon_pm_compute_clocks_dpm(struct radeon_device *rdev)
+ 	/* update active crtc counts */
+ 	rdev->pm.dpm.new_active_crtcs = 0;
+ 	rdev->pm.dpm.new_active_crtc_count = 0;
+-	list_for_each_entry(crtc,
+-		&ddev->mode_config.crtc_list, head) {
+-		radeon_crtc = to_radeon_crtc(crtc);
+-		if (crtc->enabled) {
+-			rdev->pm.dpm.new_active_crtcs |= (1 << radeon_crtc->crtc_id);
+-			rdev->pm.dpm.new_active_crtc_count++;
++	if (rdev->num_crtc && rdev->mode_info.mode_config_initialized) {
++		list_for_each_entry(crtc,
++				    &ddev->mode_config.crtc_list, head) {
++			radeon_crtc = to_radeon_crtc(crtc);
++			if (crtc->enabled) {
++				rdev->pm.dpm.new_active_crtcs |= (1 << radeon_crtc->crtc_id);
++				rdev->pm.dpm.new_active_crtc_count++;
++			}
+ 		}
+ 	}
+ 
 -- 
 1.9.1
 
