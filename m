@@ -1,60 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993AbaEGCxs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 22:53:48 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55822 "EHLO
+	id S1752720AbaEGCzK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 22:55:10 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55848 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751721AbaEGCxq (ORCPT
+	with ESMTP id S1751105AbaEGCzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 22:53:46 -0400
+	Tue, 6 May 2014 22:55:08 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Arnd Bergmann <arnd@arndb.de>, wim@iguana.be, dbaryshkov@gmail.com,
         dwmw2@infradead.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-watchdog@vger.kernel.org, linux-sunxi@googlegroups.com,
         linux@roeck-us.net, Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v2 0/6] ARM: sunxi: Machine code cleanup
-Date: Tue,  6 May 2014 21:44:18 -0500
-Message-Id: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 1/6] wdt: sunxi: Move restart code to the watchdog driver
+Date: Tue,  6 May 2014 21:44:19 -0500
+Message-Id: <1399430664-29091-2-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Most of the watchdog code is duplicated between the machine restart code and
+the watchdog driver. Add the restart hook to the watchdog driver, to be able to
+remove it from the machine code eventually.
 
-This serie moves the restart code out of the mach-sunxi directory to
-either the watchdog driver or to a new driver in drivers/power/reset.
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/watchdog/sunxi_wdt.c | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
-Since the reset code was pretty much all the code left in the
-mach-sunxi directory for all the SoCs but the A31, the only thing left
-into mach-sunxi are empty machine definition.
-
-Thanks, Maxime
-
-Changes from v1:
-  - Left the minimal machines instead of removing them
-  - Changed the context pointer in the watchdog driver to just a
-    global base address
-
-Maxime Ripard (6):
-  wdt: sunxi: Move restart code to the watchdog driver
-  power: reset: Add Allwinner A31 reset code
-  ARM: sunxi: Remove reset code from the platform
-  ARM: sunxi: Remove init_machine callback
-  ARM: sunxi: Add A31 reset driver to sunxi_defconfig
-  ARM: multi_v7: Add Allwinner reset drivers to multi_v7_defconfig
-
- arch/arm/configs/multi_v7_defconfig |   2 +
- arch/arm/configs/sunxi_defconfig    |   3 +
- arch/arm/mach-sunxi/sunxi.c         | 107 ------------------------------------
- drivers/power/reset/Kconfig         |   7 +++
- drivers/power/reset/Makefile        |   1 +
- drivers/power/reset/sun6i-reboot.c  |  85 ++++++++++++++++++++++++++++
- drivers/watchdog/sunxi_wdt.c        |  29 ++++++++++
- 7 files changed, 127 insertions(+), 107 deletions(-)
- create mode 100644 drivers/power/reset/sun6i-reboot.c
-
+diff --git a/drivers/watchdog/sunxi_wdt.c b/drivers/watchdog/sunxi_wdt.c
+index cd00a7836cdc..0d07855bc88a 100644
+--- a/drivers/watchdog/sunxi_wdt.c
++++ b/drivers/watchdog/sunxi_wdt.c
+@@ -14,6 +14,7 @@
+  */
+ 
+ #include <linux/clk.h>
++#include <linux/delay.h>
+ #include <linux/err.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
+@@ -22,9 +23,12 @@
+ #include <linux/moduleparam.h>
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
++#include <linux/reboot.h>
+ #include <linux/types.h>
+ #include <linux/watchdog.h>
+ 
++#include <asm/system_misc.h>
++
+ #define WDT_MAX_TIMEOUT         16
+ #define WDT_MIN_TIMEOUT         1
+ #define WDT_MODE_TIMEOUT(n)     ((n) << 3)
+@@ -70,6 +74,26 @@ static const int wdt_timeout_map[] = {
+ 	[16] = 0b1011, /* 16s */
+ };
+ 
++static void __iomem *reboot_wdt_base;
++
++static void sun4i_wdt_restart(enum reboot_mode mode, const char *cmd)
++{
++	/* Enable timer and set reset bit in the watchdog */
++	writel(WDT_MODE_EN | WDT_MODE_RST_EN, reboot_wdt_base + WDT_MODE);
++
++	/*
++	 * Restart the watchdog. The default (and lowest) interval
++	 * value for the watchdog is 0.5s.
++	 */
++	writel(WDT_CTRL_RELOAD, reboot_wdt_base + WDT_CTRL);
++
++	while (1) {
++		mdelay(5);
++		writel(WDT_MODE_EN | WDT_MODE_RST_EN,
++		       reboot_wdt_base + WDT_MODE);
++	}
++}
++
+ static int sunxi_wdt_ping(struct watchdog_device *wdt_dev)
+ {
+ 	struct sunxi_wdt_dev *sunxi_wdt = watchdog_get_drvdata(wdt_dev);
+@@ -181,6 +205,9 @@ static int sunxi_wdt_probe(struct platform_device *pdev)
+ 	if (unlikely(err))
+ 		return err;
+ 
++	reboot_wdt_base = sunxi_wdt->wdt_base;
++	arm_pm_restart = sun4i_wdt_restart;
++
+ 	dev_info(&pdev->dev, "Watchdog enabled (timeout=%d sec, nowayout=%d)",
+ 			sunxi_wdt->wdt_dev.timeout, nowayout);
+ 
+@@ -191,6 +218,8 @@ static int sunxi_wdt_remove(struct platform_device *pdev)
+ {
+ 	struct sunxi_wdt_dev *sunxi_wdt = platform_get_drvdata(pdev);
+ 
++	arm_pm_restart = NULL;
++
+ 	watchdog_unregister_device(&sunxi_wdt->wdt_dev);
+ 	watchdog_set_drvdata(&sunxi_wdt->wdt_dev, NULL);
+ 
 -- 
 1.9.1
 
