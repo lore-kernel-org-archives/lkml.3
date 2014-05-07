@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530AbaEGSNc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 14:13:32 -0400
-Received: from smtprelay0159.hostedemail.com ([216.40.44.159]:44204 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751172AbaEGSN3 (ORCPT
+	id S1751918AbaEGSUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 14:20:00 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:62396 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750924AbaEGST7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 14:13:29 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1345:1431:1437:1534:1541:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:3138:3139:3140:3141:3142:3353:3653:3865:3867:3870:3872:4321:4605:5007:6261:7903:8957:10004:10026:10848:11026:11473:11658:11914:12438:12517:12519:12555:13311:13357:13851,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: side53_3b585b9818f37
-X-Filterd-Recvd-Size: 2352
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Andy Whitcroft <apw@canonical.com>
-Subject: [PATCH] checkpatch: Make --strict a default for files in drivers/net and net/
-Date: Wed,  7 May 2014 11:13:26 -0700
-Message-Id: <487acde009f61607863704e5dd9da7f151cf5be8.1399486274.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+	Wed, 7 May 2014 14:19:59 -0400
+Date: Wed, 7 May 2014 14:19:56 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Joe Perches <joe@perches.com>
+Cc: Dan Streetman <ddstreet@ieee.org>, Fabian Frederick <fabf@skynet.be>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] plist: replace pr_debug with printk in plist_test()
+Message-ID: <20140507141956.4eb6ff8d@gandalf.local.home>
+In-Reply-To: <1399486238.2911.20.camel@joe-AO725>
+References: <CALZtONB-wT16fPX7GjBVFO_5Bof3=zxviG22p6_9ymbnzA9QAA@mail.gmail.com>
+	<1399300985-11137-1-git-send-email-ddstreet@ieee.org>
+	<20140505133517.71b7dc7cf327cb304e8a9edc@linux-foundation.org>
+	<CALZtONAVTQuOF3ddZ6jVZqCGgKBicAtT=_w5w4GEueYAsf3jtw@mail.gmail.com>
+	<20140506174445.b64dffb78d0676b48fa68eea@skynet.be>
+	<CALZtONBADrb_yCPqCAUfw1ei9sYxw_-MopPko3dcfas2mqsVZg@mail.gmail.com>
+	<20140507103512.5b3f7928@gandalf.local.home>
+	<1399486238.2911.20.camel@joe-AO725>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Networking files are generally more strictly conformant to
-linux-kernel style so make checkpatch more verbose by default for
-patches to files or when checking files in these directories.
+On Wed, 07 May 2014 11:10:38 -0700
+Joe Perches <joe@perches.com> wrote:
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+> On Wed, 2014-05-07 at 10:35 -0400, Steven Rostedt wrote:
+> > On Wed, 7 May 2014 10:21:28 -0400 Dan Streetman <ddstreet@ieee.org> wrote:
+> 
+> > > It would be even better if the note could clarify that sometimes it is
+> > > ok to use printk(KERN_DEBUG
+> > 
+> > Exactly. I think it's rather stupid to have to do a #define DEBUG to
+> > have pr_debug() print in general.
+> > 
+> > I see no reason to have pr_debug() be anything different than the other
+> > pr_*() functions.
+> 
+> pr_debug is meant to be disabled and have _no_ runtime
+> effect unless DEBUG is #defined.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 85fc923..633e9f6 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -24,6 +24,7 @@ my $emacs = 0;
- my $terse = 0;
- my $file = 0;
- my $check = 0;
-+my $check_orig = 0;
- my $summary = 1;
- my $mailback = 0;
- my $summary_file = 0;
-@@ -146,6 +147,7 @@ GetOptions(
- help(0) if ($help);
- 
- $fix = 1 if ($fix_inplace);
-+$check_orig = $check;
- 
- my $exit = 0;
- 
-@@ -1813,11 +1815,13 @@ sub process {
- 		$here = "#$linenr: " if (!$file);
- 		$here = "#$realline: " if ($file);
- 
-+		my $found_file = 0;
- 		# extract the filename as it passes
- 		if ($line =~ /^diff --git.*?(\S+)$/) {
- 			$realfile = $1;
- 			$realfile =~ s@^([^/]*)/@@ if (!$file);
- 			$in_commit_log = 0;
-+			$found_file = 1;
- 		} elsif ($line =~ /^\+\+\+\s+(\S+)/) {
- 			$realfile = $1;
- 			$realfile =~ s@^([^/]*)/@@ if (!$file);
-@@ -1834,6 +1838,15 @@ sub process {
- 				ERROR("MODIFIED_INCLUDE_ASM",
- 				      "do not modify files in include/asm, change architecture specific files in include/asm-<architecture>\n" . "$here$rawline\n");
- 			}
-+			$found_file = 1;
-+		}
-+
-+		if ($found_file) {
-+			if ($realfile =~ m@^(drivers/net/|net/)@) {
-+				$check = 1;
-+			} else {
-+				$check = $check_orig;
-+			}
- 			next;
- 		}
- 
--- 
-1.8.1.2.459.gbcd45b4.dirty
+I understand why it does it, but having pr_debug() named just like
+pr_info(), pr_notice(), pr_warning(), pr_err(), pr_crit(), pr_alert(),
+pr_emerg(), where all those are just printk(<LOGLEVEL>...) *except* for
+pr_debug(). That's inconsistent and wrong.
+
+pr_debug() should have been just printk(KERN_DEBUG ...) as that follows
+convention. Not something that gets disabled by default. For that, we
+should have given it a different name. That's the point I was trying to
+make.
+
+Yes, it's somewhat too late as pr_debug() is all over the place, but
+maybe when things slow down (Ha! like that will ever happen ... "are we
+done yet?"), then we could do a massive clean up and rename pr_debug()
+to something not so confusing in its usage compared to the other pr_*()
+prints.
+
+-- Steve
 
