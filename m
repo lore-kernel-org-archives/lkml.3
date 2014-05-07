@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125AbaEGUx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 16:53:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57226 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351AbaEGUxx (ORCPT
+	id S1751478AbaEGVES (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 17:04:18 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:57885 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033AbaEGVEQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 16:53:53 -0400
-Date: Wed, 7 May 2014 13:53:52 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Michal Hocko <mhocko@suse.cz>, <hannes@cmpxchg.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH -mm 1/2] memcg: get rid of memcg_create_cache_name
-Message-Id: <20140507135352.3790c739ae331d1f6721f3de@linux-foundation.org>
-In-Reply-To: <20140507104514.GC4757@esperanza>
-References: <a4aa62026c10fc709e8bf13542b29cf771381394.1399450112.git.vdavydov@parallels.com>
-	<20140507095127.GC9489@dhcp22.suse.cz>
-	<20140507104514.GC4757@esperanza>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 7 May 2014 17:04:16 -0400
+Date: Wed, 7 May 2014 23:04:11 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] kernel/stop_machine.c: remove false assignment to
+ static
+Message-ID: <20140507210411.GB2844@laptop.programming.kicks-ass.net>
+References: <20140507224656.e06286af4392251135862718@skynet.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140507224656.e06286af4392251135862718@skynet.be>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 May 2014 14:45:16 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
+On Wed, May 07, 2014 at 10:46:56PM +0200, Fabian Frederick wrote:
+> This patch also fixes function prototype over 80 characters
 
-> @@ -3164,6 +3141,7 @@ void memcg_free_cache_params(struct kmem_cache *s)
->  static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
->  				    struct kmem_cache *root_cache)
->  {
-> +	static char *memcg_name_buf;	/* protected by memcg_slab_mutex */
->  	struct kmem_cache *cachep;
->  	int id;
+And does it wrong.. Also does it really matter to GCC that we init the
+bool? Surely it can see its 0 and put it in .bss anyway?
+
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>  kernel/stop_machine.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+> index 695f0c6..8d29ee2 100644
+> --- a/kernel/stop_machine.c
+> +++ b/kernel/stop_machine.c
+> @@ -42,7 +42,7 @@ struct cpu_stopper {
 >  
-> @@ -3179,7 +3157,14 @@ static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
->  	if (cache_from_memcg_idx(root_cache, id))
->  		return;
+>  static DEFINE_PER_CPU(struct cpu_stopper, cpu_stopper);
+>  static DEFINE_PER_CPU(struct task_struct *, cpu_stopper_task);
+> -static bool stop_machine_initialized = false;
+> +static bool stop_machine_initialized;
 >  
-> -	cachep = kmem_cache_create_memcg(memcg, root_cache);
-> +	if (!memcg_name_buf) {
-> +		memcg_name_buf = kmalloc(NAME_MAX + 1, GFP_KERNEL);
-> +		if (!memcg_name_buf)
-> +			return;
-> +	}
+>  /*
+>   * Avoids a race between stop_two_cpus and global stop_cpus, where
+> @@ -241,7 +241,8 @@ static void irq_cpu_stop_queue_work(void *arg)
+>   *
+>   * returns when both are completed.
+>   */
+> -int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *arg)
+> +int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn,
+> +		  void *arg)
 
-Does this have any meaningful advantage over the simpler
+Its only 84, so I didn't care to wrap it, its more readable this way,
+but if you want it split split it like:
 
-	static char memcg_name_buf[NAME_MAX + 1];
+int
+stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *arg)
 
-?
+Or if you really have to split arguments to it in groups that make
+sense; like:
 
-I guess it saves a scrap of memory if the machine never uses memcg's.
+int stop_two_cpus(unsigned int cpu1, unsigned int cpu2,
+		  cpu_stop_fn_t fn, void *arg)
+
+But really, these are two unrelated changes, and should therefore not be
+in a single patch.
