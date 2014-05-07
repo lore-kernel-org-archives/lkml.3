@@ -1,139 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120AbaEGOus (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 10:50:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46765 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753320AbaEGOur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 10:50:47 -0400
-From: Bandan Das <bsd@redhat.com>
-To: Nadav Amit <namit@cs.technion.ac.il>
-Cc: mtosatti@redhat.com, pbonzini@redhat.com, hpa@zytor.com, gleb@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] KVM: x86: Wrong register masking in 64-bit mode
-References: <1399465972-4026-1-git-send-email-namit@cs.technion.ac.il>
-	<1399465972-4026-5-git-send-email-namit@cs.technion.ac.il>
-Date: Wed, 07 May 2014 10:50:15 -0400
-In-Reply-To: <1399465972-4026-5-git-send-email-namit@cs.technion.ac.il> (Nadav
-	Amit's message of "Wed, 7 May 2014 15:32:51 +0300")
-Message-ID: <jpglhudej88.fsf@nelium.bos.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1756168AbaEGOvZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 10:51:25 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:48780 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915AbaEGOvY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 10:51:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAL_JsqL6+i_ED+s6kODsadszefaZUcA7VHCfZ4k4yj62iXsarQ@mail.gmail.com>
+References: <536982E3.10303@gmail.com> <CAL_JsqL6+i_ED+s6kODsadszefaZUcA7VHCfZ4k4yj62iXsarQ@mail.gmail.com>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Wed, 7 May 2014 15:51:03 +0100
+X-Google-Sender-Auth: poPvto9nTfpSy_84y330JICr22U
+Message-ID: <CACxGe6scdipc8uTM2JfHLdX4Ch+=bwP8PAEN=UBH=fKnE9ShEw@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] devicetree, qcomm PMIC: fix node name conflict
+To: Rob Herring <robherring2@gmail.com>
+Cc: Frank Rowand <frowand.list@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nadav Amit <namit@cs.technion.ac.il> writes:
-
-> 32-bit operations are zero extended in 64-bit mode. Currently, the code does
-> not handle them correctly and keeps the high bits. In 16-bit mode, the high
-> 32-bits are kept intact.
+On Wed, May 7, 2014 at 2:32 AM, Rob Herring <robherring2@gmail.com> wrote:
+> On Tue, May 6, 2014 at 7:48 PM, Frank Rowand <frowand.list@gmail.com> wrote:
+>> An issue with the path of SPMI nodes under /sys/bus/... was reported in
+>> https://lkml.org/lkml/2014/4/23/312.  The symptom is that two different
+>> grandchild nodes of the spmi with the same node-name@unit-address will
+>> result in attempting to create duplicate links at
+>> /sys/bus/platform/devices/unit-address.node-name.  It turns out that the
+>> specific example provided might not be an expected configuration for
+>> current hardware, but the reported trap remains an issue.
+>>
+>> I have been poking at the problem, trying to figure out how to cleanly
+>> fix the issue without breaking devicetree device creation.
+>>
+>> The first patch in the series is the one that may be a very bad idea.  Or
+>> it may help show the way forward to deal with what I think is the major
+>> underlying problem.  I have not finished investigating the possible negative
+>> side effects.  And I am still thinking whether this is a conceptually good
+>> approach, or whether it is simply an expediant hack that hides the underlying
+>> problem.  But I am throwing this out prematurely because I have mentioned
+>> it to several people, and I want to make it visible to everyone involved.
+>>
+>> The underlying architectural problem (in my opinion) is that a lot of devices
+>> are created by the device tree infrastructure as platform devices, when they
+>> truly should not be platform devices.  They should not be platform devices
+>> because they are not physically on a platform bus, they are instead somewhere
+>> below some other bus.  The first patch in this series is a hack which
+>> results in the devices still being represented by "struct platform_device"
+>> objects, but with a link to their parent's "struct bus_type" instead of
+>> to &platform_bus_type.
+>>
+>> The second patch does not require the first patch.  The second patch provides
+>> a mechanism to allow subsystems to provide a method of naming devices to
+>> avoid name collisions.
+>>
+>> The third patch provides an example of a subsystem using the new feature
+>> provided by the second patch.
+>>
 >
-> In addition, although it is not well-documented, when address override prefix
-
-It would be helpful to have a pointer in the SDM especially for cases 
-that are not well-documented.
-
-> is used with REP-string instruction, RCX high half is zeroed even if ECX was
-> zero on the first iteration (as if an assignment was performed to ECX).
+> I think the primary question to ask is there any added benefit to
+> having the additional hierarchy of devices. I don't think there is
+> much support to have more hierarchy from what I have seen of past
+> discussions.
 >
-> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
-> ---
->  arch/x86/kvm/emulate.c | 38 +++++++++++++++++++++++---------------
->  1 file changed, 23 insertions(+), 15 deletions(-)
+> Another approach could be to support having multiple platform bus
+> instances. Then drivers can easily create a new instance for each set
+> of sub-devices.
 >
-> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-> index 743e8e3..6833b41 100644
-> --- a/arch/x86/kvm/emulate.c
-> +++ b/arch/x86/kvm/emulate.c
-> @@ -434,9 +434,21 @@ static int emulator_check_intercept(struct x86_emulate_ctxt *ctxt,
->  	return ctxt->ops->intercept(ctxt, &info, stage);
->  }
->  
-> -static void assign_masked(ulong *dest, ulong src, ulong mask)
-> +static void assign_masked(ulong *dest, ulong src, int bytes)
->  {
-> -	*dest = (*dest & ~mask) | (src & mask);
-> +	switch (bytes) {
-> +	case 2:
-> +		*dest = (u16)src | (*dest & ~0xfffful);
-> +		break;
-> +	case 4:
-> +		*dest = (u32)src;
-> +		break;
-> +	case 8:
-> +		*dest = src;
-> +		break;
-> +	default:
-> +		BUG();
 
-IIRC, Paolo mentioned that a WARN() is preferable. But I see
-a lot other places where BUG() is called, maybe, he can confirm.
+I fear that it will be more invasive that you think it will be. Right
+now the bus_type abstraction is a mechanism for matching drivers and
+devices. The bus type contains a bag of device drivers, and it tries
+to match one of them to a device when a device gets registered to that
+device (or when a driver gets registered, try to match it to one of
+the devices it already knows about). You can see this in the
+/sys/bus/<type>/drivers and /sys/bus/<type>/devices directories.
 
-> +	}
->  }
->  
->  static inline unsigned long ad_mask(struct x86_emulate_ctxt *ctxt)
-> @@ -476,26 +488,20 @@ register_address(struct x86_emulate_ctxt *ctxt, unsigned long reg)
->  	return address_mask(ctxt, reg);
->  }
->  
-> -static void masked_increment(ulong *reg, ulong mask, int inc)
-> +static void masked_increment(ulong *reg, int size, int inc)
->  {
-> -	assign_masked(reg, *reg + inc, mask);
-> +	assign_masked(reg, *reg + inc, size);
->  }
->  
->  static inline void
->  register_address_increment(struct x86_emulate_ctxt *ctxt, unsigned long *reg, int inc)
->  {
-> -	ulong mask;
-> -
-> -	if (ctxt->ad_bytes == sizeof(unsigned long))
-> -		mask = ~0UL;
-> -	else
-> -		mask = ad_mask(ctxt);
-> -	masked_increment(reg, mask, inc);
-> +	masked_increment(reg, ctxt->ad_bytes, inc);
->  }
->  
->  static void rsp_increment(struct x86_emulate_ctxt *ctxt, int inc)
->  {
-> -	masked_increment(reg_rmw(ctxt, VCPU_REGS_RSP), stack_mask(ctxt), inc);
-> +	masked_increment(reg_rmw(ctxt, VCPU_REGS_RSP), stack_size(ctxt), inc);
->  }
->  
->  static inline void jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
-> @@ -1712,17 +1718,17 @@ static int em_enter(struct x86_emulate_ctxt *ctxt)
->  	if (rc != X86EMUL_CONTINUE)
->  		return rc;
->  	assign_masked(reg_rmw(ctxt, VCPU_REGS_RBP), reg_read(ctxt, VCPU_REGS_RSP),
-> -		      stack_mask(ctxt));
-> +		      stack_size(ctxt));
->  	assign_masked(reg_rmw(ctxt, VCPU_REGS_RSP),
->  		      reg_read(ctxt, VCPU_REGS_RSP) - frame_size,
-> -		      stack_mask(ctxt));
-> +		      stack_size(ctxt));
->  	return X86EMUL_CONTINUE;
->  }
->  
->  static int em_leave(struct x86_emulate_ctxt *ctxt)
->  {
->  	assign_masked(reg_rmw(ctxt, VCPU_REGS_RSP), reg_read(ctxt, VCPU_REGS_RBP),
-> -		      stack_mask(ctxt));
-> +		      stack_size(ctxt));
->  	return emulate_pop(ctxt, reg_rmw(ctxt, VCPU_REGS_RBP), ctxt->op_bytes);
->  }
->  
-> @@ -4570,6 +4576,8 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
->  	if (ctxt->rep_prefix && (ctxt->d & String)) {
->  		/* All REP prefixes have the same first termination condition */
->  		if (address_mask(ctxt, reg_read(ctxt, VCPU_REGS_RCX)) == 0) {
-> +			assign_masked(reg_write(ctxt, VCPU_REGS_RCX), 0,
-> +				      ctxt->ad_bytes);
->  			ctxt->eip = ctxt->_eip;
->  			goto done;
->  		}
+Splitting the platform bus type into multiple instances is not trivial
+because the drivers will only be available to one instance. You'd need
+to figure out how to make a device driver available to multiple
+bus_type instances (ideally without having to manually add the driver
+to each bus_type at module load time).
+
+> This can be solved in a much less invasive way just in the DT naming
+> algorithm. This is slightly different from what I had suggested of
+> just dropping the unit address. It keeps the unit address, but adds
+> the unique index on untranslate-able addresses. The diff is bigger due
+> to refactoring to reduce the indentation levels. It is untested and
+> whitespace corrupted:
+>
+> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> index 404d1da..c77dd7a 100644
+> --- a/drivers/of/platform.c
+> +++ b/drivers/of/platform.c
+> @@ -105,23 +105,33 @@ void of_device_make_bus_id(struct device *dev)
+>          * For MMIO, get the physical address
+>          */
+>         reg = of_get_property(node, "reg", NULL);
+> -       if (reg) {
+> -               if (of_can_translate_address(node)) {
+> -                       addr = of_translate_address(node, reg);
+> -               } else {
+> -                       addrp = of_get_address(node, 0, NULL, NULL);
+> -                       if (addrp)
+> -                               addr = of_read_number(addrp, 1);
+> -                       else
+> -                               addr = OF_BAD_ADDR;
+> -               }
+> -               if (addr != OF_BAD_ADDR) {
+> -                       dev_set_name(dev, "%llx.%s",
+> -                                    (unsigned long long)addr, node->name);
+> -                       return;
+> -               }
+> +       if (!reg)
+> +               goto no_bus_id;
+> +
+> +       if (of_can_translate_address(node)) {
+> +               addr = of_translate_address(node, reg);
+> +               if (addr == OF_BAD_ADDR)
+> +                       goto no_bus_id;
+> +
+> +               dev_set_name(dev, "%llx.%s",
+> +                            (unsigned long long)addr, node->name);
+> +               return;
+>         }
+>
+> +       addrp = of_get_address(node, 0, NULL, NULL);
+> +       if (!addrp)
+> +               goto no_bus_id;
+> +
+> +       addr = of_read_number(addrp, 1);
+> +       if (addr == OF_BAD_ADDR)
+> +               goto no_bus_id;
+> +
+> +       magic = atomic_add_return(1, &bus_no_reg_magic);
+> +       dev_set_name(dev, "%llx.%s.%d", (unsigned long long)addr,
+> +                    node->name, magic - 1);
+> +       return;
+> +
+> +no_bus_id:
+
+Looks like a reasonable change to me.
+
+g.
+
+>         /*
+>          * No BusID, use the node name and add a globally incremented
+>          * counter (and pray...)
