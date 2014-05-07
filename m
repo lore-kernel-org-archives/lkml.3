@@ -1,117 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932656AbaEGLTM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 07:19:12 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:52579 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932352AbaEGLTL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 07:19:11 -0400
-X-Greylist: delayed 93206 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 May 2014 07:19:10 EDT
-Message-ID: <536A16A6.5040709@hitachi.com>
-Date: Wed, 07 May 2014 20:19:02 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S932693AbaEGLTn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 07:19:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58779 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932669AbaEGLTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 07:19:42 -0400
+Date: Wed, 7 May 2014 13:19:40 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH -mm 1/2] memcg: get rid of memcg_create_cache_name
+Message-ID: <20140507111940.GE9489@dhcp22.suse.cz>
+References: <a4aa62026c10fc709e8bf13542b29cf771381394.1399450112.git.vdavydov@parallels.com>
+ <20140507095127.GC9489@dhcp22.suse.cz>
+ <20140507104514.GC4757@esperanza>
 MIME-Version: 1.0
-To: Tony Luck <tony.luck@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, rdunlap@infradead.org,
-        Jeremy Fitzhardinge <jeremy@goop.org>, Arnd Bergmann <arnd@arndb.de>,
-        dl9pf@gmx.de, Andrew Morton <akpm@linux-foundation.org>,
-        sparse@chrisli.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        anil.s.keshavamurthy@intel.com,
-        "David S. Miller" <davem@davemloft.net>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        Chris Wright <chrisw@sous-sol.org>, akataria@vmware.com,
-        linux-tip-commits@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: Re: [tip:perf/kprobes] kprobes: Introduce NOKPROBE_SYMBOL()
- macro to maintain kprobes blacklist
-References: <20140417081705.26341.96719.stgit@ltc230.yrl.intra.hitachi.co.jp> <tip-376e242429bf8539ef39a080ac113c8799840b13@git.kernel.org> <CA+8MBb+wUR9ErQQmqCCYoKfUuPV92iLHMxRCBxrP0NW0-YmmGw@mail.gmail.com> <5368B38B.5080908@hitachi.com>
-In-Reply-To: <5368B38B.5080908@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140507104514.GC4757@esperanza>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/05/06 19:03), Masami Hiramatsu wrote:
-> (2014/05/06 5:48), Tony Luck wrote:
->> This patch is in linux-next ("next-20140505") and I see a
->> bunch of "Failed to find blacklist" messages when booting
->> on ia64:
->>
->> Failed to find blacklist 0001013168300000
->> Failed to find blacklist 0001013000f0a000
->> Failed to find blacklist 000101315f70a000
->> Failed to find blacklist 000101324c80a000
->> Failed to find blacklist 0001013063f0a000
->> Failed to find blacklist 000101327800a000
->> Failed to find blacklist 0001013277f0a000
->> Failed to find blacklist 000101315a70a000
->> Failed to find blacklist 0001013277e0a000
->> Failed to find blacklist 000101305a20a000
->> Failed to find blacklist 0001013277d0a000
->> Failed to find blacklist 00010130bdc0a000
->> Failed to find blacklist 00010130dc20a000
->> Failed to find blacklist 000101309a00a000
->> Failed to find blacklist 0001013277c0a000
->> Failed to find blacklist 0001013277b0a000
->> Failed to find blacklist 0001013277a0a000
->> Failed to find blacklist 000101327790a000
->> Failed to find blacklist 000101303140a000
->> Failed to find blacklist 0001013a3280a000
->>
->> What do these mean?
+On Wed 07-05-14 14:45:16, Vladimir Davydov wrote:
+[...]
+> From: Vladimir Davydov <vdavydov@parallels.com>
+> Subject: [PATCH] memcg: get rid of memcg_create_cache_name
 > 
-> Ah, I forgot that ia64 has function descriptor :(
-> That means kprobes initial code has failed to get correct
-> entry address of the blacklisted functions.
+> Instead of calling back to memcontrol.c from kmem_cache_create_memcg in
+> order to just create the name of a per memcg cache, let's allocate it in
+> place. We only need to pass the memcg name to kmem_cache_create_memcg
+> for that - everything else can be done in slab_common.c.
 > 
-> In include/linux/kprobes.h, I defined NOKPROBE_SYMBOL to store
-> the addresses of blacklisted functions as below,
-> 
-> #define __NOKPROBE_SYMBOL(fname)                        \
-> static unsigned long __used                             \
->         __attribute__((section("_kprobe_blacklist")))   \
->         _kbl_addr_##fname = (unsigned long)fname;
-> #define NOKPROBE_SYMBOL(fname)  __NOKPROBE_SYMBOL(fname)
-> 
-> _kbl_addr_XX stores the address of the function, but on IA64,
-> it stores the address of function descriptor.
-> 
-> Since those addresses are only used with kallsyms to lookup
-> function size, I think I should use a macro to store correct
-> function address instead of the address of function descriptor
-> on ia64 (and similar arch).
-> But I'm not sure which macro I should use... Is there any good way
-> to get the address of function, instead of function descriptor?
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 
-Hmm, there is no general interface for retrieving the function entry
-address from function pointer. I'd like to propose constant_function_entry()
-macro for this purpose in linux/types.h (and arch-dep implementation will be
-in asm/types.h)
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-BTW, as far as I can see, powerpc64 may have same problem. I'm not sure
-about powerpc64 ABI, and recently it seems that they introduced ABIv2
-support. The problem is, it seems that ppc64 ABIv2 has two function entries
-and I don't know which entry should I use for kallsyms. Is that enough
-to return (unsigned long)fname always on ABIv2 ?
-
-At least on ppc64 ABIv1, I know I should return ((func_descr_t *)func)->entry ...
-
-Thank you,
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 6c59056f4bc6..7b639ab48aa8 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -501,8 +501,6 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order);
+>  
+>  int memcg_cache_id(struct mem_cgroup *memcg);
+>  
+> -char *memcg_create_cache_name(struct mem_cgroup *memcg,
+> -			      struct kmem_cache *root_cache);
+>  int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+>  			     struct kmem_cache *root_cache);
+>  void memcg_free_cache_params(struct kmem_cache *s);
+> diff --git a/include/linux/slab.h b/include/linux/slab.h
+> index ecbec9ccb80d..86e5b26fbdab 100644
+> --- a/include/linux/slab.h
+> +++ b/include/linux/slab.h
+> @@ -117,7 +117,8 @@ struct kmem_cache *kmem_cache_create(const char *, size_t, size_t,
+>  			void (*)(void *));
+>  #ifdef CONFIG_MEMCG_KMEM
+>  struct kmem_cache *kmem_cache_create_memcg(struct mem_cgroup *,
+> -					   struct kmem_cache *);
+> +					   struct kmem_cache *,
+> +					   const char *);
+>  #endif
+>  void kmem_cache_destroy(struct kmem_cache *);
+>  int kmem_cache_shrink(struct kmem_cache *);
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index f381239ab402..9ff3742f4154 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3101,29 +3101,6 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+>  	return 0;
+>  }
+>  
+> -char *memcg_create_cache_name(struct mem_cgroup *memcg,
+> -			      struct kmem_cache *root_cache)
+> -{
+> -	static char *buf;
+> -
+> -	/*
+> -	 * We need a mutex here to protect the shared buffer. Since this is
+> -	 * expected to be called only on cache creation, we can employ the
+> -	 * slab_mutex for that purpose.
+> -	 */
+> -	lockdep_assert_held(&slab_mutex);
+> -
+> -	if (!buf) {
+> -		buf = kmalloc(NAME_MAX + 1, GFP_KERNEL);
+> -		if (!buf)
+> -			return NULL;
+> -	}
+> -
+> -	cgroup_name(memcg->css.cgroup, buf, NAME_MAX + 1);
+> -	return kasprintf(GFP_KERNEL, "%s(%d:%s)", root_cache->name,
+> -			 memcg_cache_id(memcg), buf);
+> -}
+> -
+>  int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+>  			     struct kmem_cache *root_cache)
+>  {
+> @@ -3164,6 +3141,7 @@ void memcg_free_cache_params(struct kmem_cache *s)
+>  static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
+>  				    struct kmem_cache *root_cache)
+>  {
+> +	static char *memcg_name_buf;	/* protected by memcg_slab_mutex */
+>  	struct kmem_cache *cachep;
+>  	int id;
+>  
+> @@ -3179,7 +3157,14 @@ static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
+>  	if (cache_from_memcg_idx(root_cache, id))
+>  		return;
+>  
+> -	cachep = kmem_cache_create_memcg(memcg, root_cache);
+> +	if (!memcg_name_buf) {
+> +		memcg_name_buf = kmalloc(NAME_MAX + 1, GFP_KERNEL);
+> +		if (!memcg_name_buf)
+> +			return;
+> +	}
+> +
+> +	cgroup_name(memcg->css.cgroup, memcg_name_buf, NAME_MAX + 1);
+> +	cachep = kmem_cache_create_memcg(memcg, root_cache, memcg_name_buf);
+>  	/*
+>  	 * If we could not create a memcg cache, do not complain, because
+>  	 * that's not critical at all as we can always proceed with the root
+> diff --git a/mm/slab_common.c b/mm/slab_common.c
+> index 7e348cff814d..32175617cb75 100644
+> --- a/mm/slab_common.c
+> +++ b/mm/slab_common.c
+> @@ -264,13 +264,15 @@ EXPORT_SYMBOL(kmem_cache_create);
+>   * kmem_cache_create_memcg - Create a cache for a memory cgroup.
+>   * @memcg: The memory cgroup the new cache is for.
+>   * @root_cache: The parent of the new cache.
+> + * @memcg_name: The name of the memory cgroup (used for naming the new cache).
+>   *
+>   * This function attempts to create a kmem cache that will serve allocation
+>   * requests going from @memcg to @root_cache. The new cache inherits properties
+>   * from its parent.
+>   */
+>  struct kmem_cache *kmem_cache_create_memcg(struct mem_cgroup *memcg,
+> -					   struct kmem_cache *root_cache)
+> +					   struct kmem_cache *root_cache,
+> +					   const char *memcg_name)
+>  {
+>  	struct kmem_cache *s = NULL;
+>  	char *cache_name;
+> @@ -280,7 +282,8 @@ struct kmem_cache *kmem_cache_create_memcg(struct mem_cgroup *memcg,
+>  
+>  	mutex_lock(&slab_mutex);
+>  
+> -	cache_name = memcg_create_cache_name(memcg, root_cache);
+> +	cache_name = kasprintf(GFP_KERNEL, "%s(%d:%s)", root_cache->name,
+> +			       memcg_cache_id(memcg), memcg_name);
+>  	if (!cache_name)
+>  		goto out_unlock;
+>  
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Michal Hocko
+SUSE Labs
