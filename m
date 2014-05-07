@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932383AbaEGJX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:23:29 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:57498 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932265AbaEGJX1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:23:27 -0400
-Message-ID: <1399454604.6659.13.camel@x220>
-Subject: Re: [PATCH] libata-sff: remove dead code
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Alan Cox <alan@linux.intel.com>
-Cc: David Howells <dhowells@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 07 May 2014 11:23:24 +0200
-In-Reply-To: <1399411616.2458.45.camel@acox1-desk.ger.corp.intel.com>
-References: <1399204229.8729.15.camel@x220>
-	 <1399411616.2458.45.camel@acox1-desk.ger.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	id S932413AbaEGJXj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:23:39 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51705 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932265AbaEGJXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 05:23:35 -0400
+Message-ID: <5369FB67.6040905@ti.com>
+Date: Wed, 7 May 2014 14:52:47 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Marek Vasut <marex@denx.de>, <balajitk@ti.com>,
+        Mohit Kumar <mohit.kumar@st.com>, Jingoo Han <jg1.han@samsung.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, <rogerq@ti.com>
+Subject: Re: [PATCH 05/17] pci: host: pcie-dra7xx: add support for pcie-dra7xx
+ controller
+References: <1399383244-14556-1-git-send-email-kishon@ti.com> <1399383244-14556-6-git-send-email-kishon@ti.com> <20140506163507.GA15542@obsidianresearch.com>
+In-Reply-To: <20140506163507.GA15542@obsidianresearch.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 May 2014 09:23:25.0005 (UTC) FILETIME=[FF59A7D0:01CF69D5]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Added David.]
+Hi,
 
-On Tue, 2014-05-06 at 22:26 +0100, Alan Cox wrote:
-> On Sun, 2014-05-04 at 13:50 +0200, Paul Bolle wrote:
-> > Ever since v2.6.19 the code contains a check for CONFIG_NO_ATA_LEGACY.
-> > But that macro has never been defined. Apparently no one ran into
-> > problems on platforms that do not support compatibility mode.
+On Tuesday 06 May 2014 10:05 PM, Jason Gunthorpe wrote:
+> On Tue, May 06, 2014 at 07:03:51PM +0530, Kishon Vijay Abraham I wrote:
+>> +Example:
+>> +pcie@51000000 {
+>> +	compatible = "ti,dra7xx-pcie";
+>> +	reg = <0x51002000 0x14c>, <0x51000000 0x2000>;
+>> +	reg-names = "ti_conf", "rc_dbics";
+>> +	interrupts = <0 232 0x4>, <0 233 0x4>;
+>> +	#address-cells = <3>;
+>> +	#size-cells = <2>;
+>> +	device_type = "pci";
+>> +	ti,device_type = <3>;
+>> +	ranges = <0x00000800 0 0x20001000 0x20001000 0 0x00002000  /* Configuration Space */
 > 
-> It was needed for some of the FRV devices I belive. Please check with
-> David Howells if it's still relevant
+> Configuration space should not show up in the ranges, please don't
+> copy that mistake from other drivers, put it in reg.
 
-This code has been behind (effectively) an "#if 0" check for seven
-years. So either there was no problem to begin with, the problem is
-fixed somewhere else, or no one is actually using the affected devices.
-So I doubt this is still relevant. But maybe David thinks otherwise...
+But then it needs pcie-designware.c to be modified and it will be breaking
+other platforms no?
+> 
+>> +	interrupt-map-mask = <0 0 0 0>;
+>> +	interrupt-map = <0x0 0 &gic 134>;
+> 
+> The HW cannot decode INTA/B/C/D?
+> 
+>> +#define	PCIECTRL_DRA7XX_CONF_IRQSTATUS_MSI		0x0034
+>> +#define	PCIECTRL_DRA7XX_CONF_IRQENABLE_SET_MSI		0x0038
+>> +#define	INTA						BIT(0)
+>> +#define	INTB						BIT(1)
+>> +#define	INTC						BIT(2)
+>> +#define	INTD						BIT(3)
+>> +#define	MSI						BIT(4)
+>> +#define	LEG_EP_INTERRUPTS (INTA | INTB | INTC | INTD)
+> 
+> Oh, it can, it would be wise to export this from the driver. Look at
+> the latest patches from Srikanth Thokala for the Xilinx PCI driver to
+> see how this should look
 
-> (even if its not used in the default configs)
+ok.. will have a look at it.
 
-It's not used (and has never been used) regardless which config one
-tries.
-
-
-Paul Bolle
-
+Thanks
+Kishon
