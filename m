@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530AbaEGJtC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:49:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45860 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932501AbaEGJs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932497AbaEGJs7 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 7 May 2014 05:48:59 -0400
-Message-ID: <536A0160.8070805@redhat.com>
-Date: Wed, 07 May 2014 11:48:16 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux ARM <linux-arm-kernel@lists.infradead.org>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v3 00/20] USB support for Armada 38x and Armada 375
-References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com> <loom.20140507T102941-222@post.gmane.org> <5369FB36.7040404@gmail.com>
-In-Reply-To: <5369FB36.7040404@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Received: from mga09.intel.com ([134.134.136.24]:11280 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755389AbaEGJs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 05:48:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1001,1389772800"; 
+   d="scan'208";a="507545194"
+Message-ID: <1399456133.2458.52.camel@acox1-desk.ger.corp.intel.com>
+Subject: Re: [PATCH] [linux-next] pwm: lpss: fix const qualifier discard
+ warning
+From: Alan Cox <alan@linux.intel.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Jan Moskyto Matejka <mq@suse.cz>, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 07 May 2014 10:48:53 +0100
+In-Reply-To: <20140507084137.GD6362@ulmo>
+References: <1399044179-17912-1-git-send-email-mq@suse.cz>
+	 <20140507084137.GD6362@ulmo>
+Organization: Intel Corporation
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2014-05-07 at 10:41 +0200, Thierry Reding wrote:
+> On Fri, May 02, 2014 at 05:22:59PM +0200, Jan Moskyto Matejka wrote:
+> > Fixing this warning:
+> > drivers/pwm/pwm-lpss.c: In function ‘pwm_lpss_probe_pci’:
+> > drivers/pwm/pwm-lpss.c:192:2: warning: passing argument 3 of ‘pwm_lpss_probe’ discards ‘const’ qualifier from pointer target type [enabled by default]
+> >   lpwm = pwm_lpss_probe(&pdev->dev, &pdev->resource[0], info);
+> >   ^
+> > drivers/pwm/pwm-lpss.c:130:30: note: expected ‘struct pwm_lpss_boardinfo *’ but argument is of type ‘const struct pwm_lpss_boardinfo *’
+> >  static struct pwm_lpss_chip *pwm_lpss_probe(struct device *dev,
+> > 
+> > That warning was introduced in commit 093e00bb3f82f3c67e2d1682e316fc012bcd0d92
+> > ("pwm: lpss: Add support for PCI devices").
+> > 
+> > Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
+> > ---
+> >  drivers/pwm/pwm-lpss.c | 1 +
+> >  1 file changed, 1 insertion(+)
+> 
+> This was reported over a week ago by the kbuild test robot and I've had
+> fixes for this (and an additional sparse warning) in my tree for a while
+> now. Interestingly everybody at Intel seems to have forgotten about this
+> driver after their patches got merged since nobody cared to respond.
 
-On 05/07/2014 11:21 AM, Sebastian Hesselbarth wrote:
-> [Adding back the original Cc-List]
-> 
-> On 05/07/2014 10:33 AM, Hans de Goede wrote:
->> Hi Gregory,
->>
->> Gregory CLEMENT <gregory.clement <at> free-electrons.com> writes:
->>
->>> This patch set adds the USB support for the Armada 38x Armada
->>> 375. These SoCs use an xHCI but still need specific initialization,
->>> mainly to setup the windows memory on the mbus. They also use the same
->>> controller that the other mvebu SoC for EHCI.
->>
->> <snip>
->>
->>> Gregory CLEMENT (20):
->>>    usb: ehci-orion: Fix clock reference leaking
->>>    usb: ehci-orion: Add the optional PHY support
->>
->> If you're using a proper phy driver, do you really need a soc specific ehci
->> driver? I've spend a lot of time during the last release cycle to make
->> ehci-platform a lot more generic, including adding (optional) phy support to
->> it. It would be great if the new Armada SoCs could use ehci-platform instead
->> of extending ehci-orion to cover more models (ideally most ehci-foo drivers
->> would go away completely). I've no idea how feasible it is to use
->> ehci-platform in your case, but IMHO it should at least be considered.
-> 
-> Hans,
-> 
-> unfortunately we currently have no USB-PHY driver for the other mvebu
-> SoCs. I have started some code grabbing for barebox bootloader and plan
-> to add proper USB-PHYs for Linux later.
-> 
-> There is one thing very specific to mvebu SoCs, which is the mbus:
-> you need to setup upstream memory windows for the usb bus master.
-> From my current understanding, that will require at least a minimal
-> stub to remain for ehci-orion.
-> 
-> I do think that most of the stuff in ehci-orion can (and should) be
-> replaced with ehci-platform then. So, we definitely consider reusing
-> the generic foo-platform drivers on all opportunities but IMHO we are
-> not yet ready for it.
+No - like everyone else we're all juggling multiple things. Also
+remember there have just been a bunch of public holidays on large parts
+of the planet.
 
-Ok, thanks for explaining.
+I did see Jan's email but I didn't realise it needed a response, it was
+clearly and obviously correct.
 
-Regards,
+Alan
 
-Hans
+
