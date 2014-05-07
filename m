@@ -1,87 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932335AbaEGJTP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:19:15 -0400
-Received: from mout.gmx.net ([212.227.17.21]:56521 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751886AbaEGJTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:19:12 -0400
-From: Sven Joachim <svenjoac@gmx.de>
-To: Alexandre Julliard <julliard@winehq.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Brian Gerst <brgerst@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org>
-	<CAMzpN2jx4H4p8fQr-WHxVyCHhWi0iO3WZZKyxYD7Dfa7pWkEgg@mail.gmail.com>
-	<CA+55aFwzvSiAGYfFb2R3JeVvh8_PQuOKJDrYP5C_3VQz2zhnBw@mail.gmail.com>
-	<CAMzpN2jj3dwQG7qC__8zLPhkg_ER6n4CcNxa5eg7okRN+k_VUA@mail.gmail.com>
-	<CA+55aFxr_dz3vhko1FPXhZd0ZNeGveX0oSLqUo_wyiVbxatLQw@mail.gmail.com>
-	<87k3aspd1h.fsf@wine.dyndns.org>
-Date: Wed, 07 May 2014 11:18:49 +0200
-In-Reply-To: <87k3aspd1h.fsf@wine.dyndns.org> (Alexandre Julliard's message of
-	"Mon, 14 Apr 2014 09:48:10 +0200")
-Message-ID: <87zjiuymiu.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.90 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Provags-ID: V03:K0:QsFGenef/ULkhGxiYzWAx47lNYhcg5RCwgw/eq/c+1hyD4nqv5b
- /gjwLV4UutxhgOyxD9/lfIUnK9nxsiJGF1kuBpH8Mm1qAkmn+xWG9W8I1qDdQw46OwwnIWe
- r/51V4zZIjrqFLqJYTslOBx0szBmLjnZmL5FXQmCdfCJ2uWSGYHEsOjMi4LBNJl515p8LFF
- DJrYZFqgN3qEfQgOfiY/w==
+	id S932348AbaEGJWL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:22:11 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:37936 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932265AbaEGJWH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 05:22:07 -0400
+Message-ID: <5369FB36.7040404@gmail.com>
+Date: Wed, 07 May 2014 11:21:58 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+To: Hans de Goede <hdegoede@redhat.com>
+CC: linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux ARM <linux-arm-kernel@lists.infradead.org>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 00/20] USB support for Armada 38x and Armada 375
+References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com> <loom.20140507T102941-222@post.gmane.org>
+In-Reply-To: <loom.20140507T102941-222@post.gmane.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-14 09:48 +0200, Alexandre Julliard wrote:
+[Adding back the original Cc-List]
 
-> Linus Torvalds <torvalds@linux-foundation.org> writes:
+On 05/07/2014 10:33 AM, Hans de Goede wrote:
+> Hi Gregory,
 >
->> On Fri, Apr 11, 2014 at 11:45 AM, Brian Gerst <brgerst@gmail.com> wrote:
->>>
->>> I haven't tested it recently but I do know it has worked on 64-bit
->>> kernels.  There is no reason for it not to, the only thing not
->>> supported in long mode is vm86.  16-bit protected mode is unchanged.
->>
->> Afaik 64-bit windows doesn't support 16-bit binaries, so I just
->> assumed Wine wouldn't do it either on x86-64. Not for any real
->> technical reasons, though.
->>
->> HOWEVER. I'd like to hear something more definitive than "I haven't
->> tested recently". The "we don't break user space" is about having
->> actual real *users*, not about test programs.
->>
->> Are there people actually using 16-bit old windows programs under
->> wine? That's what matters.
+> Gregory CLEMENT <gregory.clement <at> free-electrons.com> writes:
+>
+>> This patch set adds the USB support for the Armada 38x Armada
+>> 375. These SoCs use an xHCI but still need specific initialization,
+>> mainly to setup the windows memory on the mbus. They also use the same
+>> controller that the other mvebu SoC for EHCI.
+>
+> <snip>
+>
+>> Gregory CLEMENT (20):
+>>    usb: ehci-orion: Fix clock reference leaking
+>>    usb: ehci-orion: Add the optional PHY support
+>
+> If you're using a proper phy driver, do you really need a soc specific ehci
+> driver? I've spend a lot of time during the last release cycle to make
+> ehci-platform a lot more generic, including adding (optional) phy support to
+> it. It would be great if the new Armada SoCs could use ehci-platform instead
+> of extending ehci-orion to cover more models (ideally most ehci-foo drivers
+> would go away completely). I've no idea how feasible it is to use
+> ehci-platform in your case, but IMHO it should at least be considered.
 
-It seems that at least some 32-bit programs are also broken, since after
-upgrading the kernel to 3.14.3 I can no longer start my old chess
-database program:
+Hans,
 
-,----
-| % file CB70.exe 
-| CB70.exe: PE32 executable (GUI) Intel 80386, for MS Windows
-| % LANG=C wine CB70.exe
-| modify_ldt: Invalid argument
-| modify_ldt: Invalid argument
-| modify_ldt: Invalid argument
-| modify_ldt: Invalid argument
-| modify_ldt: Invalid argument
-`----
+unfortunately we currently have no USB-PHY driver for the other mvebu
+SoCs. I have started some code grabbing for barebox bootloader and plan
+to add proper USB-PHYs for Linux later.
 
-And here it just hangs, with wineboot.exe taking 100% CPU.  I had to
-kill first wineboot.exe and then CB70.exe. :-(
+There is one thing very specific to mvebu SoCs, which is the mbus:
+you need to setup upstream memory windows for the usb bus master.
+ From my current understanding, that will require at least a minimal
+stub to remain for ehci-orion.
 
-> Yes, there is still a significant number of users, and we still
-> regularly get bug reports about specific 16-bit apps. It would be really
-> nice if we could continue to support them on x86-64, particularly since
-> Microsoft doesn't ;-)
+I do think that most of the stuff in ehci-orion can (and should) be
+replaced with ehci-platform then. So, we definitely consider reusing
+the generic foo-platform drivers on all opportunities but IMHO we are
+not yet ready for it.
 
-I would rather not set up a virtual machine just for wine (I don't have
-Windows anymore).
+Sebastian
 
-Cheers,
-       Sven
