@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148AbaEGNN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:13:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45340 "EHLO
+	id S1756215AbaEGNNf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:13:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45369 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755847AbaEGNNY (ORCPT
+	with ESMTP id S1756155AbaEGNNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:13:24 -0400
+	Wed, 7 May 2014 09:13:32 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alec Berg <alecaberg@chromium.org>, Jonathan Cameron <jic23@kernel.org>,
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Jeff Layton <jlayton@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 03/70] iio: querying buffer scan_mask should return 0/1
-Date: Wed,  7 May 2014 14:12:06 +0100
-Message-Id: <1399468393-10140-4-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 08/70] locks: allow __break_lease to sleep even when break_time is 0
+Date: Wed,  7 May 2014 14:12:11 +0100
+Message-Id: <1399468393-10140-9-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -27,50 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alec Berg <alecaberg@chromium.org>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 2076a20fc1a06f7b0333c62a2bb4eeeac7ed1bcb upstream.
+commit f1c6bb2cb8b81013e8979806f8e15e3d53efb96d upstream.
 
-Ensure that querying the IIO buffer scan_mask returns a value of
-0 or 1. Currently querying the scan mask has the value returned
-by test_bit(), which returns either true or false. For some
-architectures test_bit() may return -1 for true, which will appear
-to return an error when returning from iio_scan_mask_query().
+A fl->fl_break_time of 0 has a special meaning to the lease break code
+that basically means "never break the lease". knfsd uses this to ensure
+that leases don't disappear out from under it.
 
-Additionally, it's important for the sysfs interface to consistently
-return the same thing when querying the scan_mask.
+Unfortunately, the code in __break_lease can end up passing this value
+to wait_event_interruptible as a timeout, which prevents it from going
+to sleep at all. This makes __break_lease to spin in a tight loop and
+causes soft lockups.
 
-Signed-off-by: Alec Berg <alecaberg@chromium.org>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Fix this by ensuring that we pass a minimum value of 1 as a timeout
+instead.
+
+Cc: J. Bruce Fields <bfields@fieldses.org>
+Reported-by: Terry Barnaby <terry1@beam.ltd.uk>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/iio/industrialio-buffer.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/locks.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/iio/industrialio-buffer.c b/drivers/iio/industrialio-buffer.c
-index e73033f..54adea8 100644
---- a/drivers/iio/industrialio-buffer.c
-+++ b/drivers/iio/industrialio-buffer.c
-@@ -119,7 +119,8 @@ static ssize_t iio_scan_el_show(struct device *dev,
- 	int ret;
- 	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+diff --git a/fs/locks.c b/fs/locks.c
+index b27a300..ad95fbd 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -1359,11 +1359,10 @@ int __break_lease(struct inode *inode, unsigned int mode)
  
--	ret = test_bit(to_iio_dev_attr(attr)->address,
-+	/* Ensure ret is 0 or 1. */
-+	ret = !!test_bit(to_iio_dev_attr(attr)->address,
- 		       indio_dev->buffer->scan_mask);
- 
- 	return sprintf(buf, "%d\n", ret);
-@@ -760,7 +761,8 @@ int iio_scan_mask_query(struct iio_dev *indio_dev,
- 	if (!buffer->scan_mask)
- 		return 0;
- 
--	return test_bit(bit, buffer->scan_mask);
-+	/* Ensure return value is 0 or 1. */
-+	return !!test_bit(bit, buffer->scan_mask);
- };
- EXPORT_SYMBOL_GPL(iio_scan_mask_query);
- 
+ restart:
+ 	break_time = flock->fl_break_time;
+-	if (break_time != 0) {
++	if (break_time != 0)
+ 		break_time -= jiffies;
+-		if (break_time == 0)
+-			break_time++;
+-	}
++	if (break_time == 0)
++		break_time++;
+ 	locks_insert_block(flock, new_fl);
+ 	spin_unlock(&inode->i_lock);
+ 	error = wait_event_interruptible_timeout(new_fl->fl_wait,
 -- 
 1.9.1
 
