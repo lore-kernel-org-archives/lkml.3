@@ -1,102 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407AbaEGWAu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 18:00:50 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44352 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751424AbaEGWAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 18:00:48 -0400
-Message-ID: <536AACF6.9070204@ti.com>
-Date: Wed, 7 May 2014 17:00:22 -0500
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752374AbaEGWCx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 18:02:53 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:57873 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163AbaEGWCw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 18:02:52 -0400
+Date: Wed, 7 May 2014 15:02:46 -0700
+From: josh@joshtriplett.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 24/45] torture: Choose bzImage location
+ based on architecture
+Message-ID: <20140507220245.GN27924@cloud>
+References: <20140429002455.GA15461@linux.vnet.ibm.com>
+ <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1398731133-18925-24-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/26] ARM: OMAP: dmtimer: Add function to check if timer
- is running
-References: <1398375849-6017-1-git-send-email-joelf@ti.com> <1398375849-6017-5-git-send-email-joelf@ti.com> <20140507152521.GE9502@atomide.com>
-In-Reply-To: <20140507152521.GE9502@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398731133-18925-24-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2014 10:25 AM, Tony Lindgren wrote:
-> * Joel Fernandes <joelf@ti.com> [140424 14:44]:
->> Inorder to move non-DM timer specific code that modifies the "idlect"
->> mask on OMAP1, from dmtimer code, to OMAP1 specific timer initialization code,
->> we introduce a new function that can possibly be reused for other purposes in
->> the future. The function just checks if a timer is running based on the timer ID
->> which should be same as pdev->id. This allows us to cleanly separate the timer vs
->> non-timer bits and keep the timer bits in the dmtimer code.
->>
->> Signed-off-by: Joel Fernandes <joelf@ti.com>
->> ---
->>  arch/arm/plat-omap/dmtimer.c              |   29 +++++++++++++++++++++++++++++
->>  arch/arm/plat-omap/include/plat/dmtimer.h |    2 ++
->>  2 files changed, 31 insertions(+)
->>
->> diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
->> index 4debb3d..86b2641 100644
->> --- a/arch/arm/plat-omap/dmtimer.c
->> +++ b/arch/arm/plat-omap/dmtimer.c
->> @@ -187,6 +187,35 @@ int omap_dm_timer_reserve_systimer(int id)
->>  	return 0;
->>  }
->>  
->> +/*
->> + * Check if a timer is running based on timer_id, used for OMAP1 currently.
->> + */
->> +int omap_dm_timer_is_running(int timer_id)
->> +{
->> +	int i = 1, ret = 0;
->> +	struct omap_dm_timer *timer = NULL;
->> +	unsigned long flags;
->> +
->> +	spin_lock_irqsave(&dm_timer_lock, flags);
->> +	list_for_each_entry(timer, &omap_timer_list, node) {
->> +		if (i == timer_id) {
->> +			u32 l;
->> +			l = omap_dm_timer_read_reg(timer, OMAP_TIMER_CTRL_REG);
->> +			if (l & OMAP_TIMER_CTRL_ST) {
->> +				ret = 1;
->> +				goto done;
->> +			} else {
->> +				goto done;
->> +			}
->> +		}
->> +		i++;
->> +	}
->> +done:
->> +	spin_unlock_irqrestore(&dm_timer_lock, flags);
->> +	return ret;
->> +}
->> +EXPORT_SYMBOL_GPL(omap_dm_timer_is_running);
+On Mon, Apr 28, 2014 at 05:25:12PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> Let's not add new exported custom functions, let's instead try to get
-> rid of them. What needs to use this one?
+> Currently, the scripts hard-code arch/x86/boot/bzImage, which does not
+> work well for other architectures.  This commit therefore provides a
+> identify_boot_image function that selects the correct bzImage location
+> relative to the top of the Linux source tree.  This commit also adds a
+> --bootimage argument that allows selecting some other file, for example,
+> "vmlinux".
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-This piece of code was entangled with OMAP1 specific logic.
+Two issues below; with those fixed,
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-The OMAP1 specific logic is moved into a new function in the OMAP1 timer
-layer called: omap_dm_timer_modify_idlect_mask
+>  tools/testing/selftests/rcutorture/bin/functions.sh | 21 +++++++++++++++++++++
+>  .../selftests/rcutorture/bin/kvm-test-1-run.sh      | 11 +++++------
+>  tools/testing/selftests/rcutorture/bin/kvm.sh       |  8 ++++++++
+>  3 files changed, 34 insertions(+), 6 deletions(-)
+> 
+> diff --git a/tools/testing/selftests/rcutorture/bin/functions.sh b/tools/testing/selftests/rcutorture/bin/functions.sh
+> index 6b2adb29b073..efa95867e1cc 100644
+> --- a/tools/testing/selftests/rcutorture/bin/functions.sh
+> +++ b/tools/testing/selftests/rcutorture/bin/functions.sh
+> @@ -76,6 +76,27 @@ configfrag_hotplug_cpu () {
+>  	grep -q '^CONFIG_HOTPLUG_CPU=y$' "$1"
+>  }
+>  
+> +# identify_boot_image qemu-cmd
+> +#
+> +# Returns the relative path to the kernel build image.  This will be
+> +# arch/<arch>/boot/bzImage unless overridden with the TORTURE_BOOT_IMAGE
+> +# environment variable.
+> +identify_boot_image () {
+> +	if test -n "$TORTURE_BOOT_IMAGE"
+> +	then
+> +		echo $TORTURE_BOOT_IMAGE
+> +	else
+> +		case "$1" in
+> +		qemu-system-x86_64|qemu-system-i386)
+> +			echo arch/x86/boot/bzImage
+> +			;;
+> +		qemu-system-ppc64)
+> +			echo arch/powerpc/boot/bzImage
+> +			;;
 
-What's left is code that needs to iterate over all the timers by
-checking the OMAP_TIMER_CTRL_ST bit in the control register. This is
-left back into the dmtimer code but needs to be exported since we
-ultimately will move dmtimer into clock source.
+*)
+    (fail noisily rather than silently)
 
-If you notice, I removed export of omap_dm_timer_modify_idlect_mask
-since it is moved to omap1 layer and is local there, so it should be OK
-to export this symbol instead. We are not adding more exports, and its
-still an improvement over the old code as the OMAP1 specific logic is
-decoupled from the generic dmtimer code.
+> +		esac
+> +	fi
+> +}
+> +
+>  # identify_qemu builddir
+>  #
+>  # Returns our best guess as to which qemu command is appropriate for
+> diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> index 7848227aa4c1..7a95f86cc85a 100755
+> --- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> +++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> @@ -94,9 +94,11 @@ fi
+>  # CONFIG_YENTA=n
+>  if kvm-build.sh $config_template $builddir $T
+>  then
+> +	QEMU="`identify_qemu $builddir/vmlinux`"
+> +	BOOT_IMAGE="`identify_boot_image $QEMU`"
+>  	cp $builddir/Make*.out $resdir
+>  	cp $builddir/.config $resdir
+> -	cp $builddir/arch/x86/boot/bzImage $resdir
+> +	cp $builddir/$BOOT_IMAGE $resdir
+>  	parse-build.sh $resdir/Make.out $title
+>  	if test -f $builddir.wait
+>  	then
+> @@ -124,9 +126,6 @@ cd $KVM
+>  kstarttime=`awk 'BEGIN { print systime() }' < /dev/null`
+>  echo ' ---' `date`: Starting kernel
+>  
+> -# Determine the appropriate flavor of qemu command.
+> -QEMU="`identify_qemu $builddir/vmlinux`"
+> -
 
-thanks,
+This change seems related but undocumented.
 
--Joel
-
+>  # Generate -smp qemu argument.
+>  qemu_args="-nographic $qemu_args"
+>  cpu_count=`configNR_CPUS.sh $config_template`
+> @@ -151,13 +150,13 @@ boot_args="`configfrag_boot_params "$boot_args" "$config_template"`"
+>  # Generate kernel-version-specific boot parameters
+>  boot_args="`per_version_boot_params "$boot_args" $builddir/.config $seconds`"
+>  
+> -echo $QEMU $qemu_args -m 512 -kernel $builddir/arch/x86/boot/bzImage -append \"$qemu_append $boot_args\" > $resdir/qemu-cmd
+> +echo $QEMU $qemu_args -m 512 -kernel $builddir/$BOOT_IMAGE -append \"$qemu_append $boot_args\" > $resdir/qemu-cmd
+>  if test -n "$TORTURE_BUILDONLY"
+>  then
+>  	echo Build-only run specified, boot/test omitted.
+>  	exit 0
+>  fi
+> -$QEMU $qemu_args -m 512 -kernel $builddir/arch/x86/boot/bzImage -append "$qemu_append $boot_args"; echo $? > $resdir/qemu-retval &
+> +$QEMU $qemu_args -m 512 -kernel $builddir/$BOOT_IMAGE -append "$qemu_append $boot_args"; echo $? > $resdir/qemu-retval &
+>  qemu_pid=$!
+>  commandcompleted=0
+>  echo Monitoring qemu job at pid $qemu_pid
+> diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
+> index 9b838c372698..4eed2a4f42c7 100644
+> --- a/tools/testing/selftests/rcutorture/bin/kvm.sh
+> +++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
+> @@ -39,6 +39,7 @@ dryrun=""
+>  KVM="`pwd`/tools/testing/selftests/rcutorture"; export KVM
+>  PATH=${KVM}/bin:$PATH; export PATH
+>  TORTURE_DEFCONFIG=defconfig
+> +TORTURE_BOOT_IMAGE=""
+>  TORTURE_INITRD="$KVM/initrd"; export TORTURE_INITRD
+>  TORTURE_KMAKE_ARG=""
+>  TORTURE_SUITE=rcu
+> @@ -53,6 +54,7 @@ kversion=""
+>  usage () {
+>  	echo "Usage: $scriptname optional arguments:"
+>  	echo "       --bootargs kernel-boot-arguments"
+> +	echo "       --bootimage relative-path-to-kernel-boot-image"
+>  	echo "       --buildonly"
+>  	echo "       --configs \"config-file list\""
+>  	echo "       --cpus N"
+> @@ -80,6 +82,11 @@ do
+>  		TORTURE_BOOTARGS="$2"
+>  		shift
+>  		;;
+> +	--bootimage)
+> +		checkarg --bootimage "(relative path to kernel boot image)" "$#" "$2" '[a-zA-Z0-9][a-zA-Z0-9_]*' '^--'
+> +		TORTURE_BOOT_IMAGE="$2"
+> +		shift
+> +		;;
+>  	--buildonly)
+>  		TORTURE_BUILDONLY=1
+>  		;;
+> @@ -245,6 +252,7 @@ CONFIGFRAG="$CONFIGFRAG"; export CONFIGFRAG
+>  KVM="$KVM"; export KVM
+>  KVPATH="$KVPATH"; export KVPATH
+>  PATH="$PATH"; export PATH
+> +TORTURE_BOOT_IMAGE="$TORTURE_BOOT_IMAGE"; export TORTURE_BOOT_IMAGE
+>  TORTURE_BUILDONLY="$TORTURE_BUILDONLY"; export TORTURE_BUILDONLY
+>  TORTURE_DEFCONFIG="$TORTURE_DEFCONFIG"; export TORTURE_DEFCONFIG
+>  TORTURE_INITRD="$TORTURE_INITRD"; export TORTURE_INITRD
+> -- 
+> 1.8.1.5
+> 
