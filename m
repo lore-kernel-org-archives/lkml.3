@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464AbaEGCvh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 22:51:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29887 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222AbaEGCvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 22:51:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1000,1389772800"; 
-   d="scan'208";a="536069636"
-Date: Wed, 7 May 2014 02:46:37 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@redhat.com, rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, arjan.van.de.ven@intel.com,
-        len.brown@intel.com, alan.cox@intel.com, mark.gross@intel.com,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        rajeev.d.muralidhar@intel.com, vishwesh.m.rudramuni@intel.com,
-        nicole.chalhoub@intel.com, ajaya.durg@intel.com,
-        harinarayanan.seshadri@intel.com
-Subject: Re: [RFC PATCH 00/12 v1] A new CPU load metric for power-efficient
- scheduler: CPU ConCurrency
-Message-ID: <20140506184637.GA17884@intel.com>
-References: <1399248172-13871-1-git-send-email-yuyang.du@intel.com>
- <20140505093744.GO17778@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505093744.GO17778@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752852AbaEGCxm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 22:53:42 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55809 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751368AbaEGCxk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 22:53:40 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>, wim@iguana.be, dbaryshkov@gmail.com,
+        dwmw2@infradead.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, linux-sunxi@googlegroups.com,
+        linux@roeck-us.net, Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 6/6] ARM: multi_v7: Add Allwinner reset drivers to multi_v7_defconfig
+Date: Tue,  6 May 2014 21:44:24 -0500
+Message-Id: <1399430664-29091-7-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The general code structure is an immediate no go. We're not going to
-> bolt on anything like this.
+Now that the reset code are part of drivers of their own, we need those in the
+defconfig.
 
-Could you please detail a little bit about general code structure?
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/configs/multi_v7_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Thank you all the same,
-Yuyang
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index d4e8a47a2f7c..960187ac35e0 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -200,12 +200,14 @@ CONFIG_BATTERY_SBS=y
+ CONFIG_CHARGER_TPS65090=y
+ CONFIG_POWER_RESET_AS3722=y
+ CONFIG_POWER_RESET_GPIO=y
++CONFIG_POWER_RESET_SUN6I=y
+ CONFIG_SENSORS_LM90=y
+ CONFIG_THERMAL=y
+ CONFIG_DOVE_THERMAL=y
+ CONFIG_ARMADA_THERMAL=y
+ CONFIG_WATCHDOG=y
+ CONFIG_ORION_WATCHDOG=y
++CONFIG_SUNXI_WATCHDOG=y
+ CONFIG_MFD_AS3722=y
+ CONFIG_MFD_CROS_EC=y
+ CONFIG_MFD_CROS_EC_SPI=y
+-- 
+1.9.1
+
