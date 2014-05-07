@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566AbaEGUcn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 16:32:43 -0400
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:43385 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786AbaEGUcl (ORCPT
+	id S1752052AbaEGUdt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 16:33:49 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:17962 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751009AbaEGUdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 16:32:41 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Bastian Hecht <hechtb+renesas@gmail.com>, linux-sh@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH 2/3] ARM: shmobile: r8a7740 dtsi: Add Ethernet support
-Date: Wed,  7 May 2014 22:32:29 +0200
-Message-Id: <1399494750-31996-2-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1399494750-31996-1-git-send-email-geert+renesas@glider.be>
-References: <1399494750-31996-1-git-send-email-geert+renesas@glider.be>
+	Wed, 7 May 2014 16:33:47 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AocXANiXalNXQBiQ/2dsb2JhbABagwaDPahrCgUBmgoCAoEdF3SCZhwjGIECJBOIRQHQM4VWiHyERgEDjxuKGwGLAId7gzY7
+Date: Wed, 7 May 2014 22:33:39 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 1/1] KERNEL: add __attribute__  in c file
+Message-Id: <20140507223339.3dccf63d066edbcac207e6f3@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+This patch fixes a sparse warning about noreturn attribute only
+featuring in module.h
+
+kernel/module.c:212:6: error: symbol '__module_put_and_exit' redeclared with
+different type (originally declared at include/linux/module.h:449)-
+different modifiers
+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
-The "clocks" entry should be uncommented after the conversion to CCF is
-integrated.
+ include/linux/module.h | 4 ++--
+ kernel/module.c        | 3 ++-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
- arch/arm/boot/dts/r8a7740.dtsi |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
-
-diff --git a/arch/arm/boot/dts/r8a7740.dtsi b/arch/arm/boot/dts/r8a7740.dtsi
-index 3834b94dc02a..560d8d71cea4 100644
---- a/arch/arm/boot/dts/r8a7740.dtsi
-+++ b/arch/arm/boot/dts/r8a7740.dtsi
-@@ -122,6 +122,19 @@
- 			      0 149 IRQ_TYPE_LEVEL_HIGH>;
- 	};
+diff --git a/include/linux/module.h b/include/linux/module.h
+index f520a76..05ab8f3 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -446,8 +446,8 @@ int module_kallsyms_on_each_symbol(int (*fn)(void *, const char *,
+ 					     struct module *, unsigned long),
+ 				   void *data);
  
-+	ether: ethernet@e9a00000 {
-+		compatible = "renesas,gether-r8a7740";
-+		reg = <0xe9a00000 0x800>,
-+		      <0xe9a01800 0x800>;
-+		interrupt-parent = <&gic>;
-+		interrupts = <0 110 IRQ_TYPE_LEVEL_HIGH>;
-+		/* clocks = <&mstp3_clks R8A7740_CLK_GETHER>; */
-+		phy-mode = "mii";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
-+
- 	i2c0: i2c@fff20000 {
- 		#address-cells = <1>;
- 		#size-cells = <0>;
+-extern void __module_put_and_exit(struct module *mod, long code)
+-	__attribute__((noreturn));
++extern void __attribute__((noreturn)) __module_put_and_exit(struct module *mod,
++							    long code);
+ #define module_put_and_exit(code) __module_put_and_exit(THIS_MODULE, code)
+ 
+ #ifdef CONFIG_MODULE_UNLOAD
+diff --git a/kernel/module.c b/kernel/module.c
+index 079c461..7d78872 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -209,7 +209,8 @@ static inline void add_taint_module(struct module *mod, unsigned flag,
+  * A thread that wants to hold a reference to a module only while it
+  * is running can call this to safely exit.  nfsd and lockd use this.
+  */
+-void __module_put_and_exit(struct module *mod, long code)
++void __attribute__((noreturn)) __module_put_and_exit(struct module *mod,
++						     long code)
+ {
+ 	module_put(mod);
+ 	do_exit(code);
 -- 
-1.7.9.5
+1.8.4.5
 
