@@ -1,215 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764AbaEGAYx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 May 2014 20:24:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44810 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754683AbaEGAYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 May 2014 20:24:52 -0400
-Date: Tue, 6 May 2014 19:24:21 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <dbaryshkov@gmail.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        <dwmw2@infradead.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] power: twl4030_charger: clear IRQs after handling them
-Message-ID: <20140507002421.GA19711@kahuna>
-References: <1397661299-31342-1-git-send-email-balbi@ti.com>
- <20140416163526.GA3049@atomide.com>
- <535ACC62.102@ti.com>
- <20140425210036.GO29632@saruman.home>
+	id S1754820AbaEGAZg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 May 2014 20:25:36 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:61805 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999AbaEGAZf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 May 2014 20:25:35 -0400
+Message-ID: <53697D7D.4020908@linaro.org>
+Date: Tue, 06 May 2014 17:25:33 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140425210036.GO29632@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Riley <davidriley@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Add test to validate udelay
+References: <1399421543-7751-1-git-send-email-davidriley@chromium.org>
+In-Reply-To: <1399421543-7751-1-git-send-email-davidriley@chromium.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:00-20140425, Felipe Balbi wrote:
-> On Fri, Apr 25, 2014 at 03:58:10PM -0500, Nishanth Menon wrote:
-> > On 04/16/2014 11:35 AM, Tony Lindgren wrote:
-> > > * Felipe Balbi <balbi@ti.com> [140416 08:18]:
-> > >> TRM says we *must* write 1 to each bit we're handling
-> > >> in order to clear the IRQ status and bring IRQ line
-> > >> low. This patch implements that.
-> > >>
-> > >> Signed-off-by: Felipe Balbi <balbi@ti.com>
-> > >> ---
-> > >>
-> > >> Russell, I don't have HW to test, but this should
-> > >> solve the problem you saw when not using battery
-> > >> with Zoom board. Let me know if it doesn't.
-> > > 
-> > > BTW, looks like we're enabling BCI automatically in twl4030.dtsi
-> > > while the legacy booting does not have TWL_COMMON_PDATA_BCI
-> > > enabled for LDP. Anyways, for LDP BCI should be enabled for
-> > > sure, that's the only way to power at least the earlier LDP
-> > > revisions.
-> > > 
-> > I picked up https://patchwork.kernel.org/patch/4002371/ for testing.
-> > 
-> > Unfortunately, it does not seem to work in my tests:
-> 
-> alright, I'll have a look after I get this other issue out of the way.
-> Probably not until next week.
+On 05/06/2014 05:12 PM, David Riley wrote:
+> This change adds a module and a script that makes use of it to
+> validate that udelay delays for at least as long as requested
+> (as compared to ktime).
 
-I dug a bit more into this earlier today. It makes a little sense
-considering that TWL4030 was created in a world where mobile devices did
-not consider battery was hot pluggable entity.. 
+Interesting.
 
-Long story short:
-a) the BCI interrupt status register is read-on-clear (see
-drivers/mfd/twl4030-irq.c set_cor is set to true for bci) - so the patch
-https://patchwork.kernel.org/patch/4002371/ is practically a NOP.
-b) BATSTS is a result of MADC monitoring the thermistor and is
-continually generated. I tried a bunch of tricks that I could come up
-with to try to do a hotplug support, but either we have infinite
-interrupts (due to regeneration of event) or I loose detection ability.
+So fundamentally, udelay is a good bit fuzzier accuracy wise then
+ktime_get(), as it may be backed by relatively coarsely calibrated delay
+loops, or very rough tsc freq estimates.
 
-So, to keep things simple I created the following patch that seems to
-handle:
-a) no battery connected, powered off charger - bci disabled
-b) battery connected, powered off charger - bci active
-c) battery connected, no charger - bci active
+ktime_get on the other hand is as fine grained as we can be, and is ntp
+corrected, so that a second can really be a second.
 
-note: if battery was connected, and booted and we hotplug battery out,
-we still have the spam of messages.. that is a seperate patch
-(basically do an orderly shutdown - I cant think of anything else we
-could possible do there)
+So your comparing the fast and loose interface so we can delay a bit
+before hitting some hardware again with a fairly precise interface.
+Thus  I'd not be surprised if your test failed on various hardware. I'd
+really only trust udelay to be roughly accurate, so you might want to
+consider adding some degree of acceptable error to the test.
 
-Let me know your views.. if this approach is fine, I can post out formal
-patches for the same.
------8<----
->From 9474c7f37990b97c57b72eed917b9153595133ff Mon Sep 17 00:00:00 2001
-From: Nishanth Menon <nm@ti.com>
-Date: Tue, 6 May 2014 19:02:49 -0500
-Subject: [PATCH] power: twl4030_charger: detect battery presence prior to
- enabling charger
+Really, I'm curious about the backstory that made you generate the test?
+I assume something bit you where udelay was way off? Or were you using
+udelay for some sort of accuracy sensitive use?
 
-TWL4030's Battery Charger seems to be designed for non-hotpluggable
-batteries.
+thanks
+-john
 
-If battery is not present in the system, BATSTS is always set with the
-expectation that software will take actions to move to a required safe
-state (could be power down or disable various charger paths).
-
-It does not seem possible even by manipulating the edge detection
-of the event (using BCIEDR2 register) to have a consistent hotplug
-handling. This seems to be the result of BATSTS interrupt generated
-when the thermistor of the battery pack is disconnected from the
-dedicated ADIN1 pin. Clearing the status just results in the status
-being regenerated by the monitoring ADC(MADC) and disabling the
-edges of event just makes hotplug no longer function. The only
-other option is to disable the detection of the MADC by disabling
-BCIMFEN4::BATSTSMCHGEN (battery presence detector) - but then, we can
-never again detect battery reconnection.
-
-So, detect battery presence based on precharge(which is hardware
-automatic state) or default main charger configuration at the time of
-probe and enable charger logic only if battery was present.
-
-Reported-by: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- drivers/power/twl4030_charger.c |   43 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 42 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/power/twl4030_charger.c b/drivers/power/twl4030_charger.c
-index f141088..14ec220 100644
---- a/drivers/power/twl4030_charger.c
-+++ b/drivers/power/twl4030_charger.c
-@@ -28,10 +28,13 @@
- #define TWL4030_BCIICHG		0x08
- #define TWL4030_BCIVAC		0x0a
- #define TWL4030_BCIVBUS		0x0c
-+#define TWL4030_BCIMFSTS3	0x0F
- #define TWL4030_BCIMFSTS4	0x10
- #define TWL4030_BCICTL1		0x23
- #define TWL4030_BB_CFG		0x12
- 
-+#define TWL4030_BCIMFSTS1	0x01
-+
- #define TWL4030_BCIAUTOWEN	BIT(5)
- #define TWL4030_CONFIG_DONE	BIT(4)
- #define TWL4030_BCIAUTOUSB	BIT(1)
-@@ -52,6 +55,9 @@
- #define TWL4030_BBISEL_500uA	0x02
- #define TWL4030_BBISEL_1000uA	0x03
- 
-+#define TWL4030_BATSTSPCHG	BIT(2)
-+#define TWL4030_BATSTSMCHG	BIT(6)
-+
- /* BCI interrupts */
- #define TWL4030_WOVF		BIT(0) /* Watchdog overflow */
- #define TWL4030_TMOVF		BIT(1) /* Timer overflow */
-@@ -145,6 +151,34 @@ static int twl4030bci_read_adc_val(u8 reg)
- }
- 
- /*
-+ * Check if Battery Pack was present
-+ */
-+static int twl4030_is_battery_present(struct twl4030_bci *bci)
-+{
-+	int ret;
-+	u8 val = 0;
-+
-+	/* Battery presence in Main charge? */
-+	ret = twl_i2c_read_u8(TWL_MODULE_MAIN_CHARGE, &val, TWL4030_BCIMFSTS3);
-+	if (ret)
-+		return ret;
-+	if (val & TWL4030_BATSTSMCHG)
-+		return 0;
-+
-+	/*
-+	 * OK, It could be that bootloader did not enable main charger,
-+	 * pre-charge is h/w auto. So, Battery presence in Pre-charge?
-+	 */
-+	ret = twl_i2c_read_u8(TWL4030_MODULE_PRECHARGE, &val, TWL4030_BCIMFSTS1);
-+	if (ret)
-+		return ret;
-+	if (val & TWL4030_BATSTSPCHG)
-+		return 0;
-+
-+	return -ENODEV;
-+}
-+
-+/*
-  * Check if VBUS power is present
-  */
- static int twl4030_bci_have_vbus(struct twl4030_bci *bci)
-@@ -541,8 +575,14 @@ static int __init twl4030_bci_probe(struct platform_device *pdev)
- 	bci->irq_chg = platform_get_irq(pdev, 0);
- 	bci->irq_bci = platform_get_irq(pdev, 1);
- 
--	platform_set_drvdata(pdev, bci);
-+	/* Only proceed further *IF* battery is physically present */
-+	ret = twl4030_is_battery_present(bci);
-+	if  (ret) {
-+		dev_crit(&pdev->dev, "Battery was not detected:%d\n", ret);
-+		goto fail_no_battery;
-+	}
- 
-+	platform_set_drvdata(pdev, bci);
- 	bci->ac.name = "twl4030_ac";
- 	bci->ac.type = POWER_SUPPLY_TYPE_MAINS;
- 	bci->ac.properties = twl4030_charger_props;
-@@ -633,6 +673,7 @@ fail_chg_irq:
- fail_register_usb:
- 	power_supply_unregister(&bci->ac);
- fail_register_ac:
-+fail_no_battery:
- 	kfree(bci);
- 
- 	return ret;
--- 
-1.7.9.5
-
--- 
-Regards,
-Nishanth Menon
