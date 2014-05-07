@@ -1,97 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908AbaEGHE7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 03:04:59 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34629 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028AbaEGHE5 (ORCPT
+	id S1755030AbaEGHGO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 03:06:14 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:60023 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751798AbaEGHGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 03:04:57 -0400
-Message-ID: <5369DAC6.6050608@ti.com>
-Date: Wed, 7 May 2014 10:03:34 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 7 May 2014 03:06:13 -0400
+X-IronPort-AV: E=Sophos;i="4.97,1001,1389715200"; 
+   d="scan'208";a="30181628"
+Message-ID: <5369DC5C.20001@cn.fujitsu.com>
+Date: Wed, 7 May 2014 15:10:20 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Marek Belisko <marek@goldelico.com>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rdunlap@infradead.org>, <bcousson@baylibre.com>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <plagnioj@jcrosoft.com>,
-        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-fbdev@vger.kernel.org>,
-        <hns@goldelico.com>
-Subject: Re: [PATCH v2 2/3] ARM: dts: oma3-gta04: Add display support
-References: <1398284120-4986-1-git-send-email-marek@goldelico.com> <1398284120-4986-3-git-send-email-marek@goldelico.com>
-In-Reply-To: <1398284120-4986-3-git-send-email-marek@goldelico.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="TA9jFC3xdJ9vTBgTJIH9luDgDtdnihQ8l"
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/10] workqueue: destroy worker directly in the idle
+ timeout handler
+References: <1398571754-12443-1-git-send-email-laijs@cn.fujitsu.com> <1398571754-12443-5-git-send-email-laijs@cn.fujitsu.com> <20140505143613.GD11231@htj.dyndns.org>
+In-Reply-To: <20140505143613.GD11231@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---TA9jFC3xdJ9vTBgTJIH9luDgDtdnihQ8l
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 05/05/2014 10:36 PM, Tejun Heo wrote:
+> On Sun, Apr 27, 2014 at 12:08:59PM +0800, Lai Jiangshan wrote:
+>> Since kthread_stop() is removed from destroy_worker(),
+>> destroy_worker() doesn't need to sleep.
+>> Since "unbind the worker" is moved out from destroy_worker(),
+>> destroy_worker() doesn't require manager_mutex.
+>>
+>> So destroy_worker() can be directly called in the idle timeout
+>> handler, it helps us remove POOL_MANAGE_WORKERS and
+>> maybe_destroy_worker() and simplify the manage_workers()
+>>
+>> After POOL_MANAGE_WORKERS is removed, worker_thread() doesn't
+>> need to test whether it needs to manage after processed works.
+>> So we can remove this test branch.
+> 
+> Ah, so, you can take out workers directly from idle timer.  Yeah,
+> that's nice.  I'm not a big fan of the wait_queue usage in the
+> previous patch tho.  Can we use a completion instead?
+> 
+> Thanks.
+> 
 
-On 23/04/14 23:15, Marek Belisko wrote:
-> This patch add support for lcd display on gta04 board. Display control
-> is connected on spi (used spi bitbang driver).
->=20
-> Signed-off-by: Marek Belisko <marek@goldelico.com>
-> ---
->  arch/arm/boot/dts/omap3-gta04.dts | 86 +++++++++++++++++++++++++++++++=
-++++++++
->  1 file changed, 86 insertions(+)
+1) complete() can't be called inside attach_mutex due to the worker
+   shouldn't access to the pool after complete().
+2) put_unbound_pool() may called from get_unbound_pool(), we need to add
+   an additional check and avoid the wait_for_completion() if so.
 
-<snip>
-
-> +&dss {
-> +	pinctrl-names =3D "default";
-> +	pinctrl-0 =3D < &dss_dpi_pins >;
-> +
-> +	status =3D "okay";
-> +
-> +	vdds_dsi-supply =3D <&vpll2>;
-> +
-> +	dpi_out: endpoint {
-> +               remote-endpoint =3D <&lcd_in>;
-> +               data-lines =3D <24>;
-> +       };
-> +
-> +};
->=20
-
-Did you try this on 3.15-rc? The above is not right, and I don't think
-it works. You need 'port' node for the dpi_out endpoint.
-
- Tomi
++static void worker_detach_from_pool(struct worker *worker, struct worker_pool *pool)
++{
++	bool is_last;
++
++	mutex_lock(&pool->bind_mutex);
++	list_del(&worker->bind_entry);
++	is_last = list_empty(&worker->bind_entry);
++	mutex_unlock(&pool->bind_mutex);
++
++	/* need some comments here */
++	if (is_last)
++		complete(&pool->workers_detached);
++}
 
 
+@@ -3588,6 +3587,7 @@ static void put_unbound_pool(struct worker_pool *pool)
+ 	mutex_lock(&pool->manager_mutex);
+ 	spin_lock_irq(&pool->lock);
+ 	
++	need_to_wait = pool->nr_workers != 0; /* it may be called from get_unbound_pool() */
+ 	while ((worker = first_worker(pool)))
+ 		destroy_worker(worker);
+ 	WARN_ON(pool->nr_workers || pool->nr_idle);
+@@ -3596,6 +3596,8 @@ static void put_unbound_pool(struct worker_pool *pool)
+ 	mutex_unlock(&pool->manager_mutex);
+ 	mutex_unlock(&pool->manager_arb);
+ 
++	if (need_to_wait)
++		wait_for_completion(&pool->workers_detached);
 
---TA9jFC3xdJ9vTBgTJIH9luDgDtdnihQ8l
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+ 	/* shut down the timers */
+ 	del_timer_sync(&pool->idle_timer);
+ 	del_timer_sync(&pool->mayday_timer);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTadrGAAoJEPo9qoy8lh71v68QAI+/7OX3iR/NW7MTleTezIFX
-6XTvjUJR3c0afx1CrqpdEBM59E75PwSCtwvwU78kCQswVSwEBRGfTd8g8l9GoUlD
-+kLOnVskRen+o1ghoKLF0ICLReSSzGY3bplfLBGTF5zidvDiwHrCeJuCsvzE4vMQ
-2Zg1kESfJWoQEAOTS6CmgqFJv6e5d22pyyDrzC9NrJRJITgWRlYDS2Q2K0VI+oV2
-GbjhllR1+VQR+3e3YswsHw9kRk2pYvDeyC+ZMWAyfyfJntY8McFXZPP1IUi5oCVU
-K4IkP+M7hvKeSSfecyxh9S4GHk8GBztrKWHnvGj94rXpulLwxSzIdSBnXDFYitAJ
-F3i05Nq4AohD6oqZ6LJyA8kyzGG+YcjTdNvwHkh5kxttlNGEb2lbYpGTm7OnjBkp
-5OVcTOCJUnqNDhV3RsyXSz2QhkeZZP2H7f6Qvc3w3RFwcOUFbWlQIYGcx4mKkRzh
-BHbBxa8iywIPVK1rOu03XwMHanqWcaT4XpBt0cAgrbyfAbO6hMxo1+8bPLoCo6bP
-uT8WOTWif1i7BMIk8XIbA8lWJZJuw8h9GBmrTHeW56NSTHdkLFGdqzqgiWRyG/UM
-jIIBkPmnUDZbgEkjFhvzh4aNTitIrbWudD4Dd5AnXqdN556MlMZQMh4hFPB/bsTM
-77e36kPMiAm8dIk7FJ/K
-=OElA
------END PGP SIGNATURE-----
+So I think wait_queue is more grace.
 
---TA9jFC3xdJ9vTBgTJIH9luDgDtdnihQ8l--
+Thanks,
+Lai
+
