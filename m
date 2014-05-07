@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933696AbaEGNVi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:21:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45621 "EHLO
+	id S933291AbaEGNPD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:15:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45593 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933297AbaEGNPH (ORCPT
+	with ESMTP id S933160AbaEGNO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:15:07 -0400
+	Wed, 7 May 2014 09:14:59 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mark Salter <msalter@redhat.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 55/70] arm: KVM: fix possible misalignment of PGDs and bounce page
-Date: Wed,  7 May 2014 14:12:58 +0100
-Message-Id: <1399468393-10140-56-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 49/70] [SCSI] arcmsr: upper 32 of dma address lost
+Date: Wed,  7 May 2014 14:12:52 +0100
+Message-Id: <1399468393-10140-50-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -28,89 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Salter <msalter@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 5d4e08c45a6cf8f1ab3c7fa375007635ac569165 upstream.
+commit e2c70425f05219b142b3a8a9489a622c736db39d upstream.
 
-The kvm/mmu code shared by arm and arm64 uses kalloc() to allocate
-a bounce page (if hypervisor init code crosses page boundary) and
-hypervisor PGDs. The problem is that kalloc() does not guarantee
-the proper alignment. In the case of the bounce page, the page sized
-buffer allocated may also cross a page boundary negating the purpose
-and leading to a hang during kvm initialization. Likewise the PGDs
-allocated may not meet the minimum alignment requirements of the
-underlying MMU. This patch uses __get_free_page() to guarantee the
-worst case alignment needs of the bounce page and PGDs on both arm
-and arm64.
+The original code always set the upper 32 bits to zero because it was
+doing a shift of the wrong variable.
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
-Acked-by: Marc Zyngier <marc.zyngier@arm.com>
-Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
+Fixes: 1a4f550a09f8 ('[SCSI] arcmsr: 1.20.00.15: add SATA RAID plus other fixes')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/kvm/mmu.c | 15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ drivers/scsi/arcmsr/arcmsr_hba.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/kvm/mmu.c b/arch/arm/kvm/mmu.c
-index b91a68b..df3e999 100644
---- a/arch/arm/kvm/mmu.c
-+++ b/arch/arm/kvm/mmu.c
-@@ -41,6 +41,8 @@ static unsigned long hyp_idmap_start;
- static unsigned long hyp_idmap_end;
- static phys_addr_t hyp_idmap_vector;
- 
-+#define pgd_order get_order(PTRS_PER_PGD * sizeof(pgd_t))
-+
- static void kvm_tlb_flush_vmid_ipa(struct kvm *kvm, phys_addr_t ipa)
+diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+index 278c9fa..1822cb9 100644
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c
+@@ -2501,16 +2501,15 @@ static int arcmsr_polling_ccbdone(struct AdapterControlBlock *acb,
+ static int arcmsr_iop_confirm(struct AdapterControlBlock *acb)
  {
- 	/*
-@@ -172,14 +174,14 @@ void free_boot_hyp_pgd(void)
- 	if (boot_hyp_pgd) {
- 		unmap_range(NULL, boot_hyp_pgd, hyp_idmap_start, PAGE_SIZE);
- 		unmap_range(NULL, boot_hyp_pgd, TRAMPOLINE_VA, PAGE_SIZE);
--		kfree(boot_hyp_pgd);
-+		free_pages((unsigned long)boot_hyp_pgd, pgd_order);
- 		boot_hyp_pgd = NULL;
- 	}
- 
- 	if (hyp_pgd)
- 		unmap_range(NULL, hyp_pgd, TRAMPOLINE_VA, PAGE_SIZE);
- 
--	kfree(init_bounce_page);
-+	free_page((unsigned long)init_bounce_page);
- 	init_bounce_page = NULL;
- 
- 	mutex_unlock(&kvm_hyp_pgd_mutex);
-@@ -209,7 +211,7 @@ void free_hyp_pgds(void)
- 		for (addr = VMALLOC_START; is_vmalloc_addr((void*)addr); addr += PGDIR_SIZE)
- 			unmap_range(NULL, hyp_pgd, KERN_TO_HYP(addr), PGDIR_SIZE);
- 
--		kfree(hyp_pgd);
-+		free_pages((unsigned long)hyp_pgd, pgd_order);
- 		hyp_pgd = NULL;
- 	}
- 
-@@ -782,7 +784,7 @@ int kvm_mmu_init(void)
- 		size_t len = __hyp_idmap_text_end - __hyp_idmap_text_start;
- 		phys_addr_t phys_base;
- 
--		init_bounce_page = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+		init_bounce_page = (void *)__get_free_page(GFP_KERNEL);
- 		if (!init_bounce_page) {
- 			kvm_err("Couldn't allocate HYP init bounce page\n");
- 			err = -ENOMEM;
-@@ -808,8 +810,9 @@ int kvm_mmu_init(void)
- 			 (unsigned long)phys_base);
- 	}
- 
--	hyp_pgd = kzalloc(PTRS_PER_PGD * sizeof(pgd_t), GFP_KERNEL);
--	boot_hyp_pgd = kzalloc(PTRS_PER_PGD * sizeof(pgd_t), GFP_KERNEL);
-+	hyp_pgd = (pgd_t *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, pgd_order);
-+	boot_hyp_pgd = (pgd_t *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, pgd_order);
+ 	uint32_t cdb_phyaddr, cdb_phyaddr_hi32;
+-	dma_addr_t dma_coherent_handle;
 +
- 	if (!hyp_pgd || !boot_hyp_pgd) {
- 		kvm_err("Hyp mode PGD not allocated\n");
- 		err = -ENOMEM;
+ 	/*
+ 	********************************************************************
+ 	** here we need to tell iop 331 our freeccb.HighPart
+ 	** if freeccb.HighPart is not zero
+ 	********************************************************************
+ 	*/
+-	dma_coherent_handle = acb->dma_coherent_handle;
+-	cdb_phyaddr = (uint32_t)(dma_coherent_handle);
+-	cdb_phyaddr_hi32 = (uint32_t)((cdb_phyaddr >> 16) >> 16);
++	cdb_phyaddr = lower_32_bits(acb->dma_coherent_handle);
++	cdb_phyaddr_hi32 = upper_32_bits(acb->dma_coherent_handle);
+ 	acb->cdb_phyaddr_hi32 = cdb_phyaddr_hi32;
+ 	/*
+ 	***********************************************************************
 -- 
 1.9.1
 
