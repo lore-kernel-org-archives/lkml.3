@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933673AbaEGNTX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:19:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45645 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933362AbaEGNPP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933364AbaEGNPP (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 7 May 2014 09:15:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45612 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933295AbaEGNPE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 09:15:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Grant Likely <grant.likely@linaro.org>, Mark Brown <broonie@kernel.org>,
+Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 60/70] drivercore: deferral race condition fix
-Date: Wed,  7 May 2014 14:13:03 +0100
-Message-Id: <1399468393-10140-61-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 51/70] s390/chsc: fix SEI usage on old FW levels
+Date: Wed,  7 May 2014 14:12:54 +0100
+Message-Id: <1399468393-10140-52-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -27,125 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grant Likely <grant.likely@linaro.org>
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
 
-commit 58b116bce13612e5aa6fcd49ecbd4cf8bb59e835 upstream.
+commit 06cd7a874ec6e09d151aeb1fa8600e14f1ff89f6 upstream.
 
-When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
-when all modules loaded but some driver still stuck in the deferred list
-and there is a need for external event to kick the deferred queue to probe
-these drivers.
+Using a notification type mask for the store event information chsc
+is unsupported on some firmware levels. Retry SEI with that mask set
+to zero (which is the old way of requesting only channel subsystem
+related events).
 
-The issue has been observed on embedded systems with CONFIG_PREEMPT enabled,
-audio support built as modules and using nfsroot for root filesystem.
-
-The following log fragment shows such sequence when all audio modules
-were loaded but the sound card is not present since the machine driver has
-failed to probe due to missing dependency during it's probe.
-The board is am335x-evmsk (McASP<->tlv320aic3106 codec) with davinci-evm
-machine driver:
-
-...
-[   12.615118] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: ENTER
-[   12.719969] davinci_evm sound.3: davinci_evm_probe: ENTER
-[   12.725753] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card
-[   12.753846] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component
-[   12.922051] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component DONE
-[   12.950839] davinci_evm sound.3: ASoC: platform (null) not registered
-[   12.957898] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card DONE (-517)
-[   13.099026] davinci-mcasp 4803c000.mcasp: Kicking the deferred list
-[   13.177838] davinci-mcasp 4803c000.mcasp: really_probe: probe_count = 2
-[   13.194130] davinci_evm sound.3: snd_soc_register_card failed (-517)
-[   13.346755] davinci_mcasp_driver_init: LEAVE
-[   13.377446] platform sound.3: Driver davinci_evm requests probe deferral
-[   13.592527] platform sound.3: really_probe: probe_count = 0
-
-In the log the machine driver enters it's probe at 12.719969 (this point it
-has been removed from the deferred lists). McASP driver already executing
-it's probing (since 12.615118).
-The machine driver tries to construct the sound card (12.950839) but did
-not found one of the components so it fails. After this McASP driver
-registers all the ASoC components (the machine driver still in it's probe
-function after it failed to construct the card) and the deferred work is
-prepared at 13.099026 (note that this time the machine driver is not in the
-lists so it is not going to be handled when the work is executing).
-Lastly the machine driver exit from it's probe and the core places it to
-the deferred list but there will be no other driver going to load and the
-deferred queue is not going to be kicked again - till we have external event
-like connecting USB stick, etc.
-
-The proposed solution is to try the deferred queue once more when the last
-driver is asking for deferring and we had drivers loaded while this last
-driver was probing.
-
-This way we can avoid drivers stuck in the deferred queue.
-
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Reviewed-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Mark Brown <broonie@kernel.org>
+Reported-and-tested-by: Stefan Haberland <stefan.haberland@de.ibm.com>
+Reviewed-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/base/dd.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ drivers/s390/cio/chsc.c | 22 +++++++++++++++++-----
+ 1 file changed, 17 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 0605176..8a8d611 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -52,6 +52,7 @@ static DEFINE_MUTEX(deferred_probe_mutex);
- static LIST_HEAD(deferred_probe_pending_list);
- static LIST_HEAD(deferred_probe_active_list);
- static struct workqueue_struct *deferred_wq;
-+static atomic_t deferred_trigger_count = ATOMIC_INIT(0);
+diff --git a/drivers/s390/cio/chsc.c b/drivers/s390/cio/chsc.c
+index 13299f9..ec0951a 100644
+--- a/drivers/s390/cio/chsc.c
++++ b/drivers/s390/cio/chsc.c
+@@ -560,18 +560,27 @@ static void chsc_process_sei_nt0(struct chsc_sei_nt0_area *sei_area)
  
- /**
-  * deferred_probe_work_func() - Retry probing devices in the active list.
-@@ -135,6 +136,17 @@ static bool driver_deferred_probe_enable = false;
-  * This functions moves all devices from the pending list to the active
-  * list and schedules the deferred probe workqueue to process them.  It
-  * should be called anytime a driver is successfully bound to a device.
-+ *
-+ * Note, there is a race condition in multi-threaded probe. In the case where
-+ * more than one device is probing at the same time, it is possible for one
-+ * probe to complete successfully while another is about to defer. If the second
-+ * depends on the first, then it will get put on the pending list after the
-+ * trigger event has already occured and will be stuck there.
-+ *
-+ * The atomic 'deferred_trigger_count' is used to determine if a successful
-+ * trigger has occurred in the midst of probing a driver. If the trigger count
-+ * changes in the midst of a probe, then deferred processing should be triggered
-+ * again.
-  */
- static void driver_deferred_probe_trigger(void)
+ static void chsc_process_event_information(struct chsc_sei *sei, u64 ntsm)
  {
-@@ -147,6 +159,7 @@ static void driver_deferred_probe_trigger(void)
- 	 * into the active list so they can be retried by the workqueue
- 	 */
- 	mutex_lock(&deferred_probe_mutex);
-+	atomic_inc(&deferred_trigger_count);
- 	list_splice_tail_init(&deferred_probe_pending_list,
- 			      &deferred_probe_active_list);
- 	mutex_unlock(&deferred_probe_mutex);
-@@ -265,6 +278,7 @@ static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
- static int really_probe(struct device *dev, struct device_driver *drv)
- {
- 	int ret = 0;
-+	int local_trigger_count = atomic_read(&deferred_trigger_count);
+-	do {
++	static int ntsm_unsupported;
++
++	while (true) {
+ 		memset(sei, 0, sizeof(*sei));
+ 		sei->request.length = 0x0010;
+ 		sei->request.code = 0x000e;
+-		sei->ntsm = ntsm;
++		if (!ntsm_unsupported)
++			sei->ntsm = ntsm;
  
- 	atomic_inc(&probe_count);
- 	pr_debug("bus: '%s': %s: probing driver %s with device %s\n",
-@@ -310,6 +324,9 @@ probe_failed:
- 		/* Driver requested deferred probing */
- 		dev_info(dev, "Driver %s requests probe deferral\n", drv->name);
- 		driver_deferred_probe_add(dev);
-+		/* Did a trigger occur while probing? Need to re-trigger if yes */
-+		if (local_trigger_count != atomic_read(&deferred_trigger_count))
-+			driver_deferred_probe_trigger();
- 	} else if (ret != -ENODEV && ret != -ENXIO) {
- 		/* driver matched but the probe failed */
- 		printk(KERN_WARNING
+ 		if (chsc(sei))
+ 			break;
+ 
+ 		if (sei->response.code != 0x0001) {
+-			CIO_CRW_EVENT(2, "chsc: sei failed (rc=%04x)\n",
+-				      sei->response.code);
++			CIO_CRW_EVENT(2, "chsc: sei failed (rc=%04x, ntsm=%llx)\n",
++				      sei->response.code, sei->ntsm);
++
++			if (sei->response.code == 3 && sei->ntsm) {
++				/* Fallback for old firmware. */
++				ntsm_unsupported = 1;
++				continue;
++			}
+ 			break;
+ 		}
+ 
+@@ -587,7 +596,10 @@ static void chsc_process_event_information(struct chsc_sei *sei, u64 ntsm)
+ 			CIO_CRW_EVENT(2, "chsc: unhandled nt: %d\n", sei->nt);
+ 			break;
+ 		}
+-	} while (sei->u.nt0_area.flags & 0x80);
++
++		if (!(sei->u.nt0_area.flags & 0x80))
++			break;
++	}
+ }
+ 
+ /*
 -- 
 1.9.1
 
