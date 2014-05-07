@@ -1,129 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508AbaEGJhg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:37:36 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:21408 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932069AbaEGJhf (ORCPT
+	id S932274AbaEGJiy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:38:54 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57606 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754861AbaEGJiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:37:35 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Feng Kan <fkan@apm.com>
-Cc: "tglx\@linutronix.de" <tglx@linutronix.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches\@apm.com" <patches@apm.com>, Vinayak Kale <vkale@apm.com>
-Subject: Re: [PATCH V4] gic: preserve gic V2 bypass bits in cpu ctrl register
-In-Reply-To: <1399424025-4199-1-git-send-email-fkan@apm.com> (Feng Kan's
-	message of "Wed, 7 May 2014 01:53:45 +0100")
-Organization: ARM Ltd
-References: <1399424025-4199-1-git-send-email-fkan@apm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Wed, 07 May 2014 10:37:26 +0100
-Message-ID: <877g5yorop.fsf@approximate.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 7 May 2014 05:38:52 -0400
+Date: Wed, 7 May 2014 11:38:48 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, <devicetree@vger.kernel.org>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH v3 01/20] usb: ehci-orion: Fix clock reference leaking
+Message-ID: <20140507113848.037bb94d@free-electrons.com>
+In-Reply-To: <Pine.LNX.4.44L0.1405061027490.1312-100000@iolanthe.rowland.org>
+References: <1399335255-589-2-git-send-email-gregory.clement@free-electrons.com>
+	<Pine.LNX.4.44L0.1405061027490.1312-100000@iolanthe.rowland.org>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07 2014 at  1:53:45 am BST, Feng Kan <fkan@apm.com> wrote:
-> This change is made to preserve the GIC v2 bypass bits in the
-> GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
-> This code will preserve all bits configured by the bootload regarding
-                                                     bootloader
-> v2 bypass group bits. In the X-Gene platform (as well others), the
+Dear Alan Stern,
 
-Which other platform? It'd be interesting to know which one, as you're
-implying they haven't managed to boot a mainline kernel so far...
+On Tue, 6 May 2014 10:30:57 -0400 (EDT), Alan Stern wrote:
 
-> bypass functionality is not generally used and bypass bits should not
-> be changed by the kernel gic code as it could lead to incorrect behavior.
-> Tested on X-Gene mustang board.
->
-> Signed-off-by: Vinayak Kale <vkale@apm.com>
-> Acked-by: Anup Patel <apatel@apm.com>
-> Signed-off-by: Feng Kan <fkan@apm.com>
-> ---
->  V4: Change to use bypass mask, change to use more suitable variable name.
->  V3: Fix code not touch other bits other than bypass bits.
->
->  drivers/irqchip/irq-gic.c |   20 +++++++++++++++++---
->  1 files changed, 17 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index 4300b66..50a7bb2 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -97,6 +97,8 @@ struct irq_chip gic_arch_extn = {
->  #define MAX_GIC_NR	1
->  #endif
->  
-> +#define GIC_BYPASS_MASK		0x1e0
-> +
->  static struct gic_chip_data gic_data[MAX_GIC_NR] __read_mostly;
->  
->  #ifdef CONFIG_GIC_NON_BANKED
-> @@ -418,6 +420,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->  	void __iomem *dist_base = gic_data_dist_base(gic);
->  	void __iomem *base = gic_data_cpu_base(gic);
->  	unsigned int cpu_mask, cpu = smp_processor_id();
-> +	unsigned int bypass;
+> >  err2:
+> > -	if (!IS_ERR(clk))
+> > -		clk_disable_unprepare(clk);
+> > +	usb_put_hcd(hcd);
+> 
+> At this point, priv has just become a dangling pointer, because it
+> points to something that was allocated along with hcd.
 
-Please use a type that corresponds to the width of the access (u32 in
-this case).
+Right.
 
->  	int i;
->  
->  	/*
-> @@ -449,13 +452,20 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->  		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
->  
->  	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
-> -	writel_relaxed(1, base + GIC_CPU_CTRL);
-> +
-> +	bypass = readl(base + GIC_CPU_CTRL);
-> +	bypass &= GIC_BYPASS_MASK;
-> +	writel_relaxed(bypass | 0x1, base + GIC_CPU_CTRL);
->  }
->  
->  void gic_cpu_if_down(void)
->  {
->  	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
-> -	writel_relaxed(0, cpu_base + GIC_CPU_CTRL);
-> +	unsigned int bypass;
-> +
-> +	bypass = readl(cpu_base + GIC_CPU_CTRL);
-> +	bypass &= GIC_BYPASS_MASK;
-> +	writel_relaxed(bypass, cpu_base + GIC_CPU_CTRL);
->  }
->  
->  #ifdef CONFIG_CPU_PM
-> @@ -566,6 +576,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
->  {
->  	int i;
->  	u32 *ptr;
-> +	unsigned int bypass;
->  	void __iomem *dist_base;
->  	void __iomem *cpu_base;
->  
-> @@ -590,7 +601,10 @@ static void gic_cpu_restore(unsigned int gic_nr)
->  		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
->  
->  	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
-> -	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
-> +
-> +	bypass = readl(cpu_base + GIC_CPU_CTRL);
-> +	bypass &= GIC_BYPASS_MASK;
-> +	writel_relaxed(bypass | 0x1, cpu_base + GIC_CPU_CTRL);
+> > +
+> > +	if (!IS_ERR(priv->clk))
+> > +		clk_disable_unprepare(priv->clk);
+> 
+> And now you are dereferencing memory that has been deallocated.  The
+> real problem is that you get and enable the clock _after_ creating hcd,
+> but you don't disable it _before_ deallocating hcd.
 
-It would be good to turn these into a static function (gic_cpu_if_up,
-matching gic_cpu_if_down?), and use it in both gic_cpu_init and
-gic_cpu_restore.
+Correct.
 
-Thanks,
+> 
+> >  err1:
+> >  	dev_err(&pdev->dev, "init %s fail, %d\n",
+> >  		dev_name(&pdev->dev), err);
+> > @@ -260,14 +273,14 @@ err1:
+> >  static int ehci_orion_drv_remove(struct platform_device *pdev)
+> >  {
+> >  	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+> > -	struct clk *clk;
+> > +	struct orion_ehci_hcd *priv = hcd_to_orion_priv(hcd);
+> >  
+> >  	usb_remove_hcd(hcd);
+> >  	usb_put_hcd(hcd);
+> >  
+> > -	clk = devm_clk_get(&pdev->dev, NULL);
+> > -	if (!IS_ERR(clk))
+> > -		clk_disable_unprepare(clk);
+> > +	if (!IS_ERR(priv->clk))
+> > +		clk_disable_unprepare(priv->clk);
+> 
+> This has the same problem as above.
 
-	M.
+Indeed. Will fix in v4.
+
+> Also, for both this patch and 02/20, it would be better to replace the
+> "errN" labels with something more descriptive, so that it's not
+> necessary to renumber them every time something changes.
+
+Sure. I've added an additional commit prior to this patch that renames
+the goto labels to something more meaningful. This will be part of v4.
+
+Thanks for the review!
+
+Thomas
 -- 
-Jazz is not dead. It just smells funny.
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
