@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932452AbaEGJue (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 05:50:34 -0400
-Received: from mga02.intel.com ([134.134.136.20]:6093 "EHLO mga02.intel.com"
+	id S1755748AbaEGJvc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 05:51:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57143 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755204AbaEGJuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 05:50:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1001,1389772800"; 
-   d="scan'208";a="507545804"
-Message-ID: <1399456196.2458.53.camel@acox1-desk.ger.corp.intel.com>
-Subject: Re: [PATCH] libata-sff: remove dead code
-From: Alan Cox <alan@linux.intel.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: David Howells <dhowells@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 07 May 2014 10:49:56 +0100
-In-Reply-To: <1399454604.6659.13.camel@x220>
-References: <1399204229.8729.15.camel@x220>
-	 <1399411616.2458.45.camel@acox1-desk.ger.corp.intel.com>
-	 <1399454604.6659.13.camel@x220>
-Organization: Intel Corporation
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754908AbaEGJvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 05:51:31 -0400
+Date: Wed, 7 May 2014 11:51:27 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH -mm 1/2] memcg: get rid of memcg_create_cache_name
+Message-ID: <20140507095127.GC9489@dhcp22.suse.cz>
+References: <a4aa62026c10fc709e8bf13542b29cf771381394.1399450112.git.vdavydov@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <a4aa62026c10fc709e8bf13542b29cf771381394.1399450112.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > It was needed for some of the FRV devices I belive. Please check with
-> > David Howells if it's still relevant
+On Wed 07-05-14 12:15:29, Vladimir Davydov wrote:
+> Instead of calling back to memcontrol.c from kmem_cache_create_memcg in
+> order to just create the name of a per memcg cache, let's allocate it in
+> place. We only need to pass the memcg name to kmem_cache_create_memcg
+> for that - everything else can be done in slab_common.c.
 > 
-> This code has been behind (effectively) an "#if 0" check for seven
-> years. So either there was no problem to begin with, the problem is
-> fixed somewhere else, or no one is actually using the affected devices.
-> So I doubt this is still relevant. But maybe David thinks otherwise...
-> 
-> > (even if its not used in the default configs)
-> 
-> It's not used (and has never been used) regardless which config one
-> tries.
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 
-Unless you are editing the config with out of tree changes. Which is
-possible which is why I said ask Dave. It's probably fine but best to be
-safe.
+Seems good to me.
+I would keep the comment about the static buffer as mentioned below.
+Other than that
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Alan
+[...]
+> -char *memcg_create_cache_name(struct mem_cgroup *memcg,
+> -			      struct kmem_cache *root_cache)
+> -{
+> -	static char *buf;
+> -
+> -	/*
+> -	 * We need a mutex here to protect the shared buffer. Since this is
+> -	 * expected to be called only on cache creation, we can employ the
+> -	 * slab_mutex for that purpose.
+> -	 */
+> -	lockdep_assert_held(&slab_mutex);
+> -
+> -	if (!buf) {
+> -		buf = kmalloc(NAME_MAX + 1, GFP_KERNEL);
+> -		if (!buf)
+> -			return NULL;
+> -	}
+> -
+> -	cgroup_name(memcg->css.cgroup, buf, NAME_MAX + 1);
+> -	return kasprintf(GFP_KERNEL, "%s(%d:%s)", root_cache->name,
+> -			 memcg_cache_id(memcg), buf);
+> -}
+> -
+>  int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+>  			     struct kmem_cache *root_cache)
+>  {
+> @@ -3164,6 +3141,7 @@ void memcg_free_cache_params(struct kmem_cache *s)
+>  static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
+>  				    struct kmem_cache *root_cache)
+>  {
+> +	static char *memcg_name_buf;
+>  	struct kmem_cache *cachep;
+>  	int id;
 
+So we are relying on memcg_slab_mutex now, right? Worth a comment I
+suppose.
 
+-- 
+Michal Hocko
+SUSE Labs
