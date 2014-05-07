@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933320AbaEGNPJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:15:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45610 "EHLO
+	id S933091AbaEGNUi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:20:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45626 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933160AbaEGNPE (ORCPT
+	with ESMTP id S933309AbaEGNPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:15:04 -0400
+	Wed, 7 May 2014 09:15:08 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Hellstrom <thellstrom@vmware.com>,
+Cc: Haibin Wang <wanghaibin.wang@huawei.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 53/70] drm/vmwgfx: Make sure user-space can't DMA across buffer object boundaries v2
-Date: Wed,  7 May 2014 14:12:56 +0100
-Message-Id: <1399468393-10140-54-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 56/70] KVM: ARM: vgic: Fix sgi dispatch problem
+Date: Wed,  7 May 2014 14:12:59 +0100
+Message-Id: <1399468393-10140-57-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -27,63 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Haibin Wang <wanghaibin.wang@huawei.com>
 
-commit cbd75e97a525e3819c02dc18bc2d67aa544c9e45 upstream.
+commit 91021a6c8ffdc55804dab5acdfc7de4f278b9ac3 upstream.
 
-We already check that the buffer object we're accessing is registered with
-the file. Now also make sure that we can't DMA across buffer object boundaries.
+When dispatch SGI(mode == 0), that is the vcpu of VM should send
+sgi to the cpu which the target_cpus list.
+So, there must add the "break" to branch of case 0.
 
-v2: Code commenting update.
-
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Signed-off-by: Haibin Wang <wanghaibin.wang@huawei.com>
+Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ virt/kvm/arm/vgic.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c b/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
-index 8b059eb..1b9aa98 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
-@@ -834,14 +834,36 @@ static int vmw_cmd_dma(struct vmw_private *dev_priv,
- 		SVGA3dCmdSurfaceDMA dma;
- 	} *cmd;
- 	int ret;
-+	SVGA3dCmdSurfaceDMASuffix *suffix;
-+	uint32_t bo_size;
+diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
+index 17c5ac7..0e8b10d 100644
+--- a/virt/kvm/arm/vgic.c
++++ b/virt/kvm/arm/vgic.c
+@@ -753,6 +753,7 @@ static void vgic_dispatch_sgi(struct kvm_vcpu *vcpu, u32 reg)
+ 	case 0:
+ 		if (!target_cpus)
+ 			return;
++		break;
  
- 	cmd = container_of(header, struct vmw_dma_cmd, header);
-+	suffix = (SVGA3dCmdSurfaceDMASuffix *)((unsigned long) &cmd->dma +
-+					       header->size - sizeof(*suffix));
-+
-+	/* Make sure device and verifier stays in sync. */
-+	if (unlikely(suffix->suffixSize != sizeof(*suffix))) {
-+		DRM_ERROR("Invalid DMA suffix size.\n");
-+		return -EINVAL;
-+	}
-+
- 	ret = vmw_translate_guest_ptr(dev_priv, sw_context,
- 				      &cmd->dma.guest.ptr,
- 				      &vmw_bo);
- 	if (unlikely(ret != 0))
- 		return ret;
- 
-+	/* Make sure DMA doesn't cross BO boundaries. */
-+	bo_size = vmw_bo->base.num_pages * PAGE_SIZE;
-+	if (unlikely(cmd->dma.guest.ptr.offset > bo_size)) {
-+		DRM_ERROR("Invalid DMA offset.\n");
-+		return -EINVAL;
-+	}
-+
-+	bo_size -= cmd->dma.guest.ptr.offset;
-+	if (unlikely(suffix->maximumOffset > bo_size))
-+		suffix->maximumOffset = bo_size;
-+
- 	ret = vmw_cmd_res_check(dev_priv, sw_context, vmw_res_surface,
- 				user_surface_converter, &cmd->dma.host.sid,
- 				NULL);
+ 	case 1:
+ 		target_cpus = ((1 << nrcpus) - 1) & ~(1 << vcpu_id) & 0xff;
 -- 
 1.9.1
 
