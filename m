@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345AbaEGOnn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 10:43:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36071 "EHLO mx2.suse.de"
+	id S1755993AbaEGOoE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 10:44:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49870 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751543AbaEGOnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 10:43:41 -0400
-Date: Wed, 7 May 2014 16:43:39 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/9] mm: memcontrol: retry reclaim for oom-disabled and
- __GFP_NOFAIL charges
-Message-ID: <20140507144339.GI9489@dhcp22.suse.cz>
-References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
- <1398889543-23671-4-git-send-email-hannes@cmpxchg.org>
+	id S1751108AbaEGOoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 10:44:02 -0400
+From: Bandan Das <bsd@redhat.com>
+To: Nadav Amit <namit@cs.technion.ac.il>
+Cc: mtosatti@redhat.com, pbonzini@redhat.com, hpa@zytor.com, gleb@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] KVM: x86: Fix wrong masking on relative jump/call
+References: <1399465972-4026-1-git-send-email-namit@cs.technion.ac.il>
+	<1399465972-4026-6-git-send-email-namit@cs.technion.ac.il>
+Date: Wed, 07 May 2014 10:43:50 -0400
+In-Reply-To: <1399465972-4026-6-git-send-email-namit@cs.technion.ac.il> (Nadav
+	Amit's message of "Wed, 7 May 2014 15:32:52 +0300")
+Message-ID: <jpgppjpejix.fsf@nelium.bos.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398889543-23671-4-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 30-04-14 16:25:37, Johannes Weiner wrote:
-> There is no reason why oom-disabled and __GFP_NOFAIL charges should
-> try to reclaim only once when every other charge tries several times
-> before giving up.  Make them all retry the same number of times.
+Nadav Amit <namit@cs.technion.ac.il> writes:
 
-I guess the idea whas that oom disabled (THP) allocation can fallback to
-a smaller allocation. I would suspect this would increase latency for
-THP page faults.
-
-__GFP_NOFAIL is a different story and it can be retried.
- 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Relative jumps and calls do the masking according to the operand size, and not
+> according to the address size as the KVM emulator does today.  In 64-bit mode,
+> the resulting RIP is always 64-bit. Otherwise it is masked according to the
+> instruction operand-size. Note that when 16-bit address size is used, bits
+> 63:32 are unmodified.
+>
+> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
 > ---
->  mm/memcontrol.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 6ce59146fec7..c431a30280ac 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2589,7 +2589,7 @@ static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
->  				 bool oom)
+>  arch/x86/kvm/emulate.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> index 6833b41..e406705 100644
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -506,7 +506,9 @@ static void rsp_increment(struct x86_emulate_ctxt *ctxt, int inc)
+>  
+>  static inline void jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
 >  {
->  	unsigned int batch = max(CHARGE_BATCH, nr_pages);
-> -	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
-> +	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
->  	struct mem_cgroup *mem_over_limit;
->  	struct res_counter *fail_res;
->  	unsigned long nr_reclaimed;
-> @@ -2660,6 +2660,9 @@ retry:
->  	if (mem_cgroup_wait_acct_move(mem_over_limit))
->  		goto retry;
->  
-> +	if (nr_retries--)
-> +		goto retry;
-> +
->  	if (gfp_mask & __GFP_NOFAIL)
->  		goto bypass;
->  
-> @@ -2669,9 +2672,6 @@ retry:
->  	if (!oom)
->  		goto nomem;
->  
-> -	if (nr_oom_retries--)
-> -		goto retry;
-> -
->  	mem_cgroup_oom(mem_over_limit, gfp_mask, get_order(batch));
->  nomem:
->  	if (!(gfp_mask & __GFP_NOFAIL))
-> -- 
-> 1.9.2
-> 
+> -	register_address_increment(ctxt, &ctxt->_eip, rel);
+> +	/* 64-bit mode relative jumps are always 64-bit; otherwise mask */
+> +	int op_bytes = ctxt->mode == X86EMUL_MODE_PROT64 ? 8 : ctxt->op_bytes;
 
--- 
-Michal Hocko
-SUSE Labs
+Just a nit, probably break this up for readability ?
+
+> +	masked_increment(&ctxt->eip, op_bytes, rel);
+>  }
+>  
+>  static u32 desc_limit_scaled(struct desc_struct *desc)
