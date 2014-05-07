@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751773AbaEGV4S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 17:56:18 -0400
-Received: from ozlabs.org ([103.22.144.67]:59522 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751071AbaEGV4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 17:56:13 -0400
-Date: Thu, 8 May 2014 07:56:06 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: linux-next: Tree for May 7 (argh)
-Message-Id: <20140508075606.fd453d43546aef01b87e3ad1@canb.auug.org.au>
-In-Reply-To: <536A9CF2.90906@infradead.org>
-References: <20140507173341.753d8ccf4fe033abd513f98f@canb.auug.org.au>
-	<536A9CF2.90906@infradead.org>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__8_May_2014_07_56_06_+1000_T+rdW/.2vei2hc4e"
+	id S1752002AbaEGV7S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 17:59:18 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:39119 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaEGV7R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 17:59:17 -0400
+Date: Wed, 7 May 2014 14:59:11 -0700
+From: josh@joshtriplett.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 21/45] torture: Report diagnostics from
+ qemu
+Message-ID: <20140507215911.GM27924@cloud>
+References: <20140429002455.GA15461@linux.vnet.ibm.com>
+ <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1398731133-18925-21-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398731133-18925-21-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__8_May_2014_07_56_06_+1000_T+rdW/.2vei2hc4e
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Apr 28, 2014 at 05:25:09PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> The current script does record qemu diagnostics, but the user has to
+> know where to look for them.  This commit therefore puts them into the
+> Warnings file so that kvm-recheck.sh will display them.  This change is
+> especially useful if you are in the habit of killing the qemu process
+> when you realize that you messed something up, but then later on wonder
+> why the process terminated early.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Hi Randy,
+A couple of issues below.
 
-On Wed, 07 May 2014 13:52:02 -0700 Randy Dunlap <rdunlap@infradead.org> wro=
-te:
->
-> I was away for one week.  Did I miss some new instructions about
-> building linux-next?
+> @@ -172,6 +172,14 @@ do
+>  		if test $kruntime -lt $seconds
+>  		then
+>  			echo Completed in $kruntime vs. $seconds >> $resdir/Warnings 2>&1
+> +			grep "^(qemu) qemu:" $resdir/kvm-test-1-run.sh.out >> $resdir/Warnings 2>&1
+> +			killpid="`grep "^(qemu) qemu: terminating on signal [0-9]* from pid" $resdir/kvm-test-1-run.sh.out`"
 
-Nothing that I know of.
+You already searched for lines like this and put them in Warnings in the
+previous line, so you don't need to search the entire output.  Also, you
+use grep here and sed below; you could just use sed here to directly
+obtain the PID:
 
->=20
-> I get a thousands of messages like these:
+killpid="$(sed -n "s/^(qemu) qemu: terminating on signal [0-9]* from pid \([0-9]*\).*$/\1/p" $resdir/Warnings)"
 
-What config?  What arch?  Did you just do "make oldconfig"?
+> +			if test -n "$killpid"
+> +			then
+> +				pscmd="`echo $killpid | sed -e 's/^.*from pid/ps -ef | grep/'`"
+> +				echo $pscmd >> $resdir/Warnings
+> +				echo $pscmd | sh >> $resdir/Warnings 2>&1
+> +			fi
 
-> WARNING: "system_wq" [drivers/misc/bh1770glc.ko] has no CRC!
-> WARNING: "__wake_up" [drivers/misc/bh1770glc.ko] has no CRC!
-> WARNING: "sysfs_notify" [drivers/misc/bh1770glc.ko] has no CRC!
-> WARNING: "kfree" [drivers/misc/bh1770glc.ko] has no CRC!
->=20
-> Also there hundreds of messages like these:
->=20
-> ps2mult.c:(.exit.text+0x8f): multiple definition of `cleanup_module'
-> ps2mult.c:(.init.text+0xbc8): multiple definition of `init_module'
-> ipack.c:(.exit.text+0x0): multiple definition of `cleanup_module'
-> ipack.c:(.init.text+0x0): multiple definition of `init_module'
-> mcb-core.c:(.text+0x40d): multiple definition of `cleanup_module'
-> mcb-core.c:(.text+0x3fb): multiple definition of `init_module'
+Grepping for a PID is a bad idea; it'll turn up anything that contains
+that PID anywhere on the line, including as a substring.  Given the
+above change to obtain a numeric $killpid, you can instead pass the PID
+to ps directly:
+			if test -n "$killpid"
+			then
+				ps -fp $killpid >> $resdir/Warnings 2>&1
+			fi
 
-cc'ing Rusty just in case ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__8_May_2014_07_56_06_+1000_T+rdW/.2vei2hc4e
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTaqv8AAoJEMDTa8Ir7ZwVQggP/jfsISvFFrJvOLy7IXO0D2Bg
-/Jwitr4h7sRe3/hwR8rjrsaXbvsDDFQSRatLgvjFWWP7KntRvAhDhlgE5St1mbRO
-FCfLQ/ksGs+lYcQOKg4GFPv/Mgd6Sx+UUS/4N9RRuNH2kRqHgQC2CVGrXnvdutDL
-gdQGXBGaWzqknGZ2wQRVqUQgXL+9t48YAf2bXZv+poxjK6F71K5Fvp24EHSAr3Le
-UgVSGjkAcRfXuShYQXZpb7POQ7B/sIn3JClCgaRNBFnc0Oz2m+lRJ4Llq10xs61m
-fFNIh7P8TxZeiBkmqer14DgN47FNa2rkRJHEiWjftGnqYeasminN2xDuchTBuhtE
-pZbUvqzxhorztRMPDS5eD4LQPJ3wOdsBiyJL2kX+5gUHVeJSrYk5nS77FHr8CviC
-HLw4OrYEM6xlS9OpLjeEl39FQLO66R6+5rQCOq2DJF5Fd60/ZAXA5mNiobscBkwx
-0/2+RMBw5/iDbLxt+XDwG+HELRUKdtIoQPB4y69yGxwXxNNRQOoJDF+XMAn+etRj
-kQIYSIixgPWDkmCLvXt72eJSV1GHf2FMrQV8X44WTq5F9vLPSzArbRTYBwbacdva
-5hqVzN54EPpcmPta9ChczXcrlmfo6/KWNjeOnjV7UB7LG8I/YUMBYoOMe0s2/grT
-CUF8FChgcn6kfsx/b29w
-=miGH
------END PGP SIGNATURE-----
-
---Signature=_Thu__8_May_2014_07_56_06_+1000_T+rdW/.2vei2hc4e--
