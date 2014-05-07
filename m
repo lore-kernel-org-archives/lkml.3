@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932669AbaEGMux (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 08:50:53 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58478 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751487AbaEGMuv (ORCPT
+	id S932846AbaEGMvS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 08:51:18 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:53149 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932243AbaEGMvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 08:50:51 -0400
-Date: Wed, 7 May 2014 14:50:48 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        devicetree@vger.kernel.org, Nadav Haklai <nadavh@marvell.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v3 17/20] phy: Add support for USB cluster on the Armada
- 375 SoC
-Message-ID: <20140507145048.19bd1306@free-electrons.com>
-In-Reply-To: <2511421.HV0z8e3QV0@amdc1032>
-References: <1399335255-589-1-git-send-email-gregory.clement@free-electrons.com>
-	<1399335255-589-18-git-send-email-gregory.clement@free-electrons.com>
-	<2511421.HV0z8e3QV0@amdc1032>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 7 May 2014 08:51:16 -0400
+Date: Wed, 7 May 2014 13:51:07 +0100
+From: John Church <sleeveroller@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        georgiana.chelu93@gmail.com, waydi1@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging : android: Fixes a coding style issue in
+ timed_gpio.c
+Message-ID: <20140507125107.GA9345@waldorf-new>
+References: <1399465802-9309-1-git-send-email-sleeveroller@gmail.com>
+ <20140507123915.GA26890@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140507123915.GA26890@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Bartlomiej Zolnierkiewicz,
+On Wed, May 07, 2014 at 03:39:15PM +0300, Dan Carpenter wrote:
+> I wonder if there is some kind of tutorial which teaches people to
+> choose the least specific subject possible?  We should find which
+> tutorial it is and update it.  John, can you give us a hint here which
+> tutorial you are using?
 
-On Tue, 06 May 2014 13:37:04 +0200, Bartlomiej Zolnierkiewicz wrote:
+I'm doing the Eudyptula Challenge. Task 10 is to fix a coding style issue and submit it the relevant maintainers.
 
-> > +config ARMADA375_USBCLUSTER_PHY
-> > +	def_bool y
-> > +	depends on OF
 > 
-> Please limit this driver to Armada 375 or compile testing, i.e. add additional
+> On Wed, May 07, 2014 at 01:30:02PM +0100, John Church wrote:
+> > This patch fixes a coding style issue for a line that was over 80 characters long.
+> > 
+> > Signed-off-by: John Church <sleeveroller@gmail.com>
 > 
-> 	depends on (ARCH_MVEBU && MACH_ARMADA_375) || COMPILE_TEST
+> Anyway, looks ok.
+> 
+> Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> regards,
+> dan carpenter
+>
+Thanks for your advice Dan. I've setup git send-email and mutt now so I could test the patch properly before sending.
 
-Right, will do.
+Regards,
+John
 
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
