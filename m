@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932905AbaEGNOJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:14:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45417 "EHLO
+	id S933802AbaEGNc3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:32:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45425 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932368AbaEGNOG (ORCPT
+	with ESMTP id S932868AbaEGNOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:14:06 -0400
+	Wed, 7 May 2014 09:14:07 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-ide@vger.kernel.org,
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 15/70] ahci: Do not receive interrupts sent by dummy ports
-Date: Wed,  7 May 2014 14:12:18 +0100
-Message-Id: <1399468393-10140-16-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 17/70] Input: synaptics - add min/max quirk for ThinkPad T431s, L440, L540, S1 Yoga and X1
+Date: Wed,  7 May 2014 14:12:20 +0100
+Message-Id: <1399468393-10140-18-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -28,63 +29,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Gordeev <agordeev@redhat.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 2cf532f5e67c0cfe38c8c100e49280cdadacd2be upstream.
+commit 46a2986ebbe18757c2d8c352f8fb6e0f4f0754e3 upstream.
 
-In multiple MSI mode all AHCI ports (including dummy) get assigned
-separate MSI vectors and (as result of execution
-pci_enable_msi_exact() function) separate IRQ numbers, (mapped to the
-MSI vectors).
+We expect that all the Haswell series will need such quirks, sigh.
 
-Therefore, although interrupts from dummy ports are not desired they
-are still enabled. We do not request IRQs for dummy ports, but that
-only means we do not assign AHCI-specific ISRs to corresponding IRQ
-numbers.
+The T431s seems to be T430 hardware in a T440s case, using the T440s touchpad,
+with the same min/max issue.
 
-As result, dummy port interrupts still could come and traverse all the
-way from the PCI device to the kernel, causing unnecessary overhead.
+The X1 Carbon 3rd generation name says 2nd while it is a 3rd generation.
 
-This update disables IRQs for dummy ports and prevents the described
-issue.
+The X1 and T431s share a PnPID with the T540p, but the reported ranges are
+closer to those of the T440s.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Tested-by: David Milburn <dmilburn@redhat.com>
-Cc: linux-ide@vger.kernel.org
-Fixes: 5ca72c4f7c41 ("AHCI: Support multiple MSIs")
+HdG: Squashed 5 quirk patches into one. T431s + L440 + L540 are written by me,
+S1 Yoga and X1 are written by Benjamin Tissoires.
+
+Hdg: Standardized S1 Yoga and X1 values, Yoga uses the same touchpad as the
+X240, X1 uses the same touchpad as the T440.
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/ahci.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ drivers/input/mouse/synaptics.c | 42 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index a5cf3ea..9d13ab1 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1171,12 +1171,16 @@ int ahci_host_activate(struct ata_host *host, int irq, unsigned int n_msis)
- 	for (i = 0; i < host->n_ports; i++) {
- 		struct ahci_port_priv *pp = host->ports[i]->private_data;
- 
--		/* pp is NULL for dummy ports */
--		if (pp)
--			rc = devm_request_threaded_irq(host->dev,
--						       irq + i, ahci_hw_interrupt,
--						       ahci_thread_fn, IRQF_SHARED,
--						       pp->irq_desc, host->ports[i]);
-+		/* Do not receive interrupts sent by dummy ports */
-+		if (!pp) {
-+			disable_irq(irq + i);
-+			continue;
-+		}
-+
-+		rc = devm_request_threaded_irq(host->dev, irq + i,
-+					       ahci_hw_interrupt,
-+					       ahci_thread_fn, IRQF_SHARED,
-+					       pp->irq_desc, host->ports[i]);
- 		if (rc)
- 			goto out_free_irqs;
- 	}
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index c69c816..d0da3c2 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -1515,6 +1515,14 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
+ 		.driver_data = (int []){1232, 5710, 1156, 4696},
+ 	},
+ 	{
++		/* Lenovo ThinkPad T431s */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T431"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
+ 		/* Lenovo ThinkPad T440s */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+@@ -1523,6 +1531,14 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
+ 		.driver_data = (int []){1024, 5112, 2024, 4832},
+ 	},
+ 	{
++		/* Lenovo ThinkPad L440 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad L440"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
+ 		/* Lenovo ThinkPad T540p */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+@@ -1530,6 +1546,32 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
+ 		},
+ 		.driver_data = (int []){1024, 5056, 2058, 4832},
+ 	},
++	{
++		/* Lenovo ThinkPad L540 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad L540"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
++		/* Lenovo Yoga S1 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_EXACT_MATCH(DMI_PRODUCT_VERSION,
++					"ThinkPad S1 Yoga"),
++		},
++		.driver_data = (int []){1232, 5710, 1156, 4696},
++	},
++	{
++		/* Lenovo ThinkPad X1 Carbon Haswell (3rd generation) */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION,
++					"ThinkPad X1 Carbon 2nd"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
+ #endif
+ 	{ }
+ };
 -- 
 1.9.1
 
