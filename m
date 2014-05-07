@@ -1,53 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080AbaEGQ01 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 12:26:27 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:43402 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426AbaEGQ00 (ORCPT
+	id S1755585AbaEGQ1x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 12:27:53 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:57723 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294AbaEGQ1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 12:26:26 -0400
-Message-ID: <536A5EBF.10309@cogentembedded.com>
-Date: Wed, 07 May 2014 20:26:39 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 7 May 2014 12:27:51 -0400
+Date: Wed, 7 May 2014 18:27:46 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>, ak@linux.intel.com,
+        gong.chen@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 1/5] x86, nmi:  Add new nmi type 'external'
+Message-ID: <20140507162746.GA15779@gmail.com>
+References: <1399476883-98970-1-git-send-email-dzickus@redhat.com>
+ <1399476883-98970-2-git-send-email-dzickus@redhat.com>
+ <20140507153854.GA14926@gmail.com>
+ <20140507160251.GQ39568@redhat.com>
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        kishon@ti.com, hdegoede@redhat.com
-CC: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH 5/7] usb: ohci-platform: Enable optional use of reset
- controller
-References: <1399434623-20383-1-git-send-email-maxime.ripard@free-electrons.com> <1399434623-20383-6-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1399434623-20383-6-git-send-email-maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140507160251.GQ39568@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 07-05-2014 7:50, Maxime Ripard wrote:
+* Don Zickus <dzickus@redhat.com> wrote:
 
-> The OHCI controllers used in the Allwinner A31 are asserted in reset using a
+> On Wed, May 07, 2014 at 05:38:54PM +0200, Ingo Molnar wrote:
+> > 
+> > * Don Zickus <dzickus@redhat.com> wrote:
+> > 
+> > > I noticed when debugging a perf problem on a machine with GHES enabled,
+> > > perf seemed slow.  I then realized that the GHES NMI routine was taking
+> > > a global lock all the time to inspect the hardware.  This contended
+> > > with all the local perf counters which did not need a lock.  So each cpu
+> > > accidentally was synchronizing with itself when using perf.
+> > > 
+> > > This is because the way the nmi handler works.  It executes all the handlers
+> > > registered to a particular subtype (to deal with nmi sharing).  As a result
+> > > the GHES handler was executed on every PMI.
+> > > 
+> > > Fix this by creating a new nmi type called NMI_EXT, which is used by
+> > > handlers that need to probe external hardware and require a global lock
+> > > to do so.
+> > > 
+> > > Now the main NMI handler can check the internal NMI handlers first and
+> > > then the external ones if nothing is found.
+> > > 
+> > > This makes perf a little faster again on those machines with GHES enabled.
+> > 
+> > So what happens if GHES asserts an NMI at the same time a PMI 
+> > triggers?
+> > 
+> > If the perf PMI executes and indicates that it has handled something, 
+> > we don't execute the GHES handler, right? Will the GHES re-trigger the 
+> > NMI after we return?
+> 
+> In my head, I had thought they would be queued up and things work 
+> out fine. [...]
 
-    s/asserted/powered up/?
+x86 NMIs are generally edge triggered.
 
-> global reset controller.
+> [...]  But I guess in theory, if a PMI NMI comes in and before the 
+> cpu can accept it and GHES NMI comes in, then it would suffice to 
+> say it may get dropped.  That would be not be good.  Though the race 
+> would be very small.
+> 
+> I don't have a good idea how to handle that.
 
-> Add optional support for such a controller in the OHCI platform driver.
+Well, are GHES NMIs reasserted if they are not handled? I don't know 
+but there's a definite answer to that hardware behavior question.
 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->   Documentation/devicetree/bindings/usb/usb-ohci.txt |  1 +
->   drivers/usb/host/ohci-platform.c                   | 25 +++++++++++++++++++++-
->   2 files changed, 25 insertions(+), 1 deletion(-)
+> On the flip side, we have the same exact problem, today, with the 
+> other common external NMIs (SERR, IO).  If a PCI SERR comes in at 
+> the same time as a PMI, then it gets dropped.  Worse, it doesn't get 
+> re-enabled and blocks future SERRs (just found this out two weeks 
+> ago because of a dirty perf status register on boot).
+> 
+> Again, I don't have a solution to juggle between PMI performance and 
+> reliable delivery.  We could do away with the spinlocks and go back 
+> to single cpu delivery (like it used to be).  Then devise a 
+> mechanism to switch delivery to another cpu upon hotplug.
+> 
+> Thoughts?
 
-WBR, Sergei
+I'd say we should do a delayed timer that makes sure that all possible 
+handlers are polled after an NMI is triggered, but never at a high 
+rate.
 
+Then simply return early the moment an NMI handler indicates that 
+there was an event handled - and first call high-performance handlers 
+like the perf handler.
+
+The proper channel for hardware errors is the #MC entry anyway, so 
+this is mostly about legacies and weird hardware.
+
+Thanks,
+
+	Ingo
