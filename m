@@ -1,120 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864AbaEGE5B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 00:57:01 -0400
-Received: from smtprelay2.synopsys.com ([198.182.60.111]:35507 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818AbaEGE46 (ORCPT
+	id S1751797AbaEGFK2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 01:10:28 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:43404 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905AbaEGFK0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 00:56:58 -0400
-Message-ID: <5369BD06.5020503@synopsys.com>
-Date: Wed, 7 May 2014 10:26:38 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,gmane.linux.kernel.cross-arch,gmane.linux.kernel.next
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>, <mingo@kernel.org>,
-        <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        anton Kolesov <Anton.Kolesov@synopsys.com>,
-        linux-next <linux-next@vger.kernel.org>
-Subject: Re: kprobes broken in linux-next (was Re: [tip:perf/kprobes] kprobes:
- Introduce NOKPROBE_SYMBOL()  macro to maintain kprobes blacklist)
-References: <20140417081705.26341.96719.stgit@ltc230.yrl.intra.hitachi.co.jp> <tip-376e242429bf8539ef39a080ac113c8799840b13@git.kernel.org> <5361DB14.7010406@synopsys.com> <5362F147.6030901@hitachi.com>
-In-Reply-To: <5362F147.6030901@hitachi.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.196.93]
+	Wed, 7 May 2014 01:10:26 -0400
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [linux-sunxi] [PATCH 7/7] ARM: sunxi: dt: add APP4-EVB1 board support
+From: Koen Kooi <koen@dominion.thruhere.net>
+In-Reply-To: <1399434623-20383-8-git-send-email-maxime.ripard@free-electrons.com>
+Date: Wed, 7 May 2014 07:10:21 +0200
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
+        kishon@ti.com, hdegoede@redhat.com,
+        Boris Brezillon <boris@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <EEF98E4B-881E-469C-A1C7-8B4EB8825467@dominion.thruhere.net>
+References: <1399434623-20383-1-git-send-email-maxime.ripard@free-electrons.com> <1399434623-20383-8-git-send-email-maxime.ripard@free-electrons.com>
+To: linux-sunxi@googlegroups.com
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Friday 02 May 2014 06:43 AM, Masami Hiramatsu wrote:
-> (2014/05/01 14:26), Vineet Gupta wrote:
->> On Thursday 24 April 2014 04:28 PM, tip-bot for Masami Hiramatsu wrote:
->>> Commit-ID:  376e242429bf8539ef39a080ac113c8799840b13
->>> Gitweb:     http://git.kernel.org/tip/376e242429bf8539ef39a080ac113c8799840b13
->>> Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->>> AuthorDate: Thu, 17 Apr 2014 17:17:05 +0900
->>> Committer:  Ingo Molnar <mingo@kernel.org>
->>> CommitDate: Thu, 24 Apr 2014 10:02:56 +0200
->>>
->>> kprobes: Introduce NOKPROBE_SYMBOL() macro to maintain kprobes blacklist
->>>
->>> Introduce NOKPROBE_SYMBOL() macro which builds a kprobes
->>> blacklist at kernel build time.
->>>
->> ....
->>
->>> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
->>> index 146e4ff..40ceb3c 100644
->>> --- a/include/asm-generic/vmlinux.lds.h
->>> +++ b/include/asm-generic/vmlinux.lds.h
->>> @@ -109,6 +109,14 @@
->>>  #define BRANCH_PROFILE()
->>>  #endif
->>>  
->>> +#ifdef CONFIG_KPROBES
->>> +#define KPROBE_BLACKLIST()	VMLINUX_SYMBOL(__start_kprobe_blacklist) = .; \
->>> +				*(_kprobe_blacklist)			      \
->>> +				VMLINUX_SYMBOL(__stop_kprobe_blacklist) = .;
->>> +#else
->>> +#define KPROBE_BLACKLIST()
->>> +#endif
->>> +
->>>  #ifdef CONFIG_EVENT_TRACING
->>>  #define FTRACE_EVENTS()	. = ALIGN(8);					\
->>>  			VMLINUX_SYMBOL(__start_ftrace_events) = .;	\
->>> @@ -507,6 +515,7 @@
->>>  	*(.init.rodata)							\
->>>  	FTRACE_EVENTS()							\
->>>  	TRACE_SYSCALLS()						\
->>> +	KPROBE_BLACKLIST()						\
->>>  	MEM_DISCARD(init.rodata)					\
->>>  	CLK_OF_TABLES()							\
->>>  	RESERVEDMEM_OF_TABLES()						\
->>
->> Linux-next fails to boot on ARC due to misaligned __start_kprobe_blacklist. Patch
->> below fixes it.
->>
->> ------------------------>
->> >From c5afc4ebf9c1c094a260e2aaff6c5b3106063039 Mon Sep 17 00:00:00 2001
->> From: Vineet Gupta <vgupta@synopsys.com>
->> Date: Thu, 1 May 2014 10:47:29 +0530
->> Subject: [PATCH] kprobes: Ensure blacklist data is aligned
->>
->> ARC Linux (not supporting native unaligned access) was failing to boot
->> because __start_kprobe_blacklist was not aligned.
->>
->> This was because per generated vmlinux.lds it was emitted right next
->> to .rodata with strings etc hence could be randomly unaligned.
->>
->> Fix that by ensuring a word alignment. While 4 would suffice for 32bit
->> arches and problem at hand, it is probably better to put 8.
->>
->> | Path: (null) CPU: 0 PID: 1 Comm: swapper Not tainted
->> | 3.15.0-rc3-next-20140430 #2
->> | task: 8f044000 ti: 8f01e000 task.ti: 8f01e000
->> |
->> | [ECR   ]: 0x00230400 => Misaligned r/w from 0x800fb0d3
->> | [EFA   ]: 0x800fb0d3
->> | [BLINK ]: do_one_initcall+0x86/0x1bc
->> | [ERET  ]: init_kprobes+0x52/0x120
->>
->> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Op 7 mei 2014, om 05:50 heeft Maxime Ripard <maxime.ripard@free-electrons.com> het volgende geschreven:
+
+> From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 > 
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> The APP4 EVB1 development boards embeds an A31, together with some NAND, one SD
+> card slot, and one SDIO + UART WiFi and Bluetooth chip, a few I2C buses, USB,
+> and a LCD display.
 > 
-> Thanks!
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+> arch/arm/boot/dts/Makefile                |  1 +
+> arch/arm/boot/dts/sun6i-a31-app4-evb1.dts | 63 +++++++++++++++++++++++++++++++
+> 2 files changed, 64 insertions(+)
+> create mode 100644 arch/arm/boot/dts/sun6i-a31-app4-evb1.dts
+> 
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index ffa3f5ef27d3..d50c0895a9d5 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -343,6 +343,7 @@ dtb-$(CONFIG_ARCH_SUNXI) += \
+> 	sun5i-a10s-olinuxino-micro.dtb \
+> 	sun5i-a13-olinuxino.dtb \
+> 	sun5i-a13-olinuxino-micro.dtb \
+> +	sun6i-a31-app4-evb1.dtb \
+> 	sun6i-a31-colombus.dtb \
+> 	sun6i-a31-m9.dtb \
+> 	sun7i-a20-cubieboard2.dtb \
+> diff --git a/arch/arm/boot/dts/sun6i-a31-app4-evb1.dts b/arch/arm/boot/dts/sun6i-a31-app4-evb1.dts
+> new file mode 100644
+> index 000000000000..270ab978f858
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/sun6i-a31-app4-evb1.dts
+> @@ -0,0 +1,63 @@
+> +/*
+> + * Copyright 2014 Boris Brezillon
+> + *
+> + * Boris Brezillon <boris.brezillon@free-electrons.com>
+> + *
+> + * The code contained herein is licensed under the GNU General Public
+> + * License. You may obtain a copy of the GNU General Public License
+> + * Version 2 or later at the following locations:
 
-Hi Ingo/Andrew,
+Doesn't the kernel try to avoid the 'or later' clause?
 
-Can one of you please pick this up - it doesn't show up in linux-next yet.
+regards,
 
-Thx,
--Vineet
+Koen
 
+
+> + *
+> + * http://www.opensource.org/licenses/gpl-license.html
+> + * http://www.gnu.org/copyleft/gpl.html
+> + */
+> +
+> +/dts-v1/;
+> +/include/ "sun6i-a31.dtsi"
+> +
+> +/ {
+> +	model = "Allwinner A31 APP4 EVB1 Evaluation Board";
+> +	compatible = "allwinner,app4-evb1", "allwinner,sun6i-a31";
+> +
+> +	chosen {
+> +		bootargs = "earlyprintk console=ttyS0,115200";
+> +	};
+> +
+> +	soc@01c00000 {
+> +		pio: pinctrl@01c20800 {
+> +			usb1_vbus_pin_a: usb1_vbus_pin@0 {
+> +				allwinner,pins = "PH27";
+> +				allwinner,function = "gpio_out";
+> +				allwinner,drive = <0>;
+> +				allwinner,pull = <0>;
+> +			};
+> +		};
+> +
+> +		usbphy: phy@01c19400 {
+> +			usb1_vbus-supply = <&reg_usb1_vbus>;
+> +			status = "okay";
+> +		};
+> +
+> +		ehci0: usb@01c1a000 {
+> +			status = "okay";
+> +		};
+> +
+> +		uart0: serial@01c28000 {
+> +			pinctrl-names = "default";
+> +			pinctrl-0 = <&uart0_pins_a>;
+> +			status = "okay";
+> +		};
+> +	};
+> +
+> +	reg_usb1_vbus: usb1-vbus {
+> +		compatible = "regulator-fixed";
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&usb1_vbus_pin_a>;
+> +		regulator-name = "usb1-vbus";
+> +		regulator-min-microvolt = <5000000>;
+> +		regulator-max-microvolt = <5000000>;
+> +		enable-active-high;
+> +		gpio = <&pio 7 27 0>;
+> +		status = "okay";
+> +	};
+> +
+> +};
+> -- 
+> 1.9.1
+> 
+> -- 
+> You received this message because you are subscribed to the Google Groups "linux-sunxi" group.
+> To unsubscribe from this group and stop receiving emails from it, send an email to linux-sunxi+unsubscribe@googlegroups.com.
+> For more options, visit https://groups.google.com/d/optout.
+> 
 
