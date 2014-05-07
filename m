@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141AbaEGI0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 04:26:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10913 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753550AbaEGI0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 04:26:39 -0400
-Message-ID: <5369EE01.1090909@redhat.com>
-Date: Wed, 07 May 2014 10:25:37 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755168AbaEGI3B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 04:29:01 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:51379 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879AbaEGI27 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 04:28:59 -0400
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        kishon@ti.com
-CC: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH 0/7] Add Allwinner A31 USB support
-References: <1399434623-20383-1-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1399434623-20383-1-git-send-email-maxime.ripard@free-electrons.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAAYSxhob5-8VrgiTS5=BBnFjPei4N0zSE6fhsboWR-C-LvXJog@mail.gmail.com>
+References: <1398378989-14575-1-git-send-email-tim.kryger@linaro.org>
+	<CAPDyKFoZQUNCX7Y4C=kr-JDUF3WRxjxeNU4eJRwhZ+cFbmx7iw@mail.gmail.com>
+	<CAAYSxhob5-8VrgiTS5=BBnFjPei4N0zSE6fhsboWR-C-LvXJog@mail.gmail.com>
+Date: Wed, 7 May 2014 10:28:58 +0200
+Message-ID: <CAPDyKFohigtcYwhVV3jDGp_H2vXfPX5UUbKe8bUuoyGVebGU7A@mail.gmail.com>
+Subject: Re: [PATCH] mmc: sdhci: Use mmc core regulator infrastucture
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Chris Ball <chris@printf.net>, Mike Looijmans <mike.looijmans@topic.nl>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 7 May 2014 01:42, Tim Kryger <tim.kryger@linaro.org> wrote:
+> On Fri, Apr 25, 2014 at 1:15 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>> On 25 April 2014 00:36, Tim Kryger <tim.kryger@linaro.org> wrote:
+>>> Switch the common SDHCI code over to use mmc_host's regulator pointers
+>>> and remove the ones in the sdhci_host structure.  Additionally, use the
+>>> common mmc_regulator_get_supply function to get the regulators and set
+>>> the ocr_avail mask.
+>>>
+>>> This change sets the ocr_avail directly based upon the voltage ranges
+>>> supported which ensures ocr_avail is set correctly while allowing the
+>>> use of regulators that can't provide exactly 1.8v, 3.0v, or 3.3v.
+>>>
+>>> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+>>
+>> This looks good to me!
+>>
+>> I plan to get Russell's sdhci patchset merged, prior to this patch. So
+>> likely we need to rebase this patch on top of that soon.
+>>
+>> Kind regards
+>> Ulf Hansson
+>
+> Hi Ulf,
+>
+> Can you clarify if this is the series you intend to merge and provide
+> a rough estimate on when it might happen?
 
-On 05/07/2014 05:50 AM, Maxime Ripard wrote:
-> Hi everyone,
-> 
-> This patchset adds support for the USB controllers found in the
-> Allwinner A31.
-> 
-> While the design is similar to the earlier Allwinner SoCs that are
-> already supported, a few details here and there change, like the fact
-> that the PHYs now have one clock per phy, while it used to be only one
-> for all the PHYs.
-> 
+Currently, Chris is waiting for Russell to send him a PR.
+
+>
+> http://www.spinics.net/lists/arm-kernel/msg324984.html
+
+It's that patchset I refer to, but with some minor changes and likely
+not patch 34 and onwards.
+
+Kind regards
+Ulf Hansson
+
+>
 > Thanks,
-> Maxime
-
-Thanks for working on this.
-
-Looks good, the entire series is:
-
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
-
-Regards,
-
-Hans
-
-
-> 
-> Boris BREZILLON (2):
->   usb: ehci-platform: add optional reset controller retrieval
->   ARM: sunxi: dt: add APP4-EVB1 board support
-> 
-> Maxime Ripard (5):
->   clk: sunxi: Implement A31 USB clock
->   ARM: sun6i: Add the USB clocks to the DTSI.
->   phy: usb: sunxi: Introduce Allwinner A31 USB PHY support
->   usb: ohci-platform: Enable optional use of reset controller
->   ARM: sun6i: dt: Add support for the USB controllers
-> 
->  Documentation/devicetree/bindings/usb/usb-ehci.txt |  1 +
->  Documentation/devicetree/bindings/usb/usb-ohci.txt |  1 +
->  arch/arm/boot/dts/Makefile                         |  1 +
->  arch/arm/boot/dts/sun6i-a31-app4-evb1.dts          | 63 ++++++++++++++++
->  arch/arm/boot/dts/sun6i-a31.dtsi                   | 88 ++++++++++++++++++++++
->  drivers/clk/sunxi/clk-sunxi.c                      |  6 ++
->  drivers/phy/phy-sun4i-usb.c                        | 35 ++++++---
->  drivers/usb/host/ehci-platform.c                   | 25 +++++-
->  drivers/usb/host/ohci-platform.c                   | 25 +++++-
->  9 files changed, 234 insertions(+), 11 deletions(-)
->  create mode 100644 arch/arm/boot/dts/sun6i-a31-app4-evb1.dts
-> 
+> Tim Kryger
