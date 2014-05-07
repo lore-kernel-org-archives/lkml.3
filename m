@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933585AbaEGNRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:17:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45664 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933410AbaEGNPU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933406AbaEGNPU (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 7 May 2014 09:15:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45630 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933160AbaEGNPJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 09:15:09 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vineet Gupta <vgupta@synopsys.com>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 64/70] ARC: Entry Handler tweaks: Optimize away redundant IRQ_DISABLE_SAVE
-Date: Wed,  7 May 2014 14:13:07 +0100
-Message-Id: <1399468393-10140-65-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 57/70] ftrace/module: Hardcode ftrace_module_init() call into load_module()
+Date: Wed,  7 May 2014 14:13:00 +0100
+Message-Id: <1399468393-10140-58-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -27,88 +27,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vineet Gupta <vgupta@synopsys.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit fce16bc35ae4a45634f3dc348d8d297a25c277cf upstream.
+commit a949ae560a511fe4e3adf48fa44fefded93e5c2b upstream.
 
-In the exception return path, for both U/K cases, intr are already
-disabled (for various existing reasons). So when we drop down to
-@restore_regs, we need not redo that.
+A race exists between module loading and enabling of function tracer.
 
-There was subtle issue - when intr were NOT being disabled for
-ret-to-kernel-but-no-preemption case - now fixed by moving the
-IRQ_DISABLE further up in @resume_kernel_mode.
+	CPU 1				CPU 2
+	-----				-----
+  load_module()
+   module->state = MODULE_STATE_COMING
 
-So what do we gain:
+				register_ftrace_function()
+				 mutex_lock(&ftrace_lock);
+				 ftrace_startup()
+				  update_ftrace_function();
+				   ftrace_arch_code_modify_prepare()
+				    set_all_module_text_rw();
+				   <enables-ftrace>
+				    ftrace_arch_code_modify_post_process()
+				     set_all_module_text_ro();
 
-* Shaves off a few insn in return path.
+				[ here all module text is set to RO,
+				  including the module that is
+				  loading!! ]
 
-* Eliminates the need for IRQ_DISABLE_SAVE assembler macro for ARCv2
-  hence allows for entry code sharing.
+   blocking_notifier_call_chain(MODULE_STATE_COMING);
+    ftrace_init_module()
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+     [ tries to modify code, but it's RO, and fails!
+       ftrace_bug() is called]
+
+When this race happens, ftrace_bug() will produces a nasty warning and
+all of the function tracing features will be disabled until reboot.
+
+The simple solution is to treate module load the same way the core
+kernel is treated at boot. To hardcode the ftrace function modification
+of converting calls to mcount into nops. This is done in init/main.c
+there's no reason it could not be done in load_module(). This gives
+a better control of the changes and doesn't tie the state of the
+module to its notifiers as much. Ftrace is special, it needs to be
+treated as such.
+
+The reason this would work, is that the ftrace_module_init() would be
+called while the module is in MODULE_STATE_UNFORMED, which is ignored
+by the set_all_module_text_ro() call.
+
+Link: http://lkml.kernel.org/r/1395637826-3312-1-git-send-email-indou.takao@jp.fujitsu.com
+
+Reported-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arc/include/asm/irqflags.h |  7 -------
- arch/arc/kernel/entry.S         | 10 +++++-----
- 2 files changed, 5 insertions(+), 12 deletions(-)
+ include/linux/ftrace.h |  2 ++
+ kernel/module.c        |  3 +++
+ kernel/trace/ftrace.c  | 27 ++++-----------------------
+ 3 files changed, 9 insertions(+), 23 deletions(-)
 
-diff --git a/arch/arc/include/asm/irqflags.h b/arch/arc/include/asm/irqflags.h
-index d99f79b..b68b53f 100644
---- a/arch/arc/include/asm/irqflags.h
-+++ b/arch/arc/include/asm/irqflags.h
-@@ -157,13 +157,6 @@ static inline void arch_unmask_irq(unsigned int irq)
- 	flag	\scratch
- .endm
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 9f15c00..e68db4d 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -524,6 +524,7 @@ static inline int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_a
+ extern int ftrace_arch_read_dyn_info(char *buf, int size);
  
--.macro IRQ_DISABLE_SAVE  scratch, save
--	lr	\scratch, [status32]
--	mov	\save, \scratch		/* Make a copy */
--	bic	\scratch, \scratch, (STATUS_E1_MASK | STATUS_E2_MASK)
--	flag	\scratch
--.endm
--
- .macro IRQ_ENABLE  scratch
- 	lr	\scratch, [status32]
- 	or	\scratch, \scratch, (STATUS_E1_MASK | STATUS_E2_MASK)
-diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
-index 1d71651..89f7961 100644
---- a/arch/arc/kernel/entry.S
-+++ b/arch/arc/kernel/entry.S
-@@ -642,6 +642,9 @@ resume_kernel_mode:
+ extern int skip_trace(unsigned long ip);
++extern void ftrace_module_init(struct module *mod);
  
- #ifdef CONFIG_PREEMPT
+ extern void ftrace_disable_daemon(void);
+ extern void ftrace_enable_daemon(void);
+@@ -533,6 +534,7 @@ static inline int ftrace_force_update(void) { return 0; }
+ static inline void ftrace_disable_daemon(void) { }
+ static inline void ftrace_enable_daemon(void) { }
+ static inline void ftrace_release_mod(struct module *mod) {}
++static inline void ftrace_module_init(struct module *mod) {}
+ static inline int register_ftrace_command(struct ftrace_func_command *cmd)
+ {
+ 	return -EINVAL;
+diff --git a/kernel/module.c b/kernel/module.c
+index 2069158..0b162ec 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -3288,6 +3288,9 @@ static int load_module(struct load_info *info, const char __user *uargs,
  
-+	; This is a must for preempt_schedule_irq()
-+	IRQ_DISABLE	r9
+ 	dynamic_debug_setup(info->debug, info->num_debug);
+ 
++	/* Ftrace init must be called in the MODULE_STATE_UNFORMED state */
++	ftrace_module_init(mod);
 +
- 	; Can't preempt if preemption disabled
- 	GET_CURR_THR_INFO_FROM_SP   r10
- 	ld  r8, [r10, THREAD_INFO_PREEMPT_COUNT]
-@@ -651,8 +654,6 @@ resume_kernel_mode:
- 	ld  r9, [r10, THREAD_INFO_FLAGS]
- 	bbit0  r9, TIF_NEED_RESCHED, restore_regs
+ 	/* Finally it's fully formed, ready to start executing. */
+ 	err = complete_formation(mod, info);
+ 	if (err)
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 63b236f..df6bbd3 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -4237,16 +4237,11 @@ static void ftrace_init_module(struct module *mod,
+ 	ftrace_process_locs(mod, start, end);
+ }
  
--	IRQ_DISABLE	r9
+-static int ftrace_module_notify_enter(struct notifier_block *self,
+-				      unsigned long val, void *data)
++void ftrace_module_init(struct module *mod)
+ {
+-	struct module *mod = data;
 -
- 	; Invoke PREEMPTION
- 	bl      preempt_schedule_irq
+-	if (val == MODULE_STATE_COMING)
+-		ftrace_init_module(mod, mod->ftrace_callsites,
+-				   mod->ftrace_callsites +
+-				   mod->num_ftrace_callsites);
+-	return 0;
++	ftrace_init_module(mod, mod->ftrace_callsites,
++			   mod->ftrace_callsites +
++			   mod->num_ftrace_callsites);
+ }
  
-@@ -665,12 +666,11 @@ resume_kernel_mode:
- ;
- ; Restore the saved sys context (common exit-path for EXCPN/IRQ/Trap)
- ; IRQ shd definitely not happen between now and rtie
-+; All 2 entry points to here already disable interrupts
+ static int ftrace_module_notify_exit(struct notifier_block *self,
+@@ -4260,11 +4255,6 @@ static int ftrace_module_notify_exit(struct notifier_block *self,
+ 	return 0;
+ }
+ #else
+-static int ftrace_module_notify_enter(struct notifier_block *self,
+-				      unsigned long val, void *data)
+-{
+-	return 0;
+-}
+ static int ftrace_module_notify_exit(struct notifier_block *self,
+ 				     unsigned long val, void *data)
+ {
+@@ -4272,11 +4262,6 @@ static int ftrace_module_notify_exit(struct notifier_block *self,
+ }
+ #endif /* CONFIG_MODULES */
  
- restore_regs :
+-struct notifier_block ftrace_module_enter_nb = {
+-	.notifier_call = ftrace_module_notify_enter,
+-	.priority = INT_MAX,	/* Run before anything that can use kprobes */
+-};
+-
+ struct notifier_block ftrace_module_exit_nb = {
+ 	.notifier_call = ftrace_module_notify_exit,
+ 	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
+@@ -4313,10 +4298,6 @@ void __init ftrace_init(void)
+ 				  __start_mcount_loc,
+ 				  __stop_mcount_loc);
  
--	; Disable Interrupts while restoring reg-file back
--	; XXX can this be optimised out
--	IRQ_DISABLE_SAVE    r9, r10	;@r10 has prisitine (pre-disable) copy
-+	lr	r10, [status32]
- 
- 	; Restore REG File. In case multiple Events outstanding,
- 	; use the same priorty as rtie: EXCPN, L2 IRQ, L1 IRQ, None
+-	ret = register_module_notifier(&ftrace_module_enter_nb);
+-	if (ret)
+-		pr_warning("Failed to register trace ftrace module enter notifier\n");
+-
+ 	ret = register_module_notifier(&ftrace_module_exit_nb);
+ 	if (ret)
+ 		pr_warning("Failed to register trace ftrace module exit notifier\n");
 -- 
 1.9.1
 
