@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933491AbaEGNZs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:25:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45556 "EHLO
+	id S933173AbaEGNOs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:14:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45535 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933178AbaEGNOt (ORCPT
+	with ESMTP id S933121AbaEGNOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:14:49 -0400
+	Wed, 7 May 2014 09:14:43 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christopher Covington <cov@codeaurora.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: James Ralston <james.d.ralston@intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Rebecca Swee Fun Chang <rebecca.swee.fun.chang@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 43/70] ARM: 8007/1: Remove extraneous kcmp syscall ignore
-Date: Wed,  7 May 2014 14:12:46 +0100
-Message-Id: <1399468393-10140-44-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 39/70] i2c: i801: Add Device IDs for Intel Wildcat Point-LP PCH
+Date: Wed,  7 May 2014 14:12:42 +0100
+Message-Id: <1399468393-10140-40-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -28,33 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christopher Covington <cov@codeaurora.org>
+From: James Ralston <james.d.ralston@intel.com>
 
-commit 95c52fe063351192e0f4ffb70ef9bac1aa26f5a4 upstream.
+commit afc659241258b40b683998ec801d25d276529f43 upstream.
 
-The kcmp system call was ported to ARM in
-commit 3f7d1fe108dbaefd0c57a41753fc2c90b395f458
-"ARM: 7665/1: Wire up kcmp syscall".
+This patch adds the SMBus Device IDs for the Intel Wildcat Point-LP PCH.
 
-Fixes: 3f7d1fe108db ("ARM: 7665/1: Wire up kcmp syscall")
-Signed-off-by: Christopher Covington <cov@codeaurora.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Cc: Rebecca Swee Fun Chang <rebecca.swee.fun.chang@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/include/asm/unistd.h | 1 -
- 1 file changed, 1 deletion(-)
+ Documentation/i2c/busses/i2c-i801 | 1 +
+ drivers/i2c/busses/Kconfig        | 1 +
+ drivers/i2c/busses/i2c-i801.c     | 3 +++
+ 3 files changed, 5 insertions(+)
 
-diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
-index 141baa3..cbd6197 100644
---- a/arch/arm/include/asm/unistd.h
-+++ b/arch/arm/include/asm/unistd.h
-@@ -48,6 +48,5 @@
-  */
- #define __IGNORE_fadvise64_64
- #define __IGNORE_migrate_pages
--#define __IGNORE_kcmp
+diff --git a/Documentation/i2c/busses/i2c-i801 b/Documentation/i2c/busses/i2c-i801
+index d29dea0..7b0dcdb 100644
+--- a/Documentation/i2c/busses/i2c-i801
++++ b/Documentation/i2c/busses/i2c-i801
+@@ -25,6 +25,7 @@ Supported adapters:
+   * Intel Avoton (SOC)
+   * Intel Wellsburg (PCH)
+   * Intel Coleto Creek (PCH)
++  * Intel Wildcat Point-LP (PCH)
+    Datasheets: Publicly available at the Intel website
  
- #endif /* __ASM_ARM_UNISTD_H */
+ On Intel Patsburg and later chipsets, both the normal host SMBus controller
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index 556a42b..701f989 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -109,6 +109,7 @@ config I2C_I801
+ 	    Avoton (SOC)
+ 	    Wellsburg (PCH)
+ 	    Coleto Creek (PCH)
++	    Wildcat Point-LP (PCH)
+ 
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called i2c-i801.
+diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
+index 4ebceed..25766b7 100644
+--- a/drivers/i2c/busses/i2c-i801.c
++++ b/drivers/i2c/busses/i2c-i801.c
+@@ -59,6 +59,7 @@
+   Wellsburg (PCH) MS    0x8d7e     32     hard     yes     yes     yes
+   Wellsburg (PCH) MS    0x8d7f     32     hard     yes     yes     yes
+   Coleto Creek (PCH)    0x23b0     32     hard     yes     yes     yes
++  Wildcat Point-LP (PCH)   0x9ca2     32     hard     yes     yes     yes
+ 
+   Features supported by this driver:
+   Software PEC                     no
+@@ -178,6 +179,7 @@
+ #define PCI_DEVICE_ID_INTEL_WELLSBURG_SMBUS_MS1	0x8d7e
+ #define PCI_DEVICE_ID_INTEL_WELLSBURG_SMBUS_MS2	0x8d7f
+ #define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS	0x9c22
++#define PCI_DEVICE_ID_INTEL_WILDCATPOINT_LP_SMBUS	0x9ca2
+ 
+ struct i801_mux_config {
+ 	char *gpio_chip;
+@@ -820,6 +822,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WELLSBURG_SMBUS_MS1) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WELLSBURG_SMBUS_MS2) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_COLETOCREEK_SMBUS) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WILDCATPOINT_LP_SMBUS) },
+ 	{ 0, }
+ };
+ 
 -- 
 1.9.1
 
