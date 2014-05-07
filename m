@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840AbaEGNOF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 09:14:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45399 "EHLO
+	id S933933AbaEGNcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 09:32:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45419 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932368AbaEGNN6 (ORCPT
+	with ESMTP id S932855AbaEGNOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 09:13:58 -0400
+	Wed, 7 May 2014 09:14:06 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
+Cc: Dave Jiang <dave.jiang@intel.com>,
+        Ed Ciechanowski <ed.ciechanowski@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 12/70] irqchip: Gic: Support forced affinity setting
-Date: Wed,  7 May 2014 14:12:15 +0100
-Message-Id: <1399468393-10140-13-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 16/70] libata/ahci: accommodate tag ordered controllers
+Date: Wed,  7 May 2014 14:12:19 +0100
+Message-Id: <1399468393-10140-17-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
 References: <1399468393-10140-1-git-send-email-luis.henriques@canonical.com>
@@ -34,54 +29,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit ffde1de64012c406dfdda8690918248b472f24e4 upstream.
+commit 8a4aeec8d2d6a3edeffbdfae451cdf05cbf0fefd upstream.
 
-To support the affinity setting of per cpu timers in the early startup
-of a not yet online cpu, implement the force logic, which disables the
-cpu online check.
+The AHCI spec allows implementations to issue commands in tag order
+rather than FIFO order:
 
-Tagged for stable to allow a simple fix of the affected SoC clock
-event drivers.
+	5.3.2.12 P:SelectCmd
+	HBA sets pSlotLoc = (pSlotLoc + 1) mod (CAP.NCS + 1)
+	or HBA selects the command to issue that has had the
+	PxCI bit set to '1' longer than any other command
+	pending to be issued.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Tested-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Tomasz Figa <t.figa@samsung.com>,
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-Link: http://lkml.kernel.org/r/20140416143315.916984416@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+The result is that commands posted sequentially (time-wise) may play out
+of sequence when issued by hardware.
+
+This behavior has likely been hidden by drives that arrange for commands
+to complete in issue order.  However, it appears recent drives (two from
+different vendors that we have found so far) inflict out-of-order
+completions as a matter of course.  So, we need to take care to maintain
+ordered submission, otherwise we risk triggering a drive to fall out of
+sequential-io automation and back to random-io processing, which incurs
+large latency and degrades throughput.
+
+This issue was found in simple benchmarks where QD=2 seq-write
+performance was 30-50% *greater* than QD=32 seq-write performance.
+
+Tagging for -stable and making the change globally since it has a low
+risk-to-reward ratio.  Also, word is that recent versions of an unnamed
+OS also does it this way now.  So, drives in the field are already
+experienced with this tag ordering scheme.
+
+Cc: Dave Jiang <dave.jiang@intel.com>
+Cc: Ed Ciechanowski <ed.ciechanowski@intel.com>
+Reviewed-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/irqchip/irq-gic.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/ata/libata-core.c | 21 +++++++++++++--------
+ include/linux/libata.h    |  1 +
+ 2 files changed, 14 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index ee7c503..0ebd24d 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -246,10 +246,14 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
- 			    bool force)
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index ac04311..908c07c 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4765,21 +4765,26 @@ void swap_buf_le16(u16 *buf, unsigned int buf_words)
+ static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
  {
- 	void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + (gic_irq(d) & ~3);
--	unsigned int shift = (gic_irq(d) % 4) * 8;
--	unsigned int cpu = cpumask_any_and(mask_val, cpu_online_mask);
-+	unsigned int cpu, shift = (gic_irq(d) % 4) * 8;
- 	u32 val, mask, bit;
+ 	struct ata_queued_cmd *qc = NULL;
+-	unsigned int i;
++	unsigned int i, tag;
  
-+	if (!force)
-+		cpu = cpumask_any_and(mask_val, cpu_online_mask);
-+	else
-+		cpu = cpumask_first(mask_val);
+ 	/* no command while frozen */
+ 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
+ 		return NULL;
+ 
+-	/* the last tag is reserved for internal command. */
+-	for (i = 0; i < ATA_MAX_QUEUE - 1; i++)
+-		if (!test_and_set_bit(i, &ap->qc_allocated)) {
+-			qc = __ata_qc_from_tag(ap, i);
++	for (i = 0; i < ATA_MAX_QUEUE; i++) {
++		tag = (i + ap->last_tag + 1) % ATA_MAX_QUEUE;
 +
- 	if (cpu >= NR_GIC_CPU_IF || cpu >= nr_cpu_ids)
- 		return -EINVAL;
++		/* the last tag is reserved for internal command. */
++		if (tag == ATA_TAG_INTERNAL)
++			continue;
++
++		if (!test_and_set_bit(tag, &ap->qc_allocated)) {
++			qc = __ata_qc_from_tag(ap, tag);
++			qc->tag = tag;
++			ap->last_tag = tag;
+ 			break;
+ 		}
+-
+-	if (qc)
+-		qc->tag = i;
++	}
  
+ 	return qc;
+ }
+diff --git a/include/linux/libata.h b/include/linux/libata.h
+index 611d733..d0c64ab 100644
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -773,6 +773,7 @@ struct ata_port {
+ 	unsigned long		qc_allocated;
+ 	unsigned int		qc_active;
+ 	int			nr_active_links; /* #links with active qcs */
++	unsigned int		last_tag;	/* track next tag hw expects */
+ 
+ 	struct ata_link		link;		/* host default link */
+ 	struct ata_link		*slave_link;	/* see ata_slave_link_init() */
 -- 
 1.9.1
 
