@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683AbaEHKrR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 06:47:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33418 "EHLO
+	id S1754704AbaEHKrb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 06:47:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33432 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753494AbaEHKrK (ORCPT
+	with ESMTP id S1753494AbaEHKr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 06:47:10 -0400
-Date: Thu, 8 May 2014 03:46:38 -0700
+	Thu, 8 May 2014 06:47:28 -0400
+Date: Thu, 8 May 2014 03:46:50 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-6633akuird5hi3si4gbegkm8@git.kernel.org>
+Message-ID: <tip-7yksmqtlv4nfowmlqr1rifoi@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tony.luck@intel.com, luto@amacapital.net, fenghua.yu@intel.com,
-        tglx@linutronix.de
+        torvalds@linux-foundation.org, peterz@infradead.org, jkosina@suse.cz,
+        luto@amacapital.net, srostedt@redhat.com, tglx@linutronix.de,
+        oleg@redhat.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tony.luck@intel.com, luto@amacapital.net, fenghua.yu@intel.com,
+        torvalds@linux-foundation.org, peterz@infradead.org, jkosina@suse.cz,
+        luto@amacapital.net, srostedt@redhat.com, oleg@redhat.com,
         tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/idle, ia64:
+Subject: [tip:sched/core] sched/idle, x86:
   Switch from TS_POLLING to TIF_POLLING_NRFLAG
-Git-Commit-ID: 04075425331f91f7176a34232c21b63af0eafc53
+Git-Commit-ID: f80c5b39b80ab4d52acd940c03b89948cafdbd18
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,14 +34,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  04075425331f91f7176a34232c21b63af0eafc53
-Gitweb:     http://git.kernel.org/tip/04075425331f91f7176a34232c21b63af0eafc53
+Commit-ID:  f80c5b39b80ab4d52acd940c03b89948cafdbd18
+Gitweb:     http://git.kernel.org/tip/f80c5b39b80ab4d52acd940c03b89948cafdbd18
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Fri, 11 Apr 2014 09:59:08 +0200
+AuthorDate: Fri, 11 Apr 2014 09:59:05 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 8 May 2014 09:16:55 +0200
+CommitDate: Thu, 8 May 2014 09:16:56 +0200
 
-sched/idle, ia64: Switch from TS_POLLING to TIF_POLLING_NRFLAG
+sched/idle, x86: Switch from TS_POLLING to TIF_POLLING_NRFLAG
 
 Standardize the idle polling indicator to TIF_POLLING_NRFLAG such that
 both TIF_NEED_RESCHED and TIF_POLLING_NRFLAG are in the same word.
@@ -53,43 +53,75 @@ Changing from the non-atomic thread_info::status flags to the atomic
 thread_info::flags shouldn't be a big issue since most polling state
 changes were followed/preceded by a full memory barrier anyway.
 
+Also, fix up the apm_32 idle function, clearly that was forgotten in
+the last conversion. The default idle state is !POLLING so just kill
+the lot.
+
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tony Luck <tony.luck@intel.com>
 Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-ia64@vger.kernel.org
-Link: http://lkml.kernel.org/n/tip-6633akuird5hi3si4gbegkm8@git.kernel.org
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <srostedt@redhat.com>
+Link: http://lkml.kernel.org/n/tip-7yksmqtlv4nfowmlqr1rifoi@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/ia64/include/asm/thread_info.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/thread_info.h |  4 ++--
+ arch/x86/kernel/apm_32.c           | 11 -----------
+ 2 files changed, 2 insertions(+), 13 deletions(-)
 
-diff --git a/arch/ia64/include/asm/thread_info.h b/arch/ia64/include/asm/thread_info.h
-index 5957cf6..5b17418 100644
---- a/arch/ia64/include/asm/thread_info.h
-+++ b/arch/ia64/include/asm/thread_info.h
-@@ -107,6 +107,7 @@ struct thread_info {
- #define TIF_MCA_INIT		18	/* this task is processing MCA or INIT */
- #define TIF_DB_DISABLED		19	/* debug trap disabled for fsyscall */
- #define TIF_RESTORE_RSE		21	/* user RBS is newer than kernel RBS */
-+#define TIF_POLLING_NRFLAG	22	/* idle is polling for TIF_NEED_RESCHED */
- 
- #define _TIF_SYSCALL_TRACE	(1 << TIF_SYSCALL_TRACE)
- #define _TIF_SYSCALL_AUDIT	(1 << TIF_SYSCALL_AUDIT)
-@@ -118,6 +119,7 @@ struct thread_info {
- #define _TIF_MCA_INIT		(1 << TIF_MCA_INIT)
- #define _TIF_DB_DISABLED	(1 << TIF_DB_DISABLED)
- #define _TIF_RESTORE_RSE	(1 << TIF_RESTORE_RSE)
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index 47e5de2..8540538 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -83,6 +83,7 @@ struct thread_info {
+ #define TIF_FORK		18	/* ret_from_fork */
+ #define TIF_NOHZ		19	/* in adaptive nohz mode */
+ #define TIF_MEMDIE		20	/* is terminating due to OOM killer */
++#define TIF_POLLING_NRFLAG	21	/* idle is polling for TIF_NEED_RESCHED */
+ #define TIF_IO_BITMAP		22	/* uses I/O bitmap */
+ #define TIF_FORCED_TF		24	/* true if TF in eflags artificially */
+ #define TIF_BLOCKSTEP		25	/* set when we want DEBUGCTLMSR_BTF */
+@@ -106,6 +107,7 @@ struct thread_info {
+ #define _TIF_IA32		(1 << TIF_IA32)
+ #define _TIF_FORK		(1 << TIF_FORK)
+ #define _TIF_NOHZ		(1 << TIF_NOHZ)
 +#define _TIF_POLLING_NRFLAG	(1 << TIF_POLLING_NRFLAG)
- 
- /* "work to do on user-return" bits */
- #define TIF_ALLWORK_MASK	(_TIF_SIGPENDING|_TIF_NOTIFY_RESUME|_TIF_SYSCALL_AUDIT|\
-@@ -125,7 +127,6 @@ struct thread_info {
- /* like TIF_ALLWORK_BITS but sans TIF_SYSCALL_TRACE or TIF_SYSCALL_AUDIT */
- #define TIF_WORK_MASK		(TIF_ALLWORK_MASK&~(_TIF_SYSCALL_TRACE|_TIF_SYSCALL_AUDIT))
- 
--#define TS_POLLING		1 	/* true if in idle loop and not sleeping */
- #define TS_RESTORE_SIGMASK	2	/* restore signal mask in do_signal() */
+ #define _TIF_IO_BITMAP		(1 << TIF_IO_BITMAP)
+ #define _TIF_FORCED_TF		(1 << TIF_FORCED_TF)
+ #define _TIF_BLOCKSTEP		(1 << TIF_BLOCKSTEP)
+@@ -191,8 +193,6 @@ static inline struct thread_info *current_thread_info(void)
+  * have to worry about atomic accesses.
+  */
+ #define TS_COMPAT		0x0002	/* 32bit syscall active (64BIT)*/
+-#define TS_POLLING		0x0004	/* idle task polling need_resched,
+-					   skip sending interrupt */
+ #define TS_RESTORE_SIGMASK	0x0008	/* restore signal mask in do_signal() */
  
  #ifndef __ASSEMBLY__
+diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
+index 3ab0343..f3a1f04 100644
+--- a/arch/x86/kernel/apm_32.c
++++ b/arch/x86/kernel/apm_32.c
+@@ -844,21 +844,10 @@ static int apm_do_idle(void)
+ 	int polling;
+ 	int err = 0;
+ 
+-	polling = !!(current_thread_info()->status & TS_POLLING);
+-	if (polling) {
+-		current_thread_info()->status &= ~TS_POLLING;
+-		/*
+-		 * TS_POLLING-cleared state must be visible before we
+-		 * test NEED_RESCHED:
+-		 */
+-		smp_mb();
+-	}
+ 	if (!need_resched()) {
+ 		idled = 1;
+ 		ret = apm_bios_call_simple(APM_FUNC_IDLE, 0, 0, &eax, &err);
+ 	}
+-	if (polling)
+-		current_thread_info()->status |= TS_POLLING;
+ 
+ 	if (!idled)
+ 		return 0;
