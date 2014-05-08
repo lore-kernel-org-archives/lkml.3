@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505AbaEHNSq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 09:18:46 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:46865 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754385AbaEHNSp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 09:18:45 -0400
-Date: Thu, 8 May 2014 06:18:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Daniel Santos <daniel.santos@pobox.com>
-Subject: Re: [PATCH] compiler.h: don't use temporary variable in
- __compiletime_assert()
-Message-ID: <20140508131839.GZ8754@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1399530685-7749-1-git-send-email-johannes@sipsolutions.net>
+	id S1753913AbaEHNUX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 09:20:23 -0400
+Received: from mail.efficios.com ([78.47.125.74]:45668 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751169AbaEHNUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 09:20:21 -0400
+Date: Thu, 8 May 2014 13:20:19 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
+        Oleg Nesterov <oleg@redhat.com>, Dave Jones <davej@redhat.com>
+Message-ID: <1188725331.13100.1399555219466.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20140508091529.08b68cf4@gandalf.local.home>
+References: <1399549669-25465-1-git-send-email-mathieu.desnoyers@efficios.com> <20140508090520.2b225a94@gandalf.local.home> <55466295.13096.1399554505453.JavaMail.zimbra@efficios.com> <20140508091529.08b68cf4@gandalf.local.home>
+Subject: Re: [PATCH] Fix: tracepoint: use after rcu free
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399530685-7749-1-git-send-email-johannes@sipsolutions.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050813-9332-0000-0000-000000BA1C4F
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF29 (Linux)/8.0.5_GA_5839)
+Thread-Topic: tracepoint: use after rcu free
+Thread-Index: mRPhXtslKewzMi3xkvTrWaWgyQO1GA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 08:31:25AM +0200, Johannes Berg wrote:
-> From: Johannes Berg <johannes.berg@intel.com>
+----- Original Message -----
+> From: "Steven Rostedt" <rostedt@goodmis.org>
+> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Cc: linux-kernel@vger.kernel.org, "Sasha Levin" <sasha.levin@oracle.com>, "Oleg Nesterov" <oleg@redhat.com>, "Dave
+> Jones" <davej@redhat.com>
+> Sent: Thursday, May 8, 2014 9:15:29 AM
+> Subject: Re: [PATCH] Fix: tracepoint: use after rcu free
 > 
-> Usually, BUG_ON and friends aren't even evaluated in sparse, but
-> recently compiletime_assert_atomic_type() was added, and that now
-> results in a sparse warning every time it is used.
+> On Thu, 8 May 2014 13:08:25 +0000 (UTC)
+> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
 > 
-> The reason turns out to be the temporary variable, after it sparse
-> no longer considers the value to be a constant, and results in a
-> warning and an error. The error is the more annoying part of this
-> as it suppresses any further warnings in the same file, hiding
-> other problems.
+> > > 
+> > > We can also include a (even though it's redundant)
+> > > 
+> > >  Fixes: de7b2973903c "tracepoint: Use struct pointer instead of name hash
+> > >  for
+> > >  reg/unreg tracepoints"
+> > 
+> > Thanks for the pointers, I'll keep those in mind for my next patches.
 > 
-> Since this is all about compile time and the condition should be
-> side-effect free to start with, there's no downside (apart maybe
-> from a slight compilation time penalty?) to just duplicating it,
-> leaving sparse able to evaluate it at check time, getting rid of
-> the warning and error.
+> Oh, one more thing I keep forgetting to mention to you. Your subject
+> lines :-)
 > 
-> Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+> I converted it to be:
+> 
+>  tracepoint: Fix use of tracepoint funcs after rcu free
+> 
+> only the subsystem tag should be used. Not a "Fix" tag. But the "Fix"
+> may be used in the subject itself. Also, I've been told that Linus
+> prefers to have the subject written more like a sentence and the first
+> character capitalized.
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+OK, I'm taking notes for next time.
 
-> ---
->  include/linux/compiler.h | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
+Thanks!
+
+Mathieu
+
 > 
-> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-> index 2472740d7ab2..38c0e00ddef8 100644
-> --- a/include/linux/compiler.h
-> +++ b/include/linux/compiler.h
-> @@ -324,11 +324,10 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
-> 
->  #define __compiletime_assert(condition, msg, prefix, suffix)		\
->  	do {								\
-> -		bool __cond = !(condition);				\
->  		extern void prefix ## suffix(void) __compiletime_error(msg); \
-> -		if (__cond)						\
-> +		if (!(condition))					\
->  			prefix ## suffix();				\
-> -		__compiletime_error_fallback(__cond);			\
-> +		__compiletime_error_fallback(!(condition));		\
->  	} while (0)
-> 
->  #define _compiletime_assert(condition, msg, prefix, suffix) \
-> -- 
-> 2.0.0.rc0
+> -- Steve
 > 
 
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
