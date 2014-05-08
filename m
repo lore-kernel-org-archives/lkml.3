@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057AbaEHIKI (ORCPT <rfc822;w@1wt.eu>);
+	id S1753295AbaEHIL3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 04:11:29 -0400
+Received: from plane.gmane.org ([80.91.229.3]:58377 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752954AbaEHIKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 May 2014 04:10:08 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:50118 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaEHIJ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 04:09:58 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Mugunthan V N <mugunthanvnm@ti.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH RESEND 1/5] net: mdio-gpio: fix device-tree binding documentation
-Date: Thu,  8 May 2014 10:09:20 +0200
-Message-Id: <1399536564-7626-2-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1399536564-7626-1-git-send-email-jhovold@gmail.com>
-References: <1399534639-4947-1-git-send-email-jhovold@gmail.com>
- <1399536564-7626-1-git-send-email-jhovold@gmail.com>
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Vladimir Murzin <murzin.v@gmail.com>
+Subject: Re: [PATCH] arm: memset: zero out upper bytes in r1
+Date: Thu, 8 May 2014 08:04:44 +0000 (UTC)
+Message-ID: <loom.20140508T095105-952@post.gmane.org>
+References: <1399273875-8403-1-git-send-email-a.ryabinin@samsung.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 217.140.96.21 (Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix aliases syntax in device-tree binding example to avoid
-copy-paste errors (the alias would be dropped silently).
+Andrey Ryabinin <a.ryabinin <at> samsung.com> writes:
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- Documentation/devicetree/bindings/net/mdio-gpio.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> memset doesn't work right for following example:
+> 
+> 	signed char c = 0xF0;
+> 	memset(addr, c, size);
+> 
+> Variable c is signed, so after typcasting to int the value will be 0xFFFFFFF0.
+> This value will be passed through r1 regitster to memset function.
+> memset doesn't zero out upper bytes in r1, so memory will be filled
+> with 0xFFFFFFF0 instead of expected 0xF0F0F0F0.
 
-diff --git a/Documentation/devicetree/bindings/net/mdio-gpio.txt b/Documentation/devicetree/bindings/net/mdio-gpio.txt
-index c79bab025369..8dbcf8295c6c 100644
---- a/Documentation/devicetree/bindings/net/mdio-gpio.txt
-+++ b/Documentation/devicetree/bindings/net/mdio-gpio.txt
-@@ -14,7 +14,7 @@ node.
- Example:
- 
- aliases {
--	mdio-gpio0 = <&mdio0>;
-+	mdio-gpio0 = &mdio0;
- };
- 
- mdio0: mdio {
--- 
-1.8.3.2
+It behaves the same as a generic implementation in lib/string.c, moreover
+gcc built-in behaves the same. So it looks like expected behavior and POSIX
+Programmer's Manual (man 3posix memset) explicitly says that "c" is
+converted to unsigned char.
+
+Cheers
+Vladimir
 
