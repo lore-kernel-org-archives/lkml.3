@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293AbaEHHzw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 03:55:52 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:37152 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162AbaEHHzu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 03:55:50 -0400
-Date: Thu, 8 May 2014 08:55:42 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: micky <micky_ching@realsil.com.cn>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, devel@linuxdriverproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Roger <rogerable@realtek.com>,
-        Wei WANG <wei_wang@realsil.com.cn>
-Subject: Re: [PATCH 1/2] mmc: rtsx: Revert "mmc: rtsx: modify error
- handleandremove smatch warnings"
-Message-ID: <20140508075542.GC5307@lee--X1>
-References: <cover.1398735435.git.micky_ching@realsil.com.cn>
- <1076b1824732688774d223a14595ecf26a375d82.1398735435.git.micky_ching@realsil.com.cn>
- <CAPDyKFoZ2_H6Jh0+84zLBhayMb0=q1eJw=vC_m41iCsbz0siFw@mail.gmail.com>
- <536B1B05.6010604@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <536B1B05.6010604@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753377AbaEHH4t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 03:56:49 -0400
+Received: from smtp39.i.mail.ru ([94.100.177.99]:41411 "EHLO smtp39.i.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752932AbaEHH4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 03:56:46 -0400
+From: Alexander Shiyan <shc_work@mail.ru>
+To: linux-kernel@vger.kernel.org
+Cc: Evgeniy Polyakov <zbr@ioremap.net>, Sascha Hauer <kernel@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Alexander Shiyan <shc_work@mail.ru>
+Subject: [PATCH 3/4] w1: mxc_w1: Perform a software reset at startup
+Date: Thu,  8 May 2014 11:56:39 +0400
+Message-Id: <1399535800-19335-3-git-send-email-shc_work@mail.ru>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1399535800-19335-1-git-send-email-shc_work@mail.ru>
+References: <1399535800-19335-1-git-send-email-shc_work@mail.ru>
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It seems Chris is too busy to responding, so would you help to pick
-> this patch for 3.15 fix.
+This patch adds a software reset for 1-Wire module at driver startup.
 
-Hmmmm... that's pretty bad timing.  I've literally just sent the
-pull-request containing the MFD/MMC fixup branch to Linus.  I guess
-Ulf will have to do it.
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+---
+ drivers/w1/masters/mxc_w1.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-> >>>From: Micky Ching<micky_ching@realsil.com.cn>
-> >>>
-> >>>This reverts commit 1f7b581b3ffcb2a8437397a02f4af89fa6934d08.
-> >>>
-> >>>The patch depend on commit c42deffd5b53c9e583d83c7964854ede2f12410d
-> >>><mmc: rtsx: add support for pre_req and post_req>, but the previous
-> >>>patch was discard. So we have to delete the patch.
-> >>>
-> >>>Signed-off-by: Micky Ching<micky_ching@realsil.com.cn>
-> >Acked-by: Ulf Hansson<ulf.hansson@linaro.org>
-> 
-
+diff --git a/drivers/w1/masters/mxc_w1.c b/drivers/w1/masters/mxc_w1.c
+index 0d05abe..741d2bb4 100644
+--- a/drivers/w1/masters/mxc_w1.c
++++ b/drivers/w1/masters/mxc_w1.c
+@@ -32,6 +32,7 @@
+ # define MXC_W1_CONTROL_RPP	BIT(7)
+ #define MXC_W1_TIME_DIVIDER	0x02
+ #define MXC_W1_RESET		0x04
++# define MXC_W1_RESET_RST	BIT(0)
+ 
+ struct mxc_w1_device {
+ 	void __iomem *regs;
+@@ -129,6 +130,10 @@ static int mxc_w1_probe(struct platform_device *pdev)
+ 	if (err)
+ 		return err;
+ 
++	/* Software reset 1-Wire module */
++	writeb(MXC_W1_RESET_RST, mdev->regs + MXC_W1_RESET);
++	writeb(0, mdev->regs + MXC_W1_RESET);
++
+ 	writeb(clkdiv - 1, mdev->regs + MXC_W1_TIME_DIVIDER);
+ 
+ 	mdev->bus_master.data = mdev;
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.3.2
+
