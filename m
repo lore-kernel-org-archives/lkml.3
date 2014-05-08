@@ -1,148 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909AbaEHKlF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 06:41:05 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:53270 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752926AbaEHKlB (ORCPT
+	id S1754045AbaEHKla (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 06:41:30 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:59161 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694AbaEHKl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 06:41:01 -0400
+	Thu, 8 May 2014 06:41:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn@kryo.se>, Frank Rowand <frowand.list@gmail.com>,
+        Rob Herring <robh@kernel.org>
+Subject: Re: [PATCH 3/4] of/platform: fix device naming for non-translatable addresses
+Date: Thu, 08 May 2014 12:41:10 +0200
+Message-ID: <4314054.Zr5Mecf9vm@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1399499298-8830-4-git-send-email-robherring2@gmail.com>
+References: <1399499298-8830-1-git-send-email-robherring2@gmail.com> <1399499298-8830-4-git-send-email-robherring2@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1399504982-31181-1-git-send-email-dianders@chromium.org>
-References: <1399504982-31181-1-git-send-email-dianders@chromium.org>
-Date: Thu, 8 May 2014 16:11:00 +0530
-X-Google-Sender-Auth: -qwfBe7p_MNCyDE5xs6siRfbwtA
-Message-ID: <CAOh2x=kwaoSdj8JO0Vo08Y0dX2UfKFiF3pBV-qtp-YTyN=8H8Q@mail.gmail.com>
-Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP systems
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Doug Anderson <dianders@chromium.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        David Riley <davidriley@chromium.org>,
-        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:OsGPK7Z0DpqAkZvvVQpsJ/Icqh1XfHkwCR7XPnKOWmP
+ gVrHLDjbicy9QvzvbKDJO5WzEAgEcID35o2SWkZrsj/XKLjS9e
+ oYL8om2mkDSV+j0p/BoWpTAHnQ2lWmQTkLbu+KbWPY+dSMgcm6
+ +e6gkN9iTjQ2fxD6pW6npfyGssiU5wCIorw5UX+Du9hBZt5/KD
+ F8icW6Oh75i8NxsQ2Gx/pllziKiCSVOsF5SEHCFZPCujF53Ass
+ 8PBpRFSyMfahpAWnWMcznXQC34P5pLLnWl8xxjd1cp+znDImNT
+ 2QqgokGmzh78ifEIb2ji+fgte3z98E8lPNcS1FdlgYgsHxLrr0
+ yuq50BS1ccOPB59dyC6k=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixing Rafael's id.
+On Wednesday 07 May 2014 16:48:17 Rob Herring wrote:
+> From: Rob Herring <robh@kernel.org>
+> 
+> Using non-translatable addresses in platform device names is wrong
+> because they may not be globally unique. Just use the default naming with
+> a global index if the address cannot be translated instead.
+> 
+> of_can_translate_address has the same checks as of_translate_address, so
+> we can remove it here as well.
 
-On Thu, May 8, 2014 at 4:53 AM, Doug Anderson <dianders@chromium.org> wrote:
-> Downscaling loops_per_jiffy on SMP ARM systems really doesn't work.
-> You could really only do this if:
->
-> * Each CPU is has independent frequency changes (changing one CPU
->   doesn't affect another).
-> * We change the generic ARM udelay() code to actually look at percpu
->   loops_per_jiffy.
+Have you checked that this doesn't break platforms using clkdev lookup
+based on names with local addresses? It's quite possible that nobody
+does that, but it would be good to have someone confirm it.
 
-There is one more case I believe:
-All CPUs share a single clock line and generic udelay() uses global
-loops_per_jiffy, as it would never happen that some other CPU is running
-faster and udelay would complete early
-
-> I don't know of any ARM CPUs that are totally independent that don't
-> just use a timer-based delay anyway.  For those that don't have a
-> timer-based delay, we should be conservative and overestimate
-> loops_per_jiffy.
->
-> Note that on some systems you might sometimes see (in the extreme case
-> when we're all the way downclocked) a udelay(100) become a
-> udelay(1000) now.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-
-> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-> index 7c4fada..9d944f6 100644
-> --- a/arch/arm/kernel/smp.c
-> +++ b/arch/arm/kernel/smp.c
-> @@ -649,39 +649,50 @@ int setup_profiling_timer(unsigned int multiplier)
->
->  #ifdef CONFIG_CPU_FREQ
->
-> -static DEFINE_PER_CPU(unsigned long, l_p_j_ref);
-> -static DEFINE_PER_CPU(unsigned long, l_p_j_ref_freq);
->  static unsigned long global_l_p_j_ref;
->  static unsigned long global_l_p_j_ref_freq;
-> +static unsigned long global_l_p_j_max_freq;
-> +
-> +/**
-> + * cpufreq_callback - Adjust loops_per_jiffies when frequency changes
-> + *
-> + * When the CPU frequency changes we need to adjust loops_per_jiffies, which
-> + * we assume scales linearly with frequency.
-> + *
-> + * This function is fairly castrated and only ever adjust loops_per_jiffies
-> + * upward.  It also doesn't adjust the PER_CPU loops_per_jiffies.  Here's why:
-> + * 1. The ARM udelay only ever looks at the global loops_per_jiffy not the
-> + *    percpu one.  If your CPUs _are not_ changed in lockstep you could run
-> + *    into problems by decreasing loops_per_jiffies since one of the other
-> + *    processors might still be running slower.
-> + * 2. The ARM udelay reads the loops_per_jiffy at the beginning of its loop and
-> + *    no other times.  If your CPUs _are_ changed in lockstep you could run
-> + *    into a race where one CPU has started its loop with old (slower)
-> + *    loops_per_jiffy and then suddenly is running faster.
-> + *
-> + * Anyone who wants a good udelay() should be using a timer-based solution
-> + * anyway.  If you don't have a timer solution, you just gotta be conservative.
-> + */
->
->  static int cpufreq_callback(struct notifier_block *nb,
->                                         unsigned long val, void *data)
->  {
->         struct cpufreq_freqs *freq = data;
-> -       int cpu = freq->cpu;
->
->         if (freq->flags & CPUFREQ_CONST_LOOPS)
->                 return NOTIFY_OK;
->
-> -       if (!per_cpu(l_p_j_ref, cpu)) {
-> -               per_cpu(l_p_j_ref, cpu) =
-> -                       per_cpu(cpu_data, cpu).loops_per_jiffy;
-> -               per_cpu(l_p_j_ref_freq, cpu) = freq->old;
-> -               if (!global_l_p_j_ref) {
-> -                       global_l_p_j_ref = loops_per_jiffy;
-> -                       global_l_p_j_ref_freq = freq->old;
-> -               }
-> +       if (!global_l_p_j_ref) {
-> +               global_l_p_j_ref = loops_per_jiffy;
-> +               global_l_p_j_ref_freq = freq->old;
-> +               global_l_p_j_max_freq = freq->old;
->         }
->
-> -       if ((val == CPUFREQ_PRECHANGE  && freq->old < freq->new) ||
-> -           (val == CPUFREQ_POSTCHANGE && freq->old > freq->new)) {
-> +       if (freq->new > global_l_p_j_max_freq) {
->                 loops_per_jiffy = cpufreq_scale(global_l_p_j_ref,
->                                                 global_l_p_j_ref_freq,
->                                                 freq->new);
-> -               per_cpu(cpu_data, cpu).loops_per_jiffy =
-> -                       cpufreq_scale(per_cpu(l_p_j_ref, cpu),
-> -                                       per_cpu(l_p_j_ref_freq, cpu),
-> -                                       freq->new);
-> +               global_l_p_j_max_freq = freq->new;
->         }
->         return NOTIFY_OK;
->  }
-
-So, the end of this will happen when a CPU is set to its highest frequency
-for the first time. After that this routine will simply be noise and nothing
-more. Isn't it?
-
-And if that's the case, why don't we get rid of it completely and set
-global-loop-per-jiffy for the max freq at boot ?
-
---
-viresh
+	Arnd
