@@ -1,152 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586AbaEHTpg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 15:45:36 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:61840 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754079AbaEHTpe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 15:45:34 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 1/3] PM / sleep: Flag to speed up suspend-resume of runtime-suspended devices
-Date: Thu, 08 May 2014 22:02:14 +0200
-Message-ID: <2072799.Uj3u7nOOPY@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAPDyKFqS1Brnb2GezX8-=+WkQmXei-6UrrAuYhU6td6O-uxMPw@mail.gmail.com>
-References: <Pine.LNX.4.44L0.1405071126340.1325-100000@iolanthe.rowland.org> <2321901.5eTtTCbUUZ@vostro.rjw.lan> <CAPDyKFqS1Brnb2GezX8-=+WkQmXei-6UrrAuYhU6td6O-uxMPw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755619AbaEHTp7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 15:45:59 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:51583
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755591AbaEHTp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 15:45:57 -0400
+x-originating-ip: 72.167.245.219
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: [PATCH net-next,v2] Add support for netvsc build without CONFIG_SYSFS flag
+Date: Thu,  8 May 2014 13:41:33 -0700
+Message-Id: <1399581693-25050-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 08, 2014 02:25:06 PM Ulf Hansson wrote:
-> On 8 May 2014 13:44, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Thursday, May 08, 2014 12:59:20 PM Ulf Hansson wrote:
-> >> On 8 May 2014 12:53, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> >> > On Thursday, May 08, 2014 09:49:36 AM Ulf Hansson wrote:
-> >> >> On 8 May 2014 01:29, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> >> >> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> >> >
-> >> >> > Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
-> >> >> > resume all runtime-suspended devices during system suspend, mostly
-> >> >> > because those devices may need to be reprogrammed due to different
-> >> >> > wakeup settings for system sleep and for runtime PM.
-> >> >> >
-> >> >> > For some devices, though, it's OK to remain in runtime suspend
-> >> >> > throughout a complete system suspend/resume cycle (if the device was in
-> >> >> > runtime suspend at the start of the cycle).  We would like to do this
-> >> >> > whenever possible, to avoid the overhead of extra power-up and power-down
-> >> >> > events.
-> >> >> >
-> >> >> > However, problems may arise because the device's descendants may require
-> >> >> > it to be at full power at various points during the cycle.  Therefore the
-> >> >> > most straightforward way to do this safely is if the device and all its
-> >> >> > descendants can remain runtime suspended until the resume stage of system
-> >> >> > resume.
-> >> >> >
-> >> >> > To this end, introduce dev->power.leave_runtime_suspended.
-> >> >> > If a subsystem or driver sets this flag during the ->prepare() callback,
-> >> >> > and if the flag is set in all of the device's descendants, and if the
-> >> >> > device is still in runtime suspend at the beginning of the ->suspend()
-> >> >> > callback, that callback is allowed to return 0 without clearing
-> >> >> > power.leave_runtime_suspended and without changing the state of the
-> >> >> > device, unless the current state of the device is not appropriate for
-> >> >> > the upcoming system sleep state (for example, the device is supposed to
-> >> >> > wake up the system from that state and its current wakeup settings are
-> >> >> > not suitable for that).  Then, the PM core will not invoke the device's
-> >> >> > ->suspend_late(), ->suspend_irq(), ->resume_irq(), ->resume_early(), or
-> >> >> > ->resume() callbacks.  Instead, it will invoke ->runtime_resume() during
-> >> >> > the device resume stage of system resume.
-> >> >> >
-> >> >> > By leaving this flag set after ->suspend(), a driver or subsystem tells
-> >> >> > the PM core that the device is runtime suspended, it is in a suitable
-> >> >> > state for system suspend (for example, the wakeup setting does not
-> >> >> > need to be changed), and it does not need to return to full
-> >> >> > power until the resume stage.
-> >> >> >
-> >> >> > Changelog based on an Alan Stern's description of the idea
-> >> >> > (http://marc.info/?l=linux-pm&m=139940466625569&w=2).
-> >> >> >
-> >> >> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> >> > ---
-> >> >> >  drivers/base/power/main.c    |   31 ++++++++++++++++++++++++-------
-> >> >> >  drivers/base/power/runtime.c |   10 ++++++++++
-> >> >> >  include/linux/pm.h           |    3 +++
-> >> >> >  include/linux/pm_runtime.h   |   16 ++++++++++++++++
-> >> >> >  kernel/power/Kconfig         |    4 ++++
-> >> >> >  5 files changed, 57 insertions(+), 7 deletions(-)
-> >> >> >
-> >> >> > Index: linux-pm/kernel/power/Kconfig
-> >> >> > ===================================================================
-> >> >> > --- linux-pm.orig/kernel/power/Kconfig
-> >> >> > +++ linux-pm/kernel/power/Kconfig
-> >> >> > @@ -147,6 +147,10 @@ config PM
-> >> >> >         def_bool y
-> >> >> >         depends on PM_SLEEP || PM_RUNTIME
-> >> >> >
-> >> >> > +config PM_BOTH
-> >> >> > +       def_bool y
-> >> >> > +       depends on PM_SLEEP && PM_RUNTIME
-> >> >> > +
-> >> >>
-> >> >> Should we not depend on PM_RUNTIME only? Thus we don't need the new
-> >> >> Kconfig,
-> >> >
-> >> > Well, OK.  I guess we can tolerate one useless statement in rpm_resume()
-> >> > in case CONFIG_PM_SLEEP is unset.
-> >> >
-> >> >> and then we could rename the new APIs to pm_runtime_* instead.
-> >> >
-> >> > That would just make the name longer - for what value?
-> >>
-> >> Only "__set_leave_runtime_suspended" will be a bit longer.
-> >>
-> >> The idea I had was to clearly indicate, these functions is a part of
-> >> PM_RUNTIME API.
-> >>
-> >> Compare what you have:
-> >> __set_leave_runtime_suspended
-> >> pm_set_leave_runtime_suspended
-> >> pm_leave_runtime_suspended
-> >>
-> >> To what I suggest:
-> >> __pm_runtime_set_leave_suspended
-> >> pm_runtime_set_leave_suspended
-> >> pm_runtime_leave_suspended
-> >
-> > And why exactly do you think these are any better?
-> 
-> Because that's how all (almost all) other functions in the runtime PM
-> API are specified - I believe it makes sense to keep them aligned.
-> 
-> Anyway, if you insist in keeping your functions names, it's not that
-> of a big deal for me.
-> 
-> Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
-> 
-> >
-> > The flag is not called leave_suspended surely?
-> 
-> To me that doesn't matter, the flag has nothing to do with the
-> function names in an API.
+This change ensures the driver can be built successfully without the
+CONFIG_SYSFS flag.
+MS-TFS: 182270
 
-Well, the point is that pm_runtime_leave_suspended suggests that the runtime
-PM framework is supposed to leave the device suspended, while this isn't the
-case.  This essentially is a system suspend flag that depends on runtime PM
-being available.
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/net/hyperv/hyperv_net.h   |   28 ++++++++++++++++++++++++++++
+ drivers/net/hyperv/netvsc_drv.c   |   13 +++++++------
+ drivers/net/hyperv/rndis_filter.c |    4 ++--
+ 3 files changed, 37 insertions(+), 8 deletions(-)
 
-Thanks!
-
-
+diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
+index 4b7df5a..02358cb 100644
+--- a/drivers/net/hyperv/hyperv_net.h
++++ b/drivers/net/hyperv/hyperv_net.h
+@@ -87,6 +87,8 @@ struct ndis_recv_scale_cap { /* NDIS_RECEIVE_SCALE_CAPABILITIES */
+ #define HASH_KEYLEN NDIS_RSS_HASH_SECRET_KEY_MAX_SIZE_REVISION_2
+ extern u8 netvsc_hash_key[];
+ 
++extern unsigned int netvsc_num_queue;
++
+ struct ndis_recv_scale_param { /* NDIS_RECEIVE_SCALE_PARAMETERS */
+ 	struct ndis_obj_header hdr;
+ 
+@@ -178,6 +180,32 @@ struct rndis_device {
+ 	unsigned char hw_mac_adr[ETH_ALEN];
+ };
+ 
++static inline void netvsc_record_rx_queue(struct sk_buff *skb,
++					  struct hv_netvsc_packet *packet,
++					  struct net_device *ndev)
++{
++#ifdef CONFIG_SYSFS
++	skb_record_rx_queue(skb, packet->channel->
++			    offermsg.offer.sub_channel_index %
++			    ndev->real_num_rx_queues);
++#endif
++}
++
++static inline void netvsc_show_num_queue(struct device *dev,
++					 struct net_device *ndev)
++{
++#ifdef CONFIG_SYSFS
++	dev_info(dev, "real num tx,rx queues:%u, %u\n",
++		 ndev->real_num_tx_queues, ndev->real_num_rx_queues);
++#endif
++}
++
++static inline void netvsc_set_num_queue(unsigned int *nq)
++{
++#ifdef CONFIG_SYSFS
++	*nq = num_online_cpus();
++#endif
++}
+ 
+ /* Interface */
+ int netvsc_device_add(struct hv_device *device, void *additional_info);
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index 939e3af..11794a0 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -52,6 +52,8 @@ static int ring_size = 128;
+ module_param(ring_size, int, S_IRUGO);
+ MODULE_PARM_DESC(ring_size, "Ring buffer size (# of pages)");
+ 
++unsigned int netvsc_num_queue = 1;
++
+ static void do_set_multicast(struct work_struct *w)
+ {
+ 	struct net_device_context *ndevctx =
+@@ -639,9 +641,7 @@ int netvsc_recv_callback(struct hv_device *device_obj,
+ 		__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q),
+ 				       packet->vlan_tci);
+ 
+-	skb_record_rx_queue(skb, packet->channel->
+-			    offermsg.offer.sub_channel_index %
+-			    net->real_num_rx_queues);
++	netvsc_record_rx_queue(skb, packet, net);
+ 
+ 	net->stats.rx_packets++;
+ 	net->stats.rx_bytes += packet->total_data_buflen;
+@@ -788,7 +788,7 @@ static int netvsc_probe(struct hv_device *dev,
+ 	int ret;
+ 
+ 	net = alloc_etherdev_mq(sizeof(struct net_device_context),
+-				num_online_cpus());
++				netvsc_num_queue);
+ 	if (!net)
+ 		return -ENOMEM;
+ 
+@@ -824,8 +824,7 @@ static int netvsc_probe(struct hv_device *dev,
+ 	nvdev = hv_get_drvdata(dev);
+ 	netif_set_real_num_tx_queues(net, nvdev->num_chn);
+ 	netif_set_real_num_rx_queues(net, nvdev->num_chn);
+-	dev_info(&dev->device, "real num tx,rx queues:%u, %u\n",
+-		 net->real_num_tx_queues, net->real_num_rx_queues);
++	netvsc_show_num_queue(&dev->device, net);
+ 
+ 	ret = register_netdev(net);
+ 	if (ret != 0) {
+@@ -897,6 +896,8 @@ static void __exit netvsc_drv_exit(void)
+ 
+ static int __init netvsc_drv_init(void)
+ {
++	netvsc_set_num_queue(&netvsc_num_queue);
++
+ 	if (ring_size < RING_SIZE_MIN) {
+ 		ring_size = RING_SIZE_MIN;
+ 		pr_info("Increased ring_size to %d (min allowed)\n",
+diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
+index 99c527a..9db163c 100644
+--- a/drivers/net/hyperv/rndis_filter.c
++++ b/drivers/net/hyperv/rndis_filter.c
+@@ -1094,8 +1094,8 @@ int rndis_filter_device_add(struct hv_device *dev,
+ 	if (ret || rsscap.num_recv_que < 2)
+ 		goto out;
+ 
+-	net_device->num_chn = (num_online_cpus() < rsscap.num_recv_que) ?
+-			       num_online_cpus() : rsscap.num_recv_que;
++	net_device->num_chn = (netvsc_num_queue < rsscap.num_recv_que) ?
++			       netvsc_num_queue : rsscap.num_recv_que;
+ 	if (net_device->num_chn == 1)
+ 		goto out;
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.4.1
+
