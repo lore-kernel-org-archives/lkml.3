@@ -1,115 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770AbaEHO3l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 10:29:41 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:65073 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428AbaEHO3j (ORCPT
+	id S1754533AbaEHOaV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 10:30:21 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38614 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752733AbaEHOaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 10:29:39 -0400
-Date: Thu, 8 May 2014 15:29:30 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Boris BREZILLON <b.brezillon.dev@gmail.com>, devicetree@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-doc@vger.kernel.org,
-        dev@linux-sunxi.org, linux-kernel@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>, linux-mtd@lists.infradead.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 1/9] mtd: nand: define struct nand_timings
-Message-ID: <20140508142930.GC5767@lee--X1>
-References: <1394647664-8258-1-git-send-email-b.brezillon.dev@gmail.com>
- <1394647664-8258-2-git-send-email-b.brezillon.dev@gmail.com>
- <20140430175157.GB2497@norris-Latitude-E6410>
+	Thu, 8 May 2014 10:30:18 -0400
+Date: Thu, 8 May 2014 09:29:34 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shuge <shuge@allwinnertech.com>, kevin <kevin@allwinnertech.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        devicetree <devicetree@vger.kernel.org>, linux-doc@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, dev <dev@linux-sunxi.org>
+Subject: Re: [PATCH v2 7/7] ARM: sunxi: dt: add PRCM clk and reset controller
+ subdevices
+Message-ID: <20140508142934.GV7047@lukather>
+References: <1399483554-8824-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1399483554-8824-8-git-send-email-boris.brezillon@free-electrons.com>
+ <20140508031700.GO7047@lukather>
+ <CAGb2v664vFwezKVp+C1UYdsUktRhrZDxjsyf9L=kwVHGCUV=HA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="U8v/hV883cEE9JJG"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140430175157.GB2497@norris-Latitude-E6410>
+In-Reply-To: <CAGb2v664vFwezKVp+C1UYdsUktRhrZDxjsyf9L=kwVHGCUV=HA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Define a struct containing the standard NAND timings as described in NAND
-> > datasheets.
-> > 
-> > Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
-> > ---
-> >  include/linux/mtd/nand.h |   49 ++++++++++++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 49 insertions(+)
-> > 
-> > diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-> > index 389b3c5..f3ff3a3 100644
-> > --- a/include/linux/mtd/nand.h
-> > +++ b/include/linux/mtd/nand.h
 
-[...]
+--U8v/hV883cEE9JJG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > + * Parameters)
-> 
-> Please document the units for these fields here. It looks like you're
-> using picoseconds.
+On Thu, May 08, 2014 at 11:40:59AM +0800, Chen-Yu Tsai wrote:
+> >> +                     apb0_gates: apb0_gates_clk {
+> >> +                             compatible =3D "allwinner,sun6i-a31-apb0=
+-gates-clk";
+> >> +                             #clock-cells =3D <1>;
+> >> +                             clocks =3D <&apb0>;
+> >> +                             clock-output-names =3D "apb0_pio", "apb0=
+_ir",
+> >> +                                             "apb0_timer01", "apb0_p2=
+wi",
+> >
+> > timer01 ? is this a typo?
+>=20
+> A23 manual lists the clock gate as "r_timer0_1", so I put the name on the=
+ wiki.
+> Allwinner sun6i code uses "r_tmr" or just "tmr". I see no problem naming =
+this
+> clock output as "apb0_timer" though.
 
-Can't we leave this open to interpretation?  For instance, it's more
-convenient for our driver to handle these as nano second values.
+Yep, it seems better.
 
-> > + *
-> > + */
-> > +
-> 
-> Extra blank line.
-> 
-> > +struct nand_sdr_timings {
-> > +	u32 tALH_min;
-> > +	u32 tADL_min;
-> > +	u32 tALS_min;
-> > +	u32 tAR_min;
-> > +	u32 tCEA_max;
-> > +	u32 tCEH_min;
-> > +	u32 tCH_min;
-> > +	u32 tCHZ_max;
-> > +	u32 tCLH_min;
-> > +	u32 tCLR_min;
-> > +	u32 tCLS_min;
-> > +	u32 tCOH_min;
-> > +	u32 tCS_min;
+Maxime
 
-	u32 tCSD_min;
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-> > +	u32 tDH_min;
-> > +	u32 tDS_min;
-> > +	u32 tFEAT_max;
-> > +	u32 tIR_min;
-> > +	u32 tITC_max;
+--U8v/hV883cEE9JJG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	u32 tR_max;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
-> > +	u32 tRC_min;
-> > +	u32 tREA_max;
-> > +	u32 tREH_min;
-> > +	u32 tRHOH_min;
-> > +	u32 tRHW_min;
-> > +	u32 tRHZ_max;
-> > +	u32 tRLOH_min;
-> > +	u32 tRP_min;
-> > +	u32 tRR_min;
-> > +	u64 tRST_max;
-> > +	u32 tWB_max;
-> > +	u32 tWC_min;
-> > +	u32 tWH_min;
-> > +	u32 tWHR_min;
-> > +	u32 tWP_min;
-> > +	u32 tWW_min;
-> > +};
-> > +
-> >  #endif /* __LINUX_MTD_NAND_H */
+iQIcBAEBAgAGBQJTa5TOAAoJEBx+YmzsjxAgwU8P/j2X+dDTlbYIgu1VHdkQ7vr9
+F7dQkhN7I4ZfqA3VTl62UZcMnDsU04Pz97xps3zzMZM5sEGi88u4DEXhDPsdGuVH
+QrqWBKV0pfit5ZY/IU/Y7ZhIvQhn60lezctCYfOwC0gtscZRB9jeaHFp5Vx6n9DE
+J0WQJS2/khjHP37qlnBdmFgaqekKVEbFHN21xPQY0xtYhyMaQQ1CZ3h5R/WhbI+Z
+eFMMY6KMRHhVybvWdAV73bYfCGeXDfbCKon+zl4Z16bf2ymqWnqB0Rz+4nkK8iKB
+BCt7H5Jq80MRQT/0RwMy4EMV8djKolCaVdZL6e48DKcMeKKJUg3XjCRlqrNt73Zk
+QaejygSnRlRPiEZPf3nGlyAtXQOZuPERT+2qQefSMs16aF3kQMeBnxHLAQIKrToP
+T3D6/tnZRX3heL6C0mZTrgx1jKIqahzl/a1NTTnbmMmYm033SS3XRVe2iElu6uVZ
+UOlleb7K0oEnPU2bmoc4odUF1uR+fEcNTnx5TXGdnyNnNnKFM5y/PQPpcbIla11n
+rGRLe1Kr4/vH4lUi6IkNdm615o0cuHz7ASxebbhPG1XxmHvuaPOG0gQADO1guh4y
+3jLgpqbeRFM1FbLn+i6+vLLGzrb7qAS7bvcpY7Qd68hkpiZfXWv2DcujWNOZ4FaH
++Xsr4+ZZb5M5XO2hYMfY
+=7LYo
+-----END PGP SIGNATURE-----
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--U8v/hV883cEE9JJG--
