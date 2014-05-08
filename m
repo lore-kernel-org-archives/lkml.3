@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394AbaEHSaJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 14:30:09 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60612 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752329AbaEHSaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 14:30:08 -0400
-Date: Thu, 8 May 2014 14:30:04 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/9] mm: memcontrol: catch root bypass in move precharge
-Message-ID: <20140508183004.GQ19914@cmpxchg.org>
-References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
- <1398889543-23671-5-git-send-email-hannes@cmpxchg.org>
- <20140507145553.GJ9489@dhcp22.suse.cz>
+	id S1755413AbaEHSb5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 14:31:57 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49457 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754738AbaEHSbz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 14:31:55 -0400
+Date: Thu, 8 May 2014 19:31:16 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Albin Tonnerre <Albin.Tonnerre@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Chen Gang <gang.chen@asianux.com>, Nicolas Pitre <nico@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Victor Kamensky <victor.kamensky@linaro.org>
+Subject: Re: [PATCH 04/20] arch,arm: Fold atomic_ops
+Message-ID: <20140508183116.GJ8981@arm.com>
+References: <20140508135840.956784204@infradead.org>
+ <20140508135851.939725247@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140507145553.GJ9489@dhcp22.suse.cz>
+In-Reply-To: <20140508135851.939725247@infradead.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 04:55:53PM +0200, Michal Hocko wrote:
-> On Wed 30-04-14 16:25:38, Johannes Weiner wrote:
-> [...]
-> > @@ -6546,8 +6546,9 @@ one_by_one:
-> >  			cond_resched();
-> >  		}
-> >  		ret = mem_cgroup_try_charge(memcg, GFP_KERNEL, 1, false);
-> > +		if (ret == -EINTR)
-> > +			__mem_cgroup_cancel_charge(root_mem_cgroup, 1);
-> >  		if (ret)
-> > -			/* mem_cgroup_clear_mc() will do uncharge later */
+On Thu, May 08, 2014 at 02:58:44PM +0100, Peter Zijlstra wrote:
+> Many of the atomic op implementations are the same except for one
+> instruction; fold the lot into a few CPP macros and reduce LoC.
 > 
-> I would prefer to keep the comment and explain that we will loose return
-> code on the way and that is why cancel on root has to be done here.
+> This also prepares for easy addition of new ops.
+> 
+> Requires the asm_op because of eor.
+> 
+> Cc: Albin Tonnerre <albin.tonnerre@arm.com>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Chen Gang <gang.chen@asianux.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Nicolas Pitre <nico@linaro.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Victor Kamensky <victor.kamensky@linaro.org>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  arch/arm/include/asm/atomic.h |  313 +++++++++++++++++-------------------------
+>  1 file changed, 127 insertions(+), 186 deletions(-)
 
-That makes sense, I'll add an explanation of who is (un)charged when
-and where.  Thanks!
+Acked-by: Will Deacon <will.deacon@arm.com>
 
+Will
