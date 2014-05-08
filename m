@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539AbaEHFiz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 01:38:55 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:42688 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506AbaEHFiy (ORCPT
+	id S1752692AbaEHFjH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 01:39:07 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:51125 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551AbaEHFjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 01:38:54 -0400
-Date: Thu, 8 May 2014 09:38:51 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf_fuzzer crash on pentium 4
-Message-ID: <20140508053851.GK8607@moon>
-References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
- <20140506202307.GA1458@moon>
- <20140508020050.GX39568@redhat.com>
+	Thu, 8 May 2014 01:39:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140508020050.GX39568@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <536A605D.6030009@semaphore.gr>
+References: <536A605D.6030009@semaphore.gr>
+Date: Thu, 8 May 2014 11:09:02 +0530
+Message-ID: <CAKohponPkv1gyCVca3Vigv2jSv7G49Jyu_dHDJ2BEMXDkfr-jw@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: Fix build error on some platforms that use cpufreq_for_each_*
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 10:00:50PM -0400, Don Zickus wrote:
-> > 
-> > If i'm right (btw it's possible to use addr2line helper?) then hwc->config
-> > is corrupted and p4_config_get_bind returned nil simply because proper event
-> > was not found. And I don't understand how it could happen because before
-> > configuration gets written into hwc->config it's validated once obtained
-> > from user-space as a raw event. Weird...
-> 
-> I think my commit 13beacee817d27a40ffc6f065ea0042685611dd5 explains this
-> corruption.  Though I have to admit I haven't looked through the problem
-> very closely yet.
+On 7 May 2014 22:03, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+> On platforms that use cpufreq_for_each_* macros, build fails if
+> CONFIG_CPU_FREQ=n, e.g. ARM/shmobile/koelsch/non-multiplatform:
+>
+> drivers/built-in.o: In function `clk_round_parent':
+> clkdev.c:(.text+0xcf168): undefined reference to `cpufreq_next_valid'
+> drivers/built-in.o: In function `clk_rate_table_find':
+> clkdev.c:(.text+0xcf820): undefined reference to `cpufreq_next_valid'
+> make[3]: *** [vmlinux] Error 1
+>
+> Fix this making cpufreq_next_valid function inline and move it to
+> cpufreq.h.
+>
+> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+> ---
+>  drivers/cpufreq/cpufreq.c | 11 -----------
+>  include/linux/cpufreq.h   | 11 +++++++++--
+>  2 files changed, 9 insertions(+), 13 deletions(-)
 
-nope ;) without the fix above we could (and we did) simply misconfigure
-counter but never get access out of array bound. anyway, Vince confirm
-the fix from PeterZ healed the problem.
-
-> IOW my lazy fix in that commit doesn't cover fuzzers and the real problem
-> in p4_pmu_schedule_events. :-)
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
