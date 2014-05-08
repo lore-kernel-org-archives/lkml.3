@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734AbaEHKrs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 06:47:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33443 "EHLO
+	id S1754751AbaEHKsB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 06:48:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33453 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188AbaEHKrp (ORCPT
+	with ESMTP id S1753056AbaEHKsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 06:47:45 -0400
-Date: Thu, 8 May 2014 03:47:16 -0700
+	Thu, 8 May 2014 06:48:00 -0400
+Date: Thu, 8 May 2014 03:47:27 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-kf5suce6njh5xf5d3od13rr0@git.kernel.org>
+Message-ID: <tip-vq7719foqzf6z5h4j7eh7f9e@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        luto@amacapital.net, nico@linaro.org, tglx@linutronix.de
+        nicolas.pitre@linaro.org, tglx@linutronix.de,
+        daniel.lezcano@linaro.org
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        luto@amacapital.net, nico@linaro.org, tglx@linutronix.de
+        nicolas.pitre@linaro.org, tglx@linutronix.de,
+        daniel.lezcano@linaro.org
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/idle: Avoid spurious wakeup IPIs
-Git-Commit-ID: fd99f91aa007ba255aac44fe6cf21c1db398243a
+Subject: [tip:sched/core] sched/idle: Delay clearing the polling bit
+Git-Commit-ID: c444117f0f39d59733ec23da67c44424df529230
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,116 +33,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fd99f91aa007ba255aac44fe6cf21c1db398243a
-Gitweb:     http://git.kernel.org/tip/fd99f91aa007ba255aac44fe6cf21c1db398243a
+Commit-ID:  c444117f0f39d59733ec23da67c44424df529230
+Gitweb:     http://git.kernel.org/tip/c444117f0f39d59733ec23da67c44424df529230
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 9 Apr 2014 15:35:08 +0200
+AuthorDate: Fri, 11 Apr 2014 13:47:16 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Thu, 8 May 2014 09:16:58 +0200
 
-sched/idle: Avoid spurious wakeup IPIs
+sched/idle: Delay clearing the polling bit
 
-Because mwait_idle_with_hints() gets called from !idle context it must
-call current_clr_polling(). This however means that resched_task() is
-very likely to send an IPI even when we were polling:
+With the generic idle functions assuming !polling we should only clear
+the polling bit at the very last opportunity in order to avoid
+spurious IPIs.
 
-  CPU0					CPU1
-
-  if (current_set_polling_and_test())
-    goto out;
-
-  __monitor(&ti->flags);
-  if (!need_resched())
-    __mwait(eax, ecx);
-					set_tsk_need_resched(p);
-					smp_mb();
-out:
-  current_clr_polling();
-					if (!tsk_is_polling(p))
-					  smp_send_reschedule(cpu);
-
-So while it is correct (extra IPIs aren't a problem, whereas a missed
-IPI would be) it is a performance problem (for some).
-
-Avoid this issue by using fetch_or() to atomically set NEED_RESCHED
-and test if POLLING_NRFLAG is set.
-
-Since a CPU stuck in mwait is unlikely to modify the flags word,
-contention on the cmpxchg is unlikely and thus we should mostly
-succeed in a single go.
+Ideally we'd flip the default to polling, but that means auditing all
+arch idle functions.
 
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Cc: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-kf5suce6njh5xf5d3od13rr0@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-vq7719foqzf6z5h4j7eh7f9e@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c | 41 ++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 36 insertions(+), 5 deletions(-)
+ kernel/sched/idle.c | 17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 1c9c3b7..4b82622 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -506,6 +506,39 @@ static inline void init_hrtick(void)
- #endif	/* CONFIG_SCHED_HRTICK */
+diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+index 8f4390a..ed67f0c 100644
+--- a/kernel/sched/idle.c
++++ b/kernel/sched/idle.c
+@@ -78,12 +78,10 @@ static int cpuidle_idle_call(void)
  
- /*
-+ * cmpxchg based fetch_or, macro so it works for different integer types
-+ */
-+#define fetch_or(ptr, val)						\
-+({	typeof(*(ptr)) __old, __val = *(ptr);				\
-+ 	for (;;) {							\
-+ 		__old = cmpxchg((ptr), __val, __val | (val));		\
-+ 		if (__old == __val)					\
-+ 			break;						\
-+ 		__val = __old;						\
-+ 	}								\
-+ 	__old;								\
-+})
-+
-+#ifdef TIF_POLLING_NRFLAG
-+/*
-+ * Atomically set TIF_NEED_RESCHED and test for TIF_POLLING_NRFLAG,
-+ * this avoids any races wrt polling state changes and thereby avoids
-+ * spurious IPIs.
-+ */
-+static bool set_nr_and_not_polling(struct task_struct *p)
-+{
-+	struct thread_info *ti = task_thread_info(p);
-+	return !(fetch_or(&ti->flags, _TIF_NEED_RESCHED) & _TIF_POLLING_NRFLAG);
-+}
-+#else
-+static bool set_nr_and_not_polling(struct task_struct *p)
-+{
-+	set_tsk_need_resched(p);
-+	return true;
-+}
-+#endif
-+
-+/*
-  * resched_task - mark a task 'to be rescheduled now'.
-  *
-  * On UP this means the setting of the need_resched flag, on SMP it
-@@ -521,17 +554,15 @@ void resched_task(struct task_struct *p)
- 	if (test_tsk_need_resched(p))
- 		return;
- 
--	set_tsk_need_resched(p);
--
- 	cpu = task_cpu(p);
-+
- 	if (cpu == smp_processor_id()) {
-+		set_tsk_need_resched(p);
- 		set_preempt_need_resched();
- 		return;
+ 	/*
+ 	 * Check if the idle task must be rescheduled. If it is the
+-	 * case, exit the function after re-enabling the local irq and
+-	 * set again the polling flag
++	 * case, exit the function after re-enabling the local irq.
+ 	 */
+-	if (current_clr_polling_and_test()) {
++	if (need_resched()) {
+ 		local_irq_enable();
+-		__current_set_polling();
+ 		return 0;
  	}
  
--	/* NEED_RESCHED must be visible before we test polling */
--	smp_mb();
--	if (!tsk_is_polling(p))
-+	if (set_nr_and_not_polling(p))
- 		smp_send_reschedule(cpu);
- }
+@@ -127,7 +125,7 @@ static int cpuidle_idle_call(void)
+ 			broadcast = !!(drv->states[next_state].flags &
+ 				       CPUIDLE_FLAG_TIMER_STOP);
+ 
+-			if (broadcast)
++			if (broadcast) {
+ 				/*
+ 				 * Tell the time framework to switch
+ 				 * to a broadcast timer because our
+@@ -139,6 +137,7 @@ static int cpuidle_idle_call(void)
+ 				ret = clockevents_notify(
+ 					CLOCK_EVT_NOTIFY_BROADCAST_ENTER,
+ 					&dev->cpu);
++			}
+ 
+ 			if (!ret) {
+ 				trace_cpu_idle_rcuidle(next_state, dev->cpu);
+@@ -175,8 +174,12 @@ static int cpuidle_idle_call(void)
+ 	 * We can't use the cpuidle framework, let's use the default
+ 	 * idle routine
+ 	 */
+-	if (ret)
+-		arch_cpu_idle();
++	if (ret) {
++		if (!current_clr_polling_and_test())
++			arch_cpu_idle();
++		else
++			local_irq_enable();
++	}
+ 
+ 	__current_set_polling();
  
