@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142AbaEHDMy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 23:12:54 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35156 "EHLO
+	id S1752812AbaEHDRj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 23:17:39 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35213 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753118AbaEHDMt (ORCPT
+	with ESMTP id S1751542AbaEHDRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 23:12:49 -0400
-Date: Wed, 7 May 2014 22:07:22 -0500
+	Wed, 7 May 2014 23:17:37 -0400
+Date: Wed, 7 May 2014 22:11:49 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Boris BREZILLON <boris.brezillon@free-electrons.com>
 Cc: Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
@@ -19,66 +19,40 @@ Cc: Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
         Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [PATCH v2 2/7] reset: sunxi: allow MFD subdevices probe
-Message-ID: <20140508030722.GL7047@lukather>
+Subject: Re: [PATCH v2 5/7] clk: sunxi: add PRCM (Power/Reset/Clock
+ Management) clks support
+Message-ID: <20140508031149.GN7047@lukather>
 References: <1399483554-8824-1-git-send-email-boris.brezillon@free-electrons.com>
- <1399483554-8824-3-git-send-email-boris.brezillon@free-electrons.com>
+ <1399483554-8824-6-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QWRRbczYj8mXuejp"
+	protocol="application/pgp-signature"; boundary="3hAdtgBjtgL7p0NQ"
 Content-Disposition: inline
-In-Reply-To: <1399483554-8824-3-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1399483554-8824-6-git-send-email-boris.brezillon@free-electrons.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---QWRRbczYj8mXuejp
+--3hAdtgBjtgL7p0NQ
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, May 07, 2014 at 07:25:49PM +0200, Boris BREZILLON wrote:
-> The current implementation uses sunxi_reset_init function for both early
-> init and platform device probe.
+On Wed, May 07, 2014 at 07:25:52PM +0200, Boris BREZILLON wrote:
+> The PRCM (Power/Reset/Clock Management) unit provides several clock
+> devices:
+> - AR100 clk: used to clock the Power Management co-processor
+> - AHB0 clk: used to clock the AHB0 bus
+> - APB0 clk and gates: used to clk peripherals connected to the APB0 bus
 >=20
-> The sunxi_reset_init function uses DT to retrieve device resources, which
-> will be an issue if reset controllers are registered from an MFD device
-> that define resources from mfd_cell definition.
->=20
-> Moreover, we can make of devm functions when we're in the probe context.
+> Add support for these clks in a separate driver so that they can be probed
+> as platform devices instead of registered during early init.
+> This is needed to be able to probe PRCM MFD subdevices.
 >=20
 > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
->  drivers/reset/reset-sunxi.c | 21 ++++++++++++++++++---
->  1 file changed, 18 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/reset/reset-sunxi.c b/drivers/reset/reset-sunxi.c
-> index 695bd34..1b5fea6 100644
-> --- a/drivers/reset/reset-sunxi.c
-> +++ b/drivers/reset/reset-sunxi.c
-> @@ -145,7 +145,24 @@ MODULE_DEVICE_TABLE(of, sunxi_reset_dt_ids);
-> =20
->  static int sunxi_reset_probe(struct platform_device *pdev)
->  {
-> -	return sunxi_reset_init(pdev->dev.of_node);
-> +	struct sunxi_reset_data *data;
-> +	struct resource *res;
-> +
-> +	data =3D devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-> +	if (!data)
-> +		return -ENOMEM;
-> +
-> +	res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	data->membase =3D devm_request_and_ioremap(&pdev->dev, res);
-> +	if (!data->membase)
-> +		return -ENOMEM;
 
-You'd probably be better off using devm_ioremap_resource so that you
-get a meaningful error code.
-
-Apart from this, you have my=20
 Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
 Thanks!
@@ -89,26 +63,26 @@ Maxime Ripard, Free Electrons
 Embedded Linux, Kernel and Android engineering
 http://free-electrons.com
 
---QWRRbczYj8mXuejp
+--3hAdtgBjtgL7p0NQ
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.14 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTavTqAAoJEBx+YmzsjxAgzTEP/RU9zAdEFYEx9f+7qySP4SB9
-8493dsLMtY0Q5TaaM747moqmTCyDz3ewKZLsI4NTgRki9x2lUVuFG7IQETarJmJz
-fyIWy6lkF4lypKRd6G57xHg7/uax/COC/yP6Znzm7fgfaahf6Lpcvpi7/W9ZNhjJ
-xTQ2oerF/k+fCwcNowhOpUfEeyZv1eGFQjHpJCzfpH2i2hjo26Yxjs2uelCOi7sn
-7hKdyvVpArEGLm7q7DWawDCNZXe7kbqpH7fM98OQOEmY+dme9r26jT4uDmHUVziO
-jzxtJcBdng86SlHLNRs+v2DTnseatvStoh9sxZNGoEreKszqjXHwCqnM0N7g0jQj
-U9SS0BdVrx6scX1YCTWuUpKEMrKYr/wliKbZhRwfuwsF9D1AsI3ztcUecYBOiQvO
-19fur2OJ9/t5AEkmcga6mo2tbvNBapBb2P8FgKH8XJVOVkyeUc5uJrlDZahChlhM
-IPIEOYx5oRHng1FrUc6KW3cH0Qdr6egNVEZdU02E+k1Z8OYqSt66DNZmWuVrxD9N
-+DO+hi4WTg2SlE4ibSSe9aX5gMn/T6GhPfTgcJbdmXkvxZazT7REGq4QyoWJq68v
-1QIeISrcCpJYnyDGnUUfe5teWlDHDZTHVrwKYm4yxofiuBWiXfkJSXiWZB2X2cXw
-xoGKUqsbpza4wgHxo6UH
-=m5ST
+iQIcBAEBAgAGBQJTavX0AAoJEBx+YmzsjxAg+1gQAKopdXxjzj9RVSMSMR2q2Fxb
+luB8mtq/A8rIHieCLQKVJ04G+3e9d13mrWzml5Uyst1oiIr72y9YcZlIjevYDVSC
+AjPxE4M28BuINGki1jw6TREGfbKWWbcOWgQdwbUN3Qt9SC8KlejXsszVwmHQyqfg
+E0McrjqWSt5BNREOc44Z2NUDQDZuDYRh3IHodi6+guYfT449zyT+3E1cbbQaq3g8
+CoWML0BUXFgCafOrU+0KlmoT03spRtKYpafnRPWGCmn/yUFFZQ5nBNSvUsTrFRGj
+i5sDcm+HS7X99ONWShUYG9vYyLCwiUBDMKe0wyGgTbW0Dqonl79BqrTbbXeEgaN2
+CFiNaFpWgPGFKbYR56uP/54kiFa9y+b+zeF8Bsfqvu5WAlfTdy8VblNodan2QtUD
+9YEbzXMC4VY0ACyMfGrxBsLRMowLqyO3bVqKHogCIY6Ji/I9zewuwY2t49wGnDvP
+xHBvopM4Z+C2ecD4JgPk2eVo582WZHz7DXJaGMQe0gHrYGV7YquJZPNVdDq5dqHs
++IsFI22guZypXWJyO4Yx+IwWlTPwzBNfT+tnYA0/jsPn9+h2RdA45ewIHK/KSrk9
+nG5kVU6B04zh+Bf7PTDsEfyabcfaau0hXZZo1/WSblxUysy2bSBnr/UhZdPSVtG0
+nPH2Zu1yknnWwv3azPK7
+=NU5X
 -----END PGP SIGNATURE-----
 
---QWRRbczYj8mXuejp--
+--3hAdtgBjtgL7p0NQ--
