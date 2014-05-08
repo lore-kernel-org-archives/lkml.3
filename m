@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820AbaEHPiz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:38:55 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:60138 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739AbaEHPiw (ORCPT
+	id S1753663AbaEHPp2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:45:28 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:42719 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752987AbaEHPp1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:38:52 -0400
-Date: Thu, 8 May 2014 19:38:45 +0400
-From: Paul Fertser <fercerpav@gmail.com>
-To: "suresh.gupta@freescale.com" <suresh.gupta@freescale.com>
-Cc: "balbi@ti.com" <balbi@ti.com>, "LeoLi@freescale.com" <LeoLi@freescale.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget: fsl: check vbus presence on probe
-Message-ID: <20140508153845.GA3876@home.lan>
-References: <1398329653-29968-1-git-send-email-fercerpav@gmail.com> <20140430160625.GF23679@saruman.home> <20140430192745.GI3876@home.lan> <20140430201202.GF3839@saruman.home> <2cd9b3e31cce467e9a79d7aabd63604b@BL2PR03MB579.namprd03.prod.outlook.com> <59ef67eabf72450f988638edbbe1cd47@BL2PR03MB579.namprd03.prod.outlook.com>
+	Thu, 8 May 2014 11:45:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <59ef67eabf72450f988638edbbe1cd47@BL2PR03MB579.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.17 (2007-11-30)
+In-Reply-To: <1399552888-11024-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1399552888-11024-1-git-send-email-kirill.shutemov@linux.intel.com>
+From: Armin Rigo <arigo@tunes.org>
+Date: Thu, 8 May 2014 17:44:46 +0200
+X-Google-Sender-Auth: LvXEG8fNKmPhXM0sKY9RZ8U49S0
+Message-ID: <CAMSv6X0+3-uNeiyEPD3sA5dA6Af_M+BT0aeVpa3qMv1aga0q9g@mail.gmail.com>
+Subject: Re: [PATCHv2 0/2] remap_file_pages() decommission
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
+        mingo@kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi everybody,
 
-On Thu, May 08, 2014 at 02:30:39PM +0000, suresh.gupta@freescale.com wrote:
-> As per my limited knowledge, the purpose of
-> OTGSC_STS_B_SESSION_VALID bit is to tell either VBUS is above the B
-> session valid threshold and which comes only Host is attached.
+Here is a note from the PyPy project (mentioned earlier in this
+thread, and at https://lwn.net/Articles/587923/ ).
 
-Yes, that matches the datasheet I've read.
+Yes, we use remap_file_pages() heavily on the x86-64 architecture.
+However, the individual calls to remap_file_pages() are not
+performance-critical, so it is easy to switch to using multiple
+mmap()s.  We need to perform more measurements to know exactly what
+the overhead would be, in terms notably of kernel memory.
 
-> And Host might be attach after system bootup or after driver
-> initialization. So putting this check in probe will not help much.
+However, an issue with that approach is the upper bound on the number
+of VMAs.  By default, it is not large enough.  Right now, it is
+possible to remap say 10% of the individual pages from an anonymous
+mmap of multiple GBs in size; but doing so with individual calls to
+mmap hits this arbitrary limit.  I have no particular weight to give
+for or against keeping remap_file_pages() in the kernel, but if it is
+removed or emulated, it would be a plus if the programs would run on a
+machine with the default configuration --- i.e. if you remove or
+emulate remap_file_pages(), please increase the default limit as well.
 
-If the host is attached after the driver was initialised, the
-interrupt will trigger and the driver will get notified that VBUS
-appeared and everything will go smooth, at least that's how it should
-work (I do not have any board handy to real-life check that, but
-AFAICT that's the intent of the current code).
 
-I actually do not have any iMX demoboards at all, I've only got some
-custom-designed i.MX25 boards where I can't control VBUS, it's
-permanently pulled up.
+A bientôt,
 
-But I was fixing the problem that was clearly, 100% reproducibly
-happening when VBUS was applied before the interrupt was
-configured. So what exactly do you mean here? Do you mean this check
-I've added doesn't fix the bug? Or do you mean this bug should be
-fixed somehow else? Or do you mean there's no bug in the first place
-and my board doesn't work because of something else?
-
--- 
-Be free, use free (http://www.gnu.org/philosophy/free-sw.html) software!
-mailto:fercerpav@gmail.com
+Armin.
