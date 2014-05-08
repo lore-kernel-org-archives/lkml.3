@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264AbaEHSGn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 14:06:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53721 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755214AbaEHSGl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 14:06:41 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: lwn@lwn.net
-Subject: [3.13.y.z extended stable] Linux 3.13.11.2
-Date: Thu,  8 May 2014 11:06:36 -0700
-Message-Id: <1399572397-23005-1-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-X-Extended-Stable: 3.13
+	id S1755381AbaEHSHk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 14:07:40 -0400
+Received: from mga03.intel.com ([143.182.124.21]:48750 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753697AbaEHSHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 14:07:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1012,1389772800"; 
+   d="scan'208";a="429590903"
+From: Keith Busch <keith.busch@intel.com>
+To: linux-nvme@lists.infradead.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Cc: Keith Busch <keith.busch@intel.com>
+Subject: [PATCH 0/2] Asynchronous device shutdown
+Date: Thu,  8 May 2014 12:07:32 -0600
+Message-Id: <1399572454-30239-1-git-send-email-keith.busch@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am announcing the release of the Linux 3.13.11.2 kernel.
+Device shutdown synchronization was recently reverted due to complications
+from unrelated 'async_schedule's holding up shutdown forever and the
+fact that no device driver was making use of the capability anyway.
 
+I would like to make use of this capability though; I'm told by some
+vendors that devices I develop drivers for may take a while to safely
+shutdown and there might be a lot of these devices in a machine, so we
+would benefit from letting this happen in parallel.
 
-NOTE:
- - This release contains ONLY a correction for a typo in the version string.
- - There was no review period for this release.
+This patch set adds a slightly different shutdown synchronization using
+a new domain, and I've added an implementation to the nvm-express driver
+here so there's at least one user, assuming this is acceptable.
 
+Keith Busch (2):
+  driver-core: allow asynchronous device shutdown
+  NVMe: Complete shutdown asynchronously
 
-The updated 3.13.y tree can be found at: 
-  git://kernel.ubuntu.com/ubuntu/linux.git linux-3.13.y
-and can be browsed at:
-  http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=refs/heads/linux-3.13.y;a=shortlog
-
-The diff from v3.13.11.1 is posted as a follow-up to this email.
-
-The 3.13.y extended stable tree is maintained by the Ubuntu Kernel Team.
-For more info, see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
-
- -Kamal
+ drivers/base/core.c       |    4 ++++
+ drivers/block/nvme-core.c |   28 ++++++++++++++++++++++++++--
+ include/linux/device.h    |    1 +
+ include/linux/nvme.h      |    1 +
+ 4 files changed, 32 insertions(+), 2 deletions(-)
 
 -- 
- Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Kamal Mostafa (1):
-      Linux 3.13.11.2
+1.7.10.4
 
