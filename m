@@ -1,96 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070AbaEHTM4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 15:12:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45447 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755435AbaEHTMb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932087AbaEHTNU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 15:13:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61004 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755137AbaEHTMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 May 2014 15:12:31 -0400
-Date: Thu, 8 May 2014 21:12:28 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
-Subject: Re: [PATCH v10 10/19] qspinlock, x86: Allow unfair spinlock in a
- virtual guest
-Message-ID: <20140508191228.GS2844@laptop.programming.kicks-ass.net>
-References: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com>
- <1399474907-22206-11-git-send-email-Waiman.Long@hp.com>
+Date: Thu, 8 May 2014 21:12:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 5/6] x86/traps: Shift fill_trap_info() from DO_ERROR_INFO()
+	to do_error_trap()
+Message-ID: <20140508191206.GA16930@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1399474907-22206-11-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140508191140.GA16892@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 11:01:38AM -0400, Waiman Long wrote:
+Move the callsite of fill_trap_info() into do_error_trap() and remove
+the "siginfo_t *info" argument.
 
+This obviously breaks DO_ERROR() which passed info == NULL, we simply
+change fill_trap_info() to return "siginfo_t *" and add the "default"
+case which returns SEND_SIG_PRIV.
 
-No, we want the unfair thing for VIRT, not PARAVIRT.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/x86/kernel/traps.c |   21 ++++++++++++---------
+ 1 files changed, 12 insertions(+), 9 deletions(-)
 
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 1cf8a4c..c9dd741 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -136,13 +136,16 @@ do_trap_no_signal(struct task_struct *tsk, int trapnr, char *str,
+ 	return -1;
+ }
+ 
+-static void fill_trap_info(struct pt_regs *regs, int signr, int trapnr,
+-			   siginfo_t *info)
++static siginfo_t *fill_trap_info(struct pt_regs *regs, int signr, int trapnr,
++				siginfo_t *info)
+ {
+ 	unsigned long siaddr;
+ 	int sicode;
+ 
+ 	switch (trapnr) {
++	default:
++		return SEND_SIG_PRIV;
++
+ 	case X86_TRAP_DE:
+ 		sicode = FPE_INTDIV;
+ 		siaddr = regs->ip;
+@@ -161,6 +164,7 @@ static void fill_trap_info(struct pt_regs *regs, int signr, int trapnr,
+ 	info->si_errno = 0;
+ 	info->si_code = sicode;
+ 	info->si_addr = (void __user *)siaddr;
++	return info;
+ }
+ 
+ static void __kprobes
+@@ -199,14 +203,16 @@ do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
+ }
+ 
+ static void do_error_trap(struct pt_regs *regs, long error_code, char *str,
+-			  unsigned long trapnr, int signr, siginfo_t *info)
++			  unsigned long trapnr, int signr)
+ {
+ 	enum ctx_state prev_state = exception_enter();
++	siginfo_t info;
+ 
+ 	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, signr) !=
+ 			NOTIFY_STOP) {
+ 		conditional_sti(regs);
+-		do_trap(trapnr, signr, str, regs, error_code, info);
++		do_trap(trapnr, signr, str, regs, error_code,
++			fill_trap_info(regs, signr, trapnr, &info));
+ 	}
+ 
+ 	exception_exit(prev_state);
+@@ -215,16 +221,13 @@ static void do_error_trap(struct pt_regs *regs, long error_code, char *str,
+ #define DO_ERROR(trapnr, signr, str, name)				\
+ dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
+ {									\
+-	do_error_trap(regs, error_code, str, trapnr, signr, NULL);	\
++	do_error_trap(regs, error_code, str, trapnr, signr);		\
+ }
+ 
+ #define DO_ERROR_INFO(trapnr, signr, str, name)				\
+ dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
+ {									\
+-	siginfo_t info;							\
+-									\
+-	fill_trap_info(regs, signr, trapnr, &info);			\
+-	do_error_trap(regs, error_code, str, trapnr, signr, &info);	\
++	do_error_trap(regs, error_code, str, trapnr, signr);		\
+ }
+ 
+ DO_ERROR_INFO(X86_TRAP_DE,     SIGFPE,  "divide error",			divide_error)
+-- 
+1.5.5.1
 
-> diff --git a/kernel/locking/qspinlock.c b/kernel/locking/qspinlock.c
-> index 9e7659e..10e87e1 100644
-> --- a/kernel/locking/qspinlock.c
-> +++ b/kernel/locking/qspinlock.c
-> @@ -227,6 +227,14 @@ static __always_inline int get_qlock(struct qspinlock *lock)
->  {
->  	struct __qspinlock *l = (void *)lock;
->  
-> +#ifdef CONFIG_PARAVIRT_UNFAIR_LOCKS
-> +	if (static_key_false(&paravirt_unfairlocks_enabled))
-> +		/*
-> +		 * Need to use atomic operation to get the lock when
-> +		 * lock stealing can happen.
-> +		 */
-> +		return cmpxchg(&l->locked, 0, _Q_LOCKED_VAL) == 0;
-
-That's missing {}.
-
-> +#endif
-
-
->  	barrier();
->  	ACCESS_ONCE(l->locked) = _Q_LOCKED_VAL;
->  	barrier();
-
-
-But no, what you want is:
-
-static __always_inline bool virt_lock(struct qspinlock *lock)
-{
-#ifdef CONFIG_VIRT_MUCK
-	if (static_key_false(&virt_unfairlocks_enabled)) {
-		while (!queue_spin_trylock(lock))
-			cpu_relax();
-
-		return true;
-	}
-#else
-	return false;
-}
-
-
-void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
-{
-	if (virt_lock(lock))
-		return;
-
-	...
-}
