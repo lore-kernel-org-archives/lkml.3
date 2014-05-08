@@ -1,68 +1,726 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358AbaEHKZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 06:25:46 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60979 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752813AbaEHKZp (ORCPT
+	id S1753475AbaEHK0b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 06:26:31 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:42644 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752813AbaEHK02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 06:25:45 -0400
-Date: Thu, 8 May 2014 11:25:14 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Larry Bassel <larry.bassel@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH v2 2/2] arm64: enable context tracking
-Message-ID: <20140508102514.GA6942@arm.com>
-References: <1399419149-26685-1-git-send-email-larry.bassel@linaro.org>
- <1399419149-26685-3-git-send-email-larry.bassel@linaro.org>
- <20140507101709.GE18456@arm.com>
- <7hr445w3nz.fsf@paris.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7hr445w3nz.fsf@paris.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 8 May 2014 06:26:28 -0400
+X-AuditID: cbfee68f-b7eff6d000002b70-14-536b5bc9db75
+From: Namjae Jeon <namjae.jeon@samsung.com>
+To: "'Dave Chinner'" <david@fromorbit.com>, "'Theodore Ts'o'" <tytso@mit.edu>
+Cc: "'linux-ext4'" <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Ashish Sangwan'" <a.sangwan@samsung.com>
+Subject: [PATCH v2 2/10] xfs: Add support FALLOC_FL_INSERT_RANGE for fallocate
+Date: Thu, 08 May 2014 19:26:16 +0900
+Message-id: <003801cf6aa7$f1f87b70$d5e97250$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac9qp87H8lhu4d3oS4uX1DOEZySoJw==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsWyRsSkUPdkdHawwazTghZLJ15itthy7B6j
+	xcx5d9gs9uw9yWJxedccNovWnp/sFov6bjE6sHucWiTh0XTmKLPH6gtbGT36tqxi9Pi8SS6A
+	NYrLJiU1J7MstUjfLoEr4/XVyWwFs+czVjzd9IyxgXF7XRcjJ4eEgInEhdeX2SFsMYkL99az
+	dTFycQgJLGWU+PvtIitM0apj91kgEosYJbpPnWKCcP4ySlzvWgbUzsHBJqAt8WeLKEiDiICn
+	xOLjW8EmMQusZJS4d/wjG0hCWMBP4uXMm4wgNouAqsSxrgnMIDavgKXEzqOtULagxI/J91hA
+	bGYBLYn1O48zQdjyEpvXvGWGuEhBYsfZ14wQy/Qk3h3/ywxRIyKx78U7RpDFEgKX2CW2LW2A
+	WiYg8W3yIRaQQyUEZCU2HYCaIylxcMUNlgmMYrOQrJ6FZPUsJKtnIVmxgJFlFaNoakFyQXFS
+	epGxXnFibnFpXrpecn7uJkZgRJ7+96x/B+PdA9aHGJOB1k9klhJNzgdGdF5JvKGxmZGFqYmp
+	sZG5pRlpwkrivPcfJgUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYLT8eWa3cLpoI1vIXRsR
+	8/XzLH8E3Vpz88acXeu1impkjfR3cvoZTOeUmJzcn99Wlzp37vWownzV88kV+/+siVg9abPN
+	qvPlXWvmcTTbeYk9q089pLSvQeNQVLyHeGPSkh1P319+fXeiTG0sV9GMlx7Fz+eptm3+NvOK
+	lN/RY8rTLixVEwndra3EUpyRaKjFXFScCADLUj853gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jAd2T0dnBBttXslgsnXiJ2WLLsXuM
+	FjPn3WGz2LP3JIvF5V1z2Cxae36yWyzqu8XowO5xapGER9OZo8weqy9sZfTo27KK0ePzJrkA
+	1qgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoDOU
+	FMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1jBmvr05mK5g9n7Hi6aZnjA2M
+	2+u6GDk5JARMJFYdu88CYYtJXLi3nq2LkYtDSGARo0T3qVNMEM5fRonrXcvYuxg5ONgEtCX+
+	bBEFaRAR8JRYfHwrWAOzwEpGiXvHP7KBJIQF/CRezrzJCGKzCKhKHOuawAxi8wpYSuw82gpl
+	C0r8mHwPbDOzgJbE+p3HmSBseYnNa94yQ1ykILHj7GtGiGV6Eu+O/2WGqBGR2PfiHeMERoFZ
+	SEbNQjJqFpJRs5C0LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHO/PpHYwrmywOMQo
+	wMGoxMOb4ZwVLMSaWFZcmXuIUYKDWUmEl8c/O1iINyWxsiq1KD++qDQntfgQYzLQpxOZpUST
+	84GpKK8k3tDYxMzI0sjc0MLI2Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGDvE3L3a
+	v7Z6n6znXHFb7pFTRZbW/EccXFdtnz2bGJM2+cHxK4fZrfj5e5wUlcXmvf39Uf6xcZ3htblv
+	/rWLp7vMfXl8slWi7/XHu3piplgyRldrusdwLYmR/vYhhaua+U26dSGn9ep2zQV7M29dMZZe
+	opzgaHyzZsHFtTJHm/ZNNsjJSr4+UYmlOCPRUIu5qDgRAPHCQUQ7AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 12:49:04AM +0100, Kevin Hilman wrote:
-> Hi Will,
+This patch implements fallocate's FALLOC_FL_INSERT_RANGE for XFS.
 
-Hello Kevin,
+1) Make sure that both offset and len are block size aligned.
+2) Update the i_size of inode by len bytes.
+3) Compute the file's logical block number against offset. If the computed
+   block number is not the starting block of the extent, split the extent
+   such that the block number is the starting block of the extent.
+4) Shift all the extents which are lying bewteen [offset, last allocated extent]
+   towards right by len bytes. This step will make a hole of len bytes
+   at offset.
+5) Allocate unwritten extents for the hole created in step 4.
 
-> Will Deacon <will.deacon@arm.com> writes:
-> > On Wed, May 07, 2014 at 12:32:29AM +0100, Larry Bassel wrote:
-> >> Make calls to ct_user_enter when the kernel is exited
-> >> and ct_user_exit when the kernel is entered (in el0_da,
-> >> el0_ia, el0_svc, el0_irq).
-> >
-> > Why only these entry points? I can reschedule after any exception from EL0,
-> > so I'd expect all exceptions from userspace to need annotating, no?
-> 
-> In my initial approach to this, you might recall (though it was over a
-> year ago now) was to just instrument kernel_enter rather than sprinkle
-> the instrumentaion in cl0_*.  However, your concern at the time was that
-> since it was before debugging was enabled it would complicate debugging
-> these paths.
-> 
-> Any chance you have any other suggestion on how we might do this in
-> kernel_entry rather than sprinkling them all over cl0_*?  or is the
-> sprinkling the only good way to handle this.
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+---
+ fs/xfs/xfs_bmap.c      | 372 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ fs/xfs/xfs_bmap.h      |   9 +-
+ fs/xfs/xfs_bmap_util.c | 129 ++++++++++++++++-
+ fs/xfs/xfs_bmap_util.h |   2 +
+ fs/xfs/xfs_file.c      |  37 ++++-
+ fs/xfs/xfs_trace.h     |   1 +
+ 6 files changed, 545 insertions(+), 5 deletions(-)
 
-Unfortunately, different exceptions do subtly different things before
-invoking the main handler. For example:
+diff --git a/fs/xfs/xfs_bmap.c b/fs/xfs/xfs_bmap.c
+index 1ff0da6..e24aa14 100644
+--- a/fs/xfs/xfs_bmap.c
++++ b/fs/xfs/xfs_bmap.c
+@@ -5419,7 +5419,7 @@ error0:
+  * into, this will be considered invalid operation and we abort immediately.
+  */
+ int
+-xfs_bmap_shift_extents(
++xfs_bmap_shift_extents_left(
+ 	struct xfs_trans	*tp,
+ 	struct xfs_inode	*ip,
+ 	int			*done,
+@@ -5449,7 +5449,7 @@ xfs_bmap_shift_extents(
+ 	    (XFS_IFORK_FORMAT(ip, whichfork) != XFS_DINODE_FMT_EXTENTS &&
+ 	     XFS_IFORK_FORMAT(ip, whichfork) != XFS_DINODE_FMT_BTREE),
+ 	     mp, XFS_ERRTAG_BMAPIFORMAT, XFS_RANDOM_BMAPIFORMAT))) {
+-		XFS_ERROR_REPORT("xfs_bmap_shift_extents",
++		XFS_ERROR_REPORT("xfs_bmap_shift_extents_left",
+ 				 XFS_ERRLEVEL_LOW, mp);
+ 		return XFS_ERROR(EFSCORRUPTED);
+ 	}
+@@ -5606,3 +5606,371 @@ del_cursor:
+ 	xfs_trans_log_inode(tp, ip, logflags);
+ 	return error;
+ }
++
++/*
++ * Splits an extent into two extents at split_fsb block that it is
++ * the first block of the current_ext. @current_ext is a target extent
++ * to be splitted. @split_fsb is a block where the extents is spliited.
++ * If split_fsb lies in a hole or the first block of extents, just return 0.
++ */
++STATIC int
++xfs_bmap_split_extent_at(
++	struct xfs_trans	*tp,
++	struct xfs_inode	*ip,
++	xfs_fileoff_t		split_fsb,
++	xfs_extnum_t		*current_ext,
++	xfs_fsblock_t		*firstfsb,
++	struct xfs_bmap_free	*free_list)
++{
++	int				whichfork = XFS_DATA_FORK;
++	struct xfs_btree_cur		*cur;
++	struct xfs_bmbt_rec_host	*gotp;
++	struct xfs_bmbt_irec		got;
++	struct xfs_bmbt_irec		new; /* splitted extent */
++	struct xfs_mount		*mp = ip->i_mount;
++	struct xfs_ifork		*ifp;
++	xfs_fsblock_t			gotblkcnt; /* new block count for got */
++	int				error = 0;
++	int				logflags;
++	int				i = 0;
++
++	if (unlikely(XFS_TEST_ERROR(
++	    (XFS_IFORK_FORMAT(ip, whichfork) != XFS_DINODE_FMT_EXTENTS &&
++	     XFS_IFORK_FORMAT(ip, whichfork) != XFS_DINODE_FMT_BTREE),
++	     mp, XFS_ERRTAG_BMAPIFORMAT, XFS_RANDOM_BMAPIFORMAT))) {
++		XFS_ERROR_REPORT("xfs_bmap_split_extent_at",
++				 XFS_ERRLEVEL_LOW, mp);
++		return XFS_ERROR(EFSCORRUPTED);
++	}
++
++	if (XFS_FORCED_SHUTDOWN(mp))
++		return XFS_ERROR(EIO);
++
++	ASSERT(current_ext != NULL);
++
++	ifp = XFS_IFORK_PTR(ip, whichfork);
++	if (!(ifp->if_flags & XFS_IFEXTENTS)) {
++		/* Read in all the extents */
++		error = xfs_iread_extents(tp, ip, whichfork);
++		if (error)
++			return error;
++	}
++
++	gotp = xfs_iext_bno_to_ext(ifp, split_fsb, current_ext);
++	/*
++	 * gotp can be null in 2 cases: 1) if there are no extents
++	 * or 2) split_fsb lies in a hole beyond which there are
++	 * no extents. Either way, we are done.
++	 */
++	if (!gotp)
++		return 0;
++
++	xfs_bmbt_get_all(gotp, &got);
++
++	/*
++	 * Check split_fsb lies in a hole or the start boundary offset
++	 * of the extent.
++	 */
++	if (got.br_startoff >= split_fsb)
++		return 0;
++
++	gotblkcnt = split_fsb - got.br_startoff;
++	new.br_startoff = split_fsb;
++	new.br_startblock = got.br_startblock + gotblkcnt;
++	new.br_blockcount = got.br_blockcount - gotblkcnt;
++	new.br_state = got.br_state;
++
++	/* We are going to change core inode */
++	logflags = XFS_ILOG_CORE;
++
++	if (ifp->if_flags & XFS_IFBROOT) {
++		cur = xfs_bmbt_init_cursor(mp, tp, ip, whichfork);
++		cur->bc_private.b.firstblock = *firstfsb;
++		cur->bc_private.b.flist = free_list;
++		cur->bc_private.b.flags = 0;
++	} else {
++		cur = NULL;
++		logflags |= XFS_ILOG_DEXT;
++	}
++
++	if (cur) {
++		error = xfs_bmbt_lookup_eq(cur, got.br_startoff,
++					   got.br_startblock,
++					   got.br_blockcount,
++					   &i);
++		if (error)
++			goto del_cursor;
++		XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
++	}
++
++	xfs_bmbt_set_blockcount(gotp, gotblkcnt);
++	got.br_blockcount = gotblkcnt;
++	if (cur) {
++		error = xfs_bmbt_update(cur, got.br_startoff,
++					got.br_startblock,
++					got.br_blockcount,
++					got.br_state);
++		if (error)
++			goto del_cursor;
++	}
++
++	/* Add new extent */
++	(*current_ext)++;
++	xfs_iext_insert(ip, *current_ext, 1, &new, 0);
++	XFS_IFORK_NEXT_SET(ip, whichfork,
++		XFS_IFORK_NEXTENTS(ip, whichfork) + 1);
++
++	if (cur) {
++		error = xfs_bmbt_lookup_eq(cur, new.br_startoff,
++					   new.br_startblock, new.br_blockcount,
++					   &i);
++		if (error)
++			goto del_cursor;
++		XFS_WANT_CORRUPTED_GOTO(i == 0, del_cursor);
++		cur->bc_rec.b.br_state = new.br_state;
++
++		error = xfs_btree_insert(cur, &i);
++		if (error)
++			goto del_cursor;
++		XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
++	}
++
++	/*
++	 * Convert to a btree if necessary.
++	 */
++	if (xfs_bmap_needs_btree(ip, whichfork)) {
++		int tmp_logflags; /* partial log flag return val */
++
++		ASSERT(cur == NULL);
++		error = xfs_bmap_extents_to_btree(tp, ip, firstfsb, free_list,
++				&cur, 0, &tmp_logflags, whichfork);
++		logflags |= tmp_logflags;
++	}
++
++del_cursor:
++	if (cur)
++		xfs_btree_del_cursor(cur,
++			error ? XFS_BTREE_ERROR : XFS_BTREE_NOERROR);
++	xfs_trans_log_inode(tp, ip, logflags);
++	return error;
++}
++
++int
++xfs_bmap_split_extent(
++	struct xfs_inode	*ip,
++	xfs_fileoff_t		split_fsb,
++	xfs_extnum_t		*split_ext)
++{
++	struct xfs_mount        *mp = ip->i_mount;
++	struct xfs_trans	*tp;
++	struct xfs_bmap_free	free_list;
++	xfs_fsblock_t		firstfsb;
++	int			committed;
++	int			error;
++
++	tp = xfs_trans_alloc(mp, XFS_TRANS_DIOSTRAT);
++	error = xfs_trans_reserve(tp, &M_RES(mp)->tr_write,
++			XFS_DIOSTRAT_SPACE_RES(mp, 0), 0);
++
++	if (error) {
++		/*
++		 * Free the transaction structure.
++		 */
++		ASSERT(XFS_FORCED_SHUTDOWN(mp));
++		xfs_trans_cancel(tp, 0);
++		return error;
++	}
++
++	xfs_ilock(ip, XFS_ILOCK_EXCL);
++	error = xfs_trans_reserve_quota(tp, mp, ip->i_udquot,
++			ip->i_gdquot, ip->i_pdquot,
++			XFS_DIOSTRAT_SPACE_RES(mp, 0), 0,
++			XFS_QMOPT_RES_REGBLKS);
++	if (error)
++		goto error1;
++
++	xfs_trans_ijoin(tp, ip, 0);
++	xfs_bmap_init(&free_list, &firstfsb);
++
++	error = xfs_bmap_split_extent_at(tp, ip, split_fsb, split_ext,
++					 &firstfsb, &free_list);
++	if (error)
++		goto error0;
++
++	error = xfs_bmap_finish(&tp, &free_list, &committed);
++	if (error)
++		goto error0;
++
++	error = xfs_trans_commit(tp, XFS_TRANS_RELEASE_LOG_RES);
++	xfs_iunlock(ip, XFS_ILOCK_EXCL);
++
++	return error;
++error0:
++	xfs_bmap_cancel(&free_list);
++error1:
++	xfs_trans_cancel(tp, XFS_TRANS_RELEASE_LOG_RES | XFS_TRANS_ABORT);
++	xfs_iunlock(ip, XFS_ILOCK_EXCL);
++	return error;
++}
++
++/*
++ * Shift extent records to the right to make a hole.
++ * The maximum number of extents to be shifted in a single operation
++ * is @num_exts, and @current_ext keeps track of the current extent
++ * index we have shifted. @offset_shift_fsb is the length by which each
++ * extent is shifted. @end_ext is the last extent to be shifted.
++ */
++int
++xfs_bmap_shift_extents_right(
++	struct xfs_trans	*tp,
++	struct xfs_inode	*ip,
++	int			*done,
++	xfs_fileoff_t		offset_shift_fsb,
++	xfs_extnum_t		*current_ext,
++	xfs_extnum_t		end_ext,
++	xfs_fsblock_t		*firstblock,
++	struct xfs_bmap_free	*flist,
++	int			num_exts)
++{
++	struct xfs_mount		*mp = ip->i_mount;
++	struct xfs_btree_cur		*cur;
++	struct xfs_bmbt_rec_host	*gotp;
++	struct xfs_bmbt_irec		got;
++	struct xfs_bmbt_irec            right;
++	xfs_ifork_t			*ifp;
++	xfs_fileoff_t			startoff;
++	xfs_filblks_t			blockcount = 0;
++	xfs_extnum_t			last_extent;
++	int				error = 0;
++	int				i;
++	int				whichfork = XFS_DATA_FORK;
++	int				logflags;
++
++	if (unlikely(XFS_TEST_ERROR(
++	    (XFS_IFORK_FORMAT(ip, whichfork) != XFS_DINODE_FMT_EXTENTS &&
++	     XFS_IFORK_FORMAT(ip, whichfork) != XFS_DINODE_FMT_BTREE),
++	     mp, XFS_ERRTAG_BMAPIFORMAT, XFS_RANDOM_BMAPIFORMAT))) {
++		XFS_ERROR_REPORT("xfs_bmap_shift_extents_right",
++				 XFS_ERRLEVEL_LOW, mp);
++		return XFS_ERROR(EFSCORRUPTED);
++	}
++
++	if (XFS_FORCED_SHUTDOWN(mp))
++		return XFS_ERROR(EIO);
++
++	ASSERT(current_ext != NULL);
++
++	/* We are going to change core inode */
++	logflags = XFS_ILOG_CORE;
++	ifp = XFS_IFORK_PTR(ip, whichfork);
++
++	if (ifp->if_flags & XFS_IFBROOT) {
++		cur = xfs_bmbt_init_cursor(mp, tp, ip, whichfork);
++		cur->bc_private.b.firstblock = *firstblock;
++		cur->bc_private.b.flist = flist;
++		cur->bc_private.b.flags = 0;
++	} else {
++		cur = NULL;
++		logflags |= XFS_ILOG_DEXT;
++	}
++
++	/* start shifting extents to right */
++	while (num_exts-- > 0) {
++		blockcount = 0;
++
++		if (*current_ext < end_ext) {
++			*done = 1;
++			break;
++		}
++
++		gotp = xfs_iext_get_ext(ifp, *current_ext);
++		xfs_bmbt_get_all(gotp, &got);
++		startoff = got.br_startoff + offset_shift_fsb;
++
++		/*
++		 * Before shifting extent into hole, make sure that the hole
++		 * is large enough to accomodate the shift. This checking has
++		 * to be performed for all except the last extent.
++		 */
++		last_extent = (ifp->if_bytes / sizeof(xfs_bmbt_rec_t)) - 1;
++		if (last_extent != *current_ext) {
++			xfs_bmbt_get_all(xfs_iext_get_ext(ifp,
++						*current_ext + 1), &right);
++			if (startoff + got.br_blockcount > right.br_startoff) {
++				error = XFS_ERROR(EINVAL);
++				if (error)
++					goto del_cursor;
++			}
++		}
++
++		/* Check if we can merge 2 adjacent extents */
++		if (last_extent != *current_ext &&
++		    right.br_startoff == startoff + got.br_blockcount &&
++		    right.br_startblock ==
++				got.br_startblock + got.br_blockcount &&
++		    right.br_state == got.br_state &&
++		    right.br_blockcount + got.br_blockcount <= MAXEXTLEN) {
++			blockcount = right.br_blockcount + got.br_blockcount;
++
++			/* Make cursor point to the extent we will update */
++			if (cur) {
++				error = xfs_bmbt_lookup_eq(cur,
++							   right.br_startoff,
++							   right.br_startblock,
++							   right.br_blockcount,
++							   &i);
++				if (error)
++					goto del_cursor;
++				XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
++			}
++
++			xfs_iext_remove(ip, *current_ext + 1, 1, 0);
++			if (cur) {
++				error = xfs_btree_delete(cur, &i);
++				if (error)
++					goto del_cursor;
++				XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
++			}
++			XFS_IFORK_NEXT_SET(ip, whichfork,
++					XFS_IFORK_NEXTENTS(ip, whichfork) - 1);
++
++		}
++
++		if (cur) {
++			error = xfs_bmbt_lookup_eq(cur, got.br_startoff,
++						   got.br_startblock,
++						   got.br_blockcount,
++						   &i);
++			if (error)
++				goto del_cursor;
++			XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
++		}
++
++		if (got.br_blockcount < blockcount) {
++			xfs_bmbt_set_blockcount(gotp, blockcount);
++			got.br_blockcount = blockcount;
++		}
++
++
++		xfs_bmbt_set_startoff(gotp, startoff);
++		got.br_startoff = startoff;
++
++		if (cur) {
++			error = xfs_bmbt_update(cur, got.br_startoff,
++						got.br_startblock,
++						got.br_blockcount,
++						got.br_state);
++			if (error)
++				goto del_cursor;
++		}
++
++		(*current_ext)--;
++	}
++
++del_cursor:
++	if (cur)
++		xfs_btree_del_cursor(cur,
++			error ? XFS_BTREE_ERROR : XFS_BTREE_NOERROR);
++	xfs_trans_log_inode(tp, ip, logflags);
++	return error;
++}
+diff --git a/fs/xfs/xfs_bmap.h b/fs/xfs/xfs_bmap.h
+index 38ba36e..af05899 100644
+--- a/fs/xfs/xfs_bmap.h
++++ b/fs/xfs/xfs_bmap.h
+@@ -179,10 +179,17 @@ int	xfs_bunmapi(struct xfs_trans *tp, struct xfs_inode *ip,
+ int	xfs_check_nostate_extents(struct xfs_ifork *ifp, xfs_extnum_t idx,
+ 		xfs_extnum_t num);
+ uint	xfs_default_attroffset(struct xfs_inode *ip);
+-int	xfs_bmap_shift_extents(struct xfs_trans *tp, struct xfs_inode *ip,
++int	xfs_bmap_shift_extents_left(struct xfs_trans *tp, struct xfs_inode *ip,
+ 		int *done, xfs_fileoff_t start_fsb,
+ 		xfs_fileoff_t offset_shift_fsb, xfs_extnum_t *current_ext,
+ 		xfs_fsblock_t *firstblock, struct xfs_bmap_free	*flist,
+ 		int num_exts);
++int	xfs_bmap_split_extent(struct xfs_inode *ip, xfs_fileoff_t split_offset,
++		xfs_extnum_t *split_ext);
++int	xfs_bmap_shift_extents_right(struct xfs_trans *tp, struct xfs_inode *ip,
++		int *done, xfs_fsblock_t offset_shift_fsb,
++		xfs_extnum_t *current_ext, xfs_extnum_t end_ext,
++		xfs_fsblock_t *firstblock, struct xfs_bmap_free *flist,
++		int num_exts);
+ 
+ #endif	/* __XFS_BMAP_H__ */
+diff --git a/fs/xfs/xfs_bmap_util.c b/fs/xfs/xfs_bmap_util.c
+index 296160b..5a56f5b 100644
+--- a/fs/xfs/xfs_bmap_util.c
++++ b/fs/xfs/xfs_bmap_util.c
+@@ -1550,7 +1550,7 @@ xfs_collapse_file_space(
+ 		 * We are using the write transaction in which max 2 bmbt
+ 		 * updates are allowed
+ 		 */
+-		error = xfs_bmap_shift_extents(tp, ip, &done, start_fsb,
++		error = xfs_bmap_shift_extents_left(tp, ip, &done, start_fsb,
+ 					       shift_fsb, &current_ext,
+ 					       &first_block, &free_list,
+ 					       XFS_BMAP_MAX_SHIFT_EXTENTS);
+@@ -1574,6 +1574,133 @@ out:
+ }
+ 
+ /*
++ * xfs_insert_file_space()
++ *	This routine allocate disk space and shift extent for the given file.
++ *	The first thing we do is to sync dirty data and invalidate page cache
++ *	over the region on which insert range is working. And split an extent
++ *	to two extents at given offset by calling xfs_bmap_split_extent.
++ *	And shift all extent records which are laying between [offset,
++ *	last allocated extent] to the right to reserve hole range. Lastly
++ *	allocate an unwritten extent in hole range created by shifting extents.
++ *
++ * RETURNS:
++ *	0 on success
++ *	errno on error
++ *
++ */
++int
++xfs_insert_file_space(
++	struct xfs_inode	*ip,
++	loff_t			offset,
++	loff_t			len)
++{
++	struct xfs_mount	*mp = ip->i_mount;
++	struct xfs_trans	*tp;
++	struct xfs_bmap_free	free_list;
++	xfs_fsblock_t		first_block;
++	xfs_ifork_t		*ifp;
++	int			done = 0;
++	int			committed;
++	int			error;
++	uint			rounding;
++	xfs_fileoff_t		start_fsb;
++	xfs_fileoff_t		shift_fsb;
++	xfs_extnum_t		split_ext;
++	xfs_extnum_t		current_ext = 0;
++	xfs_off_t		ioffset;
++
++	ASSERT(xfs_isilocked(ip, XFS_IOLOCK_EXCL));
++	trace_xfs_insert_file_space(ip);
++
++	error = xfs_qm_dqattach(ip, 0);
++	if (error)
++		return error;
++
++	/* wait for the completion of any pending DIOs */
++	inode_dio_wait(VFS_I(ip));
++
++	rounding = max_t(uint, 1 << mp->m_sb.sb_blocklog, PAGE_CACHE_SIZE);
++	ioffset = offset & ~(rounding - 1);
++	error = -filemap_write_and_wait_range(VFS_I(ip)->i_mapping,
++			ioffset, -1);
++	if (error)
++		return error;
++
++	truncate_pagecache_range(VFS_I(ip), ioffset, -1);
++
++	start_fsb = XFS_B_TO_FSB(mp, offset);
++	shift_fsb = XFS_B_TO_FSB(mp, len);
++
++	error = xfs_bmap_split_extent(ip, start_fsb, &split_ext);
++	if (error)
++		return error;
++
++	ifp = XFS_IFORK_PTR(ip, XFS_DATA_FORK);
++	current_ext = (ifp->if_bytes / sizeof(xfs_bmbt_rec_t)) - 1;
++	while (!error && !done) {
++		tp = xfs_trans_alloc(mp, XFS_TRANS_DIOSTRAT);
++		/*
++		 * We would need to reserve permanent block for transaction.
++		 * This will come into picture when after shifting extent into
++		 * hole we found that adjacent extents can be merged which
++		 * may lead to freeing of a block during record update.
++		 */
++		error = xfs_trans_reserve(tp, &M_RES(mp)->tr_write,
++				XFS_DIOSTRAT_SPACE_RES(mp, 0), 0);
++		if (error) {
++			ASSERT(error == ENOSPC || XFS_FORCED_SHUTDOWN(mp));
++			xfs_trans_cancel(tp, 0);
++			break;
++		}
++
++		xfs_ilock(ip, XFS_ILOCK_EXCL);
++		error = xfs_trans_reserve_quota(tp, mp, ip->i_udquot,
++				ip->i_gdquot, ip->i_pdquot,
++				XFS_DIOSTRAT_SPACE_RES(mp, 0), 0,
++				XFS_QMOPT_RES_REGBLKS);
++		if (error)
++			goto error1;
++
++		xfs_trans_ijoin(tp, ip, 0);
++
++		xfs_bmap_init(&free_list, &first_block);
++
++		/*
++		 * We are using the write transaction in which max 2 bmbt
++		 * updates are allowed
++		 */
++		error = xfs_bmap_shift_extents_right(tp, ip, &done, shift_fsb,
++						&current_ext, split_ext,
++						&first_block, &free_list,
++						XFS_BMAP_MAX_SHIFT_EXTENTS);
++		if (error)
++			goto error0;
++
++		error = xfs_bmap_finish(&tp, &free_list, &committed);
++		if (error)
++			goto error0;
++
++		error = xfs_trans_commit(tp, XFS_TRANS_RELEASE_LOG_RES);
++		xfs_iunlock(ip, XFS_ILOCK_EXCL);
++		if (error)
++			goto out;
++	}
++
++	/* Add unwritten extent in a hole range. */
++	error = xfs_alloc_file_space(ip, offset, len, XFS_BMAPI_PREALLOC);
++
++out:
++	return error;
++
++error0:
++	xfs_bmap_cancel(&free_list);
++error1:
++	xfs_trans_cancel(tp, XFS_TRANS_RELEASE_LOG_RES | XFS_TRANS_ABORT);
++	xfs_iunlock(ip, XFS_ILOCK_EXCL);
++	return error;
++}
++
++/*
+  * We need to check that the format of the data fork in the temporary inode is
+  * valid for the target inode before doing the swap. This is not a problem with
+  * attr1 because of the fixed fork offset, but attr2 has a dynamically sized
+diff --git a/fs/xfs/xfs_bmap_util.h b/fs/xfs/xfs_bmap_util.h
+index 935ed2b..d62ab4b 100644
+--- a/fs/xfs/xfs_bmap_util.h
++++ b/fs/xfs/xfs_bmap_util.h
+@@ -101,6 +101,8 @@ int	xfs_zero_file_space(struct xfs_inode *ip, xfs_off_t offset,
+ 			    xfs_off_t len);
+ int	xfs_collapse_file_space(struct xfs_inode *, xfs_off_t offset,
+ 				xfs_off_t len);
++int	xfs_insert_file_space(struct xfs_inode *, xfs_off_t offset,
++				xfs_off_t len);
+ 
+ /* EOF block manipulation functions */
+ bool	xfs_can_free_eofblocks(struct xfs_inode *ip, bool force);
+diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+index 97855c5..392b029 100644
+--- a/fs/xfs/xfs_file.c
++++ b/fs/xfs/xfs_file.c
+@@ -760,7 +760,8 @@ xfs_file_fallocate(
+ 	if (!S_ISREG(inode->i_mode))
+ 		return -EINVAL;
+ 	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
+-		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE))
++		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE |
++		     FALLOC_FL_INSERT_RANGE))
+ 		return -EOPNOTSUPP;
+ 
+ 	xfs_ilock(ip, XFS_IOLOCK_EXCL);
+@@ -790,6 +791,40 @@ xfs_file_fallocate(
+ 		error = xfs_collapse_file_space(ip, offset, len);
+ 		if (error)
+ 			goto out_unlock;
++	} else if (mode & FALLOC_FL_INSERT_RANGE) {
++		unsigned blksize_mask = (1 << inode->i_blkbits) - 1;
++		struct iattr iattr;
++
++		if (offset & blksize_mask || len & blksize_mask) {
++			error = -EINVAL;
++			goto out_unlock;
++		}
++
++		/* Check for wrap through zero */
++		if (inode->i_size + len > inode->i_sb->s_maxbytes) {
++			error = -EFBIG;
++			goto out_unlock;
++		}
++
++		/* Offset should be less than i_size */
++		if (offset >= i_size_read(inode)) {
++			error = -EINVAL;
++			goto out_unlock;
++		}
++
++		/*
++		 * The first thing we do is to expand file to
++		 * avoid data loss if there is error while shifting
++		 */
++		iattr.ia_valid = ATTR_SIZE;
++		iattr.ia_size = i_size_read(inode) + len;
++		error = xfs_setattr_size(ip, &iattr);
++		if (error)
++			goto out_unlock;
++
++		error = xfs_insert_file_space(ip, offset, len);
++		if (error)
++			goto out_unlock;
+ 	} else {
+ 		if (!(mode & FALLOC_FL_KEEP_SIZE) &&
+ 		    offset + len > i_size_read(inode)) {
+diff --git a/fs/xfs/xfs_trace.h b/fs/xfs/xfs_trace.h
+index 152f827..8943c9f 100644
+--- a/fs/xfs/xfs_trace.h
++++ b/fs/xfs/xfs_trace.h
+@@ -663,6 +663,7 @@ DEFINE_INODE_EVENT(xfs_alloc_file_space);
+ DEFINE_INODE_EVENT(xfs_free_file_space);
+ DEFINE_INODE_EVENT(xfs_zero_file_space);
+ DEFINE_INODE_EVENT(xfs_collapse_file_space);
++DEFINE_INODE_EVENT(xfs_insert_file_space);
+ DEFINE_INODE_EVENT(xfs_readdir);
+ #ifdef CONFIG_XFS_POSIX_ACL
+ DEFINE_INODE_EVENT(xfs_get_acl);
+-- 
+1.7.11-rc0
 
- - Stashing the far
- - Enabling IRQs
- - Enabling debug
- - All the stuff on the syscall path
-
-so putting the logic in kernel_entry isn't really do-able, unfortunately.
-
-Will
