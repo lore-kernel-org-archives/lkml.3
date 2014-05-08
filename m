@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181AbaEHQNl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 12:13:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44571 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754600AbaEHQNk (ORCPT
+	id S1755188AbaEHQOT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 12:14:19 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:45646 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754592AbaEHQOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 12:13:40 -0400
-Date: Thu, 8 May 2014 18:13:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: minyard@acm.org
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Minyard <cminyard@mvista.com>
-Subject: Re: [PATCH] sched: Initialize rq->age_stamp on processor start
-Message-ID: <20140508161337.GF30445@twins.programming.kicks-ass.net>
-References: <1399405857-14056-1-git-send-email-minyard@acm.org>
+	Thu, 8 May 2014 12:14:18 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yKmnPmKxJBqIz68t"
-Content-Disposition: inline
-In-Reply-To: <1399405857-14056-1-git-send-email-minyard@acm.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Date: Thu, 8 May 2014 11:14:16 -0500
+X-Google-Sender-Auth: 2l0U80_YzurmxTtTXrOe9bdf2SM
+Message-ID: <CAGo_u6q8_nh00wrnPvGpVLDpt3uT8f8BfH7kczaLpopQAs1QKw@mail.gmail.com>
+Subject: Regression: make clean (was linux-next: Tree for May 8:)
+From: Nishanth Menon <nm@ti.com>
+To: Mark Brown <broonie@linaro.org>, Vinod Koul <vinod.koul@intel.com>
+Cc: linux-next@vger.kernel.org, alsa-devel@alsa-project.org,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mark, Vinod,
 
---yKmnPmKxJBqIz68t
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, May 8, 2014 at 1:11 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> This tree still fails (more than usual) the powerpc allyesconfig build
+> and also the celleb_defconfig.
+>
+> Changes since 20140507:
+>
+> The powerpc tree still had its build failure.
+>
+> Non-merge commits (relative to Linus' tree): 4132
+>  3871 files changed, 137526 insertions(+), 86247 deletions(-)
+>
 
-On Tue, May 06, 2014 at 02:50:57PM -0500, minyard@acm.org wrote:
-> From: Corey Minyard <cminyard@mvista.com>
->=20
-> If the sched_clock time starts at a large value, the kernel will spin
-> in sched_avg_update for a long time while rq->age_stamp catches up
-> with rq->clock.
->=20
-> The comment in kernel/sched/clock.c says that there is no strict promise
-> that it starts at zero.  So initialize rq->age_stamp when a cpu starts up
-> to avoid this.
->=20
-> I was seeing long delays on a simulator that didn't start the clock at
-> zero.  This might also be an issue on reboots on processors that don't
-> re-initialize the timer to zero on reset, and when using kexec.
->=20
-> Signed-off-by: Corey Minyard <cminyard@mvista.com>
+linux-2.6$ git branch -v|grep "^*"
+* (no branch)                                   05f62d7 Add linux-next
+specific files for 20140508
+linux-2.6$ git describe
+next-20140508
+linux-2.6$ git clean -fdx;git reset --hard
+HEAD is now at 05f62d7 Add linux-next specific files for 20140508
+linux-2.6$ git status
+# Not currently on any branch.
+nothing to commit (working directory clean)
+linux-2.6$ ls sound/soc/intel/
+byt-rt5640.c  Kconfig   mfld_machine.c  sst-baytrail-dsp.c
+sst-baytrail-ipc.h  sst-dsp.c  sst-dsp-priv.h  sst-haswell-dsp.c
+sst-haswell-ipc.h  sst-mfld-dsp.h                sst-mfld-platform.h
+haswell.c     Makefile  sst-acpi.c      sst-baytrail-ipc.c
+sst-baytrail-pcm.c  sst-dsp.h  sst-firmware.c  sst-haswell-ipc.c
+sst-haswell-pcm.c  sst-mfld-platform-compress.c
+sst-mfld-platform-pcm.c
 
-This patch made my cris-defconfig build fail.
+linux-2.6$ make -j1 CROSS_COMPILE=arm-linux-gnueabi- ARCH=arm distclean V=1
+<snip>
+make -f scripts/Makefile.clean obj=sound/soc/fsl
+make -f scripts/Makefile.clean obj=sound/soc/generic
+make -f scripts/Makefile.clean obj=sound/soc/intel
+make -f scripts/Makefile.clean obj=sound/soc/intel/board
+scripts/Makefile.clean:17:
+/home/nmenon/Src/opensource/linux-2.6/sound/soc/intel/board/Makefile:
+No such file or directory
+make[4]: *** No rule to make target
+`/home/nmenon/Src/opensource/linux-2.6/sound/soc/intel/board/Makefile'.
+ Stop.
+make[3]: *** [sound/soc/intel/board] Error 2
+make[2]: *** [sound/soc/intel] Error 2
+make[1]: *** [sound/soc] Error 2
+make: *** [_clean_sound] Error 2
 
---yKmnPmKxJBqIz68t
-Content-Type: application/pgp-signature
+Seems to have been introduced by
+commit 1eee978f4258e702adf4a666ee9d81981c3846b5 (ASoC: Intel: split
+the pcm and compress to different files)
+introduced:
+ obj-$(CONFIG_SND_SST_MACHINE) += board/
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+with no board directory in sound/soc/intel/.
 
-iQIcBAEBAgAGBQJTa60wAAoJEHZH4aRLwOS6YxIP/3EmOvvP1+1mNNhOl4wIU/n/
-t7E9ztjkqEu2qiJ4XN9MaI/bDJmmYDIKPkFK6CEY4FnfYkZsY6c8CYnr5CYX0Wu1
-maCrZXNstkYr0LQvXw+nH8ZqzabKtyFAUcTB0m3Pc+ouIyNeis+cWHPSQmNHv97O
-B6clDgRV8v2LdyY4fcewgHj2RJPeoRopf45htb2Ks1Xig0yGJldhDi6dxWX2LYLU
-bteRmZrFUnNEhUa8gnIA0vQghJ1zTosR0ZAg+SY+iafpnVdemCPPQ2V5vztfFxLW
-ixC+U+UWc+8iw+fYcCfsob0X7XeA4FYMk7PT6+XMC0cTSIf+W/OpdXA2qrOuaMg8
-tvMSVAoI+OR8b3YBsBMOH38/uBxRTFHuuLfF6rE/Ne9DmskVC7E1wdMi2mBSfGX3
-s3/Uk/sbO4FZqjEVBWZT9e3ybcDtZoEam0NbMyyg/0uyVrrIdk6QLIGgtfAOZaXJ
-jxsFfUwc//x0MhkzLXA0AYKL5sjnMQq3ODNCpaKLJXAo5tkMbAQn9SKV5JYee9K0
-TEGOOyL1Hyu/eUQsHIpGvF6KfaOjEnu9OZB4zey78C3Qf7BKJPBd/CRq+rFE7TrG
-Fhw0pde9qATNJXd+aoOrt495rO4nuUZMpJvLwNkn6bc0g4PthRnhSMlEjpR7eUST
-9QkJOkLHG4kv/1FGX+E+
-=1Wrk
------END PGP SIGNATURE-----
+This regression seems to have been introduced in next-20140507 tag.
 
---yKmnPmKxJBqIz68t--
+Regards,
+Nishanth Menon
