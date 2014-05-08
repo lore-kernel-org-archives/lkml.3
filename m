@@ -1,104 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607AbaEHQiN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 12:38:13 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:55491 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885AbaEHQiM (ORCPT
+	id S1754973AbaEHQir (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 12:38:47 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:34984 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754159AbaEHQip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 12:38:12 -0400
-X-AuditID: cbfee61b-b7f766d00000646c-ba-536bb2f2271d
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-To: robh+dt@kernel.org, grant.likely@linaro.org
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH] of: Add of_device_destroy_children() function
-Date: Thu, 08 May 2014 18:37:49 +0200
-Message-id: <1399567069-3174-1-git-send-email-s.nawrocki@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKJMWRmVeSWpSXmKPExsVy+t9jAd1Pm7KDDU72C1jMP3KO1eLAnx2M
-	FpseX2O1uLxrDptF694j7BaH37SzOrB5bFrVyeZx59oeNo/NS+o9+rasYvT4vEkugDWKyyYl
-	NSezLLVI3y6BK6Pj/CeWgs0iFReP3GNpYJwm2MXIySEhYCLx4stVZghbTOLCvfVsXYxcHEIC
-	ixgl3q45wQzhdDBJnGvZClbFJmAo0Xu0jxHEFhHQl5jecYUVpIhZYCKjxKfHS8ASwgJ2Eiv7
-	frOD2CwCqhKnJ2wCGsvBwSvgKrGoOwnElBBQkJgzyWYCI/cCRoZVjKKpBckFxUnpuUZ6xYm5
-	xaV56XrJ+bmbGMGB8Ux6B+OqBotDjAIcjEo8vC+mZAcLsSaWFVfmHmKU4GBWEuF9sQwoxJuS
-	WFmVWpQfX1Sak1p8iFGag0VJnPdgq3WgkEB6YklqdmpqQWoRTJaJg1OqgTH9lvWh89PVWz2/
-	p++dGPTj1ZRHcgdcJK9PrCl6YREYVbvrmp0cr/nUnDQO2ZIbBSExjgaZ9Reu//7oaHjUwTZh
-	dfXi208/9W97lzdb8/Cjdacusq17dW7y/GTfp91NUQ4MV/Z+dW71Vf5rVzDh4J/edob8CSac
-	mkmf9VmDTM4djvuw+3XW814lluKMREMt5qLiRADQUESYCAIAAA==
+	Thu, 8 May 2014 12:38:45 -0400
+Message-ID: <536BB310.1050105@linaro.org>
+Date: Thu, 08 May 2014 09:38:40 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Keith Packard <keithp@keithp.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 2/4] MADV_VOLATILE: Add MADV_VOLATILE/NONVOLATILE hooks
+ and handle marking vmas
+References: <1398806483-19122-1-git-send-email-john.stultz@linaro.org> <1398806483-19122-3-git-send-email-john.stultz@linaro.org> <20140508012142.GA5282@bbox>
+In-Reply-To: <20140508012142.GA5282@bbox>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a helper function to unregister devices which
-were created by an of_platform_populate() call. The pattern
-used here can already be found in multiple drivers. This helper
-can now be used instead of repeating similar code in drivers.
+On 05/07/2014 06:21 PM, Minchan Kim wrote:
+> Hey John,
+>
+> On Tue, Apr 29, 2014 at 02:21:21PM -0700, John Stultz wrote:
+>> This patch introduces MADV_VOLATILE/NONVOLATILE flags to madvise(),
+>> which allows for specifying ranges of memory as volatile, and able
+>> to be discarded by the system.
+>>
+>> This initial patch simply adds flag handling to madvise, and the
+>> vma handling, splitting and merging the vmas as needed, and marking
+>> them with VM_VOLATILE.
+>>
+>> No purging or discarding of volatile ranges is done at this point.
+>>
+>> This a simplified implementation which reuses some of the logic
+>> from Minchan's earlier efforts. So credit to Minchan for his work.
+> Remove purged argument is really good thing but I'm not sure merging
+> the feature into madvise syscall is good idea.
+> My concern is how we support user who don't want SIGBUS.
+> I believe we should support them because someuser(ex, sanitizer) really
+> want to avoid MADV_NONVOLATILE call right before overwriting their cache
+> (ex, If there was purged page for cyclic cache, user should call NONVOLATILE
+> right before overwriting to avoid SIGBUS).
 
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
----
+So... Why not use MADV_FREE then for this case?
 
-This patch has been tested on ARM only (on Exynos4412 Trats2 board).
+Just to be clear, by moving back to madvise, I'm not trying to replace
+MADV_FREE. I think you're work there is still useful and splitting the
+semantics between the two is cleaner.
 
- drivers/of/device.c       |   24 ++++++++++++++++++++++++
- include/linux/of_device.h |    3 +++
- 2 files changed, 27 insertions(+)
 
-diff --git a/drivers/of/device.c b/drivers/of/device.c
-index dafb973..9303197 100644
---- a/drivers/of/device.c
-+++ b/drivers/of/device.c
-@@ -190,3 +190,27 @@ int of_device_uevent_modalias(struct device *dev, struct kobj_uevent_env *env)
+> Moreover, this changes made unmarking cost O(N) so I'd like to avoid
+> NOVOLATILE syscall if possible.
+Well, I think that was made in v13, but yes. NONVOLATILE is currently an
+expensive operation in order to keep the semantics simpler, as requested
+by Johannes and Kosaki-san.
 
- 	return 0;
- }
-+
-+static int __remove_child_device(struct device *dev, void *unused)
-+{
-+	if (of_match_node(of_default_bus_match_table, dev->of_node))
-+		of_device_destroy_children(dev);
-+
-+	device_unregister(dev);
-+	return 0;
-+}
-+
-+/**
-+ * of_device_destroy_children - unregister @parent's child devices
-+ * @parent: the parent device to start with
-+ *
-+ * Destroy all child devices of the @parent device, any grandchildren
-+ * compatible with values listed in the of_default_bus_match_table will
-+ * also be unregistered recursively.  This function can be used to
-+ * destroy devices created by an of_platform_populate() call.
-+ */
-+void of_device_destroy_children(struct device *parent)
-+{
-+	device_for_each_child(parent, NULL, __remove_child_device);
-+}
-+EXPORT_SYMBOL(of_device_destroy_children);
-diff --git a/include/linux/of_device.h b/include/linux/of_device.h
-index ef37021..0c41e0b 100644
---- a/include/linux/of_device.h
-+++ b/include/linux/of_device.h
-@@ -32,6 +32,7 @@ extern void of_dev_put(struct platform_device *dev);
- extern int of_device_add(struct platform_device *pdev);
- extern int of_device_register(struct platform_device *ofdev);
- extern void of_device_unregister(struct platform_device *ofdev);
-+extern void of_device_destroy_children(struct device *parent);
 
- extern ssize_t of_device_get_modalias(struct device *dev,
- 					char *str, ssize_t len);
-@@ -64,6 +65,8 @@ static inline int of_driver_match_device(struct device *dev,
- static inline void of_device_uevent(struct device *dev,
- 			struct kobj_uevent_env *env) { }
+> For me, SIGBUS is more special usecase for code pages but I believe
+> both are reasonable for each usecase so my preference is MADV_VOLATILE
+> is just zero-filled page and MADV_VOLATILE_SIGBUS, another new advise
+> if you really want to merge volatile range feature with madvise.
 
-+static inline void of_device_destroy_children(struct device *parent) { }
-+
- static inline int of_device_get_modalias(struct device *dev,
- 				   char *str, ssize_t len)
- {
---
-1.7.9.5
+This I disagree with. Even for non-code page cases, SIGBUS on volatile
+page access is important for normal users who might accidentally touch
+volatile data, so they know they are corrupting their data. I know
+Johannes suggested this is simply a use-after-free issue, but I really
+feel it results in having very strange semantics. And for those cases
+where there is a benefit to zero-fill, MADV_FREE seems more appropriate.
+
+thanks
+-john
+
+
 
