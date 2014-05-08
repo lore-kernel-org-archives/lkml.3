@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171AbaEHRe3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 13:34:29 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:23304 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571AbaEHRe1 (ORCPT
+	id S1755237AbaEHRez (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 13:34:55 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57866 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754907AbaEHRex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 13:34:27 -0400
-X-AuditID: cbfee61b-b7f766d00000646c-59-536bc021f720
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-To: linux-media@vger.kernel.org
-Cc: robh+dt@kernel.org, mark.rutland@arm.com, devicetree@vger.kernel.org,
-        kyungmin.park@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH V2 0/4] Exynos4 SoC camera subsystem driver cleanups
-Date: Thu, 08 May 2014 19:34:07 +0200
-Message-id: <1399570448-29737-1-git-send-email-s.nawrocki@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgluLIzCtJLcpLzFFi42I5/e+xoK7Sgexgg6VdTBbzj5xjtTjb9Ibd
-	YtPja6wWl3fNYbPo2bCV1WLp9YtMFq17j7BbHH7TzurA4bFm3hpGj02rOtk8Ni+p9+jbsorR
-	4/MmuQDWKC6blNSczLLUIn27BK6MnSueMBWs4arY9+0mUwPjdI4uRk4OCQETiYOvFrBA2GIS
-	F+6tZ+ti5OIQEpjOKLH31G1WCKeDSeLP5QZWkCo2AUOJ3qN9jCC2iIC8xJPeG2AdzAI3GCXW
-	tPxlAkkIC7hInL3+G8xmEVCVWLHnBNgKXgE3iaamV0DNHEDrFCTmTLKZwMi9gJFhFaNoakFy
-	QXFSeq6RXnFibnFpXrpecn7uJkZwuDyT3sG4qsHiEKMAB6MSD++LKdnBQqyJZcWVuYcYJTiY
-	lUR4XywDCvGmJFZWpRblxxeV5qQWH2KU5mBREuc92GodKCSQnliSmp2aWpBaBJNl4uCUamAU
-	C98X0KvM9F+j3rNL4NPsPX1nGhI3z+u4f+bdr+vJWvGczYeW184q0NTRmfeK1bDon3PYhCs+
-	uzkvfD8v5XHT+pt0nEDIFK0zZZvzeljsnjQUqf64f35lyT2xJjbf493Vv4R5vU6YX/l8ZIGQ
-	48nd3BPnX733oIaDkT3p4DHHDdYf0zfL7w1XYinOSDTUYi4qTgQAhbBqExMCAAA=
+	Thu, 8 May 2014 13:34:53 -0400
+Date: Thu, 08 May 2014 13:34:51 -0400 (EDT)
+Message-Id: <20140508.133451.1383193780216133211.davem@davemloft.net>
+To: peterz@infradead.org
+Cc: geert@linux-m68k.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, mingo@kernel.org, will.deacon@arm.com,
+        paulmck@linux.vnet.ibm.com, jesper.nilsson@axis.com, starvik@axis.com
+Subject: Re: [PATCH 07/20] arch,cris: Fold atomic_ops
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140508160606.GD30445@twins.programming.kicks-ass.net>
+References: <20140508135852.104572724@infradead.org>
+	<CAMuHMdV7FUC+p5XqwLZmqJRLYv1qhu5hf0M_e5pASBRHgFAhCA@mail.gmail.com>
+	<20140508160606.GD30445@twins.programming.kicks-ass.net>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 08 May 2014 10:34:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series includes some bug fixes for the Exynos4/S5P SoC camera
-interface drivers and removes (ab)use of "simple-bus" compatible string.
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Thu, 8 May 2014 18:06:06 +0200
 
-Comparing to previous version I've excluded patches dropping support
-for non-dt platforms and added two further bug fixes.
-of_platform_populate() is used instead of manually parsing the device
-tree and creating devices and the cleanup function has been moved to
-the core. This series depends on patch:
-http://www.kernelhub.org/?msg=466319&p=2
+> On Thu, May 08, 2014 at 05:12:31PM +0200, Geert Uytterhoeven wrote:
+>> Hi Peter,
+>> 
+>> On Thu, May 8, 2014 at 3:58 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > Many of the atomic op implementations are the same except for one
+>> > instruction; fold the lot into a few CPP macros and reduce LoC.
+>> >
+>> > This also prepares for easy addition of new ops.
+>> >
+>> > Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+>> > Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+>> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
+>> > Cc: Mikael Starvik <starvik@axis.com>
+>> > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>> > ---
+>> >  arch/cris/include/arch-v10/arch/system.h |    2 -
+>> >  arch/cris/include/asm/atomic.h           |   57 +++++++++++++------------------
+>> >  2 files changed, 25 insertions(+), 34 deletions(-)
+>> >
+>> > Index: linux-2.6/arch/cris/include/arch-v10/arch/system.h
+>> > ===================================================================
+>> > --- linux-2.6.orig/arch/cris/include/arch-v10/arch/system.h
+>> > +++ linux-2.6/arch/cris/include/arch-v10/arch/system.h
+>> > @@ -36,8 +36,6 @@ static inline unsigned long _get_base(ch
+>> >    return 0;
+>> >  }
+>> >
+>> > -#define nop() __asm__ __volatile__ ("nop");
+>> > -
+>> 
+>> Is this change supposed to be part of this series?
+> 
+> Uhm, lemme double check that. Good spotting.
+> 
+> Nope, it builds just fine without that hunk, *poof* gone.
 
-Sylwester Nawrocki (4):
-  exynos4-is: Free FIMC-IS CPU memory only when allocated
-  exynos4-is: Move firmware request to subdev open()
-  exynos4-is: Remove requirement for "simple-bus" compatible
-  ARM: dts: exynos4: Remove simple-bus compatibles from the camera
-    subsystem
-
- .../devicetree/bindings/media/samsung-fimc.txt     |    6 +--
- arch/arm/boot/dts/exynos4.dtsi                     |    2 +-
- arch/arm/boot/dts/exynos4x12.dtsi                  |    2 +-
- drivers/media/platform/exynos4-is/fimc-is.c        |   50 ++++++++++----------
- drivers/media/platform/exynos4-is/fimc-is.h        |    2 +-
- drivers/media/platform/exynos4-is/fimc-isp.c       |   10 +++-
- drivers/media/platform/exynos4-is/media-dev.c      |   21 ++++++--
- 7 files changed, 58 insertions(+), 35 deletions(-)
-
---
-1.7.9.5
-
+You did this for sparc too.
