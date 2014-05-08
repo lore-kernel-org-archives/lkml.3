@@ -1,159 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908AbaEHUSR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 16:18:17 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:49135 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755596AbaEHURV (ORCPT
+	id S932146AbaEHURJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 16:17:09 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:49370 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755594AbaEHURF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 16:17:21 -0400
-From: Marek Belisko <marek@goldelico.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, bcousson@baylibre.com, tony@atomide.com,
-        linux@arm.linux.org.uk, plagnioj@jcrosoft.com, tomi.valkeinen@ti.com,
-        grant.likely@linaro.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org,
-        hns@goldelico.com, Marek Belisko <marek@goldelico.com>
-Subject: [PATCH v3 1/3] omapdss: panel-tpo-td028ec1: Add DT support.
-Date: Thu,  8 May 2014 22:16:50 +0200
-Message-Id: <1399580212-5183-2-git-send-email-marek@goldelico.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399580212-5183-1-git-send-email-marek@goldelico.com>
-References: <1399580212-5183-1-git-send-email-marek@goldelico.com>
+	Thu, 8 May 2014 16:17:05 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Antoine Tenart <antoine.tenart@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH RFC 3/3] clk: berlin: add driver for BG2x simple PLLs
+Date: Thu,  8 May 2014 22:16:52 +0200
+Message-Id: <1399580212-30183-4-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1399580212-30183-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1399580212-30183-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Belisko <marek@goldelico.com>
----
- .../bindings/video/toppoly,td028ttec1.txt          | 30 ++++++++++++++++++++
- arch/arm/mach-omap2/display.c                      |  1 +
- .../omap2/displays-new/panel-tpo-td028ttec1.c      | 32 +++++++++++++++++++++-
- 3 files changed, 62 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/bindings/video/toppoly,td028ttec1.txt
+This is a clock driver for the simple PLLs found on Berlin SoCs.
+With repect to PLL registers and features, BG2/BG2CD and BG2Q are
+slightly different, e.g. different allowed VCO dividers and bit
+shifts.
 
-diff --git a/Documentation/devicetree/bindings/video/toppoly,td028ttec1.txt b/Documentation/devicetree/bindings/video/toppoly,td028ttec1.txt
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: devicetree@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/clk/berlin/berlin2-pll.c | 104 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 104 insertions(+)
+ create mode 100644 drivers/clk/berlin/berlin2-pll.c
+
+diff --git a/drivers/clk/berlin/berlin2-pll.c b/drivers/clk/berlin/berlin2-pll.c
 new file mode 100644
-index 0000000..7175dc3
+index 000000000000..aef4ddd8db10
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/video/toppoly,td028ttec1.txt
-@@ -0,0 +1,30 @@
-+Toppoly TD028TTEC1 Panel
-+========================
++++ b/drivers/clk/berlin/berlin2-pll.c
+@@ -0,0 +1,104 @@
++/*
++ * Copyright (c) 2014 Marvell Technology Group Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#include <linux/clk-provider.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <asm/div64.h>
 +
-+Required properties:
-+- compatible: "toppoly,td028ttec1"
++#include "common.h"
 +
-+Optional properties:
-+- label: a symbolic name for the panel
-+
-+Required nodes:
-+- Video port for DPI input
-+
-+Example
-+-------
-+
-+lcd-panel: td028ttec1@0 {
-+	compatible = "toppoly,td028ttec1";
-+	reg = <0>;
-+	spi-max-frequency = <100000>;
-+	spi-cpol;
-+	spi-cpha;
-+
-+	label = "lcd";
-+	port {
-+		lcd_in: endpoint {
-+			remote-endpoint = <&dpi_out>;
-+		};
-+	};
++struct berlin2_pll {
++	struct clk_hw hw;
++	void __iomem *base;
++	struct berlin2_pll_map map;
 +};
 +
-diff --git a/arch/arm/mach-omap2/display.c b/arch/arm/mach-omap2/display.c
-index 16d33d8..66a2ee0 100644
---- a/arch/arm/mach-omap2/display.c
-+++ b/arch/arm/mach-omap2/display.c
-@@ -566,6 +566,7 @@ static const char * const dss_compat_conv_list[] __initconst = {
- 	"svideo-connector",
- 	"ti,tfp410",
- 	"ti,tpd12s015",
-+	"toppoly,td028ttec1",
- };
- 
- /* prepend compatible string with "omapdss," */
-diff --git a/drivers/video/fbdev/omap2/displays-new/panel-tpo-td028ttec1.c b/drivers/video/fbdev/omap2/displays-new/panel-tpo-td028ttec1.c
-index fae6adc..5b3466e 100644
---- a/drivers/video/fbdev/omap2/displays-new/panel-tpo-td028ttec1.c
-+++ b/drivers/video/fbdev/omap2/displays-new/panel-tpo-td028ttec1.c
-@@ -206,7 +206,8 @@ static int td028ttec1_panel_enable(struct omap_dss_device *dssdev)
- 	if (omapdss_device_is_enabled(dssdev))
- 		return 0;
- 
--	in->ops.dpi->set_data_lines(in, ddata->data_lines);
-+	if (ddata->data_lines)
-+		in->ops.dpi->set_data_lines(in, ddata->data_lines);
- 	in->ops.dpi->set_timings(in, &ddata->videomode);
- 
- 	r = in->ops.dpi->enable(in);
-@@ -389,6 +390,23 @@ static int td028ttec1_panel_probe_pdata(struct spi_device *spi)
- 	return 0;
- }
- 
-+static int td028ttec1_probe_of(struct spi_device *spi)
-+{
-+	struct device_node *node = spi->dev.of_node;
-+	struct panel_drv_data *ddata = dev_get_drvdata(&spi->dev);
-+	struct omap_dss_device *in;
++#define to_berlin2_pll(hw) container_of(hw, struct berlin2_pll, hw)
 +
-+	in = omapdss_of_find_source_for_first_ep(node);
-+	if (IS_ERR(in)) {
-+		dev_err(&spi->dev, "failed to find video source\n");
-+		return PTR_ERR(in);
++#define SPLL_CTRL0	0x00
++#define SPLL_CTRL1	0x04
++#define SPLL_CTRL2	0x08
++#define SPLL_CTRL3	0x0c
++#define SPLL_CTRL4	0x10
++
++#define FBDIV_MASK	0x1ff
++#define RFDIV_MASK	0x1f
++#define DIVSEL_MASK	0xf
++
++/*
++ * The output frequency formula for the pll is:
++ * clkout = fbdiv / refdiv * parent / vcodiv
++ */
++static unsigned long
++berlin2_pll_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
++{
++	struct berlin2_pll *pll = to_berlin2_pll(hw);
++	struct berlin2_pll_map *map = &pll->map;
++	u32 val, fbdiv, rfdiv, vcodivsel, vcodiv;
++	u64 rate = parent_rate;
++
++	val = readl_relaxed(pll->base + SPLL_CTRL0);
++	fbdiv = (val >> map->fbdiv_shift) & FBDIV_MASK;
++	rfdiv = (val >> map->rfdiv_shift) & RFDIV_MASK;
++	if (rfdiv == 0) {
++		pr_warn("%s has zero rfdiv\n", __clk_get_name(hw->clk));
++		rfdiv = 1;
 +	}
 +
-+	ddata->in = in;
++	val = readl_relaxed(pll->base + SPLL_CTRL1);
++	vcodivsel = (val >> map->divsel_shift) & DIVSEL_MASK;
++	vcodiv = map->vcodiv[vcodivsel];
++	if (vcodiv == 0) {
++		pr_warn("%s has zero vcodiv (index %d)\n",
++			__clk_get_name(hw->clk), vcodivsel);
++		vcodiv = 1;
++	}
 +
-+	return 0;
++	rate *= fbdiv * map->mult;
++	do_div(rate, rfdiv * vcodiv);
++
++	return (unsigned long)rate;
 +}
 +
- static int td028ttec1_panel_probe(struct spi_device *spi)
- {
- 	struct panel_drv_data *ddata;
-@@ -418,6 +436,10 @@ static int td028ttec1_panel_probe(struct spi_device *spi)
- 		r = td028ttec1_panel_probe_pdata(spi);
- 		if (r)
- 			return r;
-+	} else if (spi->dev.of_node) {
-+		r = td028ttec1_probe_of(spi);
-+		if (r)
-+			return r;
- 	} else {
- 		return -ENODEV;
- 	}
-@@ -463,6 +485,13 @@ static int td028ttec1_panel_remove(struct spi_device *spi)
- 	return 0;
- }
- 
-+static const struct of_device_id td028ttec1_of_match[] = {
-+	{ .compatible = "omapdss,toppoly,td028ttec1", },
-+	{},
++static const struct clk_ops berlin2_pll_ops = {
++	.recalc_rate	= berlin2_pll_recalc_rate,
 +};
 +
-+MODULE_DEVICE_TABLE(of, td028ttec1_of_match);
++struct clk * __init
++berlin2_pll_register(const struct berlin2_pll_map *map,
++		     void __iomem *base, const char *name,
++		     const char *parent_name, unsigned long flags)
++{
++	struct clk_init_data init;
++	struct berlin2_pll *pll;
 +
- static struct spi_driver td028ttec1_spi_driver = {
- 	.probe		= td028ttec1_panel_probe,
- 	.remove		= td028ttec1_panel_remove,
-@@ -470,6 +499,7 @@ static struct spi_driver td028ttec1_spi_driver = {
- 	.driver         = {
- 		.name   = "panel-tpo-td028ttec1",
- 		.owner  = THIS_MODULE,
-+		.of_match_table = td028ttec1_of_match,
- 	},
- };
- 
++	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
++	if (!pll)
++		return ERR_PTR(-ENOMEM);
++
++	/* copy pll_map to allow __initconst */
++	memcpy(&pll->map, map, sizeof(*map));
++	pll->base = base;
++	pll->hw.init = &init;
++	init.name = name;
++	init.ops = &berlin2_pll_ops;
++	init.parent_names = &parent_name;
++	init.num_parents = 1;
++	init.flags = flags;
++
++	return clk_register(NULL, &pll->hw);
++}
 -- 
 1.9.1
 
