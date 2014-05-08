@@ -1,107 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585AbaEHQbF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 12:31:05 -0400
-Received: from denmail01-v4020.amcc.com ([192.195.68.30]:40728 "EHLO
-	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751625AbaEHQbD (ORCPT
+	id S1754721AbaEHQcY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 12:32:24 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:44622 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754159AbaEHQcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 12:31:03 -0400
-From: Feng Kan <fkan@apm.com>
-To: tglx@linutronix.de, catalin.marinas@arm.com, marc.zyngier@arm.com,
-        will.deacon@arm.com, linux-kernel@vger.kernel.org, patches@apm.com
-Cc: Feng Kan <fkan@apm.com>, Vinayak Kale <vkale@apm.com>
-Subject: [PATCH V6] gic: preserve gic V2 bypass bits in cpu ctrl register
-Date: Thu,  8 May 2014 09:30:34 -0700
-Message-Id: <1399566634-2537-1-git-send-email-fkan@apm.com>
-X-Mailer: git-send-email 1.7.6.1
+	Thu, 8 May 2014 12:32:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F70FC62@AcuExch.aculab.com>
+References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
+	<1399566363-25837-4-git-send-email-mathias.nyman@linux.intel.com>
+	<063D6719AE5E284EB5DD2968C1650D6D0F70FC62@AcuExch.aculab.com>
+Date: Thu, 8 May 2014 09:32:22 -0700
+Message-ID: <CAPcyv4jeU-Xq9bJNuybF=tPPzR=ktthWbQCW+sBFd-1JkcZdFw@mail.gmail.com>
+Subject: Re: [PATCH 03/10] usb: catch attempts to submit urbs with a vmalloc'd
+ transfer buffer
+From: Dan Williams <dan.j.williams@intel.com>
+To: David Laight <David.Laight@aculab.com>
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change is made to preserve the GIC v2 bypass bits in the
-GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
-This code will preserve all bits configured by the bootload regarding
-v2 bypass group bits. In the X-Gene platform, the bypass functionality
-is not used and bypass bits should not be changed by the kernel gic
-code as it could lead to incorrect behavior.
+On Thu, May 8, 2014 at 9:22 AM, David Laight <David.Laight@aculab.com> wrote:
+> From: Mathias Nyman
+>> From: Dan Williams <dan.j.williams@intel.com>
+>>
+>> Save someone else the debug cycles of figuring out why a driver's
+>> transfer request is failing or causing undefined system behavior.
+>> Buffers submitted for dma must come from GFP allocated / DMA-able
+>> memory.
+>>
+>> Return -EAGAIN matching the return value for dma_mapping_error() cases.
+>
+> Won't that just cause the request to be resubmitted a few clock
+> cycles later?
+> Surely you either need to error the request, or panic.
 
-Signed-off-by: Vinayak Kale <vkale@apm.com>
-Acked-by: Anup Patel <apatel@apm.com>
-Signed-off-by: Feng Kan <fkan@apm.com>
----
-V6: add gic_cpu_if_up function to replace macro used in v5
-V5: Use macro to replace read modify write of cpu_ctrl register.
-V4: Change to use bypass mask, change ot user more suitable variable name.
- drivers/irqchip/irq-gic.c       |   30 +++++++++++++++++++++++++++---
- include/linux/irqchip/arm-gic.h |    1 +
- 2 files changed, 28 insertions(+), 3 deletions(-)
+No, panic() is too drastic for this.
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 4300b66..cb8eb92 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -449,13 +449,36 @@ static void gic_cpu_init(struct gic_chip_data *gic)
- 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
- 
- 	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
--	writel_relaxed(1, base + GIC_CPU_CTRL);
-+
-+	gic_cpu_if_up();
-+}
-+
-+void gic_cpu_if_up(void)
-+{
-+	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
-+	u32 bypass;
-+
-+	/* 
-+	 * Preserve bypass disable bits to be written back later
-+	 */
-+	bypass = readl(cpu_base + GIC_CPU_CTRL);
-+	bypass &= 0x1e0;
-+
-+	writel_relaxed(bypass | 0x1, cpu_base + GIC_CPU_CTRL);
- }
- 
- void gic_cpu_if_down(void)
- {
- 	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
--	writel_relaxed(0, cpu_base + GIC_CPU_CTRL);
-+	u32 bypass;
-+
-+	/* 
-+	 * Preserve bypass disable bits to be written back later
-+	 */
-+	bypass = readl(cpu_base + GIC_CPU_CTRL);
-+	bypass &= 0x1e0;
-+
-+	writel_relaxed(bypass, cpu_base + GIC_CPU_CTRL);
- }
- 
- #ifdef CONFIG_CPU_PM
-@@ -590,7 +613,8 @@ static void gic_cpu_restore(unsigned int gic_nr)
- 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
- 
- 	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
--	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
-+	
-+	gic_cpu_if_up();
- }
- 
- static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
-diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
-index 7ed92d0..762dea0 100644
---- a/include/linux/irqchip/arm-gic.h
-+++ b/include/linux/irqchip/arm-gic.h
-@@ -80,6 +80,7 @@ extern struct irq_chip gic_arch_extn;
- void gic_init_bases(unsigned int, int, void __iomem *, void __iomem *,
- 		    u32 offset, struct device_node *);
- void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
-+void gic_cpu_if_up(void);
- void gic_cpu_if_down(void);
- 
- static inline void gic_init(unsigned int nr, int start,
--- 
-1.7.6.1
+> In any case is this the right place for this sort of test?
 
+Yes.
+
+The system is already compromised because the driver is broken.  The
+expectation is that this is a clue bat for a driver developer to fix
+their code before it goes upstream.  I found this while debugging an
+interaction with a new driver that was causing the xhci controller to
+lock up.  Had this warning been there I likely never would have
+received the xhci bug report.
