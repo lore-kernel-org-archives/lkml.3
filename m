@@ -1,47 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692AbaEHFjH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 01:39:07 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:51125 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551AbaEHFjD (ORCPT
+	id S1752767AbaEHFkL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 01:40:11 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:35789 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192AbaEHFkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 01:39:03 -0400
+	Thu, 8 May 2014 01:40:09 -0400
+Message-ID: <536B18B0.9060209@hitachi.com>
+Date: Thu, 08 May 2014 14:40:00 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <536A605D.6030009@semaphore.gr>
-References: <536A605D.6030009@semaphore.gr>
-Date: Thu, 8 May 2014 11:09:02 +0530
-Message-ID: <CAKohponPkv1gyCVca3Vigv2jSv7G49Jyu_dHDJ2BEMXDkfr-jw@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: Fix build error on some platforms that use cpufreq_for_each_*
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: ananth@in.ibm.com
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>, linuxppc-dev@lists.ozlabs.org,
+        rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFT PATCH -next ] [BUGFIX] kprobes: Fix "Failed to find blacklist"
+ error on ia64 and ppc64
+References: <536A16A6.5040709@hitachi.com> <20140507115551.22259.70581.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140508044753.GA13413@in.ibm.com>
+In-Reply-To: <20140508044753.GA13413@in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 May 2014 22:03, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> On platforms that use cpufreq_for_each_* macros, build fails if
-> CONFIG_CPU_FREQ=n, e.g. ARM/shmobile/koelsch/non-multiplatform:
->
-> drivers/built-in.o: In function `clk_round_parent':
-> clkdev.c:(.text+0xcf168): undefined reference to `cpufreq_next_valid'
-> drivers/built-in.o: In function `clk_rate_table_find':
-> clkdev.c:(.text+0xcf820): undefined reference to `cpufreq_next_valid'
-> make[3]: *** [vmlinux] Error 1
->
-> Fix this making cpufreq_next_valid function inline and move it to
-> cpufreq.h.
->
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> ---
->  drivers/cpufreq/cpufreq.c | 11 -----------
->  include/linux/cpufreq.h   | 11 +++++++++--
->  2 files changed, 9 insertions(+), 13 deletions(-)
+(2014/05/08 13:47), Ananth N Mavinakayanahalli wrote:
+> On Wed, May 07, 2014 at 08:55:51PM +0900, Masami Hiramatsu wrote:
+> 
+> ...
+> 
+>> +#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
+>> +/*
+>> + * On PPC64 ABIv1 the function pointer actually points to the
+>> + * function's descriptor. The first entry in the descriptor is the
+>> + * address of the function text.
+>> + */
+>> +#define constant_function_entry(fn)	(((func_descr_t *)(fn))->entry)
+>> +#else
+>> +#define constant_function_entry(fn)	((unsigned long)(fn))
+>> +#endif
+>> +
+>>  #endif /* __ASSEMBLY__ */
+> 
+> Hi Masami,
+> 
+> You could just use ppc_function_entry() instead.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+No, I think ppc_function_entry() has two problems (on the latest -next kernel)
+
+At first, that is an inlined functions which is not applied in build time.
+Since the NOKPROBE_SYMBOL() is used outside of any functions as like as
+EXPORT_SYMBOL(), we can only use preprocessed macros.
+Next, on PPC64 ABI*v2*, ppc_function_entry() returns local function entry,
+which seems global function entry + 2 insns. I'm not sure about implementation
+of the kallsyms on PPC64 ABIv2, but I guess we need global function entry
+for kallsyms.
+
+BTW, could you test this patch on the latest -next tree on PPC64 if possible?
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
