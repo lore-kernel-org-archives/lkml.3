@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654AbaEHPKC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:10:02 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36120 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753969AbaEHPJ7 (ORCPT
+	id S1754193AbaEHPMe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:12:34 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:38355 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856AbaEHPMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:09:59 -0400
-Date: Thu, 8 May 2014 08:09:47 -0700
-From: tip-bot for Vivek Goyal <tipbot@zytor.com>
-Message-ID: <tip-a9a17104a112a67a7bf0679b734704c130eb5faa@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, vgoyal@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, vgoyal@redhat.com
-In-Reply-To: <1398447972-27896-3-git-send-email-vgoyal@redhat.com>
-References: <1398447972-27896-3-git-send-email-vgoyal@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/boot] x86, boot: Remove misc.h inclusion from compressed
- /string.c
-Git-Commit-ID: a9a17104a112a67a7bf0679b734704c130eb5faa
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 8 May 2014 11:12:32 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140508135852.104572724@infradead.org>
+References: <20140508135840.956784204@infradead.org>
+	<20140508135852.104572724@infradead.org>
+Date: Thu, 8 May 2014 17:12:31 +0200
+X-Google-Sender-Auth: h0XyX4aaI2WuiDNJzGk8-Pdrs18
+Message-ID: <CAMuHMdV7FUC+p5XqwLZmqJRLYv1qhu5hf0M_e5pASBRHgFAhCA@mail.gmail.com>
+Subject: Re: [PATCH 07/20] arch,cris: Fold atomic_ops
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Mikael Starvik <starvik@axis.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a9a17104a112a67a7bf0679b734704c130eb5faa
-Gitweb:     http://git.kernel.org/tip/a9a17104a112a67a7bf0679b734704c130eb5faa
-Author:     Vivek Goyal <vgoyal@redhat.com>
-AuthorDate: Fri, 25 Apr 2014 13:46:12 -0400
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 8 May 2014 08:00:06 -0700
+Hi Peter,
 
-x86, boot: Remove misc.h inclusion from compressed/string.c
+On Thu, May 8, 2014 at 3:58 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> Many of the atomic op implementations are the same except for one
+> instruction; fold the lot into a few CPP macros and reduce LoC.
+>
+> This also prepares for easy addition of new ops.
+>
+> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Mikael Starvik <starvik@axis.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  arch/cris/include/arch-v10/arch/system.h |    2 -
+>  arch/cris/include/asm/atomic.h           |   57 +++++++++++++------------------
+>  2 files changed, 25 insertions(+), 34 deletions(-)
+>
+> Index: linux-2.6/arch/cris/include/arch-v10/arch/system.h
+> ===================================================================
+> --- linux-2.6.orig/arch/cris/include/arch-v10/arch/system.h
+> +++ linux-2.6/arch/cris/include/arch-v10/arch/system.h
+> @@ -36,8 +36,6 @@ static inline unsigned long _get_base(ch
+>    return 0;
+>  }
+>
+> -#define nop() __asm__ __volatile__ ("nop");
+> -
 
-Given the fact that we removed inclusion of boot.h from boot/string.c
-does not look like we need misc.h inclusion in compressed/string.c. So
-remove it.
+Is this change supposed to be part of this series?
 
-misc.h was also pulling in string_32.h which in turn had macros for
-memcmp and memcpy. So we don't need to #undef memcmp and memcpy anymore.
+Gr{oetje,eeting}s,
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-Link: http://lkml.kernel.org/r/1398447972-27896-3-git-send-email-vgoyal@redhat.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/boot/compressed/string.c | 4 ----
- arch/x86/boot/string.c            | 6 ------
- 2 files changed, 10 deletions(-)
+                        Geert
 
-diff --git a/arch/x86/boot/compressed/string.c b/arch/x86/boot/compressed/string.c
-index f3c57e3..00e788b 100644
---- a/arch/x86/boot/compressed/string.c
-+++ b/arch/x86/boot/compressed/string.c
-@@ -1,9 +1,5 @@
--#include "misc.h"
- #include "../string.c"
- 
--/* misc.h might pull in string_32.h which has a macro for memcpy. undef that */
--#undef memcpy
--
- #ifdef CONFIG_X86_32
- void *memcpy(void *dest, const void *src, size_t n)
- {
-diff --git a/arch/x86/boot/string.c b/arch/x86/boot/string.c
-index aca52b8..493f3fd 100644
---- a/arch/x86/boot/string.c
-+++ b/arch/x86/boot/string.c
-@@ -15,12 +15,6 @@
- #include <linux/types.h>
- #include "ctype.h"
- 
--/*
-- * This file gets included in compressed/string.c which might pull in
-- * string_32.h and which in turn maps memcmp to __builtin_memcmp(). Undo
-- * that first.
-- */
--#undef memcmp
- int memcmp(const void *s1, const void *s2, size_t len)
- {
- 	u8 diff;
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
