@@ -1,105 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807AbaEHMyb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 08:54:31 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:46320 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752756AbaEHMya (ORCPT
+	id S1753988AbaEHMyk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 08:54:40 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55103 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753205AbaEHMyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 08:54:30 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Feng Kan <fkan@apm.com>
-Cc: "tglx\@linutronix.de" <tglx@linutronix.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vinayak Kale <vkale@apm.com>
-Subject: Re: [PATCH V5] gic: preserve gic V2 bypass bits in cpu ctrl register
-In-Reply-To: <1399507310-2791-1-git-send-email-fkan@apm.com> (Feng Kan's
-	message of "Thu, 8 May 2014 01:01:50 +0100")
-Organization: ARM Ltd
-References: <1399507310-2791-1-git-send-email-fkan@apm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Thu, 08 May 2014 13:54:27 +0100
-Message-ID: <87ha50mnwc.fsf@approximate.cambridge.arm.com>
+	Thu, 8 May 2014 08:54:39 -0400
+Date: Thu, 8 May 2014 14:54:52 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Anvin <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 29/32] genirq: Remove irq_reserve_irq[s]
+In-Reply-To: <20140508121443.4E71CC40D85@trevor.secretlab.ca>
+Message-ID: <alpine.DEB.2.02.1405081453560.6261@ionos.tec.linutronix.de>
+References: <20140507153622.703412101@linutronix.de> <20140507154340.302183048@linutronix.de> <20140508121443.4E71CC40D85@trevor.secretlab.ca>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08 2014 at  1:01:50 am BST, Feng Kan <fkan@apm.com> wrote:
-> This change is made to preserve the GIC v2 bypass bits in the
-> GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
-> This code will preserve all bits configured by the bootload regarding
-> v2 bypass group bits. In the X-Gene platform, the bypass functionality
-> is not used and bypass bits should not be changed by the kernel gic
-> code as it could lead to incorrect behavior.
->
-> Signed-off-by: Vinayak Kale <vkale@apm.com>
-> Acked-by: Anup Patel <apatel@apm.com>
-> Signed-off-by: Feng Kan <fkan@apm.com>
-> ---
-> V5: Use macro to replace read modify write of cpu_ctrl register.
-> V4: Change to use bypass mask, change ot user more suitable variable name.
->  drivers/irqchip/irq-gic.c |   16 +++++++++++++---
->  1 files changed, 13 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index 4300b66..42e9bf4 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -97,6 +97,13 @@ struct irq_chip gic_arch_extn = {
->  #define MAX_GIC_NR	1
->  #endif
->  
-> +#define set_cpuctrl(base, val)					\
-> +	do {							\
-> +		u32 bypass;					\
-> +		bypass = readl(base + GIC_CPU_CTRL) & 0x1e0;	\
-> +		writel_relaxed(bypass | val, base + GIC_CPU_CTRL);\
-> +	} while (0)
-> +
+On Thu, 8 May 2014, Grant Likely wrote:
 
-Please use a function. A macro doesn't buy us anything here, and lacks
-type safety.
+> On Wed, 07 May 2014 15:44:21 -0000, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > No more users. And it's not going to come back. If you need
+> > hotplugable irq chips, use irq domains.
+> > 
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> 
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> 
+> The ironic thing is that irq_domain may end up bringing this function
+> back in some form as an optimization for irq_domains that need a
+> contiguous range, but don't want to allocate all the irq_descs
+> immediately. But if that happens it will be a very private API and it
+> doesn't nullify removing the function now.
 
-Your previous patch was nicer in that respect. You just had to move the
-enable code to a gic_cpu_if_up() function, and you were done...
+Right. We can deal with it when the need arises, but that's a
+completely core internal issue then which is not going to be usable
+outside of kernel/irq.
 
->  static struct gic_chip_data gic_data[MAX_GIC_NR] __read_mostly;
->  
->  #ifdef CONFIG_GIC_NON_BANKED
-> @@ -449,13 +456,15 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->  		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
->  
->  	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
-> -	writel_relaxed(1, base + GIC_CPU_CTRL);
-> +
-> +	set_cpuctrl(base, 1);
->  }
->  
->  void gic_cpu_if_down(void)
->  {
->  	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
-> -	writel_relaxed(0, cpu_base + GIC_CPU_CTRL);
-> +
-> +	set_cpuctrl(cpu_base, 0);
->  }
->  
->  #ifdef CONFIG_CPU_PM
-> @@ -590,7 +599,8 @@ static void gic_cpu_restore(unsigned int gic_nr)
->  		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
->  
->  	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
-> -	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
-> +	
-> +	set_cpuctrl(cpu_base, 1);
->  }
->  
->  static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
+Thanks,
 
-
-	M.
--- 
-Jazz is not dead. It just smells funny.
+	tglx
