@@ -1,72 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166AbaEHPEY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:04:24 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:36602 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945AbaEHPEV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:04:21 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19bJdHJrzANPMZ8SBiAV4MQ
-Date: Thu, 8 May 2014 08:04:18 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL #2/2] ARM: dts: DRA7/AM437x l3noc dts updates
-Message-ID: <20140508150417.GC26833@atomide.com>
-References: <1397492726-17203-1-git-send-email-nm@ti.com>
- <1398698101-25513-1-git-send-email-nm@ti.com>
- <20140505200322.GA9863@kahuna>
- <20140505200635.GB9863@kahuna>
+	id S1754246AbaEHPGH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:06:07 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22238 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751625AbaEHPGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 11:06:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1010,1389772800"; 
+   d="scan'208";a="508436007"
+Message-ID: <536B9CF6.9000907@intel.com>
+Date: Thu, 08 May 2014 08:04:22 -0700
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505200635.GB9863@kahuna>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jet Chen <jet.chen@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        Dave Jiang <dave.jiang@intel.com>
+CC: fengguang.wu@intel.com, wei.w.lin@intel.com, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org
+Subject: Re: [PATCH] DCA: fix over-warning in ioat3_dca_init
+References: <1399542166-42985-1-git-send-email-jet.chen@intel.com>
+In-Reply-To: <1399542166-42985-1-git-send-email-jet.chen@intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [140505 13:07]:
-> Hi Tony,
-> 
->    Please pull the following to the dts support of AM437x and DRA7
->    support for l3_noc for the upcoming 3.16 window. This series was posted
->    http://marc.info/?l=linux-omap&m=139750288003978&w=2 and the
->    functionality enabled by the first pull request for driver.
-> 
-> The following changes since commit 455c6fdbd219161bd09b1165f11699d6d73de11c:
-> 
->   Linux 3.14 (2014-03-30 20:40:15 -0700)
-> 
-> are available in the git repository at:
-> 
->   https://github.com/nmenon/linux-2.6-playground.git pull/l3noc/dts-fixes
-> 
-> for you to fetch changes up to 2eeddb8a5356e088021a8dd84de870de89bf793d:
-> 
->   ARM: dts: AM4372: add l3-noc information (2014-05-05 14:35:29 -0500)
+I actually went to a bit of trouble to get this message added as many
+BIOSes have the annoying quality of getting this wrong, and then
+products are shipped and labeled as having the DCA feature when they
+actually don't.  One easy way to get rid of the message is to disable
+either DCA or IOAT in the BIOS since it is broken anyway.  By adding
+this we at least have some visibility and it puts pressure on the BIOS
+guys to get this fixed if we want to claim the platform does DCA.
 
-Thanks pulling into omap-for-v3.16/fixes-not-urgent.
+I consider this to be a real BIOS bug as the DCA feature is crippled
+without it.  Also moving this to just a debug message is going to make
+it very difficult for us to debug this when a performance issue comes up
+on a customer platform as we will have to get them to perform extra
+steps in order to actually figure out what is going on with DCA.
 
-Tony
- 
-> ----------------------------------------------------------------
-> Afzal Mohammed (1):
->       ARM: dts: AM4372: add l3-noc information
-> 
-> Rajendra Nayak (1):
->       ARM: dts: DRA7: Use dra7-l3-noc instead of omap4-l3-noc
-> 
->  arch/arm/boot/dts/am4372.dtsi |    6 +++++-
->  arch/arm/boot/dts/dra7.dtsi   |    6 +++---
->  2 files changed, 8 insertions(+), 4 deletions(-)
-> -- 
-> Regards,
-> Nishanth Menon
-> 
+Thanks,
+
+Alex
+
+On 05/08/2014 02:42 AM, Jet Chen wrote:
+> We keep seeing such dmesg messages on boxes
+>
+> [   16.596610] WARNING: CPU: 0 PID: 457 at drivers/dma/ioat/dca.c:697 ioat3_dca_init+0x19c/0x1b0 [ioatdma]()
+> [   16.609614] ioatdma 0000:00:04.0: APICID_TAG_MAP set incorrectly by BIOS, disabling DCA
+> ...
+> [   16.892058]  [<ffffffff8172807e>] dump_stack+0x4d/0x66
+> [   16.892061]  [<ffffffff81067f7d>] warn_slowpath_common+0x7d/0xa0
+> [   16.892064]  [<ffffffff81068034>] warn_slowpath_fmt_taint+0x44/0x50
+> [   16.892065]  [<ffffffffa00228bc>] ioat3_dca_init+0x19c/0x1b0 [ioatdma]
+> [   16.892069]  [<ffffffffa0021cd6>] ioat3_dma_probe+0x386/0x3e0 [ioatdma]
+> [   16.892071]  [<ffffffffa001a192>] ioat_pci_probe+0x122/0x1b0 [ioatdma]
+> [   16.892074]  [<ffffffff81329385>] local_pci_probe+0x45/0xa0
+> [   16.892076]  [<ffffffff81080d34>] work_for_cpu_fn+0x14/0x20
+> [   16.892077]  [<ffffffff81083c33>] process_one_work+0x183/0x490
+> [   16.892079]  [<ffffffff81084bd3>] worker_thread+0x2a3/0x410
+> [   16.892080]  [<ffffffff81084930>] ? rescuer_thread+0x410/0x410
+> [   16.892081]  [<ffffffff8108b852>] kthread+0xd2/0xf0
+> [   16.892083]  [<ffffffff8108b780>] ? kthread_create_on_node+0x180/0x180
+> [   16.892085]  [<ffffffff817396bc>] ret_from_fork+0x7c/0xb0
+> [   16.892091] fbcon: mgadrmfb (fb0) is primary device
+> [   16.892092]  [<ffffffff8108b780>] ? kthread_create_on_node+0x180/0x180
+>
+> No need to use WARN_TAINT_ONCE to generate a such big noise if this is not a critical error for kernel. DCA driver could print out a debug messages then quit quietly.
+>
+> If this is a real BIOS bug, please ignore this patch. Let's transfer this issue to BIOS guys.
+>
+> Signed-off-by: Jet Chen <jet.chen@intel.com>
+> ---
+>  drivers/dma/ioat/dca.c | 10 ++--------
+>  1 file changed, 2 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/dma/ioat/dca.c b/drivers/dma/ioat/dca.c
+> index 9e84d5b..c0f7971 100644
+> --- a/drivers/dma/ioat/dca.c
+> +++ b/drivers/dma/ioat/dca.c
+> @@ -470,10 +470,7 @@ struct dca_provider *ioat2_dca_init(struct pci_dev *pdev, void __iomem *iobase)
+>  	}
+>  
+>  	if (!dca2_tag_map_valid(ioatdca->tag_map)) {
+> -		WARN_TAINT_ONCE(1, TAINT_FIRMWARE_WORKAROUND,
+> -				"%s %s: APICID_TAG_MAP set incorrectly by BIOS, disabling DCA\n",
+> -				dev_driver_string(&pdev->dev),
+> -				dev_name(&pdev->dev));
+> +		dev_dbg(&pdev->dev, "APICID_TAG_MAP set incorrectly by BIOS, disabling DCA\n");
+>  		free_dca_provider(dca);
+>  		return NULL;
+>  	}
+> @@ -691,10 +688,7 @@ struct dca_provider *ioat3_dca_init(struct pci_dev *pdev, void __iomem *iobase)
+>  	}
+>  
+>  	if (dca3_tag_map_invalid(ioatdca->tag_map)) {
+> -		WARN_TAINT_ONCE(1, TAINT_FIRMWARE_WORKAROUND,
+> -				"%s %s: APICID_TAG_MAP set incorrectly by BIOS, disabling DCA\n",
+> -				dev_driver_string(&pdev->dev),
+> -				dev_name(&pdev->dev));
+> +		dev_dbg(&pdev->dev, "APICID_TAG_MAP set incorrectly by BIOS, disabling DCA\n");
+>  		free_dca_provider(dca);
+>  		return NULL;
+>  	}
+
