@@ -1,84 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871AbaEHJko (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 05:40:44 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:45967 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475AbaEHJkl (ORCPT
+	id S1754227AbaEHJlO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 05:41:14 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:37335 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753088AbaEHJjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 05:40:41 -0400
-Message-ID: <536B50C0.7030002@ti.com>
-Date: Thu, 8 May 2014 12:39:12 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 8 May 2014 05:39:17 -0400
+Subject: [PATCH -tip v10 4/7] kprobes/x86: Remove unneeded
+ preempt_disable/enable in interrupt handlers
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
+        mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 08 May 2014 18:39:10 +0900
+Message-ID: <20140508093910.31767.22413.stgit@ltc230.yrl.intra.hitachi.co.jp>
+In-Reply-To: <20140508093842.31767.43766.stgit@ltc230.yrl.intra.hitachi.co.jp>
+References: <20140508093842.31767.43766.stgit@ltc230.yrl.intra.hitachi.co.jp>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-To: Belisko Marek <marek.belisko@gmail.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, <rdunlap@infradead.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        <linux-fbdev@vger.kernel.org>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Subject: Re: [PATCH v2 2/3] ARM: dts: oma3-gta04: Add display support
-References: <1398284120-4986-1-git-send-email-marek@goldelico.com>	<1398284120-4986-3-git-send-email-marek@goldelico.com>	<5369DAC6.6050608@ti.com> <CAAfyv36L_vh+iwrqsePsF8oOxOJ=JXUAk2nJ6F120w+0ivAn8w@mail.gmail.com>
-In-Reply-To: <CAAfyv36L_vh+iwrqsePsF8oOxOJ=JXUAk2nJ6F120w+0ivAn8w@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="0X6NiaduQ530BqCsLEa230vGmNPsx4d1r"
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0X6NiaduQ530BqCsLEa230vGmNPsx4d1r
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Since the int3 itself disables the local_irq and kprobes
+keeps it disabled while the single step has done, the
+kernel preemption never happen while processing a kprobe.
+This means that we don't need to disable/enable preemption.
+Also, this changes kprobe_int3_handler to use goto-out style.
 
-On 07/05/14 10:21, Belisko Marek wrote:
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+---
+ arch/x86/kernel/kprobes/core.c |   24 +++++++-----------------
+ 1 file changed, 7 insertions(+), 17 deletions(-)
 
->> Did you try this on 3.15-rc? The above is not right, and I don't think=
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index c7e29f7..cec5879 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -506,7 +506,6 @@ static void setup_singlestep(struct kprobe *p, struct pt_regs *regs,
+ 		 * stepping.
+ 		 */
+ 		regs->ip = (unsigned long)p->ainsn.insn;
+-		preempt_enable_no_resched();
+ 		return;
+ 	}
+ #endif
+@@ -575,13 +574,6 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 	struct kprobe_ctlblk *kcb;
+ 
+ 	addr = (kprobe_opcode_t *)(regs->ip - sizeof(kprobe_opcode_t));
+-	/*
+-	 * We don't want to be preempted for the entire
+-	 * duration of kprobe processing. We conditionally
+-	 * re-enable preemption at the end of this function,
+-	 * and also in reenter_kprobe() and setup_singlestep().
+-	 */
+-	preempt_disable();
+ 
+ 	kcb = get_kprobe_ctlblk();
+ 	p = get_kprobe(addr);
+@@ -589,7 +581,7 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 	if (p) {
+ 		if (kprobe_running()) {
+ 			if (reenter_kprobe(p, regs, kcb))
+-				return 1;
++				goto handled;
+ 		} else {
+ 			set_current_kprobe(p, regs, kcb);
+ 			kcb->kprobe_status = KPROBE_HIT_ACTIVE;
+@@ -604,7 +596,7 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 			 */
+ 			if (!p->pre_handler || !p->pre_handler(p, regs))
+ 				setup_singlestep(p, regs, kcb, 0);
+-			return 1;
++			goto handled;
+ 		}
+ 	} else if (*addr != BREAKPOINT_INSTRUCTION) {
+ 		/*
+@@ -617,19 +609,20 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 		 * the original instruction.
+ 		 */
+ 		regs->ip = (unsigned long)addr;
+-		preempt_enable_no_resched();
+-		return 1;
++		goto handled;
+ 	} else if (kprobe_running()) {
+ 		p = __this_cpu_read(current_kprobe);
+ 		if (p->break_handler && p->break_handler(p, regs)) {
+ 			if (!skip_singlestep(p, regs, kcb))
+ 				setup_singlestep(p, regs, kcb, 0);
+-			return 1;
++			goto handled;
+ 		}
+ 	} /* else: not a kprobe fault; let the kernel handle it */
+ 
+-	preempt_enable_no_resched();
+ 	return 0;
++
++handled:
++	return 1;
+ }
+ NOKPROBE_SYMBOL(kprobe_int3_handler);
+ 
+@@ -894,7 +887,6 @@ int kprobe_debug_handler(struct pt_regs *regs)
+ 	}
+ 	reset_current_kprobe();
+ out:
+-	preempt_enable_no_resched();
+ 
+ 	/*
+ 	 * if somebody else is singlestepping across a probe point, flags
+@@ -930,7 +922,6 @@ int kprobe_fault_handler(struct pt_regs *regs, int trapnr)
+ 			restore_previous_kprobe(kcb);
+ 		else
+ 			reset_current_kprobe();
+-		preempt_enable_no_resched();
+ 	} else if (kcb->kprobe_status == KPROBE_HIT_ACTIVE ||
+ 		   kcb->kprobe_status == KPROBE_HIT_SSDONE) {
+ 		/*
+@@ -1061,7 +1052,6 @@ int longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
+ 		memcpy((kprobe_opcode_t *)(kcb->jprobe_saved_sp),
+ 		       kcb->jprobes_stack,
+ 		       MIN_STACK_SIZE(kcb->jprobe_saved_sp));
+-		preempt_enable_no_resched();
+ 		return 1;
+ 	}
+ 	return 0;
 
->> it works. You need 'port' node for the dpi_out endpoint.
-> This patches was tested against 3.15 series and it works. I'l recheck.
 
-Ah, we still have some code that makes that work. But it's against the
-bindings documentations, and that code will be removed. So better add
-the port node.
-
- Tomi
-
-
-
---0X6NiaduQ530BqCsLEa230vGmNPsx4d1r
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTa1DAAAoJEPo9qoy8lh717lUQAJlZNBw7np66+7mlexo9qudI
-Rkf4xodGxwpdsx9yc6UxayUZ2cllCyM8eMsDsDwzQvtOwMluIY7qa5PrpABTSDcO
-NADo80/NLLDkJCelL2G9Dq61Vb4wLyKTZwqvgYVHJUBan7e0XqrKBNEnB/dHvAGM
-3QeinB+swFc5FQJczNVF2wIAbvUBmQwz2r8oFxheAgewwDO+mf8Jett2wqteU0Rd
-2dajhWOcH4rrIsrv8QfkR9pQKmUlAQMev7gJqAuDpZ0EhakPHvKmgGP6zy/e3f74
-yow8S8r8yPc23Hoj6ZYoPAwFKTrxFH4zUMUiNxP0syheSARg3mhMWaD9l43PQyPy
-PfqlFz4dgnNB94WZjdg8dU+gtR946wWphv1nUsdwCPtUU0C+z/BPolkR+HBIq4+D
-F4HSxTZRLhOCe86uftk1L/0v4PNO6SCcyBcL+7fY0n6s1NU2al7134kEgQJcYs+8
-ruFk1IsH/yKfKM4560VEpRXTmK65wgZ0surfk/+lalfkJKJ1KWWFjJvyVZPKnK6N
-5Ma3Ws2YFJ6V+EgoHf5hthFTBi+gn6YFAAahsq/tnuGRgeV6v1cyN8A+kj4JLnlc
-F2HbjmJX2n+V6G13GmdN8/j7B8XAB4U82izO/JUUIOq7zOv7Zfm0Ki1VJ0L6lnXW
-Jr+ailpb96Z0dfaDAwOk
-=GPMt
------END PGP SIGNATURE-----
-
---0X6NiaduQ530BqCsLEa230vGmNPsx4d1r--
