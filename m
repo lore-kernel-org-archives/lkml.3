@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142AbaEHUrZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 16:47:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13790 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932095AbaEHUrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 16:47:21 -0400
-Date: Thu, 8 May 2014 16:46:53 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Victor Kaplansky <VICTORK@il.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: perf events ring buffer memory barrier on powerpc
-Message-ID: <alpine.LRH.2.02.1405081614100.4346@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1755664AbaEHUsq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 16:48:46 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:64527 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754658AbaEHUso (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 16:48:44 -0400
+Subject: [PATCH v3 0/4] Clean up DMA API docs and dma_addr_t usage
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-doc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joerg Roedel <joro@8bytes.org>, Randy Dunlap <rdunlap@infradead.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, linux-kernel@vger.kernel.org,
+        James Bottomley <jbottomley@parallels.com>, linux-pci@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>
+Date: Thu, 08 May 2014 14:48:47 -0600
+Message-ID: <20140508204257.17877.4639.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Maybe the third time's a charm :)
 
-[ I found this in the lkml archvive ]
+This cleans up some DMA-API documentation and makes a minor no-op change to
+the dma_declare_coherent_memory() prototype.
 
-> On Wed, Oct 30, 2013 at 04:52:05PM +0200, Victor Kaplansky wrote:
->
-> > Peter Zijlstra <peterz@infradead.org> wrote on 10/30/2013 01:25:26 PM:
-> >
-> > > Also, I'm not entirely sure on C, that too seems like a dependency, we
-> > > simply cannot read the buffer @tail before we've read the tail itself,
-> > > now can we? Similarly we cannot compare tail to head without having the
-> > > head read completed.
-> >
-> > No, this one we cannot omit, because our problem on consumer side is not
-> > with @tail, which is written exclusively by consumer, but with @head.
->
-> Ah indeed, my argument was flawed in that @head is the important part.
-> But we still do a comparison of @tail against @head before we do further
-> reads.
->
-> Although I suppose speculative reads are allowed -- they don't have the
-> destructive behaviour speculative writes have -- and thus we could in
-> fact get reorder issues.
->
-> But since it is still a dependent load in that we do that @tail vs @head
-> comparison before doing other loads, wouldn't a read_barrier_depends()
-> be sufficient? Or do we still need a complete rmb?
->
-> > BTW, it is why you also don't need ACCESS_ONCE() around @tail, but only
-> > around
-> > @head read.
->
-> Agreed, the ACCESS_ONCE() around tail is superfluous since we're the one
-> updating tail, so there's no problem with the value changing
-> unexpectedly.
+Changes from v2:
+  - Added description of CPU virtual/physical and bus addresses in
+    DMA-API-HOWTO
+  - Added comments to sh/PCI (Dreamcast) update
+  - Dropped IOMMU interface dma_addr_t changes
 
-You need ACCESS_ONCE even if you are the only process writing the value. 
-Because without ACCESS_ONCE, the compiler may perform store tearing and 
-split the store into several smaller stores. Search the file 
-"Documentation/memory-barriers.txt" for the term "store tearing", it shows 
-an example where one instruction storing 32-bit value may be split to two 
-instructions, each storing 16-bit value.
+I didn't add Arnd's and Greg's acks to patch 1 because of all the new
+address description text I added.
 
-Mikulas
+---
 
+Bjorn Helgaas (4):
+      DMA-API: Clarify physical/bus address distinction
+      DMA-API: Change dma_declare_coherent_memory() CPU address to phys_addr_t
+      sh/PCI: Pass GAPSPCI_DMA_BASE CPU & bus address to dma_declare_coherent_memory()
+      iommu/exynos: Remove unnecessary "&" from function pointers
+
+
+ Documentation/DMA-API-HOWTO.txt        |  192 +++++++++++++++++++++-----------
+ Documentation/DMA-API.txt              |  148 +++++++++++++------------
+ Documentation/DMA-ISA-LPC.txt          |    4 -
+ arch/sh/drivers/pci/fixups-dreamcast.c |   18 +++
+ drivers/base/dma-coherent.c            |   10 +-
+ drivers/base/dma-mapping.c             |    6 +
+ drivers/iommu/exynos-iommu.c           |   14 +-
+ include/asm-generic/dma-coherent.h     |   13 +-
+ include/linux/dma-mapping.h            |   13 ++
+ include/linux/types.h                  |    1 
+ 10 files changed, 247 insertions(+), 172 deletions(-)
+
+-- 
+Signature
