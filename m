@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012AbaEHPBo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:01:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9757 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754335AbaEHPBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:01:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1010,1389772800"; 
-   d="scan'208";a="537123485"
-Date: Thu, 8 May 2014 23:01:33 -0400
-From: Zhuang Jin Can <jin.can.zhuang@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Felipe Balbi <balbi@ti.com>, USB list <linux-usb@vger.kernel.org>,
-        linux-omap@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        liping.zhou@intel.com, david.a.cohen@linux.intel.com
-Subject: Re: [PATCH] usb: dwc3: ep0: fix delayed status is queued too early
-Message-ID: <20140509030133.GK19925@intel.com>
-Reply-To: jin.can.zhuang@intel.com
-References: <20140508160046.GJ19925@intel.com>
- <Pine.LNX.4.44L0.1405081019230.1087-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1405081019230.1087-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753589AbaEHO4p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 10:56:45 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:49660 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752959AbaEHO4n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 10:56:43 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Subject: [PATCH] mpilib: use 'static inline' for mpi-inline.h
+Date: Thu,  8 May 2014 16:56:20 +0200
+Message-Id: <1399560990-1402858-9-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1399560990-1402858-1-git-send-email-arnd@arndb.de>
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
+ <1399560990-1402858-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:5mAD5cyp6eNnt6lN5a4JO4DaCI0vnz09NlbFZhTRSEv
+ ageZfEvuw3Cdqmw7/Ck2o4RXE0sXPiv3UAFBImpbAWdwmvW7Rw
+ P5L3pakCWdrmknpoXUlpChd9GhZjWW/L8CLIlF0fEStO7ZldSJ
+ Qn07ghEliueV+xJf8S5DCoM1mB7e54XH2dGe9/MjAyQtuSpF3+
+ WMJCdh0u4TQDwG9e1MlqDRlf+q1dJZXMlli5Iyv0xkqTmzv+Mi
+ Z7L3Yte3EqvlGtEaPdcFZXH8jB5yfsjNJPwEKN89URuHOA4rUr
+ WKLQU+4BKtesgQAMrLgBQkZJGlxYQkOlJvAw7M8BA1FZJNjAj+
+ z90xV/SOPBWJDdG2lW1Yx9H5L/5mO17i86sJ35SVr
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 10:25:46AM -0400, Alan Stern wrote:
-> On Thu, 8 May 2014, Zhuang Jin Can wrote:
-> 
-> > > When the host already timed out the control transfer and started a new 
-> > > one.  Here's what I'm talking about:
-> > > 
-> > > 	Host sends a Set-Configuration request.
-> > > 
-> > > 	The UDC driver calls the gadget driver's setup function.
-> > > 
-> > > 	The setup function returns DELAYED_STATUS.
-> > > 
-> > > 	After a few seconds, the host gets tired of waiting and
-> > > 	sends a Get-Descriptor request
-> > My understanding is dwc3 will return NYET to host for this
-> > Get-Descriptor request transaction, as dwc3 is still in STATUS phase,
-> > there's no buffer to receive anything in ep0-out.
-> 
-> dwc3 _cannot_ return NYET to a SETUP packet.  The USB protocol does not 
-> allow it.  A device must always respond to SETUP with ACK.
-It true that device can not return NYET to a SETUP packet.
-A device must always respond to SETUP with ACK _if_ the SETUP packet is
-correctly received. Because there's no buffer prepared in ep0 for dwc3
-to receive the SETUP packet, I guess there will be no handshake
-returned to host. I can confirm this by doing an experiment tomorrow:)
+Four functions of mpilib are defined as 'extern inline' at the
+moment, which is generally not the correct way to do inline functions
+using gcc.
 
-Jincan
+While this is usually harmless, it shows up as a warning in combination
+with the CONFIG_PROFILE_ALL_BRANCHES, resulting in very many lines
+like:
+
+/git/arm-soc/lib/mpi/mpi-inline.h:70:182: warning: '______f' is static but declared in inline function 'mpihelp_add' which is not static [enabled by default]
+
+Using static inline makes the code behave as expected and gets
+rid of the warning
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+---
+ lib/mpi/mpi-inline.h   | 2 +-
+ lib/mpi/mpi-internal.h | 8 --------
+ 2 files changed, 1 insertion(+), 9 deletions(-)
+
+diff --git a/lib/mpi/mpi-inline.h b/lib/mpi/mpi-inline.h
+index e2b3985..c245ea3 100644
+--- a/lib/mpi/mpi-inline.h
++++ b/lib/mpi/mpi-inline.h
+@@ -30,7 +30,7 @@
+ #define G10_MPI_INLINE_H
+ 
+ #ifndef G10_MPI_INLINE_DECL
+-#define G10_MPI_INLINE_DECL  extern inline
++#define G10_MPI_INLINE_DECL  static inline
+ #endif
+ 
+ G10_MPI_INLINE_DECL mpi_limb_t
+diff --git a/lib/mpi/mpi-internal.h b/lib/mpi/mpi-internal.h
+index 60cf765..54c1e97 100644
+--- a/lib/mpi/mpi-internal.h
++++ b/lib/mpi/mpi-internal.h
+@@ -168,20 +168,12 @@ void mpi_rshift_limbs(MPI a, unsigned int count);
+ int mpi_lshift_limbs(MPI a, unsigned int count);
+ 
+ /*-- mpihelp-add.c --*/
+-mpi_limb_t mpihelp_add_1(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
+-			 mpi_size_t s1_size, mpi_limb_t s2_limb);
+ mpi_limb_t mpihelp_add_n(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
+ 			 mpi_ptr_t s2_ptr, mpi_size_t size);
+-mpi_limb_t mpihelp_add(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr, mpi_size_t s1_size,
+-		       mpi_ptr_t s2_ptr, mpi_size_t s2_size);
+ 
+ /*-- mpihelp-sub.c --*/
+-mpi_limb_t mpihelp_sub_1(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
+-			 mpi_size_t s1_size, mpi_limb_t s2_limb);
+ mpi_limb_t mpihelp_sub_n(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
+ 			 mpi_ptr_t s2_ptr, mpi_size_t size);
+-mpi_limb_t mpihelp_sub(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr, mpi_size_t s1_size,
+-		       mpi_ptr_t s2_ptr, mpi_size_t s2_size);
+ 
+ /*-- mpihelp-cmp.c --*/
+ int mpihelp_cmp(mpi_ptr_t op1_ptr, mpi_ptr_t op2_ptr, mpi_size_t size);
+-- 
+1.8.3.2
+
