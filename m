@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404AbaEHPWj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:22:39 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42670 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751910AbaEHPWi (ORCPT
+	id S1754552AbaEHPYL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:24:11 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:47133 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984AbaEHPYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:22:38 -0400
-Date: Thu, 8 May 2014 11:22:36 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Zhuang Jin Can <jin.can.zhuang@intel.com>
-cc: Felipe Balbi <balbi@ti.com>, USB list <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        <liping.zhou@intel.com>, <david.a.cohen@linux.intel.com>
-Subject: Re: [PATCH] usb: dwc3: ep0: fix delayed status is queued too early
-In-Reply-To: <20140509030133.GK19925@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1405081118480.1087-100000@iolanthe.rowland.org>
+	Thu, 8 May 2014 11:24:09 -0400
+Date: Thu, 8 May 2014 17:24:01 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        mingo@kernel.org, will.deacon@arm.com, paulmck@linux.vnet.ibm.com,
+        Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 20/20] arch: Rewrite generic atomic support
+Message-ID: <20140508152401.GA5177@ravnborg.org>
+References: <20140508135840.956784204@infradead.org>
+ <20140508135852.940119622@infradead.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140508135852.940119622@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 May 2014, Zhuang Jin Can wrote:
+>  
+> -/**
+> - * atomic_add_return - add integer to atomic variable
+> - * @i: integer value to add
+> - * @v: pointer of type atomic_t
+> - *
+> - * Atomically adds @i to @v and returns the result
+> - */
+For people not starign at kernel code every days these sparse comments
+is a help. If anything they should be improved rather than deleted.
 
-> > dwc3 _cannot_ return NYET to a SETUP packet.  The USB protocol does not 
-> > allow it.  A device must always respond to SETUP with ACK.
-> It true that device can not return NYET to a SETUP packet.
-> A device must always respond to SETUP with ACK _if_ the SETUP packet is
-> correctly received. Because there's no buffer prepared in ep0 for dwc3
-> to receive the SETUP packet, I guess there will be no handshake
-> returned to host. I can confirm this by doing an experiment tomorrow:)
-
-The dwc3 driver should always prepare a buffer for the next ep0 SETUP
-packet as soon as it retrieves the information for the current SETUP 
-packet from the buffer.
-
-Otherwise, as you described it, if the gadget driver never sends its 
-delayed status response then the UDC will never respond to any more 
-control transfers.
-
-Alan Stern
-
+	Sam
