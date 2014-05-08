@@ -1,103 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568AbaEHVpd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 17:45:33 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43954 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754871AbaEHVpc (ORCPT
+	id S1755846AbaEHVps (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 17:45:48 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:62129 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755806AbaEHVpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 17:45:32 -0400
-Message-ID: <536BFAF7.4020405@linaro.org>
-Date: Thu, 08 May 2014 14:45:27 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Keith Packard <keithp@keithp.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 3/4] MADV_VOLATILE: Add purged page detection on setting
- memory non-volatile
-References: <1398806483-19122-1-git-send-email-john.stultz@linaro.org> <1398806483-19122-4-git-send-email-john.stultz@linaro.org> <20140508015130.GB5282@bbox>
-In-Reply-To: <20140508015130.GB5282@bbox>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 8 May 2014 17:45:46 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Subject: [RESEND PATCH 6/6] gpio: stmpe: switch to use gpiolib irqchip helpers
+Date: Thu,  8 May 2014 23:45:41 +0200
+Message-Id: <1399585541-5494-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2014 06:51 PM, Minchan Kim wrote:
-> On Tue, Apr 29, 2014 at 02:21:22PM -0700, John Stultz wrote:
->> +/**
->> + * mvolatile_check_purged_pte - Checks ptes for purged pages
->> + * @pmd: pmd to walk
->> + * @addr: starting address
->> + * @end: end address
->> + * @walk: mm_walk ptr (contains ptr to mvolatile_walker)
->> + *
->> + * Iterates over the ptes in the pmd checking if they have
->> + * purged swap entries.
->> + *
->> + * Sets the mvolatile_walker.page_was_purged to 1 if any were purged,
->> + * and clears the purged pte swp entries (since the pages are no
->> + * longer volatile, we don't want future accesses to SIGBUS).
->> + */
->> +static int mvolatile_check_purged_pte(pmd_t *pmd, unsigned long addr,
->> +					unsigned long end, struct mm_walk *walk)
->> +{
->> +	struct mvolatile_walker *vw = walk->private;
->> +	pte_t *pte;
->> +	spinlock_t *ptl;
->> +
->> +	if (pmd_trans_huge(*pmd))
->> +		return 0;
->> +	if (pmd_trans_unstable(pmd))
->> +		return 0;
->> +
->> +	pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
->> +	for (; addr != end; pte++, addr += PAGE_SIZE) {
->> +		if (!pte_present(*pte)) {
->> +			swp_entry_t mvolatile_entry = pte_to_swp_entry(*pte);
->> +
->> +			if (unlikely(is_purged_entry(mvolatile_entry))) {
->> +
->> +				vw->page_was_purged = 1;
->> +
->> +				/* clear the pte swp entry */
->> +				flush_cache_page(vw->vma, addr, pte_pfn(*pte));
-> Maybe we don't need to flush the cache because there is no mapped page.
->
->> +				ptep_clear_flush(vw->vma, addr, pte);
-> Maybe we don't need this, either. We didn't set present bit for purged
-> page but when I look at the internal of ptep_clear_flush, it checks present bit
-> and skip the TLB flush so it's okay for x86 but not sure other architecture.
-> More clear function for our purpose would be pte_clear_not_present_full.
+This switches the STMPE driver to use the gpiolib irqchip
+helpers.
 
-Ok.. basically I just wanted to zap the psudo-swp entry, so it will be
-zero-filled from here on out.
+Tested-by: Silvio Fricke <silvio.fricke@gmail.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/gpio/Kconfig      |   1 +
+ drivers/gpio/gpio-stmpe.c | 111 +++++++++++-----------------------------------
+ 2 files changed, 28 insertions(+), 84 deletions(-)
 
-
-> And we are changing page table so at least, we need to handle mmu_notifier to
-> inform that to the client of mmu_notifier.
-
-So yes, this is one item from my last iteration that I didn't act on
-yet. It wasn't clear to me here that we need to do the mmu_notifier,
-since the page is evicted earlier via try_to_purge_one (and we do notify
-then). But in just removing the psudo-swap entry we need to do a
-notification as well? Is there someplace where the mmu_notifier rules
-are better documented?
-
-thanks
--john
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index a86c49a605c6..cb91e2d9651f 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -562,6 +562,7 @@ config GPIO_SX150X
+ config GPIO_STMPE
+ 	bool "STMPE GPIOs"
+ 	depends on MFD_STMPE
++	select GPIOLIB_IRQCHIP
+ 	help
+ 	  This enables support for the GPIOs found on the STMPE I/O
+ 	  Expanders.
+diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
+index 628b58494294..ed90adbdb128 100644
+--- a/drivers/gpio/gpio-stmpe.c
++++ b/drivers/gpio/gpio-stmpe.c
+@@ -10,8 +10,6 @@
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
+ #include <linux/gpio.h>
+-#include <linux/irq.h>
+-#include <linux/irqdomain.h>
+ #include <linux/interrupt.h>
+ #include <linux/of.h>
+ #include <linux/mfd/stmpe.h>
+@@ -31,9 +29,7 @@ struct stmpe_gpio {
+ 	struct stmpe *stmpe;
+ 	struct device *dev;
+ 	struct mutex irq_lock;
+-	struct irq_domain *domain;
+ 	unsigned norequest_mask;
+-
+ 	/* Caches of interrupt control registers for bus_lock */
+ 	u8 regs[CACHE_NR_REGS][CACHE_NR_BANKS];
+ 	u8 oldregs[CACHE_NR_REGS][CACHE_NR_BANKS];
+@@ -101,13 +97,6 @@ static int stmpe_gpio_direction_input(struct gpio_chip *chip,
+ 	return stmpe_set_bits(stmpe, reg, mask, 0);
+ }
+ 
+-static int stmpe_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+-{
+-	struct stmpe_gpio *stmpe_gpio = to_stmpe_gpio(chip);
+-
+-	return irq_create_mapping(stmpe_gpio->domain, offset);
+-}
+-
+ static int stmpe_gpio_request(struct gpio_chip *chip, unsigned offset)
+ {
+ 	struct stmpe_gpio *stmpe_gpio = to_stmpe_gpio(chip);
+@@ -126,14 +115,14 @@ static struct gpio_chip template_chip = {
+ 	.get			= stmpe_gpio_get,
+ 	.direction_output	= stmpe_gpio_direction_output,
+ 	.set			= stmpe_gpio_set,
+-	.to_irq			= stmpe_gpio_to_irq,
+ 	.request		= stmpe_gpio_request,
+ 	.can_sleep		= true,
+ };
+ 
+ static int stmpe_gpio_irq_set_type(struct irq_data *d, unsigned int type)
+ {
+-	struct stmpe_gpio *stmpe_gpio = irq_data_get_irq_chip_data(d);
++	struct gpio_chip *gc = irq_data_get_irq_chip_data(d);
++	struct stmpe_gpio *stmpe_gpio = to_stmpe_gpio(gc);
+ 	int offset = d->hwirq;
+ 	int regoffset = offset / 8;
+ 	int mask = 1 << (offset % 8);
+@@ -160,14 +149,16 @@ static int stmpe_gpio_irq_set_type(struct irq_data *d, unsigned int type)
+ 
+ static void stmpe_gpio_irq_lock(struct irq_data *d)
+ {
+-	struct stmpe_gpio *stmpe_gpio = irq_data_get_irq_chip_data(d);
++	struct gpio_chip *gc = irq_data_get_irq_chip_data(d);
++	struct stmpe_gpio *stmpe_gpio = to_stmpe_gpio(gc);
+ 
+ 	mutex_lock(&stmpe_gpio->irq_lock);
+ }
+ 
+ static void stmpe_gpio_irq_sync_unlock(struct irq_data *d)
+ {
+-	struct stmpe_gpio *stmpe_gpio = irq_data_get_irq_chip_data(d);
++	struct gpio_chip *gc = irq_data_get_irq_chip_data(d);
++	struct stmpe_gpio *stmpe_gpio = to_stmpe_gpio(gc);
+ 	struct stmpe *stmpe = stmpe_gpio->stmpe;
+ 	int num_banks = DIV_ROUND_UP(stmpe->num_gpios, 8);
+ 	static const u8 regmap[] = {
+@@ -200,7 +191,8 @@ static void stmpe_gpio_irq_sync_unlock(struct irq_data *d)
+ 
+ static void stmpe_gpio_irq_mask(struct irq_data *d)
+ {
+-	struct stmpe_gpio *stmpe_gpio = irq_data_get_irq_chip_data(d);
++	struct gpio_chip *gc = irq_data_get_irq_chip_data(d);
++	struct stmpe_gpio *stmpe_gpio = to_stmpe_gpio(gc);
+ 	int offset = d->hwirq;
+ 	int regoffset = offset / 8;
+ 	int mask = 1 << (offset % 8);
+@@ -210,7 +202,8 @@ static void stmpe_gpio_irq_mask(struct irq_data *d)
+ 
+ static void stmpe_gpio_irq_unmask(struct irq_data *d)
+ {
+-	struct stmpe_gpio *stmpe_gpio = irq_data_get_irq_chip_data(d);
++	struct gpio_chip *gc = irq_data_get_irq_chip_data(d);
++	struct stmpe_gpio *stmpe_gpio = to_stmpe_gpio(gc);
+ 	int offset = d->hwirq;
+ 	int regoffset = offset / 8;
+ 	int mask = 1 << (offset % 8);
+@@ -253,7 +246,7 @@ static irqreturn_t stmpe_gpio_irq(int irq, void *dev)
+ 		while (stat) {
+ 			int bit = __ffs(stat);
+ 			int line = bank * 8 + bit;
+-			int child_irq = irq_find_mapping(stmpe_gpio->domain,
++			int child_irq = irq_find_mapping(stmpe_gpio->chip.irqdomain,
+ 							 line);
+ 
+ 			handle_nested_irq(child_irq);
+@@ -271,56 +264,6 @@ static irqreturn_t stmpe_gpio_irq(int irq, void *dev)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static int stmpe_gpio_irq_map(struct irq_domain *d, unsigned int irq,
+-			      irq_hw_number_t hwirq)
+-{
+-	struct stmpe_gpio *stmpe_gpio = d->host_data;
+-
+-	if (!stmpe_gpio)
+-		return -EINVAL;
+-
+-	irq_set_chip_data(irq, stmpe_gpio);
+-	irq_set_chip_and_handler(irq, &stmpe_gpio_irq_chip,
+-				 handle_simple_irq);
+-	irq_set_nested_thread(irq, 1);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, IRQF_VALID);
+-#else
+-	irq_set_noprobe(irq);
+-#endif
+-
+-	return 0;
+-}
+-
+-static void stmpe_gpio_irq_unmap(struct irq_domain *d, unsigned int irq)
+-{
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, 0);
+-#endif
+-	irq_set_chip_and_handler(irq, NULL, NULL);
+-	irq_set_chip_data(irq, NULL);
+-}
+-
+-static const struct irq_domain_ops stmpe_gpio_irq_simple_ops = {
+-	.unmap = stmpe_gpio_irq_unmap,
+-	.map = stmpe_gpio_irq_map,
+-	.xlate = irq_domain_xlate_twocell,
+-};
+-
+-static int stmpe_gpio_irq_init(struct stmpe_gpio *stmpe_gpio,
+-		struct device_node *np)
+-{
+-	stmpe_gpio->domain = irq_domain_add_simple(np,
+-				stmpe_gpio->chip.ngpio, 0,
+-				&stmpe_gpio_irq_simple_ops, stmpe_gpio);
+-	if (!stmpe_gpio->domain) {
+-		dev_err(stmpe_gpio->dev, "failed to create irqdomain\n");
+-		return -ENOSYS;
+-	}
+-
+-	return 0;
+-}
+-
+ static int stmpe_gpio_probe(struct platform_device *pdev)
+ {
+ 	struct stmpe *stmpe = dev_get_drvdata(pdev->dev.parent);
+@@ -358,30 +301,37 @@ static int stmpe_gpio_probe(struct platform_device *pdev)
+ 
+ 	if (irq < 0)
+ 		dev_info(&pdev->dev,
+-			"device configured in no-irq mode; "
++			"device configured in no-irq mode: "
+ 			"irqs are not available\n");
+ 
+ 	ret = stmpe_enable(stmpe, STMPE_BLOCK_GPIO);
+ 	if (ret)
+ 		goto out_free;
+ 
+-	if (irq >= 0) {
+-		ret = stmpe_gpio_irq_init(stmpe_gpio, np);
+-		if (ret)
+-			goto out_disable;
+-
+-		ret = request_threaded_irq(irq, NULL, stmpe_gpio_irq,
+-				IRQF_ONESHOT, "stmpe-gpio", stmpe_gpio);
++	if (irq > 0) {
++		ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
++				stmpe_gpio_irq, IRQF_ONESHOT,
++				"stmpe-gpio", stmpe_gpio);
+ 		if (ret) {
+ 			dev_err(&pdev->dev, "unable to get irq: %d\n", ret);
+ 			goto out_disable;
+ 		}
++		ret =  gpiochip_irqchip_add(&stmpe_gpio->chip,
++					    &stmpe_gpio_irq_chip,
++					    0,
++					    handle_simple_irq,
++					    IRQ_TYPE_NONE);
++		if (ret) {
++			dev_err(&pdev->dev,
++				"could not connect irqchip to gpiochip\n");
++			return ret;
++		}
+ 	}
+ 
+ 	ret = gpiochip_add(&stmpe_gpio->chip);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "unable to add gpiochip: %d\n", ret);
+-		goto out_freeirq;
++		goto out_disable;
+ 	}
+ 
+ 	if (pdata && pdata->setup)
+@@ -391,9 +341,6 @@ static int stmpe_gpio_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
+-out_freeirq:
+-	if (irq >= 0)
+-		free_irq(irq, stmpe_gpio);
+ out_disable:
+ 	stmpe_disable(stmpe, STMPE_BLOCK_GPIO);
+ out_free:
+@@ -406,7 +353,6 @@ static int stmpe_gpio_remove(struct platform_device *pdev)
+ 	struct stmpe_gpio *stmpe_gpio = platform_get_drvdata(pdev);
+ 	struct stmpe *stmpe = stmpe_gpio->stmpe;
+ 	struct stmpe_gpio_platform_data *pdata = stmpe->pdata->gpio;
+-	int irq = platform_get_irq(pdev, 0);
+ 	int ret;
+ 
+ 	if (pdata && pdata->remove)
+@@ -421,9 +367,6 @@ static int stmpe_gpio_remove(struct platform_device *pdev)
+ 
+ 	stmpe_disable(stmpe, STMPE_BLOCK_GPIO);
+ 
+-	if (irq >= 0)
+-		free_irq(irq, stmpe_gpio);
+-
+ 	kfree(stmpe_gpio);
+ 
+ 	return 0;
+-- 
+1.9.0
 
