@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144AbaEHMzJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 08:55:09 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:45619 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294AbaEHMzH (ORCPT
+	id S1753628AbaEHM7v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 08:59:51 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:33657 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753163AbaEHM7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 08:55:07 -0400
+	Thu, 8 May 2014 08:59:49 -0400
+Message-ID: <536B7FD3.5090506@cogentembedded.com>
+Date: Thu, 08 May 2014 17:00:03 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <4314054.Zr5Mecf9vm@wuerfel>
-References: <1399499298-8830-1-git-send-email-robherring2@gmail.com>
-	<1399499298-8830-4-git-send-email-robherring2@gmail.com>
-	<4314054.Zr5Mecf9vm@wuerfel>
-Date: Thu, 8 May 2014 07:55:06 -0500
-Message-ID: <CAL_JsqJEW_Xrfi7OiF6caHVup1Y6-8SvyOJawov8o3oiYiFvXQ@mail.gmail.com>
-Subject: Re: [PATCH 3/4] of/platform: fix device naming for non-translatable addresses
-From: Rob Herring <robherring2@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Bjorn Andersson <bjorn@kryo.se>, Frank Rowand <frowand.list@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
+CC: Bastian Hecht <hechtb+renesas@gmail.com>, linux-sh@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] ARM: shmobile: r8a7740 dtsi: Add Ethernet support
+References: <1399494750-31996-1-git-send-email-geert+renesas@glider.be> <1399494750-31996-2-git-send-email-geert+renesas@glider.be>
+In-Reply-To: <1399494750-31996-2-git-send-email-geert+renesas@glider.be>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 8, 2014 at 5:41 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 07 May 2014 16:48:17 Rob Herring wrote:
->> From: Rob Herring <robh@kernel.org>
->>
->> Using non-translatable addresses in platform device names is wrong
->> because they may not be globally unique. Just use the default naming with
->> a global index if the address cannot be translated instead.
->>
->> of_can_translate_address has the same checks as of_translate_address, so
->> we can remove it here as well.
+Hello.
+
+On 05/08/2014 12:32 AM, Geert Uytterhoeven wrote:
+
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> ---
+> The "clocks" entry should be uncommented after the conversion to CCF is
+> integrated.
+
+>   arch/arm/boot/dts/r8a7740.dtsi |   13 +++++++++++++
+>   1 file changed, 13 insertions(+)
+
+> diff --git a/arch/arm/boot/dts/r8a7740.dtsi b/arch/arm/boot/dts/r8a7740.dtsi
+> index 3834b94dc02a..560d8d71cea4 100644
+> --- a/arch/arm/boot/dts/r8a7740.dtsi
+> +++ b/arch/arm/boot/dts/r8a7740.dtsi
+> @@ -122,6 +122,19 @@
+>   			      0 149 IRQ_TYPE_LEVEL_HIGH>;
+>   	};
 >
-> Have you checked that this doesn't break platforms using clkdev lookup
-> based on names with local addresses? It's quite possible that nobody
-> does that, but it would be good to have someone confirm it.
+> +	ether: ethernet@e9a00000 {
 
-I had not, but now I have. There don't appear to be any cases of that.
+    Are you really going to refer to this node somewhere, using its label?
 
-Rob
+> +		compatible = "renesas,gether-r8a7740";
+> +		reg = <0xe9a00000 0x800>,
+> +		      <0xe9a01800 0x800>;
+> +		interrupt-parent = <&gic>;
+> +		interrupts = <0 110 IRQ_TYPE_LEVEL_HIGH>;
+> +		/* clocks = <&mstp3_clks R8A7740_CLK_GETHER>; */
+
+    This property is mandatory, according to the bindings.
+
+WBR, Sergei
+
