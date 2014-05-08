@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561AbaEHUoM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 16:44:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34653 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752840AbaEHUoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 16:44:10 -0400
-Date: Thu, 8 May 2014 22:44:08 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] kbuild: Use relative paths if possible
-Message-ID: <20140508204408.GA1184@pobox.suse.cz>
-References: <1398780493-15391-1-git-send-email-mmarek@suse.cz> <20140430161358.GB15320@ravnborg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140430161358.GB15320@ravnborg.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1755642AbaEHUpD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 16:45:03 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:59010 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754628AbaEHUpA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 16:45:00 -0400
+Date: Thu, 08 May 2014 16:44:58 -0400 (EDT)
+Message-Id: <20140508.164458.157597820665207475.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: Re: [PATCH net-next,v2] Add support for netvsc build without
+ CONFIG_SYSFS flag
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1399581693-25050-1-git-send-email-haiyangz@microsoft.com>
+References: <1399581693-25050-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 08 May 2014 13:45:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 06:13:59PM +0200, Sam Ravnborg wrote:
-> On Tue, Apr 29, 2014 at 04:08:08PM +0200, Michal Marek wrote:
-> > Hi,
-> > 
-> > This series changes the Makefile to use relative paths for $(objtree),
-> > always setting it to '.', and for $(srctree) setting either to '.' or
-> > '..', when building in the source tree or a subdirectory thereof,
-> > respectively. The goal is to make compiler messages and Ooopses more
-> > readable by avoiding the full path to the source/object directory.
-> > 
-> > Patch 2/5 is just an unrelated cleanup.
-> > 
-> > Michal
-> > 
-> > Michal Marek (5):
-> >   firmware: Simplify directory creation
-> >   firmware: Use $(quote) in the Makefile
-> >   kbuild: Use relative path for $(objtree)
-> >   kbuild: Use relative path when building in the source tree
-> >   kbuild: Use relative path when building in a subdir of the source tree
-> 
-> For patch 2,3,4 and 5 you can add my:
-> Acked-by: Sam Ravnborg <sam@ravnborg.org>
-> 
-> Patch 1 also looks good, but I did not fully grasp it and this is MO
-> implied by an ack. So please do not hold it back due to this as
-> the cleanup looked good.
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Thu,  8 May 2014 13:41:33 -0700
 
-I found a bug caused by 3/5 and 4/5: The source and build symlinks
-created by modules_install were wrong. The fix is simple:
+> +static inline void netvsc_record_rx_queue(struct sk_buff *skb,
+> +					  struct hv_netvsc_packet *packet,
+> +					  struct net_device *ndev)
+> +{
+> +#ifdef CONFIG_SYSFS
+> +	skb_record_rx_queue(skb, packet->channel->
+> +			    offermsg.offer.sub_channel_index %
+> +			    ndev->real_num_rx_queues);
+> +#endif
+> +}
 
-diff --git a/Makefile b/Makefile
-index 3d311b6..9872c53 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1064,10 +1064,10 @@ _modinst_:
- 	@rm -rf $(MODLIB)/kernel
- 	@rm -f $(MODLIB)/source
- 	@mkdir -p $(MODLIB)/kernel
--	@ln -s $(srctree) $(MODLIB)/source
-+	@ln -s `cd $(srctree) && /bin/pwd` $(MODLIB)/source
- 	@if [ ! $(objtree) -ef  $(MODLIB)/build ]; then \
- 		rm -f $(MODLIB)/build ; \
--		ln -s $(objtree) $(MODLIB)/build ; \
-+		ln -s $(CURDIR) $(MODLIB)/build ; \
- 	fi
- 	@cp -f $(objtree)/modules.order $(MODLIB)/
- 	@cp -f $(objtree)/modules.builtin $(MODLIB)/
+This is still fantastically gross, what is so unique about your
+driver that it needs hacks like this?  No other driver to my
+knowledge does.
 
-I will fold it into the respective patches and send a V2.
+Figure out what it is that makes your driver so unique, and
+try to make it conform to how other drivers handle these
+features without SYSFS ifdef'ery instead.
 
-Michal
+I'm not applying this patch, sorry.
+
+Thanks.
