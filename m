@@ -1,106 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947AbaEHQGP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 12:06:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44541 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501AbaEHQGN (ORCPT
+	id S1754994AbaEHQHR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 12:07:17 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:33568 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343AbaEHQHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 12:06:13 -0400
-Date: Thu, 8 May 2014 18:06:06 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Will Deacon <will.deacon@arm.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Mikael Starvik <starvik@axis.com>
-Subject: Re: [PATCH 07/20] arch,cris: Fold atomic_ops
-Message-ID: <20140508160606.GD30445@twins.programming.kicks-ass.net>
-References: <20140508135840.956784204@infradead.org>
- <20140508135852.104572724@infradead.org>
- <CAMuHMdV7FUC+p5XqwLZmqJRLYv1qhu5hf0M_e5pASBRHgFAhCA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nT6ukc3bqTvTgwkF"
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdV7FUC+p5XqwLZmqJRLYv1qhu5hf0M_e5pASBRHgFAhCA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 8 May 2014 12:07:14 -0400
+X-AuditID: cbfec7f5-b7fae6d000004d6d-f5-536babaf7249
+Message-id: <536BABAD.5030605@samsung.com>
+Date: Thu, 08 May 2014 18:07:09 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.4.0
+MIME-version: 1.0
+To: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        arunkk.samsung@gmail.com
+Subject: Re: [PATCH 1/2] ARM: dts: Enable USB 3503 hub on exynos5250-snow
+References: <1399293056-17143-1-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1399293056-17143-1-git-send-email-gautam.vivek@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsVy+t/xa7rrV2cHGyz7b2DxYuMtdov5R86x
+	WrRdOchu0bvgKpvFpsfXWC0u75rDZjHj/D4mi0XLWpkdODx2zrrL7rF5Sb1H35ZVjB6fN8kF
+	sERx2aSk5mSWpRbp2yVwZZz9f461oF+o4um9OawNjMv5uhg5OSQETCT2zfvNDGGLSVy4t56t
+	i5GLQ0hgKaPE+2XLmSGcz4wSt98eZQSp4hXQknh7fxpYB4uAqsSHXY/AbDYBNYnPDY/YQGx+
+	oJo1TddZQGxRgQiJe42HWSF6BSV+TL4HFhcRyJb4tb2NBWQBs8B0RolZV7+DDRIW8JTofPuB
+	HcQWEvCQ+L5+L1icEyg+fSNEnFlAR2J/6zQ2CFteYvOat8wTGAVnIdkxC0nZLCRlCxiZVzGK
+	ppYmFxQnpeca6RUn5haX5qXrJefnbmKEhP/XHYxLj1kdYhTgYFTi4V0gkxEsxJpYVlyZe4hR
+	goNZSYT3xbLsYCHelMTKqtSi/Pii0pzU4kOMTBycUg2MPDu8H10W4+B/dfHu/GLnpmc/+pQa
+	2dsnL5J0m2j18toirt0x3z3/3dvw86jrujPq0wuveyv94du1cdvXB8ZrTvkdW9uUruGxtH3X
+	xNyGz5F2jkF/LQOtdpgvlSte5R8z62+H3OlKiZXHZYtXV7h/v/do5+QtR2sv10TkPDfQ2335
+	t32035GltUosxRmJhlrMRcWJAAtVqK5dAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Vivek,
 
---nT6ukc3bqTvTgwkF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05.05.2014 14:30, Vivek Gautam wrote:
+> The exynos5250-snow has a SMSC USB3503 connected in
+> hardware only mode like a PHY. Enable support for it,
+> and add necessary 'reset-gpio' for it.
+> 
+> This is in correspondance to similar patch by Mark Brown
+> 7c1b0ec ARM: dts: Enable USB hub on Arndale
+> 
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> ---
+> 
+> Based on 'for-next' branch of kgene's linux-samsung tree.
+> 
+>  arch/arm/boot/dts/exynos5250-pinctrl.dtsi |    7 +++++++
+>  arch/arm/boot/dts/exynos5250-snow.dts     |   14 ++++++++++++++
+>  2 files changed, 21 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/exynos5250-pinctrl.dtsi b/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
+> index 9a49e68..bd8c8f1 100644
+> --- a/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
+> +++ b/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
+> @@ -706,6 +706,13 @@
+>  			samsung,pin-pud = <0>;
+>  			samsung,pin-drv = <0>;
+>  		};
+> +
+> +		usb_hub_reset: usb-hub-reset {
+> +			samsung,pins = "gpe1-0";
+> +			samsung,pin-function = <1>;
+> +			samsung,pin-pud = <0>;
+> +			samsung,pin-drv = <0>;
+> +		};
 
-On Thu, May 08, 2014 at 05:12:31PM +0200, Geert Uytterhoeven wrote:
-> Hi Peter,
->=20
-> On Thu, May 8, 2014 at 3:58 PM, Peter Zijlstra <peterz@infradead.org> wro=
-te:
-> > Many of the atomic op implementations are the same except for one
-> > instruction; fold the lot into a few CPP macros and reduce LoC.
-> >
-> > This also prepares for easy addition of new ops.
-> >
-> > Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> > Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> > Cc: Mikael Starvik <starvik@axis.com>
-> > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> > ---
-> >  arch/cris/include/arch-v10/arch/system.h |    2 -
-> >  arch/cris/include/asm/atomic.h           |   57 +++++++++++++---------=
----------
-> >  2 files changed, 25 insertions(+), 34 deletions(-)
-> >
-> > Index: linux-2.6/arch/cris/include/arch-v10/arch/system.h
-> > =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> > --- linux-2.6.orig/arch/cris/include/arch-v10/arch/system.h
-> > +++ linux-2.6/arch/cris/include/arch-v10/arch/system.h
-> > @@ -36,8 +36,6 @@ static inline unsigned long _get_base(ch
-> >    return 0;
-> >  }
-> >
-> > -#define nop() __asm__ __volatile__ ("nop");
-> > -
->=20
-> Is this change supposed to be part of this series?
+This is not a generic pin config group and should not be added to this
+file. Btw. it just sets the pin to output, which is what the consumer
+driver can do as well by calling gpio_direction_output. Do you really
+need this?
 
-Uhm, lemme double check that. Good spotting.
+>  	};
+>  
+>  	pinctrl@10d10000 {
+> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
+> index 1ce1088..2e48f27 100644
+> --- a/arch/arm/boot/dts/exynos5250-snow.dts
+> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
+> @@ -200,6 +200,20 @@
+>  		samsung,vbus-gpio = <&gpx1 1 0>;
+>  	};
+>  
+> +	usb_hub_bus {
+> +		compatible = "simple-bus";
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
 
-Nope, it builds just fine without that hunk, *poof* gone.
+Why do you need this bus?
 
-Thanks!
+> +
+> +		// SMSC USB3503 connected in hardware only mode as a PHY
 
+Wrong comment style. Also basically the comment says exactly the same as
+could be inferred from the node below.
 
---nT6ukc3bqTvTgwkF
-Content-Type: application/pgp-signature
+> +		usb_hub {
+> +			compatible = "smsc,usb3503a";
+> +			reset-gpios = <&gpe1 0 1>;
+> +			pinctrl-0 = <&usb_hub_reset>;
+> +			pinctrl-names = "default";
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+As above, do you really need to use pinctrl here?
 
-iQIcBAEBAgAGBQJTa6tuAAoJEHZH4aRLwOS69nIP/3/QXVI2z11xRK4uE5qF/IwT
-zJa4lVnZPrvX/ZL6rQvnGD2onz+AcDR9ZXlkiScRNt01DS3DttPxSyeMJJ3hyaL/
-nLF5NIEawhuea8JS2WB7MR1Qu7iUyuYsgtKjnM2xDw2i72VQ/q8V2D+k8po4eUXO
-JklOlt4prhX2r7gQDLEsikCi6PRt+Wui/s0E9w4J0Dj42KELQK2V6Pyw49o8cV+Z
-4Hyw3F6KkFYzOV55zNWR/OkO47LEsZXZojHxKZkmzT0uzVrcMSP3gkZWrLAeeDM0
-Wcdd1f5JwvfOw+v7z/t3jFuV0hravDVq3B4iZ34Ue5CinPeqdYH8ZKK8Xfgzg4DC
-ZX8UehxblfUBoeSqICxNERw+DiW/350GzdDBOcpyd34+aa5QUlTOi+G5/F7MwF9F
-TZWLPteYCrMJe6jbSp4A7Eh7W/OUlQ8tIAu/D9lFW1OT8UwaIs64kb31aSudlqQx
-niCz9cgt3ufd9CEvNDty005xMLPaG7UrsWHxW0hYp1lvbNZ5cWLukUshN5W8pwAS
-amHn8JuasH9CUeVBOu2eT52Y9dqDrsoOzy0HAcZgDG+lc9+sNcaXbOjESQj3BdOA
-HuphpYRE+RAVwEzGSqyZx//WWcOLj9e2J66wcZSuBrcuW8PJ95gMqJfOraddR98t
-RKEishADhtLWn/UiUUhq
-=F2YZ
------END PGP SIGNATURE-----
+I believe the same comments apply for patch 2/2 as well.
 
---nT6ukc3bqTvTgwkF--
+Best regards,
+Tomasz
