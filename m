@@ -1,125 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219AbaEHKYq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 06:24:46 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:25447 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493AbaEHKYo (ORCPT
+	id S1753299AbaEHKZP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 06:25:15 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:58662 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751755AbaEHKZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 06:24:44 -0400
-X-AuditID: cbfee68d-b7f4e6d000004845-f9-536b5b6b62a9
-From: Namjae Jeon <namjae.jeon@samsung.com>
-To: "'Dave Chinner'" <david@fromorbit.com>, "'Theodore Ts'o'" <tytso@mit.edu>
-Cc: "'linux-ext4'" <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Ashish Sangwan'" <a.sangwan@samsung.com>
-Subject: [PATCH v2 1/10] fs: Add support FALLOC_FL_INSERT_RANGE for fallocate
-Date: Thu, 08 May 2014 19:24:42 +0900
-Message-id: <003701cf6aa7$ba00c8d0$2e025a70$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9qp5ImXCTRP02WQyqa5euW3XEtIw==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGIsWRmVeSWpSXmKPExsWyRsSkRDc7OjvY4PJpIYulEy8xW2w5do/R
-	Yua8O2wWe/aeZLG4vGsOm0Vrz092i0V9txgd2D1OLZLwaDpzlNlj9YWtjB59W1YxenzeJBfA
-	GsVlk5Kak1mWWqRvl8CVsWLBNqaCZWIV//ZuY2lgbBDqYuTgkBAwkXjznqmLkRPIFJO4cG89
-	WxcjF4eQwFJGie3rWtkhEiYSO/6dY4ZILGKUWPijlREkISTwl1Fiz2kJkEFsAtoSf7aIgoRF
-	BDwlFh/fCjaIWWAlo8S94x/ZQBLCAr4Sb9pXs4LUswioSqw8YQwS5hWwlJj37DojhC0o8WPy
-	PRYQm1lAS2L9zuNMELa8xOY1b5kh7lGQ2HH2NSPIGBEBPYljE8IhSkQk9r14xwiyVkLgGrvE
-	xJcNYPUsAgIS3yYfYoH4V1Zi0wGoMZISB1fcYJnAKDYLyeZZSDbPQrJ5FpIVCxhZVjGKphYk
-	FxQnpRcZ6hUn5haX5qXrJefnbmIExuHpf896dzDePmB9iDEZaP1EZinR5HxgHOeVxBsamxlZ
-	mJqYGhuZW5qRJqwkzpv0MClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA+MW+5kNUxXkVRgW
-	yW7bbHJP4PWvuiVz7U4sl1hlusjoa5y12KYXYj4iqrI9J2/+WCEiMv+E9JNCPp3VimcTZ+5s
-	ul+0yL9V+3/XgoXdZoqM2+wnrli2eMu2vzWvnM1dW4sLJyydva106XzZE1lrj10qnJD/5Ybs
-	Wq6Gk3Mspb9KK/pNn8b3Ri9AiaU4I9FQi7moOBEALe2XtdkCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCKsWRmVeSWpSXmKPExsVy+t9jAd3s6Oxgg393OS2WTrzEbLHl2D1G
-	i5nz7rBZ7Nl7ksXi8q45bBatPT/ZLRb13WJ0YPc4tUjCo+nMUWaP1Re2Mnr0bVnF6PF5k1wA
-	a1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0BlK
-	CmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMIaxowVC7YxFSwTq/i3dxtLA2OD
-	UBcjJ4eEgInEjn/nmCFsMYkL99azdTFycQgJLGKUWPijlREkISTwl1Fiz2mJLkYODjYBbYk/
-	W0RBwiICnhKLj28Fq2cWWMkoce/4RzaQhLCAr8Sb9tWsIPUsAqoSK08Yg4R5BSwl5j27zghh
-	C0r8mHyPBcRmFtCSWL/zOBOELS+xec1bqHsUJHacfc0IMkZEQE/i2IRwiBIRiX0v3jFOYBSY
-	hWTSLCSTZiGZNAtJywJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwXH+TGoH48oGi0OM
-	AhyMSjy8Gc5ZwUKsiWXFlbmHGCU4mJVEeHn8s4OFeFMSK6tSi/Lji0pzUosPMSYD/TmRWUo0
-	OR+YgvJK4g2NTcyMLI3MDS2MjM1JE1YS5z3Qah0oJJCeWJKanZpakFoEs4WJg1OqgbGf9daT
-	mjeXe9e/vCcqfGDK5Vs56yu3y275Fql3ced9C9N6tr0Fl/eUTF/oNTd874aoU080935Nvyj5
-	1kyB9c16pdW/t97WWJ+9xz9Y5umdsoOaF3zfzvQ+JeKT8n9bgdL0mOo6v0e35Kx0c/1/Bdqc
-	ufK4i0/6wry29PSmA66ul21mBZxcJaOkxFKckWioxVxUnAgAnBZ+uzcDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 8 May 2014 06:25:13 -0400
+Date: Thu, 8 May 2014 11:24:36 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        "Linux Kernel, Mailing List" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [BUG] kmemleak on __radix_tree_preload
+Message-ID: <20140508102436.GC17344@arm.com>
+References: <1398390340.4283.36.camel@kjgkr>
+ <20140501170610.GB28745@arm.com>
+ <20140501184112.GH23420@cmpxchg.org>
+ <1399431488.13268.29.camel@kjgkr>
+ <20140507113928.GB17253@arm.com>
+ <1399540611.13268.45.camel@kjgkr>
+ <20140508092646.GA17349@arm.com>
+ <1399541860.13268.48.camel@kjgkr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1399541860.13268.48.camel@kjgkr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FALLOC_FL_INSERT_RANGE command is the opposite command of
-FALLOC_FL_COLLAPSE_RANGE that is needed for advertisers or someone who want to
-add some data in the middle of file. FALLOC_FL_INSERT_RANGE will insert a range
-of a file after shifting extents to right as given length.
-and this command also has same limitation as FALLOC_FL_COLLAPSE_RANGE,
-block boundary and use ftruncate(2) for crosses EOF.
+On Thu, May 08, 2014 at 10:37:40AM +0100, Jaegeuk Kim wrote:
+> 2014-05-08 (목), 10:26 +0100, Catalin Marinas:
+> > On Thu, May 08, 2014 at 06:16:51PM +0900, Jaegeuk Kim wrote:
+> > > 2014-05-07 (수), 12:39 +0100, Catalin Marinas:
+> > > > On Wed, May 07, 2014 at 03:58:08AM +0100, Jaegeuk Kim wrote:
+> > > > > unreferenced object 0xffff880004226da0 (size 576):
+> > > > >   comm "fsstress", pid 14590, jiffies 4295191259 (age 706.308s)
+> > > > >   hex dump (first 32 bytes):
+> > > > >     01 00 00 00 81 ff ff ff 00 00 00 00 00 00 00 00  ................
+> > > > >     50 89 34 81 ff ff ff ff b8 6d 22 04 00 88 ff ff  P.4......m".....
+> > > > >   backtrace:
+> > > > >     [<ffffffff816c02e8>] kmemleak_update_trace+0x58/0x80
+> > > > >     [<ffffffff81349517>] radix_tree_node_alloc+0x77/0xa0
+> > > > >     [<ffffffff81349718>] __radix_tree_create+0x1d8/0x230
+> > > > >     [<ffffffff8113286c>] __add_to_page_cache_locked+0x9c/0x1b0
+> > > > >     [<ffffffff811329a8>] add_to_page_cache_lru+0x28/0x80
+> > > > >     [<ffffffff81132f58>] grab_cache_page_write_begin+0x98/0xf0
+> > > > >     [<ffffffffa02e4bf4>] f2fs_write_begin+0xb4/0x3c0 [f2fs]
+> > > > >     [<ffffffff81131b77>] generic_perform_write+0xc7/0x1c0
+> > > > >     [<ffffffff81133b7d>] __generic_file_aio_write+0x1cd/0x3f0
+> > > > >     [<ffffffff81133dfe>] generic_file_aio_write+0x5e/0xe0
+> > > > >     [<ffffffff81195c5a>] do_sync_write+0x5a/0x90
+> > > > >     [<ffffffff811968d2>] vfs_write+0xc2/0x1d0
+> > > > >     [<ffffffff81196daf>] SyS_write+0x4f/0xb0
+> > > > >     [<ffffffff816dead2>] system_call_fastpath+0x16/0x1b
+> > > > >     [<ffffffffffffffff>] 0xffffffffffffffff
+> > > >
+> > > > OK, it shows that the allocation happens via add_to_page_cache_locked()
+> > > > and I guess it's page_cache_tree_insert() which calls
+> > > > __radix_tree_create() (the latter reusing the preloaded node). I'm not
+> > > > familiar enough to this code (radix-tree.c and filemap.c) to tell where
+> > > > the node should have been freed, who keeps track of it.
+> > > >
+> > > > At a quick look at the hex dump (assuming that the above leak is struct
+> > > > radix_tree_node):
+> > > >
+> > > > 	.path = 1
+> > > > 	.count = -0x7f (or 0xffffff81 as unsigned int)
+> > > > 	union {
+> > > > 		{
+> > > > 			.parent = NULL
+> > > > 			.private_data = 0xffffffff81348950
+> > > > 		}
+> > > > 		{
+> > > > 			.rcu_head.next = NULL
+> > > > 			.rcu_head.func = 0xffffffff81348950
+> > > > 		}
+> > > > 	}
+> > > >
+> > > > The count is a bit suspicious.
+> > > >
+> > > > From the union, it looks most likely like rcu_head information. Is
+> > > > radix_tree_node_rcu_free() function at the above rcu_head.func?
+> >
+> > Thanks for the config. Could you please confirm that 0xffffffff81348950
+> > address corresponds to the radix_tree_node_rcu_free() function in your
+> > System.map (or something else)?
+> 
+> Yap, the address is matched to radix_tree_node_rcu_free().
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
----
- fs/open.c                   |  8 +++++++-
- include/uapi/linux/falloc.h | 17 +++++++++++++++++
- 2 files changed, 24 insertions(+), 1 deletion(-)
+Cc'ing Paul as well, not that I blame RCU ;), but maybe he could shed
+some light on why kmemleak can't track this object.
 
-diff --git a/fs/open.c b/fs/open.c
-index 36662d0..74ed498 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -232,7 +232,8 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- 
- 	/* Return error if mode is not supported */
- 	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
--		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE))
-+		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE |
-+		     FALLOC_FL_INSERT_RANGE))
- 		return -EOPNOTSUPP;
- 
- 	/* Punch hole and zero range are mutually exclusive */
-@@ -250,6 +251,11 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- 	    (mode & ~FALLOC_FL_COLLAPSE_RANGE))
- 		return -EINVAL;
- 
-+	/* Insert range should only be used exclusively. */
-+	if ((mode & FALLOC_FL_INSERT_RANGE) &&
-+	    (mode & ~FALLOC_FL_INSERT_RANGE))
-+		return -EINVAL;
-+
- 	if (!(file->f_mode & FMODE_WRITE))
- 		return -EBADF;
- 
-diff --git a/include/uapi/linux/falloc.h b/include/uapi/linux/falloc.h
-index d1197ae..f4d12eb 100644
---- a/include/uapi/linux/falloc.h
-+++ b/include/uapi/linux/falloc.h
-@@ -41,4 +41,21 @@
-  */
- #define FALLOC_FL_ZERO_RANGE		0x10
- 
-+/*
-+ * FALLOC_FL_INSERT_RANGE is use to allocate disk space within the file size
-+ * without overwriting any existing data. The contents of the file beyond offset
-+ * are shifted towards right by len bytes to create space for inserting
-+ * new disk blocks and in this space new zeroed out disk blocks are inserted.
-+ * As such, this operation will increase the size of the file by len bytes.
-+ * Different filesystems may implement different limitations on the granularity
-+ * of the operation. Most will limit operations to filesystem block size
-+ * boundaries, but this boundary may be larger or smaller depending on
-+ * the filesystem and/or the configuration of the filesystem or file.
-+ *
-+ * Attempting to allocate new blocks using this flag at OR beyond the end of
-+ * the file is considered an illegal operation - just use ftruncate(2) or
-+ * fallocate(2) with mode 0 for such type of operations.
-+ */
-+#define FALLOC_FL_INSERT_RANGE		0x20
-+
- #endif /* _UAPI_FALLOC_H_ */
+My summary so far:
+
+- radix_tree_node reported by kmemleak as it cannot find any trace of it
+  when scanning the memory
+- at allocation time, radix_tree_node is memzero'ed by
+  radix_tree_node_ctor(). Given that node->rcu_head.func ==
+  radix_tree_node_rcu_free, my guess is that radix_tree_node_free() has
+  been called
+- some time later, kmemleak still hasn't received any callback for
+  kmem_cache_free(node). Possibly radix_tree_node_rcu_free() hasn't been
+  called either since node->count is not NULL.
+
+For RCU queued objects, kmemleak should still track references to them
+via rcu_sched_state and rcu_head members. But even if this went wrong, I
+would expect the object to be freed eventually and kmemleak notified (so
+just a temporary leak report which doesn't seem to be the case here).
+
+I still cannot explain the node->count value above and how it can get
+there (too many node->count--?). Maybe Johannes could shed some light.
+
+Thanks.
+
 -- 
-1.7.11-rc0
-
+Catalin
