@@ -1,126 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911AbaEHK7X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 06:59:23 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:64613 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071AbaEHK7V (ORCPT
+	id S1754023AbaEHK7x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 06:59:53 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:22471 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753903AbaEHK7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 06:59:21 -0400
+	Thu, 8 May 2014 06:59:52 -0400
+Date: Thu, 8 May 2014 06:59:47 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        fche@redhat.com, mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH -tip v10 7/7] ftrace: Introduce
+ FTRACE_OPS_FL_SELF_FILTER for ftrace-kprobe
+Message-ID: <20140508065947.214f4951@gandalf.local.home>
+In-Reply-To: <20140508093930.31767.86419.stgit@ltc230.yrl.intra.hitachi.co.jp>
+References: <20140508093842.31767.43766.stgit@ltc230.yrl.intra.hitachi.co.jp>
+	<20140508093930.31767.86419.stgit@ltc230.yrl.intra.hitachi.co.jp>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1589827.thSfpq14Si@vostro.rjw.lan>
-References: <Pine.LNX.4.44L0.1405071126340.1325-100000@iolanthe.rowland.org>
-	<2703563.1xTcfTGG98@vostro.rjw.lan>
-	<CAPDyKFoYsKunfo1Vzp3U-QDZVg97m31taKG3ZuW_86Bt3xWPog@mail.gmail.com>
-	<1589827.thSfpq14Si@vostro.rjw.lan>
-Date: Thu, 8 May 2014 12:59:20 +0200
-Message-ID: <CAPDyKFoPxXVYfK2ytGVJ8fYQDJXiSuaRX_6QtRYzffZVtKJfeA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 1/3] PM / sleep: Flag to speed up suspend-resume of
- runtime-suspended devices
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 May 2014 12:53, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Thursday, May 08, 2014 09:49:36 AM Ulf Hansson wrote:
->> On 8 May 2014 01:29, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> >
->> > Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
->> > resume all runtime-suspended devices during system suspend, mostly
->> > because those devices may need to be reprogrammed due to different
->> > wakeup settings for system sleep and for runtime PM.
->> >
->> > For some devices, though, it's OK to remain in runtime suspend
->> > throughout a complete system suspend/resume cycle (if the device was in
->> > runtime suspend at the start of the cycle).  We would like to do this
->> > whenever possible, to avoid the overhead of extra power-up and power-down
->> > events.
->> >
->> > However, problems may arise because the device's descendants may require
->> > it to be at full power at various points during the cycle.  Therefore the
->> > most straightforward way to do this safely is if the device and all its
->> > descendants can remain runtime suspended until the resume stage of system
->> > resume.
->> >
->> > To this end, introduce dev->power.leave_runtime_suspended.
->> > If a subsystem or driver sets this flag during the ->prepare() callback,
->> > and if the flag is set in all of the device's descendants, and if the
->> > device is still in runtime suspend at the beginning of the ->suspend()
->> > callback, that callback is allowed to return 0 without clearing
->> > power.leave_runtime_suspended and without changing the state of the
->> > device, unless the current state of the device is not appropriate for
->> > the upcoming system sleep state (for example, the device is supposed to
->> > wake up the system from that state and its current wakeup settings are
->> > not suitable for that).  Then, the PM core will not invoke the device's
->> > ->suspend_late(), ->suspend_irq(), ->resume_irq(), ->resume_early(), or
->> > ->resume() callbacks.  Instead, it will invoke ->runtime_resume() during
->> > the device resume stage of system resume.
->> >
->> > By leaving this flag set after ->suspend(), a driver or subsystem tells
->> > the PM core that the device is runtime suspended, it is in a suitable
->> > state for system suspend (for example, the wakeup setting does not
->> > need to be changed), and it does not need to return to full
->> > power until the resume stage.
->> >
->> > Changelog based on an Alan Stern's description of the idea
->> > (http://marc.info/?l=linux-pm&m=139940466625569&w=2).
->> >
->> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> > ---
->> >  drivers/base/power/main.c    |   31 ++++++++++++++++++++++++-------
->> >  drivers/base/power/runtime.c |   10 ++++++++++
->> >  include/linux/pm.h           |    3 +++
->> >  include/linux/pm_runtime.h   |   16 ++++++++++++++++
->> >  kernel/power/Kconfig         |    4 ++++
->> >  5 files changed, 57 insertions(+), 7 deletions(-)
->> >
->> > Index: linux-pm/kernel/power/Kconfig
->> > ===================================================================
->> > --- linux-pm.orig/kernel/power/Kconfig
->> > +++ linux-pm/kernel/power/Kconfig
->> > @@ -147,6 +147,10 @@ config PM
->> >         def_bool y
->> >         depends on PM_SLEEP || PM_RUNTIME
->> >
->> > +config PM_BOTH
->> > +       def_bool y
->> > +       depends on PM_SLEEP && PM_RUNTIME
->> > +
->>
->> Should we not depend on PM_RUNTIME only? Thus we don't need the new
->> Kconfig,
->
-> Well, OK.  I guess we can tolerate one useless statement in rpm_resume()
-> in case CONFIG_PM_SLEEP is unset.
->
->> and then we could rename the new APIs to pm_runtime_* instead.
->
-> That would just make the name longer - for what value?
+On Thu, 08 May 2014 18:39:30 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-Only "__set_leave_runtime_suspended" will be a bit longer.
+> Since the kprobes itself owns a hash table to get a kprobe
+> data structure corresponding to the given ip address, there
+> is no need to test ftrace hash in ftrace side.
+> To achive better performance on ftrace-based kprobe,
+> FTRACE_OPS_FL_SELF_FILTER flag to ftrace_ops which means
+> that ftrace skips testing its own hash table.
+> 
+> Without this patch, ftrace_lookup_ip() is biggest cycles
+> consumer when 20,000 kprobes are enabled.
+>   ----
+>   Samples: 1K of event 'cycles', Event count (approx.): 340068894
+>   +  20.77%  [k] ftrace_lookup_ip
+>   +   8.33%  [k] kprobe_trace_func
+>   +   4.83%  [k] get_kprobe_cached
+>   ----
+> 
+> With this patch, ftrace_lookup_ip() vanished from the
+> cycles consumer list (of course, there is no caller on
+> hotpath anymore :))
+>   ----
+>   Samples: 1K of event 'cycles', Event count (approx.): 186861492
+>   +   9.95%  [k] kprobe_trace_func
+>   +   6.00%  [k] kprobe_ftrace_handler
+>   +   5.53%  [k] get_kprobe_cached
 
-The idea I had was to clearly indicate, these functions is a part of
-PM_RUNTIME API.
+I should look at your filtering methods, maybe it can make ftrace
+filtering better?
 
-Compare what you have:
-__set_leave_runtime_suspended
-pm_set_leave_runtime_suspended
-pm_leave_runtime_suspended
+>   ----
+> 
+> Changes from v7:
+>  - Re-evaluate the performance improvement.
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> ---
+>  include/linux/ftrace.h |    3 +++
+>  kernel/kprobes.c       |    2 +-
+>  kernel/trace/ftrace.c  |    3 ++-
+>  3 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+> index ae9504b..f1fa7d27 100644
+> --- a/include/linux/ftrace.h
+> +++ b/include/linux/ftrace.h
+> @@ -93,6 +93,8 @@ typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip,
+>   * INITIALIZED - The ftrace_ops has already been initialized (first use time
+>   *            register_ftrace_function() is called, it will initialized the ops)
+>   * DELETED - The ops are being deleted, do not let them be registered again.
+> + * SELF_FILTER - The ftrace_ops function filters ip by itself. Do not need to
+> + *            check hash table on each hit.
 
-To what I suggest:
-__pm_runtime_set_leave_suspended
-pm_runtime_set_leave_suspended
-pm_runtime_leave_suspended
+ - The ftrace_ops function has its own ip filter and does not need to
+   rely on the ftrace internal ip filtering.
 
-Kind regards
-Ulf Hansson
+
+>   */
+>  enum {
+>  	FTRACE_OPS_FL_ENABLED			= 1 << 0,
+> @@ -105,6 +107,7 @@ enum {
+>  	FTRACE_OPS_FL_STUB			= 1 << 7,
+>  	FTRACE_OPS_FL_INITIALIZED		= 1 << 8,
+>  	FTRACE_OPS_FL_DELETED			= 1 << 9,
+> +	FTRACE_OPS_FL_SELF_FILTER		= 1 << 10,
+>  };
+>  
+>  /*
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index 0f5f23c..5c6e410 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1027,7 +1027,7 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
+>  #ifdef CONFIG_KPROBES_ON_FTRACE
+>  static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
+>  	.func = kprobe_ftrace_handler,
+> -	.flags = FTRACE_OPS_FL_SAVE_REGS,
+> +	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_SELF_FILTER,
+>  };
+>  static int kprobe_ftrace_enabled;
+>  
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index 4a54a25..062ca20 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -4501,7 +4501,8 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
+>  	 */
+>  	preempt_disable_notrace();
+>  	do_for_each_ftrace_op(op, ftrace_ops_list) {
+> -		if (ftrace_ops_test(op, ip, regs))
+> +		if (op->flags & FTRACE_OPS_FL_SELF_FILTER ||
+> +		    ftrace_ops_test(op, ip, regs))
+
+Hmm, I wonder if I should add the check for:
+
+	!(op->flags & FTRACE_OPS_FL_STUB)
+
+here too? But that's another change that I'll do.
+
+Just update the flag description as I commented and the rest looks good.
+
+-- Steve
+
+>  			op->func(ip, parent_ip, op, regs);
+>  	} while_for_each_ftrace_op(op);
+>  	preempt_enable_notrace();
+> 
+
