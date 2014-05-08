@@ -1,135 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233AbaEHMst (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 08:48:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31470 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753071AbaEHMso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 08:48:44 -0400
-Date: Thu, 8 May 2014 07:48:16 -0500
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: David Lang <david@lang.hm>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Seth Jennings <sjenning@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-Message-ID: <20140508124816.GA23565@treble.redhat.com>
-References: <20140506121211.GA4125@treble.redhat.com>
- <20140506140516.GF2099@localhost.localdomain>
- <20140506145010.GA6702@treble.redhat.com>
- <20140507122444.GB12234@gmail.com>
- <20140507154114.GA31555@treble.redhat.com>
- <20140507155754.GA15221@gmail.com>
- <alpine.DEB.2.02.1405071552520.5876@nftneq.ynat.uz>
- <20140508061220.GB31184@gmail.com>
- <alpine.DEB.2.02.1405072348580.17457@nftneq.ynat.uz>
- <20140508070814.GA31856@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140508070814.GA31856@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1754147AbaEHMsq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 08:48:46 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:23404 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694AbaEHMsQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 08:48:16 -0400
+X-AuditID: cbfec7f5-b7fae6d000004d6d-fb-536b7d0e65d7
+From: Tomasz Figa <t.figa@samsung.com>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Tomasz Figa <t.figa@samsung.com>
+Subject: [PATCH v4 2/3] drivercore: Bind/unbind power domain on probe/remove
+Date: Thu, 08 May 2014 14:45:08 +0200
+Message-id: <1399553109-6487-3-git-send-email-t.figa@samsung.com>
+X-Mailer: git-send-email 1.9.2
+In-reply-to: <1399553109-6487-1-git-send-email-t.figa@samsung.com>
+References: <1399553109-6487-1-git-send-email-t.figa@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAAyWRW0hTYQDH/c7OzjkOJ6ep9SkiMbCH8pIj4qNCtB76HrpIQwILcupwonOy
+	4yyDaDIzL20KOR2mbrYWOi+HzUrTqWUzocyU2XxII1ZgpgUhalRkzb394H97+DMCybYgjikq
+	LVdqSxUlUkpEvv477U+OvFEsP/xrJwK5LLwQWb2zQtS43iVEBjtPIaPtHYU2X3QD1NY8RiD3
+	J78Q+UbaKbRh9AJkeTtOoPc+MVr//YVG/d5lGjkW5wm0/GqKQk2t/SR63DkLUGOXkUC3xrw0
+	+jnTQKKvz2tIxFvWSOQc+QPQdP/FjFjc19kHcLXhDoV9JiOBn7Yt09juWSWw21lH4SW/h8IT
+	HX00HnxwE5seOQEO2KsB7u7dpvGGOwG7OrKzInNEJwqUJUUVSm1qeq5I9dDkAGUrUddq2gcI
+	PbCz9SCcgewRONTbS4V4L5z7wP9nESNhHQCutY8LgoKENRFwbkAcZIo9ADf0gd1ANBsPzQsT
+	wmBAwPI0DMxYQD1gmCj2DPTZpUEPySbCWlfrbo+YzYTuxR5haCwB7qx2E0F7OHsSOseSQ1OZ
+	0NrwjW4CYhsIc4IYpS6/jMsrVMtSOIWa05UWpuRr1G4QOmtzGDheHpsELAOkEWJbvEouESoq
+	uEr1JICMQBotXqgslkvEBYrK60qt5opWV6LkJgHBhMfpAZVBW3taErM5Xtd8gRlPN+uP3q9N
+	a3kS1jy1NTp46NR+meZSHh2z4jEM+6cHbZpnsg5fXWsNxMrzWVuxXQOq3NEq49Uft3VL5nXr
+	WY8vUqb5nkavzZk/30018Kff3NtzHFfxl7PLY4cM8qhzSQZxYcCVlKOt2zfv130ksZTkVIq0
+	gwItp/gHTgc0rooCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 09:08:15AM +0200, Ingo Molnar wrote:
-> 
-> * David Lang <david@lang.hm> wrote:
-> 
-> > On Thu, 8 May 2014, Ingo Molnar wrote:
-> > 
-> > >>>
-> > >>>No!
-> > >>>
-> > >>>A patch to the kernel source is 'safe' if it results in a correctly
-> > >>>patched kernel source. Full stop!
-> > >>>
-> > >>>Live patching does not enter into this question, ever. The correctness
-> > >>>of a patch to the source does not depend on 'live patching'
-> > >>>considerations in any way, shape or form.
-> > >>>
-> > >>>Any mechanism that tries to blur these lines is broken by design.
-> > >>>
-> > >>>My claim is that if a patch is correct/safe in the old fashioned way,
-> > >>>then a fundamental principle is that a live patching subsystem must
-> > >>>either safely apply, or safely reject the live patching attempt,
-> > >>>independently from any user input.
-> > >>>
-> > >>>It's similar to how kprobes (or ftrace) will safely reject or perform
-> > >>>a live patching of the kernel.
-> > >>>
-> > >>>So for example, there's this recent upstream kernel fix:
-> > >>>
-> > >>>3ca9e5d36afb agp: info leak in agpioc_info_wrap()
-> > >>>
-> > >>>which fixes an information leak. The 'patch' is Git commit
-> > >>>3ca9e5d36afb (i.e. it patches a very specific incoming kernel source
-> > >>>tree that results in a specific outgoing source tree), and we know
-> > >>>it's safe and correct.
-> > >>>
-> > >>>Any live patching subsystem must make sure that if this patch is
-> > >>>live-patched, that this attempt is either rejected safely or performed
-> > >>>safely.
-> > >>>
-> > >>>"We think/hope it won't blow up in most cases and we automated some
-> > >>>checks halfways" or "the user must know what he is doing" is really
-> > >>>not something that I think is a good concept for something as fragile
-> > >>>as live patching.
-> > >>
-> > >>In that case you will have to reject any kernel patch that changes
-> > >>any memory structure, because it's impossible as a general rule to
-> > >>say that changing memory structures is going to be safe (or even
-> > >>possible) to change.
-> > >>
-> > >>that includes any access to memory that moves around a lock
-> > >
-> > >Initially restricting it to such patches would be a good beginning -
-> > >most of the security fixes are just failed checks, i.e. they don't
-> > >typically even change any external (not on stack) memory structure,
-> > >right?
-> > 
-> > in terms of hit-patching kernels you are correct.
-> > 
-> > but that's a far cry from what it sounded like you were demanding 
-> > (that it must handle any kernel patch)
-> 
-> No, I was not demanding that at all, my suggestion was:
-> 
->    > My claim is that if a patch is correct/safe in the old fashioned 
->    > way, then a fundamental principle is that a live patching 
->    > subsystem must either safely apply, or safely reject the live 
->    > patching attempt, independently from any user input.
-> 
-> Note the 'if'. It could start simple and stupid, and only allow cases 
-> where we know the patch must be trivially safe (because it does not do 
-> much in terms of disturbing globally visible state). That needs some 
-> tooling help, but apparently tooling help is in place already.
-> 
-> And then we can complicate it from there - but have a reasonably 
-> robust starting point that we _know_ works (as long as the 
-> implementation is correct).
+On a number of platforms, devices are part of controllable power
+domains, which need to be enabled before such devices can be accessed
+and may be powered down when the device is idle to save some power.
+This means that on systems that support power domain control using
+generic power domains subsystem, it is necessary to add device to its
+power domain before binding a driver to it and remove it from its power
+domain after its driver is unbound to make sure that an unused device
+does not affect power domain state.
 
-I really wonder if detecting a "trivially safe" patch is even possible.
+Since this is not limited to particular busses and specific
+archs/platforms, it is more convenient to do the above directly in
+driver core, just as done with pinctrl default configuration. This patch
+adds necessary code to really_probe() and __device_release_driver() to
+achieve this and maintain consistent stack-like ordering of operations
+happening when binding and unbinding a driver.
 
-Where do you draw the line with the following patches?
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Reviewed-by: Philipp Zabel <philipp.zabel@gmail.com>
+[on i.MX6 GK802]
+Tested-by: Philipp Zabel <philipp.zabel@gmail.com>
+Reviewed-by: Mark Brown <broonie@linaro.org>
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+---
+ drivers/base/dd.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-- add a call to another function which modifies global data
-
-- add an early return or a goto which changes the way the function
-  modifies (or no longer modifies) global data
-
-- touch a local stack variable which results in global data being
-  modified later in the function
-
-- return a different value which causes the function's caller to modify
-  data
-
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index 62ec61e..9489b3a 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -23,6 +23,7 @@
+ #include <linux/kthread.h>
+ #include <linux/wait.h>
+ #include <linux/async.h>
++#include <linux/pm_domain.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/pinctrl/devinfo.h>
+ 
+@@ -287,6 +288,11 @@ static int really_probe(struct device *dev, struct device_driver *drv)
+ 
+ 	dev->driver = drv;
+ 
++	/* If using genpd, bind power domain now before probing */
++	ret = genpd_bind_domain(dev);
++	if (ret)
++		goto probe_failed;
++
+ 	/* If using pinctrl, bind pins now before probing */
+ 	ret = pinctrl_bind_pins(dev);
+ 	if (ret)
+@@ -317,6 +323,7 @@ static int really_probe(struct device *dev, struct device_driver *drv)
+ probe_failed:
+ 	devres_release_all(dev);
+ 	driver_sysfs_remove(dev);
++	genpd_unbind_domain(dev);
+ 	dev->driver = NULL;
+ 	dev_set_drvdata(dev, NULL);
+ 
+@@ -530,7 +537,7 @@ static void __device_release_driver(struct device *dev)
+ 			blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
+ 						     BUS_NOTIFY_UNBOUND_DRIVER,
+ 						     dev);
+-
++		genpd_unbind_domain(dev);
+ 	}
+ }
+ 
 -- 
-Josh
+1.9.2
+
