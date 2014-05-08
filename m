@@ -1,219 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009AbaEHMFf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 08:05:35 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50751 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753322AbaEHMFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 08:05:33 -0400
-Date: Thu, 8 May 2014 14:05:24 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: tthayer@altera.com
-Cc: robherring2@gmail.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        linux@arm.linux.org.uk, dinguyen@altera.com, dougthompson@xmission.com,
-        grant.likely@linaro.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tthayer.linux@gmail.com
-Subject: Re: [PATCHv3 3/3] edac: altera: Add EDAC support for Altera SDRAM
-Message-ID: <20140508120524.GF12548@pd.tnic>
-References: <1399330337-16748-1-git-send-email-tthayer@altera.com>
- <1399330337-16748-4-git-send-email-tthayer@altera.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1399330337-16748-4-git-send-email-tthayer@altera.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754149AbaEHMHv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 08:07:51 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:45189 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756AbaEHMHt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 08:07:49 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [patch 03/32] genirq: Provide generic hwirq allocation facility
+To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Anvin <hpa@zytor.com>,
+        Tony Luck <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Fenghua Yu <fenghua.yu@intel.com>
+In-Reply-To: <20140507154334.208629358@linutronix.de>
+References: <20140507153622.703412101@linutronix.de>
+	<20140507154334.208629358@linutronix.de>
+Date: Thu, 08 May 2014 13:07:38 +0100
+Message-Id: <20140508120738.B70FDC40D85@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 05:52:17PM -0500, tthayer@altera.com wrote:
-> From: Thor Thayer <tthayer@altera.com>
-
-Missing commit message.
-
+On Wed, 07 May 2014 15:44:05 -0000, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Not really the solution to the problem, but at least it confines the
+> mess in the core code and allows to get rid of the create/destroy_irq
+> variants from hell, i.e. 3 implementations with different semantics
+> plus the x86 specific variants __create_irqs and create_irq_nr
+> which have been invented in another circle of hell.
+> 
+> x86 : x86 should be converted to irq domains and I'm deliberately
+>       making it impossible to do the multi-vector MSI support by
+>       adding more crap to the current mess. It's not that hard to do
+>       and I'm really tired of the trainwrecks which have been invented
+>       by baindaid engineering so far. Any attempt to do multi-vector
+>       MSI or ioapic hotplug without converting to irq domains is NAKed
+>       hereby.
+> 
+> tile: Might use irq domains as well, but it has a very limited
+>       interrupt space, so handling it via this functionality might be
+>       the right thing to do even in the long run.
+> 
+> ia64: That's an hopeless case, as I doubt that anyone has the stomach
+>       to rewrite the homebrewn dynamic allocation facilities. I stared
+>       at it for a couple of hours and gave up. The create/destroy_irq
+>       mess could be made private to itanic right away if there
+>       wouldn't be the iommu/dmar driver being shared with x86. So to
+>       do that I'm going to add a separate ia64 specific implementation
+>       later in order not to deep-six itanic right away.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: x86@kernel.org
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> 
 > ---
-> v2: Use the SDRAM controller registers to calculate memory size
->     instead of the Device Tree. Update To & Cc list. Add maintainer
->     information.
+>  include/linux/irq.h  |   15 +++++++++++++++
+>  kernel/irq/Kconfig   |    5 +++++
+>  kernel/irq/irqdesc.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 71 insertions(+)
 > 
-> v3: EDAC driver cleanup based on comments from Mailing list.
-> 
-> Signed-off-by: Thor Thayer <tthayer@altera.com>
-> ---
->  MAINTAINERS                |    5 +
->  drivers/edac/Kconfig       |    9 +
->  drivers/edac/Makefile      |    2 +
->  drivers/edac/altera_edac.c |  411 ++++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 427 insertions(+)
->  create mode 100644 drivers/edac/altera_edac.c
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index e67ea24..ecd1277 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1290,6 +1290,11 @@ M:	Dinh Nguyen <dinguyen@altera.com>
->  S:	Maintained
->  F:	drivers/clk/socfpga/
+> Index: tip/include/linux/irq.h
+> ===================================================================
+> --- tip.orig/include/linux/irq.h
+> +++ tip/include/linux/irq.h
+> @@ -637,6 +637,21 @@ static inline int irq_reserve_irq(unsign
+>  	return irq_reserve_irqs(irq, 1);
+>  }
 >  
-> +ARM/SOCFPGA SDRAM EDAC SUPPORT
-> +M:	Thor Thayer <tthayer@altera.com>
-> +S:	Maintained
-> +F:	drivers/edac/altera_edac.c
-> +
->  ARM/STI ARCHITECTURE
->  M:	Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
->  M:	Maxime Coquelin <maxime.coquelin@st.com>
-> diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
-> index 878f090..4f4d379 100644
-> --- a/drivers/edac/Kconfig
-> +++ b/drivers/edac/Kconfig
-> @@ -368,4 +368,13 @@ config EDAC_OCTEON_PCI
->  	  Support for error detection and correction on the
->  	  Cavium Octeon family of SOCs.
->  
-> +config EDAC_ALTERA_MC
-> +	bool "Altera SDRAM Memory Controller EDAC"
-> +	depends on EDAC_MM_EDAC && ARCH_SOCFPGA
-> +	help
-> +	  Support for error detection and correction on the
-> +	  Altera SDRAM memory controller. Note that the
-> +	  preloader must initialize the SDRAM before loading
-> +	  the kernel.
-> +
->  endif # EDAC
-> diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
-> index 4154ed6..9741336 100644
-> --- a/drivers/edac/Makefile
-> +++ b/drivers/edac/Makefile
-> @@ -64,3 +64,5 @@ obj-$(CONFIG_EDAC_OCTEON_PC)		+= octeon_edac-pc.o
->  obj-$(CONFIG_EDAC_OCTEON_L2C)		+= octeon_edac-l2c.o
->  obj-$(CONFIG_EDAC_OCTEON_LMC)		+= octeon_edac-lmc.o
->  obj-$(CONFIG_EDAC_OCTEON_PCI)		+= octeon_edac-pci.o
-> +
-> +obj-$(CONFIG_EDAC_ALTERA_MC)	        += altera_edac.o
-> diff --git a/drivers/edac/altera_edac.c b/drivers/edac/altera_edac.c
-> new file mode 100644
-> index 0000000..e8a3de7
-> --- /dev/null
-> +++ b/drivers/edac/altera_edac.c
-> @@ -0,0 +1,411 @@
-> +/*
-> + *  Copyright Altera Corporation (C) 2014. All rights reserved.
-> + *  Copyright 2011-2012 Calxeda, Inc.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * This file is subject to the terms and conditions of the GNU General Public
-> + * License.  See the file "COPYING" in the main directory of this archive
-> + * for more details.
-
-I'm guessing your lawyers want this boilerplate after all?
-
-...
-
-> +static irqreturn_t altr_sdram_mc_err_handler(int irq, void *dev_id)
+> +#ifdef CONFIG_GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
+> +unsigned int irq_alloc_hwirqs(int cnt, int node);
+> +static inline unsigned int irq_alloc_hwirq(int node)
 > +{
-> +	struct mem_ctl_info *mci = dev_id;
-> +	struct altr_sdram_mc_data *drvdata = mci->pvt_info;
-> +	u32 status = 0, err_count = 0, err_addr = 0;
-> +
-> +	/* Error Address is shared by both SBE & DBE */
-> +	regmap_read(drvdata->mc_vbase, ERRADDR, &err_addr);
-> +
-> +	regmap_read(drvdata->mc_vbase, DRAMSTS, &status);
-> +
-> +	if (status & DRAMSTS_DBEERR) {
-> +		regmap_read(drvdata->mc_vbase, DBECOUNT, &err_count);
-> +		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, err_count,
-> +				     err_addr >> PAGE_SHIFT,
-> +				     err_addr & ~PAGE_MASK, 0,
-> +				     0, 0, -1, mci->ctl_name, "");
-
-So, are we setting edac_mc_panic_on_ue now or what are we planning to do
-for uncorrectable errors?
-
-> +	if (status & DRAMSTS_SBEERR) {
-> +		regmap_read(drvdata->mc_vbase, SBECOUNT, &err_count);
-> +		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci, err_count,
-> +				     err_addr >> PAGE_SHIFT,
-> +				     err_addr & ~PAGE_MASK, 0,
-> +				     0, 0, -1, mci->ctl_name, "");
-> +	}
-> +
-> +	regmap_write(drvdata->mc_vbase,	DRAMINTR,
-> +		     (DRAMINTR_INTRCLR | DRAMINTR_INTREN));
-> +
-> +	return IRQ_HANDLED;
+> +	return irq_alloc_hwirqs(1, node);
 > +}
-> +
-> +#ifdef CONFIG_EDAC_DEBUG
-> +static ssize_t altr_sdr_mc_err_inject_write(struct file *file,
-> +					    const char __user *data,
-> +					    size_t count, loff_t *ppos)
+> +void irq_free_hwirqs(unsigned int from, int cnt);
+> +static inline void irq_free_hwirq(unsigned int irq)
 > +{
-> +	struct mem_ctl_info *mci = file->private_data;
-> +	struct altr_sdram_mc_data *drvdata = mci->pvt_info;
-> +	u32 *ptemp;
-> +	dma_addr_t dma_handle;
-> +	u32 reg, read_reg = 0;
+> +	return irq_free_hwirqs(irq, 1);
+> +}
+> +int arch_setup_hwirq(unsigned int irq, int node);
+> +void arch_teardown_hwirq(unsigned int irq);
+> +#endif
 > +
-> +	ptemp = dma_alloc_coherent(mci->pdev, 16, &dma_handle, GFP_KERNEL);
-> +	if (IS_ERR(ptemp)) {
-> +		dma_free_coherent(mci->pdev, 16, ptemp, dma_handle);
-> +		edac_printk(KERN_ERR, EDAC_MC,
-> +			    "EDAC Inject: Buffer Allocation error\n");
-> +		return -ENOMEM;
+>  #ifndef irq_reg_writel
+>  # define irq_reg_writel(val, addr)	writel(val, addr)
+>  #endif
+> Index: tip/kernel/irq/Kconfig
+> ===================================================================
+> --- tip.orig/kernel/irq/Kconfig
+> +++ tip/kernel/irq/Kconfig
+> @@ -17,6 +17,11 @@ config GENERIC_IRQ_SHOW
+>  config GENERIC_IRQ_SHOW_LEVEL
+>         bool
+>  
+> +# Facility to allocate an hardware interrupt. This is legacy support
+> +# and should not be used in new code. Use irq domains instead.
+> +config GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
+> +       bool
+> +
+>  # Support for delayed migration from interrupt context
+>  config GENERIC_PENDING_IRQ
+>  	bool
+> Index: tip/kernel/irq/irqdesc.c
+> ===================================================================
+> --- tip.orig/kernel/irq/irqdesc.c
+> +++ tip/kernel/irq/irqdesc.c
+> @@ -396,6 +396,57 @@ err:
+>  }
+>  EXPORT_SYMBOL_GPL(__irq_alloc_descs);
+>  
+> +#ifdef CONFIG_GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
+> +/**
+> + * irq_alloc_hwirqs - Allocate an irq descriptor and initialize the hardware
+> + * @cnt:	number of interrupts to allocate
+> + * @node:	node on which to allocate
+> + *
+> + * Returns an interrupt number > 0 or 0, if the allocation fails.
+> + */
+> +unsigned int irq_alloc_hwirqs(int cnt, int node)
+> +{
+> +	int i, irq = __irq_alloc_descs(-1, 0, cnt, node, NULL);
+> +
+> +	if (irq < 0)
+> +		return 0;
+> +
+> +	for (i = irq; cnt > 0; i++, cnt--) {
+> +		if (arch_setup_hwirq(i, node))
+> +			goto err;
+> +		irq_clear_status_flags(i, _IRQ_NOREQUEST);
 > +	}
+> +	return irq;
 > +
-> +	regmap_read(drvdata->mc_vbase, CTLCFG, &read_reg);
-> +	read_reg &= ~(CTLCFG_GEN_SB_ERR | CTLCFG_GEN_DB_ERR);
-> +
-> +	if (count == 3) {
-> +		edac_printk(KERN_ALERT, EDAC_MC,
-> +			    "EDAC Inject Double bit error\n");
-> +		regmap_write(drvdata->mc_vbase, CTLCFG,
-> +			     (read_reg | CTLCFG_GEN_DB_ERR));
-> +	} else {
-> +		edac_printk(KERN_ALERT, EDAC_MC,
-> +			    "EDAC Inject Single bit error\n");
-> +		regmap_write(drvdata->mc_vbase,	CTLCFG,
-> +			     (read_reg | CTLCFG_GEN_SB_ERR));
-
-You can remove the "EDAC " string from those printks above as
-edac_printk already adds the prefix.
-
+> +err:
+> +	for (i--; i >= irq; i--) {
+> +		irq_set_status_flags(i, _IRQ_NOREQUEST | _IRQ_NOPROBE);
+> +		arch_teardown_hwirq(i);
 > +	}
+> +	irq_free_descs(irq, cnt);
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(irq_alloc_hwirqs);
+
+Okay, so regarding this and irq_domains, I think the functionality
+overlaps and irq_domain conversion wouldn't directly use this API. I
+could see two ways that it would be wired up in an irq_domain
+conversion...
+
+1) use an irq_domain to represent the root of the interrupt tree and be
+responsible for all of the hardware irqs. Child interrupt controllers
+would allocate a hwirq from the root irq_domain and program itself
+accordingly. This approach would either not use this API, or make it
+entirely internal to the root irq_domain.
+
+2) Use this API as the root of the interrupt tree and make first level
+of child interrupt controllers use this API to allocate HWIRQs to use
+for their irq outputs.
+
+Most of the platforms using irq_domain now fall in the first category,
+which I think makes the most sense. Any platform like x86 that has
+multiple hwirq vectors and the option of per-cpu vectors would be best
+to keep all of that detail in one place. We could add a cpumask variant
+to the irqdomain APIs, and add a stock implementation of an allocator
+that can intelligently allocate when cpumasks are used.
+
+g.
+
 > +
-> +	ptemp[0] = 0x5A5A5A5A;
-> +	ptemp[1] = 0xA5A5A5A5;
-> +	regmap_write(drvdata->mc_vbase,	CTLCFG, read_reg);
-> +	/* Ensure it has been written out */
-> +	wmb();
+> +/**
+> + * irq_free_hwirqs - Free irq descriptor and cleanup the hardware
+> + * @from:	Free from irq number
+> + * @cnt:	number of interrupts to free
+> + *
+> + */
+> +void irq_free_hwirqs(unsigned int from, int cnt)
+> +{
+> +	int i;
 > +
-> +	reg = ptemp[0];
-> +	read_reg = ptemp[1];
-> +	/* Force Read */
-> +	rmb();
+> +	for (i = from; cnt > 0; i++, cnt--) {
+> +		irq_set_status_flags(i, _IRQ_NOREQUEST | _IRQ_NOPROBE);
+> +		arch_teardown_hwirq(i);
+> +	}
+> +	irq_free_descs(from, cnt);
+> +}
+> +EXPORT_SYMBOL_GPL(irq_free_hwirqs);
+> +#endif
+> +
+>  /**
+>   * irq_reserve_irqs - mark irqs allocated
+>   * @from:	mark from irq number
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Have you checked whether those reads don't get optimized away by the
-compiler? I know, you need them for triggering the error condition.
-
-Also, you should add a comment here to explain why the reads are being
-done.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
