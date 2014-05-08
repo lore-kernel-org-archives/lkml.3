@@ -1,507 +1,1160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427AbaEHMuK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 08:50:10 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:35080 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753623AbaEHMtZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 08:49:25 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-9d-536b7d523dc6
-From: Tomasz Figa <t.figa@samsung.com>
-To: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH v4 1/3] base: power: Add generic OF-based power domain look-up
-Date: Thu, 08 May 2014 14:49:13 +0200
-Message-id: <1399553355-6615-2-git-send-email-t.figa@samsung.com>
-X-Mailer: git-send-email 1.9.2
-In-reply-to: <1399553355-6615-1-git-send-email-t.figa@samsung.com>
-References: <1399553355-6615-1-git-send-email-t.figa@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsVy+t/xy7pBtdnBBsdXcllsnLGe1WL+kXOs
-	Fv1vFrJaNC9ez2bRu+Aqm8XXwysYLWZN2ctksenxNVaLy7vmsFl87j3CaDHj/D4mi9uXeS3e
-	/H7BbrH2yF12i6XXLzJZ3D11lM1iwvS1LBZb551jtHi84i27ReveI+wWP850s1i8OtjGYrF+
-	xmsWi1W7/jBaHF8b7iDpsWbeGkaPluYeNo/Lfb1MHjtn3WX3WLznJZPHplWdbB53ru1h89g/
-	dw27x+Yl9R59W1YxeqxY/Z3d4/MmOY+Nc0MDeKO4bFJSczLLUov07RK4Mq51XGQruFtYcXD9
-	d5YGxgkxXYycHBICJhKTX15ghrDFJC7cW8/WxcjFISSwlFHixr/rUE4fk8SHIz9ZQarYBNQk
-	Pjc8YgOxRQRkJKZe2c8KUsQssI9d4tvna2BFwgJ+ErNmrWMEsVkEVCVerP0LtoJXwFGi4+ZJ
-	Voh1chL/X65gArE5BZwk1n86AFYjBFSzaNEllgmMvAsYGVYxiqaWJhcUJ6XnGuoVJ+YWl+al
-	6yXn525ihETVlx2Mi49ZHWIU4GBU4uF9EZ0RLMSaWFZcmXuIUYKDWUmE90pldrAQb0piZVVq
-	UX58UWlOavEhRiYOTqkGxiXnEmpvWDFf5q9ZoRgV0cZ4tf2p5NL9h9eaBvD7ObCcOy6WKnno
-	vcESX8tg+fefw+Xjd+Wwy4tdNa2v3bbPy+VFWe7jlMVWf+RVPxm3dmgu/rDvZYfHV5s6mW17
-	2jeEnzaax7liRr9MaLqzSGfhtCj3SZZTv6zhnmA3/dLERl1eUUHhSXWflFiKMxINtZiLihMB
-	jtXI8YgCAAA=
+	id S1754479AbaEHMu2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 08:50:28 -0400
+Received: from bes.se.axis.com ([195.60.68.10]:35489 "EHLO bes.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754443AbaEHMuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 08:50:24 -0400
+From: Andreas Irestal <andreas.irestal@axis.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "abrodkin@synopsys.com" <abrodkin@synopsys.com>,
+        "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
+        "ben@decadent.org.uk" <ben@decadent.org.uk>, "sr@denx.de" <sr@denx.de>,
+        "jonas.jensen@gmail.com" <jonas.jensen@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Jesper Nilsson <jespern@axis.com>
+Date: Thu, 8 May 2014 14:50:14 +0200
+Subject: [RFC PATCH] net:Add basic DWC Ethernet QoS Driver
+Thread-Topic: [RFC PATCH] net:Add basic DWC Ethernet QoS Driver
+Message-ID: <201405081450.14449.Andreas.Irestal@axis.com>
+Accept-Language: en-US, sv-SE
+Content-Language: en-US
+MIME-Version: 1.0
+X-Length: 79554
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces generic code to perform power domain look-up using
-device tree and automatically bind devices to their power domains.
-Generic device tree binding is introduced to specify power domains of
-devices in their device tree nodes.
+This is an early version of a driver for the Synopsys DWC Ethernet QoS IP
+version 4. Unfortunately, version 4.00a and onwards of this IP is totally
+different from earlier versions used in the STMicroelectronics drivers. Both
+functionality and registers are different. As this is my first network driver
+I am submitting an RFC to catch design flaws and bad coding standards at an
+early stage. Also, others looking at this IP could hopefully be helped by this
+early code.
 
-Backwards compatibility with legacy Samsung-specific power domain
-bindings is provided, but for now the new code is not compiled when
-CONFIG_ARCH_EXYNOS is selected to avoid collision with legacy code. This
-will change as soon as Exynos power domain code gets converted to use
-the generic framework in further patch.
+The driver is quite inefficient, yet still functional (Gbit only) and uses a
+polling-driven TX-approach. For the RX side NAPI and interrupts are used.
+There are still quite a lot of work to do. Link handling, more robust
+error-handling, HW Checksumming, scatter-gather and TCP Segmentation and
+checksum offloading to name a few.
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Reviewed-by: Mark Brown <broonie@linaro.org>
-Reviewed-by: Kevin Hilman <khilman@linaro.org>
-Reviewed-by: Philipp Zabel <philipp.zabel@gmail.com>
-[on i.MX6 GK802]
-Tested-by: Philipp Zabel <philipp.zabel@gmail.com>
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+All code has been developed and tested using an FPGA implementation of the IP,
+with an ARM Cortex A9 as the main CPU, running Linux 3.13.
+
+Signed-off-by: Andreas Irestaal <Andreas.Irestal@axis.com>
 ---
- .../devicetree/bindings/power/power_domain.txt     |  51 ++++
- drivers/base/power/domain.c                        | 283 +++++++++++++++++++++
- include/linux/pm_domain.h                          |  46 ++++
- kernel/power/Kconfig                               |   4 +
- 4 files changed, 384 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power/power_domain.txt
+ drivers/net/ethernet/Kconfig                |    1 +
+ drivers/net/ethernet/Makefile               |    1 +
+ drivers/net/ethernet/synopsys/Kconfig       |   24 +
+ drivers/net/ethernet/synopsys/Makefile      |    5 +
+ drivers/net/ethernet/synopsys/dwc_eth_qos.c |  706 +++++++++++++++++++++++++++
+ drivers/net/ethernet/synopsys/dwc_eth_qos.h |  308 ++++++++++++
+ 6 files changed, 1045 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/net/ethernet/synopsys/Kconfig
+ create mode 100644 drivers/net/ethernet/synopsys/Makefile
+ create mode 100644 drivers/net/ethernet/synopsys/dwc_eth_qos.c
+ create mode 100644 drivers/net/ethernet/synopsys/dwc_eth_qos.h
 
-diff --git a/Documentation/devicetree/bindings/power/power_domain.txt b/Documentation/devicetree/bindings/power/power_domain.txt
+diff --git a/drivers/net/ethernet/Kconfig b/drivers/net/ethernet/Kconfig
+index 506b024..64e8189 100644
+--- a/drivers/net/ethernet/Kconfig
++++ b/drivers/net/ethernet/Kconfig
+@@ -157,6 +157,7 @@ source "drivers/net/ethernet/sgi/Kconfig"
+ source "drivers/net/ethernet/smsc/Kconfig"
+ source "drivers/net/ethernet/stmicro/Kconfig"
+ source "drivers/net/ethernet/sun/Kconfig"
++source "drivers/net/ethernet/synopsys/Kconfig"
+ source "drivers/net/ethernet/tehuti/Kconfig"
+ source "drivers/net/ethernet/ti/Kconfig"
+ source "drivers/net/ethernet/tile/Kconfig"
+diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
+index c0b8789..57e4967 100644
+--- a/drivers/net/ethernet/Makefile
++++ b/drivers/net/ethernet/Makefile
+@@ -68,6 +68,7 @@ obj-$(CONFIG_NET_VENDOR_SGI) += sgi/
+ obj-$(CONFIG_NET_VENDOR_SMSC) += smsc/
+ obj-$(CONFIG_NET_VENDOR_STMICRO) += stmicro/
+ obj-$(CONFIG_NET_VENDOR_SUN) += sun/
++obj-$(CONFIG_NET_VENDOR_SYNOPSYS) += synopsys/
+ obj-$(CONFIG_NET_VENDOR_TEHUTI) += tehuti/
+ obj-$(CONFIG_NET_VENDOR_TI) += ti/
+ obj-$(CONFIG_TILE_NET) += tile/
+diff --git a/drivers/net/ethernet/synopsys/Kconfig b/drivers/net/ethernet/synopsys/Kconfig
 new file mode 100644
-index 0000000..303d0a9
+index 0000000..90dceb2
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/power/power_domain.txt
-@@ -0,0 +1,51 @@
-+* Generic power domains
++++ b/drivers/net/ethernet/synopsys/Kconfig
+@@ -0,0 +1,24 @@
++#
++# Synopsys network device configuration
++#
 +
-+System on chip designs are often divided into multiple power domains that
-+can be used for power gating of selected IP blocks for power saving by
-+reduced leakage current.
++config NET_VENDOR_SYNOPSYS
++       bool "Synopsys devices"
++       default y
++       ---help---
++         If you have a network (Ethernet) device belonging to this class, say Y
 +
-+This device tree binding can be used to bind power domain consumer devices
-+with their power domains provided by power domain providers. A power domain
-+provider can be represented by any node in the device tree and can provide
-+one or more power domains. A consumer node can refer to the provider by
-+a phandle and a set of phandle arguments (so called power domain specifier)
-+of length specified by #power-domain-cells property in the power domain
-+provider node.
++         Note that the answer to this question doesn't directly affect the
++         kernel: saying N will just cause the configurator to skip all
++         the questions about Synopsys devices. If you say Y, you will be asked
++         for your specific device in the following questions.
 +
-+==Power domain providers==
++if NET_VENDOR_SYNOPSYS
 +
-+Required properties:
-+ - #power-domain-cells : Number of cells in a power domain specifier;
-+   Typically 0 for nodes representing a single power domain and 1 for nodes
-+   providing multiple power domains (e.g. power controllers), but can be
-+   any value as specified by device tree binding documentation of particular
-+   provider.
++config SYNOPSYS_DWC_ETH_QOS
++       tristate "Sypnopsys DWC Ethernet QOS v4.00a support"
++       select PHYLIB
++       ---help---
++         This driver supports the DWC Ethernet QoS from Synopsys
 +
-+Example:
++endif # NET_VENDOR_SYNOPSYS
+diff --git a/drivers/net/ethernet/synopsys/Makefile b/drivers/net/ethernet/synopsys/Makefile
+new file mode 100644
+index 0000000..7a37572
+--- /dev/null
++++ b/drivers/net/ethernet/synopsys/Makefile
+@@ -0,0 +1,5 @@
++#
++# Makefile for the Synopsys network device drivers.
++#
 +
-+	power: power-controller@12340000 {
-+		compatible = "foo,power-controller";
-+		reg = <0x12340000 0x1000>;
-+		#power-domain-cells = <1>;
-+	};
++obj-$(CONFIG_SYNOPSYS_DWC_ETH_QOS) += dwc_eth_qos.o
+diff --git a/drivers/net/ethernet/synopsys/dwc_eth_qos.c b/drivers/net/ethernet/synopsys/dwc_eth_qos.c
+new file mode 100644
+index 0000000..20b1a9e
+--- /dev/null
++++ b/drivers/net/ethernet/synopsys/dwc_eth_qos.c
+@@ -0,0 +1,706 @@
++/*  Synopsys DWC Ethernet: Linux driver for Ethernet
++ *
++ *  This is a driver for the Synopsys DWC Ethernet IP version 4.00a. This
++ *  version introduced a lot of changes which breaks backwards compatibility
++ *  with version 3 of the same IP (Used in ST Micro drivers).
++ *
++ *  This driver only support basic functionality and Gigabit Ethernet Only. It
++ *  uses polling for TX and IRQ-driven RX with NAPI support. No hardware
++ *  checksumming or scatter-gather are supported. There are many things left to
++ *  implement: Scatter-gather, TCP Segmentation Offloading, HW Checksumming,
++ *  IRQ-driven TX, link handling, and a lot of general error handling.
++ *
++ *  Copyright (C) 2014 Axis Communications AB.
++ *
++ *  This program is free software; you can redistribute it and/or modify it
++ *  under the terms and conditions of the GNU General Public License,
++ *  version 2, as published by the Free Software Foundation.
++ */
 +
-+The node above defines a power controller that is a power domain provider
-+and expects one cell as its phandle argument.
++#include <linux/clk.h>
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/stat.h>
 +
-+==Power domain consumers==
-+
-+Required properties:
-+ - power-domains : A phandle and power domain specifier as defined by bindings
-+                   of power controller specified by phandle.
-+
-+Example:
-+
-+	leaky-device@12350000 {
-+		compatible = "foo,i-leak-current";
-+		reg = <0x12350000 0x1000>;
-+		power-domains = <&power 0>;
-+	};
-+
-+The node above defines a typical power domain consumer device, which is located
-+inside power domain with index 0 of power controller represented by node with
-+label "power".
-diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
-index ae098a2..de88e1e 100644
---- a/drivers/base/power/domain.c
-+++ b/drivers/base/power/domain.c
-@@ -8,6 +8,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/io.h>
++#include <linux/types.h>
++#include <linux/slab.h>
++#include <linux/delay.h>
++#include <linux/mm.h>
++#include <linux/netdevice.h>
++#include <linux/etherdevice.h>
 +#include <linux/platform_device.h>
- #include <linux/pm_runtime.h>
- #include <linux/pm_domain.h>
- #include <linux/pm_qos.h>
-@@ -2189,3 +2190,285 @@ void pm_genpd_init(struct generic_pm_domain *genpd,
- 	list_add(&genpd->gpd_list_node, &gpd_list);
- 	mutex_unlock(&gpd_list_lock);
- }
++#include <linux/phy.h>
++#include <linux/mii.h>
++#include <linux/delay.h>
++#include <linux/dma-mapping.h>
++#include <linux/vmalloc.h>
++#include <linux/version.h>
++#include <linux/of.h>
++#include <linux/interrupt.h>
++#include <linux/clocksource.h>
++#include <linux/net_tstamp.h>
++#include <linux/pm_runtime.h>
++#include <linux/of_net.h>
++#include <linux/of_address.h>
++#include <linux/of_mdio.h>
++#include <linux/timer.h>
++#include "dwc_eth_qos.h"
 +
-+#ifdef CONFIG_PM_GENERIC_DOMAINS_OF
-+/*
-+ * Device Tree based power domain providers.
-+ *
-+ * The code below implements generic device tree based power domain providers
-+ * that bind device tree nodes with generic power domains registered in the
-+ * system.
-+ *
-+ * Any driver that registers generic power domains and need to support binding
-+ * of devices to these domains is supposed to register a power domain provider,
-+ * which maps a power domain specifier retrieved from device tree to a power
-+ * domain.
-+ *
-+ * Two simple mapping functions have been provided for convenience:
-+ *  - of_genpd_xlate_simple() for 1:1 device tree node to domain mapping,
-+ *  - of_genpd_xlate_onecell() for mapping of multiple domains per node
-+ *    by index.
-+ */
++#define DRIVER_NAME                    "dwceqos"
++#define DRIVER_DESCRIPTION             "Synopsys DWC Ethernet QoS driver"
++#define DRIVER_VERSION                 "0.1"
 +
-+/**
-+ * struct of_genpd_provider - Power domain provider registration structure
-+ * @link: Entry in global list of domain providers
-+ * @node: Pointer to device tree node of domain provider
-+ * @xlate: Provider-specific xlate callback mapping a set of specifier cells
-+ *         into a power domain.
-+ * @data: context pointer to be passed into @xlate callback
-+ */
-+struct of_genpd_provider {
-+	struct list_head link;
++#ifdef DWCEQOS_DEBUG
++static void dwceqos_write(void __iomem *p, u32 offset, u32 v)
++{
++       printk(KERN_DEBUG "Write: Addr=%08x, Data=%08x\n", (u32)p + offset , v);
++       writel(v, p + offset);
++}
 +
-+	struct device_node *node;
-+	genpd_xlate_t xlate;
-+	void *data;
++static u32 dwceqos_read(void __iomem *p, u32 offset)
++{
++       u32 v = 0;
++       v = readl(p + offset);
++       printk(KERN_DEBUG "Read: Addr=%08x, Data=%08x\n", (u32)p + offset, v);
++       return v;
++}
++#else
++#define dwceqos_read(base, reg)                                                \
++       __raw_readl(((void __iomem *)(base)) + (reg))
++#define dwceqos_write(base, reg, val)                                  \
++       __raw_writel((val), ((void __iomem *)(base)) + (reg))
++#endif
++
++/* DMA ring descriptor. These are used as support descriptors for the HW DMA */
++struct ring_info {
++       struct sk_buff *skb;
++       dma_addr_t mapping;
++       size_t len;
 +};
 +
-+/* List of registered power domain providers. */
-+static LIST_HEAD(of_genpd_providers);
-+/* Mutex to protect the list above. */
-+static DEFINE_MUTEX(of_genpd_mutex);
++struct net_local {
++       void __iomem *baseaddr;
++       struct clk *phy_ref_clk;
++       struct clk *apb_pclk;
 +
-+/**
-+ * of_genpd_xlate_simple() - Xlate function for direct node-domain mapping
-+ * @genpdspec: OF phandle args to map into a power domain
-+ * @data: xlate function private data - pointer to struct generic_pm_domain
-+ *
-+ * This is a generic xlate function that can be used to model power domains
-+ * that have their own device tree nodes. The private data of xlate function
-+ * needs to be a valid pointer to struct generic_pm_domain.
-+ */
-+struct generic_pm_domain *of_genpd_xlate_simple(
-+					struct of_phandle_args *genpdspec,
-+					void *data)
++       struct net_device *ndev;
++       struct platform_device *pdev;
++
++       volatile struct dwc_eth_qos_txdesc *tx_descs;
++       volatile struct dwc_eth_qos_rxdesc *rx_descs;
++
++       void *tx_buf;
++
++       struct ring_info *rx_skb;
++
++       dma_addr_t tx_descs_addr;
++       dma_addr_t rx_descs_addr;
++
++       u32 next_tx;
++       u32 next_rx;
++
++       struct napi_struct napi;
++
++       struct net_device_stats stats;
++       spinlock_t rx_lock;
++};
++
++/* Allocate DMA helper structure at position given by index */
++static void dwceqos_alloc_rxring_desc(struct net_local *lp, int index)
 +{
-+	if (genpdspec->args_count != 0)
-+		return ERR_PTR(-EINVAL);
-+	return data;
-+}
-+EXPORT_SYMBOL_GPL(of_genpd_xlate_simple);
++       struct sk_buff *new_skb;
++       u32 new_skb_baddr = 0;
++       new_skb = netdev_alloc_skb(lp->ndev, DWCEQOS_RX_BUF_SIZE);
++       if (!new_skb) {
++               dev_err(&lp->ndev->dev, "alloc_skb error for desc %d\n", index);
++               goto out;
++       }
 +
-+/**
-+ * of_genpd_xlate_onecell() - Xlate function for providers using single index.
-+ * @genpdspec: OF phandle args to map into a power domain
-+ * @data: xlate function private data - pointer to struct genpd_onecell_data
-+ *
-+ * This is a generic xlate function that can be used to model simple power
-+ * domain controllers that have one device tree node and provide multiple
-+ * power domains. A single cell is used as an index to an array of power
-+ * domains specified in genpd_onecell_data struct when registering the
-+ * provider.
-+ */
-+struct generic_pm_domain *of_genpd_xlate_onecell(
-+					struct of_phandle_args *genpdspec,
-+					void *data)
-+{
-+	struct genpd_onecell_data *genpd_data = data;
-+	unsigned int idx = genpdspec->args[0];
++       /* Get dma handle of skb->data */
++       new_skb_baddr = (u32)dma_map_single(lp->ndev->dev.parent,
++               new_skb->data, DWCEQOS_RX_BUF_SIZE, DMA_FROM_DEVICE);
++       if (dma_mapping_error(lp->ndev->dev.parent, new_skb_baddr)) {
++               dev_err(&lp->pdev->dev, "DMA map error\n");
++               dev_kfree_skb(new_skb);
++               new_skb = NULL;
++       }
++out:
++       lp->rx_skb[index].skb = new_skb;
++       lp->rx_skb[index].mapping = new_skb_baddr;
++       lp->rx_skb[index].len = DWCEQOS_RX_BUF_SIZE;
 +
-+	if (genpdspec->args_count != 1)
-+		return ERR_PTR(-EINVAL);
-+
-+	if (idx >= genpd_data->domain_num) {
-+		pr_err("%s: invalid domain index %d\n", __func__, idx);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	return genpd_data->domains[idx];
-+}
-+EXPORT_SYMBOL_GPL(of_genpd_xlate_onecell);
-+
-+/**
-+ * of_genpd_add_provider() - Register a domain provider for a node
-+ * @np: Device node pointer associated with domain provider.
-+ * @xlate: Callback for decoding domain from phandle arguments.
-+ * @data: Context pointer for @genpd_src_get callback.
-+ */
-+int of_genpd_add_provider(struct device_node *np, genpd_xlate_t xlate,
-+			  void *data)
-+{
-+	struct of_genpd_provider *cp;
-+
-+	cp = kzalloc(sizeof(*cp), GFP_KERNEL);
-+	if (!cp)
-+		return -ENOMEM;
-+
-+	cp->node = of_node_get(np);
-+	cp->data = data;
-+	cp->xlate = xlate;
-+
-+	mutex_lock(&of_genpd_mutex);
-+	list_add(&cp->link, &of_genpd_providers);
-+	mutex_unlock(&of_genpd_mutex);
-+	pr_debug("Added domain provider from %s\n", np->full_name);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(of_genpd_add_provider);
-+
-+/**
-+ * of_genpd_del_provider() - Remove a previously registered domain provider
-+ * @np: Device node pointer associated with domain provider
-+ */
-+void of_genpd_del_provider(struct device_node *np)
-+{
-+	struct of_genpd_provider *cp;
-+
-+	mutex_lock(&of_genpd_mutex);
-+	list_for_each_entry(cp, &of_genpd_providers, link) {
-+		if (cp->node == np) {
-+			list_del(&cp->link);
-+			of_node_put(cp->node);
-+			kfree(cp);
-+			break;
-+		}
-+	}
-+	mutex_unlock(&of_genpd_mutex);
-+}
-+EXPORT_SYMBOL_GPL(of_genpd_del_provider);
-+
-+/**
-+ * of_genpd_get_from_provider() - Look-up power domain
-+ * @genpdspec: OF phandle args to use for look-up
-+ *
-+ * Looks for domain provider under node specified by @genpdspec and if found
-+ * uses xlate function of the provider to map phandle args to a power domain.
-+ *
-+ * Returns a valid pointer to struct generic_pm_domain on success or ERR_PTR()
-+ * on failure.
-+ */
-+static struct generic_pm_domain *of_genpd_get_from_provider(
-+					struct of_phandle_args *genpdspec)
-+{
-+	struct generic_pm_domain *genpd = ERR_PTR(-EPROBE_DEFER);
-+	struct of_genpd_provider *provider;
-+
-+	mutex_lock(&of_genpd_mutex);
-+
-+	/* Check if we have such a provider in our array */
-+	list_for_each_entry(provider, &of_genpd_providers, link) {
-+		if (provider->node == genpdspec->np)
-+			genpd = provider->xlate(genpdspec, provider->data);
-+		if (!IS_ERR(genpd))
-+			break;
-+	}
-+
-+	mutex_unlock(&of_genpd_mutex);
-+
-+	return genpd;
++       return;
 +}
 +
-+/*
-+ * Device<->domain binding using Device Tree look-up.
-+ *
-+ * The purpose of code below is to manage assignment of devices to their
-+ * power domains in an automatic fashion, based on data read from device tree.
-+ * The two functions, genpd_bind_domain() and genpd_unbind_domain() are
-+ * intended to be called by higher level code that manages devices, i.e.
-+ * really_probe() and __device_release_driver() to respectively bind and
-+ * unbind device from its power domain.
-+ *
-+ * Both generic and legacy Samsung-specific DT bindings are supported to
-+ * keep backwards compatibility with existing DTBs.
-+ */
-+
-+/**
-+ * genpd_bind_domain - Bind device to its power domain using Device Tree.
-+ * @dev: Device to bind to its power domain.
-+ *
-+ * Tries to parse power domain specifier from device's OF node and if succeeds
-+ * attaches the device to retrieved power domain.
-+ *
-+ * Returns 0 on success or negative error code otherwise.
-+ */
-+int genpd_bind_domain(struct device *dev)
++static void dwceqos_mtl_init(struct net_local *lp)
 +{
-+	struct of_phandle_args pd_args;
-+	struct generic_pm_domain *pd;
-+	int ret;
-+
-+	if (!dev->of_node)
-+		return 0;
-+
-+	ret = of_parse_phandle_with_args(dev->of_node, "power-domains",
-+					"#power-domain-cells", 0, &pd_args);
-+	if (ret < 0) {
-+		if (ret != -ENOENT)
-+			return ret;
-+
-+		/*
-+		 * Try legacy Samsung-specific bindings
-+		 * (for backwards compatibility of DT ABI)
-+		 */
-+		pd_args.args_count = 0;
-+		pd_args.np = of_parse_phandle(dev->of_node,
-+						"samsung,power-domain", 0);
-+		if (!pd_args.np)
-+			return 0;
-+	}
-+
-+	pd = of_genpd_get_from_provider(&pd_args);
-+	if (IS_ERR(pd)) {
-+		if (PTR_ERR(pd) != -EPROBE_DEFER)
-+			dev_err(dev, "failed to find power domain: %ld\n",
-+				PTR_ERR(pd));
-+		return PTR_ERR(pd);
-+	}
-+
-+	dev_dbg(dev, "adding to power domain %s\n", pd->name);
-+
-+	while (1) {
-+		ret = pm_genpd_add_device(pd, dev);
-+		if (ret != -EAGAIN)
-+			break;
-+		cond_resched();
-+	}
-+
-+	if (ret < 0) {
-+		dev_err(dev, "failed to add to power domain %s: %d",
-+			pd->name, ret);
-+		return ret;
-+	}
-+
-+	return 0;
++       dwceqos_write(lp->baseaddr, DWCEQOS_MTL_OP_MODE, 0x00000060);
 +}
 +
-+/**
-+ * genpd_unbind_domain - Unbind device from its power domain.
-+ * @dev: Device to unbind from its power domain.
-+ *
-+ * Unbinds device from power domain previously bound to it.
-+ *
-+ * Returns 0 on success or negative error code otherwise.
-+ */
-+int genpd_unbind_domain(struct device *dev)
++static void dwceqos_mtl_tx_init(struct net_local *lp)
 +{
-+	struct generic_pm_domain *pd = dev_to_genpd(dev);
-+	int ret;
++       dwceqos_write(lp->baseaddr, DWCEQOS_MTL_TXQ0_OP_MODE,
++                       DWCEQOS_MTL_TXQ_EN);
++}
 +
-+	if (!dev->of_node || IS_ERR(pd))
-+		return 0;
++static void dwceqos_mtl_rx_init(struct net_local *lp)
++{
++       dwceqos_write(lp->baseaddr, DWCEQOS_MTL_RXQ0_OP_MODE,
++               DWCEQOS_MTL_RXQ_RQS256 | DWCEQOS_MTL_RXQ_DIS_TCP_EF |
++               DWCEQOS_MTL_RXQ_FEP | DWCEQOS_MTL_RXQ_FUP |
++               DWCEQOS_MTL_RXQ_RTC32);
++}
 +
-+	dev_dbg(dev, "removing from power domain %s\n", pd->name);
++static void dwceqos_mac_rx_init(struct net_local *lp)
++{
++       u32 val;
++       dwceqos_write(lp->baseaddr, DWCEQOS_MAC_RXQ_CTRL0, 2);
++       val = DWCEQOS_MAC_PKT_FILTER_RX_ALL | DWCEQOS_MAC_PKT_FILTER_PCF_ALL |
++               DWCEQOS_MAC_PKT_FILTER_PROMISCUOUS;
++       dwceqos_write(lp->baseaddr, DWCEQOS_MAC_PKT_FILTER, val);
++}
 +
-+	while (1) {
-+		ret = pm_genpd_remove_device(pd, dev);
-+		if (ret != -EAGAIN)
-+			break;
-+		cond_resched();
-+	}
++static int dwceqos_mac_enable(struct net_local *lp)
++{
++       dwceqos_write(lp->baseaddr, DWCEQOS_MAC_CFG,
++               DWCEQOS_MAC_CFG_DM | DWCEQOS_MAC_CFG_TE |
++               DWCEQOS_MAC_CFG_RE);
++       return 0;
++}
 +
-+	if (ret < 0) {
-+		dev_err(dev, "failed to remove from power domain %s: %d",
-+			pd->name, ret);
-+		return ret;
-+	}
++static void dwceqos_dma_wake_rx(struct net_local *lp)
++{
++       u32 offset;
++       offset = DWCEQOS_RX_DCNT * sizeof(struct dwc_eth_qos_rxdesc);
++       dwceqos_write(lp->baseaddr, DWCEQOS_DMA_CH0_RXDESC_TAIL,
++               (u32)lp->rx_descs_addr + offset);
++}
 +
-+	/* Check if domain can be powered off after removing this device. */
-+	genpd_queue_power_off_work(pd);
++static inline void dwceqos_dma_rx_start(struct net_local *lp)
++{
++       dwceqos_write(lp->baseaddr, DWCEQOS_DMA_CH0_RX_CTRL,
++               DWCEQOS_DMA_CH0_TXRX_CONTROL_START |
++               DWCEQOS_DMA_CH0_TXRX_CONTROL_PBL16 |
++               DWCEQOS_RX_BUF_SIZE);
++       dwceqos_dma_wake_rx(lp);
++}
 +
-+	return 0;
++static inline void dwceqos_dma_tx_start(struct net_local *lp)
++{
++       dwceqos_write(lp->baseaddr, DWCEQOS_DMA_CH0_TX_CTRL,
++               DWCEQOS_DMA_CH0_TXRX_CONTROL_START |
++               DWCEQOS_DMA_CH0_TXRX_CONTROL_PBL16);
++}
++
++static void dwceqos_dma_setmode(struct net_local *lp)
++{
++       dwceqos_write(lp->baseaddr, DWCEQOS_DMA_MODE,
++               DWCEQOS_DMA_MODE_TXPR | DWCEQOS_DMA_MODE_DA);
++       dwceqos_write(lp->baseaddr, DWCEQOS_DMA_SYSBUS_MODE,
++               DWCEQOS_DMA_SYSBUS_MB);
++}
++
++static void dwceqos_dma_txenable(struct net_local *lp)
++{
++       u32 val;
++       val = DWCEQOS_DMA_CH0_TXRX_CONTROL_PBL16 |
++               DWCEQOS_DMA_CH0_TXRX_CONTROL_START;
++       dwceqos_write(lp->baseaddr, DWCEQOS_DMA_CH0_TX_CTRL, val);
++}
++
++static void dwceqos_dma_rx_enable(struct net_local *lp)
++{
++       u32 val;
++       val = DWCEQOS_DMA_CH0_TXRX_CONTROL_PBL16 |
++               DWCEQOS_RX_BUF_SIZE | DWCEQOS_DMA_CH0_TXRX_CONTROL_START;
++       dwceqos_write(lp->baseaddr, DWCEQOS_DMA_CH0_RX_CTRL, val);
++}
++
++/* Initialize DMA descriptors to their start values */
++static void dwceqos_dma_prepare(struct net_local *lp)
++{
++       int i;
++       for (i = 0; i < DWCEQOS_TX_DCNT; ++i) {
++               lp->tx_descs[i].tdes0.raw = 0;
++               lp->tx_descs[i].tdes1.raw = 0;
++               lp->tx_descs[i].tdes2.raw = 0;
++               lp->tx_descs[i].tdes3.raw = 0;
++       }
++
++       for (i = 0; i < DWCEQOS_RX_DCNT; ++i) {
++               lp->rx_descs[i].rdes0.rd.buffer1 = lp->rx_skb[i].mapping;
++               lp->rx_descs[i].rdes1.raw = 0;
++               lp->rx_descs[i].rdes2.rd.buffer2 = 0;
++               lp->rx_descs[i].rdes3.raw = 0;
++               lp->rx_descs[i].rdes3.rd.buf1v = 1;
++               lp->rx_descs[i].rdes3.rd.inte = 1;
++               lp->rx_descs[i].rdes3.rd.own = 1;
++       }
++       lp->next_tx = 0;
++       lp->next_rx = 0;
++}
++
++/* Allocate and initiate DMA rings for TX and RX. Also allocates RX buffers for
++ * incoming packets.
++ */
++static int dwceqos_dma_alloc(struct net_local *lp)
++{
++       u32 size;
++       int i;
++
++       size = DWCEQOS_RX_DCNT * sizeof(struct ring_info);
++       lp->rx_skb = kzalloc(size, GFP_KERNEL);
++       if (!lp->rx_skb) {
++               dev_err(&lp->pdev->dev, "Unable to allocate ring descriptor area\n");
++               return -ENOMEM;
++       }
++
++       /* Allocate DMA descriptors */
++       size = DWCEQOS_TX_DCNT * sizeof(struct dwc_eth_qos_txdesc);
++       lp->tx_descs = dma_alloc_coherent(&lp->pdev->dev, size,
++                       &lp->tx_descs_addr, 0);
++       if (!lp->tx_descs) {
++               dev_err(&lp->pdev->dev, "Failed to allocate TX DMA descriptors\n");
++               /* Should deallocate memory here */
++               return -ENOMEM;
++       }
++       size = DWCEQOS_RX_DCNT * sizeof(struct dwc_eth_qos_rxdesc);
++       lp->rx_descs = dma_alloc_coherent(&lp->pdev->dev, size,
++                       &lp->rx_descs_addr, 0);
++       if (!lp->rx_descs) {
++               dev_err(&lp->pdev->dev, "Failed to allocate RX DMA descriptors\n");
++               /* Should deallocate memory here */
++               return -ENOMEM;
++       }
++
++       for (i = 0; i < DWCEQOS_RX_DCNT; ++i) {
++               dwceqos_alloc_rxring_desc(lp, i);
++               if (!(lp->rx_skb[lp->next_rx].skb)) {
++                       dev_err(&lp->pdev->dev, "Unable to map descriptor %d to DMA\n",
++                               lp->next_rx);
++                       /* What error code to return for mapping error? */
++                       return -1;
++               }
++       }
++
++       dwceqos_dma_prepare(lp);
++
++       /* Tell HW where to look*/
++       dwceqos_write(lp->baseaddr, DWCEQOS_DMA_CH0_RXDESC_RING_LEN,
++               DWCEQOS_RX_DCNT-1);
++       dwceqos_write(lp->baseaddr, DWCEQOS_DMA_CH0_TXDESC_RING_LEN,
++               DWCEQOS_TX_DCNT-1);
++       dwceqos_write(lp->baseaddr, DWCEQOS_DMA_CH0_RXDESC_LIST_ADDR,
++               (u32)lp->rx_descs_addr);
++       dwceqos_write(lp->baseaddr, DWCEQOS_DMA_CH0_TXDESC_LIST_ADDR,
++               (u32)lp->tx_descs_addr);
++       return 0;
++}
++
++/* Checks if there are any available incoming packets ready for processing */
++int dwceqos_packet_avail(struct net_local *lp)
++{
++       return !lp->rx_descs[lp->next_rx].rdes3.wr.own;
++}
++
++/* Free DMA descriptor area */
++static void dwceqos_dma_free(struct net_local *lp)
++{
++       u32 size;
++       size = DWCEQOS_TX_DCNT * sizeof(struct dwc_eth_qos_txdesc);
++       if (lp->tx_descs)
++               dma_free_coherent(&lp->pdev->dev, size,
++                       lp->tx_descs, lp->tx_descs_addr);
++       size = DWCEQOS_RX_DCNT * sizeof(struct dwc_eth_qos_rxdesc);
++       if (lp->rx_descs)
++               dma_free_coherent(&lp->pdev->dev, size,
++                       lp->rx_descs, lp->rx_descs_addr);
++}
++
++/* HW transmit function. */
++static void dwceqos_dma_xmit(struct net_local *lp, void *data, int len)
++{
++       u32 regval;
++       int i = lp->next_tx;
++       int dwc_wait;
++       dma_addr_t dma_handle;
++
++       dma_handle = dma_map_single(lp->ndev->dev.parent,
++               data, DWCEQOS_RX_BUF_SIZE, DMA_TO_DEVICE);
++       if (dma_mapping_error(lp->ndev->dev.parent, dma_handle)) {
++               dev_err(&lp->pdev->dev, "DMA Mapping error\n");
++               return;
++       }
++
++       lp->tx_descs[i].tdes0.rd.buffer1 = dma_handle;
++       lp->tx_descs[i].tdes2.rd.buf1len = len;
++       lp->tx_descs[i].tdes3.rd.fl = len;
++       lp->tx_descs[i].tdes3.rd.fd = 1;
++       lp->tx_descs[i].tdes3.rd.ld = 1;
++       lp->tx_descs[i].tdes3.rd.own = 1;
++
++       /* Issue Transmit Poll by writing address of next free descriptor */
++       regval = lp->tx_descs_addr + (i+1) * sizeof(struct dwc_eth_qos_txdesc);
++       dwceqos_write(lp->baseaddr, DWCEQOS_DMA_CH0_TXDESC_TAIL, regval);
++
++       /* Set poll wait timeout to 2 seconds */
++       dwc_wait = 200;
++
++       while (lp->tx_descs[i].tdes3.wr.own) {
++               mdelay(10);
++               if (!dwc_wait--)
++                       break;
++       }
++       if (lp->tx_descs[i].tdes3.wr.own)
++               dev_err(&lp->pdev->dev, "Failed to transmit: Timed out\n");
++
++       lp->next_tx = (lp->next_tx + 1) % DWCEQOS_TX_DCNT;
++       dma_unmap_single(lp->ndev->dev.parent,
++                       dma_handle, DWCEQOS_RX_BUF_SIZE, DMA_TO_DEVICE);
++}
++
++/* Store HW Addr in MAC registers. Source Address Replacement not used yet */
++static void dwceqos_set_hwaddr(struct net_local *lp)
++{
++       u32 val;
++
++       val = DWCEQOS_MAC_ADDR_HI_EN | (lp->ndev->dev_addr[0] << 8) |
++               (lp->ndev->dev_addr[1]);
++       dwceqos_write(lp->baseaddr, DWCEQOS_MAC_ADDR_HI, val);
++       val = (lp->ndev->dev_addr[2] << 24) | (lp->ndev->dev_addr[3] << 16) |
++               (lp->ndev->dev_addr[4] << 8)  | (lp->ndev->dev_addr[5]);
++       dwceqos_write(lp->baseaddr, DWCEQOS_MAC_ADDR_LO, val);
++}
++
++/* DMA reset. When issued also resets all MTL and MAC registers as well */
++static void dwceqos_dma_reset(struct net_local *lp)
++{
++       /* Wait 5 seconds for DMA reset*/
++       int i = 5000;
++       dwceqos_write(lp->baseaddr, DWCEQOS_DMA_MODE, 1);
++
++       do {
++               mdelay(1);
++       } while ((dwceqos_read(lp->baseaddr, DWCEQOS_DMA_MODE) & 0x1) && i--);
++}
++
++/* Interrupt handler. So far only RX interrupts are used */
++static irqreturn_t dwceqos_interrupt(int irq, void *dev_id)
++{
++       struct net_device *ndev = dev_id;
++       struct net_local *lp = netdev_priv(ndev);
++
++       u32 cause;
++       u32 val;
++
++       cause = dwceqos_read(lp->baseaddr, DWCEQOS_DMA_INT_STAT);
++       if (cause & 0x00000001) {
++               /* DMA Channel 0 Interrupt. Assume RX interrupt for now */
++               val = dwceqos_read(lp->baseaddr, DWCEQOS_DMA_CH0_STAT);
++               /* Ack */
++               dwceqos_write(lp->baseaddr, DWCEQOS_DMA_CH0_STAT, val);
++               if (val & 0x00000040)
++                       napi_schedule(&lp->napi);
++       } else if (unlikely(!cause)) {
++               return IRQ_NONE;
++       }
++       return IRQ_HANDLED;
++}
++
++static int dwceqos_open(struct net_device *ndev)
++{
++       /* Allocate Buffers & DMA Descr. + Initiate DMA descriptors */
++       struct net_local *lp = netdev_priv(ndev);
++
++       /* Set up hardware. It looks like order of writes is important here.
++        * Only gigatbit support, no advanced MTL or MAC configuration yet.
++        */
++       dwceqos_dma_reset(lp);
++       dwceqos_mtl_init(lp);
++       dwceqos_mtl_tx_init(lp);
++       dwceqos_dma_setmode(lp);
++       dwceqos_dma_alloc(lp);
++       dwceqos_dma_wake_rx(lp);
++       dwceqos_dma_txenable(lp);
++       dwceqos_mtl_rx_init(lp);
++       dwceqos_mac_rx_init(lp);
++       dwceqos_dma_rx_enable(lp);
++       dwceqos_dma_wake_rx(lp);
++       dwceqos_set_hwaddr(lp);
++       dwceqos_mac_enable(lp);
++
++       /* Enable RX Interrupts */
++       dwceqos_write(lp->baseaddr, DWCEQOS_DMA_CH0_INT_EN, 0x00010040);
++
++       napi_enable(&lp->napi);
++       netif_carrier_on(ndev);
++       netif_start_queue(ndev);
++       return 0;
++}
++
++
++int dwceqos_stop(struct net_device *ndev)
++{
++       struct net_local *lp = netdev_priv(ndev);
++       dwceqos_dma_free(lp);
++       netif_stop_queue(ndev);
++       napi_disable(&lp->napi);
++       netif_carrier_off(ndev);
++       return 0;
++}
++
++/* Receive one packet and return skb */
++struct sk_buff *
++dwceqos_recv_packet(struct net_local *lp)
++{
++       struct sk_buff *skb;
++       u32 len;
++
++       skb = lp->rx_skb[lp->next_rx].skb;
++       len = lp->rx_descs[lp->next_rx].rdes3.wr.length;
++
++       /* Unmap old buffer */
++       dma_unmap_single(lp->ndev->dev.parent, lp->rx_skb[lp->next_rx].mapping,
++               lp->rx_skb[lp->next_rx].len, DMA_FROM_DEVICE);
++       skb_put(skb, len);
++       skb->protocol = eth_type_trans(skb, lp->ndev);
++       skb->ip_summed = 0;
++
++       /* Initialize new Buffer descriptor */
++       dwceqos_alloc_rxring_desc(lp, lp->next_rx);
++       if (!(lp->rx_skb[lp->next_rx].skb)) {
++               dev_err(&lp->pdev->dev, "Unable to map descriptor %d to DMA\n",
++                       lp->next_rx);
++               return NULL;
++       }
++
++       /* Initialize new DMA descriptor */
++       lp->rx_descs[lp->next_rx].rdes0.rd.buffer1 =
++               lp->rx_skb[lp->next_rx].mapping;
++       lp->rx_descs[lp->next_rx].rdes1.raw = 0;
++       lp->rx_descs[lp->next_rx].rdes2.rd.buffer2 = 0;
++       lp->rx_descs[lp->next_rx].rdes3.raw = 0;
++       lp->rx_descs[lp->next_rx].rdes3.rd.buf1v = 1;
++       lp->rx_descs[lp->next_rx].rdes3.rd.inte = 1;
++       lp->rx_descs[lp->next_rx].rdes3.rd.own = 1;
++       lp->next_rx = (lp->next_rx + 1) % DWCEQOS_RX_DCNT;
++       return skb;
++}
++
++
++/* NAPI poll routine */
++int dwceqos_rx_poll(struct napi_struct *napi, int budget)
++{
++       struct net_local *lp = container_of(napi, struct net_local, napi);
++       int npackets = 0;
++       struct sk_buff *skb;
++
++       spin_lock(&lp->rx_lock);
++       while (npackets < budget && dwceqos_packet_avail(lp)) {
++
++               skb = dwceqos_recv_packet(lp);
++               if (!skb)
++                       break;
++
++               netif_receive_skb(skb);
++
++               lp->stats.rx_packets++;
++               lp->stats.rx_bytes += skb->len;
++               npackets++;
++       }
++       if (npackets < budget)
++               napi_complete(napi);
++
++       spin_unlock(&lp->rx_lock);
++       return npackets;
++}
++
++/* Main transmit function called from kernel */
++int dwceqos_start_xmit(struct sk_buff *skb, struct net_device *ndev)
++{
++       int len;
++       struct net_local *lp = netdev_priv(ndev);
++       char *data;
++       data = skb->data;
++       len = skb->len;
++
++       /* Send packet on wire */
++       dwceqos_dma_xmit(lp, data, len);
++
++       skb_tx_timestamp(skb);
++
++       ndev->stats.tx_bytes += len;
++       dev_kfree_skb(skb);
++
++       return 0;
++}
++
++struct net_device_ops dwceq_netdev_ops;
++
++#ifdef CONFIG_OF
++static inline int dwceqos_probe_config_dt(struct platform_device *pdev)
++{
++       struct net_device *ndev;
++       const void *mac_address;
++
++       ndev = platform_get_drvdata(pdev);
++       /* Set the MAC address. */
++       mac_address = of_get_mac_address(pdev->dev.of_node);
++       if (mac_address)
++               memcpy(ndev->dev_addr, mac_address, ETH_ALEN);
++       else
++               dev_warn(&pdev->dev, "No MAC address found\n");
++       return 0;
++}
++#else
++static inline int dwceqos_probe_config_dt()
++{
++       return -ENOSYS;
 +}
 +#endif
-diff --git a/include/linux/pm_domain.h b/include/linux/pm_domain.h
-index 7c1d252..04473d4 100644
---- a/include/linux/pm_domain.h
-+++ b/include/linux/pm_domain.h
-@@ -310,4 +310,50 @@ static inline void pm_genpd_syscore_poweron(struct device *dev)
- 	pm_genpd_syscore_switch(dev, false);
- }
- 
-+/* OF power domain providers */
-+struct of_device_id;
 +
-+struct genpd_onecell_data {
-+	struct generic_pm_domain **domains;
-+	unsigned int domain_num;
++
++/**
++ * dwceqos_probe - Platform driver probe
++ * @pdev: Pointer to platform device structure
++ *
++ * Return 0 on success, negative value if error
++ */
++int dwceqos_probe(struct platform_device *pdev)
++{
++       struct resource *r_mem = NULL;
++       struct resource *r_irq = NULL;
++       struct net_device *ndev;
++       struct net_local *lp;
++       int ret = -ENXIO;
++
++       r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++       r_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++       if (!r_mem || !r_irq) {
++               dev_err(&pdev->dev, "no IO resource defined.\n");
++               return -ENXIO;
++       }
++       ndev = alloc_etherdev(sizeof(*lp));
++       if (!ndev) {
++               dev_err(&pdev->dev, "etherdev allocation failed.\n");
++               return -ENOMEM;
++       }
++
++       SET_NETDEV_DEV(ndev, &pdev->dev);
++
++       lp = netdev_priv(ndev);
++       lp->ndev = ndev;
++       lp->pdev = pdev;
++
++       lp->baseaddr = devm_ioremap_resource(&pdev->dev, r_mem);
++       if (IS_ERR(lp->baseaddr)) {
++               dev_err(&pdev->dev, "failed to map baseaddress.\n");
++               ret = PTR_ERR(lp->baseaddr);
++               goto err_out_free_netdev;
++       }
++
++
++       dev_dbg(&lp->pdev->dev, "BASEADDRESS hw: %p virt: %p\n",
++                       (void *)r_mem->start, lp->baseaddr);
++
++       ndev->irq = platform_get_irq(pdev, 0);
++       ndev->netdev_ops = &dwceq_netdev_ops;
++       ndev->base_addr = r_mem->start;
++       ndev->features = 0;
++
++       netif_napi_add(ndev, &lp->napi, dwceqos_rx_poll, 64);
++
++       ret = register_netdev(ndev);
++       if (ret) {
++               dev_err(&pdev->dev, "Cannot register net device, aborting.\n");
++               goto err_out_free_netdev;
++       }
++
++       lp->apb_pclk = devm_clk_get(&pdev->dev, "apb_pclk");
++       if (IS_ERR(lp->apb_pclk)) {
++               dev_err(&pdev->dev, "apb_pclk clock not found.\n");
++               ret = PTR_ERR(lp->apb_pclk);
++               goto err_out_unregister_netdev;
++       }
++       lp->phy_ref_clk = devm_clk_get(&pdev->dev, "phy_ref_clk");
++       if (IS_ERR(lp->phy_ref_clk)) {
++               dev_err(&pdev->dev, "phy_ref_clk clock not found.\n");
++               ret = PTR_ERR(lp->phy_ref_clk);
++               goto err_out_unregister_netdev;
++       }
++
++       ret = clk_prepare_enable(lp->apb_pclk);
++       if (ret) {
++               dev_err(&pdev->dev, "Unable to enable APER clock.\n");
++               goto err_out_unregister_netdev;
++       }
++       ret = clk_prepare_enable(lp->phy_ref_clk);
++       if (ret) {
++               dev_err(&pdev->dev, "Unable to enable device clock.\n");
++               goto err_out_clk_dis_aper;
++       }
++
++       platform_set_drvdata(pdev, ndev);
++       dwceqos_probe_config_dt(pdev);
++       dev_info(&lp->pdev->dev, "pdev->id %d, baseaddr 0x%08lx, irq %d\n",
++                       pdev->id, ndev->base_addr, ndev->irq);
++
++       ret = devm_request_irq(&pdev->dev, ndev->irq, &dwceqos_interrupt, 0,
++               ndev->name, ndev);
++       if (ret) {
++               dev_err(&lp->pdev->dev, "Unable to request IRQ %p, error %d\n",
++                       r_irq, ret);
++               goto err_out_unregister_clk_notifier;
++       }
++
++       return 0;
++
++err_out_unregister_clk_notifier:
++       clk_disable_unprepare(lp->phy_ref_clk);
++err_out_clk_dis_aper:
++       clk_disable_unprepare(lp->apb_pclk);
++err_out_unregister_netdev:
++       unregister_netdev(ndev);
++err_out_free_netdev:
++       free_netdev(ndev);
++       platform_set_drvdata(pdev, NULL);
++       return ret;
++}
++
++int dwceqos_remove(struct platform_device *pdev)
++{
++       struct net_device *ndev = platform_get_drvdata(pdev);
++       unregister_netdev(ndev);
++       free_netdev(ndev);
++       return 0;
++}
++
++struct net_device_ops dwceq_netdev_ops = {
++       .ndo_open       = dwceqos_open,
++       .ndo_stop       = dwceqos_stop,
++       .ndo_start_xmit = dwceqos_start_xmit,
 +};
 +
-+typedef struct generic_pm_domain *(*genpd_xlate_t)(struct of_phandle_args *args,
-+						   void *data);
++struct of_device_id dwceq_of_match[] = {
++       { .compatible = "dwc,qos-ethernet", },
++       {}
++};
++MODULE_DEVICE_TABLE(of, dwceq_of_match);
 +
-+#ifdef CONFIG_PM_GENERIC_DOMAINS_OF
-+int of_genpd_add_provider(struct device_node *np, genpd_xlate_t xlate,
-+			  void *data);
-+void of_genpd_del_provider(struct device_node *np);
++struct platform_driver dwceqos_driver = {
++       .probe   = dwceqos_probe,
++       .remove  = dwceqos_remove,
++       .driver  = {
++               .name  = DRIVER_NAME,
++               .owner = THIS_MODULE,
++               .of_match_table = dwceq_of_match,
++       },
++};
 +
-+struct generic_pm_domain *of_genpd_xlate_simple(
-+					struct of_phandle_args *genpdspec,
-+					void *data);
-+struct generic_pm_domain *of_genpd_xlate_onecell(
-+					struct of_phandle_args *genpdspec,
-+					void *data);
++module_platform_driver(dwceqos_driver);
 +
-+int genpd_bind_domain(struct device *dev);
-+int genpd_unbind_domain(struct device *dev);
-+#else /* !CONFIG_PM_GENERIC_DOMAINS_OF */
-+static inline int of_genpd_add_provider(struct device_node *np,
-+					genpd_xlate_t xlate, void *data)
-+{
-+	return 0;
-+}
-+static inline void of_genpd_del_provider(struct device_node *np) {}
++MODULE_DESCRIPTION("DWC Ethernet QoS v4.00a driver");
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR("Andreas Irestaal");
+diff --git a/drivers/net/ethernet/synopsys/dwc_eth_qos.h b/drivers/net/ethernet/synopsys/dwc_eth_qos.h
+new file mode 100644
+index 0000000..9aa84a0
+--- /dev/null
++++ b/drivers/net/ethernet/synopsys/dwc_eth_qos.h
+@@ -0,0 +1,308 @@
++#ifndef DWC_ETH_QOS_H
++#define DWC_ETH_QOS_H
 +
-+#define of_genpd_xlate_simple		NULL
-+#define of_genpd_xlate_onecell		NULL
++#define DWCEQOS_RX_BUF_SIZE 2048
 +
-+static inline int genpd_bind_domain(struct device *dev)
-+{
-+	return 0;
-+}
-+static inline int genpd_unbind_domain(struct device *dev)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_PM_GENERIC_DOMAINS_OF */
++#define DWCEQOS_RX_DCNT 16
++#define DWCEQOS_TX_DCNT 16
 +
- #endif /* _LINUX_PM_DOMAIN_H */
-diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-index 2fac9cc..45aa98e 100644
---- a/kernel/power/Kconfig
-+++ b/kernel/power/Kconfig
-@@ -306,6 +306,10 @@ config PM_GENERIC_DOMAINS_RUNTIME
- 	def_bool y
- 	depends on PM_RUNTIME && PM_GENERIC_DOMAINS
- 
-+config PM_GENERIC_DOMAINS_OF
-+	def_bool y
-+	depends on PM_GENERIC_DOMAINS && OF && !ARCH_EXYNOS
++/* DMA Registers */
++#define DWCEQOS_DMA_MODE                       0x1000
++#define DWCEQOS_DMA_SYSBUS_MODE                        0x1004
++#define DWCEQOS_DMA_INT_STAT                   0x1008
++#define DWCEQOS_DMA_DEBUG_STAT0                        0x100c
++#define DWCEQOS_DMA_DEBUG_STAT1                        0x1010
++#define DWCEQOS_DMA_DEBUG_STAT2                        0x1014
++#define DWCEQOS_DMA_CH0_CTRL                   0x1100
++#define DWCEQOS_DMA_CH0_TX_CTRL                        0x1104
++#define DWCEQOS_DMA_CH0_RX_CTRL                        0x1108
++#define DWCEQOS_DMA_CH0_TXDESC_LIST_ADDR       0x1114
++#define DWCEQOS_DMA_CH0_RXDESC_LIST_ADDR       0x111C
++#define DWCEQOS_DMA_CH0_TXDESC_TAIL            0x1120
++#define DWCEQOS_DMA_CH0_RXDESC_TAIL            0x1128
++#define DWCEQOS_DMA_CH0_TXDESC_RING_LEN                0x112c
++#define DWCEQOS_DMA_CH0_RXDESC_RING_LEN                0x1130
++#define DWCEQOS_DMA_CH0_INT_EN                 0x1134
++#define DWCEQOS_DMA_CH0_INT_WATCHDOG_T         0x1138
++#define DWCEQOS_DMA_CH0_SLOT_FUNC_CTRL_STAT    0x113c
++#define DWCEQOS_DMA_CH0_CUR_APP_TXDESC         0x1144
++#define DWCEQOS_DMA_CH0_CUR_APP_RXDESC         0x114c
++#define DWCEQOS_DMA_CH0_CUR_APP_TXBUF          0x1154
++#define DWCEQOS_DMA_CH0_CUR_APP_RXBUF          0x115c
++#define DWCEQOS_DMA_CH0_STAT                   0x1160
 +
- config CPU_PM
- 	bool
- 	depends on SUSPEND || CPU_IDLE
--- 
-1.9.2
++/* MAC Registers */
++#define DWCEQOS_MAC_CFG                                0x0000
++#define DWCEQOS_MAC_EXT_CFG                    0x0004
++#define DWCEQOS_MAC_PACKET_FILTER              0x0008
++#define DWCEQOS_MAC_RXQ_CTRL0                  0x00a0
++#define DWCEQOS_MAC_IE                         0x00b4
++#define DWCEQOS_MAC_RX_TX_STATUS               0x00b8
++#define DWCEQOS_MAC_PHYIF_CTRL_STATUS          0x00f8
++#define DWCEQOS_MAC_DEBUG                      0x0114
++#define DWCEQOS_MAC_HW_FEATURE0                        0x011c
++#define DWCEQOS_MAC_HW_FEATURE1                        0x0120
++#define DWCEQOS_MAC_HW_FEATURE2                        0x0124
++#define DWCEQOS_MAC_ADDR_HI                    0x0300
++#define DWCEQOS_MAC_ADDR_LO                    0x0304
++#define DWCEQOS_MAC_MDIO_ADDR                  0x0200
++#define DWCEQOS_MAC_MDIO_DATA                  0x0204
++#define DWCEQOS_MAC_PKT_FILTER                 0x8
++
++/* MTL Registers */
++#define DWCEQOS_MTL_OP_MODE                    0x0c00
++#define DWCEQOS_MTL_DEUBIG_CTRL                        0x0c08
++#define DWCEQOS_MTL_DEBUG_STATUS               0x0c0c
++#define DWCEQOS_MTL_FIFO_DEBUG_DATA            0x0c10
++#define DWCEQOS_MTL_INT_STATUS                 0x0c20
++#define DWCEQOS_MTL_RXQ0_DMA_MAP0              0x0c30
++#define DWCEQOS_MTL_RXQ0_DMA_MAP1              0x0c34
++#define DWCEQOS_MTL_TXQ0_OP_MODE               0x0d00
++#define DWCEQOS_MTL_TXQ0_UNDERFLOW             0x0d04
++#define DWCEQOS_MTL_TXQ0_DEBUG                 0x0d08
++#define DWCEQOS_MTL_TXQ0_ETS_STATUS            0x0d14
++#define DWCEQOS_MTL_TXQ0_QUANTUM               0x0d18
++#define DWCEQOS_MTL_TXQ0_INT_CTRL_STATUS       0x0d2c
++#define DWCEQOS_MTL_RXQ0_OP_MODE               0x0d30
++#define DWCEQOS_MTL_RXQ0_MISSED_PACKET_OF_CNT  0x0d34
++#define DWCEQOS_MTL_RXQ0_DEBUG                 0x0d38
++#define DWCEQOS_MTL_RXQ0_CTRL                  0x0d3c
++
++
++/* Fields/constants */
++#define DWCEQOS_DMA_MODE_SWR                   1
++#define DWCEQOS_DMA_MODE_TXPR                  (1 << 11)
++#define DWCEQOS_DMA_MODE_DA                    (1 << 1)
++#define DWCEQOS_DMA_SYSBUS_MB                  (1 << 14)
++
++#define DWCEQOS_DMA_CH0_TXRX_CONTROL_PBL16     (1 << 20)
++#define DWCEQOS_DMA_CH0_TXRX_CONTROL_OSP       (1 << 4)
++#define DWCEQOS_DMA_CH0_TXRX_CONTROL_START     1
++
++#define DWCEQOS_MTL_TXQ_TTC32                  0
++#define DWCEQOS_MTL_TXQ_EN                     (1 << 3)
++#define DWCEQOS_MTL_RXQ_EN                     (1 << 3)
++#define DWCEQOS_MTL_TXQ_TSF                    (1 << 1)
++
++#define DWCEQOS_MTL_TXQ0_DEBUG_TRQSTS          (1 << 4)
++#define DWCEQOS_MTL_TXQ0_DEBUG_TRCSTS          (3 << 3)
++#define DWCEQOS_MTL_TXQ0_DEBUG_TRCSTS_READ     (1 << 3)
++
++#define DWCEQOS_MTL_RXQ_RQS256                 (3 << 20)
++#define DWCEQOS_MTL_RXQ_RTC128                 3
++#define DWCEQOS_MTL_RXQ_RTC32                  1
++
++#define DWCEQOS_MTL_RXQ_DIS_TCP_EF             (1 << 6)
++#define DWCEQOS_MTL_RXQ_FEP                    (1 << 4)
++#define DWCEQOS_MTL_RXQ_FUP                    (1 << 3)
++
++#define DWCEQOS_MAC_CFG_PS                     (1 << 15)
++#define DWCEQOS_MAC_CFG_DM                     (1 << 13)
++#define DWCEQOS_MAC_CFG_TE                     (1 << 1)
++#define DWCEQOS_MAC_CFG_RE                     1
++
++#define DWCEQOS_MAC_CFG_SARC_A0                        (3 << 28)
++#define DWCEQOS_MAC_CFG_SARC_A1                        (7 << 28)
++
++#define DWCEQOS_MAC_PKT_FILTER_RX_ALL          (1 << 31)
++#define DWCEQOS_MAC_PKT_FILTER_PCF_ALL         (2 << 6)
++#define DWCEQOS_MAC_PKT_FILTER_PROMISCUOUS     (1 << 0)
++
++#define DWCEQOS_MAC_MDIO_ADDR_CSR_20_30_MHZ    (2 << 8)
++#define DWCEQOS_MAC_MDIO_ADDR_WRITE            (1 << 2)
++#define DWCEQOS_MAC_MDIO_ADDR_READ             (3 << 2)
++#define DWCEQOS_MAC_MDIO_ADDR_BUSY             1
++
++#define DWCEQOS_MAC_ADDR_HI_EN                 (1 << 31)
++
++
++#define DWCEQOS_MAC_INT_RXSTSIE                        (1 << 14)
++
++/* DMA Structs */
++struct tdes0_rd {
++       u32 buffer1;
++};
++
++struct tdes1_rd {
++       u32 buffer2;
++};
++
++struct tdes2_rd {
++       u32 buf1len:14;
++       u32 vtir:2;
++       u32 buf2len:14;
++       u32 ttse:1;
++       u32 ioc:1;
++};
++
++struct tdes3_rd {
++       u32 fl:15;
++       u32 tiplh:1;
++       u32 cic:2;
++       u32 tse:1;
++       u32 slotnum:4;
++       u32 saic:3;
++       u32 cpc:2;
++       u32 ld:1;
++       u32 fd:1;
++       u32 ctxt:1;
++       u32 own:1;
++};
++
++struct tdes0_wr {
++       u32 ts_lo;
++};
++
++struct tdes1_wr {
++       u32 ts_hi;
++};
++
++struct tdes2_wr {
++       u32 rsvd;
++};
++
++struct tdes3_wr {
++       u32 ihe:1;
++       u32 db:1;
++       u32 uf:1;
++       u32 ed:1;
++       u32 cc:4;
++       u32 ec:1;
++       u32 lc:1;
++       u32 nc:1;
++       u32 loc:1;
++       u32 pce:1;
++       u32 ff:1;
++       u32 jt:1;
++       u32 es:1;
++       u32 rsvd1:1;
++       u32 ttss:1;
++       u32 rsvd:10;
++       u32 ld:1;
++       u32 fd:1;
++       u32 ctxt:1;
++       u32 own:1;
++};
++
++struct rdes0_rd {
++       u32 buffer1;
++};
++
++struct rdes1_rd {
++       u32 reserved;
++};
++
++struct rdes2_rd {
++       u32 buffer2;
++};
++
++struct rdes3_rd {
++       u32 rsvd1:24;
++       u32 buf1v:1;
++       u32 buf2v:1;
++       u32 rsvd:4;
++       u32 inte:1;
++       u32 own:1;
++};
++
++struct rdes0_wr {
++       u32 vt:16;
++       u32 rsvd:16;
++};
++
++struct rdes1_wr {
++       u32 pt:3;
++       u32 iphe:1;
++       u32 ipv4:1;
++       u32 ipv6:1;
++       u32 ipcb:1;
++       u32 ipce:1;
++       u32 pmt:4;
++       u32 pft:1;
++       u32 pv:1;
++       u32 tsa:1;
++       u32 td:1;
++       u32 ipt1c:16;
++};
++
++struct rdes2_wr {
++       u32 hl:10;
++       u32 arprcvf:1;
++       u32 arpnr:1;
++       u32 rsvd:3;
++       u32 vf:1;
++       u32 saf:1;
++       u32 daf:1;
++       u32 hf:1;
++       u32 madrm:8;
++       u32 l3fm:1;
++       u32 l4fm:1;
++       u32 l3l4fm:3;
++};
++
++struct rdes3_wr {
++       u32 length:15;
++       u32 es:1;
++       u32 lt:3;
++       u32 de:1;
++       u32 re:1;
++       u32 oe:1;
++       u32 rwt:1;
++       u32 gp:1;
++       u32 ce:1;
++       u32 rs0v:1;
++       u32 rs1v:1;
++       u32 rs2v:1;
++       u32 ld:1;
++       u32 fd:1;
++       u32 ctxt:1;
++       u32 own:1;
++};
++
++struct dwc_eth_qos_txdesc {
++       union {
++               struct tdes0_rd rd;
++               struct tdes0_wr wr;
++               u32 raw;
++       } tdes0;
++       union {
++               struct tdes1_rd rd;
++               struct tdes1_wr wr;
++               u32 raw;
++       } tdes1;
++       union {
++               struct tdes2_rd rd;
++               struct tdes2_wr wr;
++               u32 raw;
++       } tdes2;
++       union {
++               struct tdes3_rd rd;
++               struct tdes3_wr wr;
++               u32 raw;
++       } tdes3;
++};
++
++struct dwc_eth_qos_rxdesc {
++       union {
++               struct rdes0_rd rd;
++               struct rdes0_wr wr;
++               u32 raw;
++       } rdes0;
++       union {
++               struct rdes1_rd rd;
++               struct rdes1_wr wr;
++               u32 raw;
++       } rdes1;
++       union {
++               struct rdes2_rd rd;
++               struct rdes2_wr wr;
++               u32 raw;
++       } rdes2;
++       union {
++               struct rdes3_rd rd;
++               struct rdes3_wr wr;
++               u32 raw;
++       } rdes3;
++};
++
++#endif
+--
+1.7.2.5
 
