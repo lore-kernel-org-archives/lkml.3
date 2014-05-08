@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091AbaEHDtH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 23:49:07 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:27395 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755AbaEHDtE (ORCPT
+	id S1753168AbaEHDtX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 23:49:23 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:46337 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752786AbaEHDtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 May 2014 23:49:04 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-b6-536afead964e
+X-AuditID: cbfee691-b7f3e6d000002ce8-ce-536afeaf2499
 From: Pankaj Dubey <pankaj.dubey@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
 Cc: kgene.kim@samsung.com, t.figa@samsung.com,
-        Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH v4 0/4] Introduce new Kconfig for Samsung common clock
-Date: Thu, 08 May 2014 13:07:07 +0900
-Message-id: <1399522031-3394-1-git-send-email-pankaj.dubey@samsung.com>
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH v4 2/4] ARM: select COMMON_CLK_SAMSUNG for ARCH_EXYNOS and
+ ARCH_S3C64XX
+Date: Thu, 08 May 2014 13:07:09 +0900
+Message-id: <1399522031-3394-3-git-send-email-pankaj.dubey@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t8zY921/7KCDRa/lbLoXXCVzWLT42us
-	Fpd3zWGzmHF+H5PFoq1f2C3Wz3jN4sDmsXlJvUffllWMHp83yQUwR3HZpKTmZJalFunbJXBl
-	7Do1i7HgIl/Fhr7p7A2MV7i7GDk5JARMJPa+msoMYYtJXLi3nq2LkYtDSGAZo0Tf/ulsMEX3
-	vzyBSkxnlHh0eS6U08YksbzxNlg7m4CuxJP3c8FsEYFsiSuN98FsZoEIiTkb2lhAbGEBN4kv
-	P6+CTWURUJVYsesUUJyDg1fAXWLFBCcQU0JAQWLOJBuQ8RICz9kktt64xAxRLiDxbfIhFoga
-	WYlNB6COlpQ4uOIGywRGwQWMDKsYRVMLkguKk9KLTPWKE3OLS/PS9ZLzczcxQoJy4g7G+wes
-	DzEmA42byCwlmpwPDOq8knhDYzMjC1MTU2Mjc0sz0oSVxHnTHyUFCQmkJ5akZqemFqQWxReV
-	5qQWH2Jk4uCUamC0tLgnGcqp/W9mzjO3nN5vwavKf23qvLhp7y7xp2y/pCf8fn+raWfx/kjh
-	3kcLU9rE9jv+KTzks3Hhn//z2LQVumWOr+48s9nb+LwYd9HhuCkRt6e2bdtz0nLjg2s1qk9F
-	KvIbW73St/b+3ezg/vUiw+LF6i0pXbKrlh5zUV3Ev2beStf5U5+6KLEUZyQaajEXFScCAAwo
-	YfVgAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsVy+t9jQd21/7KCDaZtErPoXXCVzWLT42us
-	Fpd3zWGzmHF+H5PFoq1f2C3Wz3jN4sDmsXlJvUffllWMHp83yQUwRzUw2mSkJqakFimk5iXn
-	p2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYA7VVSKEvMKQUKBSQWFyvp22Ga
-	EBripmsB0xih6xsSBNdjZIAGEtYxZuw6NYux4CJfxYa+6ewNjFe4uxg5OSQETCTuf3nCBmGL
-	SVy4tx7I5uIQEpjOKPHo8lwop41JYnnjbWaQKjYBXYkn7+eC2SIC2RJXGu+D2cwCERJzNrSx
-	gNjCAm4SX35eBZvKIqAqsWLXKaA4BwevgLvEiglOIKaEgILEnEk2Exi5FzAyrGIUTS1ILihO
-	Ss810itOzC0uzUvXS87P3cQIDvln0jsYVzVYHGIU4GBU4uHNcM4KFmJNLCuuzD3EKMHBrCTC
-	6z8ZKMSbklhZlVqUH19UmpNafIgxGWj3RGYp0eR8YDzmlcQbGpuYGVkamVkYmZibkyasJM57
-	sNU6UEggPbEkNTs1tSC1CGYLEwenVANji2qz/gS7h87Hshe/POU/e8sO5ytG5isyPkgrOR3x
-	3Hztj8FPz31r2766tzpWFHAFXJlrLCmrdUN66cMjCQpz7e5G750gu2PSxZq5q776yW+fJr26
-	0ufotdWuPAtVuzWPFxYuPPPxQEeFcDV7yDv2mV3C0TOsl27Zd6wzq6hx0bYWkzMHPZ1zlFiK
-	MxINtZiLihMBTj7AEb0CAAA=
+In-reply-to: <1399522031-3394-1-git-send-email-pankaj.dubey@samsung.com>
+References: <1399522031-3394-1-git-send-email-pankaj.dubey@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsVy+t8zfd31/7KCDfbM47ToXXCVzWLT42us
+	Fpd3zWGzmHF+H5PF7cu8Fou2fmG3WD/jNYsDu0dLcw+bx+Yl9R59W1YxenzeJBfAEsVlk5Ka
+	k1mWWqRvl8CVcXT3JOaCo+wVax7NYm1gnMvWxcjJISFgIvFx+nNmCFtM4sK99UBxLg4hgWWM
+	Eps/3mKEKXq47wIjRGI6o8SWiXtYIJw2JomP16ayglSxCehKPHk/F2yUiEC2xJXG+2A2s0C9
+	xOazq8DWCQtESiz73csCYrMIqEocv/seLM4r4C5xuv06excjB9A2BYk5k2xATE4BD4nJJ61B
+	KoSAKt4d3wx2nITAZHaJjokr2CDGCEh8m3yIBaJVVmLTAahnJCUOrrjBMoFReAEjwypG0dSC
+	5ILipPQiU73ixNzi0rx0veT83E2MkLCeuIPx/gHrQ4zJQOMmMkuJJucD4yKvJN7Q2MzIwtTE
+	1NjI3NKMNGElcd70R0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhgntXDNWfXZ6juvIZ9U
+	+DXDLpVzyl5Sr9MTZvlfOXL95BVDUY2z516fPbtU3H3mU3exf9u6RHSP2E9bq9Ef8MRPkOFJ
+	msEVhpMrHE7O/8PGV3V2X98u8wj9e2HT61U2+XHNWNJXHpYy8cq6mZ6Kp+daWIvOqUp4+4oz
+	sU1KgLFX+8yz57qPTuYosRRnJBpqMRcVJwIA/v4jUIECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t9jQd31/7KCDQ4tYbXoXXCVzWLT42us
+	Fpd3zWGzmHF+H5PF7cu8Fou2fmG3WD/jNYsDu0dLcw+bx+Yl9R59W1YxenzeJBfAEtXAaJOR
+	mpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdICSQlliTilQ
+	KCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMePo7knMBUfZK9Y8msXawDiXrYuRk0NC
+	wETi4b4LjBC2mMSFe+uB4lwcQgLTGSW2TNzDAuG0MUl8vDaVFaSKTUBX4sn7ucwgtohAtsSV
+	xvtgNrNAvcTms6vApgoLREos+93LAmKzCKhKHL/7HizOK+Aucbr9OnsXIwfQNgWJOZNsQExO
+	AQ+JySetQSqEgCreHd/MNoGRdwEjwypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4Kh5Jr2D
+	cVWDxSFGAQ5GJR7eDOesYCHWxLLiytxDjBIczEoivP6TgUK8KYmVValF+fFFpTmpxYcYk4Fu
+	msgsJZqcD4zovJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7ZaBwoJpCeWpGanphakFsFsYeLglGpg
+	zLPe+sI1vanz+N3XYp+N3vi63Of+FnyQyXm+whHJs7lfd6uf3Lps57wbqySuaDMLS9TyZzgk
+	CP7a5svhMo9XZJPwlLjr2v82bgs9JP7u9KurYcu/JOcU3r5/0Hxmc07U7exzzxKfvl06dU7k
+	qe3XHjmze3DsWmk656/A+Z6lt547OrMlCZ37oa/EUpyRaKjFXFScCADy4/SL3gIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -47,52 +51,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch selects COMMON_CLK_SAMSUNG for EXYNOS and S3C64XX SoC
+and removes COMMON_CLK selection as COMMON_CLK_SAMSUNG selects it's dependency.
 
-Introduce a new Kconfig file for Samsung common clock infrastructure
-related config options. As current Samsung common clock gets compiled
-based on PLAT_SAMSUNG, but moving ahead with ARM64 we can not have any
-more such config options, so this patch introduce new COMMON_CLK_SAMSUNG
-invisible option. This option also select COMMON_CLK so ARCH Kconfig just
-need to select COMMON_CLK_SAMSUNG in case they want to use Samsung common
-clock.
+CC: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+---
+ arch/arm/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-This series is based on Kukjin's for-next branch.
-
-I am just respinning this patch after rebasing. I have already addressed
-all review comments discussed here [1].
-
-[1]: http://lkml.org/lkml/2014/3/19/216
-
-V4:
- 1) Rebased on latest Kukjin's for-next branch.
-
-V3: 
- 1) Re-organized patches for preventing bisect issues.
- 2) Rebase on top of latest Kukjin's for-next branch.
- 3) Compile tested exynos_defconfig, s3c6400_defconfig and s3c2410_defconfig
-    after each commit.
-
-V2:
- 1) Adding new Kconfig file for Samsung common clock.
- 2) Make COMMON_CLK_SAMSUNG option invisible. (as suggested by Tomasz Figa)
- 3) Let COMMON_CLK_SAMSUNG select COMMON_CLK. (as suggested by Tomasz Figa)
- 4) Move S3C24XX clock config option in new Kconfig file.
-
-Pankaj Dubey (4):
-  clk: samsung: add new Kconfig for Samsung common clock option
-  ARM: select COMMON_CLK_SAMSUNG for ARCH_EXYNOS and ARCH_S3C64XX
-  ARM: S3C24XX: move S3C24XX clock Kconfig options to Samsung clock
-    Kconfig file
-  drivers: clk: use COMMON_CLK_SAMSUNG for Samsung clock support
-
- arch/arm/Kconfig              |    4 ++--
- arch/arm/mach-s3c24xx/Kconfig |   14 --------------
- drivers/clk/Kconfig           |    2 ++
- drivers/clk/Makefile          |    2 +-
- drivers/clk/samsung/Kconfig   |   12 ++++++++++++
- 5 files changed, 17 insertions(+), 17 deletions(-)
- create mode 100644 drivers/clk/samsung/Kconfig
-
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index ab438cb..0edb868 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -754,7 +754,7 @@ config ARCH_S3C64XX
+ 	select ATAGS
+ 	select CLKDEV_LOOKUP
+ 	select CLKSRC_SAMSUNG_PWM
+-	select COMMON_CLK
++	select COMMON_CLK_SAMSUNG
+ 	select CPU_V6K
+ 	select GENERIC_CLOCKEVENTS
+ 	select GPIO_SAMSUNG
+@@ -835,7 +835,7 @@ config ARCH_EXYNOS
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARCH_SPARSEMEM_ENABLE
+ 	select ARM_GIC
+-	select COMMON_CLK
++	select COMMON_CLK_SAMSUNG
+ 	select CPU_V7
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_S3C2410_I2C if I2C
 -- 
 1.7.10.4
 
