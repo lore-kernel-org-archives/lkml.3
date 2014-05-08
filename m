@@ -1,109 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246AbaEHPGH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:06:07 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22238 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751625AbaEHPGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:06:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1010,1389772800"; 
-   d="scan'208";a="508436007"
-Message-ID: <536B9CF6.9000907@intel.com>
-Date: Thu, 08 May 2014 08:04:22 -0700
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754604AbaEHPGl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:06:41 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:48382 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751885AbaEHPGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 11:06:39 -0400
+Message-ID: <536B9D78.5000602@codethink.co.uk>
+Date: Thu, 08 May 2014 16:06:32 +0100
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+Organization: Codethink Limited.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
 MIME-Version: 1.0
-To: Jet Chen <jet.chen@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        Dave Jiang <dave.jiang@intel.com>
-CC: fengguang.wu@intel.com, wei.w.lin@intel.com, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH] DCA: fix over-warning in ioat3_dca_init
-References: <1399542166-42985-1-git-send-email-jet.chen@intel.com>
-In-Reply-To: <1399542166-42985-1-git-send-email-jet.chen@intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+CC: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Magnus Damm <damm@opensource.se>, linux-pci@vger.kernel.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH] pci: rcar host needs OF
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <1399560990-1402858-1-git-send-email-arnd@arndb.de> <1399560990-1402858-14-git-send-email-arnd@arndb.de>
+In-Reply-To: <1399560990-1402858-14-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I actually went to a bit of trouble to get this message added as many
-BIOSes have the annoying quality of getting this wrong, and then
-products are shipped and labeled as having the DCA feature when they
-actually don't.  One easy way to get rid of the message is to disable
-either DCA or IOAT in the BIOS since it is broken anyway.  By adding
-this we at least have some visibility and it puts pressure on the BIOS
-guys to get this fixed if we want to claim the platform does DCA.
-
-I consider this to be a real BIOS bug as the DCA feature is crippled
-without it.  Also moving this to just a debug message is going to make
-it very difficult for us to debug this when a performance issue comes up
-on a customer platform as we will have to get them to perform extra
-steps in order to actually figure out what is going on with DCA.
-
-Thanks,
-
-Alex
-
-On 05/08/2014 02:42 AM, Jet Chen wrote:
-> We keep seeing such dmesg messages on boxes
+On 08/05/14 15:56, Arnd Bergmann wrote:
+> The pci-rcar driver is enabled for compile tests, and this has
+> now shown that the driver cannot build without CONFIG_OF,
+> following the inclusion of f8f2fe7355fb "PCI: rcar: Use new OF
+> interrupt mapping when possible":
 >
-> [   16.596610] WARNING: CPU: 0 PID: 457 at drivers/dma/ioat/dca.c:697 ioat3_dca_init+0x19c/0x1b0 [ioatdma]()
-> [   16.609614] ioatdma 0000:00:04.0: APICID_TAG_MAP set incorrectly by BIOS, disabling DCA
-> ...
-> [   16.892058]  [<ffffffff8172807e>] dump_stack+0x4d/0x66
-> [   16.892061]  [<ffffffff81067f7d>] warn_slowpath_common+0x7d/0xa0
-> [   16.892064]  [<ffffffff81068034>] warn_slowpath_fmt_taint+0x44/0x50
-> [   16.892065]  [<ffffffffa00228bc>] ioat3_dca_init+0x19c/0x1b0 [ioatdma]
-> [   16.892069]  [<ffffffffa0021cd6>] ioat3_dma_probe+0x386/0x3e0 [ioatdma]
-> [   16.892071]  [<ffffffffa001a192>] ioat_pci_probe+0x122/0x1b0 [ioatdma]
-> [   16.892074]  [<ffffffff81329385>] local_pci_probe+0x45/0xa0
-> [   16.892076]  [<ffffffff81080d34>] work_for_cpu_fn+0x14/0x20
-> [   16.892077]  [<ffffffff81083c33>] process_one_work+0x183/0x490
-> [   16.892079]  [<ffffffff81084bd3>] worker_thread+0x2a3/0x410
-> [   16.892080]  [<ffffffff81084930>] ? rescuer_thread+0x410/0x410
-> [   16.892081]  [<ffffffff8108b852>] kthread+0xd2/0xf0
-> [   16.892083]  [<ffffffff8108b780>] ? kthread_create_on_node+0x180/0x180
-> [   16.892085]  [<ffffffff817396bc>] ret_from_fork+0x7c/0xb0
-> [   16.892091] fbcon: mgadrmfb (fb0) is primary device
-> [   16.892092]  [<ffffffff8108b780>] ? kthread_create_on_node+0x180/0x180
+> drivers/built-in.o: In function `rcar_pci_map_irq':
+> :(.text+0x1cc7c): undefined reference to `of_irq_parse_and_map_pci'
 >
-> No need to use WARN_TAINT_ONCE to generate a such big noise if this is not a critical error for kernel. DCA driver could print out a debug messages then quit quietly.
->
-> If this is a real BIOS bug, please ignore this patch. Let's transfer this issue to BIOS guys.
->
-> Signed-off-by: Jet Chen <jet.chen@intel.com>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Magnus Damm <damm@opensource.se>
+> Cc: linux-pci@vger.kernel.org
+> Cc: linux-sh@vger.kernel.org
 > ---
->  drivers/dma/ioat/dca.c | 10 ++--------
->  1 file changed, 2 insertions(+), 8 deletions(-)
+>   drivers/pci/host/Kconfig | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> diff --git a/drivers/dma/ioat/dca.c b/drivers/dma/ioat/dca.c
-> index 9e84d5b..c0f7971 100644
-> --- a/drivers/dma/ioat/dca.c
-> +++ b/drivers/dma/ioat/dca.c
-> @@ -470,10 +470,7 @@ struct dca_provider *ioat2_dca_init(struct pci_dev *pdev, void __iomem *iobase)
->  	}
->  
->  	if (!dca2_tag_map_valid(ioatdca->tag_map)) {
-> -		WARN_TAINT_ONCE(1, TAINT_FIRMWARE_WORKAROUND,
-> -				"%s %s: APICID_TAG_MAP set incorrectly by BIOS, disabling DCA\n",
-> -				dev_driver_string(&pdev->dev),
-> -				dev_name(&pdev->dev));
-> +		dev_dbg(&pdev->dev, "APICID_TAG_MAP set incorrectly by BIOS, disabling DCA\n");
->  		free_dca_provider(dca);
->  		return NULL;
->  	}
-> @@ -691,10 +688,7 @@ struct dca_provider *ioat3_dca_init(struct pci_dev *pdev, void __iomem *iobase)
->  	}
->  
->  	if (dca3_tag_map_invalid(ioatdca->tag_map)) {
-> -		WARN_TAINT_ONCE(1, TAINT_FIRMWARE_WORKAROUND,
-> -				"%s %s: APICID_TAG_MAP set incorrectly by BIOS, disabling DCA\n",
-> -				dev_driver_string(&pdev->dev),
-> -				dev_name(&pdev->dev));
-> +		dev_dbg(&pdev->dev, "APICID_TAG_MAP set incorrectly by BIOS, disabling DCA\n");
->  		free_dca_provider(dca);
->  		return NULL;
->  	}
+> diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
+> index fbbef0b..4675f47 100644
+> --- a/drivers/pci/host/Kconfig
+> +++ b/drivers/pci/host/Kconfig
+> @@ -27,7 +27,7 @@ config PCI_TEGRA
+>
+>   config PCI_RCAR_GEN2
+>   	bool "Renesas R-Car Gen2 Internal PCI controller"
+> -	depends on ARCH_SHMOBILE || (ARM && COMPILE_TEST)
+> +	depends on ARCH_SHMOBILE || (ARM && OF && COMPILE_TEST)
+>   	help
+>   	  Say Y here if you want internal PCI support on R-Car Gen2 SoC.
+>   	  There are 3 internal PCI controllers available with a single
+>
 
+This driver /should/ be able to be built for just the platform case
+so it sounds like f8f2fe7355fb stopped this but no-one has yet to
+notice.
+
+-- 
+Ben Dooks				http://www.codethink.co.uk/
+Senior Engineer				Codethink - Providing Genius
