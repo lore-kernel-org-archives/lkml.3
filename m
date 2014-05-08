@@ -1,104 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662AbaEHPVN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:21:13 -0400
-Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:20049
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751501AbaEHPVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:21:11 -0400
-X-WSS-ID: 0N59HB6-08-0BF-02
-X-M-MSG: 
-Message-ID: <536BA0E3.4050709@amd.com>
-Date: Thu, 8 May 2014 10:21:07 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754094AbaEHPWE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:22:04 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:55334 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753540AbaEHPWC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 11:22:02 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Magnus Damm <damm@opensource.se>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Subject: Re: [PATCH] pci: rcar host needs OF
+Date: Thu, 08 May 2014 17:21:54 +0200
+Message-ID: <9614403.Lyniq7F3TJ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAMuHMdWBzBneDqyDxK5HU3Bt_5CyRfTM_f_6YGJHokG_v17_sw@mail.gmail.com>
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <536B9D78.5000602@codethink.co.uk> <CAMuHMdWBzBneDqyDxK5HU3Bt_5CyRfTM_f_6YGJHokG_v17_sw@mail.gmail.com>
 MIME-Version: 1.0
-To: Robert Richter <rric@kernel.org>
-CC: <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        Borislav Petkov <bp@suse.de>,
-        "Daniel J Blueman" <daniel@numascale.com>,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [PATCH V3 1/3] x86/PCI: Fix PCI root numa_node info on AMD family15h
-References: <1399489127-6961-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1399489127-6961-2-git-send-email-suravee.suthikulpanit@amd.com>
- <20140508085905.GK32718@rric.localhost>
- <20140508090148.GL32718@rric.localhost> <536B973B.2000207@amd.com>
- <20140508151402.GN32718@rric.localhost>
-In-Reply-To: <20140508151402.GN32718@rric.localhost>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(479174003)(377454003)(189002)(199002)(51704005)(24454002)(79102001)(80022001)(65806001)(47776003)(20776003)(64706001)(65956001)(74662001)(74502001)(31966008)(83506001)(84676001)(36756003)(21056001)(33656001)(50466002)(81542001)(44976005)(68736004)(19580405001)(19580395003)(83322001)(76482001)(83072002)(64126003)(65816999)(85852003)(59896001)(77982001)(92726001)(23756003)(99396002)(46102001)(92566001)(86362001)(101416001)(54356999)(4396001)(76176999)(81342001)(50986999)(87266999)(77096999)(2009001)(97736001)(87936001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR02MB115;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 0205EDCD76
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:nxeyC4PrJvlEbcISfyWIg+emUt2iUYwgkJC1Une297i
+ pn29Xmp1tp+nB6Y2edberLfWhNL29TQ5RRIiXjiqGLzTPS7KdY
+ gKYGydt2JVACgoF78TWMAjddRAo1ZLm5MNhZDFM99iv2zc/x70
+ ubAheA9uohIk4fO+0GoE4O2w4PhzH3YCWEuggMJrBot+NiRt2f
+ XSUJVQujZ9giLEnO4K4BWWBfkIRauLPJiXfwteEJyxtbxN2Oli
+ KQlLZNYherbCwkweNgprVoaLvDmIDecLT7Qu0CY0XeYH2JEvr0
+ jCnDZ1bhqw0/Gc+d4kbz7A65fE3VZXURuOYJ7eATHARMjXqeZz
+ 6IKD2RNOFOo/ctbxdNGQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/8/2014 10:14 AM, Robert Richter wrote:
-> On 08.05.14 09:39:55, Suravee Suthikulanit wrote:
->> On 5/8/2014 4:01 AM, Robert Richter wrote:
->>> On 08.05.14 10:59:05, Robert Richter wrote:
->>>> On 07.05.14 13:58:45, suravee.suthikulpanit@amd.com wrote:
->>>>> @@ -113,10 +122,17 @@ static int __init early_fill_mp_bus_info(void)
->>>>>   		info = alloc_pci_root_info(min_bus, max_bus, node, link);
->>>>>   	}
->>>>>
->>>>> +	/*
->>>>> +	 * The following code is only supported until Fam11h.
->>>>> +	 * Newer processors will depend on ACPI MCFG table instead.
->>>>> +	 */
->>>>> +	if (boot_cpu_data.x86 > 0x11)
->>>>> +		return 0;
->>>>> +
->>>>>   	/* get the default node and link for left over res */
->>>>
->>>> As this is the only substantial change of your patch, I would better
->>>> drop ther rest or at least split it in two patches. Should this change
->>>> also be for stable?
->>>
->>> Of course adding the hostbridge must be also part of the patch, didn't
->>> note this due to the other noise. See why the split would be good?
->>>
->>>>
->>>> -Robert
->>
->>
->> Robert,
->>
->> I have already added the hostbridge for family15h in this patch.
->>
->> +static struct amd_hostbridge hb_probes[] __initdata = {
->> +	{ 0, 0x18, 0x1100 }, /* K8 */
->> +	{ 0, 0x18, 0x1200 }, /* Family10h */
->> +	{ 0xff, 0, 0x1200 }, /* Family10h */
->> +	{ 0, 0x18, 0x1300 }, /* Family11h */
->> +	{ 0, 0x18, 0x1600 }, /* Family15h */ <--- HERE
->
-> Yes, I noticed that, but later, thus my 2nd mail.
->
->>   };
->>
->> The rest of the changes are mostly comments, some minor renaming of
->> variables for clarity, and replace hardcode values with preprocessor macro.
->> If needed, I can split them.
->
-> I just would drop it, you just need the fam15h device and the cpu mode
-> check.
->
-> -Robert
->
-The reason I put it all these comments here is because it took us a 
-while to discuss what to do with this file going forward. There were 
-some confusions.  Therefore, I just want to document it here.
+On Thursday 08 May 2014 17:16:32 Geert Uytterhoeven wrote:
+> On Thu, May 8, 2014 at 5:06 PM, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
+> > On 08/05/14 15:56, Arnd Bergmann wrote:
+> >>
+> >> The pci-rcar driver is enabled for compile tests, and this has
+> >> now shown that the driver cannot build without CONFIG_OF,
+> >> following the inclusion of f8f2fe7355fb "PCI: rcar: Use new OF
+> >> interrupt mapping when possible":
+> >>
+> >> drivers/built-in.o: In function `rcar_pci_map_irq':
+> >> :(.text+0x1cc7c): undefined reference to `of_irq_parse_and_map_pci'
+> >>
+> >> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> >> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> >> Cc: Magnus Damm <damm@opensource.se>
+> >> Cc: linux-pci@vger.kernel.org
+> >> Cc: linux-sh@vger.kernel.org
+> >> ---
+> >>   drivers/pci/host/Kconfig | 2 +-
+> >>   1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
+> >> index fbbef0b..4675f47 100644
+> >> --- a/drivers/pci/host/Kconfig
+> >> +++ b/drivers/pci/host/Kconfig
+> >> @@ -27,7 +27,7 @@ config PCI_TEGRA
+> >>
+> >>   config PCI_RCAR_GEN2
+> >>         bool "Renesas R-Car Gen2 Internal PCI controller"
+> >> -       depends on ARCH_SHMOBILE || (ARM && COMPILE_TEST)
+> >> +       depends on ARCH_SHMOBILE || (ARM && OF && COMPILE_TEST)
+> >>         help
+> >>           Say Y here if you want internal PCI support on R-Car Gen2 SoC.
+> >>           There are 3 internal PCI controllers available with a single
+> >>
+> >
+> > This driver /should/ be able to be built for just the platform case
+> > so it sounds like f8f2fe7355fb stopped this but no-one has yet to
+> > notice.
+> 
+> You mean include/linux/of_pci.h should provide a dummy version of
+> of_irq_parse_and_map_pci() returning 0 in case OF=n?
 
-Also, the check for (boot_cpu_data.x86 > 0x11) was needed because it 
-should not be done for family15h.
+Good idea, I'll give this patch some testing in the randconfig builder,
+replacing the one above.
 
-Suravee
+	Arnd
+
+diff --git a/include/linux/of_pci.h b/include/linux/of_pci.h
+index 1a1f5ff..b6f2621 100644
+--- a/include/linux/of_pci.h
++++ b/include/linux/of_pci.h
+@@ -7,7 +7,6 @@
+ struct pci_dev;
+ struct of_phandle_args;
+ int of_irq_parse_pci(const struct pci_dev *pdev, struct of_phandle_args *out_irq);
+-int of_irq_parse_and_map_pci(const struct pci_dev *dev, u8 slot, u8 pin);
+ 
+ struct device_node;
+ struct device_node *of_pci_find_child_device(struct device_node *parent,
+@@ -19,11 +18,14 @@ int of_pci_parse_bus_range(struct device_node *node, struct resource *res);
+ int of_pci_msi_chip_add(struct msi_chip *chip);
+ void of_pci_msi_chip_remove(struct msi_chip *chip);
+ struct msi_chip *of_pci_find_msi_chip_by_node(struct device_node *of_node);
++int of_irq_parse_and_map_pci(const struct pci_dev *dev, u8 slot, u8 pin);
+ #else
+ static inline int of_pci_msi_chip_add(struct msi_chip *chip) { return -EINVAL; }
+ static inline void of_pci_msi_chip_remove(struct msi_chip *chip) { }
+ static inline struct msi_chip *
+ of_pci_find_msi_chip_by_node(struct device_node *of_node) { return NULL; }
++static inline int
++of_irq_parse_and_map_pci(const struct pci_dev *dev, u8 slot, u8 pin) { return 0; }
+ #endif
+ 
+ #endif
+
