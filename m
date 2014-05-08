@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776AbaEHKsv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 06:48:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33488 "EHLO
+	id S1754799AbaEHKtd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 06:49:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33410 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907AbaEHKst (ORCPT
+	with ESMTP id S1754002AbaEHKrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 06:48:49 -0400
-Date: Thu, 8 May 2014 03:47:54 -0700
-From: "tip-bot for Rafael J. Wysocki" <tipbot@zytor.com>
-Message-ID: <tip-08c373e5123b4595588ae1a7aa7e00a046c61cc6@git.kernel.org>
+	Thu, 8 May 2014 06:47:04 -0400
+Date: Thu, 8 May 2014 03:46:27 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-35zzwlvwr7cp8xj196y10yyx@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        rafael.j.wysocki@intel.com, tglx@linutronix.de,
-        daniel.lezcano@linaro.org
+        cmetcalf@tilera.com, luto@amacapital.net, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        rafael.j.wysocki@intel.com, tglx@linutronix.de,
-        daniel.lezcano@linaro.org
-In-Reply-To: <4717784.WmVEpDoliM@vostro.rjw.lan>
-References: <4717784.WmVEpDoliM@vostro.rjw.lan>
+        cmetcalf@tilera.com, luto@amacapital.net, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/idle: Make cpuidle_idle_call() void
-Git-Commit-ID: 08c373e5123b4595588ae1a7aa7e00a046c61cc6
+Subject: [tip:sched/core] sched/idle, tile:
+  Switch from TS_POLLING to TIF_POLLING_NRFLAG
+Git-Commit-ID: b3a8cb18ce284b5c47517b681c42fcb9d8a99992
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,58 +32,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  08c373e5123b4595588ae1a7aa7e00a046c61cc6
-Gitweb:     http://git.kernel.org/tip/08c373e5123b4595588ae1a7aa7e00a046c61cc6
-Author:     Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-AuthorDate: Mon, 21 Apr 2014 01:26:58 +0200
+Commit-ID:  b3a8cb18ce284b5c47517b681c42fcb9d8a99992
+Gitweb:     http://git.kernel.org/tip/b3a8cb18ce284b5c47517b681c42fcb9d8a99992
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Fri, 11 Apr 2014 09:59:13 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 8 May 2014 09:17:00 +0200
+CommitDate: Thu, 8 May 2014 09:16:54 +0200
 
-sched/idle: Make cpuidle_idle_call() void
+sched/idle, tile: Switch from TS_POLLING to TIF_POLLING_NRFLAG
 
-The only value ever returned by cpuidle_idle_call() is 0 and its
-only caller ignores that value anyway, so make it void.
+Standardize the idle polling indicator to TIF_POLLING_NRFLAG such that
+both TIF_NEED_RESCHED and TIF_POLLING_NRFLAG are in the same word.
+This will allow us, using fetch_or(), to both set NEED_RESCHED and
+check for POLLING_NRFLAG in a single operation and avoid pointless
+wakeups.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Changing from the non-atomic thread_info::status flags to the atomic
+thread_info::flags shouldn't be a big issue since most polling state
+changes were followed/preceded by a full memory barrier anyway.
+
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/4717784.WmVEpDoliM@vostro.rjw.lan
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/n/tip-35zzwlvwr7cp8xj196y10yyx@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/idle.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ arch/tile/include/asm/thread_info.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
-index 88a6bc4..34083c9 100644
---- a/kernel/sched/idle.c
-+++ b/kernel/sched/idle.c
-@@ -67,9 +67,8 @@ void __weak arch_cpu_idle(void)
-  * cpuidle_idle_call - the main idle function
-  *
-  * NOTE: no locks or semaphores should be used here
-- * return non-zero on failure
-  */
--static int cpuidle_idle_call(void)
-+static void cpuidle_idle_call(void)
- {
- 	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
- 	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
-@@ -82,7 +81,7 @@ static int cpuidle_idle_call(void)
- 	 */
- 	if (need_resched()) {
- 		local_irq_enable();
--		return 0;
-+		return;
- 	}
+diff --git a/arch/tile/include/asm/thread_info.h b/arch/tile/include/asm/thread_info.h
+index 729aa10..d767ff9 100644
+--- a/arch/tile/include/asm/thread_info.h
++++ b/arch/tile/include/asm/thread_info.h
+@@ -129,6 +129,7 @@ extern void _cpu_idle(void);
+ #define TIF_MEMDIE		7	/* OOM killer at work */
+ #define TIF_NOTIFY_RESUME	8	/* callback before returning to user */
+ #define TIF_SYSCALL_TRACEPOINT	9	/* syscall tracepoint instrumentation */
++#define TIF_POLLING_NRFLAG	10	/* idle is polling for TIF_NEED_RESCHED */
  
- 	/*
-@@ -177,8 +176,6 @@ exit_idle:
+ #define _TIF_SIGPENDING		(1<<TIF_SIGPENDING)
+ #define _TIF_NEED_RESCHED	(1<<TIF_NEED_RESCHED)
+@@ -140,6 +141,7 @@ extern void _cpu_idle(void);
+ #define _TIF_MEMDIE		(1<<TIF_MEMDIE)
+ #define _TIF_NOTIFY_RESUME	(1<<TIF_NOTIFY_RESUME)
+ #define _TIF_SYSCALL_TRACEPOINT	(1<<TIF_SYSCALL_TRACEPOINT)
++#define _TIF_POLLING_NRFLAG	(1<<TIF_POLLING_NRFLAG)
  
- 	rcu_idle_exit();
- 	start_critical_timings();
--
--	return 0;
- }
+ /* Work to do on any return to user space. */
+ #define _TIF_ALLWORK_MASK \
+@@ -162,7 +164,6 @@ extern void _cpu_idle(void);
+ #ifdef __tilegx__
+ #define TS_COMPAT		0x0001	/* 32-bit compatibility mode */
+ #endif
+-#define TS_POLLING		0x0004	/* in idle loop but not sleeping */
+ #define TS_RESTORE_SIGMASK	0x0008	/* restore signal mask in do_signal */
  
- /*
+ #ifndef __ASSEMBLY__
