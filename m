@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109AbaEHPC7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:02:59 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:55021 "EHLO
+	id S1755093AbaEHPC6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:02:58 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:55715 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485AbaEHO4m (ORCPT
+	with ESMTP id S1752840AbaEHO4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 May 2014 10:56:42 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Subject: [PATCH] bus/arm-cci: add dependency on OF && CPU_V7
-Date: Thu,  8 May 2014 16:56:18 +0200
-Message-Id: <1399560990-1402858-7-git-send-email-arnd@arndb.de>
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
+Subject: [PATCH 1/2] dmaengine: omap: hide filter_fn for built-in drivers
+Date: Thu,  8 May 2014 16:56:12 +0200
+Message-Id: <1399560990-1402858-1-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1399560990-1402858-1-git-send-email-arnd@arndb.de>
+In-Reply-To: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
 References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
- <1399560990-1402858-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:xpPMIAgy3CAYJJ1lJ8xEA1yeg3SDZb/m62FXZFAV8/C
- l8BRIYjR+ymayeSaLL8QpJCr4kzlsfkSirj4Mp15KhyWMoQy4t
- IxV12cVuzMXzj7YKrvNWL4ty06P83qoHwXy0P2DR31W55I6AQB
- 2VB3bpMBdedYE7NlrVQeJpA60fBl+sn0uxH8xhCX1obfGRW6Mw
- pyWjEea6RdD74imoGS1FmvoVMcVN8fUnXywnkn7kFPb+y39t9Y
- U02cmX6sfqpPf+mJH5/dXL+wqo66UbJ77OphxuIP0z6DU1JSR/
- Vkys+4gCKFY3LyL/OX+JSbrl1qU2qGhYvjnWOk6bqPYbv/E8ji
- MxKn4l2LXryjXTRX/V/srjH7Y1fiyGQTPCaN4hMn8
+X-Provags-ID: V02:K0:CIqsGp9MKxEPFQhUWT77wfQPa+Xjhyt9Vjx3N+YZcXk
+ v6PPINCGzeEMvD5aDpmKvIGWNEqK9TcVm9lmjG+uOogA7hkiTZ
+ EpXn1EefT0+yHOB/FY62xK9sG3mUmcwEDA8tXukUDzv9DiglmD
+ 6ziMFxd+lfkVma2JLjIfgDbDBPNcH4iZ8kVCuo+ghaNKQeXhL7
+ f6NWDmBgZb4JMp4W5VcQ5ssN4WpQrM8TE9/51H9g/ITw9JB+U9
+ VzqMujGq4Wr/3SJesNErcO5xqskUXAssxVq9SGAy2MO26H9ZLV
+ 2ewJ1bZzks8c/syt+TymDmlN+txdwyOsRYc1SYKxeh25/xgUar
+ p66qPr9weabC0pXBe4DmFSAryDZDdQHAdC8HketPu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The arm-cci code uses device tree helpers for initialization
-that don't work on kernels built without CONFIG_OF. Further,
-it contains an inline assembly in cci_enable_port_for_self()
-that uses ARMv7 instructions and fails to build when targetting
-other ARM instruction set versions.
+It is not possible to reference the omap_dma_filter_fn filter
+function from a built-in driver if the dmaengine driver itself
+is a loadable module, which is a valid configuration otherwise.
 
-This works around both issues by limiting the scope of the
-Kconfig symbol to platforms that can actually build this driver
-cleanly.
+This provides only the dummy alternative if the function
+is referenced by a built-in driver to allow a successful
+build. The filter function is only required by ATAGS based
+platforms, which will continue to be broken after this change
+for the bogus configuration. When booting from DT, with the
+dma channels correctly listed there, it will work fine.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: dmaengine@vger.kernel.org
 ---
- drivers/bus/Kconfig | 2 +-
+ include/linux/omap-dma.h | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/bus/Kconfig b/drivers/bus/Kconfig
-index 552373c..d53417e 100644
---- a/drivers/bus/Kconfig
-+++ b/drivers/bus/Kconfig
-@@ -37,7 +37,7 @@ config OMAP_INTERCONNECT
+diff --git a/include/linux/omap-dma.h b/include/linux/omap-dma.h
+index 0a1a2e2..c29a6de 100644
+--- a/include/linux/omap-dma.h
++++ b/include/linux/omap-dma.h
+@@ -10,7 +10,7 @@
  
- config ARM_CCI
- 	bool "ARM CCI driver support"
--	depends on ARM
-+	depends on ARM && OF && CPU_V7
- 	help
- 	  Driver supporting the CCI cache coherent interconnect for ARM
- 	  platforms.
+ struct dma_chan;
+ 
+-#if defined(CONFIG_DMA_OMAP) || defined(CONFIG_DMA_OMAP_MODULE)
++#if defined(CONFIG_DMA_OMAP) || (defined(CONFIG_DMA_OMAP_MODULE) && defined(MODULE))
+ bool omap_dma_filter_fn(struct dma_chan *, void *);
+ #else
+ static inline bool omap_dma_filter_fn(struct dma_chan *c, void *d)
 -- 
 1.8.3.2
 
