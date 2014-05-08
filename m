@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644AbaEHVdo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 17:33:44 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54838 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755389AbaEHVdm (ORCPT
+	id S1755593AbaEHVk0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 17:40:26 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:65397 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753994AbaEHVkZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 17:33:42 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 1/3] PM / sleep: Flag to speed up suspend-resume of runtime-suspended devices
-Date: Thu, 08 May 2014 23:50:23 +0200
-Message-ID: <2356017.WpDFDYKWcr@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1516837.oN5cf7KDad@vostro.rjw.lan>
-References: <Pine.LNX.4.44L0.1405081718200.995-100000@iolanthe.rowland.org> <1516837.oN5cf7KDad@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Thu, 8 May 2014 17:40:25 -0400
+Subject: Re: [BUG] kmemleak on __radix_tree_preload
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Content-Type: text/plain; charset=windows-1252
+From: Catalin Marinas <catalin.marinas@arm.com>
+In-Reply-To: <20140508175222.GM19914@cmpxchg.org>
+Date: Thu, 8 May 2014 22:40:22 +0100
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        "Linux Kernel, Mailing List" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C810FC85-01F4-4301-A4AA-B85380D4F2FB@arm.com>
+References: <20140501184112.GH23420@cmpxchg.org> <1399431488.13268.29.camel@kjgkr> <20140507113928.GB17253@arm.com> <1399540611.13268.45.camel@kjgkr> <20140508092646.GA17349@arm.com> <1399541860.13268.48.camel@kjgkr> <20140508102436.GC17344@arm.com> <20140508150026.GA8754@linux.vnet.ibm.com> <20140508152946.GA10470@localhost> <20140508155330.GE8754@linux.vnet.ibm.com> <20140508175222.GM19914@cmpxchg.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 08, 2014 11:42:01 PM Rafael J. Wysocki wrote:
-> On Thursday, May 08, 2014 05:20:43 PM Alan Stern wrote:
-> > On Thu, 8 May 2014, Rafael J. Wysocki wrote:
-> > 
-> > > > > Wait a minute.  Following ->runtime_suspend(), you are going to call 
-> > > > > ->suspend() and then ->runtime_resume()?  That doesn't seem like what 
-> > > > > you really want; a ->suspend() call should always have a matching 
-> > > > > ->resume().
-> > > > 
-> > > > Yes, it should, but I didn't see any other way to do that.
-> > > 
-> > > Actually, that's kind of easy to resolve. :-)
-> > > 
-> > > When ->suspend() leaves power.leave_runtime_suspended set, the PM core can
-> > > simply skip the early/late and noirq callbacks and then call ->resume()
-> > > that will be responsible for using whatever is necessary to resume the
-> > > device.
-> > > 
-> > > And perhaps the flag should be called something different then, like
-> > > direct_resume (meaning go directly for ->resume() without executing
-> > > the intermediate callbacks)?
-> > 
-> > In light of what I wrote earlier, it should be okay for the ->prepare() 
-> > callback to be responsible for setting leave_runtime_suspended.  Then 
-> > there will be no need to call either ->suspend() or ->resume().
+On 8 May 2014, at 18:52, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Thu, May 08, 2014 at 08:53:30AM -0700, Paul E. McKenney wrote:
+>> On Thu, May 08, 2014 at 04:29:48PM +0100, Catalin Marinas wrote:
+>>> On Thu, May 08, 2014 at 04:00:27PM +0100, Paul E. McKenney wrote:
+>>>> On Thu, May 08, 2014 at 11:24:36AM +0100, Catalin Marinas wrote:
+>>>>> My summary so far:
+>>>>> 
+>>>>> - radix_tree_node reported by kmemleak as it cannot find any trace of it
+>>>>>  when scanning the memory
+>>>>> - at allocation time, radix_tree_node is memzero'ed by
+>>>>>  radix_tree_node_ctor(). Given that node->rcu_head.func ==
+>>>>>  radix_tree_node_rcu_free, my guess is that radix_tree_node_free() has
+>>>>>  been called
 > 
-> Hmm.  OK, let's try that.
+> The constructor is called once when the slab is initially allocated,
+> not on every object allocation.  The user is expected to return
+> objects in a pristine form or overwrite fields on reallocation, so
+> it's possible that the RCU values are left over from the previous
+> allocation.
 
-Well, no.
+You are right, I missed this one.
 
-The reason why that doesn't work is because ->prepare() callbacks are
-executed in the reverse order, so the perent's ones will be run before
-the ->prepare() of the children.  Thus if ->prepare() sets the flag
-with the expectation that ->suspend() (and the subsequent callbacks)
-won't be executed, that expectation may not be met actually.
+>>>>> - some time later, kmemleak still hasn't received any callback for
+>>>>>  kmem_cache_free(node). Possibly radix_tree_node_rcu_free() hasn't been
+>>>>>  called either since node->count is not NULL.
+>>>>> 
+>>>>> For RCU queued objects, kmemleak should still track references to them
+>>>>> via rcu_sched_state and rcu_head members. But even if this went wrong, I
+>>>>> would expect the object to be freed eventually and kmemleak notified (so
+>>>>> just a temporary leak report which doesn't seem to be the case here).
 
-So I'm going to do what I said above.  I prefer it anyway. :-)
+[…]
 
-Rafael
+>>>> Of course, if the value of node->count is preventing call_rcu() from
+>>>> being invoked in the first place, then the needed grace period won't
+>>>> start, much less finish.  ;-)
+>>> 
+>>> Given the rcu_head.func value, my assumption is that call_rcu() has
+>>> already been called.
+>> 
+>> Fair point -- given that it is a union, you would expect this field to
+>> be overwritten upon reuse.
+> 
+> .parent is overwritten immediately on reuse, but .private_data is
+> actually unlikely to be used during the lifetime of the node.
+> 
+> This could explain why .rcu.head.next is NULL like parent, and
+> .private_data/.rcu.head.func is untouched and retains RCU stuff: to me
+> it doesn't look like the node is lost in RCU-freeing, rather it was
+> previously RCU freed and then lost somewhere after reallocation.
 
+This would be a simpler explanation, and even simpler to test, just
+reset rcu_head.func in radix_tree_node_rcu_free() before being returned
+to the slab allocator.
+
+Does the negative count give us any clue? This one is reset before
+freeing the object.
+
+Thanks,
+
+Catalin
