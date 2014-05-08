@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393AbaEHShP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 14:37:15 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60623 "EHLO zene.cmpxchg.org"
+	id S1755428AbaEHSjr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 14:39:47 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36088 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753705AbaEHShN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 14:37:13 -0400
-Date: Thu, 8 May 2014 14:36:22 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH cgroup/for-3.16] cgroup: rename css_tryget*() to
- css_tryget_online*()
-Message-ID: <20140508183622.GR19914@cmpxchg.org>
-References: <20140507160429.GE26540@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140507160429.GE26540@htj.dyndns.org>
+	id S1755216AbaEHSjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 14:39:46 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: linux-edac <linux-edac@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] EDAC, MCE, AMD: Remove leftover unused mask
+Date: Thu,  8 May 2014 20:39:38 +0200
+Message-Id: <1399574378-7593-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 12:04:29PM -0400, Tejun Heo wrote:
-> Unlike the more usual refcnting, what css_tryget() provides is the
-> distinction between online and offline csses instead of protection
-> against upping a refcnt which already reached zero.  cgroup is
-> planning to provide actual tryget which fails if the refcnt already
-> reached zero.  Let's rename the existing trygets so that they clearly
-> indicate that they're onliness.
-> 
-> I thought about keeping the existing names as-are and introducing new
-> names for the planned actual tryget; however, given that each
-> controller participates in the synchronization of the online state, it
-> seems worthwhile to make it explicit that these functions are about
-> on/offline state.
-> 
-> Rename css_tryget() to css_tryget_online() and css_tryget_from_dir()
-> to css_tryget_online_from_dir().  This is pure rename.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Li Zefan <lizefan@huawei.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
+From: Borislav Petkov <bp@suse.de>
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+295d8cda2689 ("EDAC, MCE, AMD: Drop local coreid reporting") removed the
+code snippet which used that mask but forgot to drop the mask itself. Do
+that now.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ drivers/edac/mce_amd.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/drivers/edac/mce_amd.c b/drivers/edac/mce_amd.c
+index 51b9caa0b024..5f43620d580a 100644
+--- a/drivers/edac/mce_amd.c
++++ b/drivers/edac/mce_amd.c
+@@ -6,7 +6,6 @@
+ static struct amd_decoder_ops *fam_ops;
+ 
+ static u8 xec_mask	 = 0xf;
+-static u8 nb_err_cpumask = 0xf;
+ 
+ static bool report_gart_errors;
+ static void (*nb_bus_decoder)(int node_id, struct mce *m);
+@@ -852,7 +851,6 @@ static int __init mce_amd_init(void)
+ 		break;
+ 
+ 	case 0x14:
+-		nb_err_cpumask  = 0x3;
+ 		fam_ops->mc0_mce = cat_mc0_mce;
+ 		fam_ops->mc1_mce = cat_mc1_mce;
+ 		fam_ops->mc2_mce = k8_mc2_mce;
+-- 
+1.9.0
+
