@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069AbaEHQNA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 12:13:00 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:45059 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754849AbaEHQM6 (ORCPT
+	id S1755181AbaEHQNl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 12:13:41 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44571 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600AbaEHQNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 12:12:58 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-15
-X-AuditID: cbfec7f5-b7fae6d000004d6d-73-536bad074192
-Content-transfer-encoding: 8BIT
-Message-id: <536BAD05.9070401@samsung.com>
-Date: Thu, 08 May 2014 18:12:53 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-To: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        linux-samsung-soc@vger.kernel.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kgene.kim@samsung.com, arunkk.samsung@gmail.com
-Subject: Re: [PATCH 1/2] ARM: dts: Enable USB 3503 hub on exynos5250-snow
-References: <1399293056-17143-1-git-send-email-gautam.vivek@samsung.com>
- <536BA9E8.2030306@suse.de>
-In-reply-to: <536BA9E8.2030306@suse.de>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t/xq7rsa7ODDZ7f0LRo3lRs8WLjLXaL
-	+UfOsVq0XTnIbtG74CqbxabH11gtLu+aw2Yx4/w+JotFy1qZHTg9ds66y+6xeUm9R9+WVYwe
-	m09Xe3zeJBfAGsVlk5Kak1mWWqRvl8CVsW1SRMFkrorJX/4xNzD2cXQxcnJICJhInDq7iAnC
-	FpO4cG89WxcjF4eQwFJGicVzG9lBErwCghI/Jt9j6WLk4GAWkJc4cikbJMwsoCvxrmUzK0T9
-	Z0aJYwuXsUHUa0nMP9jNCFLPIqAqsXmRIUiYTUBN4nPDI7ASfqCSNU3XWUBsUYEIiXuNh8Hm
-	iAi0M0rc+PKJGcRhFtjEKLHgzU5WkCphAU+JzrcfwA4SEkiVuHz9ENgkTgF1iS0TH7JPYBSc
-	heTWWQi3zkJy6wJG5lWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYIZHwdQfj0mNWhxgFOBiV
-	eHgXyGQEC7EmlhVX5h5ilOBgVhLhfbEsO1iINyWxsiq1KD++qDQntfgQIxMHp1QDo1cTu+ZM
-	rYXXDbRvlGgIHQtv0BZurxYKXPm4K/D7xBOH77vEZtZyzed8ucN2UVRp8u+tkzTmKp7PqDxj
-	rv76yeq8Iw+b1hzl+cf2/l++xfzo2JNsrhMmz5I+9utsmbSmm9+Ss2f/3ckWy1nMo25m3G9w
-	WDrAwPhZuZC0dcbBuOluaXGd/+valFiKMxINtZiLihMBSP7Y4mICAAA=
+	Thu, 8 May 2014 12:13:40 -0400
+Date: Thu, 8 May 2014 18:13:37 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: minyard@acm.org
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Corey Minyard <cminyard@mvista.com>
+Subject: Re: [PATCH] sched: Initialize rq->age_stamp on processor start
+Message-ID: <20140508161337.GF30445@twins.programming.kicks-ass.net>
+References: <1399405857-14056-1-git-send-email-minyard@acm.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yKmnPmKxJBqIz68t"
+Content-Disposition: inline
+In-Reply-To: <1399405857-14056-1-git-send-email-minyard@acm.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.05.2014 17:59, Andreas Färber wrote:
-> Hello,
-> 
-> Am 05.05.2014 14:30, schrieb Vivek Gautam:
->> The exynos5250-snow has a SMSC USB3503 connected in
->> hardware only mode like a PHY. Enable support for it,
->> and add necessary 'reset-gpio' for it.
->>
->> This is in correspondance to similar patch by Mark Brown
->> 7c1b0ec ARM: dts: Enable USB hub on Arndale
->>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> ---
->>
->> Based on 'for-next' branch of kgene's linux-samsung tree.
->>
->>  arch/arm/boot/dts/exynos5250-pinctrl.dtsi |    7 +++++++
->>  arch/arm/boot/dts/exynos5250-snow.dts     |   14 ++++++++++++++
->>  2 files changed, 21 insertions(+)
-> 
-> The same snippet as for snow also fixed my USB issues on spring.
-> Should it go into exynos5250-cros-common.dtsi instead?
 
-The GPIO pins used are different, so I don't think the hub node added by
-these patches could be shared.
+--yKmnPmKxJBqIz68t
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Also, I believe all you need to add is a simple node as follows
+On Tue, May 06, 2014 at 02:50:57PM -0500, minyard@acm.org wrote:
+> From: Corey Minyard <cminyard@mvista.com>
+>=20
+> If the sched_clock time starts at a large value, the kernel will spin
+> in sched_avg_update for a long time while rq->age_stamp catches up
+> with rq->clock.
+>=20
+> The comment in kernel/sched/clock.c says that there is no strict promise
+> that it starts at zero.  So initialize rq->age_stamp when a cpu starts up
+> to avoid this.
+>=20
+> I was seeing long delays on a simulator that didn't start the clock at
+> zero.  This might also be an issue on reboots on processors that don't
+> re-initialize the timer to zero on reset, and when using kexec.
+>=20
+> Signed-off-by: Corey Minyard <cminyard@mvista.com>
 
-usb_hub {
-	compatible = "smsc,usb3503a";
-	reset-gpios = <&gpe1 0 1>;
-};
+This patch made my cris-defconfig build fail.
 
-at root level (see my comments to this patch in another reply), which is
-affordable to be duplicated for every platform that requires it,
-especially if the reset-gpios property differs between boards.
+--yKmnPmKxJBqIz68t
+Content-Type: application/pgp-signature
 
-Best regards,
-Tomasz
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTa60wAAoJEHZH4aRLwOS6YxIP/3EmOvvP1+1mNNhOl4wIU/n/
+t7E9ztjkqEu2qiJ4XN9MaI/bDJmmYDIKPkFK6CEY4FnfYkZsY6c8CYnr5CYX0Wu1
+maCrZXNstkYr0LQvXw+nH8ZqzabKtyFAUcTB0m3Pc+ouIyNeis+cWHPSQmNHv97O
+B6clDgRV8v2LdyY4fcewgHj2RJPeoRopf45htb2Ks1Xig0yGJldhDi6dxWX2LYLU
+bteRmZrFUnNEhUa8gnIA0vQghJ1zTosR0ZAg+SY+iafpnVdemCPPQ2V5vztfFxLW
+ixC+U+UWc+8iw+fYcCfsob0X7XeA4FYMk7PT6+XMC0cTSIf+W/OpdXA2qrOuaMg8
+tvMSVAoI+OR8b3YBsBMOH38/uBxRTFHuuLfF6rE/Ne9DmskVC7E1wdMi2mBSfGX3
+s3/Uk/sbO4FZqjEVBWZT9e3ybcDtZoEam0NbMyyg/0uyVrrIdk6QLIGgtfAOZaXJ
+jxsFfUwc//x0MhkzLXA0AYKL5sjnMQq3ODNCpaKLJXAo5tkMbAQn9SKV5JYee9K0
+TEGOOyL1Hyu/eUQsHIpGvF6KfaOjEnu9OZB4zey78C3Qf7BKJPBd/CRq+rFE7TrG
+Fhw0pde9qATNJXd+aoOrt495rO4nuUZMpJvLwNkn6bc0g4PthRnhSMlEjpR7eUST
+9QkJOkLHG4kv/1FGX+E+
+=1Wrk
+-----END PGP SIGNATURE-----
+
+--yKmnPmKxJBqIz68t--
