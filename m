@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496AbaEHIMl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 04:12:41 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:51848 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192AbaEHIJ6 (ORCPT
+	id S1753469AbaEHIMi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 04:12:38 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:50178 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509AbaEHIJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 May 2014 04:09:58 -0400
 From: Johan Hovold <jhovold@gmail.com>
@@ -12,11 +12,10 @@ To: "David S. Miller" <davem@davemloft.net>,
         Florian Fainelli <f.fainelli@gmail.com>
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org, Mugunthan V N <mugunthanvnm@ti.com>,
-        Johan Hovold <jhovold@gmail.com>, Stefan Roese <sr@denx.de>,
-        stable <stable@vger.kernel.org>
-Subject: [PATCH RESEND 3/5] Revert "net: eth: cpsw: Correctly attach to GPIO bitbang MDIO driver"
-Date: Thu,  8 May 2014 10:09:22 +0200
-Message-Id: <1399536564-7626-4-git-send-email-jhovold@gmail.com>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH RESEND 2/5] net: mdio-gpio: warn about missing bus alias id
+Date: Thu,  8 May 2014 10:09:21 +0200
+Message-Id: <1399536564-7626-3-git-send-email-jhovold@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1399536564-7626-1-git-send-email-jhovold@gmail.com>
 References: <1399534639-4947-1-git-send-email-jhovold@gmail.com>
@@ -25,56 +24,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit f8d56d8f892be43a2404356073e16401eb5a42e6.
+Use a sane default bus id (rather than -ENODEV) and print a warning when
+the bus alias id is missing.
 
-Fix potential null-pointer dereference at probe if the mdio-gpio device
-has not been successfully probed yet.
-
-The offending commit is plain wrong for a number of reasons. First of
-all it accesses internal driver data of an unrelated device. Neither
-does it check that the data is non-null (which it is in case the device
-has not been probed yet).
-
-Furthermore, the decision on whether to treat any driver data according
-to the mdio-gpio driver's internals is made based on the node name. But
-the name is not compared against "mdio" which is the normal name for the
-node, but rather against "gpio" which the node does not have to be named
-(and shouldn't be according to the binding documentation). [ If this
-hack is to be kept out-of-tree it should at least be matching against
-the compatible property. ]
-
-Cc: Stefan Roese <sr@denx.de>
-Cc: stable <stable@vger.kernel.org>	# v3.14
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 ---
- drivers/net/ethernet/ti/cpsw.c | 14 ++------------
- 1 file changed, 2 insertions(+), 12 deletions(-)
+ drivers/net/phy/mdio-gpio.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index 36aa109416c4..18d83d8d7f74 100644
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -1871,18 +1871,8 @@ static int cpsw_probe_dt(struct cpsw_platform_data *data,
- 		mdio_node = of_find_node_by_phandle(be32_to_cpup(parp));
- 		phyid = be32_to_cpup(parp+1);
- 		mdio = of_find_device_by_node(mdio_node);
--
--		if (strncmp(mdio->name, "gpio", 4) == 0) {
--			/* GPIO bitbang MDIO driver attached */
--			struct mii_bus *bus = dev_get_drvdata(&mdio->dev);
--
--			snprintf(slave_data->phy_id, sizeof(slave_data->phy_id),
--				 PHY_ID_FMT, bus->id, phyid);
--		} else {
--			/* davinci MDIO driver attached */
--			snprintf(slave_data->phy_id, sizeof(slave_data->phy_id),
--				 PHY_ID_FMT, mdio->name, phyid);
--		}
-+		snprintf(slave_data->phy_id, sizeof(slave_data->phy_id),
-+			 PHY_ID_FMT, mdio->name, phyid);
- 
- 		mac_addr = of_get_mac_address(slave_node);
- 		if (mac_addr)
+diff --git a/drivers/net/phy/mdio-gpio.c b/drivers/net/phy/mdio-gpio.c
+index 9c4defdec67b..5f1a2250018f 100644
+--- a/drivers/net/phy/mdio-gpio.c
++++ b/drivers/net/phy/mdio-gpio.c
+@@ -215,6 +215,10 @@ static int mdio_gpio_probe(struct platform_device *pdev)
+ 	if (pdev->dev.of_node) {
+ 		pdata = mdio_gpio_of_get_data(pdev);
+ 		bus_id = of_alias_get_id(pdev->dev.of_node, "mdio-gpio");
++		if (bus_id < 0) {
++			dev_warn(&pdev->dev, "failed to get alias id\n");
++			bus_id = 0;
++		}
+ 	} else {
+ 		pdata = dev_get_platdata(&pdev->dev);
+ 		bus_id = pdev->id;
 -- 
 1.8.3.2
 
