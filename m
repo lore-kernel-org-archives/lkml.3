@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174AbaEHM16 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 08:27:58 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:46716 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820AbaEHM14 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 08:27:56 -0400
-Message-ID: <536B7846.7080102@gmail.com>
-Date: Thu, 08 May 2014 15:27:50 +0300
-From: Nadav Amit <nadav.amit@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753438AbaEHMf1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 08:35:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:40933 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753205AbaEHMf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 08:35:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1010,1389772800"; 
+   d="scan'208";a="508353055"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v1 03/11] perf: Allow for multiple ring buffers per event
+In-Reply-To: <20140507152640.GR30445@twins.programming.kicks-ass.net>
+References: <1391683834-29868-1-git-send-email-alexander.shishkin@linux.intel.com> <1391683834-29868-4-git-send-email-alexander.shishkin@linux.intel.com> <20140507152640.GR30445@twins.programming.kicks-ass.net>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 08 May 2014 15:34:17 +0300
+Message-ID: <87wqdwzbxy.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, Nadav Amit <namit@cs.technion.ac.il>,
-        mtosatti@redhat.com, hpa@zytor.com
-CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] KVM: x86: Wrong register masking in 64-bit mode
-References: <1399465972-4026-1-git-send-email-namit@cs.technion.ac.il> <1399465972-4026-5-git-send-email-namit@cs.technion.ac.il> <536A56C3.7050907@redhat.com>
-In-Reply-To: <536A56C3.7050907@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/7/14, 6:52 PM, Paolo Bonzini wrote:
-> Il 07/05/2014 14:32, Nadav Amit ha scritto:
->> 32-bit operations are zero extended in 64-bit mode. Currently, the
->> code does
->> not handle them correctly and keeps the high bits. In 16-bit mode, the
->> high
->> 32-bits are kept intact.
->>
->> In addition, although it is not well-documented, when address override
->> prefix
->> is used with REP-string instruction, RCX high half is zeroed even if
->> ECX was
->> zero on the first iteration (as if an assignment was performed to ECX).
->
-> Is this true even for REPZ and ZF=0 or REPNZ and ZF=1?
->
-> Paolo
-The REPZ and REPNZ condition is checked on the end of an iteration (see 
-the REP instruction description on the SDM), so it does not matter. So 
-even REPZ/RENZ would zero RCX high half.
+Peter Zijlstra <peterz@infradead.org> writes:
 
-This "feature" is not well-documented, but can be observed. Here is a 
-small code you can try.
+> So the aux_head/tail values should also be in the file space and not
+> start at 0 again, similar for the offsets in the AUX record.
 
----
-#include <stdio.h>
-unsigned long src, dst;
-int main()
-{
-	unsigned long long rsi, rdi, rcx;
-	rcx = 0xffffffff00000000ull;
-	rsi = (unsigned long long)&src | 0xffffffff00000000ull;
-	rdi = (unsigned long long)&dst | 0xffffffff00000000ull;
-	printf("before: rsi %llx rdi %llx rcx %llx\n", rsi, rdi ,rcx);
-	asm volatile (  ".byte 0x67\n\t"
-			"repne cmpsd\n\t"
-			: "+S" (rsi), "+D" (rdi), "+c" (rcx)
-			: : "memory", "cc" );
-	printf("after: rsi %llx rdi %llx rcx %llx\n", rsi, rdi ,rcx);
-	return 0;
-}
----
+Thinking some more about it: if we keep aux_{offset,size} in userpg,
+then it would make sense to have aux_{head,tail} run from 0 to infinity
+similar to data_{head,tail}, especially considering that neither data_*
+nor aux_* pointers are file offsets anyway.
 
-Nadav
-
+Regards,
+--
+Alex
