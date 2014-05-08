@@ -1,199 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458AbaEHICl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 04:02:41 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:61791 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151AbaEHICi (ORCPT
+	id S1753465AbaEHIDb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 04:03:31 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:19320 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752732AbaEHID2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 04:02:38 -0400
-Date: Thu, 8 May 2014 12:02:34 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Don Zickus <dzickus@redhat.com>, Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf_fuzzer crash on pentium 4
-Message-ID: <20140508080234.GO8607@moon>
-References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
- <20140506202307.GA1458@moon>
- <20140508020050.GX39568@redhat.com>
- <20140508073756.GM8607@moon>
- <20140508074930.GN8607@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140508074930.GN8607@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 8 May 2014 04:03:28 -0400
+X-AuditID: cbfec7f5-b7fae6d000004d6d-bf-536b3a47d4a7
+Message-id: <536B3946.9070106@samsung.com>
+Date: Thu, 08 May 2014 11:59:02 +0400
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.4.0
+MIME-version: 1.0
+To: Afzal Mohammed <afzal.mohd.ma@gmail.com>
+Cc: linux@arm.linux.org.uk, open list <linux-kernel@vger.kernel.org>,
+        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm: memset: zero out upper bytes in r1
+References: <1399273875-8403-1-git-send-email-a.ryabinin@samsung.com>
+ <20140507234255.GA2050@afzal-ThinkPad-R50e>
+In-reply-to: <20140507234255.GA2050@afzal-ThinkPad-R50e>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsVy+t/xa7ruVtnBBnc2y1j837ia3WLT42us
+	Fpd3zWGzuH2Z14HFo6W5h81j56y77B6bl9R7fN4kF8ASxWWTkpqTWZZapG+XwJXRPnsvU8FJ
+	1orXS06zNTAuZeli5OSQEDCRWHLiIROELSZx4d56ti5GLg4hgaWMEmvW32GCcBqZJDpb97CB
+	VPEKaEnMWXSFGcRmEVCVOLV+BtgkNgE9iX+ztoPViApESNxrPMwKUS8o8WPyPbAaEQEdidsv
+	d4P1Mgt0MEq0b6oGsYUFbCRWrHgNVi8kUCyxf+pbMJtTwELi9rYORoh6HYn9rdPYIGx5ic1r
+	3jJPYBSYhWTFLCRls5CULWBkXsUomlqaXFCclJ5rpFecmFtcmpeul5yfu4kRErpfdzAuPWZ1
+	iFGAg1GJh3eBTEawEGtiWXFl7iFGCQ5mJRHeOJ7sYCHelMTKqtSi/Pii0pzU4kOMTBycUg2M
+	drL7Gycd05Db6n9DRs1CXIyHV4r50K0WtSJj8U2ZbA0ygRVrmxjq3nw+Mp3Xbv296ybi0Qy8
+	WyZYsne7cNj4RLwLWz+prGFbZQQjO7eo6tSof6sKbcSE11yLLtqoGfSZYTlr5SMp74U6exjD
+	Clx29yklae3+xbW49ffpwsN1Hydbfn/qyq3EUpyRaKjFXFScCADOXnc2OwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 11:49:30AM +0400, Cyrill Gorcunov wrote:
-> > Don, Vince, could you please give the patch a run? I've only compile tested
-> > it obviously since I've no real p4 hw. And the patch itself is a bit ugly
-> > but should bring the light if we're still having problems in events
-> > scheduling.
+On 05/08/14 03:42, Afzal Mohammed wrote:
 > 
-> Drop it, won't work.
+> int is to be converted to unsigned char in memset, would having above
+> change immediately upon entry to memset rather than at a place where it
+> won't always execute make intention clearer ? (although it doesn't make
+> difference)
+> 
 
-Updated.
----
- arch/x86/kernel/cpu/perf_event_p4.c |   67 ++++++++++++++++--------------------
- 1 file changed, 30 insertions(+), 37 deletions(-)
+I think it's better to keep it near other manipulations with r1.
+Plus this will save us from executing extra instruction on 'memset -> 6 -> 5 -> return'
+path (memset for size <= 3).
 
-Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-===================================================================
---- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
-+++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -1063,23 +1063,23 @@ static int p4_pmu_handle_irq(struct pt_r
-  * swap thread specific fields according to a thread
-  * we are going to run on
-  */
--static void p4_pmu_swap_config_ts(struct hw_perf_event *hwc, int cpu)
-+static u64 p4_pmu_swap_config_ts(u64 config, int cpu)
- {
- 	u32 escr, cccr;
- 
- 	/*
- 	 * we either lucky and continue on same cpu or no HT support
- 	 */
--	if (!p4_should_swap_ts(hwc->config, cpu))
--		return;
-+	if (!p4_should_swap_ts(config, cpu))
-+		return config;
- 
- 	/*
- 	 * the event is migrated from an another logical
- 	 * cpu, so we need to swap thread specific flags
- 	 */
- 
--	escr = p4_config_unpack_escr(hwc->config);
--	cccr = p4_config_unpack_cccr(hwc->config);
-+	escr = p4_config_unpack_escr(config);
-+	cccr = p4_config_unpack_cccr(config);
- 
- 	if (p4_ht_thread(cpu)) {
- 		cccr &= ~P4_CCCR_OVF_PMI_T0;
-@@ -1092,9 +1092,9 @@ static void p4_pmu_swap_config_ts(struct
- 			escr &= ~P4_ESCR_T0_USR;
- 			escr |= P4_ESCR_T1_USR;
- 		}
--		hwc->config  = p4_config_pack_escr(escr);
--		hwc->config |= p4_config_pack_cccr(cccr);
--		hwc->config |= P4_CONFIG_HT;
-+		config  = p4_config_pack_escr(escr);
-+		config |= p4_config_pack_cccr(cccr);
-+		config |= P4_CONFIG_HT;
- 	} else {
- 		cccr &= ~P4_CCCR_OVF_PMI_T1;
- 		cccr |= P4_CCCR_OVF_PMI_T0;
-@@ -1106,10 +1106,12 @@ static void p4_pmu_swap_config_ts(struct
- 			escr &= ~P4_ESCR_T1_USR;
- 			escr |= P4_ESCR_T0_USR;
- 		}
--		hwc->config  = p4_config_pack_escr(escr);
--		hwc->config |= p4_config_pack_cccr(cccr);
--		hwc->config &= ~P4_CONFIG_HT;
-+		config  = p4_config_pack_escr(escr);
-+		config |= p4_config_pack_cccr(cccr);
-+		config &= ~P4_CONFIG_HT;
- 	}
-+
-+	return config;
- }
- 
- /*
-@@ -1208,9 +1210,10 @@ static int p4_pmu_schedule_events(struct
- 	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
- 	unsigned long escr_mask[BITS_TO_LONGS(P4_ESCR_MSR_TABLE_SIZE)];
- 	int cpu = smp_processor_id();
-+	u64 config[X86_PMC_IDX_MAX];
- 	struct hw_perf_event *hwc;
- 	struct p4_event_bind *bind;
--	unsigned int i, thread, num;
-+	unsigned int i, thread;
- 	int cntr_idx, escr_idx;
- 	u64 config_alias;
- 	int pass;
-@@ -1218,12 +1221,13 @@ static int p4_pmu_schedule_events(struct
- 	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
- 	bitmap_zero(escr_mask, P4_ESCR_MSR_TABLE_SIZE);
- 
--	for (i = 0, num = n; i < n; i++, num--) {
-+	for (i = 0; i < n; i++) {
- 
- 		hwc = &cpuc->event_list[i]->hw;
- 		thread = p4_ht_thread(cpu);
- 		pass = 0;
- 
-+		config[i] = hwc->config;
- again:
- 		/*
- 		 * It's possible to hit a circular lock
-@@ -1233,12 +1237,12 @@ again:
- 		if (pass > 2)
- 			goto done;
- 
--		bind = p4_config_get_bind(hwc->config);
-+		bind = p4_config_get_bind(config[i]);
- 		escr_idx = p4_get_escr_idx(bind->escr_msr[thread]);
- 		if (unlikely(escr_idx == -1))
- 			goto done;
- 
--		if (hwc->idx != -1 && !p4_should_swap_ts(hwc->config, cpu)) {
-+		if (hwc->idx != -1 && !p4_should_swap_ts(config[i], cpu)) {
- 			cntr_idx = hwc->idx;
- 			if (assign)
- 				assign[i] = hwc->idx;
-@@ -1250,32 +1254,15 @@ again:
- 			/*
- 			 * Check whether an event alias is still available.
- 			 */
--			config_alias = p4_get_alias_event(hwc->config);
-+			config_alias = p4_get_alias_event(config[i]);
- 			if (!config_alias)
- 				goto done;
--			hwc->config = config_alias;
-+			config[i] = config_alias;
- 			pass++;
- 			goto again;
- 		}
--		/*
--		 * Perf does test runs to see if a whole group can be assigned
--		 * together succesfully.  There can be multiple rounds of this.
--		 * Unfortunately, p4_pmu_swap_config_ts touches the hwc->config
--		 * bits, such that the next round of group assignments will
--		 * cause the above p4_should_swap_ts to pass instead of fail.
--		 * This leads to counters exclusive to thread0 being used by
--		 * thread1.
--		 *
--		 * Solve this with a cheap hack, reset the idx back to -1 to
--		 * force a new lookup (p4_next_cntr) to get the right counter
--		 * for the right thread.
--		 *
--		 * This probably doesn't comply with the general spirit of how
--		 * perf wants to work, but P4 is special. :-(
--		 */
--		if (p4_should_swap_ts(hwc->config, cpu))
--			hwc->idx = -1;
--		p4_pmu_swap_config_ts(hwc, cpu);
-+
-+		config[i] = p4_pmu_swap_config_ts(config[i], cpu);
- 		if (assign)
- 			assign[i] = cntr_idx;
- reserve:
-@@ -1284,7 +1271,13 @@ reserve:
- 	}
- 
- done:
--	return num ? -EINVAL : 0;
-+	if (i == n) {
-+		for (i = 0; i < n; i++)
-+			cpuc->event_list[i]->hw.config = config[i];
-+		return 0;
-+	}
-+
-+	return -EINVAL;
- }
- 
- PMU_FORMAT_ATTR(cccr, "config:0-31" );
+
+> ubfx r1, r1, #0, #8 would have given the needed typecasting, but seems
+> it is available only on ARMv6T2 & above.
+> 
+
+Indeed. It might be wrapped it with #if #else, but it will be a bit ugly,
+probably not worth to do.
+
+
+
+
