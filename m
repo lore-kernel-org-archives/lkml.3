@@ -1,95 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638AbaEHUEF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 16:04:05 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:49574 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755453AbaEHUEC (ORCPT
+	id S1755677AbaEHUFA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 16:05:00 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40938 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755344AbaEHUE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 16:04:02 -0400
-X-Sasl-enc: kCGJBMPam396Wk92bc5boOxVmxDSwKwY/rmzAvzw91Wc 1399579441
-Date: Thu, 8 May 2014 22:03:52 +0200
-From: Greg KH <greg@kroah.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, olaf@aepfle.de,
-        jasowang@redhat.com, driverdev-devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next, v2] Add support for netvsc build without
- CONFIG_SYSFS flag
-Message-ID: <20140508200352.GB8847@kroah.com>
-References: <1399581693-25050-1-git-send-email-haiyangz@microsoft.com>
+	Thu, 8 May 2014 16:04:58 -0400
+Message-ID: <536BE366.8080907@free-electrons.com>
+Date: Thu, 08 May 2014 22:04:54 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399581693-25050-1-git-send-email-haiyangz@microsoft.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Lee Jones <lee.jones@linaro.org>
+CC: =?UTF-8?B?RW1pbGlvIEzDs3Bleg==?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Chen-Yu Tsai <wens@csie.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
+        Hans de Goede <hdegoede@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
+Subject: Re: [PATCH v2 3/7] mfd: add support for sun6i PRCM (Power/Reset/Clock
+ Management) unit
+References: <1399483554-8824-1-git-send-email-boris.brezillon@free-electrons.com> <1399483554-8824-4-git-send-email-boris.brezillon@free-electrons.com> <20140508110205.GB5767@lee--X1>
+In-Reply-To: <20140508110205.GB5767@lee--X1>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 01:41:33PM -0700, Haiyang Zhang wrote:
-> This change ensures the driver can be built successfully without the
-> CONFIG_SYSFS flag.
-> MS-TFS: 182270
-> 
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  drivers/net/hyperv/hyperv_net.h   |   28 ++++++++++++++++++++++++++++
->  drivers/net/hyperv/netvsc_drv.c   |   13 +++++++------
->  drivers/net/hyperv/rndis_filter.c |    4 ++--
->  3 files changed, 37 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-> index 4b7df5a..02358cb 100644
-> --- a/drivers/net/hyperv/hyperv_net.h
-> +++ b/drivers/net/hyperv/hyperv_net.h
-> @@ -87,6 +87,8 @@ struct ndis_recv_scale_cap { /* NDIS_RECEIVE_SCALE_CAPABILITIES */
->  #define HASH_KEYLEN NDIS_RSS_HASH_SECRET_KEY_MAX_SIZE_REVISION_2
->  extern u8 netvsc_hash_key[];
->  
-> +extern unsigned int netvsc_num_queue;
-> +
->  struct ndis_recv_scale_param { /* NDIS_RECEIVE_SCALE_PARAMETERS */
->  	struct ndis_obj_header hdr;
->  
-> @@ -178,6 +180,32 @@ struct rndis_device {
->  	unsigned char hw_mac_adr[ETH_ALEN];
->  };
->  
-> +static inline void netvsc_record_rx_queue(struct sk_buff *skb,
-> +					  struct hv_netvsc_packet *packet,
-> +					  struct net_device *ndev)
-> +{
-> +#ifdef CONFIG_SYSFS
-> +	skb_record_rx_queue(skb, packet->channel->
-> +			    offermsg.offer.sub_channel_index %
-> +			    ndev->real_num_rx_queues);
-> +#endif
 
-Really?  Do all other wireless drivers have this type of #ifdef needed?
+On 08/05/2014 13:02, Lee Jones wrote:
+>> The PRCM (Power/Reset/Clock Management) block exposes several subdevices
+>> in different subsystems (clk, reset ...)
+>>
+>> Add basic support for the PRCM unit with clk (AR100, AHB0, and APB0 clks)
+>> and reset controller subdevices.
+>>
+>> Other subdevices might be added later (if needed).
+>>
+>> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+>> ---
+>>  drivers/mfd/Kconfig      |   8 +++
+>>  drivers/mfd/Makefile     |   1 +
+>>  drivers/mfd/sun6i-prcm.c | 151 +++++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 160 insertions(+)
+>>  create mode 100644 drivers/mfd/sun6i-prcm.c
+> [...]
+>
+>> +#include <linux/module.h>
+>> +#include <linux/kernel.h>
+>> +#include <linux/errno.h>
+>> +#include <linux/err.h>
+>> +#include <linux/spinlock.h>
+>> +#include <linux/io.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/mutex.h>
+>> +#include <linux/completion.h>
+>> +#include <linux/irq.h>
+>> +#include <linux/jiffies.h>
+>> +#include <linux/bitops.h>
+>> +#include <linux/fs.h>
+>> +#include <linux/of.h>
+>> +#include <linux/of_irq.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/uaccess.h>
+>> +#include <linux/mfd/core.h>
+> I'm pretty sure you don't need half of these.  Please only add the
+> ones you make use of.
 
-> +}
-> +
-> +static inline void netvsc_show_num_queue(struct device *dev,
-> +					 struct net_device *ndev)
-> +{
-> +#ifdef CONFIG_SYSFS
-> +	dev_info(dev, "real num tx,rx queues:%u, %u\n",
-> +		 ndev->real_num_tx_queues, ndev->real_num_rx_queues);
-> +#endif
+Sure (this is what happens when you copy/paste from another driver :-))
 
-Do network drivers really spam the kernel log with this type of thing?
-If you have sysfs, why is this needed in the kernel log?
+>
+> [...]
+>
+>> +	dev_info(&pdev->dev, "PRCM initialized\n");
+> Please remove this from here.
 
-> +}
-> +
-> +static inline void netvsc_set_num_queue(unsigned int *nq)
-> +{
-> +#ifdef CONFIG_SYSFS
-> +	*nq = num_online_cpus();
-> +#endif
-> +}
+Okay.
 
-I really feel that something is odd here...
+>
+> [...]
+>
+>> +static struct platform_driver sun6i_prcm_driver = {
+>> +	.driver = {
+>> +		.name = "sun6i-prcm",
+>> +		.owner = THIS_MODULE,
+>> +		.of_match_table = sun6i_prcm_dt_ids,
+>> +	},
+>> +	.probe = sun6i_prcm_probe,
+> You need a .remove() call-back.
+
+This driver cannot be compiled as module (see the Kconfig definition)
+and the devices are not hotpluggable, as a result a probed device will
+never be removed.
+
+Do you still want me to implement the remove function ?
+
+>
+>> +};
+>> +module_platform_driver(sun6i_prcm_driver);
+>> +
+>> +MODULE_AUTHOR("Boris BREZILLON <boris.brezillon@free-electrons.com>");
+>> +MODULE_DESCRIPTION("Allwinner sun6i PRCM driver");
+>> +MODULE_LICENSE("GPL v2");
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
