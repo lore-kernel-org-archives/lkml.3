@@ -1,111 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117AbaEHDl1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 23:41:27 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:52446 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752916AbaEHDlY (ORCPT
+	id S1753091AbaEHDtH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 23:49:07 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:27395 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755AbaEHDtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 23:41:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140508031700.GO7047@lukather>
-References: <1399483554-8824-1-git-send-email-boris.brezillon@free-electrons.com>
- <1399483554-8824-8-git-send-email-boris.brezillon@free-electrons.com> <20140508031700.GO7047@lukather>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Thu, 8 May 2014 11:40:59 +0800
-X-Google-Sender-Auth: cy7eaY5kDImjgDZu206gZhmoQZw
-Message-ID: <CAGb2v664vFwezKVp+C1UYdsUktRhrZDxjsyf9L=kwVHGCUV=HA@mail.gmail.com>
-Subject: Re: [PATCH v2 7/7] ARM: sunxi: dt: add PRCM clk and reset controller subdevices
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        =?UTF-8?Q?Emilio_L=C3=B3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin <kevin@allwinnertech.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        devicetree <devicetree@vger.kernel.org>, linux-doc@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, dev <dev@linux-sunxi.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 7 May 2014 23:49:04 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-b6-536afead964e
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: kgene.kim@samsung.com, t.figa@samsung.com,
+        Pankaj Dubey <pankaj.dubey@samsung.com>
+Subject: [PATCH v4 0/4] Introduce new Kconfig for Samsung common clock
+Date: Thu, 08 May 2014 13:07:07 +0900
+Message-id: <1399522031-3394-1-git-send-email-pankaj.dubey@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t8zY921/7KCDRa/lbLoXXCVzWLT42us
+	Fpd3zWGzmHF+H5PFoq1f2C3Wz3jN4sDmsXlJvUffllWMHp83yQUwR3HZpKTmZJalFunbJXBl
+	7Do1i7HgIl/Fhr7p7A2MV7i7GDk5JARMJPa+msoMYYtJXLi3nq2LkYtDSGAZo0Tf/ulsMEX3
+	vzyBSkxnlHh0eS6U08YksbzxNlg7m4CuxJP3c8FsEYFsiSuN98FsZoEIiTkb2lhAbGEBN4kv
+	P6+CTWURUJVYsesUUJyDg1fAXWLFBCcQU0JAQWLOJBuQ8RICz9kktt64xAxRLiDxbfIhFoga
+	WYlNB6COlpQ4uOIGywRGwQWMDKsYRVMLkguKk9KLTPWKE3OLS/PS9ZLzczcxQoJy4g7G+wes
+	DzEmA42byCwlmpwPDOq8knhDYzMjC1MTU2Mjc0sz0oSVxHnTHyUFCQmkJ5akZqemFqQWxReV
+	5qQWH2Jk4uCUamC0tLgnGcqp/W9mzjO3nN5vwavKf23qvLhp7y7xp2y/pCf8fn+raWfx/kjh
+	3kcLU9rE9jv+KTzks3Hhn//z2LQVumWOr+48s9nb+LwYd9HhuCkRt6e2bdtz0nLjg2s1qk9F
+	KvIbW73St/b+3ezg/vUiw+LF6i0pXbKrlh5zUV3Ev2beStf5U5+6KLEUZyQaajEXFScCAAwo
+	YfVgAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsVy+t9jQd21/7KCDaZtErPoXXCVzWLT42us
+	Fpd3zWGzmHF+H5PFoq1f2C3Wz3jN4sDmsXlJvUffllWMHp83yQUwRzUw2mSkJqakFimk5iXn
+	p2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYA7VVSKEvMKQUKBSQWFyvp22Ga
+	EBripmsB0xih6xsSBNdjZIAGEtYxZuw6NYux4CJfxYa+6ewNjFe4uxg5OSQETCTuf3nCBmGL
+	SVy4tx7I5uIQEpjOKPHo8lwop41JYnnjbWaQKjYBXYkn7+eC2SIC2RJXGu+D2cwCERJzNrSx
+	gNjCAm4SX35eBZvKIqAqsWLXKaA4BwevgLvEiglOIKaEgILEnEk2Exi5FzAyrGIUTS1ILihO
+	Ss810itOzC0uzUvXS87P3cQIDvln0jsYVzVYHGIU4GBU4uHNcM4KFmJNLCuuzD3EKMHBrCTC
+	6z8ZKMSbklhZlVqUH19UmpNafIgxGWj3RGYp0eR8YDzmlcQbGpuYGVkamVkYmZibkyasJM57
+	sNU6UEggPbEkNTs1tSC1CGYLEwenVANji2qz/gS7h87Hshe/POU/e8sO5ytG5isyPkgrOR3x
+	3Hztj8FPz31r2766tzpWFHAFXJlrLCmrdUN66cMjCQpz7e5G750gu2PSxZq5q776yW+fJr26
+	0ufotdWuPAtVuzWPFxYuPPPxQEeFcDV7yDv2mV3C0TOsl27Zd6wzq6hx0bYWkzMHPZ1zlFiK
+	MxINtZiLihMBTj7AEb0CAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 8, 2014 at 11:17 AM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> On Wed, May 07, 2014 at 07:25:54PM +0200, Boris BREZILLON wrote:
->> Add DT definitions for PRCM (Power/Reset/Clock Management) clock and reset
->> controller subdevices.
->>
->> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
->> ---
->>  arch/arm/boot/dts/sun6i-a31.dtsi | 39 ++++++++++++++++++++++++++++++++++++++-
->>  1 file changed, 38 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
->> index ec3253a..b69be0b 100644
->> --- a/arch/arm/boot/dts/sun6i-a31.dtsi
->> +++ b/arch/arm/boot/dts/sun6i-a31.dtsi
->> @@ -498,9 +498,46 @@
->>                       reg = <0x01f01c00 0x300>;
->>               };
->>
->> -             prcm@01f01c00 {
->> +             prcm@01f01400 {
->
-> This has already been fixed by Hans.
->
->>                       compatible = "allwinner,sun6i-a31-prcm";
->>                       reg = <0x01f01400 0x200>;
->> +
->> +                     ar100: ar100_clk {
->> +                             compatible = "allwinner,sun6i-a31-ar100-clk";
->> +                             #clock-cells = <0>;
->> +                             clocks = <&osc32k>, <&osc24M>, <&pll6>, <&pll6>;
->> +                     };
->> +
->> +                     ahb0: ahb0_clk {
->> +                             compatible = "fixed-factor-clock";
->> +                             #clock-cells = <0>;
->> +                             clock-div = <1>;
->> +                             clock-mult = <1>;
->> +                             clocks = <&ar100>;
->> +                             clock-output-names = "ahb0";
->> +                     };
->> +
->> +                     apb0: apb0_clk {
->> +                             compatible = "allwinner,sun6i-a31-apb0-clk";
->> +                             #clock-cells = <0>;
->> +                             clocks = <&ahb0>;
->> +                             clock-output-names = "apb0";
->> +                     };
->> +
->> +                     apb0_gates: apb0_gates_clk {
->> +                             compatible = "allwinner,sun6i-a31-apb0-gates-clk";
->> +                             #clock-cells = <1>;
->> +                             clocks = <&apb0>;
->> +                             clock-output-names = "apb0_pio", "apb0_ir",
->> +                                             "apb0_timer01", "apb0_p2wi",
->
-> timer01 ? is this a typo?
 
-A23 manual lists the clock gate as "r_timer0_1", so I put the name on the wiki.
-Allwinner sun6i code uses "r_tmr" or just "tmr". I see no problem naming this
-clock output as "apb0_timer" though.
+Introduce a new Kconfig file for Samsung common clock infrastructure
+related config options. As current Samsung common clock gets compiled
+based on PLAT_SAMSUNG, but moving ahead with ARM64 we can not have any
+more such config options, so this patch introduce new COMMON_CLK_SAMSUNG
+invisible option. This option also select COMMON_CLK so ARCH Kconfig just
+need to select COMMON_CLK_SAMSUNG in case they want to use Samsung common
+clock.
 
->> +                                             "apb0_uart", "apb0_1wire",
->> +                                             "apb0_i2c";
->> +                     };
->> +
->> +                     apb0_rst: apb0_rst {
->> +                             compatible = "allwinner,sun6i-a31-clock-reset";
->> +                             #reset-cells = <1>;
->> +                     };
->>               };
->>       };
->>  };
->> --
->> 1.8.3.2
->>
+This series is based on Kukjin's for-next branch.
+
+I am just respinning this patch after rebasing. I have already addressed
+all review comments discussed here [1].
+
+[1]: http://lkml.org/lkml/2014/3/19/216
+
+V4:
+ 1) Rebased on latest Kukjin's for-next branch.
+
+V3: 
+ 1) Re-organized patches for preventing bisect issues.
+ 2) Rebase on top of latest Kukjin's for-next branch.
+ 3) Compile tested exynos_defconfig, s3c6400_defconfig and s3c2410_defconfig
+    after each commit.
+
+V2:
+ 1) Adding new Kconfig file for Samsung common clock.
+ 2) Make COMMON_CLK_SAMSUNG option invisible. (as suggested by Tomasz Figa)
+ 3) Let COMMON_CLK_SAMSUNG select COMMON_CLK. (as suggested by Tomasz Figa)
+ 4) Move S3C24XX clock config option in new Kconfig file.
+
+Pankaj Dubey (4):
+  clk: samsung: add new Kconfig for Samsung common clock option
+  ARM: select COMMON_CLK_SAMSUNG for ARCH_EXYNOS and ARCH_S3C64XX
+  ARM: S3C24XX: move S3C24XX clock Kconfig options to Samsung clock
+    Kconfig file
+  drivers: clk: use COMMON_CLK_SAMSUNG for Samsung clock support
+
+ arch/arm/Kconfig              |    4 ++--
+ arch/arm/mach-s3c24xx/Kconfig |   14 --------------
+ drivers/clk/Kconfig           |    2 ++
+ drivers/clk/Makefile          |    2 +-
+ drivers/clk/samsung/Kconfig   |   12 ++++++++++++
+ 5 files changed, 17 insertions(+), 17 deletions(-)
+ create mode 100644 drivers/clk/samsung/Kconfig
+
+-- 
+1.7.10.4
+
