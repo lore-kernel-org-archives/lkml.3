@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934AbaEHKNt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 06:13:49 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:51173 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353AbaEHKNs (ORCPT
+	id S1753548AbaEHKQN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 06:16:13 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47243 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009AbaEHKQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 06:13:48 -0400
-From: Sheetal Tigadoli <sheetal.tigadoli@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, abbotti@mev.co.uk,
-        hsweeten@visionengravers.com,
-        Sheetal Tigadoli <sheetal.tigadoli@gmail.com>
-Subject: [PATCH] staging: comedi: Fixes Coding Style Warning in file das08.h
-Date: Thu,  8 May 2014 15:43:37 +0530
-Message-Id: <1399544017-5906-1-git-send-email-sheetal.tigadoli@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 8 May 2014 06:16:12 -0400
+Message-ID: <536B5967.6020503@ti.com>
+Date: Thu, 8 May 2014 15:46:07 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Daniel Mack <zonque@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2 3/5] usb: musb: core: Convert the musb_platform_reset
+ to have a return value.
+References: <1399541743-14158-1-git-send-email-george.cherian@ti.com> <1399541743-14158-4-git-send-email-george.cherian@ti.com> <536B52C3.3010109@gmail.com>
+In-Reply-To: <536B52C3.3010109@gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Patch fixes following Warnings, found using checkpatch.pl, in file das08.h
+On 5/8/2014 3:17 PM, Daniel Mack wrote:
+> Hi Geroge,
+>
+> On 05/08/2014 11:35 AM, George Cherian wrote:
+>> -static inline void musb_platform_reset(struct musb *musb)
+>> +static inline int  musb_platform_reset(struct musb *musb)
+>>   {
+>> -	if (musb->ops->reset)
+>> -		musb->ops->reset(musb);
+>> +	if (!musb->ops->reset)
+>> +		return -EINVAL;
+>> +
+>> +	return musb->ops->reset(musb);
+>>   }
+>>   
+>>   static inline int musb_platform_get_vbus_status(struct musb *musb)
+>> diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
+>> index 74c4193..8438200 100644
+>> --- a/drivers/usb/musb/musb_dsps.c
+>> +++ b/drivers/usb/musb/musb_dsps.c
+>> @@ -536,7 +536,7 @@ static int dsps_musb_set_mode(struct musb *musb, u8 mode)
+>>   	return 0;
+>>   }
+>>   
+>> -static void dsps_musb_reset(struct musb *musb)
+>> +static int dsps_musb_reset(struct musb *musb)
+>>   {
+>>   	struct device *dev = musb->controller;
+>>   	struct dsps_glue *glue = dev_get_drvdata(dev->parent);
+>> @@ -548,6 +548,7 @@ static void dsps_musb_reset(struct musb *musb)
+>>   	usleep_range(100, 200);
+>>   	usb_phy_init(musb->xceiv);
+>>   
+>> +	return 1;
+> Could we follow the general kernel rule here and return 0 for success,
+> and < 0 on failure?
+I made this to return 1, just because the next patch in the series would 
+make it
+return session_restart. Depending on which the musb_platform_reset() 
+would return
+whether actual reset of IP (reset_done) is done or not .
 
-./scripts/checkpatch.pl --file --terse drivers/staging/comedi/drivers/das08.h
-drivers/staging/comedi/drivers/das08.h:43: WARNING: line over 80 characters
-total: 0 errors, 1 warnings, 50 lines checked
+>
+>
+>
+> Thanks,
+> Daniel
+>
 
-Signed-off-by: Sheetal Tigadoli <sheetal.tigadoli@gmail.com>
----
- drivers/staging/comedi/drivers/das08.h |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/comedi/drivers/das08.h b/drivers/staging/comedi/drivers/das08.h
-index 46a314c..18cc170 100644
---- a/drivers/staging/comedi/drivers/das08.h
-+++ b/drivers/staging/comedi/drivers/das08.h
-@@ -40,7 +40,9 @@ struct das08_board_struct {
- };
- 
- struct das08_private_struct {
--	unsigned int do_mux_bits;	/*  bits for do/mux register on boards without separate do register */
-+	unsigned int do_mux_bits;	/*  bits for do/mux register on boards
-+					 *  without separate do register
-+					 */
- 	const unsigned int *pg_gainlist;
- 	unsigned int ao_readback[2];	/* assume 2 AO channels */
- };
 -- 
-1.7.9.5
+-George
 
