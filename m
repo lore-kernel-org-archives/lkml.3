@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888AbaEHVse (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 17:48:34 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:53248 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755527AbaEHVsd (ORCPT
+	id S1755923AbaEHVtZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 17:49:25 -0400
+Received: from mailout.micron.com ([137.201.242.129]:53341 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755461AbaEHVtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 17:48:33 -0400
+	Thu, 8 May 2014 17:49:24 -0400
+Message-ID: <536BFBE1.8020503@micron.com>
+Date: Thu, 8 May 2014 14:49:21 -0700
+From: Asai Thambi S P <asamymuthupa@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:28.0) Gecko/20100101 Thunderbird/28.0
 MIME-Version: 1.0
-In-Reply-To: <536A4454.5020404@hurleysoftware.com>
-References: <536A339D.9030606@hurleysoftware.com>
-	<20140507140558.GA26294@ks3318809.kimsufi.com>
-	<536A4454.5020404@hurleysoftware.com>
-Date: Thu, 8 May 2014 23:48:32 +0200
-Message-ID: <CACRpkdZ_Wz2QLbdbXEL9CWy+=tcVwjVjVqQgYw7_dy-5FwxB9Q@mail.gmail.com>
-Subject: Re: [3.15-rc3] BUG: null ptr dereference in ichx_gpio_request_regions()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Vincent Donnefort <vdonnefort@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Linux kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jens Axboe <axboe@kernel.dk>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Sam Bradshaw <sbradshaw@micron.com>, Selvan Mani <smani@micron.com>
+Subject: mtip32xx: fix incorrectly setting MTIP_DDF_SEC_LOCK_BIT
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20682.002
+X-TM-AS-Result: No--1.553600-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 7, 2014 at 4:33 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
-> Hi Vincent,
->
-> On 05/07/2014 10:05 AM, Vincent Donnefort wrote:
->>
->> Hello Peter,
->
->
->>> This is almost certainly caused by the uninitialized regs ptr
->>> in the ich6_desc struct (i3100_desc struct has the same problem)
->>> introduced in this commit:
->>>
->>> commit bb62a35bd5d96e506af0ea8dd145480b9172a2a6
->>> Author: Vincent Donnefort <vdonnefort@gmail.com>
->>> Date:   Fri Feb 14 15:01:56 2014 +0100
->>>
->>>      gpio: ich: Add support for multiple register addresses
->>>
->>>      This patch introduces regs and reglen pointers which allow a chipset
->>> to have
->>>      register addresses differing from ICH ones.
->>>
->>>      Acked-by: Linus Walleij <linus.walleij@linaro.org>
->>>      Signed-off-by: Vincent Donnefort <vdonnefort@gmail.com>
->>>      Signed-off-by: Lee Jones <lee.jones@linaro.org>
->>>
->>
->> Yes indeed, this must be linked to this thread
->> https://lkml.org/lkml/2014/4/15/292
->
->
-> Thanks for the link.
->
-> I searched through LKML but without the driver name or the offending
-> function
-> in the commit message I couldn't find it.
->
-> Linus,
->
-> What tree is this bug fix trapped in? I see it didn't make -rc4 either.
 
-Since the last signoff is Lee I guess it's in the MFD tree?
+Fix incorrectly setting MTIP_DDF_SEC_LOCK_BIT
 
-Yours,
-Linus Walleij
+Signed-off-by: Selvan Mani <smani@micron.com>
+Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
+---
+ drivers/block/mtip32xx/mtip32xx.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index fb62446..7dc4fb4 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -1236,15 +1236,11 @@ static bool mtip_pause_ncq(struct mtip_port *port,
+ 	reply = port->rxfis + RX_FIS_D2H_REG;
+ 	task_file_data = readl(port->mmio+PORT_TFDATA);
+ 
+-	if (fis->command == ATA_CMD_SEC_ERASE_UNIT)
+-		clear_bit(MTIP_DDF_SEC_LOCK_BIT, &port->dd->dd_flag);
+-
+ 	if ((task_file_data & 1))
+ 		return false;
+ 
+ 	if (fis->command == ATA_CMD_SEC_ERASE_PREP) {
+ 		set_bit(MTIP_PF_SE_ACTIVE_BIT, &port->flags);
+-		set_bit(MTIP_DDF_SEC_LOCK_BIT, &port->dd->dd_flag);
+ 		port->ic_pause_timer = jiffies;
+ 		return true;
+ 	} else if ((fis->command == ATA_CMD_DOWNLOAD_MICRO) &&
+@@ -1256,6 +1252,7 @@ static bool mtip_pause_ncq(struct mtip_port *port,
+ 		((fis->command == 0xFC) &&
+ 			(fis->features == 0x27 || fis->features == 0x72 ||
+ 			 fis->features == 0x62 || fis->features == 0x26))) {
++		clear_bit(MTIP_DDF_SEC_LOCK_BIT, &port->dd->dd_flag);
+ 		/* Com reset after secure erase or lowlevel format */
+ 		mtip_restart_port(port);
+ 		return false;
+-- 
+1.7.1
+
