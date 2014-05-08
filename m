@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657AbaEHO6S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 10:58:18 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:65243 "EHLO
+	id S1754771AbaEHO6w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 10:58:52 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:62200 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754251AbaEHO5I (ORCPT
+	with ESMTP id S1754148AbaEHO5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 10:57:08 -0400
+	Thu, 8 May 2014 10:57:07 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Subject: [PATCH 2/2] input: atmel-wm97xx: only build for AVR32
-Date: Thu,  8 May 2014 16:56:27 +0200
-Message-Id: <1399560990-1402858-16-git-send-email-arnd@arndb.de>
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+Subject: [PATCH] watchdog: iop_wdt only builds for mach-iop13xx
+Date: Thu,  8 May 2014 16:56:19 +0200
+Message-Id: <1399560990-1402858-8-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1399560990-1402858-1-git-send-email-arnd@arndb.de>
 References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
  <1399560990-1402858-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:L4QXb7j6IHmnA46D81Zq4FdezrZbGrbiCiICeC8eRAR
- oODgvjvKa13XRRPH9FsFhhnQLq91CqY6mHh9RD/pojazfky9FT
- +Pvb9z3geuKe9u2bxbBV46bCC+2ssm9LItQUrHoPyS/ZhpZ9jK
- ekeSi1D7Zv7ZkeGT+ssCG/2pGB+j2zJgZrRnuAC0h8AY+tBF69
- eiYKAUKO+yu69UTdk8GIhJ22/b2a0yci/D89ts7IK0Yup7HEm1
- DH26PT1H6fjyamGLFHrtxi4/YfrFwrr8n8x01720V8Dgfnap57
- D5ifeXb0VjlsMmbOdMBzPFTk3nPOoOU+9u2D6FOpmpdX8GccMn
- O5oxgFSxVfxvn3KMKUrumLJ5sbWOB6GwIXEJYNl5d
+X-Provags-ID: V02:K0:/kAzIp80HEvpJItpNBJOyXzUjtfOZirQHgKGJq6CTVD
+ rfL3fOvnilthy9hx8y7fsu41L/gAIaGbnJWWMGEoN6IqVFq4r+
+ FYB7ihD++LTKTNe1uArYt8X7Rnw1/WVCM1YTJcTuMUOr1VgigA
+ W/55If5U024Bt/LtXWJ/8GOReJSs50mqVNrhgfWNH88eNWxwqT
+ 313XWFKb3b/XGaqZA55Rh6hHTIWUmjP8sIaoS1HOMow9VE3rbh
+ tzxmvgEmGi0M7v40SoRHR7R8I2rFC0uwarYhs1nJPoW6a2mXv8
+ ullOScJGr0f7AAKCB2Dfwn+Ty0IpRXCOoTmz/slO3LWKHOtgDO
+ ZowIypfyPA+1hsD1Rm5nzNEGXtVGNyQINyIoVeEXV
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building this driver on ARM/at91 always gives us this error message:
+All three iop variants we support in Linux (iop32x, iop33x and
+iop13xx) seem to have support for the watchdog hardware, but this
+driver fails to build for the first two of these because it
+uses the IOP13XX_WDTCR_IB_RESET macro that is only defined for
+iop13xx.
 
-drivers/input/touchscreen/atmel-wm97xx.c:63:2: error: #error Unknown CPU, this driver only supports AT32AP700X CPUs.
-
-Clearly this configuration is not meant to work, so let's just prevent
-it in Kconfig. If we ever want to use it on another platform, we should
-also pass proper resources for GPIO, IRQ and memory, which are hardcoded
-to AT32AP700X at the moment.
+This clarifies the dependency in Kconfig to avoid randconfig
+build errors. It is unlikely that anyone will ever miss support
+for this driver on the ancient iop3xx platforms, so we don't
+need to bother trying to fix it properly.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org
+Cc: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-watchdog@vger.kernel.org
 ---
- drivers/input/touchscreen/Kconfig | 2 +-
+ drivers/watchdog/Kconfig | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-index e2f0264..fe4c264 100644
---- a/drivers/input/touchscreen/Kconfig
-+++ b/drivers/input/touchscreen/Kconfig
-@@ -640,7 +640,7 @@ config TOUCHSCREEN_WM9713
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 2b4c1fc..e244548 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -272,7 +272,7 @@ config PNX4008_WATCHDOG
  
- config TOUCHSCREEN_WM97XX_ATMEL
- 	tristate "WM97xx Atmel accelerated touch"
--	depends on TOUCHSCREEN_WM97XX && (AVR32 || ARCH_AT91)
-+	depends on TOUCHSCREEN_WM97XX && AVR32
+ config IOP_WATCHDOG
+ 	tristate "IOP Watchdog"
+-	depends on PLAT_IOP
++	depends on ARCH_IOP13XX
+ 	select WATCHDOG_NOWAYOUT if (ARCH_IOP32X || ARCH_IOP33X)
  	help
- 	  Say Y here for support for streaming mode with WM97xx touchscreens
- 	  on Atmel AT91 or AVR32 systems with an AC97C module.
+ 	  Say Y here if to include support for the watchdog timer
 -- 
 1.8.3.2
 
