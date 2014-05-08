@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130AbaEHLjk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 07:39:40 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64152 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753391AbaEHLjj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 07:39:39 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: mingo@kernel.org
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, nicolas.pitre@linaro.org, tglx@linutronix.de,
-        daniel.lezcano@linaro.org, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/core] sched/idle: Reflow cpuidle_idle_call()
-Date: Thu, 08 May 2014 13:56:18 +0200
-Message-ID: <1591569.1rC3xo6G18@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1877683.4pfeUuvFZ2@vostro.rjw.lan>
-References: <tip-cc6vb0snt3sr7op6rlbfeqfh@git.kernel.org> <1877683.4pfeUuvFZ2@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753849AbaEHLsJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 07:48:09 -0400
+Received: from mail.efficios.com ([78.47.125.74]:45346 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753317AbaEHLsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 07:48:05 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Oleg Nesterov <oleg@redhat.com>,
+        Dave Jones <davej@redhat.com>
+Subject: [PATCH] Fix: tracepoint: use after rcu free
+Date: Thu,  8 May 2014 07:47:49 -0400
+Message-Id: <1399549669-25465-1-git-send-email-mathieu.desnoyers@efficios.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 08, 2014 01:39:14 PM Rafael J. Wysocki wrote:
-> On Thursday, May 08, 2014 03:47:40 AM tip-bot for Peter Zijlstra wrote:
-> > Commit-ID:  37352273ad48f2d177ed1b06ced32d5536b773fb
-> > Gitweb:     http://git.kernel.org/tip/37352273ad48f2d177ed1b06ced32d5536b773fb
-> > Author:     Peter Zijlstra <peterz@infradead.org>
-> > AuthorDate: Fri, 11 Apr 2014 13:55:48 +0200
-> > Committer:  Ingo Molnar <mingo@kernel.org>
-> > CommitDate: Thu, 8 May 2014 09:16:59 +0200
-> > 
-> > sched/idle: Reflow cpuidle_idle_call()
-> > 
-> > Apply goto to reduce lines and nesting levels.
-> 
-> Well, I have a couple of patches that will conflict with this.
-> 
-> This one in particular:
-> 
-> https://patchwork.kernel.org/patch/4071541/
-> 
-> which unfortunately already is in my linux-next branch, because I was
-> unaware of this work.
-> 
-> I wonder how we can resolve this?
+commit de7b2973903c6cc50b31ee5682a69b2219b9919d
+Author: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date:   Tue Apr 8 17:26:21 2014 -0400
 
-The cpuidle patches I have queued up so far are on this separate branch
+    tracepoint: Use struct pointer instead of name hash for reg/unreg tracepoints
 
-git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-cpuidle
+introduces a use after free by calling release_probes on the old struct
+tracepoint array before the newly allocated array is published with
+rcu_assign_pointer. There is a race window where tracepoints (RCU
+readers) can perform a "use-after-grace-period-after-free", which shows
+up as a GPF in stress-tests.
 
-in case you'd like to pull from there.
+Link: https://lkml.org/lkml/2014/5/6/738
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Sasha Levin <sasha.levin@oracle.com>
+CC: Oleg Nesterov <oleg@redhat.com>
+CC: Dave Jones <davej@redhat.com>
+---
+ kernel/tracepoint.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index ac5b23c..6620e58 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -188,7 +188,6 @@ static int tracepoint_add_func(struct tracepoint *tp,
+ 		WARN_ON_ONCE(1);
+ 		return PTR_ERR(old);
+ 	}
+-	release_probes(old);
+ 
+ 	/*
+ 	 * rcu_assign_pointer has a smp_wmb() which makes sure that the new
+@@ -200,6 +199,7 @@ static int tracepoint_add_func(struct tracepoint *tp,
+ 	rcu_assign_pointer(tp->funcs, tp_funcs);
+ 	if (!static_key_enabled(&tp->key))
+ 		static_key_slow_inc(&tp->key);
++	release_probes(old);
+ 	return 0;
+ }
+ 
+@@ -221,7 +221,6 @@ static int tracepoint_remove_func(struct tracepoint *tp,
+ 		WARN_ON_ONCE(1);
+ 		return PTR_ERR(old);
+ 	}
+-	release_probes(old);
+ 
+ 	if (!tp_funcs) {
+ 		/* Removed last function */
+@@ -232,6 +231,7 @@ static int tracepoint_remove_func(struct tracepoint *tp,
+ 			static_key_slow_dec(&tp->key);
+ 	}
+ 	rcu_assign_pointer(tp->funcs, tp_funcs);
++	release_probes(old);
+ 	return 0;
+ }
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.10.4
+
