@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240AbaEHXnA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 19:43:00 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:40921 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932080AbaEHXm7 (ORCPT
+	id S1755585AbaEHXnO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 19:43:14 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:44007 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932080AbaEHXnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 19:42:59 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Fri, 9 May 2014 08:45:04 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
+	Thu, 8 May 2014 19:43:12 -0400
+Message-ID: <536C168B.6090702@linaro.org>
+Date: Thu, 08 May 2014 16:43:07 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Android Kernel Team <kernel-team@android.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
@@ -25,97 +26,107 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Michel Lespinasse <walken@google.com>,
         Keith Packard <keithp@keithp.com>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 3/4] MADV_VOLATILE: Add purged page detection on setting
- memory non-volatile
-Message-ID: <20140508234504.GC25951@bbox>
-References: <1398806483-19122-1-git-send-email-john.stultz@linaro.org>
- <1398806483-19122-4-git-send-email-john.stultz@linaro.org>
- <20140508015130.GB5282@bbox>
- <536BFAF7.4020405@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <536BFAF7.4020405@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: [PATCH 2/4] MADV_VOLATILE: Add MADV_VOLATILE/NONVOLATILE hooks
+ and handle marking vmas
+References: <1398806483-19122-1-git-send-email-john.stultz@linaro.org> <1398806483-19122-3-git-send-email-john.stultz@linaro.org> <20140508012142.GA5282@bbox> <536BB310.1050105@linaro.org> <20140508231259.GA25951@bbox>
+In-Reply-To: <20140508231259.GA25951@bbox>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 02:45:27PM -0700, John Stultz wrote:
-> On 05/07/2014 06:51 PM, Minchan Kim wrote:
-> > On Tue, Apr 29, 2014 at 02:21:22PM -0700, John Stultz wrote:
-> >> +/**
-> >> + * mvolatile_check_purged_pte - Checks ptes for purged pages
-> >> + * @pmd: pmd to walk
-> >> + * @addr: starting address
-> >> + * @end: end address
-> >> + * @walk: mm_walk ptr (contains ptr to mvolatile_walker)
-> >> + *
-> >> + * Iterates over the ptes in the pmd checking if they have
-> >> + * purged swap entries.
-> >> + *
-> >> + * Sets the mvolatile_walker.page_was_purged to 1 if any were purged,
-> >> + * and clears the purged pte swp entries (since the pages are no
-> >> + * longer volatile, we don't want future accesses to SIGBUS).
-> >> + */
-> >> +static int mvolatile_check_purged_pte(pmd_t *pmd, unsigned long addr,
-> >> +					unsigned long end, struct mm_walk *walk)
-> >> +{
-> >> +	struct mvolatile_walker *vw = walk->private;
-> >> +	pte_t *pte;
-> >> +	spinlock_t *ptl;
-> >> +
-> >> +	if (pmd_trans_huge(*pmd))
-> >> +		return 0;
-> >> +	if (pmd_trans_unstable(pmd))
-> >> +		return 0;
-> >> +
-> >> +	pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
-> >> +	for (; addr != end; pte++, addr += PAGE_SIZE) {
-> >> +		if (!pte_present(*pte)) {
-> >> +			swp_entry_t mvolatile_entry = pte_to_swp_entry(*pte);
-> >> +
-> >> +			if (unlikely(is_purged_entry(mvolatile_entry))) {
-> >> +
-> >> +				vw->page_was_purged = 1;
-> >> +
-> >> +				/* clear the pte swp entry */
-> >> +				flush_cache_page(vw->vma, addr, pte_pfn(*pte));
-> > Maybe we don't need to flush the cache because there is no mapped page.
-> >
-> >> +				ptep_clear_flush(vw->vma, addr, pte);
-> > Maybe we don't need this, either. We didn't set present bit for purged
-> > page but when I look at the internal of ptep_clear_flush, it checks present bit
-> > and skip the TLB flush so it's okay for x86 but not sure other architecture.
-> > More clear function for our purpose would be pte_clear_not_present_full.
-> 
-> Ok.. basically I just wanted to zap the psudo-swp entry, so it will be
-> zero-filled from here on out.
-> 
-> 
-> > And we are changing page table so at least, we need to handle mmu_notifier to
-> > inform that to the client of mmu_notifier.
-> 
-> So yes, this is one item from my last iteration that I didn't act on
-> yet. It wasn't clear to me here that we need to do the mmu_notifier,
-> since the page is evicted earlier via try_to_purge_one (and we do notify
-> then). But in just removing the psudo-swap entry we need to do a
-> notification as well? Is there someplace where the mmu_notifier rules
+On 05/08/2014 04:12 PM, Minchan Kim wrote:
+> On Thu, May 08, 2014 at 09:38:40AM -0700, John Stultz wrote:
+>> On 05/07/2014 06:21 PM, Minchan Kim wrote:
+>>> Hey John,
+>>>
+>>> On Tue, Apr 29, 2014 at 02:21:21PM -0700, John Stultz wrote:
+>>>> This patch introduces MADV_VOLATILE/NONVOLATILE flags to madvise(),
+>>>> which allows for specifying ranges of memory as volatile, and able
+>>>> to be discarded by the system.
+>>>>
+>>>> This initial patch simply adds flag handling to madvise, and the
+>>>> vma handling, splitting and merging the vmas as needed, and marking
+>>>> them with VM_VOLATILE.
+>>>>
+>>>> No purging or discarding of volatile ranges is done at this point.
+>>>>
+>>>> This a simplified implementation which reuses some of the logic
+>>>> from Minchan's earlier efforts. So credit to Minchan for his work.
+>>> Remove purged argument is really good thing but I'm not sure merging
+>>> the feature into madvise syscall is good idea.
+>>> My concern is how we support user who don't want SIGBUS.
+>>> I believe we should support them because someuser(ex, sanitizer) really
+>>> want to avoid MADV_NONVOLATILE call right before overwriting their cache
+>>> (ex, If there was purged page for cyclic cache, user should call NONVOLATILE
+>>> right before overwriting to avoid SIGBUS).
+>> So... Why not use MADV_FREE then for this case?
+> MADV_FREE is one-shot operation. I mean we should call it again to make
+> them lazyfree while vrange could preserve volatility.
+> Pz, think about thread-sanitizer usecase. They do mmap 70TB once start up
+> and want to mark the range as volatile. If they uses MADV_FREE instead of
+> volatile, they should mark 70TB as lazyfree periodically, which is terrible
+> because MADV_FREE's cost is O(N).
 
-Hmm, it seems your claim is reasonable so we don't need to call it again, sorry.
-But let's double check with KVM people.
+I still have had difficulty seeing the thread-sanitizer usage as a
+generic enough model for other applications. I realize they want to
+avoid marking and unmarking ranges (and they want that marking and
+unmarking to be very cheap), but the zero-fill purged page (while still
+preserving volatility) causes lots of *very* strange behavior:
 
-> are better documented?
-> 
-> thanks
-> -john
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+* How do general applications know the difference between a purged page
+and a valid empty page?
+* When reading/writing a page, what happens if half-way the application
+is preempted, and the page is purged?
+* If a volatile page is purged, then zero-filled on a read or write,
+what is its purged state when we're marking it non-volatile?
 
--- 
-Kind regards,
-Minchan Kim
+These use cases don't seem completely baked, or maybe I've just not been
+able to comprehend them yet. But I don't quite understand the desire to
+prioritize this style of usage over other simpler and more well
+established usage?
+
+I'll grant that there may be some form of semantics that work for this,
+and I'm open to considering support for those at some point if they
+become more clear, but I don't think these stranger(to me at least)
+cases should be the default, and I really worry that these requests
+continue to make the basic usage harder to understand for reviewers.
+
+
+>> Just to be clear, by moving back to madvise, I'm not trying to replace
+>> MADV_FREE. I think you're work there is still useful and splitting the
+>> semantics between the two is cleaner.
+> I know.
+> New vrange syscall which works with existing VMA instead of new vrange
+> interval tree removed big concern from mm folks about duplicating
+> of manage layer(ex, vm_area_struct and vrange inteval tree) and
+> it removed my concern that mmap_sem write-side lock scalability for
+> allocator usecase so we can make the implemenation simple and clear.
+> I like it but zero-page VS SIGBUS is another issue we should make an
+> agreement.
+
+Zero-fill makes sense to me for MADV_FREE, where we're not trying to
+recover the data, but just save the cost of releasing and re-faulting
+possibly frequently used pages. The contents are not intended to be
+recovered. Thus semantics there are reasonable.
+
+With volatility (which persists until marked non-volatile), zero-filled
+purged page access breaks quite a bit of the established semantics (see
+the strange behavior questions listed above).
+
+With SIGBUS semantics, its very clear and much more simple. The
+application has hit an page that no longer exists and is clearly
+notified (via SIGBUS). There's no way for the purged state to become
+lost (other then the application ignoring the return value from
+MADV_NONVOLATILE).
+
+Again, I do understand that folks want a solution to the
+thread-sanitizer usage model, but I really think, much as we found with
+MADV_FREE, that its really a quite different semantics that are wanted,
+and trying to mix them doesn't help get anything reviewed/merged.
+
+thanks
+-john
+
