@@ -1,122 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843AbaEHCuX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 22:50:23 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35056 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751851AbaEHCuR (ORCPT
+	id S1752918AbaEHCvv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 22:51:51 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:47618 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851AbaEHCvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 22:50:17 -0400
-Date: Wed, 7 May 2014 21:45:20 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Chen-Yu Tsai <wens@csie.org>, Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Hans de Goede <hdegoede@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [PATCH 5/7] clk: sunxi: add PRCM (Power/Reset/Clock Management)
- clks support
-Message-ID: <20140508024520.GH7047@lukather>
-References: <1398697130-8338-1-git-send-email-boris.brezillon@free-electrons.com>
- <1398697130-8338-6-git-send-email-boris.brezillon@free-electrons.com>
- <20140428234039.GT3134@lukather>
- <536A697E.5000107@free-electrons.com>
+	Wed, 7 May 2014 22:51:47 -0400
+Message-ID: <536AF13F.6000502@gmail.com>
+Date: Wed, 07 May 2014 19:51:43 -0700
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PNpeiK4tTqhYOExY"
-Content-Disposition: inline
-In-Reply-To: <536A697E.5000107@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rob Herring <robherring2@gmail.com>
+CC: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn@kryo.se>, Rob Herring <robh@kernel.org>
+Subject: Re: [PATCH 1/4] of/selftest: add testcase for nodes with same name
+ and address
+References: <1399499298-8830-1-git-send-email-robherring2@gmail.com> <1399499298-8830-2-git-send-email-robherring2@gmail.com>
+In-Reply-To: <1399499298-8830-2-git-send-email-robherring2@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 5/7/2014 2:48 PM, Rob Herring wrote:
+> From: Rob Herring <robh@kernel.org>
+> 
+> Add a test case for nodes which have the same name and same
+> non-translatable unit address.
 
---PNpeiK4tTqhYOExY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If I apply patch 1 and 2 without applying 3 and 4 then console
+warnings are printed, but from a different area of code than
+the original problem reported.  This probably is not a big deal,
+but I'm trying to figure out if I can modify the test to also
+show the original problem.
 
-On Wed, May 07, 2014 at 07:12:30PM +0200, Boris BREZILLON wrote:
->=20
-> On 29/04/2014 01:40, Maxime Ripard wrote:
-> > On Mon, Apr 28, 2014 at 04:58:48PM +0200, Boris BREZILLON wrote:
-> >> The PRCM (Power/Reset/Clock Management) unit provides several clock
-> >> devices:
-> >> - AR100 clk: used to clock the Power Management co-processor
-> >> - AHB0 clk: used to clock the AHB0 bus
-> >> - APB0 clk and gates: used to clk
-> > Used to clk?
-> "Used to clk peripherals connected on the APB0 bus"
->=20
-> I'll add the missing words in the next version :-).
->=20
-> >
-> [...]
-> > Ditto.
-> >
-> > And you'll probably want to use devm_ioremap_resource when you'll have
-> > a single clock for the AR100.
->=20
-> Absolutely.
->=20
-> >
-> >> +
-> >> +	clk_parent =3D of_clk_get_parent_name(np, 0);
-> >> +	if (!clk_parent)
-> >> +		return -EINVAL;
-> [...]
-> >> +
-> >> +static struct platform_driver sun6i_a31_prcm_clk_driver =3D {
-> >> +	.driver =3D {
-> >> +		.name =3D "sun6i-a31-prcm-clk",
-> >> +		.owner =3D THIS_MODULE,
-> >> +		.of_match_table =3D sun6i_a31_prcm_clk_dt_ids,
-> >> +	},
-> >> +	.probe =3D sun6i_a31_prcm_clk_probe,
-> > You're not calling the of_clk_del_provider, and you should probably
-> > unregister your clocks too.
->=20
-> This driver cannot be compiled as a module, and as a result the probed
-> clks will never be removed.
->=20
-> Do you really want to support clk removal for this HW block ?
+The test case also properly reports the failure.
 
-Hmm, no, then it's fine.
+Once all 4 patches are applied, then the test case passes.
 
-Thanks!
-Maxime
+Thus:
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+   Tested-by: Frank Rowand <frank.rowand@sonymobile.com>
 
---PNpeiK4tTqhYOExY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> 
+> Signed-off-by: Rob Herring <robh@kernel.org>
+> ---
+>  drivers/of/selftest.c                        | 23 ++++++++++++++++++
+>  drivers/of/testcase-data/testcases.dtsi      |  1 +
+>  drivers/of/testcase-data/tests-platform.dtsi | 35 ++++++++++++++++++++++++++++
+>  3 files changed, 59 insertions(+)
+>  create mode 100644 drivers/of/testcase-data/tests-platform.dtsi
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
+< snip >
 
-iQIcBAEBAgAGBQJTau/AAAoJEBx+YmzsjxAgF4MP/REXX3DCYLkrt/OwMQ89Tmx8
-TyJD4e8SEj1nmGX1rzW1/V6pCpNgj0CoVo5nRXCzVOiwLrFATQB3c4dgtzorz8Vc
-Judw5pe5FkLAKW6PvxNNcGMyIkD/b9OLe73NMF3FJ9ovu3O+8yGmZrBw81ABom5b
-3zLICu6qoY1HEnTyEfKwP3OlMAlDtf7iQL6Snx/Cl9Ys3sDiVX4WHevERjDETIAQ
-wNDbZWjQlmKOSGWXACS6yBB4q15lohRIDjwfIMPX0ughZ50vGzzaPFJ7nUMWsXN0
-VNTxH6Fg4BLZpDdpWU7X2za4cYYYr8hhhLENCteqjHWPMKLySXTiOLFtQfU0G0Nj
-SpD16AKkYfLQa/YVm4WHgFTRGGOl6p2G7fTPsLP3BQrqzBh0AfG2QIHAxGNB2mYo
-9ePZc6qFocUp9JCmHhYZYxUXY39BxxDvytbILDgUYYbC5razpyvDjnBrck/GFrIJ
-tLWe3D72GdN0BM6T7JVefkmetRucmFqsDpJm63/FESvOfE3L+L0YwO5CPcZcR0HY
-4rxtnk/0DUVMgJHvHfXn3oJI7w8wwA3oFn2S7K7pojSre9RiyqZTeJX2zGVDD5Ln
-75XEc0VlqCglb7FiSEXeGcektcF8TTBqeivpRscSgbO0XdNWhuvnKoqGYTVoYzjj
-+8oOo2ZKQsXS5U8rwo2/
-=b36f
------END PGP SIGNATURE-----
-
---PNpeiK4tTqhYOExY--
