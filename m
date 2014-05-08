@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104AbaEHLir (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 07:38:47 -0400
-Received: from mx02.posteo.de ([89.146.194.165]:33002 "EHLO posteo.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753208AbaEHLiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 07:38:46 -0400
-From: Martin Kepplinger <martink@posteo.de>
-To: gregkh@linuxfoundation.org
-Cc: pavel@ucw.cz, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Martin Kepplinger <martink@posteo.de>
-Subject: [PATCH] staging: winbond: use dev_err() instead of printk()
-Date: Thu,  8 May 2014 13:38:33 +0200
-Message-Id: <1399549113-19758-1-git-send-email-martink@posteo.de>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754130AbaEHLjk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 07:39:40 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64152 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753391AbaEHLjj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 07:39:39 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: mingo@kernel.org
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, nicolas.pitre@linaro.org, tglx@linutronix.de,
+        daniel.lezcano@linaro.org, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] sched/idle: Reflow cpuidle_idle_call()
+Date: Thu, 08 May 2014 13:56:18 +0200
+Message-ID: <1591569.1rC3xo6G18@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1877683.4pfeUuvFZ2@vostro.rjw.lan>
+References: <tip-cc6vb0snt3sr7op6rlbfeqfh@git.kernel.org> <1877683.4pfeUuvFZ2@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For obvious error messages, use dev_err() in order to provide userspace
-with more useful information and use the common kernel coding style.
+On Thursday, May 08, 2014 01:39:14 PM Rafael J. Wysocki wrote:
+> On Thursday, May 08, 2014 03:47:40 AM tip-bot for Peter Zijlstra wrote:
+> > Commit-ID:  37352273ad48f2d177ed1b06ced32d5536b773fb
+> > Gitweb:     http://git.kernel.org/tip/37352273ad48f2d177ed1b06ced32d5536b773fb
+> > Author:     Peter Zijlstra <peterz@infradead.org>
+> > AuthorDate: Fri, 11 Apr 2014 13:55:48 +0200
+> > Committer:  Ingo Molnar <mingo@kernel.org>
+> > CommitDate: Thu, 8 May 2014 09:16:59 +0200
+> > 
+> > sched/idle: Reflow cpuidle_idle_call()
+> > 
+> > Apply goto to reduce lines and nesting levels.
+> 
+> Well, I have a couple of patches that will conflict with this.
+> 
+> This one in particular:
+> 
+> https://patchwork.kernel.org/patch/4071541/
+> 
+> which unfortunately already is in my linux-next branch, because I was
+> unaware of this work.
+> 
+> I wonder how we can resolve this?
 
-Signed-off-by: Martin Kepplinger <martink@posteo.de>
----
-this applies to v3.15-rc4
+The cpuidle patches I have queued up so far are on this separate branch
 
-greetings from Linuxdays Vienna, Austria
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-cpuidle
 
- drivers/staging/winbond/wb35tx.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+in case you'd like to pull from there.
 
-diff --git a/drivers/staging/winbond/wb35tx.c b/drivers/staging/winbond/wb35tx.c
-index 708c5b0..870cff3 100644
---- a/drivers/staging/winbond/wb35tx.c
-+++ b/drivers/staging/winbond/wb35tx.c
-@@ -49,7 +49,7 @@ static void Wb35Tx_complete(struct urb *pUrb)
- 
- 	/* The URB is completed, check the result */
- 	if (pWb35Tx->EP4VM_status != 0) {
--		printk("URB submission failed\n");
-+		dev_err(&pUrb->dev->dev, "URB submission failed\n");
- 		pWb35Tx->EP4vm_state = VM_STOP;
- 		goto error;
- 	}
-@@ -96,7 +96,7 @@ static void Wb35Tx(struct wbsoft_priv *adapter)
- 	pWb35Tx->EP4vm_state = VM_RUNNING;
- 	retv = usb_submit_urb(pUrb, GFP_ATOMIC);
- 	if (retv < 0) {
--		printk("EP4 Tx Irp sending error\n");
-+		dev_err(&pUrb->dev->dev, "EP4 Tx Irp sending error\n");
- 		goto cleanup;
- 	}
- 
-@@ -218,7 +218,7 @@ static void Wb35Tx_EP2VM_complete(struct urb *pUrb)
- 
- 	/* The Urb is completed, check the result */
- 	if (pWb35Tx->EP2VM_status != 0) {
--		printk("EP2 IoCompleteRoutine return error\n");
-+		dev_err(&pUrb->dev->dev, "EP2 IoCompleteRoutine return error\n");
- 		pWb35Tx->EP2vm_state = VM_STOP;
- 		goto error;
- 	}
 -- 
-1.7.10.4
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
