@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047AbaEHQWz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 12:22:55 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:32801 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061AbaEHQWv (ORCPT
+	id S1755178AbaEHQX6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 12:23:58 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:41681 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755116AbaEHQXz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 12:22:51 -0400
+	Thu, 8 May 2014 12:23:55 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Mathias Nyman'" <mathias.nyman@linux.intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: RE: [PATCH 03/10] usb: catch attempts to submit urbs with a
+ vmalloc'd transfer buffer
+Thread-Topic: [PATCH 03/10] usb: catch attempts to submit urbs with a
+ vmalloc'd transfer buffer
+Thread-Index: AQHPatjzaYp5Awm8dkq+2KD2bNocRps23Pcw
+Date: Thu, 8 May 2014 16:22:27 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F70FC62@AcuExch.aculab.com>
+References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
+ <1399566363-25837-4-git-send-email-mathias.nyman@linux.intel.com>
+In-Reply-To: <1399566363-25837-4-git-send-email-mathias.nyman@linux.intel.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140508153722.GO32718@rric.localhost>
-References: <1399489127-6961-1-git-send-email-suravee.suthikulpanit@amd.com>
-	<1399489127-6961-2-git-send-email-suravee.suthikulpanit@amd.com>
-	<20140508085905.GK32718@rric.localhost>
-	<20140508090148.GL32718@rric.localhost>
-	<536B973B.2000207@amd.com>
-	<20140508151402.GN32718@rric.localhost>
-	<536BA0E3.4050709@amd.com>
-	<20140508153722.GO32718@rric.localhost>
-Date: Thu, 8 May 2014 10:22:51 -0600
-Message-ID: <CAL-B5D0NpOoi-J44qnxjCiQ4mDZ=tP_qtaQT19AGS73o6u8DVw@mail.gmail.com>
-Subject: Re: [PATCH V3 1/3] x86/PCI: Fix PCI root numa_node info on AMD family15h
-From: Myron Stowe <myron.stowe@gmail.com>
-To: Robert Richter <rric@kernel.org>
-Cc: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        Borislav Petkov <bp@suse.de>, Daniel J Blueman <daniel@numascale.com>,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        Myron Stowe <myron.stowe@redhat.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 8, 2014 at 9:37 AM, Robert Richter <rric@kernel.org> wrote:
-> On 08.05.14 10:21:07, Suravee Suthikulanit wrote:
->> The reason I put it all these comments here is because it took us a while to
->> discuss what to do with this file going forward. There were some confusions.
->> Therefore, I just want to document it here.
+From: Mathias Nyman
+> From: Dan Williams <dan.j.williams@intel.com>
+> 
+> Save someone else the debug cycles of figuring out why a driver's
+> transfer request is failing or causing undefined system behavior.
+> Buffers submitted for dma must come from GFP allocated / DMA-able
+> memory.
+> 
+> Return -EAGAIN matching the return value for dma_mapping_error() cases.
 
-I agree.  Hopefully anyone getting into this in the future will be
-able to find this thread in the archives as it has been enlightning
+Won't that just cause the request to be resubmitted a few clock
+cycles later?
+Surely you either need to error the request, or panic.
+In any case is this the right place for this sort of test?
 
->>
->> Also, the check for (boot_cpu_data.x86 > 0x11) was needed because it should
->> not be done for family15h.
->
-> Yes, the only functional change of this patch is adding the bridge and
-> the family check, right? Basically:
->
-> +       { 0, 0x18, PCI_VENDOR_ID_AMD, 0x1600 },
->
-> and
->
-> +        /*
-> +         * The following code is only supported until Fam11h.
-> +         * Newer processors will depend on ACPI MCFG table instead.
-> +         */
-> +        if (boot_cpu_data.x86 > 0x11)
-> +                return 0;
-> +
->
-> This patch should stripped down to only those changes with a
-> split. And maybe this should be added to linux-stable?
->
-> All other rework is a different story... Can be done on top of this,
-> though I would drop it.
+(Yes I've spent some time before realising that Linux doesn't
+have a proper vtop() function ....)
 
-I understand Robert's reasoning to split out the core changes (as
-denoted above).  However, I *would* tend to follow on with an
-additional subsequent patch that has the rest of the content as it
-cleans this area up (as opposed to dropping it all together).  It
-makes the code a little clearer and is basically little to no risk (no
-functional change).
+	David
 
-Myron
->
-> -Robert
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+...
+> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+> index 9c4e292..adddc66 100644
+> --- a/drivers/usb/core/hcd.c
+> +++ b/drivers/usb/core/hcd.c
+> @@ -1502,6 +1502,9 @@ int usb_hcd_map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
+>  					ret = -EAGAIN;
+>  				else
+>  					urb->transfer_flags |= URB_DMA_MAP_PAGE;
+> +			} else if (is_vmalloc_addr(urb->transfer_buffer)) {
+> +				WARN_ONCE(1, "transfer buffer not dma capable\n");
+> +				ret = -EAGAIN;
+>  			} else {
+>  				urb->transfer_dma = dma_map_single(
+>  						hcd->self.controller,
+
+
