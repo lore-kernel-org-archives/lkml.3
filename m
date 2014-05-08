@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750AbaEHJfs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 05:35:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52921 "EHLO arroyo.ext.ti.com"
+	id S1753879AbaEHJf4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 05:35:56 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44053 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753216AbaEHJfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 05:35:46 -0400
+	id S1753849AbaEHJfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 05:35:51 -0400
 From: George Cherian <george.cherian@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-usb@vger.kernel.org>
 CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <rogerq@ti.com>,
         <kishon@ti.com>, George Cherian <george.cherian@ti.com>
-Subject: [PATCH 1/5] usb: dwc3: dwc3-omap: Add dwc3_omap_map_offset function
-Date: Thu, 8 May 2014 15:03:03 +0530
-Message-ID: <1399541587-14067-2-git-send-email-george.cherian@ti.com>
+Subject: [PATCH 3/5] usb: dwc3: dwc3-omap: Add dwc3_omap_extcon_register function
+Date: Thu, 8 May 2014 15:03:05 +0530
+Message-ID: <1399541587-14067-4-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1399541587-14067-1-git-send-email-george.cherian@ti.com>
 References: <1399541587-14067-1-git-send-email-george.cherian@ti.com>
@@ -23,119 +23,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calculate the wrapper register offsets in a seperate function.
+Move the extcon related code to its own function.
 Improve code readability, decrease the dwc3_probe() size.
 
 Signed-off-by: George Cherian <george.cherian@ti.com>
 ---
- drivers/usb/dwc3/dwc3-omap.c | 80 ++++++++++++++++++++++++--------------------
- 1 file changed, 44 insertions(+), 36 deletions(-)
+ drivers/usb/dwc3/dwc3-omap.c | 65 ++++++++++++++++++++++++++------------------
+ 1 file changed, 39 insertions(+), 26 deletions(-)
 
 diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index 1160ff4..872f065 100644
+index b739a24..0b9b1d8 100644
 --- a/drivers/usb/dwc3/dwc3-omap.c
 +++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -383,6 +383,49 @@ static int dwc3_omap_vbus_notifier(struct notifier_block *nb,
- 	return NOTIFY_DONE;
+@@ -450,6 +450,42 @@ static void dwc3_omap_set_utmi_mode(struct dwc3_omap *omap)
+ 	dwc3_omap_write_utmi_status(omap, reg);
  }
  
-+static void dwc3_omap_map_offset(struct dwc3_omap *omap)
++static int dwc3_omap_extcon_register(struct dwc3_omap *omap)
 +{
-+	u32			reg;
++	u32			ret;
 +	struct device_node	*node = omap->dev->of_node;
-+	int			x_major;
++	struct extcon_dev	*edev;
 +
-+	reg = dwc3_omap_readl(omap->base, USBOTGSS_REVISION);
-+	omap->revision = reg;
-+	x_major = USBOTGSS_REVISION_XMAJOR(reg);
++	if (of_property_read_bool(node, "extcon")) {
++		edev = extcon_get_edev_by_phandle(omap->dev, 0);
++		if (IS_ERR(edev)) {
++			dev_vdbg(omap->dev, "couldn't get extcon device\n");
++			return -EPROBE_DEFER;
++		}
 +
-+	/* Differentiate between OMAP5 and AM437x */
-+	switch (x_major) {
-+	case USBOTGSS_REVISION_XMAJOR1:
-+	case USBOTGSS_REVISION_XMAJOR2:
-+		omap->irq_eoi_offset = 0;
-+		omap->irq0_offset = 0;
-+		omap->irqmisc_offset = 0;
-+		omap->utmi_otg_offset = 0;
-+		omap->debug_offset = 0;
-+		break;
-+	default:
-+		/* Default to the latest revision */
-+		omap->irq_eoi_offset = USBOTGSS_EOI_OFFSET;
-+		omap->irq0_offset = USBOTGSS_IRQ0_OFFSET;
-+		omap->irqmisc_offset = USBOTGSS_IRQMISC_OFFSET;
-+		omap->utmi_otg_offset = USBOTGSS_UTMI_OTG_OFFSET;
-+		omap->debug_offset = USBOTGSS_DEBUG_OFFSET;
-+		break;
++		omap->vbus_nb.notifier_call = dwc3_omap_vbus_notifier;
++		ret = extcon_register_interest(&omap->extcon_vbus_dev,
++					       edev->name, "USB",
++					       &omap->vbus_nb);
++		if (ret < 0)
++			dev_vdbg(omap->dev, "failed to register notifier for USB\n");
++
++		omap->id_nb.notifier_call = dwc3_omap_id_notifier;
++		ret = extcon_register_interest(&omap->extcon_id_dev,
++					       edev->name, "USB-HOST",
++					       &omap->id_nb);
++		if (ret < 0)
++			dev_vdbg(omap->dev, "failed to register notifier for USB-HOST\n");
++
++		if (extcon_get_cable_state(edev, "USB") == true)
++			dwc3_omap_set_mailbox(omap, OMAP_DWC3_VBUS_VALID);
++		if (extcon_get_cable_state(edev, "USB-HOST") == true)
++			dwc3_omap_set_mailbox(omap, OMAP_DWC3_ID_GROUND);
 +	}
 +
-+	/* For OMAP5(ES2.0) and AM437x x_major is 2 even though there are
-+	 * changes in wrapper registers, Using dt compatible for aegis
-+	 */
-+
-+	if (of_device_is_compatible(node, "ti,am437x-dwc3")) {
-+		omap->irq_eoi_offset = USBOTGSS_EOI_OFFSET;
-+		omap->irq0_offset = USBOTGSS_IRQ0_OFFSET;
-+		omap->irqmisc_offset = USBOTGSS_IRQMISC_OFFSET;
-+		omap->utmi_otg_offset = USBOTGSS_UTMI_OTG_OFFSET;
-+		omap->debug_offset = USBOTGSS_DEBUG_OFFSET;
-+	}
++	return 0;
 +}
 +
  static int dwc3_omap_probe(struct platform_device *pdev)
  {
  	struct device_node	*node = pdev->dev.of_node;
-@@ -397,7 +440,6 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 	int			irq;
+@@ -457,7 +493,6 @@ static int dwc3_omap_probe(struct platform_device *pdev)
+ 	struct dwc3_omap	*omap;
+ 	struct resource		*res;
+ 	struct device		*dev = &pdev->dev;
+-	struct extcon_dev	*edev;
+ 	struct regulator	*vbus_reg = NULL;
  
- 	int			utmi_mode = 0;
--	int			x_major;
+ 	int			ret = -ENOMEM;
+@@ -529,31 +564,9 @@ static int dwc3_omap_probe(struct platform_device *pdev)
  
- 	u32			reg;
+ 	dwc3_omap_enable_irqs(omap);
  
-@@ -448,41 +490,7 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 		goto err0;
- 	}
- 
--	reg = dwc3_omap_readl(omap->base, USBOTGSS_REVISION);
--	omap->revision = reg;
--	x_major = USBOTGSS_REVISION_XMAJOR(reg);
+-	if (of_property_read_bool(node, "extcon")) {
+-		edev = extcon_get_edev_by_phandle(dev, 0);
+-		if (IS_ERR(edev)) {
+-			dev_vdbg(dev, "couldn't get extcon device\n");
+-			ret = -EPROBE_DEFER;
+-			goto err2;
+-		}
 -
--	/* Differentiate between OMAP5 and AM437x */
--	switch (x_major) {
--	case USBOTGSS_REVISION_XMAJOR1:
--	case USBOTGSS_REVISION_XMAJOR2:
--		omap->irq_eoi_offset = 0;
--		omap->irq0_offset = 0;
--		omap->irqmisc_offset = 0;
--		omap->utmi_otg_offset = 0;
--		omap->debug_offset = 0;
--		break;
--	default:
--		/* Default to the latest revision */
--		omap->irq_eoi_offset = USBOTGSS_EOI_OFFSET;
--		omap->irq0_offset = USBOTGSS_IRQ0_OFFSET;
--		omap->irqmisc_offset = USBOTGSS_IRQMISC_OFFSET;
--		omap->utmi_otg_offset = USBOTGSS_UTMI_OTG_OFFSET;
--		omap->debug_offset = USBOTGSS_DEBUG_OFFSET;
--		break;
+-		omap->vbus_nb.notifier_call = dwc3_omap_vbus_notifier;
+-		ret = extcon_register_interest(&omap->extcon_vbus_dev,
+-			edev->name, "USB", &omap->vbus_nb);
+-		if (ret < 0)
+-			dev_vdbg(dev, "failed to register notifier for USB\n");
+-		omap->id_nb.notifier_call = dwc3_omap_id_notifier;
+-		ret = extcon_register_interest(&omap->extcon_id_dev, edev->name,
+-					 "USB-HOST", &omap->id_nb);
+-		if (ret < 0)
+-			dev_vdbg(dev,
+-				"failed to register notifier for USB-HOST\n");
+-
+-		if (extcon_get_cable_state(edev, "USB") == true)
+-			dwc3_omap_set_mailbox(omap, OMAP_DWC3_VBUS_VALID);
+-		if (extcon_get_cable_state(edev, "USB-HOST") == true)
+-			dwc3_omap_set_mailbox(omap, OMAP_DWC3_ID_GROUND);
 -	}
--
--	/* For OMAP5(ES2.0) and AM437x x_major is 2 even though there are
--	 * changes in wrapper registers, Using dt compatible for aegis
--	 */
--
--	if (of_device_is_compatible(node, "ti,am437x-dwc3")) {
--		omap->irq_eoi_offset = USBOTGSS_EOI_OFFSET;
--		omap->irq0_offset = USBOTGSS_IRQ0_OFFSET;
--		omap->irqmisc_offset = USBOTGSS_IRQMISC_OFFSET;
--		omap->utmi_otg_offset = USBOTGSS_UTMI_OTG_OFFSET;
--		omap->debug_offset = USBOTGSS_DEBUG_OFFSET;
--	}
-+	dwc3_omap_map_offset(omap);
++	ret = dwc3_omap_extcon_register(omap);
++	if (ret < 0)
++		goto err2;
  
- 	reg = dwc3_omap_read_utmi_status(omap);
- 
+ 	ret = of_platform_populate(node, NULL, NULL, dev);
+ 	if (ret) {
 -- 
 1.8.3.1
 
