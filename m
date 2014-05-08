@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824AbaEHOFk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 10:05:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43842 "EHLO
+	id S1754803AbaEHOFj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 10:05:39 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43861 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598AbaEHOAp (ORCPT
+	with ESMTP id S1752620AbaEHOAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 May 2014 10:00:45 -0400
-Message-Id: <20140508135851.939725247@infradead.org>
+Message-Id: <20140508135852.245224472@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 08 May 2014 15:58:44 +0200
+Date: Thu, 08 May 2014 15:58:49 +0200
 From: Peter Zijlstra <peterz@infradead.org>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, mingo@kernel.org,
         will.deacon@arm.com, paulmck@linux.vnet.ibm.com,
         Peter Zijlstra <peterz@infradead.org>,
-        Albin Tonnerre <albin.tonnerre@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Chen Gang <gang.chen@asianux.com>, Nicolas Pitre <nico@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Victor Kamensky <victor.kamensky@linaro.org>
-Subject: [PATCH 04/20] arch,arm: Fold atomic_ops
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Tony Luck <tony.luck@intel.com>
+Subject: [PATCH 09/20] arch,ia64: Fold atomic_ops
 References: <20140508135840.956784204@infradead.org>
-Content-Disposition: inline; filename=peterz-arm-atomic_cleanup.patch
+Content-Disposition: inline; filename=peterz-ia64-atomic_cleanup.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,365 +29,239 @@ instruction; fold the lot into a few CPP macros and reduce LoC.
 
 This also prepares for easy addition of new ops.
 
-Requires the asm_op because of eor.
-
-Cc: Albin Tonnerre <albin.tonnerre@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Chen Gang <gang.chen@asianux.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Nicolas Pitre <nico@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Victor Kamensky <victor.kamensky@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>
+Cc: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/arm/include/asm/atomic.h |  313 +++++++++++++++++-------------------------
- 1 file changed, 127 insertions(+), 186 deletions(-)
+ arch/ia64/include/asm/atomic.h |  182 ++++++++++++++++++-----------------------
+ 1 file changed, 83 insertions(+), 99 deletions(-)
 
---- a/arch/arm/include/asm/atomic.h
-+++ b/arch/arm/include/asm/atomic.h
-@@ -37,84 +37,47 @@
-  * store exclusive to ensure that these are atomic.  We may loop
-  * to ensure that the update happens.
-  */
--static inline void atomic_add(int i, atomic_t *v)
--{
--	unsigned long tmp;
--	int result;
--
--	prefetchw(&v->counter);
--	__asm__ __volatile__("@ atomic_add\n"
--"1:	ldrex	%0, [%3]\n"
--"	add	%0, %0, %4\n"
--"	strex	%1, %0, [%3]\n"
--"	teq	%1, #0\n"
--"	bne	1b"
--	: "=&r" (result), "=&r" (tmp), "+Qo" (v->counter)
--	: "r" (&v->counter), "Ir" (i)
--	: "cc");
--}
--
--static inline int atomic_add_return(int i, atomic_t *v)
--{
--	unsigned long tmp;
--	int result;
--
--	smp_mb();
--	prefetchw(&v->counter);
--
--	__asm__ __volatile__("@ atomic_add_return\n"
--"1:	ldrex	%0, [%3]\n"
--"	add	%0, %0, %4\n"
--"	strex	%1, %0, [%3]\n"
--"	teq	%1, #0\n"
--"	bne	1b"
--	: "=&r" (result), "=&r" (tmp), "+Qo" (v->counter)
--	: "r" (&v->counter), "Ir" (i)
--	: "cc");
--
--	smp_mb();
--
--	return result;
--}
--
--static inline void atomic_sub(int i, atomic_t *v)
--{
--	unsigned long tmp;
--	int result;
--
--	prefetchw(&v->counter);
--	__asm__ __volatile__("@ atomic_sub\n"
--"1:	ldrex	%0, [%3]\n"
--"	sub	%0, %0, %4\n"
--"	strex	%1, %0, [%3]\n"
--"	teq	%1, #0\n"
--"	bne	1b"
--	: "=&r" (result), "=&r" (tmp), "+Qo" (v->counter)
--	: "r" (&v->counter), "Ir" (i)
--	: "cc");
--}
--
--static inline int atomic_sub_return(int i, atomic_t *v)
--{
--	unsigned long tmp;
--	int result;
--
--	smp_mb();
--	prefetchw(&v->counter);
--
--	__asm__ __volatile__("@ atomic_sub_return\n"
--"1:	ldrex	%0, [%3]\n"
--"	sub	%0, %0, %4\n"
--"	strex	%1, %0, [%3]\n"
--"	teq	%1, #0\n"
--"	bne	1b"
--	: "=&r" (result), "=&r" (tmp), "+Qo" (v->counter)
--	: "r" (&v->counter), "Ir" (i)
--	: "cc");
+Index: linux-2.6/arch/ia64/include/asm/atomic.h
+===================================================================
+--- linux-2.6.orig/arch/ia64/include/asm/atomic.h
++++ linux-2.6/arch/ia64/include/asm/atomic.h
+@@ -27,61 +27,93 @@
+ #define atomic_set(v,i)		(((v)->counter) = (i))
+ #define atomic64_set(v,i)	(((v)->counter) = (i))
  
--	smp_mb();
+-static __inline__ int
+-ia64_atomic_add (int i, atomic_t *v)
+-{
+-	__s32 old, new;
+-	CMPXCHG_BUGCHECK_DECL
 -
--	return result;
-+#define ATOMIC_OP(op, c_op, asm_op)					\
-+static inline void atomic_##op(int i, atomic_t *v)			\
+-	do {
+-		CMPXCHG_BUGCHECK(v);
+-		old = atomic_read(v);
+-		new = old + i;
+-	} while (ia64_cmpxchg(acq, v, old, new, sizeof(atomic_t)) != old);
+-	return new;
++#define ATOMIC_OP(op, c_op)						\
++static __inline__ int							\
++ia64_atomic_##op (int i, atomic_t *v)					\
 +{									\
-+	unsigned long tmp;						\
-+	int result;							\
++	__s32 old, new;							\
++	CMPXCHG_BUGCHECK_DECL						\
 +									\
-+	prefetchw(&v->counter);						\
-+	__asm__ __volatile__("@ atomic_" #op "\n"			\
-+"1:	ldrex	%0, [%3]\n"						\
-+"	" #asm_op "	%0, %0, %4\n"					\
-+"	strex	%1, %0, [%3]\n"						\
-+"	teq	%1, #0\n"						\
-+"	bne	1b"							\
-+	: "=&r" (result), "=&r" (tmp), "+Qo" (v->counter)		\
-+	: "r" (&v->counter), "Ir" (i)					\
-+	: "cc");							\
-+}									\
-+
-+#define ATOMIC_OP_RETURN(op, c_op, asm_op)				\
-+static inline int atomic_##op##_return(int i, atomic_t *v)		\
-+{									\
-+	unsigned long tmp;						\
-+	int result;							\
-+									\
-+	smp_mb();							\
-+	prefetchw(&v->counter);						\
-+									\
-+	__asm__ __volatile__("@ atomic_" #op "_return\n"		\
-+"1:	ldrex	%0, [%3]\n"						\
-+"	" #asm_op "	%0, %0, %4\n"					\
-+"	strex	%1, %0, [%3]\n"						\
-+"	teq	%1, #0\n"						\
-+"	bne	1b"							\
-+	: "=&r" (result), "=&r" (tmp), "+Qo" (v->counter)		\
-+	: "r" (&v->counter), "Ir" (i)					\
-+	: "cc");							\
-+									\
-+	smp_mb();							\
-+									\
-+	return result;							\
++	do {								\
++		CMPXCHG_BUGCHECK(v);					\
++		old = atomic_read(v);					\
++		new = old c_op i;					\
++	} while (ia64_cmpxchg(acq, v, old, new, sizeof(atomic_t)) != old); \
++	return new;							\
  }
  
- static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
-@@ -174,33 +137,29 @@ static inline int __atomic_add_unless(at
- #error SMP not supported on pre-ARMv6 CPUs
- #endif
+-static __inline__ long
+-ia64_atomic64_add (__s64 i, atomic64_t *v)
+-{
+-	__s64 old, new;
+-	CMPXCHG_BUGCHECK_DECL
++ATOMIC_OP(add, +)
++ATOMIC_OP(sub, -)
  
--static inline int atomic_add_return(int i, atomic_t *v)
--{
--	unsigned long flags;
--	int val;
--
--	raw_local_irq_save(flags);
--	val = v->counter;
--	v->counter = val += i;
--	raw_local_irq_restore(flags);
--
--	return val;
-+#define ATOMIC_OP(op, c_op, asm_op)					\
-+static inline void atomic_##op(int i, atomic_t *v)			\
-+{									\
-+	unsigned long flags;						\
-+									\
-+	raw_local_irq_save(flags);					\
-+	v->counter c_op i;						\
-+	raw_local_irq_restore(flags);					\
-+}									\
-+
-+#define ATOMIC_OP_RETURN(op, c_op, asm_op)				\
-+static inline int atomic_##op##_return(int i, atomic_t *v)		\
-+{									\
-+	unsigned long flags;						\
-+	int val;							\
-+									\
-+	raw_local_irq_save(flags);					\
-+	v->counter c_op i;						\
-+	val = v->counter;						\
-+	raw_local_irq_restore(flags);					\
-+									\
-+	return val;							\
- }
--#define atomic_add(i, v)	(void) atomic_add_return(i, v)
--
--static inline int atomic_sub_return(int i, atomic_t *v)
--{
--	unsigned long flags;
--	int val;
--
--	raw_local_irq_save(flags);
--	val = v->counter;
--	v->counter = val -= i;
--	raw_local_irq_restore(flags);
--
--	return val;
+-	do {
+-		CMPXCHG_BUGCHECK(v);
+-		old = atomic64_read(v);
+-		new = old + i;
+-	} while (ia64_cmpxchg(acq, v, old, new, sizeof(atomic64_t)) != old);
+-	return new;
 -}
--#define atomic_sub(i, v)	(void) atomic_sub_return(i, v)
- 
- static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
- {
-@@ -228,6 +187,17 @@ static inline int __atomic_add_unless(at
- 
- #endif /* __LINUX_ARM_ARCH__ */
- 
-+#define ATOMIC_OPS(op, c_op, asm_op)					\
-+	ATOMIC_OP(op, c_op, asm_op)					\
-+	ATOMIC_OP_RETURN(op, c_op, asm_op)
-+
-+ATOMIC_OPS(add, +=, add)
-+ATOMIC_OPS(sub, -=, sub)
-+
-+#undef ATOMIC_OPS
-+#undef ATOMIC_OP_RETURN
 +#undef ATOMIC_OP
-+
- #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
  
- #define atomic_inc(v)		atomic_add(1, v)
-@@ -300,89 +270,60 @@ static inline void atomic64_set(atomic64
+-static __inline__ int
+-ia64_atomic_sub (int i, atomic_t *v)
+-{
+-	__s32 old, new;
+-	CMPXCHG_BUGCHECK_DECL
++#define atomic_add_return(i,v)						\
++({									\
++	int __ia64_aar_i = (i);						\
++	(__builtin_constant_p(i)					\
++	 && (   (__ia64_aar_i ==  1) || (__ia64_aar_i ==   4)		\
++	     || (__ia64_aar_i ==  8) || (__ia64_aar_i ==  16)		\
++	     || (__ia64_aar_i == -1) || (__ia64_aar_i ==  -4)		\
++	     || (__ia64_aar_i == -8) || (__ia64_aar_i == -16)))		\
++		? ia64_fetch_and_add(__ia64_aar_i, &(v)->counter)	\
++		: ia64_atomic_add(__ia64_aar_i, v);			\
++})
+ 
+-	do {
+-		CMPXCHG_BUGCHECK(v);
+-		old = atomic_read(v);
+-		new = old - i;
+-	} while (ia64_cmpxchg(acq, v, old, new, sizeof(atomic_t)) != old);
+-	return new;
++#define atomic_sub_return(i,v)						\
++({									\
++	int __ia64_asr_i = (i);						\
++	(__builtin_constant_p(i)					\
++	 && (   (__ia64_asr_i ==   1) || (__ia64_asr_i ==   4)		\
++	     || (__ia64_asr_i ==   8) || (__ia64_asr_i ==  16)		\
++	     || (__ia64_asr_i ==  -1) || (__ia64_asr_i ==  -4)		\
++	     || (__ia64_asr_i ==  -8) || (__ia64_asr_i == -16)))	\
++		? ia64_fetch_and_add(-__ia64_asr_i, &(v)->counter)	\
++		: ia64_atomic_sub(__ia64_asr_i, v);			\
++})
++
++#define ATOMIC64_OP(op, c_op)						\
++static __inline__ long							\
++ia64_atomic64_##op (__s64 i, atomic64_t *v)				\
++{									\
++	__s64 old, new;							\
++	CMPXCHG_BUGCHECK_DECL						\
++									\
++	do {								\
++		CMPXCHG_BUGCHECK(v);					\
++		old = atomic64_read(v);					\
++		new = old c_op i;					\
++	} while (ia64_cmpxchg(acq, v, old, new, sizeof(atomic64_t)) != old); \
++	return new;							\
  }
- #endif
  
--static inline void atomic64_add(long long i, atomic64_t *v)
+-static __inline__ long
+-ia64_atomic64_sub (__s64 i, atomic64_t *v)
 -{
--	long long result;
--	unsigned long tmp;
--
--	prefetchw(&v->counter);
--	__asm__ __volatile__("@ atomic64_add\n"
--"1:	ldrexd	%0, %H0, [%3]\n"
--"	adds	%Q0, %Q0, %Q4\n"
--"	adc	%R0, %R0, %R4\n"
--"	strexd	%1, %0, %H0, [%3]\n"
--"	teq	%1, #0\n"
--"	bne	1b"
--	: "=&r" (result), "=&r" (tmp), "+Qo" (v->counter)
--	: "r" (&v->counter), "r" (i)
--	: "cc");
+-	__s64 old, new;
+-	CMPXCHG_BUGCHECK_DECL
++ATOMIC64_OP(add, +)
++ATOMIC64_OP(sub, -)
+ 
+-	do {
+-		CMPXCHG_BUGCHECK(v);
+-		old = atomic64_read(v);
+-		new = old - i;
+-	} while (ia64_cmpxchg(acq, v, old, new, sizeof(atomic64_t)) != old);
+-	return new;
 -}
--
--static inline long long atomic64_add_return(long long i, atomic64_t *v)
--{
--	long long result;
--	unsigned long tmp;
--
--	smp_mb();
--	prefetchw(&v->counter);
--
--	__asm__ __volatile__("@ atomic64_add_return\n"
--"1:	ldrexd	%0, %H0, [%3]\n"
--"	adds	%Q0, %Q0, %Q4\n"
--"	adc	%R0, %R0, %R4\n"
--"	strexd	%1, %0, %H0, [%3]\n"
--"	teq	%1, #0\n"
--"	bne	1b"
--	: "=&r" (result), "=&r" (tmp), "+Qo" (v->counter)
--	: "r" (&v->counter), "r" (i)
--	: "cc");
--
--	smp_mb();
--
--	return result;
--}
--
--static inline void atomic64_sub(long long i, atomic64_t *v)
--{
--	long long result;
--	unsigned long tmp;
--
--	prefetchw(&v->counter);
--	__asm__ __volatile__("@ atomic64_sub\n"
--"1:	ldrexd	%0, %H0, [%3]\n"
--"	subs	%Q0, %Q0, %Q4\n"
--"	sbc	%R0, %R0, %R4\n"
--"	strexd	%1, %0, %H0, [%3]\n"
--"	teq	%1, #0\n"
--"	bne	1b"
--	: "=&r" (result), "=&r" (tmp), "+Qo" (v->counter)
--	: "r" (&v->counter), "r" (i)
--	: "cc");
--}
--
--static inline long long atomic64_sub_return(long long i, atomic64_t *v)
--{
--	long long result;
--	unsigned long tmp;
--
--	smp_mb();
--	prefetchw(&v->counter);
--
--	__asm__ __volatile__("@ atomic64_sub_return\n"
--"1:	ldrexd	%0, %H0, [%3]\n"
--"	subs	%Q0, %Q0, %Q4\n"
--"	sbc	%R0, %R0, %R4\n"
--"	strexd	%1, %0, %H0, [%3]\n"
--"	teq	%1, #0\n"
--"	bne	1b"
--	: "=&r" (result), "=&r" (tmp), "+Qo" (v->counter)
--	: "r" (&v->counter), "r" (i)
--	: "cc");
--
--	smp_mb();
--
--	return result;
--}
-+#define ATOMIC64_OP(op, op1, op2)					\
-+static inline void atomic64_##op(long long i, atomic64_t *v)		\
-+{									\
-+	long long result;						\
-+	unsigned long tmp;						\
-+									\
-+	prefetchw(&v->counter);						\
-+	__asm__ __volatile__("@ atomic64_" #op "\n"			\
-+"1:	ldrexd	%0, %H0, [%3]\n"					\
-+"	" #op1 " %Q0, %Q0, %Q4\n"					\
-+"	" #op2 " %R0, %R0, %R4\n"					\
-+"	strexd	%1, %0, %H0, [%3]\n"					\
-+"	teq	%1, #0\n"						\
-+"	bne	1b"							\
-+	: "=&r" (result), "=&r" (tmp), "+Qo" (v->counter)		\
-+	: "r" (&v->counter), "r" (i)					\
-+	: "cc");							\
-+}									\
-+
-+#define ATOMIC64_OP_RETURN(op, op1, op2)				\
-+static inline long long atomic64_##op##_return(long long i, atomic64_t *v) \
-+{									\
-+	long long result;						\
-+	unsigned long tmp;						\
-+									\
-+	smp_mb();							\
-+	prefetchw(&v->counter);						\
-+									\
-+	__asm__ __volatile__("@ atomic64_" #op "_return\n"		\
-+"1:	ldrexd	%0, %H0, [%3]\n"					\
-+"	" #op1 " %Q0, %Q0, %Q4\n"					\
-+"	" #op2 " %R0, %R0, %R4\n"					\
-+"	strexd	%1, %0, %H0, [%3]\n"					\
-+"	teq	%1, #0\n"						\
-+"	bne	1b"							\
-+	: "=&r" (result), "=&r" (tmp), "+Qo" (v->counter)		\
-+	: "r" (&v->counter), "r" (i)					\
-+	: "cc");							\
-+									\
-+	smp_mb();							\
-+									\
-+	return result;							\
-+}
-+
-+#define ATOMIC64_OPS(op, op1, op2)					\
-+	ATOMIC64_OP(op, op1, op2)					\
-+	ATOMIC64_OP_RETURN(op, op1, op2)
-+
-+ATOMIC64_OPS(add, adds, adc)
-+ATOMIC64_OPS(sub, subs, sbc)
-+
-+#undef ATOMIC64_OPS
-+#undef ATOMIC64_OP_RETURN
 +#undef ATOMIC64_OP
++
++#define atomic64_add_return(i,v)					\
++({									\
++	long __ia64_aar_i = (i);					\
++	(__builtin_constant_p(i)					\
++	 && (   (__ia64_aar_i ==  1) || (__ia64_aar_i ==   4)		\
++	     || (__ia64_aar_i ==  8) || (__ia64_aar_i ==  16)		\
++	     || (__ia64_aar_i == -1) || (__ia64_aar_i ==  -4)		\
++	     || (__ia64_aar_i == -8) || (__ia64_aar_i == -16)))		\
++		? ia64_fetch_and_add(__ia64_aar_i, &(v)->counter)	\
++		: ia64_atomic64_add(__ia64_aar_i, v);			\
++})
++
++#define atomic64_sub_return(i,v)					\
++({									\
++	long __ia64_asr_i = (i);					\
++	(__builtin_constant_p(i)					\
++	 && (   (__ia64_asr_i ==   1) || (__ia64_asr_i ==   4)		\
++	     || (__ia64_asr_i ==   8) || (__ia64_asr_i ==  16)		\
++	     || (__ia64_asr_i ==  -1) || (__ia64_asr_i ==  -4)		\
++	     || (__ia64_asr_i ==  -8) || (__ia64_asr_i == -16)))	\
++		? ia64_fetch_and_add(-__ia64_asr_i, &(v)->counter)	\
++		: ia64_atomic64_sub(__ia64_asr_i, v);			\
++})
  
- static inline long long atomic64_cmpxchg(atomic64_t *ptr, long long old,
- 					long long new)
+ #define atomic_cmpxchg(v, old, new) (cmpxchg(&((v)->counter), old, new))
+ #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
+@@ -123,30 +155,6 @@ static __inline__ long atomic64_add_unle
+ 
+ #define atomic64_inc_not_zero(v) atomic64_add_unless((v), 1, 0)
+ 
+-#define atomic_add_return(i,v)						\
+-({									\
+-	int __ia64_aar_i = (i);						\
+-	(__builtin_constant_p(i)					\
+-	 && (   (__ia64_aar_i ==  1) || (__ia64_aar_i ==   4)		\
+-	     || (__ia64_aar_i ==  8) || (__ia64_aar_i ==  16)		\
+-	     || (__ia64_aar_i == -1) || (__ia64_aar_i ==  -4)		\
+-	     || (__ia64_aar_i == -8) || (__ia64_aar_i == -16)))		\
+-		? ia64_fetch_and_add(__ia64_aar_i, &(v)->counter)	\
+-		: ia64_atomic_add(__ia64_aar_i, v);			\
+-})
+-
+-#define atomic64_add_return(i,v)					\
+-({									\
+-	long __ia64_aar_i = (i);					\
+-	(__builtin_constant_p(i)					\
+-	 && (   (__ia64_aar_i ==  1) || (__ia64_aar_i ==   4)		\
+-	     || (__ia64_aar_i ==  8) || (__ia64_aar_i ==  16)		\
+-	     || (__ia64_aar_i == -1) || (__ia64_aar_i ==  -4)		\
+-	     || (__ia64_aar_i == -8) || (__ia64_aar_i == -16)))		\
+-		? ia64_fetch_and_add(__ia64_aar_i, &(v)->counter)	\
+-		: ia64_atomic64_add(__ia64_aar_i, v);			\
+-})
+-
+ /*
+  * Atomically add I to V and return TRUE if the resulting value is
+  * negative.
+@@ -163,30 +171,6 @@ atomic64_add_negative (__s64 i, atomic64
+ 	return atomic64_add_return(i, v) < 0;
+ }
+ 
+-#define atomic_sub_return(i,v)						\
+-({									\
+-	int __ia64_asr_i = (i);						\
+-	(__builtin_constant_p(i)					\
+-	 && (   (__ia64_asr_i ==   1) || (__ia64_asr_i ==   4)		\
+-	     || (__ia64_asr_i ==   8) || (__ia64_asr_i ==  16)		\
+-	     || (__ia64_asr_i ==  -1) || (__ia64_asr_i ==  -4)		\
+-	     || (__ia64_asr_i ==  -8) || (__ia64_asr_i == -16)))	\
+-		? ia64_fetch_and_add(-__ia64_asr_i, &(v)->counter)	\
+-		: ia64_atomic_sub(__ia64_asr_i, v);			\
+-})
+-
+-#define atomic64_sub_return(i,v)					\
+-({									\
+-	long __ia64_asr_i = (i);					\
+-	(__builtin_constant_p(i)					\
+-	 && (   (__ia64_asr_i ==   1) || (__ia64_asr_i ==   4)		\
+-	     || (__ia64_asr_i ==   8) || (__ia64_asr_i ==  16)		\
+-	     || (__ia64_asr_i ==  -1) || (__ia64_asr_i ==  -4)		\
+-	     || (__ia64_asr_i ==  -8) || (__ia64_asr_i == -16)))	\
+-		? ia64_fetch_and_add(-__ia64_asr_i, &(v)->counter)	\
+-		: ia64_atomic64_sub(__ia64_asr_i, v);			\
+-})
+-
+ #define atomic_dec_return(v)		atomic_sub_return(1, (v))
+ #define atomic_inc_return(v)		atomic_add_return(1, (v))
+ #define atomic64_dec_return(v)		atomic64_sub_return(1, (v))
+@@ -199,13 +183,13 @@ atomic64_add_negative (__s64 i, atomic64
+ #define atomic64_dec_and_test(v)	(atomic64_sub_return(1, (v)) == 0)
+ #define atomic64_inc_and_test(v)	(atomic64_add_return(1, (v)) == 0)
+ 
+-#define atomic_add(i,v)			atomic_add_return((i), (v))
+-#define atomic_sub(i,v)			atomic_sub_return((i), (v))
++#define atomic_add(i,v)			(void)atomic_add_return((i), (v))
++#define atomic_sub(i,v)			(void)atomic_sub_return((i), (v))
+ #define atomic_inc(v)			atomic_add(1, (v))
+ #define atomic_dec(v)			atomic_sub(1, (v))
+ 
+-#define atomic64_add(i,v)		atomic64_add_return((i), (v))
+-#define atomic64_sub(i,v)		atomic64_sub_return((i), (v))
++#define atomic64_add(i,v)		(void)atomic64_add_return((i), (v))
++#define atomic64_sub(i,v)		(void)atomic64_sub_return((i), (v))
+ #define atomic64_inc(v)			atomic64_add(1, (v))
+ #define atomic64_dec(v)			atomic64_sub(1, (v))
+ 
 
 
