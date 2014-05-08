@@ -1,145 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751065AbaEHEAP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 00:00:15 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:54043 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704AbaEHEAN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 00:00:13 -0400
-Date: Thu, 8 May 2014 09:30:03 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: support.opensource@diasemi.com, dmitry.torokhov@gmail.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] Input: Introduce the use of managed version of kzalloc
-Message-ID: <20140508040002.GA3307@himangi-Dell>
+	id S1752190AbaEHEAy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 00:00:54 -0400
+Received: from mga01.intel.com ([192.55.52.88]:64143 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751221AbaEHEAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 00:00:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1008,1389772800"; 
+   d="scan'208";a="528259772"
+Date: Thu, 8 May 2014 12:00:47 -0400
+From: Zhuang Jin Can <jin.can.zhuang@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Felipe Balbi <balbi@ti.com>, USB list <linux-usb@vger.kernel.org>,
+        linux-omap@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        liping.zhou@intel.com, david.a.cohen@linux.intel.com
+Subject: Re: [PATCH] usb: dwc3: ep0: fix delayed status is queued too early
+Message-ID: <20140508160046.GJ19925@intel.com>
+Reply-To: jin.can.zhuang@intel.com
+References: <20140508043902.GI19925@intel.com>
+ <Pine.LNX.4.44L0.1405071252550.1325-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1405071252550.1325-100000@iolanthe.rowland.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves data allocated using kzalloc to managed data allocated
-using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
-functions. This data is the third argument to da9052_request_irq in the
-two cases below.
-
-The following Coccinelle semantic patch was used for making the change:
-
-@platform@
-identifier p, probefn, removefn;
-@@
-struct platform_driver p = {
-  .probe = probefn,
-  .remove = removefn,
-};
-
-@prb@
-identifier platform.probefn, pdev;
-expression e, e1, e2;
-@@
-probefn(struct platform_device *pdev, ...) {
-  <+...
-- e = kzalloc(e1, e2)
-+ e = devm_kzalloc(&pdev->dev, e1, e2)
-  ...
-?-kfree(e);
-  ...+>
-}
-
-@rem depends on prb@
-identifier platform.removefn;
-expression e;
-@@
-removefn(...) {
-  <...
-- kfree(e);
-  ...>
-}
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
-As a follow up patch I would like to know if it would be desirable to 
-modify request_threaded_irq to devm_request_threaded_irq in the helper
-function da9052_request_irq :
-int da9052_request_irq(struct da9052 *da9052, int irq, char *name,
-			   irq_handler_t handler, void *data)
-{
-	irq = da9052_map_irq(da9052, irq);
-	if (irq < 0)
-		return irq;
-
-	return request_threaded_irq(irq, NULL, handler,
-				     IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-				     name, data);
-}
-
- drivers/input/misc/da9052_onkey.c      | 4 +---
- drivers/input/touchscreen/da9052_tsi.c | 4 +---
- 2 files changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/input/misc/da9052_onkey.c b/drivers/input/misc/da9052_onkey.c
-index 184c8f2..6fc8243 100644
---- a/drivers/input/misc/da9052_onkey.c
-+++ b/drivers/input/misc/da9052_onkey.c
-@@ -84,7 +84,7 @@ static int da9052_onkey_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	onkey = kzalloc(sizeof(*onkey), GFP_KERNEL);
-+	onkey = devm_kzalloc(&pdev->dev, sizeof(*onkey), GFP_KERNEL);
- 	input_dev = input_allocate_device();
- 	if (!onkey || !input_dev) {
- 		dev_err(&pdev->dev, "Failed to allocate memory\n");
-@@ -126,7 +126,6 @@ err_free_irq:
- 	cancel_delayed_work_sync(&onkey->work);
- err_free_mem:
- 	input_free_device(input_dev);
--	kfree(onkey);
- 
- 	return error;
- }
-@@ -139,7 +138,6 @@ static int da9052_onkey_remove(struct platform_device *pdev)
- 	cancel_delayed_work_sync(&onkey->work);
- 
- 	input_unregister_device(onkey->input);
--	kfree(onkey);
- 
- 	return 0;
- }
-diff --git a/drivers/input/touchscreen/da9052_tsi.c b/drivers/input/touchscreen/da9052_tsi.c
-index ab64d58..dff6a2e 100644
---- a/drivers/input/touchscreen/da9052_tsi.c
-+++ b/drivers/input/touchscreen/da9052_tsi.c
-@@ -238,7 +238,7 @@ static int da9052_ts_probe(struct platform_device *pdev)
- 	if (!da9052)
- 		return -EINVAL;
- 
--	tsi = kzalloc(sizeof(struct da9052_tsi), GFP_KERNEL);
-+	tsi = devm_kzalloc(&pdev->dev, sizeof(struct da9052_tsi), GFP_KERNEL);
- 	input_dev = input_allocate_device();
- 	if (!tsi || !input_dev) {
- 		error = -ENOMEM;
-@@ -311,7 +311,6 @@ err_free_datardy_irq:
- err_free_pendwn_irq:
- 	da9052_free_irq(tsi->da9052, DA9052_IRQ_PENDOWN, tsi);
- err_free_mem:
--	kfree(tsi);
- 	input_free_device(input_dev);
- 
- 	return error;
-@@ -327,7 +326,6 @@ static int  da9052_ts_remove(struct platform_device *pdev)
- 	da9052_free_irq(tsi->da9052, DA9052_IRQ_PENDOWN, tsi);
- 
- 	input_unregister_device(tsi->dev);
--	kfree(tsi);
- 
- 	return 0;
- }
--- 
-1.9.1
-
+On Wed, May 07, 2014 at 12:59:06PM -0400, Alan Stern wrote:
+> On Thu, 8 May 2014, Zhuang Jin Can wrote:
+> 
+> > > A similar problem can occur in the opposite sense: The thread queuing
+> > > the delayed status request might be delayed for so long that another
+> > > SETUP packet arrives from the host first.  In that case, the delayed
+> > > status request is a response for a stale transfer, so it must not be
+> > > sent to the host.
+> > > 
+> > > Do dwc3 and composite.c handle this case correctly?
+> > > 
+> > So the situation you describe is that we get the STATUS XferNotReady
+> > event, but gadget queues a status request when control transfer already
+> > failed.
+> 
+> When the host already timed out the control transfer and started a new 
+> one.  Here's what I'm talking about:
+> 
+> 	Host sends a Set-Configuration request.
+> 
+> 	The UDC driver calls the gadget driver's setup function.
+> 
+> 	The setup function returns DELAYED_STATUS.
+> 
+> 	After a few seconds, the host gets tired of waiting and
+> 	sends a Get-Descriptor request
+My understanding is dwc3 will return NYET to host for this
+Get-Descriptor request transaction, as dwc3 is still in STATUS phase,
+there's no buffer to receive anything in ep0-out. And your below
+comments is not applicapable to dwc3.
+> 
+> 	The gadget driver finally submits the delayed request response
+> 	to the Set-Configuration request.  But it is now too late,
+> 	because the host expects a response to the Get-Descriptor 
+> 	request.
+> 
+> >  dwc3 can't move to SETUP phase until the status request arrives,
+> > so any SETUP transaction from host will fail. If status request
+> > eventually arrives, it already missed the first control transfer, and
+> > I don't know how the controller will behave. If we still can get a
+> > STATUS XferComplete event without actually transfer anything on the
+> > bus, then we can move back to SETUP PHASE which will remove the stale
+> > delayed status request and start the new SETUP transaction. But I think
+> > in this situation, the host should already lose it patience and start
+> > to reset the bus.
+> 
+> My point is that the UDC driver can't handle this.  Therefore the
+> gadget driver has to prevent this from happening.
+> 
+> That means composite.c has to avoid sending delayed status responses if 
+> a new SETUP packet has been received already.
+> 
+> > Per my understanding, it's impossible for dwc3 to send a stale STATUS
+> > request for a new SETUP transaction. 
+> 
+> dwc3 won't know that the status response is stale.  It will think the 
+> response was meant for the new transfer, not the old one.
+> 
+> Alan Stern
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
