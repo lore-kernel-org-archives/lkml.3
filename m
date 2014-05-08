@@ -1,88 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052AbaEHQEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 12:04:39 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:65113 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754780AbaEHQEh (ORCPT
+	id S1754947AbaEHQGP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 12:06:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44541 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501AbaEHQGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 12:04:37 -0400
-Date: Thu, 8 May 2014 12:04:33 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        David Riley <davidriley@chromium.org>,
-        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP
- systems
-In-Reply-To: <CAD=FV=UEGJGHrdcXgs3EZ_wFXT8GnNeCOMt7CgdiiUzBzZ5Y0A@mail.gmail.com>
-Message-ID: <alpine.LFD.2.11.1405081149190.980@knanqh.ubzr>
-References: <1399504982-31181-1-git-send-email-dianders@chromium.org> <CAOh2x=kwaoSdj8JO0Vo08Y0dX2UfKFiF3pBV-qtp-YTyN=8H8Q@mail.gmail.com> <CAD=FV=UEGJGHrdcXgs3EZ_wFXT8GnNeCOMt7CgdiiUzBzZ5Y0A@mail.gmail.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Thu, 8 May 2014 12:06:13 -0400
+Date: Thu, 8 May 2014 18:06:06 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Mikael Starvik <starvik@axis.com>
+Subject: Re: [PATCH 07/20] arch,cris: Fold atomic_ops
+Message-ID: <20140508160606.GD30445@twins.programming.kicks-ass.net>
+References: <20140508135840.956784204@infradead.org>
+ <20140508135852.104572724@infradead.org>
+ <CAMuHMdV7FUC+p5XqwLZmqJRLYv1qhu5hf0M_e5pASBRHgFAhCA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nT6ukc3bqTvTgwkF"
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdV7FUC+p5XqwLZmqJRLYv1qhu5hf0M_e5pASBRHgFAhCA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 May 2014, Doug Anderson wrote:
 
-> 1. Initially CPU1 and CPU2 at 200MHz.  Pretend loops_per_jiffy is 1000.
-> 
-> 2. CPU1 starts a delay.  It reads global lpj (1000) and sets up its
-> local registers up for the loop.
-> 
-> 3. At the same time, CPU2 is transitioning the system to 2000MHz.
-> Right after CPU1 reads lpj CPU2 stores it as 10000.
-> 
-> 4. Now CPU1 and CPU2 are running at 2000MHz but CPU1 is only looping
-> 1000 times.  It will complete too fast.
-> 
-> ...you could possibly try to account for this in the delay loop code
-> (being careful to handle all of the corner cases and races).  ...or we
-> could make the delay loop super conservative and suggest that people
-> should be using a real timer.
+--nT6ukc3bqTvTgwkF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I don't see how you can possibly solve this issue without a timer based 
-delay.  Even if you scale the loop count in only one direction, it will 
-still have this problem even though the window for the race would happen 
-much less often.  Yet having a delay which is way longer than expected 
-might cause problems in some cases.
+On Thu, May 08, 2014 at 05:12:31PM +0200, Geert Uytterhoeven wrote:
+> Hi Peter,
+>=20
+> On Thu, May 8, 2014 at 3:58 PM, Peter Zijlstra <peterz@infradead.org> wro=
+te:
+> > Many of the atomic op implementations are the same except for one
+> > instruction; fold the lot into a few CPP macros and reduce LoC.
+> >
+> > This also prepares for easy addition of new ops.
+> >
+> > Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> > Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> > Cc: Mikael Starvik <starvik@axis.com>
+> > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> > ---
+> >  arch/cris/include/arch-v10/arch/system.h |    2 -
+> >  arch/cris/include/asm/atomic.h           |   57 +++++++++++++---------=
+---------
+> >  2 files changed, 25 insertions(+), 34 deletions(-)
+> >
+> > Index: linux-2.6/arch/cris/include/arch-v10/arch/system.h
+> > =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> > --- linux-2.6.orig/arch/cris/include/arch-v10/arch/system.h
+> > +++ linux-2.6/arch/cris/include/arch-v10/arch/system.h
+> > @@ -36,8 +36,6 @@ static inline unsigned long _get_base(ch
+> >    return 0;
+> >  }
+> >
+> > -#define nop() __asm__ __volatile__ ("nop");
+> > -
+>=20
+> Is this change supposed to be part of this series?
 
-Yet clock frequency changes with the kind of magnitude you give in your 
-example are usually not instantaneous.  Given udelay should be used for 
-very short delays, it is likely that CPU1 will complete its count before 
-the higher clock frequency is effective in most cases.
+Uhm, lemme double check that. Good spotting.
 
-> How exactly do you do this in a generic way?  I know that our systems
-> don't always boot up at full speed.  The HP Chromebook 11 might boot
-> up at 900MHz and stay that way for a while until the battery gets
-> enough juice.  The Samsung Chromebook 2 will boot up at 1.8GHz
-> although some of them can go to 1.9GHz and others to 2.0GHz.  Waiting
-> to actually see the cpufreq transition is a safe way, though it does
-> end up with some extra function calls.
+Nope, it builds just fine without that hunk, *poof* gone.
 
-The Samsung Chromebook uses an A15 which does use a timer based udelay.  
-What about the others?  IOW is this a real problem in practice or a 
-theoretical one?
-
-SMP with shared clock for DVFS simply doesn't allow pure loop counts to 
-always be accurate.  Trying to fix a broken implementation with 
-something that is still broken to some extent, and maybe more in 
-some cases, doesn't look like much progress to me.
+Thanks!
 
 
-Nicolas
+--nT6ukc3bqTvTgwkF
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTa6tuAAoJEHZH4aRLwOS69nIP/3/QXVI2z11xRK4uE5qF/IwT
+zJa4lVnZPrvX/ZL6rQvnGD2onz+AcDR9ZXlkiScRNt01DS3DttPxSyeMJJ3hyaL/
+nLF5NIEawhuea8JS2WB7MR1Qu7iUyuYsgtKjnM2xDw2i72VQ/q8V2D+k8po4eUXO
+JklOlt4prhX2r7gQDLEsikCi6PRt+Wui/s0E9w4J0Dj42KELQK2V6Pyw49o8cV+Z
+4Hyw3F6KkFYzOV55zNWR/OkO47LEsZXZojHxKZkmzT0uzVrcMSP3gkZWrLAeeDM0
+Wcdd1f5JwvfOw+v7z/t3jFuV0hravDVq3B4iZ34Ue5CinPeqdYH8ZKK8Xfgzg4DC
+ZX8UehxblfUBoeSqICxNERw+DiW/350GzdDBOcpyd34+aa5QUlTOi+G5/F7MwF9F
+TZWLPteYCrMJe6jbSp4A7Eh7W/OUlQ8tIAu/D9lFW1OT8UwaIs64kb31aSudlqQx
+niCz9cgt3ufd9CEvNDty005xMLPaG7UrsWHxW0hYp1lvbNZ5cWLukUshN5W8pwAS
+amHn8JuasH9CUeVBOu2eT52Y9dqDrsoOzy0HAcZgDG+lc9+sNcaXbOjESQj3BdOA
+HuphpYRE+RAVwEzGSqyZx//WWcOLj9e2J66wcZSuBrcuW8PJ95gMqJfOraddR98t
+RKEishADhtLWn/UiUUhq
+=F2YZ
+-----END PGP SIGNATURE-----
+
+--nT6ukc3bqTvTgwkF--
