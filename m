@@ -1,223 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200AbaEHMss (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 08:48:48 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:28368 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753689AbaEHMsQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 08:48:16 -0400
-X-AuditID: cbfec7f5-b7fae6d000004d6d-02-536b7d0f204c
-From: Tomasz Figa <t.figa@samsung.com>
-To: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH v4 3/3] ARM: exynos: Move to generic power domain bindings
-Date: Thu, 08 May 2014 14:45:09 +0200
-Message-id: <1399553109-6487-4-git-send-email-t.figa@samsung.com>
-X-Mailer: git-send-email 1.9.2
-In-reply-to: <1399553109-6487-1-git-send-email-t.figa@samsung.com>
-References: <1399553109-6487-1-git-send-email-t.figa@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAAyWRa0hTYRzGe899q1Onk8mriMFAqUgrM3oTu9ink/QhkIii0qnzkk5lJyUL
-	U1KDZpt+0DXMy8SMsZTlSry0ac3pKC8ZmyusBamhlhIoMkOznH77/R9+8H/gYXB+BQ9mMnNu
-	KVQ58mwZJSWG1p2eiF1FWQlHzANS1K43k6jRMUqiyvkmEpU2mymkMYxTaLnfCFBttQ1DlikP
-	iVw9dRRa0jgA0n/oxdAXF4vmV2dp1Obw0qjl00cMed8PUKjqcRuBOhpGAaps0mCo3Oag0cpw
-	BYF+vn1AILP+F4FMPWsAOdsunw0SWhtagVBW+ogSXFoNJnTXemmh2TqHCRbTQ0r46rFSQl99
-	Ky28fFosaF+ZgDDZXAYE43MfLSxZQoX2+ksXd16VxqYqsjMLFKrDp5OkGb2VNjzPF357cGwc
-	LwHT+9SAYSAXDV26u2og2cBAOPbNTKmBlOG5FgAX33QSW4cWg76BBeC3KC4cLpVMUn4O4EJg
-	jbuP9Es4Z6bh5LB+U9rDxcOuaR3hZ4ILg16XbTNnuTjY2T8Ltt6Fwn9zRszfQsKdgyZbhD/m
-	N5TGigW6CrAGsM0E9iryU/LE5HRlVKQoV4r5OemRKblKC9haa7kLtAzG2AHHANkO1hCSkcCT
-	8gKxUGkHkMFlAay7MCuBZ1PlhXcUqtxEVX62QrQDjJEEl4Ck7tfkWjzv/oGe1fiGpjpkhs+m
-	KL7zgmSReRcHV6N/b9+dfOjPqWO6Bqc1uj9MPH9PX3BlfW6mt9yQyFqrlU/O5N04fnOtaIqb
-	8VzXuQe7D5xIMxr/diymMW5WH+QMVHsn0MnvWmdsKf5iv33ifl3MSO1sXVJ1ZPG1zJHURBkh
-	ZsiPHsRVovw/9AI2oosCAAA=
+	id S1754233AbaEHMst (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 08:48:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31470 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753071AbaEHMso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 08:48:44 -0400
+Date: Thu, 8 May 2014 07:48:16 -0500
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: David Lang <david@lang.hm>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Seth Jennings <sjenning@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+Message-ID: <20140508124816.GA23565@treble.redhat.com>
+References: <20140506121211.GA4125@treble.redhat.com>
+ <20140506140516.GF2099@localhost.localdomain>
+ <20140506145010.GA6702@treble.redhat.com>
+ <20140507122444.GB12234@gmail.com>
+ <20140507154114.GA31555@treble.redhat.com>
+ <20140507155754.GA15221@gmail.com>
+ <alpine.DEB.2.02.1405071552520.5876@nftneq.ynat.uz>
+ <20140508061220.GB31184@gmail.com>
+ <alpine.DEB.2.02.1405072348580.17457@nftneq.ynat.uz>
+ <20140508070814.GA31856@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140508070814.GA31856@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves Exynos power domain code to use the new generic power
-domain look-up framework introduced by previous patch, allowing the new
-code to be compiled with CONFIG_ARCH_EXYNOS selected as well.
+On Thu, May 08, 2014 at 09:08:15AM +0200, Ingo Molnar wrote:
+> 
+> * David Lang <david@lang.hm> wrote:
+> 
+> > On Thu, 8 May 2014, Ingo Molnar wrote:
+> > 
+> > >>>
+> > >>>No!
+> > >>>
+> > >>>A patch to the kernel source is 'safe' if it results in a correctly
+> > >>>patched kernel source. Full stop!
+> > >>>
+> > >>>Live patching does not enter into this question, ever. The correctness
+> > >>>of a patch to the source does not depend on 'live patching'
+> > >>>considerations in any way, shape or form.
+> > >>>
+> > >>>Any mechanism that tries to blur these lines is broken by design.
+> > >>>
+> > >>>My claim is that if a patch is correct/safe in the old fashioned way,
+> > >>>then a fundamental principle is that a live patching subsystem must
+> > >>>either safely apply, or safely reject the live patching attempt,
+> > >>>independently from any user input.
+> > >>>
+> > >>>It's similar to how kprobes (or ftrace) will safely reject or perform
+> > >>>a live patching of the kernel.
+> > >>>
+> > >>>So for example, there's this recent upstream kernel fix:
+> > >>>
+> > >>>3ca9e5d36afb agp: info leak in agpioc_info_wrap()
+> > >>>
+> > >>>which fixes an information leak. The 'patch' is Git commit
+> > >>>3ca9e5d36afb (i.e. it patches a very specific incoming kernel source
+> > >>>tree that results in a specific outgoing source tree), and we know
+> > >>>it's safe and correct.
+> > >>>
+> > >>>Any live patching subsystem must make sure that if this patch is
+> > >>>live-patched, that this attempt is either rejected safely or performed
+> > >>>safely.
+> > >>>
+> > >>>"We think/hope it won't blow up in most cases and we automated some
+> > >>>checks halfways" or "the user must know what he is doing" is really
+> > >>>not something that I think is a good concept for something as fragile
+> > >>>as live patching.
+> > >>
+> > >>In that case you will have to reject any kernel patch that changes
+> > >>any memory structure, because it's impossible as a general rule to
+> > >>say that changing memory structures is going to be safe (or even
+> > >>possible) to change.
+> > >>
+> > >>that includes any access to memory that moves around a lock
+> > >
+> > >Initially restricting it to such patches would be a good beginning -
+> > >most of the security fixes are just failed checks, i.e. they don't
+> > >typically even change any external (not on stack) memory structure,
+> > >right?
+> > 
+> > in terms of hit-patching kernels you are correct.
+> > 
+> > but that's a far cry from what it sounded like you were demanding 
+> > (that it must handle any kernel patch)
+> 
+> No, I was not demanding that at all, my suggestion was:
+> 
+>    > My claim is that if a patch is correct/safe in the old fashioned 
+>    > way, then a fundamental principle is that a live patching 
+>    > subsystem must either safely apply, or safely reject the live 
+>    > patching attempt, independently from any user input.
+> 
+> Note the 'if'. It could start simple and stupid, and only allow cases 
+> where we know the patch must be trivially safe (because it does not do 
+> much in terms of disturbing globally visible state). That needs some 
+> tooling help, but apparently tooling help is in place already.
+> 
+> And then we can complicate it from there - but have a reasonably 
+> robust starting point that we _know_ works (as long as the 
+> implementation is correct).
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
----
- .../bindings/arm/exynos/power_domain.txt           | 12 ++--
- arch/arm/mach-exynos/pm_domains.c                  | 81 +---------------------
- kernel/power/Kconfig                               |  2 +-
- 3 files changed, 7 insertions(+), 88 deletions(-)
+I really wonder if detecting a "trivially safe" patch is even possible.
 
-diff --git a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-index 5216b41..60f26a8 100644
---- a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-+++ b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-@@ -8,6 +8,8 @@ Required Properties:
-     * samsung,exynos4210-pd - for exynos4210 type power domain.
- - reg: physical base address of the controller and length of memory mapped
-     region.
-+- #power-domain-cells: number of cells in power domain specifier;
-+    must be 0.
- 
- Node of a device using power domains must have a samsung,power-domain property
- defined with a phandle to respective power domain.
-@@ -17,12 +19,8 @@ Example:
- 	lcd0: power-domain-lcd0 {
- 		compatible = "samsung,exynos4210-pd";
- 		reg = <0x10023C00 0x10>;
-+		#power-domain-cells = <0>;
- 	};
- 
--Example of the node using power domain:
--
--	node {
--		/* ... */
--		samsung,power-domain = <&lcd0>;
--		/* ... */
--	};
-+See Documentation/devicetree/bindings/power/power_domain.txt for description
-+of consumer-side bindings.
-diff --git a/arch/arm/mach-exynos/pm_domains.c b/arch/arm/mach-exynos/pm_domains.c
-index fe6570e..9cad3c6 100644
---- a/arch/arm/mach-exynos/pm_domains.c
-+++ b/arch/arm/mach-exynos/pm_domains.c
-@@ -73,89 +73,14 @@ static int exynos_pd_power_off(struct generic_pm_domain *domain)
- 	return exynos_pd_power(domain, false);
- }
- 
--static void exynos_add_device_to_domain(struct exynos_pm_domain *pd,
--					 struct device *dev)
--{
--	int ret;
--
--	dev_dbg(dev, "adding to power domain %s\n", pd->pd.name);
--
--	while (1) {
--		ret = pm_genpd_add_device(&pd->pd, dev);
--		if (ret != -EAGAIN)
--			break;
--		cond_resched();
--	}
--
--	pm_genpd_dev_need_restore(dev, true);
--}
--
--static void exynos_remove_device_from_domain(struct device *dev)
--{
--	struct generic_pm_domain *genpd = dev_to_genpd(dev);
--	int ret;
--
--	dev_dbg(dev, "removing from power domain %s\n", genpd->name);
--
--	while (1) {
--		ret = pm_genpd_remove_device(genpd, dev);
--		if (ret != -EAGAIN)
--			break;
--		cond_resched();
--	}
--}
--
--static void exynos_read_domain_from_dt(struct device *dev)
--{
--	struct platform_device *pd_pdev;
--	struct exynos_pm_domain *pd;
--	struct device_node *node;
--
--	node = of_parse_phandle(dev->of_node, "samsung,power-domain", 0);
--	if (!node)
--		return;
--	pd_pdev = of_find_device_by_node(node);
--	if (!pd_pdev)
--		return;
--	pd = platform_get_drvdata(pd_pdev);
--	exynos_add_device_to_domain(pd, dev);
--}
--
--static int exynos_pm_notifier_call(struct notifier_block *nb,
--				    unsigned long event, void *data)
--{
--	struct device *dev = data;
--
--	switch (event) {
--	case BUS_NOTIFY_BIND_DRIVER:
--		if (dev->of_node)
--			exynos_read_domain_from_dt(dev);
--
--		break;
--
--	case BUS_NOTIFY_UNBOUND_DRIVER:
--		exynos_remove_device_from_domain(dev);
--
--		break;
--	}
--	return NOTIFY_DONE;
--}
--
--static struct notifier_block platform_nb = {
--	.notifier_call = exynos_pm_notifier_call,
--};
--
- static __init int exynos4_pm_init_power_domain(void)
- {
--	struct platform_device *pdev;
- 	struct device_node *np;
- 
- 	for_each_compatible_node(np, NULL, "samsung,exynos4210-pd") {
- 		struct exynos_pm_domain *pd;
- 		int on;
- 
--		pdev = of_find_device_by_node(np);
--
- 		pd = kzalloc(sizeof(*pd), GFP_KERNEL);
- 		if (!pd) {
- 			pr_err("%s: failed to allocate memory for domain\n",
-@@ -168,17 +93,13 @@ static __init int exynos4_pm_init_power_domain(void)
- 		pd->base = of_iomap(np, 0);
- 		pd->pd.power_off = exynos_pd_power_off;
- 		pd->pd.power_on = exynos_pd_power_on;
--		pd->pd.of_node = np;
--
--		platform_set_drvdata(pdev, pd);
- 
- 		on = __raw_readl(pd->base + 0x4) & S5P_INT_LOCAL_PWR_EN;
- 
- 		pm_genpd_init(&pd->pd, NULL, !on);
-+		of_genpd_add_provider(np, of_genpd_xlate_simple, &pd->pd);
- 	}
- 
--	bus_register_notifier(&platform_bus_type, &platform_nb);
--
- 	return 0;
- }
- arch_initcall(exynos4_pm_init_power_domain);
-diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-index 45aa98e..b17588c 100644
---- a/kernel/power/Kconfig
-+++ b/kernel/power/Kconfig
-@@ -308,7 +308,7 @@ config PM_GENERIC_DOMAINS_RUNTIME
- 
- config PM_GENERIC_DOMAINS_OF
- 	def_bool y
--	depends on PM_GENERIC_DOMAINS && OF && !ARCH_EXYNOS
-+	depends on PM_GENERIC_DOMAINS && OF
- 
- config CPU_PM
- 	bool
+Where do you draw the line with the following patches?
+
+- add a call to another function which modifies global data
+
+- add an early return or a goto which changes the way the function
+  modifies (or no longer modifies) global data
+
+- touch a local stack variable which results in global data being
+  modified later in the function
+
+- return a different value which causes the function's caller to modify
+  data
+
 -- 
-1.9.2
-
+Josh
