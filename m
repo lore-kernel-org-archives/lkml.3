@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902AbaEHKMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 06:12:33 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:44770 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838AbaEHKMa (ORCPT
+	id S1753934AbaEHKNt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 06:13:49 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:51173 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753353AbaEHKNs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 06:12:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <1399411579-10681-1-git-send-email-geert+renesas@glider.be>
-References: <1399411579-10681-1-git-send-email-geert+renesas@glider.be>
-Date: Thu, 8 May 2014 12:12:29 +0200
-X-Google-Sender-Auth: eY4_ejiMcJBAduKBOlCm8xLIocU
-Message-ID: <CAMuHMdWwenyU1RS4c8spFcb7M0oCXP9z8zbGQ0VACKj7EbvvkA@mail.gmail.com>
-Subject: Re: [PATCH v4] drivers: sh: compile drivers/sh/pm_runtime.c if ARCH_SHMOBILE_MULTI
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 8 May 2014 06:13:48 -0400
+From: Sheetal Tigadoli <sheetal.tigadoli@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, abbotti@mev.co.uk,
+        hsweeten@visionengravers.com,
+        Sheetal Tigadoli <sheetal.tigadoli@gmail.com>
+Subject: [PATCH] staging: comedi: Fixes Coding Style Warning in file das08.h
+Date: Thu,  8 May 2014 15:43:37 +0530
+Message-Id: <1399544017-5906-1-git-send-email-sheetal.tigadoli@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 6, 2014 at 11:26 PM, Geert Uytterhoeven
-<geert+renesas@glider.be> wrote:
-> Tested on Koelsch (legacy, reference, shmobile, and shmobile+bbb kernels)
-> and BeagleBone Black (shmobile+bbb). Will test on more hardware tomorrow.
+The Patch fixes following Warnings, found using checkpatch.pl, in file das08.h
 
-Tested on genmai with Wolfram's CCF support.
+./scripts/checkpatch.pl --file --terse drivers/staging/comedi/drivers/das08.h
+drivers/staging/comedi/drivers/das08.h:43: WARNING: line over 80 characters
+total: 0 errors, 1 warnings, 50 lines checked
 
-Gr{oetje,eeting}s,
+Signed-off-by: Sheetal Tigadoli <sheetal.tigadoli@gmail.com>
+---
+ drivers/staging/comedi/drivers/das08.h |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-                        Geert
+diff --git a/drivers/staging/comedi/drivers/das08.h b/drivers/staging/comedi/drivers/das08.h
+index 46a314c..18cc170 100644
+--- a/drivers/staging/comedi/drivers/das08.h
++++ b/drivers/staging/comedi/drivers/das08.h
+@@ -40,7 +40,9 @@ struct das08_board_struct {
+ };
+ 
+ struct das08_private_struct {
+-	unsigned int do_mux_bits;	/*  bits for do/mux register on boards without separate do register */
++	unsigned int do_mux_bits;	/*  bits for do/mux register on boards
++					 *  without separate do register
++					 */
+ 	const unsigned int *pg_gainlist;
+ 	unsigned int ao_readback[2];	/* assume 2 AO channels */
+ };
+-- 
+1.7.9.5
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
