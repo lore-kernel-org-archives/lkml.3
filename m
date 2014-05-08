@@ -1,98 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423AbaEHCZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 22:25:16 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:34992 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751469AbaEHCZO (ORCPT
+	id S1752821AbaEHC3z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 22:29:55 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:34105 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469AbaEHC3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 22:25:14 -0400
-Date: Wed, 7 May 2014 21:22:33 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: Re: [PATCH] spi: Force the registration of the spidev devices
-Message-ID: <20140508022233.GF7047@lukather>
-References: <1398705774-12361-1-git-send-email-maxime.ripard@free-electrons.com>
- <20140429183758.GH15125@sirena.org.uk>
- <20140430180609.GC3000@lukather>
- <20140501011811.GF3245@sirena.org.uk>
- <20140501223629.GJ3000@lukather>
- <20140502174048.GV3245@sirena.org.uk>
- <20140505042147.GE11606@lukather>
- <20140505191723.GK22111@sirena.org.uk>
+	Wed, 7 May 2014 22:29:52 -0400
+Message-ID: <536AEC02.7050202@huawei.com>
+Date: Thu, 8 May 2014 10:29:22 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NGIwU0kFl1Z1A3An"
-Content-Disposition: inline
-In-Reply-To: <20140505191723.GK22111@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "David S. Miller" <davem@davemloft.net>, Patrick McHardy <kaber@trash.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH net-next] vlan: rename __vlan_find_dev_deep() to  __vlan_find_dev_deep_rcu_rcu()
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.22.246]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The __vlan_find_dev_deep should always called in RCU, according
+David's suggestion, rename to __vlan_find_dev_deep_rcu looks more
+reasonable.
 
---NGIwU0kFl1Z1A3An
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+---
+ drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c |  2 +-
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c    |  2 +-
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c   |  2 +-
+ drivers/net/usb/cdc_mbim.c                         |  2 +-
+ drivers/s390/net/qeth_l3_main.c                    | 10 +++++-----
+ include/linux/if_vlan.h                            |  4 ++--
+ net/8021q/vlan_core.c                              |  6 +++---
+ net/bridge/br_netfilter.c                          |  2 +-
+ 8 files changed, 15 insertions(+), 15 deletions(-)
 
-On Mon, May 05, 2014 at 12:17:23PM -0700, Mark Brown wrote:
-> On Sun, May 04, 2014 at 11:21:47PM -0500, Maxime Ripard wrote:
-> > On Fri, May 02, 2014 at 10:40:48AM -0700, Mark Brown wrote:
-> > > > i2c-dev works great in these cases, because you always have access =
-to
-> > > > all the bus, and all the devices, except if the device is already u=
-sed
-> > > > by someone. The patch I suggested is an attempt to mimic this.
->=20
-> > > It seems better to implement something like this at the device model
-> > > level, provide a way to have a default UIO driver for anything on a
-> > > given bus.  I don't see anything bus specific apart from saying what =
-the
-> > > default driver to use is and it avoids the icky code fiddling about w=
-ith
-> > > what devices are bound and the races that might be involved duplicated
-> > > in individual buses.
->=20
-> > Hmmm, yes, that's probably a great long-term way of dealing with this,
-> > but I don't see it happening soon.
->=20
-> Isn't the code in the patch that started this thread roughly what's
-> needed, just done in a SPI specific way instead of a generic way?
+diff --git a/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c b/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c
+index c0a9dd5..b0cbb2b 100644
+--- a/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c
++++ b/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c
+@@ -185,7 +185,7 @@ static struct net_device *get_iff_from_mac(struct adapter *adapter,
+ 		if (ether_addr_equal(dev->dev_addr, mac)) {
+ 			rcu_read_lock();
+ 			if (vlan && vlan != VLAN_VID_MASK) {
+-				dev = __vlan_find_dev_deep(dev, htons(ETH_P_8021Q), vlan);
++				dev = __vlan_find_dev_deep_rcu(dev, htons(ETH_P_8021Q), vlan);
+ 			} else if (netif_is_bond_slave(dev)) {
+ 				struct net_device *upper_dev;
+ 
+diff --git a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
+index 24e16e3..05ce66e 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
++++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
+@@ -4061,7 +4061,7 @@ static int update_root_dev_clip(struct net_device *dev)
+ 
+ 	/* Parse all bond and vlan devices layered on top of the physical dev */
+ 	for (i = 0; i < VLAN_N_VID; i++) {
+-		root_dev = __vlan_find_dev_deep(dev, htons(ETH_P_8021Q), i);
++		root_dev = __vlan_find_dev_deep_rcu(dev, htons(ETH_P_8021Q), i);
+ 		if (!root_dev)
+ 			continue;
+ 
+diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+index 7e55e88..076aa5e 100644
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+@@ -4122,7 +4122,7 @@ void qlcnic_restore_indev_addr(struct net_device *netdev, unsigned long event)
+ 
+ 	rcu_read_lock();
+ 	for_each_set_bit(vid, adapter->vlans, VLAN_N_VID) {
+-		dev = __vlan_find_dev_deep(netdev, htons(ETH_P_8021Q), vid);
++		dev = __vlan_find_dev_deep_rcu(netdev, htons(ETH_P_8021Q), vid);
+ 		if (!dev)
+ 			continue;
+ 		qlcnic_config_indev_addr(adapter, dev, event);
+diff --git a/drivers/net/usb/cdc_mbim.c b/drivers/net/usb/cdc_mbim.c
+index 13f7705..5b5a0a4 100644
+--- a/drivers/net/usb/cdc_mbim.c
++++ b/drivers/net/usb/cdc_mbim.c
+@@ -206,7 +206,7 @@ static void do_neigh_solicit(struct usbnet *dev, u8 *buf, u16 tci)
+ 	/* need to send the NA on the VLAN dev, if any */
+ 	rcu_read_lock();
+ 	if (tci) {
+-		netdev = __vlan_find_dev_deep(dev->net, htons(ETH_P_8021Q),
++		netdev = __vlan_find_dev_deep_rcu(dev->net, htons(ETH_P_8021Q),
+ 					      tci);
+ 		if (!netdev) {
+ 			rcu_read_unlock();
+diff --git a/drivers/s390/net/qeth_l3_main.c b/drivers/s390/net/qeth_l3_main.c
+index 3524d34..403889a 100644
+--- a/drivers/s390/net/qeth_l3_main.c
++++ b/drivers/s390/net/qeth_l3_main.c
+@@ -1659,7 +1659,7 @@ static void qeth_l3_add_vlan_mc(struct qeth_card *card)
+ 	for_each_set_bit(vid, card->active_vlans, VLAN_N_VID) {
+ 		struct net_device *netdev;
+ 
+-		netdev = __vlan_find_dev_deep(card->dev, htons(ETH_P_8021Q),
++		netdev = __vlan_find_dev_deep_rcu(card->dev, htons(ETH_P_8021Q),
+ 					      vid);
+ 		if (netdev == NULL ||
+ 		    !(netdev->flags & IFF_UP))
+@@ -1721,7 +1721,7 @@ static void qeth_l3_add_vlan_mc6(struct qeth_card *card)
+ 	for_each_set_bit(vid, card->active_vlans, VLAN_N_VID) {
+ 		struct net_device *netdev;
+ 
+-		netdev = __vlan_find_dev_deep(card->dev, htons(ETH_P_8021Q),
++		netdev = __vlan_find_dev_deep_rcu(card->dev, htons(ETH_P_8021Q),
+ 					      vid);
+ 		if (netdev == NULL ||
+ 		    !(netdev->flags & IFF_UP))
+@@ -1766,7 +1766,7 @@ static void qeth_l3_free_vlan_addresses4(struct qeth_card *card,
+ 
+ 	QETH_CARD_TEXT(card, 4, "frvaddr4");
+ 
+-	netdev = __vlan_find_dev_deep(card->dev, htons(ETH_P_8021Q), vid);
++	netdev = __vlan_find_dev_deep_rcu(card->dev, htons(ETH_P_8021Q), vid);
+ 	if (!netdev)
+ 		return;
+ 	in_dev = in_dev_get(netdev);
+@@ -1796,7 +1796,7 @@ static void qeth_l3_free_vlan_addresses6(struct qeth_card *card,
+ 
+ 	QETH_CARD_TEXT(card, 4, "frvaddr6");
+ 
+-	netdev = __vlan_find_dev_deep(card->dev, htons(ETH_P_8021Q), vid);
++	netdev = __vlan_find_dev_deep_rcu(card->dev, htons(ETH_P_8021Q), vid);
+ 	if (!netdev)
+ 		return;
+ 	in6_dev = in6_dev_get(netdev);
+@@ -2089,7 +2089,7 @@ static int qeth_l3_verify_vlan_dev(struct net_device *dev,
+ 		struct net_device *netdev;
+ 
+ 		rcu_read_lock();
+-		netdev = __vlan_find_dev_deep(card->dev, htons(ETH_P_8021Q),
++		netdev = __vlan_find_dev_deep_rcu(card->dev, htons(ETH_P_8021Q),
+ 					      vid);
+ 		rcu_read_unlock();
+ 		if (netdev == dev) {
+diff --git a/include/linux/if_vlan.h b/include/linux/if_vlan.h
+index 13bbbde..8c0fb7f 100644
+--- a/include/linux/if_vlan.h
++++ b/include/linux/if_vlan.h
+@@ -106,7 +106,7 @@ struct vlan_pcpu_stats {
+ 
+ #if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
+ 
+-extern struct net_device *__vlan_find_dev_deep(struct net_device *real_dev,
++extern struct net_device *__vlan_find_dev_deep_rcu(struct net_device *real_dev,
+ 					       __be16 vlan_proto, u16 vlan_id);
+ extern struct net_device *vlan_dev_real_dev(const struct net_device *dev);
+ extern u16 vlan_dev_vlan_id(const struct net_device *dev);
+@@ -199,7 +199,7 @@ extern void vlan_vids_del_by_dev(struct net_device *dev,
+ extern bool vlan_uses_dev(const struct net_device *dev);
+ #else
+ static inline struct net_device *
+-__vlan_find_dev_deep(struct net_device *real_dev,
++__vlan_find_dev_deep_rcu(struct net_device *real_dev,
+ 		     __be16 vlan_proto, u16 vlan_id)
+ {
+ 	return NULL;
+diff --git a/net/8021q/vlan_core.c b/net/8021q/vlan_core.c
+index 3c32bd2..9012b1c 100644
+--- a/net/8021q/vlan_core.c
++++ b/net/8021q/vlan_core.c
+@@ -63,7 +63,7 @@ bool vlan_do_receive(struct sk_buff **skbp)
+ }
+ 
+ /* Must be invoked with rcu_read_lock. */
+-struct net_device *__vlan_find_dev_deep(struct net_device *dev,
++struct net_device *__vlan_find_dev_deep_rcu(struct net_device *dev,
+ 					__be16 vlan_proto, u16 vlan_id)
+ {
+ 	struct vlan_info *vlan_info = rcu_dereference(dev->vlan_info);
+@@ -81,13 +81,13 @@ struct net_device *__vlan_find_dev_deep(struct net_device *dev,
+ 
+ 		upper_dev = netdev_master_upper_dev_get_rcu(dev);
+ 		if (upper_dev)
+-			return __vlan_find_dev_deep(upper_dev,
++			return __vlan_find_dev_deep_rcu(upper_dev,
+ 						    vlan_proto, vlan_id);
+ 	}
+ 
+ 	return NULL;
+ }
+-EXPORT_SYMBOL(__vlan_find_dev_deep);
++EXPORT_SYMBOL(__vlan_find_dev_deep_rcu);
+ 
+ struct net_device *vlan_dev_real_dev(const struct net_device *dev)
+ {
+diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
+index 80e1b0f..adc5708 100644
+--- a/net/bridge/br_netfilter.c
++++ b/net/bridge/br_netfilter.c
+@@ -535,7 +535,7 @@ static struct net_device *brnf_get_logical_dev(struct sk_buff *skb, const struct
+ 	if (brnf_pass_vlan_indev == 0 || !vlan_tx_tag_present(skb))
+ 		return br;
+ 
+-	vlan = __vlan_find_dev_deep(br, skb->vlan_proto,
++	vlan = __vlan_find_dev_deep_rcu(br, skb->vlan_proto,
+ 				    vlan_tx_tag_get(skb) & VLAN_VID_MASK);
+ 
+ 	return vlan ? vlan : br;
+-- 
+1.8.0
 
-Hmmm, I think I get your point now. Yes, we could do it. Let me find
-some time to actually write something :)
 
-Thanks,
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---NGIwU0kFl1Z1A3An
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTauppAAoJEBx+YmzsjxAgzaYP+QE/CC1jWhYSRIVAD10/qZhk
-evBZL/A+xv4/GwpzGsSkGbBYyn1m0V1R4cj3+kYuBxzrdylnppqWaypauQbxKlnr
-WRy+wLs4vOrLD92hF0kDN8f8ipvtRXtlBdHd1BVgOxQuGV3YagsXbTs+8z+D2szu
-Zdw6hC7WqUMTJdxFjhl/BWIN4Ky9HgQRL5w1itoWUZZorHgQfdd3nbmRPnC6uLRy
-G6P5lg01ylLJF8uUgle5g6TUyAFByUyZZUE+RgIVjiOQyhjN0NuTbtf9ovvNmNt4
-MJq2Z1wMLWqjAczaAsJV8y/1nsqfB2zk+I4yYjGI1hKy6wRTSfxrUKtX6XB+EMT0
-a0ROU7iNelmAXgSSrsRKwbMHQKKBLPS5jOuCM/l8R2qqzF05JlsUJsYd3cWalIC+
-Yr5jyhmI4U2axChZZ6admbBWVNedWvuNpHZip7KrLqJCzshuvmPU4se122eHLqiW
-VMdoAWN7ouqHgHghTECJY36d334ndi9KnPZnpOydA56zj3cgj5L79NnKzOvj1Dnp
-+I/j2ZoNGNLm8PB6NaEs/5wRPBItpR6NmdQzFgaQIB3YIMZkB5xhRFvnhmbDXEUb
-yl51XGPb2ceyUlhYmZrh1XXYi85aE+ynCaIxDetMEl/M1EmGbnzNgIZr6Ddyo+DO
-XfSun1o6r0UZjWuNC1uc
-=UOre
------END PGP SIGNATURE-----
-
---NGIwU0kFl1Z1A3An--
