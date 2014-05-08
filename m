@@ -1,121 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187AbaEHJjl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 05:39:41 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:37373 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273AbaEHJjj (ORCPT
+	id S1754208AbaEHJkB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 05:40:01 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:16471 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753273AbaEHJj5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 05:39:39 -0400
-Subject: [PATCH -tip v10 7/7] ftrace: Introduce FTRACE_OPS_FL_SELF_FILTER
- for ftrace-kprobe
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
-        mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 08 May 2014 18:39:30 +0900
-Message-ID: <20140508093930.31767.86419.stgit@ltc230.yrl.intra.hitachi.co.jp>
-In-Reply-To: <20140508093842.31767.43766.stgit@ltc230.yrl.intra.hitachi.co.jp>
-References: <20140508093842.31767.43766.stgit@ltc230.yrl.intra.hitachi.co.jp>
-User-Agent: StGit/0.17-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Thu, 8 May 2014 05:39:57 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-6c-536b50eb9d6c
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+Message-id: <1399541860.13268.48.camel@kjgkr>
+Subject: Re: [BUG] kmemleak on __radix_tree_preload
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        "Linux Kernel, Mailing List" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Thu, 08 May 2014 18:37:40 +0900
+In-reply-to: <20140508092646.GA17349@arm.com>
+References: <1398390340.4283.36.camel@kjgkr> <20140501170610.GB28745@arm.com>
+ <20140501184112.GH23420@cmpxchg.org> <1399431488.13268.29.camel@kjgkr>
+ <20140507113928.GB17253@arm.com> <1399540611.13268.45.camel@kjgkr>
+ <20140508092646.GA17349@arm.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t8zQ93XAdnBBm3rZSzeL+thtFi9ydfi
+	8q45bBb31vxndWDxWDNvDaPH4TfvmT02fZrE7vF5k1wASxSXTUpqTmZZapG+XQJXxpX2ycwF
+	zyUrZt6/yNbA2CfSxcjJISFgIrGm6S0zhC0mceHeejYQW0hgGaPEyfmGMDWrZkxg7GLkAoov
+	YpTYM+k/C0iCV0BQ4sfke2A2s4C6xKR5i5ghbBGJs//fsULY2hLLFr5mhmh+xSjx7u9Edohm
+	XYkT63eDFQkLGEssnNrA1MXIwcEG1LB5vwHEEYoSb/ffBSsRASq/0DYFatcURomPx1VAbBYB
+	VYnVvXPBRnIC1VxvgNn1j1Hi5szLYM38AqIShxduh/pSSWJ3eyc7hH2KXeLcTTuIQQIS3yYf
+	YgG5QUJAVmLTAahySYmDK26wTGCUnIXk5VlIXp6F5OVZSF5ewMiyilE0tSC5oDgpvchErzgx
+	t7g0L10vOT93EyMkVifsYLx3wPoQYzLQ+onMUqLJ+cBYzyuJNzQ2M7IwNTE1NjK3NCNNWEmc
+	V+1RUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxuINTvMz5jGIyn2c8d5yfcHLu90t0Y3L
+	dL+X9XQfNJ+Xu1ZBjfmtdG0od7RGaplgjeyr2eW+mdWFLOmP/00sPFTFfUHlo9av2nlJrKXr
+	A7au4Sk+oe6a46XMM33Pp6vv/uw8EGt7RPHyimxTd68l9zdbvPj59n311Xkrjcz3i+iE59d8
+	UpU4rcRSnJFoqMVcVJwIAAput+LrAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAd3XAdnBBq1rJCzeL+thtFi9ydfi
+	8q45bBb31vxndWDxWDNvDaPH4TfvmT02fZrE7vF5k1wAS1QDo01GamJKapFCal5yfkpmXrqt
+	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
+	MI0Rur4hQXA9RgZoIGEdY0bD1sNMBaclK+5PesLawPhJuIuRk0NCwERi1YwJjBC2mMSFe+vZ
+	uhi5OIQEFjFK7Jn0nwUkwSsgKPFj8j0gm4ODWUBe4silbJAws4C6xKR5i5gh6l8xSrz7O5Ed
+	ol5X4sT63awgtrCAscTCqQ1MIL1sAtoSm/cbgISFBBQl3u6/C1YiAlR+oW0KC8TMKYwSH4+r
+	gNgsAqoSq3vngo3kBKq53vAaatc/RombMy+DNfMLiEocXridGeIBJYnd7Z3sExiFZiE5exbC
+	2bOQnL2AkXkVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnBkP5PawbiyweIQowAHoxIPb4Zz
+	VrAQa2JZcWXuIUYJDmYlEV4e/+xgId6UxMqq1KL8+KLSnNTiQ4zJQJdPZJYSTc4HJp28knhD
+	YxMzI0sjMwsjE3Nz0oSVxHkPtFoHCgmkJ5akZqemFqQWwWxh4uCUamBMXfiJv0Th/H3zTt+g
+	nVVPuA+7Tn/l96zC6O3/1JLI59OSWHOO+Xe+3NVe2RIdN4Ntd4Mgq3OpjgrnLOYlD55+eHw9
+	R27+JA15ifK991hP2W1b41vNlyzBH9Vv/7FnanBbeJFXG+tOtqYXsT5zN2pKWM78I76sr0b2
+	YfbRzV8at1veW9jyyEGJpTgj0VCLuag4EQBcD0lJMAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the kprobes itself owns a hash table to get a kprobe
-data structure corresponding to the given ip address, there
-is no need to test ftrace hash in ftrace side.
-To achive better performance on ftrace-based kprobe,
-FTRACE_OPS_FL_SELF_FILTER flag to ftrace_ops which means
-that ftrace skips testing its own hash table.
+2014-05-08 (목), 10:26 +0100, Catalin Marinas:
+> On Thu, May 08, 2014 at 06:16:51PM +0900, Jaegeuk Kim wrote:
+> > 2014-05-07 (수), 12:39 +0100, Catalin Marinas:
+> > > On Wed, May 07, 2014 at 03:58:08AM +0100, Jaegeuk Kim wrote:
+> > > > unreferenced object 0xffff880004226da0 (size 576):
+> > > >   comm "fsstress", pid 14590, jiffies 4295191259 (age 706.308s)
+> > > >   hex dump (first 32 bytes):
+> > > >     01 00 00 00 81 ff ff ff 00 00 00 00 00 00 00 00  ................
+> > > >     50 89 34 81 ff ff ff ff b8 6d 22 04 00 88 ff ff  P.4......m".....
+> > > >   backtrace:
+> > > >     [<ffffffff816c02e8>] kmemleak_update_trace+0x58/0x80
+> > > >     [<ffffffff81349517>] radix_tree_node_alloc+0x77/0xa0
+> > > >     [<ffffffff81349718>] __radix_tree_create+0x1d8/0x230
+> > > >     [<ffffffff8113286c>] __add_to_page_cache_locked+0x9c/0x1b0
+> > > >     [<ffffffff811329a8>] add_to_page_cache_lru+0x28/0x80
+> > > >     [<ffffffff81132f58>] grab_cache_page_write_begin+0x98/0xf0
+> > > >     [<ffffffffa02e4bf4>] f2fs_write_begin+0xb4/0x3c0 [f2fs]
+> > > >     [<ffffffff81131b77>] generic_perform_write+0xc7/0x1c0
+> > > >     [<ffffffff81133b7d>] __generic_file_aio_write+0x1cd/0x3f0
+> > > >     [<ffffffff81133dfe>] generic_file_aio_write+0x5e/0xe0
+> > > >     [<ffffffff81195c5a>] do_sync_write+0x5a/0x90
+> > > >     [<ffffffff811968d2>] vfs_write+0xc2/0x1d0
+> > > >     [<ffffffff81196daf>] SyS_write+0x4f/0xb0
+> > > >     [<ffffffff816dead2>] system_call_fastpath+0x16/0x1b
+> > > >     [<ffffffffffffffff>] 0xffffffffffffffff
+> > > 
+> > > OK, it shows that the allocation happens via add_to_page_cache_locked()
+> > > and I guess it's page_cache_tree_insert() which calls
+> > > __radix_tree_create() (the latter reusing the preloaded node). I'm not
+> > > familiar enough to this code (radix-tree.c and filemap.c) to tell where
+> > > the node should have been freed, who keeps track of it.
+> > > 
+> > > At a quick look at the hex dump (assuming that the above leak is struct
+> > > radix_tree_node):
+> > > 
+> > > 	.path = 1
+> > > 	.count = -0x7f (or 0xffffff81 as unsigned int)
+> > > 	union {
+> > > 		{
+> > > 			.parent = NULL
+> > > 			.private_data = 0xffffffff81348950
+> > > 		}
+> > > 		{
+> > > 			.rcu_head.next = NULL
+> > > 			.rcu_head.func = 0xffffffff81348950
+> > > 		}
+> > > 	}
+> > > 
+> > > The count is a bit suspicious.
+> > > 
+> > > From the union, it looks most likely like rcu_head information. Is
+> > > radix_tree_node_rcu_free() function at the above rcu_head.func?
+> 
+> Thanks for the config. Could you please confirm that 0xffffffff81348950
+> address corresponds to the radix_tree_node_rcu_free() function in your
+> System.map (or something else)?
 
-Without this patch, ftrace_lookup_ip() is biggest cycles
-consumer when 20,000 kprobes are enabled.
-  ----
-  Samples: 1K of event 'cycles', Event count (approx.): 340068894
-  +  20.77%  [k] ftrace_lookup_ip
-  +   8.33%  [k] kprobe_trace_func
-  +   4.83%  [k] get_kprobe_cached
-  ----
+Yap, the address is matched to radix_tree_node_rcu_free().
+Thanks,
 
-With this patch, ftrace_lookup_ip() vanished from the
-cycles consumer list (of course, there is no caller on
-hotpath anymore :))
-  ----
-  Samples: 1K of event 'cycles', Event count (approx.): 186861492
-  +   9.95%  [k] kprobe_trace_func
-  +   6.00%  [k] kprobe_ftrace_handler
-  +   5.53%  [k] get_kprobe_cached
-  ----
+> 
+> > > Also, if you run echo scan > /sys/kernel/debug/kmemleak a few times, do
+> > > any of the above leaks disappear (in case the above are some transient
+> > > rcu freeing reports; normally this shouldn't happen as the objects are
+> > > still referred but I'll look at the relevant code once I have your
+> > > .config).
+> > 
+> > Once I run the echo, the leaks are still remained.
+> 
+> OK, so they aren't just transient.
+> 
+> Thanks.
+> 
 
-Changes from v7:
- - Re-evaluate the performance improvement.
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- include/linux/ftrace.h |    3 +++
- kernel/kprobes.c       |    2 +-
- kernel/trace/ftrace.c  |    3 ++-
- 3 files changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index ae9504b..f1fa7d27 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -93,6 +93,8 @@ typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip,
-  * INITIALIZED - The ftrace_ops has already been initialized (first use time
-  *            register_ftrace_function() is called, it will initialized the ops)
-  * DELETED - The ops are being deleted, do not let them be registered again.
-+ * SELF_FILTER - The ftrace_ops function filters ip by itself. Do not need to
-+ *            check hash table on each hit.
-  */
- enum {
- 	FTRACE_OPS_FL_ENABLED			= 1 << 0,
-@@ -105,6 +107,7 @@ enum {
- 	FTRACE_OPS_FL_STUB			= 1 << 7,
- 	FTRACE_OPS_FL_INITIALIZED		= 1 << 8,
- 	FTRACE_OPS_FL_DELETED			= 1 << 9,
-+	FTRACE_OPS_FL_SELF_FILTER		= 1 << 10,
- };
- 
- /*
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 0f5f23c..5c6e410 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1027,7 +1027,7 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
- #ifdef CONFIG_KPROBES_ON_FTRACE
- static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
- 	.func = kprobe_ftrace_handler,
--	.flags = FTRACE_OPS_FL_SAVE_REGS,
-+	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_SELF_FILTER,
- };
- static int kprobe_ftrace_enabled;
- 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 4a54a25..062ca20 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -4501,7 +4501,8 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
- 	 */
- 	preempt_disable_notrace();
- 	do_for_each_ftrace_op(op, ftrace_ops_list) {
--		if (ftrace_ops_test(op, ip, regs))
-+		if (op->flags & FTRACE_OPS_FL_SELF_FILTER ||
-+		    ftrace_ops_test(op, ip, regs))
- 			op->func(ip, parent_ip, op, regs);
- 	} while_for_each_ftrace_op(op);
- 	preempt_enable_notrace();
-
+-- 
+Jaegeuk Kim
+Samsung
 
