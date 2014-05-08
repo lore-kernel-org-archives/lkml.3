@@ -1,87 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466AbaEHLVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 07:21:45 -0400
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:43742 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750768AbaEHLVo (ORCPT
+	id S1753692AbaEHLWg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 07:22:36 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53773 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750942AbaEHLWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 07:21:44 -0400
-Date: Thu, 8 May 2014 14:21:06 +0300
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: DaeSeok Youn <daeseok.youn@gmail.com>
-Cc: m.chehab@samsung.com, linux-dev@sensoray.com, hans.verkuil@cisco.com,
-        linux-media@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [media] s2255drv: fix memory leak s2255_probe()
-Message-ID: <20140508112106.GH8753@valkosipuli.retiisi.org.uk>
-References: <1408657.25U3i1DfG3@daeseok-laptop.cloud.net>
- <20140415093305.GE8753@valkosipuli.retiisi.org.uk>
- <CAHb8M2CECG7ydo9L2u5BOcQeq8V3=ydy149kCLkoueo+HbD6fg@mail.gmail.com>
- <20140505083856.GZ8753@valkosipuli.retiisi.org.uk>
- <CAHb8M2D5C-w3+_gWHOnJRXnjwMhtMYKNLnQwtX3wuGXZN=heng@mail.gmail.com>
+	Thu, 8 May 2014 07:22:34 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        nicolas.pitre@linaro.org, tglx@linutronix.de,
+        daniel.lezcano@linaro.org
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] sched/idle: Reflow cpuidle_idle_call()
+Date: Thu, 08 May 2014 13:39:14 +0200
+Message-ID: <1877683.4pfeUuvFZ2@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <tip-cc6vb0snt3sr7op6rlbfeqfh@git.kernel.org>
+References: <tip-cc6vb0snt3sr7op6rlbfeqfh@git.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHb8M2D5C-w3+_gWHOnJRXnjwMhtMYKNLnQwtX3wuGXZN=heng@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 01:38:58PM +0900, DaeSeok Youn wrote:
-> Hello,
+On Thursday, May 08, 2014 03:47:40 AM tip-bot for Peter Zijlstra wrote:
+> Commit-ID:  37352273ad48f2d177ed1b06ced32d5536b773fb
+> Gitweb:     http://git.kernel.org/tip/37352273ad48f2d177ed1b06ced32d5536b773fb
+> Author:     Peter Zijlstra <peterz@infradead.org>
+> AuthorDate: Fri, 11 Apr 2014 13:55:48 +0200
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Thu, 8 May 2014 09:16:59 +0200
 > 
-> 2014-05-05 17:38 GMT+09:00 Sakari Ailus <sakari.ailus@iki.fi>:
-> > On Tue, Apr 15, 2014 at 07:54:43PM +0900, DaeSeok Youn wrote:
-> >> Hi, Sakari
-> >>
-> >> 2014-04-15 18:33 GMT+09:00 Sakari Ailus <sakari.ailus@iki.fi>:
-> >> > Hi Daeseok,
-> >> >
-> >> > On Tue, Apr 15, 2014 at 01:49:34PM +0900, Daeseok Youn wrote:
-> >> >>
-> >> >> smatch says:
-> >> >>  drivers/media/usb/s2255/s2255drv.c:2246 s2255_probe() warn:
-> >> >> possible memory leak of 'dev'
-> >> >>
-> >> >> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
-> >> >> ---
-> >> >>  drivers/media/usb/s2255/s2255drv.c |    1 +
-> >> >>  1 files changed, 1 insertions(+), 0 deletions(-)
-> >> >>
-> >> >> diff --git a/drivers/media/usb/s2255/s2255drv.c b/drivers/media/usb/s2255/s2255drv.c
-> >> >> index 1d4ba2b..8aca3ef 100644
-> >> >> --- a/drivers/media/usb/s2255/s2255drv.c
-> >> >> +++ b/drivers/media/usb/s2255/s2255drv.c
-> >> >> @@ -2243,6 +2243,7 @@ static int s2255_probe(struct usb_interface *interface,
-> >> >>       dev->cmdbuf = kzalloc(S2255_CMDBUF_SIZE, GFP_KERNEL);
-> >> >>       if (dev->cmdbuf == NULL) {
-> >> >>               s2255_dev_err(&interface->dev, "out of memory\n");
-> >> >> +             kfree(dev);
-> >> >>               return -ENOMEM;
-> >> >>       }
-> >> >>
-> >> >
-> >> > The rest of the function already uses goto and labels for error handling. I
-> >> > think it'd take adding one more. dev is correctly released in other error
-> >> > cases.
-> >> I am not sure that adding a new label for error handling when
-> >> allocation for dev->cmdbuf is failed.
-> >> I think it is ok to me. :-) Because I think it is not good adding a
-> >> new label and use goto statement for this.
-> >
-> > I can ack this if you use the same pattern for error handling that's already
-> > there.
-> But it has a redundant kfree() call for dev->cmdbuf when it failed to
-> allocate, right?
+> sched/idle: Reflow cpuidle_idle_call()
+> 
+> Apply goto to reduce lines and nesting levels.
 
-Correct.
+Well, I have a couple of patches that will conflict with this.
 
-> If it is ok, I send this again after fixing as your comment.
+This one in particular:
 
-Please do. Thanks.
+https://patchwork.kernel.org/patch/4071541/
+
+which unfortunately already is in my linux-next branch, because I was
+unaware of this work.
+
+I wonder how we can resolve this?
+
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Link: http://lkml.kernel.org/n/tip-cc6vb0snt3sr7op6rlbfeqfh@git.kernel.org
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  kernel/sched/idle.c | 131 +++++++++++++++++++++++-----------------------------
+>  1 file changed, 58 insertions(+), 73 deletions(-)
+> 
+> diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+> index ed67f0c..88a6bc4 100644
+> --- a/kernel/sched/idle.c
+> +++ b/kernel/sched/idle.c
+> @@ -73,7 +73,7 @@ static int cpuidle_idle_call(void)
+>  {
+>  	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+>  	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+> -	int next_state, entered_state, ret;
+> +	int next_state, entered_state;
+>  	bool broadcast;
+>  
+>  	/*
+> @@ -102,90 +102,75 @@ static int cpuidle_idle_call(void)
+>  	 * Check if the cpuidle framework is ready, otherwise fallback
+>  	 * to the default arch specific idle method
+>  	 */
+> -	ret = cpuidle_enabled(drv, dev);
+> -
+> -	if (!ret) {
+> -		/*
+> -		 * Ask the governor to choose an idle state it thinks
+> -		 * it is convenient to go to. There is *always* a
+> -		 * convenient idle state
+> -		 */
+> -		next_state = cpuidle_select(drv, dev);
+> -
+> +	if (cpuidle_enabled(drv, dev)) {
+> +use_default:
+>  		/*
+> -		 * The idle task must be scheduled, it is pointless to
+> -		 * go to idle, just update no idle residency and get
+> -		 * out of this function
+> +		 * We can't use the cpuidle framework, let's use the default
+> +		 * idle routine.
+>  		 */
+> -		if (current_clr_polling_and_test()) {
+> -			dev->last_residency = 0;
+> -			entered_state = next_state;
+> +		if (current_clr_polling_and_test())
+>  			local_irq_enable();
+> -		} else {
+> -			broadcast = !!(drv->states[next_state].flags &
+> -				       CPUIDLE_FLAG_TIMER_STOP);
+> -
+> -			if (broadcast) {
+> -				/*
+> -				 * Tell the time framework to switch
+> -				 * to a broadcast timer because our
+> -				 * local timer will be shutdown. If a
+> -				 * local timer is used from another
+> -				 * cpu as a broadcast timer, this call
+> -				 * may fail if it is not available
+> -				 */
+> -				ret = clockevents_notify(
+> -					CLOCK_EVT_NOTIFY_BROADCAST_ENTER,
+> -					&dev->cpu);
+> -			}
+> -
+> -			if (!ret) {
+> -				trace_cpu_idle_rcuidle(next_state, dev->cpu);
+> -
+> -				/*
+> -				 * Enter the idle state previously
+> -				 * returned by the governor
+> -				 * decision. This function will block
+> -				 * until an interrupt occurs and will
+> -				 * take care of re-enabling the local
+> -				 * interrupts
+> -				 */
+> -				entered_state = cpuidle_enter(drv, dev,
+> -							      next_state);
+> -
+> -				trace_cpu_idle_rcuidle(PWR_EVENT_EXIT,
+> -						       dev->cpu);
+> -
+> -				if (broadcast)
+> -					clockevents_notify(
+> -						CLOCK_EVT_NOTIFY_BROADCAST_EXIT,
+> -						&dev->cpu);
+> -
+> -				/*
+> -				 * Give the governor an opportunity to reflect on the
+> -				 * outcome
+> -				 */
+> -				cpuidle_reflect(dev, entered_state);
+> -			}
+> -		}
+> +		else
+> +			arch_cpu_idle();
+> +
+> +		goto exit_idle;
+>  	}
+>  
+>  	/*
+> -	 * We can't use the cpuidle framework, let's use the default
+> -	 * idle routine
+> +	 * Ask the governor to choose an idle state it thinks
+> +	 * it is convenient to go to. There is *always* a
+> +	 * convenient idle state
+>  	 */
+> -	if (ret) {
+> -		if (!current_clr_polling_and_test())
+> -			arch_cpu_idle();
+> -		else
+> -			local_irq_enable();
+> +	next_state = cpuidle_select(drv, dev);
+> +
+> +	/*
+> +	 * The idle task must be scheduled, it is pointless to
+> +	 * go to idle, just update no idle residency and get
+> +	 * out of this function
+> +	 */
+> +	if (current_clr_polling_and_test()) {
+> +		dev->last_residency = 0;
+> +		entered_state = next_state;
+> +		local_irq_enable();
+> +		goto exit_idle;
+>  	}
+>  
+> +	broadcast = !!(drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP);
+> +
+> +	/*
+> +	 * Tell the time framework to switch to a broadcast timer
+> +	 * because our local timer will be shutdown. If a local timer
+> +	 * is used from another cpu as a broadcast timer, this call may
+> +	 * fail if it is not available
+> +	 */
+> +	if (broadcast &&
+> +	    clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu))
+> +		goto use_default;
+> +
+> +	trace_cpu_idle_rcuidle(next_state, dev->cpu);
+> +
+> +	/*
+> +	 * Enter the idle state previously returned by the governor decision.
+> +	 * This function will block until an interrupt occurs and will take
+> +	 * care of re-enabling the local interrupts
+> +	 */
+> +	entered_state = cpuidle_enter(drv, dev, next_state);
+> +
+> +	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
+> +
+> +	if (broadcast)
+> +		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
+> +
+> +	/*
+> +	 * Give the governor an opportunity to reflect on the outcome
+> +	 */
+> +	cpuidle_reflect(dev, entered_state);
+> +
+> +exit_idle:
+>  	__current_set_polling();
+>  
+>  	/*
+> -	 * It is up to the idle functions to enable back the local
+> -	 * interrupt
+> +	 * It is up to the idle functions to reenable local interrupts
+>  	 */
+>  	if (WARN_ON_ONCE(irqs_disabled()))
+>  		local_irq_enable();
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
