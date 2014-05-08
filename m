@@ -1,131 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228AbaEHN23 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 09:28:29 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:58373 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753723AbaEHN21 (ORCPT
+	id S1754225AbaEHNav (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 09:30:51 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:60498 "EHLO
+	ringil.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752940AbaEHNat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 09:28:27 -0400
+	Thu, 8 May 2014 09:30:49 -0400
+Date: Thu, 8 May 2014 21:30:25 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Milos Vyletel <milos.vyletel@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
+        "open list:CRYPTO API" <linux-crypto@vger.kernel.org>,
+        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>,
+        linux-coverity@vger.kernel.org
+Subject: Re: [PATCH] crypto: x86/sha1: fix coverity CID 1195603
+Message-ID: <20140508133025.GB12700@gondor.apana.org.au>
+References: <1398885474-21388-1-git-send-email-milos.vyletel@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4288313.uDFYZQS3W7@wuerfel>
-References: <1397561911-11647-1-git-send-email-sthokal@xilinx.com>
-	<201404301734.14478.arnd@arndb.de>
-	<CA+mB=1K_AU5cLsW0J9OhVXmpvc+nYSZwpS5iyNXVTFpibfHq6g@mail.gmail.com>
-	<4288313.uDFYZQS3W7@wuerfel>
-Date: Thu, 8 May 2014 18:58:25 +0530
-X-Google-Sender-Auth: qPIvA5upcvHK402pIwqihhXN424
-Message-ID: <CA+mB=1LiwKEZgOF7wUMfhpNCv2+n00QLibjznvP_FuZ6eTb3=g@mail.gmail.com>
-Subject: Re: [PATCH v3] pcie: Add Xilinx PCIe Host Bridge IP driver
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Srikanth Thokala <sthokal@xilinx.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, will.deacon@arm.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398885474-21388-1-git-send-email-milos.vyletel@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 7, 2014 at 8:05 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 07 May 2014 17:21:13 Srikanth Thokala wrote:
->> On Wed, Apr 30, 2014 at 9:04 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> > On Tuesday 15 April 2014, Srikanth Thokala wrote:
->> >> +/**
->> >> + * xilinx_pcie_get_config_base - Get configuration base
->> >> + * @bus: Bus structure of current bus
->> >> + * @devfn: Device/function
->> >> + * @where: Offset from base
->> >> + *
->> >> + * Return: Base address of the configuration space needed to be
->> >> + *      accessed.
->> >> + */
->> >> +static void __iomem *xilinx_pcie_get_config_base(struct pci_bus *bus,
->> >> +                                              unsigned int devfn,
->> >> +                                              int where)
->> >> +{
->> >> +     struct xilinx_pcie_port *port = sys_to_pcie(bus->sysdata);
->> >> +     int relbus;
->> >> +
->> >> +     relbus = (bus->number << ECAM_BUS_NUM_SHIFT) |
->> >> +              (devfn << ECAM_DEV_NUM_SHIFT);
->> >> +
->> >> +     return port->reg_base + relbus + where;
->> >> +}
->> >
->> > Does this mean you have an ECAM-compliant config space? Nice!
->> >
->> > Would it be possible to split the config space access out into
->> > a separate file? It would be nice to share that with the generic
->> > ECAM driver that Will Deacon has sent.
->>
->> Yes, it should be possible.  Is it ok, if I work on top of this driver?
->
-> Do you mean as a follow-on patch? My feeling is that since we are trying
-> to merge both for 3.16, it would be good to get it done right away if
-> it doesn't cause too much extra work.
+On Wed, Apr 30, 2014 at 03:17:54PM -0400, Milos Vyletel wrote:
+> Coverity detected possible use of uninitialized pointer when printing info
+> message during module load. While this is higly unlikely to cause any troubles
+> simple change in sha1_ssse3_mod_init to make it look like sha256/512 init
+> function will fix this.
+> 
+> 260
+>    	6. Condition sha1_transform_asm, taking true branch
+> 261        if (sha1_transform_asm) {
+> 
+> CID 1195603 (#1 of 1): Uninitialized pointer read (UNINIT)
+> 7. uninit_use_in_call: Using uninitialized value algo_name when calling printk.
+> 262                pr_info("Using %s optimized SHA-1 implementation\n", algo_name);
+> 263                return crypto_register_shash(&alg);
+> 264        }
+> 
+> Reported-by: <scan-admin@coverity.com>
+> Signed-off-by: Milos Vyletel <milos.vyletel@gmail.com>
 
-Sure, I will work with Will and let you know.
+Unless I'm missing something there is no way this code can use
+the variable without initialising it.
 
->
->> >> +/**
->> >> + * xilinx_pcie_enable_msi - Enable MSI support
->> >> + * @port: PCIe port information
->> >> + */
->> >> +static void xilinx_pcie_enable_msi(struct xilinx_pcie_port *port)
->> >> +{
->> >> +     port->msg_addr = __get_free_pages(GFP_KERNEL, 0);
->> >> +
->> >> +     pcie_write(port, 0x0, XILINX_PCIE_REG_MSIBASE1);
->> >> +     pcie_write(port, virt_to_phys((void *)port->msg_addr),
->> >> +                XILINX_PCIE_REG_MSIBASE2);
->> >> +}
->> >
->> > As a general comment about the MSI implementation, I wonder if this is actually
->> > generic enough to be shared with other host controllers. It could be moved
->> > into a separate file like the config space access in that case.
->>
->> I feel the MSI implementation is not generic by looking into the other
->> host controllers,
->> it is more specific to the hardware.  Correct me, if am wrong.
->
-> The other host controllers are certainly incompatible, but this one looks
-> like it could be used on other controllers easily.
->
-> Splitting it out would also make it easier to use another MSI implementation
-> like the one in the GIC.
+So this is a false positive and I'm not applying this.
 
-I need to look into this and I will come back to you.
-
->
->
->> >> +     /* Register the device */
->> >> +     pci_common_init_dev(dev, &hw);
->> >> +
->> >> +     platform_set_drvdata(pdev, port);
->> >
->> > Don't you have to do the platform_set_drvdata() before pci_common_init_dev()?
->>
->> It should be fine, as I don't see any dependencies.
->
-> Ah, it's only used in the remove function. It looks correct then, but I think
-> it would be better to set it first anyway, in case another function starts using
-> the drvdata later and that function may get called by the PCI initialization.
-
-Ok.
-
-Srikanth
-
->
->         Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
