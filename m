@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986AbaEHQd4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 12:33:56 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:34113 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150AbaEHQdy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 12:33:54 -0400
-Date: Thu, 8 May 2014 18:33:46 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        nicolas.pitre@linaro.org, tglx@linutronix.de,
-        daniel.lezcano@linaro.org, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/core] sched/idle: Reflow cpuidle_idle_call()
-Message-ID: <20140508163346.GA9330@gmail.com>
-References: <tip-cc6vb0snt3sr7op6rlbfeqfh@git.kernel.org>
- <1877683.4pfeUuvFZ2@vostro.rjw.lan>
- <1591569.1rC3xo6G18@vostro.rjw.lan>
- <20140508120826.GT11096@twins.programming.kicks-ass.net>
+	id S1755080AbaEHQeY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 12:34:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35121 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755034AbaEHQeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 12:34:23 -0400
+Date: Thu, 8 May 2014 12:33:33 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>, ak@linux.intel.com,
+        gong.chen@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, andi@firstfloor.org
+Subject: Re: [PATCH 1/5] x86, nmi:  Add new nmi type 'external'
+Message-ID: <20140508163333.GZ39568@redhat.com>
+References: <1399476883-98970-1-git-send-email-dzickus@redhat.com>
+ <1399476883-98970-2-git-send-email-dzickus@redhat.com>
+ <20140507153854.GA14926@gmail.com>
+ <20140507160251.GQ39568@redhat.com>
+ <20140507162746.GA15779@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140508120826.GT11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140507162746.GA15779@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Thu, May 08, 2014 at 01:56:18PM +0200, Rafael J. Wysocki wrote:
-> > The cpuidle patches I have queued up so far are on this separate branch
+On Wed, May 07, 2014 at 06:27:46PM +0200, Ingo Molnar wrote:
+> > [...]  But I guess in theory, if a PMI NMI comes in and before the 
+> > cpu can accept it and GHES NMI comes in, then it would suffice to 
+> > say it may get dropped.  That would be not be good.  Though the race 
+> > would be very small.
 > > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-cpuidle
-> > 
-> > in case you'd like to pull from there.
+> > I don't have a good idea how to handle that.
 > 
-> Ingo, can you do that? I think the patch I just posted should be 
-> enough to fix up the conflict.
+> Well, are GHES NMIs reasserted if they are not handled? I don't know 
+> but there's a definite answer to that hardware behavior question.
 
-Yeah, sounds good to me, I'll pull it into sched/core.
+I can't find anything that explicitly says the NMI will be re-asserted, so
+I will it does not.  Andi, do you know?  (I am not sure who maintains GHES
+any more).
 
-The patch you posted is essentially a replacement for:
+> 
+> > On the flip side, we have the same exact problem, today, with the 
+> > other common external NMIs (SERR, IO).  If a PCI SERR comes in at 
+> > the same time as a PMI, then it gets dropped.  Worse, it doesn't get 
+> > re-enabled and blocks future SERRs (just found this out two weeks 
+> > ago because of a dirty perf status register on boot).
+> > 
+> > Again, I don't have a solution to juggle between PMI performance and 
+> > reliable delivery.  We could do away with the spinlocks and go back 
+> > to single cpu delivery (like it used to be).  Then devise a 
+> > mechanism to switch delivery to another cpu upon hotplug.
+> > 
+> > Thoughts?
+> 
+> I'd say we should do a delayed timer that makes sure that all possible 
+> handlers are polled after an NMI is triggered, but never at a high 
+> rate.
 
-    52c324f8a87b cpuidle: Combine cpuidle_enabled() with cpuidle_select()
+Hmm, I was thinking about it and wanted to avoid a poll as I hear
+complaints here and there about the nmi_watchdog constantly wasting power
+cycles with its polling.
 
-when it's done on top of sched/core, right? I can construct a merge 
-resolution from that.
+I was wondering if I could do a status read outside the spinlock, then if
+a bit is set, just grab the spin_lock and re-read the status.  But then
+looking at the GHES code, I am not sure if it is as easy to read the
+status bit as it is for a PCI_SERR/IO_CHK NMI.
 
-Thanks,
+Andi thoughts here?  Should I poke Tony Luck?
 
-	Ingo
+Otherwise I can set up the polling if that doesn't work.
+
+Cheers,
+Don
