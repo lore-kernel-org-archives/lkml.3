@@ -1,154 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442AbaEHNWx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 09:22:53 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:48284 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754059AbaEHNWv (ORCPT
+	id S1754228AbaEHN23 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 09:28:29 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:58373 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753723AbaEHN21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 09:22:51 -0400
+	Thu, 8 May 2014 09:28:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <1399480621-19555-6-git-send-email-fweisbec@gmail.com>
-References: <1399480621-19555-1-git-send-email-fweisbec@gmail.com>
-	<1399480621-19555-6-git-send-email-fweisbec@gmail.com>
-Date: Thu, 8 May 2014 21:22:51 +0800
-X-Google-Sender-Auth: qgGOXnnO70jA2bafEz_AqxJi7KM
-Message-ID: <CACvQF539m8BJj5FKifsRhezkCaOSN_tBv3wUrjhcNe6E0D3r6Q@mail.gmail.com>
-Subject: Re: [PATCH 5/6] workqueue: Allow modifying low level unbound
- workqueue cpumask
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
+In-Reply-To: <4288313.uDFYZQS3W7@wuerfel>
+References: <1397561911-11647-1-git-send-email-sthokal@xilinx.com>
+	<201404301734.14478.arnd@arndb.de>
+	<CA+mB=1K_AU5cLsW0J9OhVXmpvc+nYSZwpS5iyNXVTFpibfHq6g@mail.gmail.com>
+	<4288313.uDFYZQS3W7@wuerfel>
+Date: Thu, 8 May 2014 18:58:25 +0530
+X-Google-Sender-Auth: qPIvA5upcvHK402pIwqihhXN424
+Message-ID: <CA+mB=1LiwKEZgOF7wUMfhpNCv2+n00QLibjznvP_FuZ6eTb3=g@mail.gmail.com>
+Subject: Re: [PATCH v3] pcie: Add Xilinx PCIe Host Bridge IP driver
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Srikanth Thokala <sthokal@xilinx.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, will.deacon@arm.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 8, 2014 at 12:37 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> Allow to modify the low-level unbound workqueues cpumask through
-> sysfs. This is performed by traversing the entire workqueue list
-> and calling apply_workqueue_attrs() on the unbound workqueues.
+On Wed, May 7, 2014 at 8:05 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 07 May 2014 17:21:13 Srikanth Thokala wrote:
+>> On Wed, Apr 30, 2014 at 9:04 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Tuesday 15 April 2014, Srikanth Thokala wrote:
+>> >> +/**
+>> >> + * xilinx_pcie_get_config_base - Get configuration base
+>> >> + * @bus: Bus structure of current bus
+>> >> + * @devfn: Device/function
+>> >> + * @where: Offset from base
+>> >> + *
+>> >> + * Return: Base address of the configuration space needed to be
+>> >> + *      accessed.
+>> >> + */
+>> >> +static void __iomem *xilinx_pcie_get_config_base(struct pci_bus *bus,
+>> >> +                                              unsigned int devfn,
+>> >> +                                              int where)
+>> >> +{
+>> >> +     struct xilinx_pcie_port *port = sys_to_pcie(bus->sysdata);
+>> >> +     int relbus;
+>> >> +
+>> >> +     relbus = (bus->number << ECAM_BUS_NUM_SHIFT) |
+>> >> +              (devfn << ECAM_DEV_NUM_SHIFT);
+>> >> +
+>> >> +     return port->reg_base + relbus + where;
+>> >> +}
+>> >
+>> > Does this mean you have an ECAM-compliant config space? Nice!
+>> >
+>> > Would it be possible to split the config space access out into
+>> > a separate file? It would be nice to share that with the generic
+>> > ECAM driver that Will Deacon has sent.
+>>
+>> Yes, it should be possible.  Is it ok, if I work on top of this driver?
 >
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Kevin Hilman <khilman@linaro.org>
-> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Cc: Mike Galbraith <bitbucket@online.de>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  kernel/workqueue.c | 65 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
->  1 file changed, 63 insertions(+), 2 deletions(-)
->
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 2aa296d..5978cee 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -293,7 +293,7 @@ static DEFINE_SPINLOCK(wq_mayday_lock);     /* protects wq->maydays list */
->  static LIST_HEAD(workqueues);          /* PL: list of all workqueues */
->  static bool workqueue_freezing;                /* PL: have wqs started freezing? */
->
-> -static cpumask_var_t wq_unbound_cpumask;
-> +static cpumask_var_t wq_unbound_cpumask; /* PL: low level cpumask for all unbound wqs */
->
->  /* the per-cpu worker pools */
->  static DEFINE_PER_CPU_SHARED_ALIGNED(struct worker_pool [NR_STD_WORKER_POOLS],
-> @@ -4084,19 +4084,80 @@ static struct bus_type wq_subsys = {
->         .dev_groups                     = wq_sysfs_groups,
->  };
->
-> +static int unbounds_cpumask_apply(cpumask_var_t cpumask)
-> +{
-> +       struct workqueue_struct *wq;
-> +       int ret;
-> +
-> +       lockdep_assert_held(&wq_pool_mutex);
-> +
-> +       list_for_each_entry(wq, &workqueues, list) {
-> +               struct workqueue_attrs *attrs;
-> +
-> +               if (!(wq->flags & WQ_UNBOUND))
-> +                       continue;
-> +
-> +               attrs = wq_sysfs_prep_attrs(wq);
-> +               if (!attrs)
-> +                       return -ENOMEM;
-> +
-> +               ret = apply_workqueue_attrs_locked(wq, attrs, cpumask);
-> +               free_workqueue_attrs(attrs);
-> +               if (ret)
-> +                       break;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static ssize_t unbounds_cpumask_store(struct device *dev,
-> +                                     struct device_attribute *attr,
-> +                                     const char *buf, size_t count)
-> +{
-> +       cpumask_var_t cpumask;
-> +       int ret = -EINVAL;
-> +
-> +       if (!zalloc_cpumask_var(&cpumask, GFP_KERNEL))
-> +               return -ENOMEM;
-> +
-> +       ret = cpumask_parse(buf, cpumask);
-> +       if (ret)
-> +               goto out;
+> Do you mean as a follow-on patch? My feeling is that since we are trying
+> to merge both for 3.16, it would be good to get it done right away if
+> it doesn't cause too much extra work.
 
+Sure, I will work with Will and let you know.
 
-     cpumask_and(cpumask, cpumask, cpu_possible_mask);
+>
+>> >> +/**
+>> >> + * xilinx_pcie_enable_msi - Enable MSI support
+>> >> + * @port: PCIe port information
+>> >> + */
+>> >> +static void xilinx_pcie_enable_msi(struct xilinx_pcie_port *port)
+>> >> +{
+>> >> +     port->msg_addr = __get_free_pages(GFP_KERNEL, 0);
+>> >> +
+>> >> +     pcie_write(port, 0x0, XILINX_PCIE_REG_MSIBASE1);
+>> >> +     pcie_write(port, virt_to_phys((void *)port->msg_addr),
+>> >> +                XILINX_PCIE_REG_MSIBASE2);
+>> >> +}
+>> >
+>> > As a general comment about the MSI implementation, I wonder if this is actually
+>> > generic enough to be shared with other host controllers. It could be moved
+>> > into a separate file like the config space access in that case.
+>>
+>> I feel the MSI implementation is not generic by looking into the other
+>> host controllers,
+>> it is more specific to the hardware.  Correct me, if am wrong.
+>
+> The other host controllers are certainly incompatible, but this one looks
+> like it could be used on other controllers easily.
+>
+> Splitting it out would also make it easier to use another MSI implementation
+> like the one in the GIC.
 
-> +
-> +       get_online_cpus();
-> +       if (cpumask_intersects(cpumask, cpu_online_mask)) {
-> +               mutex_lock(&wq_pool_mutex);
-> +               ret = unbounds_cpumask_apply(cpumask);
-> +               if (ret < 0) {
-> +                       /* Warn if rollback itself fails */
-> +                       WARN_ON_ONCE(unbounds_cpumask_apply(wq_unbound_cpumask));
-> +               } else {
-> +                       cpumask_copy(wq_unbound_cpumask, cpumask);
-> +               }
-> +               mutex_unlock(&wq_pool_mutex);
-> +       }
-> +       put_online_cpus();
-> +out:
-> +       free_cpumask_var(cpumask);
-> +       return ret ? ret : count;
-> +}
-> +
->  static ssize_t unbounds_cpumask_show(struct device *dev,
->                                      struct device_attribute *attr, char *buf)
->  {
->         int written;
+I need to look into this and I will come back to you.
+
 >
-> +       mutex_lock(&wq_pool_mutex);
->         written = cpumask_scnprintf(buf, PAGE_SIZE, wq_unbound_cpumask);
-> +       mutex_unlock(&wq_pool_mutex);
-> +
->         written += scnprintf(buf + written, PAGE_SIZE - written, "\n");
 >
->         return written;
->  }
+>> >> +     /* Register the device */
+>> >> +     pci_common_init_dev(dev, &hw);
+>> >> +
+>> >> +     platform_set_drvdata(pdev, port);
+>> >
+>> > Don't you have to do the platform_set_drvdata() before pci_common_init_dev()?
+>>
+>> It should be fine, as I don't see any dependencies.
 >
->  static struct device_attribute wq_sysfs_cpumask_attr =
-> -       __ATTR(cpumask, 0444, unbounds_cpumask_show, NULL);
-> +       __ATTR(cpumask, 0644, unbounds_cpumask_show, unbounds_cpumask_store);
+> Ah, it's only used in the remove function. It looks correct then, but I think
+> it would be better to set it first anyway, in case another function starts using
+> the drvdata later and that function may get called by the PCI initialization.
+
+Ok.
+
+Srikanth
+
 >
->  static int __init wq_sysfs_init(void)
->  {
+>         Arnd
 > --
-> 1.8.3.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
