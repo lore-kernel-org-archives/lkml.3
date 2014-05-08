@@ -1,74 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460AbaEHSqh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 14:46:37 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:48776 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485AbaEHSqe (ORCPT
+	id S1755421AbaEHSrd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 14:47:33 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:51172 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485AbaEHSrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 14:46:34 -0400
+	Thu, 8 May 2014 14:47:32 -0400
+Message-ID: <536BD141.7030000@mvista.com>
+Date: Thu, 08 May 2014 13:47:29 -0500
+From: Corey Minyard <cminyard@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <536BC445.8080007@cogentembedded.com>
-References: <1399494750-31996-1-git-send-email-geert+renesas@glider.be>
-	<1399494750-31996-2-git-send-email-geert+renesas@glider.be>
-	<536B7FD3.5090506@cogentembedded.com>
-	<CAMuHMdVoYnRcOVht0_Bt5_NJA3vZ40svftRXN-xbqHSMHZR5dg@mail.gmail.com>
-	<536B8340.4010901@cogentembedded.com>
-	<CAMuHMdUW3ENmykZGNQB8Qo3EVk+7RYzVHa6L-=WsxZZ06mfUTQ@mail.gmail.com>
-	<536BC445.8080007@cogentembedded.com>
-Date: Thu, 8 May 2014 20:46:34 +0200
-X-Google-Sender-Auth: 82ByOs_HCivwACmkdu7ZrFqUJCA
-Message-ID: <CAMuHMdVR9n8E-LyHn1B0REE4oTVbfJf-9v1Bo70bHCH_=r4-Vw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] ARM: shmobile: r8a7740 dtsi: Add Ethernet support
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Bastian Hecht <hechtb+renesas@gmail.com>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>, minyard@acm.org
+CC: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: Initialize rq->age_stamp on processor start
+References: <1399405857-14056-1-git-send-email-minyard@acm.org> <20140508161337.GF30445@twins.programming.kicks-ass.net>
+In-Reply-To: <20140508161337.GF30445@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sergei,
+On 05/08/2014 11:13 AM, Peter Zijlstra wrote:
+> On Tue, May 06, 2014 at 02:50:57PM -0500, minyard@acm.org wrote:
+>> From: Corey Minyard <cminyard@mvista.com>
+>>
+>> If the sched_clock time starts at a large value, the kernel will spin
+>> in sched_avg_update for a long time while rq->age_stamp catches up
+>> with rq->clock.
+>>
+>> The comment in kernel/sched/clock.c says that there is no strict promise
+>> that it starts at zero.  So initialize rq->age_stamp when a cpu starts up
+>> to avoid this.
+>>
+>> I was seeing long delays on a simulator that didn't start the clock at
+>> zero.  This might also be an issue on reboots on processors that don't
+>> re-initialize the timer to zero on reset, and when using kexec.
+>>
+>> Signed-off-by: Corey Minyard <cminyard@mvista.com>
+> This patch made my cris-defconfig build fail.
+Dang, I missed propagating a change.  Yes, it's broken.  One more time...
 
-On Thu, May 8, 2014 at 7:52 PM, Sergei Shtylyov
-<sergei.shtylyov@cogentembedded.com> wrote:
->>>>>> +               /* clocks = <&mstp3_clks R8A7740_CLK_GETHER>; */
->
->>>>>      This property is mandatory, according to the bindings.
->
->>>> Indeed, but you cannot put anything there until the platform has CCF, as
->>>> mstp3_clks doesn't exist yet.
->
->>>     Yes, that was the main obstacle to accepting those bindings sooner.
->>> This patch therefore seems somewhat premature.
->
->> My main objective is to provide working Ethernet support for Armadillo
->> reference now.
->
->    Mine was the same (but for BOCK-W board) but DT people didn't give a
-> damn. :-) So there's still no Ethernet support in BOCK-W DT.
-
-Yes there is: ethernet@18300000.
-
->> The DTS already has other nodes without "clocks" properties.
->
->    It means not everybody submitting the bindings had the same bad luck as me. :-)
-
-I think we have to be pragmatic here. The clocks properties will be added to
-the dtsi as soon as we have CCF support.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-corey
