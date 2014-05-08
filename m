@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606AbaEHOCP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 10:02:15 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:47561 "EHLO
+	id S1754194AbaEHOAy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 10:00:54 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47529 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754224AbaEHOAz (ORCPT
+	with ESMTP id S1751776AbaEHOAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 10:00:55 -0400
-Message-Id: <20140508135852.521548500@infradead.org>
+	Thu, 8 May 2014 10:00:52 -0400
+Message-Id: <20140508135852.318635136@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 08 May 2014 15:58:53 +0200
+Date: Thu, 08 May 2014 15:58:50 +0200
 From: Peter Zijlstra <peterz@infradead.org>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, mingo@kernel.org,
         will.deacon@arm.com, paulmck@linux.vnet.ibm.com,
         Peter Zijlstra <peterz@infradead.org>,
-        "Maciej W. Rozycki" <macro@codesourcery.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 13/20] arch,mips: Fold atomic_ops
+        Hirokazu Takata <takata@linux-m32r.org>
+Subject: [PATCH 10/20] arch,m32r: Fold atomic_ops
 References: <20140508135840.956784204@infradead.org>
-Content-Disposition: inline; filename=peterz-mips-atomic_cleanup.patch
+Content-Disposition: inline; filename=peterz-m32r-atomic_cleanup.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,598 +28,203 @@ instruction; fold the lot into a few CPP macros and reduce LoC.
 
 This also prepares for easy addition of new ops.
 
+Cc: Hirokazu Takata <takata@linux-m32r.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Maciej W. Rozycki" <macro@codesourcery.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/mips/include/asm/atomic.h |  565 +++++++++++++----------------------------
- 1 file changed, 191 insertions(+), 374 deletions(-)
+ arch/m32r/include/asm/atomic.h |  151 ++++++++++++++++-------------------------
+ 1 file changed, 61 insertions(+), 90 deletions(-)
 
---- a/arch/mips/include/asm/atomic.h
-+++ b/arch/mips/include/asm/atomic.h
-@@ -40,195 +40,103 @@
+Index: linux-2.6/arch/m32r/include/asm/atomic.h
+===================================================================
+--- linux-2.6.orig/arch/m32r/include/asm/atomic.h
++++ linux-2.6/arch/m32r/include/asm/atomic.h
+@@ -39,85 +39,64 @@
   */
- #define atomic_set(v, i)		((v)->counter = (i))
+ #define atomic_set(v,i)	(((v)->counter) = (i))
  
--/*
+-/**
+- * atomic_add_return - add integer to atomic variable and return it
+- * @i: integer value to add
+- * @v: pointer of type atomic_t
+- *
+- * Atomically adds @i to @v and return (@i + @v).
+- */
+-static __inline__ int atomic_add_return(int i, atomic_t *v)
+-{
+-	unsigned long flags;
+-	int result;
+-
+-	local_irq_save(flags);
+-	__asm__ __volatile__ (
+-		"# atomic_add_return		\n\t"
+-		DCACHE_CLEAR("%0", "r4", "%1")
+-		M32R_LOCK" %0, @%1;		\n\t"
+-		"add	%0, %2;			\n\t"
+-		M32R_UNLOCK" %0, @%1;		\n\t"
+-		: "=&r" (result)
+-		: "r" (&v->counter), "r" (i)
+-		: "memory"
+-#ifdef CONFIG_CHIP_M32700_TS1
+-		, "r4"
+-#endif	/* CONFIG_CHIP_M32700_TS1 */
+-	);
+-	local_irq_restore(flags);
+-
+-	return result;
+-}
+-
+-/**
+- * atomic_sub_return - subtract integer from atomic variable and return it
+- * @i: integer value to subtract
+- * @v: pointer of type atomic_t
+- *
+- * Atomically subtracts @i from @v and return (@v - @i).
+- */
+-static __inline__ int atomic_sub_return(int i, atomic_t *v)
+-{
+-	unsigned long flags;
+-	int result;
+-
+-	local_irq_save(flags);
+-	__asm__ __volatile__ (
+-		"# atomic_sub_return		\n\t"
+-		DCACHE_CLEAR("%0", "r4", "%1")
+-		M32R_LOCK" %0, @%1;		\n\t"
+-		"sub	%0, %2;			\n\t"
+-		M32R_UNLOCK" %0, @%1;		\n\t"
+-		: "=&r" (result)
+-		: "r" (&v->counter), "r" (i)
+-		: "memory"
+ #ifdef CONFIG_CHIP_M32700_TS1
+-		, "r4"
+-#endif	/* CONFIG_CHIP_M32700_TS1 */
+-	);
+-	local_irq_restore(flags);
+-
+-	return result;
+-}
+-
+-/**
 - * atomic_add - add integer to atomic variable
 - * @i: integer value to add
 - * @v: pointer of type atomic_t
 - *
 - * Atomically adds @i to @v.
 - */
--static __inline__ void atomic_add(int i, atomic_t * v)
--{
--	if (kernel_uses_llsc && R10000_LLSC_WAR) {
--		int temp;
+-#define atomic_add(i,v) ((void) atomic_add_return((i), (v)))
 -
--		__asm__ __volatile__(
--		"	.set	arch=r4000				\n"
--		"1:	ll	%0, %1		# atomic_add		\n"
--		"	addu	%0, %2					\n"
--		"	sc	%0, %1					\n"
--		"	beqzl	%0, 1b					\n"
--		"	.set	mips0					\n"
--		: "=&r" (temp), "+m" (v->counter)
--		: "Ir" (i));
--	} else if (kernel_uses_llsc) {
--		int temp;
--
--		do {
--			__asm__ __volatile__(
--			"	.set	arch=r4000			\n"
--			"	ll	%0, %1		# atomic_add	\n"
--			"	addu	%0, %2				\n"
--			"	sc	%0, %1				\n"
--			"	.set	mips0				\n"
--			: "=&r" (temp), "+m" (v->counter)
--			: "Ir" (i));
--		} while (unlikely(!temp));
--	} else {
--		unsigned long flags;
--
--		raw_local_irq_save(flags);
--		v->counter += i;
--		raw_local_irq_restore(flags);
--	}
-+#define ATOMIC_OP(op, c_op, asm_op)						\
-+static __inline__ void atomic_##op(int i, atomic_t * v)				\
-+{										\
-+	if (kernel_uses_llsc && R10000_LLSC_WAR) {				\
-+		int temp;							\
-+										\
-+		__asm__ __volatile__(						\
-+		"	.set	arch=r4000				\n"	\
-+		"1:	ll	%0, %1		# atomic_" #op "	\n"	\
-+		"	" #asm_op " %0, %2				\n"	\
-+		"	sc	%0, %1					\n"	\
-+		"	beqzl	%0, 1b					\n"	\
-+		"	.set	mips0					\n"	\
-+		: "=&r" (temp), "+m" (v->counter)				\
-+		: "Ir" (i));							\
-+	} else if (kernel_uses_llsc) {						\
-+		int temp;							\
-+										\
-+		do {								\
-+			__asm__ __volatile__(					\
-+			"	.set	arch=r4000			\n"	\
-+			"	ll	%0, %1		# atomic_" #op "\n"	\
-+			"	" #asm_op " %0, %2			\n"	\
-+			"	sc	%0, %1				\n"	\
-+			"	.set	mips0				\n"	\
-+			: "=&r" (temp), "+m" (v->counter)			\
-+			: "Ir" (i));						\
-+		} while (unlikely(!temp));					\
-+	} else {								\
-+		unsigned long flags;						\
-+										\
-+		raw_local_irq_save(flags);					\
-+		v->counter c_op i;						\
-+		raw_local_irq_restore(flags);					\
-+	}									\
-+}										\
-+
-+#define ATOMIC_OP_RETURN(op, c_op, asm_op)					\
-+static __inline__ int atomic_##op##_return(int i, atomic_t * v)			\
-+{										\
-+	int result;								\
-+										\
-+	smp_mb__before_llsc();							\
-+										\
-+	if (kernel_uses_llsc && R10000_LLSC_WAR) {				\
-+		int temp;							\
-+										\
-+		__asm__ __volatile__(						\
-+		"	.set	arch=r4000				\n"	\
-+		"1:	ll	%1, %2		# atomic_" #op "_return	\n"	\
-+		"	" #asm_op " %0, %1, %3				\n"	\
-+		"	sc	%0, %2					\n"	\
-+		"	beqzl	%0, 1b					\n"	\
-+		"	addu	%0, %1, %3				\n"	\
-+		"	.set	mips0					\n"	\
-+		: "=&r" (result), "=&r" (temp), "+m" (v->counter)		\
-+		: "Ir" (i));							\
-+	} else if (kernel_uses_llsc) {						\
-+		int temp;							\
-+										\
-+		do {								\
-+			__asm__ __volatile__(					\
-+			"	.set	arch=r4000			\n"	\
-+			"	ll	%1, %2	# atomic_" #op "_return	\n"	\
-+			"	" #asm_op " %0, %1, %3			\n"	\
-+			"	sc	%0, %2				\n"	\
-+			"	.set	mips0				\n"	\
-+			: "=&r" (result), "=&r" (temp), "+m" (v->counter)	\
-+			: "Ir" (i));						\
-+		} while (unlikely(!result));					\
-+										\
-+		result = temp + i;						\
-+	} else {								\
-+		unsigned long flags;						\
-+										\
-+		raw_local_irq_save(flags);					\
-+		result = v->counter;						\
-+		result c_op i;							\
-+		v->counter = result;						\
-+		raw_local_irq_restore(flags);					\
-+	}									\
-+										\
-+	smp_llsc_mb();								\
-+										\
-+	return result;								\
- }
- 
--/*
+-/**
 - * atomic_sub - subtract the atomic variable
 - * @i: integer value to subtract
 - * @v: pointer of type atomic_t
 - *
 - * Atomically subtracts @i from @v.
 - */
--static __inline__ void atomic_sub(int i, atomic_t * v)
--{
--	if (kernel_uses_llsc && R10000_LLSC_WAR) {
--		int temp;
--
--		__asm__ __volatile__(
--		"	.set	arch=r4000				\n"
--		"1:	ll	%0, %1		# atomic_sub		\n"
--		"	subu	%0, %2					\n"
--		"	sc	%0, %1					\n"
--		"	beqzl	%0, 1b					\n"
--		"	.set	mips0					\n"
--		: "=&r" (temp), "+m" (v->counter)
--		: "Ir" (i));
--	} else if (kernel_uses_llsc) {
--		int temp;
--
--		do {
--			__asm__ __volatile__(
--			"	.set	arch=r4000			\n"
--			"	ll	%0, %1		# atomic_sub	\n"
--			"	subu	%0, %2				\n"
--			"	sc	%0, %1				\n"
--			"	.set	mips0				\n"
--			: "=&r" (temp), "+m" (v->counter)
--			: "Ir" (i));
--		} while (unlikely(!temp));
--	} else {
--		unsigned long flags;
--
--		raw_local_irq_save(flags);
--		v->counter -= i;
--		raw_local_irq_restore(flags);
--	}
--}
--
--/*
-- * Same as above, but return the result value
-- */
--static __inline__ int atomic_add_return(int i, atomic_t * v)
--{
--	int result;
--
--	smp_mb__before_llsc();
--
--	if (kernel_uses_llsc && R10000_LLSC_WAR) {
--		int temp;
--
--		__asm__ __volatile__(
--		"	.set	arch=r4000				\n"
--		"1:	ll	%1, %2		# atomic_add_return	\n"
--		"	addu	%0, %1, %3				\n"
--		"	sc	%0, %2					\n"
--		"	beqzl	%0, 1b					\n"
--		"	addu	%0, %1, %3				\n"
--		"	.set	mips0					\n"
--		: "=&r" (result), "=&r" (temp), "+m" (v->counter)
--		: "Ir" (i));
--	} else if (kernel_uses_llsc) {
--		int temp;
--
--		do {
--			__asm__ __volatile__(
--			"	.set	arch=r4000			\n"
--			"	ll	%1, %2	# atomic_add_return	\n"
--			"	addu	%0, %1, %3			\n"
--			"	sc	%0, %2				\n"
--			"	.set	mips0				\n"
--			: "=&r" (result), "=&r" (temp), "+m" (v->counter)
--			: "Ir" (i));
--		} while (unlikely(!result));
--
--		result = temp + i;
--	} else {
--		unsigned long flags;
--
--		raw_local_irq_save(flags);
--		result = v->counter;
--		result += i;
--		v->counter = result;
--		raw_local_irq_restore(flags);
--	}
--
--	smp_llsc_mb();
--
--	return result;
--}
--
--static __inline__ int atomic_sub_return(int i, atomic_t * v)
--{
--	int result;
--
--	smp_mb__before_llsc();
--
--	if (kernel_uses_llsc && R10000_LLSC_WAR) {
--		int temp;
--
--		__asm__ __volatile__(
--		"	.set	arch=r4000				\n"
--		"1:	ll	%1, %2		# atomic_sub_return	\n"
--		"	subu	%0, %1, %3				\n"
--		"	sc	%0, %2					\n"
--		"	beqzl	%0, 1b					\n"
--		"	subu	%0, %1, %3				\n"
--		"	.set	mips0					\n"
--		: "=&r" (result), "=&r" (temp), "=m" (v->counter)
--		: "Ir" (i), "m" (v->counter)
--		: "memory");
--
--		result = temp - i;
--	} else if (kernel_uses_llsc) {
--		int temp;
--
--		do {
--			__asm__ __volatile__(
--			"	.set	arch=r4000			\n"
--			"	ll	%1, %2	# atomic_sub_return	\n"
--			"	subu	%0, %1, %3			\n"
--			"	sc	%0, %2				\n"
--			"	.set	mips0				\n"
--			: "=&r" (result), "=&r" (temp), "+m" (v->counter)
--			: "Ir" (i));
--		} while (unlikely(!result));
--
--		result = temp - i;
--	} else {
--		unsigned long flags;
--
--		raw_local_irq_save(flags);
--		result = v->counter;
--		result -= i;
--		v->counter = result;
--		raw_local_irq_restore(flags);
--	}
--
--	smp_llsc_mb();
--
--	return result;
--}
-+#define ATOMIC_OPS(op, c_op, asm_op)						\
-+	ATOMIC_OP(op, c_op, asm_op)						\
-+	ATOMIC_OP_RETURN(op, c_op, asm_op)
+-#define atomic_sub(i,v) ((void) atomic_sub_return((i), (v)))
++#define __ATOMIC_CLOBBER	, "r4"
++#else
++#define __ATOMIC_CLOBBER
++#endif
 +
-+ATOMIC_OPS(add, +=, addu)
-+ATOMIC_OPS(sub, -=, subu)
++#define ATOMIC_OP(op)							\
++static __inline__ void atomic_##op(int i, atomic_t *v)			\
++{									\
++	unsigned long flags;						\
++	int result;							\
++									\
++	local_irq_save(flags);						\
++	__asm__ __volatile__ (						\
++		"# atomic_" #op "		\n\t"			\
++		DCACHE_CLEAR("%0", "r4", "%1")				\
++		M32R_LOCK" %0, @%1;		\n\t"			\
++		#op " %0, %2;			\n\t"			\
++		M32R_UNLOCK" %0, @%1;		\n\t"			\
++		: "=&r" (result)					\
++		: "r" (&v->counter), "r" (i)				\
++		: "memory"						\
++		__ATOMIC_CLOBBER					\
++	);								\
++	local_irq_restore(flags);					\
++}									\
++
++#define ATOMIC_OP_RETURN(op)						\
++static __inline__ int atomic_##op##_return(int i, atomic_t *v)		\
++{									\
++	unsigned long flags;						\
++	int result;							\
++									\
++	local_irq_save(flags);						\
++	__asm__ __volatile__ (						\
++		"# atomic_" #op "_return	\n\t"			\
++		DCACHE_CLEAR("%0", "r4", "%1")				\
++		M32R_LOCK" %0, @%1;		\n\t"			\
++		#op " %0, %2;			\n\t"			\
++		M32R_UNLOCK" %0, @%1;		\n\t"			\
++		: "=&r" (result)					\
++		: "r" (&v->counter), "r" (i)				\
++		: "memory"						\
++		__ATOMIC_CLOBBER					\
++	);								\
++	local_irq_restore(flags);					\
++									\
++	return result;							\
++}
++
++#define ATOMIC_OPS(op) ATOMIC_OP(op) ATOMIC_OP_RETURN(op)
++
++ATOMIC_OPS(add)
++ATOMIC_OPS(sub)
 +
 +#undef ATOMIC_OPS
 +#undef ATOMIC_OP_RETURN
 +#undef ATOMIC_OP
  
- /*
-  * atomic_sub_if_positive - conditionally subtract integer from atomic variable
-@@ -407,195 +315,104 @@ static __inline__ int __atomic_add_unles
-  */
- #define atomic64_set(v, i)	((v)->counter = (i))
+ /**
+  * atomic_sub_and_test - subtract value from variable and test result
+@@ -151,9 +130,7 @@ static __inline__ int atomic_inc_return(
+ 		: "=&r" (result)
+ 		: "r" (&v->counter)
+ 		: "memory"
+-#ifdef CONFIG_CHIP_M32700_TS1
+-		, "r4"
+-#endif	/* CONFIG_CHIP_M32700_TS1 */
++		__ATOMIC_CLOBBER
+ 	);
+ 	local_irq_restore(flags);
  
--/*
-- * atomic64_add - add integer to atomic variable
-- * @i: integer value to add
-- * @v: pointer of type atomic64_t
-- *
-- * Atomically adds @i to @v.
-- */
--static __inline__ void atomic64_add(long i, atomic64_t * v)
--{
--	if (kernel_uses_llsc && R10000_LLSC_WAR) {
--		long temp;
--
--		__asm__ __volatile__(
--		"	.set	arch=r4000				\n"
--		"1:	lld	%0, %1		# atomic64_add		\n"
--		"	daddu	%0, %2					\n"
--		"	scd	%0, %1					\n"
--		"	beqzl	%0, 1b					\n"
--		"	.set	mips0					\n"
--		: "=&r" (temp), "+m" (v->counter)
--		: "Ir" (i));
--	} else if (kernel_uses_llsc) {
--		long temp;
--
--		do {
--			__asm__ __volatile__(
--			"	.set	arch=r4000			\n"
--			"	lld	%0, %1		# atomic64_add	\n"
--			"	daddu	%0, %2				\n"
--			"	scd	%0, %1				\n"
--			"	.set	mips0				\n"
--			: "=&r" (temp), "+m" (v->counter)
--			: "Ir" (i));
--		} while (unlikely(!temp));
--	} else {
--		unsigned long flags;
--
--		raw_local_irq_save(flags);
--		v->counter += i;
--		raw_local_irq_restore(flags);
--	}
-+#define ATOMIC64_OP(op, c_op, asm_op)						\
-+static __inline__ void atomic64_##op(long i, atomic64_t * v)			\
-+{										\
-+	if (kernel_uses_llsc && R10000_LLSC_WAR) {				\
-+		long temp;							\
-+										\
-+		__asm__ __volatile__(						\
-+		"	.set	arch=r4000				\n"	\
-+		"1:	lld	%0, %1		# atomic64_" #op "	\n"	\
-+		"	" #asm_op " %0, %2				\n"	\
-+		"	scd	%0, %1					\n"	\
-+		"	beqzl	%0, 1b					\n"	\
-+		"	.set	mips0					\n"	\
-+		: "=&r" (temp), "+m" (v->counter)				\
-+		: "Ir" (i));							\
-+	} else if (kernel_uses_llsc) {						\
-+		long temp;							\
-+										\
-+		do {								\
-+			__asm__ __volatile__(					\
-+			"	.set	arch=r4000			\n"	\
-+			"	lld	%0, %1		# atomic64_" #op "\n"	\
-+			"	" #asm_op " %0, %2			\n"	\
-+			"	scd	%0, %1				\n"	\
-+			"	.set	mips0				\n"	\
-+			: "=&r" (temp), "+m" (v->counter)			\
-+			: "Ir" (i));						\
-+		} while (unlikely(!temp));					\
-+	} else {								\
-+		unsigned long flags;						\
-+										\
-+		raw_local_irq_save(flags);					\
-+		v->counter c_op i;						\
-+		raw_local_irq_restore(flags);					\
-+	}									\
-+}										\
-+
-+#define ATOMIC64_OP_RETURN(op, c_op, asm_op)					\
-+static __inline__ long atomic64_##op##_return(long i, atomic64_t * v)		\
-+{										\
-+	long result;								\
-+										\
-+	smp_mb__before_llsc();							\
-+										\
-+	if (kernel_uses_llsc && R10000_LLSC_WAR) {				\
-+		long temp;							\
-+										\
-+		__asm__ __volatile__(						\
-+		"	.set	arch=r4000				\n"	\
-+		"1:	lld	%1, %2		# atomic64_" #op "_return\n"	\
-+		"	" #asm_op " %0, %1, %3				\n"	\
-+		"	scd	%0, %2					\n"	\
-+		"	beqzl	%0, 1b					\n"	\
-+		"	" #asm_op " %0, %1, %3				\n"	\
-+		"	.set	mips0					\n"	\
-+		: "=&r" (result), "=&r" (temp), "+m" (v->counter)		\
-+		: "Ir" (i));							\
-+	} else if (kernel_uses_llsc) {						\
-+		long temp;							\
-+										\
-+		do {								\
-+			__asm__ __volatile__(					\
-+			"	.set	arch=r4000			\n"	\
-+			"	lld	%1, %2	# atomic64_" #op "_return\n"	\
-+			"	" #asm_op " %0, %1, %3			\n"	\
-+			"	scd	%0, %2				\n"	\
-+			"	.set	mips0				\n"	\
-+			: "=&r" (result), "=&r" (temp), "=m" (v->counter)	\
-+			: "Ir" (i), "m" (v->counter)				\
-+			: "memory");						\
-+		} while (unlikely(!result));					\
-+										\
-+		result = temp + i;						\
-+	} else {								\
-+		unsigned long flags;						\
-+										\
-+		raw_local_irq_save(flags);					\
-+		result = v->counter;						\
-+		result c_op i;							\
-+		v->counter = result;						\
-+		raw_local_irq_restore(flags);					\
-+	}									\
-+										\
-+	smp_llsc_mb();								\
-+										\
-+	return result;								\
+@@ -181,9 +158,7 @@ static __inline__ int atomic_dec_return(
+ 		: "=&r" (result)
+ 		: "r" (&v->counter)
+ 		: "memory"
+-#ifdef CONFIG_CHIP_M32700_TS1
+-		, "r4"
+-#endif	/* CONFIG_CHIP_M32700_TS1 */
++		__ATOMIC_CLOBBER
+ 	);
+ 	local_irq_restore(flags);
+ 
+@@ -280,9 +255,7 @@ static __inline__ void atomic_clear_mask
+ 		: "=&r" (tmp)
+ 		: "r" (addr), "r" (~mask)
+ 		: "memory"
+-#ifdef CONFIG_CHIP_M32700_TS1
+-		, "r5"
+-#endif	/* CONFIG_CHIP_M32700_TS1 */
++		__ATOMIC_CLOBBER
+ 	);
+ 	local_irq_restore(flags);
  }
- 
--/*
-- * atomic64_sub - subtract the atomic variable
-- * @i: integer value to subtract
-- * @v: pointer of type atomic64_t
-- *
-- * Atomically subtracts @i from @v.
-- */
--static __inline__ void atomic64_sub(long i, atomic64_t * v)
--{
--	if (kernel_uses_llsc && R10000_LLSC_WAR) {
--		long temp;
--
--		__asm__ __volatile__(
--		"	.set	arch=r4000				\n"
--		"1:	lld	%0, %1		# atomic64_sub		\n"
--		"	dsubu	%0, %2					\n"
--		"	scd	%0, %1					\n"
--		"	beqzl	%0, 1b					\n"
--		"	.set	mips0					\n"
--		: "=&r" (temp), "+m" (v->counter)
--		: "Ir" (i));
--	} else if (kernel_uses_llsc) {
--		long temp;
--
--		do {
--			__asm__ __volatile__(
--			"	.set	arch=r4000			\n"
--			"	lld	%0, %1		# atomic64_sub	\n"
--			"	dsubu	%0, %2				\n"
--			"	scd	%0, %1				\n"
--			"	.set	mips0				\n"
--			: "=&r" (temp), "+m" (v->counter)
--			: "Ir" (i));
--		} while (unlikely(!temp));
--	} else {
--		unsigned long flags;
--
--		raw_local_irq_save(flags);
--		v->counter -= i;
--		raw_local_irq_restore(flags);
--	}
--}
--
--/*
-- * Same as above, but return the result value
-- */
--static __inline__ long atomic64_add_return(long i, atomic64_t * v)
--{
--	long result;
--
--	smp_mb__before_llsc();
--
--	if (kernel_uses_llsc && R10000_LLSC_WAR) {
--		long temp;
--
--		__asm__ __volatile__(
--		"	.set	arch=r4000				\n"
--		"1:	lld	%1, %2		# atomic64_add_return	\n"
--		"	daddu	%0, %1, %3				\n"
--		"	scd	%0, %2					\n"
--		"	beqzl	%0, 1b					\n"
--		"	daddu	%0, %1, %3				\n"
--		"	.set	mips0					\n"
--		: "=&r" (result), "=&r" (temp), "+m" (v->counter)
--		: "Ir" (i));
--	} else if (kernel_uses_llsc) {
--		long temp;
--
--		do {
--			__asm__ __volatile__(
--			"	.set	arch=r4000			\n"
--			"	lld	%1, %2	# atomic64_add_return	\n"
--			"	daddu	%0, %1, %3			\n"
--			"	scd	%0, %2				\n"
--			"	.set	mips0				\n"
--			: "=&r" (result), "=&r" (temp), "=m" (v->counter)
--			: "Ir" (i), "m" (v->counter)
--			: "memory");
--		} while (unlikely(!result));
--
--		result = temp + i;
--	} else {
--		unsigned long flags;
--
--		raw_local_irq_save(flags);
--		result = v->counter;
--		result += i;
--		v->counter = result;
--		raw_local_irq_restore(flags);
--	}
--
--	smp_llsc_mb();
--
--	return result;
--}
--
--static __inline__ long atomic64_sub_return(long i, atomic64_t * v)
--{
--	long result;
--
--	smp_mb__before_llsc();
--
--	if (kernel_uses_llsc && R10000_LLSC_WAR) {
--		long temp;
--
--		__asm__ __volatile__(
--		"	.set	arch=r4000				\n"
--		"1:	lld	%1, %2		# atomic64_sub_return	\n"
--		"	dsubu	%0, %1, %3				\n"
--		"	scd	%0, %2					\n"
--		"	beqzl	%0, 1b					\n"
--		"	dsubu	%0, %1, %3				\n"
--		"	.set	mips0					\n"
--		: "=&r" (result), "=&r" (temp), "=m" (v->counter)
--		: "Ir" (i), "m" (v->counter)
--		: "memory");
--	} else if (kernel_uses_llsc) {
--		long temp;
--
--		do {
--			__asm__ __volatile__(
--			"	.set	arch=r4000			\n"
--			"	lld	%1, %2	# atomic64_sub_return	\n"
--			"	dsubu	%0, %1, %3			\n"
--			"	scd	%0, %2				\n"
--			"	.set	mips0				\n"
--			: "=&r" (result), "=&r" (temp), "=m" (v->counter)
--			: "Ir" (i), "m" (v->counter)
--			: "memory");
--		} while (unlikely(!result));
--
--		result = temp - i;
--	} else {
--		unsigned long flags;
--
--		raw_local_irq_save(flags);
--		result = v->counter;
--		result -= i;
--		v->counter = result;
--		raw_local_irq_restore(flags);
--	}
--
--	smp_llsc_mb();
--
--	return result;
--}
-+#define ATOMIC64_OPS(op, c_op, asm_op)						\
-+	ATOMIC64_OP(op, c_op, asm_op)						\
-+	ATOMIC64_OP_RETURN(op, c_op, asm_op)
-+
-+ATOMIC64_OPS(add, +=, daddu)
-+ATOMIC64_OPS(sub, -=, dsubu)
-+
-+#undef ATOMIC64_OPS
-+#undef ATOMIC64_OP_RETURN
-+#undef ATOMIC64_OP
- 
- /*
-  * atomic64_sub_if_positive - conditionally subtract integer from atomic variable
+@@ -302,9 +275,7 @@ static __inline__ void atomic_set_mask(u
+ 		: "=&r" (tmp)
+ 		: "r" (addr), "r" (mask)
+ 		: "memory"
+-#ifdef CONFIG_CHIP_M32700_TS1
+-		, "r5"
+-#endif	/* CONFIG_CHIP_M32700_TS1 */
++		__ATOMIC_CLOBBER
+ 	);
+ 	local_irq_restore(flags);
+ }
 
 
