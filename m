@@ -1,103 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568AbaEHEcK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 00:32:10 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:54434 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983AbaEHEcI (ORCPT
+	id S1752927AbaEHEdL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 00:33:11 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:15295 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081AbaEHEdJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 00:32:08 -0400
-Message-ID: <536B0887.70505@linux.vnet.ibm.com>
-Date: Thu, 08 May 2014 10:01:03 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, Borislav Petkov <bp@alien8.de>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Mike Galbraith <mgalbraith@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] CPU hotplug: Slow down hotplug operations
-References: <1399492661-891-1-git-send-email-bp@alien8.de> <20140507130655.9f7c46de8cb39726079458fb@linux-foundation.org> <alpine.DEB.2.02.1405072214420.6261@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1405072214420.6261@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050804-7014-0000-0000-000004D98D05
+	Thu, 8 May 2014 00:33:09 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-53-536b090324e7
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+Message-id: <536B0900.10204@samsung.com>
+Date: Thu, 08 May 2014 13:33:04 +0900
+From: Seung-Woo Kim <sw0312.kim@samsung.com>
+Reply-to: sw0312.kim@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011
+ Thunderbird/16.0.1
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Inki Dae <inki.dae@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sean Paul <seanpaul@chromium.org>,
+        =?UTF-8?B?U3TDqXBoYW5lIE1hcmNoZXNpbg==?= <marcheu@chromium.org>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>
+Subject: Re: [PATCH 2/4] drm/exynos/mixer: use MXR_GRP_SXY_SY
+References: <1399217181-26442-1-git-send-email-djkurtz@chromium.org>
+ <1399217181-26442-3-git-send-email-djkurtz@chromium.org>
+ <5369C13C.3080506@samsung.com>
+ <CAGS+omAbuzRpNDvB6eTw67Dcv3WMdWF3yz+bU5p3j5JRourOyw@mail.gmail.com>
+In-reply-to: <CAGS+omAbuzRpNDvB6eTw67Dcv3WMdWF3yz+bU5p3j5JRourOyw@mail.gmail.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplleLIzCtJLcpLzFFi42JZI2JSqMvMmR1scKKX16L33Ekmi8YZ81kt
+	rnx9z2Yx6f4EFosX9y6yWPQuuMpmcbbpDbvFpsfXWC0u75rDZjHj/D4mi3mHfjNa3N1wltFi
+	xuSXbA68HrMbLrJ4bP/2gNXjfvdxJo/NS+o9+rasYvT4vEkugC2KyyYlNSezLLVI3y6BK+Pz
+	mlPsBZMUK/o6drI3MF6Q7GLk5JAQMJFYdfEpK4QtJnHh3nq2LkYuDiGBpYwSv15sYIcp2vP+
+	FitEYjqjxNa+s0wgCV4BQYkfk++xgNjMAuoSk+YtYoawRST+/z0BZWtLLFv4mhmi+TUj0KTX
+	LBDNGhLHTp8D28AioCox7ctSsDibgI7E/iW/wU4SElCQuDLxGFANB4eoQJjEzs3pIKYI0K5f
+	N5xARjILnGaROLjyDtguYQFbie62F+wQu54D7fqwE2w+p0CwRMPvX4wgCQmBiRwSxxZdY4ZY
+	LCDxbfIhFpCpEgKyEpsOMEN8LClxcMUNlgmMErOQ/DkLyZ+zkPw5C8mfCxhZVjGKphYkFxQn
+	pReZ6BUn5haX5qXrJefnbmIEJoHT/55N2MF474D1IcZkoPUTmaVEk/OBSSSvJN7Q2MzIwtTE
+	1NjI3NKMNGElcV61R0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhhzBJpnx6yVOh4yrXua
+	5xuNz1qBjovnCxpvm9T595G6r/Kfpmfii9+mV+wuV619dffI1FzJpTuON+dZ6tf+af+1okby
+	wpSdJw+sLzu8in2h+z9WO6E5jgpbi+2PdX0V/7cimWGnHlPG3uNtzJ809Vmrms/91luxf//v
+	xPB/11aKPrN5+Plr5bEvSizFGYmGWsxFxYkAWeFx5hgDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBKsWRmVeSWpSXmKPExsVy+t9jQV1mzuxgg7NvmCx6z51ksmicMZ/V
+	4srX92wWk+5PYLF4ce8ii0XvgqtsFmeb3rBbbHp8jdXi8q45bBYzzu9jsph36Dejxd0NZxkt
+	Zkx+yebA6zG74SKLx/ZvD1g97ncfZ/LYvKTeo2/LKkaPz5vkAtiiGhhtMlITU1KLFFLzkvNT
+	MvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4AuVVIoS8wpBQoFJBYXK+nbYZoQ
+	GuKmawHTGKHrGxIE12NkgAYS1jBm7Fp5h6Vgi0LFymtv2RoYP0l0MXJySAiYSOx5f4sVwhaT
+	uHBvPVsXIxeHkMB0RomtfWeZQBK8AoISPybfY+li5OBgFpCXOHIpGyTMLKAuMWneImaI+teM
+	QINes0DUa0gcO32OHcRmEVCVmPZlKVicTUBHYv+S32DLhAQUJK5MPMYOMlNUIExi5+Z0EFME
+	aOavG04gI5kFTrNIHFx5hxmkXFjAVqK77QU7xK7nQLs+7ASbzykQLNHw+xfjBEbBWUhOnYVw
+	6iwkpy5gZF7FKJpakFxQnJSea6hXnJhbXJqXrpecn7uJEZwunkntYFzZYHGIUYCDUYmHN8M5
+	K1iINbGsuDL3EKMEB7OSCK//ZKAQb0piZVVqUX58UWlOavEhxmSgRycyS4km5wNTWV5JvKGx
+	iZmRpZG5oYWRsTlpwkrivAdarQOFBNITS1KzU1MLUotgtjBxcEo1MNal1C1rbe7PO8ddeTPi
+	8X3hYps0HXnld9+UeXn6v/bHWNQtSP05o2hjziyRrQq3/5Ud/vlTcNepiiqO+E0dVeyRkYXF
+	xuJFu2/l/w/g3h3x45RWqLfJLP78fXkP3/b/YmFQtjcWO7/9ai334TlGK11/Od1Jct+Q/LzB
+	cW9oJIeS2JzLFYmBSizFGYmGWsxFxYkAL7v3OVsDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2014 01:52 AM, Thomas Gleixner wrote:
-> On Wed, 7 May 2014, Andrew Morton wrote:
->> On Wed,  7 May 2014 21:57:41 +0200 Borislav Petkov <bp@alien8.de> wrote:
+Hello Daniel,
+
+On 2014년 05월 07일 23:14, Daniel Kurtz wrote:
+> On Wed, May 7, 2014 at 1:14 PM, Seung-Woo Kim <sw0312.kim@samsung.com> wrote:
+>> Hi Daniel,
 >>
->>> We have all those eager tester dudes which scratch up a dirty script to
->>> pound on CPU hotplug senselessly and then report bugs they've managed to
->>> trigger.
+>> On 2014년 05월 05일 00:26, Daniel Kurtz wrote:
+>>> Mixer hardware supports offsetting dma from start of source buffer using
+>>> the MXR_GRP_SXY register.
 >>>
->>> Well, first of all, most, if not all, bugs they trigger are CPU hotplug
->>> related anyway. But we know hotplug is full of duct tape and brown
->>> paper bags. So we end up clearly wasting too much time dealing with a
->>> mechanism we know it is b0rked in the first place.
+>>> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+>>> ---
+>>>  drivers/gpu/drm/exynos/exynos_mixer.c | 8 +++-----
+>>>  1 file changed, 3 insertions(+), 5 deletions(-)
 >>>
->>> Oh, and I would understand if that pounding were close to some real
->>> usage patterns but I've yet to receive a justification for toggling
->>> cores on- and offline senselessly.
+>>> diff --git a/drivers/gpu/drm/exynos/exynos_mixer.c b/drivers/gpu/drm/exynos/exynos_mixer.c
+>>> index 475eb49..40cf39b 100644
+>>> --- a/drivers/gpu/drm/exynos/exynos_mixer.c
+>>> +++ b/drivers/gpu/drm/exynos/exynos_mixer.c
+>>> @@ -529,13 +529,11 @@ static void mixer_graph_buffer(struct mixer_context *ctx, int win)
 >>>
->>> In any case, before this gets rewritten properly (I'm being told we
->>> might get lucky after all) let's slow down hotplugging on purpose and
->>> thus make it uninteresting, as a temporary brown paper bag solution
->>> until the real thing gets done.
+>>>       dst_x_offset = win_data->crtc_x;
+>>>       dst_y_offset = win_data->crtc_y;
+>>> +     src_x_offset = win_data->fb_x;
+>>> +     src_y_offset = win_data->fb_y;
 >>>
->>> This way we'll save us a lot of time and efforts in chasing the wrong
->>> bugs.
+>>>       /* converting dma address base and source offset */
+>>> -     dma_addr = win_data->dma_addr
+>>> -             + (win_data->fb_x * win_data->bpp >> 3)
+>>> -             + (win_data->fb_y * win_data->fb_width * win_data->bpp >> 3);
+>>> -     src_x_offset = 0;
+>>> -     src_y_offset = 0;
+>>> +     dma_addr = win_data->dma_addr;
 >>
->> Well, I only yesterday merged Srivatsa's `CPU hotplug, stop-machine:
->> plug race-window that leads to "IPI-to-offline-CPU"' bugfix.  That bug
->> presumably wouldn't have been fixed if this patch was in place.
+>> Basically, you are right and source offset register can be used. But
+>> because of limitation of resolution for mixer up to 1920x1080, I
+>> considered modified soruce dma address to set one frame buffer, which is
+>> bigger than 1920x1080, on to both fimd and hdmi.
 > 
-> True.
+> Hi Seung-Woo,
 > 
-> OTOH, if people would have spent the same amount of time to rewrite
-> the hotplug mess, we would have a way bigger benefit. But no, we
-> prefer to add more layers of duct tape and bandaid hackery to it. 
+> I do not see why the maximum MIXER resolution matters for choosing
+> between offsetting BASE or using SXY.
 > 
-> I tried a redesign and run out of cycles, but the patches are out
-> there and none of the folks who promised to complete them ever
-> delivered. If nothing fundamental changes, I'm going to spend some
-> serious time on it in the next couple of month.
->
+> Let's say you have one big 1920x1908 framebuffer, with a span of 1920,
+> starting at dma_addr (there is no extra padding at the end of the
+> line).
+> Let's say you wanted the mixer to scan out 1920x1080 pixels starting
+> from (0, 800) in the framebuffer, and start drawing them at (0,0) on
+> the screen.
+> 
+> What we currently do is:
+>   BASE = dma_addr + (800 * 1080 * 4)
+>   SPAN = 1920
+>   SXY = SX(0) | SY(0)
+>   WH = W(1920) | H(1080)
+>   DXY = DX(0) | DY(0)
+> 
+> I am proposing we do:
+>   BASE = dma_addr
+>   SPAN = 1920
+>   SXY = SX(0) | SY(800)
+>   WH = W(1920) | H(1080)
+>   DXY = DX(0) | DY(0)
+> 
+> In both cases, the mixer resolution is 1920x1080.
 
-Yeah, that's quite unfortunate. Even several of my own attempts to try
-and fix some of the chronic issues of CPU hotplug (such as the removal
-of CPU hotplug's dependency on stop-machine, consolidation of all the
-duplicated and buggy CPU hotplug code in various architectures etc.) all
-met a similar fate. Initially there was some amount of consensus on these
-patchsets and designs, but eventually they got nowhere due to lack of any
-further feedback or signs of upstream acceptance.
+In my test to show each half of big one framebuffer (3840 x 1080) to
+FIMD from 0 to 1079 and MIXER from 1080 to 3839 with exynos4210 and
+exynos4412, it was failed to show proper hdmi display. Also it is same
+for framebuffer (1920 x 2160). AFAIK, it is mainly because mixer dma has
+limitation of dma memory size.
 
+In this case, I set register as like:
+  BASE = dma_addr /* 3840 x 1080 x 4 */
+  SPAN = 3840
+  SXY = SX(1920) | SY(0)
+  WH = W(1920) | H(1080)
+  DXY = DX(0) | DY(0)
+or:
+  BASE = dma_addr /* 1920 x 2160 x 4 */
+  SPAN = 1920
+  SXY = SX(0) | SY(1080)
+  WH = W(1920) | H(1080)
+  DXY = DX(0) | DY(0)
+but these two setting did not show hdmi display as I expected. So I used
+modified dma address.
 
-Stop-machine()-free CPU hotplug, v6:
-http://lwn.net/Articles/538819/
+> 
+> My motivation for wanting to program an un-modified dma_addr into BASE
+> is so we can then just check BASE_S to determine from which buffer the
+> mixer is actively being scanned out without worrying about the source
+> offset, since the source offset can change for a given framebuffer
+> (for example, when doing panning, or if an overlay is used for a HW
+> cursor).
 
-With performance improvements:
-http://article.gmane.org/gmane.linux.kernel/1435249
+Actually, this patch is exactly same with my first implementation, so I
+completely understand your motivation. Anyway, I was focus on extended
+displays with one buffer, so I wrote modified dma base address.
 
-Attempt to upstream that patchset in parts, v3:
-http://lwn.net/Articles/556727/
+Thanks and Regards,
+- Seung-Woo Kim
 
-Generic SMP boot/cpu-hotplug framework to consolidate arch/ code:
-https://lwn.net/Articles/500185/
+> 
+> Best Regards,
+> -Daniel
+> 
+>>
+>> Regards,
+>> - Seung-Woo Kim
+>>
+>>>
+>>>       if (win_data->scan_flags & DRM_MODE_FLAG_INTERLACE)
+>>>               ctx->interlace = true;
+>>>
+>>
+>> --
+>> Seung-Woo Kim
+>> Samsung Software R&D Center
+>> --
+>>
+> 
 
-But, luckily the recent work to fix the notifier deadlock mess actually
-went upstream, fairly quickly. So we have one less CPU hotplug problem
-to fix! :-)
-https://lkml.org/lkml/2014/3/10/522
-
-Regards,
-Srivatsa S. Bhat
+-- 
+Seung-Woo Kim
+Samsung Software R&D Center
+--
 
