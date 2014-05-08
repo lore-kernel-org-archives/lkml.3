@@ -1,83 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675AbaEHPrp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:47:45 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42690 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753659AbaEHPro (ORCPT
+	id S1754722AbaEHPtf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:49:35 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:50007 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752840AbaEHPte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:47:44 -0400
-Date: Thu, 8 May 2014 11:47:43 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 8/8] usb: ohci-da8xx can only be built-in
-In-Reply-To: <1399557141-1346645-9-git-send-email-arnd@arndb.de>
-Message-ID: <Pine.LNX.4.44L0.1405081147320.1087-100000@iolanthe.rowland.org>
+	Thu, 8 May 2014 11:49:34 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Thu, 8 May 2014 17:49:12 +0200
+From: Johan Hovold <johan@hovold.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Bryan Evenson <bevenson@melinkcorp.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: at91: fix rtc irq mask for sam9x5 SoCs
+Message-ID: <20140508154912.GA6776@localhost>
+References: <957b209589094df48ddedbc57c6ccdfd@BLUPR05MB037.namprd05.prod.outlook.com>
+ <1399479649-3247-1-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399479649-3247-1-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 May 2014, Arnd Bergmann wrote:
+On Wed, May 07, 2014 at 06:20:49PM +0200, Boris BREZILLON wrote:
+> The RTC IMR register is not reliable on sam9x5 SoCs, hence why me have to
+> mask all interrupts no matter what IMR claims about already masked irqs.
 
-> The PHY setup code of the TI DaVinci DA8xx OHCI controller
-> uses ad-hoc register access using a pointer that is meant to
-> be used only by the DaVinci platform implementation and that
-> is intentionally not exported to loadable modules. This results
-> in a link error on configurations that use a modular OHCI
-> code on this platform.
-> 
-> While the proper solution for this problem would be to
-> implement a real PHY driver shared by ohci-da8xx and musb-da8xx,
-> this patch for now just works around the build error by
-> only allowing the ohci-da8xx code to be built-in.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
+Crap, I totally forgot about this. Doug reported the problem off-list
+back in December, but it got lost somehow. Sorry.
+
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
 > ---
->  drivers/usb/host/Kconfig    | 10 ++++++++++
->  drivers/usb/host/ohci-hcd.c |  2 +-
->  2 files changed, 11 insertions(+), 1 deletion(-)
+> Hello Bryan,
 > 
-> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-> index e229a47..3af10b7 100644
-> --- a/drivers/usb/host/Kconfig
-> +++ b/drivers/usb/host/Kconfig
-> @@ -417,6 +417,16 @@ config USB_OHCI_HCD_OMAP3
->  	  Enables support for the on-chip OHCI controller on
->  	  OMAP3 and later chips.
+> Yet another patch for you ;-).
+> 
+> As usual, could you tell me if it fixes your bug.
+> 
+> BTW, thanks for your tests.
+> 
+> Best Regards,
+> 
+> Boris
+> 
+>  arch/arm/mach-at91/sysirq_mask.c | 7 +------
+>  1 file changed, 1 insertion(+), 6 deletions(-)
+> 
+> diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-at91/sysirq_mask.c
+> index 2ba694f..eb3d2a5 100644
+> --- a/arch/arm/mach-at91/sysirq_mask.c
+> +++ b/arch/arm/mach-at91/sysirq_mask.c
+> @@ -37,12 +37,7 @@ void __init at91_sysirq_mask_rtc(u32 rtc_base)
+>  	if (!base)
+>  		return;
 >  
-> +config USB_OHCI_HCD_DAVINCI
-> +	bool "OHCI support for TI DaVinci DA8xx"
-> +	depends on ARCH_DAVINCI_DA8XX
-> +	depends on USB_OHCI_HCD=y
-> +	default y
-> +	help
-> +	  Enables support for the DaVinci DA8xx integrated OHCI
-> +	  controller. This driver cannot currently be a loadable
-> +	  module because it lacks a proper PHY abstraction.
-> +
->  config USB_OHCI_ATH79
->  	bool "USB OHCI support for the Atheros AR71XX/AR7240 SoCs (DEPRECATED)"
->  	depends on (SOC_AR71XX || SOC_AR724X)
-> diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
-> index 3586460..f98d03f 100644
-> --- a/drivers/usb/host/ohci-hcd.c
-> +++ b/drivers/usb/host/ohci-hcd.c
-> @@ -1178,7 +1178,7 @@ MODULE_LICENSE ("GPL");
->  #define SA1111_DRIVER		ohci_hcd_sa1111_driver
->  #endif
->  
-> -#ifdef CONFIG_ARCH_DAVINCI_DA8XX
-> +#ifdef CONFIG_USB_OHCI_HCD_DAVINCI
->  #include "ohci-da8xx.c"
->  #define DAVINCI_PLATFORM_DRIVER	ohci_hcd_da8xx_driver
->  #endif
+> -	mask = readl_relaxed(base + AT91_RTC_IMR);
+> -	if (mask) {
+> -		pr_info("AT91: Disabling rtc irq\n");
+> -		writel_relaxed(mask, base + AT91_RTC_IDR);
+> -		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
+> -	}
+> +	writel_relaxed(0x1f, base + AT91_RTC_IDR);
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+I believe this is the right way to handle this hardware bug (IMR is
+always read as 0 on one particular SoC), but please document this in a
+comment.
 
+You should also keep the flush (read of IMR) regardless (to make sure
+the write has reached the peripheral), and remember to remove the now
+unused mask variable.
+
+>  	iounmap(base);
+>  }
+
+Thanks,
+Johan
