@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878AbaEHMsS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 08:48:18 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:28357 "EHLO
+	id S1754200AbaEHMss (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 08:48:48 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:28368 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752756AbaEHMsO (ORCPT
+	with ESMTP id S1753689AbaEHMsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 08:48:14 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-8a-536b7d0c15e7
+	Thu, 8 May 2014 08:48:16 -0400
+X-AuditID: cbfec7f5-b7fae6d000004d6d-02-536b7d0f204c
 From: Tomasz Figa <t.figa@samsung.com>
 To: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
@@ -28,92 +28,196 @@ Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         Kevin Hilman <khilman@linaro.org>,
         Philipp Zabel <philipp.zabel@gmail.com>,
         Tomasz Figa <tomasz.figa@gmail.com>, Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH v4 0/3] Generic Device Tree based power domain look-up
-Date: Thu, 08 May 2014 14:45:06 +0200
-Message-id: <1399553109-6487-1-git-send-email-t.figa@samsung.com>
+Subject: [PATCH v4 3/3] ARM: exynos: Move to generic power domain bindings
+Date: Thu, 08 May 2014 14:45:09 +0200
+Message-id: <1399553109-6487-4-git-send-email-t.figa@samsung.com>
 X-Mailer: git-send-email 1.9.2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t/xa7o8tdnBBncmi1lsnLGe1WL+kXOs
-	Fv1vFrJaNC9ez2bRu+Aqm8XXwysYLWZN2ctksenxNVaLy7vmsFl87j3CaDHj/D4mi9uXeS3e
-	/H7BbrH2yF12i6XXLzJZ3D11lM1iwvS1LBZb551jtOhf2Mtk0br3CLvFjzPdLBavDraxWKyf
-	8ZrFYtWuP4wWx9eGO0h6rJm3htGjpbmHzeNyXy+Tx85Zd9k9Fu95yeSxaVUnm8eda3vYPPbP
-	XcPusXlJvUffllWMHo8WtzB6rFj9nd3j8yY5j41zQwP4orhsUlJzMstSi/TtErgyzjU8YSxY
-	JFVx+f8M5gbGzyJdjJwcEgImEpeOdjJD2GISF+6tZ+ti5OIQEljKKPGr4zcjhNPHJNHe1Q5W
-	xSagJvG54REbiC0iICMx9cp+VpAiZoH17BKPzswA6uDgEBZwk+i+WQJSwyKgKtG4bTJYPa+A
-	o8S35mtQ2+Qk/r9cwTSBkXsBI8MqRtHU0uSC4qT0XEO94sTc4tK8dL3k/NxNjJBo+bKDcfEx
-	q0OMAhyMSjy8L6IzgoVYE8uKK3MPMUpwMCuJ8F6pzA4W4k1JrKxKLcqPLyrNSS0+xMjEwSnV
-	wDjbrW1j8qyzS68z9rwJbGC23H9nolP0ssLvly/MZnS48Vj+Vv/1jMPlXRI397ldsdnmLeC4
-	UGH9b6G9XJ0ynz8pcE7QvLascanTqQj5TKPKgFsbchi93TaclHpwMfHH9MK8VqNXDpK9QQbf
-	dyWqt13ZfuXL6WfCM+7/2PuwbNX9v5cWt5xQ9b6pxFKckWioxVxUnAgAYSNJ43QCAAA=
+In-reply-to: <1399553109-6487-1-git-send-email-t.figa@samsung.com>
+References: <1399553109-6487-1-git-send-email-t.figa@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAAyWRa0hTYRzGe899q1Onk8mriMFAqUgrM3oTu9ink/QhkIii0qnzkk5lJyUL
+	U1KDZpt+0DXMy8SMsZTlSry0ac3pKC8ZmyusBamhlhIoMkOznH77/R9+8H/gYXB+BQ9mMnNu
+	KVQ58mwZJSWG1p2eiF1FWQlHzANS1K43k6jRMUqiyvkmEpU2mymkMYxTaLnfCFBttQ1DlikP
+	iVw9dRRa0jgA0n/oxdAXF4vmV2dp1Obw0qjl00cMed8PUKjqcRuBOhpGAaps0mCo3Oag0cpw
+	BYF+vn1AILP+F4FMPWsAOdsunw0SWhtagVBW+ogSXFoNJnTXemmh2TqHCRbTQ0r46rFSQl99
+	Ky28fFosaF+ZgDDZXAYE43MfLSxZQoX2+ksXd16VxqYqsjMLFKrDp5OkGb2VNjzPF357cGwc
+	LwHT+9SAYSAXDV26u2og2cBAOPbNTKmBlOG5FgAX33QSW4cWg76BBeC3KC4cLpVMUn4O4EJg
+	jbuP9Es4Z6bh5LB+U9rDxcOuaR3hZ4ILg16XbTNnuTjY2T8Ltt6Fwn9zRszfQsKdgyZbhD/m
+	N5TGigW6CrAGsM0E9iryU/LE5HRlVKQoV4r5OemRKblKC9haa7kLtAzG2AHHANkO1hCSkcCT
+	8gKxUGkHkMFlAay7MCuBZ1PlhXcUqtxEVX62QrQDjJEEl4Ck7tfkWjzv/oGe1fiGpjpkhs+m
+	KL7zgmSReRcHV6N/b9+dfOjPqWO6Bqc1uj9MPH9PX3BlfW6mt9yQyFqrlU/O5N04fnOtaIqb
+	8VzXuQe7D5xIMxr/diymMW5WH+QMVHsn0MnvWmdsKf5iv33ifl3MSO1sXVJ1ZPG1zJHURBkh
+	ZsiPHsRVovw/9AI2oosCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Up till now there was no single generic method to bind devices to their
-power domains using Device Tree. Each platform has been doing this using
-its own way, example of which are Exynos power domain bindings [1] and
-look-up code [2].
+This patch moves Exynos power domain code to use the new generic power
+domain look-up framework introduced by previous patch, allowing the new
+code to be compiled with CONFIG_ARCH_EXYNOS selected as well.
 
-This series is intended to change this and provide generic DT bindings for
-power domain specification and generic code performing look-up of power
-domains and binding them to devices.
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+---
+ .../bindings/arm/exynos/power_domain.txt           | 12 ++--
+ arch/arm/mach-exynos/pm_domains.c                  | 81 +---------------------
+ kernel/power/Kconfig                               |  2 +-
+ 3 files changed, 7 insertions(+), 88 deletions(-)
 
-First two patches are the most important part of this series, as they
-introduce $subject. Patch 3 converts mach-exynos to use the new generic
-method. Further patches are adding one more user of the new code,
-mach-s3c64xx, with first 3 patches (4-6) required to clean-up its power
-domain driver a bit and last 3 patches (9-11) adding display support for
-Mini6410 board, including a node for display controller (FIMD) which is
-a power domain consumer.
-
-The design of DT bindings and provider code is heavily inspired by
-implementation of clock providers in Common Clock Framework, while
-the code binding devices to power domains by my Exynos power domain
-implementation (now removed by this series ;)).
-
-Successfully tested on Exynos4210-based Trats and Exynos4412-based Trats2
-boards using MFC, 
-
-[1] Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-[2] arch/arm/mach-exynos/pm_domains.c
-
-Changes since v3:
-(http://thread.gmane.org/gmane.linux.power-management.general/44571)
- - rebased onto current Rafael's linux-pm bleeding-edge branch (0a112bf),
- - renamed "power-domain" property to "power-domains" to facilitate further
-   extension to support multiple power domains per device in future.
-
-Changes since v2:
-(http://thread.gmane.org/gmane.linux.kernel/1658926)
- - rebased onto current Rafael's linux-pm bleeding-edge branch,
- - dropped patches for s3c64xx for now. I will send them in separate series,
- - do not call pm_genpd_dev_need_restore(true) in genpd_bind_domain(),
- - fixed various stylistic issues reported in review comments.
-
-Changes since v1 (RFC):
-[https://lkml.org/lkml/2014/1/11/141]
- - rebased onto current Rafael's linux-pm bleeding-edge branch,
- - reordered the patches a bit (to have the generic ones first),
- - dropped renaming of S3C64xx power domains (as suggested by Mark Brown),
- - added support for deferred probing (as suggested by Stephen Boyd),
- - fixed several minor issues pointed by Stephen Boyd,
- - replaced notifiers with direct hooks in driver core to make power domain
-   support independent from specific bus type and allow error handling.
-
-Tomasz Figa (3):
-  base: power: Add generic OF-based power domain look-up
-  drivercore: Bind/unbind power domain on probe/remove
-  ARM: exynos: Move to generic power domain bindings
-
- .../bindings/arm/exynos/power_domain.txt           |  12 +-
- .../devicetree/bindings/power/power_domain.txt     |  51 ++++
- arch/arm/mach-exynos/pm_domains.c                  |  81 +-----
- drivers/base/dd.c                                  |   9 +-
- drivers/base/power/domain.c                        | 283 +++++++++++++++++++++
- include/linux/pm_domain.h                          |  46 ++++
- kernel/power/Kconfig                               |   4 +
- 7 files changed, 398 insertions(+), 88 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/power/power_domain.txt
-
+diff --git a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+index 5216b41..60f26a8 100644
+--- a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
++++ b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+@@ -8,6 +8,8 @@ Required Properties:
+     * samsung,exynos4210-pd - for exynos4210 type power domain.
+ - reg: physical base address of the controller and length of memory mapped
+     region.
++- #power-domain-cells: number of cells in power domain specifier;
++    must be 0.
+ 
+ Node of a device using power domains must have a samsung,power-domain property
+ defined with a phandle to respective power domain.
+@@ -17,12 +19,8 @@ Example:
+ 	lcd0: power-domain-lcd0 {
+ 		compatible = "samsung,exynos4210-pd";
+ 		reg = <0x10023C00 0x10>;
++		#power-domain-cells = <0>;
+ 	};
+ 
+-Example of the node using power domain:
+-
+-	node {
+-		/* ... */
+-		samsung,power-domain = <&lcd0>;
+-		/* ... */
+-	};
++See Documentation/devicetree/bindings/power/power_domain.txt for description
++of consumer-side bindings.
+diff --git a/arch/arm/mach-exynos/pm_domains.c b/arch/arm/mach-exynos/pm_domains.c
+index fe6570e..9cad3c6 100644
+--- a/arch/arm/mach-exynos/pm_domains.c
++++ b/arch/arm/mach-exynos/pm_domains.c
+@@ -73,89 +73,14 @@ static int exynos_pd_power_off(struct generic_pm_domain *domain)
+ 	return exynos_pd_power(domain, false);
+ }
+ 
+-static void exynos_add_device_to_domain(struct exynos_pm_domain *pd,
+-					 struct device *dev)
+-{
+-	int ret;
+-
+-	dev_dbg(dev, "adding to power domain %s\n", pd->pd.name);
+-
+-	while (1) {
+-		ret = pm_genpd_add_device(&pd->pd, dev);
+-		if (ret != -EAGAIN)
+-			break;
+-		cond_resched();
+-	}
+-
+-	pm_genpd_dev_need_restore(dev, true);
+-}
+-
+-static void exynos_remove_device_from_domain(struct device *dev)
+-{
+-	struct generic_pm_domain *genpd = dev_to_genpd(dev);
+-	int ret;
+-
+-	dev_dbg(dev, "removing from power domain %s\n", genpd->name);
+-
+-	while (1) {
+-		ret = pm_genpd_remove_device(genpd, dev);
+-		if (ret != -EAGAIN)
+-			break;
+-		cond_resched();
+-	}
+-}
+-
+-static void exynos_read_domain_from_dt(struct device *dev)
+-{
+-	struct platform_device *pd_pdev;
+-	struct exynos_pm_domain *pd;
+-	struct device_node *node;
+-
+-	node = of_parse_phandle(dev->of_node, "samsung,power-domain", 0);
+-	if (!node)
+-		return;
+-	pd_pdev = of_find_device_by_node(node);
+-	if (!pd_pdev)
+-		return;
+-	pd = platform_get_drvdata(pd_pdev);
+-	exynos_add_device_to_domain(pd, dev);
+-}
+-
+-static int exynos_pm_notifier_call(struct notifier_block *nb,
+-				    unsigned long event, void *data)
+-{
+-	struct device *dev = data;
+-
+-	switch (event) {
+-	case BUS_NOTIFY_BIND_DRIVER:
+-		if (dev->of_node)
+-			exynos_read_domain_from_dt(dev);
+-
+-		break;
+-
+-	case BUS_NOTIFY_UNBOUND_DRIVER:
+-		exynos_remove_device_from_domain(dev);
+-
+-		break;
+-	}
+-	return NOTIFY_DONE;
+-}
+-
+-static struct notifier_block platform_nb = {
+-	.notifier_call = exynos_pm_notifier_call,
+-};
+-
+ static __init int exynos4_pm_init_power_domain(void)
+ {
+-	struct platform_device *pdev;
+ 	struct device_node *np;
+ 
+ 	for_each_compatible_node(np, NULL, "samsung,exynos4210-pd") {
+ 		struct exynos_pm_domain *pd;
+ 		int on;
+ 
+-		pdev = of_find_device_by_node(np);
+-
+ 		pd = kzalloc(sizeof(*pd), GFP_KERNEL);
+ 		if (!pd) {
+ 			pr_err("%s: failed to allocate memory for domain\n",
+@@ -168,17 +93,13 @@ static __init int exynos4_pm_init_power_domain(void)
+ 		pd->base = of_iomap(np, 0);
+ 		pd->pd.power_off = exynos_pd_power_off;
+ 		pd->pd.power_on = exynos_pd_power_on;
+-		pd->pd.of_node = np;
+-
+-		platform_set_drvdata(pdev, pd);
+ 
+ 		on = __raw_readl(pd->base + 0x4) & S5P_INT_LOCAL_PWR_EN;
+ 
+ 		pm_genpd_init(&pd->pd, NULL, !on);
++		of_genpd_add_provider(np, of_genpd_xlate_simple, &pd->pd);
+ 	}
+ 
+-	bus_register_notifier(&platform_bus_type, &platform_nb);
+-
+ 	return 0;
+ }
+ arch_initcall(exynos4_pm_init_power_domain);
+diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
+index 45aa98e..b17588c 100644
+--- a/kernel/power/Kconfig
++++ b/kernel/power/Kconfig
+@@ -308,7 +308,7 @@ config PM_GENERIC_DOMAINS_RUNTIME
+ 
+ config PM_GENERIC_DOMAINS_OF
+ 	def_bool y
+-	depends on PM_GENERIC_DOMAINS && OF && !ARCH_EXYNOS
++	depends on PM_GENERIC_DOMAINS && OF
+ 
+ config CPU_PM
+ 	bool
 -- 
 1.9.2
 
