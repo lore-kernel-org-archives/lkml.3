@@ -1,92 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829AbaEHGuy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 02:50:54 -0400
-Received: from mail.lang.hm ([64.81.33.126]:33864 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192AbaEHGuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 02:50:52 -0400
-Date: Wed, 7 May 2014 23:50:15 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Ingo Molnar <mingo@kernel.org>
-cc: Josh Poimboeuf <jpoimboe@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Seth Jennings <sjenning@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-In-Reply-To: <20140508061220.GB31184@gmail.com>
-Message-ID: <alpine.DEB.2.02.1405072348580.17457@nftneq.ynat.uz>
-References: <20140505141038.GA27403@localhost.localdomain> <20140505184304.GA15137@gmail.com> <20140505214919.GE2099@localhost.localdomain> <20140506121211.GA4125@treble.redhat.com> <20140506140516.GF2099@localhost.localdomain> <20140506145010.GA6702@treble.redhat.com>
- <20140507122444.GB12234@gmail.com> <20140507154114.GA31555@treble.redhat.com> <20140507155754.GA15221@gmail.com> <alpine.DEB.2.02.1405071552520.5876@nftneq.ynat.uz> <20140508061220.GB31184@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752780AbaEHG4v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 02:56:51 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42011 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103AbaEHG4u convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 02:56:50 -0400
+Date: Thu, 8 May 2014 08:56:46 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Daniel Santos <daniel.santos@pobox.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] compiler.h: don't use temporary variable in
+ __compiletime_assert()
+Message-ID: <20140508065646.GF2844@laptop.programming.kicks-ass.net>
+References: <1399530685-7749-1-git-send-email-johannes@sipsolutions.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1399530685-7749-1-git-send-email-johannes@sipsolutions.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 May 2014, Ingo Molnar wrote:
+On Thu, May 08, 2014 at 08:31:25AM +0200, Johannes Berg wrote:
+> From: Johannes Berg <johannes.berg@intel.com>
+> 
+> Usually, BUG_ON and friends aren't even evaluated in sparse, but
+> recently compiletime_assert_atomic_type() was added, and that now
+> results in a sparse warning every time it is used.
+> 
+> The reason turns out to be the temporary variable, after it sparse
+> no longer considers the value to be a constant, and results in a
+> warning and an error. The error is the more annoying part of this
+> as it suppresses any further warnings in the same file, hiding
+> other problems.
+> 
+> Since this is all about compile time and the condition should be
+> side-effect free to start with, there's no downside (apart maybe
+> from a slight compilation time penalty?) to just duplicating it,
+> leaving sparse able to evaluate it at check time, getting rid of
+> the warning and error.
+> 
+> Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 
->>>
->>> No!
->>>
->>> A patch to the kernel source is 'safe' if it results in a correctly
->>> patched kernel source. Full stop!
->>>
->>> Live patching does not enter into this question, ever. The correctness
->>> of a patch to the source does not depend on 'live patching'
->>> considerations in any way, shape or form.
->>>
->>> Any mechanism that tries to blur these lines is broken by design.
->>>
->>> My claim is that if a patch is correct/safe in the old fashioned way,
->>> then a fundamental principle is that a live patching subsystem must
->>> either safely apply, or safely reject the live patching attempt,
->>> independently from any user input.
->>>
->>> It's similar to how kprobes (or ftrace) will safely reject or perform
->>> a live patching of the kernel.
->>>
->>> So for example, there's this recent upstream kernel fix:
->>>
->>> 3ca9e5d36afb agp: info leak in agpioc_info_wrap()
->>>
->>> which fixes an information leak. The 'patch' is Git commit
->>> 3ca9e5d36afb (i.e. it patches a very specific incoming kernel source
->>> tree that results in a specific outgoing source tree), and we know
->>> it's safe and correct.
->>>
->>> Any live patching subsystem must make sure that if this patch is
->>> live-patched, that this attempt is either rejected safely or performed
->>> safely.
->>>
->>> "We think/hope it won't blow up in most cases and we automated some
->>> checks halfways" or "the user must know what he is doing" is really
->>> not something that I think is a good concept for something as fragile
->>> as live patching.
->>
->> In that case you will have to reject any kernel patch that changes
->> any memory structure, because it's impossible as a general rule to
->> say that changing memory structures is going to be safe (or even
->> possible) to change.
->>
->> that includes any access to memory that moves around a lock
->
-> Initially restricting it to such patches would be a good beginning -
-> most of the security fixes are just failed checks, i.e. they don't
-> typically even change any external (not on stack) memory structure,
-> right?
-
-in terms of hit-patching kernels you are correct.
-
-but that's a far cry from what it sounded like you were demanding (that it must 
-handle any kernel patch)
-
-David Lang
+Acked-by: Peter Zijlstra <peterz@infradead.org>
