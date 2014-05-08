@@ -1,98 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096AbaEHN5Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 09:57:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46519 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750768AbaEHN5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 09:57:22 -0400
-Message-ID: <536B8CDD.7040600@redhat.com>
-Date: Thu, 08 May 2014 15:55:41 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Alexander Bersenev <bay@hackerdom.ru>,
-        linux-sunxi <linux-sunxi@googlegroups.com>, david@hardeman.nu,
-        devicetree@vger.kernel.org, galak@codeaurora.org,
-        grant.likely@linaro.org, ijc+devicetree@hellion.org.uk,
-        james.hogan@imgtec.com, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, m.chehab@samsung.com, mark.rutland@arm.com,
-        maxime.ripard@free-electrons.com, pawel.moll@arm.com,
-        rdunlap@infradead.org, robh+dt@kernel.org, sean@mess.org,
-        srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH v5 0/3] ARM: sunxi: Add support for consumer infrared
- devices
-References: <1398871010-30681-1-git-send-email-bay@hackerdom.ru>
-In-Reply-To: <1398871010-30681-1-git-send-email-bay@hackerdom.ru>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754493AbaEHOA5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 10:00:57 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47518 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753852AbaEHOAw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 10:00:52 -0400
+Message-Id: <20140508135852.659342353@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 08 May 2014 15:58:55 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, mingo@kernel.org,
+        will.deacon@arm.com, paulmck@linux.vnet.ibm.com,
+        Peter Zijlstra <peterz@infradead.org>, Helge Deller <deller@gmx.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>
+Subject: [PATCH 15/20] arch,parisc: Fold atomic_ops
+References: <20140508135840.956784204@infradead.org>
+Content-Disposition: inline; filename=peterz-parisc-atomic_cleanup.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+OK, no LoC saved in this case because sub was defined in terms of add.
+Still do it because this also prepares for easy addition of new ops.
 
-On 04/30/2014 05:16 PM, Alexander Bersenev wrote:
-> This patch introduces Consumer IR(CIR) support for sunxi boards.
-> 
-> This is based on Alexsey Shestacov's work based on the original driver 
-> supplied by Allwinner.
-> 
-> Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
-> Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
+Cc: Helge Deller <deller@gmx.de>
+Cc: James E.J. Bottomley <jejb@parisc-linux.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ arch/parisc/include/asm/atomic.h |  121 +++++++++++++++++++++++----------------
+ 1 file changed, 73 insertions(+), 48 deletions(-)
 
-Alexander, v5 still has various issues which need fixing,
-do you plan to do a v6 soon ?
+Index: linux-2.6/arch/parisc/include/asm/atomic.h
+===================================================================
+--- linux-2.6.orig/arch/parisc/include/asm/atomic.h
++++ linux-2.6/arch/parisc/include/asm/atomic.h
+@@ -55,24 +55,7 @@ extern arch_spinlock_t __atomic_hash[ATO
+  * are atomic, so a reader never sees inconsistent values.
+  */
+ 
+-/* It's possible to reduce all atomic operations to either
+- * __atomic_add_return, atomic_set and atomic_read (the latter
+- * is there only for consistency).
+- */
+-
+-static __inline__ int __atomic_add_return(int i, atomic_t *v)
+-{
+-	int ret;
+-	unsigned long flags;
+-	_atomic_spin_lock_irqsave(v, flags);
+-
+-	ret = (v->counter += i);
+-
+-	_atomic_spin_unlock_irqrestore(v, flags);
+-	return ret;
+-}
+-
+-static __inline__ void atomic_set(atomic_t *v, int i) 
++static __inline__ void atomic_set(atomic_t *v, int i)
+ {
+ 	unsigned long flags;
+ 	_atomic_spin_lock_irqsave(v, flags);
+@@ -115,16 +98,43 @@ static __inline__ int __atomic_add_unles
+ 	return c;
+ }
+ 
++#define ATOMIC_OP(op, c_op)						\
++static __inline__ void atomic_##op(int i, atomic_t *v)			\
++{									\
++	unsigned long flags;						\
++									\
++	_atomic_spin_lock_irqsave(v, flags);				\
++	v->counter c_op i;						\
++	_atomic_spin_unlock_irqrestore(v, flags);			\
++}									\
++
++#define ATOMIC_OP_RETURN(op, c_op)					\
++static __inline__ int atomic_##op##_return(int i, atomic_t *v)		\
++{									\
++	unsigned long flags;						\
++	int ret;							\
++									\
++	_atomic_spin_lock_irqsave(v, flags);				\
++	ret = (v->counter c_op i);					\
++	_atomic_spin_unlock_irqrestore(v, flags);			\
++									\
++	return ret;							\
++}
++
++#define ATOMIC_OPS(op, c_op) ATOMIC_OP(op, c_op) ATOMIC_OP_RETURN(op, c_op)
++
++ATOMIC_OPS(add, +=)
++ATOMIC_OPS(sub, -=)
++
++#undef ATOMIC_OPS
++#undef ATOMIC_OP_RETURN
++#undef ATOMIC_OP
+ 
+-#define atomic_add(i,v)	((void)(__atomic_add_return(        (i),(v))))
+-#define atomic_sub(i,v)	((void)(__atomic_add_return(-((int) (i)),(v))))
+-#define atomic_inc(v)	((void)(__atomic_add_return(   1,(v))))
+-#define atomic_dec(v)	((void)(__atomic_add_return(  -1,(v))))
+-
+-#define atomic_add_return(i,v)	(__atomic_add_return( (i),(v)))
+-#define atomic_sub_return(i,v)	(__atomic_add_return(-(i),(v)))
+-#define atomic_inc_return(v)	(__atomic_add_return(   1,(v)))
+-#define atomic_dec_return(v)	(__atomic_add_return(  -1,(v)))
++#define atomic_inc(v)	(atomic_add(   1,(v)))
++#define atomic_dec(v)	(atomic_add(  -1,(v)))
++
++#define atomic_inc_return(v)	(atomic_add_return(   1,(v)))
++#define atomic_dec_return(v)	(atomic_add_return(  -1,(v)))
+ 
+ #define atomic_add_negative(a, v)	(atomic_add_return((a), (v)) < 0)
+ 
+@@ -148,18 +158,37 @@ static __inline__ int __atomic_add_unles
+ 
+ #define ATOMIC64_INIT(i) { (i) }
+ 
+-static __inline__ s64
+-__atomic64_add_return(s64 i, atomic64_t *v)
+-{
+-	s64 ret;
+-	unsigned long flags;
+-	_atomic_spin_lock_irqsave(v, flags);
+-
+-	ret = (v->counter += i);
+-
+-	_atomic_spin_unlock_irqrestore(v, flags);
+-	return ret;
+-}
++#define ATOMIC64_OP(op, c_op)						\
++static __inline__ void atomic64_##op(s64 i, atomic64_t *v)		\
++{									\
++	unsigned long flags;						\
++									\
++	_atomic_spin_lock_irqsave(v, flags);				\
++	v->counter c_op i;						\
++	_atomic_spin_unlock_irqrestore(v, flags);			\
++}									\
++
++#define ATOMIC64_OP_RETURN(op, c_op)					\
++static __inline__ s64 atomic64_##op##_return(s64 i, atomic64_t *v)	\
++{									\
++	unsigned long flags;						\
++	s64 ret;							\
++									\
++	_atomic_spin_lock_irqsave(v, flags);				\
++	ret = (v->counter c_op i);					\
++	_atomic_spin_unlock_irqrestore(v, flags);			\
++									\
++	return ret;							\
++}
++
++#define ATOMIC64_OPS(op, c_op) ATOMIC64_OP(op, c_op) ATOMIC64_OP_RETURN(op, c_op)
++
++ATOMIC64_OPS(add, +=)
++ATOMIC64_OPS(sub, -=)
++
++#undef ATOMIC64_OPS
++#undef ATOMIC64_OP_RETURN
++#undef ATOMIC64_OP
+ 
+ static __inline__ void
+ atomic64_set(atomic64_t *v, s64 i)
+@@ -178,15 +207,11 @@ atomic64_read(const atomic64_t *v)
+ 	return (*(volatile long *)&(v)->counter);
+ }
+ 
+-#define atomic64_add(i,v)	((void)(__atomic64_add_return( ((s64)(i)),(v))))
+-#define atomic64_sub(i,v)	((void)(__atomic64_add_return(-((s64)(i)),(v))))
+-#define atomic64_inc(v)		((void)(__atomic64_add_return(   1,(v))))
+-#define atomic64_dec(v)		((void)(__atomic64_add_return(  -1,(v))))
+-
+-#define atomic64_add_return(i,v)	(__atomic64_add_return( ((s64)(i)),(v)))
+-#define atomic64_sub_return(i,v)	(__atomic64_add_return(-((s64)(i)),(v)))
+-#define atomic64_inc_return(v)		(__atomic64_add_return(   1,(v)))
+-#define atomic64_dec_return(v)		(__atomic64_add_return(  -1,(v)))
++#define atomic64_inc(v)		(atomic64_add(   1,(v)))
++#define atomic64_dec(v)		(atomic64_add(  -1,(v)))
++
++#define atomic64_inc_return(v)		(atomic64_add_return(   1,(v)))
++#define atomic64_dec_return(v)		(atomic64_add_return(  -1,(v)))
+ 
+ #define atomic64_add_negative(a, v)	(atomic64_add_return((a), (v)) < 0)
+ 
 
-Regards,
 
-Hans
-
-> 
-> ---
-> Changes since version 1: 
->  - Fix timer memory leaks 
->  - Fix race condition when driver unloads while interrupt handler is active
->  - Support Cubieboard 2(need testing)
-> 
-> Changes since version 2:
-> - More reliable keydown events
-> - Documentation fixes
-> - Rename registers accurding to A20 user manual
-> - Remove some includes, order includes alphabetically
-> - Use BIT macro
-> - Typo fixes
-> 
-> Changes since version 3:
-> - Split the patch on smaller parts
-> - More documentation fixes
-> - Add clock-names in DT
-> - Use devm_clk_get function to get the clocks
-> - Removed gpios property from ir's DT
-> - Changed compatible from allwinner,sunxi-ir to allwinner,sun7i-a20-ir in DT
-> - Use spin_lock_irq instead spin_lock_irqsave in interrupt handler
-> - Add myself in the copyright ;)
-> - Coding style and indentation fixes
-> 
-> Changes since version 4:
-> - Try to fix indentation errors by sending patches with git send-mail
-> 
-> Alexander Bersenev (3):
->   ARM: sunxi: Add documentation for sunxi consumer infrared devices
->   ARM: sunxi: Add driver for sunxi IR controller
->   ARM: sunxi: Add IR controller support in DT on A20
-> 
->  .../devicetree/bindings/media/sunxi-ir.txt         |  23 ++
->  arch/arm/boot/dts/sun7i-a20-cubieboard2.dts        |   6 +
->  arch/arm/boot/dts/sun7i-a20-cubietruck.dts         |   6 +
->  arch/arm/boot/dts/sun7i-a20.dtsi                   |  31 +++
->  drivers/media/rc/Kconfig                           |  10 +
->  drivers/media/rc/Makefile                          |   1 +
->  drivers/media/rc/sunxi-ir.c                        | 303 +++++++++++++++++++++
->  7 files changed, 380 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/media/sunxi-ir.txt
->  create mode 100644 drivers/media/rc/sunxi-ir.c
-> 
