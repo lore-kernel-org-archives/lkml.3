@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525AbaEHP6J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:58:09 -0400
-Received: from trinity.fluff.org ([89.16.178.74]:56493 "EHLO trinity.fluff.org"
+	id S1754814AbaEHP6R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:58:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11519 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751776AbaEHP6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:58:08 -0400
-X-Greylist: delayed 1231 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 May 2014 11:58:08 EDT
-Date: Thu, 8 May 2014 16:37:34 +0100
-From: Ben Dooks <ben@trinity.fluff.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
-        linux-kernel@vger.kernel.org, Ian Molton <ian.molton@codethink.co.uk>
-Subject: Re: [PATCH] MAINTAINERS: mmc: Update email for host driver
- maintainer
-Message-ID: <20140508153734.GY4400@trinity.fluff.org>
-References: <1399541098-5104-1-git-send-email-ulf.hansson@linaro.org>
+	id S1751776AbaEHP6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 11:58:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1010,1389772800"; 
+   d="scan'208";a="508465390"
+Message-ID: <536BA96F.1030203@intel.com>
+Date: Thu, 08 May 2014 08:57:35 -0700
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399541098-5104-1-git-send-email-ulf.hansson@linaro.org>
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@trinity.fluff.org
-X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
+To: Jet Chen <jet.chen@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        Dave Jiang <dave.jiang@intel.com>
+CC: fengguang.wu@intel.com, wei.w.lin@intel.com, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org
+Subject: Re: [PATCH] DCA: fix over-warning in ioat3_dca_init
+References: <1399542166-42985-1-git-send-email-jet.chen@intel.com> <536B9CF6.9000907@intel.com> <536BA2A3.50506@intel.com>
+In-Reply-To: <536BA2A3.50506@intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 11:24:58AM +0200, Ulf Hansson wrote:
-> Update Ian Molton's email, the maintainer for tmio/sh_mobile_sdhci.
+On 05/08/2014 08:28 AM, Jet Chen wrote:
+> I agree with your option that it is a real BIOS bug and it puts pressure on the BIOS guys to get this fixed. However, this warning message interferes with our kernel booting tests and kernel performance tests. We have to disable CONFIG_INTEL_IOATDMA in kconfig until this issue gets fixed. Before that, code of CONFIG_INTEL_IOATDMA will not be validated in our testing system :(.
+> Hope this issue could get fixed soon.
 > 
-> Cc: Ian Molton <ian.molton@codethink.co.uk>
-> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-
-I think he still has the previous address, so you may want to keep it.
-
-> ---
->  MAINTAINERS |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Thanks,
+> Jet
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index e67ea24..c2803c7 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -9000,7 +9000,7 @@ F:	include/linux/toshiba.h
->  F:	include/uapi/linux/toshiba.h
->  
->  TMIO MMC DRIVER
-> -M:	Ian Molton <ian@mnementh.co.uk>
-> +M:	Ian Molton <ian.molton@codethink.co.uk>
->  L:	linux-mmc@vger.kernel.org
->  S:	Maintained
->  F:	drivers/mmc/host/tmio_mmc*
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
--- 
-Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
+First I would recommend updating your BIOS.  If the updated BIOS also
+has the issue I would recommend taking this feedback to whoever provided
+the BIOS for your platform so that they can implement the fix.
 
-Large Hadron Colada: A large Pina Colada that makes the universe disappear.
+If I am not mistaken some BIOSes have the option to disable DCA and/or
+IOATDMA.  You might want to check yours to see if you can just disable
+DCA on your platform until the issue can be resolved.
+
+Thanks,
+
+Alex
 
