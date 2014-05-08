@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781AbaEHJol (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 05:44:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44682 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753609AbaEHJoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 05:44:39 -0400
-Date: Thu, 8 May 2014 17:46:06 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: kaslr should avoid setup_data region
-Message-ID: <20140508094606.GE3320@darkstar.nay.redhat.com>
-References: <20140424023544.GA2180@darkstar.nay.redhat.com>
- <CAGXu5j+TP2=iVYj=a6YGiGdOUqznb1MxdLLz5tjL8Hwwcq2K0Q@mail.gmail.com>
- <20140424025016.GB2180@darkstar.nay.redhat.com>
- <CAGXu5jKaog6X+jw6Zh3iHSHS8KFUbLEHm75=HbVORJ-crpr7Fw@mail.gmail.com>
+	id S1753660AbaEHJrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 05:47:53 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:56438 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753059AbaEHJrv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 05:47:51 -0400
+Message-ID: <536B52C3.3010109@gmail.com>
+Date: Thu, 08 May 2014 11:47:47 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jKaog6X+jw6Zh3iHSHS8KFUbLEHm75=HbVORJ-crpr7Fw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: George Cherian <george.cherian@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org
+CC: balbi@ti.com, gregkh@linuxfoundation.org
+Subject: Re: [PATCH v2 3/5] usb: musb: core: Convert the musb_platform_reset
+ to have a return value.
+References: <1399541743-14158-1-git-send-email-george.cherian@ti.com> <1399541743-14158-4-git-send-email-george.cherian@ti.com>
+In-Reply-To: <1399541743-14158-4-git-send-email-george.cherian@ti.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/14 at 03:50pm, Kees Cook wrote:
-> Ah, it sounds like boot_params.hdr.setup_data contains a series of
-> e820-like entries chained together as a linked list? Which loaders
-> currently populate that? Looks like EFI? Seems like
-> arch/x86/boot/compressed/eboot.c works on setup_data at least.
-> 
-> I won't be in a position to test EFI booting for a while. If someone
-> else took this, that would make it get fixed much faster.
-> 
-> Do you have examples where this is actually causing failures?
-> 
-> -Kees
-> 
-> On Wed, Apr 23, 2014 at 7:50 PM, Dave Young <dyoung@redhat.com> wrote:
-> > On 04/23/14 at 07:43pm, Kees Cook wrote:
-> >> On Wed, Apr 23, 2014 at 7:35 PM, Dave Young <dyoung@redhat.com> wrote:
-> >> > Hello Kees
-> >> >
-> >> > I'm worrying that setup_data regions could be overwitten by randomize
-> >> > kernel base. Would you like to fix it in kaslr code?
-> >> >
-> >> > One problem is there could be a lot of setup_data regions but current
-> >> > mem_avoid is an fixed array.
-> >>
-> >> Sure, can you give me some examples? Seems like it shouldn't be too
-> >> hard to have the mem_avoid logic walk additional areas.
-> >
-> > Great, To walk through the list just like the function parse_setup_data in
-> > arch/x86/kernel/setup.c
+Hi Geroge,
 
-One problem for me is that I am not sure how to read the setup_data memory
-and iterate it, I think early_ioremap is not available that early. BTW the
-setup_data region could be above 4G.
+On 05/08/2014 11:35 AM, George Cherian wrote:
+> -static inline void musb_platform_reset(struct musb *musb)
+> +static inline int  musb_platform_reset(struct musb *musb)
+>  {
+> -	if (musb->ops->reset)
+> -		musb->ops->reset(musb);
+> +	if (!musb->ops->reset)
+> +		return -EINVAL;
+> +
+> +	return musb->ops->reset(musb);
+>  }
+>  
+>  static inline int musb_platform_get_vbus_status(struct musb *musb)
+> diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
+> index 74c4193..8438200 100644
+> --- a/drivers/usb/musb/musb_dsps.c
+> +++ b/drivers/usb/musb/musb_dsps.c
+> @@ -536,7 +536,7 @@ static int dsps_musb_set_mode(struct musb *musb, u8 mode)
+>  	return 0;
+>  }
+>  
+> -static void dsps_musb_reset(struct musb *musb)
+> +static int dsps_musb_reset(struct musb *musb)
+>  {
+>  	struct device *dev = musb->controller;
+>  	struct dsps_glue *glue = dev_get_drvdata(dev->parent);
+> @@ -548,6 +548,7 @@ static void dsps_musb_reset(struct musb *musb)
+>  	usleep_range(100, 200);
+>  	usb_phy_init(musb->xceiv);
+>  
+> +	return 1;
 
-Appreciate for any hints.
+Could we follow the general kernel rule here and return 0 for success,
+and < 0 on failure?
 
-Thanks
-Dave
+
+
+Thanks,
+Daniel
+
