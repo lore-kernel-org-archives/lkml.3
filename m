@@ -1,114 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496AbaEHTH0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 15:07:26 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:53009 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755192AbaEHTHX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 15:07:23 -0400
-X-Sasl-enc: jMjeWWEBtfx6SyLHZh0Y/Z4W/jOaHxCUI5PaWBfSPn5z 1399576041
-Date: Thu, 8 May 2014 21:07:12 +0200
-From: Greg KH <greg@kroah.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH net-next] Add support for netvsc build without
- CONFIG_SYSFS flag
-Message-ID: <20140508190712.GB6766@kroah.com>
-References: <1399502704-18495-1-git-send-email-haiyangz@microsoft.com>
- <20140508091304.GB24820@kroah.com>
- <67b9b573b20f4cc2b6fe75fe84ee48e1@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+	id S1755070AbaEHTMK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 15:12:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35658 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753567AbaEHTMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 15:12:08 -0400
+Date: Thu, 8 May 2014 21:11:40 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/6] x86/traps: cleanup DO_ERROR*() to prepare for uprobes
+	fixes
+Message-ID: <20140508191140.GA16892@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <67b9b573b20f4cc2b6fe75fe84ee48e1@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 03:13:19PM +0000, Haiyang Zhang wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Greg KH [mailto:greg@kroah.com]
-> > Sent: Thursday, May 8, 2014 5:13 AM
-> > To: Haiyang Zhang
-> > Cc: davem@davemloft.net; netdev@vger.kernel.org; olaf@aepfle.de;
-> > jasowang@redhat.com; driverdev-devel@linuxdriverproject.org; linux-
-> > kernel@vger.kernel.org
-> > Subject: Re: [PATCH net-next] Add support for netvsc build without
-> > CONFIG_SYSFS flag
-> > 
-> > On Wed, May 07, 2014 at 03:45:04PM -0700, Haiyang Zhang wrote:
-> > > This change ensures the driver can be built successfully without the
-> > > CONFIG_SYSFS flag.
-> > > MS-TFS: 182270
-> > >
-> > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > > Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > ---
-> > >  drivers/net/hyperv/hyperv_net.h   |    2 ++
-> > >  drivers/net/hyperv/netvsc_drv.c   |   12 +++++++++++-
-> > >  drivers/net/hyperv/rndis_filter.c |    4 ++--
-> > >  3 files changed, 15 insertions(+), 3 deletions(-)
-> > >
-> > > diff --git a/drivers/net/hyperv/hyperv_net.h
-> > > b/drivers/net/hyperv/hyperv_net.h index 4b7df5a..23b96bc 100644
-> > > --- a/drivers/net/hyperv/hyperv_net.h
-> > > +++ b/drivers/net/hyperv/hyperv_net.h
-> > > @@ -87,6 +87,8 @@ struct ndis_recv_scale_cap { /*
-> > > NDIS_RECEIVE_SCALE_CAPABILITIES */  #define HASH_KEYLEN
-> > > NDIS_RSS_HASH_SECRET_KEY_MAX_SIZE_REVISION_2
-> > >  extern u8 netvsc_hash_key[];
-> > >
-> > > +extern unsigned int netvsc_num_queue;
-> > > +
-> > >  struct ndis_recv_scale_param { /* NDIS_RECEIVE_SCALE_PARAMETERS */
-> > >  	struct ndis_obj_header hdr;
-> > >
-> > > diff --git a/drivers/net/hyperv/netvsc_drv.c
-> > > b/drivers/net/hyperv/netvsc_drv.c index 939e3af..07896f3 100644
-> > > --- a/drivers/net/hyperv/netvsc_drv.c
-> > > +++ b/drivers/net/hyperv/netvsc_drv.c
-> > > @@ -52,6 +52,8 @@ static int ring_size = 128;  module_param(ring_size,
-> > > int, S_IRUGO);  MODULE_PARM_DESC(ring_size, "Ring buffer size (# of
-> > > pages)");
-> > >
-> > > +unsigned int netvsc_num_queue = 1;
-> > > +
-> > >  static void do_set_multicast(struct work_struct *w)  {
-> > >  	struct net_device_context *ndevctx = @@ -639,9 +641,11 @@ int
-> > > netvsc_recv_callback(struct hv_device *device_obj,
-> > >  		__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q),
-> > >  				       packet->vlan_tci);
-> > >
-> > > +#ifdef CONFIG_SYSFS
-> > >  	skb_record_rx_queue(skb, packet->channel->
-> > >  			    offermsg.offer.sub_channel_index %
-> > >  			    net->real_num_rx_queues);
-> > > +#endif
-> > 
-> > Why is this a sysfs-only function?  It should have nothing to do with sysfs, right?
-> > So why would the driver care?
-> 
-> Without CONFIG_SYSFS the multi-receive queues are not allocated, see below, and 
-> the variable real_num_rx_queues is not defined, so we skip this function.
-> 
-> In alloc_netdev_mqs(), file "net/core/dev.c":
-> #ifdef CONFIG_SYSFS
->         dev->num_rx_queues = rxqs;
->         dev->real_num_rx_queues = rxqs;
->         if (netif_alloc_rx_queues(dev))
->                 goto free_all;
-> #endif
+Hello.
 
-Then you need to structure your driver better :)
+On 05/06, Oleg Nesterov wrote:
+>
+> Well, actually we are not 100% fine because si_addr can be wrong. But this is
+> not invalid_op-specific, we need to fix this anyway and the fix is simple.
+>
+> I do not want to discuss this now, but I am going to make another series later
+> which adds something like uprobe_instruction_pointer(regs). It can (should) be
+> used by DO_ERROR_INFO() (perhaps by something else, not sure about math_error())
 
-greg k-h
+So we basically need a very simple fix,
+
+	- DO_ERROR_INFO(..., regs->ip)
+	+ DO_ERROR_INFO(..., uprobe_get_trap_addr(regs))
+
+but it is not easy to change these define's, this series tries to cleanup and
+simplify this code first.
+
+Note: initially I was going to send more changes. For example, after this series
+we can convert math_error() into the "normal" DO_ERROR() user, and most probably
+we can do the same with do_general_protection().
+
+But let me send the initial changes first for review. If they pass the review
+and if nobody objects, I'd like to route them along with the pending uprobes
+fixes.
+
+Oleg.
+
+ arch/x86/include/asm/traps.h |    1 -
+ arch/x86/kernel/traps.c      |  107 +++++++++++++++++++++++------------------
+ 2 files changed, 60 insertions(+), 48 deletions(-)
+
