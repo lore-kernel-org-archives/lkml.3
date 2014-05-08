@@ -1,76 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514AbaEHMlb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 08:41:31 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:50474 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551AbaEHMla (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 08:41:30 -0400
-Date: Thu, 8 May 2014 14:41:21 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v1 03/11] perf: Allow for multiple ring buffers per event
-Message-ID: <20140508124121.GU11096@twins.programming.kicks-ass.net>
-References: <1391683834-29868-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1391683834-29868-4-git-send-email-alexander.shishkin@linux.intel.com>
- <20140507152640.GR30445@twins.programming.kicks-ass.net>
- <87wqdwzbxy.fsf@ashishki-desk.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wbs6g7essDTrqL3S"
-Content-Disposition: inline
-In-Reply-To: <87wqdwzbxy.fsf@ashishki-desk.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1753745AbaEHMll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 08:41:41 -0400
+Received: from mga03.intel.com ([143.182.124.21]:51835 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751641AbaEHMlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 08:41:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1010,1389772800"; 
+   d="scan'208";a="429429585"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
+        mingo@kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH 1/2] mm: mark remap_file_pages() syscall as deprecated
+Date: Thu,  8 May 2014 15:41:27 +0300
+Message-Id: <1399552888-11024-2-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <1399552888-11024-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1399552888-11024-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The remap_file_pages() system call is used to create a nonlinear mapping,
+that is, a mapping in which the pages of the file are mapped into a
+nonsequential order in memory. The advantage of using remap_file_pages()
+over using repeated calls to mmap(2) is that the former approach does not
+require the kernel to create additional VMA (Virtual Memory Area) data
+structures.
 
---wbs6g7essDTrqL3S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Supporting of nonlinear mapping requires significant amount of non-trivial
+code in kernel virtual memory subsystem including hot paths. Also to get
+nonlinear mapping work kernel need a way to distinguish normal page table
+entries from entries with file offset (pte_file). Kernel reserves flag in
+PTE for this purpose. PTE flags are scarce resource especially on some CPU
+architectures. It would be nice to free up the flag for other usage.
 
-On Thu, May 08, 2014 at 03:34:17PM +0300, Alexander Shishkin wrote:
-> Peter Zijlstra <peterz@infradead.org> writes:
->=20
-> > So the aux_head/tail values should also be in the file space and not
-> > start at 0 again, similar for the offsets in the AUX record.
->=20
-> Thinking some more about it: if we keep aux_{offset,size} in userpg,
-> then it would make sense to have aux_{head,tail} run from 0 to infinity
-> similar to data_{head,tail}, especially considering that neither data_*
-> nor aux_* pointers are file offsets anyway.
+Fortunately, there are not many users of remap_file_pages() in the wild.
+It's only known that one enterprise RDBMS implementation uses the syscall
+on 32-bit systems to map files bigger than can linearly fit into 32-bit
+virtual address space. This use-case is not critical anymore since 64-bit
+systems are widely available.
 
-Yeah, this might make it easier. So then the rule is *_offset +
-*_{head,tail} is the actual file offset into the buffer.
+The plan is to deprecate the syscall and replace it with an emulation.
+The emulation will create new VMAs instead of nonlinear mappings. It's
+going to work slower for rare users of remap_file_pages() but ABI is
+preserved.
 
---wbs6g7essDTrqL3S
-Content-Type: application/pgp-signature
+One side effect of emulation (apart from performance) is that user can hit
+vm.max_map_count limit more easily due to additional VMAs. See comment for
+DEFAULT_MAX_MAP_COUNT for more details on the limit.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ Documentation/vm/remap_file_pages.txt | 28 ++++++++++++++++++++++++++++
+ mm/fremap.c                           |  4 ++++
+ 2 files changed, 32 insertions(+)
+ create mode 100644 Documentation/vm/remap_file_pages.txt
 
-iQIcBAEBAgAGBQJTa3txAAoJEHZH4aRLwOS6BhIQAIGSJNkr6YT4ejyLpLUYFPKC
-iXp10WJOFZpaEJmf8oe4/Q+Tf0pHZ+nxX2QZXOGTYWtwuhwyJI66jnTM2awfGTdZ
-YSQ2/38B9UuF71SCvy73vBPVcR2ai/00zg9w1VoDzhDpuUuKM666u6LLRE8TsBNW
-V8zwB7InsYIV6fK33hzJOqm2b19+vIJwZBrBuP1W6Tj+7thp8jj+FD+0jHr2njYf
-leYTtLijKkSIyWr5x6ntOouAsOh3/rnK66ntSZDVzOBilhIalRQUimsuGRLWSSWt
-SI7Up+rCAPwI+1/TC8ajbfFMT1Bb2s+voZaCktw7qiDZY+4aEwcLCg0extK00OGL
-sVbIjFVMSrVJXVg5RB8MUEGskX7tU/V/Hc5vecp4/DhRSDqQ3B3cq4TReJdQ5ZtZ
-owfr9dneyUrHLYoZ8zVGPb2lFdVVqPVQHpm0tZnOg7DNdaYaME/7/K90dKyorbAo
-BpWTskBcNKl3r2n8dOZWO60NbBwvJzmC7Ko9GtU5uawGRSahaOiO/v/FNoVdXeNJ
-mJqKy+g3mcij8ZhI554o9orAF8k/3RBjejJAC8n+Z8BdgibhgYF9ibQRfq1BiEYp
-GXdsZc9ukENzqkPjaK1x3vBa2VViufWUR5ERPnwkHtilLLBH5rcXnrWFwg5XTnKr
-53CxAjp0ruI8ithiWBkY
-=RDCy
------END PGP SIGNATURE-----
+diff --git a/Documentation/vm/remap_file_pages.txt b/Documentation/vm/remap_file_pages.txt
+new file mode 100644
+index 000000000000..560e4363a55d
+--- /dev/null
++++ b/Documentation/vm/remap_file_pages.txt
+@@ -0,0 +1,28 @@
++The remap_file_pages() system call is used to create a nonlinear mapping,
++that is, a mapping in which the pages of the file are mapped into a
++nonsequential order in memory. The advantage of using remap_file_pages()
++over using repeated calls to mmap(2) is that the former approach does not
++require the kernel to create additional VMA (Virtual Memory Area) data
++structures.
++
++Supporting of nonlinear mapping requires significant amount of non-trivial
++code in kernel virtual memory subsystem including hot paths. Also to get
++nonlinear mapping work kernel need a way to distinguish normal page table
++entries from entries with file offset (pte_file). Kernel reserves flag in
++PTE for this purpose. PTE flags are scarce resource especially on some CPU
++architectures. It would be nice to free up the flag for other usage.
++
++Fortunately, there are not many users of remap_file_pages() in the wild.
++It's only known that one enterprise RDBMS implementation uses the syscall
++on 32-bit systems to map files bigger than can linearly fit into 32-bit
++virtual address space. This use-case is not critical anymore since 64-bit
++systems are widely available.
++
++The plan is to deprecate the syscall and replace it with an emulation.
++The emulation will create new VMAs instead of nonlinear mappings. It's
++going to work slower for rare users of remap_file_pages() but ABI is
++preserved.
++
++One side effect of emulation (apart from performance) is that user can hit
++vm.max_map_count limit more easily due to additional VMAs. See comment for
++DEFAULT_MAX_MAP_COUNT for more details on the limit.
+diff --git a/mm/fremap.c b/mm/fremap.c
+index 34feba60a17e..12c3bb63b7f9 100644
+--- a/mm/fremap.c
++++ b/mm/fremap.c
+@@ -152,6 +152,10 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
+ 	int has_write_lock = 0;
+ 	vm_flags_t vm_flags = 0;
+ 
++	pr_warn_once("%s (%d) uses depricated remap_file_pages() syscall. "
++			"See Documentation/vm/remap_file_pages.txt.\n",
++			current->comm, current->pid);
++
+ 	if (prot)
+ 		return err;
+ 	/*
+-- 
+2.0.0.rc2
 
---wbs6g7essDTrqL3S--
