@@ -1,154 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143AbaEHNI0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 09:08:26 -0400
-Received: from mail.efficios.com ([78.47.125.74]:45618 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751169AbaEHNIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 09:08:25 -0400
-Date: Thu, 8 May 2014 13:08:25 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
-        Oleg Nesterov <oleg@redhat.com>, Dave Jones <davej@redhat.com>
-Message-ID: <55466295.13096.1399554505453.JavaMail.zimbra@efficios.com>
-In-Reply-To: <20140508090520.2b225a94@gandalf.local.home>
-References: <1399549669-25465-1-git-send-email-mathieu.desnoyers@efficios.com> <20140508090520.2b225a94@gandalf.local.home>
-Subject: Re: [PATCH] Fix: tracepoint: use after rcu free
+	id S1753845AbaEHNKy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 09:10:54 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:62498 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337AbaEHNKw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 09:10:52 -0400
+Message-ID: <536B826B.7010908@cogentembedded.com>
+Date: Thu, 08 May 2014 17:11:07 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
+        kishon@ti.com, hdegoede@redhat.com,
+        Boris Brezillon <boris@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com
+Subject: Re: [PATCH 5/7] usb: ohci-platform: Enable optional use of reset
+ controller
+References: <1399434623-20383-1-git-send-email-maxime.ripard@free-electrons.com> <1399434623-20383-6-git-send-email-maxime.ripard@free-electrons.com> <536A5EBF.10309@cogentembedded.com> <20140507220317.GD7047@lukather>
+In-Reply-To: <20140507220317.GD7047@lukather>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF29 (Linux)/8.0.5_GA_5839)
-Thread-Topic: tracepoint: use after rcu free
-Thread-Index: 67mE9L/USgNFrDujZsUB0d92vC9KVA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Steven Rostedt" <rostedt@goodmis.org>
-> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> Cc: linux-kernel@vger.kernel.org, "Sasha Levin" <sasha.levin@oracle.com>, "Oleg Nesterov" <oleg@redhat.com>, "Dave
-> Jones" <davej@redhat.com>
-> Sent: Thursday, May 8, 2014 9:05:20 AM
-> Subject: Re: [PATCH] Fix: tracepoint: use after rcu free
-> 
-> On Thu,  8 May 2014 07:47:49 -0400
-> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> 
-> > commit de7b2973903c6cc50b31ee5682a69b2219b9919d
-> > Author: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > Date:   Tue Apr 8 17:26:21 2014 -0400
-> 
-> Hi Mathieu,
-> 
-> Thanks for the quick fix.
-> 
-> 
-> > 
-> >     tracepoint: Use struct pointer instead of name hash for reg/unreg
-> >     tracepoints
-> > 
-> > introduces a use after free by calling release_probes on the old struct
-> 
-> Note when talking about commits already in mainline, use the first 12
-> characters of the commit sha1 followed by the subject. Like so:
-> 
->  Commit de7b2973903c "tracepoint: Use struct pointer instead of name
->  hash for reg/unreg tracepoints" introduces a use after free ...
+Hello.
 
-OK, will do.
+On 05/08/2014 02:03 AM, Maxime Ripard wrote:
 
-> 
-> 
-> > tracepoint array before the newly allocated array is published with
-> > rcu_assign_pointer. There is a race window where tracepoints (RCU
-> > readers) can perform a "use-after-grace-period-after-free", which shows
-> > up as a GPF in stress-tests.
-> > 
-> > Link: https://lkml.org/lkml/2014/5/6/738
-> 
-> Also, Link tags need to point to lkml.kernel.org.
-> 
-> Link: http://lkml.kernel.org/r/53698021.5020108@oracle.com
-> 
-> Which is "lkml.kernel.org/r/" followed by the Message-ID.
+>>> The OHCI controllers used in the Allwinner A31 are asserted in reset using a
 
-OK
+>>     s/asserted/powered up/?
 
-> 
-> We can also include a (even though it's redundant)
-> 
->  Fixes: de7b2973903c "tracepoint: Use struct pointer instead of name hash for
->  reg/unreg tracepoints"
+> No. There's an external reset controller that maintains these devices
+> into reset. It's not only a power on thing, it can also be put back
+> into reset later in the life of the system.
 
-Thanks for the pointers, I'll keep those in mind for my next patches.
+    However, the expression that "the OHCI controllers are asserted in reset" 
+still seems dubious to me...
 
-> 
-> I'll update the change log to reflect my comments and then pull this
-> into my urgent branch and start testing it.
+> Maxime
 
-Thanks!
+WBR, Sergei
 
-Mathieu
-
-> 
-> Thanks,
-> 
-> -- Steve
-> 
-> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > CC: Steven Rostedt <rostedt@goodmis.org>
-> > CC: Sasha Levin <sasha.levin@oracle.com>
-> > CC: Oleg Nesterov <oleg@redhat.com>
-> > CC: Dave Jones <davej@redhat.com>
-> > ---
-> >  kernel/tracepoint.c |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-> > index ac5b23c..6620e58 100644
-> > --- a/kernel/tracepoint.c
-> > +++ b/kernel/tracepoint.c
-> > @@ -188,7 +188,6 @@ static int tracepoint_add_func(struct tracepoint *tp,
-> >  		WARN_ON_ONCE(1);
-> >  		return PTR_ERR(old);
-> >  	}
-> > -	release_probes(old);
-> >  
-> >  	/*
-> >  	 * rcu_assign_pointer has a smp_wmb() which makes sure that the new
-> > @@ -200,6 +199,7 @@ static int tracepoint_add_func(struct tracepoint *tp,
-> >  	rcu_assign_pointer(tp->funcs, tp_funcs);
-> >  	if (!static_key_enabled(&tp->key))
-> >  		static_key_slow_inc(&tp->key);
-> > +	release_probes(old);
-> >  	return 0;
-> >  }
-> >  
-> > @@ -221,7 +221,6 @@ static int tracepoint_remove_func(struct tracepoint
-> > *tp,
-> >  		WARN_ON_ONCE(1);
-> >  		return PTR_ERR(old);
-> >  	}
-> > -	release_probes(old);
-> >  
-> >  	if (!tp_funcs) {
-> >  		/* Removed last function */
-> > @@ -232,6 +231,7 @@ static int tracepoint_remove_func(struct tracepoint
-> > *tp,
-> >  			static_key_slow_dec(&tp->key);
-> >  	}
-> >  	rcu_assign_pointer(tp->funcs, tp_funcs);
-> > +	release_probes(old);
-> >  	return 0;
-> >  }
-> >  
-> 
-> 
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
