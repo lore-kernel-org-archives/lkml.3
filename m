@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988AbaEHMyk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 08:54:40 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55103 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753205AbaEHMyj (ORCPT
+	id S1754144AbaEHMzJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 08:55:09 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:45619 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753294AbaEHMzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 08:54:39 -0400
-Date: Thu, 8 May 2014 14:54:52 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Anvin <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 29/32] genirq: Remove irq_reserve_irq[s]
-In-Reply-To: <20140508121443.4E71CC40D85@trevor.secretlab.ca>
-Message-ID: <alpine.DEB.2.02.1405081453560.6261@ionos.tec.linutronix.de>
-References: <20140507153622.703412101@linutronix.de> <20140507154340.302183048@linutronix.de> <20140508121443.4E71CC40D85@trevor.secretlab.ca>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 8 May 2014 08:55:07 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <4314054.Zr5Mecf9vm@wuerfel>
+References: <1399499298-8830-1-git-send-email-robherring2@gmail.com>
+	<1399499298-8830-4-git-send-email-robherring2@gmail.com>
+	<4314054.Zr5Mecf9vm@wuerfel>
+Date: Thu, 8 May 2014 07:55:06 -0500
+Message-ID: <CAL_JsqJEW_Xrfi7OiF6caHVup1Y6-8SvyOJawov8o3oiYiFvXQ@mail.gmail.com>
+Subject: Re: [PATCH 3/4] of/platform: fix device naming for non-translatable addresses
+From: Rob Herring <robherring2@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn@kryo.se>, Frank Rowand <frowand.list@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 May 2014, Grant Likely wrote:
+On Thu, May 8, 2014 at 5:41 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 07 May 2014 16:48:17 Rob Herring wrote:
+>> From: Rob Herring <robh@kernel.org>
+>>
+>> Using non-translatable addresses in platform device names is wrong
+>> because they may not be globally unique. Just use the default naming with
+>> a global index if the address cannot be translated instead.
+>>
+>> of_can_translate_address has the same checks as of_translate_address, so
+>> we can remove it here as well.
+>
+> Have you checked that this doesn't break platforms using clkdev lookup
+> based on names with local addresses? It's quite possible that nobody
+> does that, but it would be good to have someone confirm it.
 
-> On Wed, 07 May 2014 15:44:21 -0000, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > No more users. And it's not going to come back. If you need
-> > hotplugable irq chips, use irq domains.
-> > 
-> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> 
-> Acked-by: Grant Likely <grant.likely@secretlab.ca>
-> 
-> The ironic thing is that irq_domain may end up bringing this function
-> back in some form as an optimization for irq_domains that need a
-> contiguous range, but don't want to allocate all the irq_descs
-> immediately. But if that happens it will be a very private API and it
-> doesn't nullify removing the function now.
+I had not, but now I have. There don't appear to be any cases of that.
 
-Right. We can deal with it when the need arises, but that's a
-completely core internal issue then which is not going to be usable
-outside of kernel/irq.
-
-Thanks,
-
-	tglx
+Rob
