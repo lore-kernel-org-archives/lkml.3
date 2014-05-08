@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417AbaEHOAs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 10:00:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43812 "EHLO
+	id S1754783AbaEHOE7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 10:04:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43880 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348AbaEHOAo (ORCPT
+	with ESMTP id S1753280AbaEHOAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 10:00:44 -0400
-Message-Id: <20140508135852.049922584@infradead.org>
+	Thu, 8 May 2014 10:00:47 -0400
+Message-Id: <20140508135852.713980957@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 08 May 2014 15:58:46 +0200
+Date: Thu, 08 May 2014 15:58:56 +0200
 From: Peter Zijlstra <peterz@infradead.org>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, mingo@kernel.org,
         will.deacon@arm.com, paulmck@linux.vnet.ibm.com,
         Peter Zijlstra <peterz@infradead.org>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Subject: [PATCH 06/20] arch,avr32: Fold atomic_ops
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Paul Mackerras <paulus@samba.org>
+Subject: [PATCH 16/20] arch,powerpc: Fold atomic_ops
 References: <20140508135840.956784204@infradead.org>
-Content-Disposition: inline; filename=peterz-avr32-atomic_cleanup.patch
+Content-Disposition: inline; filename=peterz-powerpc-atomic_cleanup.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,131 +29,257 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Many of the atomic op implementations are the same except for one
 instruction; fold the lot into a few CPP macros and reduce LoC.
 
-This also prepares for easy addition of new ops.
+Requires asm_op because PPC asm is weird :-)
 
-Requires the asm_op because of eor.
-
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/avr32/include/asm/atomic.h |   96 ++++++++++++++++++----------------------
- 1 file changed, 44 insertions(+), 52 deletions(-)
+ arch/powerpc/include/asm/atomic.h |  216 +++++++++++++++-----------------------
+ 1 file changed, 86 insertions(+), 130 deletions(-)
 
---- a/arch/avr32/include/asm/atomic.h
-+++ b/arch/avr32/include/asm/atomic.h
-@@ -22,58 +22,52 @@
- #define atomic_read(v)		(*(volatile int *)&(v)->counter)
- #define atomic_set(v, i)	(((v)->counter) = i)
+Index: linux-2.6/arch/powerpc/include/asm/atomic.h
+===================================================================
+--- linux-2.6.orig/arch/powerpc/include/asm/atomic.h
++++ linux-2.6/arch/powerpc/include/asm/atomic.h
+@@ -26,76 +26,53 @@ static __inline__ void atomic_set(atomic
+ 	__asm__ __volatile__("stw%U0%X0 %1,%0" : "=m"(v->counter) : "r"(i));
+ }
  
--/*
-- * atomic_sub_return - subtract the atomic variable
-- * @i: integer value to subtract
-- * @v: pointer of type atomic_t
-- *
-- * Atomically subtracts @i from @v. Returns the resulting value.
-- */
--static inline int atomic_sub_return(int i, atomic_t *v)
+-static __inline__ void atomic_add(int a, atomic_t *v)
 -{
--	int result;
+-	int t;
 -
--	asm volatile(
--		"/* atomic_sub_return */\n"
--		"1:	ssrf	5\n"
--		"	ld.w	%0, %2\n"
--		"	sub	%0, %3\n"
--		"	stcond	%1, %0\n"
--		"	brne	1b"
--		: "=&r"(result), "=o"(v->counter)
--		: "m"(v->counter), "rKs21"(i)
--		: "cc");
+-	__asm__ __volatile__(
+-"1:	lwarx	%0,0,%3		# atomic_add\n\
+-	add	%0,%2,%0\n"
+-	PPC405_ERR77(0,%3)
+-"	stwcx.	%0,0,%3 \n\
+-	bne-	1b"
+-	: "=&r" (t), "+m" (v->counter)
+-	: "r" (a), "r" (&v->counter)
+-	: "cc");
+-}
 -
--	return result;
+-static __inline__ int atomic_add_return(int a, atomic_t *v)
+-{
+-	int t;
+-
+-	__asm__ __volatile__(
+-	PPC_ATOMIC_ENTRY_BARRIER
+-"1:	lwarx	%0,0,%2		# atomic_add_return\n\
+-	add	%0,%1,%0\n"
+-	PPC405_ERR77(0,%2)
+-"	stwcx.	%0,0,%2 \n\
+-	bne-	1b"
+-	PPC_ATOMIC_EXIT_BARRIER
+-	: "=&r" (t)
+-	: "r" (a), "r" (&v->counter)
+-	: "cc", "memory");
+-
+-	return t;
+-}
 +#define ATOMIC_OP(op, asm_op)						\
-+static inline void atomic_##op(int i, atomic_t *v)			\
++static __inline__ void atomic_##op(int a, atomic_t *v)			\
 +{									\
-+	int result;							\
++	int t;								\
 +									\
-+	asm volatile(							\
-+		"/* atomic_" #op " */\n"				\
-+		"1:	ssrf	5\n"					\
-+		"	ld.w	%0, %2\n"				\
-+		"	" #asm_op "	%0, %3\n"			\
-+		"	stcond	%1, %0\n"				\
-+		"	brne	1b"					\
-+		: "=&r"(result), "=o"(v->counter)			\
-+		: "m"(v->counter), "rKs21"(i)				\
-+		: "cc");						\
++	__asm__ __volatile__(						\
++"1:	lwarx	%0,0,%3		# atomic_" #op "\n"			\
++	#asm_op " %0,%2,%0\n"						\
++	PPC405_ERR77(0,%3)						\
++"	stwcx.	%0,0,%3 \n"						\
++"	bne-	1b\n"							\
++	: "=&r" (t), "+m" (v->counter)					\
++	: "r" (a), "r" (&v->counter)					\
++	: "cc");							\
 +}									\
 +
 +#define ATOMIC_OP_RETURN(op, asm_op)					\
-+static inline int atomic_##op##_return(int i, atomic_t *v)		\
++static __inline__ int atomic_##op##_return(int a, atomic_t *v)		\
 +{									\
-+	int result;							\
++	int t;								\
 +									\
-+	asm volatile(							\
-+		"/* atomic_" #op "_return */\n"				\
-+		"1:	ssrf	5\n"					\
-+		"	ld.w	%0, %2\n"				\
-+		"	" #asm_op "	%0, %3\n"			\
-+		"	stcond	%1, %0\n"				\
-+		"	brne	1b"					\
-+		: "=&r"(result), "=o"(v->counter)			\
-+		: "m"(v->counter), "rKs21"(i)				\
-+		: "cc");						\
++	__asm__ __volatile__(						\
++	PPC_ATOMIC_ENTRY_BARRIER					\
++"1:	lwarx	%0,0,%2		# atomic_" #op "_return\n"		\
++	#asm_op " %0,%1,%0\n"						\
++	PPC405_ERR77(0,%2)						\
++"	stwcx.	%0,0,%2 \n"						\
++"	bne-	1b\n"							\
++	PPC_ATOMIC_EXIT_BARRIER						\
++	: "=&r" (t)							\
++	: "r" (a), "r" (&v->counter)					\
++	: "cc", "memory");						\
 +									\
-+	return result;							\
- }
- 
--/*
-- * atomic_add_return - add integer to atomic variable
-- * @i: integer value to add
-- * @v: pointer of type atomic_t
-- *
-- * Atomically adds @i to @v. Returns the resulting value.
-- */
--static inline int atomic_add_return(int i, atomic_t *v)
--{
--	int result;
--
--	if (__builtin_constant_p(i) && (i >= -1048575) && (i <= 1048576))
--		result = atomic_sub_return(-i, v);
--	else
--		asm volatile(
--			"/* atomic_add_return */\n"
--			"1:	ssrf	5\n"
--			"	ld.w	%0, %1\n"
--			"	add	%0, %3\n"
--			"	stcond	%2, %0\n"
--			"	brne	1b"
--			: "=&r"(result), "=o"(v->counter)
--			: "m"(v->counter), "r"(i)
--			: "cc", "memory");
--
--	return result;
--}
-+#define ATOMIC_OPS(op, asm_op)						\
-+	ATOMIC_OP(op, asm_op)						\
-+	ATOMIC_OP_RETURN(op, asm_op)
++	return t;							\
++}
++
++#define ATOMIC_OPS(op, asm_op) ATOMIC_OP(op, asm_op) ATOMIC_OP_RETURN(op, asm_op)
 +
 +ATOMIC_OPS(add, add)
-+ATOMIC_OPS(sub, sub)
++ATOMIC_OPS(sub, subf)
 +
 +#undef ATOMIC_OPS
 +#undef ATOMIC_OP_RETURN
 +#undef ATOMIC_OP
  
- /*
-  * atomic_sub_unless - sub unless the number is a given value
-@@ -168,8 +162,6 @@ static inline int atomic_sub_if_positive
- #define atomic_xchg(v, new)	(xchg(&((v)->counter), new))
- #define atomic_cmpxchg(v, o, n)	(cmpxchg(&((v)->counter), (o), (n)))
+ #define atomic_add_negative(a, v)	(atomic_add_return((a), (v)) < 0)
  
--#define atomic_sub(i, v)	(void)atomic_sub_return(i, v)
--#define atomic_add(i, v)	(void)atomic_add_return(i, v)
- #define atomic_dec(v)		atomic_sub(1, (v))
- #define atomic_inc(v)		atomic_add(1, (v))
+-static __inline__ void atomic_sub(int a, atomic_t *v)
+-{
+-	int t;
+-
+-	__asm__ __volatile__(
+-"1:	lwarx	%0,0,%3		# atomic_sub\n\
+-	subf	%0,%2,%0\n"
+-	PPC405_ERR77(0,%3)
+-"	stwcx.	%0,0,%3 \n\
+-	bne-	1b"
+-	: "=&r" (t), "+m" (v->counter)
+-	: "r" (a), "r" (&v->counter)
+-	: "cc");
+-}
+-
+-static __inline__ int atomic_sub_return(int a, atomic_t *v)
+-{
+-	int t;
+-
+-	__asm__ __volatile__(
+-	PPC_ATOMIC_ENTRY_BARRIER
+-"1:	lwarx	%0,0,%2		# atomic_sub_return\n\
+-	subf	%0,%1,%0\n"
+-	PPC405_ERR77(0,%2)
+-"	stwcx.	%0,0,%2 \n\
+-	bne-	1b"
+-	PPC_ATOMIC_EXIT_BARRIER
+-	: "=&r" (t)
+-	: "r" (a), "r" (&v->counter)
+-	: "cc", "memory");
+-
+-	return t;
+-}
+-
+ static __inline__ void atomic_inc(atomic_t *v)
+ {
+ 	int t;
+@@ -289,72 +266,51 @@ static __inline__ void atomic64_set(atom
+ 	__asm__ __volatile__("std%U0%X0 %1,%0" : "=m"(v->counter) : "r"(i));
+ }
  
+-static __inline__ void atomic64_add(long a, atomic64_t *v)
+-{
+-	long t;
+-
+-	__asm__ __volatile__(
+-"1:	ldarx	%0,0,%3		# atomic64_add\n\
+-	add	%0,%2,%0\n\
+-	stdcx.	%0,0,%3 \n\
+-	bne-	1b"
+-	: "=&r" (t), "+m" (v->counter)
+-	: "r" (a), "r" (&v->counter)
+-	: "cc");
+-}
+-
+-static __inline__ long atomic64_add_return(long a, atomic64_t *v)
+-{
+-	long t;
+-
+-	__asm__ __volatile__(
+-	PPC_ATOMIC_ENTRY_BARRIER
+-"1:	ldarx	%0,0,%2		# atomic64_add_return\n\
+-	add	%0,%1,%0\n\
+-	stdcx.	%0,0,%2 \n\
+-	bne-	1b"
+-	PPC_ATOMIC_EXIT_BARRIER
+-	: "=&r" (t)
+-	: "r" (a), "r" (&v->counter)
+-	: "cc", "memory");
+-
+-	return t;
+-}
++#define ATOMIC64_OP(op, asm_op)						\
++static __inline__ void atomic64_##op(long a, atomic64_t *v)		\
++{									\
++	long t;								\
++									\
++	__asm__ __volatile__(						\
++"1:	ldarx	%0,0,%3		# atomic64_" #op "\n"			\
++	#asm_op " %0,%2,%0\n"						\
++"	stdcx.	%0,0,%3 \n"						\
++"	bne-	1b\n"							\
++	: "=&r" (t), "+m" (v->counter)					\
++	: "r" (a), "r" (&v->counter)					\
++	: "cc");							\
++}									\
++
++#define ATOMIC64_OP_RETURN(op, asm_op)					\
++static __inline__ long atomic64_##op##_return(long a, atomic64_t *v)	\
++{									\
++	long t;								\
++									\
++	__asm__ __volatile__(						\
++	PPC_ATOMIC_ENTRY_BARRIER					\
++"1:	ldarx	%0,0,%2		# atomic64_" #op "_return\n"		\
++	#asm_op " %0,%1,%0\n"						\
++"	stdcx.	%0,0,%2 \n"						\
++"	bne-	1b\n"							\
++	PPC_ATOMIC_EXIT_BARRIER						\
++	: "=&r" (t)							\
++	: "r" (a), "r" (&v->counter)					\
++	: "cc", "memory");						\
++									\
++	return t;							\
++}
++
++#define ATOMIC64_OPS(op, asm_op) ATOMIC64_OP(op, asm_op) ATOMIC64_OP_RETURN(op, asm_op)
++
++ATOMIC64_OPS(add, add)
++ATOMIC64_OPS(add, subf)
++
++#undef ATOMIC64_OPS
++#undef ATOMIC64_OP_RETURN
++#undef ATOMIC64_OP
+ 
+ #define atomic64_add_negative(a, v)	(atomic64_add_return((a), (v)) < 0)
+ 
+-static __inline__ void atomic64_sub(long a, atomic64_t *v)
+-{
+-	long t;
+-
+-	__asm__ __volatile__(
+-"1:	ldarx	%0,0,%3		# atomic64_sub\n\
+-	subf	%0,%2,%0\n\
+-	stdcx.	%0,0,%3 \n\
+-	bne-	1b"
+-	: "=&r" (t), "+m" (v->counter)
+-	: "r" (a), "r" (&v->counter)
+-	: "cc");
+-}
+-
+-static __inline__ long atomic64_sub_return(long a, atomic64_t *v)
+-{
+-	long t;
+-
+-	__asm__ __volatile__(
+-	PPC_ATOMIC_ENTRY_BARRIER
+-"1:	ldarx	%0,0,%2		# atomic64_sub_return\n\
+-	subf	%0,%1,%0\n\
+-	stdcx.	%0,0,%2 \n\
+-	bne-	1b"
+-	PPC_ATOMIC_EXIT_BARRIER
+-	: "=&r" (t)
+-	: "r" (a), "r" (&v->counter)
+-	: "cc", "memory");
+-
+-	return t;
+-}
+-
+ static __inline__ void atomic64_inc(atomic64_t *v)
+ {
+ 	long t;
 
 
