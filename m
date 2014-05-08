@@ -1,95 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871AbaEHWLi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 18:11:38 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:47844 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755745AbaEHWLh (ORCPT
+	id S932090AbaEHWOJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 18:14:09 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:60917 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755753AbaEHWOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 18:11:37 -0400
-Message-ID: <536C010F.3060504@hurleysoftware.com>
-Date: Thu, 08 May 2014 18:11:27 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>
-CC: Vincent Donnefort <vdonnefort@gmail.com>,
-        Linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [3.15-rc3] BUG: null ptr dereference in ichx_gpio_request_regions()
-References: <536A339D.9030606@hurleysoftware.com>	<20140507140558.GA26294@ks3318809.kimsufi.com>	<536A4454.5020404@hurleysoftware.com> <CACRpkdZ_Wz2QLbdbXEL9CWy+=tcVwjVjVqQgYw7_dy-5FwxB9Q@mail.gmail.com>
-In-Reply-To: <CACRpkdZ_Wz2QLbdbXEL9CWy+=tcVwjVjVqQgYw7_dy-5FwxB9Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Thu, 8 May 2014 18:14:07 -0400
+Message-ID: <1399587244.2030.59.camel@j-VirtualBox>
+Subject: Re: [PATCH 2/2] sched: Fix next_balance logic in
+ rebalance_domains() and idle_balance()
+From: Jason Low <jason.low2@hp.com>
+To: Ingo Molnar <mingo@kernel.org>, jason.low2@hp.com
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org,
+        daniel.lezcano@linaro.org, alex.shi@linaro.org,
+        preeti@linux.vnet.ibm.com, efault@gmx.de, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com, aswin@hp.com
+Date: Thu, 08 May 2014 15:14:04 -0700
+In-Reply-To: <20140508173835.GB9838@gmail.com>
+References: <1398725155-7591-1-git-send-email-jason.low2@hp.com>
+	 <1398725155-7591-3-git-send-email-jason.low2@hp.com>
+	 <1399568364.2030.9.camel@j-VirtualBox> <20140508173835.GB9838@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2014 05:48 PM, Linus Walleij wrote:
-> On Wed, May 7, 2014 at 4:33 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
->> Hi Vincent,
->>
->> On 05/07/2014 10:05 AM, Vincent Donnefort wrote:
->>>
->>> Hello Peter,
->>
->>
->>>> This is almost certainly caused by the uninitialized regs ptr
->>>> in the ich6_desc struct (i3100_desc struct has the same problem)
->>>> introduced in this commit:
->>>>
->>>> commit bb62a35bd5d96e506af0ea8dd145480b9172a2a6
->>>> Author: Vincent Donnefort <vdonnefort@gmail.com>
->>>> Date:   Fri Feb 14 15:01:56 2014 +0100
->>>>
->>>>       gpio: ich: Add support for multiple register addresses
->>>>
->>>>       This patch introduces regs and reglen pointers which allow a chipset
->>>> to have
->>>>       register addresses differing from ICH ones.
->>>>
->>>>       Acked-by: Linus Walleij <linus.walleij@linaro.org>
->>>>       Signed-off-by: Vincent Donnefort <vdonnefort@gmail.com>
->>>>       Signed-off-by: Lee Jones <lee.jones@linaro.org>
->>>>
->>>
->>> Yes indeed, this must be linked to this thread
->>> https://lkml.org/lkml/2014/4/15/292
->>
->>
->> Thanks for the link.
->>
->> I searched through LKML but without the driver name or the offending
->> function
->> in the commit message I couldn't find it.
->>
->> Linus,
->>
->> What tree is this bug fix trapped in? I see it didn't make -rc4 either.
->
-> Since the last signoff is Lee I guess it's in the MFD tree?
+On Thu, 2014-05-08 at 19:38 +0200, Ingo Molnar wrote:
+> * Jason Low <jason.low2@hp.com> wrote:
+> 
+> > On Mon, 2014-04-28 at 15:45 -0700, Jason Low wrote:
+> > > Currently, in idle_balance(), we update rq->next_balance when we pull_tasks. 
+> > > However, it is also important to update this in the !pulled_tasks case too.
+> > > 
+> > > When the CPU is "busy" (the CPU isn't idle), rq->next_balance gets computed
+> > > using sd->busy_factor (so we increase the balance interval when the CPU is
+> > > busy). However, when the CPU goes idle, rq->next_balance could still be set
+> > > to a large value that was computed with the sd->busy_factor.
+> > > 
+> > > Thus, we need to also update rq->next_balance in idle_balance() in the cases
+> > > where !pulled_tasks too, so that rq->next_balance gets updated without taking
+> > > the busy_factor into account when the CPU is about to go idle.
+> > > 
+> > > This patch makes rq->next_balance get updated independently of whether or
+> > > not we pulled_task. Also, we add logic to ensure that we always traverse
+> > > at least 1 of the sched domains to get a proper next_balance value for
+> > > updating rq->next_balance.
+> > > 
+> > > Additionally, since load_balance() modifies the sd->balance_interval, we
+> > > need to re-obtain the sched domain's interval after the call to
+> > > load_balance() in rebalance_domains() before we update rq->next_balance.
+> > > 
+> > > This patch adds and uses 2 new helper functions, update_next_balance() and
+> > > get_sd_balance_interval() to update next_balance and obtain the sched
+> > > domain's balance_interval. 
+> > 
+> > 
+> > Hi Peter,
+> > 
+> > I noticed that patch 1 is in tip, but not this patch 2. I was wondering
+> > what the current status with this [PATCH 2/2] is at the moment.
+> 
+> It was crashing the bootup with the attached config, it gave the splat 
+> attached below. (ignore the line duplication, it's a serial logging 
+> artifact.)
 
-The commit above is the buggy commit. I don't have a commit id for
-the bug fix since I don't know what tree it's stuck in. Looking over
-Lee's tree, I don't see it.
+Hi Ingo, Peter,
 
-Below is your signoff on LKML of the fix.
+Were there NULL domains on the test system? If so, I think we can
+address the problem by doing update_next_balance() only if the below
+rcu_dereference_check_sched_domain() returns a non-null domain.
 
-On 04/22/2014 05:15 PM, Linus Walleij wrote:
- > On Tue, Apr 15, 2014 at 2:21 PM, Vincent Donnefort <vdonnefort@gmail.com> wrote:
- >
- >> From: Vincent Donnefort <vdonnefort@gmail.com>
- >>
- >> This patch fixes kernel NULL pointer BUG introduced by the following commit:
- >> b667cf488aa9476b0ab64acd91f2a96f188cfd21
- >> gpio: ich: Add support for multiple register addresses.
- >>
- >> Signed-off-by: Vincent Donnefort <vdonnefort@gmail.com>
- >
- > Patch applied for fixes with Eric's tested-by tag.
+@@ -6665,8 +6692,14 @@ static int idle_balance(struct rq *this_rq)
+>  	 */
+>  	this_rq->idle_stamp = rq_clock(this_rq);
+>  
+> -	if (this_rq->avg_idle < sysctl_sched_migration_cost)
+> +	if (this_rq->avg_idle < sysctl_sched_migration_cost) {
+> +		rcu_read_lock();
+> +		sd = rcu_dereference_check_sched_domain(this_rq->sd);
+> +		update_next_balance(sd, 0, &next_balance);
+> +		rcu_read_unlock();
+> +
+>  		goto out;
+> +	}
 
-Please expedite this fix as it has already missed -rc3 & -rc4.
 
-Regards,
-Peter Hurley
