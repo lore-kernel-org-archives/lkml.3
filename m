@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904AbaEHJf7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 05:35:59 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59670 "EHLO comal.ext.ti.com"
+	id S1753916AbaEHJge (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 05:36:34 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52933 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753822AbaEHJf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 05:35:57 -0400
+	id S1753771AbaEHJfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 05:35:54 -0400
 From: George Cherian <george.cherian@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-usb@vger.kernel.org>
 CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <rogerq@ti.com>,
         <kishon@ti.com>, George Cherian <george.cherian@ti.com>
-Subject: [PATCH 5/5] usb: dwc3: dwc3-omap: Disable/Enable core interrupts in Suspend/Resume
-Date: Thu, 8 May 2014 15:03:07 +0530
-Message-ID: <1399541587-14067-6-git-send-email-george.cherian@ti.com>
+Subject: [PATCH 4/5] usb: dwc3: dwc3-omap: Fix the crash on module removal
+Date: Thu, 8 May 2014 15:03:06 +0530
+Message-ID: <1399541587-14067-5-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1399541587-14067-1-git-send-email-george.cherian@ti.com>
 References: <1399541587-14067-1-git-send-email-george.cherian@ti.com>
@@ -23,65 +23,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enabling the core interrupts in complete is too late for XHCI, and stops
-xhci from proper operation. So remove prepare and complete and disable/enable
-interrupts in suspend/resume
+Following crash is seen on dwc3_omap removal
+Unable to handle kernel NULL pointer dereference at virtual address 00000018
+pgd = ec098000
+[00000018] *pgd=ad1f9831, *pte=00000000, *ppte=00000000
+Internal error: Oops: 17 [#1] SMP ARM
+Modules linked in: usb_f_ss_lb g_zero usb_f_acm u_serial usb_f_ecm u_ether libcomposite configfs snd_usb_audio snd_usbmidi_lib snd_rawmidi snd_hwdep snd_soc_omap snd_pcm_dmaengine snd_soc_core snd_compress snd_pcm snd_tim]
+CPU: 0 PID: 1296 Comm: rmmod Tainted: G        W     3.15.0-rc4-02716-g95c4e18-dirty #10
+task: ed05a080 ti: ec368000 task.ti: ec368000
+PC is at release_resource+0x14/0x7c
+LR is at release_resource+0x10/0x7c
+pc : [<c0044724>]    lr : [<c0044720>]    psr: 60000013
+sp : ec369ec0  ip : 60000013  fp : 00021008
+r10: 00000000  r9 : ec368000  r8 : c000e7a4
+r7 : 00000081  r6 : bf0062c0  r5 : ed7cd000  r4 : ed7d85c0
+r3 : 00000000  r2 : 00000000  r1 : 00000011  r0 : c086d08c
+Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c5387d  Table: ac098059  DAC: 00000015
+Process rmmod (pid: 1296, stack limit = 0xec368248)
+Stack: (0xec369ec0 to 0xec36a000)
+9ec0: 00000000 00000001 ed7cd000 c034de94 ed7cd010 ed7cd000 00000000 c034e194
+9ee0: 00000000 bf0062cc ed7cd010 c03490b0 ed154cc0 ed4c2570 ed2b8410 ed156810
+ed156810 bf006d24 c034db9c c034db84 c034c518
+9f20: bf006d24 ed156810 bf006d24 c034cd2c bf006d24 bf006d68 00000800 c034c340
+9f40: 00000000 c00a9e5c 00000020 00000000 bf006d68 00000800 ec369f4c 33637764
+9f60: 616d6f5f 00000070 00000001 ec368000 ed05a080 c000e670 00000001 c0084010
+9f80: 00021088 00000800 00021088 00000081 80000010 0000e6f4 00021088 00000800
+9fa0: 00021088 c000e5e0 00021088 00000800 000210b8 00000800 e04f6d00 e04f6d00
+9fc0: 00021088 00000800 00021088 00000081 00000001 00000000 be91de08 00021008
+9fe0: 4d768880 be91dbb4 b6fc5984 4d76888c 80000010 000210b8 00000000 00000000
+[<c0044724>] (release_resource) from [<c034de94>] (platform_device_del+0x6c/0x9c)
+[<c034de94>] (platform_device_del) from [<c034e194>] (platform_device_unregister+0xc/0x18)
+[<c034e194>] (platform_device_unregister) from [<bf0062cc>] (dwc3_omap_remove_core+0xc/0x14 [dwc3_omap])
+[<bf0062cc>] (dwc3_omap_remove_core [dwc3_omap]) from [<c03490b0>] (device_for_each_child+0x34/0x74)
+[<c03490b0>] (device_for_each_child) from [<bf0062b4>] (dwc3_omap_remove+0x6c/0x78 [dwc3_omap])
+[<bf0062b4>] (dwc3_omap_remove [dwc3_omap]) from [<c034db9c>] (platform_drv_remove+0x18/0x1c)
+[<c034db9c>] (platform_drv_remove) from [<c034c518>] (__device_release_driver+0x70/0xc8)
+[<c034c518>] (__device_release_driver) from [<c034cd2c>] (driver_detach+0xb4/0xb8)
+[<c034cd2c>] (driver_detach) from [<c034c340>] (bus_remove_driver+0x4c/0x90)
+[<c034c340>] (bus_remove_driver) from [<c00a9e5c>] (SyS_delete_module+0x10c/0x198)
+[<c00a9e5c>] (SyS_delete_module) from [<c000e5e0>] (ret_fast_syscall+0x0/0x48)
+Code: e1a04000 e59f0068 eb14505e e5943010 (e5932018)
+---[ end trace 7e2a8746ff4fc811 ]---
+Segmentation fault
 
 Signed-off-by: George Cherian <george.cherian@ti.com>
 ---
- drivers/usb/dwc3/dwc3-omap.c | 20 ++------------------
- 1 file changed, 2 insertions(+), 18 deletions(-)
+ drivers/usb/dwc3/dwc3-omap.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index 82b20d8f..0916c4b 100644
+index 0b9b1d8..82b20d8f 100644
 --- a/drivers/usb/dwc3/dwc3-omap.c
 +++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -622,27 +622,12 @@ static const struct of_device_id of_dwc3_match[] = {
- MODULE_DEVICE_TABLE(of, of_dwc3_match);
- 
- #ifdef CONFIG_PM_SLEEP
--static int dwc3_omap_prepare(struct device *dev)
--{
--	struct dwc3_omap	*omap = dev_get_drvdata(dev);
--
--	dwc3_omap_disable_irqs(omap);
--
--	return 0;
--}
--
--static void dwc3_omap_complete(struct device *dev)
--{
--	struct dwc3_omap	*omap = dev_get_drvdata(dev);
--
--	dwc3_omap_enable_irqs(omap);
--}
--
- static int dwc3_omap_suspend(struct device *dev)
+@@ -322,7 +322,7 @@ static int dwc3_omap_remove_core(struct device *dev, void *c)
  {
- 	struct dwc3_omap	*omap = dev_get_drvdata(dev);
+ 	struct platform_device *pdev = to_platform_device(dev);
  
- 	omap->utmi_otg_status = dwc3_omap_read_utmi_status(omap);
-+	dwc3_omap_disable_irqs(omap);
+-	platform_device_unregister(pdev);
++	of_device_unregister(pdev);
  
  	return 0;
  }
-@@ -652,6 +637,7 @@ static int dwc3_omap_resume(struct device *dev)
- 	struct dwc3_omap	*omap = dev_get_drvdata(dev);
- 
- 	dwc3_omap_write_utmi_status(omap, omap->utmi_otg_status);
-+	dwc3_omap_enable_irqs(omap);
- 
- 	pm_runtime_disable(dev);
- 	pm_runtime_set_active(dev);
-@@ -661,8 +647,6 @@ static int dwc3_omap_resume(struct device *dev)
- }
- 
- static const struct dev_pm_ops dwc3_omap_dev_pm_ops = {
--	.prepare	= dwc3_omap_prepare,
--	.complete	= dwc3_omap_complete,
- 
- 	SET_SYSTEM_SLEEP_PM_OPS(dwc3_omap_suspend, dwc3_omap_resume)
- };
 -- 
 1.8.3.1
 
