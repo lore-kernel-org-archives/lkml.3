@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007AbaEHOZt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 10:25:49 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42621 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754014AbaEHOZr (ORCPT
+	id S1754310AbaEHO0b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 10:26:31 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:55488 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401AbaEHO03 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 10:25:47 -0400
-Date: Thu, 8 May 2014 10:25:46 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Zhuang Jin Can <jin.can.zhuang@intel.com>
-cc: Felipe Balbi <balbi@ti.com>, USB list <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        <liping.zhou@intel.com>, <david.a.cohen@linux.intel.com>
-Subject: Re: [PATCH] usb: dwc3: ep0: fix delayed status is queued too early
-In-Reply-To: <20140508160046.GJ19925@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1405081019230.1087-100000@iolanthe.rowland.org>
+	Thu, 8 May 2014 10:26:29 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andreas =?ISO-8859-1?Q?Irest=E5l?= <andreas.irestal@axis.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "abrodkin@synopsys.com" <abrodkin@synopsys.com>,
+        "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
+        "ben@decadent.org.uk" <ben@decadent.org.uk>, "sr@denx.de" <sr@denx.de>,
+        "jonas.jensen@gmail.com" <jonas.jensen@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Jesper Nilsson <jespern@axis.com>, peppe.cavallaro@st.com
+Subject: Re: [RFC PATCH] net:Add basic DWC Ethernet QoS Driver
+Date: Thu, 08 May 2014 16:26 +0200
+Message-ID: <5261973.l3atPvULh6@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <201405081618.04475.Andreas.Irestal@axis.com>
+References: <201405081349.03139.Andreas.Irestal@axis.com> <20248221.mJ8pFfyc5U@wuerfel> <201405081618.04475.Andreas.Irestal@axis.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
+X-Provags-ID: V02:K0:yhRajjbTMepDBHLzRddAuXHAuXtIJBz7Q0WV7/qsB+d
+ XSi1v37NGk1JDEjWNZjdk4UbOtu20/6nPZKMOLZNygEIKdCo9S
+ zD94BY1Cle57TSL8rBgIbxHK0dd1lYWAA/VLpDQua8JWBrHy0t
+ fHf5B2iigNUz0xhNHub5KHq9WZG+WIOwsbXu+428+WDTiMvhV+
+ yueF5MhqwF5ngtx8CyEYE5xiNlsK5HymY4tFwXuGecqZ4jpj+D
+ 6OjhcySba0vFHBkWdXjfGfo1CcBSRbn0V5QfClhEy6WcqtnirG
+ 57xXSeRoU368t7LL83Vmelk31GxOOk4Fjb9GtQ0XY2XoHpt3I1
+ ZUSELpl4QPVYiuZkaZS4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 May 2014, Zhuang Jin Can wrote:
-
-> > When the host already timed out the control transfer and started a new 
-> > one.  Here's what I'm talking about:
+On Thursday 08 May 2014 16:18:04 Andreas Irestål wrote:
+> 
+> > > +
+> > > +   /* Set poll wait timeout to 2 seconds */
+> > > +   dwc_wait = 200;
+> > > +
+> > > +   while (lp->tx_descs[i].tdes3.wr.own) {
+> > > +           mdelay(10);
+> > > +           if (!dwc_wait--)
+> > > +                   break;
+> > > +   }
 > > 
-> > 	Host sends a Set-Configuration request.
+> > This is really evil: you are blocking the CPU for up to two seconds!
+> > You already mentioned that this is work-in-progress, but I guess it has
+> > to be a little better than this and do something that doesn't block
+> > out the CPU during TX.
 > > 
-> > 	The UDC driver calls the gadget driver's setup function.
-> > 
-> > 	The setup function returns DELAYED_STATUS.
-> > 
-> > 	After a few seconds, the host gets tired of waiting and
-> > 	sends a Get-Descriptor request
-> My understanding is dwc3 will return NYET to host for this
-> Get-Descriptor request transaction, as dwc3 is still in STATUS phase,
-> there's no buffer to receive anything in ep0-out.
+> 
+> It really is, but a 2s lockout is only happening upon TX failure. Anyway, this
+> won't be an issue in the final version, since it won't use polling for TX.
 
-dwc3 _cannot_ return NYET to a SETUP packet.  The USB protocol does not 
-allow it.  A device must always respond to SETUP with ACK.
+Actually I'd expect a 10ms delay for most packets, which is also too much.
 
-On the other hand, dwc3 _can_ return NYET to the token packet that
-follows the SETUP transaction.  That's what it should do.  But at this
-point it should be in the DATA stage, not the STATUS stage.  Receiving
-a SETUP packet should abort a STATUS stage.
+Just for scale: at gigabit speed, a 10 *microsecond* delay would be more
+appropriate than a 10 milisecond delay. Anyway, it's not important here as
+long as you find a proper solution.
 
->  And your below
-> comments is not applicapable to dwc3.
-
-True, they apply to composite.c rather than dwc3.  However, they
-address an issue very similar to your patch, so I raised this topic in
-your email thread.
-
-Alan Stern
-
+	Arnd
