@@ -1,144 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034AbaEHEt6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 00:49:58 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:43941 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483AbaEHEt5 (ORCPT
+	id S1751339AbaEHFHq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 01:07:46 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:44064 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750707AbaEHFHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 00:49:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <1399519552-10344-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1399519552-10344-1-git-send-email-Li.Xiubo@freescale.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Wed, 7 May 2014 21:49:35 -0700
-Message-ID: <CAK5ve-+CO+MCM9P=on0kRbg5okCj8jKqbbVvXhpWB_dDuFfbZQ@mail.gmail.com>
-Subject: Re: [PATCH] leds: Remove duplicated OOM message for individual driver
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        "Hennerich, Michael" <michael.hennerich@analog.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 8 May 2014 01:07:45 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtMVAEgQa1NbskEF/2dsb2JhbABZgwasNwEBAQEBAQUBmgoCAgGBGBd0giUBAQQBOj8FCwgDGC45HgYTiDkMAc9gF4VWiHwHhD8BA48bihsBiwCHe4M2Ow
+Date: Thu, 8 May 2014 07:07:38 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] kernel/stop_machine.c: remove false assignment to
+ static
+Message-Id: <20140508070738.02b3051a9766a012c4c1a923@skynet.be>
+In-Reply-To: <20140507210411.GB2844@laptop.programming.kicks-ass.net>
+References: <20140507224656.e06286af4392251135862718@skynet.be>
+	<20140507210411.GB2844@laptop.programming.kicks-ass.net>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 7, 2014 at 8:25 PM, Xiubo Li <Li.Xiubo@freescale.com> wrote:
-> The OOM message of individual driver is unnecessary, and this is
-> duplicate the memory subsystem generic OOM message.
->
+On Wed, 7 May 2014 23:04:11 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-Thanks, applied.
--Bryan
+> On Wed, May 07, 2014 at 10:46:56PM +0200, Fabian Frederick wrote:
+> > This patch also fixes function prototype over 80 characters
+> 
+> And does it wrong.. Also does it really matter to GCC that we init the
+> bool? Surely it can see its 0 and put it in .bss anyway?
+It's considered redundant but maintainer's choice is the priority :)
+ 
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> > ---
+> >  kernel/stop_machine.c | 5 +++--
+> >  1 file changed, 3 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+> > index 695f0c6..8d29ee2 100644
+> > --- a/kernel/stop_machine.c
+> > +++ b/kernel/stop_machine.c
+> > @@ -42,7 +42,7 @@ struct cpu_stopper {
+> >  
+> >  static DEFINE_PER_CPU(struct cpu_stopper, cpu_stopper);
+> >  static DEFINE_PER_CPU(struct task_struct *, cpu_stopper_task);
+> > -static bool stop_machine_initialized = false;
+> > +static bool stop_machine_initialized;
+> >  
+> >  /*
+> >   * Avoids a race between stop_two_cpus and global stop_cpus, where
+> > @@ -241,7 +241,8 @@ static void irq_cpu_stop_queue_work(void *arg)
+> >   *
+> >   * returns when both are completed.
+> >   */
+> > -int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *arg)
+> > +int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn,
+> > +		  void *arg)
+> 
+> Its only 84, so I didn't care to wrap it, its more readable this way,
+> but if you want it split split it like:
+> 
+> int
+> stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *arg)
+> 
+> Or if you really have to split arguments to it in groups that make
+> sense; like:
+> 
+> int stop_two_cpus(unsigned int cpu1, unsigned int cpu2,
+> 		  cpu_stop_fn_t fn, void *arg)
+> 
+> But really, these are two unrelated changes, and should therefore not be
+> in a single patch.
+Ok, thanks
 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> ---
->  drivers/leds/leds-adp5520.c | 5 +----
->  drivers/leds/leds-bd2802.c  | 4 +---
->  drivers/leds/leds-da903x.c  | 4 +---
->  drivers/leds/leds-da9052.c  | 3 +--
->  drivers/leds/leds-s3c24xx.c | 4 +---
->  drivers/leds/leds-sunfire.c | 4 +---
->  6 files changed, 6 insertions(+), 18 deletions(-)
->
-> diff --git a/drivers/leds/leds-adp5520.c b/drivers/leds/leds-adp5520.c
-> index 7e311a1..9982691 100644
-> --- a/drivers/leds/leds-adp5520.c
-> +++ b/drivers/leds/leds-adp5520.c
-> @@ -121,13 +121,10 @@ static int adp5520_led_probe(struct platform_device *pdev)
->
->         led = devm_kzalloc(&pdev->dev, sizeof(*led) * pdata->num_leds,
->                                 GFP_KERNEL);
-> -       if (led == NULL) {
-> -               dev_err(&pdev->dev, "failed to alloc memory\n");
-> +       if (!led)
->                 return -ENOMEM;
-> -       }
->
->         ret = adp5520_led_prepare(pdev);
-> -
->         if (ret) {
->                 dev_err(&pdev->dev, "failed to write\n");
->                 return ret;
-> diff --git a/drivers/leds/leds-bd2802.c b/drivers/leds/leds-bd2802.c
-> index fb5a347..6078c15 100644
-> --- a/drivers/leds/leds-bd2802.c
-> +++ b/drivers/leds/leds-bd2802.c
-> @@ -678,10 +678,8 @@ static int bd2802_probe(struct i2c_client *client,
->         int ret, i;
->
->         led = devm_kzalloc(&client->dev, sizeof(struct bd2802_led), GFP_KERNEL);
-> -       if (!led) {
-> -               dev_err(&client->dev, "failed to allocate driver data\n");
-> +       if (!led)
->                 return -ENOMEM;
-> -       }
->
->         led->client = client;
->         pdata = led->pdata = dev_get_platdata(&client->dev);
-> diff --git a/drivers/leds/leds-da903x.c b/drivers/leds/leds-da903x.c
-> index 2a4b87f..180bbd8 100644
-> --- a/drivers/leds/leds-da903x.c
-> +++ b/drivers/leds/leds-da903x.c
-> @@ -109,10 +109,8 @@ static int da903x_led_probe(struct platform_device *pdev)
->         }
->
->         led = devm_kzalloc(&pdev->dev, sizeof(struct da903x_led), GFP_KERNEL);
-> -       if (led == NULL) {
-> -               dev_err(&pdev->dev, "failed to alloc memory for LED%d\n", id);
-> +       if (!led)
->                 return -ENOMEM;
-> -       }
->
->         led->cdev.name = pdata->name;
->         led->cdev.default_trigger = pdata->default_trigger;
-> diff --git a/drivers/leds/leds-da9052.c b/drivers/leds/leds-da9052.c
-> index 865d4fa..5aa7e31 100644
-> --- a/drivers/leds/leds-da9052.c
-> +++ b/drivers/leds/leds-da9052.c
-> @@ -127,8 +127,7 @@ static int da9052_led_probe(struct platform_device *pdev)
->         led = devm_kzalloc(&pdev->dev,
->                            sizeof(struct da9052_led) * pled->num_leds,
->                            GFP_KERNEL);
-> -       if (led == NULL) {
-> -               dev_err(&pdev->dev, "Failed to alloc memory\n");
-> +       if (!led) {
->                 error = -ENOMEM;
->                 goto err;
->         }
-> diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
-> index 98174e7..37a6a92 100644
-> --- a/drivers/leds/leds-s3c24xx.c
-> +++ b/drivers/leds/leds-s3c24xx.c
-> @@ -77,10 +77,8 @@ static int s3c24xx_led_probe(struct platform_device *dev)
->
->         led = devm_kzalloc(&dev->dev, sizeof(struct s3c24xx_gpio_led),
->                            GFP_KERNEL);
-> -       if (led == NULL) {
-> -               dev_err(&dev->dev, "No memory for device\n");
-> +       if (!led)
->                 return -ENOMEM;
-> -       }
->
->         platform_set_drvdata(dev, led);
->
-> diff --git a/drivers/leds/leds-sunfire.c b/drivers/leds/leds-sunfire.c
-> index 388632d..0b8cc4a 100644
-> --- a/drivers/leds/leds-sunfire.c
-> +++ b/drivers/leds/leds-sunfire.c
-> @@ -135,10 +135,8 @@ static int sunfire_led_generic_probe(struct platform_device *pdev,
->         }
->
->         p = devm_kzalloc(&pdev->dev, sizeof(*p), GFP_KERNEL);
-> -       if (!p) {
-> -               dev_err(&pdev->dev, "Could not allocate struct sunfire_drvdata\n");
-> +       if (!p)
->                 return -ENOMEM;
-> -       }
->
->         for (i = 0; i < NUM_LEDS_PER_BOARD; i++) {
->                 struct led_classdev *lp = &p->leds[i].led_cdev;
-> --
-> 1.8.4
->
+Fabian
