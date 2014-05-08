@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317AbaEHASV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 20:18:21 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:59096 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867AbaEHASS (ORCPT
+	id S1751962AbaEHAak (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 20:30:40 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:48384 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415AbaEHAaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 20:18:18 -0400
-Date: Wed, 7 May 2014 18:18:14 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-doc@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joerg Roedel <joro@8bytes.org>, Randy Dunlap <rdunlap@infradead.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, linux-kernel@vger.kernel.org,
-        James Bottomley <jbottomley@parallels.com>, linux-pci@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH v2 4/5] iommu: Use dma_addr_t for IOVA arguments
-Message-ID: <20140508001814.GB4951@google.com>
-References: <20140506223250.17968.27054.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140506224840.17968.29010.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <45161364.3Gyo1xJJLV@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <45161364.3Gyo1xJJLV@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 7 May 2014 20:30:39 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 0/3] Aggressively allocate the pages on cma reserved memory
+Date: Thu,  8 May 2014 09:32:21 +0900
+Message-Id: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 09:58:58AM +0200, Arnd Bergmann wrote:
-> On Tuesday 06 May 2014 16:48:40 Bjorn Helgaas wrote:
-> > Convert the "iova" arguments of iommu_map(), iommu_unmap(), etc., from
-> > "unsigned long" to dma_addr_t.
-> > 
-> > bb5547acfcd8 ("iommu/fsl: Make iova dma_addr_t in the iommu_iova_to_phys
-> > API") did this for iommu_iova_to_phys(), but didn't fix the rest of the
-> > IOMMU API.
-> 
-> This patch looks 100% correct, but I'm not convinced it's a good idea:
-> On 32-bit platforms (i.e. most of the ones you change), doing 64-bit
-> arithmetic has a noticeable overhead. I am not aware of an IOMMU that
-> actually uses 64-bit DMA addresses on its slave side, usually they
-> are used to translate addresses from 32-bit masters into 64-bit
-> memory addresses, so using 'unsigned long' seems better from a practical
-> point of view as opposed to the strict type correctness.
+Hello,
 
-The current x86 IOMMUs support DMA addresses larger than 32 bits, but
-obviously those platforms usually run 64-bit kernels so "unsigned
-long" is already 64 bits.
+This series tries to improve CMA.
 
-I guess you're thinking about cases where "unsigned long" is 32 bits,
-the IOMMU only supports 32 bit DMA addresses, and dma_addr_t is 64
-bits.  If the IOMMU only supports 32-bit DMA addresses, is there any
-value in having a 64-bit dma_addr_t?
+CMA is introduced to provide physically contiguous pages at runtime
+without reserving memory area. But, current implementation works like as
+reserving memory approach, because allocation on cma reserved region only
+occurs as fallback of migrate_movable allocation. We can allocate from it
+when there is no movable page. In that situation, kswapd would be invoked
+easily since unmovable and reclaimable allocation consider
+(free pages - free CMA pages) as free memory on the system and free memory
+may be lower than high watermark in that case. If kswapd start to reclaim
+memory, then fallback allocation doesn't occur much.
 
-Bjorn
+In my experiment, I found that if system memory has 1024 MB memory and
+has 512 MB reserved memory for CMA, kswapd is mostly invoked around
+the 512MB free memory boundary. And invoked kswapd tries to make free
+memory until (free pages - free CMA pages) is higher than high watermark,
+so free memory on meminfo is moving around 512MB boundary consistently.
+
+To fix this problem, we should allocate the pages on cma reserved memory
+more aggressively and intelligenetly. Patch 2 implements the solution.
+Patch 1 is the simple optimization which remove useless re-trial and patch 3
+is for removing useless alloc flag, so these are not important.
+See patch 2 for more detailed description.
+
+This patchset is based on v3.15-rc4.
+
+Thanks.
+Joonsoo Kim (3):
+  CMA: remove redundant retrying code in __alloc_contig_migrate_range
+  CMA: aggressively allocate the pages on cma reserved memory when not
+    used
+  CMA: always treat free cma pages as non-free on watermark checking
+
+ include/linux/mmzone.h |    6 +++
+ mm/compaction.c        |    4 --
+ mm/internal.h          |    3 +-
+ mm/page_alloc.c        |  117 +++++++++++++++++++++++++++++++++++++++---------
+ 4 files changed, 102 insertions(+), 28 deletions(-)
+
+-- 
+1.7.9.5
+
