@@ -1,239 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801AbaEHF4u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 01:56:50 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49081 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613AbaEHF4t (ORCPT
+	id S1752704AbaEHGEU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 02:04:20 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64781 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751991AbaEHGET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 01:56:49 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Thu, 8 May 2014 14:58:52 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Keith Packard <keithp@keithp.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/4] Volatile Ranges (v14 - madvise reborn edition!)
-Message-ID: <20140508055852.GD5282@bbox>
-References: <1398806483-19122-1-git-send-email-john.stultz@linaro.org>
+	Thu, 8 May 2014 02:04:19 -0400
+Date: Thu, 8 May 2014 08:04:14 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] x86, nmi: Add better NMI stats to /proc/interrupts
+ and show handlers
+Message-ID: <20140508060414.GB31061@gmail.com>
+References: <1399476883-98970-1-git-send-email-dzickus@redhat.com>
+ <1399476883-98970-6-git-send-email-dzickus@redhat.com>
+ <94D0CD8314A33A4D9D801C0FE68B402956F047E7@G4W3202.americas.hpqcorp.net>
+ <20140508012814.GW39568@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398806483-19122-1-git-send-email-john.stultz@linaro.org>
+In-Reply-To: <20140508012814.GW39568@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 02:21:19PM -0700, John Stultz wrote:
-> Another few weeks and another volatile ranges patchset...
-> 
-> After getting the sense that the a major objection to the earlier
-> patches was the introduction of a new syscall (and its somewhat
-> strange dual length/purged-bit return values), I spent some time
-> trying to rework the vma manipulations so we can be we won't fail
-> mid-way through changing volatility (basically making it atomic).
-> I think I have it working, and thus, there is no longer the
-> need for a new syscall, and we can go back to using madvise()
-> to set and unset pages as volatile.
 
-As I said reply as other patch's reply, I'm ok with this but I'd
-like to make it clear to support zero-filled page as well as SIGBUS.
-If we want to use madvise, maybe we need another advise flag like
-MADV_VOLATILE_SIGBUS.
-> 
-> 
-> New changes are:
-> ----------------
-> o Reworked vma manipulations to be be atomic
-> o Converted back to using madvise() as syscall interface
-> o Integrated fix from Minchan to avoid SIGBUS faulting race
-> o Caught/fixed subtle use-after-free bug w/ vma merging
-> o Lots of minor cleanups and comment improvements
-> 
-> 
-> Still on the TODO list
-> ----------------------------------------------------
-> o Sort out how best to do page accounting when the volatility
->   is tracked on a per-mm basis.
+* Don Zickus <dzickus@redhat.com> wrote:
 
-What's is your concern about page accouting?
-Could you elaborate it more for everybody to understand your concern
-clearly.
+> On Wed, May 07, 2014 at 07:50:48PM +0000, Elliott, Robert (Server Storage) wrote:
+> > Don Zickus <dzickus@redhat.com> wrote:
+> > > The main reason for this patch is because I have a hard time knowing
+> > > what NMI handlers are registered on the system when debugging NMI issues.
+> > > 
+> > > This info is provided in /proc/interrupts for interrupt handlers, so I
+> > > added support for NMI stuff too.  As a bonus it provides stat breakdowns
+> > > much like the interrupts.
+> > 
+> > /proc/interrupts only shows online CPUs, while /proc/softirqs shows 
+> > all possible CPUs.  Is there any value in this information for all 
+> > possible CPUs? Perhaps a /proc/hardirqs could be created alongside.
+> 
+> Well if they are not online, they probably won't be generating NMIs, so I
+> am not sure there is much value there.
+> 
+> > 
+> > > The only ugly issue is how to label NMI subtypes using only 3 letters
+> > > and still make it obvious it is part of the NMI.  Adding a /proc/nmi
+> > > seemed overkill, so I choose to indent things by one space.  
+> > 
+> > The list only shows the currently registered handlers, which may
+> > differ from the ones that were registered when the NMIs whose counts 
+> > are being displayed occurred. You might want to describe these new 
+> > rows and mention that in Documentation/filesystems/proc.txt and 
+> > the proc(5) manpage.
+> 
+> Ok, but that is a /proc/interrupts problem not one specific to NMI, no?
+> 
+> > 
+> > > Sample output is below:
+> > > 
+> > > [root@dhcp71-248 ~]# cat /proc/interrupts
+> > >            CPU0       CPU1       CPU2       CPU3
+> > >   0:         29          0          0          0  IR-IO-APIC-edge      timer
+> > > <snip>
+> > > NMI:         20        774      10986       4227   Non-maskable interrupts
+> > >  LOC:         21        775      10987       4228  Local     PMI, arch_bt
+> > >  EXT:          0          0          0          0  External  plat
+> > >  UNK:          0          0          0          0  Unknown
+> > >  SWA:          0          0          0          0  Swallowed
+> > 
+> > Adding the list of NMI handlers in /proc/interrupts is a bit 
+> > inconsistent with the other interrupts, which don't describe their 
+> > handlers. It would be helpful to distinguish between a handler 
+> > list being present, being present but empty, or not being present.
+> > 
+> > Maybe use parenthesis like this (using Ingo's suggested format):
+> >  NMI:         20        774      10986       4227   Non-maskable interrupts
+> >  NLC:         21        775      10987       4228   NMI: Local (PMI, arch_bt)
+> >  NXT:          0          0          0          0   NMI: External (plat)
+> >  NUN:          0          0          0          0   NMI: Unknown ()
+> >  NSW:          0          0          0          0   NMI: Swallowed
+> >  LOC:      30374      24749      20795      15095   Local timer interrupts
+> > 
+> 
+> Hmm, looking at /proc/interrupts I see
+> 
+>   1:     858014      29054      23191       9337   IO-APIC-edge      i8042
+>   8:          3         24         10          2   IO-APIC-edge      rtc0
+>   9:     387555       9219       8308       7944   IO-APIC-fasteoi   acpi
+>  12:    9251360     163811     158846     141916   IO-APIC-edge      i8042
+>  16:          0          0          0          0   IO-APIC-fasteoi   mmc0
+>  17:         14          5          7         10   IO-APIC-fasteoi 
+>  19:       6892        367         13         10   IO-APIC-fasteoi ehci_hcd:usb2, ips, firewire_ohci
+>  23:    1363281        753         94         94   IO-APIC-fasteoi ehci_hcd:usb1
+> 
+> Those may not be specific handlers, but they are registered irq 
+> names, no? That basically matches what I was trying to accomplish 
+> with NMI.
+> 
+> I guess I don't see how what I did is much different than what 
+> already exists.
 
-> o Revisit anonymous page aging on swapless systems
+The parentheses makes the output more readable, especially as with the 
+NMI format it's not quite clear what is 'irq type' and what is 
+'handler'.
 
-One idea is that we can age forcefully on swapless system if system
-has volatile vma or lazyfree pages. If the number of volatile vma or
-lazyfree pages is zero, we can stop the aging automatically.
+Might make sense to add parentheses for regular irq handlers as well, 
+for consistency and readability.
 
-> o Draft up re-adding tmpfs/shm file volatility support
-> 
-  o One concern from minchan.
-  I really like O(1) cost of unmarking syscall.
+Thanks,
 
-Vrange syscall is for others, not itself. I mean if some process calls
-vrange syscall, it would scacrifice his resource for others when
-emergency happens so if the syscall is overhead rather expensive,
-anybody doesn't want to use it.
-
-One idea is put increasing counter in mm_struct and assign the token
-to volatile vma. Maybe we can squeeze it into vma->vm_start's lower
-bits if we don't want to bloat vma size because we always hold mmap_sem
-with write-side lock when we handle vrange syscall.
-And we can use the token and purged mark together to pte when the purge
-happens. With this, we can bail out as soon as we found purged entry in
-unmarking syscall so remained ptes still have purged pte although
-unmarking syscall is done. But it's no problem because if the vma is
-marked as volatile again, the token will be change(ie, increased) and
-doesn't match with pte's token. When the page fault occur, we can compare
-the token to emit SIGBUS. If it doesn't match, we can ignore and just
-map new page to pte.
-
-One problem is overflow of counter. In the case, we can deliver false
-positive to user but it isn't severe, either because use have a preparation
-to handle SIGBUS if he want to use vrange syscall with SIGBUS model.
-
-> 
-> Many thanks again to Minchan, Kosaki-san, Johannes, Jan, Rik,
-> Hugh, and others for the great feedback and discussion at
-> LSF-MM.
-> 
-> thanks
-> -john
-> 
-> 
-> Volatile ranges provides a method for userland to inform the kernel
-> that a range of memory is safe to discard (ie: can be regenerated)
-> but userspace may want to try access it in the future.  It can be
-> thought of as similar to MADV_DONTNEED, but that the actual freeing
-> of the memory is delayed and only done under memory pressure, and the
-> user can try to cancel the action and be able to quickly access any
-> unpurged pages. The idea originated from Android's ashmem, but I've
-> since learned that other OSes provide similar functionality.
-> 
-> This functionality allows for a number of interesting uses. One such
-> example is: Userland caches that have kernel triggered eviction under
-> memory pressure. This allows for the kernel to "rightsize" userspace
-> caches for current system-wide workload. Things like image bitmap
-> caches, or rendered HTML in a hidden browser tab, where the data is
-> not visible and can be regenerated if needed, are good examples.
-> 
-> Both Chrome and Firefox already make use of volatile range-like
-> functionality via the ashmem interface:
-> https://hg.mozilla.org/releases/mozilla-b2g28_v1_3t/rev/a32c32b24a34
-> 
-> https://chromium.googlesource.com/chromium/src/base/+/47617a69b9a57796935e03d78931bd01b4806e70/memory/discardable_memory_allocator_android.cc
-> 
-> 
-> The basic usage of volatile ranges is as so:
-> 1) Userland marks a range of memory that can be regenerated if
-> necessary as volatile
-> 2) Before accessing the memory again, userland marks the memory as
-> nonvolatile, and the kernel will provide notification if any pages in
-> the range has been purged.
-> 
-> If userland accesses memory while it is volatile, it will either
-> get the value stored at that memory if there has been no memory
-> pressure or the application will get a SIGBUS if the page has been
-> purged.
-> 
-> Reads or writes to the memory do not affect the volatility state of the
-> pages.
-> 
-> You can read more about the history of volatile ranges here (~reverse
-> chronological order):
-> https://lwn.net/Articles/592042/
-> https://lwn.net/Articles/590991/
-> http://permalink.gmane.org/gmane.linux.kernel.mm/98848
-> http://permalink.gmane.org/gmane.linux.kernel.mm/98676
-> https://lwn.net/Articles/522135/
-> https://lwn.net/Kernel/Index/#Volatile_ranges
-> 
-> 
-> Continuing from the last few releases, this revision is reduced in
-> scope when compared to earlier attempts. I've only focused on handled
-> volatility on anonymous memory, and we're storing the volatility in
-> the VMA.  This may have performance implications compared with the
-> earlier approach, but it does simplify the approach. I'm open to
-> expanding functionality via flags arguments, but for now I'm wanting
-> to keep focus on what the right default behavior should be and keep
-> the use cases restricted to help get reviewer interest.
-> 
-> Additionally, since we don't handle volatility on tmpfs files with this
-> version of the patch, it is not able to be used to implement semantics
-> similar to Android's ashmem. But since shared volatiltiy on files is
-> more complex, my hope is to start small and hopefully grow from there.
-> 
-> Again, much of the logic in this patchset is based on Minchan's earlier
-> efforts, so I do want to make sure the credit goes to him for his major
-> contribution!
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Android Kernel Team <kernel-team@android.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Robert Love <rlove@google.com>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Dave Hansen <dave@sr71.net>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-> Cc: Neil Brown <neilb@suse.de>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Cc: Mike Hommey <mh@glandium.org>
-> Cc: Taras Glek <tglek@mozilla.com>
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-> Cc: Michel Lespinasse <walken@google.com>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Keith Packard <keithp@keithp.com>
-> Cc: linux-mm@kvack.org <linux-mm@kvack.org>
-> 
-> John Stultz (4):
->   swap: Cleanup how special swap file numbers are defined
->   MADV_VOLATILE: Add MADV_VOLATILE/NONVOLATILE hooks and handle marking
->     vmas
->   MADV_VOLATILE: Add purged page detection on setting memory
->     non-volatile
->   MADV_VOLATILE: Add page purging logic & SIGBUS trap
-> 
->  include/linux/mm.h                     |   1 +
->  include/linux/mvolatile.h              |   7 +
->  include/linux/swap.h                   |  36 +++-
->  include/linux/swapops.h                |  10 +
->  include/uapi/asm-generic/mman-common.h |   5 +
->  mm/Makefile                            |   2 +-
->  mm/internal.h                          |   2 -
->  mm/madvise.c                           |  14 ++
->  mm/memory.c                            |   7 +
->  mm/mvolatile.c                         | 353 +++++++++++++++++++++++++++++++++
->  mm/rmap.c                              |   5 +
->  mm/vmscan.c                            |  12 ++
->  12 files changed, 440 insertions(+), 14 deletions(-)
->  create mode 100644 include/linux/mvolatile.h
->  create mode 100644 mm/mvolatile.c
-> 
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+	Ingo
