@@ -1,36 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211AbaEHNyQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 09:54:16 -0400
-Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:48331 "EHLO
-	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751295AbaEHNyN (ORCPT
+	id S1753094AbaEHNwm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 09:52:42 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:49352 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501AbaEHNwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 09:54:13 -0400
-Date: Thu, 8 May 2014 08:54:10 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: David Rientjes <rientjes@google.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch v2] mm, slab: suppress out of memory warning unless debug
- is enabled
-In-Reply-To: <alpine.DEB.2.02.1405071500030.25024@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.10.1405080853421.22626@gentwo.org>
-References: <alpine.DEB.2.02.1405071418410.8389@chino.kir.corp.google.com> <20140507142925.b0e31514d4cd8d5857b10850@linux-foundation.org> <alpine.DEB.2.02.1405071431580.8454@chino.kir.corp.google.com> <20140507144858.9aee4e420908ccf9334dfdf2@linux-foundation.org>
- <alpine.DEB.2.02.1405071500030.25024@chino.kir.corp.google.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 8 May 2014 09:52:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-omap@vger.kernel.org
+Subject: [PATCH 2/8] usb: musb: tusb-dma can't be built-in if tusb is not
+Date: Thu,  8 May 2014 15:52:15 +0200
+Message-Id: <1399557141-1346645-3-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1399557141-1346645-1-git-send-email-arnd@arndb.de>
+References: <1399557141-1346645-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:iFRq6WZNp6XxuYJMGV0j/fmr9htWBTALaOUDqZnfIZu
+ H4JqBmmZvG4ZSUHJWIxowL0e6JRRlZPqyu6brLP2XH4+Vhe0/6
+ /99gKLVPOjlXZnsgiCYlvPBSEXtuG1snVz5JCzu0f289uRROMY
+ bQ/PRNIpif7L2OAsTvVrH8XEMrHCTkAqyz6rg6TC05e8/iiiu1
+ Q9WVxENU7P07kwxKIoF3hYEGlTdIwNIidKQ1NczMg7C19sVg7V
+ Kq73VzfafiWJ9zEp29aPr4lU4ESW7lfwn2HTQHky1NvX+chnYz
+ uu0w28aa+hmx0woWt4IkuVJ5GbORO/u8vjvtrbUgxwbj3xckwO
+ X5dk4gEPGCBCABenWatI/cRHdz791p7j9ed6IKFTp
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 May 2014, David Rientjes wrote:
+A configuration with CONFIG_USB_MUSB_HDRC=y, CONFIG_USB_TUSB_OMAP_DMA=y
+and CONFIG_USB_MUSB_TUSB6010=m causes a link failure because of the
+dependency on the tusb_get_revision symbol:
 
-> Suppress this out of memory warning if the allocator is configured without debug
-> supported.  The page allocation failure warning will indicate it is a failed
-> slab allocation, the order, and the gfp mask, so this is only useful to diagnose
-> allocator issues.
+(.text+0x154ce8): undefined reference to `tusb_get_revision'
 
-Acked-by: Christoph Lameter <cl@linux.com>
+This patch ensures that either MUSB_HDRC and MUSB_TUSB6010 are
+both modules or both built-in, which are the valid configurations.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-omap@vger.kernel.org
+---
+ drivers/usb/musb/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
+index 8b78979..618b152 100644
+--- a/drivers/usb/musb/Kconfig
++++ b/drivers/usb/musb/Kconfig
+@@ -144,7 +144,7 @@ config USB_TI_CPPI41_DMA
+ 
+ config USB_TUSB_OMAP_DMA
+ 	bool 'TUSB 6010'
+-	depends on USB_MUSB_TUSB6010
++	depends on USB_MUSB_TUSB6010 = USB_MUSB_HDRC # both built-in or both modules
+ 	depends on ARCH_OMAP
+ 	help
+ 	  Enable DMA transfers on TUSB 6010 when OMAP DMA is available.
+-- 
+1.8.3.2
 
