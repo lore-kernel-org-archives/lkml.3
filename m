@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852AbaEHQvd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 12:51:33 -0400
-Received: from mx0b-0016ce01.pphosted.com ([67.231.156.153]:3827 "EHLO
-	mx0b-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751295AbaEHQvb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 12:51:31 -0400
-From: Yuval Mintz <Yuval.Mintz@qlogic.com>
-To: George Cherian <george.cherian@ti.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-CC: David Miller <davem@davemloft.net>,
-        "mugunthanvnm@ti.com" <mugunthanvnm@ti.com>,
-        "balbi@ti.com" <balbi@ti.com>, "zonque@gmail.com" <zonque@gmail.com>,
-        "mpa@pengutronix.de" <mpa@pengutronix.de>,
-        "tklauser@distanz.ch" <tklauser@distanz.ch>
-Subject: RE: [PATCH v2 2/3] net: davinci_mdio: Convert pr_err() to dev_err()
- call
-Thread-Topic: [PATCH v2 2/3] net: davinci_mdio: Convert pr_err() to
- dev_err() call
-Thread-Index: AQHPaqN1TbqrXKrKFEmtCBDRUbCzjps25XNQ
-Date: Thu, 8 May 2014 16:50:41 +0000
-Message-ID: <B5657A6538887040AD3A81F1008BEC63AD20DC@avmb3.qlogic.org>
-References: <1399542652-14900-1-git-send-email-george.cherian@ti.com>
- <1399542652-14900-3-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1399542652-14900-3-git-send-email-george.cherian@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.4.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754443AbaEHQxH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 12:53:07 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:32506 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751885AbaEHQxF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 12:53:05 -0400
+Date: Thu, 8 May 2014 17:52:17 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Linux Kernel, Mailing List" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [BUG] kmemleak on __radix_tree_preload
+Message-ID: <20140508165217.GI17344@arm.com>
+References: <20140501184112.GH23420@cmpxchg.org>
+ <1399431488.13268.29.camel@kjgkr>
+ <20140507113928.GB17253@arm.com>
+ <1399540611.13268.45.camel@kjgkr>
+ <20140508092646.GA17349@arm.com>
+ <1399541860.13268.48.camel@kjgkr>
+ <20140508102436.GC17344@arm.com>
+ <20140508150026.GA8754@linux.vnet.ibm.com>
+ <20140508152946.GA10470@localhost>
+ <20140508155330.GE8754@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7431 signatures=670434
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
- adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1402240000 definitions=main-1405080162
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140508155330.GE8754@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Also, Convert kzalloc to devm_kzalloc.
+On Thu, May 08, 2014 at 04:53:30PM +0100, Paul E. McKenney wrote:
+> On Thu, May 08, 2014 at 04:29:48PM +0100, Catalin Marinas wrote:
+> > BTW, is it safe to have a union overlapping node->parent and
+> > node->rcu_head.next? I'm still staring at the radix-tree code but a
+> > scenario I have in mind is that call_rcu() has been raised for a few
+> > nodes, other CPU may have some reference to one of them and set
+> > node->parent to NULL (e.g. concurrent calls to radix_tree_shrink()),
+> > breaking the RCU linking. I can't confirm this theory yet ;)
+> 
+> If this were reproducible, I would suggest retrying with non-overlapping
+> node->parent and node->rcu_head.next, but you knew that already.  ;-)
 
-Looks like you should remove this part of the comment.
+Reading the code, I'm less convinced about this scenario (though it's
+worth checking without the union).
 
->
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> Reviewed-by: Felipe Balbi <balbi@ti.com>
-> ---
->  drivers/net/ethernet/ti/davinci_mdio.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/net/ethernet/ti/davinci_mdio.c
-> b/drivers/net/ethernet/ti/davinci_mdio.c
-> index 34e97ec..735dc53 100644
-> --- a/drivers/net/ethernet/ti/davinci_mdio.c
-> +++ b/drivers/net/ethernet/ti/davinci_mdio.c
-> @@ -303,7 +303,7 @@ static int davinci_mdio_probe_dt(struct
-> mdio_platform_data *data,
->               return -EINVAL;
->
->       if (of_property_read_u32(node, "bus_freq", &prop)) {
-> -             pr_err("Missing bus_freq property in the DT.\n");
-> +             dev_err(&pdev->dev, "Missing bus_freq property in the DT.\n");
->               return -EINVAL;
->       }
->       data->bus_freq = prop;
+> But the usual practice would be to make node removal exclude shrinking.
+> And the radix-tree code seems to delegate locking to the caller.
+> 
+> So, is the correct locking present in the page cache?  The radix-tree
+> code seems to assume that all update operations for a given tree are
+> protected by a lock global to that tree.
 
-________________________________
+The calling code in mm/filemap.c holds mapping->tree_lock when deleting
+radix-tree nodes, so no concurrent calls.
 
-This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
+> Another diagnosis approach would be to build with
+> CONFIG_DEBUG_OBJECTS_RCU_HEAD=y, which would complain about double
+> call_rcu() invocations.  Rumor has it that is is necessary to turn off
+> other kmem debugging for this to tell you anything -- I have seen cases
+> where the kmem debugging obscures the debug-objects diagnostics.
+
+Another test Jaegeuk could run (hopefully he has some time to look into
+this).
+
+Thanks for suggestions.
+
+-- 
+Catalin
