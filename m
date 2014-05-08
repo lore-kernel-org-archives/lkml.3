@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203AbaEHNvp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 09:51:45 -0400
-Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:56161 "EHLO
-	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750853AbaEHNvn (ORCPT
+	id S1753541AbaEHNwq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 09:52:46 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:49995 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535AbaEHNwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 09:51:43 -0400
-Date: Thu, 8 May 2014 08:51:40 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: David Rientjes <rientjes@google.com>
-cc: George Spelvin <linux@horizon.com>, iamjoonsoo.kim@lge.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v2 03/10] slab: move up code to get kmem_cache_node in
- free_block()
-In-Reply-To: <alpine.DEB.2.02.1405071429310.8454@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.10.1405080850420.22626@gentwo.org>
-References: <20140507212224.9085.qmail@ns.horizon.com> <alpine.DEB.2.02.1405071429310.8454@chino.kir.corp.google.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 8 May 2014 09:52:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-omap@vger.kernel.org
+Subject: [PATCH 4/8] usb: phy: fix isp1301-omap dependency on tps65010
+Date: Thu,  8 May 2014 15:52:17 +0200
+Message-Id: <1399557141-1346645-5-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1399557141-1346645-1-git-send-email-arnd@arndb.de>
+References: <1399557141-1346645-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:eE248eORvrPMfTgZA5kA0oV9xEGAuH3QXd81j3GpsXJ
+ TQd1cC3go6R8ZyYQD74PHCfNzgCtoXAxV/S3/Z/vAgeKAPnPDk
+ UsMf/Ok3IFblw3wB7f7zP7FnXjH7E6D9mMyFRU2QqWG2+/eQdP
+ mL5MBxqkX2eEMaIPOnKihH0oZgpClhQBzwXH7wkaZtZdJLGU7v
+ j6W54xmXOZnrQD3qhNOfj74/Of1GXHe4dPgJMNHTWK73T+rzFm
+ c8Ix/WwNdYQhZmgYabcdCkJJ0dSIzegwDUltryVWIRbLGdc0P4
+ 2lNlz/zC2tv0FuxFKxtH3gZdlxuJ5iZ2H1VtUeIFE+MfsbLEAx
+ AdKFwgatt2mumij4AfBvz4i7Z19zSOatlEBPp5ws9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 May 2014, David Rientjes wrote:
+The isp1301-omap driver cannot be built-in if the tps65010 driver
+is a module, otherwise we get a link error from the reference to
+the tps65010_set_vbus_draw function.
 
-> > @@ -3362,17 +3359,12 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int nr_objects,
-> >  		       int node)
-> >  {
-> >  	int i;
-> > -	struct kmem_cache_node *n;
-> > +	struct kmem_cache_node *n = cachep->node[node];
-> >
-> >  	for (i = 0; i < nr_objects; i++) {
-> > -		void *objp;
-> > -		struct page *page;
-> > -
-> > -		clear_obj_pfmemalloc(&objpp[i]);
-> > -		objp = objpp[i];
-> > +		void *objp = clear_obj_pfmemalloc(&objpp[i]);
-> > +		struct page *page = virt_to_head_page(objp);
-> >
-> > -		page = virt_to_head_page(objp);
-> > -		n = cachep->node[node];
-> >  		list_del(&page->lru);
-> >  		check_spinlock_acquired_node(cachep, node);
-> >  		slab_put_obj(cachep, page, objp, node);
->
-> I think this unnecessarily obfuscates the code.
+There is already a hack in the driver to work around the problem
+of tps65010 being not available at all. This patch extends that
+hack to ensure that the real tps65010_set_vbus_draw() function
+is only called when it's avaiable.
 
-It takes the lookup out of the loop. What does the obfuscation?
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-omap@vger.kernel.org
+---
+ drivers/usb/phy/phy-isp1301-omap.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/usb/phy/phy-isp1301-omap.c b/drivers/usb/phy/phy-isp1301-omap.c
+index 6e146d7..35a0dd2 100644
+--- a/drivers/usb/phy/phy-isp1301-omap.c
++++ b/drivers/usb/phy/phy-isp1301-omap.c
+@@ -94,7 +94,7 @@ struct isp1301 {
+ 
+ #if defined(CONFIG_MACH_OMAP_H2) || defined(CONFIG_MACH_OMAP_H3)
+ 
+-#if	defined(CONFIG_TPS65010) || defined(CONFIG_TPS65010_MODULE)
++#if	defined(CONFIG_TPS65010) || (defined(CONFIG_TPS65010_MODULE) && defined(MODULE))
+ 
+ #include <linux/i2c/tps65010.h>
+ 
+-- 
+1.8.3.2
 
