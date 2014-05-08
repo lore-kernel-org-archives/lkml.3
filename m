@@ -1,38 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873AbaEHGJq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 02:09:46 -0400
-Received: from mout.gmx.net ([212.227.17.21]:61510 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752585AbaEHGJo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752660AbaEHGJo (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 8 May 2014 02:09:44 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1399509100-27169-1-git-send-email-dbasehore@chromium.org>
-References: <1399509100-27169-1-git-send-email-dbasehore@chromium.org>
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:50451 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055AbaEHGJl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 02:09:41 -0400
+Date: Thu, 8 May 2014 08:09:35 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Igor Mammedov <imammedo@redhat.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        bp@suse.de, paul.gortmaker@windriver.com, JBeulich@suse.com,
+        prarit@redhat.com, drjones@redhat.com, toshi.kani@hp.com,
+        riel@redhat.com, gong.chen@linux.intel.com, andi@firstfloor.org,
+        lenb@kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v5 2/4] acpi_processor: do not mark present at boot but
+ not onlined CPU as onlined
+Message-ID: <20140508060935.GA31184@gmail.com>
+References: <1399322991-19329-1-git-send-email-imammedo@redhat.com>
+ <1399322991-19329-3-git-send-email-imammedo@redhat.com>
+ <20310348.uigSpUyQCR@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Subject: Re: [PATCH] tpm: Fix tpm init with no ACPI entry
-From: Peter Huewe <peterhuewe@gmx.de>
-Date: Thu, 08 May 2014 08:09:24 +0200
-To: Derek Basehore <dbasehore@chromium.org>
-CC: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Message-ID: <fc783f97-fe3c-4887-a821-48f2e21759ad@email.android.com>
-X-Provags-ID: V03:K0:8hE8U1yLOOfKLIDU7hqX7EapCM1Yak/57wnVzY0vJqGwaWSJxv/
- gTHKvnsGZBy2+vt26jgbo3EprATWKGoJDKSf5UDJSy/8Ks2t/k9RBreQfagZbsc82GnHWC7
- yBG5zRlYyPFi+eFozXM9F29BHayEluAaNEkmp/8zQ9+YUdjFPZeTv2RqYPnAAqwElaHzeQ7
- EYgIdTIDGN4vh8f7grqCw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20310348.uigSpUyQCR@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Derek,
-Is this a regression?
-Do you know since when?
-Thanks
-Peter
----
-Sent from my mobile.
+
+* Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+
+> On Monday, May 05, 2014 10:49:49 PM Igor Mammedov wrote:
+> > acpi_processor_add() assumes that present at boot CPUs
+> > are always onlined, it is not so if a CPU failed to become
+> > onlined. As result acpi_processor_add() will mark such CPU
+> > device as onlined in sysfs and following attempts to
+> > online/offline it using /sys/device/system/cpu/cpuX/online
+> > attribute will fail.
+> > 
+> > Do not poke into device internals in acpi_processor_add()
+> > and touch "struct device { .offline }" attribute, since
+> > for CPUs onlined at boot it's set by:
+> >   topology_init() -> arch_register_cpu() -> register_cpu()
+> > before ACPI device tree is parsed, and for hotplugged
+> > CPUs it's set when userspace onlines CPU via sysfs.
+> > 
+> > Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+> > Acked-by: Toshi Kani <toshi.kani@hp.com>
+> 
+> Would there be a problem if I applied this separately from the rest 
+> of the series?
+
+If you push the fix upstream for v3.15 then it would be fine and I 
+could base the other patches on top of your (soon to be upstream) 
+commit.
+
+Thanks,
+
+	Ingo
