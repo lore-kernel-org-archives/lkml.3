@@ -1,86 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036AbaEHPCQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:02:16 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:49214 "EHLO
+	id S1753440AbaEHO4n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 10:56:43 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:59532 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752756AbaEHO4o (ORCPT
+	with ESMTP id S1752329AbaEHO4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 10:56:44 -0400
+	Thu, 8 May 2014 10:56:41 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <linux@arm.linux.org.uk>, dmaengine@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH 2/2] dmaengine: sa11x0: remove broken #ifdef
-Date: Thu,  8 May 2014 16:56:13 +0200
-Message-Id: <1399560990-1402858-2-git-send-email-arnd@arndb.de>
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org
+Subject: [PATCH 1/2] mtd/onenand: fix build warning for dma type
+Date: Thu,  8 May 2014 16:56:14 +0200
+Message-Id: <1399560990-1402858-3-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1399560990-1402858-1-git-send-email-arnd@arndb.de>
 References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
  <1399560990-1402858-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:U6CjbzaXs6rkqeJos9rhbdwMPJuW+ZfsMujI4AzwgP8
- enoRCKdbcFLrwGboc7y3lE24npzUBstGu7sur8f4YLVhSXRUZl
- DeYXJ/Fffb8hpasbT+5ajwkjdU0EOV2YSrz+oTUrFKKnuG9fxd
- DrY3QtDo5bXRuP0k2M7qCg/ELIKv3sM24ilNGZ+BJlTh4HjAQ+
- slrE5NqgRfhLBq/t3CbLeXrABc1VVDVD6lhfe7J8rSUIJhpg7f
- GfjyWKxJql4UOSzxRmYeUzXn9gq4QE0PIxi7X1RsI9mszjJG2u
- axHAyV5b5+dHP9IrbQIbm2ok5GfOHw0PPuQaopvhQinlSmHnLu
- smxAGaoYg7rDjYTEOMOeYmDUbhKol038jHzLhMOY7
+X-Provags-ID: V02:K0:uGSMCz6JxnT9PBEX1eOpY8fD+Ceaw+p5ixMBIUxyRUR
+ vlfYRk02XEA8YVHZZrrUShoy05FJcWvI9pA+OkPxYeYXK/k5/K
+ bn6sblkrPQcje/fCS6c1FdjQeWFId+kEwG0NHk8QZ/4zTvE2UL
+ KefWqLuN42lf3RY2jQ+diLXTegAAKaMK8kvRQsnb10gNb9ytHC
+ X8cajSWNhr22HQRQ2PIznEl0qJhg9Y1lqcY5KY3g03BwYnQqIe
+ wLgiMKSXFxyAlnEQyrbGRDPWjZD6o9xFuhggNbvXjcW0uNRRQv
+ NWhTeNSd/uYmLAvhZ4Q8T8aYLFOPBTeBpUL62RVVufipteJvOn
+ t+cxLeuUBD/7P1Q1wliVBLWOcoAD0ePw5A2STRqhd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sa11x0_dma_pm_ops unconditionally reference sa11x0_dma_resume
-and sa11x0_dma_suspend, which currently breaks if CONFIG_PM_SLEEP
-is disabled.
+The samsung onenand driver passes around a dma address token
+through a void pointer, which is incorrect and leads to
+warnings like this one:
 
-There is probably a better way to remove the reference in this
-case, but the safe choice is to have the suspend/resume code always
-built in the driver.
+onenand/samsung.c:548:2: warning: passing argument 1 of '__fswab32' makes integer from pointer without a cast [enabled by default]
+  writel(src, base + S5PC110_DMA_SRC_ADDR);
+  ^
+
+This patch makes it use dma_addr_t here, which is more appropriate.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: dmaengine@vger.kernel.org
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Brian Norris <computersforpeace@gmail.com>
+Cc: linux-mtd@lists.infradead.org
 ---
- drivers/dma/sa11x0-dma.c | 4 ----
- 1 file changed, 4 deletions(-)
+ drivers/mtd/onenand/samsung.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/dma/sa11x0-dma.c b/drivers/dma/sa11x0-dma.c
-index ab26d46..5ebdfbc 100644
---- a/drivers/dma/sa11x0-dma.c
-+++ b/drivers/dma/sa11x0-dma.c
-@@ -113,11 +113,9 @@ struct sa11x0_dma_phy {
- 	struct sa11x0_dma_desc	*txd_load;
- 	unsigned		sg_done;
- 	struct sa11x0_dma_desc	*txd_done;
--#ifdef CONFIG_PM_SLEEP
- 	u32			dbs[2];
- 	u32			dbt[2];
- 	u32			dcsr;
--#endif
- };
- 
- struct sa11x0_dma_dev {
-@@ -984,7 +982,6 @@ static int sa11x0_dma_remove(struct platform_device *pdev)
+diff --git a/drivers/mtd/onenand/samsung.c b/drivers/mtd/onenand/samsung.c
+index b1a792f..efb819c 100644
+--- a/drivers/mtd/onenand/samsung.c
++++ b/drivers/mtd/onenand/samsung.c
+@@ -537,9 +537,9 @@ static int onenand_write_bufferram(struct mtd_info *mtd, int area,
  	return 0;
  }
  
--#ifdef CONFIG_PM_SLEEP
- static int sa11x0_dma_suspend(struct device *dev)
+-static int (*s5pc110_dma_ops)(void *dst, void *src, size_t count, int direction);
++static int (*s5pc110_dma_ops)(dma_addr_t dst, dma_addr_t src, size_t count, int direction);
+ 
+-static int s5pc110_dma_poll(void *dst, void *src, size_t count, int direction)
++static int s5pc110_dma_poll(dma_addr_t dst, dma_addr_t src, size_t count, int direction)
  {
- 	struct sa11x0_dma_dev *d = dev_get_drvdata(dev);
-@@ -1054,7 +1051,6 @@ static int sa11x0_dma_resume(struct device *dev)
- 
- 	return 0;
+ 	void __iomem *base = onenand->dma_addr;
+ 	int status;
+@@ -605,7 +605,7 @@ static irqreturn_t s5pc110_onenand_irq(int irq, void *data)
+ 	return IRQ_HANDLED;
  }
--#endif
  
- static const struct dev_pm_ops sa11x0_dma_pm_ops = {
- 	.suspend_noirq = sa11x0_dma_suspend,
+-static int s5pc110_dma_irq(void *dst, void *src, size_t count, int direction)
++static int s5pc110_dma_irq(dma_addr_t dst, dma_addr_t src, size_t count, int direction)
+ {
+ 	void __iomem *base = onenand->dma_addr;
+ 	int status;
+@@ -686,7 +686,7 @@ static int s5pc110_read_bufferram(struct mtd_info *mtd, int area,
+ 		dev_err(dev, "Couldn't map a %d byte buffer for DMA\n", count);
+ 		goto normal;
+ 	}
+-	err = s5pc110_dma_ops((void *) dma_dst, (void *) dma_src,
++	err = s5pc110_dma_ops(dma_dst, dma_src,
+ 			count, S5PC110_DMA_DIR_READ);
+ 
+ 	if (page_dma)
 -- 
 1.8.3.2
 
