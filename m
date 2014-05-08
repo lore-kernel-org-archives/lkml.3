@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392AbaEHTB6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 15:01:58 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:38263 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485AbaEHTBz (ORCPT
+	id S1755448AbaEHTCS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 15:02:18 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:37131 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755409AbaEHTCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 15:01:55 -0400
+	Thu, 8 May 2014 15:02:15 -0400
+Date: Thu, 8 May 2014 21:02:03 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v10 07/19] qspinlock: Use a simple write to grab the
+ lock, if applicable
+Message-ID: <20140508190203.GP2844@laptop.programming.kicks-ass.net>
+References: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com>
+ <1399474907-22206-8-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
-In-Reply-To: <536BD280.9070808@cogentembedded.com>
-References: <1399494750-31996-1-git-send-email-geert+renesas@glider.be>
-	<1399494750-31996-2-git-send-email-geert+renesas@glider.be>
-	<536B7FD3.5090506@cogentembedded.com>
-	<CAMuHMdVoYnRcOVht0_Bt5_NJA3vZ40svftRXN-xbqHSMHZR5dg@mail.gmail.com>
-	<536B8340.4010901@cogentembedded.com>
-	<CAMuHMdUW3ENmykZGNQB8Qo3EVk+7RYzVHa6L-=WsxZZ06mfUTQ@mail.gmail.com>
-	<536BC445.8080007@cogentembedded.com>
-	<CAMuHMdVR9n8E-LyHn1B0REE4oTVbfJf-9v1Bo70bHCH_=r4-Vw@mail.gmail.com>
-	<536BD280.9070808@cogentembedded.com>
-Date: Thu, 8 May 2014 21:01:55 +0200
-X-Google-Sender-Auth: MQsibnM8gnxkCKFPq4YZXy6gbhQ
-Message-ID: <CAMuHMdXggzywt8q0DPrBVCyNVPKFXxwk5dKNaqmXHv+wTDRQhw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] ARM: shmobile: r8a7740 dtsi: Add Ethernet support
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Bastian Hecht <hechtb+renesas@gmail.com>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399474907-22206-8-git-send-email-Waiman.Long@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sergey,
+On Wed, May 07, 2014 at 11:01:35AM -0400, Waiman Long wrote:
+>  /**
+> + * get_qlock - Set the lock bit and own the lock
+> + * @lock: Pointer to queue spinlock structure
+> + *
+> + * This routine should only be called when the caller is the only one
+> + * entitled to acquire the lock.
+> + */
+> +static __always_inline void get_qlock(struct qspinlock *lock)
 
-On Thu, May 8, 2014 at 8:52 PM, Sergei Shtylyov
-<sergei.shtylyov@cogentembedded.com> wrote:
->>>     Mine was the same (but for BOCK-W board) but DT people didn't give a
->>> damn. :-) So there's still no Ethernet support in BOCK-W DT.
->
->> Yes there is: ethernet@18300000.
->
->    That's for an on-board SMSC911x, not for sh_eth.
+set_locked()
 
-Oh, it has two Ethernet ports? Didn't know that.
+> +{
+> +	struct __qspinlock *l = (void *)lock;
+> +
+> +	barrier();
+> +	ACCESS_ONCE(l->locked) = _Q_LOCKED_VAL;
+> +	barrier();
+> +}
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+get_qlock() is just horrible. The function doesn't actually _get_
+anything, and qlock is not in line with the rest of the naming.
