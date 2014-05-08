@@ -1,188 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302AbaEHRgO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 13:36:14 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:58321 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754413AbaEHRgJ (ORCPT
+	id S1755339AbaEHRgt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 13:36:49 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:65377 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754482AbaEHRgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 13:36:09 -0400
-X-AuditID: cbfee61a-b7f2b6d000006c4d-2c-536bc088e43e
+	Thu, 8 May 2014 13:36:46 -0400
+X-AuditID: cbfee61a-b7f2b6d000006c4d-56-536bc0ad9a2a
 From: Sylwester Nawrocki <s.nawrocki@samsung.com>
 To: linux-media@vger.kernel.org
-Cc: devicetree@vger.kernel.org, kyungmin.park@samsung.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+Cc: robh+dt@kernel.org, mark.rutland@arm.com, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
         Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH V2 2/4] exynos4-is: Move firmware request to subdev open()
-Date: Thu, 08 May 2014 19:35:16 +0200
-Message-id: <1399570516-29782-2-git-send-email-s.nawrocki@samsung.com>
+Subject: [PATCH V2 3/4] exynos4-is: Remove requirement for "simple-bus"
+ compatible
+Date: Thu, 08 May 2014 19:36:23 +0200
+Message-id: <1399570583-29824-1-git-send-email-s.nawrocki@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1399570516-29782-1-git-send-email-s.nawrocki@samsung.com>
-References: <1399570516-29782-1-git-send-email-s.nawrocki@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmluLIzCtJLcpLzFFi42I5/e+xgG7Hgexgg1XHpCzmHznHanG26Q27
-	xabH11gtLu+aw2bRs2Erq8XhN+2sDmwem5fUe/RtWcXo8XmTXABzFJdNSmpOZllqkb5dAldG
-	y4czzAVztSq+r+tkbWCcodzFyMkhIWAi8eHBZhYIW0ziwr31bF2MXBxCAosYJdbe2cAI4XQw
-	STxYvgusik3AUKL3aB8jiC0iIC/xpPcGWAezwDpGiV/z+plBEsICXhLbf/9hA7FZBFQlLq/t
-	ZgexeQXcJC4tmQEU5wBapyAxZ5INiMkp4C4xY2YiSIUQUMXa+2fYJjDyLmBkWMUomlqQXFCc
-	lJ5rqFecmFtcmpeul5yfu4kRHDTPpHYwrmywOMQowMGoxMP7Ykp2sBBrYllxZe4hRgkOZiUR
-	3hfLgEK8KYmVValF+fFFpTmpxYcYpTlYlMR5D7RaBwoJpCeWpGanphakFsFkmTg4pRoYzbas
-	nlR9RmTWea69qj8Nyn6ItTE7hO51unZX7JrFoX0ypWKJd3i5v080EpKfNe/IstTq436RkjsD
-	VecLxxocU4jzXnrr7LHLhbe9m/YsX7dg5qJF+8tPWz348EZQoyFaXWNl3KkbeyMXO3t8XX7e
-	7o5af2hefZ6v97R3rt94SxczbprEsen6ASWW4oxEQy3mouJEAOiTRpYWAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPJMWRmVeSWpSXmKPExsVy+t9jAd21B7KDDT5sFrSYf+Qcq8XZpjfs
+	FpseX2O1uLxrDptFz4atrBZLr19ksmjde4Td4vCbdlYHDo8189Ywemxa1cnmsXlJvUffllWM
+	Hp83yQWwRnHZpKTmZJalFunbJXBlrPnfyFzwUK/i9LGwBsb7al2MnBwSAiYSq2c0sEHYYhIX
+	7q0Hsrk4hAQWMUpsaD3PDOF0MEm8nvWPGaSKTcBQovdoHyOILSIgL/Gk9wZYB7PADUaJNS1/
+	mUASwgIhEj9P/gAbyyKgKvHx4V2wZl4BN4nL2yaydDFyAK1TkJgzyWYCI/cCRoZVjKKpBckF
+	xUnpuYZ6xYm5xaV56XrJ+bmbGMHB8kxqB+PKBotDjAIcjEo8vC+mZAcLsSaWFVfmHmKU4GBW
+	EuF9sQwoxJuSWFmVWpQfX1Sak1p8iFGag0VJnPdAq3WgkEB6YklqdmpqQWoRTJaJg1OqgZE5
+	z//12pknw63jZpVc/sMVUPWq2iH9km7lAkm3mgnT7jrcK/20aenlk7sM+vpa9taur8isvMzW
+	frN9q6DfJpG2A48n5TKty7BV0op8M+NxxIZJcsKKiUuUsxOXvwnWkHktN3/9VIaT+16sc7Cf
+	zr38U262p2hH0EezqW8uCH0yWPl74YYMd0slluKMREMt5qLiRADlMtsuEgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the firmware request to the FIMC-IS-ISP subdev open callback
-so we can avoid crashed on error paths in probe and deferred probing,
-when firmware request was sheduled and is in progress while the
-fimc-is device is being unregistered and its driver detached.
+This patch makes the driver instantiating its child devices itself,
+rather than relying on an OS to instantiate devices as children
+of "simple-bus". This removes an incorrect usage of "simple-bus"
+compatible.
 
 Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/media/platform/exynos4-is/fimc-is.c  |   31 ++++++++------------------
- drivers/media/platform/exynos4-is/fimc-is.h  |    2 +-
- drivers/media/platform/exynos4-is/fimc-isp.c |   10 ++++++++-
- 3 files changed, 19 insertions(+), 24 deletions(-)
+This patch addresses Mark's review comments:
+https://patchwork.linuxtv.org/patch/23008/
+---
+ .../devicetree/bindings/media/samsung-fimc.txt     |    6 +++---
+ drivers/media/platform/exynos4-is/fimc-is.c        |   16 +++++++++++++--
+ drivers/media/platform/exynos4-is/media-dev.c      |   21 ++++++++++++++++----
+ 3 files changed, 34 insertions(+), 9 deletions(-)
 
+diff --git a/Documentation/devicetree/bindings/media/samsung-fimc.txt b/Documentation/devicetree/bindings/media/samsung-fimc.txt
+index 922d6f8..8ce5984 100644
+--- a/Documentation/devicetree/bindings/media/samsung-fimc.txt
++++ b/Documentation/devicetree/bindings/media/samsung-fimc.txt
+@@ -15,9 +15,9 @@ Common 'camera' node
+ 
+ Required properties:
+ 
+-- compatible: must be "samsung,fimc", "simple-bus"
++- compatible: should be "samsung,fimc",
+ - clocks: list of clock specifiers, corresponding to entries in
+-  the clock-names property;
++  the clock-names property,
+ - clock-names : must contain "sclk_cam0", "sclk_cam1", "pxl_async0",
+   "pxl_async1" entries, matching entries in the clocks property.
+ 
+@@ -157,7 +157,7 @@ Example:
+ 	};
+ 
+ 	camera {
+-		compatible = "samsung,fimc", "simple-bus";
++		compatible = "samsung,fimc";
+ 		clocks = <&clock 132>, <&clock 133>, <&clock 351>,
+ 			 <&clock 352>;
+ 		clock-names = "sclk_cam0", "sclk_cam1", "pxl_async0",
 diff --git a/drivers/media/platform/exynos4-is/fimc-is.c b/drivers/media/platform/exynos4-is/fimc-is.c
-index 5476dce..6bbb6ca 100644
+index 6bbb6ca..4be3dd8 100644
 --- a/drivers/media/platform/exynos4-is/fimc-is.c
 +++ b/drivers/media/platform/exynos4-is/fimc-is.c
-@@ -374,22 +374,22 @@ static void fimc_is_free_cpu_memory(struct fimc_is *is)
- 			  is->memory.paddr);
- }
- 
--static void fimc_is_load_firmware(const struct firmware *fw, void *context)
-+int fimc_is_request_firmware(struct fimc_is *is, const char *fw_name)
- {
--	struct fimc_is *is = context;
-+	const struct firmware *fw;
- 	struct device *dev = &is->pdev->dev;
- 	void *buf;
- 	int ret;
- 
--	if (fw == NULL) {
-+	ret = request_firmware(&fw, fw_name, &is->pdev->dev);
-+	if (ret < 0) {
- 		dev_err(dev, "firmware request failed\n");
--		return;
-+		return ret;
- 	}
--	mutex_lock(&is->lock);
- 
- 	if (fw->size < FIMC_IS_FW_SIZE_MIN || fw->size > FIMC_IS_FW_SIZE_MAX) {
- 		dev_err(dev, "wrong firmware size: %d\n", fw->size);
--		goto done;
-+		return -EINVAL;
- 	}
- 
- 	is->fw.size = fw->size;
-@@ -397,7 +397,7 @@ static void fimc_is_load_firmware(const struct firmware *fw, void *context)
- 	ret = fimc_is_alloc_cpu_memory(is);
- 	if (ret < 0) {
- 		dev_err(dev, "failed to allocate FIMC-IS CPU memory\n");
--		goto done;
-+		return -ENOMEM;
- 	}
- 
- 	memcpy(is->memory.vaddr, fw->data, fw->size);
-@@ -430,16 +430,9 @@ static void fimc_is_load_firmware(const struct firmware *fw, void *context)
- 	 */
- 	if (is->fw.f_w)
- 		release_firmware(is->fw.f_w);
--	is->fw.f_w = fw;
--done:
--	mutex_unlock(&is->lock);
--}
- 
--static int fimc_is_request_firmware(struct fimc_is *is, const char *fw_name)
--{
--	return request_firmware_nowait(THIS_MODULE,
--				FW_ACTION_HOTPLUG, fw_name, &is->pdev->dev,
--				GFP_KERNEL, is, fimc_is_load_firmware);
-+	is->fw.f_w = fw;
-+	return 0;
- }
- 
- /* General IS interrupt handler */
-@@ -795,7 +788,6 @@ static int fimc_is_probe(struct platform_device *pdev)
- 
- 	init_waitqueue_head(&is->irq_queue);
- 	spin_lock_init(&is->slock);
--	mutex_init(&is->lock);
- 
- 	ret = of_address_to_resource(dev->of_node, 0, &res);
- 	if (ret < 0)
-@@ -859,17 +851,12 @@ static int fimc_is_probe(struct platform_device *pdev)
- 	if (ret < 0)
- 		goto err_sd;
- 
--	ret = fimc_is_request_firmware(is, FIMC_IS_FW_FILENAME);
--	if (ret < 0)
--		goto err_dfs;
- 
- 	pm_runtime_put_sync(dev);
- 
- 	dev_dbg(dev, "FIMC-IS registered successfully\n");
+@@ -24,6 +24,7 @@
+ #include <linux/i2c.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_address.h>
++#include <linux/of_device.h>
+ #include <linux/of_graph.h>
+ #include <linux/of_platform.h>
+ #include <linux/platform_device.h>
+@@ -221,10 +222,9 @@ static int fimc_is_register_subdevs(struct fimc_is *is)
  	return 0;
- 
--err_dfs:
--	fimc_is_debugfs_remove(is);
- err_sd:
- 	fimc_is_unregister_subdevs(is);
- err_vb:
-diff --git a/drivers/media/platform/exynos4-is/fimc-is.h b/drivers/media/platform/exynos4-is/fimc-is.h
-index e0be691..16afd9c 100644
---- a/drivers/media/platform/exynos4-is/fimc-is.h
-+++ b/drivers/media/platform/exynos4-is/fimc-is.h
-@@ -234,7 +234,6 @@ struct chain_config {
-  * @pctrl: pointer to pinctrl structure for this device
-  * @v4l2_dev: pointer to top the level v4l2_device
-  * @alloc_ctx: videobuf2 memory allocator context
-- * @lock: mutex serializing video device and the subdev operations
-  * @slock: spinlock protecting this data structure and the hw registers
-  * @clocks: FIMC-LITE gate clock
-  * @regs: MCUCTL mmapped registers region
-@@ -336,6 +335,7 @@ static inline u32 pmuisp_read(struct fimc_is *is, unsigned int offset)
- 
- int fimc_is_wait_event(struct fimc_is *is, unsigned long bit,
- 		       unsigned int state, unsigned int timeout);
-+int fimc_is_request_firmware(struct fimc_is *is, const char *fw_name);
- int fimc_is_cpu_set_power(struct fimc_is *is, int on);
- int fimc_is_start_firmware(struct fimc_is *is);
- int fimc_is_hw_initialize(struct fimc_is *is);
-diff --git a/drivers/media/platform/exynos4-is/fimc-isp.c b/drivers/media/platform/exynos4-is/fimc-isp.c
-index be62d6b..915c46b 100644
---- a/drivers/media/platform/exynos4-is/fimc-isp.c
-+++ b/drivers/media/platform/exynos4-is/fimc-isp.c
-@@ -366,8 +366,11 @@ static int fimc_isp_subdev_s_power(struct v4l2_subdev *sd, int on)
- static int fimc_isp_subdev_open(struct v4l2_subdev *sd,
- 				struct v4l2_subdev_fh *fh)
- {
-+	struct fimc_isp *isp = v4l2_get_subdevdata(sd);
-+	struct fimc_is *is = fimc_isp_to_is(isp);
- 	struct v4l2_mbus_framefmt fmt;
- 	struct v4l2_mbus_framefmt *format;
-+	int ret;
- 
- 	format = v4l2_subdev_get_try_format(fh, FIMC_ISP_SD_PAD_SINK);
- 
-@@ -386,7 +389,12 @@ static int fimc_isp_subdev_open(struct v4l2_subdev *sd,
- 	format = v4l2_subdev_get_try_format(fh, FIMC_ISP_SD_PAD_SRC_DMA);
- 	*format = fmt;
- 
--	return 0;
-+	mutex_lock(&isp->subdev_lock);
-+	if (is->fw.f_w == NULL)
-+		ret = fimc_is_request_firmware(is, FIMC_IS_FW_FILENAME);
-+
-+	mutex_unlock(&isp->subdev_lock);
-+	return ret;
  }
  
- static int fimc_isp_subdev_registered(struct v4l2_subdev *sd)
+-static int fimc_is_unregister_subdevs(struct fimc_is *is)
++static void fimc_is_unregister_subdevs(struct fimc_is *is)
+ {
+ 	fimc_isp_subdev_destroy(&is->isp);
+-	return 0;
+ }
+ 
+ static int fimc_is_load_setfile(struct fimc_is *is, char *file_name)
+@@ -774,6 +774,8 @@ static int fimc_is_runtime_suspend(struct device *dev);
+ static int fimc_is_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
++	bool create_children = !of_device_is_compatible(dev->of_node,
++						       "simple-bus");
+ 	struct fimc_is *is;
+ 	struct resource res;
+ 	struct device_node *node;
+@@ -801,6 +803,12 @@ static int fimc_is_probe(struct platform_device *pdev)
+ 	if (!node)
+ 		return -ENODEV;
+ 
++	if (create_children) {
++		ret = of_platform_populate(dev->of_node, NULL, NULL, dev);
++		if (ret < 0)
++			return ret;
++	}
++
+ 	is->pmu_regs = of_iomap(node, 0);
+ 	if (!is->pmu_regs)
+ 		return -ENOMEM;
+@@ -868,6 +876,9 @@ err_irq:
+ 	free_irq(is->irq, is);
+ err_clk:
+ 	fimc_is_put_clocks(is);
++	if (create_children)
++		of_device_destroy_children(dev);
++
+ 	return ret;
+ }
+ 
+@@ -928,6 +939,7 @@ static int fimc_is_remove(struct platform_device *pdev)
+ 		release_firmware(is->fw.f_w);
+ 	fimc_is_free_cpu_memory(is);
+ 
++	of_device_destroy_children(dev);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/media/platform/exynos4-is/media-dev.c b/drivers/media/platform/exynos4-is/media-dev.c
+index 344718d..f6d89ac 100644
+--- a/drivers/media/platform/exynos4-is/media-dev.c
++++ b/drivers/media/platform/exynos4-is/media-dev.c
+@@ -622,13 +622,13 @@ dev_unlock:
+ }
+ 
+ /* Register FIMC, FIMC-LITE and CSIS media entities */
+-static int fimc_md_register_platform_entities(struct fimc_md *fmd,
+-					      struct device_node *parent)
++static int fimc_md_register_platform_entities(struct fimc_md *fmd)
+ {
++	struct device *parent = &fmd->pdev->dev;
+ 	struct device_node *node;
+ 	int ret = 0;
+ 
+-	for_each_available_child_of_node(parent, node) {
++	for_each_available_child_of_node(parent->of_node, node) {
+ 		struct platform_device *pdev;
+ 		int plat_entity = -1;
+ 
+@@ -651,6 +651,7 @@ static int fimc_md_register_platform_entities(struct fimc_md *fmd,
+ 			ret = fimc_md_register_platform_entity(fmd, pdev,
+ 							plat_entity);
+ 		put_device(&pdev->dev);
++
+ 		if (ret < 0)
+ 			break;
+ 	}
+@@ -1318,6 +1319,8 @@ unlock:
+ static int fimc_md_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
++	bool create_children = !of_device_is_compatible(dev->of_node,
++						       "simple-bus");
+ 	struct v4l2_device *v4l2_dev;
+ 	struct fimc_md *fmd;
+ 	int ret;
+@@ -1343,6 +1346,14 @@ static int fimc_md_probe(struct platform_device *pdev)
+ 	fmd->use_isp = fimc_md_is_isp_available(dev->of_node);
+ 	fmd->user_subdev_api = true;
+ 
++	if (create_children) {
++		ret = of_platform_populate(dev->of_node,
++					   of_default_bus_match_table,
++					   NULL, dev);
++		if (ret < 0)
++			return ret;
++	}
++
+ 	ret = v4l2_device_register(dev, &fmd->v4l2_dev);
+ 	if (ret < 0) {
+ 		v4l2_err(v4l2_dev, "Failed to register v4l2_device: %d\n", ret);
+@@ -1371,7 +1382,7 @@ static int fimc_md_probe(struct platform_device *pdev)
+ 	/* Protect the media graph while we're registering entities */
+ 	mutex_lock(&fmd->media_dev.graph_mutex);
+ 
+-	ret = fimc_md_register_platform_entities(fmd, dev->of_node);
++	ret = fimc_md_register_platform_entities(fmd);
+ 	if (ret) {
+ 		mutex_unlock(&fmd->media_dev.graph_mutex);
+ 		goto err_clk;
+@@ -1426,6 +1437,8 @@ err_md:
+ 	media_device_unregister(&fmd->media_dev);
+ err_v4l2_dev:
+ 	v4l2_device_unregister(&fmd->v4l2_dev);
++	if (create_children)
++		of_device_destroy_children(dev);
+ 	return ret;
+ }
+ 
 -- 
 1.7.9.5
 
