@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838AbaEHVul (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 17:50:41 -0400
-Received: from mailout.micron.com ([137.201.242.129]:53543 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755414AbaEHVuk (ORCPT
+	id S1755965AbaEHVxr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 17:53:47 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:52858 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755378AbaEHVxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 17:50:40 -0400
-Message-ID: <536BFC2E.10404@micron.com>
-Date: Thu, 8 May 2014 14:50:38 -0700
-From: Asai Thambi S P <asamymuthupa@micron.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:28.0) Gecko/20100101 Thunderbird/28.0
+	Thu, 8 May 2014 17:53:46 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/IyuEwTmQIP+xVGtAakhBi
+Date: Thu, 8 May 2014 14:53:38 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Peter Griffin <peter.griffin@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-fbdev@vger.kernel.org, linux-omap@vger.kernel.org,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Janusz Krzysztofik <jmkrzyszt@gmail.com>
+Subject: Re: [PATCH 13/13] video: omap: allow building on !MMU
+Message-ID: <20140508215338.GE2198@atomide.com>
+References: <1398342509-10243-1-git-send-email-peter.griffin@linaro.org>
+ <1398342509-10243-14-git-send-email-peter.griffin@linaro.org>
+ <5369F973.10803@ti.com>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Sam Bradshaw <sbradshaw@micron.com>, Selvan Mani <smani@micron.com>
-Subject: mtip32xx: add open/close handlers in block device ops
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20682.002
-X-TM-AS-Result: No--4.378100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5369F973.10803@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Tomi Valkeinen <tomi.valkeinen@ti.com> [140507 02:15]:
+> On 24/04/14 15:28, Peter Griffin wrote:
+> > From: Arnd Bergmann <arnd@arndb.de>
+> > 
+> > The omap lcdc driver has an elaborate mmap_kern function
+> > to map the frame buffer into kernel address space as
+> > write-combined. This uses functions that are only available
+> > on MMU-enabled builds.
+> > 
+> > It does seem equivalent to ioremap_wc though, so we should
+> > be able to just use that instead.
+> > 
+> > This patch is build-tested only, it needs to be run on real
+> > hardware before applying.
+> 
+> I don't have omap1 boards, and I don't know anyone that has. I don't
+> even know if the omap1 fb is working or not...
+> 
+> Tony, any idea of omap1's fb? Are you able to test this?
 
-Add open/close handlers to 'block_device_operations' instance.
+I have three omap1 boards in my rack that I use for my boot
+testing. Tried to enable framebuffer but so far no luck on
+any of them. So I'm not much of a help here. Looks like the
+patch should work though..
 
-Signed-off-by: Selvan Mani <smani@micron.com>
-Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
----
- drivers/block/mtip32xx/mtip32xx.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+Aaro & Janusz, care to take a look at the patch in this
+thread?
 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index 7dc4fb4..bbbd83e 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -4010,6 +4010,16 @@ static int mtip_block_getgeo(struct block_device *dev,
- 	return 0;
- }
- 
-+int mtip_block_open(struct block_device *disk, fmode_t mode)
-+{
-+	return 0;
-+}
-+
-+void mtip_block_release(struct gendisk *disk, fmode_t mode)
-+{
-+	return;
-+}
-+
- /*
-  * Block device operation function.
-  *
-@@ -4017,6 +4027,8 @@ static int mtip_block_getgeo(struct block_device *dev,
-  * layer.
-  */
- static const struct block_device_operations mtip_block_ops = {
-+	.open 		= mtip_block_open,
-+	.release	= mtip_block_release,
- 	.ioctl		= mtip_block_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl	= mtip_block_compat_ioctl,
--- 
-1.7.1
+Regards,
 
+Tony
