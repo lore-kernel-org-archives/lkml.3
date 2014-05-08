@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759AbaEHUIW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 16:08:22 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40988 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754798AbaEHUIU (ORCPT
+	id S1755590AbaEHUMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 16:12:18 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:57957 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755017AbaEHUMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 16:08:20 -0400
-Message-ID: <536BE431.50007@free-electrons.com>
-Date: Thu, 08 May 2014 22:08:17 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 8 May 2014 16:12:17 -0400
+Date: Thu, 8 May 2014 16:12:14 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Doug Anderson <dianders@chromium.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Will Deacon <will.deacon@arm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        David Riley <davidriley@chromium.org>,
+        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP
+ systems
+In-Reply-To: <20140508192209.GH3693@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.11.1405081600260.980@knanqh.ubzr>
+References: <1399504982-31181-1-git-send-email-dianders@chromium.org> <CAOh2x=kwaoSdj8JO0Vo08Y0dX2UfKFiF3pBV-qtp-YTyN=8H8Q@mail.gmail.com> <CAD=FV=UEGJGHrdcXgs3EZ_wFXT8GnNeCOMt7CgdiiUzBzZ5Y0A@mail.gmail.com> <alpine.LFD.2.11.1405081149190.980@knanqh.ubzr>
+ <CAD=FV=VtcLOh51LCmafzRMdqtDrwKXCqK6gE6V7OOOUe4gjwbA@mail.gmail.com> <alpine.LFD.2.11.1405081329010.980@knanqh.ubzr> <20140508192209.GH3693@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Chen-Yu Tsai <wens@csie.org>
-CC: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin <kevin@allwinnertech.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        devicetree <devicetree@vger.kernel.org>, linux-doc@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, dev <dev@linux-sunxi.org>
-Subject: Re: [PATCH v2 7/7] ARM: sunxi: dt: add PRCM clk and reset controller
- subdevices
-References: <1399483554-8824-1-git-send-email-boris.brezillon@free-electrons.com> <1399483554-8824-8-git-send-email-boris.brezillon@free-electrons.com> <20140508031700.GO7047@lukather> <CAGb2v664vFwezKVp+C1UYdsUktRhrZDxjsyf9L=kwVHGCUV=HA@mail.gmail.com> <20140508142934.GV7047@lukather>
-In-Reply-To: <20140508142934.GV7047@lukather>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 8 May 2014, Russell King - ARM Linux wrote:
 
-On 08/05/2014 16:29, Maxime Ripard wrote:
-> On Thu, May 08, 2014 at 11:40:59AM +0800, Chen-Yu Tsai wrote:
->>>> +                     apb0_gates: apb0_gates_clk {
->>>> +                             compatible = "allwinner,sun6i-a31-apb0-gates-clk";
->>>> +                             #clock-cells = <1>;
->>>> +                             clocks = <&apb0>;
->>>> +                             clock-output-names = "apb0_pio", "apb0_ir",
->>>> +                                             "apb0_timer01", "apb0_p2wi",
->>> timer01 ? is this a typo?
->> A23 manual lists the clock gate as "r_timer0_1", so I put the name on the wiki.
->> Allwinner sun6i code uses "r_tmr" or just "tmr". I see no problem naming this
->> clock output as "apb0_timer" though.
-> Yep, it seems better.
+> Anything which is expecting precise timings from udelay() is broken.
+> Firstly, udelay() does _not_ guarantee to give you a delay of at least
+> the requested period - it tries to give an _approximate_ delay.
+> 
+> The first thing to realise is that loops_per_jiffy is calibrated with
+> interrupts _on_, which means that the calculated loops_per_jiffy is
+> the number of iterations in a jiffy _minus_ the time it takes for the
+> timer interrupt to be processed.  This means loops_per_jiffy will
+> always be smaller than the number of loops that would be executed
+> within the same period.
+> 
+> This leads to udelay() always producing slightly shorter than
+> requested delays - this is quite measurable.
 
-Fair enough, I'll change the name for the next version.
+OK, this is certainly bad.  Hopefully it won't be that far off like it 
+would when the CPU is in the middle of a clock freq transition.
 
->
-> Maxime
->
+> It gets worse when you consider the utter mess that the L2 cache code
+> is in - where on many platforms we calibrate udelay() with the cache
+> off, which results in loops_per_jiffy being smaller than it would
+> otherwise be (meaning shorter delays.)
+> 
+> So, that's two reasons there why loops_per_jiffy will be smaller than
+> it should be at boot, and therefore udelay() will be inaccurate.
+> 
+> Another reason udelay() can be unaccurate is if interrupts are on, and
+> you have USB present.  USB interrupt processing can take on the order
+> of 10s of milliseconds even on 800MHz or faster ARM CPUs.  If you
+> receive one of those mid-udelay(), your CPU will be occupied elsewhere.
+> 
+> Another reason is preempt.  If the kernel can preempt during udelay(),
+> your delay will also be much longer than you requested.  No, disabling
+> preemption in udelay() is not on, that would increase preemption
+> latency.
+> 
+> So, the only /real/ solution if you want proper delays is for udelay()
+> to use a timer or counter, and this is should always the preferred
+> method where it's available.  Quite rightly, we're not hacking udelay()
+> stuff to work around not having that, or if someone configures it out.
 
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+What about using a default based on ktime_get(), or even sched_clock(), 
+when SMP and cpufreq are configured in?
 
+
+Nicolas
