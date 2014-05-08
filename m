@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217AbaEHOru (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 10:47:50 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:59498 "EHLO
+	id S1754312AbaEHOr7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 10:47:59 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:54417 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaEHOrs (ORCPT
+	with ESMTP id S1754241AbaEHOr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 10:47:48 -0400
+	Thu, 8 May 2014 10:47:56 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH] mdio_bus: fix devm_mdiobus_alloc_size export
-Date: Thu,  8 May 2014 16:46:52 +0200
-Message-Id: <1399560433-1402630-2-git-send-email-arnd@arndb.de>
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org
+Subject: [PATCH 2/2] phy: exynos: fix SATA phy license typo
+Date: Thu,  8 May 2014 16:46:54 +0200
+Message-Id: <1399560433-1402630-4-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
 References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:2UpEL2GZKuHR7EejhcaBkLfJ3U+lRO2hcWdGbyBekks
- TaJsaRuhDIuDDwr17EptETDfgDllG5/ivWkphOcXeEOeEH1ac3
- lyDZ3Z1ZA3HmPrm31bMtFA0EpBeW+4rzqhpCRRn/LjPIcDurtp
- VlBlWr45z0yqJr1VWU9fTsS+LSSDy+pQ9QIieMuZmUMJej/d/y
- vdew2Xct1IRcB3Cddmj4sA6/Po2F7md1qmqqphUl5eMk6acArW
- ug0Z50FJ8iMQ+m5DUelPv7EAWwrRJlvcsPo4fQh8ceWewYsHI8
- t3tT2x/2EV47HgQm5pEh723cv6HKl4CdVtx9u9xKBdECCbV+xE
- hNEqnlFrgxdHws0gFtmqSPcDXKxdT1OMotMZSxkna
+X-Provags-ID: V02:K0:/0l7M1b7toiL37SHD+QCZXI00U6aXY543eXndi/wPRN
+ VWOzouEltJakg7dH9TKBnmFdaeNJOps3ysS8xlsg6SsgTqYW/H
+ IeXIjpL0ALbGkXXJ4539NzUcbgbPfzGJsTeJ1kO/lUC43LKVrg
+ 4pvuoye9jI4rk201ec0mUHiscB6Pj/4kgrR4gLXKFR9Jbn13w3
+ ncwviW3uuKShCqbCZhL8cSaJk74Q71qTlKTvyZIKubJq7CSpYK
+ m1xYTWRxdoZrU/Rhekrox7xBQYboIKBVRDVQCLt03aOkeeGKjM
+ Ule4/fZnubqDjbeQKyBaH3eZvukGctSnz0X+4VgKNn5WhSTST9
+ zs0eZkSOT83YoduRdpi0akx/qCzVC9PiCJlvYEyy+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 6d48f44b7b2 "mdio_bus: implement devm_mdiobus_alloc/devm_mdiobus_free"
-introduced a new function devm_mdiobus_alloc_size() but added an export
-for a different function devm_mdiobus_alloc(), which was obviously
-a simple mistake that leads to  build error whenever this function is
-used from a loadable module:
-
-ERROR: "devm_mdiobus_alloc_size" [drivers/net/ethernet/ti/davinci_mdio.ko] undefined!
+If the license string doesn't match exactly, the module refuses
+to load.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org
+Cc: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org
 ---
- drivers/net/phy/mdio_bus.c | 2 +-
+ drivers/phy/phy-exynos5250-sata.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
-index 68a9a38..a628496 100644
---- a/drivers/net/phy/mdio_bus.c
-+++ b/drivers/net/phy/mdio_bus.c
-@@ -117,7 +117,7 @@ struct mii_bus *devm_mdiobus_alloc_size(struct device *dev, int sizeof_priv)
+diff --git a/drivers/phy/phy-exynos5250-sata.c b/drivers/phy/phy-exynos5250-sata.c
+index c9361b7..0568945 100644
+--- a/drivers/phy/phy-exynos5250-sata.c
++++ b/drivers/phy/phy-exynos5250-sata.c
+@@ -246,6 +246,6 @@ static struct platform_driver exynos_sata_phy_driver = {
+ module_platform_driver(exynos_sata_phy_driver);
  
- 	return bus;
- }
--EXPORT_SYMBOL_GPL(devm_mdiobus_alloc);
-+EXPORT_SYMBOL_GPL(devm_mdiobus_alloc_size);
- 
- /**
-  * devm_mdiobus_free - Resource-managed mdiobus_free()
+ MODULE_DESCRIPTION("Samsung SerDes PHY driver");
+-MODULE_LICENSE("GPL V2");
++MODULE_LICENSE("GPL v2");
+ MODULE_AUTHOR("Girish K S <ks.giri@samsung.com>");
+ MODULE_AUTHOR("Yuvaraj C D <yuvaraj.cd@samsung.com>");
 -- 
 1.8.3.2
 
