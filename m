@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867AbaEHF07 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 01:26:59 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:36726 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055AbaEHF05 (ORCPT
+	id S1752212AbaEHFaK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 01:30:10 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:34138 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704AbaEHFaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 01:26:57 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Thu, 8 May 2014 14:28:46 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2 2/2] mm/compaction: avoid rescanning pageblocks in
- isolate_freepages
-Message-ID: <20140508052845.GB9161@js1304-P5Q-DELUXE>
-References: <alpine.DEB.2.02.1405061922220.18635@chino.kir.corp.google.com>
- <1399464550-26447-1-git-send-email-vbabka@suse.cz>
- <1399464550-26447-2-git-send-email-vbabka@suse.cz>
+	Thu, 8 May 2014 01:30:07 -0400
+Date: Wed, 7 May 2014 22:30:05 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [patch -mm] mm, thp: avoid excessive compaction latency during fault
+ fix
+In-Reply-To: <alpine.DEB.2.02.1405061922010.18635@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.02.1405072229390.19108@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com> <alpine.DEB.2.02.1405061920470.18635@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1405061922010.18635@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399464550-26447-2-git-send-email-vbabka@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 02:09:10PM +0200, Vlastimil Babka wrote:
-> The compaction free scanner in isolate_freepages() currently remembers PFN of
-> the highest pageblock where it successfully isolates, to be used as the
-> starting pageblock for the next invocation. The rationale behind this is that
-> page migration might return free pages to the allocator when migration fails
-> and we don't want to skip them if the compaction continues.
-> 
-> Since migration now returns free pages back to compaction code where they can
-> be reused, this is no longer a concern. This patch changes isolate_freepages()
-> so that the PFN for restarting is updated with each pageblock where isolation
-> is attempted. Using stress-highalloc from mmtests, this resulted in 10%
-> reduction of the pages scanned by the free scanner.
+mm-thp-avoid-excessive-compaction-latency-during-fault.patch excludes sync
+compaction for all high order allocations other than thp.  What we really
+want to do is suppress sync compaction for thp, but only during the page
+fault path.
 
-Hello,
+Orders greater than PAGE_ALLOC_COSTLY_ORDER aren't necessarily going to
+loop again so this is the only way to exhaust our capabilities before
+declaring that we can't allocate.
 
-Although this patch could reduce page scanned, it is possible to skip
-scanning fresh pageblock. If there is zone lock contention and we are on
-asyn compaction, we stop scanning this pageblock immediately. And
-then, we will continue to scan next pageblock. With this patch,
-next_free_pfn is updated in this case, so we never come back again to this
-pageblock. Possibly this makes compaction success rate low, doesn't
-it?
+Reported-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ mm/page_alloc.c | 17 +++++++----------
+ 1 file changed, 7 insertions(+), 10 deletions(-)
 
-Thanks.
-
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2585,16 +2585,13 @@ rebalance:
+ 	if (page)
+ 		goto got_pg;
+ 
+-	if (gfp_mask & __GFP_NO_KSWAPD) {
+-		/*
+-		 * Khugepaged is allowed to try MIGRATE_SYNC_LIGHT, the latency
+-		 * of this allocation isn't critical.  Everything else, however,
+-		 * should only be allowed to do MIGRATE_ASYNC to avoid excessive
+-		 * stalls during fault.
+-		 */
+-		if ((current->flags & (PF_KTHREAD | PF_KSWAPD)) == PF_KTHREAD)
+-			migration_mode = MIGRATE_SYNC_LIGHT;
+-	}
++	/*
++	 * It can become very expensive to allocate transparent hugepages at
++	 * fault, so use asynchronous memory compaction for THP unless it is
++	 * khugepaged trying to collapse.
++	 */
++	if (!(gfp_mask & __GFP_NO_KSWAPD) || (current->flags & PF_KTHREAD))
++		migration_mode = MIGRATE_SYNC_LIGHT;
+ 
+ 	/*
+ 	 * If compaction is deferred for high-order allocations, it is because
