@@ -1,150 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983AbaEHKg1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 06:36:27 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:20370 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027AbaEHKgZ (ORCPT
+	id S1753998AbaEHKhQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 06:37:16 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50546 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753106AbaEHKhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 06:36:25 -0400
-X-AuditID: cbfee68f-b7eff6d000002b70-e1-536b5e27678b
-From: Namjae Jeon <namjae.jeon@samsung.com>
-To: "'Dave Chinner'" <david@fromorbit.com>, "'Theodore Ts'o'" <tytso@mit.edu>
-Cc: "'linux-ext4'" <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Ashish Sangwan'" <a.sangwan@samsung.com>
-Subject: [PATCH v2 9/9] xfstests: fsstress: Add fallocate insert range
-Date: Thu, 08 May 2014 19:36:23 +0900
-Message-id: <003f01cf6aa9$5ba9b6a0$12fd23e0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9qqUyE+5riHYd7SUWMy47eodWXvw==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsWyRsSkSFcjLjvYYEW9xdKJl5gtthy7x2gx
-	c94dNos9e0+yWFzeNYfNorXnJ7vFor5bjA7sHqcWSXg0nTnK7LH6wlZGj74tqxg9Pm+SC2CN
-	4rJJSc3JLEst0rdL4MrYcOApW8Es0YoVb48zNTD+FOhi5OSQEDCRuDRzHiuELSZx4d56ti5G
-	Lg4hgaWMEu/ObmKDKTrX84YVIrGIUWLxojOMEM5fRomPb5+wdzFycLAJaEv82SIK0iAi4Cmx
-	+PhWsEnMAisZJe4d/wg2SVjATeLlr0PsIDaLgKrEmfZjYDavgKXE8VUzGCFsQYkfk++xgNjM
-	AloS63ceZ4Kw5SU2r3nLDHGRgsSOs68ZIZbpSWw9fYcVokZEYt+Ld2DHSQhcYpd42L6GFWKZ
-	gMS3yYdYQA6VEJCV2HQAao6kxMEVN1gmMIrNQrJ6FpLVs5CsnoVkxQJGllWMoqkFyQXFSelF
-	xnrFibnFpXnpesn5uZsYgdF4+t+z/h2Mdw9YH2JMBlo/kVlKNDkfGM15JfGGxmZGFqYmpsZG
-	5pZmpAkrifPef5gUJCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoHRQExvhUCqhQBP1bwjyYFS
-	nCri61pPfdSJ7Vqx4Cr3kzcunaFZU9dd2B2eH3Vj479PHoG/NeZYb5vvWLvvseVZ8VvedUfe
-	Pfp6bsKGaQzexu92eaq/E5iU9K60R05zUvgU4w0WPpHXpTy2KG+quq3fVfbmtdQL/YajRfxH
-	Tn7MlSuYvubXoRuxSizFGYmGWsxFxYkA/6sqVNwCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jAV31uOxgg641ZhZLJ15itthy7B6j
-	xcx5d9gs9uw9yWJxedccNovWnp/sFov6bjE6sHucWiTh0XTmKLPH6gtbGT36tqxi9Pi8SS6A
-	NaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6Awl
-	hbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8aGA0/ZCmaJVqx4e5ypgfGn
-	QBcjJ4eEgInEuZ43rBC2mMSFe+vZuhi5OIQEFjFKLF50hhHC+cso8fHtE/YuRg4ONgFtiT9b
-	REEaRAQ8JRYf3wrWwCywklHi3vGPbCAJYQE3iZe/DrGD2CwCqhJn2o+B2bwClhLHV81ghLAF
-	JX5MvscCYjMLaEms33mcCcKWl9i85i0zxEUKEjvOvmaEWKYnsfX0HVaIGhGJfS/eMU5gFJiF
-	ZNQsJKNmIRk1C0nLAkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjB0f5MegfjqgaLQ4wC
-	HIxKPLwZzlnBQqyJZcWVuYcYJTiYlUR4efyzg4V4UxIrq1KL8uOLSnNSiw8xJgN9OpFZSjQ5
-	H5iI8kriDY1NzIwsjcwNLYyMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBcZ1j3rsP
-	dx7orFv4ICVa6fEsj99s9j+C3113KEg6VOh1pdFav6e0IMhw9YKoN4tn3ZfPv8DL9ujpCe7o
-	XV4rShc2Ffyeq6eSMjMl9NjlyqaeX95Jrd0LxP+EW8TPC7mq55t390TyXauX7737jlZVelxV
-	j/S/UnNb8pn5/tf+xl6Jl2yu/+V2UmIpzkg01GIuKk4EAAaFLNQ6AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 8 May 2014 06:37:11 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 1/3] PM / sleep: Flag to speed up suspend-resume of runtime-suspended devices
+Date: Thu, 08 May 2014 12:53:50 +0200
+Message-ID: <1589827.thSfpq14Si@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAPDyKFoYsKunfo1Vzp3U-QDZVg97m31taKG3ZuW_86Bt3xWPog@mail.gmail.com>
+References: <Pine.LNX.4.44L0.1405071126340.1325-100000@iolanthe.rowland.org> <2703563.1xTcfTGG98@vostro.rjw.lan> <CAPDyKFoYsKunfo1Vzp3U-QDZVg97m31taKG3ZuW_86Bt3xWPog@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds insert operation support for fsstress, which is
-meant to exercise fallocate FALLOC_FL_INSERT_RANGE support.
+On Thursday, May 08, 2014 09:49:36 AM Ulf Hansson wrote:
+> On 8 May 2014 01:29, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >
+> > Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
+> > resume all runtime-suspended devices during system suspend, mostly
+> > because those devices may need to be reprogrammed due to different
+> > wakeup settings for system sleep and for runtime PM.
+> >
+> > For some devices, though, it's OK to remain in runtime suspend
+> > throughout a complete system suspend/resume cycle (if the device was in
+> > runtime suspend at the start of the cycle).  We would like to do this
+> > whenever possible, to avoid the overhead of extra power-up and power-down
+> > events.
+> >
+> > However, problems may arise because the device's descendants may require
+> > it to be at full power at various points during the cycle.  Therefore the
+> > most straightforward way to do this safely is if the device and all its
+> > descendants can remain runtime suspended until the resume stage of system
+> > resume.
+> >
+> > To this end, introduce dev->power.leave_runtime_suspended.
+> > If a subsystem or driver sets this flag during the ->prepare() callback,
+> > and if the flag is set in all of the device's descendants, and if the
+> > device is still in runtime suspend at the beginning of the ->suspend()
+> > callback, that callback is allowed to return 0 without clearing
+> > power.leave_runtime_suspended and without changing the state of the
+> > device, unless the current state of the device is not appropriate for
+> > the upcoming system sleep state (for example, the device is supposed to
+> > wake up the system from that state and its current wakeup settings are
+> > not suitable for that).  Then, the PM core will not invoke the device's
+> > ->suspend_late(), ->suspend_irq(), ->resume_irq(), ->resume_early(), or
+> > ->resume() callbacks.  Instead, it will invoke ->runtime_resume() during
+> > the device resume stage of system resume.
+> >
+> > By leaving this flag set after ->suspend(), a driver or subsystem tells
+> > the PM core that the device is runtime suspended, it is in a suitable
+> > state for system suspend (for example, the wakeup setting does not
+> > need to be changed), and it does not need to return to full
+> > power until the resume stage.
+> >
+> > Changelog based on an Alan Stern's description of the idea
+> > (http://marc.info/?l=linux-pm&m=139940466625569&w=2).
+> >
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >  drivers/base/power/main.c    |   31 ++++++++++++++++++++++++-------
+> >  drivers/base/power/runtime.c |   10 ++++++++++
+> >  include/linux/pm.h           |    3 +++
+> >  include/linux/pm_runtime.h   |   16 ++++++++++++++++
+> >  kernel/power/Kconfig         |    4 ++++
+> >  5 files changed, 57 insertions(+), 7 deletions(-)
+> >
+> > Index: linux-pm/kernel/power/Kconfig
+> > ===================================================================
+> > --- linux-pm.orig/kernel/power/Kconfig
+> > +++ linux-pm/kernel/power/Kconfig
+> > @@ -147,6 +147,10 @@ config PM
+> >         def_bool y
+> >         depends on PM_SLEEP || PM_RUNTIME
+> >
+> > +config PM_BOTH
+> > +       def_bool y
+> > +       depends on PM_SLEEP && PM_RUNTIME
+> > +
+> 
+> Should we not depend on PM_RUNTIME only? Thus we don't need the new
+> Kconfig,
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
----
- ltp/fsstress.c | 19 ++++++++++++++++---
- src/global.h   |  4 ++++
- 2 files changed, 20 insertions(+), 3 deletions(-)
+Well, OK.  I guess we can tolerate one useless statement in rpm_resume()
+in case CONFIG_PM_SLEEP is unset.
 
-diff --git a/ltp/fsstress.c b/ltp/fsstress.c
-index b56fe5c..aa3e0c3 100644
---- a/ltp/fsstress.c
-+++ b/ltp/fsstress.c
-@@ -72,6 +72,7 @@ typedef enum {
- 	OP_PUNCH,
- 	OP_ZERO,
- 	OP_COLLAPSE,
-+	OP_INSERT,
- 	OP_READ,
- 	OP_READLINK,
- 	OP_RENAME,
-@@ -170,6 +171,7 @@ void	mknod_f(int, long);
- void	punch_f(int, long);
- void	zero_f(int, long);
- void	collapse_f(int, long);
-+void	insert_f(int, long);
- void	read_f(int, long);
- void	readlink_f(int, long);
- void	rename_f(int, long);
-@@ -209,6 +211,7 @@ opdesc_t	ops[] = {
- 	{ OP_PUNCH, "punch", punch_f, 1, 1 },
- 	{ OP_ZERO, "zero", zero_f, 1, 1 },
- 	{ OP_COLLAPSE, "collapse", collapse_f, 1, 1 },
-+	{ OP_INSERT, "insert", insert_f, 1, 1 },
- 	{ OP_READ, "read", read_f, 1, 0 },
- 	{ OP_READLINK, "readlink", readlink_f, 1, 0 },
- 	{ OP_RENAME, "rename", rename_f, 2, 1 },
-@@ -2176,6 +2179,7 @@ struct print_flags falloc_flags [] = {
- 	{ FALLOC_FL_NO_HIDE_STALE, "NO_HIDE_STALE"},
- 	{ FALLOC_FL_COLLAPSE_RANGE, "COLLAPSE_RANGE"},
- 	{ FALLOC_FL_ZERO_RANGE, "ZERO_RANGE"},
-+	{ FALLOC_FL_INSERT_RANGE, "INSERT_RANGE"},
- 	{ -1, NULL}
- };
- 
-@@ -2227,10 +2231,11 @@ do_fallocate(int opno, long r, int mode)
- 	off %= maxfsize;
- 	len = (off64_t)(random() % (1024 * 1024));
- 	/*
--	 * Collapse range requires off and len to be block aligned, make it
--	 * more likely to be the case.
-+	 * Collapse/insert range requires off and len to be block aligned,
-+	 * make it more likely to be the case.
- 	 */
--	if ((mode & FALLOC_FL_COLLAPSE_RANGE) && (opno % 2)) {
-+	if ((mode & (FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_INSERT_RANGE)) &&
-+		(opno % 2)) {
- 		off = ((off + stb.st_blksize - 1) & ~(stb.st_blksize - 1));
- 		len = ((len + stb.st_blksize - 1) & ~(stb.st_blksize - 1));
- 	}
-@@ -2656,6 +2661,14 @@ collapse_f(int opno, long r)
- }
- 
- void
-+insert_f(int opno, long r)
-+{
-+#ifdef HAVE_LINUX_FALLOC_H
-+	do_fallocate(opno, r, FALLOC_FL_INSERT_RANGE);
-+#endif
-+}
-+
-+void
- read_f(int opno, long r)
- {
- 	char		*buf;
-diff --git a/src/global.h b/src/global.h
-index 8180f66..8f64787 100644
---- a/src/global.h
-+++ b/src/global.h
-@@ -172,6 +172,10 @@
- #define FALLOC_FL_ZERO_RANGE		0x10
- #endif
- 
-+#ifndef FALLOC_FL_INSERT_RANGE
-+#define FALLOC_FL_INSERT_RANGE		0x20
-+#endif
-+
- #endif /* HAVE_LINUX_FALLOC_H */
- 
- #endif /* GLOBAL_H */
+> and then we could rename the new APIs to pm_runtime_* instead.
+
+That would just make the name longer - for what value?
+
+> >  config PM_DEBUG
+> >         bool "Power Management Debug Support"
+> >         depends on PM
+> > Index: linux-pm/include/linux/pm.h
+> > ===================================================================
+> > --- linux-pm.orig/include/linux/pm.h
+> > +++ linux-pm/include/linux/pm.h
+> > @@ -583,6 +583,9 @@ struct dev_pm_info {
+> >         unsigned long           suspended_jiffies;
+> >         unsigned long           accounting_timestamp;
+> >  #endif
+> > +#ifdef CONFIG_PM_BOTH
+> > +       bool                    leave_runtime_suspended:1;
+> > +#endif
+> >         struct pm_subsys_data   *subsys_data;  /* Owned by the subsystem. */
+> >         void (*set_latency_tolerance)(struct device *, s32);
+> >         struct dev_pm_qos       *qos;
+> > Index: linux-pm/include/linux/pm_runtime.h
+> > ===================================================================
+> > --- linux-pm.orig/include/linux/pm_runtime.h
+> > +++ linux-pm/include/linux/pm_runtime.h
+> > @@ -264,4 +264,20 @@ static inline void pm_runtime_dont_use_a
+> >         __pm_runtime_use_autosuspend(dev, false);
+> >  }
+> >
+> > +#ifdef CONFIG_PM_BOTH
+> > +static inline void __set_leave_runtime_suspended(struct device *dev, bool val)
+> > +{
+> > +       dev->power.leave_runtime_suspended = val;
+> > +}
+> > +extern void pm_set_leave_runtime_suspended(struct device *dev, bool val);
+> > +static inline bool pm_leave_runtime_suspended(struct device *dev)
+> > +{
+> > +       return dev->power.leave_runtime_suspended;
+> > +}
+> > +#else
+> > +static inline void __set_leave_runtime_suspended(struct device *dev, bool val) {}
+> > +static inline void pm_set_leave_runtime_suspended(struct device *dev, bool val) {}
+> > +static inline bool pm_leave_runtime_suspended(struct device *dev) { return false; }
+> > +#endif
+> > +
+> >  #endif
+> > Index: linux-pm/drivers/base/power/runtime.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/base/power/runtime.c
+> > +++ linux-pm/drivers/base/power/runtime.c
+> > @@ -732,6 +732,7 @@ static int rpm_resume(struct device *dev
+> >         }
+> >   skip_parent:
+> >
+> > +       __set_leave_runtime_suspended(dev, false);
+
+(*)
+
+> >         if (dev->power.no_callbacks)
+> >                 goto no_callback;       /* Assume success. */
+> >
+> > @@ -1485,3 +1486,12 @@ out:
+> >         return ret;
+> >  }
+> >  EXPORT_SYMBOL_GPL(pm_runtime_force_resume);
+> > +
+> > +#ifdef CONFIG_PM_BOTH
+> > +void pm_set_leave_runtime_suspended(struct device *dev, bool val)
+> > +{
+> > +       spin_lock_irq(&dev->power.lock);
+> > +       __set_leave_runtime_suspended(dev, val);
+> > +       spin_unlock_irq(&dev->power.lock);
+> > +}
+> > +#endif
+> > Index: linux-pm/drivers/base/power/main.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/base/power/main.c
+> > +++ linux-pm/drivers/base/power/main.c
+> > @@ -479,7 +479,7 @@ static int device_resume_noirq(struct de
+> >         TRACE_DEVICE(dev);
+> >         TRACE_RESUME(0);
+> >
+> > -       if (dev->power.syscore)
+> > +       if (dev->power.syscore || pm_leave_runtime_suspended(dev))
+> >                 goto Out;
+> >
+> >         if (!dev->power.is_noirq_suspended)
+> > @@ -605,7 +605,7 @@ static int device_resume_early(struct de
+> >         TRACE_DEVICE(dev);
+> >         TRACE_RESUME(0);
+> >
+> > -       if (dev->power.syscore)
+> > +       if (dev->power.syscore || pm_leave_runtime_suspended(dev))
+> >                 goto Out;
+> >
+> >         if (!dev->power.is_late_suspended)
+> > @@ -735,6 +735,11 @@ static int device_resume(struct device *
+> >         if (dev->power.syscore)
+> >                 goto Complete;
+> >
+> > +       if (pm_leave_runtime_suspended(dev)) {
+> > +               pm_runtime_resume(dev);
+> > +               goto Complete;
+> > +       }
+> > +
+> >         dpm_wait(dev->parent, async);
+> >         dpm_watchdog_set(&wd, dev);
+> >         device_lock(dev);
+> > @@ -1007,7 +1012,7 @@ static int __device_suspend_noirq(struct
+> >                 goto Complete;
+> >         }
+> >
+> > -       if (dev->power.syscore)
+> > +       if (dev->power.syscore || pm_leave_runtime_suspended(dev))
+> >                 goto Complete;
+> >
+> >         dpm_wait_for_children(dev, async);
+> > @@ -1146,7 +1151,7 @@ static int __device_suspend_late(struct
+> >                 goto Complete;
+> >         }
+> >
+> > -       if (dev->power.syscore)
+> > +       if (dev->power.syscore || pm_leave_runtime_suspended(dev))
+> >                 goto Complete;
+> >
+> >         dpm_wait_for_children(dev, async);
+> > @@ -1382,10 +1387,21 @@ static int __device_suspend(struct devic
+> >
+> >   End:
+> >         if (!error) {
+> > +               struct device *parent = dev->parent;
+> > +
+> >                 dev->power.is_suspended = true;
+> > -               if (dev->power.wakeup_path
+> > -                   && dev->parent && !dev->parent->power.ignore_children)
+> > -                       dev->parent->power.wakeup_path = true;
+> > +               if (parent) {
+> > +                       spin_lock_irq(&parent->power.lock);
+> > +
+> > +                       if (dev->power.wakeup_path
+> > +                           && !parent->power.ignore_children)
+> > +                               parent->power.wakeup_path = true;
+> > +
+> > +                       if (!pm_leave_runtime_suspended(dev))
+> 
+> I suppose this is the reason to why you think you need CONFIG_PM_BOTH?
+
+Actually, no.  The reason is the (*) change in rpm_resume().
+
+> But won't this would work nicely even if we just had CONFIG_PM_RUNTIME?
+
+Yes, it will.
+
+> > +                               __set_leave_runtime_suspended(parent, false);
+> > +
+> > +                       spin_unlock_irq(&parent->power.lock);
+> > +               }
+> >         }
+> >
+> >         device_unlock(dev);
+> > @@ -1553,6 +1569,7 @@ int dpm_prepare(pm_message_t state)
+> >                 struct device *dev = to_device(dpm_list.next);
+> >
+> >                 get_device(dev);
+> > +               pm_set_leave_runtime_suspended(dev, false);
+> 
+> Is this needed?
+
+Yes, it is.  We don't want any leftovers after this point.
+
+> >                 mutex_unlock(&dpm_list_mtx);
+> >
+> >                 error = device_prepare(dev, state);
+> >
+> > --
+
+Thanks!
+
+
 -- 
-1.7.11-rc0
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
