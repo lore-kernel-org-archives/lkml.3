@@ -1,73 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130AbaEHWZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 18:25:56 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:38713 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756026AbaEHWX6 (ORCPT
+	id S932245AbaEHW0k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 18:26:40 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:56604 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755964AbaEHW0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 18:23:58 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: Grant Likely <grant.likely@linaro.org>, benh@kernel.crashing.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh@kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 1/6] of: align RESERVEDMEM_OF_DECLARE function callbacks to other callbacks
-Date: Thu,  8 May 2014 17:23:38 -0500
-Message-Id: <1399587823-17701-2-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399587823-17701-1-git-send-email-robherring2@gmail.com>
-References: <1399587823-17701-1-git-send-email-robherring2@gmail.com>
+	Thu, 8 May 2014 18:26:36 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [RFC][PATCH 2/3] PM / runtime: Routine for checking device status during system suspend
+Date: Fri, 09 May 2014 00:41:59 +0200
+Message-ID: <3848796.OqSGUVFgr8@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <4232134.uNVe9bptuo@vostro.rjw.lan>
+References: <Pine.LNX.4.44L0.1405081718200.995-100000@iolanthe.rowland.org> <2356017.WpDFDYKWcr@vostro.rjw.lan> <4232134.uNVe9bptuo@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <robh@kernel.org>
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-All the parameters for RESERVEDMEM_OF_DECLARE function callbacks are
-members of struct reserved_mem, so just pass the struct ptr to callback
-functions so the function callback is more in line with other OF match
-table callbacks.
+Add a new helper routine, pm_runtime_enabled_and_suspended(), to
+allow subsystems (or PM domains) to check the runtime PM status of
+devices during system suspend (possibly to avoid resuming those
+devices upfront at that time).
 
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Signed-off-by: Rob Herring <robh@kernel.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/of/of_reserved_mem.c    | 2 +-
- include/linux/of_reserved_mem.h | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/base/power/runtime.c |   27 +++++++++++++++++++++++++++
+ include/linux/pm_runtime.h   |    2 ++
+ 2 files changed, 29 insertions(+)
 
-diff --git a/drivers/of/of_reserved_mem.c b/drivers/of/of_reserved_mem.c
-index e420eb5..632aae8 100644
---- a/drivers/of/of_reserved_mem.c
-+++ b/drivers/of/of_reserved_mem.c
-@@ -188,7 +188,7 @@ static int __init __reserved_mem_init_node(struct reserved_mem *rmem)
- 		if (!of_flat_dt_is_compatible(rmem->fdt_node, compat))
- 			continue;
+Index: linux-pm/include/linux/pm_runtime.h
+===================================================================
+--- linux-pm.orig/include/linux/pm_runtime.h
++++ linux-pm/include/linux/pm_runtime.h
+@@ -57,6 +57,7 @@ extern unsigned long pm_runtime_autosusp
+ extern void pm_runtime_update_max_time_suspended(struct device *dev,
+ 						 s64 delta_ns);
+ extern void pm_runtime_set_memalloc_noio(struct device *dev, bool enable);
++extern bool pm_runtime_enabled_and_suspended(struct device *dev);
+ extern void pm_set_direct_resume(struct device *dev, bool val);
  
--		if (initfn(rmem, rmem->fdt_node, rmem->name) == 0) {
-+		if (initfn(rmem) == 0) {
- 			pr_info("Reserved memory: initialized node %s, compatible id %s\n",
- 				rmem->name, compat);
- 			return 0;
-diff --git a/include/linux/of_reserved_mem.h b/include/linux/of_reserved_mem.h
-index 9b1fbb7..4c81b84 100644
---- a/include/linux/of_reserved_mem.h
-+++ b/include/linux/of_reserved_mem.h
-@@ -21,8 +21,8 @@ struct reserved_mem_ops {
- 				  struct device *dev);
- };
+ static inline bool pm_children_suspended(struct device *dev)
+@@ -175,6 +176,7 @@ static inline unsigned long pm_runtime_a
+ 				struct device *dev) { return 0; }
+ static inline void pm_runtime_set_memalloc_noio(struct device *dev,
+ 						bool enable){}
++static inline bool pm_runtime_enabled_and_suspended(struct device *dev) { return false; }
+ static inline void __set_direct_resume(struct device *dev, bool val) {}
+ static inline void pm_set_direct_resume(struct device *dev, bool val) {}
+ static inline bool pm_direct_resume_is_set(struct device *dev) { return false; }
+Index: linux-pm/drivers/base/power/runtime.c
+===================================================================
+--- linux-pm.orig/drivers/base/power/runtime.c
++++ linux-pm/drivers/base/power/runtime.c
+@@ -1196,6 +1196,33 @@ void pm_runtime_enable(struct device *de
+ EXPORT_SYMBOL_GPL(pm_runtime_enable);
  
--typedef int (*reservedmem_of_init_fn)(struct reserved_mem *rmem,
--				      unsigned long node, const char *uname);
-+typedef int (*reservedmem_of_init_fn)(struct reserved_mem *rmem);
+ /**
++ * pm_runtime_enabled_and_suspended - Check runtime PM status of a device.
++ * @dev: Device to handle.
++ *
++ * This routine is to be executed during system suspend only, after
++ * device_prepare() has been executed for @dev.
++ *
++ * Return false if runtime PM is disabled for the device.  Otherwise, wait
++ * for pending transitions to complete and check the runtime PM status of the
++ * device after that.  Return true if it is RPM_SUSPENDED.
++ */
++bool pm_runtime_enabled_and_suspended(struct device *dev)
++{
++	unsigned long flags;
++	bool ret;
 +
- 
- #ifdef CONFIG_OF_RESERVED_MEM
- void fdt_init_reserved_mem(void);
--- 
-1.9.1
++	spin_lock_irqsave(&dev->power.lock, flags);
++	if (dev->power.disable_depth) {
++		ret = false;
++	} else {
++		__pm_runtime_barrier(dev);
++		ret = pm_runtime_status_suspended(dev);
++	}
++	spin_unlock_irqrestore(&dev->power.lock, flags);
++	return ret;
++}
++
++/**
+  * pm_runtime_forbid - Block runtime PM of a device.
+  * @dev: Device to handle.
+  *
 
