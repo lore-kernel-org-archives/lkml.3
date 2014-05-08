@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311AbaEHHlo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 03:41:44 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:51649 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753164AbaEHHkv (ORCPT
+	id S1753232AbaEHHkw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 03:40:52 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:37873 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756AbaEHHkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 03:40:51 -0400
+	Thu, 8 May 2014 03:40:49 -0400
 From: Johan Hovold <jhovold@gmail.com>
 To: "David S. Miller" <davem@davemloft.net>,
         Florian Fainelli <f.fainelli@gmail.com>
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org, Mugunthan V N <mugunthanvnm@ti.com>,
         Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 5/5] net: cpsw: add missing of_node_put
-Date: Thu,  8 May 2014 09:37:19 +0200
-Message-Id: <1399534639-4947-6-git-send-email-jhovold@gmail.com>
+Subject: [PATCH 1/5] net: mdio-gpio: fix device-tree binding documentation
+Date: Thu,  8 May 2014 09:37:15 +0200
+Message-Id: <1399534639-4947-2-git-send-email-jhovold@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1399534639-4947-1-git-send-email-jhovold@gmail.com>
 References: <1399534639-4947-1-git-send-email-jhovold@gmail.com>
@@ -23,25 +23,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing of_node_put to avoid kref leak.
+Fix aliases syntax in device-tree binding example to avoid
+copy-paste errors (the alias would be dropped silently).
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 ---
- drivers/net/ethernet/ti/cpsw.c | 1 +
- 1 file changed, 1 insertion(+)
+ Documentation/devicetree/bindings/net/mdio-gpio.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index db9360cd861c..c331b7ebc812 100644
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -1871,6 +1871,7 @@ static int cpsw_probe_dt(struct cpsw_platform_data *data,
- 		mdio_node = of_find_node_by_phandle(be32_to_cpup(parp));
- 		phyid = be32_to_cpup(parp+1);
- 		mdio = of_find_device_by_node(mdio_node);
-+		of_node_put(mdio_node);
- 		if (!mdio) {
- 			pr_err("Missing mdio platform device\n");
- 			return -EINVAL;
+diff --git a/Documentation/devicetree/bindings/net/mdio-gpio.txt b/Documentation/devicetree/bindings/net/mdio-gpio.txt
+index c79bab025369..8dbcf8295c6c 100644
+--- a/Documentation/devicetree/bindings/net/mdio-gpio.txt
++++ b/Documentation/devicetree/bindings/net/mdio-gpio.txt
+@@ -14,7 +14,7 @@ node.
+ Example:
+ 
+ aliases {
+-	mdio-gpio0 = <&mdio0>;
++	mdio-gpio0 = &mdio0;
+ };
+ 
+ mdio0: mdio {
 -- 
 1.8.3.2
 
