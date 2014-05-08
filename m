@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572AbaEHJKQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 05:10:16 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:10144 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549AbaEHJKO (ORCPT
+	id S1753602AbaEHJNL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 05:13:11 -0400
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:33813 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751660AbaEHJNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 05:10:14 -0400
-X-AuditID: cbfee61a-b7f2b6d000006c4d-88-536b49f440fa
-From: Chao Yu <chao2.yu@samsung.com>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+	Thu, 8 May 2014 05:13:08 -0400
+X-Sasl-enc: xS+dqp3fcJSgBq0Ha0AUkZ+7tdBh+r4EcvSl5TF4F//S 1399540387
+Date: Thu, 8 May 2014 02:13:04 -0700
+From: Greg KH <greg@kroah.com>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, olaf@aepfle.de,
+        jasowang@redhat.com, driverdev-devel@linuxdriverproject.org,
         linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][PATCH] f2fs: use inode_init_owner() to simplify codes
-Date: Thu, 08 May 2014 17:09:30 +0800
-Message-id: <000201cf6a9d$5266c3f0$f7344bd0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9qnQM2z4fQx4ZmTqa+2q+8kESDGw==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jQd0vntnBBvt+mVlc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlbHiwgHmgjnsFR2T
-	HjE3ML5l7WLk5JAQMJG403+KGcIWk7hwbz0biC0kMJ1R4taO3C5GLiD7B6PE4ml3mUASbAIq
-	Ess7/oPZIgKaEo+XbwZrZhbIlLjXNAPMFhbwlPh8+RfYIBYBVYlVjyezg9i8ApYSvTO2M0PY
-	ghI/Jt9jgejVkli/8zgThC0vsXnNW6iDFCR2nH3NCLFLT2J/41tGiBpxiY1HbrFMYBSYhWTU
-	LCSjZiEZNQtJywJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwYH8TGoH48oGi0OMAhyM
-	Sjy8Gc5ZwUKsiWXFlbmHGCU4mJVEeNMcs4OFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8x5otQ4U
-	EkhPLEnNTk0tSC2CyTJxcEo1MJquUDijHmarfvrPrijNQuUD559MZ/E4I3DE5BvzOoG8N8e5
-	FZ6+VzxUyXWqtE9HrENr0t6wsFXzfWpvsYox1NatnNt+dnv8nehHl5rye/5P/7vdqOfoJZ3k
-	0G5brcVPTRfNzD2veXhxR9mE398udR8w6k1kMa6YzriPySFx2qbcG0dD5mpsKFZiKc5INNRi
-	LipOBAChjwv1YAIAAA==
+Subject: Re: [PATCH net-next] Add support for netvsc build without
+ CONFIG_SYSFS flag
+Message-ID: <20140508091304.GB24820@kroah.com>
+References: <1399502704-18495-1-git-send-email-haiyangz@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399502704-18495-1-git-send-email-haiyangz@microsoft.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses exported inode_init_owner() to simplify codes in
-f2fs_new_inode().
+On Wed, May 07, 2014 at 03:45:04PM -0700, Haiyang Zhang wrote:
+> This change ensures the driver can be built successfully without the
+> CONFIG_SYSFS flag.
+> MS-TFS: 182270
+> 
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  drivers/net/hyperv/hyperv_net.h   |    2 ++
+>  drivers/net/hyperv/netvsc_drv.c   |   12 +++++++++++-
+>  drivers/net/hyperv/rndis_filter.c |    4 ++--
+>  3 files changed, 15 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
+> index 4b7df5a..23b96bc 100644
+> --- a/drivers/net/hyperv/hyperv_net.h
+> +++ b/drivers/net/hyperv/hyperv_net.h
+> @@ -87,6 +87,8 @@ struct ndis_recv_scale_cap { /* NDIS_RECEIVE_SCALE_CAPABILITIES */
+>  #define HASH_KEYLEN NDIS_RSS_HASH_SECRET_KEY_MAX_SIZE_REVISION_2
+>  extern u8 netvsc_hash_key[];
+>  
+> +extern unsigned int netvsc_num_queue;
+> +
+>  struct ndis_recv_scale_param { /* NDIS_RECEIVE_SCALE_PARAMETERS */
+>  	struct ndis_obj_header hdr;
+>  
+> diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+> index 939e3af..07896f3 100644
+> --- a/drivers/net/hyperv/netvsc_drv.c
+> +++ b/drivers/net/hyperv/netvsc_drv.c
+> @@ -52,6 +52,8 @@ static int ring_size = 128;
+>  module_param(ring_size, int, S_IRUGO);
+>  MODULE_PARM_DESC(ring_size, "Ring buffer size (# of pages)");
+>  
+> +unsigned int netvsc_num_queue = 1;
+> +
+>  static void do_set_multicast(struct work_struct *w)
+>  {
+>  	struct net_device_context *ndevctx =
+> @@ -639,9 +641,11 @@ int netvsc_recv_callback(struct hv_device *device_obj,
+>  		__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q),
+>  				       packet->vlan_tci);
+>  
+> +#ifdef CONFIG_SYSFS
+>  	skb_record_rx_queue(skb, packet->channel->
+>  			    offermsg.offer.sub_channel_index %
+>  			    net->real_num_rx_queues);
+> +#endif
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/namei.c |   11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
+Why is this a sysfs-only function?  It should have nothing to do with
+sysfs, right?  So why would the driver care?
 
-diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
-index a9409d1..9138c32 100644
---- a/fs/f2fs/namei.c
-+++ b/fs/f2fs/namei.c
-@@ -41,18 +41,9 @@ static struct inode *f2fs_new_inode(struct inode *dir, umode_t mode)
- 	}
- 	f2fs_unlock_op(sbi);
- 
--	inode->i_uid = current_fsuid();
--
--	if (dir->i_mode & S_ISGID) {
--		inode->i_gid = dir->i_gid;
--		if (S_ISDIR(mode))
--			mode |= S_ISGID;
--	} else {
--		inode->i_gid = current_fsgid();
--	}
-+	inode_init_owner(inode, dir, mode);
- 
- 	inode->i_ino = ino;
--	inode->i_mode = mode;
- 	inode->i_blocks = 0;
- 	inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
- 	inode->i_generation = sbi->s_next_generation++;
--- 
-1.7.9.5
+Don't put #ifdef in drivers, it's unmaintainable over time, if this
+really is a sysfs-only function, this should already be handled
+automatically in a .h file somewhere.
 
+thanks,
 
+greg k-h
