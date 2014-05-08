@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339AbaEHFHq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 01:07:46 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:44064 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750707AbaEHFHp (ORCPT
+	id S1751811AbaEHFLT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 01:11:19 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:35151 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009AbaEHFLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 01:07:45 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtMVAEgQa1NbskEF/2dsb2JhbABZgwasNwEBAQEBAQUBmgoCAgGBGBd0giUBAQQBOj8FCwgDGC45HgYTiDkMAc9gF4VWiHwHhD8BA48bihsBiwCHe4M2Ow
-Date: Thu, 8 May 2014 07:07:38 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/2] kernel/stop_machine.c: remove false assignment to
- static
-Message-Id: <20140508070738.02b3051a9766a012c4c1a923@skynet.be>
-In-Reply-To: <20140507210411.GB2844@laptop.programming.kicks-ass.net>
-References: <20140507224656.e06286af4392251135862718@skynet.be>
-	<20140507210411.GB2844@laptop.programming.kicks-ass.net>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 8 May 2014 01:11:18 -0400
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Thu, 8 May 2014 01:14:56 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Don Zickus <dzickus@redhat.com>
+Subject: Re: perf_fuzzer crash on pentium 4
+In-Reply-To: <20140507215430.GH8607@moon>
+Message-ID: <alpine.DEB.2.10.1405080111280.9135@vincent-weaver-1.umelst.maine.edu>
+References: <20140506202307.GA1458@moon> <alpine.DEB.2.10.1405061729350.4849@vincent-weaver-1.umelst.maine.edu> <20140506214630.GB1458@moon> <alpine.DEB.2.10.1405071244570.6340@vincent-weaver-1.umelst.maine.edu> <20140507164902.GD1444@moon> <20140507165811.GG1444@moon>
+ <alpine.DEB.2.10.1405071305010.6340@vincent-weaver-1.umelst.maine.edu> <20140507182410.GA8607@moon> <alpine.DEB.2.10.1405071713590.7020@vincent-weaver-1.umelst.maine.edu> <20140507215144.GG8607@moon> <20140507215430.GH8607@moon>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 May 2014 23:04:11 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+On Thu, 8 May 2014, Cyrill Gorcunov wrote:
 
-> On Wed, May 07, 2014 at 10:46:56PM +0200, Fabian Frederick wrote:
-> > This patch also fixes function prototype over 80 characters
-> 
-> And does it wrong.. Also does it really matter to GCC that we init the
-> bool? Surely it can see its 0 and put it in .bss anyway?
-It's considered redundant but maintainer's choice is the priority :)
- 
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> > ---
-> >  kernel/stop_machine.c | 5 +++--
-> >  1 file changed, 3 insertions(+), 2 deletions(-)
+> > > The NMI issue is probably the only one that is p4 related, and I do get 
+> > > the NMI warnings on other machines too, it's just the p4 is the only one 
+> > > where it brings down the machine.
 > > 
-> > diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-> > index 695f0c6..8d29ee2 100644
-> > --- a/kernel/stop_machine.c
-> > +++ b/kernel/stop_machine.c
-> > @@ -42,7 +42,7 @@ struct cpu_stopper {
-> >  
-> >  static DEFINE_PER_CPU(struct cpu_stopper, cpu_stopper);
-> >  static DEFINE_PER_CPU(struct task_struct *, cpu_stopper_task);
-> > -static bool stop_machine_initialized = false;
-> > +static bool stop_machine_initialized;
-> >  
-> >  /*
-> >   * Avoids a race between stop_two_cpus and global stop_cpus, where
-> > @@ -241,7 +241,8 @@ static void irq_cpu_stop_queue_work(void *arg)
-> >   *
-> >   * returns when both are completed.
-> >   */
-> > -int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *arg)
-> > +int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn,
-> > +		  void *arg)
+> > Vince, could you please provde more details on that? Is it possible
+> > to somehow log which events were used by perf?
 > 
-> Its only 84, so I didn't care to wrap it, its more readable this way,
-> but if you want it split split it like:
-> 
-> int
-> stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *arg)
-> 
-> Or if you really have to split arguments to it in groups that make
-> sense; like:
-> 
-> int stop_two_cpus(unsigned int cpu1, unsigned int cpu2,
-> 		  cpu_stop_fn_t fn, void *arg)
-> 
-> But really, these are two unrelated changes, and should therefore not be
-> in a single patch.
-Ok, thanks
+> There were a bug in p4 pmu Don (CC'ed) fixed not that long ago but I fear
+> not all corner cases might be covered yet.
 
-Fabian
+I hit the NMI warnings somewhat often on Intel hardware (Haswell, Core2) 
+but it usually doesn't make the system unusable like it does on p4.
+
+I can try to get a trace, although I'm not sure it will be useful.  I 
+spent a lot of time getting a reproducible test case for the same warnings 
+on core2 and it was unclear what the proble was and it was never fixed.
+
+The messages look like this:
+
+[ 2944.203423] Uhhuh. NMI received for unknown reason 31 on CPU 0.
+[ 2944.208006] Do you have a strange power saving mode enabled?
+[ 2944.208006] Dazed and confused, but trying to continue
+[ 2944.208006] Uhhuh. NMI received for unknown reason 21 on CPU 0.
+[ 2944.208006] Do you have a strange power saving mode enabled?
+[ 2944.208006] Dazed and confused, but trying to continue
+[ 2944.208006] Uhhuh. NMI received for unknown reason 31 on CPU 0.
+[ 2944.208006] Do you have a strange power saving mode enabled?
+[ 2944.208006] Dazed and confused, but trying to continue
+
+repeating forever, system is unusable.
+
+Vince
