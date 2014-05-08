@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045AbaEHKla (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 06:41:30 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:59161 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753694AbaEHKl1 (ORCPT
+	id S1754057AbaEHKlr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 06:41:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33061 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753233AbaEHKlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 06:41:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Bjorn Andersson <bjorn@kryo.se>, Frank Rowand <frowand.list@gmail.com>,
-        Rob Herring <robh@kernel.org>
-Subject: Re: [PATCH 3/4] of/platform: fix device naming for non-translatable addresses
-Date: Thu, 08 May 2014 12:41:10 +0200
-Message-ID: <4314054.Zr5Mecf9vm@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1399499298-8830-4-git-send-email-robherring2@gmail.com>
-References: <1399499298-8830-1-git-send-email-robherring2@gmail.com> <1399499298-8830-4-git-send-email-robherring2@gmail.com>
+	Thu, 8 May 2014 06:41:45 -0400
+Date: Thu, 8 May 2014 03:40:50 -0700
+From: "tip-bot for Yan, Zheng" <tipbot@zytor.com>
+Message-ID: <tip-a4b4f11b2783ec678cccb4ce7e4ce9665aa04a24@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, acme@kernel.org,
+        zheng.z.yan@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, acme@kernel.org,
+        zheng.z.yan@intel.com, tglx@linutronix.de
+In-Reply-To: <1398755081-12471-1-git-send-email-zheng.z.yan@intel.com>
+References: <1398755081-12471-1-git-send-email-zheng.z.yan@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86/intel: Fix Silvermont'
+ s event constraints
+Git-Commit-ID: a4b4f11b2783ec678cccb4ce7e4ce9665aa04a24
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:OsGPK7Z0DpqAkZvvVQpsJ/Icqh1XfHkwCR7XPnKOWmP
- gVrHLDjbicy9QvzvbKDJO5WzEAgEcID35o2SWkZrsj/XKLjS9e
- oYL8om2mkDSV+j0p/BoWpTAHnQ2lWmQTkLbu+KbWPY+dSMgcm6
- +e6gkN9iTjQ2fxD6pW6npfyGssiU5wCIorw5UX+Du9hBZt5/KD
- F8icW6Oh75i8NxsQ2Gx/pllziKiCSVOsF5SEHCFZPCujF53Ass
- 8PBpRFSyMfahpAWnWMcznXQC34P5pLLnWl8xxjd1cp+znDImNT
- 2QqgokGmzh78ifEIb2ji+fgte3z98E8lPNcS1FdlgYgsHxLrr0
- yuq50BS1ccOPB59dyC6k=
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 07 May 2014 16:48:17 Rob Herring wrote:
-> From: Rob Herring <robh@kernel.org>
-> 
-> Using non-translatable addresses in platform device names is wrong
-> because they may not be globally unique. Just use the default naming with
-> a global index if the address cannot be translated instead.
-> 
-> of_can_translate_address has the same checks as of_translate_address, so
-> we can remove it here as well.
+Commit-ID:  a4b4f11b2783ec678cccb4ce7e4ce9665aa04a24
+Gitweb:     http://git.kernel.org/tip/a4b4f11b2783ec678cccb4ce7e4ce9665aa04a24
+Author:     Yan, Zheng <zheng.z.yan@intel.com>
+AuthorDate: Tue, 29 Apr 2014 15:04:41 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 7 May 2014 11:33:16 +0200
 
-Have you checked that this doesn't break platforms using clkdev lookup
-based on names with local addresses? It's quite possible that nobody
-does that, but it would be good to have someone confirm it.
+perf/x86/intel: Fix Silvermont's event constraints
 
-	Arnd
+Event 0x013c is not the same as fixed counter2, remove it from
+Silvermont's event constraints.
+
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1398755081-12471-1-git-send-email-zheng.z.yan@intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index aa333d9..adb02aa 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -169,7 +169,6 @@ static struct event_constraint intel_slm_event_constraints[] __read_mostly =
+ {
+ 	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
+ 	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
+-	FIXED_EVENT_CONSTRAINT(0x013c, 2), /* CPU_CLK_UNHALTED.REF */
+ 	FIXED_EVENT_CONSTRAINT(0x0300, 2), /* pseudo CPU_CLK_UNHALTED.REF */
+ 	EVENT_CONSTRAINT_END
+ };
