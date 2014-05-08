@@ -1,85 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722AbaEHPtf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:49:35 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:50007 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752840AbaEHPte (ORCPT
+	id S1754746AbaEHPv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:51:27 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42701 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752101AbaEHPvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:49:34 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Thu, 8 May 2014 17:49:12 +0200
-From: Johan Hovold <johan@hovold.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Bryan Evenson <bevenson@melinkcorp.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: at91: fix rtc irq mask for sam9x5 SoCs
-Message-ID: <20140508154912.GA6776@localhost>
-References: <957b209589094df48ddedbc57c6ccdfd@BLUPR05MB037.namprd05.prod.outlook.com>
- <1399479649-3247-1-git-send-email-boris.brezillon@free-electrons.com>
+	Thu, 8 May 2014 11:51:25 -0400
+Date: Thu, 8 May 2014 11:51:24 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 7/8] usb: ohci: sort out dependencies for lpc32xx and
+ omap
+In-Reply-To: <1399557141-1346645-8-git-send-email-arnd@arndb.de>
+Message-ID: <Pine.LNX.4.44L0.1405081151000.1087-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399479649-3247-1-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 06:20:49PM +0200, Boris BREZILLON wrote:
-> The RTC IMR register is not reliable on sam9x5 SoCs, hence why me have to
-> mask all interrupts no matter what IMR claims about already masked irqs.
+On Thu, 8 May 2014, Arnd Bergmann wrote:
 
-Crap, I totally forgot about this. Doug reported the problem off-list
-back in December, but it got lost somehow. Sorry.
+> The dependency on the isp1301 driver is not something that
+> should be in the main OHCI driver but rather the SoC specific
+> part of it.
+> 
+> This moves the dependency for LPC32xx into USB_OHCI_HCD_LPC32XX,
+> and changes the 'select ISP1301_OMAP' to a similar 'depends on'.
+> Since the same dependency exists for the client driver, do the
+> same change there.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: linux-omap@vger.kernel.org
+> Cc: Alan Stern <stern@rowland.harvard.edu>
 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
-> ---
-> Hello Bryan,
-> 
-> Yet another patch for you ;-).
-> 
-> As usual, could you tell me if it fixes your bug.
-> 
-> BTW, thanks for your tests.
-> 
-> Best Regards,
-> 
-> Boris
-> 
->  arch/arm/mach-at91/sysirq_mask.c | 7 +------
->  1 file changed, 1 insertion(+), 6 deletions(-)
-> 
-> diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-at91/sysirq_mask.c
-> index 2ba694f..eb3d2a5 100644
-> --- a/arch/arm/mach-at91/sysirq_mask.c
-> +++ b/arch/arm/mach-at91/sysirq_mask.c
-> @@ -37,12 +37,7 @@ void __init at91_sysirq_mask_rtc(u32 rtc_base)
->  	if (!base)
->  		return;
->  
-> -	mask = readl_relaxed(base + AT91_RTC_IMR);
-> -	if (mask) {
-> -		pr_info("AT91: Disabling rtc irq\n");
-> -		writel_relaxed(mask, base + AT91_RTC_IDR);
-> -		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
-> -	}
-> +	writel_relaxed(0x1f, base + AT91_RTC_IDR);
+For the host side changes:
 
-I believe this is the right way to handle this hardware bug (IMR is
-always read as 0 on one particular SoC), but please document this in a
-comment.
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-You should also keep the flush (read of IMR) regardless (to make sure
-the write has reached the peripheral), and remember to remove the now
-unused mask variable.
-
->  	iounmap(base);
->  }
-
-Thanks,
-Johan
