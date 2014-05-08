@@ -1,95 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379AbaEHOSP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 10:18:15 -0400
-Received: from bastet.se.axis.com ([195.60.68.11]:47207 "EHLO
-	bastet.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336AbaEHOSM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 10:18:12 -0400
-From: Andreas =?iso-8859-1?q?Irest=E5l?= <andreas.irestal@axis.com>
+	id S1753267AbaEHOWl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 10:22:41 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:53675 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751309AbaEHOWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 10:22:39 -0400
+Message-ID: <1399558909.8165.8.camel@iivanov-dev>
+Subject: Re: [PATCH 5/8] usb: phy: msm: reset controller is mandatory now
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [RFC PATCH] net:Add basic DWC Ethernet QoS Driver
-Date: Thu, 8 May 2014 16:18:04 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.38-bpo.2-amd64; KDE/4.4.5; x86_64; ; )
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "abrodkin@synopsys.com" <abrodkin@synopsys.com>,
-        "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
-        "ben@decadent.org.uk" <ben@decadent.org.uk>, "sr@denx.de" <sr@denx.de>,
-        "jonas.jensen@gmail.com" <jonas.jensen@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Jesper Nilsson <jespern@axis.com>, <peppe.cavallaro@st.com>
-References: <201405081349.03139.Andreas.Irestal@axis.com> <20248221.mJ8pFfyc5U@wuerfel>
-In-Reply-To: <20248221.mJ8pFfyc5U@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Thu, 08 May 2014 17:21:49 +0300
+In-Reply-To: <1399557141-1346645-6-git-send-email-arnd@arndb.de>
+References: <1399557141-1346645-1-git-send-email-arnd@arndb.de>
+	 <1399557141-1346645-6-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-ID: <201405081618.04475.Andreas.Irestal@axis.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Signed-off-by: Andreas Irestaal <Andreas.Irestal@axis.com>
-> > ---
-> >  drivers/net/ethernet/Kconfig                |    1 +
-> >  drivers/net/ethernet/Makefile               |    1 +
-> >  drivers/net/ethernet/synopsys/Kconfig       |   24 +
-> >  drivers/net/ethernet/synopsys/Makefile      |    5 +
-> >  drivers/net/ethernet/synopsys/dwc_eth_qos.c |  710 +++++++++++++++++++++++++++
-> >  drivers/net/ethernet/synopsys/dwc_eth_qos.h |  308 ++++++++++++
-> 
-> Should we maybe move the dw_mac driver out of the stmicro directory into
-> synopsys as a preparation, to keep them in the same place?
-> 
 
-That sounds like a good idea since that driver uses the same IP. I'm not the
-person to take that decision though.
+Hi Arnd, 
 
-> > +
-> > +	/* Set poll wait timeout to 2 seconds */
-> > +	dwc_wait = 200;
-> > +
-> > +	while (lp->tx_descs[i].tdes3.wr.own) {
-> > +		mdelay(10);
-> > +		if (!dwc_wait--)
-> > +			break;
-> > +	}
+On Thu, 2014-05-08 at 15:52 +0200, Arnd Bergmann wrote:
+> Commit a27345434134 "usb: phy: msm: Use reset framework for LINK
+> and PHY resets" introduced a mandatory call to reset_control_get
+> into the msm usb phy driver, which means we have to add a Kconfig
+> dependency on the API to avoid this build error:
 > 
-> This is really evil: you are blocking the CPU for up to two seconds!
-> You already mentioned that this is work-in-progress, but I guess it has
-> to be a little better than this and do something that doesn't block
-> out the CPU during TX.
+> phy/phy-msm-usb.c: In function 'msm_otg_read_dt':
+> phy/phy-msm-usb.c:1461:2: error: implicit declaration of function 'devm_reset_control_get' [-Werror=implicit-function-declaration]
+>   motg->link_rst = devm_reset_control_get(&pdev->dev, "link");
+>   ^
 > 
-
-It really is, but a 2s lockout is only happening upon TX failure. Anyway, this
-won't be an issue in the final version, since it won't use polling for TX.
-
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> ---
+>  drivers/usb/host/Kconfig | 2 +-
+>  drivers/usb/phy/Kconfig  | 1 +
+>  2 files changed, 2 insertions(+), 1 deletion(-)
 > 
-> > +/* Fields/constants */
-> > +#define DWCEQOS_DMA_MODE_SWR			1
-> > +#define DWCEQOS_DMA_MODE_TXPR			(1 << 11)
-> > +#define DWCEQOS_DMA_MODE_DA			(1 << 1)
-> > +#define DWCEQOS_DMA_SYSBUS_MB			(1 << 14)
-> 
-> I find it more readable to use hexadecimal notation here
-> 
-> #define DWCEQOS_DMA_MODE_SWR		0x0001
-> #define DWCEQOS_DMA_MODE_DA		0x0002
-> #define DWCEQOS_DMA_MODE_TXPR		0x0800
-> #define DWCEQOS_DMA_SYSBUS_MB		0x4000
-> 
+> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+> index 3d9e540..890fc8c 100644
+> --- a/drivers/usb/host/Kconfig
+> +++ b/drivers/usb/host/Kconfig
+> @@ -168,7 +168,7 @@ config USB_EHCI_HCD_AT91
+>  
+>  config USB_EHCI_MSM
+>  	tristate "Support for Qualcomm QSD/MSM on-chip EHCI USB controller"
+> -	depends on ARCH_MSM
+> +	depends on ARCH_MSM && RESET_CONTROLLER
 
-I agree, but it's not 100% clear which one is preferred as there exist drivers
-using the first notation style. Anyway, I'll use the hex notation in future
-patches since you prefer it.
+This driver did not use reset controller API.
 
-Thanks for all valuable input. This was exactly the kind of feedback i was looking for
+>  	select USB_EHCI_ROOT_HUB_TT
+>  	select USB_MSM_OTG
+>  	---help---
+> diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+> index 359a6c1..65bec8f 100644
+> --- a/drivers/usb/phy/Kconfig
+> +++ b/drivers/usb/phy/Kconfig
+> @@ -165,6 +165,7 @@ config USB_ISP1301
+>  config USB_MSM_OTG
+>  	tristate "Qualcomm on-chip USB OTG controller support"
+>  	depends on (USB || USB_GADGET) && (ARCH_MSM || ARCH_QCOM)
+> +	depends on RESET_CONTROLLER
 
-/Andreas
+This is fine. 
 
+Thank you.
+Ivan
 
