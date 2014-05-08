@@ -1,36 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402AbaEHAoy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 20:44:54 -0400
-Received: from ns.horizon.com ([71.41.210.147]:23589 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751469AbaEHAox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 20:44:53 -0400
-Date: 7 May 2014 20:44:52 -0400
-Message-ID: <20140508004452.27923.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, rientjes@google.com
-Subject: Re: [PATCH v2 03/10] slab: move up code to get kmem_cache_node in free_block()
-Cc: cl@linux.com, iamjoonsoo.kim@lge.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-In-Reply-To: <alpine.DEB.2.02.1405071502040.25024@chino.kir.corp.google.com>
+	id S1752532AbaEHAw0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 20:52:26 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:54618 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584AbaEHAwY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 20:52:24 -0400
+Date: Wed, 7 May 2014 17:52:22 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH v2 03/10] slab: move up code to get kmem_cache_node in
+ free_block()
+In-Reply-To: <1399442780-28748-4-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <alpine.DEB.2.02.1405071752100.1128@chino.kir.corp.google.com>
+References: <1399442780-28748-1-git-send-email-iamjoonsoo.kim@lge.com> <1399442780-28748-4-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> A function called clear_obj_pfmemalloc() doesn't indicate it's returning 
-> anything, I think the vast majority of people would believe that it 
-> returns void just as it does.  There's no complier generated code 
-> optimization with this patch and
+On Wed, 7 May 2014, Joonsoo Kim wrote:
 
-> I'm not sure it's even correct since 
-> you're now clearing after doing recheck_pfmemalloc_active().
+> node isn't changed, so we don't need to retreive this structure
+> everytime we move the object. Maybe compiler do this optimization,
+> but making it explicitly is better.
+> 
+> Acked-by: Christoph Lameter <cl@linux.com>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-I thought this through before rearranging the code.
-recheck_pfmemalloc_active() checks global lists, but __ac_get_obj()
-is doing clear_obj_pfmemalloc on a local variable.
-
-I think it does make sense to remove the pointless "return;" in 
-set_obj_pfmemalloc(), however.  Not sure it's worth asking someone to 
-merge it, though.
-
+Acked-by: David Rientjes <rientjes@google.com>
