@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046AbaEHRXq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 13:23:46 -0400
-Received: from shelob.surriel.com ([74.92.59.67]:53760 "EHLO
+	id S1754917AbaEHRXn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 13:23:43 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:53761 "EHLO
 	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434AbaEHRXl (ORCPT
+	with ESMTP id S1751885AbaEHRXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 May 2014 13:23:41 -0400
 From: riel@redhat.com
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, peterz@infradead.org, mgorman@suse.de,
         chegu_vinod@hp.com
-Subject: [PATCH 4/4] sched,numa: pull workloads towards their preferred nodes
-Date: Thu,  8 May 2014 13:23:31 -0400
-Message-Id: <1399569811-14362-5-git-send-email-riel@redhat.com>
+Subject: [PATCH 1/4] numa,x86: store maximum numa node distance
+Date: Thu,  8 May 2014 13:23:28 -0400
+Message-Id: <1399569811-14362-2-git-send-email-riel@redhat.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1399569811-14362-1-git-send-email-riel@redhat.com>
 References: <1399569811-14362-1-git-send-email-riel@redhat.com>
@@ -23,98 +23,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rik van Riel <riel@redhat.com>
 
-Give a bonus to nodes near a workload's preferred node. This will pull
-workloads towards their preferred node.
+Store the maximum node distance, so the numa placement code can do
+better placement on systems with complex numa topology.
 
-For workloads that span multiple NUMA nodes, pseudo-interleaving will
-even out the memory use between nodes over time, causing the preferred
-node to move around over time.
-
-This movement over time will cause the preferred nodes to be on opposite
-sides of the system eventually, untangling workloads that were spread
-all over the system, and moving them onto adjacent nodes.
-
-The perturbation introduced by this patch enables the kernel to
-reliably untangled 2 4-node wide SPECjbb2005 instances on an 8 node
-system, improving average performance from 857814 to 931792 bops.
+The function max_node_distance will return LOCAL_DISTANCE if the
+system has simple NUMA topology, with only a single level of
+remote distance.
 
 Signed-off-by: Rik van Riel <riel@redhat.com>
 Tested-by: Chegu Vinod <chegu_vinod@hp.com>
 ---
- kernel/sched/fair.c | 25 ++++++++++++++++++++++---
- 1 file changed, 22 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/topology.h |  3 +++
+ arch/x86/mm/numa.c              | 25 +++++++++++++++++++++++++
+ include/linux/topology.h        |  3 +++
+ 3 files changed, 31 insertions(+)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 99cc829..cffa829 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -932,7 +932,7 @@ static inline unsigned long group_faults_cpu(struct numa_group *group, int nid)
-  * the proximity of those nodes.
-  */
- static inline unsigned long nearby_nodes_score(struct task_struct *p, int nid,
--						bool task)
-+						bool task, bool *preferred_nid)
- {
- 	int max_distance = max_node_distance();
- 	unsigned long score = 0;
-@@ -949,6 +949,15 @@ static inline unsigned long nearby_nodes_score(struct task_struct *p, int nid,
- 		int distance;
- 		unsigned long faults;
+diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
+index 0e8f04f..3ed2464 100644
+--- a/arch/x86/include/asm/topology.h
++++ b/arch/x86/include/asm/topology.h
+@@ -95,6 +95,9 @@ extern void setup_node_to_cpumask_map(void);
+ extern int __node_distance(int, int);
+ #define node_distance(a, b) __node_distance(a, b)
  
-+		/*
-+		 * Pseudo-interleaving balances out the memory use between the
-+		 * nodes where a workload runs, so the preferred node should
-+		 * change over time. This helps separate two workloads onto
-+		 * separate sides of the system.
-+		 */
-+		if (p->numa_group && node == p->numa_group->preferred_nid)
-+			*preferred_nid = true;
++extern int max_node_distance(void);
++#define max_node_distance max_node_distance
 +
- 		/* Already scored by the calling function. */
- 		if (node == nid)
- 			continue;
-@@ -989,6 +998,7 @@ static inline unsigned long nearby_nodes_score(struct task_struct *p, int nid,
- static inline unsigned long task_weight(struct task_struct *p, int nid)
+ #else /* !CONFIG_NUMA */
+ 
+ static inline int numa_node_id(void)
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 1d045f9..525cde9 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -34,6 +34,8 @@ __initdata
+ 
+ static int numa_distance_cnt;
+ static u8 *numa_distance;
++static int numa_max_distance;
++static bool numa_complex_topology;
+ 
+ static __init int numa_setup(char *opt)
  {
- 	unsigned long total_faults, score;
-+	bool near_preferred_nid = false;
- 
- 	if (!p->numa_faults_memory)
- 		return 0;
-@@ -999,7 +1009,7 @@ static inline unsigned long task_weight(struct task_struct *p, int nid)
- 		return 0;
- 
- 	score = 1000 * task_faults(p, nid);
--	score += nearby_nodes_score(p, nid, true);
-+	score += nearby_nodes_score(p, nid, true, &near_preferred_nid);
- 
- 	score /= total_faults;
- 
-@@ -1009,6 +1019,7 @@ static inline unsigned long task_weight(struct task_struct *p, int nid)
- static inline unsigned long group_weight(struct task_struct *p, int nid)
- {
- 	unsigned long total_faults, score;
-+	bool near_preferred_nid = false;
- 
- 	if (!p->numa_group)
- 		return 0;
-@@ -1019,7 +1030,15 @@ static inline unsigned long group_weight(struct task_struct *p, int nid)
- 		return 0;
- 
- 	score = 1000 * group_faults(p, nid);
--	score += nearby_nodes_score(p, nid, false);
-+	score += nearby_nodes_score(p, nid, false, &near_preferred_nid);
+@@ -357,6 +359,19 @@ void __init numa_reset_distance(void)
+ 		memblock_free(__pa(numa_distance), size);
+ 	numa_distance_cnt = 0;
+ 	numa_distance = NULL;	/* enable table creation */
++	numa_max_distance = LOCAL_DISTANCE;
++	numa_complex_topology = false;
++}
 +
-+	/*
-+	 * Pull workloads towards their preferred node, with the minimum
-+	 * multiplier required to be a tie-breaker when two groups of nodes
-+	 * have the same amount of memory.
-+	 */
-+	if (near_preferred_nid)
-+		score *= (max_node_distance() - LOCAL_DISTANCE);
++static void __init numa_set_max_distance(int distance)
++{
++	/* Remember the maximum node distance seen. */
++	if (distance > numa_max_distance)
++		numa_max_distance = distance;
++
++	/* Do we see any values in-between local distance and the maximum? */
++	if (distance != LOCAL_DISTANCE && distance != numa_max_distance)
++		numa_complex_topology = true;
+ }
  
- 	score /= total_faults;
+ static int __init numa_alloc_distance(void)
+@@ -437,6 +452,16 @@ void __init numa_set_distance(int from, int to, int distance)
+ 	}
  
+ 	numa_distance[from * numa_distance_cnt + to] = distance;
++
++	numa_set_max_distance(distance);
++}
++
++int max_node_distance(void)
++{
++	if (!numa_complex_topology)
++		return LOCAL_DISTANCE;
++
++	return numa_max_distance;
+ }
+ 
+ int __node_distance(int from, int to)
+diff --git a/include/linux/topology.h b/include/linux/topology.h
+index 7062330..6781b8d 100644
+--- a/include/linux/topology.h
++++ b/include/linux/topology.h
+@@ -54,6 +54,9 @@ int arch_update_cpu_topology(void);
+ #ifndef node_distance
+ #define node_distance(from,to)	((from) == (to) ? LOCAL_DISTANCE : REMOTE_DISTANCE)
+ #endif
++#ifndef max_node_distance
++#define max_node_distance() (LOCAL_DISTANCE)
++#endif
+ #ifndef RECLAIM_DISTANCE
+ /*
+  * If the distance between nodes in a system is larger than RECLAIM_DISTANCE
 -- 
 1.8.5.3
 
