@@ -1,184 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892AbaEHMDc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 08:03:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43279 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641AbaEHMDb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 08:03:31 -0400
-Date: Thu, 8 May 2014 14:03:27 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, nicolas.pitre@linaro.org,
-        tglx@linutronix.de, daniel.lezcano@linaro.org,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/core] sched/idle: Reflow cpuidle_idle_call()
-Message-ID: <20140508120327.GS11096@twins.programming.kicks-ass.net>
-References: <tip-cc6vb0snt3sr7op6rlbfeqfh@git.kernel.org>
- <1877683.4pfeUuvFZ2@vostro.rjw.lan>
- <5838571.inpi2giIZ5@vostro.rjw.lan>
+	id S1754009AbaEHMFf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 08:05:35 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50751 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753322AbaEHMFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 08:05:33 -0400
+Date: Thu, 8 May 2014 14:05:24 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: tthayer@altera.com
+Cc: robherring2@gmail.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        linux@arm.linux.org.uk, dinguyen@altera.com, dougthompson@xmission.com,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tthayer.linux@gmail.com
+Subject: Re: [PATCHv3 3/3] edac: altera: Add EDAC support for Altera SDRAM
+Message-ID: <20140508120524.GF12548@pd.tnic>
+References: <1399330337-16748-1-git-send-email-tthayer@altera.com>
+ <1399330337-16748-4-git-send-email-tthayer@altera.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8teuZUM8bA5gqecl"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5838571.inpi2giIZ5@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1399330337-16748-4-git-send-email-tthayer@altera.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 05, 2014 at 05:52:17PM -0500, tthayer@altera.com wrote:
+> From: Thor Thayer <tthayer@altera.com>
 
---8teuZUM8bA5gqecl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Missing commit message.
 
-On Thu, May 08, 2014 at 01:41:29PM +0200, Rafael J. Wysocki wrote:
-> > I wonder how we can resolve this?
->=20
-> And I wonder why I haven't been in the CC list of this tip-bot message ev=
-en.
+> ---
+> v2: Use the SDRAM controller registers to calculate memory size
+>     instead of the Device Tree. Update To & Cc list. Add maintainer
+>     information.
+> 
+> v3: EDAC driver cleanup based on comments from Mailing list.
+> 
+> Signed-off-by: Thor Thayer <tthayer@altera.com>
+> ---
+>  MAINTAINERS                |    5 +
+>  drivers/edac/Kconfig       |    9 +
+>  drivers/edac/Makefile      |    2 +
+>  drivers/edac/altera_edac.c |  411 ++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 427 insertions(+)
+>  create mode 100644 drivers/edac/altera_edac.c
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index e67ea24..ecd1277 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -1290,6 +1290,11 @@ M:	Dinh Nguyen <dinguyen@altera.com>
+>  S:	Maintained
+>  F:	drivers/clk/socfpga/
+>  
+> +ARM/SOCFPGA SDRAM EDAC SUPPORT
+> +M:	Thor Thayer <tthayer@altera.com>
+> +S:	Maintained
+> +F:	drivers/edac/altera_edac.c
+> +
+>  ARM/STI ARCHITECTURE
+>  M:	Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
+>  M:	Maxime Coquelin <maxime.coquelin@st.com>
+> diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+> index 878f090..4f4d379 100644
+> --- a/drivers/edac/Kconfig
+> +++ b/drivers/edac/Kconfig
+> @@ -368,4 +368,13 @@ config EDAC_OCTEON_PCI
+>  	  Support for error detection and correction on the
+>  	  Cavium Octeon family of SOCs.
+>  
+> +config EDAC_ALTERA_MC
+> +	bool "Altera SDRAM Memory Controller EDAC"
+> +	depends on EDAC_MM_EDAC && ARCH_SOCFPGA
+> +	help
+> +	  Support for error detection and correction on the
+> +	  Altera SDRAM memory controller. Note that the
+> +	  preloader must initialize the SDRAM before loading
+> +	  the kernel.
+> +
+>  endif # EDAC
+> diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
+> index 4154ed6..9741336 100644
+> --- a/drivers/edac/Makefile
+> +++ b/drivers/edac/Makefile
+> @@ -64,3 +64,5 @@ obj-$(CONFIG_EDAC_OCTEON_PC)		+= octeon_edac-pc.o
+>  obj-$(CONFIG_EDAC_OCTEON_L2C)		+= octeon_edac-l2c.o
+>  obj-$(CONFIG_EDAC_OCTEON_LMC)		+= octeon_edac-lmc.o
+>  obj-$(CONFIG_EDAC_OCTEON_PCI)		+= octeon_edac-pci.o
+> +
+> +obj-$(CONFIG_EDAC_ALTERA_MC)	        += altera_edac.o
+> diff --git a/drivers/edac/altera_edac.c b/drivers/edac/altera_edac.c
+> new file mode 100644
+> index 0000000..e8a3de7
+> --- /dev/null
+> +++ b/drivers/edac/altera_edac.c
+> @@ -0,0 +1,411 @@
+> +/*
+> + *  Copyright Altera Corporation (C) 2014. All rights reserved.
+> + *  Copyright 2011-2012 Calxeda, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * This file is subject to the terms and conditions of the GNU General Public
+> + * License.  See the file "COPYING" in the main directory of this archive
+> + * for more details.
 
-Yes, my bad there, I should really script adding CCs :/
+I'm guessing your lawyers want this boilerplate after all?
 
-That change actually made the patch smaller and simpler.
+...
 
----
- drivers/cpuidle/cpuidle.c | 30 +++++++++---------------------
- include/linux/cpuidle.h   |  5 -----
- kernel/sched/idle.c       | 13 ++++---------
- 3 files changed, 13 insertions(+), 35 deletions(-)
+> +static irqreturn_t altr_sdram_mc_err_handler(int irq, void *dev_id)
+> +{
+> +	struct mem_ctl_info *mci = dev_id;
+> +	struct altr_sdram_mc_data *drvdata = mci->pvt_info;
+> +	u32 status = 0, err_count = 0, err_addr = 0;
+> +
+> +	/* Error Address is shared by both SBE & DBE */
+> +	regmap_read(drvdata->mc_vbase, ERRADDR, &err_addr);
+> +
+> +	regmap_read(drvdata->mc_vbase, DRAMSTS, &status);
+> +
+> +	if (status & DRAMSTS_DBEERR) {
+> +		regmap_read(drvdata->mc_vbase, DBECOUNT, &err_count);
+> +		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, err_count,
+> +				     err_addr >> PAGE_SHIFT,
+> +				     err_addr & ~PAGE_MASK, 0,
+> +				     0, 0, -1, mci->ctl_name, "");
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 8236746e46bb..fca5405cbad6 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -65,26 +65,6 @@ int cpuidle_play_dead(void)
- }
-=20
- /**
-- * cpuidle_enabled - check if the cpuidle framework is ready
-- * @dev: cpuidle device for this cpu
-- * @drv: cpuidle driver for this cpu
-- *
-- * Return 0 on success, otherwise:
-- * -NODEV : the cpuidle framework is not available
-- * -EBUSY : the cpuidle framework is not initialized
-- */
--int cpuidle_enabled(struct cpuidle_driver *drv, struct cpuidle_device *dev)
--{
--	if (off || !initialized)
--		return -ENODEV;
--
--	if (!drv || !dev || !dev->enabled)
--		return -EBUSY;
--
--	return 0;
--}
--
--/**
-  * cpuidle_enter_state - enter the state and update stats
-  * @dev: cpuidle device for this cpu
-  * @drv: cpuidle driver for this cpu
-@@ -134,10 +114,18 @@ int cpuidle_enter_state(struct cpuidle_device *dev, s=
-truct cpuidle_driver *drv,
-  * @drv: the cpuidle driver
-  * @dev: the cpuidle device
-  *
-- * Returns the index of the idle state.
-+ * Returns the index of the idle state on success, otherwise:
-+ * -NODEV : the cpuidle framework is not available
-+ * -EBUSY : the cpuidle framework is not initialized
-  */
- int cpuidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- {
-+	if (off || !initialized)
-+		return -ENODEV;
-+
-+	if (!drv || !dev || !dev->enabled)
-+		return -EBUSY;
-+
- 	return cpuidle_curr_governor->select(drv, dev);
- }
-=20
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index b0238cba440b..a8d5bd391a26 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -120,8 +120,6 @@ struct cpuidle_driver {
- #ifdef CONFIG_CPU_IDLE
- extern void disable_cpuidle(void);
-=20
--extern int cpuidle_enabled(struct cpuidle_driver *drv,
--			  struct cpuidle_device *dev);
- extern int cpuidle_select(struct cpuidle_driver *drv,
- 			  struct cpuidle_device *dev);
- extern int cpuidle_enter(struct cpuidle_driver *drv,
-@@ -149,9 +147,6 @@ extern int cpuidle_play_dead(void);
- extern struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device=
- *dev);
- #else
- static inline void disable_cpuidle(void) { }
--static inline int cpuidle_enabled(struct cpuidle_driver *drv,
--				  struct cpuidle_device *dev)
--{return -ENODEV; }
- static inline int cpuidle_select(struct cpuidle_driver *drv,
- 				 struct cpuidle_device *dev)
- {return -ENODEV; }
-diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
-index 34083c9ac976..25b9423abce9 100644
---- a/kernel/sched/idle.c
-+++ b/kernel/sched/idle.c
-@@ -98,10 +98,11 @@ static void cpuidle_idle_call(void)
- 	rcu_idle_enter();
-=20
- 	/*
--	 * Check if the cpuidle framework is ready, otherwise fallback
--	 * to the default arch specific idle method
-+	 * Ask the cpuidle framework to choose a convenient idle state.
-+	 * Fall back to the default arch idle method on errors.
- 	 */
--	if (cpuidle_enabled(drv, dev)) {
-+	next_state =3D cpuidle_select(drv, dev);
-+	if (next_state < 0) {
- use_default:
- 		/*
- 		 * We can't use the cpuidle framework, let's use the default
-@@ -115,12 +116,6 @@ static void cpuidle_idle_call(void)
- 		goto exit_idle;
- 	}
-=20
--	/*
--	 * Ask the governor to choose an idle state it thinks
--	 * it is convenient to go to. There is *always* a
--	 * convenient idle state
--	 */
--	next_state =3D cpuidle_select(drv, dev);
-=20
- 	/*
- 	 * The idle task must be scheduled, it is pointless to
+So, are we setting edac_mc_panic_on_ue now or what are we planning to do
+for uncorrectable errors?
 
---8teuZUM8bA5gqecl
-Content-Type: application/pgp-signature
+> +	if (status & DRAMSTS_SBEERR) {
+> +		regmap_read(drvdata->mc_vbase, SBECOUNT, &err_count);
+> +		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci, err_count,
+> +				     err_addr >> PAGE_SHIFT,
+> +				     err_addr & ~PAGE_MASK, 0,
+> +				     0, 0, -1, mci->ctl_name, "");
+> +	}
+> +
+> +	regmap_write(drvdata->mc_vbase,	DRAMINTR,
+> +		     (DRAMINTR_INTRCLR | DRAMINTR_INTREN));
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +#ifdef CONFIG_EDAC_DEBUG
+> +static ssize_t altr_sdr_mc_err_inject_write(struct file *file,
+> +					    const char __user *data,
+> +					    size_t count, loff_t *ppos)
+> +{
+> +	struct mem_ctl_info *mci = file->private_data;
+> +	struct altr_sdram_mc_data *drvdata = mci->pvt_info;
+> +	u32 *ptemp;
+> +	dma_addr_t dma_handle;
+> +	u32 reg, read_reg = 0;
+> +
+> +	ptemp = dma_alloc_coherent(mci->pdev, 16, &dma_handle, GFP_KERNEL);
+> +	if (IS_ERR(ptemp)) {
+> +		dma_free_coherent(mci->pdev, 16, ptemp, dma_handle);
+> +		edac_printk(KERN_ERR, EDAC_MC,
+> +			    "EDAC Inject: Buffer Allocation error\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	regmap_read(drvdata->mc_vbase, CTLCFG, &read_reg);
+> +	read_reg &= ~(CTLCFG_GEN_SB_ERR | CTLCFG_GEN_DB_ERR);
+> +
+> +	if (count == 3) {
+> +		edac_printk(KERN_ALERT, EDAC_MC,
+> +			    "EDAC Inject Double bit error\n");
+> +		regmap_write(drvdata->mc_vbase, CTLCFG,
+> +			     (read_reg | CTLCFG_GEN_DB_ERR));
+> +	} else {
+> +		edac_printk(KERN_ALERT, EDAC_MC,
+> +			    "EDAC Inject Single bit error\n");
+> +		regmap_write(drvdata->mc_vbase,	CTLCFG,
+> +			     (read_reg | CTLCFG_GEN_SB_ERR));
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+You can remove the "EDAC " string from those printks above as
+edac_printk already adds the prefix.
 
-iQIcBAEBAgAGBQJTa3KFAAoJEHZH4aRLwOS6HokQALPEQfneNLofw30cMfZjkx6N
-LsSmF83tiPHtdmODV6DGc2XqzbcHzZFsp/Bjti8jKhvu/C+WecsWeLPkCYEyCQ8h
-4RT+alRfqCuB3fQ9uaDsCVH65HvEseTqvCTwmfMQWCKI1FqIk6P5Llb6cq5DVqJp
-vFCb7CX9tBKkumbc9S8SYTJDdK2ObpZW67chqg//vrGkeOtHyoSJn1pZjIfRAjyC
-yuiRwfDMfB7MU4Kizo4/RjqFel2WmPEaGh6tQY3vsAbbMKPRmy9Uf2AYdgDA7Jzi
-PXPy3CnGlzbRPVczpXIpTFakAbk5J0AdJmJzh6UO+HiNQRE3QitG3s1jxJ8yx1Jy
-VDYJcyKywBtc6uiTZhhQcZnw3q57GqJV5EnKRMaAjh9jjofQwSJ7lpYjVRvdl5lW
-V/PRngIvz8auyyhnlO/u8OqmOdKKBsiRcIuzcgKQlJP3+3MaB3ryxnXi34cS3BGG
-NCzpfr3VsqYEz0aqwKNSuIuyAqDUgBnsD1FCyVXjLYkieRyTrJsVOKbyqWxxf1Un
-tXs/ySUQ66yBkkWrOwTY/iF6oXmXLLhjgcd8hpPRaBEEAgHlVmV/q4Ybmn1Lau/2
-gAqLHNHgMqDPX0npMLCXtTVMIlBzuQbeN/iBZD7CZqjVZ6DJf/XAETwyxe0vea3x
-33izU31CXMbfNbKQqeJn
-=5J6X
------END PGP SIGNATURE-----
+> +	}
+> +
+> +	ptemp[0] = 0x5A5A5A5A;
+> +	ptemp[1] = 0xA5A5A5A5;
+> +	regmap_write(drvdata->mc_vbase,	CTLCFG, read_reg);
+> +	/* Ensure it has been written out */
+> +	wmb();
+> +
+> +	reg = ptemp[0];
+> +	read_reg = ptemp[1];
+> +	/* Force Read */
+> +	rmb();
 
---8teuZUM8bA5gqecl--
+Have you checked whether those reads don't get optimized away by the
+compiler? I know, you need them for triggering the error condition.
+
+Also, you should add a comment here to explain why the reads are being
+done.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
