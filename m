@@ -1,46 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746AbaEHPv1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:51:27 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42701 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752101AbaEHPvZ (ORCPT
+	id S1754844AbaEHPwa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:52:30 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:54113 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150AbaEHPw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:51:25 -0400
-Date: Thu, 8 May 2014 11:51:24 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 7/8] usb: ohci: sort out dependencies for lpc32xx and
- omap
-In-Reply-To: <1399557141-1346645-8-git-send-email-arnd@arndb.de>
-Message-ID: <Pine.LNX.4.44L0.1405081151000.1087-100000@iolanthe.rowland.org>
+	Thu, 8 May 2014 11:52:28 -0400
+Date: Thu, 8 May 2014 08:52:22 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.15-rc4
+Message-ID: <20140508155222.GA11231@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zYM0uCDKw75PZbzx"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 May 2014, Arnd Bergmann wrote:
 
-> The dependency on the isp1301 driver is not something that
-> should be in the main OHCI driver but rather the SoC specific
-> part of it.
-> 
-> This moves the dependency for LPC32xx into USB_OHCI_HCD_LPC32XX,
-> and changes the 'select ISP1301_OMAP' to a similar 'depends on'.
-> Since the same dependency exists for the client driver, do the
-> same change there.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: linux-omap@vger.kernel.org
-> Cc: Alan Stern <stern@rowland.harvard.edu>
+--zYM0uCDKw75PZbzx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-For the host side changes:
+Hi Linus,
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Please pull from:
 
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive updates for the input subsystem. Just a few fixups to various
+drivers.
+
+Changelog:
+---------
+
+Dr. H. Nikolaus Schaller (2):
+      Input: bma150 - extend chip detection for bma180
+      Input: tca8418 - fix loading this driver as a module from a device tr=
+ee
+
+Hans de Goede (2):
+      Input: synaptics - add min/max quirk for ThinkPad Edge E431
+      Input: elantech - fix touchpad initialization on Gigabyte U2442
+
+Sheng-Liang Song (1):
+      Input: atkbd - fix keyboard not working on some LG laptops
+
+
+Diffstat:
+--------
+
+ Documentation/input/elantech.txt        |  5 ++++-
+ drivers/input/keyboard/atkbd.c          | 29 ++++++++++++++++++++++++++++-
+ drivers/input/keyboard/tca8418_keypad.c |  7 +++++++
+ drivers/input/misc/bma150.c             |  4 +++-
+ drivers/input/mouse/elantech.c          | 26 +++++++++++++++++++++++++-
+ drivers/input/mouse/elantech.h          |  1 +
+ drivers/input/mouse/synaptics.c         |  8 ++++++++
+ 7 files changed, 76 insertions(+), 4 deletions(-)
+
+--=20
+Dmitry
+
+
+--zYM0uCDKw75PZbzx
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTa6g2AAoJEH70+W8r6ZYq+JkP/iGMxwaE+eJwchvCUOo2KLO3
+hTYAEYNd18yf9fK3o4SPILQIZPc9Wvo0gxWoCGsix+ZBIi8Fv+G1NhgI+C2dMSRy
+N9i4xAqTvjmgklzbyk1azIdyiUE1xUEidVkhmAWZSO29ml7nIkrdnxi7iyFjkSeS
+rwn2mRaAM/eezIn5b4z3yIZ6NgbwxNlGbfE2iBt4HYKU2no+hBISrYRx1K1orqkq
+Vo9O5LoXe5lt9LocOcl2HSgGx45pWmi5ByoLhwNxeBnB/wb1vbyGqzqBTdTELKf0
+MSR5p0gM3Eeis7Xbtkw0sdSHr1dJUxD4bXfXB0fLwojLSLQbCwYqrbHieNbqHct3
+JHaM9vJKP4oPz/IlSRPTY/aKzD+f1HnUfqXOJycXZIsFLOpC4MVGf/z72mYnmAFj
+ndOj2t3RuXb939SQG95T00G49ks2sx6fnFF3FuEQuzjZR59SZLCPStSsyVXfD/Ws
+wMzIrxOMfMOkrKJunTSlLYDBfuxRdmJ9di5JTSakHwqB1WBPgteWwi/VH7qzZo3N
+TmHNvJNBhneA1Wgr4jT/TRGeGhy9SMT2hZYFpHJwVN2TcvOueD4p/FbRzXJ/NThS
+fGctRS2orYz+C6vK2h3BXz1WqsEz34gjxN1IXOvoWQ5b1HrtN4LKS4bxSsqvxs8y
+ilnGfs/fROqOQoLMDMVX
+=ZAK1
+-----END PGP SIGNATURE-----
+
+--zYM0uCDKw75PZbzx--
