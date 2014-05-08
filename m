@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065AbaEHWYB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 18:24:01 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:37187 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756041AbaEHWX7 (ORCPT
+	id S1756088AbaEHWYG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 18:24:06 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:45566 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756041AbaEHWYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 18:23:59 -0400
+	Thu, 8 May 2014 18:24:01 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
@@ -14,9 +14,9 @@ Cc: Grant Likely <grant.likely@linaro.org>, benh@kernel.crashing.org,
         Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Rob Herring <robh@kernel.org>
-Subject: [PATCH 2/6] of: consolidate linker section OF match table declarations
-Date: Thu,  8 May 2014 17:23:39 -0500
-Message-Id: <1399587823-17701-3-git-send-email-robherring2@gmail.com>
+Subject: [PATCH 4/6] of/fdt: add FDT address translation support
+Date: Thu,  8 May 2014 17:23:41 -0500
+Message-Id: <1399587823-17701-5-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399587823-17701-1-git-send-email-robherring2@gmail.com>
 References: <1399587823-17701-1-git-send-email-robherring2@gmail.com>
@@ -26,175 +26,297 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <robh@kernel.org>
 
-We now have several OF match tables using linker sections that are
-nearly the same definition. The only variation is the callback function
-prototype. Create a common define for creating linker section OF match
-table entries which each table declaration can use.
+Copy u-boot's FDT address translation code from common/fdt_support. This
+code was originally based on the kernel's unflattened DT address parsing
+code.
 
-Cc: Grant Likely <grant.likely@linaro.org>
+This commit can be reverted once relicensing of this code to GPLv2/BSD
+is done and it is added to libfdt.
+
 Signed-off-by: Rob Herring <robh@kernel.org>
+Cc: Grant Likely <grant.likely@linaro.org>
 ---
- drivers/clocksource/clksrc-of.c |  2 +-
- drivers/irqchip/irqchip.h       |  7 +++----
- include/linux/clk-provider.h    |  5 +----
- include/linux/clocksource.h     | 16 +++-------------
- include/linux/of.h              | 22 ++++++++++++++++++++++
- include/linux/of_reserved_mem.h | 18 ++----------------
- 6 files changed, 32 insertions(+), 38 deletions(-)
+ drivers/of/Makefile      |   2 +
+ drivers/of/fdt_address.c | 241 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/of_fdt.h   |   1 +
+ 3 files changed, 244 insertions(+)
+ create mode 100644 drivers/of/fdt_address.c
 
-diff --git a/drivers/clocksource/clksrc-of.c b/drivers/clocksource/clksrc-of.c
-index ae2e427..0093a8e 100644
---- a/drivers/clocksource/clksrc-of.c
-+++ b/drivers/clocksource/clksrc-of.c
-@@ -27,7 +27,7 @@ void __init clocksource_of_init(void)
- {
- 	struct device_node *np;
- 	const struct of_device_id *match;
--	clocksource_of_init_fn init_func;
-+	of_init_fn_1 init_func;
- 	unsigned clocksources = 0;
+diff --git a/drivers/of/Makefile b/drivers/of/Makefile
+index 9891232..099b1fb 100644
+--- a/drivers/of/Makefile
++++ b/drivers/of/Makefile
+@@ -1,5 +1,6 @@
+ obj-y = base.o device.o platform.o
+ obj-$(CONFIG_OF_FLATTREE) += fdt.o
++obj-$(CONFIG_OF_EARLY_FLATTREE) += fdt_address.o
+ obj-$(CONFIG_OF_PROMTREE) += pdt.o
+ obj-$(CONFIG_OF_ADDRESS)  += address.o
+ obj-$(CONFIG_OF_IRQ)    += irq.o
+@@ -12,3 +13,4 @@ obj-$(CONFIG_OF_MTD)	+= of_mtd.o
+ obj-$(CONFIG_OF_RESERVED_MEM) += of_reserved_mem.o
  
- 	for_each_matching_node_and_match(np, __clksrc_of_table, &match) {
-diff --git a/drivers/irqchip/irqchip.h b/drivers/irqchip/irqchip.h
-index e445ba2..0f6486d 100644
---- a/drivers/irqchip/irqchip.h
-+++ b/drivers/irqchip/irqchip.h
-@@ -11,6 +11,8 @@
- #ifndef _IRQCHIP_H
- #define _IRQCHIP_H
- 
+ CFLAGS_fdt.o = -I$(src)/../../scripts/dtc/libfdt
++CFLAGS_fdt_address.o = -I$(src)/../../scripts/dtc/libfdt
+diff --git a/drivers/of/fdt_address.c b/drivers/of/fdt_address.c
+new file mode 100644
+index 0000000..8d3dc6f
+--- /dev/null
++++ b/drivers/of/fdt_address.c
+@@ -0,0 +1,241 @@
++/*
++ * FDT Address translation based on u-boot fdt_support.c which in turn was
++ * based on the kernel unflattened DT address translation code.
++ *
++ * (C) Copyright 2007
++ * Gerald Van Baren, Custom IDEAS, vanbaren@cideas.com
++ *
++ * Copyright 2010-2011 Freescale Semiconductor, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2, or (at your option)
++ * any later version.
++ */
++#include <linux/kernel.h>
++#include <linux/libfdt.h>
 +#include <linux/of.h>
++#include <linux/of_fdt.h>
++#include <linux/sizes.h>
 +
- /*
-  * This macro must be used by the different irqchip drivers to declare
-  * the association between their DT compatible string and their
-@@ -21,9 +23,6 @@
-  * @compstr: compatible string of the irqchip driver
-  * @fn: initialization function
-  */
--#define IRQCHIP_DECLARE(name,compstr,fn)				\
--	static const struct of_device_id irqchip_of_match_##name	\
--	__used __section(__irqchip_of_table)				\
--	= { .compatible = compstr, .data = fn }
-+#define IRQCHIP_DECLARE(name, compat, fn) OF_DECLARE_2(irqchip, name, compat, fn)
- 
- #endif
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 59e2eb5..3429929 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -501,10 +501,7 @@ struct clk_onecell_data {
- 
- extern struct of_device_id __clk_of_table;
- 
--#define CLK_OF_DECLARE(name, compat, fn)			\
--	static const struct of_device_id __clk_of_table_##name	\
--		__used __section(__clk_of_table)		\
--		= { .compatible = compat, .data = fn };
-+#define CLK_OF_DECLARE(name, compat, fn) OF_DECLARE_1(clk, name, compat, fn)
- 
- #ifdef CONFIG_OF
- int of_clk_add_provider(struct device_node *np,
-diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index 67301a4..a16b497 100644
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -339,23 +339,13 @@ extern int clocksource_mmio_init(void __iomem *, const char *,
- 
- extern int clocksource_i8253_init(void);
- 
--struct device_node;
--typedef void(*clocksource_of_init_fn)(struct device_node *);
-+#define CLOCKSOURCE_OF_DECLARE(name, compat, fn) \
-+	OF_DECLARE_1(clksrc, name, compat, fn)
++/* Max address size we deal with */
++#define OF_MAX_ADDR_CELLS	4
++#define OF_CHECK_COUNTS(na, ns)	((na) > 0 && (na) <= OF_MAX_ADDR_CELLS && \
++			(ns) > 0)
 +
- #ifdef CONFIG_CLKSRC_OF
- extern void clocksource_of_init(void);
--
--#define CLOCKSOURCE_OF_DECLARE(name, compat, fn)			\
--	static const struct of_device_id __clksrc_of_table_##name	\
--		__used __section(__clksrc_of_table)			\
--		 = { .compatible = compat,				\
--		     .data = (fn == (clocksource_of_init_fn)NULL) ? fn : fn }
- #else
- static inline void clocksource_of_init(void) {}
--#define CLOCKSOURCE_OF_DECLARE(name, compat, fn)			\
--	static const struct of_device_id __clksrc_of_table_##name	\
--		__attribute__((unused))					\
--		 = { .compatible = compat,				\
--		     .data = (fn == (clocksource_of_init_fn)NULL) ? fn : fn }
- #endif
- 
- #endif /* _LINUX_CLOCKSOURCE_H */
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 3bad8d1..6fb2185 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -757,4 +757,26 @@ static inline int of_get_available_child_count(const struct device_node *np)
- 	return num;
- }
- 
-+#ifdef CONFIG_OF
-+#define _OF_DECLARE(table, name, compat, fn, fn_type)			\
-+	static const struct of_device_id __of_table_##name		\
-+		__used __section(__##table##_of_table)			\
-+		 = { .compatible = compat,				\
-+		     .data = (fn == (fn_type)NULL) ? fn : fn  }
++/* Debug utility */
++#ifdef DEBUG
++static void __init of_dump_addr(const char *s, const __be32 *addr, int na)
++{
++	pr_debug("%s", s);
++	while(na--)
++		pr_cont(" %08x", *(addr++));
++	pr_debug("\n");
++}
 +#else
-+#define _OF_DECLARE(name, compat, fn, fn_type)					\
-+	static const struct of_device_id __of_table_##name		\
-+		__attribute__((unused))					\
-+		 = { .compatible = compat,				\
-+		     .data = (fn == (fn_type)NULL) ? fn : fn }
++static void __init of_dump_addr(const char *s, const __be32 *addr, int na) { }
 +#endif
 +
-+typedef int (*of_init_fn_2)(struct device_node *, struct device_node *);
-+typedef void (*of_init_fn_1)(struct device_node *);
++/* Callbacks for bus specific translators */
++struct of_bus {
++	void		(*count_cells)(const void *blob, int parentoffset,
++				int *addrc, int *sizec);
++	u64		(*map)(__be32 *addr, const __be32 *range,
++				int na, int ns, int pna);
++	int		(*translate)(__be32 *addr, u64 offset, int na);
++};
 +
-+#define OF_DECLARE_1(table, name, compat, fn) \
-+		_OF_DECLARE(table, name, compat, fn, of_init_fn_1)
-+#define OF_DECLARE_2(table, name, compat, fn) \
-+		_OF_DECLARE(table, name, compat, fn, of_init_fn_2)
++/* Default translator (generic bus) */
++static void __init fdt_bus_default_count_cells(const void *blob, int parentoffset,
++					       int *addrc, int *sizec)
++{
++	const __be32 *prop;
 +
- #endif /* _LINUX_OF_H */
-diff --git a/include/linux/of_reserved_mem.h b/include/linux/of_reserved_mem.h
-index 4c81b84..4669ddf 100644
---- a/include/linux/of_reserved_mem.h
-+++ b/include/linux/of_reserved_mem.h
-@@ -23,31 +23,17 @@ struct reserved_mem_ops {
- 
- typedef int (*reservedmem_of_init_fn)(struct reserved_mem *rmem);
- 
-+#define RESERVEDMEM_OF_DECLARE(name, compat, init)			\
-+	_OF_DECLARE(reservedmem, name, compat, init, reservedmem_of_init_fn)
- 
- #ifdef CONFIG_OF_RESERVED_MEM
- void fdt_init_reserved_mem(void);
- void fdt_reserved_mem_save_node(unsigned long node, const char *uname,
- 			       phys_addr_t base, phys_addr_t size);
--
--#define RESERVEDMEM_OF_DECLARE(name, compat, init)			\
--	static const struct of_device_id __reservedmem_of_table_##name	\
--		__used __section(__reservedmem_of_table)		\
--		 = { .compatible = compat,				\
--		     .data = (init == (reservedmem_of_init_fn)NULL) ?	\
--				init : init }
--
- #else
- static inline void fdt_init_reserved_mem(void) { }
- static inline void fdt_reserved_mem_save_node(unsigned long node,
- 		const char *uname, phys_addr_t base, phys_addr_t size) { }
--
--#define RESERVEDMEM_OF_DECLARE(name, compat, init)			\
--	static const struct of_device_id __reservedmem_of_table_##name	\
--		__attribute__((unused))					\
--		 = { .compatible = compat,				\
--		     .data = (init == (reservedmem_of_init_fn)NULL) ?	\
--				init : init }
--
- #endif
- 
- #endif /* __OF_RESERVED_MEM_H */
++	if (addrc) {
++		prop = fdt_getprop(blob, parentoffset, "#address-cells", NULL);
++		if (prop)
++			*addrc = be32_to_cpup(prop);
++		else
++			*addrc = dt_root_addr_cells;
++	}
++
++	if (sizec) {
++		prop = fdt_getprop(blob, parentoffset, "#size-cells", NULL);
++		if (prop)
++			*sizec = be32_to_cpup(prop);
++		else
++			*sizec = dt_root_size_cells;
++	}
++}
++
++static u64 __init fdt_bus_default_map(__be32 *addr, const __be32 *range,
++				      int na, int ns, int pna)
++{
++	u64 cp, s, da;
++
++	cp = of_read_number(range, na);
++	s  = of_read_number(range + na + pna, ns);
++	da = of_read_number(addr, na);
++
++	pr_debug("FDT: default map, cp=%llx, s=%llx, da=%llx\n",
++	    cp, s, da);
++
++	if (da < cp || da >= (cp + s))
++		return OF_BAD_ADDR;
++	return da - cp;
++}
++
++static int __init fdt_bus_default_translate(__be32 *addr, u64 offset, int na)
++{
++	u64 a = of_read_number(addr, na);
++	memset(addr, 0, na * 4);
++	a += offset;
++	if (na > 1)
++		addr[na - 2] = cpu_to_fdt32(a >> 32);
++	addr[na - 1] = cpu_to_fdt32(a & 0xffffffffu);
++
++	return 0;
++}
++
++/* Array of bus specific translators */
++static const struct of_bus of_busses[] __initconst = {
++	/* Default */
++	{
++		.count_cells = fdt_bus_default_count_cells,
++		.map = fdt_bus_default_map,
++		.translate = fdt_bus_default_translate,
++	},
++};
++
++static int __init fdt_translate_one(const void *blob, int parent,
++				    const struct of_bus *bus,
++				    const struct of_bus *pbus, __be32 *addr,
++				    int na, int ns, int pna, const char *rprop)
++{
++	const __be32 *ranges;
++	int rlen;
++	int rone;
++	u64 offset = OF_BAD_ADDR;
++
++	ranges = fdt_getprop(blob, parent, rprop, &rlen);
++	if (!ranges)
++		return 1;
++	if (rlen == 0) {
++		offset = of_read_number(addr, na);
++		memset(addr, 0, pna * 4);
++		pr_debug("FDT: empty ranges, 1:1 translation\n");
++		goto finish;
++	}
++
++	pr_debug("FDT: walking ranges...\n");
++
++	/* Now walk through the ranges */
++	rlen /= 4;
++	rone = na + pna + ns;
++	for (; rlen >= rone; rlen -= rone, ranges += rone) {
++		offset = bus->map(addr, ranges, na, ns, pna);
++		if (offset != OF_BAD_ADDR)
++			break;
++	}
++	if (offset == OF_BAD_ADDR) {
++		pr_debug("FDT: not found !\n");
++		return 1;
++	}
++	memcpy(addr, ranges + na, 4 * pna);
++
++ finish:
++	of_dump_addr("FDT: parent translation for:", addr, pna);
++	pr_debug("FDT: with offset: %llx\n", offset);
++
++	/* Translate it into parent bus space */
++	return pbus->translate(addr, offset, pna);
++}
++
++/*
++ * Translate an address from the device-tree into a CPU physical address,
++ * this walks up the tree and applies the various bus mappings on the
++ * way.
++ *
++ * Note: We consider that crossing any level with #size-cells == 0 to mean
++ * that translation is impossible (that is we are not dealing with a value
++ * that can be mapped to a cpu physical address). This is not really specified
++ * that way, but this is traditionally the way IBM at least do things
++ */
++u64 __init fdt_translate_address(const void *blob, int node_offset)
++{
++	int parent, len;
++	const struct of_bus *bus, *pbus;
++	const __be32 *reg;
++	__be32 addr[OF_MAX_ADDR_CELLS];
++	int na, ns, pna, pns;
++	u64 result = OF_BAD_ADDR;
++
++	pr_debug("FDT: ** translation for device %s **\n",
++		 fdt_get_name(blob, node_offset, NULL));
++
++	reg = fdt_getprop(blob, node_offset, "reg", &len);
++	if (!reg) {
++		pr_err("FDT: warning: device tree node '%s' has no address.\n",
++			fdt_get_name(blob, node_offset, NULL));
++		goto bail;
++	}
++
++	/* Get parent & match bus type */
++	parent = fdt_parent_offset(blob, node_offset);
++	if (parent < 0)
++		goto bail;
++	bus = &of_busses[0];
++
++	/* Cound address cells & copy address locally */
++	bus->count_cells(blob, parent, &na, &ns);
++	if (!OF_CHECK_COUNTS(na, ns)) {
++		pr_err("FDT: Bad cell count for %s\n",
++		       fdt_get_name(blob, node_offset, NULL));
++		goto bail;
++	}
++	memcpy(addr, reg, na * 4);
++
++	pr_debug("FDT: bus (na=%d, ns=%d) on %s\n",
++		 na, ns, fdt_get_name(blob, parent, NULL));
++	of_dump_addr("OF: translating address:", addr, na);
++
++	/* Translate */
++	for (;;) {
++		/* Switch to parent bus */
++		node_offset = parent;
++		parent = fdt_parent_offset(blob, node_offset);
++
++		/* If root, we have finished */
++		if (parent < 0) {
++			pr_debug("FDT: reached root node\n");
++			result = of_read_number(addr, na);
++			break;
++		}
++
++		/* Get new parent bus and counts */
++		pbus = &of_busses[0];
++		pbus->count_cells(blob, parent, &pna, &pns);
++		if (!OF_CHECK_COUNTS(pna, pns)) {
++			pr_err("FDT: Bad cell count for %s\n",
++				fdt_get_name(blob, node_offset, NULL));
++			break;
++		}
++
++		pr_debug("FDT: parent bus (na=%d, ns=%d) on %s\n",
++			 pna, pns, fdt_get_name(blob, parent, NULL));
++
++		/* Apply bus translation */
++		if (fdt_translate_one(blob, node_offset, bus, pbus,
++					addr, na, ns, pna, "ranges"))
++			break;
++
++		/* Complete the move up one level */
++		na = pna;
++		ns = pns;
++		bus = pbus;
++
++		of_dump_addr("FDT: one level translation:", addr, na);
++	}
++ bail:
++	return result;
++}
+diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
+index 5c0ab05..0511789 100644
+--- a/include/linux/of_fdt.h
++++ b/include/linux/of_fdt.h
+@@ -83,6 +83,7 @@ extern void unflatten_device_tree(void);
+ extern void unflatten_and_copy_device_tree(void);
+ extern void early_init_devtree(void *);
+ extern void early_get_first_memblock_info(void *, phys_addr_t *);
++extern u64 fdt_translate_address(const void *blob, int node_offset);
+ #else /* CONFIG_OF_FLATTREE */
+ static inline void early_init_fdt_scan_reserved_mem(void) {}
+ static inline const char *of_flat_dt_get_machine_name(void) { return NULL; }
 -- 
 1.9.1
 
