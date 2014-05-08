@@ -1,86 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872AbaEHPOT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:14:19 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:33825 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547AbaEHPOG (ORCPT
+	id S1754823AbaEHPOE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:14:04 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:63120 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753544AbaEHPOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:14:06 -0400
-Date: Thu, 8 May 2014 17:14:02 +0200
-From: Robert Richter <rric@kernel.org>
-To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-Cc: bhelgaas@google.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        Borislav Petkov <bp@suse.de>, Daniel J Blueman <daniel@numascale.com>,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [PATCH V3 1/3] x86/PCI: Fix PCI root numa_node info on AMD
- family15h
-Message-ID: <20140508151402.GN32718@rric.localhost>
-References: <1399489127-6961-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1399489127-6961-2-git-send-email-suravee.suthikulpanit@amd.com>
- <20140508085905.GK32718@rric.localhost>
- <20140508090148.GL32718@rric.localhost>
- <536B973B.2000207@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <536B973B.2000207@amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 8 May 2014 11:14:00 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: git@xilinx.com, Michal Simek <monstr@monstr.eu>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3] clocksource: cadence_ttc: Use readl/writel_relaxed instead of __raw
+Date: Thu,  8 May 2014 17:13:38 +0200
+Message-Id: <b8e5801e5f833aa180b020807ef91e0c568e99fa.1399562009.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <5e4fb08db4f6a436fc4593b22c3ae611ba545967.1399562009.git.michal.simek@xilinx.com>
+References: <5e4fb08db4f6a436fc4593b22c3ae611ba545967.1399562009.git.michal.simek@xilinx.com>
+In-Reply-To: <5e4fb08db4f6a436fc4593b22c3ae611ba545967.1399562009.git.michal.simek@xilinx.com>
+References: <5e4fb08db4f6a436fc4593b22c3ae611ba545967.1399562009.git.michal.simek@xilinx.com>
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-691-1399562028-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.05.14 09:39:55, Suravee Suthikulanit wrote:
-> On 5/8/2014 4:01 AM, Robert Richter wrote:
-> >On 08.05.14 10:59:05, Robert Richter wrote:
-> >>On 07.05.14 13:58:45, suravee.suthikulpanit@amd.com wrote:
-> >>>@@ -113,10 +122,17 @@ static int __init early_fill_mp_bus_info(void)
-> >>>  		info = alloc_pci_root_info(min_bus, max_bus, node, link);
-> >>>  	}
-> >>>
-> >>>+	/*
-> >>>+	 * The following code is only supported until Fam11h.
-> >>>+	 * Newer processors will depend on ACPI MCFG table instead.
-> >>>+	 */
-> >>>+	if (boot_cpu_data.x86 > 0x11)
-> >>>+		return 0;
-> >>>+
-> >>>  	/* get the default node and link for left over res */
-> >>
-> >>As this is the only substantial change of your patch, I would better
-> >>drop ther rest or at least split it in two patches. Should this change
-> >>also be for stable?
-> >
-> >Of course adding the hostbridge must be also part of the patch, didn't
-> >note this due to the other noise. See why the split would be good?
-> >
-> >>
-> >>-Robert
-> 
-> 
-> Robert,
-> 
-> I have already added the hostbridge for family15h in this patch.
-> 
-> +static struct amd_hostbridge hb_probes[] __initdata = {
-> +	{ 0, 0x18, 0x1100 }, /* K8 */
-> +	{ 0, 0x18, 0x1200 }, /* Family10h */
-> +	{ 0xff, 0, 0x1200 }, /* Family10h */
-> +	{ 0, 0x18, 0x1300 }, /* Family11h */
-> +	{ 0, 0x18, 0x1600 }, /* Family15h */ <--- HERE
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-Yes, I noticed that, but later, thus my 2nd mail.
+--=_mimegpg-monstr-desktop-691-1399562028-0001
 
->  };
-> 
-> The rest of the changes are mostly comments, some minor renaming of
-> variables for clarity, and replace hardcode values with preprocessor macro.
-> If needed, I can split them.
+For supporting ARM big-endian is necessary to use
+proper IO endianess accessors.
 
-I just would drop it, you just need the fam15h device and the cpu mode
-check.
+Based on Ben Dooks BE guide.
+Similar conversion is done here:
+"mv_xor: use {readl, writel}_relaxed instead of __raw_{readl, writel}"
+(sha1: 5733c38ae3473115ac7df3fe19bd2502149d8c51)
 
--Robert
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+
+ drivers/clocksource/cadence_ttc_timer.c | 54 ++++++++++++++++-----------------
+ 1 file changed, 27 insertions(+), 27 deletions(-)
+
+diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
+index 49fbe2847c84..7a08811df9aa 100644
+--- a/drivers/clocksource/cadence_ttc_timer.c
++++ b/drivers/clocksource/cadence_ttc_timer.c
+@@ -118,11 +118,11 @@ static void ttc_set_interval(struct ttc_timer *timer,
+ 	u32 ctrl_reg;
+
+ 	/* Disable the counter, set the counter value  and re-enable counter */
+-	ctrl_reg = __raw_readl(timer->base_addr + TTC_CNT_CNTRL_OFFSET);
++	ctrl_reg = readl_relaxed(timer->base_addr + TTC_CNT_CNTRL_OFFSET);
+ 	ctrl_reg |= TTC_CNT_CNTRL_DISABLE_MASK;
+-	__raw_writel(ctrl_reg, timer->base_addr + TTC_CNT_CNTRL_OFFSET);
++	writel_relaxed(ctrl_reg, timer->base_addr + TTC_CNT_CNTRL_OFFSET);
+
+-	__raw_writel(cycles, timer->base_addr + TTC_INTR_VAL_OFFSET);
++	writel_relaxed(cycles, timer->base_addr + TTC_INTR_VAL_OFFSET);
+
+ 	/*
+ 	 * Reset the counter (0x10) so that it starts from 0, one-shot
+@@ -130,7 +130,7 @@ static void ttc_set_interval(struct ttc_timer *timer,
+ 	 */
+ 	ctrl_reg |= CNT_CNTRL_RESET;
+ 	ctrl_reg &= ~TTC_CNT_CNTRL_DISABLE_MASK;
+-	__raw_writel(ctrl_reg, timer->base_addr + TTC_CNT_CNTRL_OFFSET);
++	writel_relaxed(ctrl_reg, timer->base_addr + TTC_CNT_CNTRL_OFFSET);
+ }
+
+ /**
+@@ -147,7 +147,7 @@ static irqreturn_t ttc_clock_event_interrupt(int irq, void *dev_id)
+ 	struct ttc_timer *timer = &ttce->ttc;
+
+ 	/* Acknowledge the interrupt and call event handler */
+-	__raw_readl(timer->base_addr + TTC_ISR_OFFSET);
++	readl_relaxed(timer->base_addr + TTC_ISR_OFFSET);
+
+ 	ttce->ce.event_handler(&ttce->ce);
+
+@@ -163,13 +163,13 @@ static cycle_t __ttc_clocksource_read(struct clocksource *cs)
+ {
+ 	struct ttc_timer *timer = &to_ttc_timer_clksrc(cs)->ttc;
+
+-	return (cycle_t)__raw_readl(timer->base_addr +
++	return (cycle_t)readl_relaxed(timer->base_addr +
+ 				TTC_COUNT_VAL_OFFSET);
+ }
+
+ static u64 notrace ttc_sched_clock_read(void)
+ {
+-	return __raw_readl(ttc_sched_clock_val_reg);
++	return readl_relaxed(ttc_sched_clock_val_reg);
+ }
+
+ /**
+@@ -211,17 +211,17 @@ static void ttc_set_mode(enum clock_event_mode mode,
+ 	case CLOCK_EVT_MODE_ONESHOT:
+ 	case CLOCK_EVT_MODE_UNUSED:
+ 	case CLOCK_EVT_MODE_SHUTDOWN:
+-		ctrl_reg = __raw_readl(timer->base_addr +
++		ctrl_reg = readl_relaxed(timer->base_addr +
+ 					TTC_CNT_CNTRL_OFFSET);
+ 		ctrl_reg |= TTC_CNT_CNTRL_DISABLE_MASK;
+-		__raw_writel(ctrl_reg,
++		writel_relaxed(ctrl_reg,
+ 				timer->base_addr + TTC_CNT_CNTRL_OFFSET);
+ 		break;
+ 	case CLOCK_EVT_MODE_RESUME:
+-		ctrl_reg = __raw_readl(timer->base_addr +
++		ctrl_reg = readl_relaxed(timer->base_addr +
+ 					TTC_CNT_CNTRL_OFFSET);
+ 		ctrl_reg &= ~TTC_CNT_CNTRL_DISABLE_MASK;
+-		__raw_writel(ctrl_reg,
++		writel_relaxed(ctrl_reg,
+ 				timer->base_addr + TTC_CNT_CNTRL_OFFSET);
+ 		break;
+ 	}
+@@ -266,8 +266,8 @@ static int ttc_rate_change_clocksource_cb(struct notifier_block *nb,
+ 		 * of an abort.
+ 		 */
+ 		ttccs->scale_clk_ctrl_reg_old =
+-			__raw_readl(ttccs->ttc.base_addr +
+-					TTC_CLK_CNTRL_OFFSET);
++			readl_relaxed(ttccs->ttc.base_addr +
++			TTC_CLK_CNTRL_OFFSET);
+
+ 		psv = (ttccs->scale_clk_ctrl_reg_old &
+ 				TTC_CLK_CNTRL_PSV_MASK) >>
+@@ -291,8 +291,8 @@ static int ttc_rate_change_clocksource_cb(struct notifier_block *nb,
+ 			return NOTIFY_DONE;
+
+ 		/* scale up: adjust divider now - before frequency change */
+-		__raw_writel(ttccs->scale_clk_ctrl_reg_new,
+-				ttccs->ttc.base_addr + TTC_CLK_CNTRL_OFFSET);
++		writel_relaxed(ttccs->scale_clk_ctrl_reg_new,
++			       ttccs->ttc.base_addr + TTC_CLK_CNTRL_OFFSET);
+ 		break;
+ 	}
+ 	case POST_RATE_CHANGE:
+@@ -301,8 +301,8 @@ static int ttc_rate_change_clocksource_cb(struct notifier_block *nb,
+ 			return NOTIFY_OK;
+
+ 		/* scale down: adjust divider now - after frequency change */
+-		__raw_writel(ttccs->scale_clk_ctrl_reg_new,
+-				ttccs->ttc.base_addr + TTC_CLK_CNTRL_OFFSET);
++		writel_relaxed(ttccs->scale_clk_ctrl_reg_new,
++			       ttccs->ttc.base_addr + TTC_CLK_CNTRL_OFFSET);
+ 		break;
+
+ 	case ABORT_RATE_CHANGE:
+@@ -311,8 +311,8 @@ static int ttc_rate_change_clocksource_cb(struct notifier_block *nb,
+ 			return NOTIFY_OK;
+
+ 		/* restore original register value */
+-		__raw_writel(ttccs->scale_clk_ctrl_reg_old,
+-				ttccs->ttc.base_addr + TTC_CLK_CNTRL_OFFSET);
++		writel_relaxed(ttccs->scale_clk_ctrl_reg_old,
++			       ttccs->ttc.base_addr + TTC_CLK_CNTRL_OFFSET);
+ 		/* fall through */
+ 	default:
+ 		return NOTIFY_DONE;
+@@ -359,10 +359,10 @@ static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
+ 	 * with no interrupt and it rolls over at 0xFFFF. Pre-scale
+ 	 * it by 32 also. Let it start running now.
+ 	 */
+-	__raw_writel(0x0,  ttccs->ttc.base_addr + TTC_IER_OFFSET);
+-	__raw_writel(CLK_CNTRL_PRESCALE | CLK_CNTRL_PRESCALE_EN,
++	writel_relaxed(0x0,  ttccs->ttc.base_addr + TTC_IER_OFFSET);
++	writel_relaxed(CLK_CNTRL_PRESCALE | CLK_CNTRL_PRESCALE_EN,
+ 		     ttccs->ttc.base_addr + TTC_CLK_CNTRL_OFFSET);
+-	__raw_writel(CNT_CNTRL_RESET,
++	writel_relaxed(CNT_CNTRL_RESET,
+ 		     ttccs->ttc.base_addr + TTC_CNT_CNTRL_OFFSET);
+
+ 	err = clocksource_register_hz(&ttccs->cs, ttccs->ttc.freq / PRESCALE);
+@@ -438,10 +438,10 @@ static void __init ttc_setup_clockevent(struct clk *clk,
+ 	 * is prescaled by 32 using the interval interrupt. Leave it
+ 	 * disabled for now.
+ 	 */
+-	__raw_writel(0x23, ttcce->ttc.base_addr + TTC_CNT_CNTRL_OFFSET);
+-	__raw_writel(CLK_CNTRL_PRESCALE | CLK_CNTRL_PRESCALE_EN,
++	writel_relaxed(0x23, ttcce->ttc.base_addr + TTC_CNT_CNTRL_OFFSET);
++	writel_relaxed(CLK_CNTRL_PRESCALE | CLK_CNTRL_PRESCALE_EN,
+ 		     ttcce->ttc.base_addr + TTC_CLK_CNTRL_OFFSET);
+-	__raw_writel(0x1,  ttcce->ttc.base_addr + TTC_IER_OFFSET);
++	writel_relaxed(0x1,  ttcce->ttc.base_addr + TTC_IER_OFFSET);
+
+ 	err = request_irq(irq, ttc_clock_event_interrupt,
+ 			  IRQF_TIMER, ttcce->ce.name, ttcce);
+@@ -490,7 +490,7 @@ static void __init ttc_timer_init(struct device_node *timer)
+ 		BUG();
+ 	}
+
+-	clksel = __raw_readl(timer_baseaddr + TTC_CLK_CNTRL_OFFSET);
++	clksel = readl_relaxed(timer_baseaddr + TTC_CLK_CNTRL_OFFSET);
+ 	clksel = !!(clksel & TTC_CLK_CNTRL_CSRC_MASK);
+ 	clk_cs = of_clk_get(timer, clksel);
+ 	if (IS_ERR(clk_cs)) {
+@@ -498,7 +498,7 @@ static void __init ttc_timer_init(struct device_node *timer)
+ 		BUG();
+ 	}
+
+-	clksel = __raw_readl(timer_baseaddr + 4 + TTC_CLK_CNTRL_OFFSET);
++	clksel = readl_relaxed(timer_baseaddr + 4 + TTC_CLK_CNTRL_OFFSET);
+ 	clksel = !!(clksel & TTC_CLK_CNTRL_CSRC_MASK);
+ 	clk_ce = of_clk_get(timer, clksel);
+ 	if (IS_ERR(clk_ce)) {
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-691-1399562028-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlNrnywACgkQykllyylKDCHD7QCeJckG16v74Ttfa/QDoROVLVHG
+aOMAoJD2Dh9wIeVPxUGeM04m0qtPZ7V4
+=i8uz
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-691-1399562028-0001--
