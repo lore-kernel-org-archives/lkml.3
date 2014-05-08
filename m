@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672AbaEHU5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 16:57:12 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:41205 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754628AbaEHU5L (ORCPT
+	id S1755129AbaEHVFg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 17:05:36 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:51228 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752840AbaEHVFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 16:57:11 -0400
-Date: Thu, 8 May 2014 21:55:56 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Will Deacon <will.deacon@arm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        David Riley <davidriley@chromium.org>,
-        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP
-	systems
-Message-ID: <20140508205556.GJ3693@n2100.arm.linux.org.uk>
-References: <1399504982-31181-1-git-send-email-dianders@chromium.org> <CAOh2x=kwaoSdj8JO0Vo08Y0dX2UfKFiF3pBV-qtp-YTyN=8H8Q@mail.gmail.com> <CAD=FV=UEGJGHrdcXgs3EZ_wFXT8GnNeCOMt7CgdiiUzBzZ5Y0A@mail.gmail.com> <alpine.LFD.2.11.1405081149190.980@knanqh.ubzr> <CAD=FV=VtcLOh51LCmafzRMdqtDrwKXCqK6gE6V7OOOUe4gjwbA@mail.gmail.com> <alpine.LFD.2.11.1405081329010.980@knanqh.ubzr> <CAD=FV=X4h0nfO7a10NXe+d76xj5ttBJx=q1pAvW4aPzrc22BoQ@mail.gmail.com>
+	Thu, 8 May 2014 17:05:35 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ACPI / PM: Export acpi_target_system_state() to modules
+Date: Thu, 08 May 2014 23:22:15 +0200
+Message-ID: <2489711.iF4O31YnBD@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAD=FV=X4h0nfO7a10NXe+d76xj5ttBJx=q1pAvW4aPzrc22BoQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 11:06:24AM -0700, Doug Anderson wrote:
-> I guess I would say that my patch is unhacking the this code.  The
-> code after my patch is simpler.  I would perhaps argue that (ec971ea
-> ARM: add cpufreq transiton notifier to adjust loops_per_jiffy for smp)
-> should never have landed to begin with.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-That depends on your point of view.  As I've already pointed out through
-the examples of why udelay() is inaccurate, for driver authors, they
-should assume that udelay() just gives you an "approximate" delay and
-it has no accuracy.
+Export the acpi_target_system_state() function to modules so that
+modular drivers can use it to check what the target ACPI sleep state
+of the system is (that is needed for i915 mostly at this point).
 
-When you start from that point, rather than (as you seem to be) believing
-that it has some kind of accuracy, then the implementation of scaling the
-loops_per_jiffy is entirely reasonable - it's a best effort implementation.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/sleep.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Again, just use a timer for your udelay() implementation.
+Index: linux-pm/drivers/acpi/sleep.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/sleep.c
++++ linux-pm/drivers/acpi/sleep.c
+@@ -89,6 +89,7 @@ u32 acpi_target_system_state(void)
+ {
+ 	return acpi_target_sleep_state;
+ }
++EXPORT_SYMBOL_GPL(acpi_target_system_state);
+ 
+ static bool pwr_btn_event_pending;
+ 
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
