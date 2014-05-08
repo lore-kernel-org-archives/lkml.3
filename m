@@ -1,134 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191AbaEHH3L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 03:29:11 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:46300 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaEHH3J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 03:29:09 -0400
-Message-ID: <536B323C.3040106@hitachi.com>
-Date: Thu, 08 May 2014 16:29:00 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753229AbaEHHaD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 03:30:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12331 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751552AbaEHHaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 03:30:00 -0400
+Message-ID: <536B324C.1040806@redhat.com>
+Date: Thu, 08 May 2014 09:29:16 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-Cc: David Lang <david@lang.hm>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Seth Jennings <sjenning@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-References: <20140505214919.GE2099@localhost.localdomain> <20140506121211.GA4125@treble.redhat.com> <20140506140516.GF2099@localhost.localdomain> <20140506145010.GA6702@treble.redhat.com> <20140507122444.GB12234@gmail.com> <20140507154114.GA31555@treble.redhat.com> <20140507155754.GA15221@gmail.com> <alpine.DEB.2.02.1405071552520.5876@nftneq.ynat.uz> <20140508061220.GB31184@gmail.com> <alpine.DEB.2.02.1405072348580.17457@nftneq.ynat.uz> <20140508070814.GA31856@gmail.com>
-In-Reply-To: <20140508070814.GA31856@gmail.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+CC: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, kishon@ti.com,
+        Boris Brezillon <boris@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: Re: [PATCH 4/7] usb: ehci-platform: add optional reset controller
+ retrieval
+References: <1399434623-20383-5-git-send-email-maxime.ripard@free-electrons.com> <Pine.LNX.4.44L0.1405071020490.1325-100000@iolanthe.rowland.org> <20140507220049.GC7047@lukather>
+In-Reply-To: <20140507220049.GC7047@lukather>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/05/08 16:08), Ingo Molnar wrote:
-> 
-> * David Lang <david@lang.hm> wrote:
-> 
->> On Thu, 8 May 2014, Ingo Molnar wrote:
+Hi,
+
+On 05/08/2014 12:00 AM, Maxime Ripard wrote:
+> On Wed, May 07, 2014 at 10:25:55AM -0400, Alan Stern wrote:
+>> On Tue, 6 May 2014, Maxime Ripard wrote:
 >>
->>>>>
->>>>> No!
->>>>>
->>>>> A patch to the kernel source is 'safe' if it results in a correctly
->>>>> patched kernel source. Full stop!
->>>>>
->>>>> Live patching does not enter into this question, ever. The correctness
->>>>> of a patch to the source does not depend on 'live patching'
->>>>> considerations in any way, shape or form.
->>>>>
->>>>> Any mechanism that tries to blur these lines is broken by design.
->>>>>
->>>>> My claim is that if a patch is correct/safe in the old fashioned way,
->>>>> then a fundamental principle is that a live patching subsystem must
->>>>> either safely apply, or safely reject the live patching attempt,
->>>>> independently from any user input.
->>>>>
->>>>> It's similar to how kprobes (or ftrace) will safely reject or perform
->>>>> a live patching of the kernel.
->>>>>
->>>>> So for example, there's this recent upstream kernel fix:
->>>>>
->>>>> 3ca9e5d36afb agp: info leak in agpioc_info_wrap()
->>>>>
->>>>> which fixes an information leak. The 'patch' is Git commit
->>>>> 3ca9e5d36afb (i.e. it patches a very specific incoming kernel source
->>>>> tree that results in a specific outgoing source tree), and we know
->>>>> it's safe and correct.
->>>>>
->>>>> Any live patching subsystem must make sure that if this patch is
->>>>> live-patched, that this attempt is either rejected safely or performed
->>>>> safely.
->>>>>
->>>>> "We think/hope it won't blow up in most cases and we automated some
->>>>> checks halfways" or "the user must know what he is doing" is really
->>>>> not something that I think is a good concept for something as fragile
->>>>> as live patching.
->>>>
->>>> In that case you will have to reject any kernel patch that changes
->>>> any memory structure, because it's impossible as a general rule to
->>>> say that changing memory structures is going to be safe (or even
->>>> possible) to change.
->>>>
->>>> that includes any access to memory that moves around a lock
+>>> From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 >>>
->>> Initially restricting it to such patches would be a good beginning -
->>> most of the security fixes are just failed checks, i.e. they don't
->>> typically even change any external (not on stack) memory structure,
->>> right?
+>>> On the Allwinner's A31 SoC the reset line connected to the EHCI IP has to
+>>> be deasserted for the EHCI block to be usable.
+>>>
+>>> Add support for an optional reset controller that will be deasserted on
+>>> power off and asserted on power on.
+>>>
+>>> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+>>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 >>
->> in terms of hit-patching kernels you are correct.
->>
->> but that's a far cry from what it sounded like you were demanding 
->> (that it must handle any kernel patch)
+>> Is this really a _reset_ line?  That is, when you assert the reset 
+>> line, does it actually reset the EHCI controller, or does it merely 
+>> leave the controller in a partially powered-down state?
 > 
-> No, I was not demanding that at all, my suggestion was:
+> It actually resets the whole controller.
 > 
->    > My claim is that if a patch is correct/safe in the old fashioned 
->    > way, then a fundamental principle is that a live patching 
->    > subsystem must either safely apply, or safely reject the live 
->    > patching attempt, independently from any user input.
+>> The difference is important.  During suspend, the controller is
+>> supposed to remember the state of the port connections as well as other
+>> settings.  If it doesn't, the controller and all attached USB devices
+>> will have to be reinitialized every time the controller resumes, which
+>> will increase the latency.
+> 
+> So you're saying that we should move this to the probe then?
 
-What would you mean "safely apply" and "safely reject"?
-Current kpatch checks the target functions are in use and reject safely
-if it is in use.
+Yes.
 
-> Note the 'if'. It could start simple and stupid, and only allow cases 
-> where we know the patch must be trivially safe (because it does not do 
-> much in terms of disturbing globally visible state). That needs some 
-> tooling help, but apparently tooling help is in place already.
+Regards,
 
-Hm, it is possible to check the binary patch itself doesn't refer
-the global memory, but it's hard to find it derefers some address
-of global memory. Also, there can be a case that the function caller
-passes the address of a global memory, and the binary patch just
-calls another function with that address. This can change the global
-state (but correct way).
-
-> And then we can complicate it from there - but have a reasonably 
-> robust starting point that we _know_ works (as long as the 
-> implementation is correct).
-
-I agreed if you mean the starting with a simple "tool" and
-complicate it. I doubt kernel module can check the patch logic....
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Hans
