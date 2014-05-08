@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911AbaEHRcA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 13:32:00 -0400
-Received: from smtp-out-032.synserver.de ([212.40.185.32]:1235 "EHLO
-	smtp-out-016.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753160AbaEHRb7 (ORCPT
+	id S1755171AbaEHRe3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 13:34:29 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:23304 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754571AbaEHRe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 13:31:59 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 10200
-Message-ID: <536BBF78.7080100@metafoo.de>
-Date: Thu, 08 May 2014 19:31:36 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Josh Wu <josh.wu@atmel.com>, Jonathan Cameron <jic23@kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH 2/2] iio:adc: at91 requires the input subsystem
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <1399560990-1402858-1-git-send-email-arnd@arndb.de> <1399560990-1402858-13-git-send-email-arnd@arndb.de> <20140508172243.GC6095@piout.net>
-In-Reply-To: <20140508172243.GC6095@piout.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 8 May 2014 13:34:27 -0400
+X-AuditID: cbfee61b-b7f766d00000646c-59-536bc021f720
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+To: linux-media@vger.kernel.org
+Cc: robh+dt@kernel.org, mark.rutland@arm.com, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: [PATCH V2 0/4] Exynos4 SoC camera subsystem driver cleanups
+Date: Thu, 08 May 2014 19:34:07 +0200
+Message-id: <1399570448-29737-1-git-send-email-s.nawrocki@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgluLIzCtJLcpLzFFi42I5/e+xoK7Sgexgg6VdTBbzj5xjtTjb9Ibd
+	YtPja6wWl3fNYbPo2bCV1WLp9YtMFq17j7BbHH7TzurA4bFm3hpGj02rOtk8Ni+p9+jbsorR
+	4/MmuQDWKC6blNSczLLUIn27BK6MnSueMBWs4arY9+0mUwPjdI4uRk4OCQETiYOvFrBA2GIS
+	F+6tZ+ti5OIQEpjOKLH31G1WCKeDSeLP5QZWkCo2AUOJ3qN9jCC2iIC8xJPeG2AdzAI3GCXW
+	tPxlAkkIC7hInL3+G8xmEVCVWLHnBNgKXgE3iaamV0DNHEDrFCTmTLKZwMi9gJFhFaNoakFy
+	QXFSeq6RXnFibnFpXrpecn7uJkZwuDyT3sG4qsHiEKMAB6MSD++LKdnBQqyJZcWVuYcYJTiY
+	lUR4XywDCvGmJFZWpRblxxeV5qQWH2KU5mBREuc92GodKCSQnliSmp2aWpBaBJNl4uCUamAU
+	C98X0KvM9F+j3rNL4NPsPX1nGhI3z+u4f+bdr+vJWvGczYeW184q0NTRmfeK1bDon3PYhCs+
+	uzkvfD8v5XHT+pt0nEDIFK0zZZvzeljsnjQUqf64f35lyT2xJjbf493Vv4R5vU6YX/l8ZIGQ
+	48nd3BPnX733oIaDkT3p4DHHDdYf0zfL7w1XYinOSDTUYi4qTgQAhbBqExMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2014 07:22 PM, Alexandre Belloni wrote:
-> Hi,
->
-> On 08/05/2014 at 16:56:24 +0200, Arnd Bergmann wrote :
->> Building the at91 adc driver with CONFIG_INPUT disabled results in this
->> build error:
->>
->> ERROR: "input_event" [drivers/iio/adc/at91_adc.ko] undefined!
->> ERROR: "input_unregister_device" [drivers/iio/adc/at91_adc.ko] undefined!
->> ERROR: "input_free_device" [drivers/iio/adc/at91_adc.ko] undefined!
->> ERROR: "input_register_device" [drivers/iio/adc/at91_adc.ko] undefined!
->> ERROR: "input_set_abs_params" [drivers/iio/adc/at91_adc.ko] undefined!
->> ERROR: "input_allocate_device" [drivers/iio/adc/at91_adc.ko] undefined!
->>
->> To make sure we can build random configurations, this turns on CONFIG_INPUT
->> whenever CONFIG_AT91_ADC is enabled.
->>
->
-> I'm wondering wether we should make part of the driver compile only if
-> CONFIG_INPUT is defined. Maybe some user will want to use the ADC and
-> not have any input on their board.
->
-> What do you think ?
->
+This patch series includes some bug fixes for the Exynos4/S5P SoC camera
+interface drivers and removes (ab)use of "simple-bus" compatible string.
 
-This typically just leads to more build errors. E.g. if INPUT is defined as 
-a module, but AT91_ADC is build in. I think it is very rare to see a 
-configuration without INPUT set, other then a randconfig.
+Comparing to previous version I've excluded patches dropping support
+for non-dt platforms and added two further bug fixes.
+of_platform_populate() is used instead of manually parsing the device
+tree and creating devices and the cleanup function has been moved to
+the core. This series depends on patch:
+http://www.kernelhub.org/?msg=466319&p=2
 
-- Lars
+Sylwester Nawrocki (4):
+  exynos4-is: Free FIMC-IS CPU memory only when allocated
+  exynos4-is: Move firmware request to subdev open()
+  exynos4-is: Remove requirement for "simple-bus" compatible
+  ARM: dts: exynos4: Remove simple-bus compatibles from the camera
+    subsystem
+
+ .../devicetree/bindings/media/samsung-fimc.txt     |    6 +--
+ arch/arm/boot/dts/exynos4.dtsi                     |    2 +-
+ arch/arm/boot/dts/exynos4x12.dtsi                  |    2 +-
+ drivers/media/platform/exynos4-is/fimc-is.c        |   50 ++++++++++----------
+ drivers/media/platform/exynos4-is/fimc-is.h        |    2 +-
+ drivers/media/platform/exynos4-is/fimc-isp.c       |   10 +++-
+ drivers/media/platform/exynos4-is/media-dev.c      |   21 ++++++--
+ 7 files changed, 58 insertions(+), 35 deletions(-)
+
+--
+1.7.9.5
+
