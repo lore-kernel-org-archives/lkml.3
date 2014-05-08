@@ -1,64 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985AbaEHV5v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 17:57:51 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:48763 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755809AbaEHV5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 17:57:49 -0400
-Message-ID: <536BFDD3.9090609@mm-sol.com>
-Date: Fri, 09 May 2014 00:57:39 +0300
-From: Stanimir Vabanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755871AbaEHWLi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 18:11:38 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:47844 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755745AbaEHWLh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 18:11:37 -0400
+Message-ID: <536C010F.3060504@hurleysoftware.com>
+Date: Thu, 08 May 2014 18:11:27 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.apana.org.au>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-arm-msm@vger.kernel.org,
-        Mona Hossain <mhossain@codeaurora.org>,
-        Hariprasad Dhalinarasimha <hnamgund@codeaurora.org>,
-        Zhen Kong <zkong@codeaurora.org>,
-        Niranjana Vishwanathapura <nvishwan@codeaurora.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [RFC PATCH v2 1/9] crypto: qce: Add core driver implementation
-References: <1397479725-20954-1-git-send-email-svarbanov@mm-sol.com> <1397479725-20954-2-git-send-email-svarbanov@mm-sol.com> <20140428085928.GA16310@gondor.apana.org.au>
-In-Reply-To: <20140428085928.GA16310@gondor.apana.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>
+CC: Vincent Donnefort <vdonnefort@gmail.com>,
+        Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [3.15-rc3] BUG: null ptr dereference in ichx_gpio_request_regions()
+References: <536A339D.9030606@hurleysoftware.com>	<20140507140558.GA26294@ks3318809.kimsufi.com>	<536A4454.5020404@hurleysoftware.com> <CACRpkdZ_Wz2QLbdbXEL9CWy+=tcVwjVjVqQgYw7_dy-5FwxB9Q@mail.gmail.com>
+In-Reply-To: <CACRpkdZ_Wz2QLbdbXEL9CWy+=tcVwjVjVqQgYw7_dy-5FwxB9Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Herbert,
-
-On 04/28/2014 11:59 AM, Herbert Xu wrote:
-> On Mon, Apr 14, 2014 at 03:48:37PM +0300, Stanimir Varbanov wrote:
+On 05/08/2014 05:48 PM, Linus Walleij wrote:
+> On Wed, May 7, 2014 at 4:33 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
+>> Hi Vincent,
 >>
->> +#define QCE_MAJOR_VERSION5	0x05
->> +#define QCE_QUEUE_LENGTH	50
-> 
-> What is the purpose of this software queue? Why can't you directly
-> feed the requests to the hardware?
-> 
-> If the hardware can't handle more than 50 requests in-flight,
-> then your software queue has failed to handle this since you're
-> taking requests off the queue before you touch the hardware so
-> you're not really limiting it to 50.  That is, for users that
-> can wait you're potentially dropping their requests instead
-> of letting them wait through the backlog mechanism.
+>> On 05/07/2014 10:05 AM, Vincent Donnefort wrote:
+>>>
+>>> Hello Peter,
+>>
+>>
+>>>> This is almost certainly caused by the uninitialized regs ptr
+>>>> in the ich6_desc struct (i3100_desc struct has the same problem)
+>>>> introduced in this commit:
+>>>>
+>>>> commit bb62a35bd5d96e506af0ea8dd145480b9172a2a6
+>>>> Author: Vincent Donnefort <vdonnefort@gmail.com>
+>>>> Date:   Fri Feb 14 15:01:56 2014 +0100
+>>>>
+>>>>       gpio: ich: Add support for multiple register addresses
+>>>>
+>>>>       This patch introduces regs and reglen pointers which allow a chipset
+>>>> to have
+>>>>       register addresses differing from ICH ones.
+>>>>
+>>>>       Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>>>>       Signed-off-by: Vincent Donnefort <vdonnefort@gmail.com>
+>>>>       Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>>>
+>>>
+>>> Yes indeed, this must be linked to this thread
+>>> https://lkml.org/lkml/2014/4/15/292
+>>
+>>
+>> Thanks for the link.
+>>
+>> I searched through LKML but without the driver name or the offending
+>> function
+>> in the commit message I couldn't find it.
+>>
+>> Linus,
+>>
+>> What tree is this bug fix trapped in? I see it didn't make -rc4 either.
+>
+> Since the last signoff is Lee I guess it's in the MFD tree?
 
-My assumption was that crypto_ablkcipher_encrypt/decrypt couldn't sleep
-and I should take the request almost immediately and return the
-appropriate error value - EINPROGRESS if the hardware is idle and EBUSY
-if the hardware working on some previous request. Thus if the returned
-error is EBUSY and the request could be backlogged I should call
-backlog->complete() when this request is taken actually for processing.
+The commit above is the buggy commit. I don't have a commit id for
+the bug fix since I don't know what tree it's stuck in. Looking over
+Lee's tree, I don't see it.
 
-What I've done in practice is another story.
+Below is your signoff on LKML of the fix.
 
-Is that assumption correct? If so, is crypto_enqueue|dequeue_request()
-are the proper tools to implement this behaviour?
+On 04/22/2014 05:15 PM, Linus Walleij wrote:
+ > On Tue, Apr 15, 2014 at 2:21 PM, Vincent Donnefort <vdonnefort@gmail.com> wrote:
+ >
+ >> From: Vincent Donnefort <vdonnefort@gmail.com>
+ >>
+ >> This patch fixes kernel NULL pointer BUG introduced by the following commit:
+ >> b667cf488aa9476b0ab64acd91f2a96f188cfd21
+ >> gpio: ich: Add support for multiple register addresses.
+ >>
+ >> Signed-off-by: Vincent Donnefort <vdonnefort@gmail.com>
+ >
+ > Patch applied for fixes with Eric's tested-by tag.
 
-regards,
-Stan
+Please expedite this fix as it has already missed -rc3 & -rc4.
+
+Regards,
+Peter Hurley
