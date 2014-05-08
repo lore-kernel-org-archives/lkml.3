@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748AbaEHPhf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:37:35 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:60496 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754632AbaEHPhc (ORCPT
+	id S1754820AbaEHPiz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:38:55 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:60138 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739AbaEHPiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:37:32 -0400
-Date: Thu, 8 May 2014 08:37:27 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] [RFC] perf: Fix a race between ring_buffer_detach() and
- ring_buffer_wakeup()
-Message-ID: <20140508153727.GD8754@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1394199526-6400-1-git-send-email-alexander.shishkin@linux.intel.com>
- <20140313195816.GJ21124@linux.vnet.ibm.com>
- <20140314095033.GP27965@twins.programming.kicks-ass.net>
- <20140507123526.GD13658@twins.programming.kicks-ass.net>
- <20140507180621.GE13658@twins.programming.kicks-ass.net>
+	Thu, 8 May 2014 11:38:52 -0400
+Date: Thu, 8 May 2014 19:38:45 +0400
+From: Paul Fertser <fercerpav@gmail.com>
+To: "suresh.gupta@freescale.com" <suresh.gupta@freescale.com>
+Cc: "balbi@ti.com" <balbi@ti.com>, "LeoLi@freescale.com" <LeoLi@freescale.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget: fsl: check vbus presence on probe
+Message-ID: <20140508153845.GA3876@home.lan>
+References: <1398329653-29968-1-git-send-email-fercerpav@gmail.com> <20140430160625.GF23679@saruman.home> <20140430192745.GI3876@home.lan> <20140430201202.GF3839@saruman.home> <2cd9b3e31cce467e9a79d7aabd63604b@BL2PR03MB579.namprd03.prod.outlook.com> <59ef67eabf72450f988638edbbe1cd47@BL2PR03MB579.namprd03.prod.outlook.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140507180621.GE13658@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050815-0928-0000-0000-000001CBA8D1
+In-Reply-To: <59ef67eabf72450f988638edbbe1cd47@BL2PR03MB579.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.17 (2007-11-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 08:06:21PM +0200, Peter Zijlstra wrote:
-> On Wed, May 07, 2014 at 02:35:26PM +0200, Peter Zijlstra wrote:
-> >  static void ring_buffer_attach(struct perf_event *event,
-> >  			       struct ring_buffer *rb)
-> >  {
-> > +	struct ring_buffer *old_rb = NULL;
-> >  	unsigned long flags;
-> >  
-> > +	if (event->rb) {
-> > +		/*
-> > +		 * Should be impossible, we set this when removing
-> > +		 * event->rb_entry and wait/clear when adding event->rb_entry.
-> > +		 */
-> > +		WARN_ON_ONCE(event->rcu_pending);
-> >  
-> > +		old_rb = event->rb;
-> > +		event->rcu_batches = get_state_synchronize_rcu();
-> > +		event->rcu_pending = 1;
-> >  
-> > +		spin_lock_irqsave(&rb->event_lock, flags);
-> > +		list_del_rcu(&event->rb_entry);
-> > +		spin_unlock_irqrestore(&rb->event_lock, flags);
-> 
-> This all works a whole lot better if you make that old_rb->event_lock.
-> 
-> > +	}
-> >  
-> > +	if (event->rcu_pending && rb) {
-> > +		cond_synchronize_rcu(event->rcu_batches);
+Hi,
 
-There is not a whole lot of code between the get_state_synchronize_rcu()
-and the cond_synchronize_rcu(), so I would expect this to do a
-synchronize_rcu() almost all the time.  Or am I missing something here?
+On Thu, May 08, 2014 at 02:30:39PM +0000, suresh.gupta@freescale.com wrote:
+> As per my limited knowledge, the purpose of
+> OTGSC_STS_B_SESSION_VALID bit is to tell either VBUS is above the B
+> session valid threshold and which comes only Host is attached.
 
-							Thanx, Paul
+Yes, that matches the datasheet I've read.
 
-> > +		event->rcu_pending = 0;
-> > +	}
-> >  
-> > +	if (rb) {
-> > +		spin_lock_irqsave(&rb->event_lock, flags);
-> > +		list_add_rcu(&event->rb_entry, &rb->event_list);
-> > +		spin_unlock_irqrestore(&rb->event_lock, flags);
-> > +	}
-> > +
-> > +	rcu_assign_pointer(event->rb, rb);
-> > +
-> > +	if (old_rb) {
-> > +		ring_buffer_put(old_rb);
-> > +		/*
-> > +		 * Since we detached before setting the new rb, so that we
-> > +		 * could attach the new rb, we could have missed a wakeup.
-> > +		 * Provide it now.
-> > +		 */
-> > +		wake_up_all(&event->waitq);
-> > +	}
-> >  }
+> And Host might be attach after system bootup or after driver
+> initialization. So putting this check in probe will not help much.
 
+If the host is attached after the driver was initialised, the
+interrupt will trigger and the driver will get notified that VBUS
+appeared and everything will go smooth, at least that's how it should
+work (I do not have any board handy to real-life check that, but
+AFAICT that's the intent of the current code).
 
+I actually do not have any iMX demoboards at all, I've only got some
+custom-designed i.MX25 boards where I can't control VBUS, it's
+permanently pulled up.
+
+But I was fixing the problem that was clearly, 100% reproducibly
+happening when VBUS was applied before the interrupt was
+configured. So what exactly do you mean here? Do you mean this check
+I've added doesn't fix the bug? Or do you mean this bug should be
+fixed somehow else? Or do you mean there's no bug in the first place
+and my board doesn't work because of something else?
+
+-- 
+Be free, use free (http://www.gnu.org/philosophy/free-sw.html) software!
+mailto:fercerpav@gmail.com
