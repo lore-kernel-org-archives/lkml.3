@@ -1,108 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567AbaEHPcH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:32:07 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:17219 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753127AbaEHPcF (ORCPT
+	id S1753898AbaEHPfU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:35:20 -0400
+Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:40250 "EHLO
+	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751501AbaEHPfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:32:05 -0400
-Message-ID: <536BA35D.50807@oracle.com>
-Date: Thu, 08 May 2014 11:31:41 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: tracing: NULL ptr deref in ring_buffer_wait
-References: <5366DFBF.6090204@oracle.com> <20140505104712.11c63a5d@gandalf.local.home> <5367B248.2010804@oracle.com>
-In-Reply-To: <5367B248.2010804@oracle.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 8 May 2014 11:35:18 -0400
+Date: Thu, 8 May 2014 10:35:15 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        viresh.kumar@linaro.org
+Subject: vmstat: On demand vmstat workers V4
+Message-ID: <alpine.DEB.2.10.1405081033090.23786@gentwo.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2014 11:46 AM, Sasha Levin wrote:
->>> >> [ 3589.407670] vfs_read (fs/read_write.c:430)
->>> >> [ 3589.407670] SyS_read (fs/read_write.c:568 fs/read_write.c:560)
->>> >> [ 3589.407670] tracesys (arch/x86/kernel/entry_64.S:746)
->>> >> [ 3589.407670] Code: 85 cd 0c 00 00 48 c7 c1 5c e1 6d ac 48 c7 c2 af 89 6d ac 31 c0 be fa 0b 00 00 48 c7 c7 16 e1 6d ac e8 3c 68 f9 ff e9 a7 0c 00 00 <49> 81 7d 00 80 81 76 ae b8 00 00 00 00 44 0f 44 c0 eb 07 0f 1f
->>> >> [ 3589.407670] RIP __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
->>> >> [ 3589.407670]  RSP <ffff88005c9d1c18>
->>> >> [ 3589.407670] CR2: 00000000000001f0
->> > 
->> > Is this easily reproducible?
-> Nope, only saw it once.
-
-And a second time today, I guess I could put a debug patch and see if that
-helps, if you had something in mind...
-
-[ 1157.707702] BUG: unable to handle kernel NULL pointer dereference at 00000000000001f0
-[ 1157.710068] IP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
-[ 1157.710068] PGD 243db1067 PUD 25b047067 PMD 0
-[ 1157.710068] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1157.710068] Dumping ftrace buffer:
-[ 1157.710068]    (ftrace buffer empty)
-[ 1157.710068] Modules linked in:
-[ 1157.710068] CPU: 14 PID: 30503 Comm: trinity-c247 Tainted: G        W     3.15.0-rc4-next-20140507-sasha-00004-g14be78b-dirty #450
-[ 1157.710068] task: ffff880002ec0000 ti: ffff880240ec8000 task.ti: ffff880240ec8000
-[ 1157.710068] RIP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
-[ 1157.710068] RSP: 0000:ffff880240ec9ab8  EFLAGS: 00010002
-[ 1157.710068] RAX: 0000000000000086 RBX: ffff880002ec0000 RCX: 0000000000000000
-[ 1157.710068] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 00000000000001f0
-[ 1157.710068] RBP: ffff880240ec9ba8 R08: 0000000000000001 R09: 0000000000000001
-[ 1157.710068] R10: ffff880002ec0000 R11: 0000000000000001 R12: 0000000000000000
-[ 1157.710068] R13: 00000000000001f0 R14: 0000000000000000 R15: 0000000000000000
-[ 1157.710068] FS:  00007f33d790b700(0000) GS:ffff88036ac00000(0000) knlGS:0000000000000000
-[ 1157.710068] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1157.710068] CR2: 00000000000001f0 CR3: 0000000243fb6000 CR4: 00000000000006a0
-[ 1157.710068] DR0: 00000000006df000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1157.710068] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-[ 1157.710068] Stack:
-[ 1157.710068]  ffff880240ec9ac8 ffffffffa30be274 ffff880240ec9ad8 ffffffffa307c7e5
-[ 1157.710068]  ffff880240ec9b08 ffffffffa31a7a05 000000000000000e ffff88036add8380
-[ 1157.710068]  00000000001d8380 000000000000000e ffff880240ec9b38 ffffffffa31a7ce8
-[ 1157.710068] Call Trace:
-[ 1157.710068] ? kvm_clock_read (arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
-[ 1157.710068] ? sched_clock (arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
-[ 1157.710068] ? sched_clock_local (kernel/sched/clock.c:214)
-[ 1157.710068] ? sched_clock_cpu (kernel/sched/clock.c:311)
-[ 1157.710068] ? __lock_acquire (kernel/locking/lockdep.c:3189)
-[ 1157.710068] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-[ 1157.710068] ? prepare_to_wait (kernel/sched/wait.c:177)
-[ 1157.710068] ? _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:109 kernel/locking/spinlock.c:159)
-[ 1157.710068] _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:117 kernel/locking/spinlock.c:159)
-[ 1157.710068] ? prepare_to_wait (kernel/sched/wait.c:177)
-[ 1157.710068] ? get_parent_ip (kernel/sched/core.c:2485)
-[ 1157.710068] ? mutex_unlock (kernel/locking/mutex.c:220)
-[ 1157.710068] prepare_to_wait (kernel/sched/wait.c:177)
-[ 1157.710068] ? __mutex_unlock_slowpath (arch/x86/include/asm/paravirt.h:809 kernel/locking/mutex.c:713 kernel/locking/mutex.c:722)
-[ 1157.710068] ring_buffer_wait (kernel/trace/ring_buffer.c:587)
-[ 1157.710068] ? bit_waitqueue (kernel/sched/wait.c:291)
-[ 1157.710068] wait_on_pipe (kernel/trace/trace.c:1095)
-[ 1157.710068] tracing_wait_pipe.isra.19 (kernel/trace/trace.c:4235)
-[ 1157.710068] tracing_read_pipe (kernel/trace/trace.c:4281)
-[ 1157.710068] ? tracing_splice_read_pipe (kernel/trace/trace.c:4250)
-[ 1157.710068] do_loop_readv_writev (fs/read_write.c:708)
-[ 1157.710068] ? tracing_splice_read_pipe (kernel/trace/trace.c:4250)
-[ 1157.710068] compat_do_readv_writev (fs/read_write.c:1020)
-[ 1157.710068] ? get_parent_ip (kernel/sched/core.c:2485)
-[ 1157.710068] ? mutex_lock_nested (arch/x86/include/asm/preempt.h:98 kernel/locking/mutex.c:570 kernel/locking/mutex.c:587)
-[ 1157.710068] ? __fdget_pos (fs/file.c:714)
-[ 1157.710068] ? __fdget_pos (fs/file.c:714)
-[ 1157.710068] ? __fget_light (include/linux/rcupdate.h:428 include/linux/fdtable.h:80 fs/file.c:684)
-[ 1157.710068] compat_readv (fs/read_write.c:1053)
-[ 1157.710068] compat_SyS_readv (fs/read_write.c:1071 fs/read_write.c:1061)
-[ 1157.710068] ia32_do_call (arch/x86/ia32/ia32entry.S:430)
-[ 1157.710068] Code: 85 cd 0c 00 00 48 c7 c1 d4 12 6e a7 48 c7 c2 2f bb 6d a7 31 c0 be fa 0b 00 00 48 c7 c7 8e 12 6e a7 e8 6c 66 f9 ff e9 a7 0c 00 00 <49> 81 7d 00 40 f8 96 a9 b8 00 00 00 00 44 0f 44 c0 eb 07 0f 1f
-[ 1157.710068] RIP __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
-[ 1157.710068]  RSP <ffff880240ec9ab8>
-[ 1157.710068] CR2: 00000000000001f0
+There were numerous requests for an update of this patch.
 
 
-Thanks,
-Sasha
+V3->V4:
+- Make the shepherd task not deferrable. It runs on the tick cpu
+  anyways. Deferral could get deltas too far out of sync if
+  vmstat operations are disabled for a certain processor.
+
+V2->V3:
+- Introduce a new tick_get_housekeeping_cpu() function. Not sure
+  if that is exactly what we want but it is a start. Thomas?
+- Migrate the shepherd task if the output of
+  tick_get_housekeeping_cpu() changes.
+- Fixes recommended by Andrew.
+
+V1->V2:
+- Optimize the need_update check by using memchr_inv.
+- Clean up.
+
+vmstat workers are used for folding counter differentials into the
+zone, per node and global counters at certain time intervals.
+They currently run at defined intervals on all processors which will
+cause some holdoff for processors that need minimal intrusion by the
+OS.
+
+The current vmstat_update mechanism depends on a deferrable timer
+firing every other second by default which registers a work queue item
+that runs on the local CPU, with the result that we have 1 interrupt
+and one additional schedulable task on each CPU every 2 seconds
+If a workload indeed causes VM activity or multiple tasks are running
+on a CPU, then there are probably bigger issues to deal with.
+
+However, some workloads dedicate a CPU for a single CPU bound task.
+This is done in high performance computing, in high frequency
+financial applications, in networking (Intel DPDK, EZchip NPS) and with
+the advent of systems with more and more CPUs over time, this may become
+more and more common to do since when one has enough CPUs
+one cares less about efficiently sharing a CPU with other tasks and
+more about efficiently monopolizing a CPU per task.
+
+The difference of having this timer firing and workqueue kernel thread
+scheduled per second can be enormous. An artificial test measuring the
+worst case time to do a simple "i++" in an endless loop on a bare metal
+system and under Linux on an isolated CPU with dynticks and with and
+without this patch, have Linux match the bare metal performance
+(~700 cycles) with this patch and loose by couple of orders of magnitude
+(~200k cycles) without it[*].  The loss occurs for something that just
+calculates statistics. For networking applications, for example, this
+could be the difference between dropping packets or sustaining line rate.
+
+Statistics are important and useful, but it would be great if there
+would be a way to not cause statistics gathering produce a huge
+performance difference. This patche does just that.
+
+This patch creates a vmstat shepherd worker that monitors the
+per cpu differentials on all processors. If there are differentials
+on a processor then a vmstat worker local to the processors
+with the differentials is created. That worker will then start
+folding the diffs in regular intervals. Should the worker
+find that there is no work to be done then it will make the shepherd
+worker monitor the differentials again.
+
+With this patch it is possible then to have periods longer than
+2 seconds without any OS event on a "cpu" (hardware thread).
+
+Reviewed-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+
+Index: linux/mm/vmstat.c
+===================================================================
+--- linux.orig/mm/vmstat.c	2014-05-06 10:51:19.711239813 -0500
++++ linux/mm/vmstat.c	2014-05-06 11:17:28.228738828 -0500
+@@ -7,6 +7,7 @@
+  *  zoned VM statistics
+  *  Copyright (C) 2006 Silicon Graphics, Inc.,
+  *		Christoph Lameter <christoph@lameter.com>
++ *  Copyright (C) 2008-2014 Christoph Lameter
+  */
+ #include <linux/fs.h>
+ #include <linux/mm.h>
+@@ -14,12 +15,14 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/cpu.h>
++#include <linux/cpumask.h>
+ #include <linux/vmstat.h>
+ #include <linux/sched.h>
+ #include <linux/math64.h>
+ #include <linux/writeback.h>
+ #include <linux/compaction.h>
+ #include <linux/mm_inline.h>
++#include <linux/tick.h>
+
+ #include "internal.h"
+
+@@ -417,13 +420,22 @@
+ EXPORT_SYMBOL(dec_zone_page_state);
+ #endif
+
+-static inline void fold_diff(int *diff)
++
++/*
++ * Fold a differential into the global counters.
++ * Returns the number of counters updated.
++ */
++static inline int fold_diff(int *diff)
+ {
+ 	int i;
++	int changes = 0;
+
+ 	for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
+-		if (diff[i])
++		if (diff[i]) {
+ 			atomic_long_add(diff[i], &vm_stat[i]);
++			changes++;
++	}
++	return changes;
+ }
+
+ /*
+@@ -439,12 +451,15 @@
+  * statistics in the remote zone struct as well as the global cachelines
+  * with the global counters. These could cause remote node cache line
+  * bouncing and will have to be only done when necessary.
++ *
++ * The function returns the number of global counters updated.
+  */
+-static void refresh_cpu_vm_stats(void)
++static int refresh_cpu_vm_stats(void)
+ {
+ 	struct zone *zone;
+ 	int i;
+ 	int global_diff[NR_VM_ZONE_STAT_ITEMS] = { 0, };
++	int changes = 0;
+
+ 	for_each_populated_zone(zone) {
+ 		struct per_cpu_pageset __percpu *p = zone->pageset;
+@@ -484,15 +499,17 @@
+ 			continue;
+ 		}
+
+-
+ 		if (__this_cpu_dec_return(p->expire))
+ 			continue;
+
+-		if (__this_cpu_read(p->pcp.count))
++		if (__this_cpu_read(p->pcp.count)) {
+ 			drain_zone_pages(zone, __this_cpu_ptr(&p->pcp));
++			changes++;
++		}
+ #endif
+ 	}
+-	fold_diff(global_diff);
++	changes += fold_diff(global_diff);
++	return changes;
+ }
+
+ /*
+@@ -1222,12 +1239,15 @@
+ #ifdef CONFIG_SMP
+ static DEFINE_PER_CPU(struct delayed_work, vmstat_work);
+ int sysctl_stat_interval __read_mostly = HZ;
++static struct cpumask *monitored_cpus;
+
+ static void vmstat_update(struct work_struct *w)
+ {
+-	refresh_cpu_vm_stats();
+-	schedule_delayed_work(&__get_cpu_var(vmstat_work),
+-		round_jiffies_relative(sysctl_stat_interval));
++	if (refresh_cpu_vm_stats())
++		schedule_delayed_work(this_cpu_ptr(&vmstat_work),
++			round_jiffies_relative(sysctl_stat_interval));
++	else
++		cpumask_set_cpu(smp_processor_id(), monitored_cpus);
+ }
+
+ static void start_cpu_timer(int cpu)
+@@ -1235,7 +1255,69 @@
+ 	struct delayed_work *work = &per_cpu(vmstat_work, cpu);
+
+ 	INIT_DEFERRABLE_WORK(work, vmstat_update);
+-	schedule_delayed_work_on(cpu, work, __round_jiffies_relative(HZ, cpu));
++	schedule_delayed_work_on(cpu, work,
++		__round_jiffies_relative(sysctl_stat_interval, cpu));
++}
++
++/*
++ * Check if the diffs for a certain cpu indicate that
++ * an update is needed.
++ */
++static bool need_update(int cpu)
++{
++	struct zone *zone;
++
++	for_each_populated_zone(zone) {
++		struct per_cpu_pageset *p = per_cpu_ptr(zone->pageset, cpu);
++
++		/*
++		 * The fast way of checking if there are any vmstat diffs.
++		 * This works because the diffs are byte sized items.
++		 */
++		if (memchr_inv(p->vm_stat_diff, 0, NR_VM_ZONE_STAT_ITEMS))
++			return true;
++	}
++	return false;
++}
++
++static void vmstat_shepherd(struct work_struct *w)
++{
++	int cpu;
++	int s = tick_get_housekeeping_cpu();
++	struct delayed_work *d = per_cpu_ptr(&vmstat_work, s);
++
++	refresh_cpu_vm_stats();
++	for_each_cpu(cpu, monitored_cpus)
++		if (need_update(cpu)) {
++			cpumask_clear_cpu(cpu, monitored_cpus);
++			start_cpu_timer(cpu);
++		}
++
++	if (s != smp_processor_id()) {
++		/* Timekeeping was moved. Move the shepherd worker */
++		cancel_delayed_work_sync(d);
++		cpumask_set_cpu(smp_processor_id(), monitored_cpus);
++		cpumask_clear_cpu(s, monitored_cpus);
++		INIT_DELAYED_WORK(d, vmstat_shepherd);
++	}
++
++	schedule_delayed_work_on(s, d,
++		__round_jiffies_relative(sysctl_stat_interval, s));
++
++}
++
++static void __init start_shepherd_timer(void)
++{
++	int cpu = tick_get_housekeeping_cpu();
++	struct delayed_work *d = per_cpu_ptr(&vmstat_work, cpu);
++
++	INIT_DELAYED_WORK(d, vmstat_shepherd);
++	monitored_cpus = kmalloc(BITS_TO_LONGS(nr_cpu_ids) * sizeof(long),
++			GFP_KERNEL);
++	cpumask_copy(monitored_cpus, cpu_online_mask);
++	cpumask_clear_cpu(cpu, monitored_cpus);
++	schedule_delayed_work_on(cpu, d,
++		__round_jiffies_relative(sysctl_stat_interval, cpu));
+ }
+
+ static void vmstat_cpu_dead(int node)
+@@ -1266,17 +1348,19 @@
+ 	case CPU_ONLINE:
+ 	case CPU_ONLINE_FROZEN:
+ 		refresh_zone_stat_thresholds();
+-		start_cpu_timer(cpu);
+ 		node_set_state(cpu_to_node(cpu), N_CPU);
++		cpumask_set_cpu(cpu, monitored_cpus);
+ 		break;
+ 	case CPU_DOWN_PREPARE:
+ 	case CPU_DOWN_PREPARE_FROZEN:
+-		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
++		if (!cpumask_test_cpu(cpu, monitored_cpus))
++			cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
++		cpumask_clear_cpu(cpu, monitored_cpus);
+ 		per_cpu(vmstat_work, cpu).work.func = NULL;
+ 		break;
+ 	case CPU_DOWN_FAILED:
+ 	case CPU_DOWN_FAILED_FROZEN:
+-		start_cpu_timer(cpu);
++		cpumask_set_cpu(cpu, monitored_cpus);
+ 		break;
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+@@ -1296,15 +1380,10 @@
+ static int __init setup_vmstat(void)
+ {
+ #ifdef CONFIG_SMP
+-	int cpu;
+-
+ 	cpu_notifier_register_begin();
+ 	__register_cpu_notifier(&vmstat_notifier);
+
+-	for_each_online_cpu(cpu) {
+-		start_cpu_timer(cpu);
+-		node_set_state(cpu_to_node(cpu), N_CPU);
+-	}
++	start_shepherd_timer();
+ 	cpu_notifier_register_done();
+ #endif
+ #ifdef CONFIG_PROC_FS
+Index: linux/kernel/time/tick-common.c
+===================================================================
+--- linux.orig/kernel/time/tick-common.c	2014-05-06 10:51:19.711239813 -0500
++++ linux/kernel/time/tick-common.c	2014-05-06 10:51:19.711239813 -0500
+@@ -222,6 +222,24 @@
+ 		tick_setup_oneshot(newdev, handler, next_event);
+ }
+
++/*
++ * Return a cpu number that may be used to run housekeeping
++ * tasks. This is usually the timekeeping cpu unless that
++ * is not available. Then we simply fall back to the current
++ * cpu.
++ */
++int tick_get_housekeeping_cpu(void)
++{
++	int cpu;
++
++	if (system_state < SYSTEM_RUNNING || tick_do_timer_cpu < 0)
++		cpu = raw_smp_processor_id();
++	else
++		cpu = tick_do_timer_cpu;
++
++	return cpu;
++}
++
+ void tick_install_replacement(struct clock_event_device *newdev)
+ {
+ 	struct tick_device *td = &__get_cpu_var(tick_cpu_device);
+Index: linux/include/linux/tick.h
+===================================================================
+--- linux.orig/include/linux/tick.h	2014-05-06 10:51:19.711239813 -0500
++++ linux/include/linux/tick.h	2014-05-06 10:51:19.711239813 -0500
+@@ -77,6 +77,7 @@
+ extern void __init tick_init(void);
+ extern int tick_is_oneshot_available(void);
+ extern struct tick_device *tick_get_device(int cpu);
++extern int tick_get_housekeeping_cpu(void);
+
+ # ifdef CONFIG_HIGH_RES_TIMERS
+ extern int tick_init_highres(void);
