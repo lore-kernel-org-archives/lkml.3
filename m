@@ -1,173 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591AbaEHUhX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 16:37:23 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:38461 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754716AbaEHUhU (ORCPT
+	id S1755630AbaEHUjS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 16:39:18 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:39432 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753553AbaEHUjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 16:37:20 -0400
+	Thu, 8 May 2014 16:39:17 -0400
+Message-ID: <536BEB71.9070007@linaro.org>
+Date: Thu, 08 May 2014 13:39:13 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140508120524.GF12548@pd.tnic>
-References: <1399330337-16748-1-git-send-email-tthayer@altera.com>
-	<1399330337-16748-4-git-send-email-tthayer@altera.com>
-	<20140508120524.GF12548@pd.tnic>
-Date: Thu, 8 May 2014 15:37:19 -0500
-Message-ID: <CAF03EBecxtMr1670ktQKTAZX_kHeZWz1SwuEk373B99BoVjbDw@mail.gmail.com>
-Subject: Re: [PATCHv3 3/3] edac: altera: Add EDAC support for Altera SDRAM
-From: Thor Thayer <tthayer.linux@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Thor Thayer <tthayer@altera.com>, Rob Herring <robherring2@gmail.com>,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
-        Rob Landley <rob@landley.net>, linux@arm.linux.org.uk,
-        Dinh Nguyen <dinguyen@altera.com>, dougthompson@xmission.com,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+To: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Doug Anderson <dianders@chromium.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Will Deacon <will.deacon@arm.com>,
+        David Riley <davidriley@chromium.org>,
+        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP systems
+References: <1399504982-31181-1-git-send-email-dianders@chromium.org> <CAOh2x=kwaoSdj8JO0Vo08Y0dX2UfKFiF3pBV-qtp-YTyN=8H8Q@mail.gmail.com> <CAD=FV=UEGJGHrdcXgs3EZ_wFXT8GnNeCOMt7CgdiiUzBzZ5Y0A@mail.gmail.com> <alpine.LFD.2.11.1405081149190.980@knanqh.ubzr> <CAD=FV=VtcLOh51LCmafzRMdqtDrwKXCqK6gE6V7OOOUe4gjwbA@mail.gmail.com> <alpine.LFD.2.11.1405081329010.980@knanqh.ubzr> <20140508192209.GH3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405081600260.980@knanqh.ubzr>
+In-Reply-To: <alpine.LFD.2.11.1405081600260.980@knanqh.ubzr>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 8, 2014 at 7:05 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Mon, May 05, 2014 at 05:52:17PM -0500, tthayer@altera.com wrote:
->> From: Thor Thayer <tthayer@altera.com>
+On 05/08/2014 01:12 PM, Nicolas Pitre wrote:
+> On Thu, 8 May 2014, Russell King - ARM Linux wrote:
 >
-> Missing commit message.
+>> So, the only /real/ solution if you want proper delays is for udelay()
+>> to use a timer or counter, and this is should always the preferred
+>> method where it's available.  Quite rightly, we're not hacking udelay()
+>> stuff to work around not having that, or if someone configures it out.
+> What about using a default based on ktime_get(), or even sched_clock(), 
+> when SMP and cpufreq are configured in?
 
-Whoops. I don't know what happened there. I'll fix it.
+While somewhat rare these days, there are some systems that still only
+have tick(jiffies)-granular time (as well as sched_clock), which might
+be far too coarse for udelay, and in addition depends on irqs being
+enabled to be able for time to progress.
 
->
->> ---
->> v2: Use the SDRAM controller registers to calculate memory size
->>     instead of the Device Tree. Update To & Cc list. Add maintainer
->>     information.
->>
->> v3: EDAC driver cleanup based on comments from Mailing list.
->>
->> Signed-off-by: Thor Thayer <tthayer@altera.com>
->> ---
->>  MAINTAINERS                |    5 +
->>  drivers/edac/Kconfig       |    9 +
->>  drivers/edac/Makefile      |    2 +
->>  drivers/edac/altera_edac.c |  411 ++++++++++++++++++++++++++++++++++++++++++++
->>  4 files changed, 427 insertions(+)
->>  create mode 100644 drivers/edac/altera_edac.c
->>
+The loops based delay is sort of a hack that allows fine grained (but
+somewhat inaccurate) time delays in just about any context.
 
-<snip>
+The problem being the loop based delays are somewhat fragile,
+particularly as many of the assumptions for that code have been broken
+(cpufreq scaling, ASMP, SMIs or other calibration issues, etc).  On
+these systems where the assumptions are broken, time-based counter
+delays are needed, but not always in place.
 
->> --- /dev/null
->> +++ b/drivers/edac/altera_edac.c
->> @@ -0,0 +1,411 @@
->> +/*
->> + *  Copyright Altera Corporation (C) 2014. All rights reserved.
->> + *  Copyright 2011-2012 Calxeda, Inc.
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms and conditions of the GNU General Public License,
->> + * version 2, as published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope it will be useful, but WITHOUT
->> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
->> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
->> + * more details.
->> + *
->> + * This file is subject to the terms and conditions of the GNU General Public
->> + * License.  See the file "COPYING" in the main directory of this archive
->> + * for more details.
->
-> I'm guessing your lawyers want this boilerplate after all?
->
+Thus I suspect we need something that provides proper warnings when we
+are using loop delays on system that breaks its assumptions.
 
-Yes. Their reasoning is that they want to retain the rights and
-warranty language with the file (just in case the COPYING file
-changes).
+thanks
+-john
 
-> ...
->
->> +static irqreturn_t altr_sdram_mc_err_handler(int irq, void *dev_id)
->> +{
->> +     struct mem_ctl_info *mci = dev_id;
->> +     struct altr_sdram_mc_data *drvdata = mci->pvt_info;
->> +     u32 status = 0, err_count = 0, err_addr = 0;
->> +
->> +     /* Error Address is shared by both SBE & DBE */
->> +     regmap_read(drvdata->mc_vbase, ERRADDR, &err_addr);
->> +
->> +     regmap_read(drvdata->mc_vbase, DRAMSTS, &status);
->> +
->> +     if (status & DRAMSTS_DBEERR) {
->> +             regmap_read(drvdata->mc_vbase, DBECOUNT, &err_count);
->> +             edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, err_count,
->> +                                  err_addr >> PAGE_SHIFT,
->> +                                  err_addr & ~PAGE_MASK, 0,
->> +                                  0, 0, -1, mci->ctl_name, "");
->
-> So, are we setting edac_mc_panic_on_ue now or what are we planning to do
-> for uncorrectable errors?
 
-Yes. I tested using edac_core.edac_mc_panic_on_ue=1 from the command
-line and it worked fine. I'll add a comment to clarify. BTW, thanks
-for your help on that.
 
->
->> +     if (status & DRAMSTS_SBEERR) {
->> +             regmap_read(drvdata->mc_vbase, SBECOUNT, &err_count);
-
-<snip>
-
->> +     if (count == 3) {
->> +             edac_printk(KERN_ALERT, EDAC_MC,
->> +                         "EDAC Inject Double bit error\n");
->> +             regmap_write(drvdata->mc_vbase, CTLCFG,
->> +                          (read_reg | CTLCFG_GEN_DB_ERR));
->> +     } else {
->> +             edac_printk(KERN_ALERT, EDAC_MC,
->> +                         "EDAC Inject Single bit error\n");
->> +             regmap_write(drvdata->mc_vbase, CTLCFG,
->> +                          (read_reg | CTLCFG_GEN_SB_ERR));
->
-> You can remove the "EDAC " string from those printks above as
-> edac_printk already adds the prefix.
-
-Great. Will do.
-
->
->> +     }
->> +
->> +     ptemp[0] = 0x5A5A5A5A;
->> +     ptemp[1] = 0xA5A5A5A5;
->> +     regmap_write(drvdata->mc_vbase, CTLCFG, read_reg);
->> +     /* Ensure it has been written out */
->> +     wmb();
->> +
->> +     reg = ptemp[0];
->> +     read_reg = ptemp[1];
->> +     /* Force Read */
->> +     rmb();
->
-> Have you checked whether those reads don't get optimized away by the
-> compiler? I know, you need them for triggering the error condition.
->
-> Also, you should add a comment here to explain why the reads are being
-> done.
-
-I considered using "volatile" variables, but decided against it after
-I read Documentation/volatile-considered-harmful.txt and my situation
-doesn't fit into the exemptions. Is there a better way to handle this?
-
-I'll add the comment.
-
-Thanks for reviewing and your comments.
-
-Thor
-
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
