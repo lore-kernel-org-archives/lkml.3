@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316AbaEHNPd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 09:15:33 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:53084 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754286AbaEHNPb (ORCPT
+	id S1754367AbaEHNQe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 09:16:34 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:36676 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753585AbaEHNQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 09:15:31 -0400
-Date: Thu, 8 May 2014 09:15:29 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
-        Oleg Nesterov <oleg@redhat.com>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH] Fix: tracepoint: use after rcu free
-Message-ID: <20140508091529.08b68cf4@gandalf.local.home>
-In-Reply-To: <55466295.13096.1399554505453.JavaMail.zimbra@efficios.com>
-References: <1399549669-25465-1-git-send-email-mathieu.desnoyers@efficios.com>
-	<20140508090520.2b225a94@gandalf.local.home>
-	<55466295.13096.1399554505453.JavaMail.zimbra@efficios.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Thu, 8 May 2014 09:16:32 -0400
+X-AuditID: cbfec7f5-b7fae6d000004d6d-3a-536b83adf9dc
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+To: viro@zeniv.linux.org.uk, ebiederm@xmission.com,
+        linux-security-module@vger.kernel.org, eparis@redhat.com,
+        zohar@linux.vnet.ibm.com
+Cc: dmitry.kasatkin@gmail.com, linux-kernel@vger.kernel.org,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>
+Subject: [PATCH 0/1] fix IMA + Apparmor kernel panic
+Date: Thu, 08 May 2014 16:16:53 +0300
+Message-id: <cover.1399554584.git.d.kasatkin@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNJMWRmVeSWpSXmKPExsVy+t/xK7prm7ODDV7MkLK49Xcvs8WXpXUW
+	/7e1sFtM3N7GYnF51xw2iw89j9gszv89zmrxacUkZgcOj52z7rJ7PDi0mcXj/b6rbB59W1Yx
+	enzeJOcx5VA7i8emJ2+ZAtijuGxSUnMyy1KL9O0SuDJ2PT/NXDCTuWLz3Y/MDYxnmboYOTgk
+	BEwkfj9l62LkBDLFJC7cWw9kc3EICSxllNg2dy0jhNPJJNG4ZjsLSBWbgJ7EhuYf7CAJEYEu
+	RokXG46xgiSYBdIlfn/+zAhiCwNNXTJ5DzPIBhYBVYm+1+YgYV4BS4mpXc+ZILYpSCz7spZ5
+	AiP3AkaGVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxghAfR1B+PSY1aHGAU4GJV4eBfIZAQL
+	sSaWFVfmHmKU4GBWEuG9UpkdLMSbklhZlVqUH19UmpNafIiRiYNTqoEx+cP+TXUl7bmLbink
+	m9SJKPaZXmTc8WbBPgNBy5CMk1ETfQ2KZbbO2LkqPetR6MFTukt9G+tDnH9UNTgcPDh9Vpu4
+	Zu7yF5Kb7LneH1ielGr/tU1DZj1fy8tdr+a7+KqaL352YVLo37WnHd0fWGbwf0zWXSRiWL+V
+	7/eq69eVXixd8Cr6/K41SizFGYmGWsxFxYkAtMNjTv4BAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 May 2014 13:08:25 +0000 (UTC)
-Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+Hi,
 
-> > 
-> > We can also include a (even though it's redundant)
-> > 
-> >  Fixes: de7b2973903c "tracepoint: Use struct pointer instead of name hash for
-> >  reg/unreg tracepoints"
-> 
-> Thanks for the pointers, I'll keep those in mind for my next patches.
+Following patch replaces IMA usage of kernel_read() with special
+version which skips security check that triggers kernel panic
+when Apparmor and IMA appraisal are enabled together.
 
-Oh, one more thing I keep forgetting to mention to you. Your subject
-lines :-)
+- Dmitry
 
-I converted it to be:
+Dmitry Kasatkin (1):
+  ima: introduce ima_kernel_read()
 
- tracepoint: Fix use of tracepoint funcs after rcu free
+ security/integrity/ima/ima_crypto.c | 32 +++++++++++++++++++++++++++++++-
+ 1 file changed, 31 insertions(+), 1 deletion(-)
 
-only the subsystem tag should be used. Not a "Fix" tag. But the "Fix"
-may be used in the subject itself. Also, I've been told that Linus
-prefers to have the subject written more like a sentence and the first
-character capitalized.
+-- 
+1.8.3.2
 
--- Steve
