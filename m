@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294AbaEHSgi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 14:36:38 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36045 "EHLO mail.skyhub.de"
+	id S1755393AbaEHShP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 14:37:15 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:60623 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753348AbaEHSgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 14:36:36 -0400
-Date: Thu, 8 May 2014 20:36:29 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Robert Richter <rric@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: Re: [PATCH v4 00/16] perf, persistent: Add persistent events
-Message-ID: <20140508183629.GJ12548@pd.tnic>
-References: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
- <20140506123907.GV32718@rric.localhost>
- <20140506185826.GF25013@pd.tnic>
- <20140507170155.GH32718@rric.localhost>
+	id S1753705AbaEHShN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 14:37:13 -0400
+Date: Thu, 8 May 2014 14:36:22 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH cgroup/for-3.16] cgroup: rename css_tryget*() to
+ css_tryget_online*()
+Message-ID: <20140508183622.GR19914@cmpxchg.org>
+References: <20140507160429.GE26540@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140507170155.GH32718@rric.localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140507160429.GE26540@htj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 07:01:55PM +0200, Robert Richter wrote:
-> For general-purpose... Why 512k buffers are ok? Depending on the
-> event, smaller buffers are maybe good enough, esp. since they are
-> permanently enabled and use system resources. Or, at some point, 512k
-> is not sufficient anymore. You don't want 512k be carved in stone.
+On Wed, May 07, 2014 at 12:04:29PM -0400, Tejun Heo wrote:
+> Unlike the more usual refcnting, what css_tryget() provides is the
+> distinction between online and offline csses instead of protection
+> against upping a refcnt which already reached zero.  cgroup is
+> planning to provide actual tryget which fails if the refcnt already
+> reached zero.  Let's rename the existing trygets so that they clearly
+> indicate that they're onliness.
+> 
+> I thought about keeping the existing names as-are and introducing new
+> names for the planned actual tryget; however, given that each
+> controller participates in the synchronization of the online state, it
+> seems worthwhile to make it explicit that these functions are about
+> on/offline state.
+> 
+> Rename css_tryget() to css_tryget_online() and css_tryget_from_dir()
+> to css_tryget_online_from_dir().  This is pure rename.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Li Zefan <lizefan@huawei.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
 
-Well, if it turns out that 512K is not enough, it will be changed in
-perf itself, right?
-
-And we still don't care because no matter the size, the persistent
-buffers overwrite themselves on fill up. If they'd stopped, they're not
-really persistent, right?
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
