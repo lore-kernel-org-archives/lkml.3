@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780AbaEHG4v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 02:56:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42011 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaEHG4u convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 02:56:50 -0400
-Date: Thu, 8 May 2014 08:56:46 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Daniel Santos <daniel.santos@pobox.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] compiler.h: don't use temporary variable in
- __compiletime_assert()
-Message-ID: <20140508065646.GF2844@laptop.programming.kicks-ass.net>
-References: <1399530685-7749-1-git-send-email-johannes@sipsolutions.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1399530685-7749-1-git-send-email-johannes@sipsolutions.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1752923AbaEHHDf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 03:03:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48139 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751942AbaEHHDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 03:03:34 -0400
+From: Ales Novak <alnovak@suse.cz>
+To: Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, John Stultz <john.stultz@linaro.org>,
+        Ales Novak <alnovak@suse.cz>
+Subject: [PATCH] drivers/rtc/interface.c: fix for fix of alarm initialization
+Date: Thu,  8 May 2014 07:56:15 +0200
+Message-Id: <1399528575-32195-1-git-send-email-alnovak@suse.cz>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1396911282-4410-1-git-send-email-alnovak@suse.cz>
+References: <1396911282-4410-1-git-send-email-alnovak@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 08:31:25AM +0200, Johannes Berg wrote:
-> From: Johannes Berg <johannes.berg@intel.com>
-> 
-> Usually, BUG_ON and friends aren't even evaluated in sparse, but
-> recently compiletime_assert_atomic_type() was added, and that now
-> results in a sparse warning every time it is used.
-> 
-> The reason turns out to be the temporary variable, after it sparse
-> no longer considers the value to be a constant, and results in a
-> warning and an error. The error is the more annoying part of this
-> as it suppresses any further warnings in the same file, hiding
-> other problems.
-> 
-> Since this is all about compile time and the condition should be
-> side-effect free to start with, there's no downside (apart maybe
-> from a slight compilation time penalty?) to just duplicating it,
-> leaving sparse able to evaluate it at check time, getting rid of
-> the warning and error.
-> 
-> Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Seems the previous patch "fix infinite loop in initializing the alarm"
+did break the infinite loop in alarm initialization, but not in the right
+way. The loop indeed should walk through the not-leap years and stop on
+the leap one.
 
-Acked-by: Peter Zijlstra <peterz@infradead.org>
+This patch does apply on top of the previous one.
+
+Signed-off-by: Ales Novak <alnovak@suse.cz>
+---
+Fix for patch drivers-rtc-interfacec-fix-infinite-loop-in-initializing-the-alarm
+
+ drivers/rtc/interface.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index a2df283..bd6314a 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -292,8 +292,7 @@ int __rtc_read_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+ 		dev_dbg(&rtc->dev, "alarm rollover: %s\n", "year");
+ 		do {
+ 			alarm->time.tm_year++;
+-		} while (alarm->time.tm_mon == 1
+-			&& is_leap_year(alarm->time.tm_year + 1900)
++		} while (!is_leap_year(alarm->time.tm_year + 1900)
+ 			&& rtc_valid_tm(&alarm->time) != 0);
+ 		break;
+ 
+-- 
+1.8.1.4
+
