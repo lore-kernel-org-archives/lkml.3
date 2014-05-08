@@ -1,147 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023AbaEHK7x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 06:59:53 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:22471 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753903AbaEHK7w (ORCPT
+	id S1753758AbaEHLCX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 07:02:23 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:63484 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753099AbaEHLCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 06:59:52 -0400
-Date: Thu, 8 May 2014 06:59:47 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        fche@redhat.com, mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH -tip v10 7/7] ftrace: Introduce
- FTRACE_OPS_FL_SELF_FILTER for ftrace-kprobe
-Message-ID: <20140508065947.214f4951@gandalf.local.home>
-In-Reply-To: <20140508093930.31767.86419.stgit@ltc230.yrl.intra.hitachi.co.jp>
-References: <20140508093842.31767.43766.stgit@ltc230.yrl.intra.hitachi.co.jp>
-	<20140508093930.31767.86419.stgit@ltc230.yrl.intra.hitachi.co.jp>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 8 May 2014 07:02:20 -0400
+Date: Thu, 8 May 2014 12:02:05 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Chen-Yu Tsai <wens@csie.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
+        Hans de Goede <hdegoede@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
+Subject: Re: [PATCH v2 3/7] mfd: add support for sun6i PRCM
+ (Power/Reset/Clock Management) unit
+Message-ID: <20140508110205.GB5767@lee--X1>
+References: <1399483554-8824-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1399483554-8824-4-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1399483554-8824-4-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 08 May 2014 18:39:30 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-
-> Since the kprobes itself owns a hash table to get a kprobe
-> data structure corresponding to the given ip address, there
-> is no need to test ftrace hash in ftrace side.
-> To achive better performance on ftrace-based kprobe,
-> FTRACE_OPS_FL_SELF_FILTER flag to ftrace_ops which means
-> that ftrace skips testing its own hash table.
+> The PRCM (Power/Reset/Clock Management) block exposes several subdevices
+> in different subsystems (clk, reset ...)
 > 
-> Without this patch, ftrace_lookup_ip() is biggest cycles
-> consumer when 20,000 kprobes are enabled.
->   ----
->   Samples: 1K of event 'cycles', Event count (approx.): 340068894
->   +  20.77%  [k] ftrace_lookup_ip
->   +   8.33%  [k] kprobe_trace_func
->   +   4.83%  [k] get_kprobe_cached
->   ----
+> Add basic support for the PRCM unit with clk (AR100, AHB0, and APB0 clks)
+> and reset controller subdevices.
 > 
-> With this patch, ftrace_lookup_ip() vanished from the
-> cycles consumer list (of course, there is no caller on
-> hotpath anymore :))
->   ----
->   Samples: 1K of event 'cycles', Event count (approx.): 186861492
->   +   9.95%  [k] kprobe_trace_func
->   +   6.00%  [k] kprobe_ftrace_handler
->   +   5.53%  [k] get_kprobe_cached
-
-I should look at your filtering methods, maybe it can make ftrace
-filtering better?
-
->   ----
+> Other subdevices might be added later (if needed).
 > 
-> Changes from v7:
->  - Re-evaluate the performance improvement.
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 > ---
->  include/linux/ftrace.h |    3 +++
->  kernel/kprobes.c       |    2 +-
->  kernel/trace/ftrace.c  |    3 ++-
->  3 files changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-> index ae9504b..f1fa7d27 100644
-> --- a/include/linux/ftrace.h
-> +++ b/include/linux/ftrace.h
-> @@ -93,6 +93,8 @@ typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip,
->   * INITIALIZED - The ftrace_ops has already been initialized (first use time
->   *            register_ftrace_function() is called, it will initialized the ops)
->   * DELETED - The ops are being deleted, do not let them be registered again.
-> + * SELF_FILTER - The ftrace_ops function filters ip by itself. Do not need to
-> + *            check hash table on each hit.
+>  drivers/mfd/Kconfig      |   8 +++
+>  drivers/mfd/Makefile     |   1 +
+>  drivers/mfd/sun6i-prcm.c | 151 +++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 160 insertions(+)
+>  create mode 100644 drivers/mfd/sun6i-prcm.c
 
- - The ftrace_ops function has its own ip filter and does not need to
-   rely on the ftrace internal ip filtering.
+[...]
 
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/errno.h>
+> +#include <linux/err.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/io.h>
+> +#include <linux/slab.h>
+> +#include <linux/mutex.h>
+> +#include <linux/completion.h>
+> +#include <linux/irq.h>
+> +#include <linux/jiffies.h>
+> +#include <linux/bitops.h>
+> +#include <linux/fs.h>
+> +#include <linux/of.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/uaccess.h>
+> +#include <linux/mfd/core.h>
 
->   */
->  enum {
->  	FTRACE_OPS_FL_ENABLED			= 1 << 0,
-> @@ -105,6 +107,7 @@ enum {
->  	FTRACE_OPS_FL_STUB			= 1 << 7,
->  	FTRACE_OPS_FL_INITIALIZED		= 1 << 8,
->  	FTRACE_OPS_FL_DELETED			= 1 << 9,
-> +	FTRACE_OPS_FL_SELF_FILTER		= 1 << 10,
->  };
->  
->  /*
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index 0f5f23c..5c6e410 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1027,7 +1027,7 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
->  #ifdef CONFIG_KPROBES_ON_FTRACE
->  static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
->  	.func = kprobe_ftrace_handler,
-> -	.flags = FTRACE_OPS_FL_SAVE_REGS,
-> +	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_SELF_FILTER,
->  };
->  static int kprobe_ftrace_enabled;
->  
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index 4a54a25..062ca20 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -4501,7 +4501,8 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
->  	 */
->  	preempt_disable_notrace();
->  	do_for_each_ftrace_op(op, ftrace_ops_list) {
-> -		if (ftrace_ops_test(op, ip, regs))
-> +		if (op->flags & FTRACE_OPS_FL_SELF_FILTER ||
-> +		    ftrace_ops_test(op, ip, regs))
+I'm pretty sure you don't need half of these.  Please only add the
+ones you make use of.
 
-Hmm, I wonder if I should add the check for:
+[...]
 
-	!(op->flags & FTRACE_OPS_FL_STUB)
+> +	dev_info(&pdev->dev, "PRCM initialized\n");
 
-here too? But that's another change that I'll do.
+Please remove this from here.
 
-Just update the flag description as I commented and the rest looks good.
+[...]
 
--- Steve
+> +static struct platform_driver sun6i_prcm_driver = {
+> +	.driver = {
+> +		.name = "sun6i-prcm",
+> +		.owner = THIS_MODULE,
+> +		.of_match_table = sun6i_prcm_dt_ids,
+> +	},
+> +	.probe = sun6i_prcm_probe,
 
->  			op->func(ip, parent_ip, op, regs);
->  	} while_for_each_ftrace_op(op);
->  	preempt_enable_notrace();
-> 
+You need a .remove() call-back.
 
+> +};
+> +module_platform_driver(sun6i_prcm_driver);
+> +
+> +MODULE_AUTHOR("Boris BREZILLON <boris.brezillon@free-electrons.com>");
+> +MODULE_DESCRIPTION("Allwinner sun6i PRCM driver");
+> +MODULE_LICENSE("GPL v2");
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
