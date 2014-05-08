@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755915AbaEHWeh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 18:34:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42251 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994AbaEHWef (ORCPT
+	id S932121AbaEHWh4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 18:37:56 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:23142 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755669AbaEHWhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 18:34:35 -0400
-Date: Thu, 8 May 2014 15:34:33 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Yong-Taek Lee <ytk.lee@samsung.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 2/2] mm/page_alloc: DEBUG_VM checks for free_list
- placement of CMA and RESERVE pages
-Message-Id: <20140508153433.7fcbe624549259b68659fe10@linux-foundation.org>
-In-Reply-To: <20140508061937.GE5282@bbox>
-References: <533D8015.1000106@suse.cz>
-	<1396539618-31362-1-git-send-email-vbabka@suse.cz>
-	<1396539618-31362-2-git-send-email-vbabka@suse.cz>
-	<53616F39.2070001@oracle.com>
-	<53638ADA.5040200@suse.cz>
-	<5367A1E5.2020903@oracle.com>
-	<5367B356.1030403@suse.cz>
-	<20140507013333.GB26212@bbox>
-	<536A4A3B.1090403@suse.cz>
-	<20140508055421.GC9161@js1304-P5Q-DELUXE>
-	<20140508061937.GE5282@bbox>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	Thu, 8 May 2014 18:37:55 -0400
+Date: Thu, 8 May 2014 18:37:52 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [RFC PATCH] ftrace/x86: Move the mcount/fentry code out of
+ entry_64.S
+Message-ID: <20140508183752.19e99780@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.02.1405090019510.6261@ionos.tec.linutronix.de>
+References: <20140508152152.2130e8cf@gandalf.local.home>
+	<alpine.DEB.2.02.1405090019510.6261@ionos.tec.linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 May 2014 15:19:37 +0900 Minchan Kim <minchan@kernel.org> wrote:
+On Fri, 9 May 2014 00:21:37 +0200 (CEST)
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-> > I also think that VM_DEBUG overhead isn't problem because of same
-> > reason from Vlastimil.
+> On Thu, 8 May 2014, Steven Rostedt wrote:
 > 
-> Guys, please read this.
+
+> I'm fine with the code move per se. That's a good thing.
+
+Great, then I'll add this to my 3.16 queue.
+
+Can I get your Acked-by for it?
+
 > 
-> https://lkml.org/lkml/2013/7/17/591
-> 
-> If you guys really want it, we could separate it with
-> CONFIG_DEBUG_CMA or CONFIG_DEBUG_RESERVE like stuff.
-> Otherwise, just remain in mmotm.
+> The live patcher argumentation for it is more than questionable.
 
-Wise words, those.
+Well, that was the final motivator. But I've been wanting to optimize
+the function tracing a bit since it's been getting more and more users.
+Namely, kprobes and perf. As such, I've been thinking about creating
+custom trampolines (like what kprobes does today) where if there's two
+or more users of ftrace, but they are using different functions, they
+don't need to go through a loop, but instead have their own trampoline
+that calls their function directly and is called by the functions they
+trace.
 
-Yes, these checks are in a pretty hot path.  I'm inclined to make the
-patch -mm (and -next) only.
+Right now I'm working on getting the function graph tracer trampoline
+(which is static) called directly if function graph is enabled.
+Currently, we save regs for function tracing, restore them, and then
+call function graph tracing. This is a big waste when function graph is
+running by itself.
 
-Unless there's a really good reason, such as "nobody who uses CMA is
-likely to be testing -next", which sounds likely :(
-
+-- Steve
