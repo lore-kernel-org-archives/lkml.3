@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645AbaEHFQg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 01:16:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17835 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751009AbaEHFQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 01:16:35 -0400
-From: Jes Sorensen <Jes.Sorensen@redhat.com>
-To: Christian Engelmayer <cengelma@gmx.at>
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, mguzik@redhat.com,
-        linux-kernel@vger.kernel.org, Larry.Finger@lwfinger.net
-Subject: Re: [PATCH v3] staging: rtl8188eu: fix potential leak in update_bcn_wps_ie()
-References: <20140507214227.621a814d@spike>
-Date: Thu, 08 May 2014 07:16:22 +0200
-In-Reply-To: <20140507214227.621a814d@spike> (Christian Engelmayer's message
-	of "Wed, 7 May 2014 21:42:27 +0200")
-Message-ID: <wrfjd2fokfyx.fsf@ultrasam.lan.trained-monkey.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751507AbaEHF0V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 01:26:21 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:62431 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055AbaEHF0U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 01:26:20 -0400
+From: Lad Prabhakar <prabhakar.csengg@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>
+Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH] sound: soc: intel: remove unneeded dependency from Makefile
+Date: Thu,  8 May 2014 10:56:11 +0530
+Message-Id: <1399526771-28422-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christian Engelmayer <cengelma@gmx.at> writes:
-> Fix a potential leak in the error path of function update_bcn_wps_ie().
-> Move the affected input verification to the beginning of the function so
-> that it may return directly without leaking already allocated memory.
-> Detected by Coverity - CID 1077718.
->
-> Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
-> ---
-> v3: Resend after v2 failed to apply
->
->   * rebased against staging-next - commit 09c3fbba (staging: rtl8188eu:
->     Remove 'u8 *pbuf' from struct recv_buf)
->   * fixed mua: no multipart, 7bit text/plain us-ascii
->
-> v2: Added change suggested by Mateusz Guzik for the rtl8723au variant:
->
->     Move the check before allocating the memory instead of freeing the
->     resource afterwards in the error path.
->
-> Compile tested and applies against branch staging-next of tree
-> git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
-> ---
->  drivers/staging/rtl8188eu/core/rtw_ap.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-Acked-by: Jes Sorensen <Jes.Sorensen@redhat.com>
+this patch removes drops the entries form Makefile, fixing
+following issues when make clean was run,
+
+scripts/Makefile.clean:17: sound/soc/intel/board/Makefile: No such file or directory
+scripts/Makefile.clean:17: sound/soc/intel/sst/Makefile: No such file or directory
+
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ Found this issue on linux-next not sure if this is fixed in
+ sound subsystem tree.
+ 
+ sound/soc/intel/Makefile |    6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/sound/soc/intel/Makefile b/sound/soc/intel/Makefile
+index 57242c4..26544c5 100644
+--- a/sound/soc/intel/Makefile
++++ b/sound/soc/intel/Makefile
+@@ -32,9 +32,3 @@ PLATFORM_LIBS = platform-libs/controls_v2_dpcm.o
+ 
+ snd-soc-sst-platform-objs := pcm.o compress.o $(PLATFORM_LIBS)
+ obj-$(CONFIG_SND_SST_PLATFORM) += snd-soc-sst-platform.o
+-
+-# Relevant Machine driver
+-obj-$(CONFIG_SND_SST_MACHINE) += board/
+-
+-# IPC driver
+-obj-$(CONFIG_SND_INTEL_SST) += sst/
+-- 
+1.7.9.5
+
