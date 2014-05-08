@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978AbaEHOkE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 10:40:04 -0400
-Received: from mail-by2lp0242.outbound.protection.outlook.com ([207.46.163.242]:42951
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753710AbaEHOkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 10:40:01 -0400
-X-WSS-ID: 0N59FEK-07-3UJ-02
-X-M-MSG: 
-Message-ID: <536B973B.2000207@amd.com>
-Date: Thu, 8 May 2014 09:39:55 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Robert Richter <rric@kernel.org>
-CC: <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        Borislav Petkov <bp@suse.de>,
-        "Daniel J Blueman" <daniel@numascale.com>,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [PATCH V3 1/3] x86/PCI: Fix PCI root numa_node info on AMD family15h
-References: <1399489127-6961-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1399489127-6961-2-git-send-email-suravee.suthikulpanit@amd.com>
- <20140508085905.GK32718@rric.localhost>
- <20140508090148.GL32718@rric.localhost>
-In-Reply-To: <20140508090148.GL32718@rric.localhost>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(377454003)(51704005)(24454002)(479174003)(46102001)(87936001)(87266999)(76482001)(77096999)(77982001)(76176999)(54356999)(50986999)(101416001)(97736001)(59896001)(81542001)(65816999)(36756003)(83322001)(68736004)(65806001)(92566001)(83506001)(4396001)(64706001)(81342001)(79102001)(64126003)(20776003)(84676001)(2009001)(99396002)(47776003)(65956001)(50466002)(19580405001)(19580395003)(33656001)(44976005)(23756003)(80022001)(86362001)(92726001)(31966008)(74662001)(21056001)(83072002)(85852003)(74502001)(3076001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR02MB119;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 0205EDCD76
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+	id S1753502AbaEHOow (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 10:44:52 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:41535 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337AbaEHOov (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 10:44:51 -0400
+X-AuditID: cbfec7f4-b7fb36d000006ff7-31-536b98612858
+Message-id: <536B975F.7070603@samsung.com>
+Date: Thu, 08 May 2014 18:40:31 +0400
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.4.0
+MIME-version: 1.0
+To: Afzal Mohammed <afzal.mohd.ma@gmail.com>
+Cc: linux@arm.linux.org.uk, open list <linux-kernel@vger.kernel.org>,
+        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm: memset: zero out upper bytes in r1
+References: <1399273875-8403-1-git-send-email-a.ryabinin@samsung.com>
+ <20140507234255.GA2050@afzal-ThinkPad-R50e> <536B3946.9070106@samsung.com>
+In-reply-to: <536B3946.9070106@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJLMWRmVeSWpSXmKPExsVy+t/xy7qJM7KDDWbPYLL4v3E1u8Wmx9dY
+	LS7vmsNmcfsyrwOLR0tzD5vHzll32T02L6n3+LxJLoAlissmJTUnsyy1SN8ugSvj0JtH7AX9
+	3BVrpy1gamCcwdHFyMkhIWAi0dPcwAxhi0lcuLeerYuRi0NIYCmjRNfmtcwQTiOTxKLOZhaQ
+	Kl4BLYlLR+6zgtgsAqoSu3ZtYQSx2QT0JP7N2s4GYosKREjcazzMClEvKPFj8j2wXhEBHYnb
+	L3eDbWMW6GCUaN9UDWILC9hIrFjxmhVi2SRGiTvv94M1cwpoS5y5uZYFokFHYn/rNDYIW15i
+	85q3zBMYBWYh2TELSdksJGULGJlXMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoQE75cdjIuP
+	WR1iFOBgVOLhfRGdESzEmlhWXJl7iFGCg1lJhJd7QnawEG9KYmVValF+fFFpTmrxIUYmDk6p
+	BkZd1eilM3hDpn2zmKF0et209N9hVXbrg965bz4ZfYhd2K8+dil3irDUZevFG2aKWtpFyhoe
+	1yrYNd0tbcUu8aN10SU51c6s61evvTvhY1TAo3UXd8Z8s3r8e/2qB08bQkKn858ttn15YOKa
+	h6qcstw2qhvDYtizQ/IuLrjCt6P4Z9PcFeWsn1cosRRnJBpqMRcVJwIAuI/wJDwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/8/2014 4:01 AM, Robert Richter wrote:
-> On 08.05.14 10:59:05, Robert Richter wrote:
->> On 07.05.14 13:58:45, suravee.suthikulpanit@amd.com wrote:
->>> @@ -113,10 +122,17 @@ static int __init early_fill_mp_bus_info(void)
->>>   		info = alloc_pci_root_info(min_bus, max_bus, node, link);
->>>   	}
->>>
->>> +	/*
->>> +	 * The following code is only supported until Fam11h.
->>> +	 * Newer processors will depend on ACPI MCFG table instead.
->>> +	 */
->>> +	if (boot_cpu_data.x86 > 0x11)
->>> +		return 0;
->>> +
->>>   	/* get the default node and link for left over res */
+On 05/08/14 11:59, Andrey Ryabinin wrote:
+> On 05/08/14 03:42, Afzal Mohammed wrote:
 >>
->> As this is the only substantial change of your patch, I would better
->> drop ther rest or at least split it in two patches. Should this change
->> also be for stable?
->
-> Of course adding the hostbridge must be also part of the patch, didn't
-> note this due to the other noise. See why the split would be good?
->
+>> int is to be converted to unsigned char in memset, would having above
+>> change immediately upon entry to memset rather than at a place where it
+>> won't always execute make intention clearer ? (although it doesn't make
+>> difference)
 >>
->> -Robert
+> 
+> I think it's better to keep it near other manipulations with r1.
+> Plus this will save us from executing extra instruction on 'memset -> 6 -> 5 -> return'
+> path (memset for size <= 3).
+> 
+> 
+>> ubfx r1, r1, #0, #8 would have given the needed typecasting, but seems
+>> it is available only on ARMv6T2 & above.
+>>
+> 
+> Indeed. It might be wrapped it with #if #else, but it will be a bit ugly,
+> probably not worth to do.
+> 
+> 
 
+Err, there is no reason to use ubfx, it just the same as and r1,r1, #0xff.
+On ARMv6T2 & above one instruction could be saved by using BFI instead of ORR, like this:
 
-Robert,
+diff --git a/arch/arm/lib/memset.S b/arch/arm/lib/memset.S
+index 94b0650..9a7f714 100644
+--- a/arch/arm/lib/memset.S
++++ b/arch/arm/lib/memset.S
+@@ -22,8 +22,8 @@ ENTRY(memset)
+ /*
+  * we know that the pointer in ip is aligned to a word boundary.
+  */
+-1:     orr     r1, r1, r1, lsl #8
+-       orr     r1, r1, r1, lsl #16
++1:     bfi     r1, r1, #8, #8
++       bfi     r1, r1, #16, #16
+        mov     r3, r1
+        cmp     r2, #16
+        blt     4f
 
-I have already added the hostbridge for family15h in this patch.
-
-+static struct amd_hostbridge hb_probes[] __initdata = {
-+	{ 0, 0x18, 0x1100 }, /* K8 */
-+	{ 0, 0x18, 0x1200 }, /* Family10h */
-+	{ 0xff, 0, 0x1200 }, /* Family10h */
-+	{ 0, 0x18, 0x1300 }, /* Family11h */
-+	{ 0, 0x18, 0x1600 }, /* Family15h */ <--- HERE
-  };
-
-The rest of the changes are mostly comments, some minor renaming of 
-variables for clarity, and replace hardcode values with preprocessor 
-macro.  If needed, I can split them.
-
-Suravee
