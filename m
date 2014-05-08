@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721AbaEHQcY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 12:32:24 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:44622 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754159AbaEHQcX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 12:32:23 -0400
+	id S1754958AbaEHQcy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 12:32:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:25549 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754849AbaEHQcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 12:32:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1012,1389772800"; 
+   d="scan'208";a="508487192"
+Message-ID: <536BB11D.3090602@intel.com>
+Date: Fri, 09 May 2014 00:30:21 +0800
+From: Jet Chen <jet.chen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F70FC62@AcuExch.aculab.com>
-References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
-	<1399566363-25837-4-git-send-email-mathias.nyman@linux.intel.com>
-	<063D6719AE5E284EB5DD2968C1650D6D0F70FC62@AcuExch.aculab.com>
-Date: Thu, 8 May 2014 09:32:22 -0700
-Message-ID: <CAPcyv4jeU-Xq9bJNuybF=tPPzR=ktthWbQCW+sBFd-1JkcZdFw@mail.gmail.com>
-Subject: Re: [PATCH 03/10] usb: catch attempts to submit urbs with a vmalloc'd
- transfer buffer
-From: Dan Williams <dan.j.williams@intel.com>
-To: David Laight <David.Laight@aculab.com>
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+To: "Jiang, Dave" <dave.jiang@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>
+CC: "Williams, Dan J" <dan.j.williams@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
+        "Wu, Fengguang" <fengguang.wu@intel.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "Lin, Wei W" <wei.w.lin@intel.com>
+Subject: Re: [PATCH] DCA: fix over-warning in ioat3_dca_init
+References: <1399542166-42985-1-git-send-email-jet.chen@intel.com>	 <536B9CF6.9000907@intel.com> <536BA2A3.50506@intel.com>	 <536BA96F.1030203@intel.com> <1399565636.122877.3.camel@djiang5-desk1.amr.corp.intel.com>
+In-Reply-To: <1399565636.122877.3.camel@djiang5-desk1.amr.corp.intel.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 8, 2014 at 9:22 AM, David Laight <David.Laight@aculab.com> wrote:
-> From: Mathias Nyman
->> From: Dan Williams <dan.j.williams@intel.com>
+On 05/09/2014 12:13 AM, Jiang, Dave wrote:
+> On Thu, 2014-05-08 at 08:57 -0700, Alexander Duyck wrote:
+>> On 05/08/2014 08:28 AM, Jet Chen wrote:
+>>> I agree with your option that it is a real BIOS bug and it puts pressure on the BIOS guys to get this fixed. However, this warning message interferes with our kernel booting tests and kernel performance tests. We have to disable CONFIG_INTEL_IOATDMA in kconfig until this issue gets fixed. Before that, code of CONFIG_INTEL_IOATDMA will not be validated in our testing system :(.
+>>> Hope this issue could get fixed soon.
+>>>
+>>> Thanks,
+>>> Jet
+>>>
 >>
->> Save someone else the debug cycles of figuring out why a driver's
->> transfer request is failing or causing undefined system behavior.
->> Buffers submitted for dma must come from GFP allocated / DMA-able
->> memory.
+>> First I would recommend updating your BIOS.  If the updated BIOS also
+>> has the issue I would recommend taking this feedback to whoever provided
+>> the BIOS for your platform so that they can implement the fix.
 >>
->> Return -EAGAIN matching the return value for dma_mapping_error() cases.
->
-> Won't that just cause the request to be resubmitted a few clock
-> cycles later?
-> Surely you either need to error the request, or panic.
+>> If I am not mistaken some BIOSes have the option to disable DCA and/or
+>> IOATDMA.  You might want to check yours to see if you can just disable
+>> DCA on your platform until the issue can be resolved.
+> 
+> Disabling DCA is the preferred option. IOATDMA is functional without
+> DCA.
+> 
+> Jet,
+> What exactly are you attempting to test with IOATDMA? The only two
+> consumers of this DMA driver I know of are MDRAID and NTB. But support
+> for XOR/PQ ops on Xeon platforms have been removed due to various
+> reasons recently so it really is just NTB at the moment in the latest
+> kernels. 
 
-No, panic() is too drastic for this.
+We are running LKP to test kernel boot and performance. More information you can find at https://01.org/lkp/
+This issue shows up in our boot testing with certain kconfig and impacts many of our test machines. It is difficult to update BIOS for all test boxes. Besides, we still not make sure every test box model have a workable version of BIOS. We will consider disabling DCA as your suggestion.
 
-> In any case is this the right place for this sort of test?
+Thanks,
+Jet
 
-Yes.
-
-The system is already compromised because the driver is broken.  The
-expectation is that this is a clue bat for a driver developer to fix
-their code before it goes upstream.  I found this while debugging an
-interaction with a new driver that was causing the xhci controller to
-lock up.  Had this warning been there I likely never would have
-received the xhci bug report.
+> 
+>> Thanks,
+>>
+>> Alex
+>>
