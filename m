@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130AbaEHWYa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 18:24:30 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:43900 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756069AbaEHWYD (ORCPT
+	id S1756111AbaEHWY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 18:24:28 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:61717 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755882AbaEHWYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 18:24:03 -0400
+	Thu, 8 May 2014 18:24:04 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
 Cc: Grant Likely <grant.likely@linaro.org>, benh@kernel.crashing.org,
         Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh@kernel.org>
-Subject: [PATCH 5/6] of/fdt: add FDT serial scanning for earlycon
-Date: Thu,  8 May 2014 17:23:42 -0500
-Message-Id: <1399587823-17701-6-git-send-email-robherring2@gmail.com>
+        Rob Herring <robh@kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 6/6] tty/serial: pl011: add DT based earlycon support
+Date: Thu,  8 May 2014 17:23:43 -0500
+Message-Id: <1399587823-17701-7-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399587823-17701-1-git-send-email-robherring2@gmail.com>
 References: <1399587823-17701-1-git-send-email-robherring2@gmail.com>
@@ -26,94 +27,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <robh@kernel.org>
 
-This adds FDT parsing of {linux,}stdout-path to setup an early serial
-console. Enabling of the early console is triggered with "earlycon"
-(with no options) on the kernel command line.
-
-Platforms must either have fixmap permanent mapping support,
-have a functioning ioremap when early params are parsed, or explicitly
-call early_init_dt_scan_chosen_serial from architecture code.
+Enable DT based earlycon initialization for the pl011 uart.
 
 Signed-off-by: Rob Herring <robh@kernel.org>
-Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/of/fdt.c | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 56 insertions(+)
+ drivers/tty/serial/amba-pl011.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-index a6f83ea..1fbeab2 100644
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -21,6 +21,7 @@
- #include <linux/slab.h>
- #include <linux/libfdt.h>
- #include <linux/debugfs.h>
-+#include <linux/serial_core.h>
- 
- #include <asm/setup.h>  /* for COMMAND_LINE_SIZE */
- #include <asm/page.h>
-@@ -696,6 +697,61 @@ static inline void early_init_dt_check_for_initrd(unsigned long node)
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index ee3d803..908a6e3 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -2072,6 +2072,7 @@ static int __init pl011_early_console_setup(struct earlycon_device *device,
+ 	return 0;
  }
- #endif /* CONFIG_BLK_DEV_INITRD */
+ EARLYCON_DECLARE(pl011, pl011_early_console_setup);
++OF_EARLYCON_DECLARE(pl011, "arm,pl011", pl011_early_console_setup);
  
-+#ifdef CONFIG_SERIAL_EARLYCON
-+extern struct of_device_id __earlycon_of_table[];
-+
-+int __init early_init_dt_scan_chosen_serial(void)
-+{
-+	int offset;
-+	const char *p;
-+	int l;
-+	const struct of_device_id *match = __earlycon_of_table;
-+	const void *fdt = initial_boot_params;
-+
-+	offset = fdt_path_offset(fdt, "/chosen");
-+	if (offset < 0)
-+		offset = fdt_path_offset(fdt, "/chosen@0");
-+	if (offset < 0)
-+		return -ENOENT;
-+
-+	p = fdt_getprop(fdt, offset, "stdout-path", &l);
-+	if (!p)
-+		p = fdt_getprop(fdt, offset, "linux,stdout-path", &l);
-+	if (!p || !l)
-+		return -ENOENT;
-+
-+	/* Get the node specified by stdout-path */
-+	offset = fdt_path_offset(fdt, p);
-+	if (offset < 0)
-+		return -ENODEV;
-+
-+	while (match->compatible) {
-+		unsigned long addr;
-+		if (fdt_node_check_compatible(fdt, offset, match->compatible)) {
-+			match++;
-+			continue;
-+		}
-+
-+		addr = fdt_translate_address(fdt, offset);
-+		if (!addr)
-+			return -ENXIO;
-+
-+		of_setup_earlycon(addr, match->data);
-+		return 0;
-+	}
-+	return -ENODEV;
-+}
-+
-+static int __init setup_of_earlycon(char *buf)
-+{
-+	if (buf)
-+		return 0;
-+
-+	return early_init_dt_scan_chosen_serial();
-+}
-+early_param("earlycon", setup_of_earlycon);
-+#endif
-+
- /**
-  * early_init_dt_scan_root - fetch the top level address and size cells
-  */
+ #else
+ #define AMBA_CONSOLE	NULL
 -- 
 1.9.1
 
