@@ -1,309 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066AbaEHLhS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 07:37:18 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:48292 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022AbaEHLhN (ORCPT
+	id S1754071AbaEHLiY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 07:38:24 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:17550 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248AbaEHLiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 07:37:13 -0400
-Subject: Re: [PATCH v1.1 2/16 update 3] arcmsr:  Adding code to support
- MSI-X interrupt
-From: ching <ching2048@areca.com.tw>
-To: Tomas Henzl <thenzl@redhat.com>
-Cc: jbottomley@parallels.com, dan.carpenter@oracle.com, agordeev@redhat.com,
-        linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <536A43AF.6060908@redhat.com>
-References: <1399463548.23184.6.camel@localhost>
-	 <536A43AF.6060908@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 May 2014 19:37:05 +0800
-Message-ID: <1399549025.25794.4.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	Thu, 8 May 2014 07:38:22 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee690-b7fcd6d0000026e0-bc-536b6cacb064
+Content-transfer-encoding: 8BIT
+Message-id: <536B6CAC.1040805@samsung.com>
+Date: Thu, 08 May 2014 20:38:20 +0900
+From: Inki Dae <inki.dae@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Seung-Woo Kim <sw0312.kim@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sean Paul <seanpaul@chromium.org>,
+        =?UTF-8?B?U3TDqXBoYW5lIE1hcmNoZXNpbg==?= <marcheu@chromium.org>
+Subject: Re: [PATCH 2/4] drm/exynos/mixer: use MXR_GRP_SXY_SY
+References: <1399217181-26442-1-git-send-email-djkurtz@chromium.org>
+ <1399217181-26442-3-git-send-email-djkurtz@chromium.org>
+ <5369C13C.3080506@samsung.com>
+ <CAGS+omAbuzRpNDvB6eTw67Dcv3WMdWF3yz+bU5p3j5JRourOyw@mail.gmail.com>
+ <536B0900.10204@samsung.com>
+ <CAGS+omB8iO2ioLcQEtxsww9kA4Yc8-8YaAkWwTy2ssLOqQvLZg@mail.gmail.com>
+In-reply-to: <CAGS+omB8iO2ioLcQEtxsww9kA4Yc8-8YaAkWwTy2ssLOqQvLZg@mail.gmail.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsWyRsSkQHdNTnawwas7xha9504yWTTOmM9q
+	ceXrezaLF/cuslj0LrjKZnG26Q27xabH11gtLu+aw2Yx4/w+Jot5h34zWtzdcJbRYsbkl2wO
+	PB6zGy6yeGz/9oDV4373cSaPzUvqPfq2rGL0+LxJLoAtissmJTUnsyy1SN8ugSvj8lfdgm7d
+	ih1/DrI2ME5X7mLk5JAQMJHovvSCBcIWk7hwbz0biC0ksJRR4s4COZia3U3dQDVcQPHpjBIz
+	T/9gB0nwCghK/Jh8DyjBwcEsIC9x5FI2SJhZQF1i0rxFzBD1rxglmi62M0HUa0nc/rMDzGYR
+	UJX49Ww92Bw2IHviivtgi0UFwiRevNrFDDJTBGjQrxtOIHOYBVaxSOyduJoZpEZYwFaiu+0F
+	O8SCs0wSN9rmsYIkOAWCJf5cOwyWkBBo5JCYcfw8G8Q2AYlvkw+BXSohICux6QAzxGeSEgdX
+	3GCZwCg2C8k/sxD+mYXknwWMzKsYRVMLkguKk9KLTPSKE3OLS/PS9ZLzczcxAqP19L9nE3Yw
+	3jtgfYgxGWjjRGYp0eR8YLTnlcQbGpsZWZiamBobmVuakSasJM6r9igpSEggPbEkNTs1tSC1
+	KL6oNCe1+BAjEwenVAPjWie56ef05kyaIroo4LD4i2czTkV1MyutC37338/YvXLC4gX95/+E
+	x8xQjn94s+i5Tt7thS9P7flvs+Yo91KVY1PZHFpav61xcbbats9qzWm2O5H7X/6XfGmx5a2X
+	05Suplbe8KoOo1UPJ/Ba7g78fEBjmdzmNSu4rE8GaYfxLLNrXu8fwJfyQYmlOCPRUIu5qDgR
+	AJ/gjkXsAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOKsWRmVeSWpSXmKPExsVy+t9jQd01OdnBBuevaVr0njvJZNE4Yz6r
+	xZWv79ksXty7yGLRu+Aqm8XZpjfsFpseX2O1uLxrDpvFjPP7mCzmHfrNaHF3w1lGixmTX7I5
+	8HjMbrjI4rH92wNWj/vdx5k8Ni+p9+jbsorR4/MmuQC2qAZGm4zUxJTUIoXUvOT8lMy8dFsl
+	7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygI5UUyhJzSoFCAYnFxUr6dpgmhIa46VrA
+	NEbo+oYEwfUYGaCBhDWMGZe/6hZ061bs+HOQtYFxunIXIyeHhICJxO6mbhYIW0ziwr31bF2M
+	XBxCAtMZJWae/sEOkuAVEJT4MfkeUBEHB7OAvMSRS9kgYWYBdYlJ8xYxQ9S/YpRoutjOBFGv
+	JXH7zw4wm0VAVeLXs/Vgc9iA7Ikr7rOB2KICYRIvXu1iBpkpAjTo1w0nkDnMAqtYJPZOXM0M
+	UiMsYCvR3faCHWLBWSaJG23zWEESnALBEn+uHWafwCgwC8l9sxDum4XkvgWMzKsYRVMLkguK
+	k9JzjfSKE3OLS/PS9ZLzczcxgpPBM+kdjKsaLA4xCnAwKvHwZjhnBQuxJpYVV+YeYpTgYFYS
+	4fXKzg4W4k1JrKxKLcqPLyrNSS0+xJgM9N1EZinR5HxgosoriTc0NjEzsjQyN7QwMjYnTVhJ
+	nPdgq3WgkEB6YklqdmpqQWoRzBYmDk6pBsZUU5P3LLcUPJO0H+YJyyxaZu7JOz2J6WHAHnYj
+	E+cnZb1WbvsLGfgCT9vGnN3FuDF/3cJgh7kN+gLnf2Xt/KPhqNJtvGJzmY+GK8cDq433XcVv
+	bmQM0dTK+PV7j5LRvFtnHGzt1OfO8Z92wXjm5LM6T27sCflUEnvMRP6XybwZU/avmFp4olSJ
+	pTgj0VCLuag4EQBRpCZkSgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomas,
+Hi Daniel,
 
-Thanks for your suggestion.
-I will add a new patch 17/17 at last.
----
+On 2014년 05월 08일 18:21, Daniel Kurtz wrote:
+> On Thu, May 8, 2014 at 12:33 PM, Seung-Woo Kim <sw0312.kim@samsung.com> wrote:
+>>
+>> Hello Daniel,
+>>
+>> On 2014년 05월 07일 23:14, Daniel Kurtz wrote:
+>>> On Wed, May 7, 2014 at 1:14 PM, Seung-Woo Kim <sw0312.kim@samsung.com> wrote:
+>>>> Hi Daniel,
+>>>>
+>>>> On 2014년 05월 05일 00:26, Daniel Kurtz wrote:
+>>>>> Mixer hardware supports offsetting dma from start of source buffer using
+>>>>> the MXR_GRP_SXY register.
+>>>>>
+>>>>> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+>>>>> ---
+>>>>>  drivers/gpu/drm/exynos/exynos_mixer.c | 8 +++-----
+>>>>>  1 file changed, 3 insertions(+), 5 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/gpu/drm/exynos/exynos_mixer.c b/drivers/gpu/drm/exynos/exynos_mixer.c
+>>>>> index 475eb49..40cf39b 100644
+>>>>> --- a/drivers/gpu/drm/exynos/exynos_mixer.c
+>>>>> +++ b/drivers/gpu/drm/exynos/exynos_mixer.c
+>>>>> @@ -529,13 +529,11 @@ static void mixer_graph_buffer(struct mixer_context *ctx, int win)
+>>>>>
+>>>>>       dst_x_offset = win_data->crtc_x;
+>>>>>       dst_y_offset = win_data->crtc_y;
+>>>>> +     src_x_offset = win_data->fb_x;
+>>>>> +     src_y_offset = win_data->fb_y;
+>>>>>
+>>>>>       /* converting dma address base and source offset */
+>>>>> -     dma_addr = win_data->dma_addr
+>>>>> -             + (win_data->fb_x * win_data->bpp >> 3)
+>>>>> -             + (win_data->fb_y * win_data->fb_width * win_data->bpp >> 3);
+>>>>> -     src_x_offset = 0;
+>>>>> -     src_y_offset = 0;
+>>>>> +     dma_addr = win_data->dma_addr;
+>>>>
+>>>> Basically, you are right and source offset register can be used. But
+>>>> because of limitation of resolution for mixer up to 1920x1080, I
+>>>> considered modified soruce dma address to set one frame buffer, which is
+>>>> bigger than 1920x1080, on to both fimd and hdmi.
+>>>
+>>> Hi Seung-Woo,
+>>>
+>>> I do not see why the maximum MIXER resolution matters for choosing
+>>> between offsetting BASE or using SXY.
+>>>
+>>> Let's say you have one big 1920x1908 framebuffer, with a span of 1920,
+>>> starting at dma_addr (there is no extra padding at the end of the
+>>> line).
+>>> Let's say you wanted the mixer to scan out 1920x1080 pixels starting
+>>> from (0, 800) in the framebuffer, and start drawing them at (0,0) on
+>>> the screen.
+>>>
+>>> What we currently do is:
+>>>   BASE = dma_addr + (800 * 1080 * 4)
+>>>   SPAN = 1920
+>>>   SXY = SX(0) | SY(0)
+>>>   WH = W(1920) | H(1080)
+>>>   DXY = DX(0) | DY(0)
+>>>
+>>> I am proposing we do:
+>>>   BASE = dma_addr
+>>>   SPAN = 1920
+>>>   SXY = SX(0) | SY(800)
+>>>   WH = W(1920) | H(1080)
+>>>   DXY = DX(0) | DY(0)
+>>>
+>>> In both cases, the mixer resolution is 1920x1080.
+>>
+>> In my test to show each half of big one framebuffer (3840 x 1080) to
+>> FIMD from 0 to 1079 and MIXER from 1080 to 3839 with exynos4210 and
+>> exynos4412, it was failed to show proper hdmi display. Also it is same
+>> for framebuffer (1920 x 2160). AFAIK, it is mainly because mixer dma has
+>> limitation of dma memory size.
+> 
+> 
+> That is unfortunate, but thank you for your explanation.
+> 
+> Is this limitation exynos4 specific, or does it also apply for the
+> exynos5 mixer?
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-08 17:45:34.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-08 17:45:52.000000000 +0800
-@@ -778,12 +778,11 @@ static int arcmsr_probe(struct pci_dev *
- 	}
- 	error = scsi_add_host(host, &pdev->dev);
- 	if(error){
--		goto RAID_controller_stop;
-+		goto free_ccb_pool;
- 	}
- 	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
- 		goto scsi_host_remove;
- 	arcmsr_iop_init(acb);
--    	scsi_scan_host(host);
- 	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
- 	atomic_set(&acb->rq_map_token, 16);
- 	atomic_set(&acb->ante_token_value, 16);
-@@ -795,13 +794,14 @@ static int arcmsr_probe(struct pci_dev *
- 	add_timer(&acb->eternal_timer);
- 	if(arcmsr_alloc_sysfs_attr(acb))
- 		goto out_free_sysfs;
-+    	scsi_scan_host(host);
- 	return 0;
- out_free_sysfs:
--scsi_host_remove:
--	scsi_remove_host(host);
--RAID_controller_stop:
- 	arcmsr_stop_adapter_bgrb(acb);
- 	arcmsr_flush_adapter_cache(acb);
-+scsi_host_remove:
-+	scsi_remove_host(host);
-+free_ccb_pool:
- 	arcmsr_free_ccb_pool(acb);
- free_hbb_mu:
- 	arcmsr_free_mu(acb);
+It seems that exynos5260/5420 mixers also have same limitation: SX/Y
+fields is 11 bits.
 
-
-
-On Wed, 2014-05-07 at 16:31 +0200, Tomas Henzl wrote:
-> On 05/07/2014 01:52 PM, ching wrote:
-> > From: Ching<ching2048@areca.com.tw>
-> >
-> > Adding code to support MSI-X interrupt.
-> >
-> > This update has made change by Tomas' and Alexander's suggestion.
-> >
-> > Signed-off-by: Ching<ching2048@areca.com.tw>
-> > ---
-> >
-> > diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
-> > --- a/drivers/scsi/arcmsr/arcmsr.h	2014-04-28 16:02:46.000000000 +0800
-> > +++ b/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:24:36.000000000 +0800
-> > @@ -64,6 +64,7 @@ struct device_attribute;
-> >  #define ARCMSR_MAX_HBB_POSTQUEUE						264
-> >  #define ARCMSR_MAX_XFER_LEN							0x26000 /* 152K */
-> >  #define ARCMSR_CDB_SG_PAGE_LENGTH						256 
-> > +#define ARCMST_NUM_MSIX_VECTORS		4
-> >  #ifndef PCI_DEVICE_ID_ARECA_1880
-> >  #define PCI_DEVICE_ID_ARECA_1880 0x1880
-> >   #endif
-> > @@ -508,6 +509,7 @@ struct AdapterControlBlock
-> >  	struct pci_dev *		pdev;
-> >  	struct Scsi_Host *		host;
-> >  	unsigned long			vir2phy_offset;
-> > +	struct msix_entry	entries[ARCMST_NUM_MSIX_VECTORS];
-> >  	/* Offset is used in making arc cdb physical to virtual calculations */
-> >  	uint32_t			outbound_int_enable;
-> >  	uint32_t			cdb_phyaddr_hi32;
-> > @@ -544,6 +546,8 @@ struct AdapterControlBlock
-> >  	/* iop init */
-> >  	#define ACB_F_ABORT				0x0200
-> >  	#define ACB_F_FIRMWARE_TRAP           		0x0400
-> > +	#define ACB_F_MSI_ENABLED		0x1000
-> > +	#define ACB_F_MSIX_ENABLED		0x2000
-> >  	struct CommandControlBlock *			pccb_pool[ARCMSR_MAX_FREECCB_NUM];
-> >  	/* used for memory free */
-> >  	struct list_head		ccb_free_list;
-> > @@ -594,6 +598,7 @@ struct AdapterControlBlock
-> >  				#define	FW_DEADLOCK	0x0010
-> >  	atomic_t 			rq_map_token;
-> >  	atomic_t			ante_token_value;
-> > +	int		msix_vector_count;
-> >  };/* HW_DEVICE_EXTENSION */
-> >  /*
-> >  *******************************************************************************
-> > diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
-> > --- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-28 15:58:34.000000000 +0800
-> > +++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-07 18:42:40.000000000 +0800
-> > @@ -603,6 +603,60 @@ static void arcmsr_message_isr_bh_fn(str
-> >  	}
-> >  }
-> >  
-> > +static int
-> > +arcmsr_request_irq(struct pci_dev *pdev, struct AdapterControlBlock *acb)
-> > +{
-> > +	int	i, j, r;
-> > +	struct msix_entry entries[ARCMST_NUM_MSIX_VECTORS];
-> > +
-> > +	if (!pci_find_capability(pdev, PCI_CAP_ID_MSIX))
-> > +		goto msi_int;
-> > +	for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++)
-> > +		entries[i].entry = i;
-> > +	r = pci_enable_msix_range(pdev, entries, 1, ARCMST_NUM_MSIX_VECTORS);
-> > +	if (r < 0)
-> > +		goto msi_int;
-> > +	acb->msix_vector_count = r;
-> > +	for (i = 0; i < r; i++) {
-> > +		if (request_irq(entries[i].vector,
-> > +			arcmsr_do_interrupt, 0, "arcmsr", acb)) {
-> > +			pr_warn("arcmsr%d: request_irq =%d failed!\n",
-> > +				acb->host->host_no, pdev->irq);
-> > +			for (j = 0 ; j < i ; j++)
-> > +				free_irq(entries[j].vector, acb);
-> > +			pci_disable_msix(pdev);
-> > +			goto msi_int;
-> > +		}
-> > +		acb->entries[i] = entries[i];
-> > +	}
-> > +	acb->acb_flags |= ACB_F_MSIX_ENABLED;
-> > +	pr_info("arcmsr%d: msi-x enabled\n", acb->host->host_no);
-> > +	return ARC_SUCCESS;
-> > +msi_int:
-> > +	if (!pci_find_capability(pdev, PCI_CAP_ID_MSI))
-> > +		goto legacy_int;
-> > +	if (pci_enable_msi_range(pdev, 1, 1) < 0)
-> > +		goto legacy_int;
-> > +	if (request_irq(pdev->irq, arcmsr_do_interrupt,
-> > +		IRQF_SHARED, "arcmsr", acb)) {
-> > +		pr_warn("arcmsr%d: request_irq =%d failed!\n",
-> > +			acb->host->host_no, pdev->irq);
-> > +		pci_disable_msi(pdev);
-> > +		goto legacy_int;
-> > +	}
-> > +	acb->acb_flags |= ACB_F_MSI_ENABLED;
-> > +	pr_info("arcmsr%d: msi enabled\n", acb->host->host_no);
-> > +	return ARC_SUCCESS;
-> > +legacy_int:
-> > +	if (request_irq(pdev->irq, arcmsr_do_interrupt,
-> > +		IRQF_SHARED, "arcmsr", acb)) {
-> > +		pr_warn("arcmsr%d: request_irq = %d failed!\n",
-> > +			acb->host->host_no, pdev->irq);
-> > +		return ARC_FAILURE;
-> > +	}
-> > +	return ARC_SUCCESS;
-> > +}
-> > +
-> >  static int arcmsr_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-> >  {
-> >  	struct Scsi_Host *host;
-> > @@ -667,16 +721,13 @@ static int arcmsr_probe(struct pci_dev *
-> >  	if(error){
-> >  		goto free_hbb_mu;
-> >  	}
-> > -	arcmsr_iop_init(acb);
-> >  	error = scsi_add_host(host, &pdev->dev);
-> >  	if(error){
-> >  		goto RAID_controller_stop;
-> Hi Ching,
-> you have moved the arcmsr_iop_init so you probably
-> should accordingly rewrite the error path handling at the end of this function
-> I don't know if it is a problem when you call arcmsr_stop_adapter_bgrb
-> without a starting it before
-> Also when you allocate the irq you could free the irq in out_free_sysfs:  
-> When you change all this you could consider moving the scsi_scan_host
-> more towards the end of that function so it's called after everything else 
-> is initiated, that can be made in another patch later.
-> -tomas
-> >
-> >
-> >
-> >
-> >
-> >  	}
-> > -	error = request_irq(pdev->irq, arcmsr_do_interrupt, IRQF_SHARED, "arcmsr", acb);
-> > -	if(error){
-> > +	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
-> >  		goto scsi_host_remove;
-> > -	}
-> > -	host->irq = pdev->irq;
-> > +	arcmsr_iop_init(acb);
-> >      	scsi_scan_host(host);
-> >  	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
-> >  	atomic_set(&acb->rq_map_token, 16);
-> > @@ -710,6 +761,21 @@ pci_disable_dev:
-> >  	return -ENODEV;
-> >  }
-> >  
-> > +static void arcmsr_free_irq(struct pci_dev *pdev, struct AdapterControlBlock *acb)
-> > +{
-> > +	int i;
-> > +
-> > +	if (acb->acb_flags & ACB_F_MSI_ENABLED) {
-> > +		free_irq(pdev->irq, acb);
-> > +		pci_disable_msi(pdev);
-> > +	} else if (acb->acb_flags & ACB_F_MSIX_ENABLED) {
-> > +		for (i = 0; i < acb->msix_vector_count; i++)
-> > +			free_irq(acb->entries[i].vector, acb);
-> > +		pci_disable_msix(pdev);
-> > +	} else
-> > +		free_irq(pdev->irq, acb);
-> > +}
-> > +
-> >  static uint8_t arcmsr_abort_hba_allcmd(struct AdapterControlBlock *acb)
-> >  {
-> >  	struct MessageUnit_A __iomem *reg = acb->pmuA;
-> > @@ -992,6 +1058,7 @@ static void arcmsr_done4abort_postqueue(
-> >  	}
-> >  	}
-> >  }
-> > +
-> >  static void arcmsr_remove(struct pci_dev *pdev)
-> >  {
-> >  	struct Scsi_Host *host = pci_get_drvdata(pdev);
-> > @@ -1029,7 +1096,7 @@ static void arcmsr_remove(struct pci_dev
-> >  			}
-> >  		}
-> >  	}
-> > -	free_irq(pdev->irq, acb);
-> > +	arcmsr_free_irq(pdev, acb);
-> >  	arcmsr_free_ccb_pool(acb);
-> >  	arcmsr_free_hbb_mu(acb);
-> >  	arcmsr_unmap_pciregion(acb);
-> > @@ -1045,6 +1112,7 @@ static void arcmsr_shutdown(struct pci_d
-> >  		(struct AdapterControlBlock *)host->hostdata;
-> >  	del_timer_sync(&acb->eternal_timer);
-> >  	arcmsr_disable_outbound_ints(acb);
-> > +	arcmsr_free_irq(pdev, acb);
-> >  	flush_work(&acb->arcmsr_do_message_isr_bh);
-> >  	arcmsr_stop_adapter_bgrb(acb);
-> >  	arcmsr_flush_adapter_cache(acb);
-> > @@ -2516,8 +2584,6 @@ static int arcmsr_iop_confirm(struct Ada
-> >  	case ACB_ADAPTER_TYPE_A: {
-> >  		if (cdb_phyaddr_hi32 != 0) {
-> >  			struct MessageUnit_A __iomem *reg = acb->pmuA;
-> > -			uint32_t intmask_org;
-> > -			intmask_org = arcmsr_disable_outbound_ints(acb);
-> >  			writel(ARCMSR_SIGNATURE_SET_CONFIG, \
-> >  						&reg->message_rwbuffer[0]);
-> >  			writel(cdb_phyaddr_hi32, &reg->message_rwbuffer[1]);
-> > @@ -2529,7 +2595,6 @@ static int arcmsr_iop_confirm(struct Ada
-> >  				acb->host->host_no);
-> >  				return 1;
-> >  			}
-> > -			arcmsr_enable_outbound_ints(acb, intmask_org);
-> >  		}
-> >  		}
-> >  		break;
-> > @@ -2539,8 +2604,6 @@ static int arcmsr_iop_confirm(struct Ada
-> >  		uint32_t __iomem *rwbuffer;
-> >  
-> >  		struct MessageUnit_B *reg = acb->pmuB;
-> > -		uint32_t intmask_org;
-> > -		intmask_org = arcmsr_disable_outbound_ints(acb);
-> >  		reg->postq_index = 0;
-> >  		reg->doneq_index = 0;
-> >  		writel(ARCMSR_MESSAGE_SET_POST_WINDOW, reg->drv2iop_doorbell);
-> > @@ -2569,7 +2632,6 @@ static int arcmsr_iop_confirm(struct Ada
-> >  			return 1;
-> >  		}
-> >  		arcmsr_hbb_enable_driver_mode(acb);
-> > -		arcmsr_enable_outbound_ints(acb, intmask_org);
-> >  		}
-> >  		break;
-> >  	case ACB_ADAPTER_TYPE_C: {
-> >
-> >
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Was the limitation perhaps the number of bits in the SXY register
+> fields (< 11) on those devices?
+> For 5250/5420 these fields are 11 bits, and I don't see any
+> restrictions about "dma memory size" in the documentation that I have.
 > 
 
+So I guess that the reason Mixer controller was operated incorrectly is
+that SX/Y fields exceed maximum value (2047) by itself when he
+calculates DMA address to access the memory region: the value of SX/Y
+fields would be increased by Mixer controller internally until reaching
+width or height, and in turn the value would exceed 2047.
+
+So I think it'd better to use existing codes because this patch isn't
+tested so not safe. You can add more comments enough to existing codes
+if needed.
+
+In addition, it seems that Exynos5422/5430 has no such limitation but
+they are much different from old ones so we would need new drivers for them.
+
+Thanks,
+Inki Dae
+
+> Thanks,
+> -Dan
+> 
+>> In this case, I set register as like:
+>>   BASE = dma_addr /* 3840 x 1080 x 4 */
+>>   SPAN = 3840
+>>   SXY = SX(1920) | SY(0)
+>>   WH = W(1920) | H(1080)
+>>   DXY = DX(0) | DY(0)
+>> or:
+>>   BASE = dma_addr /* 1920 x 2160 x 4 */
+>>   SPAN = 1920
+>>   SXY = SX(0) | SY(1080)
+>>   WH = W(1920) | H(1080)
+>>   DXY = DX(0) | DY(0)
+>> but these two setting did not show hdmi display as I expected. So I used
+>> modified dma address.
+>>
+>>>
+>>> My motivation for wanting to program an un-modified dma_addr into BASE
+>>> is so we can then just check BASE_S to determine from which buffer the
+>>> mixer is actively being scanned out without worrying about the source
+>>> offset, since the source offset can change for a given framebuffer
+>>> (for example, when doing panning, or if an overlay is used for a HW
+>>> cursor).
+>>
+>> Actually, this patch is exactly same with my first implementation, so I
+>> completely understand your motivation. Anyway, I was focus on extended
+>> displays with one buffer, so I wrote modified dma base address.
+>>
+>> Thanks and Regards,
+>> - Seung-Woo Kim
+>>
+>>>
+>>> Best Regards,
+>>> -Daniel
+>>>
+>>>>
+>>>> Regards,
+>>>> - Seung-Woo Kim
+>>>>
+>>>>>
+>>>>>       if (win_data->scan_flags & DRM_MODE_FLAG_INTERLACE)
+>>>>>               ctx->interlace = true;
+>>>>>
+>>>>
+>>>> --
+>>>> Seung-Woo Kim
+>>>> Samsung Software R&D Center
+>>>> --
+>>>>
+>>>
+>>
+>> --
+>> Seung-Woo Kim
+>> Samsung Software R&D Center
+>> --
+>>
+> 
 
