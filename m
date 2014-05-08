@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753097AbaEHGOz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 02:14:55 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:38182 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068AbaEHGOy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 02:14:54 -0400
-Date: Thu, 8 May 2014 08:14:49 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Romain Izard <romain.izard.pro@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] trace: module: Maintain a valid user count
-Message-ID: <20140508061449.GC31184@gmail.com>
-References: <20140303133330.7031b2cb@gandalf.local.home>
- <1393924179-9147-1-git-send-email-romain.izard.pro@gmail.com>
- <20140306123403.5f29c071@gandalf.local.home>
- <20140507192335.GA23409@gmail.com>
- <20140507154111.6ba752cb@gandalf.local.home>
+	id S1753118AbaEHGQR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 02:16:17 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:46126 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751506AbaEHGQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 02:16:15 -0400
+Date: Thu, 8 May 2014 11:46:58 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>, linuxppc-dev@lists.ozlabs.org,
+        rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFT PATCH -next ] [BUGFIX] kprobes: Fix "Failed to find
+ blacklist" error on ia64 and ppc64
+Message-ID: <20140508061658.GA2384@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <536A16A6.5040709@hitachi.com>
+ <20140507115551.22259.70581.stgit@ltc230.yrl.intra.hitachi.co.jp>
+ <20140508044753.GA13413@in.ibm.com>
+ <536B18B0.9060209@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140507154111.6ba752cb@gandalf.local.home>
+In-Reply-To: <536B18B0.9060209@hitachi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050806-7182-0000-0000-00000A87F819
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Wed, 7 May 2014 21:23:36 +0200
-> Ingo Molnar <mingo@kernel.org> wrote:
+On Thu, May 08, 2014 at 02:40:00PM +0900, Masami Hiramatsu wrote:
+> (2014/05/08 13:47), Ananth N Mavinakayanahalli wrote:
+> > On Wed, May 07, 2014 at 08:55:51PM +0900, Masami Hiramatsu wrote:
+> > 
+> > ...
+> > 
+> >> +#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
+> >> +/*
+> >> + * On PPC64 ABIv1 the function pointer actually points to the
+> >> + * function's descriptor. The first entry in the descriptor is the
+> >> + * address of the function text.
+> >> + */
+> >> +#define constant_function_entry(fn)	(((func_descr_t *)(fn))->entry)
+> >> +#else
+> >> +#define constant_function_entry(fn)	((unsigned long)(fn))
+> >> +#endif
+> >> +
+> >>  #endif /* __ASSEMBLY__ */
+> > 
+> > Hi Masami,
+> > 
+> > You could just use ppc_function_entry() instead.
 > 
-> > 
-> > * Steven Rostedt <rostedt@goodmis.org> wrote:
-> > 
-> > > Ingo,
-> > > 
-> > > You want to push this to Linus?
-> > > 
-> > > Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-> > 
-> > I think it would be more natural through the tracing tree, through 
-> > which most tracepoint fixes go, agreed?
-> > 
+> No, I think ppc_function_entry() has two problems (on the latest -next kernel)
 > 
-> Hmm, yeah. Not sure why I pushed it off to you :-/
+> At first, that is an inlined functions which is not applied in build time.
+> Since the NOKPROBE_SYMBOL() is used outside of any functions as like as
+> EXPORT_SYMBOL(), we can only use preprocessed macros.
+> Next, on PPC64 ABI*v2*, ppc_function_entry() returns local function entry,
+> which seems global function entry + 2 insns. I'm not sure about implementation
+> of the kallsyms on PPC64 ABIv2, but I guess we need global function entry
+> for kallsyms.
 
-To check whether I'm awake, I'm sure!
+ABIv2 does away with function descriptors and Anton fixed up that
+routine to handle the change (the +2 is an artefact of that).
 
-> Looks like this should be marked as stable and incorporated in 3.15 
-> as well.
+> BTW, could you test this patch on the latest -next tree on PPC64 if possible?
 
-Yeah.
+I'll test it, but it may take a bit.
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
+Ananth
 
-Thanks,
-
-	Ingo
