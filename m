@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694AbaEHNw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 09:52:59 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:51926 "EHLO
+	id S1753963AbaEHNxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 09:53:10 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:64264 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753562AbaEHNw4 (ORCPT
+	with ESMTP id S1753770AbaEHNxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 09:52:56 -0400
+	Thu, 8 May 2014 09:53:08 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org
-Subject: [PATCH 1/8] usb/gadget: s3c2410_udc: don't use pr_debug return value
-Date: Thu,  8 May 2014 15:52:14 +0200
-Message-Id: <1399557141-1346645-2-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Mathias Nyman <mathias.nyman@intel.com>
+Subject: [PATCH 6/8] usb: xhci: avoid warning for !PM_SLEEP
+Date: Thu,  8 May 2014 15:52:19 +0200
+Message-Id: <1399557141-1346645-7-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1399557141-1346645-1-git-send-email-arnd@arndb.de>
 References: <1399557141-1346645-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:Akbpa5qCtjX8w3cmTKU3SIf3PhQtN5SlLdoKDEqG5VK
- rmJcBsVybQi45CHJgQQDddlTaT81cXzAQYsZfcxixIV2uLnrbr
- 1qjsnfsrnguPdoYl87Pg9CxojIaHECQeN0h9Gdf5vGDvZkZQX+
- vdD6UmfC8K8zegntNC4lXiOGT6sluxK+6v92YEgZ6NNjJ6L0fL
- ENDeHQUZybH9takW4y8uD3KMWBHdSpCONyVnW0H9MlZH+abLqo
- GAwbkycTflK4erdeqmKE5zZbV/WPz/0KdyYluN/gnM1HQuUqBc
- l9GZSNvcU0eLmllA4VPL3UQDmENhpWT0095eAKh5R708+96MCC
- NAQrhG4oSzzvQpU3582oMaApQZWQqQMvVZUWDkKLk
+X-Provags-ID: V02:K0:rU60RFVzzbP7egJHIwxmaUOPiCVUrvBuFR6NHVT2TPv
+ uoCuGPt4RfJIdmzk3RIRNRqNZxEEeFi70s0qiN7tRZGmmRfGkV
+ IywlTvh+IhwiH0LuCRFczLQXL9C4ovvsCQEE+0ECaHdYouZ7zm
+ rpLoO1WNOdgY3wmHWCRNE+lf1y42+8XfEhjI+EwPljuh775/Ug
+ R3nkr/zGz7uB+RF5wIC+tQ081GVr6h2L8ObCqaIyKGBpjEsEkB
+ hwOd32rvNjf6ppmO5DJ/2bYbykr9GgC1fhxsIGoXQYIULgVv57
+ iq4COthqk46DOSaSfshqxQPvVG1M8nolxXYBI0oO6gvjd45CoR
+ dTjHsXmKHuftQcDXRv/Emst6ZxCeceGxXVu+rX1N/
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pr_debug() may be defined as "do { } while (0)" in some configurations,
-which means one cannot rely on the return value to be available.
+If we build a kernel with PM_SUSPEND set and no PM_SLEEP,
+we get a build warning in the xhci-plat driver about unused
+functions.
 
-In the dprintk function in this driver, we can work around the
-resulting build error trivially by returning the length that
-this function already knows and ignoring the return value of
-pr_debug.
+To fix this, use "#ifdef CONFIG_PM_SLEEP", like we do in most
+other drivers nowadays.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org
+Cc: Mathias Nyman <mathias.nyman@intel.com>
 ---
- drivers/usb/gadget/s3c2410_udc.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci-plat.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/gadget/s3c2410_udc.c b/drivers/usb/gadget/s3c2410_udc.c
-index dd9678f..7987aa0 100644
---- a/drivers/usb/gadget/s3c2410_udc.c
-+++ b/drivers/usb/gadget/s3c2410_udc.c
-@@ -117,7 +117,8 @@ static int dprintk(int level, const char *fmt, ...)
- 			sizeof(printk_buf)-len, fmt, args);
- 	va_end(args);
- 
--	return pr_debug("%s", printk_buf);
-+	pr_debug("%s", printk_buf);
-+	return len;
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index 151901c..3473296 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -202,7 +202,7 @@ static int xhci_plat_remove(struct platform_device *dev)
+ 	return 0;
  }
- #else
- static int dprintk(int level, const char *fmt, ...)
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ static int xhci_plat_suspend(struct device *dev)
+ {
+ 	struct usb_hcd	*hcd = dev_get_drvdata(dev);
 -- 
 1.8.3.2
 
