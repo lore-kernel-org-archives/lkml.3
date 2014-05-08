@@ -1,54 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761AbaEHKsN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 06:48:13 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:57880 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027AbaEHKsL (ORCPT
+	id S1754773AbaEHKsZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 06:48:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33462 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448AbaEHKsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 06:48:11 -0400
-From: "xiaofeng.yan" <xiaofeng.yan@huawei.com>
-To: <linux-kernel@vger.kernel.org>, <mingo@redhat.com>, <peterz@infradead.org>
-CC: <xiaofeng_yan2004@126.com>, "xiaofeng.yan" <xiaofeng.yan@huawei.com>
-Subject: [PATCH] sched/rt: Fix a comment in struct sched_dl_entity
-Date: Thu, 8 May 2014 10:31:20 +0000
-Message-ID: <1399545080-17823-1-git-send-email-xiaofeng.yan@huawei.com>
-X-Mailer: git-send-email 1.8.3.4
+	Thu, 8 May 2014 06:48:12 -0400
+Date: Thu, 8 May 2014 03:47:40 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-cc6vb0snt3sr7op6rlbfeqfh@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        nicolas.pitre@linaro.org, tglx@linutronix.de,
+        daniel.lezcano@linaro.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        nicolas.pitre@linaro.org, tglx@linutronix.de,
+        daniel.lezcano@linaro.org
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/idle: Reflow cpuidle_idle_call()
+Git-Commit-ID: 37352273ad48f2d177ed1b06ced32d5536b773fb
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.241]
-X-CFilter-Loop: Reflected
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change sched_setscheduler2() to sched_setscheduler() in the comments.
-There isn't function sched_setscheduler2() in the main line.
-The previous EDF version defines this function
-before being merged into the main line.
-User should use sched_setscheduler() instead of
-sched_setscheduler2() now.
+Commit-ID:  37352273ad48f2d177ed1b06ced32d5536b773fb
+Gitweb:     http://git.kernel.org/tip/37352273ad48f2d177ed1b06ced32d5536b773fb
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Fri, 11 Apr 2014 13:55:48 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 8 May 2014 09:16:59 +0200
 
-Signed-off-by: xiaofeng.yan <xiaofeng.yan@huawei.com>
+sched/idle: Reflow cpuidle_idle_call()
+
+Apply goto to reduce lines and nesting levels.
+
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/n/tip-cc6vb0snt3sr7op6rlbfeqfh@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/sched.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched/idle.c | 131 +++++++++++++++++++++++-----------------------------
+ 1 file changed, 58 insertions(+), 73 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 25f54c7..fe263e7 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1123,8 +1123,8 @@ struct sched_dl_entity {
+diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+index ed67f0c..88a6bc4 100644
+--- a/kernel/sched/idle.c
++++ b/kernel/sched/idle.c
+@@ -73,7 +73,7 @@ static int cpuidle_idle_call(void)
+ {
+ 	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+ 	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+-	int next_state, entered_state, ret;
++	int next_state, entered_state;
+ 	bool broadcast;
  
  	/*
- 	 * Original scheduling parameters. Copied here from sched_attr
--	 * during sched_setscheduler2(), they will remain the same until
--	 * the next sched_setscheduler2().
-+	 * during sched_setscheduler(), they will remain the same until
-+	 * the next sched_setscheduler().
+@@ -102,90 +102,75 @@ static int cpuidle_idle_call(void)
+ 	 * Check if the cpuidle framework is ready, otherwise fallback
+ 	 * to the default arch specific idle method
  	 */
- 	u64 dl_runtime;		/* maximum runtime for each instance	*/
- 	u64 dl_deadline;	/* relative deadline of each instance	*/
--- 
-1.7.9.5
-
+-	ret = cpuidle_enabled(drv, dev);
+-
+-	if (!ret) {
+-		/*
+-		 * Ask the governor to choose an idle state it thinks
+-		 * it is convenient to go to. There is *always* a
+-		 * convenient idle state
+-		 */
+-		next_state = cpuidle_select(drv, dev);
+-
++	if (cpuidle_enabled(drv, dev)) {
++use_default:
+ 		/*
+-		 * The idle task must be scheduled, it is pointless to
+-		 * go to idle, just update no idle residency and get
+-		 * out of this function
++		 * We can't use the cpuidle framework, let's use the default
++		 * idle routine.
+ 		 */
+-		if (current_clr_polling_and_test()) {
+-			dev->last_residency = 0;
+-			entered_state = next_state;
++		if (current_clr_polling_and_test())
+ 			local_irq_enable();
+-		} else {
+-			broadcast = !!(drv->states[next_state].flags &
+-				       CPUIDLE_FLAG_TIMER_STOP);
+-
+-			if (broadcast) {
+-				/*
+-				 * Tell the time framework to switch
+-				 * to a broadcast timer because our
+-				 * local timer will be shutdown. If a
+-				 * local timer is used from another
+-				 * cpu as a broadcast timer, this call
+-				 * may fail if it is not available
+-				 */
+-				ret = clockevents_notify(
+-					CLOCK_EVT_NOTIFY_BROADCAST_ENTER,
+-					&dev->cpu);
+-			}
+-
+-			if (!ret) {
+-				trace_cpu_idle_rcuidle(next_state, dev->cpu);
+-
+-				/*
+-				 * Enter the idle state previously
+-				 * returned by the governor
+-				 * decision. This function will block
+-				 * until an interrupt occurs and will
+-				 * take care of re-enabling the local
+-				 * interrupts
+-				 */
+-				entered_state = cpuidle_enter(drv, dev,
+-							      next_state);
+-
+-				trace_cpu_idle_rcuidle(PWR_EVENT_EXIT,
+-						       dev->cpu);
+-
+-				if (broadcast)
+-					clockevents_notify(
+-						CLOCK_EVT_NOTIFY_BROADCAST_EXIT,
+-						&dev->cpu);
+-
+-				/*
+-				 * Give the governor an opportunity to reflect on the
+-				 * outcome
+-				 */
+-				cpuidle_reflect(dev, entered_state);
+-			}
+-		}
++		else
++			arch_cpu_idle();
++
++		goto exit_idle;
+ 	}
+ 
+ 	/*
+-	 * We can't use the cpuidle framework, let's use the default
+-	 * idle routine
++	 * Ask the governor to choose an idle state it thinks
++	 * it is convenient to go to. There is *always* a
++	 * convenient idle state
+ 	 */
+-	if (ret) {
+-		if (!current_clr_polling_and_test())
+-			arch_cpu_idle();
+-		else
+-			local_irq_enable();
++	next_state = cpuidle_select(drv, dev);
++
++	/*
++	 * The idle task must be scheduled, it is pointless to
++	 * go to idle, just update no idle residency and get
++	 * out of this function
++	 */
++	if (current_clr_polling_and_test()) {
++		dev->last_residency = 0;
++		entered_state = next_state;
++		local_irq_enable();
++		goto exit_idle;
+ 	}
+ 
++	broadcast = !!(drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP);
++
++	/*
++	 * Tell the time framework to switch to a broadcast timer
++	 * because our local timer will be shutdown. If a local timer
++	 * is used from another cpu as a broadcast timer, this call may
++	 * fail if it is not available
++	 */
++	if (broadcast &&
++	    clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu))
++		goto use_default;
++
++	trace_cpu_idle_rcuidle(next_state, dev->cpu);
++
++	/*
++	 * Enter the idle state previously returned by the governor decision.
++	 * This function will block until an interrupt occurs and will take
++	 * care of re-enabling the local interrupts
++	 */
++	entered_state = cpuidle_enter(drv, dev, next_state);
++
++	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
++
++	if (broadcast)
++		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
++
++	/*
++	 * Give the governor an opportunity to reflect on the outcome
++	 */
++	cpuidle_reflect(dev, entered_state);
++
++exit_idle:
+ 	__current_set_polling();
+ 
+ 	/*
+-	 * It is up to the idle functions to enable back the local
+-	 * interrupt
++	 * It is up to the idle functions to reenable local interrupts
+ 	 */
+ 	if (WARN_ON_ONCE(irqs_disabled()))
+ 		local_irq_enable();
