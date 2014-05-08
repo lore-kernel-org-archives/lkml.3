@@ -1,143 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058AbaEHDUa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 23:20:30 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35252 "EHLO
+	id S1753154AbaEHDVO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 23:21:14 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35268 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753016AbaEHDUZ (ORCPT
+	with ESMTP id S1753121AbaEHDVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 23:20:25 -0400
-Date: Wed, 7 May 2014 22:17:00 -0500
+	Wed, 7 May 2014 23:21:11 -0400
+Date: Wed, 7 May 2014 22:19:49 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Chen-Yu Tsai <wens@csie.org>, Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Hans de Goede <hdegoede@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [PATCH v2 7/7] ARM: sunxi: dt: add PRCM clk and reset controller
- subdevices
-Message-ID: <20140508031700.GO7047@lukather>
-References: <1399483554-8824-1-git-send-email-boris.brezillon@free-electrons.com>
- <1399483554-8824-8-git-send-email-boris.brezillon@free-electrons.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v7] DMA: sun6i: Add driver for the Allwinner A31 DMA
+ controller
+Message-ID: <20140508031949.GQ7047@lukather>
+References: <20140430070408.GR32284@intel.com>
+ <20140430215322.GH3000@lukather>
+ <20140502163429.GA32284@intel.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/UvyDgxjlFfP/4zZ"
+	protocol="application/pgp-signature"; boundary="ZqRzwd/9tauJXEMK"
 Content-Disposition: inline
-In-Reply-To: <1399483554-8824-8-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <20140502163429.GA32284@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---/UvyDgxjlFfP/4zZ
+--ZqRzwd/9tauJXEMK
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, May 07, 2014 at 07:25:54PM +0200, Boris BREZILLON wrote:
-> Add DT definitions for PRCM (Power/Reset/Clock Management) clock and reset
-> controller subdevices.
+On Fri, May 02, 2014 at 10:04:29PM +0530, Vinod Koul wrote:
+> On Wed, Apr 30, 2014 at 02:53:22PM -0700, Maxime Ripard wrote:
+> > Hi Vinod,
+> >=20
+> > On Wed, Apr 30, 2014 at 12:34:08PM +0530, Vinod Koul wrote:
+> > > On Thu, Apr 24, 2014 at 04:22:44PM +0200, Maxime Ripard wrote:
+> > > > +static inline void sun6i_dma_free(struct sun6i_dma_dev *sdc)
+> > > > +{
+> > > > +	int i;
+> > > > +
+> > > > +	for (i =3D 0; i < NR_MAX_VCHANS; i++) {
+> > > > +		struct sun6i_vchan *vchan =3D &sdc->vchans[i];
+> > > > +
+> > > > +		list_del(&vchan->vc.chan.device_node);
+> > > > +		tasklet_kill(&vchan->vc.task);
+> > > > +	}
+> > > > +
+> > > > +	tasklet_kill(&sdc->task);
+> > > This is again not good. see http://lwn.net/Articles/588457/
+> > > At this point HW can still generate interrupts or you can have irq ru=
+nning!
+> >=20
+> > I'm not sure to fully understand the issue here, but what is not good?
+> > the first or the second tasklet_kill calls, or both?
+> >=20
+> > From what I understood, the issue is only there whenever you are
+> > calling tasklet_disable without making sure that no one will schedule
+> > your tasklet before disabling it.
+> >=20
+> > But the point is I don't actually use either _enable/_disable. I might
+> > be wrong in not using those functions, but I don't really see how I
+> > can be impacted.
 >=20
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
->  arch/arm/boot/dts/sun6i-a31.dtsi | 39 ++++++++++++++++++++++++++++++++++=
-++++-
->  1 file changed, 38 insertions(+), 1 deletion(-)
->=20
-> diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a=
-31.dtsi
-> index ec3253a..b69be0b 100644
-> --- a/arch/arm/boot/dts/sun6i-a31.dtsi
-> +++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-> @@ -498,9 +498,46 @@
->  			reg =3D <0x01f01c00 0x300>;
->  		};
-> =20
-> -		prcm@01f01c00 {
-> +		prcm@01f01400 {
+> Well that was one part of it. How do you ensure the tasklet is not schedu=
+led
+> while and after you are killing it. You need to ensure irq is disabled an=
+d pending irqs
+> have finished processing. I dont see that bit.
 
-This has already been fixed by Hans.
+Ok. I'll change that.
 
->  			compatible =3D "allwinner,sun6i-a31-prcm";
->  			reg =3D <0x01f01400 0x200>;
-> +
-> +			ar100: ar100_clk {
-> +				compatible =3D "allwinner,sun6i-a31-ar100-clk";
-> +				#clock-cells =3D <0>;
-> +				clocks =3D <&osc32k>, <&osc24M>, <&pll6>, <&pll6>;
-> +			};
-> +
-> +			ahb0: ahb0_clk {
-> +				compatible =3D "fixed-factor-clock";
-> +				#clock-cells =3D <0>;
-> +				clock-div =3D <1>;
-> +				clock-mult =3D <1>;
-> +				clocks =3D <&ar100>;
-> +				clock-output-names =3D "ahb0";
-> +			};
-> +
-> +			apb0: apb0_clk {
-> +				compatible =3D "allwinner,sun6i-a31-apb0-clk";
-> +				#clock-cells =3D <0>;
-> +				clocks =3D <&ahb0>;
-> +				clock-output-names =3D "apb0";
-> +			};
-> +
-> +			apb0_gates: apb0_gates_clk {
-> +				compatible =3D "allwinner,sun6i-a31-apb0-gates-clk";
-> +				#clock-cells =3D <1>;
-> +				clocks =3D <&apb0>;
-> +				clock-output-names =3D "apb0_pio", "apb0_ir",
-> +						"apb0_timer01", "apb0_p2wi",
+Do you want me to use tasklet_enable and tasklet_disable as well?
 
-timer01 ? is this a typo?
-
-> +						"apb0_uart", "apb0_1wire",
-> +						"apb0_i2c";
-> +			};
-> +
-> +			apb0_rst: apb0_rst {
-> +				compatible =3D "allwinner,sun6i-a31-clock-reset";
-> +				#reset-cells =3D <1>;
-> +			};
->  		};
->  	};
->  };
-> --=20
-> 1.8.3.2
->=20
+Thanks!
+Maxime
 
 --=20
 Maxime Ripard, Free Electrons
 Embedded Linux, Kernel and Android engineering
 http://free-electrons.com
 
---/UvyDgxjlFfP/4zZ
+--ZqRzwd/9tauJXEMK
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.14 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTavcsAAoJEBx+YmzsjxAgsqkQAJfau7sAK5Unc1lvf5Rjtx0o
-kc8qgAG4TBJc7sVpeG3iYqzyQYgRbJ+z1St7HdiD3D5Dj/efkE+zENcnBoxYheU9
-0lTnw2nc9eRVDW1YY5yN9Mvzdp6MEv67ZlbULJSs/2nfcVhrgW7GKsGRVAMqQFsn
-Xh2CVJgDdYqJfidtVYEqhC38UmAHi9Valn9YqGXvmEwdGvLMAY6Vz7yIcVB+yj12
-aAG3yv/17Yqpvo/6aqkSPeHK2CeQ5Ecj5CAbynGc67cjzVXkBE6WtI4pCXb2KO97
-C9N2ej0JAqgEBuCqQDIuV0euE9kbiZ43Pr6E/NLN6FNQECchRVklsYeEzLFgVWvX
-CxH3WJP0jm6oP91NunCRDXn7hEIaRUGikN8QuWEDjZE6VNzlXkoVlS0MgTIp6whl
-CXv12pqVzBGYw0Z2txSX5xJbem4LQQa7Pb30yNEUA2/SeN/sHIB6oKnQ4454nAWx
-L9nqEEy1ULRBJSLJXDSUAjdlxxSQC8PgusLP8tI8AgmtsN9LlHDHtPUftle8wgON
-oHq+4VBcSY1AL1gtH1vxmRbSKcgEbazSP0fcXihv61EYOtXm8/zVXUFqhcZt6ZEb
-NtVIGRQExiQ3SNu2m2jfzY/KZzd/LnTCb8y439nBu/bN9ZuSZnhJmTgEcBah15/u
-SsAUoDbRcdKEjEieUqQj
-=70zX
+iQIcBAEBAgAGBQJTavfUAAoJEBx+YmzsjxAg1GUQAIJvJo2FmLNpbOUmzVPWz5wY
+LFZYV/aWwzoMqH1ArnU3XaSht3I9rAu9xtthccqfYRP9OqGSFkhqUcLWq4vxqiKr
+tIE5YFofDMPeQQkj712+gspRQuk69SeIZzC7U2Q1qlylseiozYR3we/ycEc1YzdO
+BmV5q7kcsed3Aq/22bBqrK2qSi8pU3HRA3pUA7GHZyH9+QM2i4c90q8zkQtn9xZD
+F1fsSUp+HBPrd7KvryaFWKraWnW4EcgXFVgLrk4YolX3i9nZd2g5hFESZeGbSzYF
+yVFP0zjct0jyycp2FmdUyYm4MvnqCKRl7Hm8z3h3PwxSyvpA6qZsTcp6tf0XBdFe
+1eJJQTFRN1cd35bzdnF125iOf7GqwETu48gK51UC88BCdQr9mYYNtEqUct0m7yNd
+HnFL3eQnSeTrY0ec2TGrh9tCBmVdADiTFkXS6wWzPMVhLlPzRFU+zNA/3MxdWEG0
+/Q1Tv2ooZnafL7L5/vrRe1DXa6Bt2LsgCJwwKFwscbtn4QMw6uCpWVbnER07NMAx
+Yg/jSUGTWSx6CP/DjP1jqjAeykqph2vFZOgVQsD1cXWuyz5FixyYkmoWDV2suXtx
+7Q0ACxI2VwFlRNoqkGNcls/kW2vEiUSDlUlDlojISv7Sr/jNebLc0Mss9st8aZfs
+LHU8giirt3wsn1Cr4hEj
+=mX76
 -----END PGP SIGNATURE-----
 
---/UvyDgxjlFfP/4zZ--
+--ZqRzwd/9tauJXEMK--
