@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602AbaEHJNL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 05:13:11 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:33813 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751660AbaEHJNI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 05:13:08 -0400
-X-Sasl-enc: xS+dqp3fcJSgBq0Ha0AUkZ+7tdBh+r4EcvSl5TF4F//S 1399540387
-Date: Thu, 8 May 2014 02:13:04 -0700
-From: Greg KH <greg@kroah.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, olaf@aepfle.de,
-        jasowang@redhat.com, driverdev-devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next] Add support for netvsc build without
- CONFIG_SYSFS flag
-Message-ID: <20140508091304.GB24820@kroah.com>
-References: <1399502704-18495-1-git-send-email-haiyangz@microsoft.com>
+	id S1753627AbaEHJQs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 05:16:48 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:54128 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753566AbaEHJQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 05:16:46 -0400
+Message-ID: <536B4A23.5080304@linux.vnet.ibm.com>
+Date: Thu, 08 May 2014 14:40:59 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399502704-18495-1-git-send-email-haiyangz@microsoft.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Preeti Murthy <preeti.lkml@gmail.com>, Alex Shi <alex.shi@linaro.org>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>, mingo@redhat.com,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mike Galbraith <efault@gmx.de>, wangyun@linux.vnet.ibm.com,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [RESEND PATCH V5 0/8] remove cpu_load idx
+References: <1397616209-27275-1-git-send-email-alex.shi@linaro.org> <20140424162029.GV11096@twins.programming.kicks-ass.net> <5361982F.3080307@linaro.org> <CAM4v1pPH54OHehb1i-esXTMsGJ-n7ck3V8yDK_rwajVCSmdU1A@mail.gmail.com> <20140506113936.GF11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140506113936.GF11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050809-0320-0000-0000-0000033416CB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 03:45:04PM -0700, Haiyang Zhang wrote:
-> This change ensures the driver can be built successfully without the
-> CONFIG_SYSFS flag.
-> MS-TFS: 182270
+On 05/06/2014 05:09 PM, Peter Zijlstra wrote:
+> On Tue, May 06, 2014 at 03:24:13PM +0530, Preeti Murthy wrote:
+>> Hi Morten, Peter, Alex,
+>>
+>> In a similar context, I noticed that /proc/loadavg makes use of
+>> avenrun[] array which keeps track of the history of the global
+>> load average. This however makes use of the sum of
+>> nr_running + nr_uninterruptible per cpu. Why are we not
+>> using the cpu_load[] array here which also keeps track
+>> of the history of per-cpu load and then return a sum of it?
 > 
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  drivers/net/hyperv/hyperv_net.h   |    2 ++
->  drivers/net/hyperv/netvsc_drv.c   |   12 +++++++++++-
->  drivers/net/hyperv/rndis_filter.c |    4 ++--
->  3 files changed, 15 insertions(+), 3 deletions(-)
+> Entirely different kind of 'load'. Note that you cannot use
+> ->nr_uninterruptible per-cpu, also note that sched/proc.c doesn't.
+
+True, I worded it wrong above. It uses the per_cpu nr_running and a
+global nr_uninterruptible.
+
 > 
-> diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-> index 4b7df5a..23b96bc 100644
-> --- a/drivers/net/hyperv/hyperv_net.h
-> +++ b/drivers/net/hyperv/hyperv_net.h
-> @@ -87,6 +87,8 @@ struct ndis_recv_scale_cap { /* NDIS_RECEIVE_SCALE_CAPABILITIES */
->  #define HASH_KEYLEN NDIS_RSS_HASH_SECRET_KEY_MAX_SIZE_REVISION_2
->  extern u8 netvsc_hash_key[];
->  
-> +extern unsigned int netvsc_num_queue;
-> +
->  struct ndis_recv_scale_param { /* NDIS_RECEIVE_SCALE_PARAMETERS */
->  	struct ndis_obj_header hdr;
->  
-> diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-> index 939e3af..07896f3 100644
-> --- a/drivers/net/hyperv/netvsc_drv.c
-> +++ b/drivers/net/hyperv/netvsc_drv.c
-> @@ -52,6 +52,8 @@ static int ring_size = 128;
->  module_param(ring_size, int, S_IRUGO);
->  MODULE_PARM_DESC(ring_size, "Ring buffer size (# of pages)");
->  
-> +unsigned int netvsc_num_queue = 1;
-> +
->  static void do_set_multicast(struct work_struct *w)
->  {
->  	struct net_device_context *ndevctx =
-> @@ -639,9 +641,11 @@ int netvsc_recv_callback(struct hv_device *device_obj,
->  		__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q),
->  				       packet->vlan_tci);
->  
-> +#ifdef CONFIG_SYSFS
->  	skb_record_rx_queue(skb, packet->channel->
->  			    offermsg.offer.sub_channel_index %
->  			    net->real_num_rx_queues);
-> +#endif
+>> Using nr_running to show the global load average would
+>> be misleading when entire load balancing is being done on the
+>> basis of the history of cfs_rq->runnable_load_avg/cpu_load[]
+>> right? IOW, to the best of my understanding we do not use
+>> nr_running anywhere to directly determine cpu load in the kernel.
+>>
+>> My idea was that the global/per_cpu load that we reflect via
+>> proc/sys interfaces must be consistent. I haven't really
+>> looked at what /proc/schedstat, /proc/stat, top are all reading
+>> from. But /proc/loadavg is reading out global nr_running +
+>> waiting tasks when this will not give us the accurate picture
+>> of the system load especially when there are many short running
+>> tasks.
+> 
+> Nobody said /proc/loadavg is a sane number, but its what it is and since
+> its a global number its entirely unsuited for balancing -- not to
+> mention all other reasons its crap.
 
-Why is this a sysfs-only function?  It should have nothing to do with
-sysfs, right?  So why would the driver care?
+I agree its not meant for balancing. My point was that since its
+inaccurate why don't we correct it. But if your argument is that we can
+live with /proc/loadavg showing a reasonable view of system load then it
+shouldn't be a problem.
 
-Don't put #ifdef in drivers, it's unmaintainable over time, if this
-really is a sysfs-only function, this should already be handled
-automatically in a .h file somewhere.
+Regards
+Preeti U Murthy
+> 
 
-thanks,
-
-greg k-h
