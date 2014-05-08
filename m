@@ -1,119 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699AbaEHLGG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 07:06:06 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:26044 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753177AbaEHLGE (ORCPT
+	id S1753512AbaEHLNa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 07:13:30 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:58287 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750942AbaEHLN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 07:06:04 -0400
-Date: Thu, 8 May 2014 12:05:27 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Julien Grall <julien.grall@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [PATCH] arm/xen: Remove definiition of virt_to_pfn in
- asm/xen/page.h
-Message-ID: <20140508110527.GE17344@arm.com>
-References: <1397836474-10478-1-git-send-email-julien.grall@linaro.org>
- <535901F0.3010908@citrix.com>
- <53590845.1090405@linaro.org>
- <53591B8F.8070300@citrix.com>
- <alpine.DEB.2.02.1404251801060.8072@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1405071234010.14596@kaball.uk.xensource.com>
- <536A1CF8.5000309@citrix.com>
- <alpine.DEB.2.02.1405071758070.14596@kaball.uk.xensource.com>
+	Thu, 8 May 2014 07:13:29 -0400
+Date: Thu, 8 May 2014 07:13:27 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Romain Izard <romain.izard.pro@gmail.com>,
+        stable <stable@vger.kernel.org>
+Subject: [GIT PULL] trace: module: Maintain a valid user count
+Message-ID: <20140508071327.38a880d7@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.DEB.2.02.1405071758070.14596@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 05:58:21PM +0100, Stefano Stabellini wrote:
-> On Wed, 7 May 2014, David Vrabel wrote:
-> > On 07/05/14 12:41, Stefano Stabellini wrote:
-> > > On Fri, 25 Apr 2014, Stefano Stabellini wrote:
-> > >> On Thu, 24 Apr 2014, David Vrabel wrote:
-> > >>> On 24/04/14 13:49, Julien Grall wrote:
-> > >>>> Hi David,
-> > >>>>
-> > >>>> On 04/24/2014 01:22 PM, David Vrabel wrote:
-> > >>>>> On 18/04/14 16:54, Julien Grall wrote:
-> > >>>>>> virt_to_pfn has been defined in asm/memory.h by the commit e26a9e0 "ARM: Better
-> > >>>>>> virt_to_page() handling"
-> > >>>>>>
-> > >>>>>> This will result of a compilation warning when CONFIG_XEN is enabled.
-> > >>>>>>
-> > >>>>>> arch/arm/include/asm/xen/page.h:80:0: warning: "virt_to_pfn" redefined [enabled by default]
-> > >>>>>>  #define virt_to_pfn(v)          (PFN_DOWN(__pa(v)))
-> > >>>>>>  ^
-> > >>>>>> In file included from arch/arm/include/asm/page.h:163:0,
-> > >>>>>>                  from arch/arm/include/asm/xen/page.h:4,
-> > >>>>>>                  from include/xen/page.h:4,
-> > >>>>>>                  from arch/arm/xen/grant-table.c:33:
-> > >>>>>>
-> > >>>>>> The definition in memory.h is nearly the same (it directly expand PFN_DOWN),
-> > >>>>>> so we can safely drop virt_to_pfn in xen include.
-> > >>>>>
-> > >>>>>
-> > >>>>> This breaks the arm build for me.
-> > >>>>>
-> > >>>>> /local/davidvr/work/k.org/tip/drivers/block/xen-blkfront.c: In function
-> > >>>>> ‘setup_blkring’:
-> > >>>>> /local/davidvr/work/k.org/tip/drivers/block/xen-blkfront.c:1236:2:
-> > >>>>> error: implicit declaration of function ‘virt_to_pfn’
-> > >>>>> [-Werror=implicit-function-declaration]
-> > >>>>>   err = xenbus_grant_ring(dev, virt_to_mfn(info->ring.sring));
-> > >>>>>   ^
-> > >>>>
-> > >>>> I don't have any issue to build the following branch with this patch on:
-> > >>>> 	- v3.15-rc2
-> > >>>> 	- xentip master
-> > >>>> 	- xentip for-linus-3.16
-> > >>>
-> > >>> Applied to devel/for-linus-3.16.
-> > >>>
-> > >>> If something else turns up for 3.15 (and I remember) I'll take it for
-> > >>> 3.15 instead.
-> > >>
-> > >> David,
-> > >> thank you very much for taking the patch in my absence.
-> > >>
-> > >> Considering that the problem is affecting everybody enabling CONFIG_XEN
-> > >> on ARM on v3.15, I don't think we can wait for the next merge window to
-> > >> send this fix upstream.
-> > >> Too many warnings for too many people.
-> > > 
-> > > Unfortunately this commit breaks arm64 compilation, as virt_to_pfn has
-> > > not been introduced to arm64/include/asm/memory.h.
-> > > Has the patch been sent upstream yet?
-> > 
-> > No.
-> > 
-> > > We need this additional change for arm64:
-> > > 
-> > > diff --git a/arch/arm64/include/asm/memory.h b/arch/arm64/include/asm/memory.h
-> > > index e94f945..993bce5 100644
-> > > --- a/arch/arm64/include/asm/memory.h
-> > > +++ b/arch/arm64/include/asm/memory.h
-> > > @@ -138,6 +138,7 @@ static inline void *phys_to_virt(phys_addr_t x)
-> > >  #define __pa(x)			__virt_to_phys((unsigned long)(x))
-> > >  #define __va(x)			((void *)__phys_to_virt((phys_addr_t)(x)))
-> > >  #define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
-> > > +#define virt_to_pfn(x)      __phys_to_pfn(__virt_to_phys(x))
-> > 
-> > This would need an ack from an arm64 maintainer.
-> 
-> Certainly. Catalin is in CC.
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Linus,
+
+This is a long standing bug that causes bogus data to show up
+in the refcnt field of the module_refcnt tracepoint. It was
+introduced by a merge conflict resolution back in 2.6.35-rc days.
+
+The result should be refcnt = incs - decs, but instead it did
+refcnt = incs + decs.
+
+Please pull the latest trace-fixes-v3.15-rc4 tree, which can be found at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+trace-fixes-v3.15-rc4
+
+Tag SHA1: df839af2f97c5761d24b7a1c80f5ac8c4fa63dfe
+Head SHA1: 098507ae3ec2331476fb52e85d4040c1cc6d0ef4
+
+
+Romain Izard (1):
+      trace: module: Maintain a valid user count
+
+----
+ include/trace/events/module.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+---------------------------
+commit 098507ae3ec2331476fb52e85d4040c1cc6d0ef4
+Author: Romain Izard <romain.izard.pro@gmail.com>
+Date:   Tue Mar 4 10:09:39 2014 +0100
+
+    trace: module: Maintain a valid user count
+    
+    The replacement of the 'count' variable by two variables 'incs' and
+    'decs' to resolve some race conditions during module unloading was done
+    in parallel with some cleanup in the trace subsystem, and was integrated
+    as a merge.
+    
+    Unfortunately, the formula for this replacement was wrong in the tracing
+    code, and the refcount in the traces was not usable as a result.
+    
+    Use 'count = incs - decs' to compute the user count.
+    
+    Link: http://lkml.kernel.org/p/1393924179-9147-1-git-send-email-romain.izard.pro@gmail.com
+    
+    Acked-by: Ingo Molnar <mingo@kernel.org>
+    Cc: Rusty Russell <rusty@rustcorp.com.au>
+    Cc: Frederic Weisbecker <fweisbec@gmail.com>
+    Cc: stable@vger.kernel.org # 2.6.35
+    Fixes: c1ab9cab7509 "merge conflict resolution"
+    Signed-off-by: Romain Izard <romain.izard.pro@gmail.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/include/trace/events/module.h b/include/trace/events/module.h
+index 11fd51b..daa60c7 100644
+--- a/include/trace/events/module.h
++++ b/include/trace/events/module.h
+@@ -80,7 +80,7 @@ DECLARE_EVENT_CLASS(module_refcnt,
+ 
+ 	TP_fast_assign(
+ 		__entry->ip	= ip;
+-		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) + __this_cpu_read(mod->refptr->decs);
++		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) - __this_cpu_read(mod->refptr->decs);
+ 		__assign_str(name, mod->name);
+ 	),
+ 
