@@ -1,51 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185AbaEHIKP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 04:10:15 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:43013 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132AbaEHIJ6 (ORCPT
+	id S1753249AbaEHIKe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 04:10:34 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:45505 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753204AbaEHIKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 04:09:58 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Mugunthan V N <mugunthanvnm@ti.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH RESEND 0/5] net: cpsw and mdio-gpio fixes for v3.15-final
-Date: Thu,  8 May 2014 10:09:19 +0200
-Message-Id: <1399536564-7626-1-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1399534639-4947-1-git-send-email-jhovold@gmail.com>
-References: <1399534639-4947-1-git-send-email-jhovold@gmail.com>
+	Thu, 8 May 2014 04:10:20 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s4889Ym6001933, This message is accepted by code: ctloc85258
+Message-ID: <536B3B6F.1010209@realtek.com>
+Date: Thu, 8 May 2014 16:08:15 +0800
+From: Roger <rogerable@realtek.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Ulf Hansson <ulf.hansson@linaro.org>, Lee Jones <lee.jones@linaro.org>
+CC: Arnd Bergmann <arnd@arndb.de>, micky <micky_ching@realsil.com.cn>,
+        Chris Ball <chris@printf.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH] mmc: rtsx: usb backend needs LED support
+References: <cover.1398735435.git.micky_ching@realsil.com.cn>	<7208467.nZIXMIfPji@wuerfel>	<CAPDyKFpJrrviaZo_L8MkLF=v7DqGEVj9=uSNsNtU-FXNwu-MmQ@mail.gmail.com>	<201404300228.s3U2S7WA026782@rtits1.realtek.com>	<53606F49.1000401@realtek.com> <CAPDyKFrA39eFnoy-sAGcAUeDqtB78cvAivV+mmRR5C-tov-9eg@mail.gmail.com>
+In-Reply-To: <CAPDyKFrA39eFnoy-sAGcAUeDqtB78cvAivV+mmRR5C-tov-9eg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.21.81.189]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches against v3.15-rc4 fix a few issues in the cpsw and
-mdio-gpio drivers.
 
-Resend with proper stable CC (git send-email still fails to parse the
-#-part of the tag unless address is enclosed in <> it seems).
+On 04/30/2014 04:19 PM, Ulf Hansson wrote:
+> On 30 April 2014 05:34, Roger <rogerable@realtek.com> wrote:
+>>
+>> On 04/29/2014 08:46 PM, Arnd Bergmann wrote:
+>>>
+>>> On Tuesday 29 April 2014 13:05:15 Ulf Hansson wrote:
+>>>>
+>>>> On 29 April 2014 11:45, Arnd Bergmann <arnd@arndb.de> wrote:
+>>>>>
+>>>>> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_remove':
+>>>>> :(.text+0x806480): undefined reference to `led_classdev_unregister'
+>>>>> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_probe':
+>>>>> :(.text+0x806708): undefined reference to `led_classdev_register'
+>>>>>
+>>>>> This adds an explicit dependency in Kconfig
+>>>>
+>>>>
+>>>> I think the proper solution is to fix the dependency in the driver code
+>>>> instead.
+>>>>
+>>>> There are already some ifdefs hackery for making it optional to use
+>>>> leds, apparently that's not working properly.
+>>>>
+>>>
+>>> Ah, right, I misinterpreted the bug. Here is a new version:
+>>>
+>>> 8<---------
+>>>>
+>>>>  From 5b5588f8c9b8ded8b296fd32d87b2d118e548a29 Mon Sep 17 00:00:00 2001
+>>>
+>>> From: Arnd Bergmann <arnd@arndb.de>
+>>> Date: Tue, 29 Apr 2014 11:41:40 +0200
+>>> Subject: [PATCH] mmc: rtsx: usb backend needs LED support
+>>>
+>>> Building the rtsx USB driver uses the LED classdev base
+>>> support if available, but that fails if the classdev
+>>> is a module and the MMC driver is built-in, leading to this
+>>> link error.
+>>>
+>>> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_remove':
+>>> :(.text+0x806480): undefined reference to `led_classdev_unregister'
+>>> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_probe':
+>>> :(.text+0x806708): undefined reference to `led_classdev_register'
+>>>
+>>> This adds an explicit dependency in Kconfig to ensure that
+>>> the MMC driver has to be a module if LEDS_CLASS is a module,
+>>> but still allows it to be built-in if LEDS_CLASS is either
+>>> disabled or built-in.
+>>>
+>>> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>>>
+>>> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+>>> index 92d91fe..68da9b8 100644
+>>>
+>>> --- a/drivers/mmc/host/Kconfig
+>>> +++ b/drivers/mmc/host/Kconfig
+>>> @@ -696,6 +696,7 @@ config MMC_REALTEK_PCI
+>>>    config MMC_REALTEK_USB
+>>>          tristate "Realtek USB SD/MMC Card Interface Driver"
+>>>          depends on MFD_RTSX_USB
+>>> +       depends on m || LEDS_CLASS!=m
+>>>
+>>>          help
+>>>            Say Y here to include driver code to support SD/MMC card
+>>> interface
+>>>            of Realtek RTS5129/39 series card reader
+>>>
+>>> .
+>>>
+>>
+>> I think Ulf's idea is to fix the bug by modifying the .c files.
+>> I really found the problem of my ifdef hackery and it should do something
+>> similar in sdhci.c as:
+>>
+>> From: Roger Tseng <rogerable@realtek.com>
+>> Date: Wed, 30 Apr 2014 11:11:25 +0800
+>> Subject: [PATCH] mmc: rtsx: fix possible linking error if built-in
+>>
+>> rtsx_usb_sdmmc module uses the LED classdev if available, but the code
+>> failed
+>> to consider the situation that it is built-in and the LED classdev is a
+>> module,
+>> leading to following linking error:
+>>
+>>    LD      init/built-in.o
+>> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_remove':
+>> rtsx_usb_sdmmc.c:(.text+0x2a018e): undefined reference to
+>> `led_classdev_unregister'
+>> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_probe':
+>> rtsx_usb_sdmmc.c:(.text+0x2a197e): undefined reference to
+>> `led_classdev_register'
+>>
+>> Fix by excluding such condition when defining macro RTSX_USB_USE_LEDS_CLASS.
+>>
+>> Signed-off-by: Roger Tseng <rogerable@realtek.com>
+>
+> Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+>
 
-Sorry about the noise.
+Would this patch be merged into linux-next or Lee's mfd.git 
+ib-mfd-mmc-memstick-3.16 branch?
 
-Johan
+By the way, should I resend my version?
 
+>> ---
+>>   drivers/mmc/host/rtsx_usb_sdmmc.c | 3 ++-
+>>   1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/mmc/host/rtsx_usb_sdmmc.c
+>> b/drivers/mmc/host/rtsx_usb_sdmmc.c
+>> index e11fafa..38bdda5 100644
+>> --- a/drivers/mmc/host/rtsx_usb_sdmmc.c
+>> +++ b/drivers/mmc/host/rtsx_usb_sdmmc.c
+>> @@ -34,7 +34,8 @@
+>>   #include <linux/mfd/rtsx_usb.h>
+>>   #include <asm/unaligned.h>
+>>
+>> -#if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
+>> +#if defined(CONFIG_LEDS_CLASS) || (defined(CONFIG_LEDS_CLASS_MODULE) && \
+>> +       defined(CONFIG_MMC_REALTEK_USB_MODULE))
+>>   #include <linux/leds.h>
+>>   #include <linux/workqueue.h>
+>>   #define RTSX_USB_USE_LEDS_CLASS
+>>
 
-Johan Hovold (5):
-  net: mdio-gpio: fix device-tree binding documentation
-  net: mdio-gpio: warn about missing bus alias id
-  Revert "net: eth: cpsw: Correctly attach to GPIO bitbang MDIO driver"
-  net: cpsw: fix null dereference at probe
-  net: cpsw: add missing of_node_put
-
- Documentation/devicetree/bindings/net/mdio-gpio.txt |  2 +-
- drivers/net/ethernet/ti/cpsw.c                      | 17 ++++++-----------
- drivers/net/phy/mdio-gpio.c                         |  4 ++++
- 3 files changed, 11 insertions(+), 12 deletions(-)
-
--- 
-1.8.3.2
-
+Best regards,
+Roger Tseng
