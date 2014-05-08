@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134AbaEHKm3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 06:42:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33095 "EHLO
+	id S1754150AbaEHKms (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 06:42:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33113 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188AbaEHKm1 (ORCPT
+	with ESMTP id S1753188AbaEHKmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 06:42:27 -0400
-Date: Thu, 8 May 2014 03:41:34 -0700
-From: tip-bot for Li Zefan <tipbot@zytor.com>
-Message-ID: <tip-6a7cd273dc4bc3246f37ebe874754a54ccb29141@git.kernel.org>
+	Thu, 8 May 2014 06:42:46 -0400
+Date: Thu, 8 May 2014 03:41:48 -0700
+From: "tip-bot for Steven Rostedt (Red Hat)" <tipbot@zytor.com>
+Message-ID: <tip-6227cb00cc120f9a43ce8313bb0475ddabcb7d01@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, juri.lelli@gmail.com,
-        lizefan@huawei.com
+        rostedt@goodmis.org, peterz@infradead.org, tglx@linutronix.de,
+        umgwanakikbuti@gmail.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, lizefan@huawei.com,
-        juri.lelli@gmail.com
-In-Reply-To: <534F36CE.2000409@huawei.com>
-References: <534F36CE.2000409@huawei.com>
+        rostedt@goodmis.org, peterz@infradead.org, tglx@linutronix.de,
+        umgwanakikbuti@gmail.com
+In-Reply-To: <1397015410.5212.13.camel@marge.simpson.net>
+References: <1397015410.5212.13.camel@marge.simpson.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/deadline: Fix memory leak
-Git-Commit-ID: 6a7cd273dc4bc3246f37ebe874754a54ccb29141
+Subject: [tip:sched/core] sched:
+  Use CPUPRI_NR_PRIORITIES instead of MAX_RT_PRIO in cpupri check
+Git-Commit-ID: 6227cb00cc120f9a43ce8313bb0475ddabcb7d01
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,37 +34,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6a7cd273dc4bc3246f37ebe874754a54ccb29141
-Gitweb:     http://git.kernel.org/tip/6a7cd273dc4bc3246f37ebe874754a54ccb29141
-Author:     Li Zefan <lizefan@huawei.com>
-AuthorDate: Thu, 17 Apr 2014 10:05:02 +0800
+Commit-ID:  6227cb00cc120f9a43ce8313bb0475ddabcb7d01
+Gitweb:     http://git.kernel.org/tip/6227cb00cc120f9a43ce8313bb0475ddabcb7d01
+Author:     Steven Rostedt (Red Hat) <rostedt@goodmis.org>
+AuthorDate: Sun, 13 Apr 2014 09:34:53 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 7 May 2014 11:51:32 +0200
+CommitDate: Wed, 7 May 2014 11:51:33 +0200
 
-sched/deadline: Fix memory leak
+sched: Use CPUPRI_NR_PRIORITIES instead of MAX_RT_PRIO in cpupri check
 
-Free cpudl->free_cpus allocated in cpudl_init().
+The check at the beginning of cpupri_find() makes sure that the task_pri
+variable does not exceed the cp->pri_to_cpu array length. But that length
+is CPUPRI_NR_PRIORITIES not MAX_RT_PRIO, where it will miss the last two
+priorities in that array.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Acked-by: Juri Lelli <juri.lelli@gmail.com>
+As task_pri is computed from convert_prio() which should never be bigger
+than CPUPRI_NR_PRIORITIES, if the check should cause a panic if it is
+hit.
+
+Reported-by: Mike Galbraith <umgwanakikbuti@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: <stable@vger.kernel.org> # 3.14+
-Link: http://lkml.kernel.org/r/534F36CE.2000409@huawei.com
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1397015410.5212.13.camel@marge.simpson.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/cpudeadline.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ kernel/sched/cpupri.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
-index 5b9bb42..ab001b5 100644
---- a/kernel/sched/cpudeadline.c
-+++ b/kernel/sched/cpudeadline.c
-@@ -210,7 +210,5 @@ int cpudl_init(struct cpudl *cp)
-  */
- void cpudl_cleanup(struct cpudl *cp)
- {
--	/*
--	 * nothing to do for the moment
--	 */
-+	free_cpumask_var(cp->free_cpus);
- }
+diff --git a/kernel/sched/cpupri.c b/kernel/sched/cpupri.c
+index 8b836b3..3031bac 100644
+--- a/kernel/sched/cpupri.c
++++ b/kernel/sched/cpupri.c
+@@ -70,8 +70,7 @@ int cpupri_find(struct cpupri *cp, struct task_struct *p,
+ 	int idx = 0;
+ 	int task_pri = convert_prio(p->prio);
+ 
+-	if (task_pri >= MAX_RT_PRIO)
+-		return 0;
++	BUG_ON(task_pri >= CPUPRI_NR_PRIORITIES);
+ 
+ 	for (idx = 0; idx < task_pri; idx++) {
+ 		struct cpupri_vec *vec  = &cp->pri_to_cpu[idx];
