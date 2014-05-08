@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578AbaEHPZg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:25:36 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:63394 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620AbaEHPZf (ORCPT
+	id S1754549AbaEHP0W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:26:22 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60597 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101AbaEHP0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:25:35 -0400
+	Thu, 8 May 2014 11:26:21 -0400
+Date: Thu, 8 May 2014 17:26:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dongsheng Yang <dongsheng081251@gmail.com>
+Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] treewide: remove all open implementation of
+ nice_to_rlimit()/rlimit_to_nice().
+Message-ID: <20140508152614.GC30445@twins.programming.kicks-ass.net>
+References: <e1f9c9f2023719e0738e16cd6807c74c68b08fad.1399532322.git.yangds.fnst@cn.fujitsu.com>
+ <a568a1e3cc8e78648f41b5035fa5e381d36274da.1399532322.git.yangds.fnst@cn.fujitsu.com>
+ <20140508143404.GV11096@twins.programming.kicks-ass.net>
+ <CA+qeAOqCo9g=tNARWf4JESLZU6sAoSKYDvmfGE6OOmJQhajyDw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOh2x=kwaoSdj8JO0Vo08Y0dX2UfKFiF3pBV-qtp-YTyN=8H8Q@mail.gmail.com>
-References: <1399504982-31181-1-git-send-email-dianders@chromium.org>
-	<CAOh2x=kwaoSdj8JO0Vo08Y0dX2UfKFiF3pBV-qtp-YTyN=8H8Q@mail.gmail.com>
-Date: Thu, 8 May 2014 08:25:34 -0700
-X-Google-Sender-Auth: -4ZStjrc6zmWYpJqnDubFqGviP0
-Message-ID: <CAD=FV=UEGJGHrdcXgs3EZ_wFXT8GnNeCOMt7CgdiiUzBzZ5Y0A@mail.gmail.com>
-Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP systems
-From: Doug Anderson <dianders@chromium.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        David Riley <davidriley@chromium.org>,
-        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="aQ0PHH3iiKbaMI5N"
+Content-Disposition: inline
+In-Reply-To: <CA+qeAOqCo9g=tNARWf4JESLZU6sAoSKYDvmfGE6OOmJQhajyDw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Viresh,
 
-On Thu, May 8, 2014 at 3:41 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Fixing Rafael's id.
->
-> On Thu, May 8, 2014 at 4:53 AM, Doug Anderson <dianders@chromium.org> wrote:
->> Downscaling loops_per_jiffy on SMP ARM systems really doesn't work.
->> You could really only do this if:
->>
->> * Each CPU is has independent frequency changes (changing one CPU
->>   doesn't affect another).
->> * We change the generic ARM udelay() code to actually look at percpu
->>   loops_per_jiffy.
->
-> There is one more case I believe:
-> All CPUs share a single clock line and generic udelay() uses global
-> loops_per_jiffy, as it would never happen that some other CPU is running
-> faster and udelay would complete early
+--aQ0PHH3iiKbaMI5N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm not sure I understood your case.  Maybe you can give me an
-example?  I can give you an example myself of the single clock case
-and you can tell me how your example differs:
+On Thu, May 08, 2014 at 10:51:13PM +0800, Dongsheng Yang wrote:
+> Just want to avoid using hardcoding of 20. If no, there is no meaning we
+> collect
+> priority related information into prio.h.  And convertion between nice
+> value [-20,19]
+> and rlimit style value [0,40] is used by several callers currently.
+>=20
 
-1. Initially CPU1 and CPU2 at 200MHz.  Pretend loops_per_jiffy is 1000.
+Yeah, not really a comment on your patch, just a general observation on
+the thing you touched :-)
 
-2. CPU1 starts a delay.  It reads global lpj (1000) and sets up its
-local registers up for the loop.
+--aQ0PHH3iiKbaMI5N
+Content-Type: application/pgp-signature
 
-3. At the same time, CPU2 is transitioning the system to 2000MHz.
-Right after CPU1 reads lpj CPU2 stores it as 10000.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-4. Now CPU1 and CPU2 are running at 2000MHz but CPU1 is only looping
-1000 times.  It will complete too fast.
+iQIcBAEBAgAGBQJTa6IWAAoJEHZH4aRLwOS6sSIP/0nj6cxXq3jEb2gYXMpJytiN
+DZBhzYPCfM+nFJedt+B85KmdQCaxc6Lc2u0Iu/EGykybezh1AaXP+aLlAzLqx1W4
+xatxjlHM62rlTgcLfAL1zjtg8O0Fkb10O4gZczpLsUITKNKIiGeiWxwJB0U7nEqk
+tweWkJsa3CCjuBZOp1S94/Cs2Va+iRm3KY1rokkk2CulLXRjhZHCwJThHVjVl4+V
+kHa8cpeYh7RztqqlkeeB1d+5N1F7pORYsPdNnp+fMZVzRD0NTjWCuidVrPzJSM8U
+gMxFzMVk0Pp5Etgi4qacprNb4uS90FlbkjjFXxCBBIVpdiKTVrR+Y2B0rBgcwqC6
+r+lotIEZYsxy5zq4vSiLAb9+8b2kDi0TJvqCiRMsQM1ybSFyZJDHbo1CspcC4iS2
+I6g8BN4NgIM6157FA+Zk3NPGF6LSlsA0UxSTbBJ6ZgEW9Mv0U8UUxqFuF5aWdW4Z
+cgosRGgnYdMvDZ8AXLWUsSCr5olu5JQdlAPMeQWf2vswS62iPG+ZRvG02yM7xtrL
+cCBvn0HmKwGQH/2ZbnwI0UOBnru6LqXy/nMUPeMIo8aPBx18KZCPrK3JxvYFkzd0
+Y9ilEXNVNoz7aowI5kGKvi+vKpv1KPNmctA2pLg61RmfdHpz6Q8bI8hd+YAA6VVl
+Z0TQ+l4m1MadncaHGR6j
+=k0i6
+-----END PGP SIGNATURE-----
 
-...you could possibly try to account for this in the delay loop code
-(being careful to handle all of the corner cases and races).  ...or we
-could make the delay loop super conservative and suggest that people
-should be using a real timer.
-
-
-> So, the end of this will happen when a CPU is set to its highest frequency
-> for the first time. After that this routine will simply be noise and nothing
-> more. Isn't it?
-
-Yup.
-
-
-> And if that's the case, why don't we get rid of it completely and set
-> global-loop-per-jiffy for the max freq at boot ?
-
-How exactly do you do this in a generic way?  I know that our systems
-don't always boot up at full speed.  The HP Chromebook 11 might boot
-up at 900MHz and stay that way for a while until the battery gets
-enough juice.  The Samsung Chromebook 2 will boot up at 1.8GHz
-although some of them can go to 1.9GHz and others to 2.0GHz.  Waiting
-to actually see the cpufreq transition is a safe way, though it does
-end up with some extra function calls.
-
--Doug
+--aQ0PHH3iiKbaMI5N--
