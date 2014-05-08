@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322AbaEHSXw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 14:23:52 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:45181 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752329AbaEHSXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 14:23:51 -0400
-Date: Thu, 8 May 2014 20:23:44 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Robert Richter <rric@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: Re: [PATCH v4 00/16] perf, persistent: Add persistent events
-Message-ID: <20140508182344.GG12548@pd.tnic>
-References: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
- <20140506123907.GV32718@rric.localhost>
- <20140506185359.GE25013@pd.tnic>
- <20140507164407.GG32718@rric.localhost>
+	id S1755353AbaEHSYs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 14:24:48 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:35479 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753348AbaEHSYr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 14:24:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140507164407.GG32718@rric.localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140507225206.ea7cff02caf1118bb4b5a48d@skynet.be>
+References: <20140507225206.ea7cff02caf1118bb4b5a48d@skynet.be>
+Date: Thu, 8 May 2014 14:24:47 -0400
+X-Google-Sender-Auth: ORDUwJxCPeQyTdb-qPsT0-fIbAI
+Message-ID: <CAOS58YMZYnqNzpa8RqGk+btp_RkUdPry4NstJU22qzEOh_+5zw@mail.gmail.com>
+Subject: Re: [PATCH V2] MM: make vmpressure_win dynamic
+From: Tejun Heo <tj@kernel.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 06:44:07PM +0200, Robert Richter wrote:
-> With transparently I mean that the process even does not know that the
-> same event is already running by another process. The kernel detects
-> this and maps the request to that event and buffer. Of course the
-> event's buffer must be at least readonly to be shared for this.
+On Wed, May 7, 2014 at 4:52 PM, Fabian Frederick <fabf@skynet.be> wrote:
+> Initialize vmpressure_win in vmstat using
+> calculate_normal_threshold() based on each zone/cpu * SWAP_CLUSTER_SIZE
+>
+> Value refreshed through cpu notifier and exposed in read-only through /sys/kernel
+>
+> This is untested.
+>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 
-Yes.
-
-> This could be a mechanism to connect to persistent events. The kernel
-> detects by type and attr that the requested event is already running
-> persistent and maps to it.
-> 
-> But at the moment persistent events can only be shared using
-> 
->  attr.type = PERF_TYPE_PERSISTENT
->  attr.config = id
-> 
-> So the above is more an alternative to connect to persistent events
-> and the question is, which one to use. Presumable the easiest first,
-> which is the current implementation.
-
-Well, there is no trivial way to share event buffers if they're not
-read-only AFAICT.
-
-But in questions like this, we always have to step one step back and ask
-ourselves: what are the use cases for shared events and after we have
-enumerated them, to design the kernel side so that it supports them.
-
-So, do we want anything else besides shared, read-only events?
+Please cc memcg maintainers.  Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+tejun
