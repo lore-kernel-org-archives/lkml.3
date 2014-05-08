@@ -1,114 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469AbaEHNSH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 09:18:07 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:19287 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752756AbaEHNSG (ORCPT
+	id S1754505AbaEHNSq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 09:18:46 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:46865 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754385AbaEHNSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 09:18:06 -0400
-Date: Thu, 8 May 2014 09:17:58 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Romain Izard <romain.izard.pro@gmail.com>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [GIT PULL] trace: module: Maintain a valid user count
-Message-ID: <20140508091758.5be6f380@gandalf.local.home>
-In-Reply-To: <20140508071327.38a880d7@gandalf.local.home>
-References: <20140508071327.38a880d7@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 8 May 2014 09:18:45 -0400
+Date: Thu, 8 May 2014 06:18:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Daniel Santos <daniel.santos@pobox.com>
+Subject: Re: [PATCH] compiler.h: don't use temporary variable in
+ __compiletime_assert()
+Message-ID: <20140508131839.GZ8754@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1399530685-7749-1-git-send-email-johannes@sipsolutions.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399530685-7749-1-git-send-email-johannes@sipsolutions.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050813-9332-0000-0000-000000BA1C4F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu, May 08, 2014 at 08:31:25AM +0200, Johannes Berg wrote:
+> From: Johannes Berg <johannes.berg@intel.com>
+> 
+> Usually, BUG_ON and friends aren't even evaluated in sparse, but
+> recently compiletime_assert_atomic_type() was added, and that now
+> results in a sparse warning every time it is used.
+> 
+> The reason turns out to be the temporary variable, after it sparse
+> no longer considers the value to be a constant, and results in a
+> warning and an error. The error is the more annoying part of this
+> as it suppresses any further warnings in the same file, hiding
+> other problems.
+> 
+> Since this is all about compile time and the condition should be
+> side-effect free to start with, there's no downside (apart maybe
+> from a slight compilation time penalty?) to just duplicating it,
+> leaving sparse able to evaluate it at check time, getting rid of
+> the warning and error.
+> 
+> Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 
-You can hold off on pulling this if you want. I just received a patch
-that fixes a "use after free" bug that was introduced in this merge
-window. I've added that patch after this commit, and I'm starting my
-tests now. I should have another pull request later today if all goes
-well.
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
--- Steve
-
-
-On Thu, 8 May 2014 07:13:27 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
-
+> ---
+>  include/linux/compiler.h | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
 > 
-> Linus,
+> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+> index 2472740d7ab2..38c0e00ddef8 100644
+> --- a/include/linux/compiler.h
+> +++ b/include/linux/compiler.h
+> @@ -324,11 +324,10 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
 > 
-> This is a long standing bug that causes bogus data to show up
-> in the refcnt field of the module_refcnt tracepoint. It was
-> introduced by a merge conflict resolution back in 2.6.35-rc days.
+>  #define __compiletime_assert(condition, msg, prefix, suffix)		\
+>  	do {								\
+> -		bool __cond = !(condition);				\
+>  		extern void prefix ## suffix(void) __compiletime_error(msg); \
+> -		if (__cond)						\
+> +		if (!(condition))					\
+>  			prefix ## suffix();				\
+> -		__compiletime_error_fallback(__cond);			\
+> +		__compiletime_error_fallback(!(condition));		\
+>  	} while (0)
 > 
-> The result should be refcnt = incs - decs, but instead it did
-> refcnt = incs + decs.
+>  #define _compiletime_assert(condition, msg, prefix, suffix) \
+> -- 
+> 2.0.0.rc0
 > 
-> Please pull the latest trace-fixes-v3.15-rc4 tree, which can be found at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> trace-fixes-v3.15-rc4
-> 
-> Tag SHA1: df839af2f97c5761d24b7a1c80f5ac8c4fa63dfe
-> Head SHA1: 098507ae3ec2331476fb52e85d4040c1cc6d0ef4
-> 
-> 
-> Romain Izard (1):
->       trace: module: Maintain a valid user count
-> 
-> ----
->  include/trace/events/module.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> ---------------------------
-> commit 098507ae3ec2331476fb52e85d4040c1cc6d0ef4
-> Author: Romain Izard <romain.izard.pro@gmail.com>
-> Date:   Tue Mar 4 10:09:39 2014 +0100
-> 
->     trace: module: Maintain a valid user count
->     
->     The replacement of the 'count' variable by two variables 'incs' and
->     'decs' to resolve some race conditions during module unloading was done
->     in parallel with some cleanup in the trace subsystem, and was integrated
->     as a merge.
->     
->     Unfortunately, the formula for this replacement was wrong in the tracing
->     code, and the refcount in the traces was not usable as a result.
->     
->     Use 'count = incs - decs' to compute the user count.
->     
->     Link: http://lkml.kernel.org/p/1393924179-9147-1-git-send-email-romain.izard.pro@gmail.com
->     
->     Acked-by: Ingo Molnar <mingo@kernel.org>
->     Cc: Rusty Russell <rusty@rustcorp.com.au>
->     Cc: Frederic Weisbecker <fweisbec@gmail.com>
->     Cc: stable@vger.kernel.org # 2.6.35
->     Fixes: c1ab9cab7509 "merge conflict resolution"
->     Signed-off-by: Romain Izard <romain.izard.pro@gmail.com>
->     Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> diff --git a/include/trace/events/module.h b/include/trace/events/module.h
-> index 11fd51b..daa60c7 100644
-> --- a/include/trace/events/module.h
-> +++ b/include/trace/events/module.h
-> @@ -80,7 +80,7 @@ DECLARE_EVENT_CLASS(module_refcnt,
->  
->  	TP_fast_assign(
->  		__entry->ip	= ip;
-> -		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) + __this_cpu_read(mod->refptr->decs);
-> +		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) - __this_cpu_read(mod->refptr->decs);
->  		__assign_str(name, mod->name);
->  	),
->  
 
