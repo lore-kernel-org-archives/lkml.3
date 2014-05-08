@@ -1,116 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539AbaEHP3s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:29:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:7678 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751776AbaEHP3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:29:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1010,1389772800"; 
-   d="scan'208";a="508448963"
-Message-ID: <536BA2A3.50506@intel.com>
-Date: Thu, 08 May 2014 23:28:35 +0800
-From: Jet Chen <jet.chen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754684AbaEHPaG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:30:06 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:58900 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751945AbaEHPaF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 11:30:05 -0400
+Date: Thu, 8 May 2014 16:29:48 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Linux Kernel, Mailing List" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [BUG] kmemleak on __radix_tree_preload
+Message-ID: <20140508152946.GA10470@localhost>
+References: <1398390340.4283.36.camel@kjgkr>
+ <20140501170610.GB28745@arm.com>
+ <20140501184112.GH23420@cmpxchg.org>
+ <1399431488.13268.29.camel@kjgkr>
+ <20140507113928.GB17253@arm.com>
+ <1399540611.13268.45.camel@kjgkr>
+ <20140508092646.GA17349@arm.com>
+ <1399541860.13268.48.camel@kjgkr>
+ <20140508102436.GC17344@arm.com>
+ <20140508150026.GA8754@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Alexander Duyck <alexander.h.duyck@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Dave Jiang <dave.jiang@intel.com>
-CC: fengguang.wu@intel.com, wei.w.lin@intel.com, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH] DCA: fix over-warning in ioat3_dca_init
-References: <1399542166-42985-1-git-send-email-jet.chen@intel.com> <536B9CF6.9000907@intel.com>
-In-Reply-To: <536B9CF6.9000907@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140508150026.GA8754@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I agree with your option that it is a real BIOS bug and it puts pressure on the BIOS guys to get this fixed. However, this warning message interferes with our kernel booting tests and kernel performance tests. We have to disable CONFIG_INTEL_IOATDMA in kconfig until this issue gets fixed. Before that, code of CONFIG_INTEL_IOATDMA will not be validated in our testing system :(.
-Hope this issue could get fixed soon.
+On Thu, May 08, 2014 at 04:00:27PM +0100, Paul E. McKenney wrote:
+> On Thu, May 08, 2014 at 11:24:36AM +0100, Catalin Marinas wrote:
+> > On Thu, May 08, 2014 at 10:37:40AM +0100, Jaegeuk Kim wrote:
+> > > 2014-05-08 (목), 10:26 +0100, Catalin Marinas:
+> > > > On Thu, May 08, 2014 at 06:16:51PM +0900, Jaegeuk Kim wrote:
+> > > > > 2014-05-07 (수), 12:39 +0100, Catalin Marinas:
+> > > > > > On Wed, May 07, 2014 at 03:58:08AM +0100, Jaegeuk Kim wrote:
+> > > > > > > unreferenced object 0xffff880004226da0 (size 576):
+> > > > > > >   comm "fsstress", pid 14590, jiffies 4295191259 (age 706.308s)
+> > > > > > >   hex dump (first 32 bytes):
+> > > > > > >     01 00 00 00 81 ff ff ff 00 00 00 00 00 00 00 00  ................
+> > > > > > >     50 89 34 81 ff ff ff ff b8 6d 22 04 00 88 ff ff  P.4......m".....
+> > > > > > >   backtrace:
+> > > > > > >     [<ffffffff816c02e8>] kmemleak_update_trace+0x58/0x80
+> > > > > > >     [<ffffffff81349517>] radix_tree_node_alloc+0x77/0xa0
+> > > > > > >     [<ffffffff81349718>] __radix_tree_create+0x1d8/0x230
+> > > > > > >     [<ffffffff8113286c>] __add_to_page_cache_locked+0x9c/0x1b0
+> > > > > > >     [<ffffffff811329a8>] add_to_page_cache_lru+0x28/0x80
+> > > > > > >     [<ffffffff81132f58>] grab_cache_page_write_begin+0x98/0xf0
+> > > > > > >     [<ffffffffa02e4bf4>] f2fs_write_begin+0xb4/0x3c0 [f2fs]
+> > > > > > >     [<ffffffff81131b77>] generic_perform_write+0xc7/0x1c0
+> > > > > > >     [<ffffffff81133b7d>] __generic_file_aio_write+0x1cd/0x3f0
+> > > > > > >     [<ffffffff81133dfe>] generic_file_aio_write+0x5e/0xe0
+> > > > > > >     [<ffffffff81195c5a>] do_sync_write+0x5a/0x90
+> > > > > > >     [<ffffffff811968d2>] vfs_write+0xc2/0x1d0
+> > > > > > >     [<ffffffff81196daf>] SyS_write+0x4f/0xb0
+> > > > > > >     [<ffffffff816dead2>] system_call_fastpath+0x16/0x1b
+> > > > > > >     [<ffffffffffffffff>] 0xffffffffffffffff
+> > > > > >
+> > > > > > OK, it shows that the allocation happens via add_to_page_cache_locked()
+> > > > > > and I guess it's page_cache_tree_insert() which calls
+> > > > > > __radix_tree_create() (the latter reusing the preloaded node). I'm not
+> > > > > > familiar enough to this code (radix-tree.c and filemap.c) to tell where
+> > > > > > the node should have been freed, who keeps track of it.
+> > > > > >
+> > > > > > At a quick look at the hex dump (assuming that the above leak is struct
+> > > > > > radix_tree_node):
+> > > > > >
+> > > > > > 	.path = 1
+> > > > > > 	.count = -0x7f (or 0xffffff81 as unsigned int)
+> > > > > > 	union {
+> > > > > > 		{
+> > > > > > 			.parent = NULL
+> > > > > > 			.private_data = 0xffffffff81348950
+> > > > > > 		}
+> > > > > > 		{
+> > > > > > 			.rcu_head.next = NULL
+> > > > > > 			.rcu_head.func = 0xffffffff81348950
+> > > > > > 		}
+> > > > > > 	}
+> > > > > >
+> > > > > > The count is a bit suspicious.
+> > > > > >
+> > > > > > From the union, it looks most likely like rcu_head information. Is
+> > > > > > radix_tree_node_rcu_free() function at the above rcu_head.func?
+> > > >
+> > > > Thanks for the config. Could you please confirm that 0xffffffff81348950
+> > > > address corresponds to the radix_tree_node_rcu_free() function in your
+> > > > System.map (or something else)?
+> > > 
+> > > Yap, the address is matched to radix_tree_node_rcu_free().
+> > 
+> > Cc'ing Paul as well, not that I blame RCU ;), but maybe he could shed
+> > some light on why kmemleak can't track this object.
+> 
+> Do we have any information on how long it has been since that data
+> structure was handed to call_rcu()?  If that time is short, then it
+> is quite possible that its grace period simply has not yet completed.
 
-Thanks,
-Jet
+kmemleak scans every 10 minutes but Jaegeuk can confirm how long he has
+waited.
 
-On 05/08/2014 11:04 PM, Alexander Duyck wrote:
-> I actually went to a bit of trouble to get this message added as many
-> BIOSes have the annoying quality of getting this wrong, and then
-> products are shipped and labeled as having the DCA feature when they
-> actually don't.  One easy way to get rid of the message is to disable
-> either DCA or IOAT in the BIOS since it is broken anyway.  By adding
-> this we at least have some visibility and it puts pressure on the BIOS
-> guys to get this fixed if we want to claim the platform does DCA.
+> It might also be that one of the CPUs is stuck (e.g., spinning with
+> interrupts disabled), which would prevent the grace period from
+> completing, in turn preventing any memory waiting for that grace period
+> from being freed.
+
+We should get some kernel warning if it's stuck for too long but, again,
+Jaegeuk can confirm. I haven't managed to reproduce this on ARM systems.
+
+> > My summary so far:
+> > 
+> > - radix_tree_node reported by kmemleak as it cannot find any trace of it
+> >   when scanning the memory
+> > - at allocation time, radix_tree_node is memzero'ed by
+> >   radix_tree_node_ctor(). Given that node->rcu_head.func ==
+> >   radix_tree_node_rcu_free, my guess is that radix_tree_node_free() has
+> >   been called
+> > - some time later, kmemleak still hasn't received any callback for
+> >   kmem_cache_free(node). Possibly radix_tree_node_rcu_free() hasn't been
+> >   called either since node->count is not NULL.
+> > 
+> > For RCU queued objects, kmemleak should still track references to them
+> > via rcu_sched_state and rcu_head members. But even if this went wrong, I
+> > would expect the object to be freed eventually and kmemleak notified (so
+> > just a temporary leak report which doesn't seem to be the case here).
 > 
-> I consider this to be a real BIOS bug as the DCA feature is crippled
-> without it.  Also moving this to just a debug message is going to make
-> it very difficult for us to debug this when a performance issue comes up
-> on a customer platform as we will have to get them to perform extra
-> steps in order to actually figure out what is going on with DCA.
+> OK, so you are saying that this memory has been in this state for quite
+> some time?
+
+These leaks don't seem to disappear (time lapsed to be confirmed) and
+the object checksum not changed either (otherwise kmemleak would not
+report it).
+
+> If the system is responsive during this time, I recommend building with
+> CONFIG_RCU_TRACE=y, then polling the debugfs rcu/*/rcugp files.  The value
+> of "*" will be "rcu_sched" for kernels built with CONFIG_PREEMPT=n and
+> "rcu_preempt" for kernels built with CONFIG_PREEMPT=y.
 > 
-> Thanks,
-> 
-> Alex
-> 
-> On 05/08/2014 02:42 AM, Jet Chen wrote:
->> We keep seeing such dmesg messages on boxes
->>
->> [   16.596610] WARNING: CPU: 0 PID: 457 at drivers/dma/ioat/dca.c:697 ioat3_dca_init+0x19c/0x1b0 [ioatdma]()
->> [   16.609614] ioatdma 0000:00:04.0: APICID_TAG_MAP set incorrectly by BIOS, disabling DCA
->> ...
->> [   16.892058]  [<ffffffff8172807e>] dump_stack+0x4d/0x66
->> [   16.892061]  [<ffffffff81067f7d>] warn_slowpath_common+0x7d/0xa0
->> [   16.892064]  [<ffffffff81068034>] warn_slowpath_fmt_taint+0x44/0x50
->> [   16.892065]  [<ffffffffa00228bc>] ioat3_dca_init+0x19c/0x1b0 [ioatdma]
->> [   16.892069]  [<ffffffffa0021cd6>] ioat3_dma_probe+0x386/0x3e0 [ioatdma]
->> [   16.892071]  [<ffffffffa001a192>] ioat_pci_probe+0x122/0x1b0 [ioatdma]
->> [   16.892074]  [<ffffffff81329385>] local_pci_probe+0x45/0xa0
->> [   16.892076]  [<ffffffff81080d34>] work_for_cpu_fn+0x14/0x20
->> [   16.892077]  [<ffffffff81083c33>] process_one_work+0x183/0x490
->> [   16.892079]  [<ffffffff81084bd3>] worker_thread+0x2a3/0x410
->> [   16.892080]  [<ffffffff81084930>] ? rescuer_thread+0x410/0x410
->> [   16.892081]  [<ffffffff8108b852>] kthread+0xd2/0xf0
->> [   16.892083]  [<ffffffff8108b780>] ? kthread_create_on_node+0x180/0x180
->> [   16.892085]  [<ffffffff817396bc>] ret_from_fork+0x7c/0xb0
->> [   16.892091] fbcon: mgadrmfb (fb0) is primary device
->> [   16.892092]  [<ffffffff8108b780>] ? kthread_create_on_node+0x180/0x180
->>
->> No need to use WARN_TAINT_ONCE to generate a such big noise if this is not a critical error for kernel. DCA driver could print out a debug messages then quit quietly.
->>
->> If this is a real BIOS bug, please ignore this patch. Let's transfer this issue to BIOS guys.
->>
->> Signed-off-by: Jet Chen <jet.chen@intel.com>
->> ---
->>  drivers/dma/ioat/dca.c | 10 ++--------
->>  1 file changed, 2 insertions(+), 8 deletions(-)
->>
->> diff --git a/drivers/dma/ioat/dca.c b/drivers/dma/ioat/dca.c
->> index 9e84d5b..c0f7971 100644
->> --- a/drivers/dma/ioat/dca.c
->> +++ b/drivers/dma/ioat/dca.c
->> @@ -470,10 +470,7 @@ struct dca_provider *ioat2_dca_init(struct pci_dev *pdev, void __iomem *iobase)
->>  	}
->>  
->>  	if (!dca2_tag_map_valid(ioatdca->tag_map)) {
->> -		WARN_TAINT_ONCE(1, TAINT_FIRMWARE_WORKAROUND,
->> -				"%s %s: APICID_TAG_MAP set incorrectly by BIOS, disabling DCA\n",
->> -				dev_driver_string(&pdev->dev),
->> -				dev_name(&pdev->dev));
->> +		dev_dbg(&pdev->dev, "APICID_TAG_MAP set incorrectly by BIOS, disabling DCA\n");
->>  		free_dca_provider(dca);
->>  		return NULL;
->>  	}
->> @@ -691,10 +688,7 @@ struct dca_provider *ioat3_dca_init(struct pci_dev *pdev, void __iomem *iobase)
->>  	}
->>  
->>  	if (dca3_tag_map_invalid(ioatdca->tag_map)) {
->> -		WARN_TAINT_ONCE(1, TAINT_FIRMWARE_WORKAROUND,
->> -				"%s %s: APICID_TAG_MAP set incorrectly by BIOS, disabling DCA\n",
->> -				dev_driver_string(&pdev->dev),
->> -				dev_name(&pdev->dev));
->> +		dev_dbg(&pdev->dev, "APICID_TAG_MAP set incorrectly by BIOS, disabling DCA\n");
->>  		free_dca_provider(dca);
->>  		return NULL;
->>  	}
-> 
+> If the number printed does not advance, then the RCU grace period is
+> stalled, which will prevent memory waiting for that grace period from
+> ever being freed.
+
+Thanks for the suggestions
+
+> Of course, if the value of node->count is preventing call_rcu() from
+> being invoked in the first place, then the needed grace period won't
+> start, much less finish.  ;-)
+
+Given the rcu_head.func value, my assumption is that call_rcu() has
+already been called.
+
+BTW, is it safe to have a union overlapping node->parent and
+node->rcu_head.next? I'm still staring at the radix-tree code but a
+scenario I have in mind is that call_rcu() has been raised for a few
+nodes, other CPU may have some reference to one of them and set
+node->parent to NULL (e.g. concurrent calls to radix_tree_shrink()),
+breaking the RCU linking. I can't confirm this theory yet ;)
+
+-- 
+Catalin
