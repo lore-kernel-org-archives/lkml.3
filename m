@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090AbaEHWOJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 18:14:09 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:60917 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755753AbaEHWOH (ORCPT
+	id S1755907AbaEHWSc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 18:18:32 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59171 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755378AbaEHWSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 18:14:07 -0400
-Message-ID: <1399587244.2030.59.camel@j-VirtualBox>
-Subject: Re: [PATCH 2/2] sched: Fix next_balance logic in
- rebalance_domains() and idle_balance()
-From: Jason Low <jason.low2@hp.com>
-To: Ingo Molnar <mingo@kernel.org>, jason.low2@hp.com
-Cc: peterz@infradead.org, linux-kernel@vger.kernel.org,
-        daniel.lezcano@linaro.org, alex.shi@linaro.org,
-        preeti@linux.vnet.ibm.com, efault@gmx.de, vincent.guittot@linaro.org,
-        morten.rasmussen@arm.com, aswin@hp.com
-Date: Thu, 08 May 2014 15:14:04 -0700
-In-Reply-To: <20140508173835.GB9838@gmail.com>
-References: <1398725155-7591-1-git-send-email-jason.low2@hp.com>
-	 <1398725155-7591-3-git-send-email-jason.low2@hp.com>
-	 <1399568364.2030.9.camel@j-VirtualBox> <20140508173835.GB9838@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 8 May 2014 18:18:31 -0400
+Date: Fri, 9 May 2014 00:18:30 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Christoph Lameter <cl@linux.com>, Gilad Ben-Yossef <gilad@benyossef.com>,
+        Tejun Heo <tj@kernel.org>, John Stultz <johnstul@us.ibm.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        viresh.kumar@linaro.org
+Subject: Re: vmstat: On demand vmstat workers V4
+In-Reply-To: <20140508142903.c2ef166c95d2b8acd0d7ea7d@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1405090003120.6261@ionos.tec.linutronix.de>
+References: <alpine.DEB.2.10.1405081033090.23786@gentwo.org> <20140508142903.c2ef166c95d2b8acd0d7ea7d@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-08 at 19:38 +0200, Ingo Molnar wrote:
-> * Jason Low <jason.low2@hp.com> wrote:
+On Thu, 8 May 2014, Andrew Morton wrote:
+> On Thu, 8 May 2014 10:35:15 -0500 (CDT) Christoph Lameter <cl@linux.com> wrote:
+> > --- linux.orig/kernel/time/tick-common.c	2014-05-06 10:51:19.711239813 -0500
+> > +++ linux/kernel/time/tick-common.c	2014-05-06 10:51:19.711239813 -0500
+> > @@ -222,6 +222,24 @@
+> >  		tick_setup_oneshot(newdev, handler, next_event);
+> >  }
+> > 
+> > +/*
+> > + * Return a cpu number that may be used to run housekeeping
+> > + * tasks. This is usually the timekeeping cpu unless that
+> > + * is not available. Then we simply fall back to the current
+> > + * cpu.
+> > + */
 > 
-> > On Mon, 2014-04-28 at 15:45 -0700, Jason Low wrote:
-> > > Currently, in idle_balance(), we update rq->next_balance when we pull_tasks. 
-> > > However, it is also important to update this in the !pulled_tasks case too.
-> > > 
-> > > When the CPU is "busy" (the CPU isn't idle), rq->next_balance gets computed
-> > > using sd->busy_factor (so we increase the balance interval when the CPU is
-> > > busy). However, when the CPU goes idle, rq->next_balance could still be set
-> > > to a large value that was computed with the sd->busy_factor.
-> > > 
-> > > Thus, we need to also update rq->next_balance in idle_balance() in the cases
-> > > where !pulled_tasks too, so that rq->next_balance gets updated without taking
-> > > the busy_factor into account when the CPU is about to go idle.
-> > > 
-> > > This patch makes rq->next_balance get updated independently of whether or
-> > > not we pulled_task. Also, we add logic to ensure that we always traverse
-> > > at least 1 of the sched domains to get a proper next_balance value for
-> > > updating rq->next_balance.
-> > > 
-> > > Additionally, since load_balance() modifies the sd->balance_interval, we
-> > > need to re-obtain the sched domain's interval after the call to
-> > > load_balance() in rebalance_domains() before we update rq->next_balance.
-> > > 
-> > > This patch adds and uses 2 new helper functions, update_next_balance() and
-> > > get_sd_balance_interval() to update next_balance and obtain the sched
-> > > domain's balance_interval. 
-> > 
-> > 
-> > Hi Peter,
-> > 
-> > I noticed that patch 1 is in tip, but not this patch 2. I was wondering
-> > what the current status with this [PATCH 2/2] is at the moment.
+> This comment is unusably vague.  What the heck is a "housekeeping
+> task"?  Why would anyone call this and what is special about the CPU
+> number it returns?
 > 
-> It was crashing the bootup with the attached config, it gave the splat 
-> attached below. (ignore the line duplication, it's a serial logging 
-> artifact.)
+> 
+> > +int tick_get_housekeeping_cpu(void)
+> > +{
+> > +	int cpu;
+> > +
+> > +	if (system_state < SYSTEM_RUNNING || tick_do_timer_cpu < 0)
+> > +		cpu = raw_smp_processor_id();
 
-Hi Ingo, Peter,
+That's completely bogus. The system state check is pointless and
+tick_do_timer_cpu even more so because if you call that code from a
+worker thread tick_do_timer_cpu should be assigned to some cpu.
 
-Were there NULL domains on the test system? If so, I think we can
-address the problem by doing update_next_balance() only if the below
-rcu_dereference_check_sched_domain() returns a non-null domain.
+Aside of that I'm having a hard time to understand why this stuff
+wants to move around at all.
 
-@@ -6665,8 +6692,14 @@ static int idle_balance(struct rq *this_rq)
->  	 */
->  	this_rq->idle_stamp = rq_clock(this_rq);
->  
-> -	if (this_rq->avg_idle < sysctl_sched_migration_cost)
-> +	if (this_rq->avg_idle < sysctl_sched_migration_cost) {
-> +		rcu_read_lock();
-> +		sd = rcu_dereference_check_sched_domain(this_rq->sd);
-> +		update_next_balance(sd, 0, &next_balance);
-> +		rcu_read_unlock();
-> +
->  		goto out;
-> +	}
+I think we agreed long ago, that for the whole HPC FULL_NOHZ stuff you
+have to sacrify at least one CPU for housekeeping purposes of all
+kinds, timekeeping, statistics and whatever.
 
+So if you have a housekeeper, then it makes absolutely no sense at all
+to move it around in circles.
 
+Can you please enlighten me why we need this at all?
+
+Thanks,
+
+	tglx
