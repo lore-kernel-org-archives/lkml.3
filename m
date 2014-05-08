@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbaEHIWc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 04:22:32 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:41844 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509AbaEHIW3 convert rfc822-to-8bit (ORCPT
+	id S1753204AbaEHIX5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 04:23:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42346 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752959AbaEHIXz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 04:22:29 -0400
+	Thu, 8 May 2014 04:23:55 -0400
+Date: Thu, 8 May 2014 10:23:50 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH v5 1/2] perf record: Propagate exit status of a command
+ line workload
+Message-ID: <20140508082350.GG2844@laptop.programming.kicks-ass.net>
+References: <1399535994-8027-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20140508075542.GC5307@lee--X1>
-References: <cover.1398735435.git.micky_ching@realsil.com.cn>
-	<1076b1824732688774d223a14595ecf26a375d82.1398735435.git.micky_ching@realsil.com.cn>
-	<CAPDyKFoZ2_H6Jh0+84zLBhayMb0=q1eJw=vC_m41iCsbz0siFw@mail.gmail.com>
-	<536B1B05.6010604@realsil.com.cn>
-	<20140508075542.GC5307@lee--X1>
-Date: Thu, 8 May 2014 10:22:28 +0200
-Message-ID: <CAPDyKFqU+7NoZ1JjKa2YMj2DJsuBG5jD8fEt7WdLawA-mmqOjw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mmc: rtsx: Revert "mmc: rtsx: modify error
- handleandremove smatch warnings"
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: micky <micky_ching@realsil.com.cn>, Chris Ball <chris@printf.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, devel@linuxdriverproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Roger <rogerable@realtek.com>,
-        Wei WANG <wei_wang@realsil.com.cn>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1399535994-8027-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 May 2014 09:55, Lee Jones <lee.jones@linaro.org> wrote:
->> It seems Chris is too busy to responding, so would you help to pick
->> this patch for 3.15 fix.
->
-> Hmmmm... that's pretty bad timing.  I've literally just sent the
-> pull-request containing the MFD/MMC fixup branch to Linus.  I guess
-> Ulf will have to do it.
+On Thu, May 08, 2014 at 04:59:53PM +0900, Namhyung Kim wrote:
+> Currently perf record doesn't propagate the exit status of a workload
+> given by the command line.  But sometimes it'd useful if it's
+> propagated so that a monitoring script can handle errors
+> appropriately.
+> 
+> To do that, it got rid of exit handlers and run/call them directly in
+> the __cmd_record().  I don't see any reason why those are in a form of
+> exit handlers in the first place.  Also it cleaned up the resource
+> management code in record__exit().
+> 
+> With this change, perf record returns the child exit status in case of
+> normal termination and send signal to itself when terminated by signal.
+> 
+> Example run of Stephane's case:
+> 
+>   $ perf record true && echo yes || echo no
+>   [ perf record: Woken up 1 times to write data ]
+>   [ perf record: Captured and wrote 0.013 MB perf.data (~589 samples) ]
+>   yes
+> 
+>   $ perf record false && echo yes || echo no
+>   [ perf record: Woken up 1 times to write data ]
+>   [ perf record: Captured and wrote 0.013 MB perf.data (~589 samples) ]
+>   no
+> 
+> Jiri's case (error in parent):
+> 
+>   $ perf record -m 10G true && echo yes || echo no
+>   rounding mmap pages size to 17179869184 bytes (4194304 pages)
+>   failed to mmap with 12 (Cannot allocate memory)
+>   no
+> 
+> And Peter's case (interrupted by signal):
+> 
+>   $ while :; do perf record sleep 1; done
+>   ^C[ perf record: Woken up 1 times to write data ]
+>   [ perf record: Captured and wrote 0.014 MB perf.data (~593 samples) ]
 
-There seem to be some confusion here. :-)
+Thanks!
 
-This patch is _only_ intended for Chris' mmc_next branch, so it
-shouldn't go for 3.15 fixes. Or better, Chris should drop the patch
-this one is reverting.
-
-Likely we will see a merge problem in Stephen Rothwell's linux-next
-tree, until Chris' drops this patch - causing Stephen to not merge the
-mmc tree for a while. I suppose that's the best we can do, until Chris
-shows up again.
-
-Kind regards
-Ulf Hansson
-
->
->> >>>From: Micky Ching<micky_ching@realsil.com.cn>
->> >>>
->> >>>This reverts commit 1f7b581b3ffcb2a8437397a02f4af89fa6934d08.
->> >>>
->> >>>The patch depend on commit c42deffd5b53c9e583d83c7964854ede2f12410d
->> >>><mmc: rtsx: add support for pre_req and post_req>, but the previous
->> >>>patch was discard. So we have to delete the patch.
->> >>>
->> >>>Signed-off-by: Micky Ching<micky_ching@realsil.com.cn>
->> >Acked-by: Ulf Hansson<ulf.hansson@linaro.org>
->>
->
-> --
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+Acked-by: Peter Zijlstra <peterz@infradead.org>
