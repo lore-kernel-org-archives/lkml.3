@@ -1,205 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615AbaEHXpO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 19:45:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:57798 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753298AbaEHXpM (ORCPT
+	id S1756016AbaEHXp3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 19:45:29 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:41880 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753947AbaEHXp0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 19:45:12 -0400
-Date: Thu, 8 May 2014 19:45:08 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Gleb Natapov <gleb@redhat.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: KVM_GUEST support breaks page fault tracing
-Message-ID: <20140508194508.561ed220@gandalf.local.home>
-In-Reply-To: <536C0DA8.4090608@intel.com>
-References: <536C039A.5000204@intel.com>
-	<alpine.DEB.2.02.1405090024050.6261@ionos.tec.linutronix.de>
-	<536C0DA8.4090608@intel.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 8 May 2014 19:45:26 -0400
+Message-ID: <536C1710.1010108@gmail.com>
+Date: Fri, 09 May 2014 07:45:20 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: JBottomley@parallels.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>
+CC: linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] drivers: scsi: mvsas: fix compiling issue by adding 'MVS_'
+ for "enum pci_interrupt_cause"
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 08 May 2014 16:05:12 -0700
-Dave Hansen <dave.hansen@intel.com> wrote:
+The direct cause is IRQ_SPI is already defined as a macro in unicore32
+architecture (also, blackfin and mips architectures define it). The
+related error (unicore32  with allmodconfig)
 
-Added Seiji and hpa
+    CC [M]  drivers/scsi/mvsas/mv_94xx.o
+  In file included from drivers/scsi/mvsas/mv_94xx.c:27:
+  drivers/scsi/mvsas/mv_94xx.h:176: error: expected identifier before numeric constant
 
-> On 05/08/2014 03:24 PM, Thomas Gleixner wrote:
-> >> > I noticed on some of my systems that page fault tracing doesn't work:
-> >> > 
-> >> > 	cd /sys/kernel/debug/tracing
-> >> > 	echo 1 > events/exceptions/enable
-> >> > 	cat trace;
-> >> > 	# nothing shows up
-> >> > 
-> >> > I eventually traced it down to CONFIG_KVM_GUEST.  At least in a KVM VM,
-> >> > enabling that option breaks page fault tracing, and disabling fixes it.
-> >> >  I tried on some old kernels and this does not appear to be a
-> >> > regression: it never worked.
-> >> > 
-> >> > Anybody have any theories about what is going on?
-
-Has to do with the IDT tricks done to keep page faults from getting
-zero overhead when tracing is disabled. It sets up two types of traps.
-One that encompasses the other. When all of the trap tracepoints are
-disabled, the traps are called directly. But when any of them are
-enabled, the IDT gets switched to have the traps point to exceptions
-that trace the entry and exit of the exception.
-
-see commits 25c74b10bacead867478480170083f69cfc0db48 and
-d34603b07c4255b2b00a546d34f297ccd50ae4c6
-
-> 
-> Looks like the KVM code calls do_page_fault() directly:
-> 
-> > dotraplinkage void __kprobes
-> > do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
-> > {
-> >         enum ctx_state prev_state;
-> > 
-> >         switch (kvm_read_and_reset_pf_reason()) {
-> >         default:
-> >                 do_page_fault(regs, error_code);
-> >                 break;
-> >         case KVM_PV_REASON_PAGE_NOT_PRESENT:
-> 
-> That seems to explain my problems in a VM.  Any objections to doing
-> something like the attached patch?
-
-As your patch showed up as an attachment, I couldn't include it in my
-reply. But sure, that may work. But you could also play tricks to keep
-the overhead off when tracing is disabled like this one:
-
-[ I booted this, but didn't test any kvm guests with it ]
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+And "enum pci_interrupt_cause" may will be useful for kernel drivers,
+although at present, it is not used in kernel. So add 'MVS_' for it.
 
 
-diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
-index 58d66fe..835ba5b 100644
---- a/arch/x86/include/asm/traps.h
-+++ b/arch/x86/include/asm/traps.h
-@@ -39,6 +39,8 @@ asmlinkage void simd_coprocessor_error(void);
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ drivers/scsi/mvsas/mv_94xx.h | 58 ++++++++++++++++++++++----------------------
+ 1 file changed, 29 insertions(+), 29 deletions(-)
+
+diff --git a/drivers/scsi/mvsas/mv_94xx.h b/drivers/scsi/mvsas/mv_94xx.h
+index 487aa6f..14e1974 100644
+--- a/drivers/scsi/mvsas/mv_94xx.h
++++ b/drivers/scsi/mvsas/mv_94xx.h
+@@ -150,35 +150,35 @@ enum chip_register_bits {
  
- #ifdef CONFIG_TRACING
- asmlinkage void trace_page_fault(void);
-+asmlinkage void trace_async_page_fault(void);
-+#define trace_async_page_fault async_page_fault
- #define trace_divide_error divide_error
- #define trace_bounds bounds
- #define trace_invalid_op invalid_op
-@@ -51,7 +53,6 @@ asmlinkage void trace_page_fault(void);
- #define trace_coprocessor_error coprocessor_error
- #define trace_alignment_check alignment_check
- #define trace_simd_coprocessor_error simd_coprocessor_error
--#define trace_async_page_fault async_page_fault
- #endif
+ enum pci_interrupt_cause {
+ 	/*  MAIN_IRQ_CAUSE (R10200) Bits*/
+-	IRQ_COM_IN_I2O_IOP0            = (1 << 0),
+-	IRQ_COM_IN_I2O_IOP1            = (1 << 1),
+-	IRQ_COM_IN_I2O_IOP2            = (1 << 2),
+-	IRQ_COM_IN_I2O_IOP3            = (1 << 3),
+-	IRQ_COM_OUT_I2O_HOS0           = (1 << 4),
+-	IRQ_COM_OUT_I2O_HOS1           = (1 << 5),
+-	IRQ_COM_OUT_I2O_HOS2           = (1 << 6),
+-	IRQ_COM_OUT_I2O_HOS3           = (1 << 7),
+-	IRQ_PCIF_TO_CPU_DRBL0          = (1 << 8),
+-	IRQ_PCIF_TO_CPU_DRBL1          = (1 << 9),
+-	IRQ_PCIF_TO_CPU_DRBL2          = (1 << 10),
+-	IRQ_PCIF_TO_CPU_DRBL3          = (1 << 11),
+-	IRQ_PCIF_DRBL0                 = (1 << 12),
+-	IRQ_PCIF_DRBL1                 = (1 << 13),
+-	IRQ_PCIF_DRBL2                 = (1 << 14),
+-	IRQ_PCIF_DRBL3                 = (1 << 15),
+-	IRQ_XOR_A                      = (1 << 16),
+-	IRQ_XOR_B                      = (1 << 17),
+-	IRQ_SAS_A                      = (1 << 18),
+-	IRQ_SAS_B                      = (1 << 19),
+-	IRQ_CPU_CNTRL                  = (1 << 20),
+-	IRQ_GPIO                       = (1 << 21),
+-	IRQ_UART                       = (1 << 22),
+-	IRQ_SPI                        = (1 << 23),
+-	IRQ_I2C                        = (1 << 24),
+-	IRQ_SGPIO                      = (1 << 25),
+-	IRQ_COM_ERR                    = (1 << 29),
+-	IRQ_I2O_ERR                    = (1 << 30),
+-	IRQ_PCIE_ERR                   = (1 << 31),
++	MVS_IRQ_COM_IN_I2O_IOP0        = (1 << 0),
++	MVS_IRQ_COM_IN_I2O_IOP1        = (1 << 1),
++	MVS_IRQ_COM_IN_I2O_IOP2        = (1 << 2),
++	MVS_IRQ_COM_IN_I2O_IOP3        = (1 << 3),
++	MVS_IRQ_COM_OUT_I2O_HOS0       = (1 << 4),
++	MVS_IRQ_COM_OUT_I2O_HOS1       = (1 << 5),
++	MVS_IRQ_COM_OUT_I2O_HOS2       = (1 << 6),
++	MVS_IRQ_COM_OUT_I2O_HOS3       = (1 << 7),
++	MVS_IRQ_PCIF_TO_CPU_DRBL0      = (1 << 8),
++	MVS_IRQ_PCIF_TO_CPU_DRBL1      = (1 << 9),
++	MVS_IRQ_PCIF_TO_CPU_DRBL2      = (1 << 10),
++	MVS_IRQ_PCIF_TO_CPU_DRBL3      = (1 << 11),
++	MVS_IRQ_PCIF_DRBL0             = (1 << 12),
++	MVS_IRQ_PCIF_DRBL1             = (1 << 13),
++	MVS_IRQ_PCIF_DRBL2             = (1 << 14),
++	MVS_IRQ_PCIF_DRBL3             = (1 << 15),
++	MVS_IRQ_XOR_A                  = (1 << 16),
++	MVS_IRQ_XOR_B                  = (1 << 17),
++	MVS_IRQ_SAS_A                  = (1 << 18),
++	MVS_IRQ_SAS_B                  = (1 << 19),
++	MVS_IRQ_CPU_CNTRL              = (1 << 20),
++	MVS_IRQ_GPIO                   = (1 << 21),
++	MVS_IRQ_UART                   = (1 << 22),
++	MVS_IRQ_SPI                    = (1 << 23),
++	MVS_IRQ_I2C                    = (1 << 24),
++	MVS_IRQ_SGPIO                  = (1 << 25),
++	MVS_IRQ_COM_ERR                = (1 << 29),
++	MVS_IRQ_I2O_ERR                = (1 << 30),
++	MVS_IRQ_PCIE_ERR               = (1 << 31),
+ };
  
- dotraplinkage void do_divide_error(struct pt_regs *, long);
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index a2a4f46..26e370a 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1451,7 +1451,17 @@ ENTRY(async_page_fault)
- 	jmp error_code
- 	CFI_ENDPROC
- END(async_page_fault)
-+
-+#ifdef CONFIG_TRACING
-+ENTRY(trace_async_page_fault)
-+	RING0_EC_FRAME
-+	ASM_CLAC
-+	pushl_cfi $trace_do_async_page_fault
-+	jmp error_code
-+	CFI_ENDPROC
-+END(async_page_fault)
- #endif
-+#endif /* CONFIG_KVM_GUEST */
- 
- /*
-  * End of kprobes section
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 3db806d..e1f8926 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1289,7 +1289,7 @@ errorentry xen_stack_segment do_stack_segment
- errorentry general_protection do_general_protection
- trace_errorentry page_fault do_page_fault
- #ifdef CONFIG_KVM_GUEST
--errorentry async_page_fault do_async_page_fault
-+trace_errorentry async_page_fault do_async_page_fault
- #endif
- #ifdef CONFIG_X86_MCE
- paranoidzeroentry machine_check *machine_check_vector(%rip)
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 0331cb3..baef30e 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -252,14 +252,18 @@ u32 kvm_read_and_reset_pf_reason(void)
- }
- EXPORT_SYMBOL_GPL(kvm_read_and_reset_pf_reason);
- 
--dotraplinkage void __kprobes
--do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
-+enum {
-+	KVM_PV_DO_PAGE_FAULT,
-+	KVM_PV_HANDLED,
-+};
-+
-+static int kvm_pv_page_fault(struct pt_regs *regs, unsigned long error_code)
- {
- 	enum ctx_state prev_state;
- 
- 	switch (kvm_read_and_reset_pf_reason()) {
- 	default:
--		do_page_fault(regs, error_code);
-+		return KVM_PV_DO_PAGE_FAULT;
- 		break;
- 	case KVM_PV_REASON_PAGE_NOT_PRESENT:
- 		/* page is swapped out by the host. */
-@@ -275,7 +279,34 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
- 		rcu_irq_exit();
- 		break;
- 	}
-+	return KVM_PV_HANDLED;
-+}
-+
-+dotraplinkage void __kprobes
-+do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
-+{
-+	int ret;
-+
-+	ret = kvm_pv_page_fault(regs, error_code);
-+	if (ret == KVM_PV_HANDLED)
-+		return;
-+
-+	do_page_fault(regs, error_code);
-+}
-+
-+#ifdef CONFIG_TRACING
-+dotraplinkage void __kprobes notrace
-+trace_do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
-+{
-+	int ret;
-+
-+	ret = kvm_pv_page_fault(regs, error_code);
-+	if (ret == KVM_PV_HANDLED)
-+		return;
-+
-+	trace_do_page_fault(regs, error_code);
- }
-+#endif /* CONFIG_TRACING */
- 
- static void __init paravirt_ops_setup(void)
- {
+ union reg_phy_cfg {
+-- 
+1.9.2.459.g68773ac
