@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663AbaEHPp2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:45:28 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:42719 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987AbaEHPp1 convert rfc822-to-8bit (ORCPT
+	id S1754417AbaEHPqO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:46:14 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:55904 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753994AbaEHPqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:45:27 -0400
+	Thu, 8 May 2014 11:46:13 -0400
+Message-ID: <536BA6C1.5000200@semaphore.gr>
+Date: Thu, 08 May 2014 18:46:09 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1399552888-11024-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1399552888-11024-1-git-send-email-kirill.shutemov@linux.intel.com>
-From: Armin Rigo <arigo@tunes.org>
-Date: Thu, 8 May 2014 17:44:46 +0200
-X-Google-Sender-Auth: LvXEG8fNKmPhXM0sKY9RZ8U49S0
-Message-ID: <CAMSv6X0+3-uNeiyEPD3sA5dA6Af_M+BT0aeVpa3qMv1aga0q9g@mail.gmail.com>
-Subject: Re: [PATCHv2 0/2] remap_file_pages() decommission
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
-        mingo@kernel.org
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: Break out early when frequency equals target_freq
+References: <53600B71.2050904@semaphore.gr>
+In-Reply-To: <53600B71.2050904@semaphore.gr>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everybody,
+On 29/04/2014 11:28 μμ, Stratos Karafotis wrote:
+> Many drivers keep frequencies in frequency table in ascending
+> or descending order. When governor tries to change to policy->min
+> or policy->max respectively then the cpufreq_frequency_table_target
+> could return on first iteration. This will save some iteration cycles.
+> 
+> So, break out early when a frequency in cpufreq_frequency_table
+> equals to target one.
+> 
+> Testing this during kernel compilation using ondemand governor
+> with a frequency table in ascending order, the
+> cpufreq_frequency_table_target returned early on the first
+> iteration at about 30% of times called.
+> 
+> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+> ---
+>  drivers/cpufreq/freq_table.c | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/freq_table.c b/drivers/cpufreq/freq_table.c
+> index 8e518c6..1632981 100644
+> --- a/drivers/cpufreq/freq_table.c
+> +++ b/drivers/cpufreq/freq_table.c
+> @@ -137,9 +137,13 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
+>  		i = pos - table;
+>  		if ((freq < policy->min) || (freq > policy->max))
+>  			continue;
+> +		if (freq == target_freq) {
+> +			optimal.driver_data = i;
+> +			break;
+> +		}
+>  		switch (relation) {
+>  		case CPUFREQ_RELATION_H:
+> -			if (freq <= target_freq) {
+> +			if (freq < target_freq) {
+>  				if (freq >= optimal.frequency) {
+>  					optimal.frequency = freq;
+>  					optimal.driver_data = i;
+> @@ -152,7 +156,7 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
+>  			}
+>  			break;
+>  		case CPUFREQ_RELATION_L:
+> -			if (freq >= target_freq) {
+> +			if (freq > target_freq) {
+>  				if (freq <= optimal.frequency) {
+>  					optimal.frequency = freq;
+>  					optimal.driver_data = i;
+> 
 
-Here is a note from the PyPy project (mentioned earlier in this
-thread, and at https://lwn.net/Articles/587923/ ).
+Gentle reminder.
 
-Yes, we use remap_file_pages() heavily on the x86-64 architecture.
-However, the individual calls to remap_file_pages() are not
-performance-critical, so it is easy to switch to using multiple
-mmap()s.  We need to perform more measurements to know exactly what
-the overhead would be, in terms notably of kernel memory.
-
-However, an issue with that approach is the upper bound on the number
-of VMAs.  By default, it is not large enough.  Right now, it is
-possible to remap say 10% of the individual pages from an anonymous
-mmap of multiple GBs in size; but doing so with individual calls to
-mmap hits this arbitrary limit.  I have no particular weight to give
-for or against keeping remap_file_pages() in the kernel, but if it is
-removed or emulated, it would be a plus if the programs would run on a
-machine with the default configuration --- i.e. if you remove or
-emulate remap_file_pages(), please increase the default limit as well.
-
-
-A bientôt,
-
-Armin.
+Thanks,
+Stratos
