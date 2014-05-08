@@ -1,125 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851AbaEHPOH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:14:07 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:56287 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753544AbaEHPOE (ORCPT
+	id S1754872AbaEHPOT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:14:19 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:33825 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547AbaEHPOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:14:04 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: git@xilinx.com, monstr@monstr.eu, Josh Cartwright <josh.cartwright@ni.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] ARM: zynq: Enable big-endian
-Date: Thu,  8 May 2014 17:13:39 +0200
-Message-Id: <c0fa40614e2bec826fe825f75d00ae927d1197c4.1399562009.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <5e4fb08db4f6a436fc4593b22c3ae611ba545967.1399562009.git.michal.simek@xilinx.com>
-References: <5e4fb08db4f6a436fc4593b22c3ae611ba545967.1399562009.git.michal.simek@xilinx.com>
-In-Reply-To: <5e4fb08db4f6a436fc4593b22c3ae611ba545967.1399562009.git.michal.simek@xilinx.com>
-References: <5e4fb08db4f6a436fc4593b22c3ae611ba545967.1399562009.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-708-1399562040-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Thu, 8 May 2014 11:14:06 -0400
+Date: Thu, 8 May 2014 17:14:02 +0200
+From: Robert Richter <rric@kernel.org>
+To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+Cc: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
+        Borislav Petkov <bp@suse.de>, Daniel J Blueman <daniel@numascale.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [PATCH V3 1/3] x86/PCI: Fix PCI root numa_node info on AMD
+ family15h
+Message-ID: <20140508151402.GN32718@rric.localhost>
+References: <1399489127-6961-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1399489127-6961-2-git-send-email-suravee.suthikulpanit@amd.com>
+ <20140508085905.GK32718@rric.localhost>
+ <20140508090148.GL32718@rric.localhost>
+ <536B973B.2000207@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <536B973B.2000207@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On 08.05.14 09:39:55, Suravee Suthikulanit wrote:
+> On 5/8/2014 4:01 AM, Robert Richter wrote:
+> >On 08.05.14 10:59:05, Robert Richter wrote:
+> >>On 07.05.14 13:58:45, suravee.suthikulpanit@amd.com wrote:
+> >>>@@ -113,10 +122,17 @@ static int __init early_fill_mp_bus_info(void)
+> >>>  		info = alloc_pci_root_info(min_bus, max_bus, node, link);
+> >>>  	}
+> >>>
+> >>>+	/*
+> >>>+	 * The following code is only supported until Fam11h.
+> >>>+	 * Newer processors will depend on ACPI MCFG table instead.
+> >>>+	 */
+> >>>+	if (boot_cpu_data.x86 > 0x11)
+> >>>+		return 0;
+> >>>+
+> >>>  	/* get the default node and link for left over res */
+> >>
+> >>As this is the only substantial change of your patch, I would better
+> >>drop ther rest or at least split it in two patches. Should this change
+> >>also be for stable?
+> >
+> >Of course adding the hostbridge must be also part of the patch, didn't
+> >note this due to the other noise. See why the split would be good?
+> >
+> >>
+> >>-Robert
+> 
+> 
+> Robert,
+> 
+> I have already added the hostbridge for family15h in this patch.
+> 
+> +static struct amd_hostbridge hb_probes[] __initdata = {
+> +	{ 0, 0x18, 0x1100 }, /* K8 */
+> +	{ 0, 0x18, 0x1200 }, /* Family10h */
+> +	{ 0xff, 0, 0x1200 }, /* Family10h */
+> +	{ 0, 0x18, 0x1300 }, /* Family11h */
+> +	{ 0, 0x18, 0x1600 }, /* Family15h */ <--- HERE
 
---=_mimegpg-monstr-desktop-708-1399562040-0001
+Yes, I noticed that, but later, thus my 2nd mail.
 
-Enable ARCH_SUPPORTS_BIG_ENDIAN in Kconfig.
+>  };
+> 
+> The rest of the changes are mostly comments, some minor renaming of
+> variables for clarity, and replace hardcode values with preprocessor macro.
+> If needed, I can split them.
 
-zynq_secondary_trampoline is the first function
-that is called on secondary CPU.
-Reference:
-"ARM: mcpm: fix big endian issue in mcpm startup code"
-(sha1: 519ceb9fd10cd7e836d0aa97b2068cc9e97f463b)
+I just would drop it, you just need the fam15h device and the cpu mode
+check.
 
-Fix early printk support. Based on:
-"ARM: pl01x debug code endian fix"
-(sha1: 76e3faf156fa95b6465e747d702b94faf67117fc)
-
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
-
- arch/arm/include/debug/zynq.S | 2 ++
- arch/arm/mach-zynq/Kconfig    | 1 +
- arch/arm/mach-zynq/headsmp.S  | 5 ++++-
- 3 files changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/include/debug/zynq.S b/arch/arm/include/debug/zynq.S
-index 0b762fafa758..3895146341f3 100644
---- a/arch/arm/include/debug/zynq.S
-+++ b/arch/arm/include/debug/zynq.S
-@@ -43,12 +43,14 @@
-
- 		.macro	waituart,rd,rx
- 1001:		ldr	\rd, [\rx, #UART_SR_OFFSET]
-+ARM_BE8(	rev	\rd, \rd )
- 		tst	\rd, #UART_SR_TXEMPTY
- 		beq	1001b
- 		.endm
-
- 		.macro	busyuart,rd,rx
- 1002:		ldr	\rd, [\rx, #UART_SR_OFFSET]	@ get status register
-+ARM_BE8(	rev	\rd, \rd )
- 		tst	\rd, #UART_SR_TXFULL		@
- 		bne	1002b			@ wait if FIFO is full
- 		.endm
-diff --git a/arch/arm/mach-zynq/Kconfig b/arch/arm/mach-zynq/Kconfig
-index 1daa5c220d1d..ff03a71bb9a3 100644
---- a/arch/arm/mach-zynq/Kconfig
-+++ b/arch/arm/mach-zynq/Kconfig
-@@ -2,6 +2,7 @@ config ARCH_ZYNQ
- 	bool "Xilinx Zynq ARM Cortex A9 Platform" if ARCH_MULTI_V7
- 	select ARCH_HAS_CPUFREQ
- 	select ARCH_HAS_OPP
-+	select ARCH_SUPPORTS_BIG_ENDIAN
- 	select ARM_AMBA
- 	select ARM_GIC
- 	select ARM_GLOBAL_TIMER if !CPU_FREQ
-diff --git a/arch/arm/mach-zynq/headsmp.S b/arch/arm/mach-zynq/headsmp.S
-index 57a32869f0aa..dd8c071941e7 100644
---- a/arch/arm/mach-zynq/headsmp.S
-+++ b/arch/arm/mach-zynq/headsmp.S
-@@ -8,9 +8,12 @@
-  */
- #include <linux/linkage.h>
- #include <linux/init.h>
-+#include <asm/assembler.h>
-
- ENTRY(zynq_secondary_trampoline)
--	ldr	r0, [pc]
-+ARM_BE8(setend	be)				@ ensure we are in BE8 mode
-+	ldr	r0, zynq_secondary_trampoline_jump
-+ARM_BE8(rev	r0, r0)
- 	bx	r0
- .globl zynq_secondary_trampoline_jump
- zynq_secondary_trampoline_jump:
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-708-1399562040-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlNrnzgACgkQykllyylKDCGECgCfccUDWsDdl+DZtvx1fJw6WoSX
-DeEAoJ4/i+Zj9u+OhejA6z8+0ZYQkAXg
-=hwJJ
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-708-1399562040-0001--
+-Robert
