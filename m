@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423AbaEHSqP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 14:46:15 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:62862 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753705AbaEHSqN (ORCPT
+	id S1755460AbaEHSqh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 14:46:37 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:48776 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485AbaEHSqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 14:46:13 -0400
-Message-ID: <1399574770.4085.7.camel@x220>
-Subject: Re: [PATCH 2/2] phy: exynos: fix SATA phy license typo
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org
-Date: Thu, 08 May 2014 20:46:10 +0200
-In-Reply-To: <1399560433-1402630-4-git-send-email-arnd@arndb.de>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
-	 <1399560433-1402630-4-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 May 2014 18:46:10.0940 (UTC) FILETIME=[C7D433C0:01CF6AED]
-X-RcptDomain: vger.kernel.org
+	Thu, 8 May 2014 14:46:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <536BC445.8080007@cogentembedded.com>
+References: <1399494750-31996-1-git-send-email-geert+renesas@glider.be>
+	<1399494750-31996-2-git-send-email-geert+renesas@glider.be>
+	<536B7FD3.5090506@cogentembedded.com>
+	<CAMuHMdVoYnRcOVht0_Bt5_NJA3vZ40svftRXN-xbqHSMHZR5dg@mail.gmail.com>
+	<536B8340.4010901@cogentembedded.com>
+	<CAMuHMdUW3ENmykZGNQB8Qo3EVk+7RYzVHa6L-=WsxZZ06mfUTQ@mail.gmail.com>
+	<536BC445.8080007@cogentembedded.com>
+Date: Thu, 8 May 2014 20:46:34 +0200
+X-Google-Sender-Auth: 82ByOs_HCivwACmkdu7ZrFqUJCA
+Message-ID: <CAMuHMdVR9n8E-LyHn1B0REE4oTVbfJf-9v1Bo70bHCH_=r4-Vw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] ARM: shmobile: r8a7740 dtsi: Add Ethernet support
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Bastian Hecht <hechtb+renesas@gmail.com>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-08 at 16:46 +0200, Arnd Bergmann wrote:
-> If the license string doesn't match exactly, the module refuses
-> to load.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Kishon Vijay Abraham I <kishon@ti.com>
-> Cc: Kukjin Kim <kgene.kim@samsung.com>
-> Cc: linux-samsung-soc@vger.kernel.org
-> ---
->  drivers/phy/phy-exynos5250-sata.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/phy/phy-exynos5250-sata.c b/drivers/phy/phy-exynos5250-sata.c
-> index c9361b7..0568945 100644
-> --- a/drivers/phy/phy-exynos5250-sata.c
-> +++ b/drivers/phy/phy-exynos5250-sata.c
-> @@ -246,6 +246,6 @@ static struct platform_driver exynos_sata_phy_driver = {
->  module_platform_driver(exynos_sata_phy_driver);
->  
->  MODULE_DESCRIPTION("Samsung SerDes PHY driver");
-> -MODULE_LICENSE("GPL V2");
-> +MODULE_LICENSE("GPL v2");
->  MODULE_AUTHOR("Girish K S <ks.giri@samsung.com>");
->  MODULE_AUTHOR("Yuvaraj C D <yuvaraj.cd@samsung.com>");
+Hi Sergei,
 
-A bit of grepping the tree showed me
-    Documentation/blackfin/gptimers-example.c:83:MODULE_LICENSE("BSD");
-    drivers/dma/dma-jz4740.c:617:MODULE_LICENSE("GPLv2");
-    drivers/input/misc/sirfsoc-onkey.c:216:MODULE_LICENSE("GPLv2");
-    drivers/pci/host/pci-mvebu.c:1042:MODULE_LICENSE("GPLv2");
-    drivers/pci/host/pci-tegra.c:1719:MODULE_LICENSE("GPLv2");
-    drivers/power/reset/restart-poweroff.c:65:MODULE_LICENSE("GPLv2");
+On Thu, May 8, 2014 at 7:52 PM, Sergei Shtylyov
+<sergei.shtylyov@cogentembedded.com> wrote:
+>>>>>> +               /* clocks = <&mstp3_clks R8A7740_CLK_GETHER>; */
+>
+>>>>>      This property is mandatory, according to the bindings.
+>
+>>>> Indeed, but you cannot put anything there until the platform has CCF, as
+>>>> mstp3_clks doesn't exist yet.
+>
+>>>     Yes, that was the main obstacle to accepting those bindings sooner.
+>>> This patch therefore seems somewhat premature.
+>
+>> My main objective is to provide working Ethernet support for Armadillo
+>> reference now.
+>
+>    Mine was the same (but for BOCK-W board) but DT people didn't give a
+> damn. :-) So there's still no Ethernet support in BOCK-W DT.
 
-It seems these need to be changed too. But, except for dma-jz4740.c,
-these are all files that can't be built as (part of) a module. Which
-explains why no one noticed. Maybe I'll submit some trivial patches, in
-a few days, to clean this up.
+Yes there is: ethernet@18300000.
 
+>> The DTS already has other nodes without "clocks" properties.
+>
+>    It means not everybody submitting the bindings had the same bad luck as me. :-)
 
-Paul Bolle
+I think we have to be pragmatic here. The clocks properties will be added to
+the dtsi as soon as we have CCF support.
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
