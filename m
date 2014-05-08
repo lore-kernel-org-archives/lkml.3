@@ -1,276 +1,370 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462AbaEHOG3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 10:06:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43840 "EHLO
+	id S1754836AbaEHOGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 10:06:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43837 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485AbaEHOAp (ORCPT
+	with ESMTP id S1752329AbaEHOAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 May 2014 10:00:45 -0400
-Message-Id: <20140508135851.995123148@infradead.org>
+Message-Id: <20140508135852.940119622@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 08 May 2014 15:58:45 +0200
+Date: Thu, 08 May 2014 15:59:00 +0200
 From: Peter Zijlstra <peterz@infradead.org>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, mingo@kernel.org,
         will.deacon@arm.com, paulmck@linux.vnet.ibm.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Chen Gang <gang.chen@asianux.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 05/20] arch,arm64: Fold atomic_ops
+        Peter Zijlstra <peterz@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        David Howells <dhowells@redhat.com>
+Subject: [PATCH 20/20] arch: Rewrite generic atomic support
 References: <20140508135840.956784204@infradead.org>
-Content-Disposition: inline; filename=peterz-arm64-atomic_cleanup.patch
+Content-Disposition: inline; filename=peterz-generic-atomic_cleanup.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many of the atomic op implementations are the same except for one
-instruction; fold the lot into a few CPP macros and reduce LoC.
+Rewrite generic atomic support to only require cmpxchg(), generate all
+other primitives from that.
 
-This also prepares for easy addition of new ops.
+Furthermore reduce the endless repetition for all these primitives to
+a few CPP macros. This way we get more for less lines.
 
-Requires the asm_op due to eor.
-
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Chen Gang <gang.chen@asianux.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: David Howells <dhowells@redhat.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/arm64/include/asm/atomic.h |  213 ++++++++++++++++------------------------
- 1 file changed, 88 insertions(+), 125 deletions(-)
+ include/asm-generic/atomic.h   |  174 ++++++++++++++++++-----------------------
+ include/asm-generic/atomic64.h |   20 +++-
+ lib/atomic64.c                 |   83 ++++++++-----------
+ 3 files changed, 130 insertions(+), 147 deletions(-)
 
---- a/arch/arm64/include/asm/atomic.h
-+++ b/arch/arm64/include/asm/atomic.h
-@@ -43,69 +43,51 @@
-  * store exclusive to ensure that these are atomic.  We may loop
-  * to ensure that the update happens.
-  */
--static inline void atomic_add(int i, atomic_t *v)
--{
--	unsigned long tmp;
--	int result;
--
--	asm volatile("// atomic_add\n"
--"1:	ldxr	%w0, %2\n"
--"	add	%w0, %w0, %w3\n"
--"	stxr	%w1, %w0, %2\n"
--"	cbnz	%w1, 1b"
--	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
--	: "Ir" (i));
--}
--
--static inline int atomic_add_return(int i, atomic_t *v)
--{
--	unsigned long tmp;
--	int result;
--
--	asm volatile("// atomic_add_return\n"
--"1:	ldxr	%w0, %2\n"
--"	add	%w0, %w0, %w3\n"
--"	stlxr	%w1, %w0, %2\n"
--"	cbnz	%w1, 1b"
--	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
--	: "Ir" (i)
--	: "memory");
+--- a/include/asm-generic/atomic.h
++++ b/include/asm-generic/atomic.h
+@@ -19,13 +19,81 @@
+ #include <asm/barrier.h>
  
--	smp_mb();
--	return result;
--}
--
--static inline void atomic_sub(int i, atomic_t *v)
--{
--	unsigned long tmp;
--	int result;
--
--	asm volatile("// atomic_sub\n"
--"1:	ldxr	%w0, %2\n"
--"	sub	%w0, %w0, %w3\n"
--"	stxr	%w1, %w0, %2\n"
--"	cbnz	%w1, 1b"
--	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
--	: "Ir" (i));
--}
--
--static inline int atomic_sub_return(int i, atomic_t *v)
--{
--	unsigned long tmp;
--	int result;
--
--	asm volatile("// atomic_sub_return\n"
--"1:	ldxr	%w0, %2\n"
--"	sub	%w0, %w0, %w3\n"
--"	stlxr	%w1, %w0, %2\n"
--"	cbnz	%w1, 1b"
--	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
--	: "Ir" (i)
--	: "memory");
--
--	smp_mb();
--	return result;
--}
-+#define ATOMIC_OP(op, asm_op)						\
+ #ifdef CONFIG_SMP
+-/* Force people to define core atomics */
+-# if !defined(atomic_add_return) || !defined(atomic_sub_return) || \
+-     !defined(atomic_clear_mask) || !defined(atomic_set_mask)
+-#  error "SMP requires a little arch-specific magic"
+-# endif
++
++/* we can build all atomic primitives from cmpxchg */
++
++#define ATOMIC_OP(op, c_op)						\
 +static inline void atomic_##op(int i, atomic_t *v)			\
 +{									\
-+	unsigned long tmp;						\
-+	int result;							\
++	int c, old;							\
 +									\
-+	asm volatile("// atomic_" #op "\n"				\
-+"1:	ldxr	%w0, %2\n"						\
-+"	" #asm_op "	%w0, %w0, %w3\n"				\
-+"	stxr	%w1, %w0, %2\n"						\
-+"	cbnz	%w1, 1b"						\
-+	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)		\
-+	: "Ir" (i));							\
-+}									\
++	c = v->counter;							\
++	while ((old = cmpxchg(&v->counter, c, c c_op i)) != c)		\
++		c = old;						\
++}
 +
-+#define ATOMIC_OP_RETURN(op, asm_op)					\
++#define ATOMIC_OP_RETURN(op, c_op)					\
 +static inline int atomic_##op##_return(int i, atomic_t *v)		\
 +{									\
-+	unsigned long tmp;						\
-+	int result;							\
++	int c, old;							\
 +									\
-+	asm volatile("// atomic_" #op "_return\n"			\
-+"1:	ldxr	%w0, %2\n"						\
-+"	" #asm_op "	%w0, %w0, %w3\n"				\
-+"	stlxr	%w1, %w0, %2\n"						\
-+"	cbnz	%w1, 1b"						\
-+	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)		\
-+	: "Ir" (i)							\
-+	: "memory");							\
++	c = v->counter;							\
++	while ((old = cmpxchg(&v->counter, c, c c_op i)) != c)		\
++		c = old;						\
 +									\
-+	smp_mb();							\
-+	return result;							\
++	return c c_op i;						\
 +}
 +
-+#define ATOMIC_OPS(op, asm_op)						\
-+	ATOMIC_OP(op, asm_op)						\
-+	ATOMIC_OP_RETURN(op, asm_op)
++#else
 +
-+ATOMIC_OPS(add, add)
-+ATOMIC_OPS(sub, sub)
++#include <linux/irqflags.h>
 +
-+#undef ATOMIC_OPS
++#define ATOMIC_OP(op, c_op)						\
++static inline void atomic_##op(int i, atomic_t *v)			\
++{									\
++	unsigned long flags;						\
++									\
++	raw_local_irq_save(flags);					\
++	v->counter c_op i;						\
++	raw_local_irq_restore(flags);					\
++}
++
++#define ATOMIC_OP_RETURN(op, c_op)					\
++static inline int atomic_##op##_return(int i, atomic_t *v)		\
++{									\
++	unsigned long flags;						\
++	int ret;							\
++									\
++	raw_local_irq_save(flags);					\
++	ret = (v->counter c_op i);					\
++	raw_local_irq_restore(flags);					\
++									\
++	return ret;							\
++}
++
++#endif /* CONFIG_SMP */
++
++#ifndef atomic_add_return
++ATOMIC_OP_RETURN(add, +)
++#endif
++
++#ifndef atomic_sub_return
++ATOMIC_OP_RETURN(sub, -)
++#endif
++
++#ifndef atomic_clear_mask
++ATOMIC_OP(and, &)
++#define atomic_clear_mask(i, v) atomic_and(~(i), (v))
++#endif
++
++#ifndef atomic_set_mask
++ATOMIC_OP(or, |)
++#define atomic_set_mask(i, v)	atomic_or((i), (v))
+ #endif
+ 
 +#undef ATOMIC_OP_RETURN
 +#undef ATOMIC_OP
++
+ /*
+  * Atomic operations that C can't guarantee us.  Useful for
+  * resource counting etc..
+@@ -33,8 +101,6 @@
  
- static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
+ #define ATOMIC_INIT(i)	{ (i) }
+ 
+-#ifdef __KERNEL__
+-
+ /**
+  * atomic_read - read atomic variable
+  * @v: pointer of type atomic_t
+@@ -56,52 +122,6 @@
+ 
+ #include <linux/irqflags.h>
+ 
+-/**
+- * atomic_add_return - add integer to atomic variable
+- * @i: integer value to add
+- * @v: pointer of type atomic_t
+- *
+- * Atomically adds @i to @v and returns the result
+- */
+-#ifndef atomic_add_return
+-static inline int atomic_add_return(int i, atomic_t *v)
+-{
+-	unsigned long flags;
+-	int temp;
+-
+-	raw_local_irq_save(flags); /* Don't trace it in an irqsoff handler */
+-	temp = v->counter;
+-	temp += i;
+-	v->counter = temp;
+-	raw_local_irq_restore(flags);
+-
+-	return temp;
+-}
+-#endif
+-
+-/**
+- * atomic_sub_return - subtract integer from atomic variable
+- * @i: integer value to subtract
+- * @v: pointer of type atomic_t
+- *
+- * Atomically subtracts @i from @v and returns the result
+- */
+-#ifndef atomic_sub_return
+-static inline int atomic_sub_return(int i, atomic_t *v)
+-{
+-	unsigned long flags;
+-	int temp;
+-
+-	raw_local_irq_save(flags); /* Don't trace it in an irqsoff handler */
+-	temp = v->counter;
+-	temp -= i;
+-	v->counter = temp;
+-	raw_local_irq_restore(flags);
+-
+-	return temp;
+-}
+-#endif
+-
+ static inline int atomic_add_negative(int i, atomic_t *v)
  {
-@@ -160,69 +142,50 @@ static inline int __atomic_add_unless(at
- #define atomic64_read(v)	(*(volatile long long *)&(v)->counter)
- #define atomic64_set(v,i)	(((v)->counter) = (i))
+ 	return atomic_add_return(i, v) < 0;
+@@ -139,49 +159,11 @@ static inline void atomic_dec(atomic_t *
  
--static inline void atomic64_add(u64 i, atomic64_t *v)
--{
--	long result;
--	unsigned long tmp;
--
--	asm volatile("// atomic64_add\n"
--"1:	ldxr	%0, %2\n"
--"	add	%0, %0, %3\n"
--"	stxr	%w1, %0, %2\n"
--"	cbnz	%w1, 1b"
--	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
--	: "Ir" (i));
+ static inline int __atomic_add_unless(atomic_t *v, int a, int u)
+ {
+-  int c, old;
+-  c = atomic_read(v);
+-  while (c != u && (old = atomic_cmpxchg(v, c, c + a)) != c)
+-    c = old;
+-  return c;
 -}
 -
--static inline long atomic64_add_return(long i, atomic64_t *v)
+-/**
+- * atomic_clear_mask - Atomically clear bits in atomic variable
+- * @mask: Mask of the bits to be cleared
+- * @v: pointer of type atomic_t
+- *
+- * Atomically clears the bits set in @mask from @v
+- */
+-#ifndef atomic_clear_mask
+-static inline void atomic_clear_mask(unsigned long mask, atomic_t *v)
 -{
--	long result;
--	unsigned long tmp;
+-	unsigned long flags;
 -
--	asm volatile("// atomic64_add_return\n"
--"1:	ldxr	%0, %2\n"
--"	add	%0, %0, %3\n"
--"	stlxr	%w1, %0, %2\n"
--"	cbnz	%w1, 1b"
--	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
--	: "Ir" (i)
--	: "memory");
--
--	smp_mb();
--	return result;
+-	mask = ~mask;
+-	raw_local_irq_save(flags); /* Don't trace it in a irqsoff handler */
+-	v->counter &= mask;
+-	raw_local_irq_restore(flags);
 -}
+-#endif
 -
--static inline void atomic64_sub(u64 i, atomic64_t *v)
+-/**
+- * atomic_set_mask - Atomically set bits in atomic variable
+- * @mask: Mask of the bits to be set
+- * @v: pointer of type atomic_t
+- *
+- * Atomically sets the bits set in @mask in @v
+- */
+-#ifndef atomic_set_mask
+-static inline void atomic_set_mask(unsigned int mask, atomic_t *v)
 -{
--	long result;
--	unsigned long tmp;
+-	unsigned long flags;
 -
--	asm volatile("// atomic64_sub\n"
--"1:	ldxr	%0, %2\n"
--"	sub	%0, %0, %3\n"
--"	stxr	%w1, %0, %2\n"
--"	cbnz	%w1, 1b"
--	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
--	: "Ir" (i));
--}
--
--static inline long atomic64_sub_return(long i, atomic64_t *v)
+-	raw_local_irq_save(flags); /* Don't trace it in a irqsoff handler */
+-	v->counter |= mask;
+-	raw_local_irq_restore(flags);
++	int c, old;
++	c = atomic_read(v);
++	while (c != u && (old = atomic_cmpxchg(v, c, c + a)) != c)
++		c = old;
++	return c;
+ }
+-#endif
+ 
+-#endif /* __KERNEL__ */
+ #endif /* __ASM_GENERIC_ATOMIC_H */
+--- a/include/asm-generic/atomic64.h
++++ b/include/asm-generic/atomic64.h
+@@ -20,10 +20,22 @@ typedef struct {
+ 
+ extern long long atomic64_read(const atomic64_t *v);
+ extern void	 atomic64_set(atomic64_t *v, long long i);
+-extern void	 atomic64_add(long long a, atomic64_t *v);
+-extern long long atomic64_add_return(long long a, atomic64_t *v);
+-extern void	 atomic64_sub(long long a, atomic64_t *v);
+-extern long long atomic64_sub_return(long long a, atomic64_t *v);
++
++#define ATOMIC64_OP(op)							\
++extern void	 atomic64_##op(long long a, atomic64_t *v);
++
++#define ATOMIC64_OP_RETURN(op)						\
++extern long long atomic64_##op##_return(long long a, atomic64_t *v);
++
++#define ATOMIC64_OPS(op)	ATOMIC64_OP(op) ATOMIC_OP_RETURN(op)
++
++ATOMIC64_OPS(add)
++ATOMIC64_OPS(sub)
++
++#undef ATOMIC64_OPS
++#undef ATOMIC64_OP_RETURN
++#undef ATOMIC64_OP
++
+ extern long long atomic64_dec_if_positive(atomic64_t *v);
+ extern long long atomic64_cmpxchg(atomic64_t *v, long long o, long long n);
+ extern long long atomic64_xchg(atomic64_t *v, long long new);
+--- a/lib/atomic64.c
++++ b/lib/atomic64.c
+@@ -70,53 +70,42 @@ void atomic64_set(atomic64_t *v, long lo
+ }
+ EXPORT_SYMBOL(atomic64_set);
+ 
+-void atomic64_add(long long a, atomic64_t *v)
 -{
--	long result;
--	unsigned long tmp;
+-	unsigned long flags;
+-	raw_spinlock_t *lock = lock_addr(v);
 -
--	asm volatile("// atomic64_sub_return\n"
--"1:	ldxr	%0, %2\n"
--"	sub	%0, %0, %3\n"
--"	stlxr	%w1, %0, %2\n"
--"	cbnz	%w1, 1b"
--	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
--	: "Ir" (i)
--	: "memory");
--
--	smp_mb();
--	return result;
+-	raw_spin_lock_irqsave(lock, flags);
+-	v->counter += a;
+-	raw_spin_unlock_irqrestore(lock, flags);
 -}
-+#define ATOMIC64_OP(op, asm_op)						\
-+static inline void atomic64_##op(long i, atomic64_t *v)			\
+-EXPORT_SYMBOL(atomic64_add);
+-
+-long long atomic64_add_return(long long a, atomic64_t *v)
+-{
+-	unsigned long flags;
+-	raw_spinlock_t *lock = lock_addr(v);
+-	long long val;
+-
+-	raw_spin_lock_irqsave(lock, flags);
+-	val = v->counter += a;
+-	raw_spin_unlock_irqrestore(lock, flags);
+-	return val;
+-}
+-EXPORT_SYMBOL(atomic64_add_return);
+-
+-void atomic64_sub(long long a, atomic64_t *v)
+-{
+-	unsigned long flags;
+-	raw_spinlock_t *lock = lock_addr(v);
+-
+-	raw_spin_lock_irqsave(lock, flags);
+-	v->counter -= a;
+-	raw_spin_unlock_irqrestore(lock, flags);
+-}
+-EXPORT_SYMBOL(atomic64_sub);
+-
+-long long atomic64_sub_return(long long a, atomic64_t *v)
+-{
+-	unsigned long flags;
+-	raw_spinlock_t *lock = lock_addr(v);
+-	long long val;
+-
+-	raw_spin_lock_irqsave(lock, flags);
+-	val = v->counter -= a;
+-	raw_spin_unlock_irqrestore(lock, flags);
+-	return val;
+-}
+-EXPORT_SYMBOL(atomic64_sub_return);
++#define ATOMIC64_OP(op, c_op)						\
++void atomic64_##op(long long a, atomic64_t *v)				\
 +{									\
-+	long result;							\
-+	unsigned long tmp;						\
++	unsigned long flags;						\
++	raw_spinlock_t *lock = lock_addr(v);				\
 +									\
-+	asm volatile("// atomic64_" #op "\n"				\
-+"1:	ldxr	%0, %2\n"						\
-+"	" #asm_op "	%0, %0, %3\n"					\
-+"	stxr	%w1, %0, %2\n"						\
-+"	cbnz	%w1, 1b"						\
-+	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)		\
-+	: "Ir" (i));							\
++	raw_spin_lock_irqsave(lock, flags);				\
++	v->counter c_op a;						\
++	raw_spin_unlock_irqrestore(lock, flags);			\
 +}									\
++EXPORT_SYMBOL(atomic64_##op);
 +
-+#define ATOMIC64_OP_RETURN(op, asm_op)					\
-+static inline long atomic64_##op##_return(long i, atomic64_t *v)	\
++#define ATOMIC64_OP_RETURN(op, c_op)					\
++long long atomic64_##op##_return(long long a, atomic64_t *v)		\
 +{									\
-+	long result;							\
-+	unsigned long tmp;						\
++	unsigned long flags;						\
++	raw_spinlock_t *lock = lock_addr(v);				\
++	long long val;							\
 +									\
-+	asm volatile("// atomic64_" #op "_return\n"			\
-+"1:	ldxr	%0, %2\n"						\
-+"	" #asm_op "	%0, %0, %3\n"					\
-+"	stlxr	%w1, %0, %2\n"						\
-+"	cbnz	%w1, 1b"						\
-+	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)		\
-+	: "Ir" (i)							\
-+	: "memory");							\
-+									\
-+	smp_mb();							\
-+	return result;							\
-+}
++	raw_spin_lock_irqsave(lock, flags);				\
++	val = (v->counter c_op a);					\
++	raw_spin_unlock_irqrestore(lock, flags);			\
++	return val;							\
++}									\
++EXPORT_SYMBOL(atomic64_##op##_return);
 +
-+#define ATOMIC64_OPS(op, asm_op)					\
-+	ATOMIC64_OP(op, asm_op)						\
-+	ATOMIC64_OP_RETURN(op, asm_op)
++#define ATOMIC64_OPS(op, c_op)						\
++	ATOMIC64_OP(op, c_op)						\
++	ATOMIC64_OP_RETURN(op, c_op)
 +
-+ATOMIC64_OPS(add, add)
-+ATOMIC64_OPS(sub, sub)
++ATOMIC64_OPS(add, +=)
++ATOMIC64_OPS(sub, -=)
 +
 +#undef ATOMIC64_OPS
 +#undef ATOMIC64_OP_RETURN
 +#undef ATOMIC64_OP
  
- static inline long atomic64_cmpxchg(atomic64_t *ptr, long old, long new)
+ long long atomic64_dec_if_positive(atomic64_t *v)
  {
 
 
