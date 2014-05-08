@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755649AbaEHUOB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 16:14:01 -0400
-Received: from mga02.intel.com ([134.134.136.20]:41960 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755612AbaEHUOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 16:14:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1013,1389772800"; 
-   d="scan'208";a="537289571"
-Message-ID: <536BE561.7090303@linux.intel.com>
-Date: Thu, 08 May 2014 13:13:21 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755698AbaEHUOJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 16:14:09 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:55763 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755616AbaEHUOE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 16:14:04 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: dirk.brandewie@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: Re: [PATCH 0/5] updates for intel_pstate
+Date: Thu, 08 May 2014 22:30:44 +0200
+Message-ID: <3320314.vMXib5RYFF@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1399579047-5792-1-git-send-email-dirk.j.brandewie@intel.com>
+References: <1399579047-5792-1-git-send-email-dirk.j.brandewie@intel.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Sven Joachim <svenjoac@gmx.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexandre Julliard <julliard@winehq.org>,
-        Brian Gerst <brgerst@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>
-Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on 64-bit
- kernels
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <CAMzpN2jx4H4p8fQr-WHxVyCHhWi0iO3WZZKyxYD7Dfa7pWkEgg@mail.gmail.com> <CA+55aFwzvSiAGYfFb2R3JeVvh8_PQuOKJDrYP5C_3VQz2zhnBw@mail.gmail.com> <CAMzpN2jj3dwQG7qC__8zLPhkg_ER6n4CcNxa5eg7okRN+k_VUA@mail.gmail.com> <CA+55aFxr_dz3vhko1FPXhZd0ZNeGveX0oSLqUo_wyiVbxatLQw@mail.gmail.com> <87k3aspd1h.fsf@wine.dyndns.org> <87zjiuymiu.fsf@turtle.gmx.de> <CA+55aFw9BPoD10U1LfHbOMpHWZkvJTkMcfCs9s3urPr1YyWBxw@mail.gmail.com> <536A68B1.6070500@zytor.com> <87vbtgahxs.fsf@turtle.gmx.de> <4b728523-2e82-42f1-997c-792ce8e3219f@email.android.com>
-In-Reply-To: <4b728523-2e82-42f1-997c-792ce8e3219f@email.android.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2014 06:50 AM, H. Peter Anvin wrote:
-> Actually it could use KVM instead of CPU emulation on nearly all modern processors...
+On Thursday, May 08, 2014 12:57:22 PM dirk.brandewie@gmail.com wrote:
+> From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+> 
+> Patches 1-4 are bugfixes.  Patch 4 specifically removes the wreckage
+> caused by C0 tracking change. 
 
-Of course, at that point you might just run qemu-kvm instead of DOSEMU,
-since I seem to recall that DOSEMU is still a real version of DOS.  I
-have to admit to mostly using DOSBOX for games and KVM for anything else
-that needs DOS these days... just what happens to work best for me.
+I would appreciate sending such stuff before the -rc4 time frame.
 
-	-hpa
+> Patch 5 Adds new CPU IDs for the Broadwell processors.
+> 
+> Dirk Brandewie (5):
+>   intel_pstate: Set turbo VID for Baytrail
+>   intel_pstate: remove setting P state to MAX on init
+>   intel_pstate: Fix fixed point rounding macro
+>   intel_pstate: Remove C0 tracking
+>   intel_pstate: Add CPU IDs for Broadwell processors
+> 
+>  drivers/cpufreq/intel_pstate.c | 52 +++++++++++++++++-------------------------
+>  1 file changed, 21 insertions(+), 31 deletions(-)
+
+I'll queue them up for 3.15-rc6, but that's a bit too late.
+
+Next time I may just wait for the next merge window, fixes or not.
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
