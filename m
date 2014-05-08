@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206AbaEHHxA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 03:53:00 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:64432 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509AbaEHHw7 (ORCPT
+	id S1753246AbaEHHyH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 03:54:07 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:55073 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752409AbaEHHyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 03:52:59 -0400
-Date: Thu, 8 May 2014 08:52:52 +0100
+	Thu, 8 May 2014 03:54:05 -0400
+Date: Thu, 8 May 2014 08:53:57 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] mfd/mmc: Fixes branch based on v3.15-rc4 (single revert)
-Message-ID: <20140508075252.GA5307@lee--X1>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Chris Ball <chris@printf.net>, micky <micky_ching@realsil.com.cn>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, devel@linuxdriverproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Roger <rogerable@realtek.com>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH 2/2] mmc: rtsx: Revert "mmc: rtsx: add support for
+ pre_req and post_req"
+Message-ID: <20140508075357.GB5307@lee--X1>
+References: <cover.1398735435.git.micky_ching@realsil.com.cn>
+ <6a8f18cad47244e849adf8a731c621932fa777e0.1398735435.git.micky_ching@realsil.com.cn>
+ <CAPDyKFqSdvjJrsbDeX1KbjQtOjfoAwC0xz3y7Rm-BsD0T8tmxg@mail.gmail.com>
+ <CAPDyKFoEWkzHDfPn3BXVuXFMcfsLFtZdvsV36a7ic0DjCgu+NA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPDyKFoEWkzHDfPn3BXVuXFMcfsLFtZdvsV36a7ic0DjCgu+NA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+> >> This reverts commit c42deffd5b53c9e583d83c7964854ede2f12410d.
+> >>
+> >> commit <mmc: rtsx: add support for pre_req and post_req> did use
+> >> mutex_unlock() in tasklet, but mutex_unlock() can't used in
+> >> tasklet(atomic context). The driver need use mutex to avoid concurrency,
+> >> so we can't use tasklet here, the patch need to be removed.
+> >>
+> >> The spinlock host->lock and pcr->lock may deadlock, one way to solve the
+> >> deadlock is remove host->lock in sd_isr_done_transfer(), but if using
+> >> workqueue the we can avoid using the spinlock and also avoid the problem.
+> >>
+> >> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+> >
+> > Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+> 
+> Hi Lee,
+> 
+> Would you mind to pick this up and send it for 3.15 fixes?
+> 
+> The other revert "[PATCH 1/2] mmc: rtsx: Revert "mmc: rtsx: modify
+> error handle and remove smatch warnings", needs to go through the mmc
+> tree.
 
-Please find this single reversion which should be applied before v3.15.
-
-The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
-
-  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-mmc-fixes-3.15-rc4
-
-for you to fetch changes up to 98fcc5762dcecbb264fa4af5a9ae51136858e299:
-
-  mmc: rtsx: Revert "mmc: rtsx: add support for pre_req and post_req" (2014-05-08 08:44:50 +0100)
-
-----------------------------------------------------------------
-Fixes branch from MFD and MMC based on 3.15-rc4.
-
-----------------------------------------------------------------
-Micky Ching (1):
-      mmc: rtsx: Revert "mmc: rtsx: add support for pre_req and post_req"
-
- drivers/mfd/rtsx_pcr.c            | 132 ++++++++------------------------------
- drivers/mmc/host/rtsx_pci_sdmmc.c | 418 ++++++++++----------------------------
- include/linux/mfd/rtsx_common.h   |   1 -
- include/linux/mfd/rtsx_pci.h      |   6 ---
- 4 files changed, 109 insertions(+), 448 deletions(-)
+Sent.
 
 -- 
 Lee Jones
