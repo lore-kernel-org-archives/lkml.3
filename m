@@ -1,33 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659AbaEHKql (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 06:46:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33389 "EHLO
+	id S1754670AbaEHKrF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 06:47:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33409 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344AbaEHKqi (ORCPT
+	with ESMTP id S1753723AbaEHKrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 06:46:38 -0400
-Date: Thu, 8 May 2014 03:44:22 -0700
-From: tip-bot for Vincent Guittot <tipbot@zytor.com>
-Message-ID: <tip-fb2aa85564f4de35d25db022ab93640f8bb51821@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, broonie@linaro.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, dietmar.eggemann@arm.com,
-        sudeep.karkadanagesha@arm.com, arnd@arndb.de, linux@arm.linux.org.uk,
-        robh+dt@kernel.org, nico@linaro.org, vincent.guittot@linaro.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
-        linux-kernel@vger.kernel.org, broonie@linaro.org,
-        torvalds@linux-foundation.org, dietmar.eggemann@arm.com,
-        peterz@infradead.org, sudeep.karkadanagesha@arm.com, arnd@arndb.de,
-        robh+dt@kernel.org, linux@arm.linux.org.uk, vincent.guittot@linaro.org,
-        nico@linaro.org, tglx@linutronix.de
-In-Reply-To: <1397209481-28542-6-git-send-email-vincent.guittot@linaro.org>
-References: <1397209481-28542-6-git-send-email-vincent.guittot@linaro.org>
+	Thu, 8 May 2014 06:47:01 -0400
+Date: Thu, 8 May 2014 03:46:09 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-9tfzr196gs0n2afxv0ga8pc3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, zhenglong.cai@cs2c.com.cn,
+        peterz@infradead.org, luto@amacapital.net, mattst88@gmail.com,
+        ink@jurassic.park.msu.ru, tglx@linutronix.de, rth@twiddle.net
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        zhenglong.cai@cs2c.com.cn, luto@amacapital.net, mattst88@gmail.com,
+        ink@jurassic.park.msu.ru, tglx@linutronix.de, rth@twiddle.net
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched, ARM:
-  Create a dedicated scheduler topology table
-Git-Commit-ID: fb2aa85564f4de35d25db022ab93640f8bb51821
+Subject: [tip:sched/core] sched/idle, alpha:
+  Switch from TS_POLLING to TIF_POLLING_NRFLAG
+Git-Commit-ID: 2a705ad65c9c393df1a684c780f890a29aab1128
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -40,93 +34,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fb2aa85564f4de35d25db022ab93640f8bb51821
-Gitweb:     http://git.kernel.org/tip/fb2aa85564f4de35d25db022ab93640f8bb51821
-Author:     Vincent Guittot <vincent.guittot@linaro.org>
-AuthorDate: Fri, 11 Apr 2014 11:44:41 +0200
+Commit-ID:  2a705ad65c9c393df1a684c780f890a29aab1128
+Gitweb:     http://git.kernel.org/tip/2a705ad65c9c393df1a684c780f890a29aab1128
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Fri, 11 Apr 2014 09:59:17 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 7 May 2014 13:33:52 +0200
+CommitDate: Thu, 8 May 2014 09:16:53 +0200
 
-sched, ARM: Create a dedicated scheduler topology table
+sched/idle, alpha: Switch from TS_POLLING to TIF_POLLING_NRFLAG
 
-Create a dedicated topology table for ARM which will create new level to
-differentiate CPUs that can or not powergate independantly from others.
+Standardize the idle polling indicator to TIF_POLLING_NRFLAG such that
+both TIF_NEED_RESCHED and TIF_POLLING_NRFLAG are in the same word.
+This will allow us, using fetch_or(), to both set NEED_RESCHED and
+check for POLLING_NRFLAG in a single operation and avoid pointless
+wakeups.
 
-The patch gives an example of how to add domain that will take advantage of
-SD_SHARE_POWERDOMAIN.
+Changing from the non-atomic thread_info::status flags to the atomic
+thread_info::flags shouldn't be a big issue since most polling state
+changes were followed/preceded by a full memory barrier anyway.
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-Reviewed-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Tested-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@linaro.org>
+Acked-by: Richard Henderson <rth@twiddle.net>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Brown <broonie@linaro.org>
-Cc: Nicolas Pitre <nico@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Cc: devicetree@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: tony.luck@intel.com
-Cc: fenghua.yu@intel.com
-Cc: schwidefsky@de.ibm.com
-Cc: cmetcalf@tilera.com
-Cc: benh@kernel.crashing.org
-Cc: preeti@linux.vnet.ibm.com
-Link: http://lkml.kernel.org/r/1397209481-28542-6-git-send-email-vincent.guittot@linaro.org
+Cc: Matt Turner <mattst88@gmail.com>
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: 蔡正龙 <zhenglong.cai@cs2c.com.cn>
+Cc: linux-alpha@vger.kernel.org
+Link: http://lkml.kernel.org/n/tip-9tfzr196gs0n2afxv0ga8pc3@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/arm/kernel/topology.c | 26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ arch/alpha/include/asm/thread_info.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-index 0bc94b1..71e1fec 100644
---- a/arch/arm/kernel/topology.c
-+++ b/arch/arm/kernel/topology.c
-@@ -185,6 +185,15 @@ const struct cpumask *cpu_coregroup_mask(int cpu)
- 	return &cpu_topology[cpu].core_sibling;
- }
+diff --git a/arch/alpha/include/asm/thread_info.h b/arch/alpha/include/asm/thread_info.h
+index 3d6ce6d..48bbea6 100644
+--- a/arch/alpha/include/asm/thread_info.h
++++ b/arch/alpha/include/asm/thread_info.h
+@@ -73,12 +73,14 @@ register struct thread_info *__current_thread_info __asm__("$8");
+ #define TIF_SYSCALL_AUDIT	4	/* syscall audit active */
+ #define TIF_DIE_IF_KERNEL	9	/* dik recursion lock */
+ #define TIF_MEMDIE		13	/* is terminating due to OOM killer */
++#define TIF_POLLING_NRFLAG	14	/* idle is polling for TIF_NEED_RESCHED */
  
-+/*
-+ * The current assumption is that we can power gate each core independently.
-+ * This will be superseded by DT binding once available.
-+ */
-+const struct cpumask *cpu_corepower_mask(int cpu)
-+{
-+	return &cpu_topology[cpu].thread_sibling;
-+}
-+
- static void update_siblings_masks(unsigned int cpuid)
- {
- 	struct cputopo_arm *cpu_topo, *cpuid_topo = &cpu_topology[cpuid];
-@@ -266,6 +275,20 @@ void store_cpu_topology(unsigned int cpuid)
- 		cpu_topology[cpuid].socket_id, mpidr);
- }
+ #define _TIF_SYSCALL_TRACE	(1<<TIF_SYSCALL_TRACE)
+ #define _TIF_SIGPENDING		(1<<TIF_SIGPENDING)
+ #define _TIF_NEED_RESCHED	(1<<TIF_NEED_RESCHED)
+ #define _TIF_NOTIFY_RESUME	(1<<TIF_NOTIFY_RESUME)
+ #define _TIF_SYSCALL_AUDIT	(1<<TIF_SYSCALL_AUDIT)
++#define _TIF_POLLING_NRFLAG	(1<<TIF_POLLING_NRFLAG)
  
-+static inline const int cpu_corepower_flags(void)
-+{
-+	return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
-+}
-+
-+static struct sched_domain_topology_level arm_topology[] = {
-+#ifdef CONFIG_SCHED_MC
-+	{ cpu_corepower_mask, cpu_corepower_flags, SD_INIT_NAME(GMC) },
-+	{ cpu_coregroup_mask, cpu_core_flags, SD_INIT_NAME(MC) },
-+#endif
-+	{ cpu_cpu_mask, SD_INIT_NAME(DIE) },
-+	{ NULL, },
-+};
-+
- /*
-  * init_cpu_topology is called at boot when only one cpu is running
-  * which prevent simultaneous write access to cpu_topology array
-@@ -289,4 +312,7 @@ void __init init_cpu_topology(void)
- 	smp_wmb();
+ /* Work to do on interrupt/exception return.  */
+ #define _TIF_WORK_MASK		(_TIF_SIGPENDING | _TIF_NEED_RESCHED | \
+@@ -92,8 +94,6 @@ register struct thread_info *__current_thread_info __asm__("$8");
+ #define TS_UAC_NOFIX		0x0002	/* ! flags as they match          */
+ #define TS_UAC_SIGBUS		0x0004	/* ! userspace part of 'osf_sysinfo' */
+ #define TS_RESTORE_SIGMASK	0x0008	/* restore signal mask in do_signal() */
+-#define TS_POLLING		0x0010	/* idle task polling need_resched,
+-					   skip sending interrupt */
  
- 	parse_dt_topology();
-+
-+	/* Set scheduler topology descriptor */
-+	set_sched_topology(arm_topology);
- }
+ #ifndef __ASSEMBLY__
+ #define HAVE_SET_RESTORE_SIGMASK	1
