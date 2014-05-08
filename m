@@ -1,134 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932126AbaEHUHc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 16:07:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14303 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755759AbaEHUHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 16:07:31 -0400
-Message-ID: <536BE351.1050005@redhat.com>
-Date: Thu, 08 May 2014 16:04:33 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755759AbaEHUIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 16:08:22 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40988 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754798AbaEHUIU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 16:08:20 -0400
+Message-ID: <536BE431.50007@free-electrons.com>
+Date: Thu, 08 May 2014 22:08:17 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Dave Hansen <dave.hansen@intel.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>
-Subject: Re: [PATCH v5] mm: support madvise(MADV_FREE)
-References: <1398045368-2586-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1398045368-2586-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Chen-Yu Tsai <wens@csie.org>
+CC: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shuge <shuge@allwinnertech.com>, kevin <kevin@allwinnertech.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        devicetree <devicetree@vger.kernel.org>, linux-doc@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, dev <dev@linux-sunxi.org>
+Subject: Re: [PATCH v2 7/7] ARM: sunxi: dt: add PRCM clk and reset controller
+ subdevices
+References: <1399483554-8824-1-git-send-email-boris.brezillon@free-electrons.com> <1399483554-8824-8-git-send-email-boris.brezillon@free-electrons.com> <20140508031700.GO7047@lukather> <CAGb2v664vFwezKVp+C1UYdsUktRhrZDxjsyf9L=kwVHGCUV=HA@mail.gmail.com> <20140508142934.GV7047@lukather>
+In-Reply-To: <20140508142934.GV7047@lukather>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2014 09:56 PM, Minchan Kim wrote:
 
-> In summary, MADV_FREE is about 2 time faster than MADV_DONTNEED.
+On 08/05/2014 16:29, Maxime Ripard wrote:
+> On Thu, May 08, 2014 at 11:40:59AM +0800, Chen-Yu Tsai wrote:
+>>>> +                     apb0_gates: apb0_gates_clk {
+>>>> +                             compatible = "allwinner,sun6i-a31-apb0-gates-clk";
+>>>> +                             #clock-cells = <1>;
+>>>> +                             clocks = <&apb0>;
+>>>> +                             clock-output-names = "apb0_pio", "apb0_ir",
+>>>> +                                             "apb0_timer01", "apb0_p2wi",
+>>> timer01 ? is this a typo?
+>> A23 manual lists the clock gate as "r_timer0_1", so I put the name on the wiki.
+>> Allwinner sun6i code uses "r_tmr" or just "tmr". I see no problem naming this
+>> clock output as "apb0_timer" though.
+> Yep, it seems better.
 
-This is awesome.
+Fair enough, I'll change the name for the next version.
 
-I have a few nitpicks with the patch, though :)
-
-> +static long madvise_lazyfree(struct vm_area_struct *vma,
-> +			     struct vm_area_struct **prev,
-> +			     unsigned long start, unsigned long end)
-> +{
-> +	*prev = vma;
-> +	if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
-> +		return -EINVAL;
-> +
-> +	/* MADV_FREE works for only anon vma at the moment */
-> +	if (vma->vm_file)
-> +		return -EINVAL;
-> +
-> +	lazyfree_range(vma, start, end - start);
-> +	return 0;
-> +}
-
-This code checks whether lazyfree_range would work on
-the VMA...
-
-> diff --git a/mm/memory.c b/mm/memory.c
-> index c4b5bc250820..ca427f258204 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -1270,6 +1270,104 @@ static inline unsigned long zap_pud_range(struct mmu_gather *tlb,
->   	return addr;
->   }
 >
-> +static unsigned long lazyfree_pte_range(struct mmu_gather *tlb,
-> +				struct vm_area_struct *vma, pmd_t *pmd,
-> +				unsigned long addr, unsigned long end)
-> +{
-> +	struct mm_struct *mm = tlb->mm;
-> +	spinlock_t *ptl;
-> +	pte_t *start_pte;
-> +	pte_t *pte;
-> +
-> +	start_pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
-> +	pte = start_pte;
-> +	arch_enter_lazy_mmu_mode();
-> +	do {
-> +		pte_t ptent = *pte;
-> +
-> +		if (pte_none(ptent))
-> +			continue;
-> +
-> +		if (!pte_present(ptent))
-> +			continue;
-> +
-> +		ptent = pte_mkold(ptent);
-> +		ptent = pte_mkclean(ptent);
-> +		set_pte_at(mm, addr, pte, ptent);
-> +		tlb_remove_tlb_entry(tlb, pte, addr);
-
-This may not work on PPC, which has a weird hash table for
-its TLB. You will find that tlb_remove_tlb_entry does
-nothing for PPC64, and set_pte_at does not remove the hash
-table entry either.
-
-> @@ -1370,6 +1485,31 @@ void unmap_vmas(struct mmu_gather *tlb,
->   }
+> Maxime
 >
->   /**
-> + * lazyfree_range - clear dirty bit of pte in a given range
-> + * @vma: vm_area_struct holding the applicable pages
-> + * @start: starting address of pages
-> + * @size: number of bytes to do lazyfree
-> + *
-> + * Caller must protect the VMA list
-> + */
-> +void lazyfree_range(struct vm_area_struct *vma, unsigned long start,
-> +		unsigned long size)
-> +{
-> +	struct mm_struct *mm = vma->vm_mm;
-> +	struct mmu_gather tlb;
-> +	unsigned long end = start + size;
-> +
-> +	lru_add_drain();
-> +	tlb_gather_mmu(&tlb, mm, start, end);
-> +	update_hiwater_rss(mm);
-> +	mmu_notifier_invalidate_range_start(mm, start, end);
-> +	for ( ; vma && vma->vm_start < end; vma = vma->vm_next)
-> +		lazyfree_single_vma(&tlb, vma, start, end);
-> +	mmu_notifier_invalidate_range_end(mm, start, end);
-> +	tlb_finish_mmu(&tlb, start, end);
-> +}
 
-This function, called by madvise_lazyfree, can iterate
-over multiple VMAs.
-
-However, madvise_lazyfree only checked one of them.
-
-What should happen when the code encounters a VMA where
-MADV_FREE does not work?  Should it return an error?
-Should it skip over it?
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
