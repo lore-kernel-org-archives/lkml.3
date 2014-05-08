@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167AbaEHWYu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 18:24:50 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59215 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756099AbaEHWY1 (ORCPT
+	id S1756043AbaEHWX7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 18:23:59 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:35836 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756021AbaEHWX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 18:24:27 -0400
-Date: Fri, 9 May 2014 00:24:33 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Hansen <dave.hansen@intel.com>
-cc: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        LKML <linux-kernel@vger.kernel.org>, Gleb Natapov <gleb@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: KVM_GUEST support breaks page fault tracing
-In-Reply-To: <536C039A.5000204@intel.com>
-Message-ID: <alpine.DEB.2.02.1405090024050.6261@ionos.tec.linutronix.de>
-References: <536C039A.5000204@intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 8 May 2014 18:23:57 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: Grant Likely <grant.likely@linaro.org>, benh@kernel.crashing.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh@kernel.org>
+Subject: [PATCH 0/6] DT early console initialization
+Date: Thu,  8 May 2014 17:23:37 -0500
+Message-Id: <1399587823-17701-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 May 2014, Dave Hansen wrote:
+From: Rob Herring <robh@kernel.org>
 
-You forgot to cc Steven :)
+This series adds support for early serial console initialization using 
+DT. This enables determining the serial port type and address using the 
+FDT and allows enabling the console before platform specific 
+initialization runs. I've tested this on arm64. ARM support is dependent 
+on adding fixmap support.
 
-> I noticed on some of my systems that page fault tracing doesn't work:
-> 
-> 	cd /sys/kernel/debug/tracing
-> 	echo 1 > events/exceptions/enable
-> 	cat trace;
-> 	# nothing shows up
-> 
-> I eventually traced it down to CONFIG_KVM_GUEST.  At least in a KVM VM,
-> enabling that option breaks page fault tracing, and disabling fixes it.
->  I tried on some old kernels and this does not appear to be a
-> regression: it never worked.
-> 
-> Anybody have any theories about what is going on?
-> 
-> I'm also having problems with the page fault tracing on bare metal (same
-> symptom of no trace output).  I'm unsure if it's related.
-> 
+Currently, the earlycon is only enabled if "earlycon" is present on the 
+kernel command line. The FDT needs to have /chosen/stdout-path set to 
+the path of the serial port.
+
+This series is dependent on generic earlycon[1], libfdt support[2], and 
+vmlinux.lds.h clean-ups[3]. The first 2 are in linux-next already. A git 
+branch is available here:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux.git earlycon-dt
+
+Rob
+
+[1] https://lkml.org/lkml/2014/4/18/573
+[2] https://lkml.org/lkml/2014/4/22/1202
+[3] https://lkml.org/lkml/2014/3/27/285
+
+Rob Herring (6):
+  of: align RESERVEDMEM_OF_DECLARE function callbacks to other callbacks
+  of: consolidate linker section OF match table declarations
+  serial: earlycon: add DT support
+  of/fdt: add FDT address translation support
+  of/fdt: add FDT serial scanning for earlycon
+  tty/serial: pl011: add DT based earlycon support
+
+ drivers/clocksource/clksrc-of.c   |   2 +-
+ drivers/irqchip/irqchip.h         |   7 +-
+ drivers/of/Makefile               |   2 +
+ drivers/of/fdt.c                  |  56 +++++++++
+ drivers/of/fdt_address.c          | 241 ++++++++++++++++++++++++++++++++++++++
+ drivers/of/of_reserved_mem.c      |   2 +-
+ drivers/tty/serial/amba-pl011.c   |   1 +
+ drivers/tty/serial/earlycon.c     |  27 +++++
+ include/asm-generic/vmlinux.lds.h |   4 +-
+ include/linux/clk-provider.h      |   5 +-
+ include/linux/clocksource.h       |  16 +--
+ include/linux/of.h                |  22 ++++
+ include/linux/of_fdt.h            |   1 +
+ include/linux/of_reserved_mem.h   |  22 +---
+ include/linux/serial_core.h       |   6 +
+ 15 files changed, 372 insertions(+), 42 deletions(-)
+ create mode 100644 drivers/of/fdt_address.c
+
+-- 
+1.9.1
+
