@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267AbaEHOH2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 10:07:28 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42598 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751309AbaEHOH0 (ORCPT
+	id S1754550AbaEHOIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 10:08:13 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:43477 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238AbaEHOIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 10:07:26 -0400
-Date: Thu, 8 May 2014 10:07:25 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Hans de Goede <hdegoede@redhat.com>
-cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, <kishon@ti.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <kevin.z.m.zh@gmail.com>,
-        <sunny@allwinnertech.com>, <shuge@allwinnertech.com>,
-        <zhuzhenhua@allwinnertech.com>, <linux-sunxi@googlegroups.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: Re: [PATCH 4/7] usb: ehci-platform: add optional reset controller
- retrieval
-In-Reply-To: <536B324C.1040806@redhat.com>
-Message-ID: <Pine.LNX.4.44L0.1405081002190.1087-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 8 May 2014 10:08:11 -0400
+From: Toshi Kani <toshi.kani@hp.com>
+To: rjw@rjwysocki.net
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH] ACPI/hotplug: Fix STARTING/DYING action in acpi_cpu_soft_notify()
+Date: Thu,  8 May 2014 07:58:59 -0600
+Message-Id: <1399557539-7282-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 May 2014, Hans de Goede wrote:
+During CPU online/offline testing on a large system, one of the
+processors got stuck after the message "bad: scheduling from the
+idle thread!".  The problem is that acpi_cpu_soft_notify() calls
+acpi_bus_get_device() for all action types.  CPU_STARTING and
+CPU_DYING do not allow the notify handlers to sleep.  However,
+acpi_bus_get_device() can sleep in acpi_ut_acquire_mutex().
 
-> Hi,
-> 
-> On 05/08/2014 12:00 AM, Maxime Ripard wrote:
-> > On Wed, May 07, 2014 at 10:25:55AM -0400, Alan Stern wrote:
-> >> On Tue, 6 May 2014, Maxime Ripard wrote:
-> >>
-> >>> From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> >>>
-> >>> On the Allwinner's A31 SoC the reset line connected to the EHCI IP has to
-> >>> be deasserted for the EHCI block to be usable.
-> >>>
-> >>> Add support for an optional reset controller that will be deasserted on
-> >>> power off and asserted on power on.
-> >>>
-> >>> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> >>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> >>
-> >> Is this really a _reset_ line?  That is, when you assert the reset 
-> >> line, does it actually reset the EHCI controller, or does it merely 
-> >> leave the controller in a partially powered-down state?
-> > 
-> > It actually resets the whole controller.
-> > 
-> >> The difference is important.  During suspend, the controller is
-> >> supposed to remember the state of the port connections as well as other
-> >> settings.  If it doesn't, the controller and all attached USB devices
-> >> will have to be reinitialized every time the controller resumes, which
-> >> will increase the latency.
-> > 
-> > So you're saying that we should move this to the probe then?
-> 
-> Yes.
+Change acpi_cpu_soft_notify() to return immediately for CPU_STARTING
+and CPU_DYING as they have no action in this handler.
 
-That's right.  The controller should not be reset during suspend, if
-you can possibly avoid it.
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+---
+ drivers/acpi/processor_driver.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-There isn't any real benefit to asserting the reset signal during 
-suspend, is there?  I mean, it won't use any less power, right?
-
-Alan Stern
-
+diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+index 7f70f31..4fcbd67 100644
+--- a/drivers/acpi/processor_driver.c
++++ b/drivers/acpi/processor_driver.c
+@@ -121,6 +121,13 @@ static int acpi_cpu_soft_notify(struct notifier_block *nfb,
+ 	struct acpi_processor *pr = per_cpu(processors, cpu);
+ 	struct acpi_device *device;
+ 
++	/*
++	 * CPU_STARTING and CPU_DYING must not sleep. Return here since
++	 * acpi_bus_get_device() may sleep.
++	 */
++	if (action == CPU_STARTING || action == CPU_DYING)
++		return NOTIFY_DONE;
++
+ 	if (!pr || acpi_bus_get_device(pr->handle, &device))
+ 		return NOTIFY_DONE;
+ 
