@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481AbaEHIDz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 04:03:55 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:41808 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932AbaEHIDw (ORCPT
+	id S1753185AbaEHIKP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 04:10:15 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:43013 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132AbaEHIJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 04:03:52 -0400
-Date: Thu, 8 May 2014 09:03:44 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pankaj Dev <pankaj.dev@st.com>
-Subject: Re: [PATCH 1/9] ARM: STi: DT: STiH416: 416 DT Entry for clockgen
- A0/1/10/11/12
-Message-ID: <20140508080344.GE5307@lee--X1>
-References: <1399305223-18703-1-git-send-email-gabriel.fernandez@linaro.org>
- <1399305223-18703-2-git-send-email-gabriel.fernandez@linaro.org>
- <20140506071843.GD5206@lee--X1>
- <CAG374jD+msPPbPtFS+ji=8jS9+D-YHu31k7zzzC7Ty7jw9n7jQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAG374jD+msPPbPtFS+ji=8jS9+D-YHu31k7zzzC7Ty7jw9n7jQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 8 May 2014 04:09:58 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Mugunthan V N <mugunthanvnm@ti.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH RESEND 0/5] net: cpsw and mdio-gpio fixes for v3.15-final
+Date: Thu,  8 May 2014 10:09:19 +0200
+Message-Id: <1399536564-7626-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1399534639-4947-1-git-send-email-jhovold@gmail.com>
+References: <1399534639-4947-1-git-send-email-jhovold@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> Patch adds DT entries for clockgen A0/1/10/11/12
-> >>
-> >> Signed-off-by: Pankaj Dev <pankaj.dev@st.com>
-> >> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-> >> ---
-> >>  arch/arm/boot/dts/stih416-clks.h     |  15 ++
-> >
-> > This should live in include/dt-bindings/clk
-> >
-> include/dt-bindings/clk or  include/dt-bindings/clock ?
+These patches against v3.15-rc4 fix a few issues in the cpsw and
+mdio-gpio drivers.
 
-I have no idea what the difference between the two are.  I guess you
-are in a better position to answer that.  My point was just that the
-includes should be in the include directory, rather than being held
-locally in the 'dts' directory.
+Resend with proper stable CC (git send-email still fails to parse the
+#-part of the tag unless address is enclosed in <> it seems).
 
-> >>  arch/arm/boot/dts/stih416-clock.dtsi | 477 ++++++++++++++++++++++++++++++++++
-> >>  arch/arm/boot/dts/stih416.dtsi       |  10 +-
-> >>  3 files changed, 497 insertions(+), 5 deletions(-)
-> >>  create mode 100644 arch/arm/boot/dts/stih416-clks.h
+Sorry about the noise.
+
+Johan
+
+
+Johan Hovold (5):
+  net: mdio-gpio: fix device-tree binding documentation
+  net: mdio-gpio: warn about missing bus alias id
+  Revert "net: eth: cpsw: Correctly attach to GPIO bitbang MDIO driver"
+  net: cpsw: fix null dereference at probe
+  net: cpsw: add missing of_node_put
+
+ Documentation/devicetree/bindings/net/mdio-gpio.txt |  2 +-
+ drivers/net/ethernet/ti/cpsw.c                      | 17 ++++++-----------
+ drivers/net/phy/mdio-gpio.c                         |  4 ++++
+ 3 files changed, 11 insertions(+), 12 deletions(-)
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.3.2
+
