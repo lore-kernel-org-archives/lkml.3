@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaEHKnO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 06:43:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33138 "EHLO
+	id S1754362AbaEHKo1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 06:44:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33217 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376AbaEHKnL (ORCPT
+	with ESMTP id S1754342AbaEHKoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 06:43:11 -0400
-Date: Thu, 8 May 2014 03:41:04 -0700
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-2d513868e2a33e1d5315490ef4c861ee65babd65@git.kernel.org>
+	Thu, 8 May 2014 06:44:23 -0400
+Date: Thu, 8 May 2014 03:43:06 -0700
+From: tip-bot for Rik van Riel <tipbot@zytor.com>
+Message-ID: <tip-68d1b02a58f5d9f584c1fb2923ed60ec68cbbd9b@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, rmk+kernel@arm.linux.org.uk, sruffell@digium.com,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, venki@google.com
+        torvalds@linux-foundation.org, peterz@infradead.org, riel@redhat.com,
+        chegu_vinod@hp.com, mgorman@suse.de, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rmk+kernel@arm.linux.org.uk, peterz@infradead.org, sruffell@digium.com,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, venki@google.com
-In-Reply-To: <alpine.DEB.2.02.1405022307000.6261@ionos.tec.linutronix.de>
-References: <alpine.DEB.2.02.1405022307000.6261@ionos.tec.linutronix.de>
+        torvalds@linux-foundation.org, peterz@infradead.org, riel@redhat.com,
+        chegu_vinod@hp.com, mgorman@suse.de, tglx@linutronix.de
+In-Reply-To: <1397235629-16328-4-git-send-email-riel@redhat.com>
+References: <1397235629-16328-4-git-send-email-riel@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Sanitize irq accounting madness
-Git-Commit-ID: 2d513868e2a33e1d5315490ef4c861ee65babd65
+Subject: [tip:sched/core] sched/numa:
+  Do not set preferred_node on migration to a second choice node
+Git-Commit-ID: 68d1b02a58f5d9f584c1fb2923ed60ec68cbbd9b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,124 +34,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2d513868e2a33e1d5315490ef4c861ee65babd65
-Gitweb:     http://git.kernel.org/tip/2d513868e2a33e1d5315490ef4c861ee65babd65
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Fri, 2 May 2014 23:26:24 +0200
+Commit-ID:  68d1b02a58f5d9f584c1fb2923ed60ec68cbbd9b
+Gitweb:     http://git.kernel.org/tip/68d1b02a58f5d9f584c1fb2923ed60ec68cbbd9b
+Author:     Rik van Riel <riel@redhat.com>
+AuthorDate: Fri, 11 Apr 2014 13:00:29 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 7 May 2014 11:51:30 +0200
+CommitDate: Wed, 7 May 2014 13:33:47 +0200
 
-sched: Sanitize irq accounting madness
+sched/numa: Do not set preferred_node on migration to a second choice node
 
-Russell reported, that irqtime_account_idle_ticks() takes ages due to:
+Setting the numa_preferred_node for a task in task_numa_migrate
+does nothing on a 2-node system. Either we migrate to the node
+that already was our preferred node, or we stay where we were.
 
-       for (i = 0; i < ticks; i++)
-               irqtime_account_process_tick(current, 0, rq);
+On a 4-node system, it can slightly decrease overhead, by not
+calling the NUMA code as much. Since every node tends to be
+directly connected to every other node, running on the wrong
+node for a while does not do much damage.
 
-It's sad, that this code was written way _AFTER_ the NOHZ idle
-functionality was available. I charge myself guitly for not paying
-attention when that crap got merged with commit abb74cefa ("sched:
-Export ns irqtimes through /proc/stat")
+However, on an 8 node system, there are far more bad nodes
+than there are good ones, and pretending that a second choice
+is actually the preferred node can greatly delay, or even
+prevent, a workload from converging.
 
-So instead of looping nr_ticks times just apply the whole thing at
-once.
+The only time we can safely pretend that a second choice
+node is the preferred node is when the task is part of a
+workload that spans multiple NUMA nodes.
 
-As a side note: The whole cputime_t vs. u64 business in that context
-wants to be cleaned up as well. There is no point in having all these
-back and forth conversions. Lets standardise on u64 nsec for all
-kernel internal accounting and be done with it. Everything else does
-not make sense at all for fine grained accounting. Frederic, can you
-please take care of that?
-
-Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Tested-by: Vinod Chegu <chegu_vinod@hp.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Venkatesh Pallipadi <venki@google.com>
-Cc: Shaun Ruffell <sruffell@digium.com>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1405022307000.6261@ionos.tec.linutronix.de
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1397235629-16328-4-git-send-email-riel@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/cputime.c | 32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ kernel/sched/fair.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index a95097c..72fdf06 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -332,50 +332,50 @@ out:
-  * softirq as those do not count in task exec_runtime any more.
-  */
- static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
--						struct rq *rq)
-+					 struct rq *rq, int ticks)
- {
--	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
-+	cputime_t scaled = cputime_to_scaled(cputime_one_jiffy);
-+	u64 cputime = (__force u64) cputime_one_jiffy;
- 	u64 *cpustat = kcpustat_this_cpu->cpustat;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index ecea8d9..051903f 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1301,7 +1301,16 @@ static int task_numa_migrate(struct task_struct *p)
+ 	if (env.best_cpu == -1)
+ 		return -EAGAIN;
  
- 	if (steal_account_process_tick())
- 		return;
+-	sched_setnuma(p, env.dst_nid);
++	/*
++	 * If the task is part of a workload that spans multiple NUMA nodes,
++	 * and is migrating into one of the workload's active nodes, remember
++	 * this node as the task's preferred numa node, so the workload can
++	 * settle down.
++	 * A task that migrated to a second choice node will be better off
++	 * trying for a better one later. Do not set the preferred node here.
++	 */
++	if (p->numa_group && node_isset(env.dst_nid, p->numa_group->active_nodes))
++		sched_setnuma(p, env.dst_nid);
  
-+	cputime *= ticks;
-+	scaled *= ticks;
-+
- 	if (irqtime_account_hi_update()) {
--		cpustat[CPUTIME_IRQ] += (__force u64) cputime_one_jiffy;
-+		cpustat[CPUTIME_IRQ] += cputime;
- 	} else if (irqtime_account_si_update()) {
--		cpustat[CPUTIME_SOFTIRQ] += (__force u64) cputime_one_jiffy;
-+		cpustat[CPUTIME_SOFTIRQ] += cputime;
- 	} else if (this_cpu_ksoftirqd() == p) {
- 		/*
- 		 * ksoftirqd time do not get accounted in cpu_softirq_time.
- 		 * So, we have to handle it separately here.
- 		 * Also, p->stime needs to be updated for ksoftirqd.
- 		 */
--		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
--					CPUTIME_SOFTIRQ);
-+		__account_system_time(p, cputime, scaled, CPUTIME_SOFTIRQ);
- 	} else if (user_tick) {
--		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
-+		account_user_time(p, cputime, scaled);
- 	} else if (p == rq->idle) {
--		account_idle_time(cputime_one_jiffy);
-+		account_idle_time(cputime);
- 	} else if (p->flags & PF_VCPU) { /* System time or guest time */
--		account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
-+		account_guest_time(p, cputime, scaled);
- 	} else {
--		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
--					CPUTIME_SYSTEM);
-+		__account_system_time(p, cputime, scaled,	CPUTIME_SYSTEM);
- 	}
- }
- 
- static void irqtime_account_idle_ticks(int ticks)
- {
--	int i;
- 	struct rq *rq = this_rq();
- 
--	for (i = 0; i < ticks; i++)
--		irqtime_account_process_tick(current, 0, rq);
-+	irqtime_account_process_tick(current, 0, rq, ticks);
- }
- #else /* CONFIG_IRQ_TIME_ACCOUNTING */
- static inline void irqtime_account_idle_ticks(int ticks) {}
- static inline void irqtime_account_process_tick(struct task_struct *p, int user_tick,
--						struct rq *rq) {}
-+						struct rq *rq, int nr_ticks) {}
- #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
- 
- /*
-@@ -464,7 +464,7 @@ void account_process_tick(struct task_struct *p, int user_tick)
- 		return;
- 
- 	if (sched_clock_irqtime) {
--		irqtime_account_process_tick(p, user_tick, rq);
-+		irqtime_account_process_tick(p, user_tick, rq, 1);
- 		return;
- 	}
- 
+ 	/*
+ 	 * Reset the scan period if the task is being rescheduled on an
