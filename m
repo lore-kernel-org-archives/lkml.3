@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995AbaEHSG0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 14:06:26 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:35505 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754807AbaEHSGZ (ORCPT
+	id S1755193AbaEHSGj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 14:06:39 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:38239 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755115AbaEHSGi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 14:06:25 -0400
+	Thu, 8 May 2014 14:06:38 -0400
+Date: Thu, 8 May 2014 20:06:29 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org,
+        alex.shi@linaro.org, preeti@linux.vnet.ibm.com, efault@gmx.de,
+        vincent.guittot@linaro.org, morten.rasmussen@arm.com, aswin@hp.com
+Subject: Re: [PATCH 2/2] sched: Fix next_balance logic in rebalance_domains()
+ and idle_balance()
+Message-ID: <20140508180629.GJ2844@laptop.programming.kicks-ass.net>
+References: <1398725155-7591-1-git-send-email-jason.low2@hp.com>
+ <1398725155-7591-3-git-send-email-jason.low2@hp.com>
+ <1399568364.2030.9.camel@j-VirtualBox>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.11.1405081329010.980@knanqh.ubzr>
-References: <1399504982-31181-1-git-send-email-dianders@chromium.org>
-	<CAOh2x=kwaoSdj8JO0Vo08Y0dX2UfKFiF3pBV-qtp-YTyN=8H8Q@mail.gmail.com>
-	<CAD=FV=UEGJGHrdcXgs3EZ_wFXT8GnNeCOMt7CgdiiUzBzZ5Y0A@mail.gmail.com>
-	<alpine.LFD.2.11.1405081149190.980@knanqh.ubzr>
-	<CAD=FV=VtcLOh51LCmafzRMdqtDrwKXCqK6gE6V7OOOUe4gjwbA@mail.gmail.com>
-	<alpine.LFD.2.11.1405081329010.980@knanqh.ubzr>
-Date: Thu, 8 May 2014 11:06:24 -0700
-X-Google-Sender-Auth: JFwT4e9ejlS15yHvt2SXQnfLu6E
-Message-ID: <CAD=FV=X4h0nfO7a10NXe+d76xj5ttBJx=q1pAvW4aPzrc22BoQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP systems
-From: Doug Anderson <dianders@chromium.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        David Riley <davidriley@chromium.org>,
-        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1399568364.2030.9.camel@j-VirtualBox>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicolas,
+On Thu, May 08, 2014 at 09:59:24AM -0700, Jason Low wrote:
+> On Mon, 2014-04-28 at 15:45 -0700, Jason Low wrote:
+> > Currently, in idle_balance(), we update rq->next_balance when we pull_tasks. 
+> > However, it is also important to update this in the !pulled_tasks case too.
+> > 
+> > When the CPU is "busy" (the CPU isn't idle), rq->next_balance gets computed
+> > using sd->busy_factor (so we increase the balance interval when the CPU is
+> > busy). However, when the CPU goes idle, rq->next_balance could still be set
+> > to a large value that was computed with the sd->busy_factor.
+> > 
+> > Thus, we need to also update rq->next_balance in idle_balance() in the cases
+> > where !pulled_tasks too, so that rq->next_balance gets updated without taking
+> > the busy_factor into account when the CPU is about to go idle.
+> > 
+> > This patch makes rq->next_balance get updated independently of whether or
+> > not we pulled_task. Also, we add logic to ensure that we always traverse
+> > at least 1 of the sched domains to get a proper next_balance value for
+> > updating rq->next_balance.
+> > 
+> > Additionally, since load_balance() modifies the sd->balance_interval, we
+> > need to re-obtain the sched domain's interval after the call to
+> > load_balance() in rebalance_domains() before we update rq->next_balance.
+> > 
+> > This patch adds and uses 2 new helper functions, update_next_balance() and
+> > get_sd_balance_interval() to update next_balance and obtain the sched
+> > domain's balance_interval. 
+> 
+> 
+> Hi Peter,
+> 
+> I noticed that patch 1 is in tip, but not this patch 2. I was wondering
+> what the current status with this [PATCH 2/2] is at the moment.
 
-On Thu, May 8, 2014 at 10:43 AM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> On Thu, 8 May 2014, Doug Anderson wrote:
-
->> Longer delays aren't very good, but IMHO having some delays of 100 =>
->> 1000 is better than having delays of 100 => 75.  The former will cause
->> mostly performance problems and the later will cause real correctness
->> problems.
->> I'm not saying that 100 => 1000 is good, it's just less bad.
->
-> There might be some cases where precise timing is needed though.
-> I thought I came across one such case in the past but I can't remember
-> which.
-
-If precise timing is needed, shouldn't it be using ktime?
-
-
->> I will make the argument that this patch makes things less broken
->> overall on any systems that actually end up running this code, but if
->> you want NAK it then it won't cause me any heartache.  ;)
->
-> What I insist on is for this issue to be solved using a stable counter
-> such a timer when available.  It _is_ available on one of the target you
-> mentioned so that is the solution you should add to your tree.
-
-Yup, we're working on it.
-
-
-> Investigating a similar solution for your other target should be
-> preferred to hacking the udelay loop. This way you're guaranteed to
-> solve this problem fully.
-
-I have no other target in mind.  I'm merely sending this up there just
-in case there is some cpufreq running ARM board that is SMP and has no
-timer-based udelay.  Those are the only boards that could possibly be
-running this code anyway.
-
-I guess I would say that my patch is unhacking the this code.  The
-code after my patch is simpler.  I would perhaps argue that (ec971ea
-ARM: add cpufreq transiton notifier to adjust loops_per_jiffy for smp)
-should never have landed to begin with.
-
--Doug
+That made a particular .config explode, need to look at it.
