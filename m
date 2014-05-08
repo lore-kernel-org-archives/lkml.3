@@ -1,115 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154AbaEHDVO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 May 2014 23:21:14 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35268 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753121AbaEHDVL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 May 2014 23:21:11 -0400
-Date: Wed, 7 May 2014 22:19:49 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v7] DMA: sun6i: Add driver for the Allwinner A31 DMA
- controller
-Message-ID: <20140508031949.GQ7047@lukather>
-References: <20140430070408.GR32284@intel.com>
- <20140430215322.GH3000@lukather>
- <20140502163429.GA32284@intel.com>
+	id S1752946AbaEHD04 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 May 2014 23:26:56 -0400
+Received: from mga03.intel.com ([143.182.124.21]:61542 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752382AbaEHD0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 May 2014 23:26:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1008,1389772800"; 
+   d="scan'208";a="429229294"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <ak@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v1 03/11] perf: Allow for multiple ring buffers per event
+In-Reply-To: <20140507212224.GC2844@laptop.programming.kicks-ass.net>
+References: <1391683834-29868-1-git-send-email-alexander.shishkin@linux.intel.com> <1391683834-29868-4-git-send-email-alexander.shishkin@linux.intel.com> <20140507152640.GR30445@twins.programming.kicks-ass.net> <20140507210843.GS19657@tassilo.jf.intel.com> <20140507212224.GC2844@laptop.programming.kicks-ass.net>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Thu, 08 May 2014 06:26:32 +0300
+Message-ID: <87siolc5nb.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZqRzwd/9tauJXEMK"
-Content-Disposition: inline
-In-Reply-To: <20140502163429.GA32284@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Peter Zijlstra <peterz@infradead.org> writes:
 
---ZqRzwd/9tauJXEMK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Wed, May 07, 2014 at 02:08:43PM -0700, Andi Kleen wrote:
+>> > Then, when data inside that aux data store changes they should inject an
+>> > PERF_RECORD_AUX to indicate this did happen, which ties it back into the
+>> > normal event flow.
+>> 
+>> What happens when the aux buffer wraps? How would the client know
+>> if the data belongs to this _AUX entry or some later one?
+>
+> It belongs to the last one. Rewind them from 'now' until you hit
+> collisions in AUX space, then you're done.
 
-On Fri, May 02, 2014 at 10:04:29PM +0530, Vinod Koul wrote:
-> On Wed, Apr 30, 2014 at 02:53:22PM -0700, Maxime Ripard wrote:
-> > Hi Vinod,
-> >=20
-> > On Wed, Apr 30, 2014 at 12:34:08PM +0530, Vinod Koul wrote:
-> > > On Thu, Apr 24, 2014 at 04:22:44PM +0200, Maxime Ripard wrote:
-> > > > +static inline void sun6i_dma_free(struct sun6i_dma_dev *sdc)
-> > > > +{
-> > > > +	int i;
-> > > > +
-> > > > +	for (i =3D 0; i < NR_MAX_VCHANS; i++) {
-> > > > +		struct sun6i_vchan *vchan =3D &sdc->vchans[i];
-> > > > +
-> > > > +		list_del(&vchan->vc.chan.device_node);
-> > > > +		tasklet_kill(&vchan->vc.task);
-> > > > +	}
-> > > > +
-> > > > +	tasklet_kill(&sdc->task);
-> > > This is again not good. see http://lwn.net/Articles/588457/
-> > > At this point HW can still generate interrupts or you can have irq ru=
-nning!
-> >=20
-> > I'm not sure to fully understand the issue here, but what is not good?
-> > the first or the second tasklet_kill calls, or both?
-> >=20
-> > From what I understood, the issue is only there whenever you are
-> > calling tasklet_disable without making sure that no one will schedule
-> > your tasklet before disabling it.
-> >=20
-> > But the point is I don't actually use either _enable/_disable. I might
-> > be wrong in not using those functions, but I don't really see how I
-> > can be impacted.
->=20
-> Well that was one part of it. How do you ensure the tasklet is not schedu=
-led
-> while and after you are killing it. You need to ensure irq is disabled an=
-d pending irqs
-> have finished processing. I dont see that bit.
+I guess the point here is that if we don't want to lose any data in aux
+space, we need to stop the perf_event when it fills up. Also there's a
+question if we need a separate wake up watermark for the AUX buffer or
+do we simply wake up the poller every time there's new data.
 
-Ok. I'll change that.
+>> May need some extra sequence numbers in the mmap header and the aux
+>> entry to handle this.
+>
+> You're thinking of overwrite mode, right? We should update the tail in
+> that case, I've not thought about how to do that for the AUX buffer.
 
-Do you want me to use tasklet_enable and tasklet_disable as well?
+In the overwrite mode we don't have to write out AUX records at all
+before we stop the trace, we don't care how many times data in the AUX
+space wraps.
 
-Thanks!
-Maxime
+> There have been some patches for the normal buffer, but they stalled;
+>
+> https://lkml.org/lkml/2013/7/8/154
+>
+> I'm all for merging that patch (or a fixed on, since it has fail in) if
+> we can show the current !overwrite case doesn't regress.
+>
+> Also, would anybody want different mode for the data and aux parts? In
+> that case we do need to add some extra state to the control page to
+> indicate such.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+For the decoder to make sense of the trace, it needs all the data in the
+normal buffer (MMAPs, sched_switches), not just the latest bits, so it's
+a good idea to have it.
 
---ZqRzwd/9tauJXEMK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTavfUAAoJEBx+YmzsjxAg1GUQAIJvJo2FmLNpbOUmzVPWz5wY
-LFZYV/aWwzoMqH1ArnU3XaSht3I9rAu9xtthccqfYRP9OqGSFkhqUcLWq4vxqiKr
-tIE5YFofDMPeQQkj712+gspRQuk69SeIZzC7U2Q1qlylseiozYR3we/ycEc1YzdO
-BmV5q7kcsed3Aq/22bBqrK2qSi8pU3HRA3pUA7GHZyH9+QM2i4c90q8zkQtn9xZD
-F1fsSUp+HBPrd7KvryaFWKraWnW4EcgXFVgLrk4YolX3i9nZd2g5hFESZeGbSzYF
-yVFP0zjct0jyycp2FmdUyYm4MvnqCKRl7Hm8z3h3PwxSyvpA6qZsTcp6tf0XBdFe
-1eJJQTFRN1cd35bzdnF125iOf7GqwETu48gK51UC88BCdQr9mYYNtEqUct0m7yNd
-HnFL3eQnSeTrY0ec2TGrh9tCBmVdADiTFkXS6wWzPMVhLlPzRFU+zNA/3MxdWEG0
-/Q1Tv2ooZnafL7L5/vrRe1DXa6Bt2LsgCJwwKFwscbtn4QMw6uCpWVbnER07NMAx
-Yg/jSUGTWSx6CP/DjP1jqjAeykqph2vFZOgVQsD1cXWuyz5FixyYkmoWDV2suXtx
-7Q0ACxI2VwFlRNoqkGNcls/kW2vEiUSDlUlDlojISv7Sr/jNebLc0Mss9st8aZfs
-LHU8giirt3wsn1Cr4hEj
-=mX76
------END PGP SIGNATURE-----
-
---ZqRzwd/9tauJXEMK--
+Regards,
+--
+Alex
