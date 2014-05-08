@@ -1,41 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855AbaEHO7l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 10:59:41 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42657 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754835AbaEHO7j (ORCPT
+	id S1754875AbaEHPAW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:00:22 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:53622 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754145AbaEHO5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 10:59:39 -0400
-Date: Thu, 8 May 2014 10:59:38 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 3/3] ACPI / PM: Avoid resuming devices in ACPI PM
- domain during system suspend
-In-Reply-To: <2719001.qTQrFyBHGg@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1405081058420.1087-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 8 May 2014 10:57:07 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org
+Subject: [PATCH 1/2] iio: always select ANON_INODES
+Date: Thu,  8 May 2014 16:56:23 +0200
+Message-Id: <1399560990-1402858-12-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1399560990-1402858-1-git-send-email-arnd@arndb.de>
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
+ <1399560990-1402858-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:lEVPthgi3J7ZzjExiLHMtuPRViuQeSOGI5UcRNaLsgw
+ zJEsCVfZzOyXRaH8Glahj00oAhaS05Sf2MYJU+FXilOVCy7fAz
+ 80QsG1t2IPdkmbXedJr+p/XuTsXX7qP6bqUX4f3/Enm7xn9TQQ
+ aGe372LDgFBF+759X6NbU9y2xy9Gy7j0YXh1fBp3Gnez+bEytI
+ zrC4EyULgVkkyq06SdOkVT1oYNL/X/Gc7R3l/RcOI5EpSpYgJ9
+ 2CSpXWYA1qQ/41OOz3qmCdqnhLdm2ydHKXwMUWTwKGH1gEPxKa
+ K9ecDPFiwn3HO4i15i7vvdt3xYf1r8c2p6AHxSyu8HQwDRc0mP
+ S3GOJTp6TXq+JRwRxD73LvmwcSf1S1m6DysgWIOlQ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 May 2014, Rafael J. Wysocki wrote:
+Without ANON_INODES, we get this build error:
 
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Rework the ACPI PM domain's PM callbacks to avoid resuming devices
-> during system suspend (in order to modify their wakeup settings etc.)
-> if that isn't necessary.
+drivers/built-in.o: In function `iio_event_getfd':
+:(.text+0x14bf18): undefined reference to `anon_inode_getfd'
 
-Wasn't there going to be a patch in this series doing the same thing 
-for PCI?  Or has it not yet been written?
+All other users explicitly select this symbol, so we should
+do the same thing here.
 
-Alan Stern
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Jonathan Cameron <jic23@kernel.org>
+Cc: linux-iio@vger.kernel.org
+---
+ drivers/iio/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
+index 743485e..345395e 100644
+--- a/drivers/iio/Kconfig
++++ b/drivers/iio/Kconfig
+@@ -4,6 +4,7 @@
+ 
+ menuconfig IIO
+ 	tristate "Industrial I/O support"
++	select ANON_INODES
+ 	help
+ 	  The industrial I/O subsystem provides a unified framework for
+ 	  drivers for many different types of embedded sensors using a
+-- 
+1.8.3.2
 
