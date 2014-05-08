@@ -1,87 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573AbaEHOao (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 10:30:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37474 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753442AbaEHOan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 10:30:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1010,1389772800"; 
-   d="scan'208";a="535919110"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@kernel.org>, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Chiau Ee Chew <chiau.ee.chew@intel.com>,
-        Hock Leong Kweh <hock.leong.kweh@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH] spi/pxa2xx: Prevent DMA from transferring too many bytes
-Date: Thu,  8 May 2014 17:30:31 +0300
-Message-Id: <1399559431-2065-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 2.0.0.rc2
+	id S1753508AbaEHOeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 10:34:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44079 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751336AbaEHOeI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 10:34:08 -0400
+Date: Thu, 8 May 2014 16:34:04 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] treewide: remove all open implementation of
+ nice_to_rlimit()/rlimit_to_nice().
+Message-ID: <20140508143404.GV11096@twins.programming.kicks-ass.net>
+References: <e1f9c9f2023719e0738e16cd6807c74c68b08fad.1399532322.git.yangds.fnst@cn.fujitsu.com>
+ <a568a1e3cc8e78648f41b5035fa5e381d36274da.1399532322.git.yangds.fnst@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xFHWmGwbilGjB8dh"
+Content-Disposition: inline
+In-Reply-To: <a568a1e3cc8e78648f41b5035fa5e381d36274da.1399532322.git.yangds.fnst@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case we are doing DMA transfer and the size of the buffer is not multiple
-of 4 bytes the driver truncates that to 4-byte boundary and tries to handle
-remaining bytes using PIO.
 
-Or that is what it tried to do. What actually happens is that it calls
-ALIGN() to the buffer size which aligns it to the next 4-byte boundary
-(doesn't truncate). Doing this results 1-3 bytes extra to be transferred.
-Furthermore we handle remaining bytes using PIO which results one extra
-byte to be transferred. In worst case the driver transfers 4 extra bytes.
+--xFHWmGwbilGjB8dh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-While investigating this it turned out that the DMA hardware doesn't even
-have such limitation so we can solve this by dropping the code that tries
-to handle unaligned bytes.
+On Thu, May 08, 2014 at 06:33:49PM +0900, Dongsheng Yang wrote:
+> As there are already two inline functions in prio.h to handle the convert=
+iion
+> between nice value and rlimit style value of priority, this patch remove =
+all
+> open implementation of these two functions.
+>=20
+> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+> ---
+>  drivers/staging/android/binder.c | 2 +-
+>  kernel/sched/core.c              | 2 +-
+>  kernel/sys.c                     | 6 +++---
+>  3 files changed, 5 insertions(+), 5 deletions(-)
+>=20
+> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/b=
+inder.c
+> index 179b21b..9311bb6 100644
+> --- a/drivers/staging/android/binder.c
+> +++ b/drivers/staging/android/binder.c
+> @@ -436,7 +436,7 @@ static void binder_set_nice(long nice)
+>  		set_user_nice(current, nice);
+>  		return;
+>  	}
+> -	min_nice =3D 20 - current->signal->rlim[RLIMIT_NICE].rlim_cur;
+> +	min_nice =3D rlimit_to_nice(current->signal->rlim[RLIMIT_NICE].rlim_cur=
+);
+>  	binder_debug(BINDER_DEBUG_PRIORITY_CAP,
+>  		     "%d: nice value %ld not allowed use %ld instead\n",
+>  		      current->pid, nice, min_nice);
 
-Reported-by: Chiau Ee Chew <chiau.ee.chew@intel.com>
-Reported-by: Hock Leong Kweh <hock.leong.kweh@intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/spi/spi-pxa2xx-dma.c | 16 ----------------
- 1 file changed, 16 deletions(-)
+One does wonder WTF binder is smoking.. must be strong stuff. That's
+some qualitee crackpot code there.
 
-diff --git a/drivers/spi/spi-pxa2xx-dma.c b/drivers/spi/spi-pxa2xx-dma.c
-index 713af4806f26..f6759dc0153b 100644
---- a/drivers/spi/spi-pxa2xx-dma.c
-+++ b/drivers/spi/spi-pxa2xx-dma.c
-@@ -29,18 +29,6 @@ static int pxa2xx_spi_map_dma_buffer(struct driver_data *drv_data,
- 	struct sg_table *sgt;
- 	void *buf, *pbuf;
- 
--	/*
--	 * Some DMA controllers have problems transferring buffers that are
--	 * not multiple of 4 bytes. So we truncate the transfer so that it
--	 * is suitable for such controllers, and handle the trailing bytes
--	 * manually after the DMA completes.
--	 *
--	 * REVISIT: It would be better if this information could be
--	 * retrieved directly from the DMA device in a similar way than
--	 * ->copy_align etc. is done.
--	 */
--	len = ALIGN(drv_data->len, 4);
--
- 	if (dir == DMA_TO_DEVICE) {
- 		dmadev = drv_data->tx_chan->device->dev;
- 		sgt = &drv_data->tx_sgt;
-@@ -144,12 +132,8 @@ static void pxa2xx_spi_dma_transfer_complete(struct driver_data *drv_data,
- 		if (!error) {
- 			pxa2xx_spi_unmap_dma_buffers(drv_data);
- 
--			/* Handle the last bytes of unaligned transfer */
- 			drv_data->tx += drv_data->tx_map_len;
--			drv_data->write(drv_data);
--
- 			drv_data->rx += drv_data->rx_map_len;
--			drv_data->read(drv_data);
- 
- 			msg->actual_length += drv_data->len;
- 			msg->state = pxa2xx_spi_next_transfer(drv_data);
--- 
-2.0.0.rc2
+--xFHWmGwbilGjB8dh
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTa5XcAAoJEHZH4aRLwOS6PVMQAKWgVWkR3gG7Wr3xBjPLuIoP
+n09TeAjUxYarSFcD5HkLkSjlpDdYDHIHr+orzYGpSG/Kt36GglFQ9XmYg94qIdv1
+zme6P18hkNw2zIV2gMRZopN5TIU/z8MoiIOu3UCH0A4wlBkcOpDwKCar6N7F5UXn
+7ORFXWdunTzUF/rQG1lB2IrSzw+s5CW01YDJqjf7W/TJc5VuhgEkzfjxPE4I1Toi
+gG3S1Yukz0rnCh2X9XB7P7C9vSbH6GsCJygzPXv/5wFhdi5dKwe4Xzjo+hdBl8yr
+eIlgfJVhueuyIAbNtNGQPDBGUVkLGOBoT4bK+G0TmUdcG9v/p5ZNDXq1ExYYmOpm
++1h3LzAIBhC4PoNdu2MmC4r5CjjTVQ1l+ctMmNUCa+BqJBKywhmB7pjHPmSx+28o
+EJkeCv/H5h3XO8zUOh67HMndEwm8lL1w3iwDSLEqJEdNKEK8PC2IDCWpe8vS/YEz
+ln7uOlEMEcMOdESW/mmQ9AF6UD7akKWOXvqTWi48SIuhRBrQpsczWkyylqPee+ie
+AR9qA7r1CcIaEunCBikT2KhDtG0CiCnHYqfXfdRsvrAH6ndINPJTEferAm6p9g7L
+lmIMmdiDojiD7AdQo5OM2IZAF2BshLWMKw9pwKDUkiVWCdxIEnM9mIUh0IR4E9Oi
+ji3/DExNrxsX5ScL7UyP
+=itLN
+-----END PGP SIGNATURE-----
+
+--xFHWmGwbilGjB8dh--
