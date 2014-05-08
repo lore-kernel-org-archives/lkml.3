@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549AbaEHP0W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 11:26:22 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:60597 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101AbaEHP0V (ORCPT
+	id S1754640AbaEHP2m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 11:28:42 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56624 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752733AbaEHP2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 11:26:21 -0400
-Date: Thu, 8 May 2014 17:26:14 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dongsheng Yang <dongsheng081251@gmail.com>
-Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] treewide: remove all open implementation of
- nice_to_rlimit()/rlimit_to_nice().
-Message-ID: <20140508152614.GC30445@twins.programming.kicks-ass.net>
-References: <e1f9c9f2023719e0738e16cd6807c74c68b08fad.1399532322.git.yangds.fnst@cn.fujitsu.com>
- <a568a1e3cc8e78648f41b5035fa5e381d36274da.1399532322.git.yangds.fnst@cn.fujitsu.com>
- <20140508143404.GV11096@twins.programming.kicks-ass.net>
- <CA+qeAOqCo9g=tNARWf4JESLZU6sAoSKYDvmfGE6OOmJQhajyDw@mail.gmail.com>
+	Thu, 8 May 2014 11:28:41 -0400
+Date: Thu, 8 May 2014 17:28:54 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dave Jones <davej@redhat.com>
+cc: Linux Kernel <linux-kernel@vger.kernel.org>, peterz@infradead.org,
+        davidlohr@hp.com, Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [3.15-rc3] rtmutex-debug assertion.
+In-Reply-To: <20140505182942.GA19129@redhat.com>
+Message-ID: <alpine.DEB.2.02.1405081726250.6261@ionos.tec.linutronix.de>
+References: <20140429151655.GA14277@redhat.com> <20140430001432.GA32142@redhat.com> <alpine.DEB.2.02.1404301113110.6261@ionos.tec.linutronix.de> <20140502045640.GA27264@redhat.com> <alpine.DEB.2.02.1405052002360.6261@ionos.tec.linutronix.de>
+ <20140505182942.GA19129@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aQ0PHH3iiKbaMI5N"
-Content-Disposition: inline
-In-Reply-To: <CA+qeAOqCo9g=tNARWf4JESLZU6sAoSKYDvmfGE6OOmJQhajyDw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 5 May 2014, Dave Jones wrote:
 
---aQ0PHH3iiKbaMI5N
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Mon, May 05, 2014 at 08:08:02PM +0200, Thomas Gleixner wrote:
+>  
+>  > I twisted my brain around that for a fricking long time, but I really
+>  > can't see the failure in the code.
+>  > 
+>  > Neither did I succeed to trigger the issue in a VM (with and without
+>  > function tracing) on Linus latest.
+>  > 
+>  > I grabbed trinity source and did:
+>  > 
+>  > # ./trinity -l off -c futex -q
+>  > 
+>  > That should be enough, right?
+> 
+> yeah, that should do it.  That's with the version from git, or the
+> last tarball ?  (I really should do another tarball release)
 
-On Thu, May 08, 2014 at 10:51:13PM +0800, Dongsheng Yang wrote:
-> Just want to avoid using hardcoding of 20. If no, there is no meaning we
-> collect
-> priority related information into prio.h.  And convertion between nice
-> value [-20,19]
-> and rlimit style value [0,40] is used by several callers currently.
->=20
+git
+ 
+> Maybe try with -c <some number bigger than processor count>.
+> On my 4 way haswell, I run with -C40 just to keep things busy while some
+> processes idle. For something like futex, which sleeps a lot, this might
+> be important.
+> 
+>  > All I see in dmesg are occasional ooms which kill random trinity
+>  > childs. 
+> 
+> hm, that sounds odd. if it's only fuzzing futex, it shouldn't be
+> doing much memory allocation.
 
-Yeah, not really a comment on your patch, just a general observation on
-the thing you touched :-)
+It has a fast memory leak of some sort.
 
---aQ0PHH3iiKbaMI5N
-Content-Type: application/pgp-signature
+9271 tglx      20   0  198908  75320   2992 S   0.7  7.4   0:01.94 trinity-c0
+9271 tglx      20   0  256888 104368   2992 S   3.3 10.2   0:02.78 trinity-c0
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Thanks,
 
-iQIcBAEBAgAGBQJTa6IWAAoJEHZH4aRLwOS6sSIP/0nj6cxXq3jEb2gYXMpJytiN
-DZBhzYPCfM+nFJedt+B85KmdQCaxc6Lc2u0Iu/EGykybezh1AaXP+aLlAzLqx1W4
-xatxjlHM62rlTgcLfAL1zjtg8O0Fkb10O4gZczpLsUITKNKIiGeiWxwJB0U7nEqk
-tweWkJsa3CCjuBZOp1S94/Cs2Va+iRm3KY1rokkk2CulLXRjhZHCwJThHVjVl4+V
-kHa8cpeYh7RztqqlkeeB1d+5N1F7pORYsPdNnp+fMZVzRD0NTjWCuidVrPzJSM8U
-gMxFzMVk0Pp5Etgi4qacprNb4uS90FlbkjjFXxCBBIVpdiKTVrR+Y2B0rBgcwqC6
-r+lotIEZYsxy5zq4vSiLAb9+8b2kDi0TJvqCiRMsQM1ybSFyZJDHbo1CspcC4iS2
-I6g8BN4NgIM6157FA+Zk3NPGF6LSlsA0UxSTbBJ6ZgEW9Mv0U8UUxqFuF5aWdW4Z
-cgosRGgnYdMvDZ8AXLWUsSCr5olu5JQdlAPMeQWf2vswS62iPG+ZRvG02yM7xtrL
-cCBvn0HmKwGQH/2ZbnwI0UOBnru6LqXy/nMUPeMIo8aPBx18KZCPrK3JxvYFkzd0
-Y9ilEXNVNoz7aowI5kGKvi+vKpv1KPNmctA2pLg61RmfdHpz6Q8bI8hd+YAA6VVl
-Z0TQ+l4m1MadncaHGR6j
-=k0i6
------END PGP SIGNATURE-----
-
---aQ0PHH3iiKbaMI5N--
+	tglx
