@@ -1,58 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944AbaEHJhn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 05:37:43 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53003 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753257AbaEHJhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 05:37:41 -0400
+	id S1753972AbaEHJhr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 05:37:47 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45808 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753947AbaEHJho (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 05:37:44 -0400
 From: George Cherian <george.cherian@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-usb@vger.kernel.org>
 CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <zonque@gmail.com>,
         George Cherian <george.cherian@ti.com>
-Subject: [PATCH v2 0/5] Add support for SW babble Control
-Date: Thu, 8 May 2014 15:05:38 +0530
-Message-ID: <1399541743-14158-1-git-send-email-george.cherian@ti.com>
+Subject: [PATCH v2 1/5] usb: musb: core: Convert babble recover work to delayed work
+Date: Thu, 8 May 2014 15:05:39 +0530
+Message-ID: <1399541743-14158-2-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1399541743-14158-1-git-send-email-george.cherian@ti.com>
+References: <1399541743-14158-1-git-send-email-george.cherian@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Series add support for SW babble control logic found in 
-new silicon versions of AM335x. Runtime differentiation of
-silicon version is done by checking the BABBLE_CTL register.
-For newer silicon the register default value read is 0x4 and
-for older versions its 0x0.
+During babble condition first disconnect of devices are
+initiated. Make sure MUSB controller is reset and re-initialized
+after all disconnects.
 
-Patch 1 -> Convert recover work to delayed work.
-Patch 2 -> usb_phy_vbus_(off/_on) are NOPs for am335x PHY
-	   so use usb_phy(_shutdown/_init) in musb_platform_reset()
-Patch 3 -> Add return value for musb_platform_reset() in prepration
-	   to support SW babble_ctrl
-Patch 4 -> Add the sw_babble_control()
-Patch 5 -> Enable sw babble control for newer silicon
-	
-v1 -> v2 : Fixed the issue with Patch 5. In v1 it was not calling 
-	   sw_babble_control().
+To acheive this schedule a delayed work for babble rrecovery.
 
-George Cherian (5):
-  usb: musb: core: Convert babble recover work to delayed work
-  usb: musb: dsps: Call usb_phy(_shutdown/_init) during
-    musb_platform_reset()
-  usb: musb: core: Convert the musb_platform_reset to have a return
-    value.
-  usb: musb: dsps: Add the sw_babble_control()
-  usb: musb: dsps: Enable sw babble control for newer silicon
+While at that convert udelay to usleep_range.
+Refer Documentation/timers/timers-howto.txt
 
- drivers/usb/musb/musb_core.c | 49 +++++++++++++------------
- drivers/usb/musb/musb_core.h | 12 ++++---
- drivers/usb/musb/musb_dsps.c | 85 ++++++++++++++++++++++++++++++++++++++++++--
- drivers/usb/musb/musb_regs.h |  7 ++++
- 4 files changed, 124 insertions(+), 29 deletions(-)
+Signed-off-by: George Cherian <george.cherian@ti.com>
+---
+ drivers/usb/musb/musb_core.c | 15 ++++++++-------
+ drivers/usb/musb/musb_core.h |  2 +-
+ 2 files changed, 9 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index 61da471..dcadc62 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -850,7 +850,8 @@ b_host:
+ 
+ 	/* handle babble condition */
+ 	if (int_usb & MUSB_INTR_BABBLE)
+-		schedule_work(&musb->recover_work);
++		schedule_delayed_work(&musb->recover_work,
++				      msecs_to_jiffies(100));
+ 
+ #if 0
+ /* REVISIT ... this would be for multiplexing periodic endpoints, or
+@@ -1753,16 +1754,16 @@ static void musb_irq_work(struct work_struct *data)
+ /* Recover from babble interrupt conditions */
+ static void musb_recover_work(struct work_struct *data)
+ {
+-	struct musb *musb = container_of(data, struct musb, recover_work);
++	struct musb *musb = container_of(data, struct musb, recover_work.work);
+ 	int status;
+ 
+ 	musb_platform_reset(musb);
+ 
+ 	usb_phy_vbus_off(musb->xceiv);
+-	udelay(100);
++	usleep_range(100, 200);
+ 
+ 	usb_phy_vbus_on(musb->xceiv);
+-	udelay(100);
++	usleep_range(100, 200);
+ 
+ 	/*
+ 	 * When a babble condition occurs, the musb controller removes the
+@@ -1945,7 +1946,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+ 
+ 	/* Init IRQ workqueue before request_irq */
+ 	INIT_WORK(&musb->irq_work, musb_irq_work);
+-	INIT_WORK(&musb->recover_work, musb_recover_work);
++	INIT_DELAYED_WORK(&musb->recover_work, musb_recover_work);
+ 	INIT_DELAYED_WORK(&musb->deassert_reset_work, musb_deassert_reset);
+ 	INIT_DELAYED_WORK(&musb->finish_resume_work, musb_host_finish_resume);
+ 
+@@ -2041,7 +2042,7 @@ fail4:
+ 
+ fail3:
+ 	cancel_work_sync(&musb->irq_work);
+-	cancel_work_sync(&musb->recover_work);
++	cancel_delayed_work_sync(&musb->recover_work);
+ 	cancel_delayed_work_sync(&musb->finish_resume_work);
+ 	cancel_delayed_work_sync(&musb->deassert_reset_work);
+ 	if (musb->dma_controller)
+@@ -2107,7 +2108,7 @@ static int musb_remove(struct platform_device *pdev)
+ 		dma_controller_destroy(musb->dma_controller);
+ 
+ 	cancel_work_sync(&musb->irq_work);
+-	cancel_work_sync(&musb->recover_work);
++	cancel_delayed_work_sync(&musb->recover_work);
+ 	cancel_delayed_work_sync(&musb->finish_resume_work);
+ 	cancel_delayed_work_sync(&musb->deassert_reset_work);
+ 	musb_free(musb);
+diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
+index 47e8874..423cd00 100644
+--- a/drivers/usb/musb/musb_core.h
++++ b/drivers/usb/musb/musb_core.h
+@@ -297,7 +297,7 @@ struct musb {
+ 
+ 	irqreturn_t		(*isr)(int, void *);
+ 	struct work_struct	irq_work;
+-	struct work_struct	recover_work;
++	struct delayed_work	recover_work;
+ 	struct delayed_work	deassert_reset_work;
+ 	struct delayed_work	finish_resume_work;
+ 	u16			hwvers;
 -- 
 1.8.3.1
 
