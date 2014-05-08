@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351AbaEHQrl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 12:47:41 -0400
-Received: from smtprelay0071.hostedemail.com ([216.40.44.71]:57649 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753866AbaEHQri (ORCPT
+	id S1755208AbaEHQt1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 12:49:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44724 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600AbaEHQt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 12:47:38 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:973:981:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:4250:4321:5007:6119:7652:7903:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: boat48_5f68332872d57
-X-Filterd-Recvd-Size: 2028
-Message-ID: <1399567654.7543.9.camel@joe-AO725>
-Subject: Re: [PATCH 03/10] usb: catch attempts to submit urbs with a
- vmalloc'd transfer buffer
-From: Joe Perches <joe@perches.com>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sarah.a.sharp@linux.intel.com,
-        Dan Williams <dan.j.williams@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Date: Thu, 08 May 2014 09:47:34 -0700
-In-Reply-To: <1399566363-25837-4-git-send-email-mathias.nyman@linux.intel.com>
-References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
-	 <1399566363-25837-4-git-send-email-mathias.nyman@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 8 May 2014 12:49:26 -0400
+Date: Thu, 8 May 2014 18:49:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        nicolas.pitre@linaro.org, tglx@linutronix.de,
+        daniel.lezcano@linaro.org, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] sched/idle: Reflow cpuidle_idle_call()
+Message-ID: <20140508164920.GH30445@twins.programming.kicks-ass.net>
+References: <tip-cc6vb0snt3sr7op6rlbfeqfh@git.kernel.org>
+ <1877683.4pfeUuvFZ2@vostro.rjw.lan>
+ <1591569.1rC3xo6G18@vostro.rjw.lan>
+ <20140508120826.GT11096@twins.programming.kicks-ass.net>
+ <20140508163346.GA9330@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gpOboRovIPmaBszt"
+Content-Disposition: inline
+In-Reply-To: <20140508163346.GA9330@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-08 at 19:25 +0300, Mathias Nyman wrote:
-> Save someone else the debug cycles of figuring out why a driver's
-> transfer request is failing or causing undefined system behavior.
-> Buffers submitted for dma must come from GFP allocated / DMA-able
-> memory.
-> 
-> Return -EAGAIN matching the return value for dma_mapping_error() cases.
-[]
-> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-[]
-> @@ -1502,6 +1502,9 @@ int usb_hcd_map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
->  					ret = -EAGAIN;
->  				else
->  					urb->transfer_flags |= URB_DMA_MAP_PAGE;
-> +			} else if (is_vmalloc_addr(urb->transfer_buffer)) {
-> +				WARN_ONCE(1, "transfer buffer not dma capable\n");
-> +				ret = -EAGAIN;
->  			} else {
->  				urb->transfer_dma = dma_map_single(
->  						hcd->self.controller,
 
-Perhaps this could be #ifdef'd here or moved to and
-tested in dma_map_single/dma_map_single_attr instead.
+--gpOboRovIPmaBszt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Thu, May 08, 2014 at 06:33:46PM +0200, Ingo Molnar wrote:
+>=20
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+>=20
+> > On Thu, May 08, 2014 at 01:56:18PM +0200, Rafael J. Wysocki wrote:
+> > > The cpuidle patches I have queued up so far are on this separate bran=
+ch
+> > >=20
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-=
+cpuidle
+> > >=20
+> > > in case you'd like to pull from there.
+> >=20
+> > Ingo, can you do that? I think the patch I just posted should be=20
+> > enough to fix up the conflict.
+>=20
+> Yeah, sounds good to me, I'll pull it into sched/core.
+>=20
+> The patch you posted is essentially a replacement for:
+>=20
+>     52c324f8a87b cpuidle: Combine cpuidle_enabled() with cpuidle_select()
+>=20
+> when it's done on top of sched/core, right?=20
+
+tip/master actually, but yes.
+
+--gpOboRovIPmaBszt
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTa7WQAAoJEHZH4aRLwOS6GeoP/2FvC/PdrUhuxVqQIRpx04fW
+jR1Lp2/VQKFvZRiiIB8Kck1IFarvHqmHw8aM/MjvF/RKhYKocnrdyMSJ5V0ARU1D
+4qaEzz4MbEoQg9Nycgez6Qngg/K+VA13l56HCvPYo45pQOfgLdH+RXawqCQvcBhE
+rCuTrGbbwIk930qRWves30H7WPxQbUmRqK5JVTaR9kY28HOj0v4XbXG4L54L0RbF
+lg7vbBOH5+P3xj6oxJXojZyMdRlL7Umd0hFY5KLF4izkQmV0Al/ekj4AbIglCETX
+9ZgOGiL/u6zt1dpfqh6QRekrNQtA1bihf7s6OQJMFfnQN1Ys2/0MxmV09T4Gu6A6
+e7LHkqI6OsSvbOLpO73CiIq2Gvx/09ya6WIk7lJixiw8kKyjIAxPmjtZwxdj/n6c
+MAsgea45GLDyENk7FWhmbWOHvs7S9f1gqN4o05LQYmZF1u1l1rNTMkC9SBEtFkT2
+qFex2F/awTFEuG58xtvo4lPoug2rSS2UrWlOZcnY5yf3WTYEgeEHbiEkVf+wxeZe
+sNzZxxcLu/lk392EzS9w8CFlAhrwFit/r7vqA0lJNGCtCidsPQ3Nk/oUcB6k6UMH
+Xpi5rCxV7qLGYYs5sJBqJAlqfwZlqyUn9ETsP8IGwq3xmEceE2UFkSBIKCEmK+Z4
+9ihjAQdNIAS7Ug2UpeSU
+=qRHT
+-----END PGP SIGNATURE-----
+
+--gpOboRovIPmaBszt--
