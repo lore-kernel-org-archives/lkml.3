@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249AbaEHNPU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 09:15:20 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:56929 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753494AbaEHNPS (ORCPT
+	id S1754316AbaEHNPd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 09:15:33 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:53084 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754286AbaEHNPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 09:15:18 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Bjorn Andersson <bjorn@kryo.se>, Frank Rowand <frowand.list@gmail.com>
-Subject: Re: [PATCH 3/4] of/platform: fix device naming for non-translatable addresses
-Date: Thu, 08 May 2014 15:15:07 +0200
-Message-ID: <4916948.fjAQXx11x1@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAL_JsqJEW_Xrfi7OiF6caHVup1Y6-8SvyOJawov8o3oiYiFvXQ@mail.gmail.com>
-References: <1399499298-8830-1-git-send-email-robherring2@gmail.com> <4314054.Zr5Mecf9vm@wuerfel> <CAL_JsqJEW_Xrfi7OiF6caHVup1Y6-8SvyOJawov8o3oiYiFvXQ@mail.gmail.com>
+	Thu, 8 May 2014 09:15:31 -0400
+Date: Thu, 8 May 2014 09:15:29 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
+        Oleg Nesterov <oleg@redhat.com>, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH] Fix: tracepoint: use after rcu free
+Message-ID: <20140508091529.08b68cf4@gandalf.local.home>
+In-Reply-To: <55466295.13096.1399554505453.JavaMail.zimbra@efficios.com>
+References: <1399549669-25465-1-git-send-email-mathieu.desnoyers@efficios.com>
+	<20140508090520.2b225a94@gandalf.local.home>
+	<55466295.13096.1399554505453.JavaMail.zimbra@efficios.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:aopBaQIscI/Spfg8WZGxle1Msz6GjPLio0AuEZaT1np
- 6vnw9pkj0xgKeyELqybtUrxjN6hYQ3GDuOxaD1+kCvyk4kXP3W
- kg3st/Gnlxkc5hOC8xeD5OGP3QbuXAU1v2QAhsrCYoeXDCqU33
- FIbly6Y0W+K2d5hNFqCqfUU/9NIXKMTUpw/D7mrIQZ2AvxiV8W
- sU14GPuEHRoSFqnUAKBZN3rgrLyRXY5yFAd3Rn+BIuMK3OlUg7
- Qbxidh9XYgGghhkk/fsei+rOvCp32IvjkqriT0R5/YWBM6omu4
- X47dO+3e2dwvJ4pRC3lqkTUQ0XyBnkEx3RVoznXeCZuEi5TY8o
- pfYI6gIoLM9VrXCm7G54=
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 May 2014 07:55:06 Rob Herring wrote:
-> On Thu, May 8, 2014 at 5:41 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Wednesday 07 May 2014 16:48:17 Rob Herring wrote:
-> >> From: Rob Herring <robh@kernel.org>
-> >>
-> >> Using non-translatable addresses in platform device names is wrong
-> >> because they may not be globally unique. Just use the default naming with
-> >> a global index if the address cannot be translated instead.
-> >>
-> >> of_can_translate_address has the same checks as of_translate_address, so
-> >> we can remove it here as well.
-> >
-> > Have you checked that this doesn't break platforms using clkdev lookup
-> > based on names with local addresses? It's quite possible that nobody
-> > does that, but it would be good to have someone confirm it.
+On Thu, 8 May 2014 13:08:25 +0000 (UTC)
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+
+> > 
+> > We can also include a (even though it's redundant)
+> > 
+> >  Fixes: de7b2973903c "tracepoint: Use struct pointer instead of name hash for
+> >  reg/unreg tracepoints"
 > 
-> I had not, but now I have. There don't appear to be any cases of that.
+> Thanks for the pointers, I'll keep those in mind for my next patches.
 
-Ok, thanks for checking.
+Oh, one more thing I keep forgetting to mention to you. Your subject
+lines :-)
 
-	Arnd
+I converted it to be:
+
+ tracepoint: Fix use of tracepoint funcs after rcu free
+
+only the subsystem tag should be used. Not a "Fix" tag. But the "Fix"
+may be used in the subject itself. Also, I've been told that Linus
+prefers to have the subject written more like a sentence and the first
+character capitalized.
+
+-- Steve
