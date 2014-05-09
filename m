@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246AbaEIJIl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 05:08:41 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:46758 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005AbaEIJIi (ORCPT
+	id S1756261AbaEIJLj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 05:11:39 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:57502 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752505AbaEIJLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 05:08:38 -0400
+	Fri, 9 May 2014 05:11:37 -0400
+Date: Fri, 9 May 2014 11:11:31 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: James Hogan <james.hogan@imgtec.com>, linux-metag@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] metag: fix memory barriers
+Message-ID: <20140509091131.GL30445@twins.programming.kicks-ass.net>
+References: <alpine.LRH.2.02.1405081546110.4346@file01.intranet.prod.int.rdu2.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20140508135852.387473090@infradead.org>
-References: <20140508135840.956784204@infradead.org>
-	<20140508135852.387473090@infradead.org>
-Date: Fri, 9 May 2014 11:08:37 +0200
-X-Google-Sender-Auth: ohBRxkkvdzN2Z53zUy8OV_A6dmk
-Message-ID: <CAMuHMdUrG6pR0_6VhL8P_=HDmVBQxa9kinRm=AFxddyHQFBNeQ@mail.gmail.com>
-Subject: Re: [PATCH 11/20] arch,m68k: Fold atomic_ops
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Will Deacon <will.deacon@arm.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2vfFyZRy2guiefOI"
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1405081546110.4346@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
 
-On Thu, May 8, 2014 at 3:58 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> +#ifdef CONFIG_RMW_INSNS
->
-> -static inline void atomic_sub(int i, atomic_t *v)
-> -{
-> -       __asm__ __volatile__("subl %1,%0" : "+m" (*v) : ASM_DI (i));
-> -}
-> +#define ATOMIC_OP(op, c_op, asm_op)                                    \
-> +static inline void atomic_##op(int i, atomic_t *v)                     \
-> +{                                                                      \
-> +       __asm__ __volatile__(#asm_op "l %1,%0" : "+m" (*v) : ASM_DI (i));\
-> +}                                                                      \
+--2vfFyZRy2guiefOI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +#else
-> +
-> +#define ATOMIC_OP(op, c_op, asm_op)                                    \
-> +static inline void atomic_##op(int i, atomic_t *v)                     \
-> +{                                                                      \
-> +       __asm__ __volatile__(#asm_op "l %1,%0" : "+m" (*v) : ASM_DI (i));\
-> +}                                                                      \
+On Thu, May 08, 2014 at 03:51:37PM -0400, Mikulas Patocka wrote:
+> Volatile access doesn't really imply the compiler barrier. Volatile access
+> is only ordered with respect to other volatile accesses, it isn't ordered
+> with respect to general memory accesses. Gcc may reorder memory accesses
+> around volatile access, as we can see in this simple example (if we
+> compile it with optimization, both increments of *b will be collapsed to
+> just one):
+>=20
+> void fn(volatile int *a, long *b)
+> {
+> 	(*b)++;
+> 	*a =3D 10;
+> 	(*b)++;
+> }
+>=20
+> Consequently, we need the compiler barrier after a write to the volatile
+> variable, to make sure that the compiler doesn't reorder the volatile
+> write with something else.
+>=20
+> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+> Cc: stable@vger.kernel.org
 
-These two chunks are identical, so please move them out of the #ifdef.
+Acked-by: Peter Zijlstra <peterz@infradead.org>
 
-Gr{oetje,eeting}s,
+--2vfFyZRy2guiefOI
+Content-Type: application/pgp-signature
 
-                        Geert
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+iQIcBAEBAgAGBQJTbJvDAAoJEHZH4aRLwOS66z8P/1wA4CXNZYZ4jD9uefHpJaLe
+VTsH/VvL6SV48oiBzK81GqaA5mY8wUPoGWvkiEBZJ9acpLREItRDcSNXsyhve/Y8
+tuNLJT+WwlOeLrRxGOn//XRKK7TVTfl9ZYFrGhNe/b2hCvHZFmJ0swTOJ9f21cfN
+w3ljsyrCEVK2C4Va0VvxrG1otvCBzqVkgBiR8nP3vh7Rd+dXvBbc03mTMrsdyxd7
+b/Ns7TT/XcD736qEGJW+kjpFUcaby6alcvTs/xUFJjKEjrqYVv4b7kJKp1vEBsZ7
+3BhCZxPRGtyDxNOxypfTzh57lbS09ExN46Ny6EfWu4jmbiVQoyNx8T5bxB3RiBpj
+rvhuOaYe1V+6mBGBSMoHM9DcAbS4fDsvp48nDaZStcxdbtOVnbc7orOsyYQEOAlz
+BNsTGANGIT6zpDnbMG7BBRTuAYa0KtdWVOXbXAYjntwezHprshkG6WS60zCBXTob
+7ae492l6p+zFifHCiC2JyiTs3bCTohc3o3nLuaY5sBE1g7ToppcMBUdkfPhz/BGL
+I9PHA2If3+5cvGvi1uXD+B9aOT+z6YmNTLAzsdPkxyScyEPjdEwjovxwNNnQ/1rc
+OW6bPRl0PbpZdCnxGryueGLIEGvljPdGgrvehfPz+7G1dmNrqJn+mcfPepoZUk0E
+cG5AMZDmTqAVgfmDatG4
+=dBHj
+-----END PGP SIGNATURE-----
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+--2vfFyZRy2guiefOI--
