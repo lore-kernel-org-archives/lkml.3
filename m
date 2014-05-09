@@ -1,46 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165AbaEILKL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 07:10:11 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56117 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752724AbaEILKJ (ORCPT
+	id S1756481AbaEILMH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 07:12:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:44763 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755960AbaEILMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 07:10:09 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>, Aubrey Li <aubrey.li@intel.com>
-Subject: Re: [PATCH] PM / suspend: Always use deepest C-state in the "freeze" sleep state
-Date: Fri, 09 May 2014 13:26:47 +0200
-Message-ID: <2485687.UrJORvS9e7@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140509073835.GB4965@xo-6d-61-c0.localdomain>
-References: <2548502.zJ1no3NhRc@vostro.rjw.lan> <20140509073835.GB4965@xo-6d-61-c0.localdomain>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Fri, 9 May 2014 07:12:01 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: Chen-Yu Tsai <wens@csie.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
+        Hans de Goede <hdegoede@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dev@linux-sunxi.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v3 4/7] mfd: sun6i-prcm: document DT bindings
+Date: Fri,  9 May 2014 13:11:48 +0200
+Message-Id: <1399633911-7094-5-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1399633911-7094-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1399633911-7094-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 09, 2014 09:38:35 AM Pavel Machek wrote:
-> On Mon 2014-05-05 00:51:54, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > If freeze_enter() is called, we want to bypass the current cpuidle
-> > governor and always use the deepest available (that is, not disabled)
-> > C-state, because we want to save as much energy as reasonably possible
-> > then and runtime latency constraints don't matter at that point, since
-> > the system is in a sleep state anyway.
-> 
-> Would there be way to pass the parameter "go to deepest" instead of adding
-> global state for this?
+Document DT bindings of the PRCM (Power/Reset/Clock Management) unit.
 
-I'm not sure what you mean?  A parameter of what in particular?  And where
-to pass it?
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ .../devicetree/bindings/mfd/sun6i-prcm.txt         | 59 ++++++++++++++++++++++
+ 1 file changed, 59 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/sun6i-prcm.txt
 
-Rafael
+diff --git a/Documentation/devicetree/bindings/mfd/sun6i-prcm.txt b/Documentation/devicetree/bindings/mfd/sun6i-prcm.txt
+new file mode 100644
+index 0000000..1f5a31f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/sun6i-prcm.txt
+@@ -0,0 +1,59 @@
++* Allwinner PRCM (Power/Reset/Clock Management) Multi-Functional Device
++
++PRCM is an MFD device exposing several Power Management related devices
++(like clks and reset controllers).
++
++Required properties:
++ - compatible: "allwinner,sun6i-a31-prcm"
++ - reg: The PRCM registers range
++
++The prcm node may contain several subdevices definitions:
++ - see Documentation/devicetree/clk/sunxi.txt for clock devices
++ - see Documentation/devicetree/reset/allwinner,sunxi-clock-reset.txt for reset
++   controller devices
++
++
++Example:
++
++	prcm: prcm@01f01400 {
++		compatible = "allwinner,sun6i-a31-prcm";
++		reg = <0x01f01400 0x200>;
++
++		/* Put subdevices here */
++		ar100: ar100_clk {
++			compatible = "allwinner,sun6i-a31-ar100-clk";
++			#clock-cells = <0>;
++			clocks = <&osc32k>, <&osc24M>, <&pll6>, <&pll6>;
++		};
++
++		ahb0: ahb0_clk {
++			compatible = "fixed-factor-clock";
++			#clock-cells = <0>;
++			clock-div = <1>;
++			clock-mult = <1>;
++			clocks = <&ar100_div>;
++			clock-output-names = "ahb0";
++		};
++
++		apb0: apb0_clk {
++			compatible = "allwinner,sun6i-a31-apb0-clk";
++			#clock-cells = <0>;
++			clocks = <&ahb0>;
++			clock-output-names = "apb0";
++		};
++
++		apb0_gates: apb0_gates_clk {
++			compatible = "allwinner,sun6i-a31-apb0-gates-clk";
++			#clock-cells = <1>;
++			clocks = <&apb0>;
++			clock-output-names = "apb0_pio", "apb0_ir",
++					"apb0_timer01", "apb0_p2wi",
++					"apb0_uart", "apb0_1wire",
++					"apb0_i2c";
++		};
++
++		apb0_rst: apb0_rst {
++			compatible = "allwinner,sun6i-a31-clock-reset";
++			#reset-cells = <1>;
++		};
++	};
+-- 
+1.8.3.2
 
