@@ -1,50 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756810AbaEIPo2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 11:44:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48532 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756630AbaEIPo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 11:44:26 -0400
-Message-ID: <536CF7B3.4040705@zytor.com>
-Date: Fri, 09 May 2014 08:43:47 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1756852AbaEIPpm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 11:45:42 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:54497 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754063AbaEIPpk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 11:45:40 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 2/3] CMA: aggressively allocate the pages on cma reserved memory when not used
+In-Reply-To: <1399509144-8898-3-git-send-email-iamjoonsoo.kim@lge.com>
+Organization: http://mina86.com/
+References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com> <1399509144-8898-3-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:140509:m.szyprowski@samsung.com::jjklja5rOYzhLe7F:00000000000000000000000000000000000000akA
+X-Hashcash: 1:20:140509:hannes@cmpxchg.org::sAN8SCTs+YspnYzz:00000000000000000000000000000000000000000001JlD
+X-Hashcash: 1:20:140509:linux-kernel@vger.kernel.org::FH9rDb1i4aLnWAcD:0000000000000000000000000000000000rAy
+X-Hashcash: 1:20:140509:iamjoonsoo.kim@lge.com::QWg29gn20YSyv7lG:0000000000000000000000000000000000000002KnL
+X-Hashcash: 1:20:140509:minchan@kernel.org::fKury2Afn+M7+a9n:00000000000000000000000000000000000000000005mDz
+X-Hashcash: 1:20:140509:riel@redhat.com::YOdTrduOZTQbvAwK:004Kt6
+X-Hashcash: 1:20:140509:akpm@linux-foundation.org::nOjqAUKWDiYQdkwu:0000000000000000000000000000000000005CLZ
+X-Hashcash: 1:20:140509:lauraa@codeaurora.org::scImUw64u2TsiWeM:00000000000000000000000000000000000000007tsf
+X-Hashcash: 1:20:140509:heesub.shin@samsung.com::sJ3jcBC5fDjbeXvg:00000000000000000000000000000000000000AyrZ
+X-Hashcash: 1:20:140509:linux-mm@kvack.org::MDI4DM/vrTPdQ53N:0000000000000000000000000000000000000000000DD99
+X-Hashcash: 1:20:140509:mgorman@suse.de::hZbAJekaHk+bQ7CR:00C+MR
+X-Hashcash: 1:20:140509:iamjoonsoo.kim@lge.com::4mtXAhVviBoVERHh:000000000000000000000000000000000000000FPDj
+Date: Fri, 09 May 2014 08:45:32 -0700
+Message-ID: <xa1t4n0zx8f7.fsf@mina86.com>
 MIME-Version: 1.0
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>, tglx@linutronix.de,
-        mingo@redhat.com
-CC: linux-kernel@vger.kernel.org, stefani@seibold.net, luto@amacapital.net,
-        konrad.wilk@oracle.com, stable@vger.kernel.org
-Subject: Re: [PATCH] time: Cast tv_nsec to u64 for proper shifting in update_vsyscall()
-References: <1399648287-15178-1-git-send-email-boris.ostrovsky@oracle.com>
-In-Reply-To: <1399648287-15178-1-git-send-email-boris.ostrovsky@oracle.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2014 08:11 AM, Boris Ostrovsky wrote:
-> With tk->wall_to_monotonic.tv_nsec being a 32-bit value on 32-bit
-> systems, (tk->wall_to_monotonic.tv_nsec << tk->shift) in update_vsyscall()
-> may lose upper bits or, worse, add them since compiler will do this:
-> 	(u64)(tk->wall_to_monotonic.tv_nsec << tk->shift)
-> instead of
-> 	((u64)tk->wall_to_monotonic.tv_nsec << tk->shift)
-> 
-> So if, for example, tv_nsec is 0x800000 and shift is 8 we will end up
-> with 0xffffffff80000000 instead of 0x80000000. And then we are stuck in
-> the subsequent 'while' loop.
-> 
-> We need explicit cast.
-> 
-> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: stable@vger.kernel.org
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-This is needed in stable only for v3.14, right?
+On Wed, May 07 2014, Joonsoo Kim wrote:
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-	-hpa
+The code looks good to me, but I don't feel competent on whether the
+approach is beneficial or not.  Still:
+
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
 
+--=20
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
+..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
+ (o o)
+ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+
+--=-=-=
+Content-Type: multipart/signed; boundary="==-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
+
+--==-=-=
+Content-Type: text/plain
+
+
+--==-=-=
+Content-Type: application/pgp-signature; name="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIbBAEBAgAGBQJTbPgcAAoJECBgQBJQdR/0V5EP9iwYwqxiwv9ZPYqFtCjjAsHH
+tJomWa/nlEKJ+eVoTwFT2FjpORmux2MHNDCWL+ncpV4Gh3SODbstkiRhJNksiOsz
+CKrc/amtefoiCkZOLf478Mn845t4a9TitUN3fAPqG4/iPulf1alelymFqaSiTU+I
+wV5JaQK5KWUnUADR/5UzMCEG1pgyu9SbIHYM2pKljbtFDNrrcE+h10UFepUgiNda
+onZvB002cdV4KR3ZA1Dw7UcMarL/gSL1GbWiqHuQz0Za2yoPZNtWJtuBoYBfNjfq
+Nlq0aIrKmx0viXfC4XkdRIJ0lJkEaWz560exmeEXWrO3egd3TtbYjPdZ5nheDUBZ
+21ZkTTSYggR33oIasTGiAGFrJNDdX2TebAvulC1vIYZ+7wP53iwHNBQqU6UkpPw+
+0PrLQa1a7THDpoalRkfBCC+HBHBwJvsSGHYlgSvUA/b0EdzuI9CN29Ht+lC/kDqg
+vCJiO0yykygOaj/JATdP/kNnmF7KhRAJhUc2HQgrGCQ6wpyQ5Tlk8vtL9OUdaH7G
+W8VnqdRTU39S3j/1YXpJCjOxNr7m5mC6hl9pSkBaWzQ0x/bBi21jWiHdOPNWQnxK
+Qb+DpilW5ZoSmULo5dwyXIbjVxdoUKJuF9JotBoSP6tDppvXv2LD0a7PoN4oYN6l
+FEtcIJ2A1XPixQOfVFk=
+=4Tff
+-----END PGP SIGNATURE-----
+--==-=-=--
+
+--=-=-=--
