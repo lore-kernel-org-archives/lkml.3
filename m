@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756624AbaEIKJb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 06:09:31 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:58290 "EHLO
+	id S1756649AbaEIKJf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 06:09:35 -0400
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:53131 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756584AbaEIKJ2 (ORCPT
+	by vger.kernel.org with ESMTP id S1753387AbaEIKJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 06:09:28 -0400
-X-Sasl-enc: b0gmfWF6Aem0hRWc3SwbKNX4snAQpAt+ekasjQQOOYup 1399630162
+	Fri, 9 May 2014 06:09:31 -0400
+X-Sasl-enc: gC4sgU7pr/YrW8pMz4tIg+tX+uhz7CF/McyNr1M6pVbK 1399630166
 From: Michalis Pappas <mpappas@fastmail.fm>
 To: gregkh@linuxfoundation.org, dan.carpenter@oracle.com
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Michalis Pappas <mpappas@fastmail.fm>
-Subject: [PATCH v5 05/10] staging: gdm72xx: Fix some camel-case variables
-Date: Fri,  9 May 2014 18:08:24 +0800
-Message-Id: <1399630109-18701-5-git-send-email-mpappas@fastmail.fm>
+Subject: [PATCH v5 07/10] staging: gdm72xx: Removed commented-out code
+Date: Fri,  9 May 2014 18:08:26 +0800
+Message-Id: <1399630109-18701-7-git-send-email-mpappas@fastmail.fm>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <536CA86B.7000109@fastmail.fm>
 References: <536CA86B.7000109@fastmail.fm>
@@ -22,125 +22,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes the following checkpatch.pl issue:
-
-CHECK: Avoid CamelCase: 
-
 Signed-off-by: Michalis Pappas <mpappas@fastmail.fm>
 ---
- drivers/staging/gdm72xx/gdm_qos.c | 31 +++++++++++++++----------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
+ drivers/staging/gdm72xx/gdm_qos.h   | 17 -----------------
+ drivers/staging/gdm72xx/gdm_wimax.c |  4 ----
+ drivers/staging/gdm72xx/gdm_wimax.h |  6 ------
+ drivers/staging/gdm72xx/usb_boot.c  | 17 +----------------
+ 4 files changed, 1 insertion(+), 43 deletions(-)
 
-diff --git a/drivers/staging/gdm72xx/gdm_qos.c b/drivers/staging/gdm72xx/gdm_qos.c
-index 519db48..465f695 100644
---- a/drivers/staging/gdm72xx/gdm_qos.c
-+++ b/drivers/staging/gdm72xx/gdm_qos.c
-@@ -142,24 +142,24 @@ void gdm_qos_release_list(void *nic_ptr)
- 	free_qos_entry_list(&free_list);
+diff --git a/drivers/staging/gdm72xx/gdm_qos.h b/drivers/staging/gdm72xx/gdm_qos.h
+index 8f18119..6543cff 100644
+--- a/drivers/staging/gdm72xx/gdm_qos.h
++++ b/drivers/staging/gdm72xx/gdm_qos.h
+@@ -34,23 +34,6 @@
+ #define	IEEE802_1QVLANID		0x10
+ 
+ struct gdm_wimax_csr_s {
+-	/*	union{
+-		U16 all;
+-		struct _CS_CLASSIFIER_RULE_ENABLE{
+-			IPTypeOfService:1,
+-			Protocol:1,
+-			IPMaskedSrcAddress:1,
+-			IPMaskedDstAddress:1,
+-			ProtocolSrcPortRange:1,
+-			ProtocolDstPortRange:1,
+-			DstMacAddr:1,
+-			SrcMacAddr:1,
+-			Ethertype:1,
+-			IEEE802_1DUserPriority:1,
+-			IEEE802_1QVLANID:1,
+-			Reserved:5;
+-		} fields;
+-	} */
+ 	BOOLEAN		enabled;
+ 	u32		SFID;
+ 	u8		qos_buf_count;
+diff --git a/drivers/staging/gdm72xx/gdm_wimax.c b/drivers/staging/gdm72xx/gdm_wimax.c
+index 814d2e4..3ccb083 100644
+--- a/drivers/staging/gdm72xx/gdm_wimax.c
++++ b/drivers/staging/gdm72xx/gdm_wimax.c
+@@ -862,10 +862,6 @@ static void prepare_rx_complete(void *arg, void *data, int len)
+ 			netdev_err(nic->netdev,
+ 				   "get_prepared_info failed(%d)\n", ret);
+ 		gdm_wimax_rcv_with_cb(nic, prepare_rx_complete, nic);
+-		#if 0
+-		/* Re-prepare WiMax device */
+-		gdm_wimax_prepare_device(nic->netdev);
+-		#endif
+ 	}
  }
  
--static u32 chk_ipv4_rule(struct gdm_wimax_csr_s *csr, u8 *Stream, u8 *port)
-+static u32 chk_ipv4_rule(struct gdm_wimax_csr_s *csr, u8 *stream, u8 *port)
- {
- 	int i;
+diff --git a/drivers/staging/gdm72xx/gdm_wimax.h b/drivers/staging/gdm72xx/gdm_wimax.h
+index 3013bdb..55212f5 100644
+--- a/drivers/staging/gdm72xx/gdm_wimax.h
++++ b/drivers/staging/gdm72xx/gdm_wimax.h
+@@ -23,10 +23,6 @@
  
- 	if (csr->classifier_rule_en&IPTYPEOFSERVICE) {
--		if (((Stream[1] & csr->ip2s_mask) < csr->ip2s_lo) ||
--		((Stream[1] & csr->ip2s_mask) > csr->ip2s_hi))
-+		if (((stream[1] & csr->ip2s_mask) < csr->ip2s_lo) ||
-+		((stream[1] & csr->ip2s_mask) > csr->ip2s_hi))
- 			return 1;
- 	}
+ #define DRIVER_VERSION		"3.2.3"
  
- 	if (csr->classifier_rule_en&PROTOCOL) {
--		if (Stream[9] != csr->protocol)
-+		if (stream[9] != csr->protocol)
- 			return 1;
- 	}
+-/*#define ETH_P_IP	0x0800 */
+-/*#define ETH_P_ARP	0x0806 */
+-/*#define ETH_P_IPV6	0x86DD */
+-
+ #define H2L(x)		__cpu_to_le16(x)
+ #define L2H(x)		__le16_to_cpu(x)
+ #define DH2L(x)		__cpu_to_le32(x)
+@@ -62,8 +58,6 @@ struct nic {
  
- 	if (csr->classifier_rule_en&IPMASKEDSRCADDRESS) {
- 		for (i = 0; i < 4; i++) {
--			if ((Stream[12 + i] & csr->ipsrc_addrmask[i]) !=
-+			if ((stream[12 + i] & csr->ipsrc_addrmask[i]) !=
- 			(csr->ipsrc_addr[i] & csr->ipsrc_addrmask[i]))
- 				return 1;
- 		}
-@@ -167,7 +167,7 @@ static u32 chk_ipv4_rule(struct gdm_wimax_csr_s *csr, u8 *Stream, u8 *port)
+ };
  
- 	if (csr->classifier_rule_en&IPMASKEDDSTADDRESS) {
- 		for (i = 0; i < 4; i++) {
--			if ((Stream[16 + i] & csr->ipdst_addrmask[i]) !=
-+			if ((stream[16 + i] & csr->ipdst_addrmask[i]) !=
- 			(csr->ipdst_addr[i] & csr->ipdst_addrmask[i]))
- 				return 1;
- 		}
-@@ -190,16 +190,15 @@ static u32 chk_ipv4_rule(struct gdm_wimax_csr_s *csr, u8 *Stream, u8 *port)
+-/*#define LOOPBACK_TEST */
+-
+ int register_wimax_device(struct phy_dev *phy_dev, struct device *pdev);
+ int gdm_wimax_send_tx(struct sk_buff *skb, struct net_device *dev);
+ void unregister_wimax_device(struct phy_dev *phy_dev);
+diff --git a/drivers/staging/gdm72xx/usb_boot.c b/drivers/staging/gdm72xx/usb_boot.c
+index 0d45eb6..8518a5a 100644
+--- a/drivers/staging/gdm72xx/usb_boot.c
++++ b/drivers/staging/gdm72xx/usb_boot.c
+@@ -169,14 +169,7 @@ int usb_boot(struct usb_device *usbdev, u16 pid)
+ 	memcpy(&hdr, firm->data, sizeof(hdr));
  
- static u32 get_qos_index(struct nic *nic, u8 *iph, u8 *tcpudph)
- {
--	u32	IP_Ver, Header_Len, i;
-+	u32	IP_ver, i;
- 	struct qos_cb_s *qcb = &nic->qos;
+ 	array_le32_to_cpu((u32 *)&hdr, 19);
+-#if 0
+-	if (hdr.magic_code != 0x10767fff) {
+-		dev_err(&usbdev->dev, "Invalid magic code 0x%08x\n",
+-			hdr.magic_code);
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-#endif
++
+ 	if (hdr.count > MAX_IMG_CNT) {
+ 		dev_err(&usbdev->dev, "Too many images. %d\n", hdr.count);
+ 		ret = -EINVAL;
+@@ -201,14 +194,6 @@ int usb_boot(struct usb_device *usbdev, u16 pid)
+ 		memcpy(&fw_info, firm->data + pos, sizeof(fw_info));
  
- 	if (iph == NULL || tcpudph == NULL)
- 		return -1;
+ 		array_le32_to_cpu((u32 *)&fw_info, 8);
+-#if 0
+-		if ((fw_info.id & 0xfffff000) != 0x10767000) {
+-			dev_err(&usbdev->dev, "Invalid FW id. 0x%08x\n",
+-				fw_info.id);
+-			ret = -EIO;
+-			goto out;
+-		}
+-#endif
  
--	IP_Ver = (iph[0]>>4)&0xf;
--	Header_Len = iph[0]&0xf;
-+	IP_ver = (iph[0]>>4)&0xf;
- 
--	if (IP_Ver == 4) {
-+	if (IP_ver == 4) {
- 		for (i = 0; i < QOS_MAX; i++) {
- 			if (qcb->csr[i].enabled) {
- 				if (qcb->csr[i].classifier_rule_en) {
-@@ -336,16 +335,16 @@ void gdm_recv_qos_hci_packet(void *nic_ptr, u8 *buf, int size)
- {
- 	struct nic *nic = nic_ptr;
- 	u32 i, SFID, index, pos;
--	u8 subCmdEvt;
-+	u8 sub_cmd_evt;
- 	struct qos_cb_s *qcb = &nic->qos;
- 	struct qos_entry_s *entry, *n;
- 	struct list_head send_list;
- 	struct list_head free_list;
- 	unsigned long flags;
- 
--	subCmdEvt = (u8)buf[4];
-+	sub_cmd_evt = (u8)buf[4];
- 
--	if (subCmdEvt == QOS_REPORT) {
-+	if (sub_cmd_evt == QOS_REPORT) {
- 		spin_lock_irqsave(&qcb->qos_lock, flags);
- 		for (i = 0; i < qcb->qos_list_cnt; i++) {
- 			SFID = ((buf[(i*5)+6]<<24)&0xff000000);
-@@ -367,7 +366,7 @@ void gdm_recv_qos_hci_packet(void *nic_ptr, u8 *buf, int size)
- 		return;
- 	}
- 
--	/* subCmdEvt == QOS_ADD || subCmdEvt == QOS_CHANG_DEL */
-+	/* sub_cmd_evt == QOS_ADD || sub_cmd_evt == QOS_CHANG_DEL */
- 	pos = 6;
- 	SFID = ((buf[pos++]<<24)&0xff000000);
- 	SFID += ((buf[pos++]<<16)&0xff0000);
-@@ -382,7 +381,7 @@ void gdm_recv_qos_hci_packet(void *nic_ptr, u8 *buf, int size)
- 		return;
- 	}
- 
--	if (subCmdEvt == QOS_ADD) {
-+	if (sub_cmd_evt == QOS_ADD) {
- 		netdev_dbg(nic->netdev, "QOS_ADD SFID = 0x%x, index=%d\n",
- 			   SFID, index);
- 
-@@ -423,7 +422,7 @@ void gdm_recv_qos_hci_packet(void *nic_ptr, u8 *buf, int size)
- 
- 		qcb->qos_limit_size = 254/qcb->qos_list_cnt;
- 		spin_unlock_irqrestore(&qcb->qos_lock, flags);
--	} else if (subCmdEvt == QOS_CHANGE_DEL) {
-+	} else if (sub_cmd_evt == QOS_CHANGE_DEL) {
- 		netdev_dbg(nic->netdev, "QOS_CHANGE_DEL SFID = 0x%x, index=%d\n",
- 			   SFID, index);
- 
+ 		if ((fw_info.id & 0xffff) != pid)
+ 			continue;
 -- 
 1.8.4
 
