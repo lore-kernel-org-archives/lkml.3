@@ -1,92 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055AbaEIDJe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 23:09:34 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:29014 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574AbaEIDJb (ORCPT
+	id S1756166AbaEIDLh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 23:11:37 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:50429 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755500AbaEIDLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 23:09:31 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/ignr871ObRYyv+fkcd0y4
-Date: Thu, 8 May 2014 20:09:26 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Lee Jones'" <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-omap@vger.kernel.org,
-        "'Bryan Wu'" <cooloney@gmail.com>,
-        "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
-        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>
-Subject: Re: [PATCH] backlight: gpio-backlight: Fix warning when the GPIO is
- on a I2C chip
-Message-ID: <20140509030925.GN2198@atomide.com>
-References: <20140509012454.GL2198@atomide.com>
- <004701cf6b2d$e1a39c10$a4ead430$%han@samsung.com>
+	Thu, 8 May 2014 23:11:35 -0400
+Message-ID: <536C4761.9050609@hitachi.com>
+Date: Fri, 09 May 2014 12:11:29 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <004701cf6b2d$e1a39c10$a4ead430$%han@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        fche@redhat.com, mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Re: [PATCH -tip v10 7/7] ftrace: Introduce FTRACE_OPS_FL_SELF_FILTER
+ for ftrace-kprobe
+References: <20140508093842.31767.43766.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140508093930.31767.86419.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140508065947.214f4951@gandalf.local.home>
+In-Reply-To: <20140508065947.214f4951@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jingoo Han <jg1.han@samsung.com> [140508 19:25]:
-> On Friday, May 09, 2014 10:25 AM, Lee Jones wrote:
-> > 
-> > If the GPIO for the backlight is on an I2C chip, we currently
-> > get nasty warnings like this during the boot:
-> > 
-> > WARNING: CPU: 0 PID: 6 at drivers/gpio/gpiolib.c:2364 gpiod_set_raw_value+0x40/0x4c()
-> > Modules linked in:
-> > CPU: 0 PID: 6 Comm: kworker/u2:0 Not tainted 3.15.0-rc4-12393-gcde9f4e #400
-> > Workqueue: deferwq deferred_probe_work_func
-> > [<c0014cbc>] (unwind_backtrace) from [<c001191c>] (show_stack+0x10/0x14)
-> > [<c001191c>] (show_stack) from [<c0566ae0>] (dump_stack+0x80/0x9c)
-> > [<c0566ae0>] (dump_stack) from [<c003f61c>] (warn_slowpath_common+0x68/0x8c)
-> > [<c003f61c>] (warn_slowpath_common) from [<c003f65c>] (warn_slowpath_null+0x1c/0x24)
-> > [<c003f65c>] (warn_slowpath_null) from [<c02f7e10>] (gpiod_set_raw_value+0x40/0x4c)
-> > [<c02f7e10>] (gpiod_set_raw_value) from [<c0308fbc>] (gpio_backlight_update_status+0x4c/0x74)
-> > [<c0308fbc>] (gpio_backlight_update_status) from [<c030914c>] (gpio_backlight_probe+0x168/0x254)
-> > [<c030914c>] (gpio_backlight_probe) from [<c0378fa8>] (platform_drv_probe+0x18/0x48)
-> > [<c0378fa8>] (platform_drv_probe) from [<c0377c40>] (driver_probe_device+0x10c/0x238)
-> > [<c0377c40>] (driver_probe_device) from [<c0376330>] (bus_for_each_drv+0x44/0x8c)
-> > [<c0376330>] (bus_for_each_drv) from [<c0377afc>] (device_attach+0x74/0x8c)
-> > [<c0377afc>] (device_attach) from [<c03771c4>] (bus_probe_device+0x88/0xb0)
-> > [<c03771c4>] (bus_probe_device) from [<c03775c8>] (deferred_probe_work_func+0x64/0x94)
-> > [<c03775c8>] (deferred_probe_work_func) from [<c00572e8>] (process_one_work+0x1b4/0x4bc)
-> > [<c00572e8>] (process_one_work) from [<c00579d0>] (worker_thread+0x11c/0x398)
-> > [<c00579d0>] (worker_thread) from [<c005dfd8>] (kthread+0xc8/0xe4)
-> > [<c005dfd8>] (kthread) from [<c000e768>] (ret_from_fork+0x14/0x2c)
-> > 
-> > Fix this by using gpio_set_value_cansleep() as suggested in
-> > drivers/gpio/gpiolib.c:2364. This is what the other backlight drivers
-> > are also doing.
+(2014/05/08 19:59), Steven Rostedt wrote:
+> On Thu, 08 May 2014 18:39:30 +0900
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 > 
-> OK, I see.
-> However, gpio_backlight drive can be used by a lot of gpio drivers.
-> In some cases, 'can_sleep' is 'false' and gpio_set_value_cansleep()
-> is unnecessary.
+>> Since the kprobes itself owns a hash table to get a kprobe
+>> data structure corresponding to the given ip address, there
+>> is no need to test ftrace hash in ftrace side.
+>> To achive better performance on ftrace-based kprobe,
+>> FTRACE_OPS_FL_SELF_FILTER flag to ftrace_ops which means
+>> that ftrace skips testing its own hash table.
+>>
+>> Without this patch, ftrace_lookup_ip() is biggest cycles
+>> consumer when 20,000 kprobes are enabled.
+>>   ----
+>>   Samples: 1K of event 'cycles', Event count (approx.): 340068894
+>>   +  20.77%  [k] ftrace_lookup_ip
+>>   +   8.33%  [k] kprobe_trace_func
+>>   +   4.83%  [k] get_kprobe_cached
+>>   ----
+>>
+>> With this patch, ftrace_lookup_ip() vanished from the
+>> cycles consumer list (of course, there is no caller on
+>> hotpath anymore :))
+>>   ----
+>>   Samples: 1K of event 'cycles', Event count (approx.): 186861492
+>>   +   9.95%  [k] kprobe_trace_func
+>>   +   6.00%  [k] kprobe_ftrace_handler
+>>   +   5.53%  [k] get_kprobe_cached
 > 
-> In my opinion, gpio_set_value_cansleep() or gpio_set_value() can be
-> called selectively by 'can_sleep' value.
+> I should look at your filtering methods, maybe it can make ftrace
+> filtering better?
+
+Ah! Yes, it could be better :) At least the hash-table cache is good
+for ftrace too. Currently it is just for fixed-size hash-table, but
+is easy to expand for resizable one. (however, I guess with the cache
+we don't need to resize that anymore.)
+
 > 
-> How about the following?
+>>   ----
+>>
+>> Changes from v7:
+>>  - Re-evaluate the performance improvement.
+>>
+>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> ---
+>>  include/linux/ftrace.h |    3 +++
+>>  kernel/kprobes.c       |    2 +-
+>>  kernel/trace/ftrace.c  |    3 ++-
+>>  3 files changed, 6 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+>> index ae9504b..f1fa7d27 100644
+>> --- a/include/linux/ftrace.h
+>> +++ b/include/linux/ftrace.h
+>> @@ -93,6 +93,8 @@ typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip,
+>>   * INITIALIZED - The ftrace_ops has already been initialized (first use time
+>>   *            register_ftrace_function() is called, it will initialized the ops)
+>>   * DELETED - The ops are being deleted, do not let them be registered again.
+>> + * SELF_FILTER - The ftrace_ops function filters ip by itself. Do not need to
+>> + *            check hash table on each hit.
 > 
-> -       gpio_set_value(gbl->gpio, brightness ? gbl->active : !gbl->active);
-> +       if (gpio_cansleep(gbl->gpio))
-> +               gpio_set_value_cansleep(gbl->gpio,
-> +                                       brightness ? gbl->active : !gbl->active);
-> +       else
-> +               gpio_set_value(gbl->gpio, brightness ? gbl->active : !gbl->active);
+>  - The ftrace_ops function has its own ip filter and does not need to
+>    rely on the ftrace internal ip filtering.
 
-It should be always fine to use gpio_set_value_cansleep(), see your
-old thread from few years ago related to another backlight driver:
+OK, I'll update that.
 
-https://lkml.org/lkml/2012/12/5/343
+> 
+> 
+>>   */
+>>  enum {
+>>  	FTRACE_OPS_FL_ENABLED			= 1 << 0,
+>> @@ -105,6 +107,7 @@ enum {
+>>  	FTRACE_OPS_FL_STUB			= 1 << 7,
+>>  	FTRACE_OPS_FL_INITIALIZED		= 1 << 8,
+>>  	FTRACE_OPS_FL_DELETED			= 1 << 9,
+>> +	FTRACE_OPS_FL_SELF_FILTER		= 1 << 10,
+>>  };
+>>  
+>>  /*
+>> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+>> index 0f5f23c..5c6e410 100644
+>> --- a/kernel/kprobes.c
+>> +++ b/kernel/kprobes.c
+>> @@ -1027,7 +1027,7 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
+>>  #ifdef CONFIG_KPROBES_ON_FTRACE
+>>  static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
+>>  	.func = kprobe_ftrace_handler,
+>> -	.flags = FTRACE_OPS_FL_SAVE_REGS,
+>> +	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_SELF_FILTER,
+>>  };
+>>  static int kprobe_ftrace_enabled;
+>>  
+>> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+>> index 4a54a25..062ca20 100644
+>> --- a/kernel/trace/ftrace.c
+>> +++ b/kernel/trace/ftrace.c
+>> @@ -4501,7 +4501,8 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
+>>  	 */
+>>  	preempt_disable_notrace();
+>>  	do_for_each_ftrace_op(op, ftrace_ops_list) {
+>> -		if (ftrace_ops_test(op, ip, regs))
+>> +		if (op->flags & FTRACE_OPS_FL_SELF_FILTER ||
+>> +		    ftrace_ops_test(op, ip, regs))
+> 
+> Hmm, I wonder if I should add the check for:
+> 
+> 	!(op->flags & FTRACE_OPS_FL_STUB)
+> 
+> here too? But that's another change that I'll do.
 
-Regards,
+Indeed. BTW, should I change ftrace_ops_control_func() too?
 
-Tony
+> 
+> Just update the flag description as I commented and the rest looks good.
+
+OK, thanks!
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
