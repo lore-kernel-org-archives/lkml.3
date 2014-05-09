@@ -1,349 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422AbaEIMpz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 08:45:55 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:64308 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824AbaEIMpx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 08:45:53 -0400
-From: Eric Auger <eric.auger@linaro.org>
-To: eric.auger@st.com, christoffer.dall@linaro.org, marc.zyngier@arm.com,
-        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
-        christophe.barnichon@st.com, Eric Auger <eric.auger@linaro.org>
-Subject: [PATCH] ARM: KVM: add irqfd and irq routing support
-Date: Fri,  9 May 2014 14:45:28 +0200
-Message-Id: <1399639528-2462-1-git-send-email-eric.auger@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	id S1754470AbaEIMqY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 08:46:24 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:47837 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750744AbaEIMqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 08:46:21 -0400
+Message-ID: <1399639530.8165.32.camel@iivanov-dev>
+Subject: Re: [PATCH 1/2] mfd: pm8x41: add support for Qualcomm 8x41 PMICs
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        David Collins <collinsd@codeaurora.org>
+Date: Fri, 09 May 2014 15:45:30 +0300
+In-Reply-To: <20140424181829.GA19254@joshc.qualcomm.com>
+References: <1398213110-28135-1-git-send-email-courtney.cavin@sonymobile.com>
+	 <20140423214626.GA3215@joshc.qualcomm.com>
+	 <20140423233621.GM17066@sonymobile.com>
+	 <20140424181829.GA19254@joshc.qualcomm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables irqfd and irq routing on ARM.
 
-It turns on CONFIG_HAVE_KVM_EVENTFD and CONFIG_HAVE_KVM_IRQ_ROUTING
+Hi, 
 
-irqfd framework enables to assign physical IRQs to guests.
+On Thu, 2014-04-24 at 13:18 -0500, Josh Cartwright wrote:
+> On Wed, Apr 23, 2014 at 04:36:22PM -0700, Courtney Cavin wrote:
+> > On Wed, Apr 23, 2014 at 11:46:26PM +0200, Josh Cartwright wrote:
+> > > On Tue, Apr 22, 2014 at 05:31:49PM -0700, Courtney Cavin wrote:
+> [..]
 
-1) user-side uses KVM_IRQFD VM ioctl to pass KVM a kvm_irqfd struct that
-associates a VM, an eventfd, an IRQ number (aka. the GSI). When an actor
-signals the eventfd (typically a VFIO platform driver), the irqfd subsystem
-injects the specified IRQ into the VM (the "GSI" takes the semantic of a
-virtual IRQ for that guest).
+<snip>
+> 
+> 	$ git grep spmi-slave-container arch/arm/boot/dts
+> 	arch/arm/boot/dts/qcom/msm-pm8019.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pm8019.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pm8110.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pm8110.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pm8226.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pm8226.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pm8841.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pm8841.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pm8916.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pm8916.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pm8941.dtsi:	spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pm8941.dtsi:	spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pma8084.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pma8084.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pmd9635.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pmd9635.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pmi8962.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pmi8962.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pmiplutonium.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pmiplutonium.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pmplutonium.dtsi:		spmi-slave-container;
+> 	arch/arm/boot/dts/qcom/msm-pmplutonium.dtsi:		spmi-slave-container;
+> 
+> [..]
+> > > > +static const struct of_device_id pm8x41_id_table[] = {
+> > > > +	{ .compatible = "qcom,pm8841", },
+> > > > +	{ .compatible = "qcom,pm8941", },
+> > > > +	{},
+> > > > +};
+> > > > +MODULE_DEVICE_TABLE(of, pm8x41_id_table);
+> > > 
+> > > I'm thinking we should probably have a generic compatible entry as well,
+> > > "qcom,pmic-qpnp" or similar.  We should still specify in the binding
+> > > that PMIC slaves specify a version-specific string as well as the
+> > > generic string.  That is, a slave should have:
+> > > 
+> > > 	compatible = "qcom,pm8841", "qcom,pmic-qpnp";
+> > > 
+> > > ...in case we would ever need to differentiate in the future.
+> > > 
+> > > (I recall that in a previous version I had done this, but I don't
+> > > remember why I had changed it..)
+> >
+> > I gave this some thought but came to the conclusion that there is no
+> > benefit of adding a generic compatible to a new binding.  Please clarify
+> > a use-case where this would be ... useful.
+> 
+> Having a generic compatible entry allows for easily supporting new PMICs
+> without having to add yet another vacuous entry in the ID table.  In
+> this case I think it's perfectly acceptable given that this driver isn't
+> really defining a programming model for a specific device, but rather
+> acting much more like a bus.
+> 
+> Requiring a specific PMIC listed before a generic one allows us an
+> escape hatch in the future if for some reason we need to add a quirk for
+> a specific PMIC.
 
-2) the other use case is user-side does 1) and uses KVM_SET_GSI_ROUTING
-VM ioctl to create an association between a VM, a physical IRQ (aka GSI) and
-a virtual IRQ (aka irchip.pin).  This creates a so-called GSI routing entry.
-When someone triggers the eventfd, irqfd handles it but uses the specified
-routing and eventually injects irqchip.pin virtual IRQ into the guest. In that
-context the GSI takes the semantic of a physical IRQ while the irqchip.pin
-takes the semantic of a virtual IRQ.
+Is there a conclusion on this issue? I am voting for generic name :-)
+"qcom,pm-qpnp".
 
-in 1) routing is used by irqfd but an identity routing is created by default
-making the gsi = irqchip.pin. Note on ARM there is a single interrupt
-controller kind, the GIC.
+Further complication is that several sub function drivers expect to
+runtime detect the exact version of the controller ("qcom, qpnp-iadc",
+"qcom, qpnp-vadc", "qcom, qpnp-linear-charger").  This is realized by the
+exported function of the driver "qcom, qpnp-revid". Would it be good
+idea to merge qpnp-revid and "qcom,pm-qpnp" driver?
 
-GSI routing mostly is implemented in generic irqchip.c.
-The tiny ARM specific part is directly implemented in the virtual interrupt
-controller (vgic.c) as it is done for powerpc for instance. This option was
-prefered compared to implementing other #ifdef in irq_comm.c (x86 and ia64).
-Hence irq_comm.c is not used at all.
+Regards,
+Ivan
 
-Routing currently is not used for anything else than irqfd IRQ injection. Only
-SPI can be injected. This means the vgic is not totally hidden behind the
-irqchip. There are separate discussions on PPI/SGI routing.
+> 
+>   Josh
+> 
+> [1]: git://codeaurora.org/quic/la/kernel/msm-3.10#msm-3.10
+> 
 
-Only level sensitive IRQs are supported (with a registered resampler). As a
-reminder the resampler is a second eventfd called by irqfd framework when the
-virtual IRQ is completed by the guest. This eventfd is supposed to be handled
-on user-side
-
-MSI routing is not supported yet.
-
-This work was tested with Calxeda Midway xgmac main interrupt (with and without
-explicit user routing) with qemu-system-arm and QEMU VFIO platform device.
-
-Signed-off-by: Eric Auger <eric.auger@linaro.org>
-
-Conflicts:
-	Documentation/virtual/kvm/api.txt
-	arch/arm/kvm/Kconfig
----
- Documentation/virtual/kvm/api.txt |   4 +-
- arch/arm/include/uapi/asm/kvm.h   |   8 +++
- arch/arm/kvm/Kconfig              |   2 +
- arch/arm/kvm/Makefile             |   1 +
- arch/arm/kvm/irq.h                |  25 ++++++++
- virt/kvm/arm/vgic.c               | 124 ++++++++++++++++++++++++++++++++++++--
- 6 files changed, 158 insertions(+), 6 deletions(-)
- create mode 100644 arch/arm/kvm/irq.h
-
-diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index a9380ba5..202d63e3 100644
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -1339,7 +1339,7 @@ KVM_ASSIGN_DEV_IRQ. Partial deassignment of host or guest IRQ is allowed.
- 4.52 KVM_SET_GSI_ROUTING
- 
- Capability: KVM_CAP_IRQ_ROUTING
--Architectures: x86 ia64 s390
-+Architectures: x86 ia64 s390 arm
- Type: vm ioctl
- Parameters: struct kvm_irq_routing (in)
- Returns: 0 on success, -1 on error
-@@ -2126,7 +2126,7 @@ into the hash PTE second double word).
- 4.75 KVM_IRQFD
- 
- Capability: KVM_CAP_IRQFD
--Architectures: x86
-+Architectures: x86 arm
- Type: vm ioctl
- Parameters: struct kvm_irqfd (in)
- Returns: 0 on success, -1 on error
-diff --git a/arch/arm/include/uapi/asm/kvm.h b/arch/arm/include/uapi/asm/kvm.h
-index ef0c878..89b864d 100644
---- a/arch/arm/include/uapi/asm/kvm.h
-+++ b/arch/arm/include/uapi/asm/kvm.h
-@@ -192,6 +192,14 @@ struct kvm_arch_memory_slot {
- /* Highest supported SPI, from VGIC_NR_IRQS */
- #define KVM_ARM_IRQ_GIC_MAX		127
- 
-+/* needed by IRQ routing */
-+
-+/* One single KVM irqchip, ie. the VGIC */
-+#define KVM_NR_IRQCHIPS          1
-+
-+/* virtual interrupt controller input pins (max 480 SPI, 32 SGI/PPI) */
-+#define KVM_IRQCHIP_NUM_PINS     256
-+
- /* PSCI interface */
- #define KVM_PSCI_FN_BASE		0x95c1ba5e
- #define KVM_PSCI_FN(n)			(KVM_PSCI_FN_BASE + (n))
-diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
-index 4be5bb1..096692c 100644
---- a/arch/arm/kvm/Kconfig
-+++ b/arch/arm/kvm/Kconfig
-@@ -24,6 +24,7 @@ config KVM
- 	select KVM_MMIO
- 	select KVM_ARM_HOST
- 	depends on ARM_VIRT_EXT && ARM_LPAE && !CPU_BIG_ENDIAN
-+	select HAVE_KVM_EVENTFD
- 	---help---
- 	  Support hosting virtualized guest machines. You will also
- 	  need to select one or more of the processor modules below.
-@@ -56,6 +57,7 @@ config KVM_ARM_VGIC
- 	bool "KVM support for Virtual GIC"
- 	depends on KVM_ARM_HOST && OF
- 	select HAVE_KVM_IRQCHIP
-+	select HAVE_KVM_IRQ_ROUTING
- 	default y
- 	---help---
- 	  Adds support for a hardware assisted, in-kernel GIC emulation.
-diff --git a/arch/arm/kvm/Makefile b/arch/arm/kvm/Makefile
-index 789bca9..29de111 100644
---- a/arch/arm/kvm/Makefile
-+++ b/arch/arm/kvm/Makefile
-@@ -21,4 +21,5 @@ obj-y += kvm-arm.o init.o interrupts.o
- obj-y += arm.o handle_exit.o guest.o mmu.o emulate.o reset.o
- obj-y += coproc.o coproc_a15.o coproc_a7.o mmio.o psci.o perf.o
- obj-$(CONFIG_KVM_ARM_VGIC) += $(KVM)/arm/vgic.o
-+obj-$(CONFIG_HAVE_KVM_EVENTFD) += $(KVM)/eventfd.o $(KVM)/irqchip.o
- obj-$(CONFIG_KVM_ARM_TIMER) += $(KVM)/arm/arch_timer.o
-diff --git a/arch/arm/kvm/irq.h b/arch/arm/kvm/irq.h
-new file mode 100644
-index 0000000..4d6fcc6
---- /dev/null
-+++ b/arch/arm/kvm/irq.h
-@@ -0,0 +1,25 @@
-+/*
-+ * Copyright (C) 2014, STMicroelectronics
-+ * Authors: Eric Auger <eric.auger@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef __IRQ_H
-+#define __IRQ_H
-+
-+#include <linux/kvm_host.h>
-+/*
-+ * Placeholder for irqchip and irq/msi routing declarations
-+ * included in irqchip.c
-+ */
-+
-+#endif
-diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
-index 56ff9be..a041c29 100644
---- a/virt/kvm/arm/vgic.c
-+++ b/virt/kvm/arm/vgic.c
-@@ -93,6 +93,9 @@ static struct device_node *vgic_node;
- #define ACCESS_WRITE_VALUE	(3 << 1)
- #define ACCESS_WRITE_MASK(x)	((x) & (3 << 1))
- 
-+static struct kvm_irq_routing_entry identity_table[VGIC_NR_IRQS];
-+static int set_default_routing_table(struct kvm *kvm);
-+
- static void vgic_retire_disabled_irqs(struct kvm_vcpu *vcpu);
- static void vgic_update_state(struct kvm *kvm);
- static void vgic_kick_vcpus(struct kvm *kvm);
-@@ -1172,6 +1175,8 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
- {
- 	struct vgic_cpu *vgic_cpu = &vcpu->arch.vgic_cpu;
- 	bool level_pending = false;
-+	struct kvm *kvm;
-+	int is_assigned_irq;
- 
- 	kvm_debug("MISR = %08x\n", vgic_cpu->vgic_misr);
- 
-@@ -1189,12 +1194,22 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
- 			vgic_irq_clear_active(vcpu, irq);
- 			vgic_cpu->vgic_lr[lr] &= ~GICH_LR_EOI;
- 
-+			kvm = vcpu->kvm;
-+			is_assigned_irq = kvm_irq_has_notifier(kvm, 0, irq);
-+
- 			/* Any additional pending interrupt? */
--			if (vgic_dist_irq_is_pending(vcpu, irq)) {
--				vgic_cpu_irq_set(vcpu, irq);
--				level_pending = true;
--			} else {
-+			if (is_assigned_irq) {
- 				vgic_cpu_irq_clear(vcpu, irq);
-+				kvm_debug("EOI irqchip routed vIRQ %d\n", irq);
-+				kvm_notify_acked_irq(kvm, 0, irq);
-+				vgic_dist_irq_clear(vcpu, irq);
-+			} else {
-+				if (vgic_dist_irq_is_pending(vcpu, irq)) {
-+					vgic_cpu_irq_set(vcpu, irq);
-+					level_pending = true;
-+				} else {
-+					vgic_cpu_irq_clear(vcpu, irq);
-+				}
- 			}
- 
- 			/*
-@@ -1627,6 +1642,8 @@ int kvm_vgic_create(struct kvm *kvm)
- 	kvm->arch.vgic.vgic_dist_base = VGIC_ADDR_UNDEF;
- 	kvm->arch.vgic.vgic_cpu_base = VGIC_ADDR_UNDEF;
- 
-+	set_default_routing_table(kvm);
-+
- out_unlock:
- 	for (; vcpu_lock_idx >= 0; vcpu_lock_idx--) {
- 		vcpu = kvm_get_vcpu(kvm, vcpu_lock_idx);
-@@ -2017,3 +2034,102 @@ struct kvm_device_ops kvm_arm_vgic_v2_ops = {
- 	.get_attr = vgic_get_attr,
- 	.has_attr = vgic_has_attr,
- };
-+
-+
-+/*
-+ * set up a default identity routing table
-+ * The user-side can further change the routing table using
-+ * KVM_SET_GSI_ROUTING VM ioctl
-+ */
-+
-+static int set_default_routing_table(struct kvm *kvm)
-+{
-+	struct kvm_irq_routing_entry;
-+	int i;
-+	for (i = 0; i < VGIC_NR_IRQS; i++)	{
-+		identity_table[i].gsi = i;
-+		identity_table[i].type = KVM_IRQ_ROUTING_IRQCHIP;
-+		identity_table[i].u.irqchip.irqchip = 0;
-+		identity_table[i].u.irqchip.pin = i;
-+	}
-+	return kvm_set_irq_routing(kvm, identity_table,
-+				   ARRAY_SIZE(identity_table), 0);
-+}
-+
-+
-+/*
-+ * Functions needed for GSI routing (used by irqchip.c)
-+ * implemented in irq_comm.c for x86 and ia64
-+ * in architecture specific files for some other archictures (powerpc)
-+ */
-+
-+static int vgic_set_assigned_irq(struct kvm_kernel_irq_routing_entry *e,
-+			   struct kvm *kvm, int irq_source_id, int level,
-+			   bool line_status)
-+{
-+	/* only SPI can be assigned in current implementation */
-+	if (e->irqchip.pin < 32)
-+		return -EINVAL;
-+
-+	if (irq_source_id == KVM_USERSPACE_IRQ_SOURCE_ID) {
-+		/*
-+		 * This path is not tested yet,
-+		 * only irqchip with resampler was exercised
-+		 */
-+		kvm_vgic_inject_irq(kvm, 0, e->irqchip.pin, level);
-+	} else if (irq_source_id == KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID) {
-+		if (level == 1) {
-+			kvm_debug("Inject irqchip routed vIRQ %d\n",
-+					e->irqchip.pin);
-+			kvm_vgic_inject_irq(kvm, 0, e->irqchip.pin, level);
-+			/*
-+			 * toggling down vIRQ wire is directly handled in
-+			 * process_maintenance for this reason:
-+			 * irqfd_resampler_ack is called in
-+			 * process_maintenance which holds the dist lock.
-+			 * irqfd_resampler_ack calls kvm_set_irq
-+			 * which ends_up calling kvm_vgic_inject_irq.
-+			 * This later attempts to take the lock -> deadlock!
-+			 */
-+		}
-+	}
-+	return 0;
-+
-+}
-+
-+/* void implementation requested to compile irqchip.c */
-+
-+int kvm_set_msi(struct kvm_kernel_irq_routing_entry *e,
-+		struct kvm *kvm, int irq_source_id, int level, bool line_status)
-+{
-+	return 0;
-+}
-+
-+int kvm_set_routing_entry(struct kvm_irq_routing_table *rt,
-+			  struct kvm_kernel_irq_routing_entry *e,
-+			  const struct kvm_irq_routing_entry *ue)
-+{
-+	int r = -EINVAL;
-+
-+	switch (ue->type) {
-+	case KVM_IRQ_ROUTING_IRQCHIP:
-+		e->set = vgic_set_assigned_irq;
-+		e->irqchip.irqchip = ue->u.irqchip.irqchip;
-+		e->irqchip.pin = ue->u.irqchip.pin;
-+		if (e->irqchip.pin >= KVM_IRQCHIP_NUM_PINS)
-+			goto out;
-+		/* chip[0][virtualID] = physicalID  */
-+		rt->chip[ue->u.irqchip.irqchip][e->irqchip.pin] = ue->gsi;
-+		break;
-+	default:
-+		goto out;
-+	}
-+
-+	r = 0;
-+out:
-+	return r;
-+}
-+
-+
-+
-+
--- 
-1.9.1
 
