@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399AbaEITvG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 15:51:06 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:60228 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757098AbaEITvD (ORCPT
+	id S1757424AbaEITvQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 15:51:16 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:42335 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756938AbaEITvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 15:51:03 -0400
-Date: Fri, 9 May 2014 15:50:59 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, vgoyal@redhat.com,
-        axboe@kernel.dk, hannes@cmpxchg.org, mhocko@suse.cz,
-        arozansk@redhat.com
-Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: implement cftype->write()
-Message-ID: <20140509195059.GE4486@htj.dyndns.org>
-References: <1399380266-3324-1-git-send-email-tj@kernel.org>
+	Fri, 9 May 2014 15:51:13 -0400
+Date: Fri, 9 May 2014 12:51:09 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH percpu/for-3.16 2/2] percpu-refcount: implement
+ percpu_ref_tryget()
+Message-ID: <20140509195109.GC2276@kmo>
+References: <20140507155511.GB26540@htj.dyndns.org>
+ <20140507155647.GC26540@htj.dyndns.org>
+ <20140507155810.GD26540@htj.dyndns.org>
+ <20140509194020.GB2276@kmo>
+ <20140509194140.GC4486@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1399380266-3324-1-git-send-email-tj@kernel.org>
+In-Reply-To: <20140509194140.GC4486@htj.dyndns.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 08:44:21AM -0400, Tejun Heo wrote:
-> This patchset is on top of
+On Fri, May 09, 2014 at 03:41:40PM -0400, Tejun Heo wrote:
+> On Fri, May 09, 2014 at 12:40:21PM -0700, Kent Overstreet wrote:
+> > On Wed, May 07, 2014 at 11:58:10AM -0400, Tejun Heo wrote:
+> > > Implement percpu_ref_tryget() which fails if the refcnt already
+> > > reached zero.  Note that this is different from the recently renamed
+> > > percpu_ref_tryget_live() which fails if the refcnt has been killed and
+> > > is draining the remaining references.  percpu_ref_tryget() succeeds on
+> > > a killed refcnt as long as its current refcnt is above zero.
+> > 
+> > I'd still kind of prefer tryget() to be labelled "deprecated, don't use outside
+> > the cgroup code" or somesuch, but it's not a huge deal :)
 > 
->   cgroup/for-3.16 12d3089c192c ("kernel/cpuset.c: convert printk to pr_foo()")
-> + [1] [PATCHSET cgroup/for-3.16] cgroup: post unified hierarchy fixes and updates
-> 
-> and available on the following git branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-post-unified-updates
+> Hmmm... why would it be deprecated?  These are just two different
+> operations.
 
-Refreshed without content change on top of
+Well not so much deprecated as "bad, avoid" - IMO using tryget() almost always
+(I haven't seen a convincing counterexample) means you screwed up your
+refcounting somewhere, if you need to take a ref on something whatever made that
+object visible to you should have its own ref.
 
-  b9a63d0116e8 ("Merge branch 'for-3.16' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu into for-3.16")
-+ [1] [PATCHSET v2 cgroup/for-3.16] cgroup: post unified hierarchy fixes and updates
-
-and available on the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-post-unified-updates-v2
-
--- 
-tejun
-
-[1] http://lkml.kernel.org/g/1399663975-315-1-git-send-email-tj@kernel.org
+(I think we had this debate, but that was awhile ago...)
