@@ -1,96 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757526AbaEITeq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 15:34:46 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:60694 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757387AbaEITdC (ORCPT
+	id S1757375AbaEITdA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 15:33:00 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:36648 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884AbaEITc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 15:33:02 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/7] cgroup: css_release() shouldn't clear cgroup->subsys[]
-Date: Fri,  9 May 2014 15:32:51 -0400
-Message-Id: <1399663975-315-4-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1399663975-315-1-git-send-email-tj@kernel.org>
-References: <1399663975-315-1-git-send-email-tj@kernel.org>
+	Fri, 9 May 2014 15:32:58 -0400
+X-Originating-IP: 173.246.103.110
+Date: Fri, 9 May 2014 12:32:46 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 01/45] rcutorture: Add forward-progress
+ checking for writer
+Message-ID: <20140509193246.GC13050@jtriplet-mobl1>
+References: <20140429002455.GA15461@linux.vnet.ibm.com>
+ <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140507211649.GA27924@cloud>
+ <20140507234313.GP8754@linux.vnet.ibm.com>
+ <20140509155230.GA4152@thin>
+ <20140509173658.GV8754@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140509173658.GV8754@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-c1a71504e971 ("cgroup: don't recycle cgroup id until all csses' have
-been destroyed") made cgroup ID persist until a cgroup is released and
-add cgroup->subsys[] clearing to css_release() so that css_from_id()
-doesn't return a css which has already been released which happens
-before cgroup release; however, the right change here was updating
-offline_css() to clear cgroup->subsys[] which was done by e32978031016
-("cgroup: cgroup->subsys[] should be cleared after the css is
-offlined") instead of clearing it from css_release().
+On Fri, May 09, 2014 at 10:36:58AM -0700, Paul E. McKenney wrote:
+> On Fri, May 09, 2014 at 08:52:31AM -0700, Josh Triplett wrote:
+> > On Wed, May 07, 2014 at 04:43:13PM -0700, Paul E. McKenney wrote:
+> > > On Wed, May 07, 2014 at 02:16:49PM -0700, josh@joshtriplett.org wrote:
+> > > > On Mon, Apr 28, 2014 at 05:24:49PM -0700, Paul E. McKenney wrote:
+> > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > > 
+> > > > > The rcutorture output currently does not distinguish between stalls in
+> > > > > the RCU implementation and stalls in the rcu_torture_writer() kthreads.
+> > > > > This commit therefore adds some diagnostics to help distinguish between
+> > > > > these two conditions, at least for the non-SRCU implementations.  (SRCU
+> > > > > does not provide evidence of update-side forward progress by design.)
+> > > > > 
+> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > 
+> > > > The concept makes sense, and the writer state annotations seem like a
+> > > > useful debugging mechanism, but having RCU know about RCU torture types
+> > > > seems fundamentally wrong.  This mechanism accesses rcu_state, which is
+> > > > already implementation-specific, so why not just only define the
+> > > > function for the RCU implementations that support it, and then have a
+> > > > function pointer in the torture-test structure to report a stall?
+> > > 
+> > > Ouch.  It is worse than that!  When running RCU-bh or RCU-sched,
+> > > the current code incorrectly returns the statistics for RCU.
+> > > So I do need some way for rcutorture to tell RCU which flavor
+> > > it is testing.
+> > > 
+> > > One thing I could do would be to pass in a pointer to the call_rcu()
+> > > function (cur_ops->call from rcutorture's viewpoint), then scan the
+> > > rcu_state structures looking for the selected flavor (rsp->call from
+> > > tree.c's viewpoint).  In the SRCU and RCU-busted cases, the flavor would
+> > > not be found, and I could then just set everything to zero.
+> > > 
+> > > Does that seem reasonable, or is there a better way to do this?
+> > 
+> > That search seems rather too hackish; why not just declare one
+> > stats-returning function per RCU flavor, and put the pointer to the
+> > corresponding function in the structure for each test type?
+> 
+> The problem is that rcutorture doesn't know anything about the structures,
+> as those are internal to the implementation.  All it knows is which
+> functions it is using.  I -could- EXPORT_SYMBOL_GPL() the rcu_state
+> structures to modules (they are already non-static), then rename
+> TINY_RCU's rcu_ctrlblk to rcu_state to allow the needed type punning,
+> then do some special-case thing for SRCU, and put a pointer to whatever
+> in rcu_torture_ops, but that was feeling a bit hackish as well.
+> 
+> So what did you have in mind to allow rcutorture to communicate the
+> rcuflavor to the underlying RCU implementation?
 
-We're now clearing cgroup->subsys[] twice.  This is okay for
-traditional hierarchies as a css's lifetime is the same as its
-cgroup's; however, this confuses unified hierarchy and turning on and
-off a controller repeatedly using "cgroup.subtree_control" can lead to
-an oops like the following which happens because cgroup->subsys[] is
-incorrectly cleared asynchronously by css_release().
+Rather than EXPORT_SYMBOL_GPLing the rcu_state structures, just
+EXPORT_SYMBOL_GPL one version of rcutorture_get_gp_data per RCU flavor.
+(And hide them all behind #ifdef CONFIG_RCU_TORTURE_TEST.)  Then add a
+get_gp_data field to rcu_torture_ops; if NULL, skip the stats.  (Or put
+a no-op version in rcutorture.)
 
- BUG: unable to handle kernel NULL pointer dereference at 00000000000000 08
- IP: [<ffffffff81130c11>] kill_css+0x21/0x1c0
- PGD 1170d067 PUD f0ab067 PMD 0
- Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
- Modules linked in:
- CPU: 2 PID: 459 Comm: bash Not tainted 3.15.0-rc2-work+ #5
- Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
- task: ffff880009296710 ti: ffff88000e198000 task.ti: ffff88000e198000
- RIP: 0010:[<ffffffff81130c11>]  [<ffffffff81130c11>] kill_css+0x21/0x1c0
- RSP: 0018:ffff88000e199dc8  EFLAGS: 00010202
- RAX: 0000000000000001 RBX: 0000000000000000 RCX: 0000000000000001
- RDX: 0000000000000001 RSI: ffffffff8238a968 RDI: ffff880009296f98
- RBP: ffff88000e199de0 R08: 0000000000000001 R09: 02b0000000000000
- R10: 0000000000000000 R11: ffff880009296fc0 R12: 0000000000000001
- R13: ffff88000db6fc58 R14: 0000000000000001 R15: ffff8800139dcc00
- FS:  00007ff9160c5740(0000) GS:ffff88001fb00000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: 0000000000000008 CR3: 0000000013947000 CR4: 00000000000006e0
- Stack:
-  ffff88000e199de0 ffffffff82389160 0000000000000001 ffff88000e199e80
-  ffffffff8113537f 0000000000000007 ffff88000e74af00 ffff88000e199e48
-  ffff880009296710 ffff88000db6fc00 ffffffff8239c100 0000000000000002
- Call Trace:
-  [<ffffffff8113537f>] cgroup_subtree_control_write+0x85f/0xa00
-  [<ffffffff8112fd18>] cgroup_file_write+0x38/0x1d0
-  [<ffffffff8126fc97>] kernfs_fop_write+0xe7/0x170
-  [<ffffffff811f2ae6>] vfs_write+0xb6/0x1c0
-  [<ffffffff811f35ad>] SyS_write+0x4d/0xc0
-  [<ffffffff81d0acd2>] system_call_fastpath+0x16/0x1b
- Code: 5c 41 5d 41 5e 41 5f 5d c3 90 0f 1f 44 00 00 55 48 89 e5 41 54 53 48 89 fb 48 83 ec 08 8b 05 37 ad 29 01 85 c0 0f 85 df 00 00 00 <48> 8b 43 08 48 8b 3b be 01 00 00 00 8b 48 5c d3 e6 e8 49 ff ff
- RIP  [<ffffffff81130c11>] kill_css+0x21/0x1c0
-  RSP <ffff88000e199dc8>
- CR2: 0000000000000008
- ---[ end trace e7aae1f877c4e1b4 ]---
-
-Remove the unnecessary cgroup->subsys[] clearing from css_release().
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/cgroup.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index e2ff925..35daf89 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4102,7 +4102,6 @@ static void css_release(struct percpu_ref *ref)
- 		container_of(ref, struct cgroup_subsys_state, refcnt);
- 	struct cgroup_subsys *ss = css->ss;
- 
--	RCU_INIT_POINTER(css->cgroup->subsys[ss->id], NULL);
- 	cgroup_idr_remove(&ss->css_idr, css->id);
- 
- 	call_rcu(&css->rcu_head, css_free_rcu_fn);
--- 
-1.9.0
-
+- Josh Triplett
