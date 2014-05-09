@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494AbaEITeF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 15:34:05 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:33757 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754499AbaEITdE (ORCPT
+	id S1757511AbaEITeW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 15:34:22 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:40657 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757195AbaEITeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 15:33:04 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 4/7] cgroup: update and fix parsing of "cgroup.subtree_control"
-Date: Fri,  9 May 2014 15:32:52 -0400
-Message-Id: <1399663975-315-5-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1399663975-315-1-git-send-email-tj@kernel.org>
-References: <1399663975-315-1-git-send-email-tj@kernel.org>
+	Fri, 9 May 2014 15:34:18 -0400
+From: srinivas.kandagatla@linaro.org
+To: Mike Turquette <mturquette@linaro.org>
+Cc: galak@codeaurora.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH v2] clk: qcom: add clocks necessary for apq8064 sdcc
+Date: Fri,  9 May 2014 12:34:05 -0700
+Message-Id: <1399664045-18870-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399661305-11641-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1399661305-11641-1-git-send-email-srinivas.kandagatla@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was confused that strsep() was equivalent to strtok_r() in skipping
-over consecutive delimiters.  strsep() just splits at the first
-occurrence of one of the delimiters which makes the parsing very
-inflexible, which makes allowing multiple whitespace chars as
-delimters kinda moot.  Let's just be consistently strict and require
-list of tokens separated by spaces.  This is what
-Documentation/cgroups/unified-hierarchy.txt describes too.
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-Also, parsing may access beyond the end of the string if the string
-ends with spaces or is zero-length.  Make sure it skips zero-length
-tokens.  Note that this also ensures that the parser doesn't puke on
-multiple consecutive spaces.
+This patch adds clocks necessary for SD card controller on apq8064 SOC.
+Without this patch the clocks are visible to the sdcc driver.
 
-v2: Add zero-length token skipping.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 ---
- kernel/cgroup.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/clk/qcom/gcc-msm8960.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 35daf89..b81e7c0 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2542,11 +2542,13 @@ static int cgroup_subtree_control_write(struct cgroup_subsys_state *dummy_css,
- 	int ssid, ret;
+diff --git a/drivers/clk/qcom/gcc-msm8960.c b/drivers/clk/qcom/gcc-msm8960.c
+index f4ffd91..c47a758 100644
+--- a/drivers/clk/qcom/gcc-msm8960.c
++++ b/drivers/clk/qcom/gcc-msm8960.c
+@@ -2876,6 +2876,14 @@ static struct clk_regmap *gcc_apq8064_clks[] = {
+ 	[GSBI7_QUP_SRC] = &gsbi7_qup_src.clkr,
+ 	[GSBI7_QUP_CLK] = &gsbi7_qup_clk.clkr,
+ 	[GSBI7_H_CLK] = &gsbi7_h_clk.clkr,
++	[SDC1_SRC] = &sdc1_src.clkr,
++	[SDC1_CLK] = &sdc1_clk.clkr,
++	[SDC2_SRC] = &sdc2_src.clkr,
++	[SDC2_CLK] = &sdc2_clk.clkr,
++	[SDC3_SRC] = &sdc3_src.clkr,
++	[SDC3_CLK] = &sdc3_clk.clkr,
++	[SDC4_SRC] = &sdc4_src.clkr,
++	[SDC4_CLK] = &sdc4_clk.clkr,
+ };
  
- 	/*
--	 * Parse input - white space separated list of subsystem names
--	 * prefixed with either + or -.
-+	 * Parse input - space separated list of subsystem names prefixed
-+	 * with either + or -.
- 	 */
- 	p = buffer;
--	while ((tok = strsep(&p, " \t\n"))) {
-+	while ((tok = strsep(&p, " "))) {
-+		if (tok[0] =='\0')
-+			continue;
- 		for_each_subsys(ss, ssid) {
- 			if (ss->disabled || strcmp(tok + 1, ss->name))
- 				continue;
+ static const struct regmap_config gcc_msm8960_regmap_config = {
 -- 
-1.9.0
+1.9.1
 
