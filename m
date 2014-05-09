@@ -1,75 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758080AbaEIVqr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 17:46:47 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50237 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757815AbaEIVqq (ORCPT
+	id S1758093AbaEIVqz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 17:46:55 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38908 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757815AbaEIVqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 17:46:46 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Cc: Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: next-20140409 Bad Kconfig help text in drivers/acpi/Kconfig
-Date: Sat, 10 May 2014 00:03:28 +0200
-Message-ID: <1700408.9j4GRJaOLE@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <25850.1399660010@turing-police.cc.vt.edu>
-References: <25850.1399660010@turing-police.cc.vt.edu>
+	Fri, 9 May 2014 17:46:52 -0400
+Date: Fri, 9 May 2014 23:47:00 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Joe Perches <joe@perches.com>
+cc: Borislav Petkov <bp@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Andres Freund <andres@anarazel.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Andy Whitcroft <apw@canonical.com>
+Subject: Re: [PATCH] checkpatch: Warn on #defines ending in semicolon
+In-Reply-To: <1399671106.2912.21.camel@joe-AO725>
+Message-ID: <alpine.DEB.2.02.1405092345480.6261@ionos.tec.linutronix.de>
+References: <1399598957-7011-1-git-send-email-andres@anarazel.de>  <1399598957-7011-3-git-send-email-andres@anarazel.de>  <20140509075730.GB16058@pd.tnic> <20140509103303.GC16058@pd.tnic> <1399671106.2912.21.camel@joe-AO725>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 09, 2014 02:26:50 PM Valdis Kletnieks wrote:
-> 
-> --==_Exmh_1399660010_2033P
-> Content-Type: text/plain; charset=us-ascii
-> 
-> So this commit landed in linux-next recently:
-> 
-> commit e2a7c3d7812369daae56f069eab2e8f3e548d231
-> Author: Lan Tianyu <tianyu.lan@intel.com>
-> Date:   Sun May 4 11:07:24 2014 +0800
-> 
->     ACPI: Revert "ACPI: Remove CONFIG_ACPI_PROCFS_POWER and cm_sbsc.c"
-> 
->     The commit 1e2d9cd and 7d7ee95 remove ACPI Proc Battery
->     directory and breaks some old userspace tools. This patch
->     is to revert 7d7ee95.
-> 
->     Fixes: 7d7ee958867a (ACPI: Remove CONFIG_ACPI_PROCFS_POWER and cm_sbsc.c)
-> 
-> The problem is that it really needs a follow-on patch to fix this help text:
-> 
->     This option has no effect on /proc/acpi/ directories
->     and functions, which do not yet exist in /sys
->     This option, together with the proc directories, will be
->     deleted in 2.6.39.
-> 
-> Somebody want to pick a new release target and try again?
+On Fri, 9 May 2014, Joe Perches wrote:
 
-Do you mean something like this:
+> Using a #define ending in a semicolon is poor style
 
----
- drivers/acpi/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+It's not poor style it's simply a bug. Just because it 
 
-Index: linux-pm/drivers/acpi/Kconfig
-===================================================================
---- linux-pm.orig/drivers/acpi/Kconfig
-+++ linux-pm/drivers/acpi/Kconfig
-@@ -60,7 +60,7 @@ config ACPI_PROCFS_POWER
- 	  This option has no effect on /proc/acpi/ directories
- 	  and functions, which do not yet exist in /sys
- 	  This option, together with the proc directories, will be
--	  deleted in 2.6.39.
-+	  deleted in the future.
- 
- 	  Say N to delete power /proc/acpi/ directories that have moved to /sys/
- 
+> can lead to unexpected code paths being executed.
 
+Thanks,
+
+	tglx
