@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756424AbaEIJSA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 05:18:00 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:43049 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854AbaEIJR6 (ORCPT
+	id S1756626AbaEIJSc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 05:18:32 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:63542 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754042AbaEIJS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 05:17:58 -0400
-Date: Fri, 9 May 2014 11:17:53 +0200
-From: Robert Richter <rric@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Jean Pihet <jean.pihet@linaro.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: Re: [PATCH v4 00/16] perf, persistent: Add persistent events
-Message-ID: <20140509091753.GT32718@rric.localhost>
-References: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
- <20140506123907.GV32718@rric.localhost>
- <20140506185359.GE25013@pd.tnic>
- <20140507164407.GG32718@rric.localhost>
- <20140508182344.GG12548@pd.tnic>
+	Fri, 9 May 2014 05:18:28 -0400
+From: =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
+To: axboe@kernel.dk, sbradshaw@micron.com
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
+Subject: [PATCH] block: small performance optimization
+Date: Fri,  9 May 2014 11:17:40 +0200
+Message-Id: <1399627061-5960-1-git-send-email-m@bjorling.me>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140508182344.GG12548@pd.tnic>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.05.14 20:23:44, Borislav Petkov wrote:
-> On Wed, May 07, 2014 at 06:44:07PM +0200, Robert Richter wrote:
-> > With transparently I mean that the process even does not know that the
-> > same event is already running by another process. The kernel detects
-> > this and maps the request to that event and buffer. Of course the
-> > event's buffer must be at least readonly to be shared for this.
-> 
-> Yes.
-> 
-> > This could be a mechanism to connect to persistent events. The kernel
-> > detects by type and attr that the requested event is already running
-> > persistent and maps to it.
-> > 
-> > But at the moment persistent events can only be shared using
-> > 
-> >  attr.type = PERF_TYPE_PERSISTENT
-> >  attr.config = id
-> > 
-> > So the above is more an alternative to connect to persistent events
-> > and the question is, which one to use. Presumable the easiest first,
-> > which is the current implementation.
-> 
-> Well, there is no trivial way to share event buffers if they're not
-> read-only AFAICT.
-> 
-> But in questions like this, we always have to step one step back and ask
-> ourselves: what are the use cases for shared events and after we have
-> enumerated them, to design the kernel side so that it supports them.
-> 
-> So, do we want anything else besides shared, read-only events?
+Hi Jens,
 
-I only talk about events that are sharable since they are read-only.
+The IO accounting stats contribute significant overhead on high IO/multi-node
+workloads. By moving the in_flight IO tracking to per-cpu counters, we can
+elevate some of the cache coherence overhead, at the cost of setup/teardown
+and percpu counters structure within the hd_struct structure.
 
-The question I am asking here is how to connect to an event that is
-sharable. This could be done transparently.
+Sam Bradshaw reported an IOPS increase of 20% on his fio workloads.
 
--Robert
+Thanks,
+Matias
+
+Matias Bjørling (1):
+  blk: per-cpu counters for in-flight IO accounting
+
+ block/partition-generic.c |  4 ++--
+ include/linux/genhd.h     | 25 ++++++++++++++++++-------
+ 2 files changed, 20 insertions(+), 9 deletions(-)
+
+-- 
+1.9.1
+
