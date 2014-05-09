@@ -1,700 +1,753 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693AbaEIKKG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 06:10:06 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:60443 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756565AbaEIKJb (ORCPT
+	id S1756707AbaEIKKN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 06:10:13 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:32882 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756061AbaEIKKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 06:09:31 -0400
-X-Sasl-enc: eDizVD1iMifO2q+WC2yjqWe7neVcBKYRvX+y3kLRsza+ 1399630168
-From: Michalis Pappas <mpappas@fastmail.fm>
-To: gregkh@linuxfoundation.org, dan.carpenter@oracle.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Michalis Pappas <mpappas@fastmail.fm>
-Subject: [PATCH v5 08/10] staging: gdm72xx: Whitespace fixes to conform to coding standards
-Date: Fri,  9 May 2014 18:08:27 +0800
-Message-Id: <1399630109-18701-8-git-send-email-mpappas@fastmail.fm>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <536CA86B.7000109@fastmail.fm>
-References: <536CA86B.7000109@fastmail.fm>
+	Fri, 9 May 2014 06:10:08 -0400
+Date: Fri, 9 May 2014 19:09:35 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: daeseok.youn@gmail.com, himangi774@gmail.com, sachin.kamat@linaro.org,
+        fempsci@gmail.com, nandu.hgowda@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com
+Subject: [PATCH 4/5] staging: cxt1e1: Fix line length over 80 characters in
+ musycc.c
+Message-ID: <20140509100935.GA6501@devel.8.8.4.4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes the following checkpatch.pl issues:
+clean up checkpatch.pl warning:
+ WARNING: Line length over 80 characters
 
-WARNING: unnecessary whitespace before a quoted newline
-CHECK: Alignment should match open parenthesis
-CHECK: No space is necessary after a cast
-
-Also some additional, whitespace related, readability issues.
-
-Signed-off-by: Michalis Pappas <mpappas@fastmail.fm>
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
- drivers/staging/gdm72xx/gdm_qos.c   | 72 ++++++++++++++++++-------------------
- drivers/staging/gdm72xx/gdm_sdio.c  | 15 ++++----
- drivers/staging/gdm72xx/gdm_usb.c   | 43 ++++++++--------------
- drivers/staging/gdm72xx/gdm_wimax.c | 61 +++++++++++++++----------------
- drivers/staging/gdm72xx/gdm_wimax.h |  6 ++--
- drivers/staging/gdm72xx/netlink_k.c |  5 ++-
- drivers/staging/gdm72xx/netlink_k.h |  4 +--
- drivers/staging/gdm72xx/usb_boot.c  | 18 +++++-----
- 8 files changed, 101 insertions(+), 123 deletions(-)
+ drivers/staging/cxt1e1/musycc.c |  312 ++++++++++++++++++++++++---------------
+ 1 files changed, 196 insertions(+), 116 deletions(-)
 
-diff --git a/drivers/staging/gdm72xx/gdm_qos.c b/drivers/staging/gdm72xx/gdm_qos.c
-index 465f695..33df46a 100644
---- a/drivers/staging/gdm72xx/gdm_qos.c
-+++ b/drivers/staging/gdm72xx/gdm_qos.c
-@@ -47,8 +47,7 @@ static void *alloc_qos_entry(void)
+diff --git a/drivers/staging/cxt1e1/musycc.c b/drivers/staging/cxt1e1/musycc.c
+index 7a793c3..c086c60 100644
+--- a/drivers/staging/cxt1e1/musycc.c
++++ b/drivers/staging/cxt1e1/musycc.c
+@@ -102,19 +102,24 @@ musycc_dump_rxbuffer_ring(mch_t *ch, int lockit)
+ #if 1
+ 				if (m->data && (status & HOST_RX_OWNED))
+ #else
+-				if (m->data)    /* always dump regardless of valid RX
+-						 * data */
++				/* always dump regardless of valid RX data */
++				if (m->data)
+ #endif
+ 				{
+-					dp = (u_int32_t *) OS_phystov((void *) (le32_to_cpu(m->data)));
++					dp = (u_int32_t *)OS_phystov((void *)(le32_to_cpu(m->data)));
+ 					if (len >= 0x10)
+-						pr_info("    %x[%x]: %08X %08X %08X %08x\n", (u_int32_t) dp, len,
+-							*dp, *(dp + 1), *(dp + 2), *(dp + 3));
++						pr_info("    %x[%x]: %08X %08X %08X %08x\n",
++							(u_int32_t)dp, len,
++							*dp, *(dp + 1),
++							*(dp + 2), *(dp + 3));
+ 					else if (len >= 0x08)
+-						pr_info("    %x[%x]: %08X %08X\n", (u_int32_t) dp, len,
++						pr_info("    %x[%x]: %08X %08X\n",
++							(u_int32_t)dp, len,
+ 							*dp, *(dp + 1));
+ 					else
+-						pr_info("    %x[%x]: %08X\n", (u_int32_t) dp, len, *dp);
++						pr_info("    %x[%x]: %08X\n",
++							(u_int32_t)dp,
++							len, *dp);
+ 				}
+ #endif
+ 			m = m->snext;
+@@ -163,15 +168,19 @@ musycc_dump_txbuffer_ring(mch_t *ch, int lockit)
+ 			len = status & LENGTH_MASK;
  
- 	spin_lock_irqsave(&qos_free_list.lock, flags);
- 	if (qos_free_list.cnt) {
--		entry = list_entry(qos_free_list.head.prev, struct qos_entry_s,
--					list);
-+		entry = list_entry(qos_free_list.head.prev, struct qos_entry_s, list);
- 		list_del(&entry->list);
- 		qos_free_list.cnt--;
- 		spin_unlock_irqrestore(&qos_free_list.lock, flags);
-@@ -62,7 +61,7 @@ static void *alloc_qos_entry(void)
- 
- static void free_qos_entry(void *entry)
- {
--	struct qos_entry_s *qentry = (struct qos_entry_s *) entry;
-+	struct qos_entry_s *qentry = (struct qos_entry_s *)entry;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&qos_free_list.lock, flags);
-@@ -148,7 +147,7 @@ static u32 chk_ipv4_rule(struct gdm_wimax_csr_s *csr, u8 *stream, u8 *port)
- 
- 	if (csr->classifier_rule_en&IPTYPEOFSERVICE) {
- 		if (((stream[1] & csr->ip2s_mask) < csr->ip2s_lo) ||
--		((stream[1] & csr->ip2s_mask) > csr->ip2s_hi))
-+		    ((stream[1] & csr->ip2s_mask) > csr->ip2s_hi))
- 			return 1;
- 	}
- 
-@@ -190,7 +189,7 @@ static u32 chk_ipv4_rule(struct gdm_wimax_csr_s *csr, u8 *stream, u8 *port)
- 
- static u32 get_qos_index(struct nic *nic, u8 *iph, u8 *tcpudph)
- {
--	u32	IP_ver, i;
-+	u32 IP_ver, i;
- 	struct qos_cb_s *qcb = &nic->qos;
- 
- 	if (iph == NULL || tcpudph == NULL)
-@@ -198,16 +197,16 @@ static u32 get_qos_index(struct nic *nic, u8 *iph, u8 *tcpudph)
- 
- 	IP_ver = (iph[0]>>4)&0xf;
- 
--	if (IP_ver == 4) {
--		for (i = 0; i < QOS_MAX; i++) {
--			if (qcb->csr[i].enabled) {
--				if (qcb->csr[i].classifier_rule_en) {
--					if (chk_ipv4_rule(&qcb->csr[i], iph,
--					tcpudph) == 0)
--						return i;
--				}
--			}
--		}
-+	if (IP_ver != 4)
-+		return -1;
-+
-+	for (i = 0; i < QOS_MAX; i++) {
-+		if (!qcb->csr[i].enabled)
-+			continue;
-+		if (!qcb->csr[i].classifier_rule_en)
-+			continue;
-+		if (chk_ipv4_rule(&qcb->csr[i], iph, tcpudph) == 0)
-+			return i;
- 	}
- 
- 	return -1;
-@@ -222,22 +221,20 @@ static u32 extract_qos_list(struct nic *nic, struct list_head *head)
- 	INIT_LIST_HEAD(head);
- 
- 	for (i = 0; i < QOS_MAX; i++) {
--		if (qcb->csr[i].enabled) {
--			if (qcb->csr[i].qos_buf_count < qcb->qos_limit_size) {
--				if (!list_empty(&qcb->qos_list[i])) {
--					entry = list_entry(
--					qcb->qos_list[i].prev,
--					struct qos_entry_s, list);
--					list_move_tail(&entry->list, head);
--					qcb->csr[i].qos_buf_count++;
--
--					if (!list_empty(&qcb->qos_list[i]))
--						netdev_warn(nic->netdev,
--							    "Index(%d) is piled!!\n",
--							    i);
--				}
--			}
--		}
-+		if (!qcb->csr[i].enabled)
-+			continue;
-+		if (qcb->csr[i].qos_buf_count >= qcb->qos_limit_size)
-+			continue;
-+		if (list_empty(&qcb->qos_list[i]))
-+			continue;
-+
-+		entry = list_entry(qcb->qos_list[i].prev, struct qos_entry_s, list);
-+
-+		list_move_tail(&entry->list, head);
-+		qcb->csr[i].qos_buf_count++;
-+
-+		if (!list_empty(&qcb->qos_list[i]))
-+			netdev_warn(nic->netdev, "Index(%d) is piled!!\n", i);
- 	}
- 
- 	return 0;
-@@ -260,14 +257,14 @@ int gdm_qos_send_hci_pkt(struct sk_buff *skb, struct net_device *dev)
- 	int index;
- 	struct qos_cb_s *qcb = &nic->qos;
- 	unsigned long flags;
--	struct ethhdr *ethh = (struct ethhdr *) (skb->data + HCI_HEADER_SIZE);
--	struct iphdr *iph = (struct iphdr *) ((char *) ethh + ETH_HLEN);
-+	struct ethhdr *ethh = (struct ethhdr *)(skb->data + HCI_HEADER_SIZE);
-+	struct iphdr *iph = (struct iphdr *)((char *)ethh + ETH_HLEN);
- 	struct tcphdr *tcph;
- 	struct qos_entry_s *entry = NULL;
- 	struct list_head send_list;
- 	int ret = 0;
- 
--	tcph = (struct tcphdr *) iph + iph->ihl*4;
-+	tcph = (struct tcphdr *)iph + iph->ihl*4;
- 
- 	if (B2H(ethh->h_proto) == ETH_P_IP) {
- 		if (qcb->qos_list_cnt && !qos_free_list.cnt) {
-@@ -280,7 +277,7 @@ int gdm_qos_send_hci_pkt(struct sk_buff *skb, struct net_device *dev)
- 
- 		spin_lock_irqsave(&qcb->qos_lock, flags);
- 		if (qcb->qos_list_cnt) {
--			index = get_qos_index(nic, (u8 *)iph, (u8 *) tcph);
-+			index = get_qos_index(nic, (u8 *)iph, (u8 *)tcph);
- 			if (index == -1)
- 				index = qcb->qos_null_idx;
- 
-@@ -376,7 +373,7 @@ void gdm_recv_qos_hci_packet(void *nic_ptr, u8 *buf, int size)
- 	index = get_csr(qcb, SFID, 1);
- 	if (index == -1) {
- 		netdev_err(nic->netdev,
--			   "QoS ERROR: csr Update Error / Wrong index (%d) \n",
-+			   "QoS ERROR: csr Update Error / Wrong index (%d)\n",
- 			   index);
- 		return;
- 	}
-@@ -433,8 +430,7 @@ void gdm_recv_qos_hci_packet(void *nic_ptr, u8 *buf, int size)
- 		qcb->qos_list_cnt--;
- 		qcb->qos_limit_size = 254/qcb->qos_list_cnt;
- 
--		list_for_each_entry_safe(entry, n, &qcb->qos_list[index],
--					list) {
-+		list_for_each_entry_safe(entry, n, &qcb->qos_list[index], list) {
- 			list_move_tail(&entry->list, &free_list);
- 		}
- 		spin_unlock_irqrestore(&qcb->qos_lock, flags);
-diff --git a/drivers/staging/gdm72xx/gdm_sdio.c b/drivers/staging/gdm72xx/gdm_sdio.c
-index c246537..07be325 100644
---- a/drivers/staging/gdm72xx/gdm_sdio.c
-+++ b/drivers/staging/gdm72xx/gdm_sdio.c
-@@ -312,8 +312,7 @@ static void send_sdu(struct sdio_func *func, struct tx_cxt *tx)
- 	spin_unlock_irqrestore(&tx->lock, flags);
- }
- 
--static void send_hci(struct sdio_func *func, struct tx_cxt *tx,
--			struct sdio_tx *t)
-+static void send_hci(struct sdio_func *func, struct tx_cxt *tx, struct sdio_tx *t)
- {
- 	unsigned long flags;
- 
-@@ -380,7 +379,7 @@ static void do_tx(struct work_struct *work)
- }
- 
- static int gdm_sdio_send(void *priv_dev, void *data, int len,
--			void (*cb)(void *data), void *cb_data)
-+			 void (*cb)(void *data), void *cb_data)
- {
- 	struct sdiowm_dev *sdev = priv_dev;
- 	struct tx_cxt *tx = &sdev->tx;
-@@ -510,6 +509,7 @@ static void gdm_sdio_irq(struct sdio_func *func)
- 
- 	if (hdr[3] == 1) {	/* Ack */
- 		u32 *ack_seq = (u32 *)&hdr[4];
-+
- 		spin_lock_irqsave(&tx->lock, flags);
- 		tx->can_send = 1;
- 
-@@ -521,7 +521,7 @@ static void gdm_sdio_irq(struct sdio_func *func)
- 	}
- 
- 	memcpy(rx->rx_buf, hdr + TYPE_A_HEADER_SIZE,
--			TYPE_A_LOOKAHEAD_SIZE - TYPE_A_HEADER_SIZE);
-+	       TYPE_A_LOOKAHEAD_SIZE - TYPE_A_HEADER_SIZE);
- 
- 	buf = rx->rx_buf + TYPE_A_LOOKAHEAD_SIZE - TYPE_A_HEADER_SIZE;
- 	remain = len - TYPE_A_LOOKAHEAD_SIZE + TYPE_A_HEADER_SIZE;
-@@ -577,8 +577,8 @@ done:
- }
- 
- static int gdm_sdio_receive(void *priv_dev,
--				void (*cb)(void *cb_data, void *data, int len),
--				void *cb_data)
-+			    void (*cb)(void *cb_data, void *data, int len),
-+			    void *cb_data)
- {
- 	struct sdiowm_dev *sdev = priv_dev;
- 	struct rx_cxt *rx = &sdev->rx;
-@@ -601,8 +601,7 @@ static int gdm_sdio_receive(void *priv_dev,
- 	return 0;
- }
- 
--static int sdio_wimax_probe(struct sdio_func *func,
--				const struct sdio_device_id *id)
-+static int sdio_wimax_probe(struct sdio_func *func, const struct sdio_device_id *id)
- {
- 	int ret;
- 	struct phy_dev *phy_dev = NULL;
-diff --git a/drivers/staging/gdm72xx/gdm_usb.c b/drivers/staging/gdm72xx/gdm_usb.c
-index b9d7643..c7298d0 100644
---- a/drivers/staging/gdm72xx/gdm_usb.c
-+++ b/drivers/staging/gdm72xx/gdm_usb.c
-@@ -344,16 +344,11 @@ static int gdm_usb_send(void *priv_dev, void *data, int len,
- 	if ((len % 512) == 0)
- 		len++;
- 
--	usb_fill_bulk_urb(t->urb,
--			usbdev,
--			usb_sndbulkpipe(usbdev, 1),
--			t->buf,
--			len + padding,
--			gdm_usb_send_complete,
--			t);
--
--	print_hex_dump_debug("usb_send: ", DUMP_PREFIX_NONE, 16, 1,
--			     t->buf, len + padding, false);
-+	usb_fill_bulk_urb(t->urb, usbdev, usb_sndbulkpipe(usbdev, 1), t->buf,
-+			  len + padding, gdm_usb_send_complete, t);
-+
-+	print_hex_dump_debug("usb_send: ", DUMP_PREFIX_NONE, 16, 1, t->buf,
-+			     len + padding, false);
- #ifdef CONFIG_WIMAX_GDM72XX_USB_PM
- 	if (usbdev->state & USB_STATE_SUSPENDED) {
- 		list_add_tail(&t->p_list, &tx->pending_list);
-@@ -470,8 +465,8 @@ static void gdm_usb_rcv_complete(struct urb *urb)
- }
- 
- static int gdm_usb_receive(void *priv_dev,
--			void (*cb)(void *cb_data, void *data, int len),
--			void *cb_data)
-+			   void (*cb)(void *cb_data, void *data, int len),
-+			   void *cb_data)
- {
- 	struct usbwm_dev *udev = priv_dev;
- 	struct usb_device *usbdev = udev->usbdev;
-@@ -494,13 +489,8 @@ static int gdm_usb_receive(void *priv_dev,
- 	r->callback = cb;
- 	r->cb_data = cb_data;
- 
--	usb_fill_bulk_urb(r->urb,
--			usbdev,
--			usb_rcvbulkpipe(usbdev, 0x82),
--			r->buf,
--			RX_BUF_SIZE,
--			gdm_usb_rcv_complete,
--			r);
-+	usb_fill_bulk_urb(r->urb, usbdev, usb_rcvbulkpipe(usbdev, 0x82), r->buf,
-+			  RX_BUF_SIZE, gdm_usb_rcv_complete, r);
- 
- 	return usb_submit_urb(r->urb, GFP_ATOMIC);
- }
-@@ -519,7 +509,7 @@ static void do_pm_control(struct work_struct *work)
- 
- 	spin_lock_irqsave(&tx->lock, flags);
- 	if (!(udev->usbdev->state & USB_STATE_SUSPENDED) &&
--	     (!list_empty(&tx->hci_list) || !list_empty(&tx->sdu_list))) {
-+	    (!list_empty(&tx->hci_list) || !list_empty(&tx->sdu_list))) {
- 		struct usb_tx *t, *temp;
- 
- 		list_for_each_entry_safe(t, temp, &tx->pending_list, p_list) {
-@@ -536,8 +526,7 @@ static void do_pm_control(struct work_struct *work)
- }
- #endif /* CONFIG_WIMAX_GDM72XX_USB_PM */
- 
--static int gdm_usb_probe(struct usb_interface *intf,
--				const struct usb_device_id *id)
-+static int gdm_usb_probe(struct usb_interface *intf, const struct usb_device_id *id)
- {
- 	int ret = 0;
- 	u8 bConfigurationValue;
-@@ -566,8 +555,7 @@ static int gdm_usb_probe(struct usb_interface *intf,
- 	}
- 
- 	/* Support for EEPROM bootloader */
--	if (bConfigurationValue == DOWNLOAD_CONF_VALUE ||
--		idProduct & B_DOWNLOAD) {
-+	if (bConfigurationValue == DOWNLOAD_CONF_VALUE || idProduct & B_DOWNLOAD) {
- 		ret = usb_boot(usbdev, bcdDevice);
- 		goto out;
- 	}
-@@ -639,8 +627,8 @@ static void gdm_usb_disconnect(struct usb_interface *intf)
- 	idProduct = L2H(usbdev->descriptor.idProduct);
- 
- 	if (idProduct != EMERGENCY_PID &&
--			bConfigurationValue != DOWNLOAD_CONF_VALUE &&
--			(idProduct & B_DOWNLOAD) == 0) {
-+	    bConfigurationValue != DOWNLOAD_CONF_VALUE && (idProduct & B_DOWNLOAD) == 0) {
-+
- 		udev = phy_dev->priv_dev;
- 		udev->usbdev = NULL;
- 
-@@ -742,8 +730,7 @@ static int k_mode_thread(void *arg)
- 
- 			spin_lock_irqsave(&tx->lock, flags);
- 
--			list_for_each_entry_safe(t, temp, &tx->pending_list,
--						p_list) {
-+			list_for_each_entry_safe(t, temp, &tx->pending_list, p_list) {
- 				list_del(&t->p_list);
- 				ret = usb_submit_urb(t->urb, GFP_ATOMIC);
- 
-diff --git a/drivers/staging/gdm72xx/gdm_wimax.c b/drivers/staging/gdm72xx/gdm_wimax.c
-index 3ccb083..094e9c9 100644
---- a/drivers/staging/gdm72xx/gdm_wimax.c
-+++ b/drivers/staging/gdm72xx/gdm_wimax.c
-@@ -135,24 +135,24 @@ static void dump_eth_packet(struct net_device *dev, const char *title,
- 	u16 port = 0;
- 
- 	protocol = (data[12]<<8) | data[13];
--	ih = (struct iphdr *) (data+ETH_HLEN);
-+	ih = (struct iphdr *)(data+ETH_HLEN);
- 
- 	if (protocol == ETH_P_IP) {
--		uh = (struct udphdr *) ((char *)ih + sizeof(struct iphdr));
-+		uh = (struct udphdr *)((char *)ih + sizeof(struct iphdr));
- 		ip_protocol = ih->protocol;
- 		port = ntohs(uh->dest);
- 	} else if (protocol == ETH_P_IPV6) {
--		struct ipv6hdr *i6h = (struct ipv6hdr *) data;
--		uh = (struct udphdr *) ((char *)i6h + sizeof(struct ipv6hdr));
-+		struct ipv6hdr *i6h = (struct ipv6hdr *)data;
-+
-+		uh = (struct udphdr *)((char *)i6h + sizeof(struct ipv6hdr));
- 		ip_protocol = i6h->nexthdr;
- 		port = ntohs(uh->dest);
- 	}
- 
--	netdev_dbg(dev, "[%s] len=%d, %s, %s, %s\n",
--		title, len,
--		get_protocol_name(protocol),
--		get_ip_protocol_name(ip_protocol),
--		get_port_name(port));
-+	netdev_dbg(dev, "[%s] len=%d, %s, %s, %s\n", title, len,
-+		   get_protocol_name(protocol),
-+		   get_ip_protocol_name(ip_protocol),
-+		   get_port_name(port));
- 
- 	if (!(data[0] == 0xff && data[1] == 0xff)) {
- 		if (protocol == ETH_P_IP)
-@@ -196,9 +196,10 @@ static void gdm_wimax_event_rcv(struct net_device *dev, u16 type, void *msg,
- {
- 	struct nic *nic = netdev_priv(dev);
- 
--	u8 *buf = (u8 *) msg;
-+	u8 *buf = (u8 *)msg;
- 	u16 hci_cmd =  (buf[0]<<8) | buf[1];
- 	u16 hci_len = (buf[2]<<8) | buf[3];
-+
- 	netdev_dbg(dev, "H=>D: 0x%04x(%d)\n", hci_cmd, hci_len);
- 
- 	gdm_wimax_send(nic, msg, len);
-@@ -310,6 +311,7 @@ static int gdm_wimax_event_send(struct net_device *dev, char *buf, int size)
- 
- 	u16 hci_cmd =  ((u8)buf[0]<<8) | (u8)buf[1];
- 	u16 hci_len = ((u8)buf[2]<<8) | (u8)buf[3];
-+
- 	netdev_dbg(dev, "D=>H: 0x%04x(%d)\n", hci_cmd, hci_len);
- 
- 	spin_lock_irqsave(&wm_event.evt_lock, flags);
-@@ -346,8 +348,7 @@ int gdm_wimax_send_tx(struct sk_buff *skb, struct net_device *dev)
- 	int ret = 0;
- 	struct nic *nic = netdev_priv(dev);
- 
--	ret = gdm_wimax_send_with_cb(nic, skb->data, skb->len, tx_complete,
--					nic);
-+	ret = gdm_wimax_send_with_cb(nic, skb->data, skb->len, tx_complete, nic);
- 	if (ret == -ENOSPC) {
- 		netif_stop_queue(dev);
- 		ret = 0;
-@@ -368,7 +369,7 @@ static int gdm_wimax_tx(struct sk_buff *skb, struct net_device *dev)
- {
- 	int ret = 0;
- 	struct nic *nic = netdev_priv(dev);
--	struct fsm_s *fsm = (struct fsm_s *) nic->sdk_data[SIOC_DATA_FSM].buf;
-+	struct fsm_s *fsm = (struct fsm_s *)nic->sdk_data[SIOC_DATA_FSM].buf;
- 
- 	dump_eth_packet(dev, "TX", skb->data, skb->len);
- 
-@@ -408,7 +409,7 @@ static int gdm_wimax_set_config(struct net_device *dev, struct ifmap *map)
- static void __gdm_wimax_set_mac_addr(struct net_device *dev, char *mac_addr)
- {
- 	u16 hci_pkt_buf[32 / sizeof(u16)];
--	u8 *pkt = (u8 *) &hci_pkt_buf[0];
-+	u8 *pkt = (u8 *)&hci_pkt_buf[0];
- 	struct nic *nic = netdev_priv(dev);
- 
- 	/* Since dev is registered as a ethernet device,
-@@ -454,7 +455,7 @@ static struct net_device_stats *gdm_wimax_stats(struct net_device *dev)
- static int gdm_wimax_open(struct net_device *dev)
- {
- 	struct nic *nic = netdev_priv(dev);
--	struct fsm_s *fsm = (struct fsm_s *) nic->sdk_data[SIOC_DATA_FSM].buf;
-+	struct fsm_s *fsm = (struct fsm_s *)nic->sdk_data[SIOC_DATA_FSM].buf;
- 
- 	netif_start_queue(dev);
- 
-@@ -466,7 +467,7 @@ static int gdm_wimax_open(struct net_device *dev)
- static int gdm_wimax_close(struct net_device *dev)
- {
- 	struct nic *nic = netdev_priv(dev);
--	struct fsm_s *fsm = (struct fsm_s *) nic->sdk_data[SIOC_DATA_FSM].buf;
-+	struct fsm_s *fsm = (struct fsm_s *)nic->sdk_data[SIOC_DATA_FSM].buf;
- 
- 	netif_stop_queue(dev);
- 
-@@ -536,14 +537,13 @@ static void gdm_wimax_cleanup_ioctl(struct net_device *dev)
- static void gdm_update_fsm(struct net_device *dev, struct fsm_s *new_fsm)
- {
- 	struct nic *nic = netdev_priv(dev);
--	struct fsm_s *cur_fsm =
--		(struct fsm_s *) nic->sdk_data[SIOC_DATA_FSM].buf;
-+	struct fsm_s *cur_fsm = (struct fsm_s *)nic->sdk_data[SIOC_DATA_FSM].buf;
- 
- 	if (!cur_fsm)
- 		return;
- 
- 	if (cur_fsm->m_status != new_fsm->m_status ||
--		cur_fsm->c_status != new_fsm->c_status) {
-+	    cur_fsm->c_status != new_fsm->c_status) {
- 		if (new_fsm->m_status == M_CONNECTED) {
- 			netif_carrier_on(dev);
- 		} else if (cur_fsm->m_status == M_CONNECTED) {
-@@ -558,7 +558,7 @@ static void gdm_update_fsm(struct net_device *dev, struct fsm_s *new_fsm)
- 
- static int gdm_wimax_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- {
--	struct wm_req_s *req = (struct wm_req_s *) ifr;
-+	struct wm_req_s *req = (struct wm_req_s *)ifr;
- 	struct nic *nic = netdev_priv(dev);
- 	int ret;
- 
-@@ -575,15 +575,14 @@ static int gdm_wimax_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 		}
- 		if (req->cmd == SIOCG_DATA) {
- 			ret = gdm_wimax_ioctl_get_data(&req->data,
--						&nic->sdk_data[req->data_id]);
-+						       &nic->sdk_data[req->data_id]);
- 			if (ret < 0)
- 				return ret;
- 		} else if (req->cmd == SIOCS_DATA) {
- 			if (req->data_id == SIOC_DATA_FSM) {
- 				/*NOTE: gdm_update_fsm should be called
- 				before gdm_wimax_ioctl_set_data is called*/
--				gdm_update_fsm(dev,
--						(struct fsm_s *) req->data.buf);
-+				gdm_update_fsm(dev, (struct fsm_s *)req->data.buf);
+ 			if (m->data) {
+-				dp = (u_int32_t *) OS_phystov((void *) (le32_to_cpu(m->data)));
++				dp = (u_int32_t *)OS_phystov((void *)(le32_to_cpu(m->data)));
+ 				if (len >= 0x10)
+-					pr_info("    %x[%x]: %08X %08X %08X %08x\n", (u_int32_t) dp, len,
+-						*dp, *(dp + 1), *(dp + 2), *(dp + 3));
++					pr_info("    %x[%x]: %08X %08X %08X %08x\n",
++						(u_int32_t) dp, len,
++						*dp, *(dp + 1),
++						*(dp + 2), *(dp + 3));
+ 				else if (len >= 0x08)
+-					pr_info("    %x[%x]: %08X %08X\n", (u_int32_t) dp, len,
++					pr_info("    %x[%x]: %08X %08X\n",
++						(u_int32_t)dp, len,
+ 						*dp, *(dp + 1));
+ 				else
+-					pr_info("    %x[%x]: %08X\n", (u_int32_t) dp, len, *dp);
++					pr_info("    %x[%x]: %08X\n",
++						(u_int32_t)dp, len, *dp);
  			}
- 			ret = gdm_wimax_ioctl_set_data(
- 				&nic->sdk_data[req->data_id], &req->data);
-@@ -603,7 +602,7 @@ static void gdm_wimax_prepare_device(struct net_device *dev)
- {
- 	struct nic *nic = netdev_priv(dev);
- 	u16 buf[32 / sizeof(u16)];
--	struct hci_s *hci = (struct hci_s *) buf;
-+	struct hci_s *hci = (struct hci_s *)buf;
- 	u16 len = 0;
- 	u32 val = 0;
+ #endif
+ 			m = m->snext;
+@@ -212,11 +221,15 @@ musycc_dump_ring(ci_t *ci, unsigned int chan)
+ 		pr_info(">> musycc_dump_ring: channel %d not up.\n", chan);
+ 		return ENOENT;
+ 	}
+-	pr_info(">> CI %p CHANNEL %3d @ %p: state %x status/p %x/%x\n", ci, chan, ch, ch->state,
++	pr_info(">> CI %p CHANNEL %3d @ %p: state %x status/p %x/%x\n",
++		ci, chan, ch, ch->state,
+ 		ch->status, ch->p.status);
+-	pr_info("--------------------------------\nTX Buffer Ring - Channel %d, txd_num %d. (bd/ch pend %d %d), TXD required %d, txpkt %lu\n",
++	pr_info("--------------------------------\n");
++	pr_info("TX Buffer Ring - Channel %d, txd_num %d. (bd/ch pend %d %d), TXD required %d, txpkt %lu\n",
+ 		chan, ch->txd_num,
+-		(u_int32_t) atomic_read(&ci->tx_pending), (u_int32_t) atomic_read(&ch->tx_pending), ch->txd_required, ch->s.tx_packets);
++		(u_int32_t)atomic_read(&ci->tx_pending),
++		(u_int32_t)atomic_read(&ch->tx_pending),
++		ch->txd_required, ch->s.tx_packets);
+ 	pr_info("++ User 0x%p IRQ_SRV 0x%p USR_ADD 0x%p QStopped %x, start_tx %x tx_full %d txd_free %d mode %x\n",
+ 		ch->user, ch->txd_irq_srv, ch->txd_usr_add,
+ 		sd_queue_stopped(ch->user),
+@@ -311,7 +324,8 @@ musycc_update_tx_thp(mch_t *ch)
+ 	spin_unlock_irqrestore(&ch->ch_txlock, flags);
  
-@@ -660,8 +659,7 @@ static int gdm_wimax_hci_get_tlv(u8 *buf, u8 *T, u16 *L, u8 **V)
- 	return next_pos;
+ #ifdef RLD_TRANS_DEBUG
+-	pr_info("++ musycc_update_tx_thp[%d]: setting thp = %p, sts %x\n", ch->channum, md, md->status);
++	pr_info("++ musycc_update_tx_thp[%d]: setting thp = %p, sts %x\n",
++		ch->channum, md, md->status);
+ #endif
  }
  
--static int gdm_wimax_get_prepared_info(struct net_device *dev, char *buf,
--					int len)
-+static int gdm_wimax_get_prepared_info(struct net_device *dev, char *buf, int len)
- {
- 	u8 T, *V;
- 	u16 L;
-@@ -740,7 +738,7 @@ static void gdm_wimax_transmit_aggr_pkt(struct net_device *dev, char *buf,
- 	int length;
+@@ -358,18 +372,20 @@ musycc_wq_chan_restart(void *arg)      /* channel private structure */
+ #ifdef RLD_TRANS_DEBUG
+ 			md = &ch->mdr[ch->rxix_irq_srv];
+ 			pr_info("++ musycc_wq_chan_restart[%d] CHAN RX ACTIVATE: rxix_irq_srv %d, md %p sts %x, rxpkt %lu\n",
+-				ch->channum, ch->rxix_irq_srv, md, le32_to_cpu(md->status),
+-				ch->s.rx_packets);
++				ch->channum, ch->rxix_irq_srv, md,
++				le32_to_cpu(md->status), ch->s.rx_packets);
+ #elif defined(RLD_RXACT_DEBUG)
+ 			md = &ch->mdr[ch->rxix_irq_srv];
+ 			pr_info("++ musycc_wq_chan_restart[%d] CHAN RX ACTIVATE: rxix_irq_srv %d, md %p sts %x, rxpkt %lu\n",
+-				ch->channum, ch->rxix_irq_srv, md, le32_to_cpu(md->status),
++				ch->channum, ch->rxix_irq_srv,
++				md, le32_to_cpu(md->status),
+ 				ch->s.rx_packets);
+ 			musycc_dump_rxbuffer_ring(ch, 1);      /* RLD DEBUG */
+ #endif
+ 		}
+ #endif
+-		musycc_serv_req(pi, SR_CHANNEL_ACTIVATE | SR_RX_DIRECTION | ch->gchan);
++		musycc_serv_req(pi, SR_CHANNEL_ACTIVATE |
++				SR_RX_DIRECTION | ch->gchan);
+ 	}
+ 	/**********************************/
+ 	/** check for TX restart request **/
+@@ -382,16 +398,20 @@ musycc_wq_chan_restart(void *arg)      /* channel private structure */
+ 		md = ch->txd_irq_srv;
+ 		if (!md) {
+ #ifdef RLD_TRANS_DEBUG
+-			pr_info("-- musycc_wq_chan_restart[%d]: WARNING, starting NULL md\n", ch->channum);
++			pr_info("-- musycc_wq_chan_restart[%d]: WARNING, starting NULL md\n",
++				ch->channum);
+ #endif
+-		} else if (md->data && ((le32_to_cpu(md->status)) & MUSYCC_TX_OWNED)) {
++		} else if (md->data && ((le32_to_cpu(md->status)) &
++			   MUSYCC_TX_OWNED)) {
+ 			ch->ch_start_tx = 0;
  
- 	while (len > 0) {
--		hci = (struct hci_s *) buf;
-+		hci = (struct hci_s *)buf;
+ #ifdef RLD_TRANS_DEBUG
+ 			pr_info("++ musycc_wq_chan_restart() CHAN TX ACTIVATE: chan %d txd_irq_srv %p = sts %x, txpkt %lu\n",
+-				ch->channum, ch->txd_irq_srv, ch->txd_irq_srv->status, ch->s.tx_packets);
++				ch->channum, ch->txd_irq_srv,
++				ch->txd_irq_srv->status, ch->s.tx_packets);
+ #endif
+-			musycc_serv_req(pi, SR_CHANNEL_ACTIVATE | SR_TX_DIRECTION | ch->gchan);
++			musycc_serv_req(pi, SR_CHANNEL_ACTIVATE |
++					SR_TX_DIRECTION | ch->gchan);
+ 		}
+ #ifdef RLD_RESTART_DEBUG
+ 		else {
+@@ -422,7 +442,8 @@ musycc_chan_restart(mch_t *ch)
  
- 		if (B2H(hci->cmd_evt) != WIMAX_RX_SDU) {
- 			netdev_err(dev, "Wrong cmd_evt(0x%04X)\n",
-@@ -785,8 +783,7 @@ static void gdm_wimax_transmit_pkt(struct net_device *dev, char *buf, int len)
+ 	/* 2.6 - find next unprocessed message, then set TX thp to it */
+ #ifdef RLD_RESTART_DEBUG
+-	pr_info(">> musycc_chan_restart: scheduling Chan %x workQ @ %p\n", ch->channum, &ch->ch_work);
++	pr_info(">> musycc_chan_restart: scheduling Chan %x workQ @ %p\n",
++		ch->channum, &ch->ch_work);
+ #endif
+ 	c4_wk_chan_restart(ch);        /* work queue mechanism fires off: Ref:
+ 					* musycc_wq_chan_restart () */
+@@ -439,7 +460,8 @@ rld_put_led(mpi_t *pi, u_int32_t ledval)
+ 	else
+ 		led |= ledval;
  
- 	switch (cmd_evt) {
- 	case WIMAX_RX_SDU_AGGR:
--		gdm_wimax_transmit_aggr_pkt(dev, &buf[HCI_HEADER_SIZE],
--						cmd_len);
-+		gdm_wimax_transmit_aggr_pkt(dev, &buf[HCI_HEADER_SIZE], cmd_len);
- 		break;
- 	case WIMAX_RX_SDU:
- 		gdm_wimax_netif_rx(dev, &buf[HCI_HEADER_SIZE], cmd_len);
-@@ -822,13 +819,13 @@ static void gdm_wimax_ind_fsm_update(struct net_device *dev, struct fsm_s *fsm)
- 	memcpy(&hci_pkt_buf[HCI_HEADER_SIZE], fsm, sizeof(struct fsm_s));
- 
- 	gdm_wimax_event_send(dev, hci_pkt_buf,
--				HCI_HEADER_SIZE + sizeof(struct fsm_s));
-+			     HCI_HEADER_SIZE + sizeof(struct fsm_s));
+-	pci_write_32((u_int32_t *) &pi->up->cpldbase->leds, led);  /* RLD DEBUG TRANHANG */
++	/* RLD DEBUG TRANHANG */
++	pci_write_32((u_int32_t *) &pi->up->cpldbase->leds, led);
  }
  
- static void gdm_wimax_ind_if_updown(struct net_device *dev, int if_up)
- {
- 	u16 buf[32 / sizeof(u16)];
--	struct hci_s *hci = (struct hci_s *) buf;
-+	struct hci_s *hci = (struct hci_s *)buf;
- 	unsigned char up_down;
  
- 	up_down = if_up ? WIMAX_IF_UP : WIMAX_IF_DOWN;
-@@ -944,7 +941,7 @@ cleanup:
- void unregister_wimax_device(struct phy_dev *phy_dev)
- {
- 	struct nic *nic = netdev_priv(phy_dev->netdev);
--	struct fsm_s *fsm = (struct fsm_s *) nic->sdk_data[SIOC_DATA_FSM].buf;
-+	struct fsm_s *fsm = (struct fsm_s *)nic->sdk_data[SIOC_DATA_FSM].buf;
- 
- 	if (fsm)
- 		fsm->m_status = M_INIT;
-diff --git a/drivers/staging/gdm72xx/gdm_wimax.h b/drivers/staging/gdm72xx/gdm_wimax.h
-index 55212f5..21087c03 100644
---- a/drivers/staging/gdm72xx/gdm_wimax.h
-+++ b/drivers/staging/gdm72xx/gdm_wimax.h
-@@ -38,10 +38,10 @@ struct phy_dev {
- 	struct net_device	*netdev;
- 
- 	int	(*send_func)(void *priv_dev, void *data, int len,
--			void (*cb)(void *cb_data), void *cb_data);
-+			     void (*cb)(void *cb_data), void *cb_data);
- 	int	(*rcv_func)(void *priv_dev,
--			void (*cb)(void *cb_data, void *data, int len),
--			void *cb_data);
-+			    void (*cb)(void *cb_data, void *data, int len),
-+			    void *cb_data);
- };
- 
- struct nic {
-diff --git a/drivers/staging/gdm72xx/netlink_k.c b/drivers/staging/gdm72xx/netlink_k.c
-index 52317c7..06f7b13 100644
---- a/drivers/staging/gdm72xx/netlink_k.c
-+++ b/drivers/staging/gdm72xx/netlink_k.c
-@@ -55,8 +55,7 @@ static void netlink_rcv_cb(struct sk_buff *skb)
- 	if (skb->len >= NLMSG_HDRLEN) {
- 		nlh = (struct nlmsghdr *)skb->data;
- 
--		if (skb->len < nlh->nlmsg_len ||
--		nlh->nlmsg_len > ND_MAX_MSG_LEN) {
-+		if (skb->len < nlh->nlmsg_len || nlh->nlmsg_len > ND_MAX_MSG_LEN) {
- 			netdev_err(skb->dev, "Invalid length (%d,%d)\n",
- 				   skb->len, nlh->nlmsg_len);
+@@ -481,16 +503,21 @@ musycc_serv_req(mpi_t *pi, u_int32_t req)
+ #ifdef RLD_TRANS_DEBUG
+ 			pr_info(">> same CHAN ACT SR, Port %d Req %x => issue SR_NOOP CMD\n", pi->portnum, req);
+ #endif
+-			SD_SEM_GIVE(&pi->sr_sem_busy);     /* allow this next request */
++			/* allow this next request */
++			SD_SEM_GIVE(&pi->sr_sem_busy);
+ 			musycc_serv_req(pi, SR_NOOP);
+-			SD_SEM_TAKE(&pi->sr_sem_busy, "serv");     /* relock & continue w/
+-								    * original req */
++			/* relock & continue w/ original req */
++			SD_SEM_TAKE(&pi->sr_sem_busy, "serv");
+ 		} else if (req == SR_NOOP) {
+-			/* no need to issue back-to-back SR_NOOP commands at this time */
++			/* no need to issue back-to-back
++			 * SR_NOOP commands at this time
++			 */
+ #ifdef RLD_TRANS_DEBUG
+-			pr_info(">> same Port SR_NOOP skipped, Port %d\n", pi->portnum);
++			pr_info(">> same Port SR_NOOP skipped, Port %d\n",
++				pi->portnum);
+ #endif
+-			SD_SEM_GIVE(&pi->sr_sem_busy);     /* allow this next request */
++			/* allow this next request */
++			SD_SEM_GIVE(&pi->sr_sem_busy);
  			return;
-@@ -89,7 +88,7 @@ static void netlink_rcv(struct sk_buff *skb)
- }
- 
- struct sock *netlink_init(int unit, void (*cb)(struct net_device *dev, u16 type,
--						void *msg, int len))
-+					       void *msg, int len))
- {
- 	struct sock *sock;
- 	struct netlink_kernel_cfg cfg = {
-diff --git a/drivers/staging/gdm72xx/netlink_k.h b/drivers/staging/gdm72xx/netlink_k.h
-index 1dffaa6..b6caac1 100644
---- a/drivers/staging/gdm72xx/netlink_k.h
-+++ b/drivers/staging/gdm72xx/netlink_k.h
-@@ -16,8 +16,8 @@
- #include <linux/netdevice.h>
- #include <net/sock.h>
- 
--struct sock *netlink_init(int unit,
--	void (*cb)(struct net_device *dev, u16 type, void *msg, int len));
-+struct sock *netlink_init(int unit, void (*cb)(struct net_device *dev, u16 type,
-+					       void *msg, int len));
- void netlink_exit(struct sock *sock);
- int netlink_send(struct sock *sock, int group, u16 type, void *msg, int len);
- 
-diff --git a/drivers/staging/gdm72xx/usb_boot.c b/drivers/staging/gdm72xx/usb_boot.c
-index 8518a5a..75149d7 100644
---- a/drivers/staging/gdm72xx/usb_boot.c
-+++ b/drivers/staging/gdm72xx/usb_boot.c
-@@ -67,6 +67,7 @@ struct fw_info {
- static void array_le32_to_cpu(u32 *arr, int num)
- {
- 	int i;
+ 		}
+ 	}
+@@ -508,22 +535,27 @@ rewrite:
+ 	 * the host follow any SCR write with another operation which reads from
+ 	 * the same address."
+ 	 */
+-	r = pci_read_32((u_int32_t *) &pi->reg->srd);      /* adhere to write
+-							    * timing imposition */
 +
- 	for (i = 0; i < num; i++, arr++)
- 		*arr = __le32_to_cpu(*arr);
++	/* adhere to write timing imposition */
++	r = pci_read_32((u_int32_t *) &pi->reg->srd);
+ 
+ 
+-	if ((r != req) && (req != SR_CHIP_RESET) && (++rcnt <= MUSYCC_SR_RETRY_CNT)) {
++	if ((r != req) && (req != SR_CHIP_RESET) &&
++	    (++rcnt <= MUSYCC_SR_RETRY_CNT)) {
+ 		if (cxt1e1_log_level >= LOG_MONITOR)
+ 			pr_info("%s: %d - reissue srv req/last %x/%x (hdw reads %x), Chan %d.\n",
+ 				pi->up->devname, rcnt, req, pi->sr_last, r,
+ 				(pi->portnum * MUSYCC_NCHANS) + (req & 0x1f));
+-		OS_uwait_dummy();          /* this delay helps reduce reissue counts
+-					    * (reason not yet researched) */
++		/* this delay helps reduce reissue counts
++		 * (reason not yet researched)
++		 */
++		OS_uwait_dummy();
+ 		goto rewrite;
+ 	}
+ 	if (rcnt > MUSYCC_SR_RETRY_CNT) {
+ 		pr_warning("%s: failed service request (#%d)= %x, group %d.\n",
+-			   pi->up->devname, MUSYCC_SR_RETRY_CNT, req, pi->portnum);
++			   pi->up->devname, MUSYCC_SR_RETRY_CNT,
++			   req, pi->portnum);
+ 		SD_SEM_GIVE(&pi->sr_sem_busy); /* allow any next request */
+ 		return;
+ 	}
+@@ -538,8 +570,8 @@ rewrite:
+ 		OS_uwait(100000, "icard"); /* 100ms */
+ 	} else {
+ 		FLUSH_MEM_READ();
+-		SD_SEM_TAKE(&pi->sr_sem_wait, "sakack");       /* sleep until SACK
+-								* interrupt occurs */
++		/* sleep until SACK interrupt occurs */
++		SD_SEM_TAKE(&pi->sr_sem_wait, "sakack");
+ 	}
+ 	SD_SEM_GIVE(&pi->sr_sem_busy); /* allow any next request */
  }
-@@ -79,7 +80,7 @@ static int gdm_wibro_send(struct usb_device *usbdev, void *data, int len)
- 	int actual;
+@@ -558,15 +590,19 @@ musycc_update_timeslots(mpi_t *pi)
+ 		u_int8_t lastval = 0;
  
- 	ret = usb_bulk_msg(usbdev, usb_sndbulkpipe(usbdev, 1), data, len,
--			&actual, 1000);
-+			   &actual, 1000);
+ 		if (((i == 0) && e1mode) || /* disable if  E1 mode */
+-		    ((i == 16) && ((pi->p.port_mode == CFG_FRAME_E1CRC_CAS) || (pi->p.port_mode == CFG_FRAME_E1CRC_CAS_AMI)))
+-		    || ((i > 23) && (!e1mode))) /* disable if T1 mode */
+-			pi->tsm[i] = 0xff;      /* make tslot unavailable for this mode */
++		    ((i == 16) && ((pi->p.port_mode == CFG_FRAME_E1CRC_CAS) ||
++		    (pi->p.port_mode == CFG_FRAME_E1CRC_CAS_AMI))) ||
++		    ((i > 23) && (!e1mode))) /* disable if T1 mode */
++			/* make tslot unavailable for this mode */
++			pi->tsm[i] = 0xff;
+ 		else
+-			pi->tsm[i] = 0x00;      /* make tslot available for assignment */
++			/* make tslot available for assignment */
++			pi->tsm[i] = 0x00;
+ 		for (j = 0; j < 8; j++)
+ 			bits[j] = -1;
+ 		for (ch = 0; ch < MUSYCC_NCHANS; ch++) {
+-			if ((pi->chan[ch]->state == UP) && (pi->chan[ch]->p.bitmask[i])) {
++			if ((pi->chan[ch]->state == UP) &&
++			    (pi->chan[ch]->p.bitmask[i])) {
+ 				usedby++;
+ 				last = ch;
+ 				lastval = pi->chan[ch]->p.bitmask[i];
+@@ -590,8 +626,10 @@ musycc_update_timeslots(mpi_t *pi)
+ 			else
+ 				ts = (7 << 5) | (idx = bits[0]);
+ 			for (j = 1; j < 8; j++) {
+-				pi->regram->rscm[idx * 8 + j] = (bits[j] < 0) ? 0 : (0x80 | bits[j]);
+-				pi->regram->tscm[idx * 8 + j] = (bits[j] < 0) ? 0 : (0x80 | bits[j]);
++				pi->regram->rscm[idx * 8 + j] =
++					(bits[j] < 0) ? 0 : (0x80 | bits[j]);
++				pi->regram->tscm[idx * 8 + j] =
++					(bits[j] < 0) ? 0 : (0x80 | bits[j]);
+ 			}
+ 		}
+ 		pi->regram->rtsm[i] = ts;
+@@ -624,7 +662,8 @@ musycc_update_timeslots(mpi_t *pi)
+ 	hmask = (0x1f << hyperdummy) & 0x1f;
+ #endif
+ 	for (i = 0; i < 128; i++) {
+-		gchan = ((pi->portnum * MUSYCC_NCHANS) + (i & hmask)) % MUSYCC_NCHANS;
++		gchan = ((pi->portnum * MUSYCC_NCHANS) +
++			(i & hmask)) % MUSYCC_NCHANS;
+ 		ch = pi->chan[gchan];
+ 		if (ch->p.mode_56k)
+ 			tsen = MODE_56KBPS;
+@@ -711,7 +750,7 @@ musycc_init(ci_t *ci)
+ 	char       *regaddr;        /* temp for address boundary calculations */
+ 	int         i, gchan;
  
- 	if (ret < 0) {
- 		dev_err(&usbdev->dev, "Error : usb_bulk_msg ( result = %d )\n",
-@@ -95,7 +96,7 @@ static int gdm_wibro_recv(struct usb_device *usbdev, void *data, int len)
- 	int actual;
+-	OS_sem_init(&ci->sem_wdbusy, SEM_AVAILABLE);       /* watchdog exclusion */
++	OS_sem_init(&ci->sem_wdbusy, SEM_AVAILABLE); /* watchdog exclusion */
  
- 	ret = usb_bulk_msg(usbdev, usb_rcvbulkpipe(usbdev, 2), data, len,
--			&actual, 5000);
-+			   &actual, 5000);
+ 	/*
+ 	 * Per MUSYCC manual, Section 6.3.4 - "The host must allocate a dword
+@@ -725,9 +764,9 @@ musycc_init(ci_t *ci)
+ 	if (!regaddr)
+ 		return -ENOMEM;
+ 	ci->iqd_p_saved = regaddr;      /* save orig value for free's usage */
+-	ci->iqd_p = (u_int32_t *) ((unsigned long) (regaddr + INT_QUEUE_BOUNDARY - 1) &
+-			(~(INT_QUEUE_BOUNDARY - 1)));    /* this calculates
+-							  * closest boundary */
++	/* this calculates closest boundary */
++	ci->iqd_p = (u_int32_t *) ((unsigned long)(regaddr + INT_QUEUE_BOUNDARY - 1) &
++				   (~(INT_QUEUE_BOUNDARY - 1)));
  
- 	if (ret < 0) {
- 		dev_err(&usbdev->dev,
-@@ -105,9 +106,8 @@ static int gdm_wibro_recv(struct usb_device *usbdev, void *data, int len)
- 	return 0;
- }
+ 	for (i = 0; i < INT_QUEUE_SIZE; i++)
+ 		ci->iqd_p[i] = __constant_cpu_to_le32(INT_EMPTY_ENTRY);
+@@ -753,9 +792,9 @@ musycc_init(ci_t *ci)
+ 			return -ENOMEM;
+ 		}
+ 		pi->regram_saved = regaddr; /* save orig value for free's usage */
+-		pi->regram = (struct musycc_groupr *) ((unsigned long) (regaddr + GROUP_BOUNDARY - 1) &
+-				(~(GROUP_BOUNDARY - 1)));        /* this calculates
+-								  * closest boundary */
++		/* this calculates closest boundary */
++		pi->regram = (struct musycc_groupr *) ((unsigned long)(regaddr + GROUP_BOUNDARY - 1) &
++				(~(GROUP_BOUNDARY - 1)));
+ 	}
  
--static int download_image(struct usb_device *usbdev,
--				const struct firmware *firm,
--				loff_t pos, u32 img_len, u32 magic_num)
-+static int download_image(struct usb_device *usbdev, const struct firmware *firm,
-+			  loff_t pos, u32 img_len, u32 magic_num)
- {
- 	struct dn_header h;
- 	int ret = 0;
-@@ -204,8 +204,8 @@ int usb_boot(struct usb_device *usbdev, u16 pid)
- 			goto out;
+ 	/* any board centric MUSYCC commands will use group ZERO as its "home" */
+@@ -768,7 +807,8 @@ musycc_init(ci_t *ci)
+ 	ci->regram->__glcd = __constant_cpu_to_le32(GCD_MAGIC);
+ #else
+ 	/* standard driver POLLS for INTB via CPLD register */
+-	ci->regram->__glcd = __constant_cpu_to_le32(GCD_MAGIC | MUSYCC_GCD_INTB_DISABLE);
++	ci->regram->__glcd = __constant_cpu_to_le32(GCD_MAGIC |
++						    MUSYCC_GCD_INTB_DISABLE);
+ #endif
+ 
+ 	ci->regram->__iqp = cpu_to_le32(OS_vtophys(&ci->iqd_p[0]));
+@@ -779,7 +819,7 @@ musycc_init(ci_t *ci)
+ 	ci->state = C_RUNNING;          /* mark as full interrupt processing
+ 					 * available */
+ 
+-	musycc_serv_req(&ci->port[0], SR_GLOBAL_INIT);     /* FIRST INTERRUPT ! */
++	musycc_serv_req(&ci->port[0], SR_GLOBAL_INIT); /* FIRST INTERRUPT ! */
+ 
+ 	/* sanity check settable parameters */
+ 
+@@ -844,42 +884,49 @@ musycc_bh_tx_eom(mpi_t *pi, int gchan)
+ 			readCount = 0;
+ 			while (status & MUSYCC_TX_OWNED) {
+ 				for (loopCount = 0; loopCount < 0x30; loopCount++)
+-					OS_uwait_dummy();  /* use call to avoid optimization
+-							    * removal of dummy delay */
++					/* use call to avoid optimization
++					 * removal of dummy delay */
++					OS_uwait_dummy();
+ 				FLUSH_MEM_READ();
+ 				status = le32_to_cpu(md->status);
+ 				if (readCount++ > 40)
+-					break;          /* don't wait any longer */
++					break; /* don't wait any longer */
+ 			}
+ 			if (status & MUSYCC_TX_OWNED) {
+ 				if (cxt1e1_log_level >= LOG_MONITOR) {
+ 					pr_info("%s: Port %d Chan %2d - unexpected TX msg ownership intr (md %p sts %x)\n",
+-						pi->up->devname, pi->portnum, ch->channum,
+-						md, status);
++						pi->up->devname, pi->portnum,
++						ch->channum, md, status);
+ 					pr_info("++ User 0x%p IRQ_SRV 0x%p USR_ADD 0x%p QStopped %x, start_tx %x tx_full %d txd_free %d mode %x\n",
+-						ch->user, ch->txd_irq_srv, ch->txd_usr_add,
++						ch->user, ch->txd_irq_srv,
++						ch->txd_usr_add,
+ 						sd_queue_stopped(ch->user),
+-						ch->ch_start_tx, ch->tx_full, ch->txd_free, ch->p.chan_mode);
++						ch->ch_start_tx, ch->tx_full,
++						ch->txd_free, ch->p.chan_mode);
+ 					musycc_dump_txbuffer_ring(ch, 0);
+ 				}
+ 				break;              /* Not our mdesc, done */
+ 			} else {
+ 				if (cxt1e1_log_level >= LOG_MONITOR)
+ 					pr_info("%s: Port %d Chan %2d - recovered TX msg ownership [%d] (md %p sts %x)\n",
+-						pi->up->devname, pi->portnum, ch->channum, readCount, md, status);
++						pi->up->devname, pi->portnum,
++						ch->channum, readCount,
++						md, status);
+ 			}
+ 		}
+ 		ch->txd_irq_srv = md->snext;
+ 
+ 		md->data = 0;
+-		if (md->mem_token)	{
++		if (md->mem_token) {
+ #ifdef CONFIG_SBE_WAN256T3_NCOMM
+ 			int hdlcnum = 0;
+ #endif
+ 			/* upcount channel */
+-			atomic_sub(OS_mem_token_tlen(md->mem_token), &ch->tx_pending);
++			atomic_sub(OS_mem_token_tlen(md->mem_token),
++				   &ch->tx_pending);
+ 			/* upcount card */
+-			atomic_sub(OS_mem_token_tlen(md->mem_token), &pi->up->tx_pending);
++			atomic_sub(OS_mem_token_tlen(md->mem_token),
++				   &pi->up->tx_pending);
+ #ifdef SBE_WAN256T3_ENABLE
+ 			if (!atomic_read(&pi->up->tx_pending))
+ 				wan256t3_led(pi->up, LED_TX, 0);
+@@ -894,7 +941,7 @@ musycc_bh_tx_eom(mpi_t *pi, int gchan)
+ 					(*nciProcess_TX_complete) (hdlcnum,
+ 							getuserbychan(gchan));
+ 			}
+-#endif                              /*** CONFIG_SBE_WAN256T3_NCOMM ***/
++#endif /* CONFIG_SBE_WAN256T3_NCOMM */
+ 
+ 			OS_mem_token_free_irq(md->mem_token);
+ 			md->mem_token = NULL;
+@@ -908,14 +955,17 @@ musycc_bh_tx_eom(mpi_t *pi, int gchan)
+ 		++ch->txd_free;
+ 		FLUSH_MEM_WRITE();
+ 
+-		if ((ch->p.chan_mode != CFG_CH_PROTO_TRANS) && (status & EOBIRQ_ENABLE)) {
++		if ((ch->p.chan_mode != CFG_CH_PROTO_TRANS) &&
++		    (status & EOBIRQ_ENABLE)) {
+ 			if (cxt1e1_log_level >= LOG_MONITOR)
+ 				pr_info("%s: Mode (%x) incorrect EOB status (%x)\n",
+-					pi->up->devname, ch->p.chan_mode, status);
++					pi->up->devname, ch->p.chan_mode,
++					status);
+ 			if ((status & EOMIRQ_ENABLE) == 0)
+ 				break;
+ 		}
+-	} while ((ch->p.chan_mode != CFG_CH_PROTO_TRANS) && ((status & EOMIRQ_ENABLE) == 0));
++	} while ((ch->p.chan_mode != CFG_CH_PROTO_TRANS) &&
++		 ((status & EOMIRQ_ENABLE) == 0));
+ 	/*
+ 	 * NOTE: (The above 'while' is coupled w/ previous 'do', way above.) Each
+ 	 * Transparent data buffer has the EOB bit, and NOT the EOM bit, set and
+@@ -944,8 +994,8 @@ musycc_bh_tx_eom(mpi_t *pi, int gchan)
+ #endif
+ 			ch->tx_full = 0;
+ 			ch->txd_required = 0;
+-			sd_enable_xmit(ch->user);  /* re-enable to catch flow controlled
+-						    * channel */
++			/* re-enable to catch flow controlled channel */
++			sd_enable_xmit(ch->user);
+ 		}
+ 	}
+ #ifdef RLD_TXFULL_DEBUG
+@@ -998,7 +1048,9 @@ musycc_bh_rx_eom(mpi_t *pi, int gchan)
+ 			 */
+ 			if (hdlcnum >= 228) {
+ 				if (nciProcess_RX_packet)
+-					(*nciProcess_RX_packet) (hdlcnum, status & 0x3fff, m, ch->user);
++					(*nciProcess_RX_packet)(hdlcnum,
++								status & 0x3fff,
++								m, ch->user);
+ 			} else
+ #endif                              /*** CONFIG_SBE_WAN256T3_NCOMM ***/
+ 
+@@ -1011,7 +1063,8 @@ musycc_bh_rx_eom(mpi_t *pi, int gchan)
+ 							       OS_mem_token_data(m2)));
+ 
+ 					/* pass the received mbuf upward */
+-					sd_recv_consume(m, status & LENGTH_MASK, ch->user);
++					sd_recv_consume(m, status & LENGTH_MASK,
++							ch->user);
+ 					ch->s.rx_packets++;
+ 					ch->s.rx_bytes += status & LENGTH_MASK;
+ 				} else
+@@ -1092,7 +1145,8 @@ musycc_intr_th_handler(void *devp)
+ 		if (cxt1e1_log_level >= LOG_MONITOR) {
+ 			pr_info("%s: note - updated ISD from %08x to %08x\n",
+ 				ci->devname, status,
+-				(status & (~INTRPTS_NEXTINT_M)) | ci->intlog.this_status_new);
++				(status & (~INTRPTS_NEXTINT_M)) |
++				ci->intlog.this_status_new);
+ 		}
+ 		/*
+ 		 * Replace bogus status with software corrected value.
+@@ -1100,7 +1154,8 @@ musycc_intr_th_handler(void *devp)
+ 		 * It's not known whether, during this problem occurrence, if the
+ 		 * INTFULL bit is correctly reported or not.
+ 		 */
+-		status = (status & (~INTRPTS_NEXTINT_M)) | (ci->intlog.this_status_new);
++		status = (status & (~INTRPTS_NEXTINT_M)) |
++			 (ci->intlog.this_status_new);
+ 		nextInt = INTRPTS_NEXTINT(status);
+ 	}
+ 	/**********************************************/
+@@ -1149,11 +1204,13 @@ musycc_intr_th_handler(void *devp)
+ 	ci->intlog.this_status_new = currInt;
+ 
+ 	if ((cxt1e1_log_level >= LOG_WARN) && (status & INTRPTS_INTFULL_M))
+-		pr_info("%s: Interrupt queue full condition occurred\n", ci->devname);
++		pr_info("%s: Interrupt queue full condition occurred\n",
++			ci->devname);
+ 	if (cxt1e1_log_level >= LOG_DEBUG)
+ 		pr_info("%s: interrupts pending, isd @ 0x%p: %x curr %d cnt %d NEXT %d\n",
+ 			ci->devname, &ci->reg->isd,
+-			status, nextInt, intCnt, (intCnt + nextInt) & (INT_QUEUE_SIZE - 1));
++			status, nextInt, intCnt,
++			(intCnt + nextInt) & (INT_QUEUE_SIZE - 1));
+ 
+ 	FLUSH_MEM_WRITE();
+ #if defined(SBE_ISR_TASKLET)
+@@ -1242,16 +1299,18 @@ musycc_intr_bh_tasklet(ci_t *ci)
+ 
+ 		while ((currInt == badInt) || (currInt == badInt2)) {
+ 			for (loopCount = 0; loopCount < 0x30; loopCount++)
+-				OS_uwait_dummy();  /* use call to avoid optimization removal
+-						    * of dummy delay */
++				/* use call to avoid optimization
++				 * removal of dummy delay
++				 */
++				OS_uwait_dummy();
+ 			FLUSH_MEM_READ();
+ 			currInt = le32_to_cpu(ci->iqd_p[headx]);
+ 			if (readCount++ > 20)
+ 				break;
  		}
  
--		ret = download_image(usbdev, firm, pos,
--				fw_info.kernel_len, DN_KERNEL_MAGIC_NUMBER);
-+		ret = download_image(usbdev, firm, pos, fw_info.kernel_len,
-+				     DN_KERNEL_MAGIC_NUMBER);
- 		if (ret < 0)
- 			goto out;
- 		dev_info(&usbdev->dev, "GCT: Kernel download success.\n");
-@@ -216,7 +216,7 @@ int usb_boot(struct usb_device *usbdev, u16 pid)
- 			goto out;
+-		if ((currInt == badInt) || (currInt == badInt2)) {      /* catch failure of Bug
+-									 * Fix checking */
++		/* catch failure of Bug Fix checking */
++		if ((currInt == badInt) || (currInt == badInt2)) {
+ 			if (cxt1e1_log_level >= LOG_WARN)
+ 				pr_info("%s: Illegal Interrupt Detected @ 0x%p, mod %d.)\n",
+ 					ci->devname, &ci->iqd_p[headx], headx);
+@@ -1270,7 +1329,8 @@ musycc_intr_bh_tasklet(ci_t *ci)
+ 				ci->iqd_p[headx] = __constant_cpu_to_le32(INT_EMPTY_ENTRY2);
+ 			else
+ 				ci->iqd_p[headx] = __constant_cpu_to_le32(INT_EMPTY_ENTRY);
+-			ci->iqp_headx = (headx + 1) & (INT_QUEUE_SIZE - 1); /* insure wrapness */
++			/* insure wrapness */
++			ci->iqp_headx = (headx + 1) & (INT_QUEUE_SIZE - 1);
+ 			FLUSH_MEM_WRITE();
+ 			FLUSH_MEM_READ();
+ 			continue;
+@@ -1291,8 +1351,8 @@ musycc_intr_bh_tasklet(ci_t *ci)
+ 			pr_info("+ interrupt event: %d, grp: %d, chan: %2d, side: %cX\n",
+ 				event, group, gchan, tx ? 'T' : 'R');
  		}
- 		ret = download_image(usbdev, firm, pos, fw_info.rootfs_len,
--				DN_ROOTFS_MAGIC_NUMBER);
-+				     DN_ROOTFS_MAGIC_NUMBER);
- 		if (ret < 0)
- 			goto out;
- 		dev_info(&usbdev->dev, "GCT: Filesystem download success.\n");
-@@ -261,7 +261,7 @@ out:
- }
+-		pi = &ci->port[group];      /* notice that here we assume 1-1 group -
+-					     * port mapping */
++		/* notice that here we assume 1-1 group - port mapping */
++		pi = &ci->port[group];
+ 		ch = pi->chan[gchan];
+ 		switch (event) {
+ 		case EVE_SACK:              /* Service Request Acknowledge */
+@@ -1300,15 +1360,17 @@ musycc_intr_bh_tasklet(ci_t *ci)
+ 				volatile u_int32_t r;
  
- static int em_download_image(struct usb_device *usbdev, const char *img_name,
--				char *type_string)
-+			     char *type_string)
- {
- 	char *buf = NULL;
- 	loff_t pos = 0;
+ 				r = pci_read_32((u_int32_t *) &pi->reg->srd);
+-				pr_info("- SACK cmd: %08x (hdw= %08x)\n", pi->sr_last, r);
++				pr_info("- SACK cmd: %08x (hdw= %08x)\n",
++					pi->sr_last, r);
+ 			}
+-			SD_SEM_GIVE(&pi->sr_sem_wait);     /* wake up waiting process */
++			/* wake up waiting process */
++			SD_SEM_GIVE(&pi->sr_sem_wait);
+ 			break;
+-		case EVE_CHABT:     /* Change To Abort Code (0x7e -> 0xff) */
+-		case EVE_CHIC:              /* Change To Idle Code (0xff -> 0x7e) */
++		case EVE_CHABT: /* Change To Abort Code (0x7e -> 0xff) */
++		case EVE_CHIC:  /* Change To Idle Code (0xff -> 0x7e) */
+ 			break;
+-		case EVE_EOM:               /* End Of Message */
+-		case EVE_EOB:               /* End Of Buffer (Transparent mode) */
++		case EVE_EOM:   /* End Of Message */
++		case EVE_EOB:   /* End Of Buffer (Transparent mode) */
+ 			if (tx)
+ 				musycc_bh_tx_eom(pi, gchan);
+ 			else
+@@ -1365,14 +1427,21 @@ musycc_intr_bh_tasklet(ci_t *ci)
+ #endif
+ 				{
+ 					pr_info("%s: TX buffer underflow [ONR] on channel %d, mode %x QStopped %x free %d\n",
+-						ci->devname, ch->channum, ch->p.chan_mode, sd_queue_stopped(ch->user), ch->txd_free);
++						ci->devname, ch->channum,
++						ch->p.chan_mode,
++						sd_queue_stopped(ch->user),
++						ch->txd_free);
+ #ifdef RLD_DEBUG
+-					if (ch->p.chan_mode == 2) {     /* problem = ONR on HDLC
+-									 * mode */
++					/* problem = ONR on HDLC mode */
++					if (ch->p.chan_mode == 2) {
+ 						pr_info("++ Failed Last %x Next %x QStopped %x, start_tx %x tx_full %d txd_free %d mode %x\n",
+-							(u_int32_t) ch->txd_irq_srv, (u_int32_t) ch->txd_usr_add,
++							(u_int32_t)ch->txd_irq_srv,
++							(u_int32_t)ch->txd_usr_add,
+ 							sd_queue_stopped(ch->user),
+-							ch->ch_start_tx, ch->tx_full, ch->txd_free, ch->p.chan_mode);
++							ch->ch_start_tx,
++							ch->tx_full,
++							ch->txd_free,
++							ch->p.chan_mode);
+ 						musycc_dump_txbuffer_ring(ch, 0);
+ 					}
+ #endif
+@@ -1390,7 +1459,8 @@ musycc_intr_bh_tasklet(ci_t *ci)
+ 
+ 				if (cxt1e1_log_level >= LOG_WARN) {
+ 					pr_info("%s: RX buffer overflow [ONR] on channel %d, mode %x\n",
+-						ci->devname, ch->channum, ch->p.chan_mode);
++						ci->devname, ch->channum,
++						ch->p.chan_mode);
+ #ifdef RLD_DEBUG
+ 					musycc_dump_rxbuffer_ring(ch, 0);
+ #endif
+@@ -1408,7 +1478,8 @@ musycc_intr_bh_tasklet(ci_t *ci)
+ 				 */
+ 				if (cxt1e1_log_level >= LOG_MONITOR)
+ 					pr_info("%s: TX buffer underrun [BUFF] on channel %d, mode %x\n",
+-						ci->devname, ch->channum, ch->p.chan_mode);
++						ci->devname, ch->channum,
++						ch->p.chan_mode);
+ 			} else {                 /* RX buffer overrun */
+ 				ch->s.rx_over_errors++;
+ 				/*
+@@ -1420,7 +1491,8 @@ musycc_intr_bh_tasklet(ci_t *ci)
+ 				 */
+ 				if (cxt1e1_log_level >= LOG_WARN)
+ 					pr_info("%s: RX buffer overrun [BUFF] on channel %d, mode %x\n",
+-						ci->devname, ch->channum, ch->p.chan_mode);
++						ci->devname, ch->channum,
++						ch->p.chan_mode);
+ 				/*
+ 				 * Per MUSYCC manual, Section 6.4.9.4 [Receive Errors],
+ 				 * Transparent mode DOES require recovery for the RX BUFF
+@@ -1440,14 +1512,17 @@ musycc_intr_bh_tasklet(ci_t *ci)
+ 		}                           /* switch on err */
+ 
+ 		/* Check for interrupt lost condition */
+-		if ((currInt & INTRPT_ILOST_M) && (cxt1e1_log_level >= LOG_ERROR))
++		if ((currInt & INTRPT_ILOST_M) &&
++		    (cxt1e1_log_level >= LOG_ERROR))
+ 			pr_info("%s: Interrupt queue overflow - ILOST asserted\n",
+ 				ci->devname);
+-		ci->iqp_headx = (headx + 1) & (INT_QUEUE_SIZE - 1);     /* insure wrapness */
++		/* insure wrapness */
++		ci->iqp_headx = (headx + 1) & (INT_QUEUE_SIZE - 1);
+ 		FLUSH_MEM_WRITE();
+ 		FLUSH_MEM_READ();
+ 	}                               /* while */
+-	if ((cxt1e1_log_level >= LOG_MONITOR2) && (ci->iqp_headx != ci->iqp_tailx)) {
++	if ((cxt1e1_log_level >= LOG_MONITOR2) &&
++	    (ci->iqp_headx != ci->iqp_tailx)) {
+ 		int         bh;
+ 
+ 		bh = atomic_read(&CI->bh_pending);
+@@ -1525,13 +1600,15 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 	if (!ch)
+ 		return -ENOENT;
+ 
+-	if (ci->state != C_RUNNING)     /* full interrupt processing available */
++	/* full interrupt processing available */
++	if (ci->state != C_RUNNING)
+ 		return -EINVAL;
+ 	if (ch->state != UP)
+ 		return -EINVAL;
+ 
++	/* how else to flag unwritable state ? */
+ 	if (!(ch->status & TX_ENABLED))
+-		return -EROFS;               /* how else to flag unwritable state ? */
++		return -EROFS;
+ 
+ #ifdef RLD_TRANS_DEBUG
+ 	if (1 || cxt1e1_log_level >= LOG_MONITOR2)
+@@ -1541,7 +1618,8 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 	{
+ 		pr_info("++ start_xmt[%d]: state %x start %x full %d free %d required %d stopped %x\n",
+ 			channum, ch->state, ch->ch_start_tx, ch->tx_full,
+-			ch->txd_free, ch->txd_required, sd_queue_stopped(ch->user));
++			ch->txd_free, ch->txd_required,
++			sd_queue_stopped(ch->user));
+ 	}
+ 	/***********************************************/
+ 	/** Determine total amount of data to be sent **/
+@@ -1558,7 +1636,8 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 
+ 	if (txd_need_cnt == 0) {
+ 		if (cxt1e1_log_level >= LOG_MONITOR2)
+-			pr_info("%s channel %d: no TX data in User buffer\n", ci->devname, channum);
++			pr_info("%s channel %d: no TX data in User buffer\n",
++				ci->devname, channum);
+ 		OS_mem_token_free(mem_token);
+ 		return 0;                   /* no data to send */
+ 	}
+@@ -1581,7 +1660,8 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 	if (txd_need_cnt > ch->txd_free) {
+ 		if (cxt1e1_log_level >= LOG_MONITOR2)
+ 			pr_info("start_xmit[%d]: EBUSY - need more descriptors, have %d of %d need %d\n",
+-				channum, ch->txd_free, ch->txd_num, txd_need_cnt);
++				channum, ch->txd_free,
++				ch->txd_num, txd_need_cnt);
+ 		ch->tx_full = 1;
+ 		ch->txd_required = txd_need_cnt;
+ 		sd_disable_xmit(ch->user);
+@@ -1605,7 +1685,8 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 		 * after ALL subsequent chunks are setup.
+ 		 */
+ 		if (md != ch->txd_usr_add)  /* not first chunk */
+-			u |= MUSYCC_TX_OWNED;   /* transfer ownership from HOST to MUSYCC */
++			/* transfer ownership from HOST to MUSYCC */
++			u |= MUSYCC_TX_OWNED;
+ 
+ 		if (len)                    /* not last chunk */
+ 			u |= EOBIRQ_ENABLE;
+@@ -1625,12 +1706,11 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 		if (ch->p.pad_fill_count) {
+ 			u |= (PADFILL_ENABLE | (ch->p.pad_fill_count << EXTRA_FLAGS));
+ 		}
+-		md->mem_token = len ? NULL : mem_token;    /* Fill in mds on last
+-							    * segment, others set ZERO
+-							    * so that entire token is
+-							    * removed ONLY when ALL
+-							    * segments have been
+-							    * transmitted. */
++		/* Fill in mds on last segment, others set ZERO
++		 * so that entire token is removed ONLY when ALL
++		 * segments have been transmitted.
++		 */
++		md->mem_token = len ? NULL : mem_token;
+ 
+ 		md->data = cpu_to_le32(OS_vtophys(OS_mem_token_data(m2)));
+ 		FLUSH_MEM_WRITE();
 -- 
-1.8.4
+1.7.1
 
