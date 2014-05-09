@@ -1,86 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213AbaEIDpJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 23:45:09 -0400
-Received: from ozlabs.org ([103.22.144.67]:58378 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752029AbaEIDpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 23:45:07 -0400
-Date: Fri, 9 May 2014 13:44:55 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Ball <chris@printf.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Micky Ching <micky_ching@realsil.com.cn>,
-        Lee Jones <lee.jones@linaro.org>, Ulf Hansson <ulf.hansson@linaro.org>
-Subject: linux-next: manual merge of the mmc tree with Linus' tree
-Message-ID: <20140509134455.07d7de4d@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1751107AbaEIEHu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 00:07:50 -0400
+Received: from [133.145.228.42] ([133.145.228.42]:58581 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712AbaEIEHs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 00:07:48 -0400
+Message-ID: <536C547A.40304@hitachi.com>
+Date: Fri, 09 May 2014 13:07:22 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/PjVaGnR.dlNJckWVZtyr8/."; protocol="application/pgp-signature"
+To: David Lang <david@lang.hm>
+Cc: Ingo Molnar <mingo@kernel.org>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+References: <cover.1398958771.git.jpoimboe@redhat.com> <alpine.LRH.2.00.1405021504320.22053@twin.jikos.cz> <alpine.DEB.2.02.1405051633080.14881@nftneq.ynat.uz> <alpine.LNX.2.00.1405060147190.3969@pobox.suse.cz> <20140506073228.GA26271@gmail.com> <20140506122302.GC4125@treble.redhat.com> <20140507121924.GA12234@gmail.com> <alpine.DEB.2.02.1405081840580.17457@nftneq.ynat.uz>
+In-Reply-To: <alpine.DEB.2.02.1405081840580.17457@nftneq.ynat.uz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/PjVaGnR.dlNJckWVZtyr8/.
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+(2014/05/09 10:46), David Lang wrote:
+> On Wed, 7 May 2014, Ingo Molnar wrote:
+> 
+>> * Josh Poimboeuf <jpoimboe@redhat.com> wrote:
+>>
+>>> On Tue, May 06, 2014 at 09:32:28AM +0200, Ingo Molnar wrote:
+>>>>
+>>>> * Jiri Kosina <jkosina@suse.cz> wrote:
+>>>>
+>>>>> On Mon, 5 May 2014, David Lang wrote:
+>>>>>
+>>>>>> how would you know that all instances of the datastructure in memory
+>>>>>> have= been touched? just because all tasks have run and are outside the
+>>>>>> function in question doesn't tell you data structures have been
+>>>>>> converted. You have n= o way of knowing when (or if) the next call to
+>>>>>> the modified function will take place on any potential in-memory
+>>>>>> structure.
+>>>>>
+>>>>> The problem you are trying to avoid here is functions expecting to read
+>>>>> "v2" format of the data from memory, while there are still tasks that are
+>>>>> unpredictably writing "v1" format of the data to the memory.
+>>>>>
+>>>>> There are several ways to attack this problem:
+>>>>>
+>>>>> - stop the whole system, convert all the existing data structures to new
+>>>>>   format (which might potentially be non-trivial, mostly because you
+>>>>>   have to *know* where all the data structures have been allocated), apply
+>>>>>   patch, resume operation [ksplice, probably kpatch in future]
+>>>>> - restrict the data format to be backwards compatible [to be done
+>>>>>   manually during patch creation, currently what kGraft needs to do in
+>>>>>   such case]
+>>>>> - have a proxy code which can read both "v1" and "v2" formats, and writes
+>>>>>   back in the same format it has seen the data structure on input
+>>>>> - once all the *code* has been converted, it still has to understand "v1"
+>>>>>   and "v2", but it can now start writing out "v2" format only [possible
+>>>>>   with kGraft, not implemented in automated fashion]
+>>>>>
+>>>>> Ideas are of course more than welcome.
+>>>>
+>>>> So what I'm curious about, what is the actual 'in the field' distro
+>>>> experience, about the type of live-patches that get pushed with
+>>>> urgency?
+>>>>
+>>>> My guess would be that the overwhelming majority of live-patches don't
+>>>> change data structures - and hence the right initial model would be to
+>>>> ensure (via tooling, and via review) that 'v1' and 'v2' data is
+>>>> exactly the same.
+>>>
+>>> Yes, in general we want to avoid data changes.  In practice, we expect
+>>> most patches to be small, localized security fixes, so it shouldn't be
+>>> an issue in most cases.
+>>>
+>>> Currently the kpatch tooling detects any compile-time changes to
+>>> static data and refuses to build the patch module in that case.
+>>>
+>>> But there's no way to programmatically detect changes to dynamic
+>>> data. Which is why the user always has to be very careful when
+>>> selecting a patch.
+>>
+>> And since this is about the system kernel it's dead easy to mess up a
+>> new kernel function and make the system unbootable - so it's not like
+>> 'be careful' isn't something implied already.
+> 
+> It's possible to have two versions of code that each work independently, but 
+> that you can't switch between easily on the fly.
+> 
+> If the new code assumes a lock is held that the old code didn't take, then when 
+> you switch, you are eventually going to hit a case where the new code trys to 
+> release a lock it doesn't hold.
+> 
+> detecting all possible cases progromatically seems close to impossible.
 
-Hi Chris,
+Agreed. Perhaps, spinlock or locks which have small critical section are
+usually able to make safe, because a lock caller also does unlock.
+But mutex etc. usually have different locker/unlocker function.
+In that case, we'll need to check running all functions which is in the
+critical region.
 
-Today's linux-next merge of the mmc tree got a conflict in
-drivers/mmc/host/rtsx_pci_sdmmc.c between commit 98fcc5762dce ("mmc:
-rtsx: Revert "mmc: rtsx: add support for pre_req and post_req"") from
-the  tree and commit 1f7b581b3ffc ("mmc: rtsx: modify error handle and
-remove smatch warnings") from the mmc tree.
+> but this means that there are two categories of patches
+> 
+> 1. patches that are safe to put in a kernel that you are going to boot from
+> 
+> 2. patches that are able to be applied on the fly
+> 
+> and the tool isn't going to be able to tell you which category the patch is in. 
+> It can identify some of the items that make it unlikely or impossible for the 
+> patch to belong to #2, but don't rely on the tool catching all of them
 
-I fixed it up (maybe - see below and in the final tree) and can carry
-the fix as necessary (no action is required).
+Yeah, I think we'd better start with heuristic decision. Most of the
+cases, it could be applied.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thank you,
 
-diff --cc drivers/mmc/host/rtsx_pci_sdmmc.c
-index 0b9ded13a3ae,09340b9429ec..000000000000
---- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-+++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-@@@ -258,10 -375,11 +260,13 @@@ static void sd_send_cmd_get_rsp(struct=20
-  	if (cmd->opcode =3D=3D SD_SWITCH_VOLTAGE) {
-  		err =3D rtsx_pci_write_register(pcr, SD_BUS_STAT,
-  				0xFF, SD_CLK_TOGGLE_EN);
-- 		if (err < 0)
-+ 		if (err < 0) {
-+ 			rtsx_pci_write_register(pcr, SD_BUS_STAT,
-+ 				SD_CLK_TOGGLE_EN | SD_CLK_FORCE_STOP, 0);
-  			goto out;
-+ 		}
- +
- +		clock_toggled =3D true;
-  	}
- =20
-  	rtsx_pci_init_cmd(pcr);
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
---Sig_/PjVaGnR.dlNJckWVZtyr8/.
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTbE88AAoJEMDTa8Ir7ZwV3kkP/jk0ARYN9mVJFkiqC38pDqpM
-ZYI/dJyWNTiWN4G5oQqL4mr0vAxLFWhG9QlaMwp3UjRtQieZbbNizgq6g6mR+OY8
-Ua51N6XqC5HPchYuQWsS7eJg0bYhTZ/E8fVejncjeCGTKp+1FSeUwVWQF6/LrB/8
-Mn+6L/ImbQDKi2IG5gggJKw6KwVV8PB4a1nhob61Amh0oIOs0Fbq0az5/onJ7jXG
-KGtug0sg6c6Vv3bC6A3Br9wo6EdO6ZtzGeKo7ppr8xMFz1X7Q9ILYsaYLv4HLj1s
-YN+Kp6sNXGMig56VJtT3FRjr4Y3xF1DrBuICwhKXQOBsLvHH3xS5Sj5XVwryaYld
-XCbXNlI0Rma4vkKQBVH4Wihe+soRkumYoHTWm6kmVoF/PNQCsbIc5WGkIkziIbOK
-1tH1JzrjVzmegYTxAiZ5lZB+lvDNevHzqXuwk8W24UlvbyanK0hESA/7ZTGC07d7
-ZZSTWCB8OoFw8So0qqd0pb7nrgdB9rpkbmxz/zPcs1fAJS8KKhBJNp+jGiXWlUMO
-oIKbseF0RcQZ36koe+/+VcA9yxoEXKiC0GU135YKPKMQ85oBzArgAUH4WR/7j1ZB
-K6sLx4wUejgD+ctAGJ558aIVD3nw6SiRF9WU4tT/En6nx829LgoKN1azGUiQ+SOm
-oi5PSBG/z4/U75vTeGhq
-=VXDj
------END PGP SIGNATURE-----
-
---Sig_/PjVaGnR.dlNJckWVZtyr8/.--
