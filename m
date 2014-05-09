@@ -1,113 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853AbaEIBqb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 21:46:31 -0400
-Received: from mail.lang.hm ([64.81.33.126]:44311 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753367AbaEIBqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 21:46:30 -0400
-Date: Thu, 8 May 2014 18:46:07 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Ingo Molnar <mingo@kernel.org>
-cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Seth Jennings <sjenning@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-In-Reply-To: <20140507121924.GA12234@gmail.com>
-Message-ID: <alpine.DEB.2.02.1405081840580.17457@nftneq.ynat.uz>
-References: <cover.1398958771.git.jpoimboe@redhat.com> <alpine.LRH.2.00.1405021504320.22053@twin.jikos.cz> <alpine.DEB.2.02.1405051633080.14881@nftneq.ynat.uz> <alpine.LNX.2.00.1405060147190.3969@pobox.suse.cz> <20140506073228.GA26271@gmail.com>
- <20140506122302.GC4125@treble.redhat.com> <20140507121924.GA12234@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755340AbaEIBwW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 21:52:22 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:50812 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754207AbaEIBwT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 21:52:19 -0400
+Date: Thu, 8 May 2014 21:52:18 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 1/3] PM / sleep: Flag to speed up suspend-resume of
+ runtime-suspended devices
+In-Reply-To: <2356017.WpDFDYKWcr@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1405082110330.13708-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 May 2014, Ingo Molnar wrote:
+On Thu, 8 May 2014, Rafael J. Wysocki wrote:
 
-> * Josh Poimboeuf <jpoimboe@redhat.com> wrote:
->
->> On Tue, May 06, 2014 at 09:32:28AM +0200, Ingo Molnar wrote:
->>>
->>> * Jiri Kosina <jkosina@suse.cz> wrote:
->>>
->>>> On Mon, 5 May 2014, David Lang wrote:
->>>>
->>>>> how would you know that all instances of the datastructure in memory
->>>>> have= been touched? just because all tasks have run and are outside the
->>>>> function in question doesn't tell you data structures have been
->>>>> converted. You have n= o way of knowing when (or if) the next call to
->>>>> the modified function will take place on any potential in-memory
->>>>> structure.
->>>>
->>>> The problem you are trying to avoid here is functions expecting to read
->>>> "v2" format of the data from memory, while there are still tasks that are
->>>> unpredictably writing "v1" format of the data to the memory.
->>>>
->>>> There are several ways to attack this problem:
->>>>
->>>> - stop the whole system, convert all the existing data structures to new
->>>>   format (which might potentially be non-trivial, mostly because you
->>>>   have to *know* where all the data structures have been allocated), apply
->>>>   patch, resume operation [ksplice, probably kpatch in future]
->>>> - restrict the data format to be backwards compatible [to be done
->>>>   manually during patch creation, currently what kGraft needs to do in
->>>>   such case]
->>>> - have a proxy code which can read both "v1" and "v2" formats, and writes
->>>>   back in the same format it has seen the data structure on input
->>>> - once all the *code* has been converted, it still has to understand "v1"
->>>>   and "v2", but it can now start writing out "v2" format only [possible
->>>>   with kGraft, not implemented in automated fashion]
->>>>
->>>> Ideas are of course more than welcome.
->>>
->>> So what I'm curious about, what is the actual 'in the field' distro
->>> experience, about the type of live-patches that get pushed with
->>> urgency?
->>>
->>> My guess would be that the overwhelming majority of live-patches don't
->>> change data structures - and hence the right initial model would be to
->>> ensure (via tooling, and via review) that 'v1' and 'v2' data is
->>> exactly the same.
->>
->> Yes, in general we want to avoid data changes.  In practice, we expect
->> most patches to be small, localized security fixes, so it shouldn't be
->> an issue in most cases.
->>
->> Currently the kpatch tooling detects any compile-time changes to
->> static data and refuses to build the patch module in that case.
->>
->> But there's no way to programmatically detect changes to dynamic
->> data. Which is why the user always has to be very careful when
->> selecting a patch.
->
-> And since this is about the system kernel it's dead easy to mess up a
-> new kernel function and make the system unbootable - so it's not like
-> 'be careful' isn't something implied already.
+> Well, no.
+> 
+> The reason why that doesn't work is because ->prepare() callbacks are
+> executed in the reverse order, so the perent's ones will be run before
+> the ->prepare() of the children.  Thus if ->prepare() sets the flag
+> with the expectation that ->suspend() (and the subsequent callbacks)
+> won't be executed, that expectation may not be met actually.
 
-It's possible to have two versions of code that each work independently, but 
-that you can't switch between easily on the fly.
+That's true also if the flag gets set in ->suspend(), isn't it?  A
+driver may set direct_resume in its ->suspend() callback, expecting
+that the subsequent callbacks won't be executed.  But if a descendant
+hasn't also set its flag then the callbacks _will_ be executed.
 
-If the new code assumes a lock is held that the old code didn't take, then when 
-you switch, you are eventually going to hit a case where the new code trys to 
-release a lock it doesn't hold.
+> So I'm going to do what I said above.  I prefer it anyway. :-)
 
-detecting all possible cases progromatically seems close to impossible.
+In your most recent patch (and in the earlier ones too), after you call
+dev's ->suspend() routine, if dev->power.direct_resume isn't set then
+you clear dev->parent->direct_resume.  But what good will that do if
+dev->parent's ->suspend() routine turns the flag back on when it gets
+called later?
 
-but this means that there are two categories of patches
+I can think of two ways to make this work.
 
-1. patches that are safe to put in a kernel that you are going to boot from
+	Expect subsystems and drivers to set the flag during 
+	->suspend().  Turn on the flag in every device during 
+	device_prepare().  Then in __device_suspend(), remember the
+	flag's value and turn it off before invoking the callback.  If 
+	the flag is on again when the callback returns, set the flag 
+	back to the remembered value.  If the flag ends up being off
+	then turn off the parent's flag.
 
-2. patches that are able to be applied on the fly
+	Expect subsystems and drivers to set the flag during 
+	->prepare().  Whenever a callback returns with the flag not
+	set, clear the flag in all of the device's ancestors.
 
-and the tool isn't going to be able to tell you which category the patch is in. 
-It can identify some of the items that make it unlikely or impossible for the 
-patch to belong to #2, but don't rely on the tool catching all of them
+Both are somewhat awkward, and both involve turning the flag off after 
+the callback has turned it on.
 
-David Lang
+Also, how do you expect direct_resume to work with the PCI subsystem?  
+Will the PCI core set the flag appropriately on behalf of the driver?  
+If the core does set the flag, will it invoke the driver's ->suspend()
+callback or skip the callback?  If it invokes the driver's callback but
+leaves the device in runtime suspend, what happens if the driver
+expects the device always to be at full power when its ->suspend()  
+routine runs?  If the core skips the driver's ->suspend() callback,
+what happens if one of the device's children did not set direct_resume 
+and so the later PM callbacks do get invoked?
+
+Several of these questions are a lot easier to answer if the flag gets 
+set during ->prepare() rather than ->suspend().
+
+Alan Stern
+
