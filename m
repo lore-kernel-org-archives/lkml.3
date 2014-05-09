@@ -1,52 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884AbaEIMW4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 08:22:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43574 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755408AbaEIMWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 08:22:54 -0400
-Date: Fri, 9 May 2014 14:22:52 +0200 (CEST)
-From: Michael Matz <matz@suse.de>
-To: Pavel Machek <pavel@ucw.cz>
-cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Udo Seidel <udoseidel@gmx.de>
-Subject: Re: kgr: dealing with optimalizations? (was Re: [RFC 06/16] kgr:
- add Documentat)ion
-In-Reply-To: <20140509093154.GA4877@xo-6d-61-c0.localdomain>
-Message-ID: <alpine.LNX.2.00.1405091419430.23942@wotan.suse.de>
-References: <1398868249-26169-1-git-send-email-jslaby@suse.cz> <1398868249-26169-7-git-send-email-jslaby@suse.cz> <20140506110312.GA15033@xo-6d-61-c0.localdomain> <20140509093154.GA4877@xo-6d-61-c0.localdomain>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753208AbaEIM3t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 08:29:49 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:59447 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775AbaEIM3s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 08:29:48 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <536CBC5E.5070202@hurleysoftware.com>
+References: <536A339D.9030606@hurleysoftware.com>
+	<20140507140558.GA26294@ks3318809.kimsufi.com>
+	<536A4454.5020404@hurleysoftware.com>
+	<CACRpkdZ_Wz2QLbdbXEL9CWy+=tcVwjVjVqQgYw7_dy-5FwxB9Q@mail.gmail.com>
+	<20140509072050.GG5767@lee--X1>
+	<536CBC5E.5070202@hurleysoftware.com>
+Date: Fri, 9 May 2014 08:29:47 -0400
+X-Google-Sender-Auth: DtMFkfCUcveHqIzA_dkIIxj625A
+Message-ID: <CA+5PVA42QVXW_=C3z=i7mvv4RBeuaX64RxuWW8-iZYi0um9big@mail.gmail.com>
+Subject: Re: [3.15-rc3] BUG: null ptr dereference in ichx_gpio_request_regions()
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Vincent Donnefort <vdonnefort@gmail.com>,
+        Linux kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, May 9, 2014 at 7:30 AM, Peter Hurley <peter@hurleysoftware.com> wrote:
+> On 05/09/2014 03:20 AM, Lee Jones wrote:
+>>
+>> On Thu, 08 May 2014, Linus Walleij wrote:
+>>
+>>> On Wed, May 7, 2014 at 4:33 PM, Peter Hurley <peter@hurleysoftware.com>
+>>> wrote:
+>>>>
+>>>> Hi Vincent,
+>>>>
+>>>> On 05/07/2014 10:05 AM, Vincent Donnefort wrote:
+>>>>>
+>>>>>
+>>>>> Hello Peter,
+>>>>
+>>>>
+>>>>
+>>>>>> This is almost certainly caused by the uninitialized regs ptr
+>>>>>> in the ich6_desc struct (i3100_desc struct has the same problem)
+>>>>>> introduced in this commit:
+>>>>>>
+>>>>>> commit bb62a35bd5d96e506af0ea8dd145480b9172a2a6
+>>>>>> Author: Vincent Donnefort <vdonnefort@gmail.com>
+>>>>>> Date:   Fri Feb 14 15:01:56 2014 +0100
+>>>>>>
+>>>>>>       gpio: ich: Add support for multiple register addresses
+>>>>>>
+>>>>>>       This patch introduces regs and reglen pointers which allow a
+>>>>>> chipset
+>>>>>> to have
+>>>>>>       register addresses differing from ICH ones.
+>>>>>>
+>>>>>>       Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>>>>>>       Signed-off-by: Vincent Donnefort <vdonnefort@gmail.com>
+>>>>>>       Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>>>>>
+>>>>>
+>>>>> Yes indeed, this must be linked to this thread
+>>>>> https://lkml.org/lkml/2014/4/15/292
+>>>>
+>>>>
+>>>>
+>>>> Thanks for the link.
+>>>>
+>>>> I searched through LKML but without the driver name or the offending
+>>>> function
+>>>> in the commit message I couldn't find it.
+>>>>
+>>>> Linus,
+>>>>
+>>>> What tree is this bug fix trapped in? I see it didn't make -rc4 either.
+>>>
+>>>
+>>> Since the last signoff is Lee I guess it's in the MFD tree?
+>>
+>>
+>> This patch is in Mainline.
+>>
+>> Search for $SUBJECT.
+>
+>
+> Hmmm. Search for '[PATCH] gpio: ich: set regs and reglen for i3100 and ich6
+> chipset'
+> (which is the bug fix for the buggy commit) turns up nothing in mainline.
 
-On Fri, 9 May 2014, Pavel Machek wrote:
+It's not in mainline (as you've found).
 
-> Ok, one big question: you are replacing single functions, and assume 
-> that's ok, right?
-> 
-> But ... is it ok? gcc is allowed to do optimalization on whole source 
-> file (and whole source tree with LTO).  How do you prevent situation 
-> where changing function foo() breaks optimalization in function bar()?
+> This bug was reported on April 14 in -rc1 by Eric Paris here
+> http://lkml.iu.edu/hypermail/linux/kernel/1404.1/03833.html
+> and _fixed_ a day later on April 15 by Vincent Donnefort here
+> https://lkml.org/lkml/2014/4/15/292
+> It was signed off by Linus Walleij on the same day here
+> https://lkml.org/lkml/2014/4/22/1128
 
-If such situation (behaviour changes with optimization) happens it's 
-either compiler or a source bug, so is of no direct concern to kgraft.  
-If you want to exchange an inlined function foo you of course have to take 
-care of actually exchanging all functions into which foo was inlined.  
-For that you need the inline tree for all kernels for which you want to 
-support kgrafting.
+To add to this, Fedora picked up the patch shortly after that as an
+add-on patch to 3.15-rcX.  We are still carrying that separate patch
+on top of 3.15-rc4.
 
-> Is turning off inter-procedural and inter-module optimalizations needed 
-> for kgraft to work?
+> Since this bug fix never made it to mainline, I re-discovered
+> the bug in -rc3 and reported it here
+> http://lists-archives.com/linux-kernel/28051348-bug-null-ptr-dereference-in-ichx_gpio_request_regions.html
+> (presumably, you received a copy of that email).
+> Vincent replied with the link to the previous bug fix.
 
-No.
+Right, still missing in -rc4.
 
+> Since that time, I have been trying to find in which tree that
+> bug fix is stuck, but I just keep getting replies which show
+> an uncareful reading of this thread.
 
-Ciao,
-Michael.
+Yep.
+
+Someone please get this into the mainline tree.
+
+josh
