@@ -1,92 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932376AbaEIPaq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 11:30:46 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:58367 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757172AbaEIPam (ORCPT
+	id S932400AbaEIPa4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 11:30:56 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:58329 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932379AbaEIPav convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 11:30:42 -0400
-Message-ID: <536CF49E.1050708@atmel.com>
-Date: Fri, 9 May 2014 17:30:38 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "Yang, Wenyou" <Wenyou.Yang@atmel.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Fri, 9 May 2014 11:30:51 -0400
+From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: dts: at91-sama5d3_xplained: add the regulator device
- node
-References: <1398054547-5834-1-git-send-email-wenyou.yang@atmel.com> <20140421095443.GA3461@piout.net> <20140421122205.GB3461@piout.net> <B256D81BAE5131468A838E5D7A24364180A876DA@penmbx01>
-In-Reply-To: <B256D81BAE5131468A838E5D7A24364180A876DA@penmbx01>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Subject: RE: [PATCH v2] serial: uart: add hw flow control support
+ configuration
+Thread-Topic: [PATCH v2] serial: uart: add hw flow control support
+ configuration
+Thread-Index: AQHPZXA8z3C7j2dF7EGLBbHJueLeaJs4a++Q
+Date: Fri, 9 May 2014 15:30:02 +0000
+Message-ID: <3E54258959B69E4282D79E01AB1F32B704735082@DFLE11.ent.ti.com>
+References: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/04/2014 03:37, Yang, Wenyou :
-> Hi,
-> 
->> -----Original Message-----
->> From: Alexandre Belloni [mailto:alexandre.belloni@free-electrons.com]
->> Sent: Monday, April 21, 2014 8:22 PM
->> To: Yang, Wenyou
->> Cc: devicetree@vger.kernel.org; Ferre, Nicolas; linux-
->> kernel@vger.kernel.org; robh+dt@kernel.org; broonie@kernel.org; linux-
->> arm-kernel@lists.infradead.org
->> Subject: Re: [PATCH] ARM: dts: at91-sama5d3_xplained: add the regulator
->> device node
->>
->> On 21/04/2014 at 11:54:43 +0200, Alexandre Belloni wrote :
->>> Hi,
->>>
->>> On 21/04/2014 at 12:29:07 +0800, Wenyou Yang wrote :
->>>> +
->>>> +						vddana_reg: LDO_REG2 {
->>>> +							regulator-name = "VDDANA";
->>>> +							regulator-min-microvolt =
->> <3300000>;
->>>> +							regulator-max-microvolt =
->> <3300000>;
->>>> +							regulator-always-on;
->>>
->>> I'm pretty sure that one is not always on as you actually have to
->>> configure it to get any voltage. Are you sure you want to set the
->>> regulator-always-on property here ?
->>>
->>
->> Just to clarify my though, wouldn't it be better to make the ADC driver
->> handle that regulator instead of using regulator-always-on ?
-> Yes, you are right. 
-> It should not use regulator-always-on property for this regulator.
-> It is ADC driver and ISI driver to handle it(The ISI takes PCK for clock).
+>-----Original Message-----
+>From: Karicheri, Muralidharan
+>Sent: Thursday, May 01, 2014 3:05 PM
+>To: devicetree@vger.kernel.org; linux-doc@vger.kernel.org; linux-kernel@vger.kernel.org;
+>linux-serial@vger.kernel.org
+>Cc: Karicheri, Muralidharan; Rob Herring; Pawel Moll; Mark Rutland; Ian Campbell; Kumar
+>Gala; Randy Dunlap; Greg Kroah-Hartman; Jiri Slaby; Shilimkar, Santosh
+>Subject: [PATCH v2] serial: uart: add hw flow control support configuration
+>
+>8250 uart driver currently supports only software assisted hw flow control. The software
+>assisted hw flow control maintains a hw_stopped flag in the tty structure to stop and start
+>transmission and use modem status interrupt for the event to drive the handshake signals.
+>This is not needed if hw has flow control capabilities. This patch adds a DT attribute for
+>enabling hw flow control for a uart port. Also skip stop and start if this flag is present in flag
+>field of the port structure.
+>
+>Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>
+>CC: Rob Herring <robh+dt@kernel.org>
+>CC: Pawel Moll <pawel.moll@arm.com>
+>CC: Mark Rutland <mark.rutland@arm.com>
+>CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
+>CC: Kumar Gala <galak@codeaurora.org>
+>CC: Randy Dunlap <rdunlap@infradead.org>
+>CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>CC: Jiri Slaby <jslaby@suse.cz>
+>CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>---
+> .../devicetree/bindings/serial/of-serial.txt       |    1 +
+> drivers/tty/serial/8250/8250_core.c                |    6 ++++--
+> drivers/tty/serial/of_serial.c                     |    4 ++++
+> drivers/tty/serial/serial_core.c                   |   12 +++++++++---
+> 4 files changed, 18 insertions(+), 5 deletions(-)
+>
+>diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt
+>b/Documentation/devicetree/bindings/serial/of-serial.txt
+>index 1928a3e..7705477 100644
+>--- a/Documentation/devicetree/bindings/serial/of-serial.txt
+>+++ b/Documentation/devicetree/bindings/serial/of-serial.txt
+>@@ -37,6 +37,7 @@ Optional properties:
+> - auto-flow-control: one way to enable automatic flow control support. The
+>   driver is allowed to detect support for the capability even without this
+>   property.
+>+- has-hw-flow-control: the hardware has flow control capability.
+>
+> Example:
+>
+>diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+>index 0e1bf88..b69aff2 100644
+>--- a/drivers/tty/serial/8250/8250_core.c
+>+++ b/drivers/tty/serial/8250/8250_core.c
+>@@ -2338,9 +2338,11 @@ serial8250_do_set_termios(struct uart_port *port, struct
+>ktermios *termios,
+> 	 * the trigger, or the MCR RTS bit is cleared.  In the case where
+> 	 * the remote UART is not using CTS auto flow control, we must
+> 	 * have sufficient FIFO entries for the latency of the remote
+>-	 * UART to respond.  IOW, at least 32 bytes of FIFO.
+>+	 * UART to respond.  IOW, at least 32 bytes of FIFO. Also enable
+>+	 * AFE if hw flow control is supported
+> 	 */
+>-	if (up->capabilities & UART_CAP_AFE && port->fifosize >= 32) {
+>+	if ((up->capabilities & UART_CAP_AFE && (port->fifosize >= 32)) ||
+>+	    (port->flags & UPF_HARD_FLOW)) {
+> 		up->mcr &= ~UART_MCR_AFE;
+> 		if (termios->c_cflag & CRTSCTS)
+> 			up->mcr |= UART_MCR_AFE;
+>diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c index
+>9924660..77ec6a1 100644
+>--- a/drivers/tty/serial/of_serial.c
+>+++ b/drivers/tty/serial/of_serial.c
+>@@ -182,6 +182,10 @@ static int of_platform_serial_probe(struct platform_device *ofdev)
+> 					  "auto-flow-control"))
+> 			port8250.capabilities |= UART_CAP_AFE;
+>
+>+		if (of_property_read_bool(ofdev->dev.of_node,
+>+					  "has-hw-flow-control"))
+>+			port8250.port.flags |= UPF_HARD_FLOW;
+>+
+> 		ret = serial8250_register_8250_port(&port8250);
+> 		break;
+> 	}
+>diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+>index b68550d..851707a 100644
+>--- a/drivers/tty/serial/serial_core.c
+>+++ b/drivers/tty/serial/serial_core.c
+>@@ -174,8 +174,12 @@ static int uart_port_startup(struct tty_struct *tty, struct
+>uart_state *state,
+> 			if (tty->termios.c_cflag & CBAUD)
+> 				uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
+> 		}
+>-
+>-		if (tty_port_cts_enabled(port)) {
+>+		/*
+>+		 * if hw support flow control without software intervention,
+>+		 * then skip the below check
+>+		 */
+>+		if (tty_port_cts_enabled(port) &&
+>+		    !(uport->flags & UPF_HARD_FLOW)) {
+> 			spin_lock_irq(&uport->lock);
+> 			if (!(uport->ops->get_mctrl(uport) & TIOCM_CTS))
+> 				tty->hw_stopped = 1;
+>@@ -2772,7 +2776,9 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned
+>int status)
+>
+> 	uport->icount.cts++;
+>
+>-	if (tty_port_cts_enabled(port)) {
+>+	/* skip below code if the hw flow control is supported */
+>+	if (tty_port_cts_enabled(port) &&
+>+	    !(uport->flags & UPF_HARD_FLOW)) {
+> 		if (tty->hw_stopped) {
+> 			if (status) {
+> 				tty->hw_stopped = 0;
+>--
+>1.7.9.5
 
-Hi Wenyou and Alexandre,
+Any idea who is going to pick this patch for merge?
 
-After talking to our system engineers, it not usual to avoid to power
-the VDDANA rail. In fact it will prevent you to use all the pads that
-are powered by VDDANA: PD20-PD31. Moreover, even if you do not activate
-the ADC output on these lines you won't be able to use them as plain
-GPIO... (Cf. package and pinout section of the datasheet).
-
-As the ADVREF pin of the SoC is connected to the VDDANA on this board
-(even if this default configuration can be modified with a soldering
-iron), we have to note that we may consume a little bit more power.
-
-But still, I would recommend to keep the "regulator-always-on" property
-on this node. Do you agree and allow me to take your first revision of
-the patch?
-
-
-Bye,
--- 
-Nicolas Ferre
+Murali
