@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595AbaEILuw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 07:50:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38961 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754913AbaEILuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 07:50:50 -0400
-Message-ID: <536CC0F1.301@ti.com>
-Date: Fri, 9 May 2014 17:20:09 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754438AbaEILwu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 07:52:50 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:55621 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070AbaEILwp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 07:52:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH 00/22] Random ARM randconfig fixes in drivers
+Date: Fri, 9 May 2014 13:48:49 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, dwmw2@infradead.org, dmitry.torokhov@gmail.com,
+        balbi@ti.com, gregkh@linuxfoundation.org, plagnioj@jcrosoft.com,
+        jic23@kernel.org, josh.wu@atmel.com, kishon@ti.com,
+        linus.walleij@linaro.org, broonie@kernel.org, mturquette@linaro.org,
+        nicolas.ferre@atmel.com, ohad@wizery.com, linux@arm.linux.org.uk,
+        tony@atomide.com, vinod.koul@intel.com, wim@iguana.be,
+        wsa@the-dreams.de, dmaengine@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-mtd@lists.infradead.org, linux-pci@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, netdev@vger.kernel.org
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <20140508164157.GA22224@roeck-us.net>
+In-Reply-To: <20140508164157.GA22224@roeck-us.net>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Jingoo Han <jg1.han@samsung.com>
-CC: "'Santosh Shilimkar'" <santosh.shilimkar@ti.com>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <rogerq@ti.com>, <balajitk@ti.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Marek Vasut'" <marex@denx.de>
-Subject: Re: [PATCH 06/17] pci: host: pcie-designware: Use *base-mask* for
- configuring the iATU
-References: <1399383244-14556-1-git-send-email-kishon@ti.com> <4764413.ZAEU5S5p0p@wuerfel> <000201cf6a9c$9dd295e0$d977c1a0$%han@samsung.com> <6882241.amuhzvbd8n@wuerfel>
-In-Reply-To: <6882241.amuhzvbd8n@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201405091348.49713.arnd@arndb.de>
+X-Provags-ID: V02:K0:eFSnR1LLI47q+OMhcKsCbJan99MgoqC+4Q7iyDyibqM
+ a3A+OImcp58hzE2umfvTIzfZcf3wkUXKEeYhQXUDgcyHR457yV
+ xhFkTLT4p9pLWBcPW++CFh2DW8bqZXTSmUzo1SJTQYYpv9fxUQ
+ ojL98vGHVnUq0AOkwd4/dRECLFsyrsQtqkBBEaDQJcqZAAurQl
+ Cfn81dUEemg/MEdjjEkd1wJthq4tax2c11p2uAFrQ+YoYPaIFS
+ 33x/siBTm+3QO6rtPTuWiMzZZ8ZBcXuIFv32vzAVGBzmjBK3uL
+ ziLsyq7/tLoOoBxMAv9Y+ELfFEd5xjJ8nhtBfqXNTxMF9ovgGW
+ jE3XBvYbxJmunHXqMf7g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thursday 08 May 2014, Guenter Roeck wrote:
+> On Thu, May 08, 2014 at 04:46:51PM +0200, Arnd Bergmann wrote:
+> > These are a bunch of fixes I had to do to get all randconfig
+> > configurations on ARM working. Most of these are really old
+> > bugs, but there are also some new ones. I don't think any of
+> > them require a backport to linux-stable.
+> > 
+> > I have checked that they are all still required on yesterday's
+> > linux-next kernel. Please apply on the appropriate trees unless
+> > there are objections.
+> > 
+> Is this series of patches also going to fix arm:allmodconfig ?
 
-On Thursday 08 May 2014 02:48 PM, Arnd Bergmann wrote:
-> On Thursday 08 May 2014 18:05:11 Jingoo Han wrote:
->> On Tuesday, May 06, 2014 10:59 PM, Arnd Bergmann wrote:
->>> On Tuesday 06 May 2014 19:03:52 Kishon Vijay Abraham I wrote:
->>>> In DRA7, the cpu sees 32bit address, but the pcie controller can see only 28bit
->>>> address. So whenever the cpu issues a read/write request, the 4 most
->>>> significant bits are used by L3 to determine the target controller.
->>>> For example, the cpu reserves 0x2000_0000 - 0x2FFF_FFFF for PCIe controller but
->>>> the PCIe controller will see only (0x000_0000 - 0xFFF_FFF). So for programming
->>>> the outbound translation window the *base* should be programmed as 0x000_0000.
->>>> Whenever we try to write to say 0x2000_0000, it will be translated to whatever
->>>> we have programmed in the translation window with base as 0x000_0000.
->>>>
->>>> Cc: Bjorn Helgaas <bhelgaas@google.com>
->>>> Cc: Marek Vasut <marex@denx.de>
->>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>> Acked-by: Jingoo Han <jg1.han@samsung.com>
->>>> Acked-by: Mohit Kumar <mohit.kumar@st.com>
->>>
->>> Sorry, but NAK.
->>>
->>> We have a standard 'dma-ranges' property to handle this, so use it.
->>>
->>> See the x-gene PCIe driver patches for an example. Please also talk
->>> to Santosh about it, as he is implementing generic support for
->>> parsing dma-ranges in platform devices at the moment.
->>
->> Hi Arnd,
->>
->> Do you mean the following patch?
->> http://www.spinics.net/lists/kernel/msg1737725.html
->>
-> 
-> That is the patch Santosh did for platform devices, which is related but not
-> what I meant here. For the PCI inbound window setup, please have a look
-> at https://lkml.org/lkml/2014/3/19/607
+Possibly, I haven't checked in a while. I'm unfortunately sitting on
+about 200 other patches in the same branch, which together fix all
+build errors in any configuration I encountered.
 
-For some reason lkml is not showing any contents. Do you have a different link?
+I should really do some allmodconfig/allnoconfig/allyesconfig
+builds without my series again, and prioritize sending out the
+ones required for that.
 
-Thanks
-Kishon
+	Arnd
