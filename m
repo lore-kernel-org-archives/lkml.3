@@ -1,65 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333AbaEIVQz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 17:16:55 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:53462 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757513AbaEIVNk (ORCPT
+	id S932371AbaEIVRk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 17:17:40 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:58412 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932341AbaEIVRh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 17:13:40 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/9] cgroup: use restart_syscall() for mount retries
-Date: Fri,  9 May 2014 17:13:27 -0400
-Message-Id: <1399670015-23463-2-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1399670015-23463-1-git-send-email-tj@kernel.org>
-References: <1399670015-23463-1-git-send-email-tj@kernel.org>
+	Fri, 9 May 2014 17:17:37 -0400
+Date: Fri, 9 May 2014 23:17:28 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        mingo@kernel.org, will.deacon@arm.com, paulmck@linux.vnet.ibm.com,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>
+Subject: Re: [PATCH 06/20] arch,avr32: Fold atomic_ops
+Message-ID: <20140509211728.GI1429@laptop.programming.kicks-ass.net>
+References: <20140508135840.956784204@infradead.org>
+ <20140508135852.049922584@infradead.org>
+ <20140509183241.GA4491@samfundet.no>
+ <20140509204309.GA13467@laptop.programming.kicks-ass.net>
+ <20140509205155.GH1429@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140509205155.GH1429@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup_mount() uses dumb delay-and-retry logic to wait for cgroup_root
-which is being destroyed.  The retry currently loops inside
-cgroup_mount() proper.  This patch makes it return with
-restart_syscall() instead so that retry travels out to userland
-boundary.
+On Fri, May 09, 2014 at 10:51:55PM +0200, Peter Zijlstra wrote:
+> On Fri, May 09, 2014 at 10:43:09PM +0200, Peter Zijlstra wrote:
+> > On Fri, May 09, 2014 at 08:32:41PM +0200, Hans-Christian Egtvedt wrote:
+> 
+> > > > -	if (__builtin_constant_p(i) && (i >= -1048575) && (i <= 1048576))
+> > > > -		result = atomic_sub_return(-i, v);
+> > > 
+> > > I do not recall why we did it like this any more, I would assume both sub and
+> > > add to be single cycle instructions.
+> 
+> Similarly, can I rip out atomic_sub_unless() ?
 
-This slightly simplifies the logic and more importantly makes the
-retry logic behave better when the wait for some reason becomes
-lengthy or infinite by allowing the operation to be suspended or
-terminated from userland.
+Something like so?
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cgroup.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Subject: arch,avr32: Fold atomic_ops
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Wed Apr 9 21:51:29 CEST 2014
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 3083c5a..2755f33 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1681,7 +1681,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 	ret = parse_cgroupfs_options(data, &opts);
- 	if (ret)
- 		goto out_unlock;
--retry:
-+
- 	/* look for a matching existing root */
- 	if (!opts.subsys_mask && !opts.none && !opts.name) {
- 		cgrp_dfl_root_visible = true;
-@@ -1740,8 +1740,7 @@ retry:
- 		if (!atomic_inc_not_zero(&root->cgrp.refcnt)) {
- 			mutex_unlock(&cgroup_mutex);
- 			msleep(10);
--			mutex_lock(&cgroup_mutex);
--			goto retry;
-+			return ERR_PTR(restart_syscall());
- 		}
+Many of the atomic op implementations are the same except for one
+instruction; fold the lot into a few CPP macros and reduce LoC.
+
+This also prepares for easy addition of new ops.
+
+Requires the asm_op because of eor.
+
+The avr32 sub instruction is limited to 21 bits, Hans-Christian cannot
+recall the reason for the weird __builtin_constant_p() tests so take all
+that out and use a straight fwd negate add instead of subtract.
+
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ arch/avr32/include/asm/atomic.h |  145 +++++++++++++++-------------------------
+ 1 file changed, 55 insertions(+), 90 deletions(-)
+
+--- a/arch/avr32/include/asm/atomic.h
++++ b/arch/avr32/include/asm/atomic.h
+@@ -22,117 +22,84 @@
+ #define atomic_read(v)		(*(volatile int *)&(v)->counter)
+ #define atomic_set(v, i)	(((v)->counter) = i)
  
- 		ret = 0;
--- 
-1.9.0
-
+-/*
+- * atomic_sub_return - subtract the atomic variable
+- * @i: integer value to subtract
+- * @v: pointer of type atomic_t
+- *
+- * Atomically subtracts @i from @v. Returns the resulting value.
+- */
+-static inline int atomic_sub_return(int i, atomic_t *v)
+-{
+-	int result;
+-
+-	asm volatile(
+-		"/* atomic_sub_return */\n"
+-		"1:	ssrf	5\n"
+-		"	ld.w	%0, %2\n"
+-		"	sub	%0, %3\n"
+-		"	stcond	%1, %0\n"
+-		"	brne	1b"
+-		: "=&r"(result), "=o"(v->counter)
+-		: "m"(v->counter), "rKs21"(i)
+-		: "cc");
+-
+-	return result;
++#define ATOMIC_OP(op, asm_op)						\
++static inline void atomic_##op(int i, atomic_t *v)			\
++{									\
++	int result;							\
++									\
++	asm volatile(							\
++		"/* atomic_" #op " */\n"				\
++		"1:	ssrf	5\n"					\
++		"	ld.w	%0, %2\n"				\
++		"	" #asm_op "	%0, %3\n"			\
++		"	stcond	%1, %0\n"				\
++		"	brne	1b"					\
++		: "=&r"(result), "=o"(v->counter)			\
++		: "m"(v->counter), "r"(i)				\
++		: "cc");						\
++}									\
++
++#define ATOMIC_OP_RETURN(op, asm_op)					\
++static inline int atomic_##op##_return(int i, atomic_t *v)		\
++{									\
++	int result;							\
++									\
++	asm volatile(							\
++		"/* atomic_" #op "_return */\n"				\
++		"1:	ssrf	5\n"					\
++		"	ld.w	%0, %2\n"				\
++		"	" #asm_op "	%0, %3\n"			\
++		"	stcond	%1, %0\n"				\
++		"	brne	1b"					\
++		: "=&r"(result), "=o"(v->counter)			\
++		: "m"(v->counter), "r"(i)				\
++		: "cc");						\
++									\
++	return result;							\
+ }
+ 
++#define ATOMIC_OPS(op, asm_op)						\
++	ATOMIC_OP(op, asm_op)						\
++	ATOMIC_OP_RETURN(op, asm_op)
++
++ATOMIC_OPS(add, add)
++
++#undef ATOMIC_OPS
++#undef ATOMIC_OP_RETURN
++#undef ATOMIC_OP
++
+ /*
+- * atomic_add_return - add integer to atomic variable
+- * @i: integer value to add
+- * @v: pointer of type atomic_t
+- *
+- * Atomically adds @i to @v. Returns the resulting value.
++ * The 'sub' instruction is limited to 21 bits, use negate add instead.
+  */
+-static inline int atomic_add_return(int i, atomic_t *v)
+-{
+-	int result;
+-
+-	if (__builtin_constant_p(i) && (i >= -1048575) && (i <= 1048576))
+-		result = atomic_sub_return(-i, v);
+-	else
+-		asm volatile(
+-			"/* atomic_add_return */\n"
+-			"1:	ssrf	5\n"
+-			"	ld.w	%0, %1\n"
+-			"	add	%0, %3\n"
+-			"	stcond	%2, %0\n"
+-			"	brne	1b"
+-			: "=&r"(result), "=o"(v->counter)
+-			: "m"(v->counter), "r"(i)
+-			: "cc", "memory");
+-
+-	return result;
+-}
++#define atomic_sub(i, v)	atomic_add(-(i), (v))
++#define atomic_sub_return(i, v)	atomic_add_return(-(i), (v))
+ 
+ /*
+- * atomic_sub_unless - sub unless the number is a given value
++ * __atomic_add_unless - add unless the number is a given value
+  * @v: pointer of type atomic_t
+- * @a: the amount to subtract from v...
++ * @a: the amount to add to v...
+  * @u: ...unless v is equal to u.
+  *
+- * Atomically subtract @a from @v, so long as it was not @u.
++ * Atomically adds @a to @v, so long as it was not @u.
+  * Returns the old value of @v.
+ */
+-static inline void atomic_sub_unless(atomic_t *v, int a, int u)
++static inline int __atomic_add_unless(atomic_t *v, int a, int u)
+ {
+-	int tmp;
++	int tmp, old = atomic_read(v);
+ 
+ 	asm volatile(
+-		"/* atomic_sub_unless */\n"
++		"/* __atomic_add_unless */\n"
+ 		"1:	ssrf	5\n"
+ 		"	ld.w	%0, %2\n"
+ 		"	cp.w	%0, %4\n"
+ 		"	breq	1f\n"
+-		"	sub	%0, %3\n"
++		"	add	%0, %3\n"
+ 		"	stcond	%1, %0\n"
+ 		"	brne	1b\n"
+ 		"1:"
+ 		: "=&r"(tmp), "=o"(v->counter)
+-		: "m"(v->counter), "rKs21"(a), "rKs21"(u)
++		: "m"(v->counter), "r"(a), "ir"(u)
+ 		: "cc", "memory");
+-}
+-
+-/*
+- * __atomic_add_unless - add unless the number is a given value
+- * @v: pointer of type atomic_t
+- * @a: the amount to add to v...
+- * @u: ...unless v is equal to u.
+- *
+- * Atomically adds @a to @v, so long as it was not @u.
+- * Returns the old value of @v.
+-*/
+-static inline int __atomic_add_unless(atomic_t *v, int a, int u)
+-{
+-	int tmp, old = atomic_read(v);
+-
+-	if (__builtin_constant_p(a) && (a >= -1048575) && (a <= 1048576))
+-		atomic_sub_unless(v, -a, u);
+-	else {
+-		asm volatile(
+-			"/* __atomic_add_unless */\n"
+-			"1:	ssrf	5\n"
+-			"	ld.w	%0, %2\n"
+-			"	cp.w	%0, %4\n"
+-			"	breq	1f\n"
+-			"	add	%0, %3\n"
+-			"	stcond	%1, %0\n"
+-			"	brne	1b\n"
+-			"1:"
+-			: "=&r"(tmp), "=o"(v->counter)
+-			: "m"(v->counter), "r"(a), "ir"(u)
+-			: "cc", "memory");
+-	}
+ 
+ 	return old;
+ }
+@@ -168,8 +135,6 @@ static inline int atomic_sub_if_positive
+ #define atomic_xchg(v, new)	(xchg(&((v)->counter), new))
+ #define atomic_cmpxchg(v, o, n)	(cmpxchg(&((v)->counter), (o), (n)))
+ 
+-#define atomic_sub(i, v)	(void)atomic_sub_return(i, v)
+-#define atomic_add(i, v)	(void)atomic_add_return(i, v)
+ #define atomic_dec(v)		atomic_sub(1, (v))
+ #define atomic_inc(v)		atomic_add(1, (v))
+ 
