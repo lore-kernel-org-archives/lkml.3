@@ -1,94 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086AbaEIJqB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 05:46:01 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:59005 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755864AbaEIJp7 (ORCPT
+	id S1756209AbaEIJrH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 05:47:07 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:54503 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012AbaEIJrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 05:45:59 -0400
-Date: Fri, 9 May 2014 10:45:11 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Linux Kernel, Mailing List" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [BUG] kmemleak on __radix_tree_preload
-Message-ID: <20140509094511.GB7950@arm.com>
-References: <20140501184112.GH23420@cmpxchg.org>
- <1399431488.13268.29.camel@kjgkr>
- <20140507113928.GB17253@arm.com>
- <1399540611.13268.45.camel@kjgkr>
- <20140508092646.GA17349@arm.com>
- <1399541860.13268.48.camel@kjgkr>
- <20140508102436.GC17344@arm.com>
- <20140508150026.GA8754@linux.vnet.ibm.com>
- <20140508152946.GA10470@localhost>
- <1399593691.13268.58.camel@kjgkr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399593691.13268.58.camel@kjgkr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 9 May 2014 05:47:04 -0400
+X-AuditID: cbfec7f5-b7fae6d000004d6d-b8-536ca1bc6d43
+Message-id: <536CA1B9.5070605@samsung.com>
+Date: Fri, 09 May 2014 11:36:57 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.4.0
+MIME-version: 1.0
+To: Mark Rutland <Mark.Rutland@arm.com>, Rob Herring <robh+dt@kernel.org>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        kishon <kishon@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-doc@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>
+Subject: Re: [PATCH v7 1/2] phy: Add new Exynos5 USB 3.0 PHY driver
+References: <1398665874-31238-1-git-send-email-gautam.vivek@samsung.com>
+ <5368F136.6070804@samsung.com>
+ <CAFp+6iHN-W-k6ow5YykK_QWgBJ+GgzXwPX6suWtizxwJWOiGtg@mail.gmail.com>
+ <CAFp+6iF=Z_dkd+YJm2-ODmvgZ6PCt+bUx+vSVm_5RtobVN0WfA@mail.gmail.com>
+In-reply-to: <CAFp+6iF=Z_dkd+YJm2-ODmvgZ6PCt+bUx+vSVm_5RtobVN0WfA@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNLMWRmVeSWpSXmKPExsVy+t/xK7p7FuYEG3x5JWZx8H69xfwj51gt
+	2q4cZLdoXryezeLH6wtsFr0LrrJZXHjaw2ax6fE1VouFbUtYLC7vmsNmMeP8PiaLRctamS2W
+	Xr/IZNG69wi7xeE37awO/B5r5q1h9Ni0qpPNY//cNewem5fUe/RtWcXocfzGdiaPz5vkAtij
+	uGxSUnMyy1KL9O0SuDKeNs5kLvgqX3Hx8SnGBsaHEl2MnBwSAiYSD3c2sUHYYhIX7q0Hsrk4
+	hASWMkpMfHCMFcL5zCix+91HRpAqXgEtiWdrPwElODhYBFQlXt73AQmzCahJfG54BDaIH6hk
+	TdN1FhBbVCBC4l7jYVaIVkGJH5PvgcVFBDwlbr66zAQyn1ngI4vE2fZv7CAJYQFniQk7TrJA
+	LP7OKPFk7TomkASnQLDEqyubwTYwC6hLTJq3iBnClpfYvOYt8wRGwVlIlsxCUjYLSdkCRuZV
+	jKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCER9nUH49JjVocYBTgYlXh4F8hkBAuxJpYVV+Ye
+	YpTgYFYS4X02PSdYiDclsbIqtSg/vqg0J7X4ECMTB6dUA6PkBXX23fsile+cOFKiK/miR/Zz
+	2qXfpYIJjRY/2qd+3Dyj4WCln/x/i4vl7HUGMuaSfD/LGRZd6BFN9hZuP6LCsDWoqPL5pQ8t
+	XRsW+Fz07tYVb7bk8f+ZenHbL5X9lpf0ryyaziR9oJ7vqbEDj5TIrfxuff34rUf5XyXZnir6
+	pjr3rvClaCWW4oxEQy3mouJEAH80bP2OAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 01:01:31AM +0100, Jaegeuk Kim wrote:
-> > > > > > > > On Wed, May 07, 2014 at 03:58:08AM +0100, Jaegeuk Kim wrote:
-> > > > > > > > > unreferenced object 0xffff880004226da0 (size 576):
-> > > > > > > > >   comm "fsstress", pid 14590, jiffies 4295191259 (age 706.308s)
-> > > > > > > > >   hex dump (first 32 bytes):
-> > > > > > > > >     01 00 00 00 81 ff ff ff 00 00 00 00 00 00 00 00  ................
-> > > > > > > > >     50 89 34 81 ff ff ff ff b8 6d 22 04 00 88 ff ff  P.4......m".....
-> > > > > > > > >   backtrace:
-> > > > > > > > >     [<ffffffff816c02e8>] kmemleak_update_trace+0x58/0x80
-> > > > > > > > >     [<ffffffff81349517>] radix_tree_node_alloc+0x77/0xa0
-> > > > > > > > >     [<ffffffff81349718>] __radix_tree_create+0x1d8/0x230
-> > > > > > > > >     [<ffffffff8113286c>] __add_to_page_cache_locked+0x9c/0x1b0
-> > > > > > > > >     [<ffffffff811329a8>] add_to_page_cache_lru+0x28/0x80
-> > > > > > > > >     [<ffffffff81132f58>] grab_cache_page_write_begin+0x98/0xf0
-> > > > > > > > >     [<ffffffffa02e4bf4>] f2fs_write_begin+0xb4/0x3c0 [f2fs]
-> > > > > > > > >     [<ffffffff81131b77>] generic_perform_write+0xc7/0x1c0
-> > > > > > > > >     [<ffffffff81133b7d>] __generic_file_aio_write+0x1cd/0x3f0
-> > > > > > > > >     [<ffffffff81133dfe>] generic_file_aio_write+0x5e/0xe0
-> > > > > > > > >     [<ffffffff81195c5a>] do_sync_write+0x5a/0x90
-> > > > > > > > >     [<ffffffff811968d2>] vfs_write+0xc2/0x1d0
-> > > > > > > > >     [<ffffffff81196daf>] SyS_write+0x4f/0xb0
-> > > > > > > > >     [<ffffffff816dead2>] system_call_fastpath+0x16/0x1b
-> > > > > > > > >     [<ffffffffffffffff>] 0xffffffffffffffff
-[...]
-> Under existing the kmemleak messeages, the fsstress test has been
-> running over 12 hours.
-> For sure now, I quit the test and umount the file system, which drops
-> the whole page caches used by f2fs.
-> Then do, echo scan > $DEBUGFS/kmemleak again, but there still exist a
-> bunch of leak messages.
+[CCing DT maintainers]
+
+On 08.05.2014 11:03, Vivek Gautam wrote:
+> On Thu, May 8, 2014 at 11:35 AM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+>> Hi Sylwester,
+>>
+>>
+>> On Tue, May 6, 2014 at 7:57 PM, Sylwester Nawrocki
+>> <s.nawrocki@samsung.com> wrote:
+>>> On 28/04/14 08:17, Vivek Gautam wrote:
+>>>> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
+>>>> The new driver uses the generic PHY framework and will interact
+>>>> with DWC3 controller present on Exynos5 series of SoCs.
+>>>> Thereby, removing old phy-samsung-usb3 driver and related code
+>>>> used untill now which was based on usb/phy framework.
+>>>>
+>>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>>>> ---
+>>>>
+>>>> Changes from v6:
+>>>>  - Addressed review comments:
+>>>>    -- Sorted config entries in Kconfig and Makefile
+>>>>    -- Made #define to_usbdrd_phy(inst) to a static inline routine.
+>>>>    -- Restructured exynos5_rate_to_clk() as suggested.
+>>>>    -- Amended 'val' field for regmap_update_bits() in the routine
+>>>>       exynos5_usbdrd_phy_isol().
+>>>>    -- Removed sentinel entry from exynos5_usbdrd_phy_cfg[] struct.
+>>>>    -- Removed check for 'match' entry in probe().
+>>>>
+>>>>  .../devicetree/bindings/phy/samsung-phy.txt        |   40 ++
+>>>>  drivers/phy/Kconfig                                |   11 +
+>>>>  drivers/phy/Makefile                               |    1 +
+>>>>  drivers/phy/phy-exynos5-usbdrd.c                   |  627 ++++++++++++++++++++
+>>>>  4 files changed, 679 insertions(+)
+>>>>  create mode 100644 drivers/phy/phy-exynos5-usbdrd.c
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>>> index b422e38..51efe4c 100644
+>>>> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>>> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>>> @@ -114,3 +114,43 @@ Example:
+>>>>               compatible = "samsung,exynos-sataphy-i2c";
+>>>>               reg = <0x38>;
+>>>>       };
+>>>> +
+>>>> +Samsung Exynos5 SoC series USB DRD PHY controller
+>>>> +--------------------------------------------------
+>>>> +
+>>>> +Required properties:
+>>>> +- compatible : Should be set to one of the following supported values:
+>>>> +     - "samsung,exynos5250-usbdrd-phy" - for exynos5250 SoC,
+>>>> +     - "samsung,exynos5420-usbdrd-phy" - for exynos5420 SoC.
+>>>> +- reg : Register offset and length of USB DRD PHY register set;
+>>>> +- clocks: Clock IDs array as required by the controller
+>>>> +- clock-names: names of clocks correseponding to IDs in the clock property;
+>>>> +            Required clocks:
+>>>> +     - phy: main PHY clock (same as USB DRD controller i.e. DWC3 IP clock),
+>>>> +            used for register access.
+>>>> +     - ref: PHY's reference clock (usually crystal clock), used for
+>>>> +            PHY operations, associated by phy name. It is used to
+>>>> +            determine bit values for clock settings register.
+>>>> +            For Exynos5420 this is given as 'sclk_usbphy30' in CMU.
+>>>> +- samsung,pmu-syscon: phandle for PMU system controller interface, used to
+>>>> +                   control pmu registers for power isolation.
+>>>> +- samsung,pmu-offset: phy power control register offset to pmu-system-controller
+>>>> +                   base.
+>>>
+>>> It doesn't seem right to have register offset encoded in the device tree
+>>> like this. I think it'd be more appropriate to associate such an offset
+>>> with the compatible string's value in the driver.
+>>
+>> Ok, it makes more sense.
+>> Just out of curiosity, what difference would this make ?
 > 
-> The oldest one is:
-> unreferenced object 0xffff88007b167478 (size 576):
->   comm "fsstress", pid 1636, jiffies 4294945289 (age 164639.728s)
->   hex dump (first 32 bytes):
->     01 00 00 00 81 ff ff ff 00 00 00 00 00 00 00 00  ................
->     50 89 34 81 ff ff ff ff 90 74 16 7b 00 88 ff ff  P.4......t.{....
->   backtrace:
-> [snip]
+> Moreover, in case of Exynos5420 (and may be in future SoCs), where we
+> have 2 USB DRD PHY controllers,
+> we will need to have a way around to deal with two separate offsets in
+> the driver for one compatible string.
+> 
+> Getting the offsets from DT seems a cleaner way to handle this case of
+> multi controllers.
 
-As Johannes pointed out, the simplest explanation would be that the
-radix tree node is leaked after allocation. So let's ignore radix-tree.c
-filemap.c or RCU for now.
+Mark, Rob, what is your opinion on this?
 
-As I read the code, a radix tree node allocated via the above call path
-would be stored in the page_tree of the address_space structure. This
-address_space object is inode.i_data and the inode is allocated by the
-f2fs code. When the inode is destroyed by the f2fs code, can you add
-some checks to make sure there are no nodes left in the radix tree? If
-there are, they would just leak and have to figure out where they should
-have been freed.
-
-You could also revert some of the f2fs changes since 3.14 (assuming 3.14
-didn't show leaks) and see if you still get the leaks.
-
--- 
-Catalin
+Best regards,
+Tomasz
