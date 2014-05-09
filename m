@@ -1,176 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474AbaEIGPL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 02:15:11 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:51595 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755325AbaEIGPH (ORCPT
+	id S1753513AbaEIGVn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 02:21:43 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:58766 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483AbaEIGVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 02:15:07 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Fri, 9 May 2014 15:17:14 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>
-Subject: Re: [PATCH v5] mm: support madvise(MADV_FREE)
-Message-ID: <20140509061714.GF25951@bbox>
-References: <1398045368-2586-1-git-send-email-minchan@kernel.org>
- <536BE351.1050005@redhat.com>
+	Fri, 9 May 2014 02:21:42 -0400
+Message-ID: <536C73EF.7010907@hitachi.com>
+Date: Fri, 09 May 2014 15:21:35 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <536BE351.1050005@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Josh Poimboeuf <jpoimboe@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, David Lang <david@lang.hm>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Seth Jennings <sjenning@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+References: <20140506121211.GA4125@treble.redhat.com> <20140506140516.GF2099@localhost.localdomain> <20140506145010.GA6702@treble.redhat.com> <20140507122444.GB12234@gmail.com> <20140507154114.GA31555@treble.redhat.com> <20140507155754.GA15221@gmail.com> <alpine.DEB.2.02.1405071552520.5876@nftneq.ynat.uz> <20140508061220.GB31184@gmail.com> <alpine.DEB.2.02.1405072348580.17457@nftneq.ynat.uz> <20140508070814.GA31856@gmail.com> <20140508124816.GA23565@treble.redhat.com>
+In-Reply-To: <20140508124816.GA23565@treble.redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Rik,
-
-On Thu, May 08, 2014 at 04:04:33PM -0400, Rik van Riel wrote:
-> On 04/20/2014 09:56 PM, Minchan Kim wrote:
+(2014/05/08 21:48), Josh Poimboeuf wrote:
+>> No, I was not demanding that at all, my suggestion was:
+>>
+>>    > My claim is that if a patch is correct/safe in the old fashioned 
+>>    > way, then a fundamental principle is that a live patching 
+>>    > subsystem must either safely apply, or safely reject the live 
+>>    > patching attempt, independently from any user input.
+>>
+>> Note the 'if'. It could start simple and stupid, and only allow cases 
+>> where we know the patch must be trivially safe (because it does not do 
+>> much in terms of disturbing globally visible state). That needs some 
+>> tooling help, but apparently tooling help is in place already.
+>>
+>> And then we can complicate it from there - but have a reasonably 
+>> robust starting point that we _know_ works (as long as the 
+>> implementation is correct).
 > 
-> >In summary, MADV_FREE is about 2 time faster than MADV_DONTNEED.
+> I really wonder if detecting a "trivially safe" patch is even possible.
 > 
-> This is awesome.
-
-Thanks!
-
+> Where do you draw the line with the following patches?
 > 
-> I have a few nitpicks with the patch, though :)
+> - add a call to another function which modifies global data
+
+This depends on what global data and how. For example, the global data
+is used only from the replaced functions, it's a kind of local data.
+And also, the global data modification is as designed (e.g. acquiring/
+releasing a spinlock), that is also safe.
+
+I think, the bad case is modifying shared global data to new state which
+unexpected by other data holders.
+
+> - add an early return or a goto which changes the way the function
+>   modifies (or no longer modifies) global data
+
+Ditto, if it is unexpected at other parts, that will be unacceptable.
+
+> - touch a local stack variable which results in global data being
+>   modified later in the function
 > 
-> >+static long madvise_lazyfree(struct vm_area_struct *vma,
-> >+			     struct vm_area_struct **prev,
-> >+			     unsigned long start, unsigned long end)
-> >+{
-> >+	*prev = vma;
-> >+	if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
-> >+		return -EINVAL;
-> >+
-> >+	/* MADV_FREE works for only anon vma at the moment */
-> >+	if (vma->vm_file)
-> >+		return -EINVAL;
-> >+
-> >+	lazyfree_range(vma, start, end - start);
-> >+	return 0;
-> >+}
-> 
-> This code checks whether lazyfree_range would work on
-> the VMA...
-> 
-> >diff --git a/mm/memory.c b/mm/memory.c
-> >index c4b5bc250820..ca427f258204 100644
-> >--- a/mm/memory.c
-> >+++ b/mm/memory.c
-> >@@ -1270,6 +1270,104 @@ static inline unsigned long zap_pud_range(struct mmu_gather *tlb,
-> >  	return addr;
-> >  }
-> >
-> >+static unsigned long lazyfree_pte_range(struct mmu_gather *tlb,
-> >+				struct vm_area_struct *vma, pmd_t *pmd,
-> >+				unsigned long addr, unsigned long end)
-> >+{
-> >+	struct mm_struct *mm = tlb->mm;
-> >+	spinlock_t *ptl;
-> >+	pte_t *start_pte;
-> >+	pte_t *pte;
-> >+
-> >+	start_pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
-> >+	pte = start_pte;
-> >+	arch_enter_lazy_mmu_mode();
-> >+	do {
-> >+		pte_t ptent = *pte;
-> >+
-> >+		if (pte_none(ptent))
-> >+			continue;
-> >+
-> >+		if (!pte_present(ptent))
-> >+			continue;
-> >+
-> >+		ptent = pte_mkold(ptent);
-> >+		ptent = pte_mkclean(ptent);
-> >+		set_pte_at(mm, addr, pte, ptent);
-> >+		tlb_remove_tlb_entry(tlb, pte, addr);
-> 
-> This may not work on PPC, which has a weird hash table for
-> its TLB. You will find that tlb_remove_tlb_entry does
-> nothing for PPC64, and set_pte_at does not remove the hash
-> table entry either.
+> - return a different value which causes the function's caller to modify
+>   data
 
-Hmm, I didn't notice that. Thanks Rik.
+I think if the local variable or return value change is correctly handled
+by the caller (as expected), that is good too.
 
-Maybe I need this in asm-generic.
-
-static inline void ptep_set_lazyfree(struct mm_struct *mm, unsigned addr, pte_t *ptep)
-{
-        pte_t ptent = *ptep;
-        ptent = pte_mkold(ptent);
-        ptent = pte_mkclean(ptent);
-        set_pte_at(mm, addr, ptep, ptent);
-}
-
-For arch/powerpc/include/asm/pgtable.h
-
-static inline void ptep_set_lazyfree(struct mm_struct *mm, unsigned long addr,
-                        pte_t *ptep)
-{
-        pte_update(mm, addr, ptep, _PAGE_DIRTY|_PAGE_ACCESSED, 0, 0);
-}
-
-> 
-> >@@ -1370,6 +1485,31 @@ void unmap_vmas(struct mmu_gather *tlb,
-> >  }
-> >
-> >  /**
-> >+ * lazyfree_range - clear dirty bit of pte in a given range
-> >+ * @vma: vm_area_struct holding the applicable pages
-> >+ * @start: starting address of pages
-> >+ * @size: number of bytes to do lazyfree
-> >+ *
-> >+ * Caller must protect the VMA list
-> >+ */
-> >+void lazyfree_range(struct vm_area_struct *vma, unsigned long start,
-> >+		unsigned long size)
-> >+{
-> >+	struct mm_struct *mm = vma->vm_mm;
-> >+	struct mmu_gather tlb;
-> >+	unsigned long end = start + size;
-> >+
-> >+	lru_add_drain();
-> >+	tlb_gather_mmu(&tlb, mm, start, end);
-> >+	update_hiwater_rss(mm);
-> >+	mmu_notifier_invalidate_range_start(mm, start, end);
-> >+	for ( ; vma && vma->vm_start < end; vma = vma->vm_next)
-> >+		lazyfree_single_vma(&tlb, vma, start, end);
-> >+	mmu_notifier_invalidate_range_end(mm, start, end);
-> >+	tlb_finish_mmu(&tlb, start, end);
-> >+}
-> 
-> This function, called by madvise_lazyfree, can iterate
-> over multiple VMAs.
-> 
-> However, madvise_lazyfree only checked one of them.
-
-Oops, the check should have been lazyfree_range.
-Will fix.
-
-> 
-> What should happen when the code encounters a VMA where
-> MADV_FREE does not work?  Should it return an error?
-> Should it skip over it?
-
-I'd like to maintain it same as DONTNEED sematic so it could return
-just EINVAL.
-
-Thanks for the review!
+Thank you,
 
 -- 
-Kind regards,
-Minchan Kim
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
