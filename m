@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681AbaEIOPY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 10:15:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49432 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036AbaEIOPX convert rfc822-to-8bit (ORCPT
+	id S1756718AbaEIOPr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 10:15:47 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:17260 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754166AbaEIOPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 10:15:23 -0400
-Date: Fri, 9 May 2014 16:15:20 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: mingo@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        luto@amacapital.net, nicolas.pitre@linaro.org,
-        daniel.lezcano@linaro.org, umgwanakikbuti@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC][PATCH 6/8] sched,idle: Avoid spurious wakeup IPIs
-Message-ID: <20140509141520.GV2844@laptop.programming.kicks-ass.net>
-References: <20140411134243.160989490@infradead.org>
- <20140411135218.478299389@infradead.org>
- <CAAG0J9_q1KsUx10-XAb7AJnxv2ehctg6q1KME7ahsk1OZV8vZQ@mail.gmail.com>
+	Fri, 9 May 2014 10:15:46 -0400
+Date: Fri, 9 May 2014 17:15:34 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: DaeSeok Youn <daeseok.youn@gmail.com>
+Cc: gregkh@linuxfoundation.org, himangi774@gmail.com, sachin.kamat@linaro.org,
+        fempsci@gmail.com, nandu.hgowda@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] staging: cxt1e1: remove dead code in musycc.c
+Message-ID: <20140509141534.GK4963@mwanda>
+References: <20140509100606.GA6479@devel.8.8.4.4>
+ <20140509105149.GH4963@mwanda>
+ <CAHb8M2AopFJGhgZOu_hbn2YWvMgeuFz2zK2uYo4Fnt6kACKSOg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CAAG0J9_q1KsUx10-XAb7AJnxv2ehctg6q1KME7ahsk1OZV8vZQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAHb8M2AopFJGhgZOu_hbn2YWvMgeuFz2zK2uYo4Fnt6kACKSOg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 02:37:27PM +0100, James Hogan wrote:
-> Hi Peter,
-> 
-> On 11 April 2014 14:42, Peter Zijlstra <peterz@infradead.org> wrote:
-> > +       return !(fetch_or(&ti->flags, _TIF_NEED_RESCHED) & _TIF_POLLING_NRFLAG);
-> 
-> This breaks the build on metag, and I suspect arm64 too:
+On Fri, May 09, 2014 at 11:09:35PM +0900, DaeSeok Youn wrote:
+> 2014-05-09 19:51 GMT+09:00, Dan Carpenter <dan.carpenter@oracle.com>:
+> > On Fri, May 09, 2014 at 07:06:06PM +0900, Daeseok Youn wrote:
+> >> Removes "#if 0" blocks.
+> >>
+> >> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> >> ---
+> >> Dan,
+> >>  I decided to leave musycc_dump_rxbuffer_ring(ch, 0) which is commented
+> >>  out and make a block as "RLD_DEBUG". Because i think this block need to
+> >> debug
+> >>  with define "RLD_DEBUG". If I am wrong, let me know.
+> >>
+> >
+> > This change should maybe have been in a separate patch.  It's a border
+> > line thing.  But definitely, it should have been mentioned in the
+> > changelog.
+> >
+> > Btw, you can use `git citool` to add or remove lines from a
+> > commit.  Highlight and right click on the lines you want to add or
+> > remove.
+> Thanks for the tip. I used "git add -p" after "git rebase" and "git
+> reset HEAD" for
+> spliting a patch.
+> But I have a question, Do I have to resend rest of patches after
+> spliting this patch?
+> In this case, 2/5 is splited to two, it doesn't need to rebase but
+> numbering of patches are changed.
 
-Yep, I just got a patch for arm64.
+Probably it's simplest to just fixup the changelog and resend as-is.
+If you split a patch then normally it's easiest to just resend
+everything.
 
-> kernel/sched/core.c In function ‘set_nr_and_not_polling’:
-> kernel/sched/core.c +531 : error: ‘_TIF_POLLING_NRFLAG’ undeclared
-> 
-> since metag/arm64 define TIF_POLLING_NRFLAG but not
-> _TIF_POLLING_NRFLAG. Could you please fix that prior to your patch to
-> avoid breaking bisection?
+If you have to resend just one patch and it doesn't affect the later
+patches then you can just resend that one so long as you get the
+In-Reply-To email header correct.  If you don't know what an In-Reply-To
+header is, then resend everything.
 
-Ingo, is there any git magic to make that happen? Can we have a tree
-with 2 patches (one for ARM64 and one for metag) before the sched/core
-tree?
+regards,
+dan carpenter
 
-> BTW what is it that determines whether an arch needs TIF_POLLING_NRFLAG?
-
-Any SMP arch that has a polling idle function of any kind (including the
-default cpu_idle_poll()).
-
-That said, even if that's true, not having TIF_POLLING_NRFLAG isn't
-fatal, just sub-optimal in that we'll send an unconditional IPI to wake
-the CPU even though its polling TIF_NEED_RESCHED and doesn't need
-anything other than that write to wake up.
-
-Most archs have (x86) hlt or (arm) wfi like idle instructions, and if
-that is your only possible idle function, you'll require the interrupt
-to wake up and there's really no point to having the POLLING bit.
-
-Lastly, having the POLLING bit and not needing it is similarly non-fatal.
