@@ -1,103 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721AbaEINCm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 09:02:42 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:59118 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756609AbaEINCH (ORCPT
+	id S932118AbaEINDR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 09:03:17 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:49126 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824AbaEINDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 09:02:07 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: mturquette@linaro.org, t.figa@samsung.com, kgene.kim@samsung.com,
-        galak@codeaurora.org, ijc+devicetree@hellion.org.uk,
-        mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org
-Subject: [PATCH 3/4] clk: samsung: exynos5250: Add xclkout debug clock
-Date: Fri,  9 May 2014 18:30:09 +0530
-Message-Id: <1399640410-30957-4-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1399640410-30957-1-git-send-email-tushar.behera@linaro.org>
-References: <1399640410-30957-1-git-send-email-tushar.behera@linaro.org>
+	Fri, 9 May 2014 09:03:14 -0400
+Message-ID: <536CD20F.2000704@atmel.com>
+Date: Fri, 9 May 2014 15:03:11 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+CC: Bryan Evenson <bevenson@melinkcorp.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Mark Roszko <mark.roszko@gmail.com>,
+        "Johan Hovold" <jhovold@gmail.com>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>, <stable@vger.kernel.org>
+Subject: Re: [PATCH v3] ARM: at91: fix startup rtc irq mask for sam9g25 and
+ sam9g35 SoCs
+References: <1399633297-6813-1-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1399633297-6813-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A new clock provider has been added to configure the XCLKOUT debug
-clock. Added a minimal implemetation for Exynos5420 clock driver.
+On 09/05/2014 13:01, Boris BREZILLON :
+> The sam9g25 and sam9g35 have the following errata:
 
-Right now, only one valid parent clock from XCLKOUT is defined
-in existing clock driver. The driver will be updated later for other
-for other parent clocks.
+Cf. below...
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-CC: Tomasz Figa <t.figa@samsung.com>
----
- drivers/clk/samsung/clk-exynos5250.c   |   14 ++++++++++++++
- include/dt-bindings/clock/exynos5250.h |    3 +++
- 2 files changed, 17 insertions(+)
+> "RTC: Interrupt Mask Register cannot be used
+>  Interrupt Mask Register read always returns 0."
+> 
+> Hence we should not rely on what IMR claims about already masked irqs
+> and just disable all the IRQs.
+> 
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: <stable@vger.kernel.org> # v3.10+
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> ---
+> Hello,
+> 
+> Sorry for the noise, I just forgot to remove the mask variable in my
+> previous version.
+> 
+> Best Regards,
+> 
+> Boris
+> 
+> Changes since v2:
+> - removed unused variable 'mask'
+> Changes since v1:
+> - use a macro to define IRQs bitmask
+> - read IMR register to ensure the write to IDR has been flushed
+> - quote atmel's datasheet errata in commit message
+> - comment the code to describe why we're not using IMR to disable
+>   the interrupts
+> 
+>  arch/arm/mach-at91/sysirq_mask.c | 22 +++++++++++++---------
+>  1 file changed, 13 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-at91/sysirq_mask.c
+> index 2ba694f..1527dda 100644
+> --- a/arch/arm/mach-at91/sysirq_mask.c
+> +++ b/arch/arm/mach-at91/sysirq_mask.c
+> @@ -25,24 +25,28 @@
+>  
+>  #include "generic.h"
+>  
+> -#define AT91_RTC_IDR	0x24	/* Interrupt Disable Register */
+> -#define AT91_RTC_IMR	0x28	/* Interrupt Mask Register */
+> +#define AT91_RTC_IDR		0x24	/* Interrupt Disable Register */
+> +#define AT91_RTC_IMR		0x28	/* Interrupt Mask Register */
+> +#define AT91_RTC_IRQ_MASK	0x1f	/* Available IRQs mask */
+>  
+>  void __init at91_sysirq_mask_rtc(u32 rtc_base)
+>  {
+>  	void __iomem *base;
+> -	u32 mask;
+>  
+>  	base = ioremap(rtc_base, 64);
+>  	if (!base)
+>  		return;
+>  
+> -	mask = readl_relaxed(base + AT91_RTC_IMR);
+> -	if (mask) {
+> -		pr_info("AT91: Disabling rtc irq\n");
+> -		writel_relaxed(mask, base + AT91_RTC_IDR);
+> -		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
+> -	}
+> +	/*
+> +	 * The sam9g25 and sam9g35 have the following errata:
 
-diff --git a/drivers/clk/samsung/clk-exynos5250.c b/drivers/clk/samsung/clk-exynos5250.c
-index e7ee442..2637aea 100644
---- a/drivers/clk/samsung/clk-exynos5250.c
-+++ b/drivers/clk/samsung/clk-exynos5250.c
-@@ -225,6 +225,13 @@ PNAME(mout_audio2_p)	= { "cdclk2", "fin_pll", "sclk_hdmi27m", "sclk_dptxphy",
- PNAME(mout_spdif_p)	= { "sclk_audio0", "sclk_audio1", "sclk_audio2",
- 				"spdif_extclk" };
- 
-+PNAME(xclkout_p) = {
-+	"dummy", "dummy", "dummy", "dummy",
-+	"dummy", "dummy", "dummy", "dummy",
-+	"dummy", "dummy", "dummy", "dummy",
-+	"dummy", "dummy", "dummy", "dummy",
-+	"fin_pll", "dummy", "dummy" };
-+
- /* fixed rate clocks generated outside the soc */
- static struct samsung_fixed_rate_clock exynos5250_fixed_rate_ext_clks[] __initdata = {
- 	FRATE(CLK_FIN_PLL, "fin_pll", NULL, CLK_IS_ROOT, 0),
-@@ -236,6 +243,7 @@ static struct samsung_fixed_rate_clock exynos5250_fixed_rate_clks[] __initdata =
- 	FRATE(0, "sclk_hdmi27m", NULL, CLK_IS_ROOT, 27000000),
- 	FRATE(0, "sclk_dptxphy", NULL, CLK_IS_ROOT, 24000000),
- 	FRATE(0, "sclk_uhostphy", NULL, CLK_IS_ROOT, 48000000),
-+	FRATE(0, "dummy", NULL, CLK_IS_ROOT, 0),
- };
- 
- static struct samsung_fixed_factor_clock exynos5250_fixed_factor_clks[] __initdata = {
-@@ -678,6 +686,10 @@ static struct samsung_pll_clock exynos5250_plls[nr_plls] __initdata = {
- 		VPLL_LOCK, VPLL_CON0, NULL),
- };
- 
-+static struct samsung_out_clock exynos5250_clkout[] __initdata = {
-+	CLKOUT(CLK_XCLKOUT, "xclkout", xclkout_p),
-+};
-+
- static struct of_device_id ext_clk_match[] __initdata = {
- 	{ .compatible = "samsung,clock-xxti", .data = (void *)0, },
- 	{ },
-@@ -721,6 +733,8 @@ static void __init exynos5250_clk_init(struct device_node *np)
- 			ARRAY_SIZE(exynos5250_div_clks));
- 	samsung_clk_register_gate(exynos5250_gate_clks,
- 			ARRAY_SIZE(exynos5250_gate_clks));
-+	samsung_clk_register_clkout(np,
-+			exynos5250_clkout, ARRAY_SIZE(exynos5250_clkout));
- 
- 	exynos5250_clk_sleep_init();
- 
-diff --git a/include/dt-bindings/clock/exynos5250.h b/include/dt-bindings/clock/exynos5250.h
-index 922f2dc..7c1cd0b 100644
---- a/include/dt-bindings/clock/exynos5250.h
-+++ b/include/dt-bindings/clock/exynos5250.h
-@@ -151,6 +151,9 @@
- #define CLK_MDMA0		346
- #define CLK_SMMU_MDMA0		347
- 
-+/* debug clocks */
-+#define CLK_XCLKOUT		896
-+
- /* mux clocks */
- #define CLK_MOUT_HDMI		1024
- 
+Actually all chips in what we call the "5 series" or "sam9x5" (sam9g15,
+sam9g25, sam9x25, sam9g35 and sam9x35). And... no, the sam9g45 is not
+part of that series ;-)
+
+> +	 * "RTC: Interrupt Mask Register cannot be used
+> +	 *  Interrupt Mask Register read always returns 0."
+> +	 *
+> +	 * Hence we're not relying on IMR values to disable
+> +	 * interrupts.
+> +	 */
+> +	writel_relaxed(AT91_RTC_IRQ_MASK, base + AT91_RTC_IDR);
+> +	(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
+>  
+>  	iounmap(base);
+>  }
+
+Okay for me (maybe change the comment as it can puzzle some users):
+
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+Thanks, bye,
 -- 
-1.7.9.5
-
+Nicolas Ferre
