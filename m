@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139AbaEIP34 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 11:29:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36483 "EHLO mx1.redhat.com"
+	id S1757118AbaEIP3v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 11:29:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14046 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756983AbaEIP3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 11:29:53 -0400
-Subject: [PATCH v2 14/15] PCI: Remove pci_find_upstream_pcie_bridge()
+	id S1757062AbaEIP3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 11:29:49 -0400
+Subject: [PATCH v2 13/15] iommu: Remove pci.h
 From: Alex Williamson <alex.williamson@redhat.com>
 To: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
-Cc: bhelgaas@google.com, acooks@gmail.com, linux-kernel@vger.kernel.org
-Date: Fri, 09 May 2014 09:29:49 -0600
-Message-ID: <20140509152949.8321.55082.stgit@bling.home>
+Cc: bhelgaas@google.com, Joerg Roedel <joro@8bytes.org>, acooks@gmail.com,
+        linux-kernel@vger.kernel.org
+Date: Fri, 09 May 2014 09:29:44 -0600
+Message-ID: <20140509152943.8321.64626.stgit@bling.home>
 In-Reply-To: <20140509151735.8321.22017.stgit@bling.home>
 References: <20140509151735.8321.22017.stgit@bling.home>
 User-Agent: StGit/0.17-dirty
@@ -22,78 +23,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's broken and has no users.
+The single helper here no longer has any users.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: Joerg Roedel <joro@8bytes.org>
 ---
- drivers/pci/search.c |   35 -----------------------------------
- include/linux/pci.h  |   11 -----------
- 2 files changed, 46 deletions(-)
+ drivers/iommu/pci.h |   29 -----------------------------
+ 1 file changed, 29 deletions(-)
+ delete mode 100644 drivers/iommu/pci.h
 
-diff --git a/drivers/pci/search.c b/drivers/pci/search.c
-index aea2443..473c6e8 100644
---- a/drivers/pci/search.c
-+++ b/drivers/pci/search.c
-@@ -244,41 +244,6 @@ struct pci_dev *pci_find_dma_isolation_root(struct pci_dev *pdev)
- 	return pdev;
- }
- 
+diff --git a/drivers/iommu/pci.h b/drivers/iommu/pci.h
+deleted file mode 100644
+index 352d80a..0000000
+--- a/drivers/iommu/pci.h
++++ /dev/null
+@@ -1,29 +0,0 @@
 -/*
-- * find the upstream PCIe-to-PCI bridge of a PCI device
-- * if the device is PCIE, return NULL
-- * if the device isn't connected to a PCIe bridge (that is its parent is a
-- * legacy PCI bridge and the bridge is directly connected to bus 0), return its
-- * parent
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License, version 2, as
+- * published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+- *
+- * Copyright (C) 2013 Red Hat, Inc.
+- * Copyright (C) 2013 Freescale Semiconductor, Inc.
+- *
 - */
--struct pci_dev *
--pci_find_upstream_pcie_bridge(struct pci_dev *pdev)
+-#ifndef __IOMMU_PCI_H
+-#define __IOMMU_PCI_H
+-
+-/* Helper function for swapping pci device reference */
+-static inline void swap_pci_ref(struct pci_dev **from, struct pci_dev *to)
 -{
--	struct pci_dev *tmp = NULL;
--
--	if (pci_is_pcie(pdev))
--		return NULL;
--	while (1) {
--		if (pci_is_root_bus(pdev->bus))
--			break;
--		pdev = pdev->bus->self;
--		/* a p2p bridge */
--		if (!pci_is_pcie(pdev)) {
--			tmp = pdev;
--			continue;
--		}
--		/* PCI device should connect to a PCIe bridge */
--		if (pci_pcie_type(pdev) != PCI_EXP_TYPE_PCI_BRIDGE) {
--			/* Busted hardware? */
--			WARN_ON_ONCE(1);
--			return NULL;
--		}
--		return pdev;
--	}
--
--	return tmp;
+-	pci_dev_put(*from);
+-	*from = to;
 -}
 -
- static struct pci_bus *pci_do_find_bus(struct pci_bus *bus, unsigned char busnr)
- {
- 	struct pci_bus *child;
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 5096031..64184d5 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1804,15 +1804,4 @@ int pci_for_each_dma_alias(struct pci_dev *pdev,
- 				     u16 alias, void *data), void *data);
- struct pci_dev *pci_find_dma_isolation_root(struct pci_dev *pdev);
- 
--/**
-- * pci_find_upstream_pcie_bridge - find upstream PCIe-to-PCI bridge of a device
-- * @pdev: the PCI device
-- *
-- * if the device is PCIE, return NULL
-- * if the device isn't connected to a PCIe bridge (that is its parent is a
-- * legacy PCI bridge and the bridge is directly connected to bus 0), return its
-- * parent
-- */
--struct pci_dev *pci_find_upstream_pcie_bridge(struct pci_dev *pdev);
--
- #endif /* LINUX_PCI_H */
+-#endif  /* __IOMMU_PCI_H */
 
