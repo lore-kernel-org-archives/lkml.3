@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498AbaEIMMi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 08:12:38 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:52739 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712AbaEIMMh (ORCPT
+	id S1755006AbaEIMN2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 08:13:28 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:35257 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080AbaEIMN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 08:12:37 -0400
-Date: Fri, 9 May 2014 20:12:29 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Jens Axboe <axboe@fb.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: blk-mq: WARN at block/blk-mq.c:585 __blk_mq_run_hw_queue
-Message-ID: <20140509121229.GB27918@kernel.org>
-References: <536A532C.4050001@oracle.com>
- <536A5532.1060008@fb.com>
- <536A56E4.5020909@oracle.com>
- <536A5764.4020606@fb.com>
- <536C49E6.9000503@oracle.com>
- <536C4B2E.4030906@fb.com>
+	Fri, 9 May 2014 08:13:27 -0400
+Message-ID: <536CC661.7000706@linaro.org>
+Date: Fri, 09 May 2014 17:43:21 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <536C4B2E.4030906@fb.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Simek <michal.simek@xilinx.com>,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>
+CC: Michal Simek <monstr@monstr.eu>, Lee Jones <lee.jones@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2 1/2] mfd: syscon: Support early initialization
+References: <cover.1392807832.git.michal.simek@xilinx.com> <fa3178534fcf4488fc45a9a24e44b2588acb38c6.1392807832.git.michal.simek@xilinx.com>
+In-Reply-To: <fa3178534fcf4488fc45a9a24e44b2588acb38c6.1392807832.git.michal.simek@xilinx.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 09:27:42PM -0600, Jens Axboe wrote:
-> On 2014-05-08 21:22, Sasha Levin wrote:
-> >On 05/07/2014 11:55 AM, Jens Axboe wrote:
-> >>On 05/07/2014 09:53 AM, Sasha Levin wrote:
-> >>>On 05/07/2014 11:45 AM, Jens Axboe wrote:
-> >>>>On 05/07/2014 09:37 AM, Sasha Levin wrote:
-> >>>>>Hi all,
-> >>>>>
-> >>>>>While fuzzing with trinity inside a KVM tools guest running the latest -next
-> >>>>>kernel I've stumbled on the following spew:
-> >>>>>
-> >>>>>[  986.962569] WARNING: CPU: 41 PID: 41607 at block/blk-mq.c:585 __blk_mq_run_hw_queue+0x90/0x500()
-> >>>>
-> >>>>I'm going to need more info than this. What were you running? How as kvm
-> >>>>invoked (nr cpus)?
-> >>>
-> >>>Sure!
-> >>>
-> >>>It's running in a KVM tools guest (not qemu), with the following options:
-> >>>
-> >>>'--rng --balloon -m 28000 -c 48 -p "numa=fake=32 init=/virt/init zcache ftrace_dump_on_oops debugpat kvm.mmu_audit=1 slub_debug=FZPU rcutorture.rcutorture_runnable=0 loop.max_loop=64 zram.num_devices=4 rcutorture.nreaders=8 oops=panic nr_hugepages=1000 numa_balancing=enable'.
-> >>>
-> >>>So basically 48 vcpus (the host has 128 physical ones), and ~28G of RAM.
-> >>>
-> >>>I've been running trinity as a fuzzer, which doesn't handle logging too well,
-> >>>so I can't reproduce it's actions easily.
-> >>>
-> >>>There was an additional stress of hotplugging CPUs and memory during this recent
-> >>>fuzzing run, so it's fair to suspect that this happened as a result of that.
-> >>
-> >>Aha!
-> >>
-> >>>Anything else that might be helpful?
-> >>
-> >>No, not too surprising given the info that cpu hotplug was being
-> >>stressed at the same time. blk-mq doesn't quiesce when this happens, so
-> >>it's very unlikely that there are races between updating the cpu masks
-> >>and flushing out the previously queued work.
-> >
-> >So this warning is something you'd expect when CPUs go up/down?
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+On 02/19/2014 04:34 PM, Michal Simek wrote:
+> Some platforms need to get system controller ready as soon as
+> possible. The patch provides early_syscon_initialization which
+> create early mapping for all syscon compatible devices in
+> early_syscon_probe. Regmap is get via
+> syscon_early_regmap_lookup_by_phandle()
 > 
-> Let me put it this way - I'm not surprised that it triggered, but it
-> will of course be fixed up.
+> Regular device probes attach device to regmap via
+> regmap_attach_dev().
+> 
+> For early syscon initialization is necessary to extend struct
+> syscon and provide remove function which unmap all early init
+> structures.
+> 
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com> ---
+> 
 
-Does reverting 1eaade629f5c47 change anything?
+I don't have V3 in my mailbox, hence replying to this thread. The
+content is applicable to V3.
 
-The ctx->online isn't changed immediately when cpu is offline, likely there are
-something wrong. I'm wondering why we need that patch?
+[...]
+> @@ -95,6 +98,24 @@ struct regmap
+> *syscon_regmap_lookup_by_pdevname(const char *s) } 
+> EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_pdevname);
+> 
+> +struct regmap *syscon_early_regmap_lookup_by_phandle(struct
+> device_node *np, +						     const char *property) +{ +	struct
+> device_node *syscon_np; +	struct syscon *syscon; + +	syscon_np =
+> of_parse_phandle(np, property, 0); +	if (!syscon_np) +		return
+> ERR_PTR(-ENODEV); + +	syscon = syscon_np->data; + +
+> of_node_put(syscon_np); + +	return syscon->regmap;
 
-Thanks,
-Shaohua
+This fails while derefencing syscon if if early_syscon_init() has not
+yet been not yet been called. Something like this would be helpful.
+
+struct regmap *regmap = ERR_PTR(-ENODEV);
+
+syscon = syscon_np->data;
+if (syscon)
+	regmap = syscon->regmap;
+
+return regmap;
+
+
+- -- 
+Tushar Behera
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEcBAEBAgAGBQJTbMZMAAoJELqclMPPkq4NoZEH/j/vTBLu0VmKm01jZqJUUC59
+siD+DvRclRcdRGCzsf7iN9Zjw2g+abDtEBynBNdC6swTJJUwDyMtkcguiHn/ytPN
+B/5bli3rKpRkDlg9i/Cfgqd2KmYh1U6Q2LJ3+pyRAQqe0zm+bI5+fp/cn1PGLBIW
+1R2rexJO98GhGO/Yhh62FD366rB15bgApC2+XjYb2Wcka3f8VY47gqkxnAwxZzvU
+ovG/rqXEuGW7H3o/+BLDtmQREEjKg20ggRo2FEj0WozhTo6Sn2YUJg70DKioguu0
+eteP+X4DsShluJfxq9/51bfFutlXPPYZIbLIZxwyiFSJiAIR8hjLO/Ed/GicybQ=
+=HCI5
+-----END PGP SIGNATURE-----
