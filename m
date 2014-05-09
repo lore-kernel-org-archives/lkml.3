@@ -1,101 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603AbaEIOHw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 10:07:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46733 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751084AbaEIOHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 10:07:50 -0400
-Date: Fri, 9 May 2014 16:07:23 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>, Jim Keniston <jkenisto@us.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: can't we kill DIE_GPF ? (Was: x86/traps: cleanup DO_ERROR*() to
-	prepare for uprobes fixes)
-Message-ID: <20140509140723.GA22532@redhat.com>
-References: <20140508191140.GA16892@redhat.com>
+	id S932066AbaEIOIb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 10:08:31 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42509 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755882AbaEIOI3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 10:08:29 -0400
+Date: Fri, 9 May 2014 10:08:28 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+cc: Zhuang Jin Can <jin.can.zhuang@intel.com>, Felipe Balbi <balbi@ti.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "liping.zhou@intel.com" <liping.zhou@intel.com>,
+        "david.a.cohen@linux.intel.com" <david.a.cohen@linux.intel.com>
+Subject: RE: [PATCH] usb: dwc3: ep0: fix delayed status is queued too early
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E03046D195FB1@US01WEMBX2.internal.synopsys.com>
+Message-ID: <Pine.LNX.4.44L0.1405091000110.1239-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140508191140.GA16892@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08, Oleg Nesterov wrote:
->
-> For example, after this series
-> we can convert math_error() into the "normal" DO_ERROR() user, and most probably
-> we can do the same with do_general_protection().
+On Thu, 8 May 2014, Paul Zimmerman wrote:
 
-As for do_general_protection(), the problem is DIE_GPF.
+> > That doesn't handle the problem I described above.  When the dwc3
+> > driver gets the late delayed status response, it will think it is a
+> > response to the new SETUP packet, and so it will carry out a bogus
+> > transfer.  It won't know that the status request was meant to be a
+> > response to a defunct control transfer.
+> 
+> I think you misunderstood me. What I meant was, once the DWC3
+> controller sees the next SETUP packet, it will still accept the
+> commands from the dwc3 driver to start the DATA and STATUS phases
+> for the previous Control transfer, and will send back (fake) completion
+> events for those commands to the driver. But it won't actually send
+> anything on the wire.
 
-Masami, could you explain why it is needed ? kprobe_exceptions_notify()
-is the only user, can't it use DIE_TRAP and check trapnr = X86_TRAP_GP ?
+I see.  The hardware keeps track of which transfer is being acted on.
 
-And if it can, probably we can do notify_die() at the start like other
-DO_ERROR() functions do ?
+> So it should be impossible for the dwc3 driver to carry out a bogus
+> transfer. This is a feature of the DWC3 controller intended to
+> simplify what the software needs to handle, and to automatically
+> take care of the corner cases involved here.
+> 
+> > > For other controllers that can't do this, maybe it should be handled
+> > > in the UDC driver rather than in the composite gadget?
+> > 
+> > The only place this can be handled properly is in the gadget driver:
+> > composite.c for those gadgets using it, otherwise in the higher level
+> > driver (if there are any remaining gadgets that don't use the composite
+> > framework).
+> 
+> Why can't the UDC drivers handle this? AFAIK they all keep track of
+> which phase of a Control transfer they are in. If they see another
+> SETUP packet arrive, they could "fake" the DATA/STATUS stages of the
+> previous transfer, before passing on the next SETUP packet to the
+> gadget driver. Similar to what the DWC3 controller does in hardware.
 
-IOW, any reason why the patch below is wrong?
+That would be possible, yes.
 
-Oleg.
+> Although, I guess it would be simpler to do it once in composite.c,
+> instead of in each individual UDC driver. But there would have to be
+> a quirk or something, to disable the code if the dwc3 driver is in
+> use. And that wouldn't fix the problem for gadgets that don't use
+> composite.c.
 
---- x/arch/x86/include/asm/kdebug.h
-+++ x/arch/x86/include/asm/kdebug.h
-@@ -15,7 +15,6 @@ enum die_val {
- 	DIE_DIE,
- 	DIE_KERNELDEBUG,
- 	DIE_TRAP,
--	DIE_GPF,
- 	DIE_CALL,
- 	DIE_PAGE_FAULT,
- 	DIE_NMIUNKNOWN,
---- x/arch/x86/kernel/traps.c
-+++ x/arch/x86/kernel/traps.c
-@@ -283,6 +283,9 @@ do_general_protection(struct pt_regs *re
- 	enum ctx_state prev_state;
- 
- 	prev_state = exception_enter();
-+	if (notify_die(DIE_TRAP, "general protection fault", regs, error_code,
-+			X86_TRAP_GP, SIGSEGV) == NOTIFY_STOP)
-+		goto exit;
- 	conditional_sti(regs);
- 
- #ifdef CONFIG_X86_32
-@@ -300,10 +303,7 @@ do_general_protection(struct pt_regs *re
- 
- 		tsk->thread.error_code = error_code;
- 		tsk->thread.trap_nr = X86_TRAP_GP;
--		if (notify_die(DIE_GPF, "general protection fault", regs, error_code,
--			       X86_TRAP_GP, SIGSEGV) != NOTIFY_STOP)
--			die("general protection fault", regs, error_code);
--		goto exit;
-+		die("general protection fault", regs, error_code);
- 	}
- 
- 	tsk->thread.error_code = error_code;
---- x/arch/x86/kernel/kprobes/core.c
-+++ x/arch/x86/kernel/kprobes/core.c
-@@ -979,13 +979,14 @@ kprobe_exceptions_notify(struct notifier
- 			ret = NOTIFY_STOP;
- 		}
- 		break;
--	case DIE_GPF:
-+	case DIE_TRAP:
- 		/*
- 		 * To be potentially processing a kprobe fault and to
- 		 * trust the result from kprobe_running(), we have
- 		 * be non-preemptible.
- 		 */
--		if (!preemptible() && kprobe_running() &&
-+		if (args->trapnr == X86_TRAP_GP &&
-+		    !preemptible() && kprobe_running() &&
- 		    kprobe_fault_handler(args->regs, args->trapnr))
- 			ret = NOTIFY_STOP;
- 		break;
+Would the dwc3 driver really need such a quirk?  From what you said
+before, I got the impression that if a new SETUP packet arrived before
+the old transfer was complete, dwc3 wouldn't inform the gadget driver 
+about it.  It would wait until the gadget driver submitted its 
+status response for the old transfer and _then_ tell it about the new 
+SETUP.
+
+As for gadgets not using the composite framework, I don't think there
+are very many of them left.  gadgetfs certainly, but hardly any others.  
+Felipe should know for sure.
+
+Alan Stern
 
