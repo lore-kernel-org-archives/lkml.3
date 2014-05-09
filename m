@@ -1,53 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983AbaEIGOw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 02:14:52 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:64882 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754619AbaEIGOt (ORCPT
+	id S1755474AbaEIGPL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 02:15:11 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:51595 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755325AbaEIGPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 02:14:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-doc@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joerg Roedel <joro@8bytes.org>, Randy Dunlap <rdunlap@infradead.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, linux-kernel@vger.kernel.org,
-        James Bottomley <jbottomley@parallels.com>, linux-pci@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH v3 1/4] DMA-API: Clarify physical/bus address distinction
-Date: Fri, 09 May 2014 08:12:02 +0200
-Message-ID: <119388463.n2RtThRsle@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140508204854.17877.59304.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140508204257.17877.4639.stgit@bhelgaas-glaptop.roam.corp.google.com> <20140508204854.17877.59304.stgit@bhelgaas-glaptop.roam.corp.google.com>
+	Fri, 9 May 2014 02:15:07 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Fri, 9 May 2014 15:17:14 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>
+Subject: Re: [PATCH v5] mm: support madvise(MADV_FREE)
+Message-ID: <20140509061714.GF25951@bbox>
+References: <1398045368-2586-1-git-send-email-minchan@kernel.org>
+ <536BE351.1050005@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:4iadN9RjF/9h2gmZi3tm71vALGLPoBR8fvF19OnSiuS
- LStMNUhvKxy7bdlqpvIrdXQCNtE3w58oK5hWsXgZHNK8Sus358
- ysYsa+xbqwS0Y8vEob5JRu+NwigRHR+gtI5ZBX5a55dGZF2aAu
- OHkWT+MCPwvEUwv1czhKJf1lnaFrjJ8l7XQMBAiCLvsd5PA8kV
- RabaDqru/uXpD0TdG/6ckDJnaXlZ/pnbgmla2p0Ct16rnMfPnJ
- 2+HRGYVH6rj0v9ALuafNm/zTlFMlRRboHWgl0LAYbcFTF3I454
- p4K9PT9xK+gXBrssoHYO35XeLTK/JbAX5TuTy9DtwP8bIGSrBu
- CxLA0Q+cPFUS1evGTpOw=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <536BE351.1050005@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 May 2014 14:48:54 Bjorn Helgaas wrote:
-> The DMA-API documentation sometimes refers to "physical addresses" when it
-> really means "bus addresses."  Sometimes these are identical, but they may
-> be different if the bridge leading to the bus performs address translation.
-> Update the documentation to use "bus address" when appropriate.
-> 
-> Also, consistently capitalize "DMA", use parens with function names, use
-> dev_printk() in examples, and reword a few sections for clarity.
-> 
-> No functional change; documentation changes only.
-> 
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Hello Rik,
 
-Looks great!
+On Thu, May 08, 2014 at 04:04:33PM -0400, Rik van Riel wrote:
+> On 04/20/2014 09:56 PM, Minchan Kim wrote:
+> 
+> >In summary, MADV_FREE is about 2 time faster than MADV_DONTNEED.
+> 
+> This is awesome.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Thanks!
+
+> 
+> I have a few nitpicks with the patch, though :)
+> 
+> >+static long madvise_lazyfree(struct vm_area_struct *vma,
+> >+			     struct vm_area_struct **prev,
+> >+			     unsigned long start, unsigned long end)
+> >+{
+> >+	*prev = vma;
+> >+	if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
+> >+		return -EINVAL;
+> >+
+> >+	/* MADV_FREE works for only anon vma at the moment */
+> >+	if (vma->vm_file)
+> >+		return -EINVAL;
+> >+
+> >+	lazyfree_range(vma, start, end - start);
+> >+	return 0;
+> >+}
+> 
+> This code checks whether lazyfree_range would work on
+> the VMA...
+> 
+> >diff --git a/mm/memory.c b/mm/memory.c
+> >index c4b5bc250820..ca427f258204 100644
+> >--- a/mm/memory.c
+> >+++ b/mm/memory.c
+> >@@ -1270,6 +1270,104 @@ static inline unsigned long zap_pud_range(struct mmu_gather *tlb,
+> >  	return addr;
+> >  }
+> >
+> >+static unsigned long lazyfree_pte_range(struct mmu_gather *tlb,
+> >+				struct vm_area_struct *vma, pmd_t *pmd,
+> >+				unsigned long addr, unsigned long end)
+> >+{
+> >+	struct mm_struct *mm = tlb->mm;
+> >+	spinlock_t *ptl;
+> >+	pte_t *start_pte;
+> >+	pte_t *pte;
+> >+
+> >+	start_pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
+> >+	pte = start_pte;
+> >+	arch_enter_lazy_mmu_mode();
+> >+	do {
+> >+		pte_t ptent = *pte;
+> >+
+> >+		if (pte_none(ptent))
+> >+			continue;
+> >+
+> >+		if (!pte_present(ptent))
+> >+			continue;
+> >+
+> >+		ptent = pte_mkold(ptent);
+> >+		ptent = pte_mkclean(ptent);
+> >+		set_pte_at(mm, addr, pte, ptent);
+> >+		tlb_remove_tlb_entry(tlb, pte, addr);
+> 
+> This may not work on PPC, which has a weird hash table for
+> its TLB. You will find that tlb_remove_tlb_entry does
+> nothing for PPC64, and set_pte_at does not remove the hash
+> table entry either.
+
+Hmm, I didn't notice that. Thanks Rik.
+
+Maybe I need this in asm-generic.
+
+static inline void ptep_set_lazyfree(struct mm_struct *mm, unsigned addr, pte_t *ptep)
+{
+        pte_t ptent = *ptep;
+        ptent = pte_mkold(ptent);
+        ptent = pte_mkclean(ptent);
+        set_pte_at(mm, addr, ptep, ptent);
+}
+
+For arch/powerpc/include/asm/pgtable.h
+
+static inline void ptep_set_lazyfree(struct mm_struct *mm, unsigned long addr,
+                        pte_t *ptep)
+{
+        pte_update(mm, addr, ptep, _PAGE_DIRTY|_PAGE_ACCESSED, 0, 0);
+}
+
+> 
+> >@@ -1370,6 +1485,31 @@ void unmap_vmas(struct mmu_gather *tlb,
+> >  }
+> >
+> >  /**
+> >+ * lazyfree_range - clear dirty bit of pte in a given range
+> >+ * @vma: vm_area_struct holding the applicable pages
+> >+ * @start: starting address of pages
+> >+ * @size: number of bytes to do lazyfree
+> >+ *
+> >+ * Caller must protect the VMA list
+> >+ */
+> >+void lazyfree_range(struct vm_area_struct *vma, unsigned long start,
+> >+		unsigned long size)
+> >+{
+> >+	struct mm_struct *mm = vma->vm_mm;
+> >+	struct mmu_gather tlb;
+> >+	unsigned long end = start + size;
+> >+
+> >+	lru_add_drain();
+> >+	tlb_gather_mmu(&tlb, mm, start, end);
+> >+	update_hiwater_rss(mm);
+> >+	mmu_notifier_invalidate_range_start(mm, start, end);
+> >+	for ( ; vma && vma->vm_start < end; vma = vma->vm_next)
+> >+		lazyfree_single_vma(&tlb, vma, start, end);
+> >+	mmu_notifier_invalidate_range_end(mm, start, end);
+> >+	tlb_finish_mmu(&tlb, start, end);
+> >+}
+> 
+> This function, called by madvise_lazyfree, can iterate
+> over multiple VMAs.
+> 
+> However, madvise_lazyfree only checked one of them.
+
+Oops, the check should have been lazyfree_range.
+Will fix.
+
+> 
+> What should happen when the code encounters a VMA where
+> MADV_FREE does not work?  Should it return an error?
+> Should it skip over it?
+
+I'd like to maintain it same as DONTNEED sematic so it could return
+just EINVAL.
+
+Thanks for the review!
+
+-- 
+Kind regards,
+Minchan Kim
