@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041AbaEIIIU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 04:08:20 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:55702 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752316AbaEIIIO (ORCPT
+	id S1754491AbaEIIJP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 04:09:15 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:52397 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752118AbaEIIJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 04:08:14 -0400
-Date: Fri, 9 May 2014 09:08:07 +0100
+	Fri, 9 May 2014 04:09:09 -0400
+Date: Fri, 9 May 2014 09:09:04 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Chen-Yu Tsai <wens@csie.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [PATCH v2 3/7] mfd: add support for sun6i PRCM
- (Power/Reset/Clock Management) unit
-Message-ID: <20140509080807.GH5767@lee--X1>
-References: <1399483554-8824-1-git-send-email-boris.brezillon@free-electrons.com>
- <1399483554-8824-4-git-send-email-boris.brezillon@free-electrons.com>
- <20140508110205.GB5767@lee--X1>
- <536BE366.8080907@free-electrons.com>
- <20140509071246.GE5767@lee--X1>
- <536C84F6.2050701@redhat.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH 1/6] mfd: stmpe: root out static GPIO and IRQ
+ assignments
+Message-ID: <20140509080904.GI5767@lee--X1>
+References: <1399583799-23517-1-git-send-email-linus.walleij@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <536C84F6.2050701@redhat.com>
+In-Reply-To: <1399583799-23517-1-git-send-email-linus.walleij@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>>> +static struct platform_driver sun6i_prcm_driver = {
-> >>>> +	.driver = {
-> >>>> +		.name = "sun6i-prcm",
-> >>>> +		.owner = THIS_MODULE,
-> >>>> +		.of_match_table = sun6i_prcm_dt_ids,
-> >>>> +	},
-> >>>> +	.probe = sun6i_prcm_probe,
-> >>> You need a .remove() call-back.
-> >>
-> >> This driver cannot be compiled as module (see the Kconfig definition)
-> >> and the devices are not hotpluggable, as a result a probed device will
-> >> never be removed.
-> >>
-> >> Do you still want me to implement the remove function ?
-> > 
-> > .remove() also be run on shut down.
+> The only platform using the STMPE expander now boots from
+> device tree using all-dynamic GPIO and IRQ number assignments, so
+> remove the mechanism to pass this from the device tree entirely.
 > 
-> That is not true, if your device needs to do anything special at shutdown
-> you need to add a shutdown callback. Devices are kept as is (not torn down)
-> on shutdown.
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/gpio/gpio-stmpe.c | 18 +++++-------------
+>  drivers/mfd/stmpe.c       |  3 +--
+>  include/linux/mfd/stmpe.h | 14 --------------
+>  3 files changed, 6 insertions(+), 29 deletions(-)
 
-Ah okay, I'll bow to your knowledge.  So there's no reason for this
-driver to ever call mfd_remove_devices() then?
+Applied, thanks.
 
 -- 
 Lee Jones
