@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757064AbaEISR6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 14:17:58 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:54113 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756683AbaEISR5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 14:17:57 -0400
+	id S1757230AbaEISTV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 14:19:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56747 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756907AbaEISTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 14:19:18 -0400
+Message-ID: <536D1B6D.8060004@redhat.com>
+Date: Fri, 09 May 2014 14:16:13 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140509201405.7969fa7e0cd39f4f1e4e3149@skynet.be>
-References: <20140509201405.7969fa7e0cd39f4f1e4e3149@skynet.be>
-Date: Fri, 9 May 2014 11:17:56 -0700
-Message-ID: <CALAqxLW7oMJyhZ+a0tHX+KpbinA0f+6vRo2eigE1iuSQk4mERw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] kernel/time/ntp.c: convert simple_strtol to kstrtol
-From: John Stultz <john.stultz@linaro.org>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        akpm <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        morten.rasmussen@arm.com, mingo@kernel.org,
+        george.mccollister@gmail.com, ktkhai@parallels.com
+Subject: Re: [PATCH] sched: wake up task on prev_cpu if not in SD_WAKE_AFFINE
+ domain with cpu
+References: <20140502004237.79dd3de6@annuminas.surriel.com>	 <1399011219.5233.55.camel@marge.simpson.net> <53633B81.1080403@redhat.com>	 <1399016273.5233.94.camel@marge.simpson.net> <536379D0.8070306@redhat.com>	 <1399030032.5233.142.camel@marge.simpson.net> <5363B793.9010208@redhat.com>	 <20140506115448.GH11096@twins.programming.kicks-ass.net>	 <536943C9.4030502@redhat.com>	 <20140506203916.GQ17778@laptop.programming.kicks-ass.net>	 <536C3B69.1000208@redhat.com>	 <20140509012743.67d4006d@annuminas.surriel.com>	 <1399620873.5200.68.camel@marge.simpson.net> <536CE48E.2060305@redhat.com>	 <1399649042.31219.47.camel@marge.simpson.net> <536CF346.6080009@redhat.com> <1399658123.5187.2.camel@marge.simpson.net>
+In-Reply-To: <1399658123.5187.2.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 9, 2014 at 11:14 AM, Fabian Frederick <fabf@skynet.be> wrote:
+On 05/09/2014 01:55 PM, Mike Galbraith wrote:
+> On Fri, 2014-05-09 at 11:24 -0400, Rik van Riel wrote:
+>> On 05/09/2014 11:24 AM, Mike Galbraith wrote:
 >
+>>> If no ->flags & SD_BALANCE_WAKE is encountered during traversal, sd
+>>> remains NULL, we fall through to return prev_cpu.
+>      ^^^^^^^^^^^^
+>
+>> We do fall through, but into this loop:
+>
+>>           while (sd) {
 
-Commit message missing.  Mind adding a brief description of why this
-change is worth making?
+You are right. That code is a little hard to follow...
 
-> Inspired-By: Andrew Morton <akpm@linux-foundation.org>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  kernel/time/ntp.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
->
-> diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-> index 419a52c..82b7c9e 100644
-> --- a/kernel/time/ntp.c
-> +++ b/kernel/time/ntp.c
-> @@ -923,7 +923,10 @@ void __hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
->
->  static int __init ntp_tick_adj_setup(char *str)
->  {
-> -       ntp_tick_adj = simple_strtol(str, NULL, 0);
-> +       int rc = kstrtol(str, 0, (long *)&ntp_tick_adj);
-> +
-> +       if (rc)
-> +               return rc;
->         ntp_tick_adj <<= NTP_SCALE_SHIFT;
->
->         return 1;
-> --
-> 1.8.4.5
->
+That leaves the big question: do we want to fall back to
+prev_cpu if it is not idle, and it has an idle sibling,
+or would it be better to find an idle sibling of prev_cpu
+when we wake up a task?
 
-thanks
--john
