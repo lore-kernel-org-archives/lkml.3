@@ -1,63 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298AbaEIGAS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 02:00:18 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:42413 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124AbaEIGAQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 02:00:16 -0400
+	id S1752601AbaEIGEo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 02:04:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1056 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751364AbaEIGEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 02:04:42 -0400
+Date: Fri, 9 May 2014 02:04:11 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com,
+        mingo@kernel.org, george.mccollister@gmail.com, ktkhai@parallels.com
+Subject: [PATCH] sched: clean up select_task_rq_fair conditionals and
+ indentation
+Message-ID: <20140509020411.34adbd29@annuminas.surriel.com>
+In-Reply-To: <20140509012743.67d4006d@annuminas.surriel.com>
+References: <20140502004237.79dd3de6@annuminas.surriel.com>
+	<1399011219.5233.55.camel@marge.simpson.net>
+	<53633B81.1080403@redhat.com>
+	<1399016273.5233.94.camel@marge.simpson.net>
+	<536379D0.8070306@redhat.com>
+	<1399030032.5233.142.camel@marge.simpson.net>
+	<5363B793.9010208@redhat.com>
+	<20140506115448.GH11096@twins.programming.kicks-ass.net>
+	<536943C9.4030502@redhat.com>
+	<20140506203916.GQ17778@laptop.programming.kicks-ass.net>
+	<536C3B69.1000208@redhat.com>
+	<20140509012743.67d4006d@annuminas.surriel.com>
+Organization: Red Hat, Inc.
 MIME-Version: 1.0
-In-Reply-To: <000e01cf6b23$58fda900$0af8fb00$@samsung.com>
-References: <000001cf643d$69e5e350$3db1a9f0$@samsung.com>
-	<CAOh2x=m8DzmLOGqL0E_seOZMuzU=O9vQuu-JEp+E5454RmfEXw@mail.gmail.com>
-	<003901cf6664$e4e8d2a0$aeba77e0$@samsung.com>
-	<CAKohpon7W726Hxj5OJ6SnmPz3gYhAeBRr1wS3SCa3F2hSLriLQ@mail.gmail.com>
-	<5367946F.1030407@ti.com>
-	<CAKohpon-KZpSJK7PxpLjZS7sVPcYraDxb4oJHN6dxSagD+F--Q@mail.gmail.com>
-	<CAGo_u6pUVeMM9mqe5htvM1X_4pkRGEUVOA2ty4ZPfUyLcLZkrw@mail.gmail.com>
-	<CAKohpokfcptseU6ST+e_GfU6poVJxXCXMeoYCvT65060v5GJYQ@mail.gmail.com>
-	<003e01cf6984$fb950280$f2bf0780$@samsung.com>
-	<CAGo_u6o0J_T_hnmDAiYpsDxe77iKPCjuWisZJfTjYYOVGJF96A@mail.gmail.com>
-	<CAKohpo=qbj9w5=wWHEG=9c2spjbbhaDaXG+F-Lhe9QffV9sDbw@mail.gmail.com>
-	<001501cf6a5c$07bc2520$17346f60$@samsung.com>
-	<CAGo_u6rAY1Cqh6_1RPsjGMwqNSVr=yW+VgyXfEjA6V+LT-SMcQ@mail.gmail.com>
-	<000301cf6a62$413c16b0$c3b44410$@samsung.com>
-	<CAKohponiuHYjLve5ywLSGtDPPFN9a54gzZUicn1m702B2Ct3Pw@mail.gmail.com>
-	<000e01cf6b23$58fda900$0af8fb00$@samsung.com>
-Date: Fri, 9 May 2014 11:30:15 +0530
-Message-ID: <CAKohpomX_ZXSyk7RuCyO1t8VUee5H5KN5zj1-VhDp+ZtFbF-xA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] PM / OPP: Add support for descending order for
- cpufreq table
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Jonghwan Choi <jhbird.choi@samsung.com>
-Cc: Nishanth Menon <nm@ti.com>, Linux PM list <linux-pm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 May 2014 06:39, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
-> -> In exynos cpufreq driver, if we want to support more frequency, then
+This cleanup goes on top of the previous patch. We could also skip the
+whole domain iteration if !want_affine, but that doesn't fit nicely in
+80 columns and may have to be done in yet another patch (breaking that
+bit of the code out into its own function?)
 
-Don't add "->" to your replies, it doesn't make it more readable but less.
+---8<---
 
-> we have to describe frequency information in dts file and have to change exynos cpufreq
->  driver file also(For adding divider value).
+Subject: sched: clean up select_task_rq_fair conditionals and indentation
 
-Why? So, as far as I got it your dividers are nothing but 0,1,2...
-i.e.
-Freqs: 400  500  600  700  800
-div:      4      3      2      1      0
+The whole top half of select_task_rq_fair is only run if
+sd_flag & SD_BALANCE_WAKE. The code should probably reflect
+that.
 
-right? That's what you are doing in exynos5440. So just add this in your
-probe after doing: dev_pm_opp_init_cpufreq_table
+Also remove the useless new_cpu = prev_cpu assignment, as the
+value of new_cpu is not actually used.
 
-for(i = 0; all-available-freqs; i++)
-    dvfs_info->freq_table[i].driver_data = dvfs_info->freq_count - i;
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ kernel/sched/fair.c | 47 ++++++++++++++++++++++++-----------------------
+ 1 file changed, 24 insertions(+), 23 deletions(-)
 
-And this will work with changes in dts files.
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 5d33fb1b..844807b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4424,37 +4424,38 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
+ 	if (p->nr_cpus_allowed == 1)
+ 		return prev_cpu;
+ 
++	rcu_read_lock();
+ 	if (sd_flag & SD_BALANCE_WAKE) {
+ 		if (cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
+ 			want_affine = 1;
+-		new_cpu = prev_cpu;
+-	}
+ 
+-	rcu_read_lock();
+-	for_each_domain(cpu, tmp) {
+-		if (!(tmp->flags & SD_LOAD_BALANCE))
+-			continue;
++		for_each_domain(cpu, tmp) {
++			if (!cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
++				break;
+ 
+-		/*
+-		 * If both cpu and prev_cpu are part of this domain,
+-		 * cpu is a valid SD_WAKE_AFFINE target.
+-		 */
+-		if (want_affine && (tmp->flags & SD_WAKE_AFFINE) &&
+-		    cpumask_test_cpu(prev_cpu, sched_domain_span(tmp))) {
+-			affine_sd = tmp;
+-			break;
+-		}
++			if (!(tmp->flags & SD_LOAD_BALANCE))
++				continue;
+ 
+-		if (tmp->flags & sd_flag)
+-			sd = tmp;
+-	}
++			/*
++			 * If both cpu and prev_cpu are part of this domain,
++			 * cpu is a valid SD_WAKE_AFFINE target.
++			 */
++			if (want_affine && (tmp->flags & SD_WAKE_AFFINE) &&
++			    cpumask_test_cpu(prev_cpu,
++					     sched_domain_span(tmp))) {
++				affine_sd = tmp;
++				break;
++			}
+ 
+-	if (affine_sd) {
+-		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
+-			prev_cpu = cpu;
+-	}
++			if (tmp->flags & sd_flag)
++				sd = tmp;
++		}
++
++		if (affine_sd) {
++			if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
++				prev_cpu = cpu;
++		}
+ 
+-	if (sd_flag & SD_BALANCE_WAKE) {
+ 		new_cpu = select_idle_sibling(p, prev_cpu);
+ 		goto unlock;
+ 	}
+
