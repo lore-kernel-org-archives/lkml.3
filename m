@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757515AbaEIUwC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 16:52:02 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50907 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756796AbaEIUv7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 16:51:59 -0400
-Date: Fri, 9 May 2014 22:51:55 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        mingo@kernel.org, will.deacon@arm.com, paulmck@linux.vnet.ibm.com,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Subject: Re: [PATCH 06/20] arch,avr32: Fold atomic_ops
-Message-ID: <20140509205155.GH1429@laptop.programming.kicks-ass.net>
-References: <20140508135840.956784204@infradead.org>
- <20140508135852.049922584@infradead.org>
- <20140509183241.GA4491@samfundet.no>
- <20140509204309.GA13467@laptop.programming.kicks-ass.net>
+	id S1757582AbaEIUwZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 16:52:25 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41404 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757485AbaEIUwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 16:52:22 -0400
+Date: Fri, 9 May 2014 22:52:18 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Thor Thayer <tthayer.linux@gmail.com>
+Cc: Thor Thayer <tthayer@altera.com>, Rob Herring <robherring2@gmail.com>,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
+        Rob Landley <rob@landley.net>, linux@arm.linux.org.uk,
+        Dinh Nguyen <dinguyen@altera.com>, dougthompson@xmission.com,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv3 3/3] edac: altera: Add EDAC support for Altera SDRAM
+Message-ID: <20140509205218.GA16051@pd.tnic>
+References: <1399330337-16748-1-git-send-email-tthayer@altera.com>
+ <1399330337-16748-4-git-send-email-tthayer@altera.com>
+ <20140508120524.GF12548@pd.tnic>
+ <CAF03EBecxtMr1670ktQKTAZX_kHeZWz1SwuEk373B99BoVjbDw@mail.gmail.com>
+ <20140509135259.GC16260@pd.tnic>
+ <CAF03EBeKbXr-7+qeARkBRXjystMjs4yEWnmw7q8tgJv9-SPgXA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20140509204309.GA13467@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAF03EBeKbXr-7+qeARkBRXjystMjs4yEWnmw7q8tgJv9-SPgXA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 10:43:09PM +0200, Peter Zijlstra wrote:
-> On Fri, May 09, 2014 at 08:32:41PM +0200, Hans-Christian Egtvedt wrote:
+On Fri, May 09, 2014 at 03:31:53PM -0500, Thor Thayer wrote:
+> Yes, good point. Our hardware can't recover from Double Bit Errors so
+> I'll go back to the panic() in that path. I like the flexibility of
+> the command line parameter though...
 
-> > > -	if (__builtin_constant_p(i) && (i >= -1048575) && (i <= 1048576))
-> > > -		result = atomic_sub_return(-i, v);
-> > 
-> > I do not recall why we did it like this any more, I would assume both sub and
-> > add to be single cycle instructions.
+Like to panic by default when the machine is booted normally but to be
+able to turn off the panicking with a module parameter?
 
-Similarly, can I rip out atomic_sub_unless() ?
+If so, then you could probably implement a trivial setter called
+
+edac_mc_set_panic_on_ue() in a separate patch.
+
+Then, you call it at the end of altr_sdram_probe().
+
+If you want to turn it off again, you do
+
+echo "0" > /sys/module/edac_core/parameters/edac_mc_panic_on_ue
+
+Something like that...
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
