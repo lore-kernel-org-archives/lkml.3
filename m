@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757145AbaEISIb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 14:08:31 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45648 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137AbaEISI3 (ORCPT
+	id S1757240AbaEISJL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 14:09:11 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:28326 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756596AbaEISJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 14:08:29 -0400
-From: Kumar Gala <galak@codeaurora.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Kumar Gala <galak@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Andy Gross <agross@codeaurora.org>
-Subject: [PATCH] pinctrl: qcom: ipq8064: Fix naming convention
-Date: Fri,  9 May 2014 13:08:25 -0500
-Message-Id: <1399658905-12415-1-git-send-email-galak@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Fri, 9 May 2014 14:09:09 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuMXACAZbVNXQw5R/2dsb2JhbABZgwaCQaoKBAEBAQEBAQUBmhQCAoEZF3SCZhwjGIECJBOIRQHRNoVWiBgWToRHAQOPJIoiAYsDh3+DODuBMA
+Date: Fri, 9 May 2014 20:09:03 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] kernel/power/hibernate.c: convert simple_strtoul to
+ kstrtoul
+Message-Id: <20140509200903.2917158bfbe26723226122c5@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop underscore in spdif_groups to match all other groups.
 
-Signed-off-by: Kumar Gala <galak@codeaurora.org>
+Inspired-By: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/pinctrl/pinctrl-ipq8064.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/power/hibernate.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pinctrl/pinctrl-ipq8064.c b/drivers/pinctrl/pinctrl-ipq8064.c
-index 54aba9f..acafea4 100644
---- a/drivers/pinctrl/pinctrl-ipq8064.c
-+++ b/drivers/pinctrl/pinctrl-ipq8064.c
-@@ -366,7 +366,7 @@ static const char * const sdc1_groups[] = {
- };
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index f4f2073..66332b6 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -1109,7 +1109,10 @@ static int __init resumewait_setup(char *str)
  
- static const char * const spdif_groups[] = {
--	"gpio_10", "gpio_48",
-+	"gpio10", "gpio48",
- };
+ static int __init resumedelay_setup(char *str)
+ {
+-	resume_delay = simple_strtoul(str, NULL, 0);
++	int rc = kstrtoul(str, 0, (unsigned long *)&resume_delay);
++
++	if (rc)
++		return rc;
+ 	return 1;
+ }
  
- static const char * const nand_groups[] = {
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.4.5
 
