@@ -1,50 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359AbaEIOGP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 10:06:15 -0400
-Received: from mga11.intel.com ([192.55.52.93]:23355 "EHLO mga11.intel.com"
+	id S1755603AbaEIOHw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 10:07:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46733 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752606AbaEIOGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 10:06:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1018,1389772800"; 
-   d="scan'208";a="529151129"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Armin Rigo <arigo@tunes.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-In-Reply-To: <CA+55aFw9eiaFtr+c4gcGSWG=pPeqDnX5aPQMVMqX1XkPF30ahg@mail.gmail.com>
-References: <1399552888-11024-1-git-send-email-kirill.shutemov@linux.intel.com>
- <CAMSv6X0+3-uNeiyEPD3sA5dA6Af_M+BT0aeVpa3qMv1aga0q9g@mail.gmail.com>
- <20140508160205.A0EC7E009B@blue.fi.intel.com>
- <CA+55aFw9eiaFtr+c4gcGSWG=pPeqDnX5aPQMVMqX1XkPF30ahg@mail.gmail.com>
-Subject: Re: [PATCHv2 0/2] remap_file_pages() decommission
-Content-Transfer-Encoding: 7bit
-Message-Id: <20140509140536.F06BFE009B@blue.fi.intel.com>
-Date: Fri,  9 May 2014 17:05:36 +0300 (EEST)
+	id S1751084AbaEIOHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 10:07:50 -0400
+Date: Fri, 9 May 2014 16:07:23 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: can't we kill DIE_GPF ? (Was: x86/traps: cleanup DO_ERROR*() to
+	prepare for uprobes fixes)
+Message-ID: <20140509140723.GA22532@redhat.com>
+References: <20140508191140.GA16892@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140508191140.GA16892@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds wrote:
-> On Thu, May 8, 2014 at 9:02 AM, Kirill A. Shutemov
-> <kirill.shutemov@linux.intel.com> wrote:
-> >
-> >> i.e. if you remove or
-> >> emulate remap_file_pages(), please increase the default limit as well.
-> >
-> > It's fine to me. Andrew?
-> 
-> Not Andrew, but one thing we might look at is to make the limit
-> per-user rather than per-vm.
+On 05/08, Oleg Nesterov wrote:
+>
+> For example, after this series
+> we can convert math_error() into the "normal" DO_ERROR() user, and most probably
+> we can do the same with do_general_protection().
 
-Hm. I'm confused here. Do we have any limit forced per-user?
-I only see things like rlimits which are copied from parrent.
-Is it what you want?
+As for do_general_protection(), the problem is DIE_GPF.
 
--- 
- Kirill A. Shutemov
+Masami, could you explain why it is needed ? kprobe_exceptions_notify()
+is the only user, can't it use DIE_TRAP and check trapnr = X86_TRAP_GP ?
+
+And if it can, probably we can do notify_die() at the start like other
+DO_ERROR() functions do ?
+
+IOW, any reason why the patch below is wrong?
+
+Oleg.
+
+--- x/arch/x86/include/asm/kdebug.h
++++ x/arch/x86/include/asm/kdebug.h
+@@ -15,7 +15,6 @@ enum die_val {
+ 	DIE_DIE,
+ 	DIE_KERNELDEBUG,
+ 	DIE_TRAP,
+-	DIE_GPF,
+ 	DIE_CALL,
+ 	DIE_PAGE_FAULT,
+ 	DIE_NMIUNKNOWN,
+--- x/arch/x86/kernel/traps.c
++++ x/arch/x86/kernel/traps.c
+@@ -283,6 +283,9 @@ do_general_protection(struct pt_regs *re
+ 	enum ctx_state prev_state;
+ 
+ 	prev_state = exception_enter();
++	if (notify_die(DIE_TRAP, "general protection fault", regs, error_code,
++			X86_TRAP_GP, SIGSEGV) == NOTIFY_STOP)
++		goto exit;
+ 	conditional_sti(regs);
+ 
+ #ifdef CONFIG_X86_32
+@@ -300,10 +303,7 @@ do_general_protection(struct pt_regs *re
+ 
+ 		tsk->thread.error_code = error_code;
+ 		tsk->thread.trap_nr = X86_TRAP_GP;
+-		if (notify_die(DIE_GPF, "general protection fault", regs, error_code,
+-			       X86_TRAP_GP, SIGSEGV) != NOTIFY_STOP)
+-			die("general protection fault", regs, error_code);
+-		goto exit;
++		die("general protection fault", regs, error_code);
+ 	}
+ 
+ 	tsk->thread.error_code = error_code;
+--- x/arch/x86/kernel/kprobes/core.c
++++ x/arch/x86/kernel/kprobes/core.c
+@@ -979,13 +979,14 @@ kprobe_exceptions_notify(struct notifier
+ 			ret = NOTIFY_STOP;
+ 		}
+ 		break;
+-	case DIE_GPF:
++	case DIE_TRAP:
+ 		/*
+ 		 * To be potentially processing a kprobe fault and to
+ 		 * trust the result from kprobe_running(), we have
+ 		 * be non-preemptible.
+ 		 */
+-		if (!preemptible() && kprobe_running() &&
++		if (args->trapnr == X86_TRAP_GP &&
++		    !preemptible() && kprobe_running() &&
+ 		    kprobe_fault_handler(args->regs, args->trapnr))
+ 			ret = NOTIFY_STOP;
+ 		break;
+
