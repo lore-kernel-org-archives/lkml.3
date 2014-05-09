@@ -1,102 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378AbaEIIEl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 04:04:41 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:47386 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338AbaEIIEc (ORCPT
+	id S1754927AbaEIIG4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 04:06:56 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:54516 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752062AbaEIIGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 04:04:32 -0400
-Message-ID: <536C8A75.4080401@huawei.com>
-Date: Fri, 9 May 2014 15:57:41 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Fri, 9 May 2014 04:06:50 -0400
+X-Greylist: delayed 95201 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 May 2014 04:06:49 EDT
+Message-ID: <536C8C90.2050601@hitachi.com>
+Date: Fri, 09 May 2014 17:06:40 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Vegard Nossum <vegard.nossum@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Vegard Nossum <vegard.nossum@gmail.com>
-CC: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Xishi Qiu <qiuxishi@huawei.com>
-Subject: kmemcheck: got WARNING when dynamicly adjust /proc/sys/kernel/kmemcheck
- to 0/1
-Content-Type: text/plain; charset="ISO-8859-1"
+To: ananth@in.ibm.com
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>, linuxppc-dev@lists.ozlabs.org,
+        rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFT PATCH -next ] [BUGFIX] kprobes: Fix "Failed to find blacklist"
+ error on ia64 and ppc64
+References: <536A16A6.5040709@hitachi.com> <20140507115551.22259.70581.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140508044753.GA13413@in.ibm.com> <536B18B0.9060209@hitachi.com> <20140508061658.GA2384@in.ibm.com>
+In-Reply-To: <20140508061658.GA2384@in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.179]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OS boot with kmemcheck=0, then set 1, do something, set 0, do something, set 1...
-then I got the WARNING log. Does kmemcheck support dynamicly adjust?
+(2014/05/08 15:16), Ananth N Mavinakayanahalli wrote:
+> On Thu, May 08, 2014 at 02:40:00PM +0900, Masami Hiramatsu wrote:
+>> (2014/05/08 13:47), Ananth N Mavinakayanahalli wrote:
+>>> On Wed, May 07, 2014 at 08:55:51PM +0900, Masami Hiramatsu wrote:
+>>>
+>>> ...
+>>>
+>>>> +#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
+>>>> +/*
+>>>> + * On PPC64 ABIv1 the function pointer actually points to the
+>>>> + * function's descriptor. The first entry in the descriptor is the
+>>>> + * address of the function text.
+>>>> + */
+>>>> +#define constant_function_entry(fn)	(((func_descr_t *)(fn))->entry)
+>>>> +#else
+>>>> +#define constant_function_entry(fn)	((unsigned long)(fn))
+>>>> +#endif
+>>>> +
+>>>>  #endif /* __ASSEMBLY__ */
+>>>
+>>> Hi Masami,
+>>>
+>>> You could just use ppc_function_entry() instead.
+>>
+>> No, I think ppc_function_entry() has two problems (on the latest -next kernel)
+>>
+>> At first, that is an inlined functions which is not applied in build time.
+>> Since the NOKPROBE_SYMBOL() is used outside of any functions as like as
+>> EXPORT_SYMBOL(), we can only use preprocessed macros.
+>> Next, on PPC64 ABI*v2*, ppc_function_entry() returns local function entry,
+>> which seems global function entry + 2 insns. I'm not sure about implementation
+>> of the kallsyms on PPC64 ABIv2, but I guess we need global function entry
+>> for kallsyms.
+> 
+> ABIv2 does away with function descriptors and Anton fixed up that
+> routine to handle the change (the +2 is an artefact of that).
 
-Thanks,
-Xishi Qiu
+Hmm, do you mean that the address +2 is the actual entry point?
+I'd like to know which address is same as the address shown in /proc/kallsyms.
 
-[   20.200305] igb: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: RX
-[   20.208652] ADDRCONF(NETDEV_UP): eth0: link is not ready
-[   20.216504] ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-[   22.647385] auditd (3116): /proc/3116/oom_adj is deprecated, please use /proc/3116/oom_score_adj instead.
-[   24.845214] BIOS EDD facility v0.16 2004-Jun-25, 1 devices found
-[   30.434764] eth0: no IPv6 routers present
-[  340.154608] NOHZ: local_softirq_pending 01
-[  340.154639] WARNING: kmemcheck: Caught 64-bit read from uninitialized memory (ffff88083f43a550)
-[  340.154644] c000000002000000000000000000000080ff5d0100c9ffff400ed34e0888ffff
-[  340.154667]  u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u
-[  340.154687]                                  ^
-[  340.154690]
-[  340.154694] Pid: 3, comm: ksoftirqd/0 Tainted: G         C   3.4.24-qiuxishi.19-0.1-default+ #2 Huawei Technologies Co., Ltd. Tecal RH2285 V2-24S/BC11SRSC1
-[  340.154702] RIP: 0010:[<ffffffff81217d72>]  [<ffffffff81217d72>] d_namespace_path+0x132/0x270
-[  340.154714] RSP: 0018:ffff8808515a1c88  EFLAGS: 00010202
-[  340.154718] RAX: ffff88083f43a540 RBX: ffff880852e718f3 RCX: 0000000000000001
-[  340.154721] RDX: ffff8808515a1d28 RSI: 0000000000000000 RDI: ffff881053855a60
-[  340.154725] RBP: ffff8808515a1ce8 R08: ffff8808515a1c50 R09: ffff880852e75800
-[  340.154728] R10: 00000000000156f0 R11: 0000000000000000 R12: 0000000000000001
-[  340.154731] R13: 0000000000000100 R14: ffff880852e71510 R15: ffff880852e71800
-[  340.154736] FS:  0000000000000000(0000) GS:ffff88085f600000(0000) knlGS:0000000000000000
-[  340.154740] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  340.154743] CR2: ffff880852e71570 CR3: 00000008513f2000 CR4: 00000000000407f0
-[  340.154746] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  340.154750] DR3: 0000000000000000 DR6: 00000000ffff4ff0 DR7: 0000000000000400
-[  340.154753]  [<ffffffff81217f35>] aa_path_name+0x85/0x180
-[  340.154758]  [<ffffffff812187d6>] apparmor_bprm_set_creds+0x126/0x520
-[  340.154763]  [<ffffffff811f60ae>] security_bprm_set_creds+0xe/0x10
-[  340.154771]  [<ffffffff81170d65>] prepare_binprm+0xa5/0x100
-[  340.154777]  [<ffffffff811716c2>] do_execve_common+0x232/0x430
-[  340.154781]  [<ffffffff8117194a>] do_execve+0x3a/0x40
-[  340.154785]  [<ffffffff8100abb9>] sys_execve+0x49/0x70
-[  340.154793]  [<ffffffff814764bc>] stub_execve+0x6c/0xc0
-[  340.154801]  [<ffffffffffffffff>] 0xffffffffffffffff
-[  340.154813] WARNING: kmemcheck: Caught 64-bit read from uninitialized memory (ffff88083f43a570)
-[  340.154817] 746f70000300000078a5433f0888fffff86d433f0888ffff746f700000730000
-[  340.154839]  u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u
-[  340.154858]                                  ^
-[  340.154861]
-[  340.154864] Pid: 3, comm: ksoftirqd/0 Tainted: G         C   3.4.24-qiuxishi.19-0.1-default+ #2 Huawei Technologies Co., Ltd. Tecal RH2285 V2-24S/BC11SRSC1
-[  340.154871] RIP: 0010:[<ffffffff811691f4>]  [<ffffffff811691f4>] rw_verify_area+0x24/0x100
-[  340.154880] RSP: 0018:ffff8808515a1dc8  EFLAGS: 00010202
-[  340.154883] RAX: ffff88083f43a540 RBX: 0000000000000080 RCX: 0000000000000080
-[  340.154887] RDX: ffff8808515a1e30 RSI: ffff880852e71500 RDI: 0000000000000000
-[  340.154890] RBP: ffff8808515a1de8 R08: ffff880852e73200 R09: ffff88085f004900
-[  340.154894] R10: ffff880852e72600 R11: 0000000000000000 R12: ffff880852e71500
-[  340.154897] R13: 0000000000000000 R14: ffff880852e73200 R15: 0000000000000001
-[  340.154901] FS:  0000000000000000(0000) GS:ffff88085f600000(0000) knlGS:0000000000000000
-[  340.154905] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  340.154908] CR2: ffff880852e71570 CR3: 00000008513f2000 CR4: 00000000000407f0
-[  340.154911] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  340.154914] DR3: 0000000000000000 DR6: 00000000ffff4ff0 DR7: 0000000000000400
-[  340.154917]  [<ffffffff811698f4>] vfs_read+0xa4/0x130
-[  340.154922]  [<ffffffff81170ca4>] kernel_read+0x44/0x60
-[  340.154926]  [<ffffffff81170d90>] prepare_binprm+0xd0/0x100
-[  340.154931]  [<ffffffff811716c2>] do_execve_common+0x232/0x430
-[  340.154935]  [<ffffffff8117194a>] do_execve+0x3a/0x40
-[  340.154939]  [<ffffffff8100abb9>] sys_execve+0x49/0x70
-[  340.154944]  [<ffffffff814764bc>] stub_execve+0x6c/0xc0
-[  340.154950]  [<ffffffffffffffff>] 0xffffffffffffffff
-[  340.154955] WARNING: kmemcheck: Caught 32-bit read from uninitialized memory (ffff88083f43a540)
-[  340.154959] c000000002000000000000000000000080ff5d0100c9ffff400ed34e0888ffff
-[  340.154981]  u u u u u u u u u u u u u u u u i i i i i i i i u u u u u u u u
-[  340.155000]  ^
+>> BTW, could you test this patch on the latest -next tree on PPC64 if possible?
+> 
+> I'll test it, but it may take a bit.
+
+Thanks for your help!
+
+> 
+> Ananth
+> 
+> 
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
