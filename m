@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208AbaEII7v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 04:59:51 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:54900 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752187AbaEII7s (ORCPT
+	id S1753542AbaEIJGs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 05:06:48 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:39659 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaEIJGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 04:59:48 -0400
-Date: Fri, 9 May 2014 09:59:41 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Chen-Yu Tsai <wens@csie.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [PATCH v2 3/7] mfd: add support for sun6i PRCM
- (Power/Reset/Clock Management) unit
-Message-ID: <20140509085941.GM5767@lee--X1>
-References: <1399483554-8824-1-git-send-email-boris.brezillon@free-electrons.com>
- <1399483554-8824-4-git-send-email-boris.brezillon@free-electrons.com>
- <20140508110205.GB5767@lee--X1>
- <536BE366.8080907@free-electrons.com>
- <20140509071246.GE5767@lee--X1>
- <536C84F6.2050701@redhat.com>
- <20140509080807.GH5767@lee--X1>
- <536C8F71.5040604@redhat.com>
- <536C91A6.6000500@free-electrons.com>
+	Fri, 9 May 2014 05:06:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <536C91A6.6000500@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <000001cf6b38$a6a3ffa0$f3ebfee0$%han@samsung.com>
+References: <20140509012454.GL2198@atomide.com>
+	<004701cf6b2d$e1a39c10$a4ead430$%han@samsung.com>
+	<20140509030925.GN2198@atomide.com>
+	<000001cf6b38$a6a3ffa0$f3ebfee0$%han@samsung.com>
+Date: Fri, 9 May 2014 11:06:45 +0200
+Message-ID: <CACRpkdZV647fx5j+a8ds_1eHffwnUijvX7qodH7LgJtYkqvvEw@mail.gmail.com>
+Subject: Re: [PATCH] backlight: gpio-backlight: Fix warning when the GPIO is
+ on a I2C chip
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Tony Lindgren <tony@atomide.com>, Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>, Bryan Wu <cooloney@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>>>>>> +static struct platform_driver sun6i_prcm_driver = {
-> >>>>>>> +	.driver = {
-> >>>>>>> +		.name = "sun6i-prcm",
-> >>>>>>> +		.owner = THIS_MODULE,
-> >>>>>>> +		.of_match_table = sun6i_prcm_dt_ids,
-> >>>>>>> +	},
-> >>>>>>> +	.probe = sun6i_prcm_probe,
-> >>>>>> You need a .remove() call-back.
-> >>>>> This driver cannot be compiled as module (see the Kconfig definition)
-> >>>>> and the devices are not hotpluggable, as a result a probed device will
-> >>>>> never be removed.
-> >>>>>
-> >>>>> Do you still want me to implement the remove function ?
-> >>>> .remove() also be run on shut down.
-> >>> That is not true, if your device needs to do anything special at shutdown
-> >>> you need to add a shutdown callback. Devices are kept as is (not torn down)
-> >>> on shutdown.
-> >> Ah okay, I'll bow to your knowledge.  So there's no reason for this
-> >> driver to ever call mfd_remove_devices() then?
-> > No, this is an integral part of the SOC, which never gets removed in any way.
-> 
-> Lee, I'm about to send a 3rd version of this series, is it okay for you
-> if I leave the remove function unimplemented ?
+On Fri, May 9, 2014 at 5:42 AM, Jingoo Han <jg1.han@samsung.com> wrote:
 
-It is.
+> Linus Walleij,
+> Is there any reason to keep these two functions such as
+> gpiod_set_raw_value_cansleep() and gpiod_set_raw_value()?
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yes, the former can *not* be called from interrupt context,
+and thus erroneous usage can be detected with runtime checks.
+
+Yours,
+Linus Walleij
