@@ -1,159 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610AbaEIFDA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 01:03:00 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:33107 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbaEIFC6 (ORCPT
+	id S1753500AbaEIFOY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 01:14:24 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:32939 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324AbaEIFOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 01:02:58 -0400
-Message-ID: <536C6175.5000302@gmail.com>
-Date: Fri, 09 May 2014 07:02:45 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: kgene.kim@samsung.com, t.figa@samsung.com, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, ben-linux@fluff.org, arnd@arndb.de,
-        olof@lixom.net, marc.zyngier@arm.com, thomas.abraham@linaro.org,
-        kyungmin.park@samsung.com, inki.dae@samsung.com,
-        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
-        chanho61.park@samsung.com, sajjan.linux@gmail.com,
-        tushar.behera@linaro.org, sachin.kamat@linaro.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCHv4 7/7] ARM: dts: Add device tree sources for Exynos3250
-References: <1398388572-30239-1-git-send-email-cw00.choi@samsung.com> <1398388572-30239-8-git-send-email-cw00.choi@samsung.com> <535B0324.50705@gmail.com> <536C2A1C.6030807@samsung.com>
-In-Reply-To: <536C2A1C.6030807@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 9 May 2014 01:14:22 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
+        Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>,
+        Irina Tirdea <irina.tirdea@intel.com>
+Subject: [PATCH v6 2/2] perf tools: Get rid of on_exit() feature test
+Date: Fri,  9 May 2014 14:14:18 +0900
+Message-Id: <1399612458-18758-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1399612458-18758-1-git-send-email-namhyung@kernel.org>
+References: <1399612458-18758-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chanwoo,
+The on_exit() function was only used in perf record but it's gone in
+previous patch.
 
-On 09.05.2014 03:06, Chanwoo Choi wrote:
-> On 04/26/2014 09:51 AM, Tomasz Figa wrote:
->> On 25.04.2014 03:16, Chanwoo Choi wrote:
+Acked-by: Stephane Eranian <eranian@google.com>
+Cc: Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>
+Cc: Irina Tirdea <irina.tirdea@intel.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-record.c                     | 31 -------------------------
+ tools/perf/config/Makefile                      |  8 -------
+ tools/perf/config/feature-checks/Makefile       |  4 ----
+ tools/perf/config/feature-checks/test-all.c     |  5 ----
+ tools/perf/config/feature-checks/test-on-exit.c | 16 -------------
+ 5 files changed, 64 deletions(-)
+ delete mode 100644 tools/perf/config/feature-checks/test-on-exit.c
 
-[snip]
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index a4d6437570b5..0646efd26257 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -30,37 +30,6 @@
+ #include <sched.h>
+ #include <sys/mman.h>
+ 
+-#ifndef HAVE_ON_EXIT_SUPPORT
+-#ifndef ATEXIT_MAX
+-#define ATEXIT_MAX 32
+-#endif
+-static int __on_exit_count = 0;
+-typedef void (*on_exit_func_t) (int, void *);
+-static on_exit_func_t __on_exit_funcs[ATEXIT_MAX];
+-static void *__on_exit_args[ATEXIT_MAX];
+-static int __exitcode = 0;
+-static void __handle_on_exit_funcs(void);
+-static int on_exit(on_exit_func_t function, void *arg);
+-#define exit(x) (exit)(__exitcode = (x))
+-
+-static int on_exit(on_exit_func_t function, void *arg)
+-{
+-	if (__on_exit_count == ATEXIT_MAX)
+-		return -ENOMEM;
+-	else if (__on_exit_count == 0)
+-		atexit(__handle_on_exit_funcs);
+-	__on_exit_funcs[__on_exit_count] = function;
+-	__on_exit_args[__on_exit_count++] = arg;
+-	return 0;
+-}
+-
+-static void __handle_on_exit_funcs(void)
+-{
+-	int i;
+-	for (i = 0; i < __on_exit_count; i++)
+-		__on_exit_funcs[i] (__exitcode, __on_exit_args[i]);
+-}
+-#endif
+ 
+ struct record {
+ 	struct perf_tool	tool;
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 150c84c7416d..f2edc593a7a7 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -174,7 +174,6 @@ CORE_FEATURE_TESTS =			\
+ 	libpython-version		\
+ 	libslang			\
+ 	libunwind			\
+-	on-exit				\
+ 	stackprotector-all		\
+ 	timerfd				\
+ 	libdw-dwarf-unwind
+@@ -200,7 +199,6 @@ VF_FEATURE_TESTS =			\
+ 	libelf-getphdrnum		\
+ 	libelf-mmap			\
+ 	libpython-version		\
+-	on-exit				\
+ 	stackprotector-all		\
+ 	timerfd				\
+ 	libunwind-debug-frame		\
+@@ -571,12 +569,6 @@ ifneq ($(filter -lbfd,$(EXTLIBS)),)
+   CFLAGS += -DHAVE_LIBBFD_SUPPORT
+ endif
+ 
+-ifndef NO_ON_EXIT
+-  ifeq ($(feature-on-exit), 1)
+-    CFLAGS += -DHAVE_ON_EXIT_SUPPORT
+-  endif
+-endif
+-
+ ifndef NO_BACKTRACE
+   ifeq ($(feature-backtrace), 1)
+     CFLAGS += -DHAVE_BACKTRACE_SUPPORT
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 2da103c53f89..64c84e5f0514 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -24,7 +24,6 @@ FILES=					\
+ 	test-libslang.bin		\
+ 	test-libunwind.bin		\
+ 	test-libunwind-debug-frame.bin	\
+-	test-on-exit.bin		\
+ 	test-stackprotector-all.bin	\
+ 	test-timerfd.bin		\
+ 	test-libdw-dwarf-unwind.bin
+@@ -133,9 +132,6 @@ test-liberty-z.bin:
+ test-cplus-demangle.bin:
+ 	$(BUILD) -liberty
+ 
+-test-on-exit.bin:
+-	$(BUILD)
+-
+ test-backtrace.bin:
+ 	$(BUILD)
+ 
+diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
+index fc37eb3ca17b..fe5c1e5c952f 100644
+--- a/tools/perf/config/feature-checks/test-all.c
++++ b/tools/perf/config/feature-checks/test-all.c
+@@ -69,10 +69,6 @@
+ # include "test-libbfd.c"
+ #undef main
+ 
+-#define main main_test_on_exit
+-# include "test-on-exit.c"
+-#undef main
+-
+ #define main main_test_backtrace
+ # include "test-backtrace.c"
+ #undef main
+@@ -110,7 +106,6 @@ int main(int argc, char *argv[])
+ 	main_test_gtk2(argc, argv);
+ 	main_test_gtk2_infobar(argc, argv);
+ 	main_test_libbfd();
+-	main_test_on_exit();
+ 	main_test_backtrace();
+ 	main_test_libnuma();
+ 	main_test_timerfd();
+diff --git a/tools/perf/config/feature-checks/test-on-exit.c b/tools/perf/config/feature-checks/test-on-exit.c
+deleted file mode 100644
+index 8e88b16e6ded..000000000000
+--- a/tools/perf/config/feature-checks/test-on-exit.c
++++ /dev/null
+@@ -1,16 +0,0 @@
+-#include <stdio.h>
+-#include <stdlib.h>
+-
+-static void exit_fn(int status, void *__data)
+-{
+-	printf("exit status: %d, data: %d\n", status, *(int *)__data);
+-}
+-
+-static int data = 123;
+-
+-int main(void)
+-{
+-	on_exit(exit_fn, &data);
+-
+-	return 321;
+-}
+-- 
+1.9.2
 
->>> +    cpus {
->>> +        #address-cells = <1>;
->>> +        #size-cells = <0>;
->>> +
->>> +        cpu@0 {
->>> +            device_type = "cpu";
->>> +            compatible = "arm,cortex-a7";
->>> +            reg = <0>;
->>> +            clock-frequency = <1000000000>;
->>> +        };
->>
->> Why only one CPU? I believe Exynos3250 is dual core.
->
-> I'll add cpu1 information.
->
->> Also are physical IDs of the cores really 0 and 1? On Exynos4210 for example they are 0x900 and 0x901, while on Exynos4212 they are 0xa00 and 0xa01. Please check this.
->
-> The 'reg' property means only hardware id(hwid) of CPU.
-> You can check it on arm_dt_init_cpu_maps() in arch/arm/kernel/devtree.c.h.
-> or Documentation/devicetree/bindings/arm/cpus.txt.
->
-
-Well, as described in Documentation/devicetree/bindings/arm/cpus.txt, on 
-32-bit ARM v7 or later CPUs the "reg" property should be equal to the 
-lower 24-bits of MPIDR value of given CPU, which in addition to core ID 
-includes also cluster ID, which can be non-zero, even on single cluster 
-SoCs (like it is on Exynos4210 and 4x12).
-
->>> +    };
->>> +
->>> +    fixed-rate-clocks {
->>> +        compatible = "simple-bus";
->>> +        #address-cells = <1>;
->>> +        #size-cells = <0>;
-
-[snip]
-
->>> +    cmu: clock-controller@10030000 {
->>> +        compatible = "samsung,exynos3250-cmu";
->>> +        reg = <0x10030000 0x20000>;
->>> +        #clock-cells = <1>;
->>> +    };
->>> +
->>> +    rtc@10070000 {
->>
->> Please add label to the node, so it can be referenced from board dts files added later (using the method I explained above).
->
-> OK, I'll add lable as following:
->
-> 	rtc_0: rtc@10070000 {
-
-There is no need to suffix the RTC with _0, as there is just one RTC in 
-the SoC. So in this case rtc: rtc@10070000 will be enough.
-
->
->>
->>> +        compatible = "samsung,s3c6410-rtc";
->>> +        reg = <0x10070000 0x100>;
->>> +        interrupts = <0 73 0>, <0 74 0>;
->>> +        status = "disabled";
->>> +    };
-
-[snip]
-
->>> +    adc: adc@126C0000 {
->>> +        compatible = "samsung,exynos-adc-v3";
->>> +        reg = <0x126C0000 0x100>, <0x10020718 0x4>;
->>> +        interrupts = <0 137 0>;
->>> +        clock-names = "adc", "sclk_tsadc";
->>> +        clocks = <&cmu CLK_TSADC>, <&cmu CLK_SCLK_TSADC>;
->>> +        #io-channel-cells = <1>;
->>> +        io-channel-ranges;
->>> +        status = "disabled";
->>> +    };
->>> +
->>> +    serial@13800000 {
->>
->> Please add label.
->
-> OK, I'll add lable as following:
->
-> 	serial_0: serial@13800000 {
->
-
-OK. In this case there are multiple instances of serial controller 
-available so the _0 suffix is fine.
-
->>
->>> +        compatible = "samsung,exynos4210-uart";
->>> +        reg = <0x13800000 0x100>;
->>> +        interrupts = <0 109 0>;
->>> +        clocks = <&cmu CLK_UART0>, <&cmu CLK_SCLK_UART0>;
->>> +        clock-names = "uart", "clk_uart_baud0";
->>> +        status = "disabled";
->>> +    };
->>> +
->>> +    serial@13810000 {
->
-> OK, I'll add lable as following:
->
-> 	serial_1: serial@13800000 {
->
-
-OK.
-
->
-> Thanks for your review.
-
-You're welcome. Thanks for addressing my comments.
-
-Best regards,
-Tomasz
