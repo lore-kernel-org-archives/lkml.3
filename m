@@ -1,90 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756234AbaEINhF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 09:37:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8019 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754925AbaEINhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 09:37:01 -0400
-Date: Fri, 9 May 2014 09:36:16 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>, ak@linux.intel.com,
-        gong.chen@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, andi@firstfloor.org
-Subject: Re: [PATCH 1/5] x86, nmi:  Add new nmi type 'external'
-Message-ID: <20140509133616.GD39568@redhat.com>
-References: <1399476883-98970-1-git-send-email-dzickus@redhat.com>
- <1399476883-98970-2-git-send-email-dzickus@redhat.com>
- <20140507153854.GA14926@gmail.com>
- <20140507160251.GQ39568@redhat.com>
- <20140507162746.GA15779@gmail.com>
- <20140508163333.GZ39568@redhat.com>
- <20140508173501.GA9838@gmail.com>
- <20140508175247.GA39568@redhat.com>
- <20140509071050.GA19751@gmail.com>
+	id S1756492AbaEINhc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 09:37:32 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:53304 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754913AbaEINh2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 09:37:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140509071050.GA19751@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [217.156.156.35]
+In-Reply-To: <20140411135218.478299389@infradead.org>
+References: <20140411134243.160989490@infradead.org>
+	<20140411135218.478299389@infradead.org>
+Date: Fri, 9 May 2014 14:37:27 +0100
+X-Google-Sender-Auth: J6hRi2xy0wh3YzXouIoWuKHy2XU
+Message-ID: <CAAG0J9_q1KsUx10-XAb7AJnxv2ehctg6q1KME7ahsk1OZV8vZQ@mail.gmail.com>
+Subject: Re: [RFC][PATCH 6/8] sched,idle: Avoid spurious wakeup IPIs
+From: James Hogan <james.hogan@imgtec.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        luto@amacapital.net, nicolas.pitre@linaro.org,
+        daniel.lezcano@linaro.org, umgwanakikbuti@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 09:10:50AM +0200, Ingo Molnar wrote:
-> 
-> * Don Zickus <dzickus@redhat.com> wrote:
-> 
-> > On Thu, May 08, 2014 at 07:35:01PM +0200, Ingo Molnar wrote:
-> > > 
-> > > * Don Zickus <dzickus@redhat.com> wrote:
-> > > 
-> > > > > > Again, I don't have a solution to juggle between PMI performance 
-> > > > > > and reliable delivery.  We could do away with the spinlocks and 
-> > > > > > go back to single cpu delivery (like it used to be).  Then 
-> > > > > > devise a mechanism to switch delivery to another cpu upon 
-> > > > > > hotplug.
-> > > > > > 
-> > > > > > Thoughts?
-> > > > > 
-> > > > > I'd say we should do a delayed timer that makes sure that all 
-> > > > > possible handlers are polled after an NMI is triggered, but never 
-> > > > > at a high rate.
-> > > > 
-> > > > Hmm, I was thinking about it and wanted to avoid a poll as I hear 
-> > > > complaints here and there about the nmi_watchdog constantly wasting 
-> > > > power cycles with its polling.
-> > > 
-> > > But the polling would only happen if there's NMI traffic, so that's 
-> > > fine. So as long as polling stops some time after the last PMI use, 
-> > > it's a good solution.
-> > 
-> > So you are thinking an NMI comes in, kicks off a delayed timer for 
-> > say 10ms.  The timer fires, rechecks the NMI for missed events and 
-> > then stops? If another NMI happens before the timer fires, just kick 
-> > the timer again?
-> > 
-> > Something like that?
-> 
-> Yeah, exactly, using delayed IRQ work for that or so.
-> 
-> This would allow us to 'optimistic' processing of NMI events: the 
-> first handler that manages to do any work causes a return. No need to 
-> make a per handler distinction, etc.
-> 
-> It would generally be pretty robust and would possibly be a natural 
-> workaround for 'stuck PMU' type of bugs as well.
+Hi Peter,
 
-Agreed.  I'll try to hack something up for that.
+On 11 April 2014 14:42, Peter Zijlstra <peterz@infradead.org> wrote:
+> Because mwait_idle_with_hints() gets called from !idle context it must
+> call current_clr_polling(). This however means that resched_task() is
+> very likely to send an IPI even when we were polling:
+>
+>   CPU0                                  CPU1
+>
+>   if (current_set_polling_and_test())
+>     goto out;
+>
+>   __monitor(&ti->flags);
+>   if (!need_resched())
+>     __mwait(eax, ecx);
+>                                         set_tsk_need_resched(p);
+>                                         smp_mb();
+> out:
+>   current_clr_polling();
+>                                         if (!tsk_is_polling(p))
+>                                           smp_send_reschedule(cpu);
+>
+>
+> So while it is correct (extra IPIs aren't a problem, whereas a missed
+> IPI would be) it is a performance problem (for some).
+>
+> Avoid this issue by using fetch_or() to atomically set NEED_RESCHED
+> and test if POLLING_NRFLAG is set.
+>
+> Since a CPU stuck in mwait is unlikely to modify the flags word,
+> contention on the cmpxchg is unlikely and thus we should mostly
+> succeed in a single go.
+>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Andy Lutomirski <luto@amacapital.net>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  kernel/sched/core.c |   41 ++++++++++++++++++++++++++++++++++++-----
+>  1 file changed, 36 insertions(+), 5 deletions(-)
+>
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -505,6 +505,39 @@ static inline void init_hrtick(void)
+>  #endif /* CONFIG_SCHED_HRTICK */
+>
+>  /*
+> + * cmpxchg based fetch_or, macro so it works for different integer types
+> + */
+> +#define fetch_or(ptr, val)                                             \
+> +({     typeof(*(ptr)) __old, __val = *(ptr);                           \
+> +       for (;;) {                                                      \
+> +               __old = cmpxchg((ptr), __val, __val | (val));           \
+> +               if (__old == __val)                                     \
+> +                       break;                                          \
+> +               __val = __old;                                          \
+> +       }                                                               \
+> +       __old;                                                          \
+> +})
+> +
+> +#ifdef TIF_POLLING_NRFLAG
+> +/*
+> + * Atomically set TIF_NEED_RESCHED and test for TIF_POLLING_NRFLAG,
+> + * this avoids any races wrt polling state changes and thereby avoids
+> + * spurious IPIs.
+> + */
+> +static bool set_nr_and_not_polling(struct task_struct *p)
+> +{
+> +       struct thread_info *ti = task_thread_info(p);
+> +       return !(fetch_or(&ti->flags, _TIF_NEED_RESCHED) & _TIF_POLLING_NRFLAG);
 
-> 
-> [ As long as it does not result in spurious 'dazed and confused' 
->   messages :-) ]
+This breaks the build on metag, and I suspect arm64 too:
 
-Hehe. 
+kernel/sched/core.c In function ‘set_nr_and_not_polling’:
+kernel/sched/core.c +531 : error: ‘_TIF_POLLING_NRFLAG’ undeclared
 
-Cheers,
-Don
+since metag/arm64 define TIF_POLLING_NRFLAG but not
+_TIF_POLLING_NRFLAG. Could you please fix that prior to your patch to
+avoid breaking bisection?
+
+BTW what is it that determines whether an arch needs TIF_POLLING_NRFLAG?
+
+Thanks
+James
+
+
+> +}
+> +#else
+> +static bool set_nr_and_not_polling(struct task_struct *p)
+> +{
+> +       set_tsk_need_resched(p);
+> +       return true;
+> +}
+> +#endif
+> +
+> +/*
+>   * resched_task - mark a task 'to be rescheduled now'.
+>   *
+>   * On UP this means the setting of the need_resched flag, on SMP it
+> @@ -520,17 +553,15 @@ void resched_task(struct task_struct *p)
+>         if (test_tsk_need_resched(p))
+>                 return;
+>
+> -       set_tsk_need_resched(p);
+> -
+>         cpu = task_cpu(p);
+> +
+>         if (cpu == smp_processor_id()) {
+> +               set_tsk_need_resched(p);
+>                 set_preempt_need_resched();
+>                 return;
+>         }
+>
+> -       /* NEED_RESCHED must be visible before we test polling */
+> -       smp_mb();
+> -       if (!tsk_is_polling(p))
+> +       if (set_nr_and_not_polling(p))
+>                 smp_send_reschedule(cpu);
+>  }
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
