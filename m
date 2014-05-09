@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163AbaEIH6B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 03:58:01 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:15624 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376AbaEIH57 (ORCPT
+	id S1755497AbaEIH7W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 03:59:22 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:40916 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376AbaEIH7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 03:57:59 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 09 May 2014 00:53:16 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Ben Skeggs <bskeggs@redhat.com>
-CC: Thierry Reding <thierry.reding@gmail.com>, <nouveau@lists.freedesktop.org>,
-        <dri-devel@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <gnurou@gmail.com>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH] drm/gk20a/fb: fix NULL dereference
-Date: Fri, 9 May 2014 16:57:48 +0900
-Message-ID: <1399622268-16940-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.9.2
-X-NVConfidentiality: public
+	Fri, 9 May 2014 03:59:21 -0400
+Date: Fri, 9 May 2014 10:59:05 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        nandu.hgowda@gmail.com, sachin.kamat@linaro.org,
+        peter.p.waskiewicz.jr@intel.com, linux-kernel@vger.kernel.org,
+        himangi774@gmail.com, fempsci@gmail.com
+Subject: Re: [PATCH 1/3] staging: cxt1e1: Fix no spaces at the start of a
+ line in musycc.c
+Message-ID: <20140509075904.GJ26890@mwanda>
+References: <20140509013843.GA30927@devel.8.8.4.4>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140509013843.GA30927@devel.8.8.4.4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gk20a_ram_put() can be called with a NULL nouveau_mem in case of error.
-Handle that case the way is it done in other RAM drivers.
+On Fri, May 09, 2014 at 10:38:43AM +0900, Daeseok Youn wrote:
+> clean up checkpatch.pl warning:
+>  WARNING: please no spaces at the start of a line in
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+> This patch includes cleanup for fixing line length.
+> 
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c | 2 ++
- 1 file changed, 2 insertions(+)
+This patch is super hard to review.  Your "line length" fixes include
+moving variable declarations around, deleting comments, getting rid of
+nonsense curly braces.  Those are all great but the patch is over a
+thousand lines long and it's difficult to review.
 
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c b/drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c
-index 403c88f07b99..7effd1a63458 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c
-@@ -36,6 +36,8 @@ gk20a_ram_put(struct nouveau_fb *pfb, struct nouveau_mem **pmem)
- 	int i;
- 
- 	*pmem = NULL;
-+	if (unlikely(mem == NULL))
-+		return;
- 
- 	for (i = 0; i < mem->size; i++) {
- 		struct page *page;
--- 
-1.9.2
+If you just change spaces to tabs, that takes me 5 seconds to review
+because I have scripts and email macros to do that.
+
+If you just delete the #if 0 blocks that also is easy to review in a
+single patch.
+
+Just delete all the code that depends on #ifdef RLD_DUMP_BUFDATA because
+that stuff is never set.
+
+Please break this up into smaller patches and also write a better
+changelog.
+
+regards,
+dan carpenter
 
