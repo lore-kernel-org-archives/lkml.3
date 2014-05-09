@@ -1,79 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756261AbaEIJLj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 05:11:39 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57502 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505AbaEIJLh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 05:11:37 -0400
-Date: Fri, 9 May 2014 11:11:31 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: James Hogan <james.hogan@imgtec.com>, linux-metag@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] metag: fix memory barriers
-Message-ID: <20140509091131.GL30445@twins.programming.kicks-ass.net>
-References: <alpine.LRH.2.02.1405081546110.4346@file01.intranet.prod.int.rdu2.redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2vfFyZRy2guiefOI"
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1405081546110.4346@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1756279AbaEIJMG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 05:12:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40824 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752316AbaEIJMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 05:12:03 -0400
+From: Petr Mladek <pmladek@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Dave Anderson <anderson@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Kay Sievers <kay@vrfy.org>, Jiri Kosina <jkosina@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
+        linux-kernel@vger.kernel.org, Petr Mladek <pmladek@suse.cz>
+Subject: [RFC PATCH 00/11] printk: safe printing in NMI context
+Date: Fri,  9 May 2014 11:10:54 +0200
+Message-Id: <1399626665-29817-1-git-send-email-pmladek@suse.cz>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+printk() cannot be used safely in NMI context because it uses internal locks
+and thus could cause a deadlock. Unfortunately there are circumstances when
+calling printk from NMI is very useful. For example, all WARN.*(in_nmi())
+would be much more helpful if they didn't lockup the machine.
 
---2vfFyZRy2guiefOI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Another example would be arch_trigger_all_cpu_backtrace for x86 which uses NMI
+to dump traces on all CPU (either triggered by sysrq+l or from RCU stall
+detector).
 
-On Thu, May 08, 2014 at 03:51:37PM -0400, Mikulas Patocka wrote:
-> Volatile access doesn't really imply the compiler barrier. Volatile access
-> is only ordered with respect to other volatile accesses, it isn't ordered
-> with respect to general memory accesses. Gcc may reorder memory accesses
-> around volatile access, as we can see in this simple example (if we
-> compile it with optimization, both increments of *b will be collapsed to
-> just one):
->=20
-> void fn(volatile int *a, long *b)
-> {
-> 	(*b)++;
-> 	*a =3D 10;
-> 	(*b)++;
-> }
->=20
-> Consequently, we need the compiler barrier after a write to the volatile
-> variable, to make sure that the compiler doesn't reorder the volatile
-> write with something else.
->=20
-> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-> Cc: stable@vger.kernel.org
+This patch set solves the problem by using trylock rather than spin_lock.
+If the lock can not be taken, it uses NMI specific buffers to temporary
+store the message.
 
-Acked-by: Peter Zijlstra <peterz@infradead.org>
+Patches 1-5 are preparation steps to be able to handle more ring buffers
+using the same functions.
 
---2vfFyZRy2guiefOI
-Content-Type: application/pgp-signature
+Patch 6 adds the main logic to handle the NMI messages a safe way.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Patches 7-11 improve various aspects of the NMI messages handling.
 
-iQIcBAEBAgAGBQJTbJvDAAoJEHZH4aRLwOS66z8P/1wA4CXNZYZ4jD9uefHpJaLe
-VTsH/VvL6SV48oiBzK81GqaA5mY8wUPoGWvkiEBZJ9acpLREItRDcSNXsyhve/Y8
-tuNLJT+WwlOeLrRxGOn//XRKK7TVTfl9ZYFrGhNe/b2hCvHZFmJ0swTOJ9f21cfN
-w3ljsyrCEVK2C4Va0VvxrG1otvCBzqVkgBiR8nP3vh7Rd+dXvBbc03mTMrsdyxd7
-b/Ns7TT/XcD736qEGJW+kjpFUcaby6alcvTs/xUFJjKEjrqYVv4b7kJKp1vEBsZ7
-3BhCZxPRGtyDxNOxypfTzh57lbS09ExN46Ny6EfWu4jmbiVQoyNx8T5bxB3RiBpj
-rvhuOaYe1V+6mBGBSMoHM9DcAbS4fDsvp48nDaZStcxdbtOVnbc7orOsyYQEOAlz
-BNsTGANGIT6zpDnbMG7BBRTuAYa0KtdWVOXbXAYjntwezHprshkG6WS60zCBXTob
-7ae492l6p+zFifHCiC2JyiTs3bCTohc3o3nLuaY5sBE1g7ToppcMBUdkfPhz/BGL
-I9PHA2If3+5cvGvi1uXD+B9aOT+z6YmNTLAzsdPkxyScyEPjdEwjovxwNNnQ/1rc
-OW6bPRl0PbpZdCnxGryueGLIEGvljPdGgrvehfPz+7G1dmNrqJn+mcfPepoZUk0E
-cG5AMZDmTqAVgfmDatG4
-=dBHj
------END PGP SIGNATURE-----
+It was a long way until I got stable working solution that would fulfill
+the most important needs:
 
---2vfFyZRy2guiefOI--
+    + do not lock up the machine
+    + prefer last messages if logging is too slow
+    + pass the messages to the console as soon as possible
+    + keep the order of messages, especially parts of continuous lines
+    + reduce interlacing messages from normal and NMI context
+
+The current solution works pretty well. There are still some corner cases
+where the continuous messages are split. I still want to look at it but
+I do not want to hide the work any longer. I look forward to hear your
+opinion and hints.
+
+Note that the first two patches modifies API that is used by some external
+tools, e.g. crash, makedumpfile. The tools would need to get updated.
+The API was changed to make the solution cleaner.
+
+I added Paul E. McKenney into CC because there are used memory barriers
+in the 6th patch.
+
+
+The patch set is based on kernel-next. The last commit is a42b108e06bb28348
+(Add linux-next specific files for 20140507).
+
+It can be applied also on the Linus' tree if you apply the recent
+patches that touch kernel/printk/printk.c
+
+Petr Mladek (11):
+  printk: rename struct printk_log to printk_msg
+  printk: allow to handle more log buffers
+  printk: rename "logbuf_lock" to "main_logbuf_lock"
+  printk: add NMI ring and cont buffers
+  printk: allow to modify NMI log buffer size using boot parameter
+  printk: NMI safe printk
+  printk: right ordering of the cont buffers from NMI context
+  printk: try hard to print Oops message in NMI context
+  printk: merge and flush NMI buffer predictably via IRQ work
+  printk: survive rotation of sequence numbers
+  printk: avoid staling when merging NMI log buffer
+
+ Documentation/kernel-parameters.txt |   19 +-
+ kernel/printk/printk.c              | 1218 +++++++++++++++++++++++++----------
+ 2 files changed, 878 insertions(+), 359 deletions(-)
+
+-- 
+1.8.4
