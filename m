@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220AbaEIRIr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 13:08:47 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:61138 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756553AbaEIRIp (ORCPT
+	id S1757258AbaEIRKj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 13:10:39 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:40240 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757231AbaEIRKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 13:08:45 -0400
-Message-ID: <536D0B9B.8070906@mvista.com>
-Date: Fri, 09 May 2014 12:08:43 -0500
-From: Corey Minyard <cminyard@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 9 May 2014 13:10:35 -0400
+Date: Fri, 9 May 2014 18:09:46 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: James Hogan <james.hogan@imgtec.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "luto@amacapital.net" <luto@amacapital.net>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "umgwanakikbuti@gmail.com" <umgwanakikbuti@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Will Deacon <Will.Deacon@arm.com>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC][PATCH 6/8] sched,idle: Avoid spurious wakeup IPIs
+Message-ID: <20140509170946.GN7950@arm.com>
+References: <20140411134243.160989490@infradead.org>
+ <20140411135218.478299389@infradead.org>
+ <CAAG0J9_q1KsUx10-XAb7AJnxv2ehctg6q1KME7ahsk1OZV8vZQ@mail.gmail.com>
+ <20140509141520.GV2844@laptop.programming.kicks-ass.net>
+ <20140509144034.GF7950@arm.com>
+ <20140509145002.GW2844@laptop.programming.kicks-ass.net>
+ <20140509145745.GI7950@arm.com>
+ <20140509170234.GZ30445@twins.programming.kicks-ass.net>
+ <20140509170649.GG13658@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>, minyard@acm.org
-CC: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ftrace: Simplify ring buffer resizing, make work with
- RT
-References: <1399579402-27034-1-git-send-email-minyard@acm.org> <20140509131244.GF29014@linutronix.de>
-In-Reply-To: <20140509131244.GF29014@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140509170649.GG13658@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2014 08:12 AM, Sebastian Andrzej Siewior wrote:
-> * minyard@acm.org | 2014-05-08 15:03:22 [-0500]:
->
->> This isn't well tested, but fixes an obvious PREEMPT_RT problem and seems
->> like a good simplification.  You can see the PREEMPT_RT bug if you enable
->> ftrace and all the self tests; it will fail running selftests when it tries
->> to resize the buffers.
-> I posted http://marc.info/?l=linux-rt-users&m=139962823022896&w=2 before
-> I noticed this one. You seem not to touch the second hunk.
->
-> Sebastian
-That's a good solution, too.  I didn't notice the second hunk in my testing.
+On Fri, May 09, 2014 at 06:06:49PM +0100, Peter Zijlstra wrote:
+> Subject: arm64: Remove TIF_POLLING_NRFLAG
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Fri May  9 19:04:00 CEST 2014
+> 
+> The only idle method for arm64 is WFI and it therefore
+> unconditionally requires the reschedule interrupt when idle.
+> 
+> Suggested-by: Catalin Marinas <catalin.marinas@arm.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 
-Thanks,
+There's a tag with my name already but just in case you need another:
 
--corey
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+
+Thanks.
