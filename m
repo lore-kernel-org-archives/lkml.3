@@ -1,86 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645AbaEIJTv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 05:19:51 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:42014 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751978AbaEIJTu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 05:19:50 -0400
-Date: Fri, 9 May 2014 10:18:24 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Will Deacon <will.deacon@arm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        David Riley <davidriley@chromium.org>,
-        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP
-	systems#
-Message-ID: <20140509091824.GL3693@n2100.arm.linux.org.uk>
-References: <1399504982-31181-1-git-send-email-dianders@chromium.org> <CAOh2x=kwaoSdj8JO0Vo08Y0dX2UfKFiF3pBV-qtp-YTyN=8H8Q@mail.gmail.com> <CAD=FV=UEGJGHrdcXgs3EZ_wFXT8GnNeCOMt7CgdiiUzBzZ5Y0A@mail.gmail.com> <alpine.LFD.2.11.1405081149190.980@knanqh.ubzr> <CAD=FV=VtcLOh51LCmafzRMdqtDrwKXCqK6gE6V7OOOUe4gjwbA@mail.gmail.com> <alpine.LFD.2.11.1405081329010.980@knanqh.ubzr> <20140508192209.GH3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405081600260.980@knanqh.ubzr> <20140508205223.GI3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405082058130.980@knanqh.ubzr>
+	id S1756107AbaEIJWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 05:22:13 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48769 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752431AbaEIJWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 05:22:11 -0400
+Message-ID: <536C9E32.5040308@ti.com>
+Date: Fri, 9 May 2014 12:21:54 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1405082058130.980@knanqh.ubzr>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: <sonika.jindal@intel.com>
+CC: David Airlie <airlied@linux.ie>, Dave Airlie <airlied@redhat.com>,
+        Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Archit Taneja <archit@ti.com>,
+        <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?VmlsbGUgU3lyasOkbMOk?= <ville.syrjala@linux.intel.com>
+Subject: Re: [PATCH 01/12] drm: Move DRM_ROTATE bits out of omapdrm into drm_crtc.h
+References: <1399622493-31701-1-git-send-email-sonika.jindal@intel.com> <1399622493-31701-2-git-send-email-sonika.jindal@intel.com>
+In-Reply-To: <1399622493-31701-2-git-send-email-sonika.jindal@intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="oemToEPslohj4MTutTkpHX6nlhXppLO9n"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 09:37:15PM -0400, Nicolas Pitre wrote:
-> On Thu, 8 May 2014, Russell King - ARM Linux wrote:
-> 
-> > If you're in a preempt or SMP environment, provide a timer for udelay().
-> > IF you're in an environment with IRQs which can take a long time, use
-> > a timer for udelay().  If you're in an environment where the CPU clock
-> > can change unexpectedly, use a timer for udelay().
-> 
-> Longer delays are normally not a problem.  If they are, then simply 
-> disabling IRQs may solve it if absolutely required.  With much shorter 
-> delays than expected this is another story.
-> 
-> What about the following:
-> 
-> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-> index 7c4fada440..10030cc5a0 100644
-> --- a/arch/arm/kernel/smp.c
-> +++ b/arch/arm/kernel/smp.c
-> @@ -682,6 +682,15 @@ static int cpufreq_callback(struct notifier_block *nb,
->  			cpufreq_scale(per_cpu(l_p_j_ref, cpu),
->  					per_cpu(l_p_j_ref_freq, cpu),
->  					freq->new);
-> +		/*
-> +		 * Another CPU might have called udelay() just before LPJ
-> +		 * and a shared CPU clock is increased.  That other CPU still
-> +		 * looping on the old LPJ value would return significantly
-> +		 * sooner than expected.  The actual fix is to provide a
-> +		 * timer based udelay() implementation instead.
-> +		 */
-> +		if (freq->old < freq->new)
-> +			pr_warn_once("*** udelay() on SMP is racy and may be much shorter than expected ***\n");
->  	}
->  	return NOTIFY_OK;
->  }
+--oemToEPslohj4MTutTkpHX6nlhXppLO9n
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-No, because you're assuming this is just a SMP problem.  What about
-preempt, where you could preempt away from a udelay loop to change
-the CPU frequency, and then back again, possibly resulting in the
-CPU clock rate increasing and maybe a shorter delay if the switch
-from-change-clock-and-back is fast enough?  Remember that udelay()
-can be used for up to 2ms delays.
+On 09/05/14 11:01, sonika.jindal@intel.com wrote:
+> From: Ville Syrj=C3=A4l=C3=A4 <ville.syrjala at linux.intel.com>
+>=20
+> The rotation property stuff should be standardized among all drivers.
+> Move the bits to drm_crtc.h from omap_drv.h.
+>=20
+> Cc: David Airlie <airlied@linux.ie>
+> Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> Cc: Dave Airlie <airlied@redhat.com>
+> Cc: Rob Clark <robdclark@gmail.com>
+> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Cc: Archit Taneja <archit@ti.com>
+> Cc: dri-devel@lists.freedesktop.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Ville Syrj=C3=A4l=C3=A4 <ville.syrjala@linux.intel.com>
+> Reviewed-by: Sagar Kamble <sagar.a.kamble@intel.com>
+> Tested-by: Sagar Kamble <sagar.a.kamble@intel.com>
+> ---
+>  drivers/gpu/drm/omapdrm/omap_drv.h |    7 -------
+>  include/drm/drm_crtc.h             |    8 ++++++++
+>  2 files changed, 8 insertions(+), 7 deletions(-)
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+
+ Tomi
+
+
+
+--oemToEPslohj4MTutTkpHX6nlhXppLO9n
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTbJ4yAAoJEPo9qoy8lh71lJwQAKWWNeMF8bdnZHi7pPwaMswD
+Pk15JXUPe5c7e3Z8OoouFlwGj0+K2w6r8DNR9MvXUATh41U+HiXIvHXk+OeV6NIH
+N6zUrY/EHB3JiQ9HtdUpkAgCIOltRqTwAGbfVrrTwYUkY5SPhN58Ex8ooshSZCev
+SkSWpgxHjSVWENU8ELNN1QZxqhNbTfmifje5PO4vT6bMzlpqbhu0VpPjiWkKMs8b
+JAwd83/4tcVvJLuP/dHvdBBqPY9jq2uqGbreVzSlnM545ZqmOmmKVR4SdI8qZunf
+R9b4cuf8z5oHSCvzS02Khtgh2onrmuSUlCHbn3pR1xNQGf94J5ug049JH+pWmEAq
+rUK5LprpAuy8G+dY53NI4e4Kaw7rQYjLPseZeC9zfNCdsJdH7FWYNQpLOg4uNcQB
+sOeOCaYIFk6WyDJDotg4SQrDHTo5D/OF/rnWZx6iW/EdQ44unO6gmx/IBFM+mG4B
+g4Khk74WHGzPV9sPLZdnRsxE/8y5ozWkDX6+CzKu/w0yhpJS62usztVKV61y03XV
+inSds43tj3y8gK0oROW6iykMmz8z/4Zq0ORopF8/es+XGvDCvFal1im35Y+40XlQ
+XCZdq39qxp5b/baTav/5qHYbARZQnuz0d5w4hsMdfgNoMVhlyLUZyYGMuu9sidsP
+oArRiKbl4X6E/4Pln1b0
+=rYhj
+-----END PGP SIGNATURE-----
+
+--oemToEPslohj4MTutTkpHX6nlhXppLO9n--
