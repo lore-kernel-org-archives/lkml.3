@@ -1,79 +1,922 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666AbaEIBGB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 21:06:01 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:45040 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753492AbaEIBF7 (ORCPT
+	id S1755879AbaEIBGm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 21:06:42 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:10548 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755727AbaEIBGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 21:05:59 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s4915H3N000491, This message is accepted by code: ctloc85258
-Message-ID: <536C2AD0.7020104@realsil.com.cn>
-Date: Fri, 9 May 2014 09:09:36 +0800
-From: micky <micky_ching@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>, Lee Jones <lee.jones@linaro.org>
-CC: Chris Ball <chris@printf.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Roger <rogerable@realtek.com>,
-        Wei WANG <wei_wang@realsil.com.cn>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH 1/2] mmc: rtsx: Revert "mmc: rtsx: modify errorhandleandremovesmatch warnings"
-References: <cover.1398735435.git.micky_ching@realsil.com.cn>	<1076b1824732688774d223a14595ecf26a375d82.1398735435.git.micky_ching@realsil.com.cn>	<CAPDyKFoZ2_H6Jh0+84zLBhayMb0=q1eJw=vC_m41iCsbz0siFw@mail.gmail.com>	<536B1B05.6010604@realsil.com.cn>	<20140508075542.GC5307@lee--X1> <CAPDyKFqU+7NoZ1JjKa2YMj2DJsuBG5jD8fEt7WdLawA-mmqOjw@mail.gmail.com>
-In-Reply-To: <CAPDyKFqU+7NoZ1JjKa2YMj2DJsuBG5jD8fEt7WdLawA-mmqOjw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [172.29.41.103]
+	Thu, 8 May 2014 21:06:39 -0400
+X-AuditID: cbfee68e-b7fd86d0000038e3-42-536c2a1d42ee
+Message-id: <536C2A1C.6030807@samsung.com>
+Date: Fri, 09 May 2014 10:06:36 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: kgene.kim@samsung.com, t.figa@samsung.com, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, ben-linux@fluff.org, arnd@arndb.de,
+        olof@lixom.net, marc.zyngier@arm.com, thomas.abraham@linaro.org,
+        kyungmin.park@samsung.com, inki.dae@samsung.com,
+        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
+        chanho61.park@samsung.com, sajjan.linux@gmail.com,
+        tushar.behera@linaro.org, sachin.kamat@linaro.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCHv4 7/7] ARM: dts: Add device tree sources for Exynos3250
+References: <1398388572-30239-1-git-send-email-cw00.choi@samsung.com>
+ <1398388572-30239-8-git-send-email-cw00.choi@samsung.com>
+ <535B0324.50705@gmail.com>
+In-reply-to: <535B0324.50705@gmail.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA5WSWUxTURCGOXctJNVLETyiaEJiTEBR2TyKC/riJcRoxJiIJljrDbIUSgsG
+	fVAji4KylshNYwARBEoVLWJAqawSUdlkNSDEBUVbVECQrWhLeeDVt+/8559/ZpIR4KIu0lEQ
+	EhHNySPE4c6UDaFZ5Rm1xcklPGBb2qQIGTObaPSILyNR5oNaDHXWuKLcxlYSpRnukGjiVzyN
+	Wr+XAJQ5lE6gvtlEEqXkdVOo5aqBRtpPPSTqfHqbQnzbcwz1dwqRcWCBQoW9HRh61TtBofTs
+	+wRK0DXSqHk+BaDPDWMk4pXfKFTG6wnUxBcApH46D9A1o45Cuiol8HViNTkawMbH3aTYudlM
+	wHampmCsUT2Cs1Wq9zRbUvSbYrXqJIod6Kmm2PKCy2zXy6skm/pYDdgJ7fojwkCb3We58JDz
+	nHzr3tM25/ofJtEyQxuIrZ57QV8BP+JAMrAWQMYT8nlNS+wA2wfLqGRgIxAxhQBWTYxhyUCw
+	aCp94mPRswF80zqOWR56ABN1esJcLWRcYEZxDWZmgtkIh+6WLuqUSa8Z6aPMbM8chyXZXUt+
+	WzitHFzkVcwmOJWVRptDcaaSgt/utSwG2TH+cDivGVi65QA4+HGENn9Ymyq+5htJM+PMZliT
+	cIuy8AZYrhnFLfuUWcOExLWWiRg4pawnLOs4QW3tkmUNrCvuI9KBg2rZTKplqaplqXkAVwN7
+	TiaRKc4Ey93dFGKpIiYi2E0SKdUC00W9XviSWgne1frUA4mpZQbuaC+JNF1cRHTQdg9vd+Tl
+	6eXhvmOn9//JzquF+R/OHBUxweJoLozjZJw8SB4TzinqASawdrwCAqWKLN+LuRV+rG66u6Ml
+	dn9saKgh7tjlFTd6eezgBV56WFAhzKnwG/xxvflsUZ2daxAtcTj1d5SPcqq1i4ZRGiv9pEHZ
+	LbVqmikICMvx+TPNvt8XV2HLZ5+Y0a6siyzcM+//U7+7eJ1M1IC3B8JA1fDbZ0O72oMPHLp0
+	MmR8hzOhOCfe7oLLFeJ/DnN5J2cDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEJsWRmVeSWpSXmKPExsVy+t9jQV1ZrZxggyePGS3+TjrGbrFxxnpW
+	i0nrDjBZXN6vbTH/yDlWi/43C1ktPn9oYbc492olo8Wk+xNYLG78amO16F1wlc3ibNMbdotN
+	j6+xWlzeNYfNYsb5fUwWty/zWvy984/NYun1i0wWp65/ZrOYMH0ti0Xr3iPsFif/9DJaPDn8
+	kdVixuSXbBbrZ7xmsTg2Ywmjxapdfxgt2v/uZbPYu3Myo4Osx5p5axg9Wpp72Dx+/5rE6HG5
+	r5fJ4++qF8weO2fdZfdYufwLm8emVZ1sHneu7WHz2Lyk3uPKiSZWj74tqxg9Pm+SC+CNamC0
+	yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAEGjZJCWWJO
+	KVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsIYx4/aGTvaCN+cZK/b8PsrewPiumbGL
+	kYNDQsBEYvU26y5GTiBTTOLCvfVsXYxcHEIC0xklzpz7xAThvGaUaNv7mgWkildAS2Liiv1M
+	IDaLgKrE/cWrweJsQPH9L26wgdiiAmESK6dfgaoXlPgx+R6YLSKgLvFtSj87yFBmgR1sEi+X
+	nQUbJCzgLfF0wUlGiG3zGCXuPXrBDpLgBOp4vugvK4jNLKAjsb91GhuELS+xec1b5gmMArOQ
+	LJmFpGwWkrIFjMyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYJT4DPpHYyrGiwOMQpwMCrx
+	8L6Ykh0sxJpYVlyZe4hRgoNZSYT3xTKgEG9KYmVValF+fFFpTmrxIcZkYBhMZJYSTc4Hpue8
+	knhDYxMzI0sjc0MLI2Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamD0X/596ST16vgV
+	y+52bo07E5z9qbxu8aWHbda7jnG99Ft5z/d4sofDfzet2Req4hP3zVHwz1d//TgtIdLVg5Vv
+	Jfvbp3eEb5g3XEjjuvyCdUXB+djH09SNspTSWDYYl2d1xHWdmxr53bRy4qewm6mRUl+E9JnP
+	adsfD9nkuHV1nXfUhcMCmx4qsRRnJBpqMRcVJwIAKVvb8sUDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulf
+Hi Tomasz,
 
-On 05/08/2014 04:22 PM, Ulf Hansson wrote:
-> On 8 May 2014 09:55, Lee Jones <lee.jones@linaro.org> wrote:
->>> It seems Chris is too busy to responding, so would you help to pick
->>> this patch for 3.15 fix.
->> Hmmmm... that's pretty bad timing.  I've literally just sent the
->> pull-request containing the MFD/MMC fixup branch to Linus.  I guess
->> Ulf will have to do it.
-> There seem to be some confusion here. :-)
->
-> This patch is _only_ intended for Chris' mmc_next branch, so it
-> shouldn't go for 3.15 fixes. Or better, Chris should drop the patch
-> this one is reverting.
-Sorry for the mistake, only the second patch of the patch set is need 
-for 3.15 fix.
-I wrote this email in a wrong place.
+On 04/26/2014 09:51 AM, Tomasz Figa wrote:
+> Hi Chanwoo,
+> 
+> On 25.04.2014 03:16, Chanwoo Choi wrote:
+>> From: Tomasz Figa <t.figa@samsung.com>
+>>
+>> This patch add new exynos3250.dtsi to support Exynos3250 SoC based on Cortex-A7
+>> dual core and includes following dt nodes:
+>>
+>> - GIC interrupt controller
+>> - Pinctrl to control GPIOs
+>> - Clock controller
+>> - CPU information (Cortex-A7 dual core)
+>> - UART to support serial port
+>> - MCT (Multi Core Timer)
+>> - ADC (Analog Digital Converter)
+>> - I2C/SPI bus
+>> - Power domain
+>> - PMU (Performance Monitoring Unit)
+>> - MSHC (Mobile Storage Host Controller)
+>> - PWM (Pluse Width Modulation)
+>> - AMBA bus
+>>
+>> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> Signed-off-by: Inki Dae <inki.dae@samsung.com>
+>> Signed-off-by: Hyunhee Kim <hyunhee.kim@samsung.com>
+>> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
+>> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+>> Cc: Ben Dooks <ben-linux@fluff.org>
+>> Cc: Kukjin Kim <kgene.kim@samsung.com>
+>> Cc: Rob Herring <robh+dt@kernel.org>
+>> Cc: Pawel Moll <pawel.moll@arm.com>
+>> Cc: Mark Rutland <mark.rutland@arm.com>
+>> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+>> Cc: Kumar Gala <galak@codeaurora.org>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Cc: devicetree@vger.kernel.org
+>> ---
+>>   arch/arm/boot/dts/exynos3250-pinctrl.dtsi | 477 +++++++++++++++
+>>   arch/arm/boot/dts/exynos3250.dtsi         | 405 +++++++++++++
+>>   arch/arm/boot/dts/exynos4212-tizenw.dts   | 926 ++++++++++++++++++++++++++++++
+>>   3 files changed, 1808 insertions(+)
+>>   create mode 100644 arch/arm/boot/dts/exynos3250-pinctrl.dtsi
+>>   create mode 100644 arch/arm/boot/dts/exynos3250.dtsi
+>>   create mode 100644 arch/arm/boot/dts/exynos4212-tizenw.dts
+>>
+>> diff --git a/arch/arm/boot/dts/exynos3250-pinctrl.dtsi b/arch/arm/boot/dts/exynos3250-pinctrl.dtsi
+>> new file mode 100644
+>> index 0000000..976490b
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/exynos3250-pinctrl.dtsi
+>> @@ -0,0 +1,477 @@
+>> +/*
+>> + * Samsung's Exynos3250 SoCs pin-mux and pin-config device tree source
+>> + *
+>> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
+>> + *        http://www.samsung.com
+>> + *
+>> + * Samsung's Exynos3250 SoCs pin-mux and pin-config optiosn are listed as device
+>> + * tree nodes are listed in this file.
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> +*/
+>> +
+>> +/ {
+>> +    pinctrl@11400000 {
+> 
+> Could you use references instead of re-specifying the whole tree hierarchy in every file a node is used?
+> 
+> Instead of
+> 
+> / {
+>     pinctrl@11400000 {
+> 
+>     };
+> };
+> 
+> one may simply use
+> 
+> &pinctrl_0 {
+> 
+> };
+> 
+> You might just need to change the location of #include "exynos3250-pinctrl.dtsi" from top of exynos3250.dtsi to bottom of it.
+> 
 
-Best Regards.
-> Likely we will see a merge problem in Stephen Rothwell's linux-next
-> tree, until Chris' drops this patch - causing Stephen to not merge the
-> mmc tree for a while. I suppose that's the best we can do, until Chris
-> shows up again.
->
-> Kind regards
-> Ulf Hansson
->
->>>>>> From: Micky Ching<micky_ching@realsil.com.cn>
->>>>>>
->>>>>> This reverts commit 1f7b581b3ffcb2a8437397a02f4af89fa6934d08.
->>>>>>
->>>>>> The patch depend on commit c42deffd5b53c9e583d83c7964854ede2f12410d
->>>>>> <mmc: rtsx: add support for pre_req and post_req>, but the previous
->>>>>> patch was discard. So we have to delete the patch.
->>>>>>
->>>>>> Signed-off-by: Micky Ching<micky_ching@realsil.com.cn>
->>>> Acked-by: Ulf Hansson<ulf.hansson@linaro.org>
->> --
->> Lee Jones
->> Linaro STMicroelectronics Landing Team Lead
->> Linaro.org │ Open source software for ARM SoCs
->> Follow Linaro: Facebook | Twitter | Blog
-> .
->
+OK, I'll change it.
 
+>> +        gpa0: gpa0 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpa1: gpa1 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpb: gpb {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpc0: gpc0 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpc1: gpc1 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpd0: gpd0 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpd1: gpd1 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        uart0_data: uart0-data {
+>> +            samsung,pins = "gpa0-0", "gpa0-1";
+>> +            samsung,pin-function = <0x2>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        uart0_fctl: uart0-fctl {
+>> +            samsung,pins = "gpa0-2", "gpa0-3";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        uart1_data: uart1-data {
+>> +            samsung,pins = "gpa0-4", "gpa0-5";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        uart1_fctl: uart1-fctl {
+>> +            samsung,pins = "gpa0-6", "gpa0-7";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        i2c2_bus: i2c2-bus {
+>> +            samsung,pins = "gpa0-6", "gpa0-7";
+>> +            samsung,pin-function = <3>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        i2c3_bus: i2c3-bus {
+>> +            samsung,pins = "gpa1-2", "gpa1-3";
+>> +            samsung,pin-function = <3>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        spi0_bus: spi0-bus {
+>> +            samsung,pins = "gpb-0", "gpb-2", "gpb-3";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        i2c4_bus: i2c4-bus {
+>> +            samsung,pins = "gpb-0", "gpb-1";
+>> +            samsung,pin-function = <3>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        spi1_bus: spi1-bus {
+>> +            samsung,pins = "gpb-4", "gpb-6", "gpb-7";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        i2c5_bus: i2c5-bus {
+>> +            samsung,pins = "gpb-2", "gpb-3";
+>> +            samsung,pin-function = <3>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        i2s2_bus: i2s2-bus {
+>> +            samsung,pins = "gpc1-0", "gpc1-1", "gpc1-2", "gpc1-3",
+>> +                    "gpc1-4";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        pcm2_bus: pcm2-bus {
+>> +            samsung,pins = "gpc1-0", "gpc1-1", "gpc1-2", "gpc1-3",
+>> +                    "gpc1-4";
+>> +            samsung,pin-function = <3>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        i2c6_bus: i2c6-bus {
+>> +            samsung,pins = "gpc1-3", "gpc1-4";
+>> +            samsung,pin-function = <4>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        pwm0_out: pwm0-out {
+>> +            samsung,pins = "gpd0-0";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        pwm1_out: pwm1-out {
+>> +            samsung,pins = "gpd0-1";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        i2c7_bus: i2c7-bus {
+>> +            samsung,pins = "gpd0-2", "gpd0-3";
+>> +            samsung,pin-function = <3>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        pwm2_out: pwm2-out {
+>> +            samsung,pins = "gpd0-2";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        pwm3_out: pwm3-out {
+>> +            samsung,pins = "gpd0-3";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        i2c0_bus: i2c0-bus {
+>> +            samsung,pins = "gpd1-0", "gpd1-1";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        mipi0_clk: mipi0-clk {
+>> +            samsung,pins = "gpd1-0", "gpd1-1";
+>> +            samsung,pin-function = <3>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        i2c1_bus: i2c1-bus {
+>> +            samsung,pins = "gpd1-2", "gpd1-3";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +    };
+>> +
+>> +    pinctrl@11000000 {
+>> +        gpe0: gpe0 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +        };
+>> +
+>> +        gpe1: gpe1 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +        };
+>> +
+>> +        gpe2: gpe2 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +        };
+>> +
+>> +        gpk0: gpk0 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpk1: gpk1 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpk2: gpk2 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpl0: gpl0 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpm0: gpm0 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpm1: gpm1 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpm2: gpm2 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpm3: gpm3 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpm4: gpm4 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpx0: gpx0 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            interrupt-parent = <&gic>;
+>> +            interrupts = <0 32 0>, <0 33 0>, <0 34 0>, <0 35 0>,
+>> +                    <0 36 0>, <0 37 0>, <0 38 0>, <0 39 0>;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpx1: gpx1 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            interrupt-parent = <&gic>;
+>> +            interrupts = <0 40 0>, <0 41 0>, <0 42 0>, <0 43 0>,
+>> +                    <0 44 0>, <0 45 0>, <0 46 0>, <0 47 0>;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpx2: gpx2 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        gpx3: gpx3 {
+>> +            gpio-controller;
+>> +            #gpio-cells = <2>;
+>> +
+>> +            interrupt-controller;
+>> +            #interrupt-cells = <2>;
+>> +        };
+>> +
+>> +        sd0_clk: sd0-clk {
+>> +            samsung,pins = "gpk0-0";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <3>;
+>> +        };
+>> +
+>> +        sd0_cmd: sd0-cmd {
+>> +            samsung,pins = "gpk0-1";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <3>;
+>> +        };
+>> +
+>> +        sd0_cd: sd0-cd {
+>> +            samsung,pins = "gpk0-2";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <3>;
+>> +        };
+>> +
+>> +        sd0_rdqs: sd0-rdqs {
+>> +            samsung,pins = "gpk0-7";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <3>;
+>> +        };
+>> +
+>> +        sd0_bus1: sd0-bus-width1 {
+>> +            samsung,pins = "gpk0-3";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <3>;
+>> +        };
+>> +
+>> +        sd0_bus4: sd0-bus-width4 {
+>> +            samsung,pins = "gpk0-4", "gpk0-5", "gpk0-6";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <3>;
+>> +        };
+>> +
+>> +        sd0_bus8: sd0-bus-width8 {
+>> +            samsung,pins = "gpl0-0", "gpl0-1", "gpl0-2", "gpl0-3";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <3>;
+>> +        };
+>> +
+>> +        sd1_clk: sd1-clk {
+>> +            samsung,pins = "gpk1-0";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <3>;
+>> +        };
+>> +
+>> +        sd1_cmd: sd1-cmd {
+>> +            samsung,pins = "gpk1-1";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <3>;
+>> +        };
+>> +
+>> +        sd1_cd: sd1-cd {
+>> +            samsung,pins = "gpk1-2";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <3>;
+>> +        };
+>> +
+>> +        sd1_bus1: sd1-bus-width1 {
+>> +            samsung,pins = "gpk1-3";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <3>;
+>> +        };
+>> +
+>> +        sd1_bus4: sd1-bus-width4 {
+>> +            samsung,pins = "gpk1-4", "gpk1-5", "gpk1-6";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <3>;
+>> +        };
+>> +
+>> +        cam_port_b_io: cam-port-b-io {
+>> +            samsung,pins = "gpm0-0", "gpm0-1", "gpm0-2", "gpm0-3",
+>> +                    "gpm0-4", "gpm0-5", "gpm0-6", "gpm0-7",
+>> +                    "gpm1-0", "gpm1-1", "gpm2-0", "gpm2-1";
+>> +            samsung,pin-function = <3>;
+>> +            samsung,pin-pud = <3>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        cam_port_b_clk_active: cam-port-b-clk-active {
+>> +            samsung,pins = "gpm2-2";
+>> +            samsung,pin-function = <3>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <3>;
+>> +        };
+>> +
+>> +        cam_port_b_clk_idle: cam-port-b-clk-idle {
+>> +            samsung,pins = "gpm2-2";
+>> +            samsung,pin-function = <0>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        fimc_is_i2c0: fimc-is-i2c0 {
+>> +            samsung,pins = "gpm4-0", "gpm4-1";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        fimc_is_i2c1: fimc-is-i2c1 {
+>> +            samsung,pins = "gpm4-2", "gpm4-3";
+>> +            samsung,pin-function = <2>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +
+>> +        fimc_is_uart: fimc-is-uart {
+>> +            samsung,pins = "gpm3-5", "gpm3-7";
+>> +            samsung,pin-function = <3>;
+>> +            samsung,pin-pud = <0>;
+>> +            samsung,pin-drv = <0>;
+>> +        };
+>> +    };
+>> +};
+>> diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
+>> new file mode 100644
+>> index 0000000..5be3dd3
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/exynos3250.dtsi
+>> @@ -0,0 +1,405 @@
+>> +/*
+>> + * Samsung's Exynos3250 SoC device tree source
+>> + *
+>> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
+>> + *        http://www.samsung.com
+>> + *
+>> + * Samsung's Exynos3250 SoC device nodes are listed in this file. Exynos3250
+>> + * based board files can include this file and provide values for board specfic
+>> + * bindings.
+>> + *
+>> + * Note: This file does not include device nodes for all the controllers in
+>> + * Exynos3250 SoC. As device tree coverage for Exynos3250 increases, additional
+>> + * nodes can be added to this file.
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +
+>> +#include "skeleton.dtsi"
+>> +#include "exynos3250-pinctrl.dtsi"
+>> +#include <dt-bindings/clock/exynos3250.h>
+>> +
+>> +/ {
+>> +    compatible = "samsung,exynos3250";
+>> +    interrupt-parent = <&gic>;
+>> +
+>> +    aliases {
+>> +        pinctrl0 = &pinctrl_0;
+>> +        pinctrl1 = &pinctrl_1;
+>> +        mshc0 = &mshc_0;
+>> +        mshc1 = &mshc_1;
+>> +        spi0 = &spi_0;
+>> +        spi1 = &spi_1;
+>> +        i2c0 = &i2c_0;
+>> +        i2c1 = &i2c_1;
+>> +        i2c2 = &i2c_2;
+>> +        i2c3 = &i2c_3;
+>> +        i2c4 = &i2c_4;
+>> +        i2c5 = &i2c_5;
+>> +        i2c6 = &i2c_6;
+>> +        i2c7 = &i2c_7;
+>> +    };
+>> +
+>> +    cpus {
+>> +        #address-cells = <1>;
+>> +        #size-cells = <0>;
+>> +
+>> +        cpu@0 {
+>> +            device_type = "cpu";
+>> +            compatible = "arm,cortex-a7";
+>> +            reg = <0>;
+>> +            clock-frequency = <1000000000>;
+>> +        };
+> 
+> Why only one CPU? I believe Exynos3250 is dual core. 
+
+I'll add cpu1 information.
+
+> Also are physical IDs of the cores really 0 and 1? On Exynos4210 for example they are 0x900 and 0x901, while on Exynos4212 they are 0xa00 and 0xa01. Please check this.
+
+The 'reg' property means only hardware id(hwid) of CPU.
+You can check it on arm_dt_init_cpu_maps() in arch/arm/kernel/devtree.c.h.
+or Documentation/devicetree/bindings/arm/cpus.txt.
+
+>> +    };
+>> +
+>> +    fixed-rate-clocks {
+>> +        compatible = "simple-bus";
+>> +        #address-cells = <1>;
+>> +        #size-cells = <0>;
+>> +
+>> +        xusbxti: clock@0 {
+>> +            compatible = "fixed-clock";
+>> +            reg = <0>;
+>> +            clock-frequency = <0>;
+>> +            #clock-cells = <0>;
+>> +            clock-output-names = "xusbxti";
+>> +        };
+>> +
+>> +        xxti: clock@1 {
+>> +            compatible = "fixed-clock";
+>> +            reg = <1>;
+>> +            clock-frequency = <0>;
+>> +            #clock-cells = <0>;
+>> +            clock-output-names = "xxti";
+>> +        };
+>> +
+>> +        xtcxo: clock@2 {
+>> +            compatible = "fixed-clock";
+>> +            reg = <2>;
+>> +            clock-frequency = <0>;
+>> +            #clock-cells = <0>;
+>> +            clock-output-names = "xtcxo";
+>> +        };
+>> +    };
+>> +
+>> +    chipid@10000000 {
+>> +        compatible = "samsung,exynos4210-chipid";
+>> +        reg = <0x10000000 0x100>;
+>> +    };
+>> +
+>> +    sys_reg: syscon@10010000 {
+>> +        compatible = "samsung,exynos3-sysreg", "syscon";
+>> +        reg = <0x10010000 0x400>;
+>> +    };
+>> +
+>> +    pd_cam: cam-power-domain@10023C00 {
+>> +        compatible = "samsung,exynos4210-pd";
+>> +        reg = <0x10023C00 0x20>;
+>> +    };
+>> +
+>> +    pd_mfc: mfc-power-domain@10023C40 {
+>> +        compatible = "samsung,exynos4210-pd";
+>> +        reg = <0x10023C40 0x20>;
+>> +    };
+>> +
+>> +    pd_g3d: g3d-power-domain@10023C60 {
+>> +        compatible = "samsung,exynos4210-pd";
+>> +        reg = <0x10023C60 0x20>;
+>> +    };
+>> +
+>> +    pd_lcd0: lcd0-power-domain@10023C80 {
+>> +        compatible = "samsung,exynos4210-pd";
+>> +        reg = <0x10023C80 0x20>;
+>> +    };
+>> +
+>> +    pd_isp: isp-power-domain@10023CA0 {
+>> +        compatible = "samsung,exynos4210-pd";
+>> +        reg = <0x10023CA0 0x20>;
+>> +    };
+>> +
+>> +    cmu: clock-controller@10030000 {
+>> +        compatible = "samsung,exynos3250-cmu";
+>> +        reg = <0x10030000 0x20000>;
+>> +        #clock-cells = <1>;
+>> +    };
+>> +
+>> +    rtc@10070000 {
+> 
+> Please add label to the node, so it can be referenced from board dts files added later (using the method I explained above).
+
+OK, I'll add lable as following:
+
+	rtc_0: rtc@10070000 {
+
+> 
+>> +        compatible = "samsung,s3c6410-rtc";
+>> +        reg = <0x10070000 0x100>;
+>> +        interrupts = <0 73 0>, <0 74 0>;
+>> +        status = "disabled";
+>> +    };
+>> +
+>> +    gic: interrupt-controller@10481000 {
+>> +        compatible = "arm,cortex-a15-gic";
+>> +        #interrupt-cells = <3>;
+>> +        interrupt-controller;
+>> +        reg = <0x10481000 0x1000>,
+>> +              <0x10482000 0x1000>,
+>> +              <0x10484000 0x2000>,
+>> +              <0x10486000 0x2000>;
+>> +              interrupts = <1 9 0xf04>;
+>> +    };
+>> +
+>> +    mct@10050000 {
+>> +        compatible = "samsung,exynos4210-mct";
+>> +        reg = <0x10050000 0x800>;
+>> +        interrupts = <0 218 0>, <0 219 0>, <0 220 0>, <0 221 0>,
+>> +                 <0 223 0>, <0 226 0>, <0 227 0>, <0 228 0>;
+>> +        clocks = <&cmu CLK_FIN_PLL>, <&cmu CLK_MCT>;
+>> +        clock-names = "fin_pll", "mct";
+>> +    };
+>> +
+>> +    pinctrl_1: pinctrl@11000000 {
+>> +        compatible = "samsung,exynos3250-pinctrl";
+>> +        reg = <0x11000000 0x1000>;
+>> +        interrupts = <0 225 0>;
+>> +
+>> +        wakeup-interrupt-controller {
+>> +            compatible = "samsung,exynos4210-wakeup-eint";
+>> +            interrupt-parent = <&gic>;
+>> +            interrupts = <0 48 0>;
+>> +        };
+>> +    };
+>> +
+>> +    pinctrl_0: pinctrl@11400000 {
+>> +        compatible = "samsung,exynos3250-pinctrl";
+>> +        reg = <0x11400000 0x1000>;
+>> +        interrupts = <0 240 0>;
+>> +    };
+>> +
+>> +    mshc_0: mshc@12510000 {
+>> +        compatible = "samsung,exynos5250-dw-mshc";
+>> +        reg = <0x12510000 0x1000>;
+>> +        interrupts = <0 142 0>;
+>> +        clocks = <&cmu CLK_SDMMC0>, <&cmu CLK_SCLK_MMC0>;
+>> +        clock-names = "biu", "ciu";
+>> +        fifo-depth = <0x80>;
+>> +        #address-cells = <1>;
+>> +        #size-cells = <0>;
+>> +        status = "disabled";
+>> +    };
+>> +
+>> +    mshc_1: mshc@12520000 {
+>> +        compatible = "samsung,exynos5250-dw-mshc";
+>> +        reg = <0x12520000 0x1000>;
+>> +        interrupts = <0 143 0>;
+>> +        clocks = <&cmu CLK_SDMMC1>, <&cmu CLK_SCLK_MMC1>;
+>> +        clock-names = "biu", "ciu";
+>> +        fifo-depth = <0x80>;
+>> +        #address-cells = <1>;
+>> +        #size-cells = <0>;
+>> +        status = "disabled";
+>> +    };
+>> +
+>> +    amba {
+>> +        #address-cells = <1>;
+>> +        #size-cells = <1>;
+>> +        compatible = "arm,amba-bus";
+>> +        interrupt-parent = <&gic>;
+>> +        ranges;
+>> +
+>> +        pdma0: pdma@12680000 {
+>> +            compatible = "arm,pl330", "arm,primecell";
+>> +            reg = <0x12680000 0x1000>;
+>> +            interrupts = <0 138 0>;
+>> +            clocks = <&cmu CLK_PDMA0>;
+>> +            clock-names = "apb_pclk";
+>> +            #dma-cells = <1>;
+>> +            #dma-channels = <8>;
+>> +            #dma-requests = <32>;
+>> +        };
+>> +
+>> +        pdma1: pdma@12690000 {
+>> +            compatible = "arm,pl330", "arm,primecell";
+>> +            reg = <0x12690000 0x1000>;
+>> +            interrupts = <0 139 0>;
+>> +            clocks = <&cmu CLK_PDMA1>;
+>> +            clock-names = "apb_pclk";
+>> +            #dma-cells = <1>;
+>> +            #dma-channels = <8>;
+>> +            #dma-requests = <32>;
+>> +        };
+>> +    };
+>> +
+>> +    adc: adc@126C0000 {
+>> +        compatible = "samsung,exynos-adc-v3";
+>> +        reg = <0x126C0000 0x100>, <0x10020718 0x4>;
+>> +        interrupts = <0 137 0>;
+>> +        clock-names = "adc", "sclk_tsadc";
+>> +        clocks = <&cmu CLK_TSADC>, <&cmu CLK_SCLK_TSADC>;
+>> +        #io-channel-cells = <1>;
+>> +        io-channel-ranges;
+>> +        status = "disabled";
+>> +    };
+>> +
+>> +    serial@13800000 {
+> 
+> Please add label.
+
+OK, I'll add lable as following:
+
+	serial_0: serial@13800000 {
+
+> 
+>> +        compatible = "samsung,exynos4210-uart";
+>> +        reg = <0x13800000 0x100>;
+>> +        interrupts = <0 109 0>;
+>> +        clocks = <&cmu CLK_UART0>, <&cmu CLK_SCLK_UART0>;
+>> +        clock-names = "uart", "clk_uart_baud0";
+>> +        status = "disabled";
+>> +    };
+>> +
+>> +    serial@13810000 {
+
+OK, I'll add lable as following:
+
+	serial_1: serial@13800000 {
+
+
+Thanks for your review.
+
+Best regards,
+Chanwoo Choi
