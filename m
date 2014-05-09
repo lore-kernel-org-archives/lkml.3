@@ -1,132 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004AbaEIKvX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 06:51:23 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:34589 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673AbaEIKvU (ORCPT
+	id S1756260AbaEIKwG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 06:52:06 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:16658 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaEIKwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 06:51:20 -0400
+	Fri, 9 May 2014 06:52:05 -0400
+Date: Fri, 9 May 2014 13:51:49 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: gregkh@linuxfoundation.org, himangi774@gmail.com, sachin.kamat@linaro.org,
+        fempsci@gmail.com, nandu.hgowda@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] staging: cxt1e1: remove dead code in musycc.c
+Message-ID: <20140509105149.GH4963@mwanda>
+References: <20140509100606.GA6479@devel.8.8.4.4>
 MIME-Version: 1.0
-In-Reply-To: <536CAA4F.8050404@samsung.com>
-References: <1398665874-31238-1-git-send-email-gautam.vivek@samsung.com>
-	<5368F136.6070804@samsung.com>
-	<CAFp+6iHN-W-k6ow5YykK_QWgBJ+GgzXwPX6suWtizxwJWOiGtg@mail.gmail.com>
-	<CAFp+6iF=Z_dkd+YJm2-ODmvgZ6PCt+bUx+vSVm_5RtobVN0WfA@mail.gmail.com>
-	<536CAA4F.8050404@samsung.com>
-Date: Fri, 9 May 2014 16:21:19 +0530
-X-Google-Sender-Auth: 9dMqPuVAcZPbovLA2F7vPcgdNAo
-Message-ID: <CAFp+6iEGvy71s=-Vt37TKkVDUX1wO6GZdwL=uBfPjng78yE5-A@mail.gmail.com>
-Subject: Re: [PATCH v7 1/2] phy: Add new Exynos5 USB 3.0 PHY driver
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        kishon <kishon@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-doc@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140509100606.GA6479@devel.8.8.4.4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sylwester,
+On Fri, May 09, 2014 at 07:06:06PM +0900, Daeseok Youn wrote:
+> Removes "#if 0" blocks.
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+> Dan,
+>  I decided to leave musycc_dump_rxbuffer_ring(ch, 0) which is commented
+>  out and make a block as "RLD_DEBUG". Because i think this block need to debug
+>  with define "RLD_DEBUG". If I am wrong, let me know.
+> 
 
+This change should maybe have been in a separate patch.  It's a border
+line thing.  But definitely, it should have been mentioned in the
+changelog.
 
-On Fri, May 9, 2014 at 3:43 PM, Sylwester Nawrocki
-<s.nawrocki@samsung.com> wrote:
-> Hi Vivek,
->
-> On 08/05/14 11:03, Vivek Gautam wrote:
->>>>> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
->>>>> >>> index b422e38..51efe4c 100644
->>>>> >>> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
->>>>> >>> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
->>>>> >>> @@ -114,3 +114,43 @@ Example:
->>>>> >>>               compatible = "samsung,exynos-sataphy-i2c";
->>>>> >>>               reg = <0x38>;
->>>>> >>>       };
->>>>> >>> +
->>>>> >>> +Samsung Exynos5 SoC series USB DRD PHY controller
->>>>> >>> +--------------------------------------------------
->>>>> >>> +
->>>>> >>> +Required properties:
->>>>> >>> +- compatible : Should be set to one of the following supported values:
->>>>> >>> +     - "samsung,exynos5250-usbdrd-phy" - for exynos5250 SoC,
->>>>> >>> +     - "samsung,exynos5420-usbdrd-phy" - for exynos5420 SoC.
->>>>> >>> +- reg : Register offset and length of USB DRD PHY register set;
->>>>> >>> +- clocks: Clock IDs array as required by the controller
->>>>> >>> +- clock-names: names of clocks correseponding to IDs in the clock property;
->>>>> >>> +            Required clocks:
->>>>> >>> +     - phy: main PHY clock (same as USB DRD controller i.e. DWC3 IP clock),
->>>>> >>> +            used for register access.
->>>>> >>> +     - ref: PHY's reference clock (usually crystal clock), used for
->>>>> >>> +            PHY operations, associated by phy name. It is used to
->>>>> >>> +            determine bit values for clock settings register.
->>>>> >>> +            For Exynos5420 this is given as 'sclk_usbphy30' in CMU.
->>>>> >>> +- samsung,pmu-syscon: phandle for PMU system controller interface, used to
->>>>> >>> +                   control pmu registers for power isolation.
->>>>> >>> +- samsung,pmu-offset: phy power control register offset to pmu-system-controller
->>>>> >>> +                   base.
->>>> >>
->>>> >> It doesn't seem right to have register offset encoded in the device tree
->>>> >> like this. I think it'd be more appropriate to associate such an offset
->>>> >> with the compatible string's value in the driver.
->>> >
->>> > Ok, it makes more sense.
->>> > Just out of curiosity, what difference would this make ?
->>
->> Moreover, in case of Exynos5420 (and may be in future SoCs), where we
->> have 2 USB DRD PHY controllers,
->> we will need to have a way around to deal with two separate offsets in
->> the driver for one compatible string.
->
-> It could be handled by creating a list of offsets per compatible string and
-> then adding some way to identify the PHY device instance. So I believe that's
-> not a big issue.
+Btw, you can use `git citool` to add or remove lines from a
+commit.  Highlight and right click on the lines you want to add or
+remove.
 
-True, we had tried to make use of 'aliases' for multiple controllers
-on Exynos5420,
-in earlier version V3 of this patch, to handle the pmu-register
-offsets in _somewhat_ similar fashion. [1]
-But then we had to drop that as per the suggestions in the mailing list.
+I don't really care either way if you keep it or delete it.
 
-> Now you'd be encoding a list of registers offsets in the
-> device tree, without encoding bit layout of each register. It's unlikely that
-> each instance would have different bits layout, but describing individual
-> registers in DT I thought is something that we're not supposed to do.
+regards,
+dan carpenter
 
-Ok, so this is information to me, i was not very much aware of this.
-Thanks for explaining it here.
-
->
->> Getting the offsets from DT seems a cleaner way to handle this case of
->> multi controllers.
->
-> I think it's easier from the driver POV, but isn't it violating the device
-> tree rules ?
-> Anyway. I'm just pointing this minor issue in the binding as it appears
-> to me. The final word of course belongs to a DT binding maintainer.
-
-Thanks Sylwester, for pointing this out here.
-Meantime, please let me know if the approach using aliases is one
-possible solution for this or not ?
-
-
-[1] [PATCH v3] phy: Add new Exynos5 USB 3.0 PHY driver
-     https://lkml.org/lkml/2014/1/21/46
-
-
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
