@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322AbaEIP3J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 11:29:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38845 "EHLO mx1.redhat.com"
+	id S932339AbaEIP3Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 11:29:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20687 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932217AbaEIP3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 11:29:05 -0400
-Subject: [PATCH v2 06/15] PCI: Add quirks for ASMedia and Tundra bridges
+	id S1755420AbaEIP3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 11:29:11 -0400
+Subject: [PATCH v2 07/15] PCI: Consolidate isolation domain code
 From: Alex Williamson <alex.williamson@redhat.com>
 To: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
 Cc: bhelgaas@google.com, acooks@gmail.com, linux-kernel@vger.kernel.org
-Date: Fri, 09 May 2014 09:29:01 -0600
-Message-ID: <20140509152901.8321.66435.stgit@bling.home>
+Date: Fri, 09 May 2014 09:29:07 -0600
+Message-ID: <20140509152907.8321.17741.stgit@bling.home>
 In-Reply-To: <20140509151735.8321.22017.stgit@bling.home>
 References: <20140509151735.8321.22017.stgit@bling.home>
 User-Agent: StGit/0.17-dirty
@@ -22,46 +22,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The quirk is intended to be extremely generic, but we only apply it
-to known offending devices.
+Each of the IOMMU drivers supporting IOMMU groups has their own
+implementation of an algorithm to find the base device for an IOMMU
+group.  This N:1 function takes into account visibility of a PCI
+device on the bus using DMA aliases, as well as the isolation of
+devices using ACS.  Since these are all generic PCI properties,
+provide this helper in PCI code to create a single, standard
+implementation.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- drivers/pci/quirks.c |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+ drivers/pci/search.c |  130 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pci.h  |    1 
+ 2 files changed, 131 insertions(+)
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 63b8245..a10a685 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -3356,6 +3356,29 @@ static void quirk_dma_func1_alias(struct pci_dev *dev)
+diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+index dab4561..aea2443 100644
+--- a/drivers/pci/search.c
++++ b/drivers/pci/search.c
+@@ -115,6 +115,136 @@ int pci_for_each_dma_alias(struct pci_dev *pdev,
  }
  
  /*
-+ * A few PCIe-to-PCI bridges fail to expose a PCIe capability, resulting in
-+ * using the wrong DMA alias for the device.  Some of these devices can be
-+ * used as either forward or reverse bridges, so we need to test whether the
-+ * device is operating in the correct mode.  We could probably apply this
-+ * quirk to PCI_ANY_ID, but for now we'll just use known offenders.  The test
-+ * is for a non-root, non-PCIe bridge where the upstream device is PCIe and
-+ * is not a PCIe-to-PCI bridge, then @pdev is actually a PCIe-to-PCI bridge.
++ * last_dma_alias_dev - Isolation root helper to record the last DMA alias pdev
 + */
-+static void quirk_use_pcie_bridge_dma_alias(struct pci_dev *pdev)
++static int last_dma_alias_dev(struct pci_dev *pdev, u16 alias, void *data)
 +{
-+	if (!pci_is_root_bus(pdev->bus) &&
-+	    pdev->hdr_type == PCI_HEADER_TYPE_BRIDGE &&
-+	    !pci_is_pcie(pdev) && pci_is_pcie(pdev->bus->self) &&
-+	    pci_pcie_type(pdev->bus->self) != PCI_EXP_TYPE_PCI_BRIDGE)
-+		pdev->dev_flags |= PCI_DEV_FLAG_PCIE_BRIDGE_ALIAS;
++	*(struct pci_dev **)data = pdev;
++	return 0;
 +}
-+/* ASM1083/1085, https://bugzilla.kernel.org/show_bug.cgi?id=44881#c46 */
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ASMEDIA, 0x1080,
-+			 quirk_use_pcie_bridge_dma_alias);
-+/* Tundra 8113, https://bugzilla.kernel.org/show_bug.cgi?id=44881#c43 */
-+DECLARE_PCI_FIXUP_HEADER(0x10e3, 0x8113, quirk_use_pcie_bridge_dma_alias);
 +
 +/*
-  * Marvell 88SE9123 uses function 1 as the requester ID for DMA.  In some
-  * SKUs function 1 is present and is a legacy IDE controller, in other
-  * SKUs this function is not present, making this a ghost requester.
++ * To consider a device isolated, we require ACS to support Source Validation,
++ * Request Redirection, Completer Redirection, and Upstream Forwarding.  This
++ * effectively means that devices cannot spoof their requester ID, requests
++ * and commpletions cannot be redirected, and all transactions are forwarded
++ * upstream, even as it passes through a bridge where the target device is
++ * downstream.
++ */
++#define REQ_ACS_FLAGS   (PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_UF)
++
++/*
++ * pci_find_dma_isolation_root - Given a PCI device, find the root device for
++ *				 an isolation domain.
++ * @pdev: target device
++ *
++ * This function takes DMA alias quirks, bus topology, and PCI ACS into
++ * account to find the root device for an isolation domain.  The root device
++ * is a consistent and representative device within the isolation domain.
++ * Passing any device within a given isolation domain results in the same
++ * returned root device, allowing this root device to be used for lookup
++ * for structures like IOMMU groups.  Note that the root device is not
++ * necessarily a bridge, in the case of a multifunction device without
++ * DMA isolation between functions, the root device is the lowest function
++ * without isolation.
++ */
++struct pci_dev *pci_find_dma_isolation_root(struct pci_dev *pdev)
++{
++	struct pci_bus *bus;
++
++	/*
++	 * Step 1: Find the upstream DMA alias device
++	 *
++	 * A device can be aliased by bridges or DMA alias quirks.  Being able
++	 * to differentiate devices is a minimum requirement for isolation.
++	 */
++	pci_for_each_dma_alias(pdev, &last_dma_alias_dev, &pdev);
++
++	/*
++	 * Step 2: Find the upstream ACS device
++	 *
++	 * Beyond differentiation, ACS prevents uncontrolled peer-to-peer
++	 * transactions.  Therefore the next step is to find the upstream
++	 * ACS device.
++	 */
++	for (bus = pdev->bus; !pci_is_root_bus(bus); bus = bus->parent) {
++		if (!bus->self)
++			continue;
++
++		if (pci_acs_path_enabled(bus->self, NULL, REQ_ACS_FLAGS))
++			break;
++
++		pdev = bus->self;
++	}
++
++	/*
++	 * Step 3: Handle DMA function aliases
++	 *
++	 * PCI functions are sometimes broken and use the wrong requester
++	 * ID for DMA transactions.  The requester ID for this device may
++	 * actually be used by another function in this slot.  If such a
++	 * function exists, use it.
++	 */
++	if (pdev->multifunction) {
++		u8 func, func_mask = 1 << PCI_FUNC(pdev->devfn);
++
++		for (func = 0; func < 8; func++) {
++			struct pci_dev *tmp;
++
++			if (func == PCI_FUNC(pdev->devfn))
++				continue;
++
++			tmp = pci_get_slot(pdev->bus,
++					   PCI_DEVFN(PCI_SLOT(pdev->devfn),
++						     func));
++			if (!tmp)
++				continue;
++
++			pci_dev_put(tmp);
++			/*
++			 * If this device has a DMA alias to us, it becomes
++			 * the base device regardless of ACS.
++			 */
++			if (tmp->dma_func_alias & func_mask) {
++				pdev = tmp;
++				break;
++			}
++		}
++	}
++
++	/*
++	 * Step 4: Handle multifunction ACS
++	 *
++	 * If the resulting device is multifunction and does not itself
++	 * support ACS then we cannot assume isolation between functions.
++	 * The root device needs to be consistent, therefore we return the
++	 * lowest numbered function that also lacks ACS support.
++	 */
++	if (pdev->multifunction && !pci_acs_enabled(pdev, REQ_ACS_FLAGS)) {
++		u8 func;
++
++		for (func = 0; func < PCI_FUNC(pdev->devfn); func++) {
++			struct pci_dev *tmp;
++
++			tmp = pci_get_slot(pdev->bus,
++					   PCI_DEVFN(PCI_SLOT(pdev->devfn),
++						     func));
++			if (!tmp)
++				continue;
++
++			pci_dev_put(tmp);
++
++			if (!pci_acs_enabled(tmp, REQ_ACS_FLAGS)) {
++				pdev = tmp;
++				break;
++			}
++		}
++	}
++
++	return pdev;
++}
++
++/*
+  * find the upstream PCIe-to-PCI bridge of a PCI device
+  * if the device is PCIE, return NULL
+  * if the device isn't connected to a PCIe bridge (that is its parent is a
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 31d9a90..5096031 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1802,6 +1802,7 @@ static inline struct eeh_dev *pci_dev_to_eeh_dev(struct pci_dev *pdev)
+ int pci_for_each_dma_alias(struct pci_dev *pdev,
+ 			   int (*fn)(struct pci_dev *pdev,
+ 				     u16 alias, void *data), void *data);
++struct pci_dev *pci_find_dma_isolation_root(struct pci_dev *pdev);
+ 
+ /**
+  * pci_find_upstream_pcie_bridge - find upstream PCIe-to-PCI bridge of a device
 
