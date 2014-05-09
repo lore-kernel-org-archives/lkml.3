@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936AbaEIH43 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 03:56:29 -0400
-Received: from mga03.intel.com ([143.182.124.21]:2457 "EHLO mga03.intel.com"
+	id S1756053AbaEIH5O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 03:57:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39550 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755323AbaEIH4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 03:56:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1016,1389772800"; 
-   d="scan'208";a="429848765"
-Message-ID: <536C8CCC.8010600@linux.intel.com>
-Date: Fri, 09 May 2014 11:07:40 +0300
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752169AbaEIH5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 03:57:13 -0400
+Date: Fri, 9 May 2014 09:57:08 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] coretemp.0 folder contents changed
+Message-ID: <20140509095708.0f566c34@endymion.delvare>
+In-Reply-To: <536A22D2.5070104@roeck-us.net>
+References: <5367C6A7.5020008@linux.intel.com>
+	<20140505173231.GA25644@roeck-us.net>
+	<20140506135558.3cafd062@endymion.delvare>
+	<5368E45F.30301@roeck-us.net>
+	<20140507091308.227d8152@endymion.delvare>
+	<536A22D2.5070104@roeck-us.net>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-CC: Julius Werner <jwerner@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [regression 3.15-rc3] Resume from s4 broken by 1f81b6d22a5980955b01e08cf27fb745dc9b686f
-References: <20140505180530.GA18465@intel.com> <CAODwPW_57G+Lebe2Xarem9P-L6ePtAaZfy5kpNVEtgkWbc0FWw@mail.gmail.com> <20140506114126.GB18465@intel.com> <536A39C0.5060205@linux.intel.com> <20140507150240.GK18465@intel.com>
-In-Reply-To: <20140507150240.GK18465@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Guenter,
 
->> I can't see how this relates to Julius patch though, and I'm not sure yet why it
->> only triggers when devices are connected to SS ports. Maybe just unlucky timing?
+On Wed, 07 May 2014 05:10:58 -0700, Guenter Roeck wrote:
+> On 05/07/2014 12:13 AM, Jean Delvare wrote:
+> > On Tue, 06 May 2014 06:32:15 -0700, Guenter Roeck wrote:
+> >> Can we implement a similar approach to network devices and make hwmon
+> >> path names (ie the /sys/class/hwmon/XXX path name) configurable via udev ?
+> >> Might be worth exploring.
+> >
+> > This is one possibility indeed. The good thing is that libsensors makes
+> > no assumption on hwmon class device names, so we can change the names
+> > without breaking any application which uses libsensors. Scripts
+> > accessing sysfs directly may break though (pwmconfig would, for
+> > example.)
+> >
+> > We'll have to be careful when choosing the new names, and make sure
+> > there is no name space collision. Network interface renaming has caused
+> > a great deal of trouble out there.
 >
-> I think the non-SS ports are connected to the EHCI controllers rather
-> than the XHCI controllers. So that explains at least one detail. And I
-> guess timing is as good an excuse as any why this gets exposed by the
-> patch in question.
-
-That's right, sometimes I forget that there exists something else than xHCI.
-
+> Agreed. I'll try to find some time to play with it.
+> 
+> > Another approach, which I have in mind for quite some time already but
+> > could never find the time to implement, would be a small helper binary
+> > which would look-up hwmon devices by libsensors-like name (and the
+> > other way around too.) Scripts could use it to benefit from libsensors
+> > persistent names.
 >
->>
->> Does this help?:
->
-> Indeed it does. The machine just survived a dozen or so suspend+resume
-> cycles without a hitch. The bug was 100% reproducible on this machine,
-> so the fix seems solid.
->
-> Tested-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
->
+> Still needs that binary, though.
 
-Great, a patch with your Tested-by tag pushed to my tree at:
+I have a proof of concept ready, I'll post it in a minute.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mnyman/xhci.git for-usb-linus
-
--Mathias
-
-
+-- 
+Jean Delvare
+SUSE L3 Support
