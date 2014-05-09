@@ -1,91 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702AbaEIQKZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 12:10:25 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:55484 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378AbaEIQKX (ORCPT
+	id S1756843AbaEIQLL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 12:11:11 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:42130 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756765AbaEIQLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 12:10:23 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH v2] radio-bcm2048.c: fix wrong overflow check
-Date: Fri, 9 May 2014 18:10:17 +0200
-User-Agent: KMail/1.13.7 (Linux/3.15.0-031500rc3-generic; KDE/4.13.0; x86_64; ; )
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, hans.verkuil@cisco.com,
-        m.chehab@samsung.com, ext-eero.nurkkala@nokia.com,
-        nils.faerber@kernelconcepts.de, joni.lapilainen@gmail.com,
-        freemangordon@abv.bg, sre@ring0.de, Greg KH <greg@kroah.com>,
-        linux-media@vger.kernel.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Pavel Machek <pavel@ucw.cz>
-References: <20140422125726.GA30238@mwanda> <alpine.LNX.2.00.1405051534090.3969@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1405051534090.3969@pobox.suse.cz>
+	Fri, 9 May 2014 12:11:09 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: linux-wireless@vger.kernel.org
+Subject: [PATCH] orinoco_usb: Fix broken firmware load error checking
+Date: Fri, 9 May 2014 18:10:34 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: Kumar Amit Mehta <gmate.amit@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2631387.AxMYleU8kP";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201405091810.18289@pali>
+Content-Disposition: inline
+Message-Id: <201405091810.34444.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2631387.AxMYleU8kP
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+The check of ezusb_firmware_download() return value (added by commit
+488ec878034eccb852267b0e27ce9d511f75c587) is broken because
+ezusb_firmware_download() returns 1 on success.
+This causes the driver not to work with the following error:
+orinoco_usb: probe of 3-3:1.0 failed with error -14
 
-On Monday 05 May 2014 15:34:29 Jiri Kosina wrote:
-> On Tue, 22 Apr 2014, Dan Carpenter wrote:
-> > From: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> >=20
-> > This patch fixes an off by one check in
-> > bcm2048_set_region().
-> >=20
-> > Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> > Signed-off-by: Pavel Machek <pavel@ucw.cz>
-> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> > ---
-> > v2: Send it to the correct list.  Re-work the changelog.
-> >=20
-> > This patch has been floating around for four months but
-> > Pavel and Pali are knuckle-heads and don't know how to use
-> > get_maintainer.pl so they never send it to linux-media.
-> >=20
-> > Also Pali doesn't give reporter credit and Pavel steals
-> > authorship credit.
-> >=20
-> > Also when you try explain to them about how to send patches
-> > correctly they complain that they have been trying but it
-> > is too much work so now I have to do it.  During the past
-> > four months thousands of other people have been able to
-> > send patches in the correct format to the correct list but
-> > it is too difficult for Pavel and Pali...  *sigh*.
->=20
-> Seems like it's not in linux-next as of today, so I am taking
-> it now. Thanks,
+Check the return value only for negative values.
 
-I still do not see this patch in torvalds branch... So what is=20
-needed to include this security buffer overflow patch into=20
-mainline & stable kernels?
+This fix should be applied to -stable kernels too.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+---
+ drivers/net/wireless/orinoco/orinoco_usb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
---nextPart2631387.AxMYleU8kP
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlNs/eoACgkQi/DJPQPkQ1LyvwCfW2bD3mNnIkopKovNtmu8Ln/w
-t+YAn3hyS/hRtclc3eHqR1KaAg0DrT+4
-=26FT
------END PGP SIGNATURE-----
-
---nextPart2631387.AxMYleU8kP--
+diff --git a/drivers/net/wireless/orinoco/orinoco_usb.c b/drivers/net/wireless/orinoco/orinoco_usb.c
+index f9805c9..1cbb783 100644
+--- a/drivers/net/wireless/orinoco/orinoco_usb.c
++++ b/drivers/net/wireless/orinoco/orinoco_usb.c
+@@ -1687,7 +1687,7 @@ static int ezusb_probe(struct usb_interface *interface,
+ 		firmware.code = fw_entry->data;
+ 	}
+ 	if (firmware.size && firmware.code) {
+-		if (ezusb_firmware_download(upriv, &firmware))
++		if (ezusb_firmware_download(upriv, &firmware) < 0)
+ 			goto error;
+ 	} else {
+ 		err("No firmware to download");
+-- 
+Ondrej Zary
