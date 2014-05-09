@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757498AbaEITz0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 15:55:26 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:42097 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756533AbaEITzZ (ORCPT
+	id S1757413AbaEIT6d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 15:58:33 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:56329 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756533AbaEIT6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 15:55:25 -0400
-Date: Fri, 9 May 2014 15:55:22 -0400
+	Fri, 9 May 2014 15:58:31 -0400
+Date: Fri, 9 May 2014 15:58:27 -0400
 From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH percpu/for-3.16 2/2] percpu-refcount: implement
- percpu_ref_tryget()
-Message-ID: <20140509195522.GF4486@htj.dyndns.org>
-References: <20140507155511.GB26540@htj.dyndns.org>
- <20140507155647.GC26540@htj.dyndns.org>
- <20140507155810.GD26540@htj.dyndns.org>
- <20140509194020.GB2276@kmo>
- <20140509194140.GC4486@htj.dyndns.org>
- <20140509195109.GC2276@kmo>
+To: lizefan@huawei.com
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: remove cgroup_tree_mutex
+Message-ID: <20140509195827.GG4486@htj.dyndns.org>
+References: <1399407574-21472-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140509195109.GC2276@kmo>
+In-Reply-To: <1399407574-21472-1-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, May 09, 2014 at 12:51:09PM -0700, Kent Overstreet wrote:
-> Well not so much deprecated as "bad, avoid" - IMO using tryget() almost always
-> (I haven't seen a convincing counterexample) means you screwed up your
-> refcounting somewhere, if you need to take a ref on something whatever made that
-> object visible to you should have its own ref.
+On Tue, May 06, 2014 at 04:19:26PM -0400, Tejun Heo wrote:
+> This patchset is on top of
 > 
-> (I think we had this debate, but that was awhile ago...)
+>   cgroup/for-3.16 12d3089c192c ("kernel/cpuset.c: convert printk to pr_foo()")
+> + [1] [PATCHSET cgroup/for-3.16] cgroup: post unified hierarchy fixes and updates
+> + [2] [PATCHSET cgroup/for-3.16] cgroup: implement cftype->write()
+> 
+> and is available in the following git branch.
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-kill-tree_mutex
 
-Oh sure, tryget can definitely be misunderstood but RCU protected
-iteration is one valid use case.
+Refreshed without content change on top of
 
-	rcu_read_lock();
-	locate the object of interest;
-	tryget[_live]() depending on the use case;
-	rcu_read_unlock();
+ b9a63d0116e8 ("Merge branch 'for-3.16' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu into for-3.16")
+ + [1] [PATCHSET v2 cgroup/for-3.16] cgroup: post unified hierarchy fixes and updates
+ + [2] (REFRESHED) [PATCHSET cgroup/for-3.16] cgroup: implement cftype->write()
 
-	access the object.
+and available in the following git branch.
 
-It's not different from why we use atomic_inc_not_zero() in some
-places.  The only difference is that percpu_ref distinguishes live
-vs. dying states.  It's true that this can be used in pretty stupid
-ways but I think the comments are pretty clear on that.  Do you think
-we need more warning there?
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-kill-tree_mutex-v2
 
 Thanks.
 
 -- 
 tejun
+
+[1] http://lkml.kernel.org/g/1399663975-315-1-git-send-email-tj@kernel.org
+[2] http://lkml.kernel.org/g/20140509195059.GE4486@htj.dyndns.org
