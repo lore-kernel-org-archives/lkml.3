@@ -1,117 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169AbaEIKuG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 06:50:06 -0400
-Received: from fallback8.mail.ru ([94.100.176.136]:41357 "EHLO
-	fallback8.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945AbaEIKuE (ORCPT
+	id S1756004AbaEIKvX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 06:51:23 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:34589 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673AbaEIKvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 06:50:04 -0400
-From: Brilliantov Kirill Vladimirovich <brilliantov@inbox.ru>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Andreas Dilger <andreas.dilger@intel.com>,
-        Oleg Drokin <oleg.drokin@intel.com>, Peng Tao <tao.peng@emc.com>,
-        CCing hpdd-discuss <hpdd-discuss@ml01.01.org>,
-        linux-kernel@vger.kernel.org,
-        Brilliantov Kirill Vladimirovich <brilliantov@inbox.ru>
-Subject: [PATCH] staging/lustre: fix sparse warning: Using plain integer as NULL pointer
-Date: Fri,  9 May 2014 14:49:24 +0400
-Message-Id: <1399632564-10263-1-git-send-email-brilliantov@inbox.ru>
-X-Mailer: git-send-email 1.9.1
-X-Spam: Not detected
-X-Mras: Ok
+	Fri, 9 May 2014 06:51:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <536CAA4F.8050404@samsung.com>
+References: <1398665874-31238-1-git-send-email-gautam.vivek@samsung.com>
+	<5368F136.6070804@samsung.com>
+	<CAFp+6iHN-W-k6ow5YykK_QWgBJ+GgzXwPX6suWtizxwJWOiGtg@mail.gmail.com>
+	<CAFp+6iF=Z_dkd+YJm2-ODmvgZ6PCt+bUx+vSVm_5RtobVN0WfA@mail.gmail.com>
+	<536CAA4F.8050404@samsung.com>
+Date: Fri, 9 May 2014 16:21:19 +0530
+X-Google-Sender-Auth: 9dMqPuVAcZPbovLA2F7vPcgdNAo
+Message-ID: <CAFp+6iEGvy71s=-Vt37TKkVDUX1wO6GZdwL=uBfPjng78yE5-A@mail.gmail.com>
+Subject: Re: [PATCH v7 1/2] phy: Add new Exynos5 USB 3.0 PHY driver
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        kishon <kishon@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-doc@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Brilliantov Kirill Vladimirovich <brilliantov@inbox.ru>
----
- drivers/staging/lustre/lustre/osc/lproc_osc.c | 68 +++++++++++++--------------
- 1 file changed, 34 insertions(+), 34 deletions(-)
+Hi Sylwester,
 
-diff --git a/drivers/staging/lustre/lustre/osc/lproc_osc.c b/drivers/staging/lustre/lustre/osc/lproc_osc.c
-index 358e32c..0cadfcd 100644
---- a/drivers/staging/lustre/lustre/osc/lproc_osc.c
-+++ b/drivers/staging/lustre/lustre/osc/lproc_osc.c
-@@ -525,44 +525,44 @@ LPROC_SEQ_FOPS_RW_TYPE(osc, import);
- LPROC_SEQ_FOPS_RW_TYPE(osc, pinger_recov);
- 
- static struct lprocfs_vars lprocfs_osc_obd_vars[] = {
--	{ "uuid",	     &osc_uuid_fops,	0, 0 },
--	{ "ping",	     &osc_ping_fops,    0, 0222 },
--	{ "connect_flags",   &osc_connect_flags_fops, 0, 0 },
--	{ "blocksize",       &osc_blksize_fops,     0, 0 },
--	{ "kbytestotal",     &osc_kbytestotal_fops, 0, 0 },
--	{ "kbytesfree",      &osc_kbytesfree_fops,  0, 0 },
--	{ "kbytesavail",     &osc_kbytesavail_fops, 0, 0 },
--	{ "filestotal",      &osc_filestotal_fops,  0, 0 },
--	{ "filesfree",       &osc_filesfree_fops,   0, 0 },
--	//{ "filegroups",      lprocfs_rd_filegroups,  0, 0 },
--	{ "ost_server_uuid", &osc_server_uuid_fops, 0, 0 },
--	{ "ost_conn_uuid",   &osc_conn_uuid_fops, 0, 0 },
--	{ "active",	     &osc_active_fops, 0 },
--	{ "max_pages_per_rpc", &osc_obd_max_pages_per_rpc_fops, 0 },
--	{ "max_rpcs_in_flight", &osc_max_rpcs_in_flight_fops, 0 },
--	{ "destroys_in_flight", &osc_destroys_in_flight_fops, 0, 0 },
--	{ "max_dirty_mb",    &osc_max_dirty_mb_fops, 0 },
--	{ "osc_cached_mb",   &osc_cached_mb_fops, 0 },
--	{ "cur_dirty_bytes", &osc_cur_dirty_bytes_fops, 0, 0 },
--	{ "cur_grant_bytes", &osc_cur_grant_bytes_fops, 0 },
--	{ "cur_lost_grant_bytes", &osc_cur_lost_grant_bytes_fops, 0, 0},
--	{ "grant_shrink_interval", &osc_grant_shrink_interval_fops, 0 },
--	{ "checksums",       &osc_checksum_fops, 0 },
--	{ "checksum_type",   &osc_checksum_type_fops, 0 },
--	{ "resend_count",    &osc_resend_count_fops, 0},
--	{ "timeouts",	     &osc_timeouts_fops, 0, 0 },
--	{ "contention_seconds", &osc_contention_seconds_fops, 0 },
--	{ "lockless_truncate",  &osc_lockless_truncate_fops, 0 },
--	{ "import",		&osc_import_fops, 0 },
--	{ "state",		&osc_state_fops, 0, 0 },
--	{ "pinger_recov",	&osc_pinger_recov_fops, 0 },
--	{ 0 }
-+	{ "uuid",	     &osc_uuid_fops,	NULL, 0 },
-+	{ "ping",	     &osc_ping_fops,    NULL, 0222 },
-+	{ "connect_flags",   &osc_connect_flags_fops, NULL, 0 },
-+	{ "blocksize",       &osc_blksize_fops,     NULL, 0 },
-+	{ "kbytestotal",     &osc_kbytestotal_fops, NULL, 0 },
-+	{ "kbytesfree",      &osc_kbytesfree_fops,  NULL, 0 },
-+	{ "kbytesavail",     &osc_kbytesavail_fops, NULL, 0 },
-+	{ "filestotal",      &osc_filestotal_fops,  NULL, 0 },
-+	{ "filesfree",       &osc_filesfree_fops,   NULL, 0 },
-+	/*{ "filegroups",      lprocfs_rd_filegroups,  NULL, 0 },*/
-+	{ "ost_server_uuid", &osc_server_uuid_fops, NULL, 0 },
-+	{ "ost_conn_uuid",   &osc_conn_uuid_fops, NULL, 0 },
-+	{ "active",	     &osc_active_fops, NULL },
-+	{ "max_pages_per_rpc", &osc_obd_max_pages_per_rpc_fops, NULL },
-+	{ "max_rpcs_in_flight", &osc_max_rpcs_in_flight_fops, NULL },
-+	{ "destroys_in_flight", &osc_destroys_in_flight_fops, NULL, 0 },
-+	{ "max_dirty_mb",    &osc_max_dirty_mb_fops, NULL },
-+	{ "osc_cached_mb",   &osc_cached_mb_fops, NULL },
-+	{ "cur_dirty_bytes", &osc_cur_dirty_bytes_fops, NULL, 0 },
-+	{ "cur_grant_bytes", &osc_cur_grant_bytes_fops, NULL },
-+	{ "cur_lost_grant_bytes", &osc_cur_lost_grant_bytes_fops, NULL, 0},
-+	{ "grant_shrink_interval", &osc_grant_shrink_interval_fops, NULL },
-+	{ "checksums",       &osc_checksum_fops, NULL },
-+	{ "checksum_type",   &osc_checksum_type_fops, NULL },
-+	{ "resend_count",    &osc_resend_count_fops, NULL},
-+	{ "timeouts",	     &osc_timeouts_fops, NULL, 0 },
-+	{ "contention_seconds", &osc_contention_seconds_fops, NULL },
-+	{ "lockless_truncate",  &osc_lockless_truncate_fops, NULL },
-+	{ "import",		&osc_import_fops, NULL },
-+	{ "state",		&osc_state_fops, NULL, 0 },
-+	{ "pinger_recov",	&osc_pinger_recov_fops, NULL },
-+	{ NULL }
- };
- 
- LPROC_SEQ_FOPS_RO_TYPE(osc, numrefs);
- static struct lprocfs_vars lprocfs_osc_module_vars[] = {
--	{ "num_refs",	&osc_numrefs_fops,     0, 0 },
--	{ 0 }
-+	{ "num_refs",	&osc_numrefs_fops,     NULL, 0 },
-+	{ NULL }
- };
- 
- #define pct(a,b) (b ? a * 100 / b : 0)
+
+On Fri, May 9, 2014 at 3:43 PM, Sylwester Nawrocki
+<s.nawrocki@samsung.com> wrote:
+> Hi Vivek,
+>
+> On 08/05/14 11:03, Vivek Gautam wrote:
+>>>>> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>>>> >>> index b422e38..51efe4c 100644
+>>>>> >>> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>>>> >>> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>>>> >>> @@ -114,3 +114,43 @@ Example:
+>>>>> >>>               compatible = "samsung,exynos-sataphy-i2c";
+>>>>> >>>               reg = <0x38>;
+>>>>> >>>       };
+>>>>> >>> +
+>>>>> >>> +Samsung Exynos5 SoC series USB DRD PHY controller
+>>>>> >>> +--------------------------------------------------
+>>>>> >>> +
+>>>>> >>> +Required properties:
+>>>>> >>> +- compatible : Should be set to one of the following supported values:
+>>>>> >>> +     - "samsung,exynos5250-usbdrd-phy" - for exynos5250 SoC,
+>>>>> >>> +     - "samsung,exynos5420-usbdrd-phy" - for exynos5420 SoC.
+>>>>> >>> +- reg : Register offset and length of USB DRD PHY register set;
+>>>>> >>> +- clocks: Clock IDs array as required by the controller
+>>>>> >>> +- clock-names: names of clocks correseponding to IDs in the clock property;
+>>>>> >>> +            Required clocks:
+>>>>> >>> +     - phy: main PHY clock (same as USB DRD controller i.e. DWC3 IP clock),
+>>>>> >>> +            used for register access.
+>>>>> >>> +     - ref: PHY's reference clock (usually crystal clock), used for
+>>>>> >>> +            PHY operations, associated by phy name. It is used to
+>>>>> >>> +            determine bit values for clock settings register.
+>>>>> >>> +            For Exynos5420 this is given as 'sclk_usbphy30' in CMU.
+>>>>> >>> +- samsung,pmu-syscon: phandle for PMU system controller interface, used to
+>>>>> >>> +                   control pmu registers for power isolation.
+>>>>> >>> +- samsung,pmu-offset: phy power control register offset to pmu-system-controller
+>>>>> >>> +                   base.
+>>>> >>
+>>>> >> It doesn't seem right to have register offset encoded in the device tree
+>>>> >> like this. I think it'd be more appropriate to associate such an offset
+>>>> >> with the compatible string's value in the driver.
+>>> >
+>>> > Ok, it makes more sense.
+>>> > Just out of curiosity, what difference would this make ?
+>>
+>> Moreover, in case of Exynos5420 (and may be in future SoCs), where we
+>> have 2 USB DRD PHY controllers,
+>> we will need to have a way around to deal with two separate offsets in
+>> the driver for one compatible string.
+>
+> It could be handled by creating a list of offsets per compatible string and
+> then adding some way to identify the PHY device instance. So I believe that's
+> not a big issue.
+
+True, we had tried to make use of 'aliases' for multiple controllers
+on Exynos5420,
+in earlier version V3 of this patch, to handle the pmu-register
+offsets in _somewhat_ similar fashion. [1]
+But then we had to drop that as per the suggestions in the mailing list.
+
+> Now you'd be encoding a list of registers offsets in the
+> device tree, without encoding bit layout of each register. It's unlikely that
+> each instance would have different bits layout, but describing individual
+> registers in DT I thought is something that we're not supposed to do.
+
+Ok, so this is information to me, i was not very much aware of this.
+Thanks for explaining it here.
+
+>
+>> Getting the offsets from DT seems a cleaner way to handle this case of
+>> multi controllers.
+>
+> I think it's easier from the driver POV, but isn't it violating the device
+> tree rules ?
+> Anyway. I'm just pointing this minor issue in the binding as it appears
+> to me. The final word of course belongs to a DT binding maintainer.
+
+Thanks Sylwester, for pointing this out here.
+Meantime, please let me know if the approach using aliases is one
+possible solution for this or not ?
+
+
+[1] [PATCH v3] phy: Add new Exynos5 USB 3.0 PHY driver
+     https://lkml.org/lkml/2014/1/21/46
+
+
+
 -- 
-1.9.1
-
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
