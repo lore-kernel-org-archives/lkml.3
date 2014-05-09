@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599AbaEIOBW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 10:01:22 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46037 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751520AbaEIOBU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 10:01:20 -0400
-Message-ID: <536CDFAE.8070208@free-electrons.com>
-Date: Fri, 09 May 2014 16:01:18 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: =?UTF-8?B?RW1pbGlvIEzDs3Bleg==?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Chen-Yu Tsai <wens@csie.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Hans de Goede <hdegoede@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [PATCH v3 3/7] mfd: add support for sun6i PRCM (Power/Reset/Clock
- Management) unit
-References: <1399633911-7094-1-git-send-email-boris.brezillon@free-electrons.com> <1399633911-7094-4-git-send-email-boris.brezillon@free-electrons.com> <20140509135251.GY5767@lee--X1>
-In-Reply-To: <20140509135251.GY5767@lee--X1>
-Content-Type: text/plain; charset=UTF-8
+	id S1755359AbaEIOGP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 10:06:15 -0400
+Received: from mga11.intel.com ([192.55.52.93]:23355 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752606AbaEIOGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 10:06:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1018,1389772800"; 
+   d="scan'208";a="529151129"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Armin Rigo <arigo@tunes.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+In-Reply-To: <CA+55aFw9eiaFtr+c4gcGSWG=pPeqDnX5aPQMVMqX1XkPF30ahg@mail.gmail.com>
+References: <1399552888-11024-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <CAMSv6X0+3-uNeiyEPD3sA5dA6Af_M+BT0aeVpa3qMv1aga0q9g@mail.gmail.com>
+ <20140508160205.A0EC7E009B@blue.fi.intel.com>
+ <CA+55aFw9eiaFtr+c4gcGSWG=pPeqDnX5aPQMVMqX1XkPF30ahg@mail.gmail.com>
+Subject: Re: [PATCHv2 0/2] remap_file_pages() decommission
 Content-Transfer-Encoding: 7bit
+Message-Id: <20140509140536.F06BFE009B@blue.fi.intel.com>
+Date: Fri,  9 May 2014 17:05:36 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus Torvalds wrote:
+> On Thu, May 8, 2014 at 9:02 AM, Kirill A. Shutemov
+> <kirill.shutemov@linux.intel.com> wrote:
+> >
+> >> i.e. if you remove or
+> >> emulate remap_file_pages(), please increase the default limit as well.
+> >
+> > It's fine to me. Andrew?
+> 
+> Not Andrew, but one thing we might look at is to make the limit
+> per-user rather than per-vm.
 
-On 09/05/2014 15:52, Lee Jones wrote:
->> The PRCM (Power/Reset/Clock Management) block exposes several subdevices
->> in different subsystems (clk, reset ...)
->>
->> Add basic support for the PRCM unit with clk (AR100, AHB0, and APB0 clks)
->> and reset controller subdevices.
->>
->> Other subdevices might be added later (if needed).
->>
->> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
->> Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->> ---
->>  drivers/mfd/Kconfig      |   8 +++
->>  drivers/mfd/Makefile     |   1 +
->>  drivers/mfd/sun6i-prcm.c | 134 +++++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 143 insertions(+)
->>  create mode 100644 drivers/mfd/sun6i-prcm.c
-> [...]
->
->> +/*
->> + * Copyright (C) 2014 Free Electrons
->> + *
->> + * License Terms: GNU General Public License v2
->> + * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
->> + *
->> + * Allwinner PRCM (Power/Reset/Clock Management) driver
->> + *
->> + */
->> +
->> +#include <linux/mfd/core.h>
->> +#include <linux/module.h>
->> +#include <linux/of.h>
-> Ah, now isn't that better?
-
-Absolutely :-).
-
-> Acked-by: Lee Jones <lee.jones@linaro.org>
->
+Hm. I'm confused here. Do we have any limit forced per-user?
+I only see things like rlimits which are copied from parrent.
+Is it what you want?
 
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
-
+ Kirill A. Shutemov
