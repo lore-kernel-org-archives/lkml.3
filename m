@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924AbaEIIH1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 04:07:27 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:44416 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755809AbaEIIHV (ORCPT
+	id S1756041AbaEIIIU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 04:08:20 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:55702 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752316AbaEIIIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 04:07:21 -0400
-Date: Fri, 9 May 2014 11:07:06 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        nandu.hgowda@gmail.com, sachin.kamat@linaro.org,
-        peter.p.waskiewicz.jr@intel.com, linux-kernel@vger.kernel.org,
-        himangi774@gmail.com, fempsci@gmail.com
-Subject: Re: [PATCH 2/3] Staging: cxt1e1: Fix line length over 80 characters
- in musycc.c
-Message-ID: <20140509080706.GK26890@mwanda>
-References: <20140509013948.GA30935@devel.8.8.4.4>
+	Fri, 9 May 2014 04:08:14 -0400
+Date: Fri, 9 May 2014 09:08:07 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Chen-Yu Tsai <wens@csie.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
+        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
+Subject: Re: [PATCH v2 3/7] mfd: add support for sun6i PRCM
+ (Power/Reset/Clock Management) unit
+Message-ID: <20140509080807.GH5767@lee--X1>
+References: <1399483554-8824-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1399483554-8824-4-git-send-email-boris.brezillon@free-electrons.com>
+ <20140508110205.GB5767@lee--X1>
+ <536BE366.8080907@free-electrons.com>
+ <20140509071246.GE5767@lee--X1>
+ <536C84F6.2050701@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140509013948.GA30935@devel.8.8.4.4>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <536C84F6.2050701@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is ok, but here are some additional hints.
+> >>>> +static struct platform_driver sun6i_prcm_driver = {
+> >>>> +	.driver = {
+> >>>> +		.name = "sun6i-prcm",
+> >>>> +		.owner = THIS_MODULE,
+> >>>> +		.of_match_table = sun6i_prcm_dt_ids,
+> >>>> +	},
+> >>>> +	.probe = sun6i_prcm_probe,
+> >>> You need a .remove() call-back.
+> >>
+> >> This driver cannot be compiled as module (see the Kconfig definition)
+> >> and the devices are not hotpluggable, as a result a probed device will
+> >> never be removed.
+> >>
+> >> Do you still want me to implement the remove function ?
+> > 
+> > .remove() also be run on shut down.
+> 
+> That is not true, if your device needs to do anything special at shutdown
+> you need to add a shutdown callback. Devices are kept as is (not torn down)
+> on shutdown.
 
-On Fri, May 09, 2014 at 10:39:48AM +0900, Daeseok Youn wrote:
-> @@ -1100,7 +1102,9 @@ musycc_bh_rx_eom(mpi_t *pi, int gchan)
->  			 */
->  			if (hdlcnum >= 228) {
->  				if (nciProcess_RX_packet)
-> -					(*nciProcess_RX_packet) (hdlcnum, status & 0x3fff, m, ch->user);
-> +					(*nciProcess_RX_packet)(hdlcnum, status &
-> +								0x3fff, m,
-> +								ch->user);
+Ah okay, I'll bow to your knowledge.  So there's no reason for this
+driver to ever call mfd_remove_devices() then?
 
-It's possible to break this one up at the commas.
-
-					(*nciProcess_RX_packet)(hdlcnum,
-								status & 0x3fff,
-								m, ch->user);
-
->  			} else
->  #endif /* CONFIG_SBE_WAN256T3_NCOMM */
->  			{
-> @@ -1379,7 +1383,8 @@ musycc_intr_bh_tasklet(ci_t *ci)
->  			else
->  				ci->iqd_p[headx] =
->  					__constant_cpu_to_le32(INT_EMPTY_ENTRY);
-> -			ci->iqp_headx = (headx + 1) & (INT_QUEUE_SIZE - 1); /* insure wrapness */
-> +			/* insure wrapness */
-> +			ci->iqp_headx = (headx + 1) & (INT_QUEUE_SIZE - 1);
->  			FLUSH_MEM_WRITE();
->  			FLUSH_MEM_READ();
->  			continue;
-> @@ -1516,7 +1521,8 @@ musycc_intr_bh_tasklet(ci_t *ci)
->  					pr_info("%s: RX buffer overflow [ONR] on channel %d, mode %x\n",
->  						ci->devname, ch->channum,
->  						ch->p.chan_mode);
-> -					//musycc_dump_rxbuffer_ring (ch, 0);        /* RLD DEBUG */
-> +					/* RLD DEBUG */
-> +					//musycc_dump_rxbuffer_ring (ch, 0);
-
-Just delete this commented out code.
-
->  				}
->  			}
->  			musycc_chan_restart(ch);
-> @@ -1573,7 +1579,8 @@ musycc_intr_bh_tasklet(ci_t *ci)
->  		} /* switch on err */
->  
->  		/* Check for interrupt lost condition */
-> -		if ((currInt & INTRPT_ILOST_M) && (cxt1e1_log_level >= LOG_ERROR))
-> +		if ((currInt & INTRPT_ILOST_M) &&
-> +		    (cxt1e1_log_level >= LOG_ERROR))
->  			pr_info("%s: Interrupt queue overflow - ILOST asserted\n",
->  				ci->devname);
->  		/* insure wrapness */
-> @@ -1684,7 +1691,8 @@ musycc_del_chan(ci_t *ci, int channum)
->  {
->  	mch_t      *ch;
->  
-> -	if ((channum < 0) || (channum >= (MUSYCC_NPORTS * MUSYCC_NCHANS)))  /* sanity chk param */
-> +	/* sanity chk param */
-
-This kind of comment is too obvious.  Just delete it.
-
-> +	if ((channum < 0) || (channum >= (MUSYCC_NPORTS * MUSYCC_NCHANS)))
->  		return ECHRNG;
->  	ch = sd_find_chan(ci, channum);
->  	if (!ch)
-
-regards,
-dan carpenter
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
