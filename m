@@ -1,97 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756774AbaEIOnM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 10:43:12 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:53443 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755531AbaEIOnI (ORCPT
+	id S1756820AbaEIOng (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 10:43:36 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46510 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754251AbaEIOne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 10:43:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140509135153.GM12304@sirena.org.uk>
-References: <1398350916-885-1-git-send-email-ch.naveen@samsung.com>
- <20140424162558.GB12304@sirena.org.uk> <CAHfPSqB5+mLiC07jbEpeUgW63pZVk700SkYGxToO7GRAsFm_nQ@mail.gmail.com>
- <20140509135153.GM12304@sirena.org.uk>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Fri, 9 May 2014 20:12:47 +0530
-Message-ID: <CAHfPSqDSTyQXPT-NCZ2hE01qpdmaR54tbWCUYC_zSDGFp58+7g@mail.gmail.com>
-Subject: Re: [PATCH] i2c: exynos5: Initialise Samsung High Speed I2C
- controller early
-To: Mark Brown <broonie@kernel.org>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        sjg@chromium.org, grundler@chromium.org, linux-kernel@vger.kernel.org,
-        wsa@the-dreams.de, cpgs@samsung.com
-Content-Type: text/plain; charset=UTF-8
+	Fri, 9 May 2014 10:43:34 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Bryan Evenson <bevenson@melinkcorp.com>
+Cc: Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Mark Roszko <mark.roszko@gmail.com>, Johan Hovold <jhovold@gmail.com>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Andrew Morton <akpm@linux-foundation.org>, <stable@vger.kernel.org>
+Subject: [RESEND PATCH v4] ARM: at91: fix at91_sysirq_mask_rtc for sam9x5 SoCs
+Date: Fri,  9 May 2014 16:43:30 +0200
+Message-Id: <1399646610-18816-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mark,
+sam9x5 SoCs have the following errata:
+"RTC: Interrupt Mask Register cannot be used
+ Interrupt Mask Register read always returns 0."
 
-On 9 May 2014 19:21, Mark Brown <broonie@kernel.org> wrote:
-> On Fri, May 09, 2014 at 05:50:00PM +0530, Naveen Krishna Ch wrote:
->> On 24 April 2014 21:55, Mark Brown <broonie@kernel.org> wrote:
->
->> >> Such solution has been proposed by Mark Brown to fix the problem of
->> >> the regulators not beeing available on the peripheral device probe():
->> >> http://lists.infradead.org/pipermail/linux-arm-kernel/2010-March/011971.html
->
->> > What specifically is this needed for?  We *should* be able to use
->> > deferred probe for most things, but I know that not all subsystems are
->> > able to yet.
->
->> DRM related drivers like DP, FIMD, HDMI, Mixer wants to be probed ASAP
->> during the boot.
->> The real problem comes when, one of these drivers do a regulator_get().
->
->> If the physical supply  is not enabled/hookedup the regulator_get() call
->> assumes that physical supply is present and returns a
->> "dummy_regulator" (But, not an error).
->
->> Because of which, Display and several other devices fails to work.
->
-> These drivers are buggy, if they geniunely expect and handle a missing
-> supply then they should be using regulator_get_optional() to request the
-> regulator and even if they don't the use of subsys_initcall() is not
-> going to fix anything here - if a dummy regulator is going to be
-> returned the time things are probed won't make a difference.
-We have a situation where.a PMIC is sitting under I2C_TUNNEL
-with I2C, SPI and SPI uses DMA.
+Hence we should not rely on what IMR claims about already masked IRQs
+and just disable all IRQs.
 
-PMIC --- I2C_TUNNEL ---- I2C/SPI ---- DMA
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: <stable@vger.kernel.org> # v3.10+
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+Hello,
 
-This PMIC is setting some FETS required for Backlight, LCD and G3D modules.
+Again, sorry for the noise, but I forgot to add Nicolas' ack and to keep
+Andrew and the stable ML in cc.
 
-If all the I2C, SPI, DMA, I2C_TUNNEL, DRM based LCD are all mod_probes()
-DRM drivers are probing a head of the PMIC probe. Which is causing the
-display drivers to get "dummy_regulators" instead of the real supplies.
+Best Regards,
 
-We couldn't implement -PROBE_DEFER because, the probes are not failing.
+Boris
 
-Should we should check if the return value of regulator_get() is a
-"dummy_regulator"
-and then defer the probe /.
+Changes since v3:
+- fix commit message and comment
+Changes since v2:
+- removed unused variable 'mask'
+Changes since v1:
+- use a macro to define IRQs bitmask
+- read IMR register to ensure the write to IDR has been flushed
+- quote atmel's datasheet errata in commit message
+- comment the code to describe why we're not using IMR to disable
+  the interrupts
 
->
->> I2C, I2C_TUNNEL, SPI and DMA drivers are required as subsys_initcall()
->> for similar reason.
->
-> What makes you say this?  Typically those drivers don't use regulators
-> at all.
-I mean I2C, I2C_TUNNEL, SPI and DMA drivers have be to subsys_initcall()
-to get the PMIC up intime. so, that the system would use the real supplies.
+ arch/arm/mach-at91/sysirq_mask.c | 22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
-This looks like a board specific solution. I guess, this is quite
-frequent with the
-buses like I2C, SPI.
-
-Kindly, suggest a nicer way. Thanks
-
-
-
+diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-at91/sysirq_mask.c
+index 2ba694f..f8bc351 100644
+--- a/arch/arm/mach-at91/sysirq_mask.c
++++ b/arch/arm/mach-at91/sysirq_mask.c
+@@ -25,24 +25,28 @@
+ 
+ #include "generic.h"
+ 
+-#define AT91_RTC_IDR	0x24	/* Interrupt Disable Register */
+-#define AT91_RTC_IMR	0x28	/* Interrupt Mask Register */
++#define AT91_RTC_IDR		0x24	/* Interrupt Disable Register */
++#define AT91_RTC_IMR		0x28	/* Interrupt Mask Register */
++#define AT91_RTC_IRQ_MASK	0x1f	/* Available IRQs mask */
+ 
+ void __init at91_sysirq_mask_rtc(u32 rtc_base)
+ {
+ 	void __iomem *base;
+-	u32 mask;
+ 
+ 	base = ioremap(rtc_base, 64);
+ 	if (!base)
+ 		return;
+ 
+-	mask = readl_relaxed(base + AT91_RTC_IMR);
+-	if (mask) {
+-		pr_info("AT91: Disabling rtc irq\n");
+-		writel_relaxed(mask, base + AT91_RTC_IDR);
+-		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
+-	}
++	/*
++	 * sam9x5 SoCs have the following errata:
++	 * "RTC: Interrupt Mask Register cannot be used
++	 *  Interrupt Mask Register read always returns 0."
++	 *
++	 * Hence we're not relying on IMR values to disable
++	 * interrupts.
++	 */
++	writel_relaxed(AT91_RTC_IRQ_MASK, base + AT91_RTC_IDR);
++	(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
+ 
+ 	iounmap(base);
+ }
 -- 
-Shine bright,
-(: Nav :)
+1.8.3.2
+
