@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756815AbaEIOgh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 10:36:37 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:41227 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756646AbaEIOgf (ORCPT
+	id S1755095AbaEIOlY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 10:41:24 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:32870 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750987AbaEIOlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 10:36:35 -0400
-Date: Fri, 9 May 2014 15:36:29 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Alexander Shiyan <shc_work@mail.ru>, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH 1/2] mfd: mc13xxx: Do not use platform data with
- devicetree
-Message-ID: <20140509143629.GA5767@lee--X1>
-References: <1398926883-21778-1-git-send-email-shc_work@mail.ru>
- <20140509113030.GV5767@lee--X1>
- <1399643769.716496780@f345.i.mail.ru>
- <20140509141840.GZ5767@lee--X1>
- <20140509143054.GN12304@sirena.org.uk>
+	Fri, 9 May 2014 10:41:23 -0400
+Date: Fri, 9 May 2014 15:40:34 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: James Hogan <james.hogan@imgtec.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "luto@amacapital.net" <luto@amacapital.net>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "umgwanakikbuti@gmail.com" <umgwanakikbuti@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Will Deacon <Will.Deacon@arm.com>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC][PATCH 6/8] sched,idle: Avoid spurious wakeup IPIs
+Message-ID: <20140509144034.GF7950@arm.com>
+References: <20140411134243.160989490@infradead.org>
+ <20140411135218.478299389@infradead.org>
+ <CAAG0J9_q1KsUx10-XAb7AJnxv2ehctg6q1KME7ahsk1OZV8vZQ@mail.gmail.com>
+ <20140509141520.GV2844@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140509143054.GN12304@sirena.org.uk>
+In-Reply-To: <20140509141520.GV2844@laptop.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > You need to revert (or remove) the original one and apply:
-> 
-> >   "ASoC: mc13783: Add devicetree support"
-> 
-> > ... instead.
-> 
-> Why not just pull the tag instead?  I haven't looked at the patch but
-> don't they need to go in together anyway.
+Hi Peter,
 
-Only functionally.  They are orthogonally buildable apparently.
+On Fri, May 09, 2014 at 03:15:20PM +0100, Peter Zijlstra wrote:
+> On Fri, May 09, 2014 at 02:37:27PM +0100, James Hogan wrote:
+> > On 11 April 2014 14:42, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > +       return !(fetch_or(&ti->flags, _TIF_NEED_RESCHED) & _TIF_POLLING_NRFLAG);
+> > 
+> > This breaks the build on metag, and I suspect arm64 too:
+> 
+> Yep, I just got a patch for arm64.
+
+[...]
+
+> Any SMP arch that has a polling idle function of any kind (including the
+> default cpu_idle_poll()).
+> 
+> That said, even if that's true, not having TIF_POLLING_NRFLAG isn't
+> fatal, just sub-optimal in that we'll send an unconditional IPI to wake
+> the CPU even though its polling TIF_NEED_RESCHED and doesn't need
+> anything other than that write to wake up.
+> 
+> Most archs have (x86) hlt or (arm) wfi like idle instructions, and if
+> that is your only possible idle function, you'll require the interrupt
+> to wake up and there's really no point to having the POLLING bit.
+
+I wonder why we still need TIF_POLLING_NRFLAG for arm64. It was on arm
+until commit 16a8016372c42c7628eb (sanitize tsk_is_polling()). On arm64
+we use wfi for idle or a firmware call but in both cases the assumption
+is that we need an interrupt for waking up.
+
+So I think we should remove this macro for arm64.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Catalin
