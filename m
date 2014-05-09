@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903AbaEIHc7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 03:32:59 -0400
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:48266 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751055AbaEIHc5 (ORCPT
+	id S1753996AbaEIHeb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 03:34:31 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:56849 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116AbaEIHe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 03:32:57 -0400
-Date: Fri, 9 May 2014 10:32:52 +0300
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: m.chehab@samsung.com, linux-dev@sensoray.com, hans.verkuil@cisco.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [media] s2255drv: fix memory leak s2255_probe()
-Message-ID: <20140509073252.GI8753@valkosipuli.retiisi.org.uk>
-References: <20140508225718.GA24276@devel.8.8.4.4>
+	Fri, 9 May 2014 03:34:29 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH 1/2] input: fix ps2/serio module dependency
+Date: Fri, 09 May 2014 09:34:26 +0200
+Message-ID: <4385062.1bvKsSrGCq@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140508155931.GA11672@core.coreip.homeip.net>
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <1399560990-1402858-15-git-send-email-arnd@arndb.de> <20140508155931.GA11672@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140508225718.GA24276@devel.8.8.4.4>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:YnYmdy3kE0iM/HdrCqO8+MegTQFLU9+nViZbVewlnv+
+ 9SZ6TV9ryuFzJ6jXoRMEN2+a2EXsfLoqy53+Kn4vRuhHTdKJ8N
+ EN5VFYjdK+JScdmmviye/G5Lu17JpyHrILEnSDXAZzq6YeJlzO
+ wRnm3/yfrhF/sQVqAZzedEE0CrLkyIeUqFUKx2rd5myXa4nFht
+ V4c2FCiEzsedEGWa/dyr7cNdX8YLMW2iqV0CoACf8PcaxA2vLF
+ eUHEdBbdJkrxVlMNde72OK3EzyChAgaqnYWYwZS7TNbjSfWgi3
+ 4tanxouMPAhESZ3kz/+etCVHKLlkb29GnQykF+1cIm/V4XLG3V
+ anRhGT8WEoYeToajFnCs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daeseok,
-
-Thanks for the update! :-)
-
-On Fri, May 09, 2014 at 07:57:18AM +0900, Daeseok Youn wrote:
-> smatch says:
->  drivers/media/usb/s2255/s2255drv.c:2246 s2255_probe() warn:
-> possible memory leak of 'dev'
+On Thursday 08 May 2014 08:59:31 Dmitry Torokhov wrote:
+> Hi Arnd,
 > 
-> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
-> ---
-> V2: use the same pattern for error handling.
+> On Thu, May 08, 2014 at 04:56:26PM +0200, Arnd Bergmann wrote:
+> > @@ -71,7 +71,7 @@ config KEYBOARD_ATKBD
+> >       default y
+> >       select SERIO
+> >       select SERIO_LIBPS2
+> > -     select SERIO_I8042 if X86
+> > +     select SERIO_I8042 if X86 || ARCH_MIGHT_HAVE_PC_SERIO
 > 
->  drivers/media/usb/s2255/s2255drv.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> x86 also selects ARCH_MIGHT_HAVE_PC_SERIO so shouldn't this be
 > 
-> diff --git a/drivers/media/usb/s2255/s2255drv.c b/drivers/media/usb/s2255/s2255drv.c
-> index 1d4ba2b..3193474 100644
-> --- a/drivers/media/usb/s2255/s2255drv.c
-> +++ b/drivers/media/usb/s2255/s2255drv.c
-> @@ -2243,7 +2243,7 @@ static int s2255_probe(struct usb_interface *interface,
->  	dev->cmdbuf = kzalloc(S2255_CMDBUF_SIZE, GFP_KERNEL);
->  	if (dev->cmdbuf == NULL) {
->  		s2255_dev_err(&interface->dev, "out of memory\n");
-> -		return -ENOMEM;
-> +		goto errorFWDATA1;
->  	}
->  
->  	atomic_set(&dev->num_channels, 0);
+>         select SERIO_I8042 if ARCH_MIGHT_HAVE_PC_SERIO
+> 
+> ?
+> 
+> I can fix it up on my side if you agree.
 
-Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
+Yes, sounds good, thanks!
 
--- 
-Kind regards,
-
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+	Arnd
