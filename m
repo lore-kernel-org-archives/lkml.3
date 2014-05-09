@@ -1,163 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932400AbaEIPa4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 11:30:56 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58329 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932379AbaEIPav convert rfc822-to-8bit (ORCPT
+	id S1757259AbaEIPcN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 11:32:13 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34044 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757236AbaEIPcK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 11:30:51 -0400
-From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
-To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+	Fri, 9 May 2014 11:32:10 -0400
+Date: Fri, 9 May 2014 16:32:06 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Chander Kashyap <chander.kashyap@linaro.org>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Subject: RE: [PATCH v2] serial: uart: add hw flow control support
- configuration
-Thread-Topic: [PATCH v2] serial: uart: add hw flow control support
- configuration
-Thread-Index: AQHPZXA8z3C7j2dF7EGLBbHJueLeaJs4a++Q
-Date: Fri, 9 May 2014 15:30:02 +0000
-Message-ID: <3E54258959B69E4282D79E01AB1F32B704735082@DFLE11.ent.ti.com>
-References: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        Chander Kashyap <k.chander@samsung.com>
+Subject: Re: [Patch v4 5/5] mcpm: exynos: populate suspend and powered_up
+ callbacks
+Message-ID: <20140509153206.GB5040@e102568-lin.cambridge.arm.com>
+References: <1399278444-8312-3-git-send-email-chander.kashyap@linaro.org>
+ <1399282040-8995-1-git-send-email-chander.kashyap@linaro.org>
+ <1399282040-8995-6-git-send-email-chander.kashyap@linaro.org>
 MIME-Version: 1.0
+In-Reply-To: <1399282040-8995-6-git-send-email-chander.kashyap@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 09 May 2014 15:32:15.0571 (UTC) FILETIME=[DB058A30:01CF6B9B]
+X-MC-Unique: 114050916320803401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Karicheri, Muralidharan
->Sent: Thursday, May 01, 2014 3:05 PM
->To: devicetree@vger.kernel.org; linux-doc@vger.kernel.org; linux-kernel@vger.kernel.org;
->linux-serial@vger.kernel.org
->Cc: Karicheri, Muralidharan; Rob Herring; Pawel Moll; Mark Rutland; Ian Campbell; Kumar
->Gala; Randy Dunlap; Greg Kroah-Hartman; Jiri Slaby; Shilimkar, Santosh
->Subject: [PATCH v2] serial: uart: add hw flow control support configuration
->
->8250 uart driver currently supports only software assisted hw flow control. The software
->assisted hw flow control maintains a hw_stopped flag in the tty structure to stop and start
->transmission and use modem status interrupt for the event to drive the handshake signals.
->This is not needed if hw has flow control capabilities. This patch adds a DT attribute for
->enabling hw flow control for a uart port. Also skip stop and start if this flag is present in flag
->field of the port structure.
->
->Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->
->CC: Rob Herring <robh+dt@kernel.org>
->CC: Pawel Moll <pawel.moll@arm.com>
->CC: Mark Rutland <mark.rutland@arm.com>
->CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
->CC: Kumar Gala <galak@codeaurora.org>
->CC: Randy Dunlap <rdunlap@infradead.org>
->CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->CC: Jiri Slaby <jslaby@suse.cz>
->CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
->---
-> .../devicetree/bindings/serial/of-serial.txt       |    1 +
-> drivers/tty/serial/8250/8250_core.c                |    6 ++++--
-> drivers/tty/serial/of_serial.c                     |    4 ++++
-> drivers/tty/serial/serial_core.c                   |   12 +++++++++---
-> 4 files changed, 18 insertions(+), 5 deletions(-)
->
->diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt
->b/Documentation/devicetree/bindings/serial/of-serial.txt
->index 1928a3e..7705477 100644
->--- a/Documentation/devicetree/bindings/serial/of-serial.txt
->+++ b/Documentation/devicetree/bindings/serial/of-serial.txt
->@@ -37,6 +37,7 @@ Optional properties:
-> - auto-flow-control: one way to enable automatic flow control support. The
->   driver is allowed to detect support for the capability even without this
->   property.
->+- has-hw-flow-control: the hardware has flow control capability.
->
-> Example:
->
->diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
->index 0e1bf88..b69aff2 100644
->--- a/drivers/tty/serial/8250/8250_core.c
->+++ b/drivers/tty/serial/8250/8250_core.c
->@@ -2338,9 +2338,11 @@ serial8250_do_set_termios(struct uart_port *port, struct
->ktermios *termios,
-> 	 * the trigger, or the MCR RTS bit is cleared.  In the case where
-> 	 * the remote UART is not using CTS auto flow control, we must
-> 	 * have sufficient FIFO entries for the latency of the remote
->-	 * UART to respond.  IOW, at least 32 bytes of FIFO.
->+	 * UART to respond.  IOW, at least 32 bytes of FIFO. Also enable
->+	 * AFE if hw flow control is supported
-> 	 */
->-	if (up->capabilities & UART_CAP_AFE && port->fifosize >= 32) {
->+	if ((up->capabilities & UART_CAP_AFE && (port->fifosize >= 32)) ||
->+	    (port->flags & UPF_HARD_FLOW)) {
-> 		up->mcr &= ~UART_MCR_AFE;
-> 		if (termios->c_cflag & CRTSCTS)
-> 			up->mcr |= UART_MCR_AFE;
->diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c index
->9924660..77ec6a1 100644
->--- a/drivers/tty/serial/of_serial.c
->+++ b/drivers/tty/serial/of_serial.c
->@@ -182,6 +182,10 @@ static int of_platform_serial_probe(struct platform_device *ofdev)
-> 					  "auto-flow-control"))
-> 			port8250.capabilities |= UART_CAP_AFE;
->
->+		if (of_property_read_bool(ofdev->dev.of_node,
->+					  "has-hw-flow-control"))
->+			port8250.port.flags |= UPF_HARD_FLOW;
->+
-> 		ret = serial8250_register_8250_port(&port8250);
-> 		break;
-> 	}
->diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
->index b68550d..851707a 100644
->--- a/drivers/tty/serial/serial_core.c
->+++ b/drivers/tty/serial/serial_core.c
->@@ -174,8 +174,12 @@ static int uart_port_startup(struct tty_struct *tty, struct
->uart_state *state,
-> 			if (tty->termios.c_cflag & CBAUD)
-> 				uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
-> 		}
->-
->-		if (tty_port_cts_enabled(port)) {
->+		/*
->+		 * if hw support flow control without software intervention,
->+		 * then skip the below check
->+		 */
->+		if (tty_port_cts_enabled(port) &&
->+		    !(uport->flags & UPF_HARD_FLOW)) {
-> 			spin_lock_irq(&uport->lock);
-> 			if (!(uport->ops->get_mctrl(uport) & TIOCM_CTS))
-> 				tty->hw_stopped = 1;
->@@ -2772,7 +2776,9 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned
->int status)
->
-> 	uport->icount.cts++;
->
->-	if (tty_port_cts_enabled(port)) {
->+	/* skip below code if the hw flow control is supported */
->+	if (tty_port_cts_enabled(port) &&
->+	    !(uport->flags & UPF_HARD_FLOW)) {
-> 		if (tty->hw_stopped) {
-> 			if (status) {
-> 				tty->hw_stopped = 0;
->--
->1.7.9.5
+On Mon, May 05, 2014 at 10:27:20AM +0100, Chander Kashyap wrote:
+> In order to support cpuidle through mcpm, suspend and powered-up
+> callbacks are required in mcpm platform code.
+> Hence populate the same callbacks.
+> 
+> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
+> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+> ---
+> Changes in v4: None
+> Changes in v3:
+> 	1. Removed coherancy enablement after suspend failure.
 
-Any idea who is going to pick this patch for merge?
+coherency
 
-Murali
+> 	2. Use generic function to poweron cpu.
+> changes in v2:
+> 	1. Fixed typo: enynos_pmu_cpunr to exynos_pmu_cpunr
+>  arch/arm/mach-exynos/mcpm-exynos.c |   34 ++++++++++++++++++++++++++++++++++
+>  1 file changed, 34 insertions(+)
+> 
+> diff --git a/arch/arm/mach-exynos/mcpm-exynos.c b/arch/arm/mach-exynos/mcpm-exynos.c
+> index d0f7461..6d4a907 100644
+> --- a/arch/arm/mach-exynos/mcpm-exynos.c
+> +++ b/arch/arm/mach-exynos/mcpm-exynos.c
+> @@ -256,10 +256,44 @@ static int exynos_power_down_finish(unsigned int cpu, unsigned int cluster)
+>  	return -ETIMEDOUT; /* timeout */
+>  }
+>  
+> +void exynos_powered_up(void)
+
+static ?
+
+> +{
+> +	unsigned int mpidr, cpu, cluster;
+> +
+> +	mpidr = read_cpuid_mpidr();
+> +	cpu = MPIDR_AFFINITY_LEVEL(mpidr, 0);
+> +	cluster = MPIDR_AFFINITY_LEVEL(mpidr, 1);
+> +
+> +	arch_spin_lock(&exynos_mcpm_lock);
+> +	if (cpu_use_count[cpu][cluster] == 0)
+> +		cpu_use_count[cpu][cluster] = 1;
+> +	arch_spin_unlock(&exynos_mcpm_lock);
+> +}
+> +
+> +static void exynos_suspend(u64 residency)
+> +{
+> +	unsigned int mpidr, cpunr;
+> +
+> +	mpidr = read_cpuid_mpidr();
+> +	cpunr = exynos_pmu_cpunr(mpidr);
+
+If I were to be picky, I would compute these values only if they
+are needed, ie move the computation after exynos_power_down().
+
+There is another quite horrible issue here. We know this code works
+because the processors A15/A7 hit the caches with C bit in SCTLR cleared.
+
+On processors where this is not true, this sequence would explode
+if power down fails (in case core is gated but L2 is still powered on,
+the stack is stuck in L2) since it is going to read stack data that is
+in L2 but can't be read.
+
+It is not related to this sequence only, but it is an issue in general
+and wanted to mention that on the lists for public awareness.
+
+The gist of what I am saying is, please add a comment to that extent,
+here and it should be added in exynos_power_down() too.
+
+> +	__raw_writel(virt_to_phys(mcpm_entry_point), ns_sram_base_addr + 0x1c);
+
+No magic numbers please (0x1c). You can add a macro/wrapper, as TC2 does.
+
+> +	exynos_power_down();
+> +
+> +	/*
+> +	 * Execution reaches here only if cpu did not power down.
+> +	 * Hence roll back the changes done in exynos_power_down function.
+> +	*/
+> +	exynos_cpu_powerup(cpunr);
+
+Please be aware that if this function returns MCPM will soft reboot, and
+the CPUidle driver will have no way to detect a state entry failure.
+
+I am just flagging this up, since fixing this behaviour is not easy, and
+honestly, since power down failure should be the exception not the rule,
+the idle stats should not be affected much.
+
+I think this is the proper way of implementing the sequence but please
+all keep in mind what I wrote above.
+
+Lorenzo
+
+> +}
+> +
+>  static const struct mcpm_platform_ops exynos_power_ops = {
+>  	.power_up		= exynos_power_up,
+>  	.power_down		= exynos_power_down,
+>  	.power_down_finish	= exynos_power_down_finish,
+> +	.suspend		= exynos_suspend,
+> +	.powered_up		= exynos_powered_up,
+>  };
+>  
+>  static void __init exynos_mcpm_usage_count_init(void)
+> -- 
+> 1.7.9.5
+> 
+> 
+
