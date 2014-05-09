@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698AbaEIOWo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 10:22:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15763 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756457AbaEIOWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 10:22:40 -0400
-Message-ID: <536CE48E.2060305@redhat.com>
-Date: Fri, 09 May 2014 10:22:06 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1756379AbaEIOZh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 10:25:37 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:61227 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073AbaEIOZg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 10:25:36 -0400
 MIME-Version: 1.0
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        morten.rasmussen@arm.com, mingo@kernel.org,
-        george.mccollister@gmail.com, ktkhai@parallels.com
-Subject: Re: [PATCH] sched: wake up task on prev_cpu if not in SD_WAKE_AFFINE
- domain with cpu
-References: <20140502004237.79dd3de6@annuminas.surriel.com>	 <1399011219.5233.55.camel@marge.simpson.net> <53633B81.1080403@redhat.com>	 <1399016273.5233.94.camel@marge.simpson.net> <536379D0.8070306@redhat.com>	 <1399030032.5233.142.camel@marge.simpson.net> <5363B793.9010208@redhat.com>	 <20140506115448.GH11096@twins.programming.kicks-ass.net>	 <536943C9.4030502@redhat.com>	 <20140506203916.GQ17778@laptop.programming.kicks-ass.net>	 <536C3B69.1000208@redhat.com>	 <20140509012743.67d4006d@annuminas.surriel.com> <1399620873.5200.68.camel@marge.simpson.net>
-In-Reply-To: <1399620873.5200.68.camel@marge.simpson.net>
+In-Reply-To: <20140509141534.GK4963@mwanda>
+References: <20140509100606.GA6479@devel.8.8.4.4>
+	<20140509105149.GH4963@mwanda>
+	<CAHb8M2AopFJGhgZOu_hbn2YWvMgeuFz2zK2uYo4Fnt6kACKSOg@mail.gmail.com>
+	<20140509141534.GK4963@mwanda>
+Date: Fri, 9 May 2014 23:25:36 +0900
+Message-ID: <CAHb8M2D+G8GsMA25VRoMO0JHUDs+pVWaJr_p+Z4ZCTTZ3rH13w@mail.gmail.com>
+Subject: Re: [PATCH 2/5] staging: cxt1e1: remove dead code in musycc.c
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: gregkh@linuxfoundation.org, himangi774@gmail.com, sachin.kamat@linaro.org,
+        fempsci@gmail.com, nandu.hgowda@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2014 03:34 AM, Mike Galbraith wrote:
-> On Fri, 2014-05-09 at 01:27 -0400, Rik van Riel wrote: 
->> On Thu, 08 May 2014 22:20:25 -0400
->> Rik van Riel <riel@redhat.com> wrote:
->>
->>> Looks like SD_BALANCE_WAKE is not gotten from the sd flags at
->>> all, but passed into select_task_rq by try_to_wake_up, as a
->>> hard coded sd_flags argument.
->>
->>> Should we do that, if SD_WAKE_BALANCE is not set for any sched domain?
->>
->> I answered my own question. The sd_flag SD_WAKE_BALANCE simply means
->> "this is a wakeup of a previously existing task, please place it
->> properly".
->>
->> However, it appears that the current code will fall back to the large
->> loop with select_idlest_group and friends, if prev_cpu and cpu are not
->> part of the same SD_WAKE_AFFINE sched domain. That is a bug...
-> 
-> ttwu(): cpu = select_task_rq(p, p->wake_cpu, SD_BALANCE_WAKE, wake_flags);
-> 
-> We pass SD_BALANCE_WAKE for a normal wakeup, so sd will only be set if
-> we encounter a domain during traversal where Joe User has told us to do
-> (expensive) wake balancing before we hit a domain shared by waker/wakee.
-> 
-> The user can turn SD_WAKE_AFFINE off beyond socket, and we'll not pull
-> cross node on wakeup.
-> 
-> Or, you could create an override button to say despite SD_WAKE_AFFINE
-> perhaps having been set during domain construction (because of some
-> pseudo-random numbers), don't do that if we have a preferred node, or
-> just make that automatically part of having numa scheduling enabled, and
-> don't bother wasting cycles if preferred && this != preferred.
+2014-05-09 23:15 GMT+09:00, Dan Carpenter <dan.carpenter@oracle.com>:
+> On Fri, May 09, 2014 at 11:09:35PM +0900, DaeSeok Youn wrote:
+>> 2014-05-09 19:51 GMT+09:00, Dan Carpenter <dan.carpenter@oracle.com>:
+>> > On Fri, May 09, 2014 at 07:06:06PM +0900, Daeseok Youn wrote:
+>> >> Removes "#if 0" blocks.
+>> >>
+>> >> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>> >> ---
+>> >> Dan,
+>> >>  I decided to leave musycc_dump_rxbuffer_ring(ch, 0) which is
+>> >> commented
+>> >>  out and make a block as "RLD_DEBUG". Because i think this block need
+>> >> to
+>> >> debug
+>> >>  with define "RLD_DEBUG". If I am wrong, let me know.
+>> >>
+>> >
+>> > This change should maybe have been in a separate patch.  It's a border
+>> > line thing.  But definitely, it should have been mentioned in the
+>> > changelog.
+>> >
+>> > Btw, you can use `git citool` to add or remove lines from a
+>> > commit.  Highlight and right click on the lines you want to add or
+>> > remove.
+>> Thanks for the tip. I used "git add -p" after "git rebase" and "git
+>> reset HEAD" for
+>> spliting a patch.
+>> But I have a question, Do I have to resend rest of patches after
+>> spliting this patch?
+>> In this case, 2/5 is splited to two, it doesn't need to rebase but
+>> numbering of patches are changed.
+>
+> Probably it's simplest to just fixup the changelog and resend as-is.
+> If you split a patch then normally it's easiest to just resend
+> everything.
+>
+> If you have to resend just one patch and it doesn't affect the later
+> patches then you can just resend that one so long as you get the
+> In-Reply-To email header correct.  If you don't know what an In-Reply-To
+> header is, then resend everything.
+>
+Thanks for kind explanation.
+I will just change the changelog and send this again.
 
-That's not the problem.
+Regards,
+Daeseok Youn
 
-The problem is that if we do not do an affine wakeup, due to
-SD_WAKE_AFFINE not being set on a top level domain, we will
-not try to run p on prev_cpu, but we will fall through into
-the loop with find_idlest_group, etc...
-
--- 
-All rights reversed
+> regards,
+> dan carpenter
+>
+>
