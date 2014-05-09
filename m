@@ -1,148 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756405AbaEIJyk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 05:54:40 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:22862 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754024AbaEIJyi (ORCPT
+	id S1756223AbaEIJzv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 05:55:51 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:38336 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752118AbaEIJzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 05:54:38 -0400
-Message-ID: <536CA54A.3060707@huawei.com>
-Date: Fri, 9 May 2014 17:52:10 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Fri, 9 May 2014 05:55:50 -0400
+Date: Fri, 9 May 2014 10:55:45 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL v2] First pull-request for the IB between MFD and GPIO
+Message-ID: <20140509095545.GO5767@lee--X1>
+References: <1399583799-23517-1-git-send-email-linus.walleij@linaro.org>
+ <20140509093111.GN5767@lee--X1>
 MIME-Version: 1.0
-To: Xishi Qiu <qiuxishi@huawei.com>
-CC: Vegard Nossum <vegard.nossum@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Vegard Nossum <vegard.nossum@gmail.com>, Linux MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: kmemcheck: got WARNING when dynamicly adjust /proc/sys/kernel/kmemcheck
- to 0/1
-References: <536C8A75.4080401@huawei.com>
-In-Reply-To: <536C8A75.4080401@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.179]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140509093111.GN5767@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/5/9 15:57, Xishi Qiu wrote:
+Looks like it matters which order the patches are merged in - my bad!
 
-> OS boot with kmemcheck=0, then set 1, do something, set 0, do something, set 1...
-> then I got the WARNING log. Does kmemcheck support dynamicly adjust?
-> 
-> Thanks,
-> Xishi Qiu
-> 
-> [   20.200305] igb: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: RX
-> [   20.208652] ADDRCONF(NETDEV_UP): eth0: link is not ready
-> [   20.216504] ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-> [   22.647385] auditd (3116): /proc/3116/oom_adj is deprecated, please use /proc/3116/oom_score_adj instead.
-> [   24.845214] BIOS EDD facility v0.16 2004-Jun-25, 1 devices found
-> [   30.434764] eth0: no IPv6 routers present
-> [  340.154608] NOHZ: local_softirq_pending 01
-> [  340.154639] WARNING: kmemcheck: Caught 64-bit read from uninitialized memory (ffff88083f43a550)
-> [  340.154644] c000000002000000000000000000000080ff5d0100c9ffff400ed34e0888ffff
-> [  340.154667]  u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u
-> [  340.154687]                                  ^
-> [  340.154690]
-> [  340.154694] Pid: 3, comm: ksoftirqd/0 Tainted: G         C   3.4.24-qiuxishi.19-0.1-default+ #2 Huawei Technologies Co., Ltd. Tecal RH2285 V2-24S/BC11SRSC1
-> [  340.154702] RIP: 0010:[<ffffffff81217d72>]  [<ffffffff81217d72>] d_namespace_path+0x132/0x270
-> [  340.154714] RSP: 0018:ffff8808515a1c88  EFLAGS: 00010202
-> [  340.154718] RAX: ffff88083f43a540 RBX: ffff880852e718f3 RCX: 0000000000000001
-> [  340.154721] RDX: ffff8808515a1d28 RSI: 0000000000000000 RDI: ffff881053855a60
-> [  340.154725] RBP: ffff8808515a1ce8 R08: ffff8808515a1c50 R09: ffff880852e75800
-> [  340.154728] R10: 00000000000156f0 R11: 0000000000000000 R12: 0000000000000001
-> [  340.154731] R13: 0000000000000100 R14: ffff880852e71510 R15: ffff880852e71800
-> [  340.154736] FS:  0000000000000000(0000) GS:ffff88085f600000(0000) knlGS:0000000000000000
-> [  340.154740] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  340.154743] CR2: ffff880852e71570 CR3: 00000008513f2000 CR4: 00000000000407f0
-> [  340.154746] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  340.154750] DR3: 0000000000000000 DR6: 00000000ffff4ff0 DR7: 0000000000000400
-> [  340.154753]  [<ffffffff81217f35>] aa_path_name+0x85/0x180
-> [  340.154758]  [<ffffffff812187d6>] apparmor_bprm_set_creds+0x126/0x520
-> [  340.154763]  [<ffffffff811f60ae>] security_bprm_set_creds+0xe/0x10
-> [  340.154771]  [<ffffffff81170d65>] prepare_binprm+0xa5/0x100
-> [  340.154777]  [<ffffffff811716c2>] do_execve_common+0x232/0x430
-> [  340.154781]  [<ffffffff8117194a>] do_execve+0x3a/0x40
-> [  340.154785]  [<ffffffff8100abb9>] sys_execve+0x49/0x70
-> [  340.154793]  [<ffffffff814764bc>] stub_execve+0x6c/0xc0
-> [  340.154801]  [<ffffffffffffffff>] 0xffffffffffffffff
-> [  340.154813] WARNING: kmemcheck: Caught 64-bit read from uninitialized memory (ffff88083f43a570)
-> [  340.154817] 746f70000300000078a5433f0888fffff86d433f0888ffff746f700000730000
-> [  340.154839]  u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u
-> [  340.154858]                                  ^
-> [  340.154861]
-> [  340.154864] Pid: 3, comm: ksoftirqd/0 Tainted: G         C   3.4.24-qiuxishi.19-0.1-default+ #2 Huawei Technologies Co., Ltd. Tecal RH2285 V2-24S/BC11SRSC1
-> [  340.154871] RIP: 0010:[<ffffffff811691f4>]  [<ffffffff811691f4>] rw_verify_area+0x24/0x100
-> [  340.154880] RSP: 0018:ffff8808515a1dc8  EFLAGS: 00010202
-> [  340.154883] RAX: ffff88083f43a540 RBX: 0000000000000080 RCX: 0000000000000080
-> [  340.154887] RDX: ffff8808515a1e30 RSI: ffff880852e71500 RDI: 0000000000000000
-> [  340.154890] RBP: ffff8808515a1de8 R08: ffff880852e73200 R09: ffff88085f004900
-> [  340.154894] R10: ffff880852e72600 R11: 0000000000000000 R12: ffff880852e71500
-> [  340.154897] R13: 0000000000000000 R14: ffff880852e73200 R15: 0000000000000001
-> [  340.154901] FS:  0000000000000000(0000) GS:ffff88085f600000(0000) knlGS:0000000000000000
-> [  340.154905] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  340.154908] CR2: ffff880852e71570 CR3: 00000008513f2000 CR4: 00000000000407f0
-> [  340.154911] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  340.154914] DR3: 0000000000000000 DR6: 00000000ffff4ff0 DR7: 0000000000000400
-> [  340.154917]  [<ffffffff811698f4>] vfs_read+0xa4/0x130
-> [  340.154922]  [<ffffffff81170ca4>] kernel_read+0x44/0x60
-> [  340.154926]  [<ffffffff81170d90>] prepare_binprm+0xd0/0x100
-> [  340.154931]  [<ffffffff811716c2>] do_execve_common+0x232/0x430
-> [  340.154935]  [<ffffffff8117194a>] do_execve+0x3a/0x40
-> [  340.154939]  [<ffffffff8100abb9>] sys_execve+0x49/0x70
-> [  340.154944]  [<ffffffff814764bc>] stub_execve+0x6c/0xc0
-> [  340.154950]  [<ffffffffffffffff>] 0xffffffffffffffff
-> [  340.154955] WARNING: kmemcheck: Caught 32-bit read from uninitialized memory (ffff88083f43a540)
-> [  340.154959] c000000002000000000000000000000080ff5d0100c9ffff400ed34e0888ffff
-> [  340.154981]  u u u u u u u u u u u u u u u u i i i i i i i i u u u u u u u u
-> [  340.155000]  ^
-> 
-> 
+The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
 
-Another problem, does there some way will initialize the shadow?
-I only find the object has been initialized.
+  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
 
-kmemcheck_slab_alloc()
-	...
-	/*
-	 * Has already been memset(), which initializes the shadow for us
-	 * as well.
-	 */
-	if (gfpflags & __GFP_ZERO)
-		return;  ----> add kmemcheck_mark_initialized() ?
-	...
+are available in the git repository at:
 
-slab:
-	slab_alloc()
-	...
-	if (likely(objp))
-		kmemcheck_slab_alloc(cachep, flags, objp, cachep->object_size);
+  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-gpio-v3.16
 
-	if (unlikely((flags & __GFP_ZERO) && objp))
-		memset(objp, 0, cachep->object_size);
+for you to fetch changes up to 3ba1d516d5feddba3e13d30d31a70da130a3ee0e:
 
-	return objp;
+  mfd: stmpe: root out static GPIO and IRQ assignments (2014-05-09 10:51:14 +0100)
 
-slub:
-	slab_alloc_node()
-	...
-	if (unlikely(gfpflags & __GFP_ZERO) && object)
-		memset(object, 0, s->object_size);
+----------------------------------------------------------------
+Immutable branch between MFD and GPIO due for v3.16.
 
-	slab_post_alloc_hook(s, gfpflags, object);
+----------------------------------------------------------------
+Linus Walleij (4):
+      mfd: stmpe: mask off unused blocks properly
+      mfd: stmpe: Probe properly from the Device Tree
+      mfd: stmpe: add optional regulators
+      mfd: stmpe: root out static GPIO and IRQ assignments
 
-	return object;
+ drivers/gpio/gpio-stmpe.c | 18 +++++-------------
+ drivers/mfd/Kconfig       |  1 +
+ drivers/mfd/stmpe-i2c.c   | 30 +++++++++++++++++++++++++++++-
+ drivers/mfd/stmpe.c       | 30 ++++++++++++++++++++++++++++--
+ drivers/mfd/stmpe.h       |  2 +-
+ include/linux/mfd/stmpe.h | 19 +++++--------------
+ 6 files changed, 69 insertions(+), 31 deletions(-)
 
-The shadow memory which used for slab/slub is called from kmemcheck_alloc_shadow(),
-and it will initialized *only* in kmemcheck_slab_alloc(), right?
-
-Thanks,
-Xishi Qiu
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
