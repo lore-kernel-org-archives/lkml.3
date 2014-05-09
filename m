@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123AbaEIB3h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 21:29:37 -0400
-Received: from mail.anarazel.de ([217.115.131.40]:33634 "EHLO mail.anarazel.de"
+	id S1756099AbaEIB3g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 21:29:36 -0400
+Received: from mail.anarazel.de ([217.115.131.40]:33631 "EHLO mail.anarazel.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755569AbaEIB3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755505AbaEIB3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 May 2014 21:29:34 -0400
 From: Andres Freund <andres@anarazel.de>
 To: Borislav Petkov <bp@suse.de>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: 
-Date: Fri,  9 May 2014 03:29:15 +0200
-Message-Id: <1399598957-7011-1-git-send-email-andres@anarazel.de>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andres Freund <andres@anarazel.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 2/2] x86: Fix typo in MSR_IA32_MISC_ENABLE_LIMIT_CPUID macro
+Date: Fri,  9 May 2014 03:29:17 +0200
+Message-Id: <1399598957-7011-3-git-send-email-andres@anarazel.de>
 X-Mailer: git-send-email 2.0.0.rc2.4.g1dc51c6.dirty
+In-Reply-To: <1399598957-7011-1-git-send-email-andres@anarazel.de>
+References: <1399598957-7011-1-git-send-email-andres@anarazel.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The spuriously added semicolon didn't have any effect because the
+macro isn't currently in use.
 
-After 3.14 I noticed that perf started to only support software
-events.
+c0a639ad0bc6b178b46996bd1f821a04643e2bde
 
-The reason - found after a some staring deathmatches because the
-patches look innocent - is a typo in __flip_bit() introduced by
-22085a66c2fab6cf9b9393c056a3600a6b4735de which only takes effect after
-c0a639ad0bc6b178b46996bd1f821a04643e2bde. Due to the typo no msr
-writes via either msr_clear/set_bit actually write back the new value.
-That then causes cpuid limits not to be lifted causing 'my' perf and
-very likely some other problems.
+Signed-off-by: Andres Freund <andres@anarazel.de>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/include/uapi/asm/msr-index.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-There's also a typo in the former commit which makes it impossible to
-actually use the MSR_IA32_MISC_ENABLE_LIMIT_CPUID macro correctly.
-
-Regards,
-
-Andres Freund
+diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+index c827ace..fcf2b3a 100644
+--- a/arch/x86/include/uapi/asm/msr-index.h
++++ b/arch/x86/include/uapi/asm/msr-index.h
+@@ -384,7 +384,7 @@
+ #define MSR_IA32_MISC_ENABLE_MWAIT_BIT			18
+ #define MSR_IA32_MISC_ENABLE_MWAIT			(1ULL << MSR_IA32_MISC_ENABLE_MWAIT_BIT)
+ #define MSR_IA32_MISC_ENABLE_LIMIT_CPUID_BIT		22
+-#define MSR_IA32_MISC_ENABLE_LIMIT_CPUID		(1ULL << MSR_IA32_MISC_ENABLE_LIMIT_CPUID_BIT);
++#define MSR_IA32_MISC_ENABLE_LIMIT_CPUID		(1ULL << MSR_IA32_MISC_ENABLE_LIMIT_CPUID_BIT)
+ #define MSR_IA32_MISC_ENABLE_XTPR_DISABLE_BIT		23
+ #define MSR_IA32_MISC_ENABLE_XTPR_DISABLE		(1ULL << MSR_IA32_MISC_ENABLE_XTPR_DISABLE_BIT)
+ #define MSR_IA32_MISC_ENABLE_XD_DISABLE_BIT		34
+-- 
+2.0.0.rc2.4.g1dc51c6.dirty
 
