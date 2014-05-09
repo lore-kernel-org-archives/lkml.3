@@ -1,288 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756313AbaEIJfH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 05:35:07 -0400
-Received: from smtprelay.synopsys.com ([198.182.60.111]:41838 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537AbaEIJfE convert rfc822-to-8bit (ORCPT
+	id S1756277AbaEIJij (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 05:38:39 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45837 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722AbaEIJig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 05:35:04 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Peter Zijlstra <peterz@infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 03/20] arch,arc: Fold atomic_ops
-Thread-Topic: [PATCH 03/20] arch,arc: Fold atomic_ops
-Thread-Index: AQHPasXpGvX/3Pye7ki8B6tFh1WNPw==
-Date: Fri, 9 May 2014 09:34:51 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA230751A6AB58E@IN01WEMBXA.internal.synopsys.com>
-References: <20140508135840.956784204@infradead.org>
- <20140508135851.886055622@infradead.org>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.196.93]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 9 May 2014 05:38:36 -0400
+Message-ID: <536CA1D4.6010605@ti.com>
+Date: Fri, 9 May 2014 12:37:24 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: Marek Belisko <marek@goldelico.com>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rdunlap@infradead.org>, <bcousson@baylibre.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <plagnioj@jcrosoft.com>,
+        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-fbdev@vger.kernel.org>, <hns@goldelico.com>
+Subject: Re: [PATCH v3 0/3] Add display support for gta04 device
+References: <1399580212-5183-1-git-send-email-marek@goldelico.com>
+In-Reply-To: <1399580212-5183-1-git-send-email-marek@goldelico.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="edfPGatkwflS48KB5oIg0SrJaxCV8TVle"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+--edfPGatkwflS48KB5oIg0SrJaxCV8TVle
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Minor point below, otherwise looks good.
+On 08/05/14 23:16, Marek Belisko wrote:
+> This 3 patches adding display support for openmoko gta04 device.
+> First patch add DT bindings for topolly td028 panel. Second add descrip=
+tion for
+> dss + panel and third fix panel probing when panel is compiled as modul=
+e.
+>=20
+> Changes from v2:
+> - add missing 'port' node for dpi_out endpoint (comment from Tomi Valke=
+inen)
+>=20
+> Changes from v1:
+> - extend panel compatible string by 'omapdss'
+> - add tpo-td028 panel to dss_compat_conv_list
+> - add MODULE_ALIAS macro to properly probe panel when is compiled as mo=
+dule
+>=20
+> Marek Belisko (3):
+>   omapdss: panel-tpo-td028ec1: Add DT support.
+>   ARM: dts: oma3-gta04: Add display support
+>   omapdss: panel-tpo-td028ec1: Add module alias
+>=20
+>  .../bindings/video/toppoly,td028ttec1.txt          | 30 ++++++++
+>  arch/arm/boot/dts/omap3-gta04.dts                  | 87 ++++++++++++++=
+++++++++
+>  arch/arm/mach-omap2/display.c                      |  1 +
+>  .../omap2/displays-new/panel-tpo-td028ttec1.c      | 33 +++++++-
+>  4 files changed, 150 insertions(+), 1 deletion(-)
+>  create mode 100644 Documentation/devicetree/bindings/video/toppoly,td0=
+28ttec1.txt
+>=20
 
-On Thursday 08 May 2014 07:30 PM, Peter Zijlstra wrote:
-> Many of the atomic op implementations are the same except for one
-> instruction; fold the lot into a few CPP macros and reduce LoC.
->
-> This also prepares for easy addition of new ops.
->
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Vineet Gupta <vgupta@synopsys.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> ---
->  arch/arc/include/asm/atomic.h |  194 ++++++++++++++----------------------------
->  1 file changed, 68 insertions(+), 126 deletions(-)
->
-> --- a/arch/arc/include/asm/atomic.h
-> +++ b/arch/arc/include/asm/atomic.h
-> @@ -25,79 +25,36 @@
->  
->  #define atomic_set(v, i) (((v)->counter) = (i))
->  
-> -static inline void atomic_add(int i, atomic_t *v)
-> -{
-> -	unsigned int temp;
-> -
-> -	__asm__ __volatile__(
-> -	"1:	llock   %0, [%1]	\n"
-> -	"	add     %0, %0, %2	\n"
-> -	"	scond   %0, [%1]	\n"
-> -	"	bnz     1b		\n"
-> -	: "=&r"(temp)	/* Early clobber, to prevent reg reuse */
-> -	: "r"(&v->counter), "ir"(i)
-> -	: "cc");
-> -}
-> -
-> -static inline void atomic_sub(int i, atomic_t *v)
-> -{
-> -	unsigned int temp;
-> -
-> -	__asm__ __volatile__(
-> -	"1:	llock   %0, [%1]	\n"
-> -	"	sub     %0, %0, %2	\n"
-> -	"	scond   %0, [%1]	\n"
-> -	"	bnz     1b		\n"
-> -	: "=&r"(temp)
-> -	: "r"(&v->counter), "ir"(i)
-> -	: "cc");
-> -}
-> -
-> -/* add and also return the new value */
-> -static inline int atomic_add_return(int i, atomic_t *v)
-> -{
-> -	unsigned int temp;
-> -
-> -	__asm__ __volatile__(
-> -	"1:	llock   %0, [%1]	\n"
-> -	"	add     %0, %0, %2	\n"
-> -	"	scond   %0, [%1]	\n"
-> -	"	bnz     1b		\n"
-> -	: "=&r"(temp)
-> -	: "r"(&v->counter), "ir"(i)
-> -	: "cc");
-> -
-> -	return temp;
-> -}
-> -
-> -static inline int atomic_sub_return(int i, atomic_t *v)
-> -{
-> -	unsigned int temp;
-> -
-> -	__asm__ __volatile__(
-> -	"1:	llock   %0, [%1]	\n"
-> -	"	sub     %0, %0, %2	\n"
-> -	"	scond   %0, [%1]	\n"
-> -	"	bnz     1b		\n"
-> -	: "=&r"(temp)
-> -	: "r"(&v->counter), "ir"(i)
-> -	: "cc");
-> -
-> -	return temp;
-> -}
-> -
-> -static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
-> -{
-> -	unsigned int temp;
-> -
-> -	__asm__ __volatile__(
-> -	"1:	llock   %0, [%1]	\n"
-> -	"	bic     %0, %0, %2	\n"
-> -	"	scond   %0, [%1]	\n"
-> -	"	bnz     1b		\n"
-> -	: "=&r"(temp)
-> -	: "r"(addr), "ir"(mask)
-> -	: "cc");
-> +#define ATOMIC_OP(op, c_op, asm_op)					\
-> +static inline void atomic_##op(int i, atomic_t *v)			\
-> +{									\
-> +	unsigned int temp;						\
-> +									\
-> +	__asm__ __volatile__(						\
-> +	"1:	llock   %0, [%1]	\n"				\
-> +	"	" #asm_op " %0, %0, %2	\n"				\
-> +	"	scond   %0, [%1]	\n"				\
-> +	"	bnz     1b		\n"				\
-> +	: "=&r"(temp)	/* Early clobber, to prevent reg reuse */	\
-> +	: "r"(&v->counter), "ir"(i)					\
-> +	: "cc");							\
-> +}									\
-> +
-> +#define ATOMIC_OP_RETURN(op, c_op, asm_op)				\
-> +static inline int atomic_##op##_return(int i, atomic_t *v)		\
-> +{									\
-> +	unsigned int temp;						\
-> +									\
-> +	__asm__ __volatile__(						\
-> +	"1:	llock   %0, [%1]	\n"				\
-> +	"	" #asm_op " %0, %0, %2	\n"				\
-> +	"	scond   %0, [%1]	\n"				\
-> +	"	bnz     1b		\n"				\
-> +	: "=&r"(temp)							\
-> +	: "r"(&v->counter), "ir"(i)					\
-> +	: "cc");							\
-> +									\
-> +	return temp;							\
->  }
->  
->  #else	/* !CONFIG_ARC_HAS_LLSC */
-> @@ -126,6 +83,7 @@ static inline void atomic_set(atomic_t *
->  	v->counter = i;
->  	atomic_ops_unlock(flags);
->  }
-> +
->  #endif
->  
->  /*
-> @@ -133,63 +91,47 @@ static inline void atomic_set(atomic_t *
->   * Locking would change to irq-disabling only (UP) and spinlocks (SMP)
->   */
->  
-> -static inline void atomic_add(int i, atomic_t *v)
-> -{
-> -	unsigned long flags;
-> -
-> -	atomic_ops_lock(flags);
-> -	v->counter += i;
-> -	atomic_ops_unlock(flags);
-> -}
-> -
-> -static inline void atomic_sub(int i, atomic_t *v)
-> -{
-> -	unsigned long flags;
-> -
-> -	atomic_ops_lock(flags);
-> -	v->counter -= i;
-> -	atomic_ops_unlock(flags);
-> -}
-> -
-> -static inline int atomic_add_return(int i, atomic_t *v)
-> -{
-> -	unsigned long flags;
-> -	unsigned long temp;
-> -
-> -	atomic_ops_lock(flags);
-> -	temp = v->counter;
-> -	temp += i;
-> -	v->counter = temp;
-> -	atomic_ops_unlock(flags);
-> -
-> -	return temp;
-> -}
-> -
-> -static inline int atomic_sub_return(int i, atomic_t *v)
-> -{
-> -	unsigned long flags;
-> -	unsigned long temp;
-> -
-> -	atomic_ops_lock(flags);
-> -	temp = v->counter;
-> -	temp -= i;
-> -	v->counter = temp;
-> -	atomic_ops_unlock(flags);
-> -
-> -	return temp;
-> -}
-> -
-> -static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
-> -{
-> -	unsigned long flags;
-> -
-> -	atomic_ops_lock(flags);
-> -	*addr &= ~mask;
-> -	atomic_ops_unlock(flags);
-> +#define ATOMIC_OP(op, c_op, asm_op)					\
-> +static inline void atomic_##op(int i, atomic_t *v)			\
-> +{									\
-> +	unsigned long flags;						\
-> +									\
-> +	atomic_ops_lock(flags);						\
-> +	v->counter c_op i;						\
-> +	atomic_ops_unlock(flags);					\
-> +}
-> +
-> +#define ATOMIC_OP_RETURN(op, c_op)					\
-> +static inline int atomic_##op##_return(int i, atomic_t *v)		\
-> +{									\
-> +	unsigned long flags;						\
-> +	unsigned long temp;						\
-> +									\
-> +	atomic_ops_lock(flags);						\
-> +	temp = v->counter;						\
-> +	temp c_op i;							\
-> +	v->counter = temp;						\
-> +	atomic_ops_unlock(flags);					\
-> +									\
-> +	return temp;							\
->  }
->  
->  #endif /* !CONFIG_ARC_HAS_LLSC */
->  
-> +#define ATOMIC_OPS(op, c_op, asm_op)					\
-> +	ATOMIC_OP(op, c_op, asm_op)					\
-> +	ATOMIC_OP_RETURN(op, c_op, asm_op)
-> +
-> +ATOMIC_OPS(add, +=, add)
-> +ATOMIC_OPS(sub, -=, sub)
-> +ATOMIC_OP(and, &=, and)
-> +
-> +#define atomic_clear_mask(mask, v) atomic_and(~(mask), (v))
+I think this series looks fine. I'll pick it up.
 
-Given that ARC has instruction to do just that, can we keep below instead.
+ Tomi
 
-ATOMIC_OP(clear_mask, ~=, bic)
 
-(see asm version of atomic_clear_mask)
 
--Vineet
+--edfPGatkwflS48KB5oIg0SrJaxCV8TVle
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-> +
-> +#undef ATOMIC_OPS
-> +#undef ATOMIC_OP_RETURN
-> +#undef ATOMIC_OP
-> +
->  /**
->   * __atomic_add_unless - add unless the number is a given value
->   * @v: pointer of type atomic_t
->
->
->
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJTbKHUAAoJEPo9qoy8lh71xSwP/31AJ6WQVmWybr+czhxNILov
+A4aO8T+eHPG3mz8RqfwC8ibxPpSiqqJfbr+gz0Cykx5uXokU0R/1XRofpDbIorY8
+cvG7kSf3mpFh6juYU3LlK6kA/BJMttf7ArxIr0Dutg1dESMSrH+LpN5OkmWRH7ef
+fmbUBUndWc5m9vTD36IO2WQiqXBiaAMsUYHf5mbra3OOGivM+F91pj6jyEBUgHEG
+1yxtSTahHbVl4Ztsyj5/aATW/knzZJXCGUtGizUn9HFqfH8USB42j2TroIIGzn71
+BUma3MOGMusPmgG2MOvJuj8SKKElynbxR/uFfdnKTz+/3Ff2GRC+ZIyHNu1hTsNE
+2Iu4ID4AFZgC/u9H1FAHgoAITzhz9w6YyruaZFFtqVtRrpAzfJmk1fFpVKVSxHDD
+BhCtqRZS3+Ma9fxr2/ygRjW3V2cdRBUmVFN4HnfkMGXMNSZS/h3koCRSYnHjH49t
+N88eS14y8yRxIJjEdWFAa4Z7jy1IqvpB2RGxMfJIN3w1Gz2qCma8RIx17veSj6Se
+GxiEz9hhdqO0ERkrl5yliksCKD5/i+82MXVjrLWCRcht6HFQTNgdiC9PPV+cEQSy
+2Dy+r6gO4HRBWY2CzL75J/A5neiVWO+eaLW2Vo9ZzNcXUwkJvuRJRWf9icPf7wBH
+e9M9j8BAIvbkUO6xMkh6
+=pUQ8
+-----END PGP SIGNATURE-----
+
+--edfPGatkwflS48KB5oIg0SrJaxCV8TVle--
