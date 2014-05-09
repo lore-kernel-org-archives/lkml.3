@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756850AbaEIQYt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 12:24:49 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:52492 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775AbaEIQYr (ORCPT
+	id S1756825AbaEIQam (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 12:30:42 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:61209 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744AbaEIQal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 12:24:47 -0400
+	Fri, 9 May 2014 12:30:41 -0400
+Date: Fri, 9 May 2014 20:30:38 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Don Zickus <dzickus@redhat.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf_fuzzer crash on pentium 4
+Message-ID: <20140509163038.GH320@moon.sw.swsoft.com>
+References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
+ <20140506202307.GA1458@moon>
+ <20140508020050.GX39568@redhat.com>
+ <20140508073756.GM8607@moon>
+ <20140508074930.GN8607@moon>
+ <20140508080234.GO8607@moon>
+ <alpine.DEB.2.10.1405091211430.13652@vincent-weaver-1.umelst.maine.edu>
 MIME-Version: 1.0
-In-Reply-To: <536CD0D1.4080903@ti.com>
-References: <1399614983-552-1-git-send-email-mranostay@gmail.com>
-	<536CD0D1.4080903@ti.com>
-Date: Fri, 9 May 2014 09:24:46 -0700
-Message-ID: <CAKzfze-ijg1GTJzNvhEVN5ULm9q0gQhScLpwC-CLNa90Whf1sg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: dts: am335x-bone-common: Add i2c2 definition
-From: Matt Ranostay <mranostay@gmail.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Linux OMAP List <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pantelis Antoniou <pantelis.antoniou@gmail.com>,
-        Matt Porter <matt.porter@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, linux@arm.linux.org.uk
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1405091211430.13652@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 9, 2014 at 5:57 AM, Nishanth Menon <nm@ti.com> wrote:
-> On Fri 09 May 2014 12:56:23 AM CDT, Matt Ranostay wrote:
->> Add missing i2c2 bus define to access various cape and
->> prototype/breakout board devices.
->>
->> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
->> ---
->>  arch/arm/boot/dts/am335x-bone-common.dtsi | 16 ++++++++++++++++
->>  1 file changed, 16 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
->> index 2e7d932..2aedfee 100644
->> --- a/arch/arm/boot/dts/am335x-bone-common.dtsi
->> +++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
->> @@ -84,6 +84,13 @@
->>               >;
->>       };
->>
->> +     i2c2_pins: pinmux_i2c2_pins {
->> +             pinctrl-single,pins = <
->> +                     0x178 (PIN_INPUT_PULLUP | MUX_MODE3)    /* i2c2_sda.uart1_ctsn */
->> +                     0x17c (PIN_INPUT_PULLUP | MUX_MODE3)    /* i2c2_scl.uart1_rtsn */
->
-> I dont understand the comment -> i2c2_sda is being muxed to uart1_cstsn?
->
-Good catch I mixed up the ordering of the comment.
+On Fri, May 09, 2014 at 12:19:49PM -0400, Vince Weaver wrote:
+> On Thu, 8 May 2014, Cyrill Gorcunov wrote:
+> > 
+> > Updated.
+> > ---
+> >  arch/x86/kernel/cpu/perf_event_p4.c |   67 ++++++++++++++++--------------------
+> >  1 file changed, 30 insertions(+), 37 deletions(-)
+> 
+> I tried this patch, and even though it seemed to fix one of the NMI storms 
+> I was experiencing I've managed to trigger again using a different random 
+> seed.
 
->> +             >;
->> +     };
->> +
->>       uart0_pins: pinmux_uart0_pins {
->>               pinctrl-single,pins = <
->>                       0x170 (PIN_INPUT_PULLUP | MUX_MODE0)    /* uart0_rxd.uart0_rxd */
->> @@ -222,6 +229,15 @@
->>
->>  };
->>
->> +
->> +&i2c2 {
->> +     pinctrl-names = "default";
->> +     pinctrl-0 = <&i2c2_pins>;
->> +
->> +     status = "okay";
->> +     clock-frequency = <400000>;
->
-> How did we decide on 400KHz -> do all all i2c2 devices on ALL capes
-> work in full speed? OR should we consider a conservative 100KHz?
->
+Thanks a lot for help in testing, Vince! I think the patch would be still
+needed so I will prepare normal change log explaining what has been fixed
+in the patch.
 
-Probably a better plan.
-Will submit v2 this weekend.
+> I've been trying to track down a trace of what is triggering things, but 
+> this is very difficult as the full log isn't making it to the serial 
+> console, even when I fsync() stdout.
 
->> +};
->> +
->>  /include/ "tps65217.dtsi"
->>
->>  &tps {
->
->
-> --
-> Regards,
-> Nishanth Menon
->
+I see. Need to think. Maybe something comes to mind. Debuggin it is really
+a hard job :/ I've been promised to get access to real p4 machine next
+week, maybe I find something.
+
+> Maybe related, but the following messages tend to happen a lot while 
+> fuzzing, and always happen before the fuzzing that eventually locks up:
+> 
+> The warnings are for
+> 	if (WARN_ON_ONCE(!(event->hw.state & PERF_HES_STOPPED)))
+> and
+> 	WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);	
+
+Thanks for info, Vince! Look, every time you start perf_fuzzer (note,
+I didn't read its code yet, that's why I'm asking) -- does it log
+which events are passed to kernel from userspace? Btw, do you run
+kernel with nmi-watchdog turned on?
