@@ -1,196 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577AbaEIFUQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 01:20:16 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:43043 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbaEIFUO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 01:20:14 -0400
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
-To: grant.likely@linaro.org, gregkh@linuxfoundation.org,
-        xiaoguangrong@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Cc: Wei Yang <weiyang@linux.vnet.ibm.com>
-Subject: [PATCH] drivercore: refine commit 58b116b "drivercore: deferral race condition fix"
-Date: Fri,  9 May 2014 13:19:59 +0800
-Message-Id: <1399612799-12251-1-git-send-email-weiyang@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050905-8256-0000-0000-00000D04242B
+	id S1751558AbaEIF2Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 01:28:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57957 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750772AbaEIF2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 01:28:15 -0400
+Date: Fri, 9 May 2014 01:27:43 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, linux-kernel@vger.kernel.org,
+        morten.rasmussen@arm.com, mingo@kernel.org,
+        george.mccollister@gmail.com, ktkhai@parallels.com
+Subject: [PATCH] sched: wake up task on prev_cpu if not in SD_WAKE_AFFINE
+ domain with cpu
+Message-ID: <20140509012743.67d4006d@annuminas.surriel.com>
+In-Reply-To: <536C3B69.1000208@redhat.com>
+References: <20140502004237.79dd3de6@annuminas.surriel.com>
+	<1399011219.5233.55.camel@marge.simpson.net>
+	<53633B81.1080403@redhat.com>
+	<1399016273.5233.94.camel@marge.simpson.net>
+	<536379D0.8070306@redhat.com>
+	<1399030032.5233.142.camel@marge.simpson.net>
+	<5363B793.9010208@redhat.com>
+	<20140506115448.GH11096@twins.programming.kicks-ass.net>
+	<536943C9.4030502@redhat.com>
+	<20140506203916.GQ17778@laptop.programming.kicks-ass.net>
+	<536C3B69.1000208@redhat.com>
+Organization: Red Hat, Inc.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit 58b116b fixs a race condition in which some driver will stuck in the
-deferred list, while introduces another case "probe flood". The root cause is
-in commit 58b116b, deferred_trigger_count will be increased even a probe
-failure happens.
+On Thu, 08 May 2014 22:20:25 -0400
+Rik van Riel <riel@redhat.com> wrote:
 
-The driver_deferred_probe_trigger() is invoked when a driver is successfully
-bound to a device.(As the comment shows). The commit 58b116b introduce another
-chance to trigger it: when EPROBE_DEFER retun and deferred_trigger_count is
-changed. And unfortunately, deferred_trigger_count is increased in
-driver_deferred_probe_trigger() again.
+> Looks like SD_BALANCE_WAKE is not gotten from the sd flags at
+> all, but passed into select_task_rq by try_to_wake_up, as a
+> hard coded sd_flags argument.
 
-Suppose there are 10 devices sits in the deferred list and one irrelevant
-driver probe succeeds. In this case, those devices will be triggered to do the
-deferred probe. Since this driver is not the one they want, they will be put
-into the deferred list again. Imagin 5 of them do it first and rest of them do
-it later. Current implementation will increase the deferred_trigger_count when
-the first 5 trigger deferred probe, which lead the rest 5 feel they need to
-trigger the deferred probe again. But the reality is no other driver is probed
-successfully.
+> Should we do that, if SD_WAKE_BALANCE is not set for any sched domain?
 
-This patch fix this problem by making sure the driver_deferred_probe_trigger()
-is only called when a driver is successfully probed. Move the comparison in
-the loop of deferred probe.
+I answered my own question. The sd_flag SD_WAKE_BALANCE simply means
+"this is a wakeup of a previously existing task, please place it
+properly".
 
-Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
+However, it appears that the current code will fall back to the large
+loop with select_idlest_group and friends, if prev_cpu and cpu are not
+part of the same SD_WAKE_AFFINE sched domain. That is a bug...
+
+---8<---
+
+Subject: sched: wake up task on prev_cpu if not in SD_WAKE_AFFINE domain with cpu
+
+If prev_cpu and cpu are not part of the same SD_WAKE_AFFINE domain,
+the current code will fall back to the select_idlest_group CPU selection
+mechanism, instead of trying to wake up the task on a CPU near its
+previous CPU.
+
+Fix that by always calling select_idle_sibling when doing an SD_BALANCE_WAKE
+wakeup.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
 ---
- drivers/base/base.h |    2 +-
- drivers/base/bus.c  |    3 ++-
- drivers/base/dd.c   |   44 +++++++++++++++++++++++++++-----------------
- 3 files changed, 30 insertions(+), 19 deletions(-)
+ kernel/sched/fair.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/base/base.h b/drivers/base/base.h
-index 24f4242..6315207 100644
---- a/drivers/base/base.h
-+++ b/drivers/base/base.h
-@@ -105,7 +105,7 @@ extern void container_dev_init(void);
- struct kobject *virtual_device_parent(struct device *dev);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7570dd9..5d33fb1b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4452,7 +4452,9 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
+ 	if (affine_sd) {
+ 		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
+ 			prev_cpu = cpu;
++	}
  
- extern int bus_add_device(struct device *dev);
--extern void bus_probe_device(struct device *dev);
-+extern int bus_probe_device(struct device *dev);
- extern void bus_remove_device(struct device *dev);
- 
- extern int bus_add_driver(struct device_driver *drv);
-diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-index 83e910a..9e605b0 100644
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -543,7 +543,7 @@ out_put:
-  *
-  * - Automatically probe for a driver if the bus allows it.
-  */
--void bus_probe_device(struct device *dev)
-+int bus_probe_device(struct device *dev)
- {
- 	struct bus_type *bus = dev->bus;
- 	struct subsys_interface *sif;
-@@ -562,6 +562,7 @@ void bus_probe_device(struct device *dev)
- 		if (sif->add_dev)
- 			sif->add_dev(dev, sif);
- 	mutex_unlock(&bus->p->mutex);
-+	return ret;
- }
- 
- /**
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 62ec61e..eab7d02 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -52,7 +52,7 @@ static DEFINE_MUTEX(deferred_probe_mutex);
- static LIST_HEAD(deferred_probe_pending_list);
- static LIST_HEAD(deferred_probe_active_list);
- static struct workqueue_struct *deferred_wq;
--static atomic_t deferred_trigger_count = ATOMIC_INIT(0);
-+static u32 success_probe;
- 
- /**
-  * deferred_probe_work_func() - Retry probing devices in the active list.
-@@ -61,6 +61,8 @@ static void deferred_probe_work_func(struct work_struct *work)
- {
- 	struct device *dev;
- 	struct device_private *private;
-+	u32 old_success;
-+	int ret = 0;
- 	/*
- 	 * This block processes every device in the deferred 'active' list.
- 	 * Each device is removed from the active list and passed to
-@@ -81,6 +83,7 @@ static void deferred_probe_work_func(struct work_struct *work)
- 		list_del_init(&private->deferred_probe);
- 
- 		get_device(dev);
-+		old_success = ACCESS_ONCE(success_probe);
- 
- 		/*
- 		 * Drop the mutex while probing each device; the probe path may
-@@ -99,7 +102,28 @@ static void deferred_probe_work_func(struct work_struct *work)
- 		device_pm_unlock();
- 
- 		dev_dbg(dev, "Retrying from deferred list\n");
--		bus_probe_device(dev);
-+		ret = bus_probe_device(dev);
-+		if (ret == -EPROBE_DEFER) {
-+			/*
-+			 * Note, there is a race condition in multi-threaded
-+			 * probe. In the case where more than one device is
-+			 * probing at the same time, it is possible for one
-+			 * probe to complete successfully while another is about
-+			 * to defer. If the second depends on the first, then
-+			 * it will get put on the pending list after the trigger
-+			 * event has already occured and will be stuck there.
-+			 *
-+			 * The 'success_probe' is used to be a counter for a
-+			 * successful probe. When other drivers succeed to
-+			 * probe during our probe, let's move ourself to the
-+			 * active list and do it again.
-+			 */
-+			mutex_lock(&deferred_probe_mutex);
-+			if (old_success != success_probe)
-+				list_move(&private->deferred_probe,
-+					  &deferred_probe_active_list);
-+			mutex_unlock(&deferred_probe_mutex);
-+		}
- 
- 		mutex_lock(&deferred_probe_mutex);
- 
-@@ -137,16 +161,6 @@ static bool driver_deferred_probe_enable = false;
-  * list and schedules the deferred probe workqueue to process them.  It
-  * should be called anytime a driver is successfully bound to a device.
-  *
-- * Note, there is a race condition in multi-threaded probe. In the case where
-- * more than one device is probing at the same time, it is possible for one
-- * probe to complete successfully while another is about to defer. If the second
-- * depends on the first, then it will get put on the pending list after the
-- * trigger event has already occured and will be stuck there.
-- *
-- * The atomic 'deferred_trigger_count' is used to determine if a successful
-- * trigger has occurred in the midst of probing a driver. If the trigger count
-- * changes in the midst of a probe, then deferred processing should be triggered
-- * again.
-  */
- static void driver_deferred_probe_trigger(void)
- {
-@@ -159,7 +173,7 @@ static void driver_deferred_probe_trigger(void)
- 	 * into the active list so they can be retried by the workqueue
- 	 */
- 	mutex_lock(&deferred_probe_mutex);
--	atomic_inc(&deferred_trigger_count);
-+	success_probe++;
- 	list_splice_tail_init(&deferred_probe_pending_list,
- 			      &deferred_probe_active_list);
- 	mutex_unlock(&deferred_probe_mutex);
-@@ -278,7 +292,6 @@ static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
- static int really_probe(struct device *dev, struct device_driver *drv)
- {
- 	int ret = 0;
--	int local_trigger_count = atomic_read(&deferred_trigger_count);
- 
- 	atomic_inc(&probe_count);
- 	pr_debug("bus: '%s': %s: probing driver %s with device %s\n",
-@@ -324,9 +337,6 @@ probe_failed:
- 		/* Driver requested deferred probing */
- 		dev_info(dev, "Driver %s requests probe deferral\n", drv->name);
- 		driver_deferred_probe_add(dev);
--		/* Did a trigger occur while probing? Need to re-trigger if yes */
--		if (local_trigger_count != atomic_read(&deferred_trigger_count))
--			driver_deferred_probe_trigger();
- 	} else if (ret != -ENODEV && ret != -ENXIO) {
- 		/* driver matched but the probe failed */
- 		printk(KERN_WARNING
--- 
-1.7.9.5
++	if (sd_flag & SD_BALANCE_WAKE) {
+ 		new_cpu = select_idle_sibling(p, prev_cpu);
+ 		goto unlock;
+ 	}
 
