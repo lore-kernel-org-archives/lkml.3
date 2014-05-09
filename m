@@ -1,150 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314AbaEISWL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 14:22:11 -0400
-Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:14277 "EHLO
-	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756700AbaEISWJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 14:22:09 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap0XALEbbVNXQw5R/2dsb2JhbABZgwasSwQBAQEBAQEFAZoUAgKBGRd0glMTHCMYgQIkE4hFAdEzhVaIfIRHAQOPJIoiAYsDh3+DODs
-Date: Fri, 9 May 2014 20:22:02 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 1/1] kernel/user_namespace.c: kernel-doc/checkpatch fixes
-Message-Id: <20140509202202.2790dab9965e22b574513d8e@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757339AbaEISWX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 14:22:23 -0400
+Received: from mta-out1.inet.fi ([62.71.2.198]:44035 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757322AbaEISWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 14:22:21 -0400
+Date: Fri, 9 May 2014 21:19:35 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Armin Rigo <arigo@tunes.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCHv2 0/2] remap_file_pages() decommission
+Message-ID: <20140509181935.GA24841@node.dhcp.inet.fi>
+References: <1399552888-11024-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <CAMSv6X0+3-uNeiyEPD3sA5dA6Af_M+BT0aeVpa3qMv1aga0q9g@mail.gmail.com>
+ <20140508160205.A0EC7E009B@blue.fi.intel.com>
+ <CA+55aFw9eiaFtr+c4gcGSWG=pPeqDnX5aPQMVMqX1XkPF30ahg@mail.gmail.com>
+ <20140509140536.F06BFE009B@blue.fi.intel.com>
+ <CA+55aFz9Yo7OC03tKt2wsdd8cDi00yxvMwszrsOsx0ZVEh6zqQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFz9Yo7OC03tKt2wsdd8cDi00yxvMwszrsOsx0ZVEh6zqQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--uid->gid
--split some function declarations
--if/then/else warning
+On Fri, May 09, 2014 at 08:14:08AM -0700, Linus Torvalds wrote:
+> On Fri, May 9, 2014 at 7:05 AM, Kirill A. Shutemov
+> <kirill.shutemov@linux.intel.com> wrote:
+> >
+> > Hm. I'm confused here. Do we have any limit forced per-user?
+> 
+> Sure we do. See "struct user_struct". We limit max number of
+> processes, open files, signals etc.
 
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Okay got it.
+
+BTW, nobody seems use field 'files' of user_struct:
+
+>From 8bb8a0c740ad66126be4d3c092493e1ecc2189ef Mon Sep 17 00:00:00 2001
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Fri, 9 May 2014 20:25:55 +0300
+Subject: [PATCH] kernel: drop unused field 'files' from user_struct
+
+Nobody seems uses it for a long time. Let's drop it.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- kernel/user_namespace.c | 33 ++++++++++++++++++++-------------
- 1 file changed, 20 insertions(+), 13 deletions(-)
+ include/linux/sched.h | 1 -
+ kernel/user.c         | 1 -
+ 2 files changed, 2 deletions(-)
 
-diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index bf71b4b..fcc0256 100644
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -286,7 +286,7 @@ EXPORT_SYMBOL(from_kuid_munged);
- /**
-  *	make_kgid - Map a user-namespace gid pair into a kgid.
-  *	@ns:  User namespace that the gid is in
-- *	@uid: group identifier
-+ *	@gid: group identifier
-  *
-  *	Maps a user-namespace gid pair into a kernel internal kgid,
-  *	and returns that kgid.
-@@ -482,7 +482,8 @@ static int projid_m_show(struct seq_file *seq, void *v)
- 	return 0;
- }
- 
--static void *m_start(struct seq_file *seq, loff_t *ppos, struct uid_gid_map *map)
-+static void *m_start(struct seq_file *seq, loff_t *ppos,
-+		     struct uid_gid_map *map)
- {
- 	struct uid_gid_extent *extent = NULL;
- 	loff_t pos = *ppos;
-@@ -546,7 +547,8 @@ struct seq_operations proc_projid_seq_operations = {
- 	.show = projid_m_show,
- };
- 
--static bool mappings_overlap(struct uid_gid_map *new_map, struct uid_gid_extent *extent)
-+static bool mappings_overlap(struct uid_gid_map *new_map,
-+			     struct uid_gid_extent *extent)
- {
- 	u32 upper_first, lower_first, upper_last, lower_last;
- 	unsigned idx;
-@@ -653,7 +655,7 @@ static ssize_t map_write(struct file *file, const char __user *buf,
- 	ret = -EINVAL;
- 	pos = kbuf;
- 	new_map.nr_extents = 0;
--	for (;pos; pos = next_line) {
-+	for (; pos; pos = next_line) {
- 		extent = &new_map.extent[new_map.nr_extents];
- 
- 		/* Find the end of line and ensure I don't look past it */
-@@ -687,13 +689,16 @@ static ssize_t map_write(struct file *file, const char __user *buf,
- 
- 		/* Verify we have been given valid starting values */
- 		if ((extent->first == (u32) -1) ||
--		    (extent->lower_first == (u32) -1 ))
-+		    (extent->lower_first == (u32) -1))
- 			goto out;
- 
--		/* Verify count is not zero and does not cause the extent to wrap */
-+		/* Verify count is not zero and does not cause the
-+		 * extent to wrap
-+		 */
- 		if ((extent->first + extent->count) <= extent->first)
- 			goto out;
--		if ((extent->lower_first + extent->count) <= extent->lower_first)
-+		if ((extent->lower_first + extent->count) <=
-+		     extent->lower_first)
- 			goto out;
- 
- 		/* Do the ranges in extent overlap any previous extents? */
-@@ -751,7 +756,8 @@ out:
- 	return ret;
- }
- 
--ssize_t proc_uid_map_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
-+ssize_t proc_uid_map_write(struct file *file, const char __user *buf,
-+			   size_t size, loff_t *ppos)
- {
- 	struct seq_file *seq = file->private_data;
- 	struct user_namespace *ns = seq->private;
-@@ -767,7 +773,8 @@ ssize_t proc_uid_map_write(struct file *file, const char __user *buf, size_t siz
- 			 &ns->uid_map, &ns->parent->uid_map);
- }
- 
--ssize_t proc_gid_map_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
-+ssize_t proc_gid_map_write(struct file *file, const char __user *buf,
-+			   size_t size, loff_t *ppos)
- {
- 	struct seq_file *seq = file->private_data;
- 	struct user_namespace *ns = seq->private;
-@@ -783,7 +790,8 @@ ssize_t proc_gid_map_write(struct file *file, const char __user *buf, size_t siz
- 			 &ns->gid_map, &ns->parent->gid_map);
- }
- 
--ssize_t proc_projid_map_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
-+ssize_t proc_projid_map_write(struct file *file, const char __user *buf,
-+			      size_t size, loff_t *ppos)
- {
- 	struct seq_file *seq = file->private_data;
- 	struct user_namespace *ns = seq->private;
-@@ -800,7 +808,7 @@ ssize_t proc_projid_map_write(struct file *file, const char __user *buf, size_t
- 			 &ns->projid_map, &ns->parent->projid_map);
- }
- 
--static bool new_idmap_permitted(const struct file *file, 
-+static bool new_idmap_permitted(const struct file *file,
- 				struct user_namespace *ns, int cap_setid,
- 				struct uid_gid_map *new_map)
- {
-@@ -811,8 +819,7 @@ static bool new_idmap_permitted(const struct file *file,
- 			kuid_t uid = make_kuid(ns->parent, id);
- 			if (uid_eq(uid, file->f_cred->fsuid))
- 				return true;
--		}
--		else if (cap_setid == CAP_SETGID) {
-+		} else if (cap_setid == CAP_SETGID) {
- 			kgid_t gid = make_kgid(ns->parent, id);
- 			if (gid_eq(gid, file->f_cred->fsgid))
- 				return true;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 25f54c79f757..f0503ffa7a59 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -745,7 +745,6 @@ static inline int signal_group_exit(const struct signal_struct *sig)
+ struct user_struct {
+ 	atomic_t __count;	/* reference count */
+ 	atomic_t processes;	/* How many processes does this user have? */
+-	atomic_t files;		/* How many open files does this user have? */
+ 	atomic_t sigpending;	/* How many pending signals does this user have? */
+ #ifdef CONFIG_INOTIFY_USER
+ 	atomic_t inotify_watches; /* How many inotify watches does this user have? */
+diff --git a/kernel/user.c b/kernel/user.c
+index 294fc6a94168..4efa39350e44 100644
+--- a/kernel/user.c
++++ b/kernel/user.c
+@@ -87,7 +87,6 @@ static DEFINE_SPINLOCK(uidhash_lock);
+ struct user_struct root_user = {
+ 	.__count	= ATOMIC_INIT(1),
+ 	.processes	= ATOMIC_INIT(1),
+-	.files		= ATOMIC_INIT(0),
+ 	.sigpending	= ATOMIC_INIT(0),
+ 	.locked_shm     = 0,
+ 	.uid		= GLOBAL_ROOT_UID,
 -- 
-1.8.4.5
+ Kirill A. Shutemov
