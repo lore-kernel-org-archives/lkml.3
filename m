@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049AbaEIBJx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 21:09:53 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:20103 "EHLO
+	id S1755091AbaEIBQJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 21:16:09 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:20522 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756013AbaEIBJv (ORCPT
+	with ESMTP id S1753280AbaEIBQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 21:09:51 -0400
+	Thu, 8 May 2014 21:16:07 -0400
 X-IronPort-AV: E=Sophos;i="4.97,1014,1389715200"; 
-   d="scan'208";a="30282836"
-Message-ID: <536C1CD8.2030602@cn.fujitsu.com>
-Date: Fri, 9 May 2014 09:10:00 +0900
+   d="scan'208";a="30283063"
+Message-ID: <536C1E50.5020806@cn.fujitsu.com>
+Date: Fri, 9 May 2014 09:16:16 +0900
 From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Dongsheng Yang <dongsheng081251@gmail.com>, <mingo@redhat.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] treewide: remove all open implementation of nice_to_rlimit()/rlimit_to_nice().
-References: <e1f9c9f2023719e0738e16cd6807c74c68b08fad.1399532322.git.yangds.fnst@cn.fujitsu.com> <a568a1e3cc8e78648f41b5035fa5e381d36274da.1399532322.git.yangds.fnst@cn.fujitsu.com> <20140508143404.GV11096@twins.programming.kicks-ass.net> <CA+qeAOqCo9g=tNARWf4JESLZU6sAoSKYDvmfGE6OOmJQhajyDw@mail.gmail.com> <20140508152614.GC30445@twins.programming.kicks-ass.net>
-In-Reply-To: <20140508152614.GC30445@twins.programming.kicks-ass.net>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+CC: <rostedt@goodmis.org>, <peterz@infradead.org>, <bsegall@google.com>,
+        <mingo@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: Distinguish sched_wakeup event when wake up a
+ task which did schedule out or not.
+References: <53683B14.3060702@cn.fujitsu.com> <1399341154-11785-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+In-Reply-To: <1399341154-11785-1-git-send-email-yangds.fnst@cn.fujitsu.com>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.167.226.49]
@@ -27,15 +28,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2014 12:26 AM, Peter Zijlstra wrote:
-> On Thu, May 08, 2014 at 10:51:13PM +0800, Dongsheng Yang wrote:
->> Just want to avoid using hardcoding of 20. If no, there is no meaning we
->> collect
->> priority related information into prio.h.  And convertion between nice
->> value [-20,19]
->> and rlimit style value [0,40] is used by several callers currently.
->>
-> Yeah, not really a comment on your patch, just a general observation on
-> the thing you touched :-)
+Hi steven, does this version look good to you?
 
-Ha, okey, thanx for your reply. :)
+Thanx :)
+
+On 05/06/2014 10:52 AM, Dongsheng Yang wrote:
+> ttwu_do_wakeup() is called when the task's state is switched back to
+> TASK_RUNNING, whether or not the task actually scheduled out. Tracing
+> the wakeup event when the task never scheduled out is quite confusing.
+>
+> This patch take the use of 'success' parameter in sched_wakeup tracepoint,
+> to indicate that the task we are waking up did schedule out or just
+> change its state to TASK_RUNNING.
+>
+> success is true:
+> 	task was out of run queue and sleeping, we are really wake it up.
+> success is false:
+> 	taks was on run queue all the time and we just change its state
+> 	to TASK_RUNNING.
+>
+> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+> ---
+>   kernel/sched/core.c | 5 ++++-
+>   1 file changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 9074c6d..14b9fe4 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1420,6 +1420,7 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
+>   {
+>   	activate_task(rq, p, en_flags);
+>   	p->on_rq = 1;
+> +	trace_sched_wakeup(p, true);
+>   
+>   	/* if a worker is waking up, notify workqueue */
+>   	if (p->flags & PF_WQ_WORKER)
+> @@ -1433,7 +1434,6 @@ static void
+>   ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
+>   {
+>   	check_preempt_curr(rq, p, wake_flags);
+> -	trace_sched_wakeup(p, true);
+>   
+>   	p->state = TASK_RUNNING;
+>   #ifdef CONFIG_SMP
+> @@ -1481,6 +1481,7 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
+>   	if (p->on_rq) {
+>   		/* check_preempt_curr() may use rq clock */
+>   		update_rq_clock(rq);
+> +		trace_sched_wakeup(p, false);
+>   		ttwu_do_wakeup(rq, p, wake_flags);
+>   		ret = 1;
+>   	}
+> @@ -1675,6 +1676,8 @@ static void try_to_wake_up_local(struct task_struct *p)
+>   
+>   	if (!p->on_rq)
+>   		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
+> +	else
+> +		trace_sched_wakeup(p, false);
+>   
+>   	ttwu_do_wakeup(rq, p, 0);
+>   	ttwu_stat(p, smp_processor_id(), 0);
+
