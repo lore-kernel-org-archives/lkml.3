@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832AbaEIHMz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 03:12:55 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:52052 "EHLO
+	id S1755966AbaEIHOa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 03:14:30 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:37956 "EHLO
 	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460AbaEIHMx (ORCPT
+	with ESMTP id S1751221AbaEIHO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 03:12:53 -0400
-Date: Fri, 9 May 2014 08:12:46 +0100
+	Fri, 9 May 2014 03:14:28 -0400
+Date: Fri, 9 May 2014 08:14:23 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Chen-Yu Tsai <wens@csie.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Hans de Goede <hdegoede@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [PATCH v2 3/7] mfd: add support for sun6i PRCM
- (Power/Reset/Clock Management) unit
-Message-ID: <20140509071246.GE5767@lee--X1>
-References: <1399483554-8824-1-git-send-email-boris.brezillon@free-electrons.com>
- <1399483554-8824-4-git-send-email-boris.brezillon@free-electrons.com>
- <20140508110205.GB5767@lee--X1>
- <536BE366.8080907@free-electrons.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Chris Ball <chris@printf.net>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Micky Ching <micky_ching@realsil.com.cn>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: linux-next: manual merge of the mmc tree with Linus' tree
+Message-ID: <20140509071423.GF5767@lee--X1>
+References: <20140509134455.07d7de4d@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <536BE366.8080907@free-electrons.com>
+In-Reply-To: <20140509134455.07d7de4d@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> +static struct platform_driver sun6i_prcm_driver = {
-> >> +	.driver = {
-> >> +		.name = "sun6i-prcm",
-> >> +		.owner = THIS_MODULE,
-> >> +		.of_match_table = sun6i_prcm_dt_ids,
-> >> +	},
-> >> +	.probe = sun6i_prcm_probe,
-> > You need a .remove() call-back.
+> Today's linux-next merge of the mmc tree got a conflict in
+> drivers/mmc/host/rtsx_pci_sdmmc.c between commit 98fcc5762dce ("mmc:
+> rtsx: Revert "mmc: rtsx: add support for pre_req and post_req"") from
+> the  tree and commit 1f7b581b3ffc ("mmc: rtsx: modify error handle and
+> remove smatch warnings") from the mmc tree.
 > 
-> This driver cannot be compiled as module (see the Kconfig definition)
-> and the devices are not hotpluggable, as a result a probed device will
-> never be removed.
-> 
-> Do you still want me to implement the remove function ?
+> I fixed it up (maybe - see below and in the final tree) and can carry
+> the fix as necessary (no action is required).
 
-.remove() also be run on shut down.  It's best practice to have one.
-
-> >> +module_platform_driver(sun6i_prcm_driver);
-> >> +
-> >> +MODULE_AUTHOR("Boris BREZILLON <boris.brezillon@free-electrons.com>");
-> >> +MODULE_DESCRIPTION("Allwinner sun6i PRCM driver");
-> >> +MODULE_LICENSE("GPL v2");
-> 
+FYI: From what Ulf (co-maintainer of MMC) says, this was expected and
+will continue to happen until a pending revert is merged.
 
 -- 
 Lee Jones
