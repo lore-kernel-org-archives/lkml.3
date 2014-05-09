@@ -1,47 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885AbaEIQBb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 12:01:31 -0400
-Received: from mail01-md.ns.itscom.net ([175.177.155.111]:45240 "EHLO
-	mail01-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753547AbaEIQB3 (ORCPT
+	id S1756890AbaEIQDQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 12:03:16 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:50164 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279AbaEIQDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 12:01:29 -0400
-From: "J. R. Okajima" <hooanon05g@gmail.com>
-Subject: Re: IMA + O_DIRECT (Re: [PATCH 0/1] fix IMA + Apparmor kernel panic)
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, viro@zeniv.linux.org.uk,
-        ebiederm@xmission.com, linux-security-module@vger.kernel.org,
-        eparis@redhat.com, dmitry.kasatkin@gmail.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1399647534.2232.8.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <cover.1399554584.git.d.kasatkin@samsung.com> <29977.1399605003@jrobl> <536C8E64.6000009@samsung.com> <11673.1399627021@jrobl> <1399647534.2232.8.camel@dhcp-9-2-203-236.watson.ibm.com>
-Date: Sat, 10 May 2014 01:01:27 +0900
-Message-ID: <18674.1399651287@jrobl>
+	Fri, 9 May 2014 12:03:14 -0400
+Message-ID: <536CFC46.8010408@windriver.com>
+Date: Fri, 9 May 2014 12:03:18 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>
+CC: John Stultz <john.stultz@linaro.org>,
+        David Riley <davidriley@chromium.org>,
+        Will Deacon <Will.Deacon@arm.com>, <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] init: Don't decrease loops_per_jiffy when a CPU comes
+ up
+References: <1399506651-20031-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1399506651-20031-1-git-send-email-dianders@chromium.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.56.57]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 14-05-07 07:50 PM, Doug Anderson wrote:
+> The loops_per_jiffy count continues to be updated as each CPU is
+> brought up.  This causes problems when we've got an HMP system and
+> different CPUs have different loops per jiffy.  On exynos 542x
+> systems, for instance, the A7s will have significantly lower loops per
+> jiffy than their big brothers.
 
-Mimi Zohar:
-> Another approach was posted here
-> http://marc.info/?l=linux-security-module&m=138919062430367&w=2 which
-> also was not upstreamed.
+Based on the other discussion for the ARM variant of this, I'm
+assuming this also becomes a WFC issue.  And if not, then it
+probably should go by John or similar ; getmaintainers is just
+being dumb in spitting my name out, since I only made one
+trivial change to this file a year ago or similar.
 
-It might be better a little than previous one which handles the flag
-temporarily. But, in order to make the code cleaner particulary for
-do_blockdev_direct_IO(), I'd suggest
-- make two new static inline functions like
-  r = ima_aware_file_inode_mutex_lock(file) and ..._unlock(r, file).
-- these new functions are complied when CONFIG_IMA is enabled, otherwise
-  they are plain mutex_lock/unlock().
-- then do_blockdev_direct_IO() can call them blindly.
-- of course, O_DIRECT_HAVELOCK should be complied only when CONFIG_IMA
-  is enabled too.
+P.
+--
 
-I can guess that several people thinks that is still "ugly locking", but
-the deadlock is much ugly in real world. And we need some workaround for
-it.
-
-
-J. R. Okajima
+> 
+> We should always set the loops_per_jiffy the first time through, then
+> use the max.
+> 
+> One could argue that complex HMP systems should really be completely
+> ignoring the global loops_per_jiffy variable anyway.  That's probably
+> why nobody has fixed this before.  With that argument you could say
+> that while this change isn't incorrect, it's a bit misguided.  Still,
+> it doesn't hurt and provides a better fallback than we had without
+> this.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  init/calibrate.c | 22 +++++++++++++---------
+>  1 file changed, 13 insertions(+), 9 deletions(-)
+> 
+> diff --git a/init/calibrate.c b/init/calibrate.c
+> index 520702d..073bf9b 100644
+> --- a/init/calibrate.c
+> +++ b/init/calibrate.c
+> @@ -265,40 +265,44 @@ unsigned long __attribute__((weak)) calibrate_delay_is_known(void)
+>  void calibrate_delay(void)
+>  {
+>  	unsigned long lpj;
+> -	static bool printed;
+> +	static bool already_ran;
+>  	int this_cpu = smp_processor_id();
+>  
+>  	if (per_cpu(cpu_loops_per_jiffy, this_cpu)) {
+>  		lpj = per_cpu(cpu_loops_per_jiffy, this_cpu);
+> -		if (!printed)
+> +		if (!already_ran)
+>  			pr_info("Calibrating delay loop (skipped) "
+>  				"already calibrated this CPU");
+>  	} else if (preset_lpj) {
+>  		lpj = preset_lpj;
+> -		if (!printed)
+> +		if (!already_ran)
+>  			pr_info("Calibrating delay loop (skipped) "
+>  				"preset value.. ");
+> -	} else if ((!printed) && lpj_fine) {
+> +	} else if ((!already_ran) && lpj_fine) {
+>  		lpj = lpj_fine;
+>  		pr_info("Calibrating delay loop (skipped), "
+>  			"value calculated using timer frequency.. ");
+>  	} else if ((lpj = calibrate_delay_is_known())) {
+>  		;
+>  	} else if ((lpj = calibrate_delay_direct()) != 0) {
+> -		if (!printed)
+> +		if (!already_ran)
+>  			pr_info("Calibrating delay using timer "
+>  				"specific routine.. ");
+>  	} else {
+> -		if (!printed)
+> +		if (!already_ran)
+>  			pr_info("Calibrating delay loop... ");
+>  		lpj = calibrate_delay_converge();
+>  	}
+>  	per_cpu(cpu_loops_per_jiffy, this_cpu) = lpj;
+> -	if (!printed)
+> +	if (!already_ran) {
+>  		pr_cont("%lu.%02lu BogoMIPS (lpj=%lu)\n",
+>  			lpj/(500000/HZ),
+>  			(lpj/(5000/HZ)) % 100, lpj);
+>  
+> -	loops_per_jiffy = lpj;
+> -	printed = true;
+> +		loops_per_jiffy = lpj;
+> +	} else {
+> +		loops_per_jiffy = max(loops_per_jiffy, lpj);
+> +	}
+> +
+> +	already_ran = true;
+>  }
+> 
