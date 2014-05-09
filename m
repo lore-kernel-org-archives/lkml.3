@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489AbaEILhy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 07:37:54 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:52780 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142AbaEILhx (ORCPT
+	id S1756307AbaEILkx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 07:40:53 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:34902 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753387AbaEILkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 07:37:53 -0400
-Date: Fri, 9 May 2014 12:37:47 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Robert Baldyga <r.baldyga@samsung.com>
-Cc: sameo@linux.intel.com, myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        lgirdwood@gmail.com, broonie@kernel.org, linux-kernel@vger.kernel.org,
-        m.szyprowski@samsung.com, k.kozlowski@samsung.com
-Subject: Re: [PATCH v3 2/2] mfd: max77693: handle IRQs using regmap
-Message-ID: <20140509113747.GX5767@lee--X1>
-References: <1398762747-1138-1-git-send-email-r.baldyga@samsung.com>
- <1398762747-1138-3-git-send-email-r.baldyga@samsung.com>
+	Fri, 9 May 2014 07:40:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398762747-1138-3-git-send-email-r.baldyga@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1398800520-18135-1-git-send-email-alchark@gmail.com>
+References: <1398800520-18135-1-git-send-email-alchark@gmail.com>
+Date: Fri, 9 May 2014 13:40:51 +0200
+Message-ID: <CACRpkdbJGWbTJQBJqs-T6c29JciKofMkWoSU=zYW2BOEP-VEJA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: vt8500: Ensure value reg is updated when setting direction
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexey Charkov <alchark@gmail.com>
+Cc: Tony Prisk <linux@prisktech.co.nz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch modifies mfd driver to use regmap for handling interrupts.
-> It allows to simplify irq handling process. This modifications needed
-> to make small changes in function drivers, which use interrupts.
-> 
-> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> 
-> [For extcon part]
-> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
-> ---
->  drivers/extcon/extcon-max77693.c     |   3 +-
->  drivers/mfd/Kconfig                  |   1 +
->  drivers/mfd/Makefile                 |   2 +-
->  drivers/mfd/max77693-irq.c           | 346 -----------------------------------
->  drivers/mfd/max77693.c               | 158 ++++++++++++++--
->  include/linux/mfd/max77693-private.h |  46 ++++-
->  6 files changed, 195 insertions(+), 361 deletions(-)
->  delete mode 100644 drivers/mfd/max77693-irq.c
+On Tue, Apr 29, 2014 at 9:42 PM, Alexey Charkov <alchark@gmail.com> wrote:
 
-Patch looks good now:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+> Current code only touches the direction register when setting direction
+> to output, which breaks logic like
+>
+> echo high > /sys/class/gpio/gpio0/direction
+>
+> which is expected to also set the value. This patch also adds a call
+> to update the value register when setting direction to output.
+>
+> Signed-off-by: Alexey Charkov <alchark@gmail.com>
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Patch applied for fixes with Tony's ACK.
+
+Yours,
+Linus Walleij
