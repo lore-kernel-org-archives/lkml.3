@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502AbaEIF4V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 01:56:21 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:53801 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124AbaEIF4T (ORCPT
+	id S1753298AbaEIGAS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 02:00:18 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:42413 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124AbaEIGAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 01:56:19 -0400
-From: Matt Ranostay <mranostay@gmail.com>
-To: robh+dt@kernel.org, mark.rutland@arm.com, linux@arm.linux.org.uk
-Cc: linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, pantelis.antoniou@gmail.com,
-        matt.porter@linaro.org, Matt Ranostay <mranostay@gmail.com>
-Subject: [PATCH] ARM: dts: am335x-bone-common: Add i2c2 definition
-Date: Thu,  8 May 2014 22:56:23 -0700
-Message-Id: <1399614983-552-1-git-send-email-mranostay@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Fri, 9 May 2014 02:00:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <000e01cf6b23$58fda900$0af8fb00$@samsung.com>
+References: <000001cf643d$69e5e350$3db1a9f0$@samsung.com>
+	<CAOh2x=m8DzmLOGqL0E_seOZMuzU=O9vQuu-JEp+E5454RmfEXw@mail.gmail.com>
+	<003901cf6664$e4e8d2a0$aeba77e0$@samsung.com>
+	<CAKohpon7W726Hxj5OJ6SnmPz3gYhAeBRr1wS3SCa3F2hSLriLQ@mail.gmail.com>
+	<5367946F.1030407@ti.com>
+	<CAKohpon-KZpSJK7PxpLjZS7sVPcYraDxb4oJHN6dxSagD+F--Q@mail.gmail.com>
+	<CAGo_u6pUVeMM9mqe5htvM1X_4pkRGEUVOA2ty4ZPfUyLcLZkrw@mail.gmail.com>
+	<CAKohpokfcptseU6ST+e_GfU6poVJxXCXMeoYCvT65060v5GJYQ@mail.gmail.com>
+	<003e01cf6984$fb950280$f2bf0780$@samsung.com>
+	<CAGo_u6o0J_T_hnmDAiYpsDxe77iKPCjuWisZJfTjYYOVGJF96A@mail.gmail.com>
+	<CAKohpo=qbj9w5=wWHEG=9c2spjbbhaDaXG+F-Lhe9QffV9sDbw@mail.gmail.com>
+	<001501cf6a5c$07bc2520$17346f60$@samsung.com>
+	<CAGo_u6rAY1Cqh6_1RPsjGMwqNSVr=yW+VgyXfEjA6V+LT-SMcQ@mail.gmail.com>
+	<000301cf6a62$413c16b0$c3b44410$@samsung.com>
+	<CAKohponiuHYjLve5ywLSGtDPPFN9a54gzZUicn1m702B2Ct3Pw@mail.gmail.com>
+	<000e01cf6b23$58fda900$0af8fb00$@samsung.com>
+Date: Fri, 9 May 2014 11:30:15 +0530
+Message-ID: <CAKohpomX_ZXSyk7RuCyO1t8VUee5H5KN5zj1-VhDp+ZtFbF-xA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] PM / OPP: Add support for descending order for
+ cpufreq table
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Jonghwan Choi <jhbird.choi@samsung.com>
+Cc: Nishanth Menon <nm@ti.com>, Linux PM list <linux-pm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing i2c2 bus define to access various cape and
-prototype/breakout board devices.
+On 9 May 2014 06:39, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
+> -> In exynos cpufreq driver, if we want to support more frequency, then
 
-Signed-off-by: Matt Ranostay <mranostay@gmail.com>
----
- arch/arm/boot/dts/am335x-bone-common.dtsi | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+Don't add "->" to your replies, it doesn't make it more readable but less.
 
-diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
-index 2e7d932..2aedfee 100644
---- a/arch/arm/boot/dts/am335x-bone-common.dtsi
-+++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
-@@ -84,6 +84,13 @@
- 		>;
- 	};
- 
-+	i2c2_pins: pinmux_i2c2_pins {
-+		pinctrl-single,pins = <
-+			0x178 (PIN_INPUT_PULLUP | MUX_MODE3)	/* i2c2_sda.uart1_ctsn */
-+			0x17c (PIN_INPUT_PULLUP | MUX_MODE3)	/* i2c2_scl.uart1_rtsn */
-+		>;
-+	};
-+
- 	uart0_pins: pinmux_uart0_pins {
- 		pinctrl-single,pins = <
- 			0x170 (PIN_INPUT_PULLUP | MUX_MODE0)	/* uart0_rxd.uart0_rxd */
-@@ -222,6 +229,15 @@
- 
- };
- 
-+
-+&i2c2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&i2c2_pins>;
-+
-+	status = "okay";
-+	clock-frequency = <400000>;
-+};
-+
- /include/ "tps65217.dtsi"
- 
- &tps {
--- 
-1.8.3.2
+> we have to describe frequency information in dts file and have to change exynos cpufreq
+>  driver file also(For adding divider value).
 
+Why? So, as far as I got it your dividers are nothing but 0,1,2...
+i.e.
+Freqs: 400  500  600  700  800
+div:      4      3      2      1      0
+
+right? That's what you are doing in exynos5440. So just add this in your
+probe after doing: dev_pm_opp_init_cpufreq_table
+
+for(i = 0; all-available-freqs; i++)
+    dvfs_info->freq_table[i].driver_data = dvfs_info->freq_count - i;
+
+And this will work with changes in dts files.
