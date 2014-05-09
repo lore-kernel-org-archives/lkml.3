@@ -1,159 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756492AbaEINhc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 09:37:32 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:53304 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754913AbaEINh2 convert rfc822-to-8bit (ORCPT
+	id S1755408AbaEINoc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 09:44:32 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:15566 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753083AbaEINoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 09:37:28 -0400
+	Fri, 9 May 2014 09:44:30 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <linux-kernel@vger.kernel.org>, Bo Shen <voice.shen@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 1/2] ARM: at91: add PWM pinctrl to SAMA5D3
+Date: Fri, 9 May 2014 15:44:27 +0200
+Message-ID: <a5a0a9b8090f80f40daf3a13849b3961d9d617d6.1399642907.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
 MIME-Version: 1.0
-X-Originating-IP: [217.156.156.35]
-In-Reply-To: <20140411135218.478299389@infradead.org>
-References: <20140411134243.160989490@infradead.org>
-	<20140411135218.478299389@infradead.org>
-Date: Fri, 9 May 2014 14:37:27 +0100
-X-Google-Sender-Auth: J6hRi2xy0wh3YzXouIoWuKHy2XU
-Message-ID: <CAAG0J9_q1KsUx10-XAb7AJnxv2ehctg6q1KME7ahsk1OZV8vZQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH 6/8] sched,idle: Avoid spurious wakeup IPIs
-From: James Hogan <james.hogan@imgtec.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        luto@amacapital.net, nicolas.pitre@linaro.org,
-        daniel.lezcano@linaro.org, umgwanakikbuti@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/boot/dts/sama5d3.dtsi | 82 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 82 insertions(+)
 
-On 11 April 2014 14:42, Peter Zijlstra <peterz@infradead.org> wrote:
-> Because mwait_idle_with_hints() gets called from !idle context it must
-> call current_clr_polling(). This however means that resched_task() is
-> very likely to send an IPI even when we were polling:
->
->   CPU0                                  CPU1
->
->   if (current_set_polling_and_test())
->     goto out;
->
->   __monitor(&ti->flags);
->   if (!need_resched())
->     __mwait(eax, ecx);
->                                         set_tsk_need_resched(p);
->                                         smp_mb();
-> out:
->   current_clr_polling();
->                                         if (!tsk_is_polling(p))
->                                           smp_send_reschedule(cpu);
->
->
-> So while it is correct (extra IPIs aren't a problem, whereas a missed
-> IPI would be) it is a performance problem (for some).
->
-> Avoid this issue by using fetch_or() to atomically set NEED_RESCHED
-> and test if POLLING_NRFLAG is set.
->
-> Since a CPU stuck in mwait is unlikely to modify the flags word,
-> contention on the cmpxchg is unlikely and thus we should mostly
-> succeed in a single go.
->
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Andy Lutomirski <luto@amacapital.net>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> ---
->  kernel/sched/core.c |   41 ++++++++++++++++++++++++++++++++++++-----
->  1 file changed, 36 insertions(+), 5 deletions(-)
->
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -505,6 +505,39 @@ static inline void init_hrtick(void)
->  #endif /* CONFIG_SCHED_HRTICK */
->
->  /*
-> + * cmpxchg based fetch_or, macro so it works for different integer types
-> + */
-> +#define fetch_or(ptr, val)                                             \
-> +({     typeof(*(ptr)) __old, __val = *(ptr);                           \
-> +       for (;;) {                                                      \
-> +               __old = cmpxchg((ptr), __val, __val | (val));           \
-> +               if (__old == __val)                                     \
-> +                       break;                                          \
-> +               __val = __old;                                          \
-> +       }                                                               \
-> +       __old;                                                          \
-> +})
-> +
-> +#ifdef TIF_POLLING_NRFLAG
-> +/*
-> + * Atomically set TIF_NEED_RESCHED and test for TIF_POLLING_NRFLAG,
-> + * this avoids any races wrt polling state changes and thereby avoids
-> + * spurious IPIs.
-> + */
-> +static bool set_nr_and_not_polling(struct task_struct *p)
-> +{
-> +       struct thread_info *ti = task_thread_info(p);
-> +       return !(fetch_or(&ti->flags, _TIF_NEED_RESCHED) & _TIF_POLLING_NRFLAG);
+diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
+index 9caa06b3641e..ed7943745f23 100644
+--- a/arch/arm/boot/dts/sama5d3.dtsi
++++ b/arch/arm/boot/dts/sama5d3.dtsi
+@@ -583,6 +583,88 @@
+ 					};
+ 				};
+ 
++				pwm0 {
++					pinctrl_pwm0_pwmh0_0: pwm0_pwmh0-0 {
++						atmel,pins =
++							<AT91_PIOA 20 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PA20 periph B, conflicts with ISI_D4 and LCDDAT20 */
++					};
++					pinctrl_pwm0_pwmh0_1: pwm0_pwmh0-1 {
++						atmel,pins =
++							<AT91_PIOB 0 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB0 periph B, conflicts with GTX0 */
++					};
++
++					pinctrl_pwm0_pwmh1_0: pwm0_pwmh1-0 {
++						atmel,pins =
++							<AT91_PIOA 22 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PA22 periph B, conflicts with ISI_D6 and LCDDAT22 */
++					};
++					pinctrl_pwm0_pwmh1_1: pwm0_pwmh1-1 {
++						atmel,pins =
++							<AT91_PIOB 4 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB4 periph B, conflicts with GRX0 */
++					};
++					pinctrl_pwm0_pwmh1_2: pwm0_pwmh1-2 {
++						atmel,pins =
++							<AT91_PIOB 27 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* PB27 periph C, conflicts with G125CKO and RTS1 */
++					};
++
++					pinctrl_pwm0_pwmh2_0: pwm0_pwmh2-0 {
++						atmel,pins =
++							<AT91_PIOB 8 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB8 periph B, conflicts with GTXCK */
++					};
++					pinctrl_pwm0_pwmh2_1: pwm0_pwmh2-1 {
++						atmel,pins =
++							<AT91_PIOD 5 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* PD5 periph C, conflicts with MCI0_DA4 and TIOA0 */
++					};
++
++					pinctrl_pwm0_pwmh3_0: pwm0_pwmh3-0 {
++						atmel,pins =
++							<AT91_PIOB 12 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB12 periph B, conflicts with GRXDV */
++					};
++					pinctrl_pwm0_pwmh3_1: pwm0_pwmh3-1 {
++						atmel,pins =
++							<AT91_PIOD 7 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* PD7 periph C, conflicts with MCI0_DA6 and TCLK0 */
++					};
++
++					pinctrl_pwm0_pwml0_0: pwm0_pwml0-0 {
++						atmel,pins =
++							<AT91_PIOA 21 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PA21 periph B, conflicts with ISI_D5 and LCDDAT21 */
++					};
++					pinctrl_pwm0_pwml0_1: pwm0_pwml0-1 {
++						atmel,pins =
++							<AT91_PIOB 1 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB1 periph B, conflicts with GTX1 */
++					};
++
++					pinctrl_pwm0_pwml1_0: pwm0_pwml1-0 {
++						atmel,pins =
++							<AT91_PIOA 23 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PA23 periph B, conflicts with ISI_D7 and LCDDAT23 */
++					};
++					pinctrl_pwm0_pwml1_1: pwm0_pwml1-1 {
++						atmel,pins =
++							<AT91_PIOB 5 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB5 periph B, conflicts with GRX1 */
++					};
++					pinctrl_pwm0_pwml1_2: pwm0_pwml1-2 {
++						atmel,pins =
++							<AT91_PIOE 31 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PE31 periph B, conflicts with IRQ */
++					};
++
++					pinctrl_pwm0_pwml2_0: pwm0_pwml2-0 {
++						atmel,pins =
++							<AT91_PIOB 9 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB9 periph B, conflicts with GTXEN */
++					};
++					pinctrl_pwm0_pwml2_1: pwm0_pwml2-1 {
++						atmel,pins =
++							<AT91_PIOD 6 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* PD6 periph C, conflicts with MCI0_DA5 and TIOB0 */
++					};
++
++					pinctrl_pwm0_pwml3_0: pwm0_pwml3-0 {
++						atmel,pins =
++							<AT91_PIOB 13 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB13 periph B, conflicts with GRXER */
++					};
++					pinctrl_pwm0_pwml3_1: pwm0_pwml3-1 {
++						atmel,pins =
++							<AT91_PIOD 8 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* PD8 periph C, conflicts with MCI0_DA7 */
++					};
++				};
++
+ 				spi0 {
+ 					pinctrl_spi0: spi0-0 {
+ 						atmel,pins =
+-- 
+1.8.2.2
 
-This breaks the build on metag, and I suspect arm64 too:
-
-kernel/sched/core.c In function ‘set_nr_and_not_polling’:
-kernel/sched/core.c +531 : error: ‘_TIF_POLLING_NRFLAG’ undeclared
-
-since metag/arm64 define TIF_POLLING_NRFLAG but not
-_TIF_POLLING_NRFLAG. Could you please fix that prior to your patch to
-avoid breaking bisection?
-
-BTW what is it that determines whether an arch needs TIF_POLLING_NRFLAG?
-
-Thanks
-James
-
-
-> +}
-> +#else
-> +static bool set_nr_and_not_polling(struct task_struct *p)
-> +{
-> +       set_tsk_need_resched(p);
-> +       return true;
-> +}
-> +#endif
-> +
-> +/*
->   * resched_task - mark a task 'to be rescheduled now'.
->   *
->   * On UP this means the setting of the need_resched flag, on SMP it
-> @@ -520,17 +553,15 @@ void resched_task(struct task_struct *p)
->         if (test_tsk_need_resched(p))
->                 return;
->
-> -       set_tsk_need_resched(p);
-> -
->         cpu = task_cpu(p);
-> +
->         if (cpu == smp_processor_id()) {
-> +               set_tsk_need_resched(p);
->                 set_preempt_need_resched();
->                 return;
->         }
->
-> -       /* NEED_RESCHED must be visible before we test polling */
-> -       smp_mb();
-> -       if (!tsk_is_polling(p))
-> +       if (set_nr_and_not_polling(p))
->                 smp_send_reschedule(cpu);
->  }
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
