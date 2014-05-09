@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757424AbaEITvQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 15:51:16 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:42335 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756938AbaEITvN (ORCPT
+	id S1757447AbaEITvv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 15:51:51 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39200 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744AbaEITvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 15:51:13 -0400
-Date: Fri, 9 May 2014 12:51:09 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH percpu/for-3.16 2/2] percpu-refcount: implement
- percpu_ref_tryget()
-Message-ID: <20140509195109.GC2276@kmo>
-References: <20140507155511.GB26540@htj.dyndns.org>
- <20140507155647.GC26540@htj.dyndns.org>
- <20140507155810.GD26540@htj.dyndns.org>
- <20140509194020.GB2276@kmo>
- <20140509194140.GC4486@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140509194140.GC4486@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 9 May 2014 15:51:49 -0400
+Date: Fri, 09 May 2014 15:51:47 -0400 (EDT)
+Message-Id: <20140509.155147.151325080919519192.davem@davemloft.net>
+To: jhovold@gmail.com
+Cc: f.fainelli@gmail.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        mugunthanvnm@ti.com
+Subject: Re: [PATCH RESEND 0/5] net: cpsw and mdio-gpio fixes for
+ v3.15-final
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1399536564-7626-1-git-send-email-jhovold@gmail.com>
+References: <1399534639-4947-1-git-send-email-jhovold@gmail.com>
+	<1399536564-7626-1-git-send-email-jhovold@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 09 May 2014 12:51:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 03:41:40PM -0400, Tejun Heo wrote:
-> On Fri, May 09, 2014 at 12:40:21PM -0700, Kent Overstreet wrote:
-> > On Wed, May 07, 2014 at 11:58:10AM -0400, Tejun Heo wrote:
-> > > Implement percpu_ref_tryget() which fails if the refcnt already
-> > > reached zero.  Note that this is different from the recently renamed
-> > > percpu_ref_tryget_live() which fails if the refcnt has been killed and
-> > > is draining the remaining references.  percpu_ref_tryget() succeeds on
-> > > a killed refcnt as long as its current refcnt is above zero.
-> > 
-> > I'd still kind of prefer tryget() to be labelled "deprecated, don't use outside
-> > the cgroup code" or somesuch, but it's not a huge deal :)
+From: Johan Hovold <jhovold@gmail.com>
+Date: Thu,  8 May 2014 10:09:19 +0200
+
+> These patches against v3.15-rc4 fix a few issues in the cpsw and
+> mdio-gpio drivers.
 > 
-> Hmmm... why would it be deprecated?  These are just two different
-> operations.
+> Resend with proper stable CC (git send-email still fails to parse the
+> #-part of the tag unless address is enclosed in <> it seems).
+> 
+> Sorry about the noise.
 
-Well not so much deprecated as "bad, avoid" - IMO using tryget() almost always
-(I haven't seen a convincing counterexample) means you screwed up your
-refcounting somewhere, if you need to take a ref on something whatever made that
-object visible to you should have its own ref.
-
-(I think we had this debate, but that was awhile ago...)
+Series applied, thanks.
