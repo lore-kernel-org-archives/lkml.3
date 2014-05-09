@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014AbaEIRz3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 13:55:29 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:55401 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775AbaEIRz1 (ORCPT
+	id S1757171AbaEIR4S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 13:56:18 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54308 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756779AbaEIR4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 13:55:27 -0400
-Message-ID: <1399658123.5187.2.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched: wake up task on prev_cpu if not in
- SD_WAKE_AFFINE domain with cpu
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        morten.rasmussen@arm.com, mingo@kernel.org,
-        george.mccollister@gmail.com, ktkhai@parallels.com
-Date: Fri, 09 May 2014 19:55:23 +0200
-In-Reply-To: <536CF346.6080009@redhat.com>
-References: <20140502004237.79dd3de6@annuminas.surriel.com>
-	 <1399011219.5233.55.camel@marge.simpson.net> <53633B81.1080403@redhat.com>
-	 <1399016273.5233.94.camel@marge.simpson.net> <536379D0.8070306@redhat.com>
-	 <1399030032.5233.142.camel@marge.simpson.net> <5363B793.9010208@redhat.com>
-	 <20140506115448.GH11096@twins.programming.kicks-ass.net>
-	 <536943C9.4030502@redhat.com>
-	 <20140506203916.GQ17778@laptop.programming.kicks-ass.net>
-	 <536C3B69.1000208@redhat.com>
-	 <20140509012743.67d4006d@annuminas.surriel.com>
-	 <1399620873.5200.68.camel@marge.simpson.net> <536CE48E.2060305@redhat.com>
-	 <1399649042.31219.47.camel@marge.simpson.net> <536CF346.6080009@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 9 May 2014 13:56:16 -0400
+Date: Fri, 9 May 2014 18:56:02 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "J. R. Okajima" <hooanon05g@gmail.com>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, ebiederm@xmission.com,
+        linux-security-module@vger.kernel.org, eparis@redhat.com,
+        zohar@linux.vnet.ibm.com, dmitry.kasatkin@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: IMA + O_DIRECT (Re: [PATCH 0/1] fix IMA + Apparmor kernel panic)
+Message-ID: <20140509175602.GA18016@ZenIV.linux.org.uk>
+References: <cover.1399554584.git.d.kasatkin@samsung.com>
+ <29977.1399605003@jrobl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <29977.1399605003@jrobl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-09 at 11:24 -0400, Rik van Riel wrote: 
-> On 05/09/2014 11:24 AM, Mike Galbraith wrote:
+On Fri, May 09, 2014 at 12:10:03PM +0900, J. R. Okajima wrote:
+> 
+> Dmitry Kasatkin:
+> > Following patch replaces IMA usage of kernel_read() with special
+> > version which skips security check that triggers kernel panic
+> > when Apparmor and IMA appraisal are enabled together.
+> 
+> I know this is related to exit(2), but this behaviour of IMA is related
+> to open(2) too.
+> When O_DIRECT is specified, some filesystems (for example, ext2) call
+> do_blockdev_direct_IO() which acquires i_mutex. But
+> IMA:process_measurement() already acquires i_mutex before kernel_read().
+> It causes a deadlock even if you replace kernel_read() by a simpler one.
+> How can we stop reading the file from IMA?
 
-> > If no ->flags & SD_BALANCE_WAKE is encountered during traversal, sd
-> > remains NULL, we fall through to return prev_cpu.
-    ^^^^^^^^^^^^ 
+Disabling it would be a good start...  And no, I'm not kidding - the mess
+you are proposing is such that it's not at all obvious that this stuff
+is worth the trouble.
 
-> We do fall through, but into this loop:
-
->          while (sd) {
-
-
-
+Why the devil is it playing with ->i_mutex?  IMA, that is.  Its use for
+data is absolutely fs-dependent.  Again, filesystem is *NOT* required
+to take ->i_mutex anywhere on the write path.  At all.
