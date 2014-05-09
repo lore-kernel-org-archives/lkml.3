@@ -1,320 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756974AbaEIOy4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 10:54:56 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:35838 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756952AbaEIOyv (ORCPT
+	id S1756670AbaEIO46 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 10:56:58 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:58548 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751067AbaEIO44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 10:54:51 -0400
-Date: Fri, 9 May 2014 23:54:08 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: himangi774@gmail.com, sachin.kamat@linaro.org, fempsci@gmail.com,
-        nandu.hgowda@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com
-Subject: [PATCH 2/5 V2] staging: cxt1e1: remove dead code in musycc.c
-Message-ID: <20140509145408.GA8544@devel.8.8.4.4>
+	Fri, 9 May 2014 10:56:56 -0400
+Message-ID: <536CECB4.1090109@semaphore.gr>
+Date: Fri, 09 May 2014 17:56:52 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Doug Smythies <dsmythies@telus.net>
+Subject: Re: [RFC PATCH] cpufreq: intel_pstate: Change the calculation of
+ next pstate
+References: <5368255D.3090207@semaphore.gr> <536BEE89.3040602@gmail.com>
+In-Reply-To: <536BEE89.3040602@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes "#if 0" blocks.
+Hi Dirk,
 
-And the musycc_dump_rxbuffer_ring(ch, 0) which is commented
-out puts in RLD_DEBUG block and uncommented.
-Because this function may be used for debugging.
+On 08/05/2014 11:52 μμ, Dirk Brandewie wrote:
+> On 05/05/2014 04:57 PM, Stratos Karafotis wrote:
+>> Currently the driver calculates the next pstate proportional to
+>> core_busy factor, scaled by the ratio max_pstate / current_pstate.
+>>
+>> Using the scaled load (core_busy) to calculate the next pstate
+>> is not always correct, because there are cases that the load is
+>> independent from current pstate. For example, a tight 'for' loop
+>> through many sampling intervals will cause a load of 100% in
+>> every pstate.
+>>
+>> So, change the above method and calculate the next pstate with
+>> the assumption that the next pstate should not depend on the
+>> current pstate. The next pstate should only be proportional
+>> to measured load. Use the linear function to calculate the load:
+>>
+>> Next P-state = A + B * load
+>>
+>> where A = min_state and B = (max_pstate - min_pstate) / 100
+>> If turbo is enabled the B = (turbo_pstate - min_pstate) / 100
+>> The load is calculated using the kernel time functions.
+>>
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
-V2 : fix the changelog, added a log that musycc_dump_rxbuffer_ring()
-is uncommented.
+Thank you very much for your comments and for your time to test my patch!
 
- drivers/staging/cxt1e1/musycc.c |  136 ++-------------------------------------
- 1 files changed, 5 insertions(+), 131 deletions(-)
 
-diff --git a/drivers/staging/cxt1e1/musycc.c b/drivers/staging/cxt1e1/musycc.c
-index 2ddf889..91fab77 100644
---- a/drivers/staging/cxt1e1/musycc.c
-+++ b/drivers/staging/cxt1e1/musycc.c
-@@ -64,7 +64,6 @@ void        musycc_update_timeslots(mpi_t *);
- 
- /*******************************************************************/
- 
--#if 1
- static int
- musycc_dump_rxbuffer_ring(mch_t *ch, int lockit)
- {
-@@ -128,9 +127,7 @@ musycc_dump_rxbuffer_ring(mch_t *ch, int lockit)
- 		spin_unlock_irqrestore(&ch->ch_rxlock, flags);
- 	return 0;
- }
--#endif
- 
--#if 1
- static int
- musycc_dump_txbuffer_ring(mch_t *ch, int lockit)
- {
-@@ -188,8 +185,6 @@ musycc_dump_txbuffer_ring(mch_t *ch, int lockit)
- 		spin_unlock_irqrestore(&ch->ch_txlock, flags);
- 	return 0;
- }
--#endif
--
- 
- /*
-  * The following supports a backdoor debug facility which can be used to
-@@ -340,9 +335,6 @@ musycc_wq_chan_restart(void *arg)      /* channel private structure */
- 	mch_t      *ch;
- 	mpi_t      *pi;
- 	struct mdesc *md;
--#if 0
--	unsigned long flags;
--#endif
- 
- 	ch = container_of(arg, struct c4_chan_info, ch_work);
- 	pi = ch->up;
-@@ -391,22 +383,14 @@ musycc_wq_chan_restart(void *arg)      /* channel private structure */
- 		/* find next unprocessed message, then set TX thp to it */
- 		musycc_update_tx_thp(ch);
- 
--#if 0
--		spin_lock_irqsave(&ch->ch_txlock, flags);
--#endif
- 		md = ch->txd_irq_srv;
- 		if (!md) {
- #ifdef RLD_TRANS_DEBUG
- 			pr_info("-- musycc_wq_chan_restart[%d]: WARNING, starting NULL md\n", ch->channum);
- #endif
--#if 0
--			spin_unlock_irqrestore(&ch->ch_txlock, flags);
--#endif
- 		} else if (md->data && ((le32_to_cpu(md->status)) & MUSYCC_TX_OWNED)) {
- 			ch->ch_start_tx = 0;
--#if 0
--			spin_unlock_irqrestore(&ch->ch_txlock, flags);   /* allow interrupts for service request */
--#endif
-+
- #ifdef RLD_TRANS_DEBUG
- 			pr_info("++ musycc_wq_chan_restart() CHAN TX ACTIVATE: chan %d txd_irq_srv %p = sts %x, txpkt %lu\n",
- 				ch->channum, ch->txd_irq_srv, ch->txd_irq_srv->status, ch->s.tx_packets);
-@@ -421,9 +405,6 @@ musycc_wq_chan_restart(void *arg)      /* channel private structure */
- 				le32_to_cpu(md->status),
- 				le32_to_cpu(md->data), ch->ch_start_tx);
- 			musycc_dump_txbuffer_ring(ch, 0);
--#if 0
--			spin_unlock_irqrestore(&ch->ch_txlock, flags);   /* allow interrupts for service request */
--#endif
- 		}
- #endif
- 	}
-@@ -831,12 +812,6 @@ musycc_bh_tx_eom(mpi_t *pi, int gchan)
- 	mch_t      *ch;
- 	struct mdesc *md;
- 
--#if 0
--#ifndef SBE_ISR_INLINE
--	unsigned long flags;
--
--#endif
--#endif
- 	volatile u_int32_t status;
- 
- 	ch = pi->chan[gchan];
-@@ -849,13 +824,6 @@ musycc_bh_tx_eom(mpi_t *pi, int gchan)
- 		return;                     /* note: mdt==0 implies a malloc()
- 					     * failure w/in chan_up() routine */
- 
--#if 0
--#ifdef SBE_ISR_INLINE
--	spin_lock_irq(&ch->ch_txlock);
--#else
--	spin_lock_irqsave(&ch->ch_txlock, flags);
--#endif
--#endif
- 	do {
- 		FLUSH_MEM_READ();
- 		md = ch->txd_irq_srv;
-@@ -993,13 +961,6 @@ musycc_bh_tx_eom(mpi_t *pi, int gchan)
- #endif
- 
- 	FLUSH_MEM_WRITE();
--#if 0
--#ifdef SBE_ISR_INLINE
--	spin_unlock_irq(&ch->ch_txlock);
--#else
--	spin_unlock_irqrestore(&ch->ch_txlock, flags);
--#endif
--#endif
- }
- 
- 
-@@ -1181,11 +1142,6 @@ musycc_intr_th_handler(void *devp)
- 			 * walking the chain.  As the chain is walked, the interrupt will
- 			 * eventually be serviced by the correct driver/handler.
- 			 */
--#if 0
--			/* chained interrupt = not ours */
--			pr_info(">> %s: intCnt NULL, sts %x, possibly a chained interrupt!\n",
--					ci->devname, status);
--#endif
- 			return IRQ_NONE;
- 		}
- 
-@@ -1360,15 +1316,11 @@ musycc_intr_bh_tasklet(ci_t *ci)
- 				musycc_bh_tx_eom(pi, gchan);
- 			else
- 				musycc_bh_rx_eom(pi, gchan);
--#if 0
--			break;
--#else
- 			/*
- 			 * MUSYCC Interrupt Descriptor section states that EOB and EOM
- 			 * can be combined with the NONE error (as well as others).  So
- 			 * drop thru to catch this...
- 			 */
--#endif
- 		case EVE_NONE:
- 			if (err == ERR_SHT)
- 				ch->s.rx_length_errors++;
-@@ -1444,7 +1396,9 @@ musycc_intr_bh_tasklet(ci_t *ci)
- 				if (cxt1e1_log_level >= LOG_WARN) {
- 					pr_info("%s: RX buffer overflow [ONR] on channel %d, mode %x\n",
- 						ci->devname, ch->channum, ch->p.chan_mode);
--					//musycc_dump_rxbuffer_ring (ch, 0);        /* RLD DEBUG */
-+#ifdef RLD_DEBUG
-+					musycc_dump_rxbuffer_ring(ch, 0);
-+#endif
- 				}
- 			}
- 			musycc_chan_restart(ch);
-@@ -1511,35 +1465,6 @@ musycc_intr_bh_tasklet(ci_t *ci)
- 	/* else, nothing returned */
- }
- 
--#if 0
--	int         __init
--musycc_new_chan(ci_t *ci, int channum, void *user)
--{
--	mch_t      *ch;
--
--	ch = ci->port[channum / MUSYCC_NCHANS].chan[channum % MUSYCC_NCHANS];
--
--	if (ch->state != UNASSIGNED)
--		return EEXIST;
--	/* NOTE: mch_t already cleared during OS_kmalloc() */
--	ch->state = DOWN;
--	ch->user = user;
--#if 0
--	ch->status = 0;
--	ch->p.status = 0;
--	ch->p.intr_mask = 0;
--#endif
--	ch->p.chan_mode = CFG_CH_PROTO_HDLC_FCS16;
--	ch->p.idlecode = CFG_CH_FLAG_7E;
--	ch->p.pad_fill_count = 2;
--	spin_lock_init(&ch->ch_rxlock);
--	spin_lock_init(&ch->ch_txlock);
--
--	return 0;
--}
--#endif
--
--
- #ifdef SBE_PMCC4_ENABLE
- 	status_t
- musycc_chan_down(ci_t *dummy, int channum)
-@@ -1592,52 +1517,12 @@ musycc_chan_down(ci_t *dummy, int channum)
- }
- #endif
- 
--
--#if 0
--/* TODO: determine if these functions will not be needed and can be removed */
--int
--musycc_del_chan(ci_t *ci, int channum)
--{
--	mch_t      *ch;
--
--	if ((channum < 0) || (channum >= (MUSYCC_NPORTS * MUSYCC_NCHANS)))  /* sanity chk param */
--		return ECHRNG;
--	ch = sd_find_chan(ci, channum);
--	if (!ch)
--		return ENOENT;
--	if (ch->state == UP)
--		musycc_chan_down(ci, channum);
--	ch->state = UNASSIGNED;
--	return 0;
--}
--
--
--int
--musycc_del_chan_stats(ci_t *ci, int channum)
--{
--	mch_t      *ch;
--
--	if (channum < 0 || channum >= (MUSYCC_NPORTS * MUSYCC_NCHANS))      /* sanity chk param */
--		return ECHRNG;
--	ch = sd_find_chan(ci, channum);
--	if (!ch)
--		return ENOENT;
--
--	memset(&ch->s, 0, sizeof(struct sbecom_chan_stats));
--	return 0;
--}
--#endif
--
--
- int
- musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
- {
- 	mch_t      *ch;
- 	struct mdesc *md;
- 	void       *m2;
--#if 0
--	unsigned long flags;
--#endif
- 	int         txd_need_cnt;
- 	u_int32_t   len;
- 
-@@ -1694,9 +1579,7 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
- 		OS_mem_token_free(mem_token);
- 		return 0;
- 	}
--#if 0
--	spin_lock_irqsave(&ch->ch_txlock, flags);
--#endif
-+
- 	/************************************************************/
- 	/** flow control the line if not enough descriptors remain **/
- 	/************************************************************/
-@@ -1707,9 +1590,6 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
- 		ch->tx_full = 1;
- 		ch->txd_required = txd_need_cnt;
- 		sd_disable_xmit(ch->user);
--#if 0
--		spin_unlock_irqrestore(&ch->ch_txlock, flags);
--#endif
- 		return -EBUSY;               /* tell user to try again later */
- 	}
- 	/**************************************************/
-@@ -1748,12 +1628,6 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
- 		/* last chunk in hdlc mode */
- 		u |= (ch->p.idlecode << IDLE_CODE);
- 		if (ch->p.pad_fill_count) {
--#if 0
--			/* NOOP NOTE: u_int8_t cannot be > 0xFF */
--			/* sanitize pad_fill_count for maximums allowed by hardware */
--			if (ch->p.pad_fill_count > EXTRA_FLAGS_MASK)
--				ch->p.pad_fill_count = EXTRA_FLAGS_MASK;
--#endif
- 			u |= (PADFILL_ENABLE | (ch->p.pad_fill_count << EXTRA_FLAGS));
- 		}
- 		md->mem_token = len ? NULL : mem_token;    /* Fill in mds on last
--- 
-1.7.1
+> 
+> This will hurt your power numbers under "normal" conditions where you
+> are not running a performance workload. Consider the following:
+> 
+>    1. The system is idle, all core at min P state and utilization is low say < 10%
+>    2. You run something that drives the load as seen by the kernel to 100%
+>       which scaled by the current P state.
+> 
+> This would cause the P state to go from min -> max in one step.  Which is
+> what you want if you are only looking at a single core.  But this will also
+> drag every core in the package to the max P state as well.  This would be fine
 
+I think, this will also happen using the original driver (before your
+new patch 4/5), after some sampling intervals.
+
+
+> if the power vs frequency cure was linear all the cores would finish
+> their work faster and go idle sooner (race to halt) and maybe spend
+> more time in a deeper C state which dwarfs the amount of power we can
+> save by controlling P states. Unfortunately this is *not* the case, 
+> power vs frequency curve is non-linear and get very steep in the turbo
+> range.  If it were linear there would be no reason to have P state
+> control you could select the highest P state and walk away.
+> 
+> Being conservative on the way up and aggressive on way down give you
+> the best power efficiency on non-benchmark loads.  Most benchmarks
+> are pretty useless for measuring power efficiency (unless they were
+> designed for it) since they are measuring how fast something can be
+> done which is measuring the efficiency at max performance.
+> 
+> The performance issues you pointed out were caused by commit 
+> fcb6a15c intel_pstate: Take core C0 time into account for core busy calculation
+> and the ensuing problem is caused. These have been fixed in the patch set
+> 
+>    https://lkml.org/lkml/2014/5/8/574
+> 
+> The performance comparison between before/after this patch set, your patch
+> and ondemand/acpi_cpufreq is available at:
+>     http://openbenchmarking.org/result/1405085-PL-C0200965993
+> ffmpeg was added to the set of benchmarks because there was a regression
+> reported against this benchmark as well.
+>     https://bugzilla.kernel.org/show_bug.cgi?id=75121
+
+Of course, I agree generally with your comments above. But I believe that
+the we should scale the core as soon as we measure high load. 
+
+I tested your new patches and I confirm your benchmarks. But I think
+they are against the above theory (at least on low loads).
+With the new patches I get increased frequencies even on an idle system.
+Please compare the results below.
+
+With your latest patches during a mp3 decoding (a non-benchmark load)
+the energy consumption increased to 5187.52 J from 5036.57 J (almost 3%).
+
+
+Thanks again,
+Stratos
+
+
+
+With my patch
+-------------
+[root@albert ~]# /home/stratosk/kernels/linux-pm/tools/power/x86/turbostat/turbostat -i 60
+    Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt CorWatt GFXWatt 
+       -       -       1    0.06    1645    3392       0    0.26    0.00   99.67    0.00      32      32    0.00    0.00    0.00    0.00   20.18    2.00    0.02
+       0       0       2    0.10    1623    3392       0    0.63    0.01   99.26    0.00      32      32    0.00    0.00    0.00    0.00   20.18    2.00    0.02
+       0       4       0    0.01    1618    3392       0    0.72
+       1       1       1    0.03    1618    3392       0    0.03    0.00   99.94    0.00      27
+       1       5       0    0.01    1606    3392       0    0.05
+       2       2       0    0.02    1635    3392       0    0.28    0.00   99.70    0.00      22
+       2       6       3    0.17    1668    3392       0    0.13
+       3       3       2    0.12    1647    3392       0    0.08    0.00   99.80    0.00      30
+       3       7       0    0.02    1623    3392       0    0.18
+
+
+With your latest patch
+----------------------
+[root@albert ~]# /home/stratosk/kernels/linux-pm/tools/power/x86/turbostat/turbostat -i 60
+    Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt CorWatt GFXWatt 
+       -       -       1    0.05    2035    3392       0    0.28    0.01   99.66    0.00      34      34    0.00    0.00    0.00    0.00   20.20    2.01    0.02
+       0       0       1    0.04    1831    3392       0    0.06    0.00   99.90    0.00      34      34    0.00    0.00    0.00    0.00   20.20    2.01    0.02
+       0       4       0    0.01    2136    3392       0    0.09
+       1       1       1    0.06    1931    3392       0    0.70    0.00   99.24    0.00      31
+       1       5       0    0.01    2024    3392       0    0.75
+       2       2       1    0.03    2231    3392       0    0.21    0.03   99.73    0.00      26
+       2       6       2    0.09    1967    3392       0    0.15
+       3       3       3    0.15    2115    3392       0    0.06    0.00   99.78    0.00      34
+       3       7       0    0.02    2073    3392       0    0.19
+
+
+
+With my patch:
+--------------
+[root@albert ~]# /home/stratosk/kernels/linux-pm/tools/power/x86/turbostat/turbostat mpg321 /home/stratosk/One\ Direction\ -\ Story\ of\ My\ Life.mp3
+[4:05] Decoding of One Direction - Story of My Life.mp3 finished.
+    Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt CorWatt GFXWatt 
+       -       -       7    0.45    1613    3392       0   14.55    0.02   84.97    0.00      35      35    0.00    0.00    0.00    0.00   20.51    2.33    0.01
+       0       0      16    1.01    1623    3392       0    1.06    0.04   97.89    0.00      35      35    0.00    0.00    0.00    0.00   20.51    2.33    0.01
+       0       4       0    0.02    1616    3392       0    2.05
+       1       1       3    0.16    1609    3392       0    1.61    0.00   98.22    0.00      30
+       1       5      13    0.80    1606    3392       0    0.97
+       2       2       8    0.52    1606    3392       0   38.97    0.03   60.48    0.00      26
+       2       6      10    0.65    1613    3392       0   38.84
+       3       3       7    0.42    1613    3392       0   16.28    0.01   83.29    0.00      33
+       3       7       1    0.05    1624    3392       0   16.65
+245.566284 sec
+
+
+With your patch:
+----------------
+[root@albert ~]# /home/stratosk/kernels/linux-pm/tools/power/x86/turbostat/turbostat mpg321 /home/stratosk/One\ Direction\ -\ Story\ of\ My\ Life.mp3
+[4:05] Decoding of One Direction - Story of My Life.mp3 finished.
+    Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt CorWatt GFXWatt 
+       -       -       7    0.27    2773    3392       0   40.05    0.01   59.67    0.00      35      35    0.00    0.00    0.00    0.00   21.11    2.93    0.01
+       0       0       9    0.31    2773    3392       0   82.55    0.01   17.12    0.00      35      35    0.00    0.00    0.00    0.00   21.11    2.93    0.01
+       0       4       5    0.15    3290    3392       0   82.71
+       1       1       8    0.31    2541    3392       0   26.87    0.00   72.82    0.00      30
+       1       5      19    0.79    2400    3392       0   26.38
+       2       2       8    0.23    3490    3392       0   15.43    0.00   84.34    0.00      27
+       2       6       1    0.04    2086    3392       0   15.62
+       3       3       4    0.13    2978    3392       0   35.44    0.00   64.42    0.00      31
+       3       7       6    0.16    3553    3392       0   35.42
+245.642873 sec
+
+
+With original code
+-----------------
+[root@albert ~]# /home/stratosk/kernels/linux-pm/tools/power/x86/turbostat/turbostat mpg321 /home/stratosk/One\ Direction\ -\ Story\ of\ My\ Life.mp3
+[4:05] Decoding of One Direction - Story of My Life.mp3 finished.
+    Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt CorWatt GFXWatt 
+       -       -       5    0.32    1608    3392       0   20.43    0.01   79.24    0.00      35      35    0.00    0.00    0.00    0.00   20.59    2.41    0.01
+       0       0       2    0.11    1621    3392       0   20.90    0.01   78.98    0.00      35      35    0.00    0.00    0.00    0.00   20.59    2.41    0.01
+       0       4       6    0.38    1600    3392       0   20.63
+       1       1       8    0.50    1603    3392       0   24.10    0.00   75.40    0.00      29
+       1       5       0    0.02    1611    3392       0   24.58
+       2       2      13    0.81    1598    3392       0    0.45    0.02   98.73    0.00      29
+       2       6       1    0.04    1675    3392       0    1.21
+       3       3       9    0.59    1603    3392       0   35.54    0.01   63.86    0.00      33
+       3       7       1    0.08    1749    3392       0   36.05
+245.641863 sec
