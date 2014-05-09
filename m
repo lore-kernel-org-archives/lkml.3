@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108AbaEIH5e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 03:57:34 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44559 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755811AbaEIH5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 03:57:32 -0400
-Date: Fri, 9 May 2014 09:57:30 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andres Freund <andres@anarazel.de>
-Cc: Borislav Petkov <bp@suse.de>, x86@kernel.org, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/2] x86: Fix typo in MSR_IA32_MISC_ENABLE_LIMIT_CPUID
- macro
-Message-ID: <20140509075730.GB16058@pd.tnic>
-References: <1399598957-7011-1-git-send-email-andres@anarazel.de>
- <1399598957-7011-3-git-send-email-andres@anarazel.de>
+	id S1756163AbaEIH6B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 03:58:01 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:15624 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376AbaEIH57 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 03:57:59 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 09 May 2014 00:53:16 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Ben Skeggs <bskeggs@redhat.com>
+CC: Thierry Reding <thierry.reding@gmail.com>, <nouveau@lists.freedesktop.org>,
+        <dri-devel@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <gnurou@gmail.com>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH] drm/gk20a/fb: fix NULL dereference
+Date: Fri, 9 May 2014 16:57:48 +0900
+Message-ID: <1399622268-16940-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.9.2
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1399598957-7011-3-git-send-email-andres@anarazel.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 03:29:17AM +0200, Andres Freund wrote:
-> The spuriously added semicolon didn't have any effect because the
-> macro isn't currently in use.
-> 
-> c0a639ad0bc6b178b46996bd1f821a04643e2bde
-> 
-> Signed-off-by: Andres Freund <andres@anarazel.de>
-> Cc: Borislav Petkov <bp@suse.de>
-> Cc: H. Peter Anvin <hpa@linux.intel.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  arch/x86/include/uapi/asm/msr-index.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-> index c827ace..fcf2b3a 100644
-> --- a/arch/x86/include/uapi/asm/msr-index.h
-> +++ b/arch/x86/include/uapi/asm/msr-index.h
-> @@ -384,7 +384,7 @@
->  #define MSR_IA32_MISC_ENABLE_MWAIT_BIT			18
->  #define MSR_IA32_MISC_ENABLE_MWAIT			(1ULL << MSR_IA32_MISC_ENABLE_MWAIT_BIT)
->  #define MSR_IA32_MISC_ENABLE_LIMIT_CPUID_BIT		22
-> -#define MSR_IA32_MISC_ENABLE_LIMIT_CPUID		(1ULL << MSR_IA32_MISC_ENABLE_LIMIT_CPUID_BIT);
-> +#define MSR_IA32_MISC_ENABLE_LIMIT_CPUID		(1ULL << MSR_IA32_MISC_ENABLE_LIMIT_CPUID_BIT)
->  #define MSR_IA32_MISC_ENABLE_XTPR_DISABLE_BIT		23
->  #define MSR_IA32_MISC_ENABLE_XTPR_DISABLE		(1ULL << MSR_IA32_MISC_ENABLE_XTPR_DISABLE_BIT)
->  #define MSR_IA32_MISC_ENABLE_XD_DISABLE_BIT		34
+gk20a_ram_put() can be called with a NULL nouveau_mem in case of error.
+Handle that case the way is it done in other RAM drivers.
 
-Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c b/drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c
+index 403c88f07b99..7effd1a63458 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c
+@@ -36,6 +36,8 @@ gk20a_ram_put(struct nouveau_fb *pfb, struct nouveau_mem **pmem)
+ 	int i;
+ 
+ 	*pmem = NULL;
++	if (unlikely(mem == NULL))
++		return;
+ 
+ 	for (i = 0; i < mem->size; i++) {
+ 		struct page *page;
 -- 
-Regards/Gruss,
-    Boris.
+1.9.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
