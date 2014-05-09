@@ -1,107 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756820AbaEIOng (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 10:43:36 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46510 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754251AbaEIOne (ORCPT
+	id S1754237AbaEIOri (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 10:47:38 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:60044 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775AbaEIOrg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 10:43:34 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Bryan Evenson <bevenson@melinkcorp.com>
-Cc: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Mark Roszko <mark.roszko@gmail.com>, Johan Hovold <jhovold@gmail.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Andrew Morton <akpm@linux-foundation.org>, <stable@vger.kernel.org>
-Subject: [RESEND PATCH v4] ARM: at91: fix at91_sysirq_mask_rtc for sam9x5 SoCs
-Date: Fri,  9 May 2014 16:43:30 +0200
-Message-Id: <1399646610-18816-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
+	Fri, 9 May 2014 10:47:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <536CE414.5030406@suse.de>
+References: <1399432682-677-1-git-send-email-acourbot@nvidia.com>
+ <536A57FA.2090608@wwwdotorg.org> <536AC45F.6080608@nvidia.com> <536CE414.5030406@suse.de>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 9 May 2014 23:47:15 +0900
+Message-ID: <CAAVeFuJkdfYZdSvh4OuwqxiuyyoYtBnHH16L4gJrbAvo2F-w0w@mail.gmail.com>
+Subject: Re: [PATCH] ARM: tegra: enable console framebuffer rotation
+To: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
+Cc: Alex Courbot <acourbot@nvidia.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sam9x5 SoCs have the following errata:
-"RTC: Interrupt Mask Register cannot be used
- Interrupt Mask Register read always returns 0."
+On Fri, May 9, 2014 at 11:20 PM, Andreas Färber <afaerber@suse.de> wrote:
+> Am 08.05.2014 01:40, schrieb Alex Courbot:
+>> On 05/08/2014 12:57 AM, Stephen Warren wrote:
+>>> On 05/06/2014 09:18 PM, Alexandre Courbot wrote:
+>>>> Console rotation is needed for devices like Tegra Note 7 and NVIDIA
+>>>> SHIELD to get the boot console in the expected orientation.
+>>>
+>>> I've squashed this into Tegra's for-3.16/defconfig branch.
+>>>
+>>> Can you please also update multi_v7_defconfig, and send that change to
+>>> arm-soc (arm@kernel.org) to be applied. Thanks.
+>>
+>> I omitted doing this for now because the devices that require this
+>> option (TN7/SHIELD) need a custom build with appended DTB and/or
+>> command-line anyway. Therefore they cannot use a multi-mach kernel
+>
+> What does appending a .dtb have to do with whether or not to use a
+> multi-mach kernel? We package zImage/uImage and .dtbs separately, so
+> surely the multi_v7_defconfig should be kept working with Tegra devices.
+> Appending a .dtb only comes into play for preparing installation images.
 
-Hence we should not rely on what IMR claims about already masked IRQs
-and just disable all IRQs.
+When appending a dtb the kernel image must also be built with
+CONFIG_ARM_APPENDED_DTB, which I guess is not an option we want to add
+by default to Tegra and probably even less to multi_v7. So since the
+kernel config needs to be changed anyway, I thought we would always
+want to use tegra_defconfig as a basis for these devices.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: <stable@vger.kernel.org> # v3.10+
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
-Hello,
-
-Again, sorry for the noise, but I forgot to add Nicolas' ack and to keep
-Andrew and the stable ML in cc.
-
-Best Regards,
-
-Boris
-
-Changes since v3:
-- fix commit message and comment
-Changes since v2:
-- removed unused variable 'mask'
-Changes since v1:
-- use a macro to define IRQs bitmask
-- read IMR register to ensure the write to IDR has been flushed
-- quote atmel's datasheet errata in commit message
-- comment the code to describe why we're not using IMR to disable
-  the interrupts
-
- arch/arm/mach-at91/sysirq_mask.c | 22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
-
-diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-at91/sysirq_mask.c
-index 2ba694f..f8bc351 100644
---- a/arch/arm/mach-at91/sysirq_mask.c
-+++ b/arch/arm/mach-at91/sysirq_mask.c
-@@ -25,24 +25,28 @@
- 
- #include "generic.h"
- 
--#define AT91_RTC_IDR	0x24	/* Interrupt Disable Register */
--#define AT91_RTC_IMR	0x28	/* Interrupt Mask Register */
-+#define AT91_RTC_IDR		0x24	/* Interrupt Disable Register */
-+#define AT91_RTC_IMR		0x28	/* Interrupt Mask Register */
-+#define AT91_RTC_IRQ_MASK	0x1f	/* Available IRQs mask */
- 
- void __init at91_sysirq_mask_rtc(u32 rtc_base)
- {
- 	void __iomem *base;
--	u32 mask;
- 
- 	base = ioremap(rtc_base, 64);
- 	if (!base)
- 		return;
- 
--	mask = readl_relaxed(base + AT91_RTC_IMR);
--	if (mask) {
--		pr_info("AT91: Disabling rtc irq\n");
--		writel_relaxed(mask, base + AT91_RTC_IDR);
--		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
--	}
-+	/*
-+	 * sam9x5 SoCs have the following errata:
-+	 * "RTC: Interrupt Mask Register cannot be used
-+	 *  Interrupt Mask Register read always returns 0."
-+	 *
-+	 * Hence we're not relying on IMR values to disable
-+	 * interrupts.
-+	 */
-+	writel_relaxed(AT91_RTC_IRQ_MASK, base + AT91_RTC_IDR);
-+	(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
- 
- 	iounmap(base);
- }
--- 
-1.8.3.2
-
+Not that adding CONFIG_FRAMEBUFFER_CONSOLE_ROTATION to multi_v7 would
+inflate the resulting kernel much, though.
