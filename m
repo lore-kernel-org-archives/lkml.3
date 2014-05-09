@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731AbaEINxG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 09:53:06 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40116 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756697AbaEINxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 09:53:02 -0400
-Date: Fri, 9 May 2014 15:52:59 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Thor Thayer <tthayer.linux@gmail.com>
-Cc: Thor Thayer <tthayer@altera.com>, Rob Herring <robherring2@gmail.com>,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
-        Rob Landley <rob@landley.net>, linux@arm.linux.org.uk,
-        Dinh Nguyen <dinguyen@altera.com>, dougthompson@xmission.com,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv3 3/3] edac: altera: Add EDAC support for Altera SDRAM
-Message-ID: <20140509135259.GC16260@pd.tnic>
-References: <1399330337-16748-1-git-send-email-tthayer@altera.com>
- <1399330337-16748-4-git-send-email-tthayer@altera.com>
- <20140508120524.GF12548@pd.tnic>
- <CAF03EBecxtMr1670ktQKTAZX_kHeZWz1SwuEk373B99BoVjbDw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAF03EBecxtMr1670ktQKTAZX_kHeZWz1SwuEk373B99BoVjbDw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756754AbaEINxR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 09:53:17 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:45972 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754078AbaEINxP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 09:53:15 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH] video: of: display_timing: fix default native-mode setting
+Date: Fri,  9 May 2014 15:53:12 +0200
+Message-Id: <1399643592-17125-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 03:37:19PM -0500, Thor Thayer wrote:
-> Yes. Their reasoning is that they want to retain the rights and
-> warranty language with the file (just in case the COPYING file
-> changes).
+Set native mode to the first child node of the display-timings node and not
+the first child node of the display-timings parent node.
 
-Ok, thanks for checking up on this.
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ drivers/video/of_display_timing.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Yes. I tested using edac_core.edac_mc_panic_on_ue=1 from the command
-> line and it worked fine. I'll add a comment to clarify. BTW, thanks
-> for your help on that.
-
-Sure, but the question still remains: do you want to panic on
-uncorrectable errors by default or want the user to decide? I guess this
-is something you can answer for your hardware...
-
-> I considered using "volatile" variables, but decided against it after
-> I read Documentation/volatile-considered-harmful.txt and my situation
-> doesn't fit into the exemptions. Is there a better way to handle this?
-
-Off the top of my head, I'd first look at compiler asm output to
-check what my compiler does with those writes and then take a look at
-employing the ACCESS_ONCE macro or something similar where we use the
-asm volatile() as an optimization stop for the compiler, among others.
-
-And then I'll look at asm again to make sure it does what it is supposed
-to do. Something to that effect, in any case...
-
-HTH.
-
+diff --git a/drivers/video/of_display_timing.c b/drivers/video/of_display_timing.c
+index ba5b40f..19dd752 100644
+--- a/drivers/video/of_display_timing.c
++++ b/drivers/video/of_display_timing.c
+@@ -164,7 +164,7 @@ struct display_timings *of_get_display_timings(struct device_node *np)
+ 	entry = of_parse_phandle(timings_np, "native-mode", 0);
+ 	/* assume first child as native mode if none provided */
+ 	if (!entry)
+-		entry = of_get_next_child(np, NULL);
++		entry = of_get_next_child(timings_np, NULL);
+ 	/* if there is no child, it is useless to go on */
+ 	if (!entry) {
+ 		pr_err("%s: no timing specifications given\n",
 -- 
-Regards/Gruss,
-    Boris.
+1.8.3.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
