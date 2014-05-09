@@ -1,42 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256AbaEIBRs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 21:17:48 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:63817 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932182AbaEIBRr (ORCPT
+	id S1755800AbaEIBTq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 21:19:46 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:56250 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754263AbaEIBTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 21:17:47 -0400
-Message-ID: <536C2CB7.1060600@converseincode.com>
-Date: Thu, 08 May 2014 18:17:43 -0700
-From: Behan Webster <behanw@converseincode.com>
+	Thu, 8 May 2014 21:19:45 -0400
+Message-ID: <536C2D2B.6090501@gmail.com>
+Date: Fri, 09 May 2014 09:19:39 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Subject: Re: [PATCH] mpilib: use 'static inline' for mpi-inline.h
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>	<1399560990-1402858-1-git-send-email-arnd@arndb.de>	<1399560990-1402858-9-git-send-email-arnd@arndb.de> <20140508113013.74b2eb9d@gandalf.local.home>
-In-Reply-To: <20140508113013.74b2eb9d@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: JBottomley@parallels.com
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] [PATCH] drivers: scsi: mvsas: fix compiling issue by adding
+ 'MVS_' for "enum pci_interrupt_cause"
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/14 08:30, Steven Rostedt wrote:
-> On Thu,  8 May 2014 16:56:20 +0200
-> Arnd Bergmann <arnd@arndb.de> wrote:
->
->> Four functions of mpilib are defined as 'extern inline' at the
->> moment, which is generally not the correct way to do inline functions
->> using gcc.
-> I think clang would appreciate this too.
-Indeed. Saves me writing the same patch. :)
+The direct cause is IRQ_SPI is already defined as a macro in unicore32
+architecture (also, blackfin and mips architectures define it). The
+related error (unicore32  with allmodconfig)
 
-Behan
+    CC [M]  drivers/scsi/mvsas/mv_94xx.o
+  In file included from drivers/scsi/mvsas/mv_94xx.c:27:
+  drivers/scsi/mvsas/mv_94xx.h:176: error: expected identifier before numeric constant
 
+And IRQ_SAS_A and IRQ_SAS_B are used as 'u32' (although "enum
+pci_interrupt_cause" is not used directly, now).
+
+All together, need add 'MVS_' for "enum pci_interrupt_cause".
+
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ drivers/scsi/mvsas/mv_94xx.c | 10 ++++----
+ drivers/scsi/mvsas/mv_94xx.h | 58 ++++++++++++++++++++++----------------------
+ 2 files changed, 34 insertions(+), 34 deletions(-)
+
+diff --git a/drivers/scsi/mvsas/mv_94xx.c b/drivers/scsi/mvsas/mv_94xx.c
+index 1e4479f..9270d15 100644
+--- a/drivers/scsi/mvsas/mv_94xx.c
++++ b/drivers/scsi/mvsas/mv_94xx.c
+@@ -564,7 +564,7 @@ static void mvs_94xx_interrupt_enable(struct mvs_info *mvi)
+ 	u32 tmp;
+ 
+ 	tmp = mr32(MVS_GBL_CTL);
+-	tmp |= (IRQ_SAS_A | IRQ_SAS_B);
++	tmp |= (MVS_IRQ_SAS_A | MVS_IRQ_SAS_B);
+ 	mw32(MVS_GBL_INT_STAT, tmp);
+ 	writel(tmp, regs + 0x0C);
+ 	writel(tmp, regs + 0x10);
+@@ -580,7 +580,7 @@ static void mvs_94xx_interrupt_disable(struct mvs_info *mvi)
+ 
+ 	tmp = mr32(MVS_GBL_CTL);
+ 
+-	tmp &= ~(IRQ_SAS_A | IRQ_SAS_B);
++	tmp &= ~(MVS_IRQ_SAS_A | MVS_IRQ_SAS_B);
+ 	mw32(MVS_GBL_INT_STAT, tmp);
+ 	writel(tmp, regs + 0x0C);
+ 	writel(tmp, regs + 0x10);
+@@ -596,7 +596,7 @@ static u32 mvs_94xx_isr_status(struct mvs_info *mvi, int irq)
+ 	if (!(mvi->flags & MVF_FLAG_SOC)) {
+ 		stat = mr32(MVS_GBL_INT_STAT);
+ 
+-		if (!(stat & (IRQ_SAS_A | IRQ_SAS_B)))
++		if (!(stat & (MVS_IRQ_SAS_A | MVS_IRQ_SAS_B)))
+ 			return 0;
+ 	}
+ 	return stat;
+@@ -606,8 +606,8 @@ static irqreturn_t mvs_94xx_isr(struct mvs_info *mvi, int irq, u32 stat)
+ {
+ 	void __iomem *regs = mvi->regs;
+ 
+-	if (((stat & IRQ_SAS_A) && mvi->id == 0) ||
+-			((stat & IRQ_SAS_B) && mvi->id == 1)) {
++	if (((stat & MVS_IRQ_SAS_A) && mvi->id == 0) ||
++			((stat & MVS_IRQ_SAS_B) && mvi->id == 1)) {
+ 		mw32_f(MVS_INT_STAT, CINT_DONE);
+ 
+ 		spin_lock(&mvi->lock);
+diff --git a/drivers/scsi/mvsas/mv_94xx.h b/drivers/scsi/mvsas/mv_94xx.h
+index 487aa6f..14e1974 100644
+--- a/drivers/scsi/mvsas/mv_94xx.h
++++ b/drivers/scsi/mvsas/mv_94xx.h
+@@ -150,35 +150,35 @@ enum chip_register_bits {
+ 
+ enum pci_interrupt_cause {
+ 	/*  MAIN_IRQ_CAUSE (R10200) Bits*/
+-	IRQ_COM_IN_I2O_IOP0            = (1 << 0),
+-	IRQ_COM_IN_I2O_IOP1            = (1 << 1),
+-	IRQ_COM_IN_I2O_IOP2            = (1 << 2),
+-	IRQ_COM_IN_I2O_IOP3            = (1 << 3),
+-	IRQ_COM_OUT_I2O_HOS0           = (1 << 4),
+-	IRQ_COM_OUT_I2O_HOS1           = (1 << 5),
+-	IRQ_COM_OUT_I2O_HOS2           = (1 << 6),
+-	IRQ_COM_OUT_I2O_HOS3           = (1 << 7),
+-	IRQ_PCIF_TO_CPU_DRBL0          = (1 << 8),
+-	IRQ_PCIF_TO_CPU_DRBL1          = (1 << 9),
+-	IRQ_PCIF_TO_CPU_DRBL2          = (1 << 10),
+-	IRQ_PCIF_TO_CPU_DRBL3          = (1 << 11),
+-	IRQ_PCIF_DRBL0                 = (1 << 12),
+-	IRQ_PCIF_DRBL1                 = (1 << 13),
+-	IRQ_PCIF_DRBL2                 = (1 << 14),
+-	IRQ_PCIF_DRBL3                 = (1 << 15),
+-	IRQ_XOR_A                      = (1 << 16),
+-	IRQ_XOR_B                      = (1 << 17),
+-	IRQ_SAS_A                      = (1 << 18),
+-	IRQ_SAS_B                      = (1 << 19),
+-	IRQ_CPU_CNTRL                  = (1 << 20),
+-	IRQ_GPIO                       = (1 << 21),
+-	IRQ_UART                       = (1 << 22),
+-	IRQ_SPI                        = (1 << 23),
+-	IRQ_I2C                        = (1 << 24),
+-	IRQ_SGPIO                      = (1 << 25),
+-	IRQ_COM_ERR                    = (1 << 29),
+-	IRQ_I2O_ERR                    = (1 << 30),
+-	IRQ_PCIE_ERR                   = (1 << 31),
++	MVS_IRQ_COM_IN_I2O_IOP0        = (1 << 0),
++	MVS_IRQ_COM_IN_I2O_IOP1        = (1 << 1),
++	MVS_IRQ_COM_IN_I2O_IOP2        = (1 << 2),
++	MVS_IRQ_COM_IN_I2O_IOP3        = (1 << 3),
++	MVS_IRQ_COM_OUT_I2O_HOS0       = (1 << 4),
++	MVS_IRQ_COM_OUT_I2O_HOS1       = (1 << 5),
++	MVS_IRQ_COM_OUT_I2O_HOS2       = (1 << 6),
++	MVS_IRQ_COM_OUT_I2O_HOS3       = (1 << 7),
++	MVS_IRQ_PCIF_TO_CPU_DRBL0      = (1 << 8),
++	MVS_IRQ_PCIF_TO_CPU_DRBL1      = (1 << 9),
++	MVS_IRQ_PCIF_TO_CPU_DRBL2      = (1 << 10),
++	MVS_IRQ_PCIF_TO_CPU_DRBL3      = (1 << 11),
++	MVS_IRQ_PCIF_DRBL0             = (1 << 12),
++	MVS_IRQ_PCIF_DRBL1             = (1 << 13),
++	MVS_IRQ_PCIF_DRBL2             = (1 << 14),
++	MVS_IRQ_PCIF_DRBL3             = (1 << 15),
++	MVS_IRQ_XOR_A                  = (1 << 16),
++	MVS_IRQ_XOR_B                  = (1 << 17),
++	MVS_IRQ_SAS_A                  = (1 << 18),
++	MVS_IRQ_SAS_B                  = (1 << 19),
++	MVS_IRQ_CPU_CNTRL              = (1 << 20),
++	MVS_IRQ_GPIO                   = (1 << 21),
++	MVS_IRQ_UART                   = (1 << 22),
++	MVS_IRQ_SPI                    = (1 << 23),
++	MVS_IRQ_I2C                    = (1 << 24),
++	MVS_IRQ_SGPIO                  = (1 << 25),
++	MVS_IRQ_COM_ERR                = (1 << 29),
++	MVS_IRQ_I2O_ERR                = (1 << 30),
++	MVS_IRQ_PCIE_ERR               = (1 << 31),
+ };
+ 
+ union reg_phy_cfg {
 -- 
-Behan Webster
-behanw@converseincode.com
-
+1.9.2.459.g68773ac
