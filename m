@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756992AbaEIQP3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 12:15:29 -0400
-Received: from mail01-md.ns.itscom.net ([175.177.155.111]:50039 "EHLO
-	mail01-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756833AbaEIQP1 (ORCPT
+	id S1757037AbaEIQPv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 12:15:51 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49929 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756630AbaEIQPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 12:15:27 -0400
-From: "J. R. Okajima" <hooanon05g@gmail.com>
-Subject: Re: IMA + O_DIRECT (Re: [PATCH 0/1] fix IMA + Apparmor kernel panic)
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>, viro@zeniv.linux.org.uk,
-        ebiederm@xmission.com, linux-security-module@vger.kernel.org,
-        eparis@redhat.com, dmitry.kasatkin@gmail.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <18674.1399651287@jrobl>
-References: <cover.1399554584.git.d.kasatkin@samsung.com> <29977.1399605003@jrobl> <536C8E64.6000009@samsung.com> <11673.1399627021@jrobl> <1399647534.2232.8.camel@dhcp-9-2-203-236.watson.ibm.com> <18674.1399651287@jrobl>
-Date: Sat, 10 May 2014 01:15:25 +0900
-Message-ID: <18718.1399652125@jrobl>
+	Fri, 9 May 2014 12:15:50 -0400
+Date: Fri, 9 May 2014 18:15:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: [REGRESSION] funny sched_domain build failure during resume
+Message-ID: <20140509161545.GX30445@twins.programming.kicks-ass.net>
+References: <20140509160455.GA4486@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jiGx5cYVmJx/T6kL"
+Content-Disposition: inline
+In-Reply-To: <20140509160455.GA4486@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-"J. R. Okajima":
-> do_blockdev_direct_IO(), I'd suggest
-> - make two new static inline functions like
->   r = ima_aware_file_inode_mutex_lock(file) and ..._unlock(r, file).
-> - these new functions are complied when CONFIG_IMA is enabled, otherwise
->   they are plain mutex_lock/unlock().
-> - then do_blockdev_direct_IO() can call them blindly.
-> - of course, O_DIRECT_HAVELOCK should be complied only when CONFIG_IMA
->   is enabled too.
+--jiGx5cYVmJx/T6kL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-One more thing.
-Since struct file is a sharable object, it might be better to put
-task-id into struct file. Hmm, then should we support for multiple tasks
-by list or something? Oh the code grows...
+On Fri, May 09, 2014 at 12:04:55PM -0400, Tejun Heo wrote:
+> It looks like the allocation is for a temp buffer and there are also
+> percpu allocations going on.  Maybe just allocate the buffers on boot
+> and keep them around?
 
+Its not a scratch buffer, but we could certainly try and keep it around
+over suspend/resume.
 
-J. R. Okajima
+I'll try and prod at that on monday.
+
+--jiGx5cYVmJx/T6kL
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTbP8qAAoJEHZH4aRLwOS6ijIP/0WHPQcGuXL9C7ruBkhQKI2Q
+rlBZcylESzJ18ivNoY+G+a8yRrUy+d5H/SeAHRI4s/IvGQt1cuTRpuuERF1YoJjR
+LImogkkVYSiOIyTG41dgHf/lHl4enrgU+MsZnwVbDE8U+/Qep5M54WOYo0K//CIo
+Ub3tTkGpQZ/wsvjw85kRdEU6dmzFG6DcyTWAIIJUDzuBPwNQCFOu5rfO/beul7LP
+GeLcXXySoFJTdSVDk66Y8si06Nd/8M90anPsppyXT/HBRRLzzZwRBtSejkMwQtqt
+lmcrmFzMCoDURfPQkQOTpiH/EXCn640wvpPi1NPhTy8NuMD6DB5L94iYpUdaizL3
+gbufWWGeJT97+fqAnx+33JBQ+im1fuAbsUXxXSqy5Wz+3k3MfGQ7aDoiK3Vr+Vb7
+9NJrZlBpyFW4mvLZtKloRxf640ciD67Ua7qxeykvc7nF8Wqse0sWC1tKmTc1hboC
+b/SBkQvy1vzkE+EgKEK3uI95RFI9kknDZevoIWUfwnjvBPxTXhN9NnIcB44A83IH
+2wXOdOKVz9M66R+YRfHQ8hI6btRUpJ24wLv9cJqcXF2V84sP1p31LB647zZwDpbX
+XUGUuaTLyYsnH/f4dLm4nVRzvkSd+H+yHCPzpBZA3fiNZJcsCvew2vUzarrSPUtx
+oCz4UA7XYAybOc+ZSvaM
+=0Qtt
+-----END PGP SIGNATURE-----
+
+--jiGx5cYVmJx/T6kL--
