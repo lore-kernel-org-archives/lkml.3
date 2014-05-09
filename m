@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420AbaEIOMp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 10:12:45 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:60241 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084AbaEIOMo (ORCPT
+	id S1756619AbaEIOOI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 10:14:08 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54969 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753367AbaEIOOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 10:12:44 -0400
-Message-ID: <536CE25C.5040107@kernel.dk>
-Date: Fri, 09 May 2014 08:12:44 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 9 May 2014 10:14:06 -0400
+Date: Fri, 9 May 2014 16:13:56 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>, Aubrey Li <aubrey.li@intel.com>
+Subject: Re: [PATCH] PM / suspend: Always use deepest C-state in the "freeze"
+ sleep state
+Message-ID: <20140509141356.GA1811@xo-6d-61-c0.localdomain>
+References: <2548502.zJ1no3NhRc@vostro.rjw.lan>
+ <20140509073835.GB4965@xo-6d-61-c0.localdomain>
+ <2485687.UrJORvS9e7@vostro.rjw.lan>
 MIME-Version: 1.0
-To: =?UTF-8?B?TWF0aWFzIEJqw7hybGluZw==?= <m@bjorling.me>, sbradshaw@micron.com
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: per-cpu counters for in-flight IO accounting
-References: <1399627061-5960-1-git-send-email-m@bjorling.me> <1399627061-5960-2-git-send-email-m@bjorling.me>
-In-Reply-To: <1399627061-5960-2-git-send-email-m@bjorling.me>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2485687.UrJORvS9e7@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2014 03:17 AM, Matias Bjørling wrote:
-> With multi-million IOPS and multi-node workloads, the atomic_t in_flight
-> tracking becomes a bottleneck. Change the in-flight accounting to per-cpu
-> counters to elevate.
+On Fri 2014-05-09 13:26:47, Rafael J. Wysocki wrote:
+> On Friday, May 09, 2014 09:38:35 AM Pavel Machek wrote:
+> > On Mon 2014-05-05 00:51:54, Rafael J. Wysocki wrote:
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > 
+> > > If freeze_enter() is called, we want to bypass the current cpuidle
+> > > governor and always use the deepest available (that is, not disabled)
+> > > C-state, because we want to save as much energy as reasonably possible
+> > > then and runtime latency constraints don't matter at that point, since
+> > > the system is in a sleep state anyway.
+> > 
+> > Would there be way to pass the parameter "go to deepest" instead of adding
+> > global state for this?
+> 
+> I'm not sure what you mean?  A parameter of what in particular?  And where
+> to pass it?
 
-The part stats are a pain in the butt, I've tried to come up with a
-great fix for them too. But I don't think the percpu conversion is
-necessarily the right one. The summing is part of the hotpath, so percpu
-counters aren't necessarily the right way to go. I don't have a better
-answer right now, otherwise it would have been fixed :-)
+Currently the code is:
 
-There's some low hanging fruit (like doing part_in_flight() twice in
-part_round_stats_single()), though.
+static void freeze_enter(void)
+{
++ cpuidle_use_deepest_state(true);
+  cpuidle_resume();
+  wait_event(suspend_freeze_wait_head, suspend_freeze_wake);
+  cpuidle_pause();
++ cpuidle_use_deepest_state(false);
+}
 
-So I'm not going to apply this one as-is, lets see if we can find a
-better solution. Perhaps local_t would be a good solution.
+. I believe it would be better if you did
 
+cpuidle_resume(GOTO_DEEPEST_C_STATE)
+
+instead of having global state.
+
+Thanks,
+										Pavel
 -- 
-Jens Axboe
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
