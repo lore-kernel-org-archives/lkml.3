@@ -1,226 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460AbaEIUUr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 16:20:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64408 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757267AbaEIUUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 16:20:45 -0400
-Subject: [PATCH] i915: Add module option to support VGA arbiter on HD devices
-From: Alex Williamson <alex.williamson@redhat.com>
-To: intel-gfx@lists.freedesktop.org
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
-        Ville =?utf-8?b?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>,
-        Dave Airlie <airlied@redhat.com>
-Date: Fri, 09 May 2014 14:20:41 -0600
-Message-ID: <20140509201655.2849.97478.stgit@bling.home>
-User-Agent: StGit/0.17-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+	id S1757393AbaEIUYo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 16:24:44 -0400
+Received: from smtprelay0167.hostedemail.com ([216.40.44.167]:47158 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756929AbaEIUYn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 16:24:43 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:2911:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3873:4321:4425:5007:7652:7875:8603:10004:10400:10848:11232:11658:11914:12296:12517:12519:12663:12740:13069:13071:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: flag58_be42c0d5c25b
+X-Filterd-Recvd-Size: 1586
+Message-ID: <1399667080.2912.6.camel@joe-AO725>
+Subject: Re: [PATCH] drivers: staging: ft1000: Improve coding style
+From: Joe Perches <joe@perches.com>
+To: Artem Fetishev <wwctrsrx@gmail.com>
+Cc: marek.belisko@gmail.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 09 May 2014 13:24:40 -0700
+In-Reply-To: <1399704813-9516-1-git-send-email-wwctrsrx@gmail.com>
+References: <1399704813-9516-1-git-send-email-wwctrsrx@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 81b5c7bc found that the current VGA arbiter support in i915
-only works for ancient GMCH-based IGD devices and attempted to update
-support for newer HD devices.  Unfortunately newer devices cannot
-completely opt-out of VGA arbitration like the old devices could.
-The VGA I/O space cannot be disabled internally.  The only way to
-route VGA I/O elsewhere is by disabling I/O at the device PCI command
-register.  This means that with commit 81b5c7bc and multiple VGA
-adapters, the VGA arbiter will report that multiple VGA devices are
-participating in arbitration, Xorg will notice this and disable DRI.
-Therefore, 81b5c7bc was reverted because DRI is more important than
-being correct.
+On Sat, 2014-05-10 at 09:53 +0300, Artem Fetishev wrote:
+> Improvements include:
+>  - Lines over 80 characters;
+>  - Use pr_info() instead printk(KERN_INFO);
+>  - Removal of typedefs;
+>  - Indentation.
+>  - Fix IOCTL_FT1000_* marcos:
+>    - Add closing brackets;
+>    - remove sizeof (_IOR and _IOW macro can accept types);
+>    - replace _IOW which size of 0 (the last arg) with _IO.
+>    - Actually these macros are not used anywhere and might be removed.
 
-There is however an actual need for i915 to correctly participate in
-VGA arbitration; VGA device assignment.  If we want to use VFIO to
-assign a VGA device to a virtual machine, we need to be able to
-access the VGA resources of that device.  By adding an i915 module
-option we can allow i915 to continue with its charade by default, but
-also allow an easy path for users who require working VGA arbitration.
-Hopefully Xorg can someday be taught to behave better with multiple
-VGA devices.
+Hello Artem.
 
-This also rolls in reverted commit 6e1b4fda, which corrected an
-ordering issue with 81b5c7bc by delaying the disabling of VGA memory
-until after vgacon->fbcon handoff.
+All of these are nice little fixes, but combined,
+they are difficult to review.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Dave Airlie <airlied@redhat.com>
----
+Could you please separate them into multiple patches,
+one per line item entry?
 
-This should be a nop with the default module setting, so if there's
-any opportunity to get this into v3.15, it would be appreciated.
-
- drivers/gpu/drm/i915/i915_dma.c      |   22 +++++++++++++++++++---
- drivers/gpu/drm/i915/i915_drv.h      |    1 +
- drivers/gpu/drm/i915/i915_params.c   |    5 +++++
- drivers/gpu/drm/i915/intel_display.c |   30 ++++++++++++++++++++++++++++++
- drivers/gpu/drm/i915/intel_drv.h     |    2 ++
- include/linux/vgaarb.h               |    7 +++++++
- 6 files changed, 64 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index 96177ee..c0d0c03 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1306,10 +1306,20 @@ static int i915_load_modeset_init(struct drm_device *dev)
- 	 * If we are a secondary display controller (!PCI_DISPLAY_CLASS_VGA),
- 	 * then we do not take part in VGA arbitration and the
- 	 * vga_client_register() fails with -ENODEV.
-+	 *
-+	 * NB.  The set_decode callback here actually only works on GMCH
-+	 * devices, on newer HD devices we can only disable VGA MMIO space.
-+	 * Disabling VGA I/O space requires disabling I/O in the PCI command
-+	 * register.  Nonetheless, we like to pretend that we participate in
-+	 * VGA arbitration and can dynamically disable VGA I/O space because
-+	 * this makes X happy, even though it's a complete lie.
- 	 */
--	ret = vga_client_register(dev->pdev, dev, NULL, i915_vga_set_decode);
--	if (ret && ret != -ENODEV)
--		goto out;
-+	if (!i915.enable_hd_vgaarb || !HAS_PCH_SPLIT(dev)) {
-+		ret = vga_client_register(dev->pdev, dev, NULL,
-+					  i915_vga_set_decode);
-+		if (ret && ret != -ENODEV)
-+			goto out;
-+	}
- 
- 	intel_register_dsm_handler();
- 
-@@ -1369,6 +1379,12 @@ static int i915_load_modeset_init(struct drm_device *dev)
- 	 */
- 	intel_fbdev_initial_config(dev);
- 
-+	/*
-+	 * Must do this after fbcon init so that
-+	 * vgacon_save_screen() works during the handover.
-+	 */
-+	i915_disable_vga_mem(dev);
-+
- 	/* Only enable hotplug handling once the fbdev is fully set up. */
- 	dev_priv->enable_hotplug_processing = true;
- 
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index ec82f6b..f3908f6 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -2080,6 +2080,7 @@ struct i915_params {
- 	bool prefault_disable;
- 	bool reset;
- 	bool disable_display;
-+	bool enable_hd_vgaarb;
- };
- extern struct i915_params i915 __read_mostly;
- 
-diff --git a/drivers/gpu/drm/i915/i915_params.c b/drivers/gpu/drm/i915/i915_params.c
-index d1d7980..64d96c6 100644
---- a/drivers/gpu/drm/i915/i915_params.c
-+++ b/drivers/gpu/drm/i915/i915_params.c
-@@ -47,6 +47,7 @@ struct i915_params i915 __read_mostly = {
- 	.invert_brightness = 0,
- 	.disable_display = 0,
- 	.enable_cmd_parser = 0,
-+	.enable_hd_vgaarb = false,
- };
- 
- module_param_named(modeset, i915.modeset, int, 0400);
-@@ -152,3 +153,7 @@ MODULE_PARM_DESC(disable_display, "Disable display (default: false)");
- module_param_named(enable_cmd_parser, i915.enable_cmd_parser, int, 0600);
- MODULE_PARM_DESC(enable_cmd_parser,
- 		 "Enable command parsing (1=enabled, 0=disabled [default])");
-+
-+module_param_named(enable_hd_vgaarb, i915.enable_hd_vgaarb, bool, 0444);
-+MODULE_PARM_DESC(enable_hd_vgaarb,
-+	"Enable support for VGA arbitration on Intel HD IGD. (default: false)");
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 69bcc42..2cd35ba 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -11284,6 +11284,33 @@ static void i915_disable_vga(struct drm_device *dev)
- 	POSTING_READ(vga_reg);
- }
- 
-+static void i915_enable_vga_mem(struct drm_device *dev)
-+{
-+	/* Enable VGA memory on Intel HD */
-+	if (i915.enable_hd_vgaarb && HAS_PCH_SPLIT(dev)) {
-+		vga_get_uninterruptible(dev->pdev, VGA_RSRC_LEGACY_IO);
-+		outb(inb(VGA_MSR_READ) | VGA_MSR_MEM_EN, VGA_MSR_WRITE);
-+		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
-+						   VGA_RSRC_LEGACY_MEM |
-+						   VGA_RSRC_NORMAL_IO |
-+						   VGA_RSRC_NORMAL_MEM);
-+		vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
-+	}
-+}
-+
-+void i915_disable_vga_mem(struct drm_device *dev)
-+{
-+	/* Disable VGA memory on Intel HD */
-+	if (i915.enable_hd_vgaarb && HAS_PCH_SPLIT(dev)) {
-+		vga_get_uninterruptible(dev->pdev, VGA_RSRC_LEGACY_IO);
-+		outb(inb(VGA_MSR_READ) & ~VGA_MSR_MEM_EN, VGA_MSR_WRITE);
-+		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
-+						   VGA_RSRC_NORMAL_IO |
-+						   VGA_RSRC_NORMAL_MEM);
-+		vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
-+	}
-+}
-+
- void intel_modeset_init_hw(struct drm_device *dev)
- {
- 	intel_prepare_ddi(dev);
-@@ -11594,6 +11621,7 @@ void i915_redisable_vga_power_on(struct drm_device *dev)
- 	if (!(I915_READ(vga_reg) & VGA_DISP_DISABLE)) {
- 		DRM_DEBUG_KMS("Something enabled VGA plane, disabling it\n");
- 		i915_disable_vga(dev);
-+		i915_disable_vga_mem(dev);
- 	}
- }
- 
-@@ -11848,6 +11876,8 @@ void intel_modeset_cleanup(struct drm_device *dev)
- 
- 	intel_disable_fbc(dev);
- 
-+	i915_enable_vga_mem(dev);
-+
- 	intel_disable_gt_powersave(dev);
- 
- 	ironlake_teardown_rc6(dev);
-diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
-index 328b1a7..fbe5d360 100644
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -934,4 +934,6 @@ int intel_sprite_get_colorkey(struct drm_device *dev, void *data,
- /* intel_tv.c */
- void intel_tv_init(struct drm_device *dev);
- 
-+extern void i915_disable_vga_mem(struct drm_device *dev);
-+
- #endif /* __INTEL_DRV_H__ */
-diff --git a/include/linux/vgaarb.h b/include/linux/vgaarb.h
-index 2c02f3a..80cf817 100644
---- a/include/linux/vgaarb.h
-+++ b/include/linux/vgaarb.h
-@@ -65,8 +65,15 @@ struct pci_dev;
-  *     out of the arbitration process (and can be safe to take
-  *     interrupts at any time.
-  */
-+#if defined(CONFIG_VGA_ARB)
- extern void vga_set_legacy_decoding(struct pci_dev *pdev,
- 				    unsigned int decodes);
-+#else
-+static inline void vga_set_legacy_decoding(struct pci_dev *pdev,
-+					   unsigned int decodes)
-+{
-+}
-+#endif
- 
- /**
-  *     vga_get         - acquire & locks VGA resources
+Maybe reorder them too doing the indentation fix
+first and leaving the 80 column changes until last.
 
