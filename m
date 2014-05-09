@@ -1,43 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344AbaEITMt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 15:12:49 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:54791 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757303AbaEITMl (ORCPT
+	id S1757201AbaEITT1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 15:19:27 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:58190 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756796AbaEITTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 15:12:41 -0400
-Date: Fri, 9 May 2014 15:12:38 -0400
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>
-Subject: Re: [PATCH percpu/for-3.16 2/2] percpu-refcount: implement
- percpu_ref_tryget()
-Message-ID: <20140509191238.GB4486@htj.dyndns.org>
-References: <20140507155511.GB26540@htj.dyndns.org>
- <20140507155647.GC26540@htj.dyndns.org>
- <20140507155810.GD26540@htj.dyndns.org>
+	Fri, 9 May 2014 15:19:25 -0400
+X-Originating-IP: 173.246.103.110
+Date: Fri, 9 May 2014 12:19:16 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: [PATCH] drivers/char/mem.c: Add /dev/ioports, supporting 16-bit and
+ 32-bit ports
+Message-ID: <20140509191914.GA7286@jtriplet-mobl1>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140507155810.GD26540@htj.dyndns.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 11:58:10AM -0400, Tejun Heo wrote:
-> Implement percpu_ref_tryget() which fails if the refcnt already
-> reached zero.  Note that this is different from the recently renamed
-> percpu_ref_tryget_live() which fails if the refcnt has been killed and
-> is draining the remaining references.  percpu_ref_tryget() succeeds on
-> a killed refcnt as long as its current refcnt is above zero.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Kent Overstreet <kmo@daterainc.com>
+/dev/port only supports reading and writing 8-bit ports; multi-byte
+operations on /dev/port will just operate on multiple successive 8-bit
+ports.
 
-Applying 1-2 to percpu/for-3.16.
+Add a new device, /dev/ioports, which supports reading and writing
+16-bit and 32-bit ports.  This makes it possible to perform arbitrary
+I/O port operations cleanly from privileged userspace processes, without
+using iopl or ioperm.
 
-Thanks.
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
 
+Written after encountering yet another out-of-tree omnibus "do arbitrary
+I/O for test purposes" driver; this one's main reason for existence was
+the inability to operate on 16-bit and 32-bit I/O ports.  Let's get a
+proper interface into the kernel, to make such drivers obsolete.
+
+I've also written a corresponding manpage patch, which I'll submit as a
+reply to this one.
+
+ drivers/char/mem.c | 79 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 77 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index 917403f..84e0526 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -35,6 +35,7 @@
+ #endif
+ 
+ #define DEVPORT_MINOR	4
++#define DEVIOPORTS_MINOR	12
+ 
+ static inline unsigned long size_inside_page(unsigned long start,
+ 					     unsigned long size)
+@@ -584,6 +585,69 @@ static ssize_t write_port(struct file *file, const char __user *buf,
+ 	*ppos = i;
+ 	return tmp-buf;
+ }
++
++static ssize_t read_ioports(struct file *file, char __user *buf,
++			    size_t count, loff_t *ppos)
++{
++	unsigned long port = *ppos;
++
++	if (!access_ok(VERIFY_WRITE, buf, count))
++		return -EFAULT;
++	if (port > 65535)
++		return 0;
++	switch (count) {
++	case 1:
++		if (__put_user(inb(port), buf) < 0)
++			return -EFAULT;
++		return 1;
++	case 2:
++		if (__put_user(inw(port), buf) < 0)
++			return -EFAULT;
++		return 2;
++	case 4:
++		if (__put_user(inl(port), buf) < 0)
++			return -EFAULT;
++		return 4;
++	default:
++		return -EINVAL;
++	}
++}
++
++static ssize_t write_ioports(struct file *file, const char __user *buf,
++			     size_t count, loff_t *ppos)
++{
++	unsigned long port = *ppos;
++
++	if (!access_ok(VERIFY_READ, buf, count))
++		return -EFAULT;
++	if (port > 65535)
++		return 0;
++	switch (count) {
++	case 1: {
++		u8 b;
++		if (__get_user(b, buf))
++			return -EFAULT;
++		outb(b, port);
++		return 1;
++	}
++	case 2: {
++		u16 w;
++		if (__get_user(w, buf))
++			return -EFAULT;
++		outw(w, port);
++		return 2;
++	}
++	case 4: {
++		u32 l;
++		if (__get_user(l, buf))
++			return -EFAULT;
++		outl(l, port);
++		return 4;
++	}
++	default:
++		return -EINVAL;
++	}
++}
+ #endif
+ 
+ static ssize_t read_null(struct file *file, char __user *buf,
+@@ -779,6 +843,13 @@ static const struct file_operations port_fops = {
+ 	.write		= write_port,
+ 	.open		= open_port,
+ };
++
++static const struct file_operations ioports_fops = {
++	.llseek		= memory_lseek,
++	.read		= read_ioports,
++	.write		= write_ioports,
++	.open		= open_port,
++};
+ #endif
+ 
+ static const struct file_operations zero_fops = {
+@@ -827,6 +898,9 @@ static const struct memdev {
+ #ifdef CONFIG_PRINTK
+ 	[11] = { "kmsg", 0644, &kmsg_fops, NULL },
+ #endif
++#ifdef CONFIG_DEVPORT
++	 [12] = { "ioports", 0, &ioports_fops, NULL },
++#endif
+ };
+ 
+ static int memory_open(struct inode *inode, struct file *filp)
+@@ -892,9 +966,10 @@ static int __init chr_dev_init(void)
+ 			continue;
+ 
+ 		/*
+-		 * Create /dev/port?
++		 * Create /dev/port and /dev/ioports?
+ 		 */
+-		if ((minor == DEVPORT_MINOR) && !arch_has_dev_port())
++		if ((minor == DEVPORT_MINOR || minor == DEVIOPORTS_MINOR)
++		    && !arch_has_dev_port())
+ 			continue;
+ 
+ 		device_create(mem_class, NULL, MKDEV(MEM_MAJOR, minor),
 -- 
-tejun
+2.0.0.rc2
+
