@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757171AbaEIR4S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 13:56:18 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54308 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756779AbaEIR4Q (ORCPT
+	id S1757254AbaEIR4i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 13:56:38 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:36297 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757200AbaEIR4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 13:56:16 -0400
-Date: Fri, 9 May 2014 18:56:02 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "J. R. Okajima" <hooanon05g@gmail.com>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, ebiederm@xmission.com,
-        linux-security-module@vger.kernel.org, eparis@redhat.com,
-        zohar@linux.vnet.ibm.com, dmitry.kasatkin@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: IMA + O_DIRECT (Re: [PATCH 0/1] fix IMA + Apparmor kernel panic)
-Message-ID: <20140509175602.GA18016@ZenIV.linux.org.uk>
-References: <cover.1399554584.git.d.kasatkin@samsung.com>
- <29977.1399605003@jrobl>
+	Fri, 9 May 2014 13:56:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <29977.1399605003@jrobl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org>
+	<1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>
+Date: Fri, 9 May 2014 10:56:35 -0700
+Message-ID: <CAJAp7Oh2iZ2Tqv6cb6atpOfwrgKpHA5LtESLTt4gvVpXE0qDQA@mail.gmail.com>
+Subject: Re: [PATCH v1 00/11] Add Qualcomm SD Card Controller support.
+From: Bjorn Andersson <bjorn@kryo.se>
+To: srinivas.kandagatla@linaro.org, Linus Walleij <linus.walleij@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-mmc@vger.kernel.org,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        agross@quicinc.com, linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 12:10:03PM +0900, J. R. Okajima wrote:
-> 
-> Dmitry Kasatkin:
-> > Following patch replaces IMA usage of kernel_read() with special
-> > version which skips security check that triggers kernel panic
-> > when Apparmor and IMA appraisal are enabled together.
-> 
-> I know this is related to exit(2), but this behaviour of IMA is related
-> to open(2) too.
-> When O_DIRECT is specified, some filesystems (for example, ext2) call
-> do_blockdev_direct_IO() which acquires i_mutex. But
-> IMA:process_measurement() already acquires i_mutex before kernel_read().
-> It causes a deadlock even if you replace kernel_read() by a simpler one.
-> How can we stop reading the file from IMA?
+On Tue, Apr 29, 2014 at 1:18 AM,  <srinivas.kandagatla@linaro.org> wrote:
+[...]
+> This patch series adds Qualcomm SD Card Controller support in pl180 mmci
+> driver. QCom SDCC is basically a pl180, but bit more customized, some of the
+> register layouts and offsets are different to the ones mentioned in pl180
+> datasheet. The plan is to totally remove the standalone SDCC driver
+> drivers/mmc/host/msm_sdcc.* and start using generic mmci driver for all
+> Qualcomm parts, as we get chance to test on other Qcom boards.
 
-Disabling it would be a good start...  And no, I'm not kidding - the mess
-you are proposing is such that it's not at all obvious that this stuff
-is worth the trouble.
+Hi Srinivas,
 
-Why the devil is it playing with ->i_mutex?  IMA, that is.  Its use for
-data is absolutely fs-dependent.  Again, filesystem is *NOT* required
-to take ->i_mutex anywhere on the write path.  At all.
+I think your series looks good, so I pulled it into my tree and
+combined with some input from [1] I got this up and running on Sony
+Xperia T (msm8960 based).
+
+I do get below prints in dmesg during probe, mount and some initial
+accesses; but the code seems to retry the operations and things work
+out nicely.
+
+[  193.556540] mmcblk0: response CRC error sending r/w cmd command,
+card status 0xb00
+
+
+PS. please send the patch enabling AMBA to Kumar as well.
+
+[1] https://git.linaro.org/landing-teams/working/qualcomm/kernel.git/commitdiff/14ea2f1dc5bb719dbfb943e2c700ac166a8c125a
+
+Regards,
+Bjorn
