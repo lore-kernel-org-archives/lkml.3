@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932320AbaEIRDE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 13:03:04 -0400
-Received: from smtprelay0135.hostedemail.com ([216.40.44.135]:32926 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932286AbaEIRDC (ORCPT
+	id S932348AbaEIRDk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 13:03:40 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39464 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932325AbaEIRDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 13:03:02 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:960:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3167:3352:3622:3865:3867:3874:4321:5007:7652:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12114:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: grass21_8e8fb306f3f13
-X-Filterd-Recvd-Size: 2232
-Message-ID: <1399654978.11258.17.camel@joe-AO725>
-Subject: Re: [PATCH 2/2] x86: Fix typo in MSR_IA32_MISC_ENABLE_LIMIT_CPUID
- macro
-From: Joe Perches <joe@perches.com>
-To: Borislav Petkov <bp@suse.de>
-Cc: Andres Freund <andres@anarazel.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andy Whitcroft <apw@canonical.com>
-Date: Fri, 09 May 2014 10:02:58 -0700
-In-Reply-To: <20140509103303.GC16058@pd.tnic>
-References: <1399598957-7011-1-git-send-email-andres@anarazel.de>
-	 <1399598957-7011-3-git-send-email-andres@anarazel.de>
-	 <20140509075730.GB16058@pd.tnic> <20140509103303.GC16058@pd.tnic>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 9 May 2014 13:03:37 -0400
+Date: Fri, 9 May 2014 18:02:55 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Xiubo Li <Li.Xiubo@freescale.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Message-ID: <20140509170255.GR12304@sirena.org.uk>
+References: <1399601073-19278-1-git-send-email-Li.Xiubo@freescale.com>
+ <1399601073-19278-2-git-send-email-Li.Xiubo@freescale.com>
+ <20140509163243.GD16418@e106331-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oZHGAHLZLTxDXFvh"
+Content-Disposition: inline
+In-Reply-To: <20140509163243.GD16418@e106331-lin.cambridge.arm.com>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv4 1/2] dt/bindings: Add the DT binding documentation for
+ endianness
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-09 at 12:33 +0200, Borislav Petkov wrote:
-> On Fri, May 09, 2014 at 09:57:30AM +0200, Borislav Petkov wrote:
-> > > diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-[]
-> > > -#define MSR_IA32_MISC_ENABLE_LIMIT_CPUID		(1ULL << MSR_IA32_MISC_ENABLE_LIMIT_CPUID_BIT);
-> > > +#define MSR_IA32_MISC_ENABLE_LIMIT_CPUID		(1ULL << MSR_IA32_MISC_ENABLE_LIMIT_CPUID_BIT)
-> 
-> Btw, we should probably be catching typos like that with checkpatch.
-> Here's an initial version for single-line macros:
-[]
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> @@ -3313,6 +3313,11 @@ sub process {
->  			}
->  		}
->  
-> +		if ($line =~ /^\+\s*#\s*define\s.*;\s*$/) {
-> +			WARN("TRAILING_SEMICOLON",
-> +			     "Trailing semicolon at macro definition\n" . $herecurr);
-> +		}
-> +
 
-Seems sensible.
+--oZHGAHLZLTxDXFvh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I suggest moving the test next to the other macro
-definition tests for things like unnecessary semicolon
-around "do {... while (0)" around line 3800.
+On Fri, May 09, 2014 at 05:32:43PM +0100, Mark Rutland wrote:
+> On Fri, May 09, 2014 at 03:04:32AM +0100, Xiubo Li wrote:
 
-Extending the test to find multiline forms like
+> > {big,little}-endian{,-*}: these are boolean properties, if absent
+> > meaning that the CPU and the Device are in the same endianness mode.
 
-#define	foo	\
-	bar;
+> That's not really true though. A device might usually be little-endian,
+> regardless of the endianness of a CPU. Some vendors may integrate it as
+> big-endian after a binding is added, and in the absence of a specified
+> endianness a driver is likely to assume LE.
 
-would also be trivially done there.
+The default should be device specific rather than binding specific.
 
+--oZHGAHLZLTxDXFvh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTbQo8AAoJELSic+t+oim9odIP/3214AgwfPCqRju85+0TILfU
+N028geissnkpwItxvQCOW5WYK21A6Gkb/YlJ8CmcMcc5CAr7zJYaU2toaKHBhHFx
+Kfu9tAgsfE9y9+7DKQeh1vdV2mhS6hMZR8Z6ZxEGwscB+prncQApp7yGLXcwI+tk
+8xUfo/lgF3oL6BwMvdRZVqDwCnaXcQFs6Gr8mM43QZvFynzSUtxqVDGnom5X/3hA
+Q3Zcu+kD1DZjtXjaWZwDNJ4kg+Vh2nkqfczj0zaWJ1d8HWYHQVFzVVaTWAIQ132S
+wQ9ibDo3xBQJJpHpvq0KPzYQs6MN0MSL4Fy6GKZUE+rDcYtEy9n16E6FuAY3idUq
+rMyN0+TYUttolnFHvN2PXzi73sAOlEw5u4tAmNdw85rMk2YQOWO0GzLJTCRotIQb
+gIyj8kDl039/FURRYrHFQHqaSuue0XECWoLF65aJzhnJ3fnDhdok7mu+pqW1rmue
+7Ee6nXOp644A71WORfUhs2e6a6r+vkVFAOPQy4rhqfQbQy2F3WZIzRkYBRq3M+GQ
+y+MZepeqWFLQl+nbMFiWvR3YxUt7IablZs6uiBMQ6PHvCgsCNs6I7lu7SBqrpg7K
+sVmFv/7gsF2+2B/9OBA7Zx7LUll08d0VlbJiYK3D8W9bMK3siflYzSejMqWzvnvC
+jefjZ1n7FLWqkY3wCd7d
+=d5oN
+-----END PGP SIGNATURE-----
+
+--oZHGAHLZLTxDXFvh--
