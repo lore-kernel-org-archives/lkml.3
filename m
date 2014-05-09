@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776AbaEIO6f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 10:58:35 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:31276 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752279AbaEIO6d (ORCPT
+	id S1756804AbaEIO7t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 10:59:49 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:55128 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895AbaEIO7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 10:58:33 -0400
-Date: Fri, 9 May 2014 15:57:45 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: James Hogan <james.hogan@imgtec.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "luto@amacapital.net" <luto@amacapital.net>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "umgwanakikbuti@gmail.com" <umgwanakikbuti@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Will Deacon <Will.Deacon@arm.com>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC][PATCH 6/8] sched,idle: Avoid spurious wakeup IPIs
-Message-ID: <20140509145745.GI7950@arm.com>
-References: <20140411134243.160989490@infradead.org>
- <20140411135218.478299389@infradead.org>
- <CAAG0J9_q1KsUx10-XAb7AJnxv2ehctg6q1KME7ahsk1OZV8vZQ@mail.gmail.com>
- <20140509141520.GV2844@laptop.programming.kicks-ass.net>
- <20140509144034.GF7950@arm.com>
- <20140509145002.GW2844@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140509145002.GW2844@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 9 May 2014 10:59:47 -0400
+Message-ID: <1399647534.2232.8.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: IMA + O_DIRECT (Re: [PATCH 0/1] fix IMA + Apparmor kernel panic)
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: "J. R. Okajima" <hooanon05g@gmail.com>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, viro@zeniv.linux.org.uk,
+        ebiederm@xmission.com, linux-security-module@vger.kernel.org,
+        eparis@redhat.com, dmitry.kasatkin@gmail.com,
+        linux-kernel@vger.kernel.org
+Date: Fri, 09 May 2014 10:58:54 -0400
+In-Reply-To: <11673.1399627021@jrobl>
+References: <cover.1399554584.git.d.kasatkin@samsung.com>
+	 <29977.1399605003@jrobl> <536C8E64.6000009@samsung.com>
+	 <11673.1399627021@jrobl>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050914-9332-0000-0000-000000BD525E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 03:50:02PM +0100, Peter Zijlstra wrote:
-> On Fri, May 09, 2014 at 03:40:34PM +0100, Catalin Marinas wrote:
+On Fri, 2014-05-09 at 18:17 +0900, J. R. Okajima wrote: 
+> Dmitry Kasatkin:
+> > It is a different issue.
+> >
+> > I made patch more than a year ago which fix the problem
+> >
+> > https://lkml.org/lkml/2013/2/20/601
 > 
-> > I wonder why we still need TIF_POLLING_NRFLAG for arm64. It was on arm
-> > until commit 16a8016372c42c7628eb (sanitize tsk_is_polling()). On arm64
-> > we use wfi for idle or a firmware call but in both cases the assumption
-> > is that we need an interrupt for waking up.
-> > 
-> > So I think we should remove this macro for arm64.
-> 
-> Does ARM64 support idle=poll? If so, you could keep it for that,
-> otherwise it does indeed appear to be pointless.
+> Yes, I know this is a different issue, but I didn't know the patch.
+> While I am not sure how ugly (or beautiful) is the approache the patch
+> took, as long as IMA needs to read the file, we should merge the merge.
+> Or we should wait for your another patch.
 
-We don't support idle=poll either.
+Another approach was posted here
+http://marc.info/?l=linux-security-module&m=138919062430367&w=2 which
+also was not upstreamed.
 
-> As to 32bit ARM, are there SMP chips which do not have WFI?
+Mimi
 
-No. WFI is even used for the secondary booting protocol (we need to send
-an IPI to get them going).
-
--- 
-Catalin
