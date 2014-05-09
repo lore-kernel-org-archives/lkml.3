@@ -1,199 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225AbaEIIP3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 04:15:29 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:31748 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752316AbaEIIPP (ORCPT
+	id S1752956AbaEIITQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 04:19:16 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:41398 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055AbaEIITK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 04:15:15 -0400
-X-AuditID: cbfee68e-b7fd86d0000038e3-a7-536c8e90b8ae
-Message-id: <536C8E90.6030607@samsung.com>
-Date: Fri, 09 May 2014 17:15:12 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, kgene.kim@samsung.com,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        ben-linux@fluff.org, arnd@arndb.de, olof@lixom.net,
-        marc.zyngier@arm.com, thomas.abraham@linaro.org,
-        kyungmin.park@samsung.com, inki.dae@samsung.com,
-        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
-        chanho61.park@samsung.com, sajjan.linux@gmail.com,
-        tushar.behera@linaro.org, sachin.kamat@linaro.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCHv4 7/7] ARM: dts: Add device tree sources for Exynos3250
-References: <1398388572-30239-1-git-send-email-cw00.choi@samsung.com>
- <1398388572-30239-8-git-send-email-cw00.choi@samsung.com>
- <535B0324.50705@gmail.com> <535B9A98.3060206@gmail.com>
- <536C7A96.3000906@samsung.com> <536C8B48.90706@samsung.com>
-In-reply-to: <536C8B48.90706@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA5WSeUiTYRzHefYe2yzhbTl7tAtnBtnllT0dRIjBWxJIVlAENtebWh5rs6jo
-	EI8Oj7Uj3ZodWkptraxZoJFuLlke6bSZB5omHVgaVDNRa9EOAv/tv8/z/X35fn8P/DgY7zUR
-	yEnNyGIkGcI0AemDG/yixKsVsrSEMHMMciqtbPRYU00g5UMzC9lNK9Gtpg4CXRmvIJDjWx4b
-	dXzRAaQcluOob+YCgYrL35CoPWecjYzvewhkf3adRBpbAwsN2H2Rc/APiap6u1iotddBIrn6
-	AY7y65vYqOV3MUAfXnwnkEb1mUTVmjEcWTWVAOmf/QboorOeRPV1KrB1MW24aQB0Xm4RSf+a
-	UQLaLitm0U79KEbXad+yad3dCZI26i+T9GDPc5KuqTxPdzfnELTsiR7QDuOSeN/9PpsPMWmp
-	JxjJ2i0HfVJ6uyYwcW3QyV/jDVg2aF1YALgcSEXBn5M/2V72h51D1WQB8OHwqCoAf7SUEP9M
-	VaMOwjtQA6hzXgbexxiAhYW1mNvlS4VCRdFV0s04FQLLBkZwN5Mu3TTa59H51F6oU3fjXv88
-	OKUa8rAftQzaW9WeUIxqI2Fv/oSnej4VBz+WtwA386hpAEtnDrqZS62A7e1THh2jVkFTfinp
-	5aWwxvAVcwdB6j4X5qo/sr0bUXBSZXG1cVyDxdBoxrxfC4CN9/pwOfDXztpJOytWOyu2HGB6
-	wGfEIrE0KVkSsUYqTJcez0heI8pMNwLXPbX9+SSrBf3mTRYgclUqsEC+KNN1bxlZieGR0RFo
-	XdS6yIj1G6L/TxYs8L09krSLRyULs5ijDCNmJImS42mM1AJYHG5gNuAHHa6ILsm2hIAPn+L6
-	h/dfm6jf5ugfuEHIbenKrTuli/ZsD94h3NdQW3pqSePQnOC87kWygkfjcIUo5lBQcy7un3kk
-	zCozUcu1L8+kHLsjsB0IsM+NexyZuMX2tHNm49n4TTW6S69404oEW0lqpPNcbFez1XS6bHfO
-	6nfvq1SxZgEuTRGGh2ISqfAv4kZ1n2UDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAJsWRmVeSWpSXmKPExsVy+t9jQd0JfTnBBo/3GVr8nXSM3WLjjPWs
-	FpPWHWCyuLxf22L+kXOsFv1vFrJafP7Qwm5x7tVKRotJ9yewWNz41cZq0bvgKpvF2aY37Bab
-	Hl9jtbi8aw6bxYzz+5gsbl/mtfh75x+bxdLrF5ksTl3/zGYxYfpaFovWvUfYLU7+6WW0eHL4
-	I6vFjMkv2SzWz3jNYnFsxhJGi1W7/jBatP/dy2axd+dkRgdZjzXz1jB6tDT3sHn8/jWJ0eNy
-	Xy+Tx99VL5g9ds66y+6xcvkXNo9NqzrZPO5c28PmsXlJvceVE02sHn1bVjF6fN4kF8Ab1cBo
-	k5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQMMGiWFssSc
-	UqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYQ1jxvWLX5gLdihW/H6zj7mB8ZR0FyMn
-	h4SAicTSF59ZIWwxiQv31rN1MXJxCAlMZ5RY+beTEcJ5zSjR3b2DGaSKV0BLYmLPFDYQm0VA
-	VWL27YcsIDYbUHz/ixtgcVGBMImV06+wQNQLSvyYfA/MFhFQkbh8ajrYUGaB02wS11u/gK0W
-	FvCWeLrgJCOILSTwk1Fi2q8EEJtTQFPi7NkfYHFmAR2J/a3T2CBseYnNa94yT2AUmIVkxywk
-	ZbOQlC1gZF7FKJpakFxQnJSea6RXnJhbXJqXrpecn7uJEZz+nknvYFzVYHGIUYCDUYmH98WU
-	7GAh1sSy4srcQ4wSHMxKIrwevTnBQrwpiZVVqUX58UWlOanFhxiTgUEwkVlKNDkfmJrzSuIN
-	jU3MjCyNzA0tjIzNSRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNTqoFxftW2xuBJ12bWtoXe
-	vja1Q8n1YKZJMm/QXpZvuyZESvU/YX23wSav7S/fx1Nruy5dKLr/rtFFPFJVuCLJeOcZybKe
-	mKv2ZbeWXL7B6uu4VuLbjS3nayT7owJ/9h7IWKN65dhB/SmanvyRRc2Hnkn4aMRw/t8jI23y
-	de+lKYHL063CX+9TO2SkxFKckWioxVxUnAgAcmpIt8MDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 9 May 2014 04:19:10 -0400
+Message-ID: <536C8F79.2040500@suse.cz>
+Date: Fri, 09 May 2014 10:19:05 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+CC: lwn@lwn.net
+Subject: Linux 3.12.19
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
+I'm announcing the release of the 3.12.19 kernel.
 
-On 05/09/2014 05:01 PM, Tomasz Figa wrote:
-> On 09.05.2014 08:49, Chanwoo Choi wrote:
->> Hi Tomasz,
->>
->> On 04/26/2014 08:38 PM, Tomasz Figa wrote:
->>> On 26.04.2014 02:51, Tomasz Figa wrote:
->>>> Hi Chanwoo,
->>>>
->>>> On 25.04.2014 03:16, Chanwoo Choi wrote:
->>>>> From: Tomasz Figa <t.figa@samsung.com>
->>>>>
->>>>> This patch add new exynos3250.dtsi to support Exynos3250 SoC based on
->>>>> Cortex-A7
->>>>> dual core and includes following dt nodes:
->>>>>
->>>>> - GIC interrupt controller
->>>>> - Pinctrl to control GPIOs
->>>>> - Clock controller
->>>>> - CPU information (Cortex-A7 dual core)
->>>>> - UART to support serial port
->>>>> - MCT (Multi Core Timer)
->>>>> - ADC (Analog Digital Converter)
->>>>> - I2C/SPI bus
->>>>> - Power domain
->>>>> - PMU (Performance Monitoring Unit)
->>>>> - MSHC (Mobile Storage Host Controller)
->>>>> - PWM (Pluse Width Modulation)
->>>>> - AMBA bus
->>>>>
->>>>> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
->>>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->>>>> Signed-off-by: Inki Dae <inki.dae@samsung.com>
->>>>> Signed-off-by: Hyunhee Kim <hyunhee.kim@samsung.com>
->>>>> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
->>>>> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
->>>>> Cc: Ben Dooks <ben-linux@fluff.org>
->>>>> Cc: Kukjin Kim <kgene.kim@samsung.com>
->>>>> Cc: Rob Herring <robh+dt@kernel.org>
->>>>> Cc: Pawel Moll <pawel.moll@arm.com>
->>>>> Cc: Mark Rutland <mark.rutland@arm.com>
->>>>> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
->>>>> Cc: Kumar Gala <galak@codeaurora.org>
->>>>> Cc: Russell King <linux@arm.linux.org.uk>
->>>>> Cc: devicetree@vger.kernel.org
->>>>> ---
->>>>>   arch/arm/boot/dts/exynos3250-pinctrl.dtsi | 477 +++++++++++++++
->>>>>   arch/arm/boot/dts/exynos3250.dtsi         | 405 +++++++++++++
->>>>>   arch/arm/boot/dts/exynos4212-tizenw.dts   | 926
->>>>> ++++++++++++++++++++++++++++++
->>>>>   3 files changed, 1808 insertions(+)
->>>>>   create mode 100644 arch/arm/boot/dts/exynos3250-pinctrl.dtsi
->>>>>   create mode 100644 arch/arm/boot/dts/exynos3250.dtsi
->>>>>   create mode 100644 arch/arm/boot/dts/exynos4212-tizenw.dts
->>>>>
->>>>> diff --git a/arch/arm/boot/dts/exynos3250-pinctrl.dtsi
->>>>> b/arch/arm/boot/dts/exynos3250-pinctrl.dtsi
->>>>> new file mode 100644
->>>>> index 0000000..976490b
->>>>> --- /dev/null
->>>>> +++ b/arch/arm/boot/dts/exynos3250-pinctrl.dtsi
->>>>> @@ -0,0 +1,477 @@
->>>>> +/*
->>>>> + * Samsung's Exynos3250 SoCs pin-mux and pin-config device tree source
->>>>> + *
->>>>> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
->>>>> + *        http://www.samsung.com
->>>>> + *
->>>>> + * Samsung's Exynos3250 SoCs pin-mux and pin-config optiosn are
->>>>> listed as device
->>>>> + * tree nodes are listed in this file.
->>>>> + *
->>>>> + * This program is free software; you can redistribute it and/or modify
->>>>> + * it under the terms of the GNU General Public License version 2 as
->>>>> + * published by the Free Software Foundation.
->>>>> +*/
->>>>> +
->>>>> +/ {
->>>>> +    pinctrl@11400000 {
->>>>
->>>> Could you use references instead of re-specifying the whole tree
->>>> hierarchy in every file a node is used?
->>>>
->>>> Instead of
->>>>
->>>> / {
->>>>      pinctrl@11400000 {
->>>>
->>>>      };
->>>> };
->>>>
->>>> one may simply use
->>>>
->>>> &pinctrl_0 {
->>>>
->>>> };
->>>>
->>>> You might just need to change the location of #include
->>>> "exynos3250-pinctrl.dtsi" from top of exynos3250.dtsi to bottom of it.
->>>
->>> Oh, well, you also should move all nodes of on-SoC devices under a simple-bus node called soc. You can see the patch adding dts file for Exynos5260 for an example [1].
->>>
->>> [1] http://thread.gmane.org/gmane.linux.kernel.samsung-soc/29360/focus=29361
->>
->>
->> OK, I'll move nodes dependent on SoC under 'soc' dt node as example patch[1] except for 'amba-bus' dt node.
-> 
-> I don't see any reason why amba-bus node shouldn't be under soc node as
-> well. Any on-chip devices should be.
+All users of the 3.12 kernel series must upgrade.
 
-I didn't understand the correct meaning of 'simple-bus'.
-OK, I'll move 'amba-bus' dt node under 'soc' dt node.
+The updated 3.12.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+linux-3.12.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
 
-Best Regards,
-Chanwoo Choi
+----------------------------------------------------------------
+Ajesh Kunhipurayil Vijayan (1):
+      jffs2: Fix crash due to truncation of csize
 
+Al Viro (1):
+      __dentry_path() fixes
 
+Alexei Starovoitov (1):
+      openvswitch: fix vport-netdev unregister
 
+Aravind Gopalakrishnan (2):
+      x86/quirks: Add workaround for AMD F16h Erratum792
+      amd64_edac: Fix logic to determine channel for F15 M30h processors
+
+Bodo Stroesser (1):
+      ipmi: Fix a race restarting the timer
+
+Chew, Kean ho (1):
+      i2c: i801: enable Intel BayTrail SMBUS
+
+Claudio Takahasi (1):
+      Bluetooth: Fix removing Long Term Key
+
+Dave Kleikamp (1):
+      sparc64: don't treat 64-bit syscall return codes as 32-bit
+
+David Ertman (1):
+      e1000e: Fix no connectivity when driver loaded with cable out
+
+David S. Miller (1):
+      sparc64: Make sure %pil interrupts are enabled during hypervisor
+yield.
+
+Derek Basehore (1):
+      backing_dev: fix hung task on sync
+
+Emil Goode (1):
+      brcmsmac: fix deadlock on missing firmware
+
+Eric Whitney (3):
+      ext4: fix error return from ext4_ext_handle_uninitialized_extents()
+      ext4: fix partial cluster handling for bigalloc file systems
+      ext4: fix premature freeing of partial clusters split across
+leaf blocks
+
+Hannes Reinecke (1):
+      tty: Set correct tty name in 'active' sysfs attribute
+
+Helge Deller (1):
+      parisc: fix epoll_pwait syscall on compat kernel
+
+Hidetoshi Seto (1):
+      Btrfs: skip submitting barrier for missing device
+
+Ian Abbott (1):
+      staging: comedi: 8255_pci: initialize MITE data window
+
+Ingo Molnar (1):
+      drivers/net: tulip_remove_one needs to call pci_disable_device()
+
+Jan Kara (1):
+      bdi: avoid oops on device removal
+
+Jay Cornwall (1):
+      iommu/amd: Fix PASID format in INVALIDATE_IOTLB_PAGES command
+
+Jiri Slaby (1):
+      Linux 3.12.19
+
+Joe Perches (2):
+      usbatm: Fix dynamic_debug / ratelimited atm_dbg and atm_rldbg macros
+      printk: pr_debug_ratelimited: check state first to reduce
+"callbacks suppressed" messages
+
+Josef Bacik (1):
+      Btrfs: fix deadlock with nested trans handles
+
+Kamlakant Patel (1):
+      jffs2: Fix segmentation fault found in stress test
+
+Kieran Clancy (1):
+      ACPI / EC: Process rather than discard events in acpi_ec_clear
+
+LEROY Christophe (1):
+      powerpc/8xx: mfspr SPRN_TBRx in lieu of mftb/mftbu is not supported
+
+Lan Tianyu (1):
+      ACPI / button: Add ACPI Button event via netlink routine
+
+Li Zefan (2):
+      jffs2: avoid soft-lockup in jffs2_reserve_space_gc()
+      jffs2: remove from wait queue after schedule()
+
+Mark Tinguely (1):
+      xfs: fix directory hash ordering bug
+
+Mikulas Patocka (2):
+      dcache: restore error on restart in prepend_path
+      user namespace: fix incorrect memory barriers
+
+Mohit Kumar (2):
+      PCI: designware: Fix RC BAR to be single 64-bit non-prefetchable
+memory BAR
+      PCI: designware: Fix iATU programming for cfg1, io and mem viewport
+
+Neil Horman (1):
+      x86: Adjust irq remapping quirk for older revisions of 5500/5520
+chipsets
+
+Oleg Nesterov (3):
+      pid_namespace: pidns_get() should check task_active_pid_ns() != NULL
+      wait: fix reparent_leader() vs EXIT_DEAD->EXIT_ZOMBIE race
+      exit: call disassociate_ctty() before exit_task_namespaces()
+
+Oliver Neukum (1):
+      ACPI / sleep: remove panic in case hardware has changed after S4
+
+Paolo Bonzini (1):
+      KVM: ioapic: fix assignment of ioapic->rtc_status.pending_eoi
+(CVE-2014-0155)
+
+Paul Gortmaker (1):
+      sparc32: fix build failure for arch_jump_label_transform
+
+Peter Hurley (1):
+      tty: Fix low_latency BUG
+
+Petr Tesarik (1):
+      /dev/mem: handle out-of-bounds read/write
+
+Rusty Russell (1):
+      virtio_balloon: don't softlockup on huge balloon changes.
+
+Sergey Dyasly (1):
+      ARM: 7840/1: LPAE: don't reject mapping /dev/mem above 4GB
+
+Tedd Ho-Jeong An (1):
+      Bluetooth: Add support for Intel Bluetooth device [8087:0a2a]
+
+Wang, Xiaoming (1):
+      net: ipv4: current group_info should be put after using.
+
+ Documentation/i2c/busses/i2c-i801            |  1 +
+ Makefile                                     |  2 +-
+ arch/arm/mm/mmap.c                           |  6 +--
+ arch/parisc/kernel/syscall_table.S           |  2 +-
+ arch/powerpc/boot/util.S                     | 14 ++++++
+ arch/powerpc/include/asm/ppc_asm.h           |  2 +
+ arch/powerpc/include/asm/reg.h               |  7 +++
+ arch/powerpc/include/asm/timex.h             |  8 +++
+ arch/powerpc/kernel/vdso32/gettimeofday.S    |  6 +++
+ arch/sparc/Kconfig                           |  2 +-
+ arch/sparc/kernel/process_64.c               |  4 +-
+ arch/sparc/kernel/syscalls.S                 |  4 +-
+ arch/x86/kernel/early-quirks.c               | 15 +++---
+ arch/x86/kernel/quirks.c                     | 37 ++++++++++++++
+ drivers/acpi/button.c                        |  4 ++
+ drivers/acpi/ec.c                            | 21 ++++----
+ drivers/acpi/sleep.c                         |  7 +--
+ drivers/bluetooth/btusb.c                    |  1 +
+ drivers/char/ipmi/ipmi_si_intf.c             | 46 +++++++++++-------
+ drivers/char/mem.c                           |  6 +++
+ drivers/edac/amd64_edac.c                    | 14 ++++--
+ drivers/i2c/busses/Kconfig                   |  1 +
+ drivers/i2c/busses/i2c-i801.c                |  3 ++
+ drivers/iommu/amd_iommu.c                    |  4 +-
+ drivers/net/ethernet/dec/tulip/tulip_core.c  |  1 +
+ drivers/net/ethernet/intel/e1000e/netdev.c   | 20 ++++++--
+ .../brcm80211/brcmsmac/mac80211_if.c         | 14 +++---
+ drivers/pci/host/pcie-designware.c           |  8 +--
+ drivers/staging/comedi/drivers/8255_pci.c    | 34 +++++++++++++
+ drivers/tty/ipwireless/tty.c                 |  3 --
+ drivers/tty/tty_buffer.c                     | 20 ++------
+ drivers/tty/tty_io.c                         | 23 ++++++---
+ drivers/usb/atm/usbatm.h                     | 14 +++---
+ drivers/usb/gadget/u_serial.c                |  4 +-
+ drivers/virtio/virtio_balloon.c              |  6 +++
+ fs/btrfs/disk-io.c                           |  4 ++
+ fs/btrfs/transaction.c                       | 14 ++----
+ fs/dcache.c                                  | 10 ++--
+ fs/ext4/extents.c                            | 40 +++++++++++++--
+ fs/fs-writeback.c                            | 31 ++++++++----
+ fs/jffs2/compr_rtime.c                       |  4 +-
+ fs/jffs2/nodelist.h                          |  2 +-
+ fs/jffs2/nodemgmt.c                          | 14 ++++--
+ fs/xfs/xfs_da_btree.c                        |  2 +-
+ include/linux/backing-dev.h                  |  2 +-
+ include/linux/printk.h                       | 16 +++++-
+ include/linux/tty.h                          |  2 +-
+ kernel/exit.c                                | 21 +++++---
+ kernel/pid_namespace.c                       |  4 +-
+ kernel/user_namespace.c                      | 11 ++---
+ mm/backing-dev.c                             | 16 ++++--
+ net/bluetooth/hci_event.c                    |  8 ++-
+ net/ipv4/ping.c                              | 15 ++++--
+ net/openvswitch/dp_notify.c                  |  7 ++-
+ net/openvswitch/vport-netdev.c               | 16 ++++--
+ net/openvswitch/vport-netdev.h               |  1 +
+ virt/kvm/ioapic.c                            |  2 +-
+ 57 files changed, 431 insertions(+), 175 deletions(-)
+
+thanks,
+-- 
+js
