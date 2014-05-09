@@ -1,87 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255AbaEIBl6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 21:41:58 -0400
-Received: from ozlabs.org ([103.22.144.67]:39253 "EHLO ozlabs.org"
+	id S1755853AbaEIBqb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 21:46:31 -0400
+Received: from mail.lang.hm ([64.81.33.126]:44311 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932117AbaEIBl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 21:41:57 -0400
-Date: Fri, 9 May 2014 11:41:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Gustavo Padovan <gustavo@padovan.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Petri Gynther <pgynther@google.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: linux-next: manual merge of the bluetooth tree with Linus' tree
-Message-ID: <20140509114149.30c2c1c1@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1753367AbaEIBqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 21:46:30 -0400
+Date: Thu, 8 May 2014 18:46:07 -0700 (PDT)
+From: David Lang <david@lang.hm>
+X-X-Sender: dlang@asgard.lang.hm
+To: Ingo Molnar <mingo@kernel.org>
+cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Seth Jennings <sjenning@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+In-Reply-To: <20140507121924.GA12234@gmail.com>
+Message-ID: <alpine.DEB.2.02.1405081840580.17457@nftneq.ynat.uz>
+References: <cover.1398958771.git.jpoimboe@redhat.com> <alpine.LRH.2.00.1405021504320.22053@twin.jikos.cz> <alpine.DEB.2.02.1405051633080.14881@nftneq.ynat.uz> <alpine.LNX.2.00.1405060147190.3969@pobox.suse.cz> <20140506073228.GA26271@gmail.com>
+ <20140506122302.GC4125@treble.redhat.com> <20140507121924.GA12234@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/LzreT9ZAet5wlOu2Zhc=/LG"; protocol="application/pgp-signature"
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/LzreT9ZAet5wlOu2Zhc=/LG
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, 7 May 2014, Ingo Molnar wrote:
 
-Hi Gustavo,
+> * Josh Poimboeuf <jpoimboe@redhat.com> wrote:
+>
+>> On Tue, May 06, 2014 at 09:32:28AM +0200, Ingo Molnar wrote:
+>>>
+>>> * Jiri Kosina <jkosina@suse.cz> wrote:
+>>>
+>>>> On Mon, 5 May 2014, David Lang wrote:
+>>>>
+>>>>> how would you know that all instances of the datastructure in memory
+>>>>> have= been touched? just because all tasks have run and are outside the
+>>>>> function in question doesn't tell you data structures have been
+>>>>> converted. You have n= o way of knowing when (or if) the next call to
+>>>>> the modified function will take place on any potential in-memory
+>>>>> structure.
+>>>>
+>>>> The problem you are trying to avoid here is functions expecting to read
+>>>> "v2" format of the data from memory, while there are still tasks that are
+>>>> unpredictably writing "v1" format of the data to the memory.
+>>>>
+>>>> There are several ways to attack this problem:
+>>>>
+>>>> - stop the whole system, convert all the existing data structures to new
+>>>>   format (which might potentially be non-trivial, mostly because you
+>>>>   have to *know* where all the data structures have been allocated), apply
+>>>>   patch, resume operation [ksplice, probably kpatch in future]
+>>>> - restrict the data format to be backwards compatible [to be done
+>>>>   manually during patch creation, currently what kGraft needs to do in
+>>>>   such case]
+>>>> - have a proxy code which can read both "v1" and "v2" formats, and writes
+>>>>   back in the same format it has seen the data structure on input
+>>>> - once all the *code* has been converted, it still has to understand "v1"
+>>>>   and "v2", but it can now start writing out "v2" format only [possible
+>>>>   with kGraft, not implemented in automated fashion]
+>>>>
+>>>> Ideas are of course more than welcome.
+>>>
+>>> So what I'm curious about, what is the actual 'in the field' distro
+>>> experience, about the type of live-patches that get pushed with
+>>> urgency?
+>>>
+>>> My guess would be that the overwhelming majority of live-patches don't
+>>> change data structures - and hence the right initial model would be to
+>>> ensure (via tooling, and via review) that 'v1' and 'v2' data is
+>>> exactly the same.
+>>
+>> Yes, in general we want to avoid data changes.  In practice, we expect
+>> most patches to be small, localized security fixes, so it shouldn't be
+>> an issue in most cases.
+>>
+>> Currently the kpatch tooling detects any compile-time changes to
+>> static data and refuses to build the patch module in that case.
+>>
+>> But there's no way to programmatically detect changes to dynamic
+>> data. Which is why the user always has to be very careful when
+>> selecting a patch.
+>
+> And since this is about the system kernel it's dead easy to mess up a
+> new kernel function and make the system unbootable - so it's not like
+> 'be careful' isn't something implied already.
 
-Today's linux-next merge of the bluetooth tree got a conflict in
-drivers/bluetooth/btusb.c between commit 3c49aa852e00 ("Revert
-"Bluetooth: Enable autosuspend for Intel Bluetooth device"") from
-Linus' tree and commit 10d4c6736ea6 ("Bluetooth: btusb: Add Broadcom
-patch RAM support") from the bluetooth tree.
+It's possible to have two versions of code that each work independently, but 
+that you can't switch between easily on the fly.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+If the new code assumes a lock is held that the old code didn't take, then when 
+you switch, you are eventually going to hit a case where the new code trys to 
+release a lock it doesn't hold.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+detecting all possible cases progromatically seems close to impossible.
 
-diff --cc drivers/bluetooth/btusb.c
-index a7dfbf9a3afb,8f579cd9bbaf..000000000000
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@@ -1486,8 -1635,13 +1636,11 @@@ static int btusb_probe(struct usb_inter
-  	if (id->driver_info & BTUSB_BCM92035)
-  		hdev->setup =3D btusb_setup_bcm92035;
- =20
-+ 	if (id->driver_info & BTUSB_BCM_PATCHRAM)
-+ 		hdev->setup =3D btusb_setup_bcm_patchram;
-+=20
- -	if (id->driver_info & BTUSB_INTEL) {
- -		usb_enable_autosuspend(data->udev);
- +	if (id->driver_info & BTUSB_INTEL)
-  		hdev->setup =3D btusb_setup_intel;
- -	}
- =20
-  	/* Interface numbers are hardcoded in the specification */
-  	data->isoc =3D usb_ifnum_to_if(data->udev, 1);
+but this means that there are two categories of patches
 
---Sig_/LzreT9ZAet5wlOu2Zhc=/LG
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+1. patches that are safe to put in a kernel that you are going to boot from
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+2. patches that are able to be applied on the fly
 
-iQIcBAEBCAAGBQJTbDJiAAoJEMDTa8Ir7ZwV8xwP/3jBWYzkbNSt5CsauDoT2g+s
-pIx45Xnh8ENaEmhyWzJxhp/EijhQAvWdSgaiAqdTv4wQh6p8EA3E4UZjyHPM8/RI
-aayvvrs7bg4pRTfnOIxCt16Gj1j1MkP/vSsa9zXjFyUrBbCa3jqiLDJLuW5SlrYo
-waiwaK273Ff04+WCDaVqYA3IYAZQViUILiPt4TPqcCY/O/KIE6TCIICzBoxZ455k
-C54EeOzaVWNtU9w+dV2t1heeTi9ezKaihJGVcq7zLN7cfd9/2TV8HZyaO65KdgwQ
-OEt9FG8bLXkuAmlFPH1Y1FUSry639nVxNBDZVu+JnnHNiFK7d/nA+kyJYvaad7nq
-pFAECGTOHQOQahxvXSyNOem4IBTygE/D4xtRuumUvZST/crOurLOjCll6OyO+PLf
-rrHMjWDej8mipirlvwK48qmO3G7ZdqtZ+tz0br5gLzyDoLChudVEdmwmic/6h+I6
-A0l94qUGWLQfjJRO+bFFbgzJxE8Racsv9nW6r7SdLmqpedjsz6fUmk9UE0RsUUbz
-6L7/BQ0WEEmjINZfiB0UtqrXH7ISoUA/feZMriOTDpuwKJBZiK913E2v2xFu/Aig
-wVg0TO8ZGVoJPF/u9fDl2xKzMDUvaGqZS3SjBcVWrzpH9ggeWXzMBhO9A08p/F6s
-VkHDPgOmh5c8Mxzy92BZ
-=JknW
------END PGP SIGNATURE-----
+and the tool isn't going to be able to tell you which category the patch is in. 
+It can identify some of the items that make it unlikely or impossible for the 
+patch to belong to #2, but don't rely on the tool catching all of them
 
---Sig_/LzreT9ZAet5wlOu2Zhc=/LG--
+David Lang
