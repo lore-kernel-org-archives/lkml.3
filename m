@@ -1,77 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529AbaEIOtE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 10:49:04 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39332 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744AbaEIOtC (ORCPT
+	id S1755960AbaEIOuG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 10:50:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46562 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751084AbaEIOuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 10:49:02 -0400
-Date: Fri, 9 May 2014 15:48:43 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Alexander Shiyan <shc_work@mail.ru>, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>
-Message-ID: <20140509144843.GO12304@sirena.org.uk>
-References: <1398926883-21778-1-git-send-email-shc_work@mail.ru>
- <20140509113030.GV5767@lee--X1>
- <1399643769.716496780@f345.i.mail.ru>
- <20140509141840.GZ5767@lee--X1>
- <20140509143054.GN12304@sirena.org.uk>
- <20140509143629.GA5767@lee--X1>
+	Fri, 9 May 2014 10:50:04 -0400
+Message-ID: <536CEB1A.2060206@free-electrons.com>
+Date: Fri, 09 May 2014 16:50:02 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mHuN3Uv9+U713CGJ"
-Content-Disposition: inline
-In-Reply-To: <20140509143629.GA5767@lee--X1>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] mfd: mc13xxx: Do not use platform data with
- devicetree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Wolfram Sang <wsa@the-dreams.de>, Randy Dunlap <rdunlap@infradead.org>,
+        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
+        kevin@allwinnertech.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] i2c: sunxi: add P2WI (Push/Pull 2 Wire Interface)
+ controller support
+References: <1399485515-11243-1-git-send-email-boris.brezillon@free-electrons.com> <1399485515-11243-3-git-send-email-boris.brezillon@free-electrons.com> <20140509143116.GD7047@lukather>
+In-Reply-To: <20140509143116.GD7047@lukather>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---mHuN3Uv9+U713CGJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 09/05/2014 16:31, Maxime Ripard wrote:
+> Hi Boris,
+>
+> On Wed, May 07, 2014 at 07:58:35PM +0200, Boris BREZILLON wrote:
+>
+[...]
+> +
+> +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	p2wi->regs = devm_ioremap_resource(dev, r);
+> +	if (IS_ERR(p2wi->regs)) {
+> +		dev_err(dev, "failed to retrieve iomem resource\n");
+> +		return PTR_ERR(p2wi->regs);
+> You seem to be returning the error code in the next error messages. It
+> would probably be a good idea to put it there too.
 
-On Fri, May 09, 2014 at 03:36:29PM +0100, Lee Jones wrote:
+Yes, I'll print the err code in the error message.
 
-> > Why not just pull the tag instead?  I haven't looked at the patch but
-> > don't they need to go in together anyway.
+>
+>> +	}
+>> +
+>> +	snprintf(p2wi->adapter.name, sizeof(p2wi->adapter.name), pdev->name);
+>> +	ret = platform_get_irq(pdev, 0);
+>> +	if (ret < 0) {
+>> +		dev_err(dev, "failed to retrieve irq: %d\n", ret);
+>> +		return ret;
+>> +	}
+>> +	p2wi->irq = ret;
+>> +
+>> +	p2wi->clk = devm_clk_get(dev, NULL);
+>> +	if (IS_ERR(p2wi->clk)) {
+>> +		ret = PTR_ERR(p2wi->clk);
+>> +		dev_err(dev, "failed to retrieve clk: %d\n",
+>> +			ret);
+>> +		return ret;
+>> +	}
+>> +
+>> +	ret = clk_prepare_enable(p2wi->clk);
+>> +	if (ret) {
+>> +		dev_err(dev, "failed to enable clk: %d\n", ret);
+>> +		return ret;
+>> +	}
+>> +
+>> +	parent_clk_freq = clk_get_rate(p2wi->clk);
+>> +
+>> +	p2wi->rstc = devm_reset_control_get(dev, NULL);
+>> +	if (IS_ERR(p2wi->rstc)) {
+>> +		ret = PTR_ERR(p2wi->rstc);
+>> +		dev_err(dev, "failed to retrieve reset controller: %d\n",
+>> +			ret);
+>> +		goto err_clk_disable;
+>> +	}
+>> +
+>> +	ret = reset_control_deassert(p2wi->rstc);
+>> +	if (ret) {
+>> +		dev_err(dev, "failed to deassert reset line: %d\n",
+>> +			ret);
+>> +		goto err_clk_disable;
+>> +	}
+>> +
+>> +	init_completion(&p2wi->complete);
+>> +	p2wi->adapter.dev.parent = dev;
+>> +	p2wi->adapter.algo = &p2wi_algo;
+>> +	p2wi->adapter.owner = THIS_MODULE;
+>> +	p2wi->adapter.dev.of_node = pdev->dev.of_node;
+>> +	platform_set_drvdata(pdev, p2wi);
+>> +	i2c_set_adapdata(&p2wi->adapter, p2wi);
+>> +
+>> +	ret = devm_request_irq(dev, p2wi->irq, p2wi_interrupt, 0, pdev->name,
+>> +			       p2wi);
+>> +	if (ret) {
+>> +		dev_err(dev, "can't register interrupt handler irq%d: %d\n",
+>> +			p2wi->irq, ret);
+>> +		goto err_reset_assert;
+>> +	}
+>> +
+>> +	writel(P2WI_CTRL_SOFT_RST, p2wi->regs + P2WI_CTRL);
+>> +
+>> +	clk_div = parent_clk_freq / clk_freq;
+>> +	if (!clk_div) {
+>> +		dev_warn(dev,
+>> +			 "clock-frequency is too high, setting it to %lu Hz\n",
+>> +			 parent_clk_freq);
+>> +		clk_div = 1;
+>> +	} else if (clk_div > P2WI_CCR_MAX_CLK_DIV) {
+>> +		dev_warn(dev,
+>> +			 "clock-frequency is too low, setting it to %lu Hz\n",
+>> +			 parent_clk_freq / P2WI_CCR_MAX_CLK_DIV);
+>> +		clk_div = P2WI_CCR_MAX_CLK_DIV;
+>> +	}
+>> +
+>> +	writel(P2WI_CCR_SDA_OUT_DELAY(1) | P2WI_CCR_CLK_DIV(clk_div),
+>> +	       p2wi->regs + P2WI_CCR);
+>> +
+>> +	if (p2wi_mode_reg >= 0 && p2wi_mode_val >= 0) {
+>> +		writel(P2WI_PMCR_PMU_INIT_SEND |
+>> +		       P2WI_PMCR_PMU_MODE_REG(p2wi_mode_reg) |
+>> +		       P2WI_PMCR_PMU_INIT_DATA(p2wi_mode_val) |
+>> +		       P2WI_PMCR_PMU_DEV_ADDR(p2wi->slave_addr),
+>> +		       p2wi->regs + P2WI_PMCR);
+>> +
+>> +		while (readl(p2wi->regs + P2WI_PMCR) &
+>> +		       P2WI_PMCR_PMU_INIT_SEND)
+>> +			cpu_relax();
+>> +	}
+> Did we actually encounter such a case? From what I've seen so far,
+> both community's u-boot and Allwinner's bootloader already do this.
+>
+> As you know, I'm really not fond of putting random values and
+> registers offsets into the DT itself. Making the assumption that the
+> PMIC is already switched to P2WI by the bootloader seems pretty safe
+> to me.
 
-> Only functionally.  They are orthogonally buildable apparently.
+Hans, any opinion ?
 
-Working code seems important to bisection too...
+If everybody agrees on that point, I'll remove the initialization part
+from the probe (and drop the allwinner,reg-xx properties retrieval).
 
---mHuN3Uv9+U713CGJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Best Regards,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Boris
 
-iQIcBAEBAgAGBQJTbOrIAAoJELSic+t+oim9KTEP/2m6PE42xK07EdHOKUaipUMh
-+WkoYfKYPbVmx0A72QR+585Ttl5SScR/F8qG8zH9SMJ3wnRDOlBwCSfiXQwy6M7y
-mJgq1KwHLQtLVALkgOD1TLY0FOcU5s/ZvR5MAmz1Ln8kpjY1HHEFGWXzkdc128Q9
-U7sQdYIeoNFJgL+RpfG1OU4kTEbZpivUpjzOWyOun4bPEWLMBY/o31N4RCYsTr9Q
-p0bm5baWqgtl81FoDRJqc8QB906LvCgNo+z/pVQDgv/1adRPXlPxwx/EEUVp75fW
-zY/+07BN/ppK6DdJgohVWbYAsNoIcgc3uM5GZlRMke4lOnKfVx4Znx1z+9QckNE5
-Rtalp9WXkpqa7S1WOUhyje/0OFduxrNtfwamMmw24p0xidJquEwgUJ/MBeQrRvex
-yNGhwmkhpMU09VXVXYToP5XZ/ANFRO7qXD8AwM+Wpd+XpNg95JOMTnR3gY9XQEui
-VdasCv2+sA8IKNE+tkwULhB/6f7fSTGfEcGAOO7mHyvN0Y7hnGoDhI7uVH0z6c9N
-nRH+omPvA1Nwi3R5QPyfA3lIPmqq48tNzS6kQCuxW3VzAN4Rg7ZtqEyHAsfJqGpc
-7UvwqC8SHj7ckSZjYyEEnh6OIxTZsrPs3Su/b3zSwSQr/csBPLSoHPlOOaiysGq6
-0vqhdW5nNjvaJ8iroFzh
-=2hOb
------END PGP SIGNATURE-----
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
---mHuN3Uv9+U713CGJ--
