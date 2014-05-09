@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756187AbaEIDm3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 23:42:29 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33048 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752269AbaEIDm1 (ORCPT
+	id S1756199AbaEIDoD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 23:44:03 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:29758 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752269AbaEIDoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 23:42:27 -0400
-Date: Thu, 08 May 2014 23:42:25 -0400 (EDT)
-Message-Id: <20140508.234225.1072761273005912123.davem@davemloft.net>
-To: joe@perches.com
-Cc: netdev@vger.kernel.org, amirv@mellanox.com, eli@mellanox.com,
-        linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
-Subject: Re: [PATCH V2] mellanox: Logging message cleanups
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <eceba320507a1895ff8f1a5bd0b7a67839e7b7b0.1399492267.git.joe@perches.com>
-References: <20140507.154108.567253192690937393.davem@davemloft.net>
-	<eceba320507a1895ff8f1a5bd0b7a67839e7b7b0.1399492267.git.joe@perches.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 8 May 2014 23:44:01 -0400
+Date: Thu, 8 May 2014 23:43:55 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        fche@redhat.com, mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH -tip v10 7/7] ftrace: Introduce
+ FTRACE_OPS_FL_SELF_FILTER for ftrace-kprobe
+Message-ID: <20140508234355.38ac66ee@gandalf.local.home>
+In-Reply-To: <536C4761.9050609@hitachi.com>
+References: <20140508093842.31767.43766.stgit@ltc230.yrl.intra.hitachi.co.jp>
+	<20140508093930.31767.86419.stgit@ltc230.yrl.intra.hitachi.co.jp>
+	<20140508065947.214f4951@gandalf.local.home>
+	<536C4761.9050609@hitachi.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 08 May 2014 20:42:27 -0700 (PDT)
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Wed,  7 May 2014 12:52:57 -0700
+On Fri, 09 May 2014 12:11:29 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-> Use a more current logging style.
+> > Hmm, I wonder if I should add the check for:
+> > 
+> > 	!(op->flags & FTRACE_OPS_FL_STUB)
+> > 
+> > here too? But that's another change that I'll do.
 > 
-> o Coalesce formats
-> o Add missing spaces for coalesced formats
-> o Align arguments for modified formats
-> o Add missing newlines for some logging messages
-> o Use DRV_NAME as part of format instead of %s, DRV_NAME to
->   reduce overall text.
-> o Use ..., ##__VA_ARGS__ instead of args... in macros
-> o Correct a few format typos
-> o Use a single line message where appropriate
+> Indeed. BTW, should I change ftrace_ops_control_func() too?
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> Acked-By: Amir Vadai <amirv@mellanox.com>
 
-Applied, thanks.
+Currently there's no users of it, so I guess it could wait. Otherwise
+we are adding a check that will never be true in an extreme hot path.
+
+-- Steve
+
