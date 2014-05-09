@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480AbaEITy3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 15:54:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56387 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754063AbaEITy2 (ORCPT
+	id S1757498AbaEITz0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 15:55:26 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:42097 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756533AbaEITzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 15:54:28 -0400
-Date: Fri, 9 May 2014 12:54:26 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jianyu Zhan <nasa4836@gmail.com>
-Cc: cl@linux.com, mhocko@suse.cz, hannes@cmpxchg.org, riel@redhat.com,
-        minchan@kernel.org, zhangyanfei@cn.fujitsu.com,
-        hanpt@linux.vnet.ibm.com, sasha.levin@oracle.com, oleg@redhat.com,
-        fabf@skynet.be, mgorman@suse.de, aarcange@redhat.com, cldu@marvell.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: use a irq-safe __mod_zone_page_state in
- mlocked_vma_newpage()
-Message-Id: <20140509125426.e585b751a81bfcc96b6b8b88@linux-foundation.org>
-In-Reply-To: <1399652208-18987-1-git-send-email-nasa4836@gmail.com>
-References: <1399652208-18987-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 9 May 2014 15:55:25 -0400
+Date: Fri, 9 May 2014 15:55:22 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH percpu/for-3.16 2/2] percpu-refcount: implement
+ percpu_ref_tryget()
+Message-ID: <20140509195522.GF4486@htj.dyndns.org>
+References: <20140507155511.GB26540@htj.dyndns.org>
+ <20140507155647.GC26540@htj.dyndns.org>
+ <20140507155810.GD26540@htj.dyndns.org>
+ <20140509194020.GB2276@kmo>
+ <20140509194140.GC4486@htj.dyndns.org>
+ <20140509195109.GC2276@kmo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140509195109.GC2276@kmo>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 May 2014 00:16:48 +0800 Jianyu Zhan <nasa4836@gmail.com> wrote:
+Hello,
 
-> mlocked_vma_newpage() is only called in fault path by
-> page_add_new_anon_rmap(), which is called on a *new* page.
-> And such page is initially only visible via the pagetables, and the
-> pte is locked while calling page_add_new_anon_rmap(), so we need not
-> use an irq-safe mod_zone_page_state() here, using a light-weight version
-> __mod_zone_page_state() would be OK.
+On Fri, May 09, 2014 at 12:51:09PM -0700, Kent Overstreet wrote:
+> Well not so much deprecated as "bad, avoid" - IMO using tryget() almost always
+> (I haven't seen a convincing counterexample) means you screwed up your
+> refcounting somewhere, if you need to take a ref on something whatever made that
+> object visible to you should have its own ref.
 > 
-> ...
->
-> --- a/mm/internal.h
-> +++ b/mm/internal.h
-> @@ -196,7 +196,7 @@ static inline int mlocked_vma_newpage(struct vm_area_struct *vma,
->  		return 0;
->  
->  	if (!TestSetPageMlocked(page)) {
-> -		mod_zone_page_state(page_zone(page), NR_MLOCK,
-> +		__mod_zone_page_state(page_zone(page), NR_MLOCK,
->  				    hpage_nr_pages(page));
->  		count_vm_event(UNEVICTABLE_PGMLOCKED);
->  	}
+> (I think we had this debate, but that was awhile ago...)
 
-The comment over __mod_zone_page_state() says "For use when we know
-that interrupts are disabled".  But that is not the case here.
+Oh sure, tryget can definitely be misunderstood but RCU protected
+iteration is one valid use case.
 
-Please fix this up, probably by altering the __mod_zone_page_state()
-documentation.
+	rcu_read_lock();
+	locate the object of interest;
+	tryget[_live]() depending on the use case;
+	rcu_read_unlock();
 
+	access the object.
 
-Your proposed change to (the very poorly named) mlocked_vma_newpage()
-makes that function more dangerous - people might add new callsites
-without knowing that they're adding races.  This risk can be reduced by
+It's not different from why we use atomic_inc_not_zero() in some
+places.  The only difference is that percpu_ref distinguishes live
+vs. dying states.  It's true that this can be used in pretty stupid
+ways but I think the comments are pretty clear on that.  Do you think
+we need more warning there?
 
-a) adding documentation explaining why __mod_zone_page_state() is
-   used and why it is safe and
+Thanks.
 
-b) moving mlocked_vma_newpage() out of internal.h and placing it in
-   mm/rmap.c immediately before page_add_new_anon_rmap().  Or, probably
-   better, by removing mlocked_vma_newpage() altogether and open-coding
-   its logic into page_add_new_anon_rmap().
-
-
+-- 
+tejun
