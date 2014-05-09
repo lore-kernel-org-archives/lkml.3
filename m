@@ -1,114 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016AbaEHXp3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 19:45:29 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:41880 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947AbaEHXp0 (ORCPT
+	id S1753947AbaEIACG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 20:02:06 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:56369 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620AbaEIACE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 19:45:26 -0400
-Message-ID: <536C1710.1010108@gmail.com>
-Date: Fri, 09 May 2014 07:45:20 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 8 May 2014 20:02:04 -0400
 MIME-Version: 1.0
-To: JBottomley@parallels.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>
-CC: linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drivers: scsi: mvsas: fix compiling issue by adding 'MVS_'
- for "enum pci_interrupt_cause"
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140508205556.GJ3693@n2100.arm.linux.org.uk>
+References: <1399504982-31181-1-git-send-email-dianders@chromium.org>
+	<CAOh2x=kwaoSdj8JO0Vo08Y0dX2UfKFiF3pBV-qtp-YTyN=8H8Q@mail.gmail.com>
+	<CAD=FV=UEGJGHrdcXgs3EZ_wFXT8GnNeCOMt7CgdiiUzBzZ5Y0A@mail.gmail.com>
+	<alpine.LFD.2.11.1405081149190.980@knanqh.ubzr>
+	<CAD=FV=VtcLOh51LCmafzRMdqtDrwKXCqK6gE6V7OOOUe4gjwbA@mail.gmail.com>
+	<alpine.LFD.2.11.1405081329010.980@knanqh.ubzr>
+	<CAD=FV=X4h0nfO7a10NXe+d76xj5ttBJx=q1pAvW4aPzrc22BoQ@mail.gmail.com>
+	<20140508205556.GJ3693@n2100.arm.linux.org.uk>
+Date: Thu, 8 May 2014 17:02:02 -0700
+X-Google-Sender-Auth: eWpwusT3Q9X2zUxt9KBr6TlnUY0
+Message-ID: <CAD=FV=ViOie+E_mxgcE51oNL0HY1zF9KYG_TDSbKjMzE2GZZMw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP systems
+From: Doug Anderson <dianders@chromium.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Will Deacon <will.deacon@arm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        David Riley <davidriley@chromium.org>,
+        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Mark Brown <broonie@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The direct cause is IRQ_SPI is already defined as a macro in unicore32
-architecture (also, blackfin and mips architectures define it). The
-related error (unicore32  with allmodconfig)
+Russel,
 
-    CC [M]  drivers/scsi/mvsas/mv_94xx.o
-  In file included from drivers/scsi/mvsas/mv_94xx.c:27:
-  drivers/scsi/mvsas/mv_94xx.h:176: error: expected identifier before numeric constant
+On Thu, May 8, 2014 at 1:55 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Thu, May 08, 2014 at 11:06:24AM -0700, Doug Anderson wrote:
+>> I guess I would say that my patch is unhacking the this code.  The
+>> code after my patch is simpler.  I would perhaps argue that (ec971ea
+>> ARM: add cpufreq transiton notifier to adjust loops_per_jiffy for smp)
+>> should never have landed to begin with.
+>
+> That depends on your point of view.  As I've already pointed out through
+> the examples of why udelay() is inaccurate, for driver authors, they
+> should assume that udelay() just gives you an "approximate" delay and
+> it has no accuracy.
 
-And "enum pci_interrupt_cause" may will be useful for kernel drivers,
-although at present, it is not used in kernel. So add 'MVS_' for it.
+That disagrees with what Thomas Gleixner says at
+<http://lkml.iu.edu//hypermail/linux/kernel/1203.1/01034.html>.  It
+also seems like perhaps the regulator core is broken, then...  If a
+udelay(30) can end up as a udelay(20) then we may return from a
+regulator code 10us earlier than we should and we'll assume that a
+regulator is ramped before it really is...
 
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/scsi/mvsas/mv_94xx.h | 58 ++++++++++++++++++++++----------------------
- 1 file changed, 29 insertions(+), 29 deletions(-)
-
-diff --git a/drivers/scsi/mvsas/mv_94xx.h b/drivers/scsi/mvsas/mv_94xx.h
-index 487aa6f..14e1974 100644
---- a/drivers/scsi/mvsas/mv_94xx.h
-+++ b/drivers/scsi/mvsas/mv_94xx.h
-@@ -150,35 +150,35 @@ enum chip_register_bits {
- 
- enum pci_interrupt_cause {
- 	/*  MAIN_IRQ_CAUSE (R10200) Bits*/
--	IRQ_COM_IN_I2O_IOP0            = (1 << 0),
--	IRQ_COM_IN_I2O_IOP1            = (1 << 1),
--	IRQ_COM_IN_I2O_IOP2            = (1 << 2),
--	IRQ_COM_IN_I2O_IOP3            = (1 << 3),
--	IRQ_COM_OUT_I2O_HOS0           = (1 << 4),
--	IRQ_COM_OUT_I2O_HOS1           = (1 << 5),
--	IRQ_COM_OUT_I2O_HOS2           = (1 << 6),
--	IRQ_COM_OUT_I2O_HOS3           = (1 << 7),
--	IRQ_PCIF_TO_CPU_DRBL0          = (1 << 8),
--	IRQ_PCIF_TO_CPU_DRBL1          = (1 << 9),
--	IRQ_PCIF_TO_CPU_DRBL2          = (1 << 10),
--	IRQ_PCIF_TO_CPU_DRBL3          = (1 << 11),
--	IRQ_PCIF_DRBL0                 = (1 << 12),
--	IRQ_PCIF_DRBL1                 = (1 << 13),
--	IRQ_PCIF_DRBL2                 = (1 << 14),
--	IRQ_PCIF_DRBL3                 = (1 << 15),
--	IRQ_XOR_A                      = (1 << 16),
--	IRQ_XOR_B                      = (1 << 17),
--	IRQ_SAS_A                      = (1 << 18),
--	IRQ_SAS_B                      = (1 << 19),
--	IRQ_CPU_CNTRL                  = (1 << 20),
--	IRQ_GPIO                       = (1 << 21),
--	IRQ_UART                       = (1 << 22),
--	IRQ_SPI                        = (1 << 23),
--	IRQ_I2C                        = (1 << 24),
--	IRQ_SGPIO                      = (1 << 25),
--	IRQ_COM_ERR                    = (1 << 29),
--	IRQ_I2O_ERR                    = (1 << 30),
--	IRQ_PCIE_ERR                   = (1 << 31),
-+	MVS_IRQ_COM_IN_I2O_IOP0        = (1 << 0),
-+	MVS_IRQ_COM_IN_I2O_IOP1        = (1 << 1),
-+	MVS_IRQ_COM_IN_I2O_IOP2        = (1 << 2),
-+	MVS_IRQ_COM_IN_I2O_IOP3        = (1 << 3),
-+	MVS_IRQ_COM_OUT_I2O_HOS0       = (1 << 4),
-+	MVS_IRQ_COM_OUT_I2O_HOS1       = (1 << 5),
-+	MVS_IRQ_COM_OUT_I2O_HOS2       = (1 << 6),
-+	MVS_IRQ_COM_OUT_I2O_HOS3       = (1 << 7),
-+	MVS_IRQ_PCIF_TO_CPU_DRBL0      = (1 << 8),
-+	MVS_IRQ_PCIF_TO_CPU_DRBL1      = (1 << 9),
-+	MVS_IRQ_PCIF_TO_CPU_DRBL2      = (1 << 10),
-+	MVS_IRQ_PCIF_TO_CPU_DRBL3      = (1 << 11),
-+	MVS_IRQ_PCIF_DRBL0             = (1 << 12),
-+	MVS_IRQ_PCIF_DRBL1             = (1 << 13),
-+	MVS_IRQ_PCIF_DRBL2             = (1 << 14),
-+	MVS_IRQ_PCIF_DRBL3             = (1 << 15),
-+	MVS_IRQ_XOR_A                  = (1 << 16),
-+	MVS_IRQ_XOR_B                  = (1 << 17),
-+	MVS_IRQ_SAS_A                  = (1 << 18),
-+	MVS_IRQ_SAS_B                  = (1 << 19),
-+	MVS_IRQ_CPU_CNTRL              = (1 << 20),
-+	MVS_IRQ_GPIO                   = (1 << 21),
-+	MVS_IRQ_UART                   = (1 << 22),
-+	MVS_IRQ_SPI                    = (1 << 23),
-+	MVS_IRQ_I2C                    = (1 << 24),
-+	MVS_IRQ_SGPIO                  = (1 << 25),
-+	MVS_IRQ_COM_ERR                = (1 << 29),
-+	MVS_IRQ_I2O_ERR                = (1 << 30),
-+	MVS_IRQ_PCIE_ERR               = (1 << 31),
- };
- 
- union reg_phy_cfg {
--- 
-1.9.2.459.g68773ac
+I'm out tomorrow but I can confirm on Monday that I was really seeing
+udelay(30) be a udelay(20) without this patch.
