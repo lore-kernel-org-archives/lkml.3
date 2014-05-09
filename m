@@ -1,127 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118AbaEINDR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 09:03:17 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:49126 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824AbaEINDO (ORCPT
+	id S1754085AbaEINKz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 09:10:55 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:38461 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824AbaEINKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 09:03:14 -0400
-Message-ID: <536CD20F.2000704@atmel.com>
-Date: Fri, 9 May 2014 15:03:11 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 9 May 2014 09:10:53 -0400
 MIME-Version: 1.0
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-CC: Bryan Evenson <bevenson@melinkcorp.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Mark Roszko <mark.roszko@gmail.com>,
-        "Johan Hovold" <jhovold@gmail.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>, <stable@vger.kernel.org>
-Subject: Re: [PATCH v3] ARM: at91: fix startup rtc irq mask for sam9g25 and
- sam9g35 SoCs
-References: <1399633297-6813-1-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1399633297-6813-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <20140508153734.GY4400@trinity.fluff.org>
+References: <1399541098-5104-1-git-send-email-ulf.hansson@linaro.org>
+	<20140508153734.GY4400@trinity.fluff.org>
+Date: Fri, 9 May 2014 15:10:51 +0200
+Message-ID: <CAPDyKFruGqNdMGrpa0=_mtUqjon0ZT5f8G=24TOYLHbobT-zMw@mail.gmail.com>
+Subject: Re: [PATCH] MAINTAINERS: mmc: Update email for host driver maintainer
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Ben Dooks <ben@trinity.fluff.org>
+Cc: linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ian Molton <ian.molton@codethink.co.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 13:01, Boris BREZILLON :
-> The sam9g25 and sam9g35 have the following errata:
+On 8 May 2014 17:37, Ben Dooks <ben@trinity.fluff.org> wrote:
+> On Thu, May 08, 2014 at 11:24:58AM +0200, Ulf Hansson wrote:
+>> Update Ian Molton's email, the maintainer for tmio/sh_mobile_sdhci.
+>>
+>> Cc: Ian Molton <ian.molton@codethink.co.uk>
+>> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+>
+> I think he still has the previous address, so you may want to keep it.
 
-Cf. below...
+Actually he responded to me off-list, yesterday. He told me he was
+happy with that change.
 
-> "RTC: Interrupt Mask Register cannot be used
->  Interrupt Mask Register read always returns 0."
-> 
-> Hence we should not rely on what IMR claims about already masked irqs
-> and just disable all the IRQs.
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: <stable@vger.kernel.org> # v3.10+
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
-> Hello,
-> 
-> Sorry for the noise, I just forgot to remove the mask variable in my
-> previous version.
-> 
-> Best Regards,
-> 
-> Boris
-> 
-> Changes since v2:
-> - removed unused variable 'mask'
-> Changes since v1:
-> - use a macro to define IRQs bitmask
-> - read IMR register to ensure the write to IDR has been flushed
-> - quote atmel's datasheet errata in commit message
-> - comment the code to describe why we're not using IMR to disable
->   the interrupts
-> 
->  arch/arm/mach-at91/sysirq_mask.c | 22 +++++++++++++---------
->  1 file changed, 13 insertions(+), 9 deletions(-)
-> 
-> diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-at91/sysirq_mask.c
-> index 2ba694f..1527dda 100644
-> --- a/arch/arm/mach-at91/sysirq_mask.c
-> +++ b/arch/arm/mach-at91/sysirq_mask.c
-> @@ -25,24 +25,28 @@
->  
->  #include "generic.h"
->  
-> -#define AT91_RTC_IDR	0x24	/* Interrupt Disable Register */
-> -#define AT91_RTC_IMR	0x28	/* Interrupt Mask Register */
-> +#define AT91_RTC_IDR		0x24	/* Interrupt Disable Register */
-> +#define AT91_RTC_IMR		0x28	/* Interrupt Mask Register */
-> +#define AT91_RTC_IRQ_MASK	0x1f	/* Available IRQs mask */
->  
->  void __init at91_sysirq_mask_rtc(u32 rtc_base)
->  {
->  	void __iomem *base;
-> -	u32 mask;
->  
->  	base = ioremap(rtc_base, 64);
->  	if (!base)
->  		return;
->  
-> -	mask = readl_relaxed(base + AT91_RTC_IMR);
-> -	if (mask) {
-> -		pr_info("AT91: Disabling rtc irq\n");
-> -		writel_relaxed(mask, base + AT91_RTC_IDR);
-> -		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
-> -	}
-> +	/*
-> +	 * The sam9g25 and sam9g35 have the following errata:
+Additionally, I have several times got bounces on his old one. :-)
 
-Actually all chips in what we call the "5 series" or "sam9x5" (sam9g15,
-sam9g25, sam9x25, sam9g35 and sam9x35). And... no, the sam9g45 is not
-part of that series ;-)
+Kind regards
+Ulf Hansson
 
-> +	 * "RTC: Interrupt Mask Register cannot be used
-> +	 *  Interrupt Mask Register read always returns 0."
-> +	 *
-> +	 * Hence we're not relying on IMR values to disable
-> +	 * interrupts.
-> +	 */
-> +	writel_relaxed(AT91_RTC_IRQ_MASK, base + AT91_RTC_IDR);
-> +	(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
->  
->  	iounmap(base);
->  }
-
-Okay for me (maybe change the comment as it can puzzle some users):
-
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-Thanks, bye,
--- 
-Nicolas Ferre
+>
+>> ---
+>>  MAINTAINERS |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/MAINTAINERS b/MAINTAINERS
+>> index e67ea24..c2803c7 100644
+>> --- a/MAINTAINERS
+>> +++ b/MAINTAINERS
+>> @@ -9000,7 +9000,7 @@ F:      include/linux/toshiba.h
+>>  F:   include/uapi/linux/toshiba.h
+>>
+>>  TMIO MMC DRIVER
+>> -M:   Ian Molton <ian@mnementh.co.uk>
+>> +M:   Ian Molton <ian.molton@codethink.co.uk>
+>>  L:   linux-mmc@vger.kernel.org
+>>  S:   Maintained
+>>  F:   drivers/mmc/host/tmio_mmc*
+>> --
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+> --
+> Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
+>
+> Large Hadron Colada: A large Pina Colada that makes the universe disappear.
+>
