@@ -1,351 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757109AbaEIQQs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 12:16:48 -0400
-Received: from smtp36.i.mail.ru ([94.100.177.96]:60179 "EHLO smtp36.i.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750775AbaEIQQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 12:16:47 -0400
-From: Alexander Shiyan <shc_work@mail.ru>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@linaro.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH] pinctrl: Add i.MX1 pincontrol driver
-Date: Fri,  9 May 2014 20:16:33 +0400
-Message-Id: <1399652193-17827-1-git-send-email-shc_work@mail.ru>
-X-Mailer: git-send-email 1.8.3.2
-X-Spam: Not detected
-X-Mras: Ok
+	id S1757153AbaEIQRB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 12:17:01 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:53751 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757132AbaEIQQ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 12:16:58 -0400
+From: Jianyu Zhan <nasa4836@gmail.com>
+To: cl@linux.com, akpm@linux-foundation.org, mhocko@suse.cz,
+        hannes@cmpxchg.org, riel@redhat.com, minchan@kernel.org,
+        zhangyanfei@cn.fujitsu.com, hanpt@linux.vnet.ibm.com,
+        sasha.levin@oracle.com, oleg@redhat.com, fabf@skynet.be,
+        mgorman@suse.de, aarcange@redhat.com, cldu@marvell.com,
+        nasa4836@gmail.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: use a irq-safe __mod_zone_page_state in mlocked_vma_newpage()
+Date: Sat, 10 May 2014 00:16:48 +0800
+Message-Id: <1399652208-18987-1-git-send-email-nasa4836@gmail.com>
+X-Mailer: git-send-email 2.0.0-rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds pincontrol driver for Freescale i.MX1 SOCs.
+>You are changing from the irq safe variant to __mod_zone_page_state which
+>is *not* irq safe. Its legit to do so since presumably irqs are disabled
+>anyways so you do not have to worry about irq safeness of
+>__mod_zone_page_state.
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+>Please update the description. Its a bit confusing right now.
+
+Hi, Christoph, I'm sorry for the misleading phrasing. 
+Would be this one OK? Thanks.
+
+--------<8---------
+mm: use a light-weight __mod_zone_page_state in mlocked_vma_newpage()
+
+mlocked_vma_newpage() is only called in fault path by
+page_add_new_anon_rmap(), which is called on a *new* page.
+And such page is initially only visible via the pagetables, and the
+pte is locked while calling page_add_new_anon_rmap(), so we need not
+use an irq-safe mod_zone_page_state() here, using a light-weight version
+__mod_zone_page_state() would be OK.
+
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
 ---
- drivers/pinctrl/Kconfig        |   7 ++
- drivers/pinctrl/Makefile       |   1 +
- drivers/pinctrl/pinctrl-imx1.c | 279 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 287 insertions(+)
- create mode 100644 drivers/pinctrl/pinctrl-imx1.c
+ mm/internal.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index 934fd89..4a8613a 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -130,6 +130,13 @@ config PINCTRL_IMX1_CORE
- 	select PINMUX
- 	select PINCONF
+diff --git a/mm/internal.h b/mm/internal.h
+index 07b6736..69079b1 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -196,7 +196,7 @@ static inline int mlocked_vma_newpage(struct vm_area_struct *vma,
+ 		return 0;
  
-+config PINCTRL_IMX1
-+	bool "IMX1 pinctrl driver"
-+	depends on SOC_IMX1
-+	select PINCTRL_IMX1_CORE
-+	help
-+	  Say Y here to enable the imx1 pinctrl driver
-+
- config PINCTRL_IMX27
- 	bool "IMX27 pinctrl driver"
- 	depends on SOC_IMX27
-diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index 68bb399..0a2f725 100644
---- a/drivers/pinctrl/Makefile
-+++ b/drivers/pinctrl/Makefile
-@@ -24,6 +24,7 @@ obj-$(CONFIG_PINCTRL_BAYTRAIL)	+= pinctrl-baytrail.o
- obj-$(CONFIG_PINCTRL_BCM281XX)	+= pinctrl-bcm281xx.o
- obj-$(CONFIG_PINCTRL_IMX)	+= pinctrl-imx.o
- obj-$(CONFIG_PINCTRL_IMX1_CORE)	+= pinctrl-imx1-core.o
-+obj-$(CONFIG_PINCTRL_IMX1)	+= pinctrl-imx1.o
- obj-$(CONFIG_PINCTRL_IMX27)	+= pinctrl-imx27.o
- obj-$(CONFIG_PINCTRL_IMX35)	+= pinctrl-imx35.o
- obj-$(CONFIG_PINCTRL_IMX50)	+= pinctrl-imx50.o
-diff --git a/drivers/pinctrl/pinctrl-imx1.c b/drivers/pinctrl/pinctrl-imx1.c
-new file mode 100644
-index 0000000..533a6e5
---- /dev/null
-+++ b/drivers/pinctrl/pinctrl-imx1.c
-@@ -0,0 +1,279 @@
-+/*
-+ * i.MX1 pinctrl driver based on imx pinmux core
-+ *
-+ * Copyright (C) 2014 Alexander Shiyan <shc_work@mail.ru>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/pinctrl/pinctrl.h>
-+
-+#include "pinctrl-imx1.h"
-+
-+#define PAD_ID(port, pin)	((port) * 32 + (pin))
-+#define PA	0
-+#define PB	1
-+#define PC	2
-+#define PD	3
-+
-+enum imx1_pads {
-+	MX1_PAD_A24		= PAD_ID(PA, 0),
-+	MX1_PAD_TIN		= PAD_ID(PA, 1),
-+	MX1_PAD_PWMO		= PAD_ID(PA, 2),
-+	MX1_PAD_CSI_MCLK	= PAD_ID(PA, 3),
-+	MX1_PAD_CSI_D0		= PAD_ID(PA, 4),
-+	MX1_PAD_CSI_D1		= PAD_ID(PA, 5),
-+	MX1_PAD_CSI_D2		= PAD_ID(PA, 6),
-+	MX1_PAD_CSI_D3		= PAD_ID(PA, 7),
-+	MX1_PAD_CSI_D4		= PAD_ID(PA, 8),
-+	MX1_PAD_CSI_D5		= PAD_ID(PA, 9),
-+	MX1_PAD_CSI_D6		= PAD_ID(PA, 10),
-+	MX1_PAD_CSI_D7		= PAD_ID(PA, 11),
-+	MX1_PAD_CSI_VSYNC	= PAD_ID(PA, 12),
-+	MX1_PAD_CSI_HSYNC	= PAD_ID(PA, 13),
-+	MX1_PAD_CSI_PIXCLK	= PAD_ID(PA, 14),
-+	MX1_PAD_I2C_SDA		= PAD_ID(PA, 15),
-+	MX1_PAD_I2C_SCL		= PAD_ID(PA, 16),
-+	MX1_PAD_DTACK		= PAD_ID(PA, 17),
-+	MX1_PAD_BCLK		= PAD_ID(PA, 18),
-+	MX1_PAD_LBA		= PAD_ID(PA, 19),
-+	MX1_PAD_ECB		= PAD_ID(PA, 20),
-+	MX1_PAD_A0		= PAD_ID(PA, 21),
-+	MX1_PAD_CS4		= PAD_ID(PA, 22),
-+	MX1_PAD_CS5		= PAD_ID(PA, 23),
-+	MX1_PAD_A16		= PAD_ID(PA, 24),
-+	MX1_PAD_A17		= PAD_ID(PA, 25),
-+	MX1_PAD_A18		= PAD_ID(PA, 26),
-+	MX1_PAD_A19		= PAD_ID(PA, 27),
-+	MX1_PAD_A20		= PAD_ID(PA, 28),
-+	MX1_PAD_A21		= PAD_ID(PA, 29),
-+	MX1_PAD_A22		= PAD_ID(PA, 30),
-+	MX1_PAD_A23		= PAD_ID(PA, 31),
-+	MX1_PAD_SD_DAT0		= PAD_ID(PB, 8),
-+	MX1_PAD_SD_DAT1		= PAD_ID(PB, 9),
-+	MX1_PAD_SD_DAT2		= PAD_ID(PB, 10),
-+	MX1_PAD_SD_DAT3		= PAD_ID(PB, 11),
-+	MX1_PAD_SD_SCLK		= PAD_ID(PB, 12),
-+	MX1_PAD_SD_CMD		= PAD_ID(PB, 13),
-+	MX1_PAD_SIM_SVEN	= PAD_ID(PB, 14),
-+	MX1_PAD_SIM_PD		= PAD_ID(PB, 15),
-+	MX1_PAD_SIM_TX		= PAD_ID(PB, 16),
-+	MX1_PAD_SIM_RX		= PAD_ID(PB, 17),
-+	MX1_PAD_SIM_RST		= PAD_ID(PB, 18),
-+	MX1_PAD_SIM_CLK		= PAD_ID(PB, 19),
-+	MX1_PAD_USBD_AFE	= PAD_ID(PB, 20),
-+	MX1_PAD_USBD_OE		= PAD_ID(PB, 21),
-+	MX1_PAD_USBD_RCV	= PAD_ID(PB, 22),
-+	MX1_PAD_USBD_SUSPND	= PAD_ID(PB, 23),
-+	MX1_PAD_USBD_VP		= PAD_ID(PB, 24),
-+	MX1_PAD_USBD_VM		= PAD_ID(PB, 25),
-+	MX1_PAD_USBD_VPO	= PAD_ID(PB, 26),
-+	MX1_PAD_USBD_VMO	= PAD_ID(PB, 27),
-+	MX1_PAD_UART2_CTS	= PAD_ID(PB, 28),
-+	MX1_PAD_UART2_RTS	= PAD_ID(PB, 29),
-+	MX1_PAD_UART2_TXD	= PAD_ID(PB, 30),
-+	MX1_PAD_UART2_RXD	= PAD_ID(PB, 31),
-+	MX1_PAD_SSI_RXFS	= PAD_ID(PC, 3),
-+	MX1_PAD_SSI_RXCLK	= PAD_ID(PC, 4),
-+	MX1_PAD_SSI_RXDAT	= PAD_ID(PC, 5),
-+	MX1_PAD_SSI_TXDAT	= PAD_ID(PC, 6),
-+	MX1_PAD_SSI_TXFS	= PAD_ID(PC, 7),
-+	MX1_PAD_SSI_TXCLK	= PAD_ID(PC, 8),
-+	MX1_PAD_UART1_CTS	= PAD_ID(PC, 9),
-+	MX1_PAD_UART1_RTS	= PAD_ID(PC, 10),
-+	MX1_PAD_UART1_TXD	= PAD_ID(PC, 11),
-+	MX1_PAD_UART1_RXD	= PAD_ID(PC, 12),
-+	MX1_PAD_SPI1_RDY	= PAD_ID(PC, 13),
-+	MX1_PAD_SPI1_SCLK	= PAD_ID(PC, 14),
-+	MX1_PAD_SPI1_SS		= PAD_ID(PC, 15),
-+	MX1_PAD_SPI1_MISO	= PAD_ID(PC, 16),
-+	MX1_PAD_SPI1_MOSI	= PAD_ID(PC, 17),
-+	MX1_PAD_BT13		= PAD_ID(PC, 19),
-+	MX1_PAD_BT12		= PAD_ID(PC, 20),
-+	MX1_PAD_BT11		= PAD_ID(PC, 21),
-+	MX1_PAD_BT10		= PAD_ID(PC, 22),
-+	MX1_PAD_BT9		= PAD_ID(PC, 23),
-+	MX1_PAD_BT8		= PAD_ID(PC, 24),
-+	MX1_PAD_BT7		= PAD_ID(PC, 25),
-+	MX1_PAD_BT6		= PAD_ID(PC, 26),
-+	MX1_PAD_BT5		= PAD_ID(PC, 27),
-+	MX1_PAD_BT4		= PAD_ID(PC, 28),
-+	MX1_PAD_BT3		= PAD_ID(PC, 29),
-+	MX1_PAD_BT2		= PAD_ID(PC, 30),
-+	MX1_PAD_BT1		= PAD_ID(PC, 31),
-+	MX1_PAD_LSCLK		= PAD_ID(PD, 6),
-+	MX1_PAD_REV		= PAD_ID(PD, 7),
-+	MX1_PAD_CLS		= PAD_ID(PD, 8),
-+	MX1_PAD_PS		= PAD_ID(PD, 9),
-+	MX1_PAD_SPL_SPR		= PAD_ID(PD, 10),
-+	MX1_PAD_CONTRAST	= PAD_ID(PD, 11),
-+	MX1_PAD_ACD_OE		= PAD_ID(PD, 12),
-+	MX1_PAD_LP_HSYNC	= PAD_ID(PD, 13),
-+	MX1_PAD_FLM_VSYNC	= PAD_ID(PD, 14),
-+	MX1_PAD_LD0		= PAD_ID(PD, 15),
-+	MX1_PAD_LD1		= PAD_ID(PD, 16),
-+	MX1_PAD_LD2		= PAD_ID(PD, 17),
-+	MX1_PAD_LD3		= PAD_ID(PD, 18),
-+	MX1_PAD_LD4		= PAD_ID(PD, 19),
-+	MX1_PAD_LD5		= PAD_ID(PD, 20),
-+	MX1_PAD_LD6		= PAD_ID(PD, 21),
-+	MX1_PAD_LD7		= PAD_ID(PD, 22),
-+	MX1_PAD_LD8		= PAD_ID(PD, 23),
-+	MX1_PAD_LD9		= PAD_ID(PD, 24),
-+	MX1_PAD_LD10		= PAD_ID(PD, 25),
-+	MX1_PAD_LD11		= PAD_ID(PD, 26),
-+	MX1_PAD_LD12		= PAD_ID(PD, 27),
-+	MX1_PAD_LD13		= PAD_ID(PD, 28),
-+	MX1_PAD_LD14		= PAD_ID(PD, 29),
-+	MX1_PAD_LD15		= PAD_ID(PD, 30),
-+	MX1_PAD_TMR2OUT		= PAD_ID(PD, 31),
-+};
-+
-+/* Pad names for the pinmux subsystem */
-+static const struct pinctrl_pin_desc imx1_pinctrl_pads[] = {
-+	IMX_PINCTRL_PIN(MX1_PAD_A24),
-+	IMX_PINCTRL_PIN(MX1_PAD_TIN),
-+	IMX_PINCTRL_PIN(MX1_PAD_PWMO),
-+	IMX_PINCTRL_PIN(MX1_PAD_CSI_MCLK),
-+	IMX_PINCTRL_PIN(MX1_PAD_CSI_D0),
-+	IMX_PINCTRL_PIN(MX1_PAD_CSI_D1),
-+	IMX_PINCTRL_PIN(MX1_PAD_CSI_D2),
-+	IMX_PINCTRL_PIN(MX1_PAD_CSI_D3),
-+	IMX_PINCTRL_PIN(MX1_PAD_CSI_D4),
-+	IMX_PINCTRL_PIN(MX1_PAD_CSI_D5),
-+	IMX_PINCTRL_PIN(MX1_PAD_CSI_D6),
-+	IMX_PINCTRL_PIN(MX1_PAD_CSI_D7),
-+	IMX_PINCTRL_PIN(MX1_PAD_CSI_VSYNC),
-+	IMX_PINCTRL_PIN(MX1_PAD_CSI_HSYNC),
-+	IMX_PINCTRL_PIN(MX1_PAD_CSI_PIXCLK),
-+	IMX_PINCTRL_PIN(MX1_PAD_I2C_SDA),
-+	IMX_PINCTRL_PIN(MX1_PAD_I2C_SCL),
-+	IMX_PINCTRL_PIN(MX1_PAD_DTACK),
-+	IMX_PINCTRL_PIN(MX1_PAD_BCLK),
-+	IMX_PINCTRL_PIN(MX1_PAD_LBA),
-+	IMX_PINCTRL_PIN(MX1_PAD_ECB),
-+	IMX_PINCTRL_PIN(MX1_PAD_A0),
-+	IMX_PINCTRL_PIN(MX1_PAD_CS4),
-+	IMX_PINCTRL_PIN(MX1_PAD_CS5),
-+	IMX_PINCTRL_PIN(MX1_PAD_A16),
-+	IMX_PINCTRL_PIN(MX1_PAD_A17),
-+	IMX_PINCTRL_PIN(MX1_PAD_A18),
-+	IMX_PINCTRL_PIN(MX1_PAD_A19),
-+	IMX_PINCTRL_PIN(MX1_PAD_A20),
-+	IMX_PINCTRL_PIN(MX1_PAD_A21),
-+	IMX_PINCTRL_PIN(MX1_PAD_A22),
-+	IMX_PINCTRL_PIN(MX1_PAD_A23),
-+	IMX_PINCTRL_PIN(MX1_PAD_SD_DAT0),
-+	IMX_PINCTRL_PIN(MX1_PAD_SD_DAT1),
-+	IMX_PINCTRL_PIN(MX1_PAD_SD_DAT2),
-+	IMX_PINCTRL_PIN(MX1_PAD_SD_DAT3),
-+	IMX_PINCTRL_PIN(MX1_PAD_SD_SCLK),
-+	IMX_PINCTRL_PIN(MX1_PAD_SD_CMD),
-+	IMX_PINCTRL_PIN(MX1_PAD_SIM_SVEN),
-+	IMX_PINCTRL_PIN(MX1_PAD_SIM_PD),
-+	IMX_PINCTRL_PIN(MX1_PAD_SIM_TX),
-+	IMX_PINCTRL_PIN(MX1_PAD_SIM_RX),
-+	IMX_PINCTRL_PIN(MX1_PAD_SIM_CLK),
-+	IMX_PINCTRL_PIN(MX1_PAD_USBD_AFE),
-+	IMX_PINCTRL_PIN(MX1_PAD_USBD_OE),
-+	IMX_PINCTRL_PIN(MX1_PAD_USBD_RCV),
-+	IMX_PINCTRL_PIN(MX1_PAD_USBD_SUSPND),
-+	IMX_PINCTRL_PIN(MX1_PAD_USBD_VP),
-+	IMX_PINCTRL_PIN(MX1_PAD_USBD_VM),
-+	IMX_PINCTRL_PIN(MX1_PAD_USBD_VPO),
-+	IMX_PINCTRL_PIN(MX1_PAD_USBD_VMO),
-+	IMX_PINCTRL_PIN(MX1_PAD_UART2_CTS),
-+	IMX_PINCTRL_PIN(MX1_PAD_UART2_RTS),
-+	IMX_PINCTRL_PIN(MX1_PAD_UART2_TXD),
-+	IMX_PINCTRL_PIN(MX1_PAD_UART2_RXD),
-+	IMX_PINCTRL_PIN(MX1_PAD_SSI_RXFS),
-+	IMX_PINCTRL_PIN(MX1_PAD_SSI_RXCLK),
-+	IMX_PINCTRL_PIN(MX1_PAD_SSI_RXDAT),
-+	IMX_PINCTRL_PIN(MX1_PAD_SSI_TXDAT),
-+	IMX_PINCTRL_PIN(MX1_PAD_SSI_TXFS),
-+	IMX_PINCTRL_PIN(MX1_PAD_SSI_TXCLK),
-+	IMX_PINCTRL_PIN(MX1_PAD_UART1_CTS),
-+	IMX_PINCTRL_PIN(MX1_PAD_UART1_RTS),
-+	IMX_PINCTRL_PIN(MX1_PAD_UART1_TXD),
-+	IMX_PINCTRL_PIN(MX1_PAD_UART1_RXD),
-+	IMX_PINCTRL_PIN(MX1_PAD_SPI1_RDY),
-+	IMX_PINCTRL_PIN(MX1_PAD_SPI1_SCLK),
-+	IMX_PINCTRL_PIN(MX1_PAD_SPI1_SS),
-+	IMX_PINCTRL_PIN(MX1_PAD_SPI1_MISO),
-+	IMX_PINCTRL_PIN(MX1_PAD_SPI1_MOSI),
-+	IMX_PINCTRL_PIN(MX1_PAD_BT13),
-+	IMX_PINCTRL_PIN(MX1_PAD_BT12),
-+	IMX_PINCTRL_PIN(MX1_PAD_BT11),
-+	IMX_PINCTRL_PIN(MX1_PAD_BT10),
-+	IMX_PINCTRL_PIN(MX1_PAD_BT9),
-+	IMX_PINCTRL_PIN(MX1_PAD_BT8),
-+	IMX_PINCTRL_PIN(MX1_PAD_BT7),
-+	IMX_PINCTRL_PIN(MX1_PAD_BT6),
-+	IMX_PINCTRL_PIN(MX1_PAD_BT5),
-+	IMX_PINCTRL_PIN(MX1_PAD_BT4),
-+	IMX_PINCTRL_PIN(MX1_PAD_BT3),
-+	IMX_PINCTRL_PIN(MX1_PAD_BT2),
-+	IMX_PINCTRL_PIN(MX1_PAD_BT1),
-+	IMX_PINCTRL_PIN(MX1_PAD_LSCLK),
-+	IMX_PINCTRL_PIN(MX1_PAD_REV),
-+	IMX_PINCTRL_PIN(MX1_PAD_CLS),
-+	IMX_PINCTRL_PIN(MX1_PAD_PS),
-+	IMX_PINCTRL_PIN(MX1_PAD_SPL_SPR),
-+	IMX_PINCTRL_PIN(MX1_PAD_CONTRAST),
-+	IMX_PINCTRL_PIN(MX1_PAD_ACD_OE),
-+	IMX_PINCTRL_PIN(MX1_PAD_LP_HSYNC),
-+	IMX_PINCTRL_PIN(MX1_PAD_FLM_VSYNC),
-+	IMX_PINCTRL_PIN(MX1_PAD_LD0),
-+	IMX_PINCTRL_PIN(MX1_PAD_LD1),
-+	IMX_PINCTRL_PIN(MX1_PAD_LD2),
-+	IMX_PINCTRL_PIN(MX1_PAD_LD3),
-+	IMX_PINCTRL_PIN(MX1_PAD_LD4),
-+	IMX_PINCTRL_PIN(MX1_PAD_LD5),
-+	IMX_PINCTRL_PIN(MX1_PAD_LD6),
-+	IMX_PINCTRL_PIN(MX1_PAD_LD7),
-+	IMX_PINCTRL_PIN(MX1_PAD_LD8),
-+	IMX_PINCTRL_PIN(MX1_PAD_LD9),
-+	IMX_PINCTRL_PIN(MX1_PAD_LD10),
-+	IMX_PINCTRL_PIN(MX1_PAD_LD11),
-+	IMX_PINCTRL_PIN(MX1_PAD_LD12),
-+	IMX_PINCTRL_PIN(MX1_PAD_LD13),
-+	IMX_PINCTRL_PIN(MX1_PAD_LD14),
-+	IMX_PINCTRL_PIN(MX1_PAD_LD15),
-+	IMX_PINCTRL_PIN(MX1_PAD_TMR2OUT),
-+};
-+
-+static struct imx1_pinctrl_soc_info imx1_pinctrl_info = {
-+	.pins	= imx1_pinctrl_pads,
-+	.npins	= ARRAY_SIZE(imx1_pinctrl_pads),
-+};
-+
-+static int __init imx1_pinctrl_probe(struct platform_device *pdev)
-+{
-+	return imx1_pinctrl_core_probe(pdev, &imx1_pinctrl_info);
-+}
-+
-+static const struct of_device_id imx1_pinctrl_of_match[] = {
-+	{ .compatible = "fsl,imx1-iomuxc", },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, imx1_pinctrl_of_match);
-+
-+static struct platform_driver imx1_pinctrl_driver = {
-+	.driver	= {
-+		.name		= "imx1-pinctrl",
-+		.owner		= THIS_MODULE,
-+		.of_match_table	= imx1_pinctrl_of_match,
-+	},
-+	.remove	= imx1_pinctrl_core_remove,
-+};
-+module_platform_driver_probe(imx1_pinctrl_driver, imx1_pinctrl_probe);
-+
-+MODULE_AUTHOR("Alexander Shiyan <shc_work@mail.ru>");
-+MODULE_DESCRIPTION("Freescale i.MX1 pinctrl driver");
-+MODULE_LICENSE("GPL");
+ 	if (!TestSetPageMlocked(page)) {
+-		mod_zone_page_state(page_zone(page), NR_MLOCK,
++		__mod_zone_page_state(page_zone(page), NR_MLOCK,
+ 				    hpage_nr_pages(page));
+ 		count_vm_event(UNEVICTABLE_PGMLOCKED);
+ 	}
 -- 
-1.8.3.2
+2.0.0-rc1
 
