@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310AbaEIH2n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 03:28:43 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:39720 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938AbaEIH2m (ORCPT
+	id S1752903AbaEIHc7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 03:32:59 -0400
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:48266 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751055AbaEIHc5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 03:28:42 -0400
-Date: Fri, 9 May 2014 10:28:01 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Julian Andres Klode <jak@jak-linux.org>,
-        Randy Dunlap <rdunlap@infradead.org>, devel@driverdev.osuosl.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
-Subject: Re: [patch v2] Documentation/email-clients.txt: add a section about
- git
-Message-ID: <20140509072801.GI26890@mwanda>
-References: <536A5A1E.6070004@codeaurora.org>
- <20140508084412.GA20398@mwanda>
- <20140508090508.GA16423@jak-x230>
- <CAJd=RBBNbJnTsu=73o9Yy4dgVw2zUJR9Cc5=eZB+U+WqJ=4KDg@mail.gmail.com>
+	Fri, 9 May 2014 03:32:57 -0400
+Date: Fri, 9 May 2014 10:32:52 +0300
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: m.chehab@samsung.com, linux-dev@sensoray.com, hans.verkuil@cisco.com,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [media] s2255drv: fix memory leak s2255_probe()
+Message-ID: <20140509073252.GI8753@valkosipuli.retiisi.org.uk>
+References: <20140508225718.GA24276@devel.8.8.4.4>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJd=RBBNbJnTsu=73o9Yy4dgVw2zUJR9Cc5=eZB+U+WqJ=4KDg@mail.gmail.com>
+In-Reply-To: <20140508225718.GA24276@devel.8.8.4.4>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 05:28:46PM +0800, Hillf Danton wrote:
-> And a howto to tame gmail is doule apprecaited.
+Hi Daeseok,
 
-There is actually a gmail section in the man page.  `man git send-email`
-It's a the bottom.
+Thanks for the update! :-)
 
+On Fri, May 09, 2014 at 07:57:18AM +0900, Daeseok Youn wrote:
+> smatch says:
+>  drivers/media/usb/s2255/s2255drv.c:2246 s2255_probe() warn:
+> possible memory leak of 'dev'
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+> V2: use the same pattern for error handling.
+> 
+>  drivers/media/usb/s2255/s2255drv.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/usb/s2255/s2255drv.c b/drivers/media/usb/s2255/s2255drv.c
+> index 1d4ba2b..3193474 100644
+> --- a/drivers/media/usb/s2255/s2255drv.c
+> +++ b/drivers/media/usb/s2255/s2255drv.c
+> @@ -2243,7 +2243,7 @@ static int s2255_probe(struct usb_interface *interface,
+>  	dev->cmdbuf = kzalloc(S2255_CMDBUF_SIZE, GFP_KERNEL);
+>  	if (dev->cmdbuf == NULL) {
+>  		s2255_dev_err(&interface->dev, "out of memory\n");
+> -		return -ENOMEM;
+> +		goto errorFWDATA1;
+>  	}
+>  
+>  	atomic_set(&dev->num_channels, 0);
 
-EXAMPLE
-   Use gmail as the smtp server
-       To use git send-email to send your patches through the GMail SMTP
-       server, edit ~/.gitconfig to specify your account settings:
+Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
 
-           [sendemail]
-                   smtpencryption = tls
-                   smtpserver = smtp.gmail.com
-                   smtpuser = yourname@gmail.com
-                   smtpserverport = 587
+-- 
+Kind regards,
 
-       Once your commits are ready to be sent to the mailing list, run the
-       following commands:
-
-           $ git format-patch --cover-letter -M origin/master -o outgoing/
-           $ edit outgoing/0000-*
-           $ git send-email outgoing/*
-
-       Note: the following perl modules are required Net::SMTP::SSL,
-       MIME::Base64 and Authen::SASL
-
-
-regards,
-dan carpenter
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
