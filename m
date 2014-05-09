@@ -1,90 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311AbaEIKzF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 06:55:05 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:44619 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753527AbaEIKzD (ORCPT
+	id S1756545AbaEIK4p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 06:56:45 -0400
+Received: from smtp-vbr14.xs4all.nl ([194.109.24.34]:2264 "EHLO
+	smtp-vbr14.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756508AbaEIK4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 06:55:03 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Bryan Evenson <bevenson@melinkcorp.com>
-Cc: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Mark Roszko <mark.roszko@gmail.com>, Johan Hovold <jhovold@gmail.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Andrew Morton <akpm@linux-foundation.org>, <stable@vger.kernel.org>
-Subject: [PATCH v2] ARM: at91: fix startup rtc irq mask for sam9g25 and sam9g35 SoCs
-Date: Fri,  9 May 2014 12:54:59 +0200
-Message-Id: <1399632899-2075-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
+	Fri, 9 May 2014 06:56:42 -0400
+Message-ID: <536CB401.4090403@xs4all.nl>
+Date: Fri, 09 May 2014 12:54:57 +0200
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+MIME-Version: 1.0
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Andy Walls <awalls@md.metrocast.net>
+CC: Mauro Carvalho Chehab <m.chehab@samsung.com>, ivtv-devel@ivtvdriver.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: Re: [PATCH] [media] ivtv: avoid GFP_KERNEL in atomic context
+References: <1398442477-28876-1-git-send-email-khoroshilov@ispras.ru>
+In-Reply-To: <1398442477-28876-1-git-send-email-khoroshilov@ispras.ru>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sam9g25 and sam9g35 have the following errata:
-"RTC: Interrupt Mask Register cannot be used
- Interrupt Mask Register read always returns 0."
+On 04/25/2014 06:14 PM, Alexey Khoroshilov wrote:
+> ivtv_yuv_init() is used in atomic context,
+> so memory allocation should be done keeping that in mind.
+> 
+> Call graph for ivtv_yuv_init() is as follows:
+> - ivtv_yuv_next_free()
+>   - ivtv_yuv_prep_frame() [ioctl handler]
+>   - ivtv_yuv_setup_stream_frame()
+>     - ivtv_irq_dec_data_req() -> ivtv_irq_handler() [ATOMIC CONTEXT]
+>     - ivtv_yuv_udma_stream_frame() [with mutex held]
+>     - ivtv_write() [with mutex held]
+> 
+> The patch adds gfp_t argument and implements its usage according to the context.
+> 
+> Found by Linux Driver Verification project (linuxtesting.org).
 
-Hence we should not rely on what IMR claims about already masked irqs
-and just disable all the IRQs.
+I am hesitant to take this patch. I'm fairly certain that the call from the irq handler
+will never have to allocate memory (it will always be allocated already) so is this
+patch really needed? On the other hand, it certainly won't break anything.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: <stable@vger.kernel.org> # v3.10+
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
-Changes since v1:
-- use a macro to define IRQs bitmask
-- read IMR register to ensure the write to IDR has been flushed
-- quote atmel's datasheet errata in commit message
-- comment the code to describe why we're not using IMR to disable
-  the interrupts
+Andy, what is your opinion on this?
 
- arch/arm/mach-at91/sysirq_mask.c | 21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+Regards,
 
-diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-at91/sysirq_mask.c
-index 2ba694f..4e2cd0d 100644
---- a/arch/arm/mach-at91/sysirq_mask.c
-+++ b/arch/arm/mach-at91/sysirq_mask.c
-@@ -25,8 +25,9 @@
- 
- #include "generic.h"
- 
--#define AT91_RTC_IDR	0x24	/* Interrupt Disable Register */
--#define AT91_RTC_IMR	0x28	/* Interrupt Mask Register */
-+#define AT91_RTC_IDR		0x24	/* Interrupt Disable Register */
-+#define AT91_RTC_IMR		0x28	/* Interrupt Mask Register */
-+#define AT91_RTC_IRQ_MASK	0x1f	/* Available IRQs mask */
- 
- void __init at91_sysirq_mask_rtc(u32 rtc_base)
- {
-@@ -37,12 +38,16 @@ void __init at91_sysirq_mask_rtc(u32 rtc_base)
- 	if (!base)
- 		return;
- 
--	mask = readl_relaxed(base + AT91_RTC_IMR);
--	if (mask) {
--		pr_info("AT91: Disabling rtc irq\n");
--		writel_relaxed(mask, base + AT91_RTC_IDR);
--		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
--	}
-+	/*
-+	 * The sam9g25 and sam9g35 have the following errata:
-+	 * "RTC: Interrupt Mask Register cannot be used
-+	 *  Interrupt Mask Register read always returns 0."
-+	 *
-+	 * Hence we're not relying on IMR values to disable
-+	 * interrupts.
-+	 */
-+	writel_relaxed(AT91_RTC_IRQ_MASK, base + AT91_RTC_IDR);
-+	(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
- 
- 	iounmap(base);
- }
--- 
-1.8.3.2
+	Hans
+
+> 
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> ---
+>  drivers/media/pci/ivtv/ivtv-fileops.c |  2 +-
+>  drivers/media/pci/ivtv/ivtv-irq.c     |  2 +-
+>  drivers/media/pci/ivtv/ivtv-yuv.c     | 16 ++++++++--------
+>  drivers/media/pci/ivtv/ivtv-yuv.h     |  2 +-
+>  4 files changed, 11 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/media/pci/ivtv/ivtv-fileops.c b/drivers/media/pci/ivtv/ivtv-fileops.c
+> index 9caffd8aa995..2e8885c245e7 100644
+> --- a/drivers/media/pci/ivtv/ivtv-fileops.c
+> +++ b/drivers/media/pci/ivtv/ivtv-fileops.c
+> @@ -689,7 +689,7 @@ retry:
+>  			int got_sig;
+>  
+>  			if (mode == OUT_YUV)
+> -				ivtv_yuv_setup_stream_frame(itv);
+> +				ivtv_yuv_setup_stream_frame(itv, GFP_KERNEL);
+>  
+>  			mutex_unlock(&itv->serialize_lock);
+>  			prepare_to_wait(&itv->dma_waitq, &wait, TASK_INTERRUPTIBLE);
+> diff --git a/drivers/media/pci/ivtv/ivtv-irq.c b/drivers/media/pci/ivtv/ivtv-irq.c
+> index 19a7c9b990a3..7a44f6b7aed4 100644
+> --- a/drivers/media/pci/ivtv/ivtv-irq.c
+> +++ b/drivers/media/pci/ivtv/ivtv-irq.c
+> @@ -822,7 +822,7 @@ static void ivtv_irq_dec_data_req(struct ivtv *itv)
+>  	}
+>  	else {
+>  		if (test_bit(IVTV_F_I_DEC_YUV, &itv->i_flags))
+> -			ivtv_yuv_setup_stream_frame(itv);
+> +			ivtv_yuv_setup_stream_frame(itv, GFP_ATOMIC);
+>  		clear_bit(IVTV_F_S_NEEDS_DATA, &s->s_flags);
+>  		ivtv_queue_move(s, &s->q_full, NULL, &s->q_predma, itv->dma_data_req_size);
+>  		ivtv_dma_stream_dec_prepare(s, itv->dma_data_req_offset + IVTV_DECODER_OFFSET, 0);
+> diff --git a/drivers/media/pci/ivtv/ivtv-yuv.c b/drivers/media/pci/ivtv/ivtv-yuv.c
+> index 2ad65eb29832..9bf47b89f8a0 100644
+> --- a/drivers/media/pci/ivtv/ivtv-yuv.c
+> +++ b/drivers/media/pci/ivtv/ivtv-yuv.c
+> @@ -854,7 +854,7 @@ void ivtv_yuv_work_handler(struct ivtv *itv)
+>  	yi->old_frame_info = f;
+>  }
+>  
+> -static void ivtv_yuv_init(struct ivtv *itv)
+> +static void ivtv_yuv_init(struct ivtv *itv, gfp_t gfp)
+>  {
+>  	struct yuv_playback_info *yi = &itv->yuv_info;
+>  
+> @@ -936,7 +936,7 @@ static void ivtv_yuv_init(struct ivtv *itv)
+>  	}
+>  
+>  	/* We need a buffer for blanking when Y plane is offset - non-fatal if we can't get one */
+> -	yi->blanking_ptr = kzalloc(720 * 16, GFP_KERNEL|__GFP_NOWARN);
+> +	yi->blanking_ptr = kzalloc(720 * 16, gfp|__GFP_NOWARN);
+>  	if (yi->blanking_ptr) {
+>  		yi->blanking_dmaptr = pci_map_single(itv->pdev, yi->blanking_ptr, 720*16, PCI_DMA_TODEVICE);
+>  	} else {
+> @@ -952,13 +952,13 @@ static void ivtv_yuv_init(struct ivtv *itv)
+>  }
+>  
+>  /* Get next available yuv buffer on PVR350 */
+> -static void ivtv_yuv_next_free(struct ivtv *itv)
+> +static void ivtv_yuv_next_free(struct ivtv *itv, gfp_t gfp)
+>  {
+>  	int draw, display;
+>  	struct yuv_playback_info *yi = &itv->yuv_info;
+>  
+>  	if (atomic_read(&yi->next_dma_frame) == -1)
+> -		ivtv_yuv_init(itv);
+> +		ivtv_yuv_init(itv, gfp);
+>  
+>  	draw = atomic_read(&yi->next_fill_frame);
+>  	display = atomic_read(&yi->next_dma_frame);
+> @@ -1119,12 +1119,12 @@ static int ivtv_yuv_udma_frame(struct ivtv *itv, struct ivtv_dma_frame *args)
+>  }
+>  
+>  /* Setup frame according to V4L2 parameters */
+> -void ivtv_yuv_setup_stream_frame(struct ivtv *itv)
+> +void ivtv_yuv_setup_stream_frame(struct ivtv *itv, gfp_t gfp)
+>  {
+>  	struct yuv_playback_info *yi = &itv->yuv_info;
+>  	struct ivtv_dma_frame dma_args;
+>  
+> -	ivtv_yuv_next_free(itv);
+> +	ivtv_yuv_next_free(itv, gfp);
+>  
+>  	/* Copy V4L2 parameters to an ivtv_dma_frame struct... */
+>  	dma_args.y_source = NULL;
+> @@ -1151,7 +1151,7 @@ int ivtv_yuv_udma_stream_frame(struct ivtv *itv, void __user *src)
+>  	struct ivtv_dma_frame dma_args;
+>  	int res;
+>  
+> -	ivtv_yuv_setup_stream_frame(itv);
+> +	ivtv_yuv_setup_stream_frame(itv, GFP_KERNEL);
+>  
+>  	/* We only need to supply source addresses for this */
+>  	dma_args.y_source = src;
+> @@ -1171,7 +1171,7 @@ int ivtv_yuv_prep_frame(struct ivtv *itv, struct ivtv_dma_frame *args)
+>  	int res;
+>  
+>  /*	IVTV_DEBUG_INFO("yuv_prep_frame\n"); */
+> -	ivtv_yuv_next_free(itv);
+> +	ivtv_yuv_next_free(itv, GFP_KERNEL);
+>  	ivtv_yuv_setup_frame(itv, args);
+>  	/* Wait for frame DMA. Note that serialize_lock is locked,
+>  	   so to allow other processes to access the driver while
+> diff --git a/drivers/media/pci/ivtv/ivtv-yuv.h b/drivers/media/pci/ivtv/ivtv-yuv.h
+> index ca5173fbf006..06753cfe64f3 100644
+> --- a/drivers/media/pci/ivtv/ivtv-yuv.h
+> +++ b/drivers/media/pci/ivtv/ivtv-yuv.h
+> @@ -34,7 +34,7 @@
+>  extern const u32 yuv_offset[IVTV_YUV_BUFFERS];
+>  
+>  int ivtv_yuv_filter_check(struct ivtv *itv);
+> -void ivtv_yuv_setup_stream_frame(struct ivtv *itv);
+> +void ivtv_yuv_setup_stream_frame(struct ivtv *itv, gfp_t gfp);
+>  int ivtv_yuv_udma_stream_frame(struct ivtv *itv, void __user *src);
+>  void ivtv_yuv_frame_complete(struct ivtv *itv);
+>  int ivtv_yuv_prep_frame(struct ivtv *itv, struct ivtv_dma_frame *args);
+> 
 
