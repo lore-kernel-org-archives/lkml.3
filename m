@@ -1,126 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208AbaEIM3t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 08:29:49 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:59447 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775AbaEIM3s (ORCPT
+	id S1752733AbaEIMjM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 08:39:12 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:61660 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712AbaEIMjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 08:29:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <536CBC5E.5070202@hurleysoftware.com>
-References: <536A339D.9030606@hurleysoftware.com>
-	<20140507140558.GA26294@ks3318809.kimsufi.com>
-	<536A4454.5020404@hurleysoftware.com>
-	<CACRpkdZ_Wz2QLbdbXEL9CWy+=tcVwjVjVqQgYw7_dy-5FwxB9Q@mail.gmail.com>
-	<20140509072050.GG5767@lee--X1>
-	<536CBC5E.5070202@hurleysoftware.com>
-Date: Fri, 9 May 2014 08:29:47 -0400
-X-Google-Sender-Auth: DtMFkfCUcveHqIzA_dkIIxj625A
-Message-ID: <CA+5PVA42QVXW_=C3z=i7mvv4RBeuaX64RxuWW8-iZYi0um9big@mail.gmail.com>
-Subject: Re: [3.15-rc3] BUG: null ptr dereference in ichx_gpio_request_regions()
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
-        Vincent Donnefort <vdonnefort@gmail.com>,
-        Linux kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 9 May 2014 08:39:10 -0400
+X-AuditID: cbfec7f5-b7fae6d000004d6d-d9-536ccc6b5e2b
+Message-id: <536CCC78.6050806@samsung.com>
+Date: Fri, 09 May 2014 14:39:20 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Mel Gorman <mgorman@suse.de>, Laura Abbott <lauraa@codeaurora.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        "'Tomasz Stanislawski'" <t.stanislaws@samsung.com>
+Subject: Re: [RFC PATCH 0/3] Aggressively allocate the pages on cma reserved
+ memory
+References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com>
+In-reply-to: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsVy+t/xa7rZZ3KCDebOFrWYs34Nm8XGGetZ
+	LVZv8rU4OHsJk8XK7mY2i7NNb9gttnfOYLe4vGsOm8W9Nf9ZLSa/e8ZoseB4C6vFsq/v2S3+
+	XlnPYjGv/SWrA5/H4TfvmT0u9/UyeWxa1cnmsenTJHaPrrdXmDxOzPjN4rHuzysmj/f7rrJ5
+	9G1Zxeix+XS1x+dNcgHcUVw2Kak5mWWpRfp2CVwZX36fZSp4Ilxx+6FNA+MN/i5GDg4JAROJ
+	lw3uXYycQKaYxIV769lAbCGBpYwSvY2lXYxcQPYnRombbb3sIAleAS2J/e8ngRWxCKhKXFq1
+	iQnEZhMwlOh62wUWFxWIkdj9eSEjRL2gxI/J91hAbBGBUIm5HavAbGaBs8wS1z4mgtjCQPEd
+	q3ZCLXaVWN2xC6yXU8BNYnbrJ6h6M4lHLeuYIWx5ic1r3jJPYBSYhWTFLCRls5CULWBkXsUo
+	mlqaXFCclJ5rpFecmFtcmpeul5yfu4kREl9fdzAuPWZ1iFGAg1GJh3eBTEawEGtiWXFl7iFG
+	CQ5mJRFezcM5wUK8KYmVValF+fFFpTmpxYcYmTg4pRoYdXuFeN7YxO8pPhId+f1B/VrlCYwh
+	/LEfTqQkZe0y+mlyeEVt5U3W72E8vsaFCd8LG45uUNbu1PefPbv14T+N1pUhFrMWlBma34u7
+	FjhZuDX/2c+GSV6OVzZFNfidfckVmT+Dr6A+Ou+O07ZLCw5v2Cx6wufCme8PLz2SOdp95D7H
+	Os+60goTJZbijERDLeai4kQABO/zJ40CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 9, 2014 at 7:30 AM, Peter Hurley <peter@hurleysoftware.com> wrote:
-> On 05/09/2014 03:20 AM, Lee Jones wrote:
->>
->> On Thu, 08 May 2014, Linus Walleij wrote:
->>
->>> On Wed, May 7, 2014 at 4:33 PM, Peter Hurley <peter@hurleysoftware.com>
->>> wrote:
->>>>
->>>> Hi Vincent,
->>>>
->>>> On 05/07/2014 10:05 AM, Vincent Donnefort wrote:
->>>>>
->>>>>
->>>>> Hello Peter,
->>>>
->>>>
->>>>
->>>>>> This is almost certainly caused by the uninitialized regs ptr
->>>>>> in the ich6_desc struct (i3100_desc struct has the same problem)
->>>>>> introduced in this commit:
->>>>>>
->>>>>> commit bb62a35bd5d96e506af0ea8dd145480b9172a2a6
->>>>>> Author: Vincent Donnefort <vdonnefort@gmail.com>
->>>>>> Date:   Fri Feb 14 15:01:56 2014 +0100
->>>>>>
->>>>>>       gpio: ich: Add support for multiple register addresses
->>>>>>
->>>>>>       This patch introduces regs and reglen pointers which allow a
->>>>>> chipset
->>>>>> to have
->>>>>>       register addresses differing from ICH ones.
->>>>>>
->>>>>>       Acked-by: Linus Walleij <linus.walleij@linaro.org>
->>>>>>       Signed-off-by: Vincent Donnefort <vdonnefort@gmail.com>
->>>>>>       Signed-off-by: Lee Jones <lee.jones@linaro.org>
->>>>>>
->>>>>
->>>>> Yes indeed, this must be linked to this thread
->>>>> https://lkml.org/lkml/2014/4/15/292
->>>>
->>>>
->>>>
->>>> Thanks for the link.
->>>>
->>>> I searched through LKML but without the driver name or the offending
->>>> function
->>>> in the commit message I couldn't find it.
->>>>
->>>> Linus,
->>>>
->>>> What tree is this bug fix trapped in? I see it didn't make -rc4 either.
->>>
->>>
->>> Since the last signoff is Lee I guess it's in the MFD tree?
->>
->>
->> This patch is in Mainline.
->>
->> Search for $SUBJECT.
+Hello,
+
+On 2014-05-08 02:32, Joonsoo Kim wrote:
+> This series tries to improve CMA.
 >
+> CMA is introduced to provide physically contiguous pages at runtime
+> without reserving memory area. But, current implementation works like as
+> reserving memory approach, because allocation on cma reserved region only
+> occurs as fallback of migrate_movable allocation. We can allocate from it
+> when there is no movable page. In that situation, kswapd would be invoked
+> easily since unmovable and reclaimable allocation consider
+> (free pages - free CMA pages) as free memory on the system and free memory
+> may be lower than high watermark in that case. If kswapd start to reclaim
+> memory, then fallback allocation doesn't occur much.
 >
-> Hmmm. Search for '[PATCH] gpio: ich: set regs and reglen for i3100 and ich6
-> chipset'
-> (which is the bug fix for the buggy commit) turns up nothing in mainline.
+> In my experiment, I found that if system memory has 1024 MB memory and
+> has 512 MB reserved memory for CMA, kswapd is mostly invoked around
+> the 512MB free memory boundary. And invoked kswapd tries to make free
+> memory until (free pages - free CMA pages) is higher than high watermark,
+> so free memory on meminfo is moving around 512MB boundary consistently.
+>
+> To fix this problem, we should allocate the pages on cma reserved memory
+> more aggressively and intelligenetly. Patch 2 implements the solution.
+> Patch 1 is the simple optimization which remove useless re-trial and patch 3
+> is for removing useless alloc flag, so these are not important.
+> See patch 2 for more detailed description.
+>
+> This patchset is based on v3.15-rc4.
 
-It's not in mainline (as you've found).
+Thanks for posting those patches. It basically reminds me the following 
+discussion:
+http://thread.gmane.org/gmane.linux.kernel/1391989/focus=1399524
 
-> This bug was reported on April 14 in -rc1 by Eric Paris here
-> http://lkml.iu.edu/hypermail/linux/kernel/1404.1/03833.html
-> and _fixed_ a day later on April 15 by Vincent Donnefort here
-> https://lkml.org/lkml/2014/4/15/292
-> It was signed off by Linus Walleij on the same day here
-> https://lkml.org/lkml/2014/4/22/1128
+Your approach is basically the same. I hope that your patches can be 
+improved
+in such a way that they will be accepted by mm maintainers. I only 
+wonder if the
+third patch is really necessary. Without it kswapd wakeup might be still 
+avoided
+in some cases.
 
-To add to this, Fedora picked up the patch shortly after that as an
-add-on patch to 3.15-rcX.  We are still carrying that separate patch
-on top of 3.15-rc4.
+> Thanks.
+> Joonsoo Kim (3):
+>    CMA: remove redundant retrying code in __alloc_contig_migrate_range
+>    CMA: aggressively allocate the pages on cma reserved memory when not
+>      used
+>    CMA: always treat free cma pages as non-free on watermark checking
+>
+>   include/linux/mmzone.h |    6 +++
+>   mm/compaction.c        |    4 --
+>   mm/internal.h          |    3 +-
+>   mm/page_alloc.c        |  117 +++++++++++++++++++++++++++++++++++++++---------
+>   4 files changed, 102 insertions(+), 28 deletions(-)
+>
 
-> Since this bug fix never made it to mainline, I re-discovered
-> the bug in -rc3 and reported it here
-> http://lists-archives.com/linux-kernel/28051348-bug-null-ptr-dereference-in-ichx_gpio_request_regions.html
-> (presumably, you received a copy of that email).
-> Vincent replied with the link to the previous bug fix.
+Best regards
+-- 
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
 
-Right, still missing in -rc4.
-
-> Since that time, I have been trying to find in which tree that
-> bug fix is stuck, but I just keep getting replies which show
-> an uncareful reading of this thread.
-
-Yep.
-
-Someone please get this into the mainline tree.
-
-josh
