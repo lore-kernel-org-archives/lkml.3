@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124AbaEIHy5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 03:54:57 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40541 "EHLO mail.skyhub.de"
+	id S1755936AbaEIH43 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 03:56:29 -0400
+Received: from mga03.intel.com ([143.182.124.21]:2457 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751221AbaEIHy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 03:54:56 -0400
-Date: Fri, 9 May 2014 09:54:52 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andres Freund <andres@anarazel.de>
-Cc: Borislav Petkov <bp@suse.de>, x86@kernel.org, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/2] x86: Fix typo preventing msr_set/clear_bit from
- having an effect
-Message-ID: <20140509075452.GA16058@pd.tnic>
-References: <1399598957-7011-1-git-send-email-andres@anarazel.de>
- <1399598957-7011-2-git-send-email-andres@anarazel.de>
+	id S1755323AbaEIH4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 03:56:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1016,1389772800"; 
+   d="scan'208";a="429848765"
+Message-ID: <536C8CCC.8010600@linux.intel.com>
+Date: Fri, 09 May 2014 11:07:40 +0300
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1399598957-7011-2-git-send-email-andres@anarazel.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+CC: Julius Werner <jwerner@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [regression 3.15-rc3] Resume from s4 broken by 1f81b6d22a5980955b01e08cf27fb745dc9b686f
+References: <20140505180530.GA18465@intel.com> <CAODwPW_57G+Lebe2Xarem9P-L6ePtAaZfy5kpNVEtgkWbc0FWw@mail.gmail.com> <20140506114126.GB18465@intel.com> <536A39C0.5060205@linux.intel.com> <20140507150240.GK18465@intel.com>
+In-Reply-To: <20140507150240.GK18465@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 03:29:16AM +0200, Andres Freund wrote:
-> Due to a typo the msr accessor function introduced in
-> 22085a66c2fab6cf9b9393c056a3600a6b4735de didn't have any lasting
-> effects because they accidentally wrote the old value back.
-> 
-> After c0a639ad0bc6b178b46996bd1f821a04643e2bde this at the very least
-> this causes cpuid limits not to be lifted on some cpus leading to
-> missing capabilities for those.
-> 
-> Signed-off-by: Andres Freund <andres@anarazel.de>
-> Cc: Borislav Petkov <bp@suse.de>
-> Cc: H. Peter Anvin <hpa@linux.intel.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  arch/x86/lib/msr.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/lib/msr.c b/arch/x86/lib/msr.c
-> index db9db44..4362373 100644
-> --- a/arch/x86/lib/msr.c
-> +++ b/arch/x86/lib/msr.c
-> @@ -76,7 +76,7 @@ static inline int __flip_bit(u32 msr, u8 bit, bool set)
->  	if (m1.q == m.q)
->  		return 0;
->  
-> -	err = msr_write(msr, &m);
-> +	err = msr_write(msr, &m1);
->  	if (err)
->  		return err;
 
-Good catch, thanks, and sorry about the screwup! :-[
+>> I can't see how this relates to Julius patch though, and I'm not sure yet why it
+>> only triggers when devices are connected to SS ports. Maybe just unlucky timing?
+>
+> I think the non-SS ports are connected to the EHCI controllers rather
+> than the XHCI controllers. So that explains at least one detail. And I
+> guess timing is as good an excuse as any why this gets exposed by the
+> patch in question.
 
-Acked-by: Borislav Petkov <bp@suse.de>
+That's right, sometimes I forget that there exists something else than xHCI.
 
--- 
-Regards/Gruss,
-    Boris.
+>
+>>
+>> Does this help?:
+>
+> Indeed it does. The machine just survived a dozen or so suspend+resume
+> cycles without a hitch. The bug was 100% reproducible on this machine,
+> so the fix seems solid.
+>
+> Tested-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+>
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Great, a patch with your Tested-by tag pushed to my tree at:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/mnyman/xhci.git for-usb-linus
+
+-Mathias
+
+
