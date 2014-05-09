@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617AbaEILxM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 07:53:12 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:43412 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754974AbaEILxJ (ORCPT
+	id S1756306AbaEIL5L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 07:57:11 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:60439 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754328AbaEIL5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 07:53:09 -0400
+	Fri, 9 May 2014 07:57:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAGsJ_4wOdD53Fkf+_CtDqSg5Yvz-1kwaWzMJb357uq5BL9_-7Q@mail.gmail.com>
+In-Reply-To: <CAGsJ_4zgQbsCZGXrAMqy6BbSvjtFUTYGw9px4UDRtUd=GUau=w@mail.gmail.com>
 References: <1398287792-19831-1-git-send-email-linus.walleij@linaro.org>
-	<1398287792-19831-2-git-send-email-linus.walleij@linaro.org>
-	<CAGsJ_4wOdD53Fkf+_CtDqSg5Yvz-1kwaWzMJb357uq5BL9_-7Q@mail.gmail.com>
-Date: Fri, 9 May 2014 13:53:08 +0200
-Message-ID: <CACRpkdbieXh8iHSCqai03vNbBZ2_2zV1SscXLY+4T9ZprWJEvQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] RFT: pinctrl: sirf: switch to using allocated state container
+	<1398287792-19831-3-git-send-email-linus.walleij@linaro.org>
+	<CAGsJ_4zgQbsCZGXrAMqy6BbSvjtFUTYGw9px4UDRtUd=GUau=w@mail.gmail.com>
+Date: Fri, 9 May 2014 13:57:06 +0200
+Message-ID: <CACRpkdYU4ZXg+sYpeUFDqOhGhar5uJJzQJwJxNBbWdAMDcmUKw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] RFT: pinctrl: sirf: move sgpio lock into state container
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Barry Song <baohua@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Barry Song <Baohua.Song@csr.com>,
@@ -25,28 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 1, 2014 at 2:29 PM, Barry Song <baohua@kernel.org> wrote:
+On Thu, May 1, 2014 at 2:40 PM, Barry Song <baohua@kernel.org> wrote:
 > 2014-04-24 5:16 GMT+08:00 Linus Walleij <linus.walleij@linaro.org>:
 
->> This rewrites the SIRF pinctrl driver to allocate a state container
->> for the GPIO chip, just as is done for the pin controller, and
->> use the gpiochip_add_pin_range() to add the range from the gpiochip
->> side rather than adding the range from the pinctrl side.
->>
->> All resulting changes are done in order to pass around a state
->> container rather than refer to a static global object.
+>> Instead of referring to a global static variable for the sgpio
+>> locking, use the state container to contain the lock.
 >>
 >> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 >
-> Linus, thanks! but this breaks prima2 pinctrl subsystem, do you have an idea?
-> otherwise i will do a debug to find the reason.
+> hi Linus, thanks! this looks very good only if we fix the
+> gpiochip_add_pin_range() failure in patch 1:
+>
+> [    0.231658] pinmux-sirf b0120000.pinctrl: initialized SIRFSOC pinmux driver
+> [    0.261200] bio: create slab <bio-0> at 0
+> [    0.268264] GPIO chip /axi/peri-iobg/pinctrl@b0120000: could not
+> create pin range
+> [    0.276142] pinmux-sirf b0120000.pinctrl: could not add gpiochip pin range
 
-Unfortunately no :-(
+Hm! This may mean that the pin controller is not there at this point,
+so the pin controller needs to be probed first, before the gpiochip
+and its range is probed.
 
-This is the downside of dry-coding ... I rely on others to help out.
+What happens if you do this:
 
-See it as a suggestion to what I think should be refactored and how,
-I'll keep it on a branch as some "TODO" item for the moment.
+diff --git a/drivers/pinctrl/sirf/pinctrl-sirf.c
+b/drivers/pinctrl/sirf/pinctrl-sirf.c
+index 76502aab2cb1..ce7c3552398f 100644
+--- a/drivers/pinctrl/sirf/pinctrl-sirf.c
++++ b/drivers/pinctrl/sirf/pinctrl-sirf.c
+@@ -950,7 +950,7 @@ static int __init sirfsoc_gpio_init(void)
+
+        return sirfsoc_gpio_probe(np);
+ }
+-subsys_initcall(sirfsoc_gpio_init);
++device_initcall(sirfsoc_gpio_init);
+
+ MODULE_AUTHOR("Rongjun Ying <rongjun.ying@csr.com>, "
+        "Yuping Luo <yuping.luo@csr.com>, "
+
 
 Yours,
 Linus Walleij
