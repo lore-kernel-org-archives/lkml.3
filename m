@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756601AbaEINwQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 09:52:16 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39288 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755531AbaEINwM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 09:52:12 -0400
-Date: Fri, 9 May 2014 14:51:53 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        sjg@chromium.org, grundler@chromium.org, linux-kernel@vger.kernel.org,
-        wsa@the-dreams.de, cpgs@samsung.com
-Message-ID: <20140509135153.GM12304@sirena.org.uk>
-References: <1398350916-885-1-git-send-email-ch.naveen@samsung.com>
- <20140424162558.GB12304@sirena.org.uk>
- <CAHfPSqB5+mLiC07jbEpeUgW63pZVk700SkYGxToO7GRAsFm_nQ@mail.gmail.com>
+	id S1756731AbaEINxG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 09:53:06 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40116 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756697AbaEINxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 09:53:02 -0400
+Date: Fri, 9 May 2014 15:52:59 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Thor Thayer <tthayer.linux@gmail.com>
+Cc: Thor Thayer <tthayer@altera.com>, Rob Herring <robherring2@gmail.com>,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
+        Rob Landley <rob@landley.net>, linux@arm.linux.org.uk,
+        Dinh Nguyen <dinguyen@altera.com>, dougthompson@xmission.com,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv3 3/3] edac: altera: Add EDAC support for Altera SDRAM
+Message-ID: <20140509135259.GC16260@pd.tnic>
+References: <1399330337-16748-1-git-send-email-tthayer@altera.com>
+ <1399330337-16748-4-git-send-email-tthayer@altera.com>
+ <20140508120524.GF12548@pd.tnic>
+ <CAF03EBecxtMr1670ktQKTAZX_kHeZWz1SwuEk373B99BoVjbDw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mpNcIJL4U0bEY9+B"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAHfPSqB5+mLiC07jbEpeUgW63pZVk700SkYGxToO7GRAsFm_nQ@mail.gmail.com>
-X-Cookie: You will be successful in your work.
+In-Reply-To: <CAF03EBecxtMr1670ktQKTAZX_kHeZWz1SwuEk373B99BoVjbDw@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] i2c: exynos5: Initialise Samsung High Speed I2C
- controller early
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 08, 2014 at 03:37:19PM -0500, Thor Thayer wrote:
+> Yes. Their reasoning is that they want to retain the rights and
+> warranty language with the file (just in case the COPYING file
+> changes).
 
---mpNcIJL4U0bEY9+B
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ok, thanks for checking up on this.
 
-On Fri, May 09, 2014 at 05:50:00PM +0530, Naveen Krishna Ch wrote:
-> On 24 April 2014 21:55, Mark Brown <broonie@kernel.org> wrote:
+> Yes. I tested using edac_core.edac_mc_panic_on_ue=1 from the command
+> line and it worked fine. I'll add a comment to clarify. BTW, thanks
+> for your help on that.
 
-> >> Such solution has been proposed by Mark Brown to fix the problem of
-> >> the regulators not beeing available on the peripheral device probe():
-> >> http://lists.infradead.org/pipermail/linux-arm-kernel/2010-March/011971.html
+Sure, but the question still remains: do you want to panic on
+uncorrectable errors by default or want the user to decide? I guess this
+is something you can answer for your hardware...
 
-> > What specifically is this needed for?  We *should* be able to use
-> > deferred probe for most things, but I know that not all subsystems are
-> > able to yet.
+> I considered using "volatile" variables, but decided against it after
+> I read Documentation/volatile-considered-harmful.txt and my situation
+> doesn't fit into the exemptions. Is there a better way to handle this?
 
-> DRM related drivers like DP, FIMD, HDMI, Mixer wants to be probed ASAP
-> during the boot.
-> The real problem comes when, one of these drivers do a regulator_get().
+Off the top of my head, I'd first look at compiler asm output to
+check what my compiler does with those writes and then take a look at
+employing the ACCESS_ONCE macro or something similar where we use the
+asm volatile() as an optimization stop for the compiler, among others.
 
-> If the physical supply  is not enabled/hookedup the regulator_get() call
-> assumes that physical supply is present and returns a
-> "dummy_regulator" (But, not an error).
+And then I'll look at asm again to make sure it does what it is supposed
+to do. Something to that effect, in any case...
 
-> Because of which, Display and several other devices fails to work.
+HTH.
 
-These drivers are buggy, if they geniunely expect and handle a missing
-supply then they should be using regulator_get_optional() to request the
-regulator and even if they don't the use of subsys_initcall() is not
-going to fix anything here - if a dummy regulator is going to be
-returned the time things are probed won't make a difference.
+-- 
+Regards/Gruss,
+    Boris.
 
-> I2C, I2C_TUNNEL, SPI and DMA drivers are required as subsys_initcall()
-> for similar reason.
-
-What makes you say this?  Typically those drivers don't use regulators
-at all.
-
---mpNcIJL4U0bEY9+B
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTbN12AAoJELSic+t+oim9tt4P/ianGaD5q8ymN951nJdeJi/J
-/GR9nLcBmKEbVGjFZVNI/q+zGralwSAdMj5P8Nc7MZyuY8A9PEs+GMdqopeTQtdV
-sh7oO6UhwdUDzOFxTncfRztnfpkYbeLj3O0kgLHimhi8XWgGF6nZfEHHg5/A2u85
-dNYw5jRYM6A2621K0seUOURpJWugKC2bJa4nKEigV3El5coO2eZaVbpdlS7/W7y6
-tQ/onjZWZYpHNVhRNFKHzSAuv5sU9qILp6rU0hOIW5MJAYEHNlVFWQW1OU8BS7vE
-I3Ex/Tcx3DETRcOhhL/fCYOHUqLc8CBSRO8hHNerbSf5PmE9nALRbGolW71bZy8Q
-D3KyhkcUnl3LcuL6aIcXawg4Cnkvp4s1inu77sHEj7zM1QT51VfhCqOqCvZy+OM0
-HQjF8uG3q5Tt/Xv8ECIiTE27xkxgwL0RXDY6Ybeh/3wpsbogoyAa+vaEjTMJ9NRH
-u7hn9BbzcDmptJj/vSZLDi0qyyqZ4BteSP06XlVWDNRNNPNrSmqqOBhE1LCMCF+N
-ujKUIq+OZ0WhEvo1/Z0DHjUw+FtVlt0VL0Te3FkZtUFq/ZcBQmJfJXNEDdd6EsL2
-d8WYnloP8ytNJLoBgdJ81Dn3G8LpnxTnb3PrMheOYgW59FOQ05r87IZt5ik/KKSP
-uxq+rNe8xUp0cTjXU+yw
-=u6Jv
------END PGP SIGNATURE-----
-
---mpNcIJL4U0bEY9+B--
+Sent from a fat crate under my desk. Formatting is fine.
+--
