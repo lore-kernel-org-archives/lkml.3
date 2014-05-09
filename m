@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583AbaEIJPy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 05:15:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40984 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753208AbaEIJPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 05:15:51 -0400
-From: Petr Mladek <pmladek@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Dave Anderson <anderson@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Kay Sievers <kay@vrfy.org>, Jiri Kosina <jkosina@suse.cz>,
-        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
-        linux-kernel@vger.kernel.org, Petr Mladek <pmladek@suse.cz>
-Subject: [RFC PATCH 11/11] printk: avoid staling when merging NMI log buffer
-Date: Fri,  9 May 2014 11:11:05 +0200
-Message-Id: <1399626665-29817-12-git-send-email-pmladek@suse.cz>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1399626665-29817-1-git-send-email-pmladek@suse.cz>
-References: <1399626665-29817-1-git-send-email-pmladek@suse.cz>
+	id S1756399AbaEIJMw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 05:12:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48135 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756373AbaEIJMs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 05:12:48 -0400
+Date: Fri, 9 May 2014 11:12:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: minyard@acm.org
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Corey Minyard <cminyard@mvista.com>
+Subject: Re: [PATCH] sched: Initialize rq->age_stamp on processor start
+Message-ID: <20140509091245.GN30445@twins.programming.kicks-ass.net>
+References: <20140508161337.GF30445@twins.programming.kicks-ass.net>
+ <1399574859-11714-1-git-send-email-minyard@acm.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FexDM9E/OpjgUmaq"
+Content-Disposition: inline
+In-Reply-To: <1399574859-11714-1-git-send-email-minyard@acm.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New messages can appear in NMI log buffer at any time. The call merging them
-into the main log buffer might have hard times to catch up with the flood. It
-can be even interrupted by an NMI that adds new messages itself.
 
-It would make sense to limit the number of copied messages and postpone
-the merging to a later time and even another CPU. We could nicely reuse
-the IRQ work here.
+--FexDM9E/OpjgUmaq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-One drawback is that it might create mess when merging continuous lines
-but this would be very rare. IMHO, it is not worth making the code more
-complicated.
+On Thu, May 08, 2014 at 01:47:39PM -0500, minyard@acm.org wrote:
+> From: Corey Minyard <cminyard@mvista.com>
+>=20
+> If the sched_clock time starts at a large value, the kernel will spin
+> in sched_avg_update for a long time while rq->age_stamp catches up
+> with rq->clock.
+>=20
+> The comment in kernel/sched/clock.c says that there is no strict promise
+> that it starts at zero.  So initialize rq->age_stamp when a cpu starts up
+> to avoid this.
+>=20
+> I was seeing long delays on a simulator that didn't start the clock at
+> zero.  This might also be an issue on reboots on processors that don't
+> re-initialize the timer to zero on reset, and when using kexec.
+>=20
+> Signed-off-by: Corey Minyard <cminyard@mvista.com>
 
-To be honest, I am not much happy with the current limit 5000 messages.
-The number is sucked out of my little finger ;-) I would feel better with
-some limit but I also might be too paranoid. Any better idea is welcome.
+Thanks
 
-Signed-off-by: Petr Mladek <pmladek@suse.cz>
----
- kernel/printk/printk.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+--FexDM9E/OpjgUmaq
+Content-Type: application/pgp-signature
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 9c97b6daccc3..26accbf2186d 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -380,6 +380,8 @@ static struct printk_log nmi_log = {
-  */
- #define NMI_MAX_LEN_POWER (min(NMI_IDX_BYTES, sizeof(nmi_log.buf_len) * 8 - 1))
- #define NMI_MAX_LEN (1UL << NMI_MAX_LEN_POWER)
-+/* maximum number of merged strings in one call */
-+#define NMI_MAX_MERGE 5000
- 
- /* maximum number of messages that fit into NMI log buffer */
- static unsigned int nmi_max_messages;
-@@ -1974,6 +1976,7 @@ static void merge_nmi_delayed_printk(void)
- 	u32 old_main_next_idx;
- 	u64 old_main_next_seq;
- 	int main_cont_flushed = 0;
-+	int merged = 0;
- 
- 	while (true) {
- 		/*
-@@ -2004,6 +2007,13 @@ restart_merge:
- 			nmi_merge_idx = idx_from_id(nmi_first_id);
- 		}
- 
-+		/* do not stale CPU with too many merges */
-+		if (merged++ > NMI_MAX_MERGE) {
-+			__this_cpu_or(printk_pending, PRINTK_PENDING_OUTPUT);
-+			irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
-+			return;
-+		}
-+
- 		/*
- 		 * Make sure that the whole message has been written for the
- 		 * given idx.
--- 
-1.8.4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTbJwNAAoJEHZH4aRLwOS642QP/RSRwLinBj7c6bxXYpZvQtO/
+d9DvVxxjSXYFq7C3Dq80B09BrXUbWL4RKJxdK42YVqdBVfwSWYGw9spiRZ7+u777
+7YR8SU8RAU2t//F32lT+DUlHMM4iYCpP5AgxI5j4TJIn4/o7eZ1McHc/4LTAHIQp
+4wCwbvBclqmJNOpC3hzNfg+3CKYYPcnZiob/9my/oM9D10dVV88PGL557tayvB3A
+887j73KncplvNRV6wdMM0p+lCwKEWYDMHD+PDDYOk98M/ybTAPnNEQkoxXZGk7Ny
+xVRO3alHbGEHkuSI65A6RAOmyHFHM8D5hJSD9xBXRWMpFcQc01aCOENfNAnbsI70
+cSDcVu+d3wF5zQiZ5kHeuSafh4rCW6xJzRUhB9/Z4mSy2Ndeoa56A9g/ekzCXCWh
+7+5De1LNtHP9krvGYmm/L6q3vqUmkbliEW7LlVKR/E85eA0wMcsi++rU4+GtlIWJ
+muJZbwBJ8pNEGkcoo5l/1HlGjtXwjRvLu/TfgZFD6KhqelgWUFuWwHxN+YfrK4c4
+dlDaZ9fQtO6KIHbA14pNq1j4LpC+vVyWedUEeZJYP4pBZQ2PImwszv0/l2X/jl7+
+1a5tergvbAOeCC24L00jngTKrC2mT32i813650c49bbPUHIXj8gLtia2jRXMIElM
+d6GeUx+M7iq1MVrNoaMX
+=6E+m
+-----END PGP SIGNATURE-----
+
+--FexDM9E/OpjgUmaq--
