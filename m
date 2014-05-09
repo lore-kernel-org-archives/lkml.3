@@ -1,104 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170AbaEIIBs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 04:01:48 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:53663 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753083AbaEIIBq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 04:01:46 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-47-536c8b669948
-Message-id: <536C8B63.3000400@samsung.com>
-Date: Fri, 09 May 2014 10:01:39 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>
-Cc: kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, ben-linux@fluff.org, arnd@arndb.de,
-        olof@lixom.net, marc.zyngier@arm.com, thomas.abraham@linaro.org,
-        kyungmin.park@samsung.com, inki.dae@samsung.com,
-        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
-        chanho61.park@samsung.com, sajjan.linux@gmail.com,
-        tushar.behera@linaro.org, sachin.kamat@linaro.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCHv4 7/7] ARM: dts: Add device tree sources for Exynos3250
-References: <1398388572-30239-1-git-send-email-cw00.choi@samsung.com>
- <1398388572-30239-8-git-send-email-cw00.choi@samsung.com>
- <535B0324.50705@gmail.com> <536C2A1C.6030807@samsung.com>
- <536C6175.5000302@gmail.com> <536C7F65.50503@samsung.com>
-In-reply-to: <536C7F65.50503@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA02Sa0iTYRTHed5377sLrl6d1pNkxqggK1O68BBd/CD2ggSJX0SDWrqmsM2x
-	paUELZ3abV420TXCDBVxmtK00uEy1DST1Jw5yaWpiXdSt0yXk9z2xW+/c87/nN+Xw8L9xhmB
-	rBTpbaFcKhDzSQ6jd6vbcuLWE3Fs2NZDiFyaLiZ6rWsgkKb+A4YsbceQ1TFDoBedfQQqWHxJ
-	IPuyion65msA0owXMtCIM5dA6vJvJPqStchExqlhAllMz0mk63+PoVELF7lsWySqsn7F0Ger
-	nUSFpa8YKMfcyUQ9m2qAfnWsEEinnSNRl64SIINpE6A8l5lE5hYtiAii68rqAK3KfkrS/5wa
-	QFvy1RjtMszidIv+B5OuqXaQtNHwiKRtw60k3Vh5nx76lEXQ+U0GQNuNB65y4znnk4TilHSh
-	/OTFG5xks34Slw363F3YqMeVYJT9GLBZkDoNB99Ok17eAwfGGraZw/KjqgBUrT7DvIUdwKKR
-	XOBOcakQOFPhwtzMoA7D5UYN4WaSOgLtyknPpd3bmbosK8PNAVQcHHvQQXh3feG6dszT96eu
-	QPV6pceGU5UkNBbk4e4Bj4qG0+U9wGveALD2u9ZjZlNHYdGaymPGqeOwLaeE9HIwbKxbwguB
-	r36HRL8jpt8RKwe4AQQI0xJlipsiSXioQiBRpElFoYmpEiPwPoWjGVR0nWsHFAvwfbizCcmx
-	foQgXZEhaQeQhfP9uYEicawfN0mQkSmUp16Xp4mFinaAsdiBSqDq/BlufmeKmpsqDnMF2Uz2
-	9d7IpYSF4tbVmDVHywVbVDrvrOzvvQjBhDwmLiM7eogX1Lz3jmaXsrSaZeJGHiqRTtfK/sy3
-	ZcrYPisB+x2imsvzUc5go/6389SllO6ya8G6j5ymatu8zo7tUzaYz/RPDBQcTNbx8uIne12j
-	b/gMRbIgPASXKwT/AWxIp+fyAgAA
+	id S1753054AbaEIIE2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 04:04:28 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44595 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751338AbaEIIEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 04:04:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1016,1389772800"; 
+   d="scan'208";a="537547802"
+From: sonika.jindal@intel.com
+To: sonika.jindal@intel.com
+Cc: David Airlie <airlied@linux.ie>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Dave Airlie <airlied@redhat.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Archit Taneja <archit@ti.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>
+Subject: [PATCH 01/12] drm: Move DRM_ROTATE bits out of omapdrm into drm_crtc.h
+Date: Fri,  9 May 2014 13:31:22 +0530
+Message-Id: <1399622493-31701-2-git-send-email-sonika.jindal@intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1399622493-31701-1-git-send-email-sonika.jindal@intel.com>
+References: <1399622493-31701-1-git-send-email-sonika.jindal@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ville Syrjälä <ville.syrjala at linux.intel.com>
 
+The rotation property stuff should be standardized among all drivers.
+Move the bits to drm_crtc.h from omap_drv.h.
 
-On 09.05.2014 09:10, Chanwoo Choi wrote:
-> Hi Tomasz,
-> 
-> On 05/09/2014 02:02 PM, Tomasz Figa wrote:
->> Hi Chanwoo,
->>
->> On 09.05.2014 03:06, Chanwoo Choi wrote:
->>> On 04/26/2014 09:51 AM, Tomasz Figa wrote:
->>>> On 25.04.2014 03:16, Chanwoo Choi wrote:
->>
->> [snip]
->>
->>>>> +    cpus {
->>>>> +        #address-cells = <1>;
->>>>> +        #size-cells = <0>;
->>>>> +
->>>>> +        cpu@0 {
->>>>> +            device_type = "cpu";
->>>>> +            compatible = "arm,cortex-a7";
->>>>> +            reg = <0>;
->>>>> +            clock-frequency = <1000000000>;
->>>>> +        };
->>>>
->>>> Why only one CPU? I believe Exynos3250 is dual core.
->>>
->>> I'll add cpu1 information.
->>>
->>>> Also are physical IDs of the cores really 0 and 1? On Exynos4210 for example they are 0x900 and 0x901, while on Exynos4212 they are 0xa00 and 0xa01. Please check this.
->>>
->>> The 'reg' property means only hardware id(hwid) of CPU.
->>> You can check it on arm_dt_init_cpu_maps() in arch/arm/kernel/devtree.c.h.
->>> or Documentation/devicetree/bindings/arm/cpus.txt.
->>>
->>
->> Well, as described in Documentation/devicetree/bindings/arm/cpus.txt, on 32-bit ARM v7 or later CPUs the "reg" property should be equal to the lower 24-bits of MPIDR value of given CPU, which in addition to core ID includes also cluster ID, which can be non-zero, even on single cluster SoCs (like it is on Exynos4210 and 4x12).
-> 
-> I checked the lower 24-bit of MPIDR value for Exynos3250 in arm_dt_init_cpu_maps().
-> - the lower 24-bit of MPIDR for CPU0 is '0x0'.
+Cc: David Airlie <airlied@linux.ie>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Dave Airlie <airlied@redhat.com>
+Cc: Rob Clark <robdclark@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Archit Taneja <archit@ti.com>
+Cc: dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Reviewed-by: Sagar Kamble <sagar.a.kamble@intel.com>
+Tested-by: Sagar Kamble <sagar.a.kamble@intel.com>
+---
+ drivers/gpu/drm/omapdrm/omap_drv.h |    7 -------
+ include/drm/drm_crtc.h             |    8 ++++++++
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
-Fair enough. Thanks.
+diff --git a/drivers/gpu/drm/omapdrm/omap_drv.h b/drivers/gpu/drm/omapdrm/omap_drv.h
+index 428b2981..aac8e10 100644
+--- a/drivers/gpu/drm/omapdrm/omap_drv.h
++++ b/drivers/gpu/drm/omapdrm/omap_drv.h
+@@ -119,13 +119,6 @@ struct omap_drm_private {
+ 	struct omap_drm_irq error_handler;
+ };
+ 
+-/* this should probably be in drm-core to standardize amongst drivers */
+-#define DRM_ROTATE_0	0
+-#define DRM_ROTATE_90	1
+-#define DRM_ROTATE_180	2
+-#define DRM_ROTATE_270	3
+-#define DRM_REFLECT_X	4
+-#define DRM_REFLECT_Y	5
+ 
+ #ifdef CONFIG_DEBUG_FS
+ int omap_debugfs_init(struct drm_minor *minor);
+diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
+index 27f828c..4775008 100644
+--- a/include/drm/drm_crtc.h
++++ b/include/drm/drm_crtc.h
+@@ -64,6 +64,14 @@ struct drm_object_properties {
+ 	uint64_t values[DRM_OBJECT_MAX_PROPERTY];
+ };
+ 
++/* rotation property bits */
++#define DRM_ROTATE_0	0
++#define DRM_ROTATE_90	1
++#define DRM_ROTATE_180	2
++#define DRM_ROTATE_270	3
++#define DRM_REFLECT_X	4
++#define DRM_REFLECT_Y	5
++
+ enum drm_connector_force {
+ 	DRM_FORCE_UNSPECIFIED,
+ 	DRM_FORCE_OFF,
+-- 
+1.7.10.4
 
-Best regards,
-Tomasz
