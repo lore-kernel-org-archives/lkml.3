@@ -1,129 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500AbaEIJSm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 05:18:42 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:43291 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756201AbaEIJSa (ORCPT
+	id S1756645AbaEIJTv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 05:19:51 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:42014 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751978AbaEIJTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 05:18:30 -0400
-From: =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
-To: axboe@kernel.dk, sbradshaw@micron.com
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
-Subject: [PATCH] block: per-cpu counters for in-flight IO accounting
-Date: Fri,  9 May 2014 11:17:41 +0200
-Message-Id: <1399627061-5960-2-git-send-email-m@bjorling.me>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399627061-5960-1-git-send-email-m@bjorling.me>
-References: <1399627061-5960-1-git-send-email-m@bjorling.me>
+	Fri, 9 May 2014 05:19:50 -0400
+Date: Fri, 9 May 2014 10:18:24 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Doug Anderson <dianders@chromium.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Will Deacon <will.deacon@arm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        David Riley <davidriley@chromium.org>,
+        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP
+	systems#
+Message-ID: <20140509091824.GL3693@n2100.arm.linux.org.uk>
+References: <1399504982-31181-1-git-send-email-dianders@chromium.org> <CAOh2x=kwaoSdj8JO0Vo08Y0dX2UfKFiF3pBV-qtp-YTyN=8H8Q@mail.gmail.com> <CAD=FV=UEGJGHrdcXgs3EZ_wFXT8GnNeCOMt7CgdiiUzBzZ5Y0A@mail.gmail.com> <alpine.LFD.2.11.1405081149190.980@knanqh.ubzr> <CAD=FV=VtcLOh51LCmafzRMdqtDrwKXCqK6gE6V7OOOUe4gjwbA@mail.gmail.com> <alpine.LFD.2.11.1405081329010.980@knanqh.ubzr> <20140508192209.GH3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405081600260.980@knanqh.ubzr> <20140508205223.GI3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405082058130.980@knanqh.ubzr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.11.1405082058130.980@knanqh.ubzr>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With multi-million IOPS and multi-node workloads, the atomic_t in_flight
-tracking becomes a bottleneck. Change the in-flight accounting to per-cpu
-counters to elevate.
+On Thu, May 08, 2014 at 09:37:15PM -0400, Nicolas Pitre wrote:
+> On Thu, 8 May 2014, Russell King - ARM Linux wrote:
+> 
+> > If you're in a preempt or SMP environment, provide a timer for udelay().
+> > IF you're in an environment with IRQs which can take a long time, use
+> > a timer for udelay().  If you're in an environment where the CPU clock
+> > can change unexpectedly, use a timer for udelay().
+> 
+> Longer delays are normally not a problem.  If they are, then simply 
+> disabling IRQs may solve it if absolutely required.  With much shorter 
+> delays than expected this is another story.
+> 
+> What about the following:
+> 
+> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+> index 7c4fada440..10030cc5a0 100644
+> --- a/arch/arm/kernel/smp.c
+> +++ b/arch/arm/kernel/smp.c
+> @@ -682,6 +682,15 @@ static int cpufreq_callback(struct notifier_block *nb,
+>  			cpufreq_scale(per_cpu(l_p_j_ref, cpu),
+>  					per_cpu(l_p_j_ref_freq, cpu),
+>  					freq->new);
+> +		/*
+> +		 * Another CPU might have called udelay() just before LPJ
+> +		 * and a shared CPU clock is increased.  That other CPU still
+> +		 * looping on the old LPJ value would return significantly
+> +		 * sooner than expected.  The actual fix is to provide a
+> +		 * timer based udelay() implementation instead.
+> +		 */
+> +		if (freq->old < freq->new)
+> +			pr_warn_once("*** udelay() on SMP is racy and may be much shorter than expected ***\n");
+>  	}
+>  	return NOTIFY_OK;
+>  }
 
-Signed-off-by: Matias Bjørling <m@bjorling.me>
----
- block/partition-generic.c |  4 ++--
- include/linux/genhd.h     | 25 ++++++++++++++++++-------
- 2 files changed, 20 insertions(+), 9 deletions(-)
+No, because you're assuming this is just a SMP problem.  What about
+preempt, where you could preempt away from a udelay loop to change
+the CPU frequency, and then back again, possibly resulting in the
+CPU clock rate increasing and maybe a shorter delay if the switch
+from-change-clock-and-back is fast enough?  Remember that udelay()
+can be used for up to 2ms delays.
 
-diff --git a/block/partition-generic.c b/block/partition-generic.c
-index 789cdea..b21937a 100644
---- a/block/partition-generic.c
-+++ b/block/partition-generic.c
-@@ -140,8 +140,8 @@ ssize_t part_inflight_show(struct device *dev,
- {
- 	struct hd_struct *p = dev_to_part(dev);
- 
--	return sprintf(buf, "%8u %8u\n", atomic_read(&p->in_flight[0]),
--		atomic_read(&p->in_flight[1]));
-+	return sprintf(buf, "%8d %8d\n", percpu_counter_sum(&p->in_flight[0]),
-+		percpu_counter_sum(&p->in_flight[1]));
- }
- 
- #ifdef CONFIG_FAIL_MAKE_REQUEST
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index 9f3c275..8487d70 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -118,7 +118,6 @@ struct hd_struct {
- 	int make_it_fail;
- #endif
- 	unsigned long stamp;
--	atomic_t in_flight[2];
- #ifdef	CONFIG_SMP
- 	struct disk_stats __percpu *dkstats;
- #else
-@@ -126,6 +125,7 @@ struct hd_struct {
- #endif
- 	atomic_t ref;
- 	struct rcu_head rcu_head;
-+	struct percpu_counter in_flight[2];
- };
- 
- #define GENHD_FL_REMOVABLE			1
-@@ -330,15 +330,26 @@ static inline void part_stat_set_all(struct hd_struct *part, int value)
- 
- static inline int init_part_stats(struct hd_struct *part)
- {
-+	if (percpu_counter_init(&part->in_flight[0], 0))
-+		return 0;
-+	if (percpu_counter_init(&part->in_flight[1], 0))
-+		goto err_cnt;
- 	part->dkstats = alloc_percpu(struct disk_stats);
- 	if (!part->dkstats)
--		return 0;
-+		goto err_stats;
- 	return 1;
-+err_stats:
-+	percpu_counter_destroy(&part->in_flight[1]);
-+err_cnt:
-+	percpu_counter_destroy(&part->in_flight[0]);
-+	return 0;
- }
- 
- static inline void free_part_stats(struct hd_struct *part)
- {
- 	free_percpu(part->dkstats);
-+	percpu_counter_destroy(&part->in_flight[1]);
-+	percpu_counter_destroy(&part->in_flight[0]);
- }
- 
- #else /* !CONFIG_SMP */
-@@ -382,21 +393,21 @@ static inline void free_part_stats(struct hd_struct *part)
- 
- static inline void part_inc_in_flight(struct hd_struct *part, int rw)
- {
--	atomic_inc(&part->in_flight[rw]);
-+	__percpu_counter_add(&part->in_flight[rw], 1, 1000000);
- 	if (part->partno)
--		atomic_inc(&part_to_disk(part)->part0.in_flight[rw]);
-+		__percpu_counter_add(&part_to_disk(part)->part0.in_flight[rw], 1, 1000000);
- }
- 
- static inline void part_dec_in_flight(struct hd_struct *part, int rw)
- {
--	atomic_dec(&part->in_flight[rw]);
-+	__percpu_counter_add(&part->in_flight[rw], -1, 1000000);
- 	if (part->partno)
--		atomic_dec(&part_to_disk(part)->part0.in_flight[rw]);
-+		__percpu_counter_add(&part_to_disk(part)->part0.in_flight[rw], -1, 1000000);
- }
- 
- static inline int part_in_flight(struct hd_struct *part)
- {
--	return atomic_read(&part->in_flight[0]) + atomic_read(&part->in_flight[1]);
-+	return percpu_counter_sum(&part->in_flight[0]) + percpu_counter_sum(&part->in_flight[1]);
- }
- 
- static inline struct partition_meta_info *alloc_part_info(struct gendisk *disk)
 -- 
-1.9.1
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
