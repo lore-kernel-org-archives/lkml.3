@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214AbaEILXW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 07:23:22 -0400
-Received: from mga09.intel.com ([134.134.136.24]:39092 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751499AbaEILXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 07:23:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1017,1389772800"; 
-   d="scan'208";a="508961525"
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: peterhuewe@gmx.de, tpmdd-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org,
-        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Subject: [PATCH] tpm: missing tpm_chip_put in tpm_get_random()
-Date: Fri,  9 May 2014 14:23:10 +0300
-Message-Id: <1399634590-8360-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
+	id S1755693AbaEILZE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 07:25:04 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:49695 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754241AbaEILZD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 07:25:03 -0400
+Date: Fri, 9 May 2014 12:24:55 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, arm@kernel.org
+Subject: Re: [PATCH 04/10] mfd: vexpress: Define the device as MFD cells
+Message-ID: <20140509112455.GU5767@lee--X1>
+References: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
+ <1398707877-22596-5-git-send-email-pawel.moll@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398707877-22596-5-git-send-email-pawel.moll@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Regression in 41ab999c. Call to tpm_chip_put is missing. This
-will cause TPM device driver not to unload if tmp_get_random()
-is called.
+On Mon, 28 Apr 2014, Pawel Moll wrote:
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
----
- drivers/char/tpm/tpm-interface.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+> This patch - finally, after over 6 months! :-( - addresses
+> Samuel's request to split the vexpress-sysreg driver into
+> smaller portions and define the device in a form of MFD
+> cells:
+> 
+> * LEDs code has been completely removed and replaced with
+>   "gpio-leds" nodes in the tree (referencing dedicated
+>   GPIO subnodes in sysreg - bindings documentation updated);
+>   this also better fits the reality as some variants of the
+>   motherboard don't have all the LEDs populated
+> 
+> * syscfg bridge code has been extracted into a separate
+>   driver (placed in drivers/misc for no better place)
+> 
+> * all the ID & MISC registers are defined as sysconf
+>   making them available for other drivers should they need
+>   to use them (and also to the user via /sys/kernel/debug/regmap
+>   which can be helpful in platform debugging)
+> 
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> ---
+>  .../devicetree/bindings/arm/vexpress-sysreg.txt    |  36 +-
+>  arch/arm/boot/dts/vexpress-v2m-rs1.dtsi            |  76 ++-
+>  arch/arm/boot/dts/vexpress-v2m.dtsi                |  76 ++-
+>  arch/arm/mach-vexpress/ct-ca9x4.c                  |   2 +-
+>  arch/arm/mach-vexpress/v2m.c                       |  15 +-
+>  drivers/mfd/Kconfig                                |  15 +-
+>  drivers/mfd/Makefile                               |   2 +-
+>  drivers/mfd/vexpress-sysreg.c                      | 533 ++++++---------------
+>  drivers/misc/Kconfig                               |   9 +
+>  drivers/misc/Makefile                              |   1 +
+>  drivers/misc/vexpress-syscfg.c                     | 324 +++++++++++++
+>  include/linux/vexpress.h                           |  16 +-
+>  12 files changed, 667 insertions(+), 438 deletions(-)
+>  create mode 100644 drivers/misc/vexpress-syscfg.c
 
-diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-index 62e10fd..4ea4d52 100644
---- a/drivers/char/tpm/tpm-interface.c
-+++ b/drivers/char/tpm/tpm-interface.c
-@@ -991,13 +991,13 @@ int tpm_get_random(u32 chip_num, u8 *out, size_t max)
- 	int err, total = 0, retries = 5;
- 	u8 *dest = out;
- 
-+	if (!out || !num_bytes || max > TPM_MAX_RNG_DATA)
-+		return -EINVAL;
-+
- 	chip = tpm_chip_find_get(chip_num);
- 	if (chip == NULL)
- 		return -ENODEV;
- 
--	if (!out || !num_bytes || max > TPM_MAX_RNG_DATA)
--		return -EINVAL;
--
- 	do {
- 		tpm_cmd.header.in = tpm_getrandom_header;
- 		tpm_cmd.params.getrandom_in.num_bytes = cpu_to_be32(num_bytes);
-@@ -1016,6 +1016,7 @@ int tpm_get_random(u32 chip_num, u8 *out, size_t max)
- 		num_bytes -= recd;
- 	} while (retries-- && total < max);
- 
-+	tpm_chip_put(chip);
- 	return total ? total : -EIO;
- }
- EXPORT_SYMBOL_GPL(tpm_get_random);
+MFD changes look reasonable to me, and remove a hell of a lot of code.
+
+Acked-by: Lee Jones <lee.jones@linaro.org>
+
 -- 
-1.9.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
