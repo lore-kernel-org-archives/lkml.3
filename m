@@ -1,36 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932292AbaEIQeK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 12:34:10 -0400
-Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:50243
-	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932253AbaEIQeH (ORCPT
+	id S1756927AbaEIQhQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 12:37:16 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:62345 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756535AbaEIQhO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 12:34:07 -0400
-Date: Fri, 9 May 2014 11:34:03 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Jianyu Zhan <nasa4836@gmail.com>
-cc: akpm@linux-foundation.org, mhocko@suse.cz, hannes@cmpxchg.org,
-        riel@redhat.com, minchan@kernel.org, zhangyanfei@cn.fujitsu.com,
-        hanpt@linux.vnet.ibm.com, sasha.levin@oracle.com, oleg@redhat.com,
-        fabf@skynet.be, mgorman@suse.de, aarcange@redhat.com, cldu@marvell.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: use a irq-safe __mod_zone_page_state in
- mlocked_vma_newpage()
-In-Reply-To: <1399652208-18987-1-git-send-email-nasa4836@gmail.com>
-Message-ID: <alpine.DEB.2.10.1405091133360.11810@gentwo.org>
-References: <1399652208-18987-1-git-send-email-nasa4836@gmail.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 9 May 2014 12:37:14 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Fri, 9 May 2014 18:36:52 +0200
+From: Johan Hovold <johan@hovold.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Johan Hovold <johan@hovold.com>, Bryan Evenson <bevenson@melinkcorp.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: at91: fix rtc irq mask for sam9x5 SoCs
+Message-ID: <20140509163652.GE6776@localhost>
+References: <957b209589094df48ddedbc57c6ccdfd@BLUPR05MB037.namprd05.prod.outlook.com>
+ <1399479649-3247-1-git-send-email-boris.brezillon@free-electrons.com>
+ <20140508154912.GA6776@localhost>
+ <536BBEA4.6080908@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <536BBEA4.6080908@free-electrons.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 May 2014, Jianyu Zhan wrote:
+On Thu, May 08, 2014 at 07:28:04PM +0200, Boris BREZILLON wrote:
 
-> Hi, Christoph, I'm sorry for the misleading phrasing.
-> Would be this one OK? Thanks.
+> > You should also keep the flush (read of IMR) regardless (to make sure
+> > the write has reached the peripheral), and remember to remove the now
+> > unused mask variable.
+> 
+> Does it has something to do with memory barriers ?
+> If so, why not using writel instead of writel_relaxed ?
 
-Good.
+You only need to use the non-relaxed version when synchronising with DMA
+operations.
 
-Reviewed-by: Christoph Lameter <cl@linux.com>
+The read-back of a register on the same device is a common technique to
+make sure that preceding write has actually reached the peripheral
+(write posting or flushing). In this case, it is used to make
+(reasonably) sure that interrupts have actually been masked before
+returning. (In the general case, you'd even need to verify the read-back
+value to be certain that the device has changed its state.)
+
+Johan
