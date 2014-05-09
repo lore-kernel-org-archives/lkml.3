@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757586AbaEITgh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 15:36:37 -0400
-Received: from mail-bl2lp0203.outbound.protection.outlook.com ([207.46.163.203]:14470
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756765AbaEITgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 15:36:36 -0400
-Date: Fri, 9 May 2014 14:36:14 -0500
-From: Scott Wood <scottwood@freescale.com>
-To: Tiejun Chen <tiejun.chen@windriver.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [v6,3/5] powerpc/book3e: support kgdb for kernel space
-Message-ID: <20140509193614.GA28739@home.buserror.net>
-References: <1382520685-11609-4-git-send-email-tiejun.chen@windriver.com>
+	id S1757323AbaEITkZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 15:40:25 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:49507 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754063AbaEITkY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 15:40:24 -0400
+Date: Fri, 9 May 2014 12:40:21 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH percpu/for-3.16 2/2] percpu-refcount: implement
+ percpu_ref_tryget()
+Message-ID: <20140509194020.GB2276@kmo>
+References: <20140507155511.GB26540@htj.dyndns.org>
+ <20140507155647.GC26540@htj.dyndns.org>
+ <20140507155810.GD26540@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382520685-11609-4-git-send-email-tiejun.chen@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [2601:2:5800:3f7:b074:a81c:8d02:b651]
-X-ClientProxiedBy: BN1PR08CA0037.namprd08.prod.outlook.com (10.242.217.165)
- To DM2PR03MB400.namprd03.prod.outlook.com (10.141.84.153)
-X-Forefront-PRVS: 02065A9E77
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(51704005)(24454002)(76482001)(77982001)(2009001)(33656001)(46406003)(4396001)(64706001)(20776003)(47776003)(31966008)(46102001)(74502001)(74662001)(42186004)(21056001)(97756001)(81342001)(19580395003)(83322001)(53416003)(19580405001)(23726002)(50466002)(69596002)(81542001)(101416001)(83506001)(86362001)(79102001)(92726001)(54356999)(80022001)(92566001)(83072002)(50986999)(76176999)(81156002)(87976001)(21314002)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB400;H:home.buserror.net;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=scottwood@freescale.com; 
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20140507155810.GD26540@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 05:31:23PM +0800, Tiejun Chen wrote:
-> Currently we need to skip this for supporting KGDB.
+On Wed, May 07, 2014 at 11:58:10AM -0400, Tejun Heo wrote:
+> Implement percpu_ref_tryget() which fails if the refcnt already
+> reached zero.  Note that this is different from the recently renamed
+> percpu_ref_tryget_live() which fails if the refcnt has been killed and
+> is draining the remaining references.  percpu_ref_tryget() succeeds on
+> a killed refcnt as long as its current refcnt is above zero.
+
+I'd still kind of prefer tryget() to be labelled "deprecated, don't use outside
+the cgroup code" or somesuch, but it's not a huge deal :)
+
+Acked-by: Kent Overstreet <kmo@daterainc.com>
+
 > 
-> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
-> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Kent Overstreet <kmo@daterainc.com>
 > ---
-> arch/powerpc/kernel/exceptions-64e.S |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+>  include/linux/percpu-refcount.h |   32 ++++++++++++++++++++++++++++++++
+>  1 file changed, 32 insertions(+)
 > 
-> diff --git a/arch/powerpc/kernel/exceptions-64e.S b/arch/powerpc/kernel/exceptions-64e.S
-> index a55cf62..0b750c6 100644
-> --- a/arch/powerpc/kernel/exceptions-64e.S
-> +++ b/arch/powerpc/kernel/exceptions-64e.S
-> @@ -597,11 +597,13 @@ kernel_dbg_exc:
->  	rfdi
+> --- a/include/linux/percpu-refcount.h
+> +++ b/include/linux/percpu-refcount.h
+> @@ -118,6 +118,36 @@ static inline void percpu_ref_get(struct
+>  }
 >  
->  	/* Normal debug exception */
-> +1:	andi.	r14,r11,MSR_PR;		/* check for userspace again */
-> +#ifndef CONFIG_KGDB
->  	/* XXX We only handle coming from userspace for now since we can't
->  	 *     quite save properly an interrupted kernel state yet
->  	 */
-> -1:	andi.	r14,r11,MSR_PR;		/* check for userspace again */
->  	beq	kernel_dbg_exc;		/* if from kernel mode */
-> +#endif
-
-Now that we have support for properly saving state on special level
-exceptions, that should be used here.  With the above patch, what happens
-if e.g. a debug exception fires during a TLB miss, and the kgdb handler
-takes its own TLB miss accessing the serial port?
-
--Scott
+>  /**
+> + * percpu_ref_tryget - try to increment a percpu refcount
+> + * @ref: percpu_ref to try-get
+> + *
+> + * Increment a percpu refcount unless its count already reached zero.
+> + * Returns %true on success; %false on failure.
+> + *
+> + * The caller is responsible for ensuring that @ref stays accessible.
+> + */
+> +static inline bool percpu_ref_tryget(struct percpu_ref *ref)
+> +{
+> +	unsigned __percpu *pcpu_count;
+> +	int ret = false;
+> +
+> +	rcu_read_lock_sched();
+> +
+> +	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
+> +
+> +	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR)) {
+> +		__this_cpu_inc(*pcpu_count);
+> +		ret = true;
+> +	} else {
+> +		ret = atomic_inc_not_zero(&ref->count);
+> +	}
+> +
+> +	rcu_read_unlock_sched();
+> +
+> +	return ret;
+> +}
+> +
+> +/**
+>   * percpu_ref_tryget_live - try to increment a live percpu refcount
+>   * @ref: percpu_ref to try-get
+>   *
+> @@ -128,6 +158,8 @@ static inline void percpu_ref_get(struct
+>   * will fail.  For such guarantee, percpu_ref_kill_and_confirm() should be
+>   * used.  After the confirm_kill callback is invoked, it's guaranteed that
+>   * no new reference will be given out by percpu_ref_tryget().
+> + *
+> + * The caller is responsible for ensuring that @ref stays accessible.
+>   */
+>  static inline bool percpu_ref_tryget_live(struct percpu_ref *ref)
+>  {
