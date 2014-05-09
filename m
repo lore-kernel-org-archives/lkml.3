@@ -1,150 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087AbaEIQQN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 12:16:13 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:34855 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756995AbaEIQQJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 12:16:09 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Fri, 9 May 2014 12:19:49 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-cc: Don Zickus <dzickus@redhat.com>, Vince Weaver <vincent.weaver@maine.edu>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf_fuzzer crash on pentium 4
-In-Reply-To: <20140508080234.GO8607@moon>
-Message-ID: <alpine.DEB.2.10.1405091211430.13652@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu> <20140506202307.GA1458@moon> <20140508020050.GX39568@redhat.com> <20140508073756.GM8607@moon> <20140508074930.GN8607@moon> <20140508080234.GO8607@moon>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757109AbaEIQQs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 12:16:48 -0400
+Received: from smtp36.i.mail.ru ([94.100.177.96]:60179 "EHLO smtp36.i.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750775AbaEIQQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 12:16:47 -0400
+From: Alexander Shiyan <shc_work@mail.ru>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Alexander Shiyan <shc_work@mail.ru>
+Subject: [PATCH] pinctrl: Add i.MX1 pincontrol driver
+Date: Fri,  9 May 2014 20:16:33 +0400
+Message-Id: <1399652193-17827-1-git-send-email-shc_work@mail.ru>
+X-Mailer: git-send-email 1.8.3.2
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 May 2014, Cyrill Gorcunov wrote:
-> 
-> Updated.
-> ---
->  arch/x86/kernel/cpu/perf_event_p4.c |   67 ++++++++++++++++--------------------
->  1 file changed, 30 insertions(+), 37 deletions(-)
+This patch adds pincontrol driver for Freescale i.MX1 SOCs.
 
-I tried this patch, and even though it seemed to fix one of the NMI storms 
-I was experiencing I've managed to trigger again using a different random 
-seed.
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+---
+ drivers/pinctrl/Kconfig        |   7 ++
+ drivers/pinctrl/Makefile       |   1 +
+ drivers/pinctrl/pinctrl-imx1.c | 279 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 287 insertions(+)
+ create mode 100644 drivers/pinctrl/pinctrl-imx1.c
 
-I've been trying to track down a trace of what is triggering things, but 
-this is very difficult as the full log isn't making it to the serial 
-console, even when I fsync() stdout.
-
-Maybe related, but the following messages tend to happen a lot while 
-fuzzing, and always happen before the fuzzing that eventually locks up:
-
-The warnings are for
-	if (WARN_ON_ONCE(!(event->hw.state & PERF_HES_STOPPED)))
-and
-	WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);	
-
-
-[ 3086.168915] hrtimer: interrupt took 4251 ns
-
-[ 3097.845779] NOHZ: local_softirq_pending 100
-[ 3098.222766] NOHZ: local_softirq_pending 100
-[ 3098.239817] ------------[ cut here ]------------
-[ 3098.240006] WARNING: CPU: 0 PID: 1877 at arch/x86/kernel/cpu/perf_event.c:1082 x86_pmu_start+0x4b/0xf8()
-[ 3098.240006] Modules linked in: loop iTCO_wdt iTCO_vendor_support lpc_ich ppdev evdev microcode pcspkr psmouse i915 serio_raw parport_pc tpm_tis drm_kms_helper i2c_i801 tpm mfd_core parport drm acpi_cpufreq processor video button thermal_sys snd_hda_codec_analog snd_hda_codec_generic snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_pcm i2c_algo_bit snd_timer i2c_core snd soundcore sr_mod cdrom sd_mod crc_t10dif crct10dif_generic crct10dif_common tg3 ehci_pci uhci_hcd ehci_hcd ptp ata_generic ata_piix floppy libata scsi_mod pps_core libphy usbcore usb_common
-[ 3098.240006] CPU: 0 PID: 1877 Comm: perf_fuzzer Not tainted 3.15.0-rc4+ #4
-[ 3098.240006] Hardware name: LENOVO 88088NU/LENOVO, BIOS 2JKT37AUS 07/12/2007
-[ 3098.240006]  0000000000000000 ffff88003af6bb40 ffffffff81430fbe 0000000000000000
-[ 3098.240006]  ffff88003af6bb78 ffffffff8103c77d ffffffff81012912 ffff88003cb52c00
-[ 3098.240006]  ffff88003f40bb50 000000000000000c ffff88003f40bb58 ffff88003af6bb88
-[ 3098.240006] Call Trace:
-[ 3098.240006]  [<ffffffff81430fbe>] dump_stack+0x45/0x56
-[ 3098.240006]  [<ffffffff8103c77d>] warn_slowpath_common+0x7f/0x98
-[ 3098.240006]  [<ffffffff81012912>] ? x86_pmu_start+0x4b/0xf8
-[ 3098.240006]  [<ffffffff8103c844>] warn_slowpath_null+0x1a/0x1c
-[ 3098.240006]  [<ffffffff81012912>] x86_pmu_start+0x4b/0xf8
-[ 3098.240006]  [<ffffffff81012ee2>] x86_pmu_enable+0x154/0x233
-[ 3098.240006]  [<ffffffff810cfc66>] perf_pmu_enable+0x27/0x29
-[ 3098.240006]  [<ffffffff810117e7>] x86_pmu_commit_txn+0x7b/0x98
-[ 3098.240006]  [<ffffffff8108a9e5>] ? clockevents_program_event+0x9d/0xb9
-[ 3098.240006]  [<ffffffff810591ad>] ? __hrtimer_start_range_ns+0x267/0x299
-[ 3098.240006]  [<ffffffff81015067>] ? p4_pmu_enable_event+0x111/0x11c
-[ 3098.240006]  [<ffffffff810150b0>] ? p4_pmu_enable_all+0x3e/0x48
-[ 3098.240006]  [<ffffffff810d0cfe>] ? event_sched_in+0x138/0x148
-[ 3098.240006]  [<ffffffff810d0da6>] group_sched_in+0x98/0x141
-[ 3098.240006]  [<ffffffff81064b4b>] ? sched_clock_cpu+0x91/0xa2
-[ 3098.240006]  [<ffffffff810d1960>] __perf_event_enable+0xf6/0x136
-[ 3098.240006]  [<ffffffff810cd934>] remote_function+0x1c/0x45
-[ 3098.240006]  [<ffffffff810905c6>] generic_exec_single+0x3e/0x10f
-[ 3098.240006]  [<ffffffff810cd918>] ? cpu_clock_event_add+0x1b/0x1b
-[ 3098.240006]  [<ffffffff810cd918>] ? cpu_clock_event_add+0x1b/0x1b
-[ 3098.240006]  [<ffffffff81090715>] smp_call_function_single+0x7e/0x86
-[ 3098.240006]  [<ffffffff810cc9cd>] task_function_call+0x49/0x53
-[ 3098.240006]  [<ffffffff810d186a>] ? __perf_install_in_context+0xf2/0xf2
-[ 3098.240006]  [<ffffffff810cf080>] perf_event_enable+0x8a/0xbf
-[ 3098.240006]  [<ffffffff810ceff6>] ? __perf_event_mark_enabled+0x5f/0x5f
-[ 3098.240006]  [<ffffffff810cca34>] perf_event_for_each_child+0x5d/0x98
-[ 3098.240006]  [<ffffffff810d048b>] perf_event_task_enable+0x56/0x7c
-[ 3098.240006]  [<ffffffff8104dea9>] SyS_prctl+0x16e/0x391
-[ 3098.240006]  [<ffffffff811228fd>] ? SyS_write+0x63/0x79
-[ 3098.240006]  [<ffffffff8143acd6>] system_call_fastpath+0x1a/0x1f
-[ 3098.240006] ---[ end trace de5690b3396a1c26 ]---
-
-[ 3113.245401] NOHZ: local_softirq_pending 100
-[ 3117.838763] ------------[ cut here ]------------
-[ 3117.840006] WARNING: CPU: 1 PID: 1877 at arch/x86/kernel/cpu/perf_event.c:1164 x86_pmu_stop+0x6d/0xa0()
-[ 3117.840006] Modules linked in: loop iTCO_wdt iTCO_vendor_support lpc_ich ppdev evdev microcode pcspkr psmouse i915 serio_raw parport_pc tpm_tis drm_kms_helper i2c_i801 tpm mfd_core parport drm acpi_cpufreq processor video button thermal_sys snd_hda_codec_analog snd_hda_codec_generic snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_pcm i2c_algo_bit snd_timer i2c_core snd soundcore sr_mod cdrom sd_mod crc_t10dif crct10dif_generic crct10dif_common tg3 ehci_pci uhci_hcd ehci_hcd ptp ata_generic ata_piix floppy libata scsi_mod pps_core libphy usbcore usb_common
-[ 3117.840006] CPU: 1 PID: 1877 Comm: perf_fuzzer Tainted: G        W     3.15.0-rc4+ #4
-[ 3117.840006] Hardware name: LENOVO 88088NU/LENOVO, BIOS 2JKT37AUS 07/12/2007
-[ 3117.840006]  0000000000000000 ffff88003af6b7a0 ffffffff81430fbe 0000000000000000
-[ 3117.840006]  ffff88003af6b7d8 ffffffff8103c77d ffffffff81012034 ffff880037038400
-[ 3117.840006]  ffff88003f50bb50 0000000000000004 000002d043484e06 ffff88003af6b7e8
-[ 3117.840006] Call Trace:
-[ 3117.840006]  [<ffffffff81430fbe>] dump_stack+0x45/0x56
-[ 3117.840006]  [<ffffffff8103c77d>] warn_slowpath_common+0x7f/0x98
-[ 3117.840006]  [<ffffffff81012034>] ? x86_pmu_stop+0x6d/0xa0
-[ 3117.840006]  [<ffffffff8103c844>] warn_slowpath_null+0x1a/0x1c
-[ 3117.840006]  [<ffffffff81012034>] x86_pmu_stop+0x6d/0xa0
-[ 3117.840006]  [<ffffffff810120a1>] x86_pmu_del+0x3a/0xe5
-[ 3117.840006]  [<ffffffff810cfd01>] event_sched_out+0x99/0x102
-[ 3117.840006]  [<ffffffff810cfd95>] group_sched_out+0x2b/0x7b
-[ 3117.840006]  [<ffffffff810d003b>] ctx_sched_out+0x9c/0xf1
-[ 3117.840006]  [<ffffffff810d126b>] __perf_event_task_sched_out+0x171/0x306
-[ 3117.840006]  [<ffffffff8105eef0>] perf_event_task_sched_out+0x33/0x67
-[ 3117.840006]  [<ffffffff81066d7d>] ? set_next_entity+0x3e/0x65
-[ 3117.840006]  [<ffffffff8106890b>] ? pick_next_task_fair+0x142/0x336
-[ 3117.840006]  [<ffffffff810674bf>] ? dequeue_task_fair+0x155/0x162
-[ 3117.840006]  [<ffffffff8105e710>] ? pick_next_task+0x33/0x6b
-[ 3117.840006]  [<ffffffff81432c03>] __schedule+0x237/0x4cd
-[ 3117.840006]  [<ffffffff81432f0c>] schedule+0x73/0x75
-[ 3117.840006]  [<ffffffff81432973>] schedule_hrtimeout_range_clock+0xb6/0xe6
-[ 3117.840006]  [<ffffffff81058972>] ? hrtimer_get_res+0x42/0x42
-[ 3117.840006]  [<ffffffff810591f3>] ? hrtimer_start_range_ns+0x14/0x16
-[ 3117.840006]  [<ffffffff814329b6>] schedule_hrtimeout_range+0x13/0x15
-[ 3117.840006]  [<ffffffff81130be8>] poll_schedule_timeout+0x41/0x61
-[ 3117.840006]  [<ffffffff81131df0>] do_sys_poll+0x391/0x429
-[ 3117.840006]  [<ffffffff81130d7c>] ? poll_select_copy_remaining+0xf9/0xf9
-[ 3117.840006]  [<ffffffff81130d7c>] ? poll_select_copy_remaining+0xf9/0xf9
-[ 3117.840006]  [<ffffffff81130d7c>] ? poll_select_copy_remaining+0xf9/0xf9
-[ 3117.840006]  [<ffffffff81130d7c>] ? poll_select_copy_remaining+0xf9/0xf9
-[ 3117.840006]  [<ffffffff81130d7c>] ? poll_select_copy_remaining+0xf9/0xf9
-[ 3117.840006]  [<ffffffff81130d7c>] ? poll_select_copy_remaining+0xf9/0xf9
-[ 3117.840006]  [<ffffffff81130d7c>] ? poll_select_copy_remaining+0xf9/0xf9
-[ 3117.840006]  [<ffffffff81130d7c>] ? poll_select_copy_remaining+0xf9/0xf9
-[ 3117.840006]  [<ffffffff81130d7c>] ? poll_select_copy_remaining+0xf9/0xf9
-[ 3117.840006]  [<ffffffff81131f28>] SyS_poll+0x50/0xb7
-[ 3117.840006]  [<ffffffff8143aed3>] tracesys+0xe1/0xe6
-[ 3117.840006] ---[ end trace de5690b3396a1c27 ]---
-
-[ 3123.751913] Uhhuh. NMI received for unknown reason 21 on CPU 0.
-[ 3123.752446] Do you have a strange power saving mode enabled?
-[ 3123.752446] Dazed and confused, but trying to continue
-[ 3123.752446] Uhhuh. NMI received for unknown reason 31 on CPU 0.
-[ 3123.752446] Do you have a strange power saving mode enabled?
-[ 3123.752446] Dazed and confused, but trying to continue
-....repeat forever
+diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+index 934fd89..4a8613a 100644
+--- a/drivers/pinctrl/Kconfig
++++ b/drivers/pinctrl/Kconfig
+@@ -130,6 +130,13 @@ config PINCTRL_IMX1_CORE
+ 	select PINMUX
+ 	select PINCONF
+ 
++config PINCTRL_IMX1
++	bool "IMX1 pinctrl driver"
++	depends on SOC_IMX1
++	select PINCTRL_IMX1_CORE
++	help
++	  Say Y here to enable the imx1 pinctrl driver
++
+ config PINCTRL_IMX27
+ 	bool "IMX27 pinctrl driver"
+ 	depends on SOC_IMX27
+diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+index 68bb399..0a2f725 100644
+--- a/drivers/pinctrl/Makefile
++++ b/drivers/pinctrl/Makefile
+@@ -24,6 +24,7 @@ obj-$(CONFIG_PINCTRL_BAYTRAIL)	+= pinctrl-baytrail.o
+ obj-$(CONFIG_PINCTRL_BCM281XX)	+= pinctrl-bcm281xx.o
+ obj-$(CONFIG_PINCTRL_IMX)	+= pinctrl-imx.o
+ obj-$(CONFIG_PINCTRL_IMX1_CORE)	+= pinctrl-imx1-core.o
++obj-$(CONFIG_PINCTRL_IMX1)	+= pinctrl-imx1.o
+ obj-$(CONFIG_PINCTRL_IMX27)	+= pinctrl-imx27.o
+ obj-$(CONFIG_PINCTRL_IMX35)	+= pinctrl-imx35.o
+ obj-$(CONFIG_PINCTRL_IMX50)	+= pinctrl-imx50.o
+diff --git a/drivers/pinctrl/pinctrl-imx1.c b/drivers/pinctrl/pinctrl-imx1.c
+new file mode 100644
+index 0000000..533a6e5
+--- /dev/null
++++ b/drivers/pinctrl/pinctrl-imx1.c
+@@ -0,0 +1,279 @@
++/*
++ * i.MX1 pinctrl driver based on imx pinmux core
++ *
++ * Copyright (C) 2014 Alexander Shiyan <shc_work@mail.ru>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/pinctrl/pinctrl.h>
++
++#include "pinctrl-imx1.h"
++
++#define PAD_ID(port, pin)	((port) * 32 + (pin))
++#define PA	0
++#define PB	1
++#define PC	2
++#define PD	3
++
++enum imx1_pads {
++	MX1_PAD_A24		= PAD_ID(PA, 0),
++	MX1_PAD_TIN		= PAD_ID(PA, 1),
++	MX1_PAD_PWMO		= PAD_ID(PA, 2),
++	MX1_PAD_CSI_MCLK	= PAD_ID(PA, 3),
++	MX1_PAD_CSI_D0		= PAD_ID(PA, 4),
++	MX1_PAD_CSI_D1		= PAD_ID(PA, 5),
++	MX1_PAD_CSI_D2		= PAD_ID(PA, 6),
++	MX1_PAD_CSI_D3		= PAD_ID(PA, 7),
++	MX1_PAD_CSI_D4		= PAD_ID(PA, 8),
++	MX1_PAD_CSI_D5		= PAD_ID(PA, 9),
++	MX1_PAD_CSI_D6		= PAD_ID(PA, 10),
++	MX1_PAD_CSI_D7		= PAD_ID(PA, 11),
++	MX1_PAD_CSI_VSYNC	= PAD_ID(PA, 12),
++	MX1_PAD_CSI_HSYNC	= PAD_ID(PA, 13),
++	MX1_PAD_CSI_PIXCLK	= PAD_ID(PA, 14),
++	MX1_PAD_I2C_SDA		= PAD_ID(PA, 15),
++	MX1_PAD_I2C_SCL		= PAD_ID(PA, 16),
++	MX1_PAD_DTACK		= PAD_ID(PA, 17),
++	MX1_PAD_BCLK		= PAD_ID(PA, 18),
++	MX1_PAD_LBA		= PAD_ID(PA, 19),
++	MX1_PAD_ECB		= PAD_ID(PA, 20),
++	MX1_PAD_A0		= PAD_ID(PA, 21),
++	MX1_PAD_CS4		= PAD_ID(PA, 22),
++	MX1_PAD_CS5		= PAD_ID(PA, 23),
++	MX1_PAD_A16		= PAD_ID(PA, 24),
++	MX1_PAD_A17		= PAD_ID(PA, 25),
++	MX1_PAD_A18		= PAD_ID(PA, 26),
++	MX1_PAD_A19		= PAD_ID(PA, 27),
++	MX1_PAD_A20		= PAD_ID(PA, 28),
++	MX1_PAD_A21		= PAD_ID(PA, 29),
++	MX1_PAD_A22		= PAD_ID(PA, 30),
++	MX1_PAD_A23		= PAD_ID(PA, 31),
++	MX1_PAD_SD_DAT0		= PAD_ID(PB, 8),
++	MX1_PAD_SD_DAT1		= PAD_ID(PB, 9),
++	MX1_PAD_SD_DAT2		= PAD_ID(PB, 10),
++	MX1_PAD_SD_DAT3		= PAD_ID(PB, 11),
++	MX1_PAD_SD_SCLK		= PAD_ID(PB, 12),
++	MX1_PAD_SD_CMD		= PAD_ID(PB, 13),
++	MX1_PAD_SIM_SVEN	= PAD_ID(PB, 14),
++	MX1_PAD_SIM_PD		= PAD_ID(PB, 15),
++	MX1_PAD_SIM_TX		= PAD_ID(PB, 16),
++	MX1_PAD_SIM_RX		= PAD_ID(PB, 17),
++	MX1_PAD_SIM_RST		= PAD_ID(PB, 18),
++	MX1_PAD_SIM_CLK		= PAD_ID(PB, 19),
++	MX1_PAD_USBD_AFE	= PAD_ID(PB, 20),
++	MX1_PAD_USBD_OE		= PAD_ID(PB, 21),
++	MX1_PAD_USBD_RCV	= PAD_ID(PB, 22),
++	MX1_PAD_USBD_SUSPND	= PAD_ID(PB, 23),
++	MX1_PAD_USBD_VP		= PAD_ID(PB, 24),
++	MX1_PAD_USBD_VM		= PAD_ID(PB, 25),
++	MX1_PAD_USBD_VPO	= PAD_ID(PB, 26),
++	MX1_PAD_USBD_VMO	= PAD_ID(PB, 27),
++	MX1_PAD_UART2_CTS	= PAD_ID(PB, 28),
++	MX1_PAD_UART2_RTS	= PAD_ID(PB, 29),
++	MX1_PAD_UART2_TXD	= PAD_ID(PB, 30),
++	MX1_PAD_UART2_RXD	= PAD_ID(PB, 31),
++	MX1_PAD_SSI_RXFS	= PAD_ID(PC, 3),
++	MX1_PAD_SSI_RXCLK	= PAD_ID(PC, 4),
++	MX1_PAD_SSI_RXDAT	= PAD_ID(PC, 5),
++	MX1_PAD_SSI_TXDAT	= PAD_ID(PC, 6),
++	MX1_PAD_SSI_TXFS	= PAD_ID(PC, 7),
++	MX1_PAD_SSI_TXCLK	= PAD_ID(PC, 8),
++	MX1_PAD_UART1_CTS	= PAD_ID(PC, 9),
++	MX1_PAD_UART1_RTS	= PAD_ID(PC, 10),
++	MX1_PAD_UART1_TXD	= PAD_ID(PC, 11),
++	MX1_PAD_UART1_RXD	= PAD_ID(PC, 12),
++	MX1_PAD_SPI1_RDY	= PAD_ID(PC, 13),
++	MX1_PAD_SPI1_SCLK	= PAD_ID(PC, 14),
++	MX1_PAD_SPI1_SS		= PAD_ID(PC, 15),
++	MX1_PAD_SPI1_MISO	= PAD_ID(PC, 16),
++	MX1_PAD_SPI1_MOSI	= PAD_ID(PC, 17),
++	MX1_PAD_BT13		= PAD_ID(PC, 19),
++	MX1_PAD_BT12		= PAD_ID(PC, 20),
++	MX1_PAD_BT11		= PAD_ID(PC, 21),
++	MX1_PAD_BT10		= PAD_ID(PC, 22),
++	MX1_PAD_BT9		= PAD_ID(PC, 23),
++	MX1_PAD_BT8		= PAD_ID(PC, 24),
++	MX1_PAD_BT7		= PAD_ID(PC, 25),
++	MX1_PAD_BT6		= PAD_ID(PC, 26),
++	MX1_PAD_BT5		= PAD_ID(PC, 27),
++	MX1_PAD_BT4		= PAD_ID(PC, 28),
++	MX1_PAD_BT3		= PAD_ID(PC, 29),
++	MX1_PAD_BT2		= PAD_ID(PC, 30),
++	MX1_PAD_BT1		= PAD_ID(PC, 31),
++	MX1_PAD_LSCLK		= PAD_ID(PD, 6),
++	MX1_PAD_REV		= PAD_ID(PD, 7),
++	MX1_PAD_CLS		= PAD_ID(PD, 8),
++	MX1_PAD_PS		= PAD_ID(PD, 9),
++	MX1_PAD_SPL_SPR		= PAD_ID(PD, 10),
++	MX1_PAD_CONTRAST	= PAD_ID(PD, 11),
++	MX1_PAD_ACD_OE		= PAD_ID(PD, 12),
++	MX1_PAD_LP_HSYNC	= PAD_ID(PD, 13),
++	MX1_PAD_FLM_VSYNC	= PAD_ID(PD, 14),
++	MX1_PAD_LD0		= PAD_ID(PD, 15),
++	MX1_PAD_LD1		= PAD_ID(PD, 16),
++	MX1_PAD_LD2		= PAD_ID(PD, 17),
++	MX1_PAD_LD3		= PAD_ID(PD, 18),
++	MX1_PAD_LD4		= PAD_ID(PD, 19),
++	MX1_PAD_LD5		= PAD_ID(PD, 20),
++	MX1_PAD_LD6		= PAD_ID(PD, 21),
++	MX1_PAD_LD7		= PAD_ID(PD, 22),
++	MX1_PAD_LD8		= PAD_ID(PD, 23),
++	MX1_PAD_LD9		= PAD_ID(PD, 24),
++	MX1_PAD_LD10		= PAD_ID(PD, 25),
++	MX1_PAD_LD11		= PAD_ID(PD, 26),
++	MX1_PAD_LD12		= PAD_ID(PD, 27),
++	MX1_PAD_LD13		= PAD_ID(PD, 28),
++	MX1_PAD_LD14		= PAD_ID(PD, 29),
++	MX1_PAD_LD15		= PAD_ID(PD, 30),
++	MX1_PAD_TMR2OUT		= PAD_ID(PD, 31),
++};
++
++/* Pad names for the pinmux subsystem */
++static const struct pinctrl_pin_desc imx1_pinctrl_pads[] = {
++	IMX_PINCTRL_PIN(MX1_PAD_A24),
++	IMX_PINCTRL_PIN(MX1_PAD_TIN),
++	IMX_PINCTRL_PIN(MX1_PAD_PWMO),
++	IMX_PINCTRL_PIN(MX1_PAD_CSI_MCLK),
++	IMX_PINCTRL_PIN(MX1_PAD_CSI_D0),
++	IMX_PINCTRL_PIN(MX1_PAD_CSI_D1),
++	IMX_PINCTRL_PIN(MX1_PAD_CSI_D2),
++	IMX_PINCTRL_PIN(MX1_PAD_CSI_D3),
++	IMX_PINCTRL_PIN(MX1_PAD_CSI_D4),
++	IMX_PINCTRL_PIN(MX1_PAD_CSI_D5),
++	IMX_PINCTRL_PIN(MX1_PAD_CSI_D6),
++	IMX_PINCTRL_PIN(MX1_PAD_CSI_D7),
++	IMX_PINCTRL_PIN(MX1_PAD_CSI_VSYNC),
++	IMX_PINCTRL_PIN(MX1_PAD_CSI_HSYNC),
++	IMX_PINCTRL_PIN(MX1_PAD_CSI_PIXCLK),
++	IMX_PINCTRL_PIN(MX1_PAD_I2C_SDA),
++	IMX_PINCTRL_PIN(MX1_PAD_I2C_SCL),
++	IMX_PINCTRL_PIN(MX1_PAD_DTACK),
++	IMX_PINCTRL_PIN(MX1_PAD_BCLK),
++	IMX_PINCTRL_PIN(MX1_PAD_LBA),
++	IMX_PINCTRL_PIN(MX1_PAD_ECB),
++	IMX_PINCTRL_PIN(MX1_PAD_A0),
++	IMX_PINCTRL_PIN(MX1_PAD_CS4),
++	IMX_PINCTRL_PIN(MX1_PAD_CS5),
++	IMX_PINCTRL_PIN(MX1_PAD_A16),
++	IMX_PINCTRL_PIN(MX1_PAD_A17),
++	IMX_PINCTRL_PIN(MX1_PAD_A18),
++	IMX_PINCTRL_PIN(MX1_PAD_A19),
++	IMX_PINCTRL_PIN(MX1_PAD_A20),
++	IMX_PINCTRL_PIN(MX1_PAD_A21),
++	IMX_PINCTRL_PIN(MX1_PAD_A22),
++	IMX_PINCTRL_PIN(MX1_PAD_A23),
++	IMX_PINCTRL_PIN(MX1_PAD_SD_DAT0),
++	IMX_PINCTRL_PIN(MX1_PAD_SD_DAT1),
++	IMX_PINCTRL_PIN(MX1_PAD_SD_DAT2),
++	IMX_PINCTRL_PIN(MX1_PAD_SD_DAT3),
++	IMX_PINCTRL_PIN(MX1_PAD_SD_SCLK),
++	IMX_PINCTRL_PIN(MX1_PAD_SD_CMD),
++	IMX_PINCTRL_PIN(MX1_PAD_SIM_SVEN),
++	IMX_PINCTRL_PIN(MX1_PAD_SIM_PD),
++	IMX_PINCTRL_PIN(MX1_PAD_SIM_TX),
++	IMX_PINCTRL_PIN(MX1_PAD_SIM_RX),
++	IMX_PINCTRL_PIN(MX1_PAD_SIM_CLK),
++	IMX_PINCTRL_PIN(MX1_PAD_USBD_AFE),
++	IMX_PINCTRL_PIN(MX1_PAD_USBD_OE),
++	IMX_PINCTRL_PIN(MX1_PAD_USBD_RCV),
++	IMX_PINCTRL_PIN(MX1_PAD_USBD_SUSPND),
++	IMX_PINCTRL_PIN(MX1_PAD_USBD_VP),
++	IMX_PINCTRL_PIN(MX1_PAD_USBD_VM),
++	IMX_PINCTRL_PIN(MX1_PAD_USBD_VPO),
++	IMX_PINCTRL_PIN(MX1_PAD_USBD_VMO),
++	IMX_PINCTRL_PIN(MX1_PAD_UART2_CTS),
++	IMX_PINCTRL_PIN(MX1_PAD_UART2_RTS),
++	IMX_PINCTRL_PIN(MX1_PAD_UART2_TXD),
++	IMX_PINCTRL_PIN(MX1_PAD_UART2_RXD),
++	IMX_PINCTRL_PIN(MX1_PAD_SSI_RXFS),
++	IMX_PINCTRL_PIN(MX1_PAD_SSI_RXCLK),
++	IMX_PINCTRL_PIN(MX1_PAD_SSI_RXDAT),
++	IMX_PINCTRL_PIN(MX1_PAD_SSI_TXDAT),
++	IMX_PINCTRL_PIN(MX1_PAD_SSI_TXFS),
++	IMX_PINCTRL_PIN(MX1_PAD_SSI_TXCLK),
++	IMX_PINCTRL_PIN(MX1_PAD_UART1_CTS),
++	IMX_PINCTRL_PIN(MX1_PAD_UART1_RTS),
++	IMX_PINCTRL_PIN(MX1_PAD_UART1_TXD),
++	IMX_PINCTRL_PIN(MX1_PAD_UART1_RXD),
++	IMX_PINCTRL_PIN(MX1_PAD_SPI1_RDY),
++	IMX_PINCTRL_PIN(MX1_PAD_SPI1_SCLK),
++	IMX_PINCTRL_PIN(MX1_PAD_SPI1_SS),
++	IMX_PINCTRL_PIN(MX1_PAD_SPI1_MISO),
++	IMX_PINCTRL_PIN(MX1_PAD_SPI1_MOSI),
++	IMX_PINCTRL_PIN(MX1_PAD_BT13),
++	IMX_PINCTRL_PIN(MX1_PAD_BT12),
++	IMX_PINCTRL_PIN(MX1_PAD_BT11),
++	IMX_PINCTRL_PIN(MX1_PAD_BT10),
++	IMX_PINCTRL_PIN(MX1_PAD_BT9),
++	IMX_PINCTRL_PIN(MX1_PAD_BT8),
++	IMX_PINCTRL_PIN(MX1_PAD_BT7),
++	IMX_PINCTRL_PIN(MX1_PAD_BT6),
++	IMX_PINCTRL_PIN(MX1_PAD_BT5),
++	IMX_PINCTRL_PIN(MX1_PAD_BT4),
++	IMX_PINCTRL_PIN(MX1_PAD_BT3),
++	IMX_PINCTRL_PIN(MX1_PAD_BT2),
++	IMX_PINCTRL_PIN(MX1_PAD_BT1),
++	IMX_PINCTRL_PIN(MX1_PAD_LSCLK),
++	IMX_PINCTRL_PIN(MX1_PAD_REV),
++	IMX_PINCTRL_PIN(MX1_PAD_CLS),
++	IMX_PINCTRL_PIN(MX1_PAD_PS),
++	IMX_PINCTRL_PIN(MX1_PAD_SPL_SPR),
++	IMX_PINCTRL_PIN(MX1_PAD_CONTRAST),
++	IMX_PINCTRL_PIN(MX1_PAD_ACD_OE),
++	IMX_PINCTRL_PIN(MX1_PAD_LP_HSYNC),
++	IMX_PINCTRL_PIN(MX1_PAD_FLM_VSYNC),
++	IMX_PINCTRL_PIN(MX1_PAD_LD0),
++	IMX_PINCTRL_PIN(MX1_PAD_LD1),
++	IMX_PINCTRL_PIN(MX1_PAD_LD2),
++	IMX_PINCTRL_PIN(MX1_PAD_LD3),
++	IMX_PINCTRL_PIN(MX1_PAD_LD4),
++	IMX_PINCTRL_PIN(MX1_PAD_LD5),
++	IMX_PINCTRL_PIN(MX1_PAD_LD6),
++	IMX_PINCTRL_PIN(MX1_PAD_LD7),
++	IMX_PINCTRL_PIN(MX1_PAD_LD8),
++	IMX_PINCTRL_PIN(MX1_PAD_LD9),
++	IMX_PINCTRL_PIN(MX1_PAD_LD10),
++	IMX_PINCTRL_PIN(MX1_PAD_LD11),
++	IMX_PINCTRL_PIN(MX1_PAD_LD12),
++	IMX_PINCTRL_PIN(MX1_PAD_LD13),
++	IMX_PINCTRL_PIN(MX1_PAD_LD14),
++	IMX_PINCTRL_PIN(MX1_PAD_LD15),
++	IMX_PINCTRL_PIN(MX1_PAD_TMR2OUT),
++};
++
++static struct imx1_pinctrl_soc_info imx1_pinctrl_info = {
++	.pins	= imx1_pinctrl_pads,
++	.npins	= ARRAY_SIZE(imx1_pinctrl_pads),
++};
++
++static int __init imx1_pinctrl_probe(struct platform_device *pdev)
++{
++	return imx1_pinctrl_core_probe(pdev, &imx1_pinctrl_info);
++}
++
++static const struct of_device_id imx1_pinctrl_of_match[] = {
++	{ .compatible = "fsl,imx1-iomuxc", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, imx1_pinctrl_of_match);
++
++static struct platform_driver imx1_pinctrl_driver = {
++	.driver	= {
++		.name		= "imx1-pinctrl",
++		.owner		= THIS_MODULE,
++		.of_match_table	= imx1_pinctrl_of_match,
++	},
++	.remove	= imx1_pinctrl_core_remove,
++};
++module_platform_driver_probe(imx1_pinctrl_driver, imx1_pinctrl_probe);
++
++MODULE_AUTHOR("Alexander Shiyan <shc_work@mail.ru>");
++MODULE_DESCRIPTION("Freescale i.MX1 pinctrl driver");
++MODULE_LICENSE("GPL");
+-- 
+1.8.3.2
 
