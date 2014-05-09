@@ -1,166 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491AbaEIKDI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 06:03:08 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44244 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756421AbaEIKDG (ORCPT
+	id S1756518AbaEIKDP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 06:03:15 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:52358 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756494AbaEIKDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 06:03:06 -0400
-Message-ID: <536CA79B.5010505@oracle.com>
-Date: Fri, 09 May 2014 12:02:03 +0200
-From: Vegard Nossum <vegard.nossum@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 9 May 2014 06:03:11 -0400
+Date: Fri, 9 May 2014 11:03:04 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "Gupta, Pekon" <pekon@ti.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel@stlinux.com" <kernel@stlinux.com>,
+        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "angus.clark@st.com" <angus.clark@st.com>
+Subject: Re: [RFC 13/47] mtd: nand: stm_nand_bch: provide Device Tree support
+Message-ID: <20140509100304.GR5767@lee--X1>
+References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
+ <1395735604-26706-14-git-send-email-lee.jones@linaro.org>
+ <20980858CB6D3A4BAE95CA194937D5E73EAB5C83@DBDE04.ent.ti.com>
+ <20140430125406.GN29462@lee--X1>
+ <20980858CB6D3A4BAE95CA194937D5E73EACA3F0@DBDE04.ent.ti.com>
 MIME-Version: 1.0
-To: Xishi Qiu <qiuxishi@huawei.com>
-CC: Pekka Enberg <penberg@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Vegard Nossum <vegard.nossum@gmail.com>, Linux MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: kmemcheck: got WARNING when dynamicly adjust /proc/sys/kernel/kmemcheck
- to 0/1
-References: <536C8A75.4080401@huawei.com> <536CA54A.3060707@huawei.com>
-In-Reply-To: <536CA54A.3060707@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73EACA3F0@DBDE04.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2014 11:52 AM, Xishi Qiu wrote:
-> On 2014/5/9 15:57, Xishi Qiu wrote:
->
->> OS boot with kmemcheck=0, then set 1, do something, set 0, do something, set 1...
->> then I got the WARNING log. Does kmemcheck support dynamicly adjust?
->>
->> Thanks,
->> Xishi Qiu
->>
->> [   20.200305] igb: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: RX
->> [   20.208652] ADDRCONF(NETDEV_UP): eth0: link is not ready
->> [   20.216504] ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
->> [   22.647385] auditd (3116): /proc/3116/oom_adj is deprecated, please use /proc/3116/oom_score_adj instead.
->> [   24.845214] BIOS EDD facility v0.16 2004-Jun-25, 1 devices found
->> [   30.434764] eth0: no IPv6 routers present
->> [  340.154608] NOHZ: local_softirq_pending 01
->> [  340.154639] WARNING: kmemcheck: Caught 64-bit read from uninitialized memory (ffff88083f43a550)
->> [  340.154644] c000000002000000000000000000000080ff5d0100c9ffff400ed34e0888ffff
->> [  340.154667]  u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u
->> [  340.154687]                                  ^
->> [  340.154690]
->> [  340.154694] Pid: 3, comm: ksoftirqd/0 Tainted: G         C   3.4.24-qiuxishi.19-0.1-default+ #2 Huawei Technologies Co., Ltd. Tecal RH2285 V2-24S/BC11SRSC1
->> [  340.154702] RIP: 0010:[<ffffffff81217d72>]  [<ffffffff81217d72>] d_namespace_path+0x132/0x270
->> [  340.154714] RSP: 0018:ffff8808515a1c88  EFLAGS: 00010202
->> [  340.154718] RAX: ffff88083f43a540 RBX: ffff880852e718f3 RCX: 0000000000000001
->> [  340.154721] RDX: ffff8808515a1d28 RSI: 0000000000000000 RDI: ffff881053855a60
->> [  340.154725] RBP: ffff8808515a1ce8 R08: ffff8808515a1c50 R09: ffff880852e75800
->> [  340.154728] R10: 00000000000156f0 R11: 0000000000000000 R12: 0000000000000001
->> [  340.154731] R13: 0000000000000100 R14: ffff880852e71510 R15: ffff880852e71800
->> [  340.154736] FS:  0000000000000000(0000) GS:ffff88085f600000(0000) knlGS:0000000000000000
->> [  340.154740] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->> [  340.154743] CR2: ffff880852e71570 CR3: 00000008513f2000 CR4: 00000000000407f0
->> [  340.154746] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->> [  340.154750] DR3: 0000000000000000 DR6: 00000000ffff4ff0 DR7: 0000000000000400
->> [  340.154753]  [<ffffffff81217f35>] aa_path_name+0x85/0x180
->> [  340.154758]  [<ffffffff812187d6>] apparmor_bprm_set_creds+0x126/0x520
->> [  340.154763]  [<ffffffff811f60ae>] security_bprm_set_creds+0xe/0x10
->> [  340.154771]  [<ffffffff81170d65>] prepare_binprm+0xa5/0x100
->> [  340.154777]  [<ffffffff811716c2>] do_execve_common+0x232/0x430
->> [  340.154781]  [<ffffffff8117194a>] do_execve+0x3a/0x40
->> [  340.154785]  [<ffffffff8100abb9>] sys_execve+0x49/0x70
->> [  340.154793]  [<ffffffff814764bc>] stub_execve+0x6c/0xc0
->> [  340.154801]  [<ffffffffffffffff>] 0xffffffffffffffff
->> [  340.154813] WARNING: kmemcheck: Caught 64-bit read from uninitialized memory (ffff88083f43a570)
->> [  340.154817] 746f70000300000078a5433f0888fffff86d433f0888ffff746f700000730000
->> [  340.154839]  u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u u
->> [  340.154858]                                  ^
->> [  340.154861]
->> [  340.154864] Pid: 3, comm: ksoftirqd/0 Tainted: G         C   3.4.24-qiuxishi.19-0.1-default+ #2 Huawei Technologies Co., Ltd. Tecal RH2285 V2-24S/BC11SRSC1
->> [  340.154871] RIP: 0010:[<ffffffff811691f4>]  [<ffffffff811691f4>] rw_verify_area+0x24/0x100
->> [  340.154880] RSP: 0018:ffff8808515a1dc8  EFLAGS: 00010202
->> [  340.154883] RAX: ffff88083f43a540 RBX: 0000000000000080 RCX: 0000000000000080
->> [  340.154887] RDX: ffff8808515a1e30 RSI: ffff880852e71500 RDI: 0000000000000000
->> [  340.154890] RBP: ffff8808515a1de8 R08: ffff880852e73200 R09: ffff88085f004900
->> [  340.154894] R10: ffff880852e72600 R11: 0000000000000000 R12: ffff880852e71500
->> [  340.154897] R13: 0000000000000000 R14: ffff880852e73200 R15: 0000000000000001
->> [  340.154901] FS:  0000000000000000(0000) GS:ffff88085f600000(0000) knlGS:0000000000000000
->> [  340.154905] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->> [  340.154908] CR2: ffff880852e71570 CR3: 00000008513f2000 CR4: 00000000000407f0
->> [  340.154911] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->> [  340.154914] DR3: 0000000000000000 DR6: 00000000ffff4ff0 DR7: 0000000000000400
->> [  340.154917]  [<ffffffff811698f4>] vfs_read+0xa4/0x130
->> [  340.154922]  [<ffffffff81170ca4>] kernel_read+0x44/0x60
->> [  340.154926]  [<ffffffff81170d90>] prepare_binprm+0xd0/0x100
->> [  340.154931]  [<ffffffff811716c2>] do_execve_common+0x232/0x430
->> [  340.154935]  [<ffffffff8117194a>] do_execve+0x3a/0x40
->> [  340.154939]  [<ffffffff8100abb9>] sys_execve+0x49/0x70
->> [  340.154944]  [<ffffffff814764bc>] stub_execve+0x6c/0xc0
->> [  340.154950]  [<ffffffffffffffff>] 0xffffffffffffffff
->> [  340.154955] WARNING: kmemcheck: Caught 32-bit read from uninitialized memory (ffff88083f43a540)
->> [  340.154959] c000000002000000000000000000000080ff5d0100c9ffff400ed34e0888ffff
->> [  340.154981]  u u u u u u u u u u u u u u u u i i i i i i i i u u u u u u u u
->> [  340.155000]  ^
->>
->>
->
-> Another problem, does there some way will initialize the shadow?
-> I only find the object has been initialized.
->
-> kmemcheck_slab_alloc()
-> 	...
-> 	/*
-> 	 * Has already been memset(), which initializes the shadow for us
-> 	 * as well.
-> 	 */
-> 	if (gfpflags & __GFP_ZERO)
-> 		return;  ----> add kmemcheck_mark_initialized() ?
-> 	...
->
-> slab:
-> 	slab_alloc()
-> 	...
-> 	if (likely(objp))
-> 		kmemcheck_slab_alloc(cachep, flags, objp, cachep->object_size);
->
-> 	if (unlikely((flags & __GFP_ZERO) && objp))
-> 		memset(objp, 0, cachep->object_size);
->
-> 	return objp;
->
-> slub:
-> 	slab_alloc_node()
-> 	...
-> 	if (unlikely(gfpflags & __GFP_ZERO) && object)
-> 		memset(object, 0, s->object_size);
->
-> 	slab_post_alloc_hook(s, gfpflags, object);
->
-> 	return object;
->
-> The shadow memory which used for slab/slub is called from kmemcheck_alloc_shadow(),
-> and it will initialized *only* in kmemcheck_slab_alloc(), right?
->
+> >> >+	of_property_read_u32(np, "st,bch-bitflip-threshold",
+> >> >+			     &pdata->bch_bitflip_threshold);
+> >> >+
+> >> mtd->bitflip_threshold is by default set to ecc.strength (unless a driver initializes it).
+> >> And then can be re-configured for each MTD partition separately
+> >> 	/sys/class/mtd/mtdX/bitflip_threshold
+> >> 	Refer: $kernel/Documentation/ABI/testing/sysfs-class-mtd
+> >> So, I don't think this is a HW parameter, and so should not be passed from DT.
+> >
+> >I think the bit-flip threshold is/can be chip specific, and as we know
+> >which chip we're likely to be booting on, we can specify this via the
+> >hardware description.  Thus, I think it's perfectly viable for an
+> >option to pass through DT to exist.
+> >
+> I don't think that’s the correct interpretation of bitflip_threshold.
+> 
+> (1) bitflip_threshold is dependent on ecc.strength (ECC scheme) of your driver.
+> MTD layers uses bitflip_threshold to warn above layers that number of
+> correctable bit-flips have reached a dangerous level beyond which driver's
+> ECC scheme may not be able to correct them. So above layers should start
+> taking additional corrective action like scrubbing.
+> 	@@drivers/mtd/mtdcore.c: mtd_read()
+> 		return ret_code >= mtd->bitflip_threshold ? -EUCLEAN : 0;
+> 
+> (2) Also, user-space may control it based on how your device ages on field.
+> A fresh silicon may not show too many bitflips. But as device ages the
+> probability of simultaneous bitflips will increase. So user-space may lower
+> the bitflip_threshold to avoid accumulation of bitflips in a single page.
+>  
+> Thus, bitflip_threshold should not be passed via DT.
+> It's neither a hardware parameter, nor it’s a static constant.
 
-If you enable kmemcheck at run-time, there is no way to know what 
-already-allocated objects have been initialised or not, so we assume 
-that they have been. In that case, there is also very little point in 
-allocating shadow memory for them, since it will all be marked as 
-"initialised" anyway (one exception is if we later memcpy() 
-uninitialised memory into them, but that seems like it would be a pretty 
-rare occurrence).
+Ah, I see.  I will fixup, thanks for the explanation.
 
-The use case for toggling kmemcheck at run-time is to check a particular 
-piece of code (enable it, run a program/system call/insert a 
-module/whatever, disable it -- this will basically check memory 
-allocated while kmemcheck is enabled, but not memory allocated before or 
-after).
+> >> >+struct device_node *stm_of_get_partitions_node(struct device_node *np,
+> >> >+					       int bank_nr)
+> >> >+{
+> >> >+	struct device_node *banksnp, *banknp, *partsnp = NULL;
+> >> >+	char name[10];
+> >> >+
+> >> >+	banksnp = of_parse_phandle(np, "st,nand-banks", 0);
+> >> >+	if (!banksnp)
+> >> >+		return NULL;
+> >> >+
+> >> >+	sprintf(name, "bank%d", bank_nr);
+> >> >+	banknp = of_get_child_by_name(banksnp, name);
+> >> >+	if (banknp)
+> >> >+		return NULL;
+> >> >+
+> >> >+	partsnp = of_get_child_by_name(banknp, "partitions");
+> >> >+	of_node_put(banknp);
+> >> >+
+> >> Sorry, I'm bit confused here .. I think you don't need to find children of
+> >> Your bank node. This should already taken care in default parser
+> >> drivers/mtd/ofpart.c : parse_ofpart_partitions()
+> >> And all you need to pass is 'of_node' of bank (device).
+> >> Is my understanding correct ?
+> >
+> >We have 3 options here, you _can_ use parse_ofpart_partitions() if
+> >your partition information conforms to its schema, but said schema
+> >does not support banks and/or other information that we choose to
+> >place within the bank node.  The second option is to register a
+> >parser.  My personal view is that registering a parser is using the
+> >framework for 'using the framework's' sake i.e. doesn't actually
+> >achieve anything special.  We've chosen the third option, which is to
+> >parse and extract the information ourselves - which is actually fairly
+> >trivial, and pass the required partition data in through the
+> >mtd_device_parse_register() call - which is where the information
+> >would be parsed in the case of the first two options.
+> >
+> Do you really want to have *custom* partition format ?
+> If your previous code was non-DT (platform file based), then I think
+> It's good point to move to unified generic partition format which others
+> are following, as you make your driver DT compliant, and in mainline.
+> 
+> I understand you primary objective would be to get ST driver work
+> out of mainline asap, but if you upstream too many custom stuff you
+> are only adding maintenance burden for your code. This is where
+> most of my comments originate.
+> However, I leave it to Brian to decide, if he is okay with these.
+> 
+> 
+> with regards, pekon
 
-So to answer your original question, yes, toggling kmemcheck at run-time 
-is supported, but there is an increased chance of false negatives (we 
-don't spot a problem where there is one). About false positives (we spot 
-a problem where there isn't one), I don't think runtime toggling should 
-make a difference.
-
-
-Vegard
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
