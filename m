@@ -1,90 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888AbaEIIOD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 04:14:03 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:54272 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537AbaEIIN4 (ORCPT
+	id S1756030AbaEIIOw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 04:14:52 -0400
+Received: from bastet.se.axis.com ([195.60.68.11]:34841 "EHLO
+	bastet.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270AbaEIIOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 04:13:56 -0400
-X-AuditID: cbfec7f5-b7fae6d000004d6d-df-536c8e409f44
-Message-id: <536C8E64.6000009@samsung.com>
-Date: Fri, 09 May 2014 11:14:28 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: "J. R. Okajima" <hooanon05g@gmail.com>
-Cc: viro@zeniv.linux.org.uk, ebiederm@xmission.com,
-        linux-security-module@vger.kernel.org, eparis@redhat.com,
-        zohar@linux.vnet.ibm.com, dmitry.kasatkin@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: IMA + O_DIRECT (Re: [PATCH 0/1] fix IMA + Apparmor kernel panic)
-References: <cover.1399554584.git.d.kasatkin@samsung.com>
- <29977.1399605003@jrobl>
-In-reply-to: <29977.1399605003@jrobl>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsVy+t/xy7oOfTnBBmv2qFt8WVpn8X9bC7vF
-	xO1tLBbn+1rZLC7vmsNm8aHnEZvF+b/HWS0+rZjE7MDhsXPWXXaPB4c2s3i833eVzePzJjmP
-	KYfaWTw2PXnLFMAWxWWTkpqTWZZapG+XwJWxasoc5oJF3BU/7k1ja2B8y9HFyMkhIWAi0fTn
-	NjuELSZx4d56ti5GLg4hgaWMEpvugSRAnEYmiZ0TbrNCOLMYJX68mgOU4eDgFdCSuPA9CqSb
-	RUBV4u+pZjYQm01AT2JD8w+wElGBCInHF4RAwrwCghI/Jt9jAQmLAHV2bwWbyCxwlFFi6vv5
-	jCA1wgK+EpNnzWMCsYUEQiT+zLnMAmJzAo3/0NrFCmIzC+hI7G+dxgZhy0tsXvOWGaJeVaJ7
-	7Vo2iGcUJU5PPsc8gVF4FpLVs5C0z0LSvoCReRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZG
-	SPx83cG49JjVIUYBDkYlHt4FMhnBQqyJZcWVuYcYJTiYlUR4PXpzgoV4UxIrq1KL8uOLSnNS
-	iw8xMnFwSjUwdhz+/E+CkfH/u4mpmS3S5kucbl+yjA2+dbvJWyV88Zatei7SZp/OhZ+dWfLz
-	2qodpV9WS7/fPVHGrFuGsYHX+QDX2f1t1aJKhz/8sxBeunXhpSq1A5K7pDl8jYW/h4Yv7lEy
-	YdobuLLIwe3eiWqLd5bHIsJyraXZlfJ36KkbhmeuW7PuZc41JZbijERDLeai4kQAG0owKH0C	AAA=
+	Fri, 9 May 2014 04:14:48 -0400
+Date: Fri, 9 May 2014 10:14:40 +0200
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: David Miller <davem@davemloft.net>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Jesper Nilsson <jespern@axis.com>, Mikael Starvik <starvik@axis.com>
+Subject: Re: [PATCH 07/20] arch,cris: Fold atomic_ops
+Message-ID: <20140509081440.GP9831@axis.com>
+References: <20140508135852.104572724@infradead.org>
+ <CAMuHMdV7FUC+p5XqwLZmqJRLYv1qhu5hf0M_e5pASBRHgFAhCA@mail.gmail.com>
+ <20140508160606.GD30445@twins.programming.kicks-ass.net>
+ <20140508.133451.1383193780216133211.davem@davemloft.net>
+ <20140508181734.GK2844@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140508181734.GK2844@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/14 06:10, J. R. Okajima wrote:
-> Dmitry Kasatkin:
->> Following patch replaces IMA usage of kernel_read() with special
->> version which skips security check that triggers kernel panic
->> when Apparmor and IMA appraisal are enabled together.
-> I know this is related to exit(2), but this behaviour of IMA is related
-> to open(2) too.
-> When O_DIRECT is specified, some filesystems (for example, ext2) call
-> do_blockdev_direct_IO() which acquires i_mutex. But
-> IMA:process_measurement() already acquires i_mutex before kernel_read().
-> It causes a deadlock even if you replace kernel_read() by a simpler one.
+On Thu, May 08, 2014 at 08:17:34PM +0200, Peter Zijlstra wrote:
+> On Thu, May 08, 2014 at 01:34:51PM -0400, David Miller wrote:
+> > You did this for sparc too.
+> 
+> I did indeed.
+> 
+> And sparc32 and sparc64 compile file without these spurious hunks.
+> 
+> I'm sure I needed that to make it compile at one point, but I suspect
+> they're remnants from the smp_mb__ shuffle which needed include file
+> changes.
+> 
+> But since then I've redone those and solved the compile issues
+> differently, but these hunks stuck around...
+> 
+> I've gone over the other patches, cris and sparc appear to be the only
+> ones so affected.
 
-Hi,
+With those changes, here's my
 
-It is a different issue.
-
-I made patch more than a year ago which fix the problem
-
-https://lkml.org/lkml/2013/2/20/601
-
-I think we had to declare the purpose of the patch in a bit different way.
-IMA really does not need direct-io, and can temporarily drop the flag.
-As side affect, it would fix the deadlock problem
-
-But I have a different patch now. I will post it today.
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
 
 
-> How can we stop reading the file from IMA?
-
-It is actually very interesting question...
-
-1) if you would like to use IMA without it reading a file, then I think
-I must disappoint you.
-It is not possible.. IMA needs reading a file.
-
-2) if you do not use IMA, then there is no problem for you, because IMA
-will not read file if it is not used...
-
-Have a nice day.
-
-- Dmitry
-
->
-> J. R. Okajima
->
-
-
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
