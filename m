@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970AbaEIHGx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 03:06:53 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:43253 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904AbaEIHGw (ORCPT
+	id S1752500AbaEIHKI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 03:10:08 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:40614 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaEIHKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 03:06:52 -0400
+	Fri, 9 May 2014 03:10:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <1399560433-1402630-2-git-send-email-arnd@arndb.de>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <1399560433-1402630-2-git-send-email-arnd@arndb.de>
+In-Reply-To: <536BDB88.8090106@ti.com>
+References: <1398755224-7530-1-git-send-email-prabhakar.csengg@gmail.com> <536BDB88.8090106@ti.com>
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Fri, 9 May 2014 12:36:20 +0530
-Message-ID: <CA+V-a8vt5=MB8SipxRKc99hLaXt8m=3UmSBLRCX20M0c1jcJLA@mail.gmail.com>
-Subject: Re: [PATCH] mdio_bus: fix devm_mdiobus_alloc_size export
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: LAK <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
+Date: Fri, 9 May 2014 12:39:35 +0530
+Message-ID: <CA+V-a8s_vjvcX_BpLeg0tnBQx4+n2voQo_dz+EA_ZETTV_exyg@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: configs: drop CONFIG_COMMON_CLK_DEBUG
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
         Grygorii Strashko <grygorii.strashko@ti.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        netdev <netdev@vger.kernel.org>
+        Olof Johansson <olof@lixom.net>, Tony Prisk <linux@prisktech.co.nz>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 8, 2014 at 8:16 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> commit 6d48f44b7b2 "mdio_bus: implement devm_mdiobus_alloc/devm_mdiobus_free"
-> introduced a new function devm_mdiobus_alloc_size() but added an export
-> for a different function devm_mdiobus_alloc(), which was obviously
-> a simple mistake that leads to  build error whenever this function is
-> used from a loadable module:
->
-> ERROR: "devm_mdiobus_alloc_size" [drivers/net/ethernet/ti/davinci_mdio.ko] undefined!
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Grygorii Strashko <grygorii.strashko@ti.com>
-> Cc: Florian Fainelli <f.fainelli@gmail.com>
-> Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-> Cc: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: netdev@vger.kernel.org
+Hi Santosh,
 
-Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On Fri, May 9, 2014 at 1:01 AM, Santosh Shilimkar
+<santosh.shilimkar@ti.com> wrote:
+> On Tuesday 29 April 2014 03:07 AM, Lad Prabhakar wrote:
+>> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+>>
+>> this patch removes COMMON_CLK_DEBUG config option
+>> from defconfig file as this config option is obsolete.
+>>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>> ---
+>>  Changes for v2:
+>>  a> Dropped imx defconfig files as suggested by Shawn.
+>>
+>
+>>  arch/arm/configs/keystone_defconfig     |    1 -
+> Am picking the keystone part from this patch. Thanks.
+> You might want split this patch so that others can pick it
+> up
+>
+Thanks for picking it up.
 
 Thanks,
 --Prabhakar Lad
-
-> ---
->  drivers/net/phy/mdio_bus.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
-> index 68a9a38..a628496 100644
-> --- a/drivers/net/phy/mdio_bus.c
-> +++ b/drivers/net/phy/mdio_bus.c
-> @@ -117,7 +117,7 @@ struct mii_bus *devm_mdiobus_alloc_size(struct device *dev, int sizeof_priv)
->
->         return bus;
->  }
-> -EXPORT_SYMBOL_GPL(devm_mdiobus_alloc);
-> +EXPORT_SYMBOL_GPL(devm_mdiobus_alloc_size);
->
->  /**
->   * devm_mdiobus_free - Resource-managed mdiobus_free()
-> --
-> 1.8.3.2
->
