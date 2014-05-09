@@ -1,111 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226AbaEIJyN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 05:54:13 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49880 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752674AbaEIJyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 05:54:12 -0400
-Message-ID: <536CA5BC.8080106@ti.com>
-Date: Fri, 9 May 2014 12:54:04 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1756363AbaEIJyU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 05:54:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48330 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752669AbaEIJyR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 05:54:17 -0400
+Date: Fri, 9 May 2014 11:54:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: riel@redhat.com
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, mgorman@suse.de,
+        chegu_vinod@hp.com
+Subject: Re: [PATCH 2/4] sched,numa: weigh nearby nodes for task placement on
+ complex NUMA topologies
+Message-ID: <20140509095414.GR30445@twins.programming.kicks-ass.net>
+References: <1399569811-14362-1-git-send-email-riel@redhat.com>
+ <1399569811-14362-3-git-send-email-riel@redhat.com>
 MIME-Version: 1.0
-To: Fabian Frederick <fabf@skynet.be>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] drivers/video/fbdev/core/fbmem.c: remove positive
- test on unsigned values
-References: <20140425221511.1c8dc66551123166c7f27a9c@skynet.be>
-In-Reply-To: <20140425221511.1c8dc66551123166c7f27a9c@skynet.be>
-X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="X1DRJjknNHdx0TQEEFf54Gp07acdxB3dS"
+	protocol="application/pgp-signature"; boundary="yJLks8MEB0SlUFSu"
+Content-Disposition: inline
+In-Reply-To: <1399569811-14362-3-git-send-email-riel@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---X1DRJjknNHdx0TQEEFf54Gp07acdxB3dS
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-On 25/04/14 23:15, Fabian Frederick wrote:
-> fb_image.dx, fb_image.dy and fbconf2bmap.framebuffer are __u32
->=20
-> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-> Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  drivers/video/fbdev/core/fbmem.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/video/fbdev/core/fbmem.c b/drivers/video/fbdev/cor=
-e/fbmem.c
-> index b6d5008..583896e 100644
-> --- a/drivers/video/fbdev/core/fbmem.c
-> +++ b/drivers/video/fbdev/core/fbmem.c
-> @@ -433,7 +433,7 @@ static void fb_do_show_logo(struct fb_info *info, s=
-truct fb_image *image,
->  			image->dx +=3D image->width + 8;
->  		}
->  	} else if (rotate =3D=3D FB_ROTATE_UD) {
-> -		for (x =3D 0; x < num && image->dx >=3D 0; x++) {
-> +		for (x =3D 0; x < num; x++) {
->  			info->fbops->fb_imageblit(info, image);
->  			image->dx -=3D image->width + 8;
->  		}
-> @@ -445,7 +445,7 @@ static void fb_do_show_logo(struct fb_info *info, s=
-truct fb_image *image,
->  			image->dy +=3D image->height + 8;
->  		}
->  	} else if (rotate =3D=3D FB_ROTATE_CCW) {
-> -		for (x =3D 0; x < num && image->dy >=3D 0; x++) {
-> +		for (x =3D 0; x < num; x++) {
->  			info->fbops->fb_imageblit(info, image);
->  			image->dy -=3D image->height + 8;
->  		}
-> @@ -1179,7 +1179,7 @@ static long do_fb_ioctl(struct fb_info *info, uns=
-igned int cmd,
->  			return -EFAULT;
->  		if (con2fb.console < 1 || con2fb.console > MAX_NR_CONSOLES)
->  			return -EINVAL;
-> -		if (con2fb.framebuffer < 0 || con2fb.framebuffer >=3D FB_MAX)
-> +		if (con2fb.framebuffer >=3D FB_MAX)
->  			return -EINVAL;
->  		if (!registered_fb[con2fb.framebuffer])
->  			request_module("fb%d", con2fb.framebuffer);
->=20
+--yJLks8MEB0SlUFSu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Looks fine to me. Queued for 3.16.
+On Thu, May 08, 2014 at 01:23:29PM -0400, riel@redhat.com wrote:
+> +	/*
+> +	 * No need to calculate a score if the system has a simple NUMA
+> +	 * topology, with no node distances between "local" and "far away".
+> +	 */
+> +	if (max_distance == LOCAL_DISTANCE)
+> +		return 0;
 
- Tomi
+That's basically !numa and we shouldn't be getting here, so I think you
+can make that a WARN_ON_ONCE().
 
-
-
---X1DRJjknNHdx0TQEEFf54Gp07acdxB3dS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+--yJLks8MEB0SlUFSu
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTbKW8AAoJEPo9qoy8lh71itQP/038F7D5FChnxKb3u6rOsX6G
-vuOGTF8tVYz3nTQDb547NaRFlgQunoon/EnlL6+6HhkdqHZ8a5af1zL78n30Z4Jq
-lElldkHDcWttnskuwQzFxBlFGqOfFAzPM58ckpU3fwcSFuQZGGh7VOcnPcfjC54D
-pNJJK3PvyZFae0cV86aSqW+Xg5HE5/KytTCAvasyTO6jVxOso1idmHywyIvX6Cbw
-H4qztSblt4vRQ+EchBqdbWmU8NRCBRxhPQaBbLWyAAPbsVQchxZpN+JlBF+QS/la
-5yLOPr6XgQ90wRmnW0fi81M4uZ+fyqxmHTeBuXGOt6/rdJLOl1v9JkmW/LI4qSu2
-rjwclnScX0YP30S7Fu9tsRHi+EuiimONJJlCCMYxLZ5DUS4QnPJ0FAEYi6HD1v3s
-NFW5+zDV2Rv8nWzjt79zelLSJlLamqGL649Y9+kDIEo/tu59liyghLdF8GsegIql
-5uI8SWOdq4nef9kgR3lrbvH4KLirQA6d7e9mkCxZfDmQsqzNfjhZxpqGvVCX4O3i
-16gd8ETD1VQwVKcIJKfMidgZpQNfEFRDPAAS/lZ4/iCmTSRyKCDPF0RIXC2xAqK/
-DWlkDQeKeHuTCH5+hXjz6zCJN74CjrqZl1ECfi+QApi/omylxg0ijY27GTJIRWAn
-hzX/YJqGXD4/YyYoI9Zr
-=VRkQ
+iQIcBAEBAgAGBQJTbKXFAAoJEHZH4aRLwOS6XugP/1lelZNT0MfjCLQTFICTJ/I5
+kplkfvkLAVeLGVzWeudPx+qtksl26WdeJ/9YFm/9EnD0Ok9Isxe9QHwkgdN5sQ5r
+cnXq7nlZ5AueqMrkcwifaTubUc9kk4X53Fms96bMhqt0GrHmOFuPNsUpwKOV4148
+ValbhFex8LSke6fuZGjKMZl+pY6RCzVSxj2+jyLix8iEYSlm25TWW5BMLBzHomzN
+41QdymmUCrV6Z7xXldUngCvGQVB7fxNgIx9AMEe3h842D5bZ8ROowury6Eiy+Viy
+Bn9pLOfMc2e+15KEM5+ie4AysFsagxVYPPVVdOMI0zZjMDLJZNCwBItD66MxDmLM
+m6qvwhajn3lruJkvUrRhGypntoCguaZazx6LHM1e44epkzYiob0ff7I3tDWEFLRa
+5JFyFPcH/rnAGMvPqFv0nBIxLErq/R8c4JHF9jSgsmvLw3RGoxtbQ+q6vtBeLEO+
+RbUz/iBfHvr2fyfW7i4Wopl+XWrqdAM98KndZwaGimRA4TJcbnjewL1mMAGE87EW
+NApJ8wZmqmKG6Qdh3cxkhBOlMj6d8vJSUa8UYNbtfUsOkPVF8pbb1/Q86gn3ZeLp
+lrhvFSbDMTfL4r+WQ+zt/wQFC/jHhhYCYhn9VGd3SX83C/QLKNpT5SJKsQUX/G1j
+TfrM7WYLzcMEYGOosoh8
+=LWSg
 -----END PGP SIGNATURE-----
 
---X1DRJjknNHdx0TQEEFf54Gp07acdxB3dS--
+--yJLks8MEB0SlUFSu--
