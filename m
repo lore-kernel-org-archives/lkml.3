@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932535AbaEIVfr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 17:35:47 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:33364 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757775AbaEIVbj (ORCPT
+	id S1757517AbaEIVi7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 17:38:59 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:65457 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756553AbaEIVi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 17:31:39 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
-        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>
-Subject: [PATCH 02/14] cgroup: remove pointless has tasks/children test from mem_cgroup_force_empty()
-Date: Fri,  9 May 2014 17:31:19 -0400
-Message-Id: <1399671091-23867-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1399671091-23867-1-git-send-email-tj@kernel.org>
-References: <1399671091-23867-1-git-send-email-tj@kernel.org>
+	Fri, 9 May 2014 17:38:57 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/1] kernel/power/hibernate.c: convert simple_strtoul to kstrtoul
+Date: Fri, 09 May 2014 23:55:39 +0200
+Message-ID: <13472444.sHWql5LHCk@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140509200903.2917158bfbe26723226122c5@skynet.be>
+References: <20140509200903.2917158bfbe26723226122c5@skynet.be>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mem_cgroup_force_empty() is used only from
-mem_cgroup_force_empty_write() and tests whether the target memcg has
-any tasks or children without any synchronization and then returns
--EBUSY if so.
+On Friday, May 09, 2014 08:09:03 PM Fabian Frederick wrote:
+> 
+> Inspired-By: Andrew Morton <akpm@linux-foundation.org>
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 
-This is just weird.  The tests don't really mean anything as tasks and
-children may be added after the tests and it also makes the behavior
-of the knob arbitrary because there may be lingering offline and
-removed children on the children list for extended period of time -
-writes to the knob can return -EBUSY for reasons completely invisible
-to userland.
+Queued up for 3.16, thanks!
 
-The knob is best-effort anyway and the broken business test doesn't
-affect its operation.  Remove it.
+> ---
+>  kernel/power/hibernate.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> index f4f2073..66332b6 100644
+> --- a/kernel/power/hibernate.c
+> +++ b/kernel/power/hibernate.c
+> @@ -1109,7 +1109,10 @@ static int __init resumewait_setup(char *str)
+>  
+>  static int __init resumedelay_setup(char *str)
+>  {
+> -	resume_delay = simple_strtoul(str, NULL, 0);
+> +	int rc = kstrtoul(str, 0, (unsigned long *)&resume_delay);
+> +
+> +	if (rc)
+> +		return rc;
+>  	return 1;
+>  }
+>  
+> 
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c | 5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index a5e0417..036453a 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4857,11 +4857,6 @@ static inline bool memcg_has_children(struct mem_cgroup *memcg)
- static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
- {
- 	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
--	struct cgroup *cgrp = memcg->css.cgroup;
--
--	/* returns EBUSY if there is a task or if we come here twice. */
--	if (cgroup_has_tasks(cgrp) || !list_empty(&cgrp->children))
--		return -EBUSY;
- 
- 	/* we call try-to-free pages for make this cgroup empty */
- 	lru_add_drain_all();
 -- 
-1.9.0
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
