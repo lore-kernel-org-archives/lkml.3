@@ -1,84 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919AbaEIL1a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 07:27:30 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39117 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947AbaEIL13 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 07:27:29 -0400
-Date: Fri, 9 May 2014 12:27:12 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Chiau Ee Chew <chiau.ee.chew@intel.com>,
-        Hock Leong Kweh <hock.leong.kweh@intel.com>
-Message-ID: <20140509112712.GL12304@sirena.org.uk>
-References: <1399559431-2065-1-git-send-email-mika.westerberg@linux.intel.com>
- <20140509103315.GJ12304@sirena.org.uk>
- <20140509112105.GS3722@lahna.fi.intel.com>
+	id S1756350AbaEIL3y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 07:29:54 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38005 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753422AbaEIL3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 07:29:52 -0400
+Message-ID: <536CBC00.6000709@ti.com>
+Date: Fri, 9 May 2014 16:59:04 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aaL8sFpsRKk5R4SN"
-Content-Disposition: inline
-In-Reply-To: <20140509112105.GS3722@lahna.fi.intel.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi/pxa2xx: Prevent DMA from transferring too many bytes
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+CC: Marek Vasut <marex@denx.de>, <devicetree@vger.kernel.org>,
+        <balajitk@ti.com>, <linux-doc@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, Jingoo Han <jg1.han@samsung.com>,
+        <linux-kernel@vger.kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, <linux-omap@vger.kernel.org>,
+        <rogerq@ti.com>
+Subject: Re: [PATCH 05/17] pci: host: pcie-dra7xx: add support for pcie-dra7xx
+ controller
+References: <1399383244-14556-1-git-send-email-kishon@ti.com> <4300084.bc6ByDTk7W@wuerfel> <5369F287.6000103@ti.com> <6485683.q96o7U6vf8@wuerfel>
+In-Reply-To: <6485683.q96o7U6vf8@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Arnd,
 
---aaL8sFpsRKk5R4SN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Wednesday 07 May 2014 03:00 PM, Arnd Bergmann wrote:
+> On Wednesday 07 May 2014 14:14:55 Kishon Vijay Abraham I wrote:
+>>>> +static void dra7xx_pcie_enable_interrupts(struct pcie_port *pp)
+>>>> +{
+>>>> +    struct dra7xx_pcie *dra7xx = to_dra7xx_pcie(pp);
+>>>> +
+>>>> +    dra7xx_pcie_writel(dra7xx->base, PCIECTRL_DRA7XX_CONF_IRQSTATUS_MAIN,
+>>>> +                       ~INTERRUPTS);
+>>>> +    dra7xx_pcie_writel(dra7xx->base,
+>>>> +                       PCIECTRL_DRA7XX_CONF_IRQENABLE_SET_MAIN, INTERRUPTS);
+>>>> +    dra7xx_pcie_writel(dra7xx->base, PCIECTRL_DRA7XX_CONF_IRQSTATUS_MSI,
+>>>> +                       ~LEG_EP_INTERRUPTS & ~MSI);
+>>>> +
+>>>> +    if (IS_ENABLED(CONFIG_PCI_MSI))
+>>>> +            dra7xx_pcie_writel(dra7xx->base,
+>>>> +                               PCIECTRL_DRA7XX_CONF_IRQENABLE_SET_MSI, MSI);
+>>>> +    else
+>>>> +            dra7xx_pcie_writel(dra7xx->base,
+>>>> +                               PCIECTRL_DRA7XX_CONF_IRQENABLE_SET_MSI,
+>>>> +                               LEG_EP_INTERRUPTS);
+>>>
+>>> Doesn't this just enable one or the other? In general I'd assume you need
+>>> both INTx and MSI, at least if MSI is available.
+>>
+>> Not sure since the programming sequence in the TRM explicitly states either
+>> legacy interrupts or MSI interrupts should be enabled but not both.
+> 
+> Hmm, I think that means you can't have MSI at all. You have to support
+> legacy PCI devices that can't do MSI.
+> 
+> Do you know if you have a modern GIC implementation with MSI support
+> in these SoCs? It would be better anyway to use the GIC for doing
 
-On Fri, May 09, 2014 at 02:21:05PM +0300, Mika Westerberg wrote:
-> On Fri, May 09, 2014 at 11:33:15AM +0100, Mark Brown wrote:
+In DRA7 it is not there. I'm not sure in other platforms.
+> MSI, so you can just ignore the internal MSI controller here.
+> 
+>>>> +static int add_pcie_port(struct dra7xx_pcie *dra7xx,
+>>>> +                      struct platform_device *pdev)
+>>>> +{
+>>>> +    int ret;
+>>>> +    struct pcie_port *pp;
+>>>> +    struct resource *res;
+>>>> +    struct device *dev = &pdev->dev;
+>>>> +
+>>>> +    pp = &dra7xx->pp;
+>>>> +    pp->dev = dev;
+>>>> +    pp->ops = &dra7xx_pcie_host_ops;
+>>>> +
+>>>> +    spin_lock_init(&pp->conf_lock);
+>>>> +
+>>>> +    pp->irq = platform_get_irq(pdev, 1);
+>>>> +    if (pp->irq < 0) {
+>>>> +            dev_err(dev, "missing IRQ resource\n");
+>>>> +            return -EINVAL;
+>>>> +    }
+>>>>
+>>>
+>>> The binding does not list a mandatory "interrupts" property, so
+>>> this should not be treated as an error.
+>>
+>> actually the 'interrupts' property is documented in pci/designware-pcie.txt.
+> 
+> Hmm, but you don't seem to use it the same way as documented there.
+> I'm not sure what 'level interrupt, pulse interrupt, special interrupt'
+> in the parent binding are, but they don't seem to be the ones you use
+> here.
 
-> > Is this definitely the case for all of the IPs using this driver?  It
-> > seems like something which might have been present in actual PXA
-> > implemenetations but got fixed in later revisons used with x86.  Equally
-> > well the current code is clearly broken either way so I'm not sure that
-> > problems with older systems should be a barrier to merging the patch but
-> > it seems better to check.
+Yeah. I'll update my Documentation. Thanks for pointing this out.
 
-> This code came with x86 LPSS implementation originally. The PXA one,
-> which lives in a different file (spi-pxa2xx-pxadma.c) didn't have any
-> such checks AFAIK.
-
-OK, that should be fine then.  The PXA platforms should be being
-converted over to use this file as part of the dmaengine transition on
-that platform so we can't assume it's Intel specific even though it was
-originally written for x86.
-
---aaL8sFpsRKk5R4SN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTbLuMAAoJELSic+t+oim96xwQAI/C8uzyyNVFFc9scb0AkZTJ
-DdX/hV2R/crrwIaXWGROI+Xt7treqoMQ7Ac3MwMhdJe8KptYaYCyKkX2Wz0+UQOD
-V0756VBsFrRFyLQpkgHU8a0ujZrnXOSpF6NXUTYW5isEoUJfMQHYcgRiRlrB4IyC
-x2UG8ZBELVwGjKjK3iY42YG7IrmLQhNLlwRfqSgpg/Z8xFew/jOmm0L9EFXrIJga
-OKkkyjF/ml8L4PnlB5trdWc2iDcQZYRNyNfA5gcB5BM9mnnX329A8WTFf+nTQksF
-xqH5I4lpAUVg9d3fbM7W8SqrLH9XEdSGir6IgvJPetvkHulCrNVLzx16MVnZ7z3/
-fEndPAgJ1y48e7E8NeaDrUYkqUSQEOHPPXbbBr8RUB56IwOcVkQn33U4GLNvq6v6
-/f4eT2/eHkALyYGIl04WsfKjju0pA+TBmp2mHi0yqGUyRH7h9bGQ9AXHKZ8c1ux6
-SSjHRlloFrxrSNkOfVCVbu6tRf9JQU9ZnGH9W1yxoDW4l53lXM2LXvs+lX9CxVnX
-n/cMWiCyQbBTldPxSyIB0N98rIg7bgZDMpyAoYsSuJpo5cwpbMr1A1BpMKlR4hGx
-CuNPZcseKMicYiWgGdu6NvH5hjQcxu060zuvVPjP/LdzaDoTdU+R8OTjkhaDrTbD
-RdBBxMXh59FTCuYWtYpA
-=CCEW
------END PGP SIGNATURE-----
-
---aaL8sFpsRKk5R4SN--
+Thanks
+Kishon
