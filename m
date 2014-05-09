@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079AbaEIHim (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 03:38:42 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41644 "EHLO
+	id S1756135AbaEIHis (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 03:38:48 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41651 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756041AbaEIHil (ORCPT
+	with ESMTP id S1756041AbaEIHiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 03:38:41 -0400
-Date: Fri, 9 May 2014 09:38:35 +0200
+	Fri, 9 May 2014 03:38:46 -0400
+Date: Fri, 9 May 2014 09:38:41 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>, Aubrey Li <aubrey.li@intel.com>
-Subject: Re: [PATCH] PM / suspend: Always use deepest C-state in the "freeze"
- sleep state
-Message-ID: <20140509073835.GB4965@xo-6d-61-c0.localdomain>
-References: <2548502.zJ1no3NhRc@vostro.rjw.lan>
+To: David Miller <davem@davemloft.net>
+Cc: andi@firstfloor.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tom.zanussi@linux.intel.com, ak@linux.intel.com
+Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
+Message-ID: <20140509073841.GC4965@xo-6d-61-c0.localdomain>
+References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
+ <1399328773-6531-9-git-send-email-andi@firstfloor.org>
+ <20140505.231229.136734008603421707.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2548502.zJ1no3NhRc@vostro.rjw.lan>
+In-Reply-To: <20140505.231229.136734008603421707.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-05-05 00:51:54, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Mon 2014-05-05 23:12:29, David Miller wrote:
+> From: Andi Kleen <andi@firstfloor.org>
+> Date: Mon,  5 May 2014 15:25:57 -0700
 > 
-> If freeze_enter() is called, we want to bypass the current cpuidle
-> governor and always use the deepest available (that is, not disabled)
-> C-state, because we want to save as much energy as reasonably possible
-> then and runtime latency constraints don't matter at that point, since
-> the system is in a sleep state anyway.
-
-Would there be way to pass the parameter "go to deepest" instead of adding
-global state for this?
-								Pavel
-
-> Index: linux-pm/kernel/power/suspend.c
-> ===================================================================
-> --- linux-pm.orig/kernel/power/suspend.c
-> +++ linux-pm/kernel/power/suspend.c
-> @@ -54,9 +54,11 @@ static void freeze_begin(void)
->  
->  static void freeze_enter(void)
->  {
-> +	cpuidle_use_deepest_state(true);
->  	cpuidle_resume();
->  	wait_event(suspend_freeze_wait_head, suspend_freeze_wake);
->  	cpuidle_pause();
-> +	cpuidle_use_deepest_state(false);
->  }
->  
->  void freeze_wake(void)
+> > This is all the code that saves connection information
+> > between different sockets. Not really essential for
+> > small systems.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> It is absolutely essential unless you want poor performance
+> of TCP connections.
 
+Sounds like "poor" performance of TCP and 400KB memory free is tradeoff that
+makes for small machines.
+
+									Pavel
 -- 
 (english) http://www.livejournal.com/~pavelmachek
 (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
