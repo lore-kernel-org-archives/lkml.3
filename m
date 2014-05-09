@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158AbaEICUn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 22:20:43 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:8211 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754730AbaEICUl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 22:20:41 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-5f-536c3b784c5f
-Message-id: <536C3B5A.2030107@samsung.com>
-Date: Fri, 09 May 2014 11:20:10 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: t.figa@samsung.com, linux@arm.linux.org.uk, kyungmin.park@samsung.com,
-        inki.dae@samsung.com, sw0312.kim@samsung.com, hyunhee.kim@samsung.com,
-        yj44.cho@samsung.com, chanho61.park@samsung.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv5] ARM: EXYNOS: Support secondary CPU boot of Exynos4212
-References: <1398735462-1938-1-git-send-email-cw00.choi@samsung.com>
- <5369B88E.9030901@samsung.com> <034d01cf6b2c$748bdd50$5da397f0$@samsung.com>
-In-reply-to: <034d01cf6b2c$748bdd50$5da397f0$@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsWyRsSkQLfCOifYYOIHeYvL+7UtPn9oYbeY
-	dH8Ci0XvgqtsFmeb3rBbbHp8jdXi8q45bBYzzu9jsrh9mddixuSXbBbrZ7xmsdi7czKjA49H
-	S3MPm8fmJfUefVtWMXp83iQXwBLFZZOSmpNZllqkb5fAlXH3WDtzwUXGiltXrrM1MM5l7GLk
-	5JAQMJGYfuAQM4QtJnHh3nq2LkYuDiGBpYwSx7c2sMAUvX/ZyQpiCwlMZ5To288OUfSaUeLK
-	xJlgk3gFtCTurpjKBmKzCKhKPDn5jh3EZgOK739xAywuKhAmsXL6FRaIekGJH5PvgdkiAmoS
-	PYu3MoIMZRbYwCTx+PtLsJOEBXwkHv3ZygyxbTKjxMIbx8GmcgpYScw5/hmsm1lAR2J/6zQ2
-	CFteYvOat1D/vGWXmPApFeIiAYlvkw8B1XMAxWUlNh2AKpGUOLjiBssERrFZSG6ahWTqLCRT
-	FzAyr2IUTS1ILihOSi8y1StOzC0uzUvXS87P3cQIjM3T/55N3MF4/4D1IcZkoJUTmaVEk/OB
-	sZ1XEm9obGZkYWpiamxkbmlGmrCSOG/6o6QgIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYzr
-	jlq/DGd7n8J8VvW5WeUnZqVsbXGPabnXJwVI3fL/sPL4Fp1f59YwKojs3LzD8KLA4riq4mcV
-	Ip7mVWUxHSwGvq8SPKb9KEp9djJJbNrtS4eFdxzSzr75SiT7ak7f0X27p36vPZ10VeWL18/a
-	hqdOt3KSuBM9X21UuVx7KmWe+fccn3TH/rdKLMUZiYZazEXFiQBOCLpa4wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jQd1o65xgg+2HBCwu79e2+Pyhhd1i
-	0v0JLBa9C66yWZxtesNusenxNVaLy7vmsFnMOL+PyeL2ZV6LGZNfslmsn/GaxWLvzsmMDjwe
-	Lc09bB6bl9R79G1ZxejxeZNcAEtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWF
-	uZJCXmJuqq2Si0+ArltmDtBhSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDC
-	GsaMu8famQsuMlbcunKdrYFxLmMXIyeHhICJxPuXnawQtpjEhXvr2UBsIYHpjBJ9+9m7GLmA
-	7NeMElcmzgRr4BXQkri7YipYEYuAqsSTk+/YQWw2oPj+FzfA4qICYRIrp19hgagXlPgx+R6Y
-	LSKgJtGzeCsjyFBmgQ1MEo+/v2QGSQgL+Eg8+rOVGWLbZEaJhTeOg03lFLCSmHP8M1g3s4CO
-	xP7WaWwQtrzE5jVvmScwCsxCsmQWkrJZSMoWMDKvYhRNLUguKE5KzzXUK07MLS7NS9dLzs/d
-	xAiO/WdSOxhXNlgcYhTgYFTi4X0xJTtYiDWxrLgy9xCjBAezkgjvHf2cYCHelMTKqtSi/Pii
-	0pzU4kOMycAwmMgsJZqcD0xLeSXxhsYmZkaWRuaGFkbG5qQJK4nzHmi1DhQSSE8sSc1OTS1I
-	LYLZwsTBKdXAaOloHuaXFyTAenJJzYx5VzKnPuG48m/O8+kyW2bpHHisdP3pPDF3i60GiqeP
-	t/+btvZ2surVjbvW/578dHViVYDTlKi5vYmr876vDuU8Yi1U959BuDzn7Ox8Tq2iBpVJT24+
-	MPl7j+vHnD21Ex6Xph8t5PFIPr3pZ8rmzGUaJ+U03mzgfPfmbZ8SS3FGoqEWc1FxIgDNX8JT
-	QQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1756192AbaEICU7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 22:20:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49549 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754927AbaEICU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 22:20:57 -0400
+Message-ID: <536C3B69.1000208@redhat.com>
+Date: Thu, 08 May 2014 22:20:25 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Mike Galbraith <umgwanakikbuti@gmail.com>, linux-kernel@vger.kernel.org,
+        morten.rasmussen@arm.com, mingo@kernel.org,
+        george.mccollister@gmail.com, ktkhai@parallels.com
+Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
+References: <20140502004237.79dd3de6@annuminas.surriel.com> <1399011219.5233.55.camel@marge.simpson.net> <53633B81.1080403@redhat.com> <1399016273.5233.94.camel@marge.simpson.net> <536379D0.8070306@redhat.com> <1399030032.5233.142.camel@marge.simpson.net> <5363B793.9010208@redhat.com> <20140506115448.GH11096@twins.programming.kicks-ass.net> <536943C9.4030502@redhat.com> <20140506203916.GQ17778@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140506203916.GQ17778@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2014 11:14 AM, Kukjin Kim wrote:
-> Chanwoo Choi wrote:
->>
->> Dear Kukjin,
->>
->> Could you please pick this patch?
->>
-> I've applied.
+On 05/06/2014 04:39 PM, Peter Zijlstra wrote:
+> On Tue, May 06, 2014 at 04:19:21PM -0400, Rik van Riel wrote:
+>> On 05/06/2014 07:54 AM, Peter Zijlstra wrote:
+>>> On Fri, May 02, 2014 at 11:19:47AM -0400, Rik van Riel wrote:
+>>>> As an aside, it also looks like SD_BALANCE_WAKE is set on all domains
+>                                      ^^^^^^^^^^^^^^^
 
-Thanks for your apply.
+> No BALANCE_WAKE there
 
-Best regards,
-Chanwoo Choi
+Looks like SD_BALANCE_WAKE is not gotten from the sd flags at
+all, but passed into select_task_rq by try_to_wake_up, as a
+hard coded sd_flags argument.
 
+static int
+try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+{
+...
+        cpu = select_task_rq(p, p->wake_cpu, SD_BALANCE_WAKE, wake_flags);
+...
+
+static inline
+int select_task_rq(struct task_struct *p, int cpu, int sd_flags, int
+wake_flags)
+{
+        cpu = p->sched_class->select_task_rq(p, cpu, sd_flags, wake_flags);
+...
+
+static int
+select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag,
+int wake_flags)
+{
+...
+
+        if (sd_flag & SD_BALANCE_WAKE) {
+                if (cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
+                        want_affine = 1;
+                new_cpu = prev_cpu;
+        }
+
+Should we do that, if SD_WAKE_BALANCE is not set for any sched domain?
+
+-- 
+All rights reversed
