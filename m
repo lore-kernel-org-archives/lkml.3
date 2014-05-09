@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129AbaEIKWb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 06:22:31 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56714 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062AbaEIKW3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 06:22:29 -0400
-Date: Fri, 9 May 2014 12:22:19 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+	id S1753897AbaEIKcq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 06:32:46 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51098 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752673AbaEIKcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 06:32:45 -0400
+From: "Gupta, Pekon" <pekon@ti.com>
+To: Lee Jones <lee.jones@linaro.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 03/20] arch,arc: Fold atomic_ops
-Message-ID: <20140509102219.GW30445@twins.programming.kicks-ass.net>
-References: <20140508135840.956784204@infradead.org>
- <20140508135851.886055622@infradead.org>
- <C2D7FE5348E1B147BCA15975FBA230751A6AB58E@IN01WEMBXA.internal.synopsys.com>
+        "kernel@stlinux.com" <kernel@stlinux.com>,
+        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "angus.clark@st.com" <angus.clark@st.com>
+Subject: RE: [RFC 13/47] mtd: nand: stm_nand_bch: provide Device Tree support
+Thread-Topic: [RFC 13/47] mtd: nand: stm_nand_bch: provide Device Tree
+ support
+Thread-Index: AQHPSAMgB9WSu3WEI0qVLuMmzpyAn5rzCprAgDbvtgCAB81FEIAGJ+0AgABipVA=
+Date: Fri, 9 May 2014 10:32:02 +0000
+Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EACBC8F@DBDE04.ent.ti.com>
+References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
+ <1395735604-26706-14-git-send-email-lee.jones@linaro.org>
+ <20980858CB6D3A4BAE95CA194937D5E73EAB5C83@DBDE04.ent.ti.com>
+ <20140430125406.GN29462@lee--X1>
+ <20980858CB6D3A4BAE95CA194937D5E73EACA3F0@DBDE04.ent.ti.com>
+ <20140509100304.GR5767@lee--X1>
+In-Reply-To: <20140509100304.GR5767@lee--X1>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3TQuZyvpu40ebvIM"
-Content-Disposition: inline
-In-Reply-To: <C2D7FE5348E1B147BCA15975FBA230751A6AB58E@IN01WEMBXA.internal.synopsys.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s49AWqVr002220
+
+>From: Lee Jones [mailto:lee.jones@linaro.org]
+>
+>> >> >+	of_property_read_u32(np, "st,bch-bitflip-threshold",
+>> >> >+			     &pdata->bch_bitflip_threshold);
+>> >> >+
+>> >> mtd->bitflip_threshold is by default set to ecc.strength (unless a driver initializes it).
+>> >> And then can be re-configured for each MTD partition separately
+>> >> 	/sys/class/mtd/mtdX/bitflip_threshold
+>> >> 	Refer: $kernel/Documentation/ABI/testing/sysfs-class-mtd
+>> >> So, I don't think this is a HW parameter, and so should not be passed from DT.
+>> >
+>> >I think the bit-flip threshold is/can be chip specific, and as we know
+>> >which chip we're likely to be booting on, we can specify this via the
+>> >hardware description.  Thus, I think it's perfectly viable for an
+>> >option to pass through DT to exist.
+>> >
+>> I don't think that‚Äôs the correct interpretation of bitflip_threshold.
+>>
+>> (1) bitflip_threshold is dependent on ecc.strength (ECC scheme) of your driver.
+>> MTD layers uses bitflip_threshold to warn above layers that number of
+>> correctable bit-flips have reached a dangerous level beyond which driver's
+>> ECC scheme may not be able to correct them. So above layers should start
+>> taking additional corrective action like scrubbing.
+>> 	@@drivers/mtd/mtdcore.c: mtd_read()
+>> 		return ret_code >= mtd->bitflip_threshold ? -EUCLEAN : 0;
+>>
+>> (2) Also, user-space may control it based on how your device ages on field.
+>> A fresh silicon may not show too many bitflips. But as device ages the
+>> probability of simultaneous bitflips will increase. So user-space may lower
+>> the bitflip_threshold to avoid accumulation of bitflips in a single page.
+>>
+>> Thus, bitflip_threshold should not be passed via DT.
+>> It's neither a hardware parameter, nor it‚Äôs a static constant.
+>
+>Ah, I see.  I will fixup, thanks for the explanation.
+>
+
+Please wait, I'll review your [v2] series also, then you can further
+send all fixes together. I'm bit caught in other commitments for 3.16,
+so hopefully I'll be able to review your patches by next week.
 
 
---3TQuZyvpu40ebvIM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, May 09, 2014 at 09:34:51AM +0000, Vineet Gupta wrote:
-> Hi Peter,
->=20
-> Minor point below, otherwise looks good.
->=20
-> > +#define atomic_clear_mask(mask, v) atomic_and(~(mask), (v))
->=20
-> Given that ARC has instruction to do just that, can we keep below instead.
->=20
-> ATOMIC_OP(clear_mask, ~=3D, bic)
->=20
-> (see asm version of atomic_clear_mask)
-
-Ah, yes I did notices that.
-
-The thing is, I was going to kill clear_mask in the next set.
-
-I'm going to introduce: atomic_{or,and,xor}() and replace all
-atomic_set_mask() with atomic_or() and atomic_clear_mask() with
-atomic_and(~(mask)).
-
-One of the 'problems' is that atomic_{set,clear}_mask() are not
-available on all archs and its a 'weird' interface in so far as that
-most our other primitives are or/and based, I don't think we have nand.
-
-But if people really want I suppose I could also add atomic_nand().
-
---3TQuZyvpu40ebvIM
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTbKxbAAoJEHZH4aRLwOS6WeoQAIrz4mWlo5WQmtdUsrfgbiIC
-CmEsKdfPB6j1wMZd96dtg8klfXkUER/ZUYX8+c681mtw8d5uCw22fbMNyME+PmfD
-E/XLy6HDRPP7d6HUEg02Jz1wyGj+MZ2ZyZfThk/xjTGt7Wl7LRLAycAbmDGgnWZO
-RDU+RH24KiOV+HJDegMIA5LoNL2IeJ7+eCuzwxfo/yKaYqJdKC84pmMvcrTBFfls
-FImQDOllQY2rj626oP05CRW3ASEqNrNmoCKcxRZAO/OIbjAbAf4eYZbg2qYLMjTP
-Top944UfyEsRqIw66G0lDYVcJl9Bk2YM74vSjk9AVUpCDPjI9TNYOQxDZvHYvdLx
-MwzQ857KZxyD0Sj85CXxAEItfdq3BxH1En2ZtcT8MbWaEhL5z/cQ+1asJJ6biZdH
-lYRlsOL0lp+MDYxyFk22qCypXN3JoAQPCjQ6qX85IekRMGGvxb0B3ooncPI0vYOB
-f1A/AAh/2lSU4oXa08lsX6Wa/mpe6ePjX+9JcNaIdeSueU0rl/FaXvQ6+pwvOxYT
-vobq7Tof2MIJEcX3W1AoUkIZxkyExTXVfROHelnHk0q+2TKn5e0krLJCnbN4VcmB
-7cBouPPzen+3h6t518CPCJ6CmFVpe/hyR4H+FQ/0b4SjHLv/Xi3oPpcryNgGYfJT
-XLwOOrHE/ALzFQYutxuL
-=sb+Y
------END PGP SIGNATURE-----
-
---3TQuZyvpu40ebvIM--
+with regards, pekon
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
