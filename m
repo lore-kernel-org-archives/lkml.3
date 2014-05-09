@@ -1,127 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601AbaEIGEo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 02:04:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1056 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751364AbaEIGEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 02:04:42 -0400
-Date: Fri, 9 May 2014 02:04:11 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com,
-        mingo@kernel.org, george.mccollister@gmail.com, ktkhai@parallels.com
-Subject: [PATCH] sched: clean up select_task_rq_fair conditionals and
- indentation
-Message-ID: <20140509020411.34adbd29@annuminas.surriel.com>
-In-Reply-To: <20140509012743.67d4006d@annuminas.surriel.com>
-References: <20140502004237.79dd3de6@annuminas.surriel.com>
-	<1399011219.5233.55.camel@marge.simpson.net>
-	<53633B81.1080403@redhat.com>
-	<1399016273.5233.94.camel@marge.simpson.net>
-	<536379D0.8070306@redhat.com>
-	<1399030032.5233.142.camel@marge.simpson.net>
-	<5363B793.9010208@redhat.com>
-	<20140506115448.GH11096@twins.programming.kicks-ass.net>
-	<536943C9.4030502@redhat.com>
-	<20140506203916.GQ17778@laptop.programming.kicks-ass.net>
-	<536C3B69.1000208@redhat.com>
-	<20140509012743.67d4006d@annuminas.surriel.com>
-Organization: Red Hat, Inc.
+	id S1752628AbaEIGLl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 02:11:41 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:50274 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365AbaEIGLj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 02:11:39 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCHSET 00/17] perf report: Add -F option for specifying output fields (v4)
+References: <87lhuwr2pk.fsf@sejong.aot.lge.com>
+	<20140423125828.GL5328@redhat.com> <1398346899.1681.18.camel@leonhard>
+	<20140424210015.GJ8488@redhat.com> <20140428194642.GQ5328@redhat.com>
+	<878uqpos3k.fsf@sejong.aot.lge.com>
+	<20140429172735.GD32375@redhat.com>
+	<874n1bpuzh.fsf@sejong.aot.lge.com>
+	<20140430133554.GB61249@redhat.com>
+	<87mweunv8p.fsf@sejong.aot.lge.com>
+	<20140507152219.GN39568@redhat.com>
+Date: Fri, 09 May 2014 15:11:28 +0900
+In-Reply-To: <20140507152219.GN39568@redhat.com> (Don Zickus's message of
+	"Wed, 7 May 2014 11:22:19 -0400")
+Message-ID: <87y4ybmqgf.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This cleanup goes on top of the previous patch. We could also skip the
-whole domain iteration if !want_affine, but that doesn't fit nicely in
-80 columns and may have to be done in yet another patch (breaking that
-bit of the code out into its own function?)
+Hi Don,
 
----8<---
+On Wed, 7 May 2014 11:22:19 -0400, Don Zickus wrote:
+> On Wed, May 07, 2014 at 12:05:58PM +0900, Namhyung Kim wrote:
+>> Hi Don,
+>> 
+>> On Wed, 30 Apr 2014 09:35:55 -0400, Don Zickus wrote:
+>> > On Wed, Apr 30, 2014 at 08:38:10AM +0900, Namhyung Kim wrote:
+>> >> Hi Don,
+>> >> 
+>> >> On Tue, 29 Apr 2014 13:27:35 -0400, Don Zickus wrote:
+>> >> > On Tue, Apr 29, 2014 at 10:13:35AM +0900, Namhyung Kim wrote:
+>> >> >> >        /*
+>> >> >> >         * Addresses with no major/minor numbers are assumed to be
+>> >> >> >         * anonymous in userspace.  Sort those on pid then address.
+>> >> >> >         *
+>> >> >> >         * The kernel and non-zero major/minor mapped areas are
+>> >> >> >         * assumed to be unity mapped.  Sort those on address.
+>> >> >> >         */
+>> >> >> >
+>> >> >> >        if ((left->cpumode != PERF_RECORD_MISC_KERNEL) &&
+>> >> >> >            !l_map->maj && !l_map->min && !l_map->ino &&
+>> >> >> >            !l_map->ino_generation) {
+>> >> >> >                /* userspace anonymous */
+>> >> >> >
+>> >> >> >                if (left->thread->pid_ > right->thread->pid_) return -1;
+>> >> >> >                if (left->thread->pid_ < right->thread->pid_) return 1;
+>> >> >> 
+>> >> >> Isn't it necessary to check whether the address is in a same map in case
+>> >> >> of anon pages?  I mean the daddr.al_addr is a map-relative offset so it
+>> >> >> might have same value for different maps.
+>> >> >
+>> >> > That's why I sort on pids here.  Because the anon address might have the
+>> >> > same value for different maps.  The thought was to group all the pid
+>> >> > addresses together to keep things seperated.
+>> >> >
+>> >> > Do you see a different way to solve the problem?  I am not sure al_addr
+>> >> > vs. addr will make much difference here.
+>> >> 
+>> >> I'm not saying to get rid of the pid check, I'm saying that it might
+>> >> need to add another check for maps (i.e. start address) as there might
+>> >> be many maps in a single address space.
+>> >
+>> > Hmm, I guess I would need to see an example.  While I agree there might be
+>> > many maps in a single address space (/proc/<pid>/maps demonstrates that),
+>> > I understood them to map to a unique location (ie no overlap) unless they
+>> > are shared.
+>> >
+>> > I am willing to believe I missed scenario when sorting, I just can't think
+>> > of it (so I wouldn't know how to fix it).  That's why I was looking for an
+>> > example to make it more obvious to me.  Sorry for being slow..
+>> 
+>> I'm also sorry for being late.  Looking at the code, it seems to use
+>> identity__map_ip() for anon maps so my concern is bogus.  Please just
+>> forget about it and keep going.  Sorry for interrupting your work..
+>
+> No worries.  Always good to have an extra pair of eyes.
+>
+> I am a little stuck about where to go.  I think it might make sense to
+> submit this as a standalone patch (despite the possible group limitation
+> we are discussing).  Thoughts?
 
-Subject: sched: clean up select_task_rq_fair conditionals and indentation
+You meant to submit the 'dcacheline' sort key patch?  I'm okay with it.
 
-The whole top half of select_task_rq_fair is only run if
-sd_flag & SD_BALANCE_WAKE. The code should probably reflect
-that.
+Things are getting more confusing when thinking about complex
+scenarios..  so I'd rather finish this -F option patchset and start to
+think about how to integrate group sorting with it.
 
-Also remove the useless new_cpu = prev_cpu assignment, as the
-value of new_cpu is not actually used.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- kernel/sched/fair.c | 47 ++++++++++++++++++++++++-----------------------
- 1 file changed, 24 insertions(+), 23 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 5d33fb1b..844807b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4424,37 +4424,38 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
- 	if (p->nr_cpus_allowed == 1)
- 		return prev_cpu;
- 
-+	rcu_read_lock();
- 	if (sd_flag & SD_BALANCE_WAKE) {
- 		if (cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
- 			want_affine = 1;
--		new_cpu = prev_cpu;
--	}
- 
--	rcu_read_lock();
--	for_each_domain(cpu, tmp) {
--		if (!(tmp->flags & SD_LOAD_BALANCE))
--			continue;
-+		for_each_domain(cpu, tmp) {
-+			if (!cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
-+				break;
- 
--		/*
--		 * If both cpu and prev_cpu are part of this domain,
--		 * cpu is a valid SD_WAKE_AFFINE target.
--		 */
--		if (want_affine && (tmp->flags & SD_WAKE_AFFINE) &&
--		    cpumask_test_cpu(prev_cpu, sched_domain_span(tmp))) {
--			affine_sd = tmp;
--			break;
--		}
-+			if (!(tmp->flags & SD_LOAD_BALANCE))
-+				continue;
- 
--		if (tmp->flags & sd_flag)
--			sd = tmp;
--	}
-+			/*
-+			 * If both cpu and prev_cpu are part of this domain,
-+			 * cpu is a valid SD_WAKE_AFFINE target.
-+			 */
-+			if (want_affine && (tmp->flags & SD_WAKE_AFFINE) &&
-+			    cpumask_test_cpu(prev_cpu,
-+					     sched_domain_span(tmp))) {
-+				affine_sd = tmp;
-+				break;
-+			}
- 
--	if (affine_sd) {
--		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
--			prev_cpu = cpu;
--	}
-+			if (tmp->flags & sd_flag)
-+				sd = tmp;
-+		}
-+
-+		if (affine_sd) {
-+			if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
-+				prev_cpu = cpu;
-+		}
- 
--	if (sd_flag & SD_BALANCE_WAKE) {
- 		new_cpu = select_idle_sibling(p, prev_cpu);
- 		goto unlock;
- 	}
-
+Thanks,
+Namhyung
