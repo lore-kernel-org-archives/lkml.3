@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280AbaEIRCq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 13:02:46 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42013 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757096AbaEIRCo (ORCPT
+	id S932320AbaEIRDE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 13:03:04 -0400
+Received: from smtprelay0135.hostedemail.com ([216.40.44.135]:32926 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932286AbaEIRDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 13:02:44 -0400
-Date: Fri, 9 May 2014 19:02:34 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: James Hogan <james.hogan@imgtec.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "luto@amacapital.net" <luto@amacapital.net>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "umgwanakikbuti@gmail.com" <umgwanakikbuti@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Will Deacon <Will.Deacon@arm.com>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC][PATCH 6/8] sched,idle: Avoid spurious wakeup IPIs
-Message-ID: <20140509170234.GZ30445@twins.programming.kicks-ass.net>
-References: <20140411134243.160989490@infradead.org>
- <20140411135218.478299389@infradead.org>
- <CAAG0J9_q1KsUx10-XAb7AJnxv2ehctg6q1KME7ahsk1OZV8vZQ@mail.gmail.com>
- <20140509141520.GV2844@laptop.programming.kicks-ass.net>
- <20140509144034.GF7950@arm.com>
- <20140509145002.GW2844@laptop.programming.kicks-ass.net>
- <20140509145745.GI7950@arm.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="x+IuRATsqV0DV21e"
-Content-Disposition: inline
-In-Reply-To: <20140509145745.GI7950@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 9 May 2014 13:03:02 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:960:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3167:3352:3622:3865:3867:3874:4321:5007:7652:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12114:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: grass21_8e8fb306f3f13
+X-Filterd-Recvd-Size: 2232
+Message-ID: <1399654978.11258.17.camel@joe-AO725>
+Subject: Re: [PATCH 2/2] x86: Fix typo in MSR_IA32_MISC_ENABLE_LIMIT_CPUID
+ macro
+From: Joe Perches <joe@perches.com>
+To: Borislav Petkov <bp@suse.de>
+Cc: Andres Freund <andres@anarazel.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andy Whitcroft <apw@canonical.com>
+Date: Fri, 09 May 2014 10:02:58 -0700
+In-Reply-To: <20140509103303.GC16058@pd.tnic>
+References: <1399598957-7011-1-git-send-email-andres@anarazel.de>
+	 <1399598957-7011-3-git-send-email-andres@anarazel.de>
+	 <20140509075730.GB16058@pd.tnic> <20140509103303.GC16058@pd.tnic>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2014-05-09 at 12:33 +0200, Borislav Petkov wrote:
+> On Fri, May 09, 2014 at 09:57:30AM +0200, Borislav Petkov wrote:
+> > > diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+[]
+> > > -#define MSR_IA32_MISC_ENABLE_LIMIT_CPUID		(1ULL << MSR_IA32_MISC_ENABLE_LIMIT_CPUID_BIT);
+> > > +#define MSR_IA32_MISC_ENABLE_LIMIT_CPUID		(1ULL << MSR_IA32_MISC_ENABLE_LIMIT_CPUID_BIT)
+> 
+> Btw, we should probably be catching typos like that with checkpatch.
+> Here's an initial version for single-line macros:
+[]
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+[]
+> @@ -3313,6 +3313,11 @@ sub process {
+>  			}
+>  		}
+>  
+> +		if ($line =~ /^\+\s*#\s*define\s.*;\s*$/) {
+> +			WARN("TRAILING_SEMICOLON",
+> +			     "Trailing semicolon at macro definition\n" . $herecurr);
+> +		}
+> +
 
---x+IuRATsqV0DV21e
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Seems sensible.
 
-On Fri, May 09, 2014 at 03:57:45PM +0100, Catalin Marinas wrote:
-> On Fri, May 09, 2014 at 03:50:02PM +0100, Peter Zijlstra wrote:
-> > On Fri, May 09, 2014 at 03:40:34PM +0100, Catalin Marinas wrote:
-> >=20
-> > > I wonder why we still need TIF_POLLING_NRFLAG for arm64. It was on arm
-> > > until commit 16a8016372c42c7628eb (sanitize tsk_is_polling()). On arm=
-64
-> > > we use wfi for idle or a firmware call but in both cases the assumpti=
-on
-> > > is that we need an interrupt for waking up.
-> > >=20
-> > > So I think we should remove this macro for arm64.
-> >=20
-> > Does ARM64 support idle=3Dpoll? If so, you could keep it for that,
-> > otherwise it does indeed appear to be pointless.
->=20
-> We don't support idle=3Dpoll either.
->=20
-> > As to 32bit ARM, are there SMP chips which do not have WFI?
->=20
-> No. WFI is even used for the secondary booting protocol (we need to send
-> an IPI to get them going).
+I suggest moving the test next to the other macro
+definition tests for things like unnecessary semicolon
+around "do {... while (0)" around line 3800.
 
-OK, so I'll queue a patch removing TIF_POLLING_NRFLAG for arm64.
+Extending the test to find multiline forms like
 
-Thanks!
+#define	foo	\
+	bar;
 
---x+IuRATsqV0DV21e
-Content-Type: application/pgp-signature
+would also be trivially done there.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTbQoqAAoJEHZH4aRLwOS6NwUQAJHLxoKK86uQfqE8pLwdT7b9
-HLu9bzMWYqSMYp2fCPDl1X0m/eKDWY2LdLZN7LauRPc+n4ZFq73bHpMT5Dcyulks
-7dsHws/VBKfnc90emGp7mldtEr13u7fIspiTG0cPeQh1aAvcELZ+ucH/OkjQ1UA9
-Yy8lba/VLv6Ck993CrDyLDJqLJyF5jmAJii6dGf/day4zZUrA95R43M+eDLv+fV2
-1n9DFdzC2HT6/z23Hc6mij1RnuYLw+AbFV3+4W19lMXGijVpJgwrq2APsauZ/1+F
-yxFgSGRDaJAfkz5qtrMOSL5NXvShco2H0Sj+b83wGhB+YuoIWdSWBIYbXoMkkeL1
-uZ8xQyBwTO3Xa6H/g6lssurBSRXP/noZfP22kuY/1bWAWiSlG73MU9rDhCpfkcwY
-gO9vpTv8XpbZIVxWVd9Ho0zv6w+gGsTlRk2FC/qSa7Qu34suVkOf0C4qiScDTUmw
-Emf5YgWcpqTUf0cc864tgRX5yARefZlYqg3HP+fdHmvSUUsVkJ13Do4/rkiLQr40
-RLcQUsXA7kE8KeeTjNqfiOPdok0wXW2ZMrh2wzYxIk7eguftQ5OoY6XkERrbmn+3
-s1kwFRNrKvflL4VnDucXtcYJwnWO5YjMYT83J6kHKunm7gWKbgInSaK4R8c3d31i
-TgC0gtdTLUC5jf6xVzIO
-=nOE1
------END PGP SIGNATURE-----
-
---x+IuRATsqV0DV21e--
