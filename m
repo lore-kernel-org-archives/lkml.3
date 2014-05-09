@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413AbaEIT6d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 15:58:33 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:56329 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756533AbaEIT6b (ORCPT
+	id S1757502AbaEIT6s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 15:58:48 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:64337 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757229AbaEIT6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 15:58:31 -0400
-Date: Fri, 9 May 2014 15:58:27 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: remove cgroup_tree_mutex
-Message-ID: <20140509195827.GG4486@htj.dyndns.org>
-References: <1399407574-21472-1-git-send-email-tj@kernel.org>
+	Fri, 9 May 2014 15:58:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH] drivers/char/mem.c: Add /dev/ioports, supporting 16-bit and 32-bit ports
+Date: Fri, 09 May 2014 21:58:43 +0200
+Message-ID: <9233735.5FfZoZovqP@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140509191914.GA7286@jtriplet-mobl1>
+References: <20140509191914.GA7286@jtriplet-mobl1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399407574-21472-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:GxrYCPArlRLhpSsO3PKa5S3573zuO2Md1PeEfbD6YuK
+ zMbHGVSo11RJjzzEVlzfri/bGs2O5zO0/BbvS4E1puI9jj7/7l
+ AvRc5pGbPie/fwYNj70t2jlvDlgweog8+FP9mb2GqBXmQL3Gvk
+ dgj1emfVLSMMVcjt9XbGKOi4yxjLY1GcQQ2LzLMmnQIcV2VOwE
+ Mr37ZTDvnXMyR1JA+EHgtuJKZZBtfpOfirYlMMMtRB6cLBSQwz
+ CaItT9ov/oP8eCW9EZccKO6/pqwjkAo9RQApka8JX2JhLzzmk+
+ mum2MjGVtNGGgGyoFd9f8AuOEG+D1PAPp41bOWzPPZ4x0tQf6w
+ blbejZLqd9HuOT67cxVQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 04:19:26PM -0400, Tejun Heo wrote:
-> This patchset is on top of
-> 
->   cgroup/for-3.16 12d3089c192c ("kernel/cpuset.c: convert printk to pr_foo()")
-> + [1] [PATCHSET cgroup/for-3.16] cgroup: post unified hierarchy fixes and updates
-> + [2] [PATCHSET cgroup/for-3.16] cgroup: implement cftype->write()
-> 
-> and is available in the following git branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-kill-tree_mutex
+On Friday 09 May 2014 12:19:16 Josh Triplett wrote:
 
-Refreshed without content change on top of
+> +	if (!access_ok(VERIFY_WRITE, buf, count))
+> +		return -EFAULT;
+> +	if (port > 65535)
+> +		return 0;
 
- b9a63d0116e8 ("Merge branch 'for-3.16' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu into for-3.16")
- + [1] [PATCHSET v2 cgroup/for-3.16] cgroup: post unified hierarchy fixes and updates
- + [2] (REFRESHED) [PATCHSET cgroup/for-3.16] cgroup: implement cftype->write()
+This should probably test against IO_SPACE_LIMIT, which may be zero,
+something larger than 65536 or even ULONG_MAX, depending on the
+architecture.
 
-and available in the following git branch.
+In cases where this IO_SPACE_LIMIT is zero or ULONG_MAX, we should
+probably disallow access completely. The former case is for architectures
+that don't have any I/O ports, the other is either a mistake, or is
+used when inb is defined as readb, and the port numbers are just virtual
+addresses.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-kill-tree_mutex-v2
-
-Thanks.
-
--- 
-tejun
-
-[1] http://lkml.kernel.org/g/1399663975-315-1-git-send-email-tj@kernel.org
-[2] http://lkml.kernel.org/g/20140509195059.GE4486@htj.dyndns.org
+	Arnd
