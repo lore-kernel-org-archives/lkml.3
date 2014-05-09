@@ -1,81 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972AbaEIKdc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 06:33:32 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39063 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752652AbaEIKdb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 06:33:31 -0400
-Date: Fri, 9 May 2014 11:33:15 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Chiau Ee Chew <chiau.ee.chew@intel.com>,
-        Hock Leong Kweh <hock.leong.kweh@intel.com>
-Message-ID: <20140509103315.GJ12304@sirena.org.uk>
-References: <1399559431-2065-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1753451AbaEIKis (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 06:38:48 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:46480 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751070AbaEIKir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 06:38:47 -0400
+Message-ID: <536CAF29.7070401@linux.vnet.ibm.com>
+Date: Fri, 09 May 2014 16:04:17 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oHvWihI+f7iV74d0"
-Content-Disposition: inline
-In-Reply-To: <1399559431-2065-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi/pxa2xx: Prevent DMA from transferring too many bytes
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: tglx@linutronix.de, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        arvind.chauhan@arm.com, khilman@linaro.org
+Subject: Re: [PATCH 1/2] hrtimer: reprogram event for expires=KTIME_MAX in
+ hrtimer_force_reprogram()
+References: <cover.1399623699.git.viresh.kumar@linaro.org> <189ea71f724d00995a73e63c8ed9ff5b7857a69d.1399623699.git.viresh.kumar@linaro.org>
+In-Reply-To: <189ea71f724d00995a73e63c8ed9ff5b7857a69d.1399623699.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050910-5806-0000-0000-000024D519B0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Viresh,
 
---oHvWihI+f7iV74d0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 05/09/2014 02:10 PM, Viresh Kumar wrote:
+> In hrtimer_force_reprogram(), we are reprogramming event device only if the next
+> timer event is before KTIME_MAX. But what if it is equal to KTIME_MAX? As we
+> aren't reprogramming it again, it will be set to the last value it was, probably
+> tick interval, i.e. few milliseconds.
+> 
+> And we will get a interrupt due to that, wouldn't have any hrtimers to service
+> and return without doing much. But the implementation of event device's driver
+> may make it more stupid. For example: drivers/clocksource/arm_arch_timer.c
+> disables the event device only on SHUTDOWN/UNUSED requests in set-mode.
+> Otherwise, it will keep giving interrupts at tick interval even if
+> hrtimer_interrupt() didn't reprogram tick..
+> 
+> To get this fixed, lets reprogram event device even for KTIME_MAX, so that the
+> timer is scheduled for long enough.
 
-On Thu, May 08, 2014 at 05:30:31PM +0300, Mika Westerberg wrote:
-> In case we are doing DMA transfer and the size of the buffer is not multiple
-> of 4 bytes the driver truncates that to 4-byte boundary and tries to handle
-> remaining bytes using PIO.
+I looked through the code in arm_arch_timer.c and I think the more
+fundamental problem lies in the timer handler there. Ideally even before
+calling the tick event handler the timer handler must be programming the
+tick device to fire at some __MAX__ time.
+Then irrespective of whether the core kernel deems it appropriate to
+program it or not, the max time by which a timer interrupt will get
+deferred is __MAX__ and one will not find anomalies like what you saw.
 
-...
+The reason this got exposed in NOHZ_FULL config is because in a normal
+NOHZ scenario when the cpu goes idle, and there are no pending timers in
+timer_list, even then tick_sched_timer gets cancelled. Precisely the
+scenario that you have described.
+   But we don't get continuous interrupts then because the first time we
+get an interrupt, we queue the tick_sched_timer and program the tick
+device to the time of its expiry and therefore *push* the time at which
+your tick device should fire further.
+  In case of NOHZ_FULL however I am presuming you will not queue the
+tick_sched_timer again unless there is more than one process in the
+runqueue. Therefore the tick device keeps firing since its counter
+remains in the expired state and is not pushed up.
 
-> While investigating this it turned out that the DMA hardware doesn't even
-> have such limitation so we can solve this by dropping the code that tries
-> to handle unaligned bytes.
+Moreover from the core kernel's perspective also this does not look like
+the right thing to do. The core timer code cannot *shutdown* a clock
+device simply because there are no pending timers. Some arch may change
+their notion of *shutdown* to rendering the tick device unusable. Some
+archs may already do that.
+   Hence I don't think we should take a drastic measure as to shutdown
+the clock device in case of no pending timers,
 
-Is this definitely the case for all of the IPs using this driver?  It
-seems like something which might have been present in actual PXA
-implemenetations but got fixed in later revisons used with x86.  Equally
-well the current code is clearly broken either way so I'm not sure that
-problems with older systems should be a barrier to merging the patch but
-it seems better to check.
+My suggestion is as pointed above to set the tick device to a KTIME_MAX
+equivalent before calling the timer interrupt event handler.
 
---oHvWihI+f7iV74d0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Regards
+Preeti U Murthy
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  kernel/hrtimer.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+> index 6b715c0..b21085c 100644
+> --- a/kernel/hrtimer.c
+> +++ b/kernel/hrtimer.c
+> @@ -591,8 +591,7 @@ hrtimer_force_reprogram(struct hrtimer_cpu_base *cpu_base, int skip_equal)
+>  	if (cpu_base->hang_detected)
+>  		return;
+> 
+> -	if (cpu_base->expires_next.tv64 != KTIME_MAX)
+> -		tick_program_event(cpu_base->expires_next, 1);
+> +	tick_program_event(cpu_base->expires_next, 1);
+>  }
+> 
+>  /*
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTbK7oAAoJELSic+t+oim9FMUP/jRlwTJTd0UsV/ppYjS0p3rc
-B0P2rYKrGLP1KMCA0NLjyA7JjAOgsAGmqC/e/9k8uAxqUYQTk+hVpsASOAM2uIjh
-OdXAHuU4nTqIBdTzBMwdaxiJx7y9LHCtbCVgEmkkfFbHtMFroXhXsqM3LmGzujZe
-GQK24PUL1feOQlbqfb87NKq100K8vdTiqXqFIM0CWvHjGRQAAgtLzEe/5erW047H
-HY2I3NN24xTmkGFFCDfhqkaeoJGCP3JTe4nOiKvF4iFCGzJ+iShB0yu9BB8EHEba
-rHG4JwQUh5uPYAUuQgpo2IK5WSyr9RJEh+kBGf6vyZrJ9XioLkqHZ6G2YrcWZCbR
-2Up4mT7LzmZzajpoc0VWX+xkeM2MuBkfoarl/OpGM7NfEaw7CTDMboynESp5toLn
-igL85zJAwRZgTadnnX3c9o5Kd83Kplhb1TXKe5a7XYszqUFULjNWvheE/zotDjqE
-1X6vuNaEbKvCxqtnvll78HL3ouhjuRPry7PMyi9gQszh1PBG1ehpLUat/AumJHXr
-84GJlPcQzPNUgyuS3Fs57SQnCacOoUhkRaPX1VvQxgSm+nQA/l53PktLK4vdsm6R
-heNwu22tIQIgqEqzWmz/OkHSLU78BgxNYMBZThXTp6ui2ITyg3PKTpJ5k3PNeq3T
-f2ruHOJNzy5l75iqdgGX
-=xhCJ
------END PGP SIGNATURE-----
-
---oHvWihI+f7iV74d0--
