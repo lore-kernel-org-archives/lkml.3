@@ -1,182 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757902AbaEIVPE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 17:15:04 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:38556 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757382AbaEIVNr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 17:13:47 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 6/9] cgroup: remove cgroup_destory_css_killed()
-Date: Fri,  9 May 2014 17:13:32 -0400
-Message-Id: <1399670015-23463-7-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1399670015-23463-1-git-send-email-tj@kernel.org>
-References: <1399670015-23463-1-git-send-email-tj@kernel.org>
+	id S1757940AbaEIVPq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 17:15:46 -0400
+Received: from mail-bn1bon0064.outbound.protection.outlook.com ([157.56.111.64]:36542
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757918AbaEIVPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 17:15:41 -0400
+X-Greylist: delayed 1963 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 May 2014 17:15:41 EDT
+Date: Fri, 9 May 2014 15:37:48 -0500
+From: Kim Phillips <kim.phillips@freescale.com>
+To: Joe Perches <joe@perches.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, Andy Whitcroft <apw@canonical.com>
+Subject: Re: [PATCH] checkpatch: Make --strict a default for files in
+ drivers/net and net/
+Message-ID: <20140509153748.e2467ab487404f07e818719e@freescale.com>
+In-Reply-To: <487acde009f61607863704e5dd9da7f151cf5be8.1399486274.git.joe@perches.com>
+References: <487acde009f61607863704e5dd9da7f151cf5be8.1399486274.git.joe@perches.com>
+Organization: Freescale Semiconductor, Inc.
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(164054003)(24454002)(189002)(199002)(2009001)(74502001)(77096999)(46102001)(83072002)(81342001)(81542001)(36756003)(76482001)(77156001)(21056001)(50226001)(50986999)(76176999)(4396001)(31966008)(74662001)(46406003)(92726001)(92566001)(79102001)(33646001)(64706001)(20776003)(100306002)(47776003)(62966002)(80022001)(23726002)(88136002)(19580405001)(68736004)(44976005)(93916002)(84676001)(69596002)(83322001)(19580395003)(81156002)(89996001)(86362001)(87286001)(6806004)(77982001)(87936001)(50466002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB019;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 02065A9E77
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Kim.Phillips@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup_destroy_css_killed() is cgroup destruction stage which happens
-after all csses are offlined.  After the recent updates, it no longer
-does anything other than putting the base reference.  This patch
-removes the function and makes cgroup_destroy_locked() put the base
-ref at the end isntead.
+On Wed, 7 May 2014 11:13:26 -0700
+Joe Perches <joe@perches.com> wrote:
 
-This also makes cgroup->nr_css unnecessary.  Removed.
+> Networking files are generally more strictly conformant to
+> linux-kernel style
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- include/linux/cgroup.h |  3 ---
- kernel/cgroup.c        | 62 +++++---------------------------------------------
- 2 files changed, 6 insertions(+), 59 deletions(-)
+checkpatch disagrees :) :
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 164851e..160fcc6 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -158,9 +158,6 @@ struct cgroup {
- 	 */
- 	int id;
- 
--	/* the number of attached css's */
--	int nr_css;
--
- 	/*
- 	 * If this cgroup contains any tasks, it contributes one to
- 	 * populated_cnt.  All children with non-zero popuplated_cnt of
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 87ea2ce..bb67acb 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -178,7 +178,6 @@ static struct cftype cgroup_base_files[];
- static void cgroup_put(struct cgroup *cgrp);
- static int rebind_subsystems(struct cgroup_root *dst_root,
- 			     unsigned int ss_mask);
--static void cgroup_destroy_css_killed(struct cgroup *cgrp);
- static int cgroup_destroy_locked(struct cgroup *cgrp);
- static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss);
- static void kill_css(struct cgroup_subsys_state *css);
-@@ -4168,7 +4167,6 @@ static int online_css(struct cgroup_subsys_state *css)
- 		ret = ss->css_online(css);
- 	if (!ret) {
- 		css->flags |= CSS_ONLINE;
--		css->cgroup->nr_css++;
- 		rcu_assign_pointer(css->cgroup->subsys[ss->id], css);
- 	}
- 	return ret;
-@@ -4188,7 +4186,6 @@ static void offline_css(struct cgroup_subsys_state *css)
- 		ss->css_offline(css);
- 
- 	css->flags &= ~CSS_ONLINE;
--	css->cgroup->nr_css--;
- 	RCU_INIT_POINTER(css->cgroup->subsys[ss->id], NULL);
- 
- 	wake_up_all(&css->cgroup->offline_waitq);
-@@ -4373,39 +4370,18 @@ out_destroy:
- 
- /*
-  * This is called when the refcnt of a css is confirmed to be killed.
-- * css_tryget_online() is now guaranteed to fail.
-+ * css_tryget_online() is now guaranteed to fail.  Tell the subsystem to
-+ * initate destruction and put the css ref from kill_css().
-  */
- static void css_killed_work_fn(struct work_struct *work)
- {
- 	struct cgroup_subsys_state *css =
- 		container_of(work, struct cgroup_subsys_state, destroy_work);
--	struct cgroup *cgrp = css->cgroup;
- 
- 	mutex_lock(&cgroup_mutex);
--
--	/*
--	 * css_tryget_online() is guaranteed to fail now.  Tell subsystems
--	 * to initate destruction.
--	 */
- 	offline_css(css);
--
--	/*
--	 * If @cgrp is marked dead, it's waiting for refs of all css's to
--	 * be disabled before proceeding to the second phase of cgroup
--	 * destruction.  If we are the last one, kick it off.
--	 */
--	if (!cgrp->nr_css && cgroup_is_dead(cgrp))
--		cgroup_destroy_css_killed(cgrp);
--
- 	mutex_unlock(&cgroup_mutex);
- 
--	/*
--	 * Put the css refs from kill_css().  Each css holds an extra
--	 * reference to the cgroup's dentry and cgroup removal proceeds
--	 * regardless of css refs.  On the last put of each css, whenever
--	 * that may be, the extra dentry ref is put so that dentry
--	 * destruction happens only after all css's are released.
--	 */
- 	css_put(css);
+{drivers/}net/ :            ~10.8 CHECKs per .[hc] file
+everything else:            ~10   CHECKs per .[hc] file
+no net, no drivers/staging:  ~8.6 CHECKs per .[hc] file
+
+(see [1] below for details).
+
+> +		if ($found_file) {
+> +			if ($realfile =~ m@^(drivers/net/|net/)@) {
+
+this isn't easily extensible/scalable to other subsystems, or
+say something like "all Freescale drivers."  Having it configurable
+in .checkpatch.conf might be a better solution, but I don't believe
+networking should be the only subsystem that can take advantage of
+the extra checkpatch CHECKs.
+
+Can we enable --strict universally in the Linux kernel, maybe like
+so:?
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 34eb216..60e1a39 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -228,6 +228,7 @@ if ($tree) {
+                print "Must be run from the top-level dir. of a kernel tree\n";
+                exit(2);
+        }
++       $check = 1;
  }
  
-@@ -4517,11 +4493,7 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- 	 */
- 	set_bit(CGRP_DEAD, &cgrp->flags);
- 
--	/*
--	 * Initiate massacre of all css's.  cgroup_destroy_css_killed()
--	 * will be invoked to perform the rest of destruction once the
--	 * percpu refs of all css's are confirmed to be killed.
--	 */
-+	/* initiate massacre of all css's */
- 	for_each_css(css, ssid, cgrp)
- 		kill_css(css);
- 
-@@ -4532,15 +4504,6 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- 	raw_spin_unlock(&release_list_lock);
- 
- 	/*
--	 * If @cgrp has css's attached, the second stage of cgroup
--	 * destruction is kicked off from css_killed_work_fn() after the
--	 * refs of all attached css's are killed.  If @cgrp doesn't have
--	 * any css, we kick it off here.
--	 */
--	if (!cgrp->nr_css)
--		cgroup_destroy_css_killed(cgrp);
--
--	/*
- 	 * Remove @cgrp directory along with the base files.  @cgrp has an
- 	 * extra ref on its kn.
- 	 */
-@@ -4549,25 +4512,12 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- 	set_bit(CGRP_RELEASABLE, &cgrp->parent->flags);
- 	check_for_release(cgrp->parent);
- 
-+	/* put the base reference */
-+	cgroup_put(cgrp);
-+
- 	return 0;
- };
- 
--/**
-- * cgroup_destroy_css_killed - the second step of cgroup destruction
-- * @cgrp: the cgroup whose csses have just finished offlining
-- *
-- * This function is invoked from a work item for a cgroup which is being
-- * destroyed after all css's are offlined and performs the rest of
-- * destruction.  This is the second step of destruction described in the
-- * comment above cgroup_destroy_locked().
-- */
--static void cgroup_destroy_css_killed(struct cgroup *cgrp)
--{
--	lockdep_assert_held(&cgroup_mutex);
--
--	cgroup_put(cgrp);
--}
--
- static int cgroup_rmdir(struct kernfs_node *kn)
- {
- 	struct cgroup *cgrp;
--- 
-1.9.0
+ my $emitted_corrupt = 0;
 
+fwiw, --strict has been set unconditionally in u-boot's
+.checkpatch.conf for over a year now, and has significantly reduced
+patch revision churn for simple mistakes like parenthesis alignment,
+spaces after a cast and/or before a semicolon...
+
+Thanks,
+
+Kim
+
+[1] the following were run on kernel v3.15-rc4-260-g38583f0:
+
+for i in `git ls-files | grep -v '^net/' | grep -v '^drivers/net/' | grep \\\.[ch]$`; do scripts/checkpatch.pl --strict -f $i; done | grep ^CHECK: | wc -l
+328329
+git ls-files | grep -v '^net/' | grep -v '^drivers/net/' | grep \\\.[ch]$ | wc -l
+32754
+=> 32754 / 328329 ~= 10 CHECKs per file.[ch] for everything outside of {drivers/}net/.
+
+for i in `git ls-files net/ drivers/net/ | grep \\\.[ch]$`; do scripts/checkpatch.pl --strict -f $i; done | grep ^CHECK: | wc -l
+40431
+git ls-files net/ drivers/net/ | grep \\\.[ch]$ | wc -l
+3742
+=> {drivers/}net/: 40431 / 3742 = 10.8 CHECKs per file.[hc]
+
+for i in `git ls-files | grep -v '^net/' | grep -v '^drivers/net/' | grep -v '^drivers/staging/' | grep \\\.[ch]$`; do scripts/checkpatch.pl --strict -f $i; done | grep ^CHECK: | wc -l
+262005
+git ls-files | grep -v '^net/' | grep -v '^drivers/net/' | grep -v '^drivers/staging/' | grep \\\.[ch]$ | wc -l
+30479
+=> no net, no staging:  262005 / 30479  =  8.6 CHECKs per file.[hc]
