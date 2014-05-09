@@ -1,60 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371AbaEIMUW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 08:20:22 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:64181 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaEIMUV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 08:20:21 -0400
+	id S1754915AbaEIMUx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 08:20:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11883 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752123AbaEIMUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 08:20:52 -0400
+Date: Fri, 9 May 2014 08:20:25 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Victor Kaplansky <VICTORK@il.ibm.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: perf events ring buffer memory barrier on powerpc
+In-Reply-To: <OF667059AA.7F151BCC-ONC2257CD3.0036CFEB-C2257CD3.003BBF01@il.ibm.com>
+Message-ID: <alpine.LRH.2.02.1405090755320.21432@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1405081614100.4346@file01.intranet.prod.int.rdu2.redhat.com> <OF667059AA.7F151BCC-ONC2257CD3.0036CFEB-C2257CD3.003BBF01@il.ibm.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140424162558.GB12304@sirena.org.uk>
-References: <1398350916-885-1-git-send-email-ch.naveen@samsung.com> <20140424162558.GB12304@sirena.org.uk>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Fri, 9 May 2014 17:50:00 +0530
-Message-ID: <CAHfPSqB5+mLiC07jbEpeUgW63pZVk700SkYGxToO7GRAsFm_nQ@mail.gmail.com>
-Subject: Re: [PATCH] i2c: exynos5: Initialise Samsung High Speed I2C
- controller early
-To: Mark Brown <broonie@kernel.org>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        sjg@chromium.org, grundler@chromium.org, linux-kernel@vger.kernel.org,
-        wsa@the-dreams.de, cpgs@samsung.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: MULTIPART/MIXED; BOUNDARY="185206533-810175369-1399638026=:21432"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mark,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On 24 April 2014 21:55, Mark Brown <broonie@kernel.org> wrote:
-> On Thu, Apr 24, 2014 at 08:18:36PM +0530, Naveen Krishna Chatradhi wrote:
->> This patch moves initialization code to subsys_initcall() to ensure
->> that the i2c bus is available early so the regulators can be quickly
->> probed and available for other devices on their probe() call.
->
->> Such solution has been proposed by Mark Brown to fix the problem of
->> the regulators not beeing available on the peripheral device probe():
->> http://lists.infradead.org/pipermail/linux-arm-kernel/2010-March/011971.html
->
-> What specifically is this needed for?  We *should* be able to use
-> deferred probe for most things, but I know that not all subsystems are
-> able to yet.
-DRM related drivers like DP, FIMD, HDMI, Mixer wants to be probed ASAP
-during the boot.
-The real problem comes when, one of these drivers do a regulator_get().
+--185206533-810175369-1399638026=:21432
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-If the physical supply  is not enabled/hookedup the regulator_get() call
-assumes that physical supply is present and returns a
-"dummy_regulator" (But, not an error).
 
-Because of which, Display and several other devices fails to work.
 
-I2C, I2C_TUNNEL, SPI and DMA drivers are required as subsys_initcall()
-for similar reason.
+On Fri, 9 May 2014, Victor Kaplansky wrote:
 
--- 
-Shine bright,
-(: Nav :)
+> Mikulas Patocka <mpatocka@redhat.com> wrote on 05/08/2014 11:46:53 PM:
+> 
+> > > > BTW, it is why you also don't need ACCESS_ONCE() around @tail, but only
+> > > > around
+> > > > @head read.
+> > >
+> > > Agreed, the ACCESS_ONCE() around tail is superfluous since we're the one
+> > > updating tail, so there's no problem with the value changing
+> > > unexpectedly.
+> >
+> > You need ACCESS_ONCE even if you are the only process writing the value.
+> > Because without ACCESS_ONCE, the compiler may perform store tearing and
+> > split the store into several smaller stores. Search the file
+> > "Documentation/memory-barriers.txt" for the term "store tearing", it shows
+> > an example where one instruction storing 32-bit value may be split to two
+> > instructions, each storing 16-bit value.
+> >
+> > Mikulas
+> 
+> AFAIR, I was talking about redundant ACCESS_ONCE() around @tail *read* in
+> consumer code. As for ACCESS_ONCE() around @tail write in consumer code,
+> I see your point, but I don't think that volatile imposed by ACCESS_ONCE()
+> is appropriate, since:
+> 
+>     - compiler can generate several stores despite volatile if @tail
+>     is bigger in size than native machine data size, e.g. 64-bit on
+>     a 32-bit CPU.
+
+That's true - so you should define data_head and data_tail as "unsigned 
+long", not "__u64".
+
+>     - volatile imposed by ACCESS_ONCE() does nothing to prevent CPU from
+>     reordering, splitting or merging accesses. It can only mediate
+>     communication problems between processes running on same CPU.
+
+That's why you need smp barrier in addition to ACCESS_ONCE. You need both 
+- the smp barrier (to prevent the CPU from reordering) and ACCESS_ONCE (to 
+prevent the compiler from splitting the write to smaller memory accesses).
+
+
+Since Linux 3.14, there are new macros smp_store_release and 
+smp_load_acquire that combine ACCESS_ONCE and memory barrier, so you can 
+use them. (they call compiletime_assert_atomic_type to make sure that you 
+don't use them on types that are not atomic, such as long long on 32-bit 
+architectures)
+
+> What you really want is to guarantee *atomicity* of @tail write on consumer
+> side.
+> 
+> -- Victor
+
+Mikulas
+--185206533-810175369-1399638026=:21432--
