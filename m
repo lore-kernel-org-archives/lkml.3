@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072AbaEIB3f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 21:29:35 -0400
-Received: from mail.anarazel.de ([217.115.131.40]:33628 "EHLO mail.anarazel.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754555AbaEIB3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 21:29:34 -0400
-From: Andres Freund <andres@anarazel.de>
-To: Borislav Petkov <bp@suse.de>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andres Freund <andres@anarazel.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 1/2] x86: Fix typo preventing msr_set/clear_bit from having an effect
-Date: Fri,  9 May 2014 03:29:16 +0200
-Message-Id: <1399598957-7011-2-git-send-email-andres@anarazel.de>
-X-Mailer: git-send-email 2.0.0.rc2.4.g1dc51c6.dirty
-In-Reply-To: <1399598957-7011-1-git-send-email-andres@anarazel.de>
-References: <1399598957-7011-1-git-send-email-andres@anarazel.de>
+	id S1754622AbaEIBhV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 21:37:21 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:59598 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751924AbaEIBhT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 21:37:19 -0400
+Date: Thu, 8 May 2014 21:37:15 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Doug Anderson <dianders@chromium.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Will Deacon <will.deacon@arm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        David Riley <davidriley@chromium.org>,
+        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP
+ systems
+In-Reply-To: <20140508205223.GI3693@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.11.1405082058130.980@knanqh.ubzr>
+References: <1399504982-31181-1-git-send-email-dianders@chromium.org> <CAOh2x=kwaoSdj8JO0Vo08Y0dX2UfKFiF3pBV-qtp-YTyN=8H8Q@mail.gmail.com> <CAD=FV=UEGJGHrdcXgs3EZ_wFXT8GnNeCOMt7CgdiiUzBzZ5Y0A@mail.gmail.com> <alpine.LFD.2.11.1405081149190.980@knanqh.ubzr>
+ <CAD=FV=VtcLOh51LCmafzRMdqtDrwKXCqK6gE6V7OOOUe4gjwbA@mail.gmail.com> <alpine.LFD.2.11.1405081329010.980@knanqh.ubzr> <20140508192209.GH3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405081600260.980@knanqh.ubzr>
+ <20140508205223.GI3693@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to a typo the msr accessor function introduced in
-22085a66c2fab6cf9b9393c056a3600a6b4735de didn't have any lasting
-effects because they accidentally wrote the old value back.
+On Thu, 8 May 2014, Russell King - ARM Linux wrote:
 
-After c0a639ad0bc6b178b46996bd1f821a04643e2bde this at the very least
-this causes cpuid limits not to be lifted on some cpus leading to
-missing capabilities for those.
+> If you're in a preempt or SMP environment, provide a timer for udelay().
+> IF you're in an environment with IRQs which can take a long time, use
+> a timer for udelay().  If you're in an environment where the CPU clock
+> can change unexpectedly, use a timer for udelay().
 
-Signed-off-by: Andres Freund <andres@anarazel.de>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/lib/msr.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Longer delays are normally not a problem.  If they are, then simply 
+disabling IRQs may solve it if absolutely required.  With much shorter 
+delays than expected this is another story.
 
-diff --git a/arch/x86/lib/msr.c b/arch/x86/lib/msr.c
-index db9db44..4362373 100644
---- a/arch/x86/lib/msr.c
-+++ b/arch/x86/lib/msr.c
-@@ -76,7 +76,7 @@ static inline int __flip_bit(u32 msr, u8 bit, bool set)
- 	if (m1.q == m.q)
- 		return 0;
- 
--	err = msr_write(msr, &m);
-+	err = msr_write(msr, &m1);
- 	if (err)
- 		return err;
- 
--- 
-2.0.0.rc2.4.g1dc51c6.dirty
+What about the following:
+
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 7c4fada440..10030cc5a0 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -682,6 +682,15 @@ static int cpufreq_callback(struct notifier_block *nb,
+ 			cpufreq_scale(per_cpu(l_p_j_ref, cpu),
+ 					per_cpu(l_p_j_ref_freq, cpu),
+ 					freq->new);
++		/*
++		 * Another CPU might have called udelay() just before LPJ
++		 * and a shared CPU clock is increased.  That other CPU still
++		 * looping on the old LPJ value would return significantly
++		 * sooner than expected.  The actual fix is to provide a
++		 * timer based udelay() implementation instead.
++		 */
++		if (freq->old < freq->new)
++			pr_warn_once("*** udelay() on SMP is racy and may be much shorter than expected ***\n");
+ 	}
+ 	return NOTIFY_OK;
+ }
+
+
+Nicolas
 
