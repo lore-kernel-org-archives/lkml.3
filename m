@@ -1,45 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757674AbaEIU6c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 16:58:32 -0400
-Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:36342 "EHLO
-	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756796AbaEIU6a (ORCPT
+	id S1757641AbaEIU7w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 16:59:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58198 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757189AbaEIU7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 16:58:30 -0400
-Date: Fri, 9 May 2014 22:58:27 +0200
-From: Alessandro Zummo <a.zummo@towertech.it>
-To: atx@atx.name
-Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] rtc: Add support for Microchip MCP795
-Message-ID: <20140509225827.55e395cd@linux.lan.towertech.it>
-In-Reply-To: <20140506171318.GA2397@dashie>
-References: <20140506171318.GA2397@dashie>
-Organization: Tower Technologies
-MIME-Version: 1.0
+	Fri, 9 May 2014 16:59:50 -0400
+Date: Fri, 9 May 2014 13:59:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Fix _IOC_TYPECHECK sparse error
+Message-Id: <20140509135949.feac79f3cb0ed9b13afbfeb4@linux-foundation.org>
+In-Reply-To: <536C873E.8060408@xs4all.nl>
+References: <536C873E.8060408@xs4all.nl>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 May 2014 19:13:18 +0200
-atx@atx.name wrote:
+On Fri, 09 May 2014 09:43:58 +0200 Hans Verkuil <hverkuil@xs4all.nl> wrote:
 
-> Adds driver for SPI RTC Microchip MCP795. Does only support saving/loading time from the chip (i. e. no alarms/power events/ID).
+> Andrew, can you merge this for 3.15 or 3.16 (you decide)? While it fixes a sparse error
+> for the media subsystem, it is not really appropriate to go through our media tree.
 > 
-> Signed-off-by: Josef Gajdusek <atx@atx.name>
+> Thanks,
+> 
+> 	Hans
+> 
+> 
+> When running sparse over drivers/media/v4l2-core/v4l2-ioctl.c I get these
+> errors:
+> 
+> drivers/media/v4l2-core/v4l2-ioctl.c:2043:9: error: bad integer constant expression
+> drivers/media/v4l2-core/v4l2-ioctl.c:2044:9: error: bad integer constant expression
+> drivers/media/v4l2-core/v4l2-ioctl.c:2045:9: error: bad integer constant expression
+> drivers/media/v4l2-core/v4l2-ioctl.c:2046:9: error: bad integer constant expression
+> 
+> etc.
+> 
+> The root cause of that turns out to be in include/asm-generic/ioctl.h:
+> 
+> #include <uapi/asm-generic/ioctl.h>
+> 
+> /* provoke compile error for invalid uses of size argument */
+> extern unsigned int __invalid_size_argument_for_IOC;
+> #define _IOC_TYPECHECK(t) \
+>         ((sizeof(t) == sizeof(t[1]) && \
+>           sizeof(t) < (1 << _IOC_SIZEBITS)) ? \
+>           sizeof(t) : __invalid_size_argument_for_IOC)
+> 
+> If it is defined as this (as is already done if __KERNEL__ is not defined):
+> 
+> #define _IOC_TYPECHECK(t) (sizeof(t))
+> 
+> then all is well with the world.
+> 
+> This patch allows sparse to work correctly.
+> 
+> --- a/include/asm-generic/ioctl.h
+> +++ b/include/asm-generic/ioctl.h
+> @@ -3,10 +3,15 @@
+>  
+>  #include <uapi/asm-generic/ioctl.h>
+>  
+> +#ifdef __CHECKER__
+> +#define _IOC_TYPECHECK(t) (sizeof(t))
+> +#else
+>  /* provoke compile error for invalid uses of size argument */
+>  extern unsigned int __invalid_size_argument_for_IOC;
+>  #define _IOC_TYPECHECK(t) \
+>  	((sizeof(t) == sizeof(t[1]) && \
+>  	  sizeof(t) < (1 << _IOC_SIZEBITS)) ? \
+>  	  sizeof(t) : __invalid_size_argument_for_IOC)
+> +#endif
+> +
+>  #endif /* _ASM_GENERIC_IOCTL_H */
 
- 
- Acked-by: Alessandro Zummo <a.zummo@towertech.it>
-
--- 
-
- Best regards,
-
- Alessandro Zummo,
-  Tower Technologies - Torino, Italy
-
-  http://www.towertech.it
-
+Can't we use BUILD_BUG_ON() here?  That's neater, more standard and
+BUILD_BUG_ON() already has sparse handling.  
