@@ -1,57 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756805AbaEIOUJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 10:20:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46165 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751073AbaEIOUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 10:20:06 -0400
-Message-ID: <536CE414.5030406@suse.de>
-Date: Fri, 09 May 2014 16:20:04 +0200
-From: =?ISO-8859-1?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755582AbaEIOWf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 10:22:35 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:49168 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751084AbaEIOWd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 10:22:33 -0400
+Message-ID: <536CE48F.2040904@fb.com>
+Date: Fri, 9 May 2014 08:22:07 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Alex Courbot <acourbot@nvidia.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: tegra: enable console framebuffer rotation
-References: <1399432682-677-1-git-send-email-acourbot@nvidia.com> <536A57FA.2090608@wwwdotorg.org> <536AC45F.6080608@nvidia.com>
-In-Reply-To: <536AC45F.6080608@nvidia.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: Shaohua Li <shli@kernel.org>
+CC: Sasha Levin <sasha.levin@oracle.com>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: blk-mq: WARN at block/blk-mq.c:585 __blk_mq_run_hw_queue
+References: <536A532C.4050001@oracle.com> <536A5532.1060008@fb.com> <536A56E4.5020909@oracle.com> <536A5764.4020606@fb.com> <536C49E6.9000503@oracle.com> <536C4B2E.4030906@fb.com> <20140509121229.GB27918@kernel.org>
+In-Reply-To: <20140509121229.GB27918@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-09_04:2014-05-09,2014-05-09,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=2.2170373842334e-07 kscore.compositescore=0
+ circleOfTrustscore=198.888439154703 compositescore=0.998981209195878
+ urlsuspect_oldscore=0.998981209195878 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.998981209195878 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1405090181
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 08.05.2014 01:40, schrieb Alex Courbot:
-> On 05/08/2014 12:57 AM, Stephen Warren wrote:
->> On 05/06/2014 09:18 PM, Alexandre Courbot wrote:
->>> Console rotation is needed for devices like Tegra Note 7 and NVIDIA
->>> SHIELD to get the boot console in the expected orientation.
+On 05/09/2014 06:12 AM, Shaohua Li wrote:
+> On Thu, May 08, 2014 at 09:27:42PM -0600, Jens Axboe wrote:
+>> On 2014-05-08 21:22, Sasha Levin wrote:
+>>> On 05/07/2014 11:55 AM, Jens Axboe wrote:
+>>>> On 05/07/2014 09:53 AM, Sasha Levin wrote:
+>>>>> On 05/07/2014 11:45 AM, Jens Axboe wrote:
+>>>>>> On 05/07/2014 09:37 AM, Sasha Levin wrote:
+>>>>>>> Hi all,
+>>>>>>>
+>>>>>>> While fuzzing with trinity inside a KVM tools guest running the latest -next
+>>>>>>> kernel I've stumbled on the following spew:
+>>>>>>>
+>>>>>>> [  986.962569] WARNING: CPU: 41 PID: 41607 at block/blk-mq.c:585 __blk_mq_run_hw_queue+0x90/0x500()
+>>>>>>
+>>>>>> I'm going to need more info than this. What were you running? How as kvm
+>>>>>> invoked (nr cpus)?
+>>>>>
+>>>>> Sure!
+>>>>>
+>>>>> It's running in a KVM tools guest (not qemu), with the following options:
+>>>>>
+>>>>> '--rng --balloon -m 28000 -c 48 -p "numa=fake=32 init=/virt/init zcache ftrace_dump_on_oops debugpat kvm.mmu_audit=1 slub_debug=FZPU rcutorture.rcutorture_runnable=0 loop.max_loop=64 zram.num_devices=4 rcutorture.nreaders=8 oops=panic nr_hugepages=1000 numa_balancing=enable'.
+>>>>>
+>>>>> So basically 48 vcpus (the host has 128 physical ones), and ~28G of RAM.
+>>>>>
+>>>>> I've been running trinity as a fuzzer, which doesn't handle logging too well,
+>>>>> so I can't reproduce it's actions easily.
+>>>>>
+>>>>> There was an additional stress of hotplugging CPUs and memory during this recent
+>>>>> fuzzing run, so it's fair to suspect that this happened as a result of that.
+>>>>
+>>>> Aha!
+>>>>
+>>>>> Anything else that might be helpful?
+>>>>
+>>>> No, not too surprising given the info that cpu hotplug was being
+>>>> stressed at the same time. blk-mq doesn't quiesce when this happens, so
+>>>> it's very unlikely that there are races between updating the cpu masks
+>>>> and flushing out the previously queued work.
+>>>
+>>> So this warning is something you'd expect when CPUs go up/down?
 >>
->> I've squashed this into Tegra's for-3.16/defconfig branch.
->>
->> Can you please also update multi_v7_defconfig, and send that change to
->> arm-soc (arm@kernel.org) to be applied. Thanks.
+>> Let me put it this way - I'm not surprised that it triggered, but it
+>> will of course be fixed up.
 > 
-> I omitted doing this for now because the devices that require this
-> option (TN7/SHIELD) need a custom build with appended DTB and/or
-> command-line anyway. Therefore they cannot use a multi-mach kernel
+> Does reverting 1eaade629f5c47 change anything?
+> 
+> The ctx->online isn't changed immediately when cpu is offline, likely there are
+> something wrong. I'm wondering why we need that patch?
 
-What does appending a .dtb have to do with whether or not to use a
-multi-mach kernel? We package zImage/uImage and .dtbs separately, so
-surely the multi_v7_defconfig should be kept working with Tegra devices.
-Appending a .dtb only comes into play for preparing installation images.
+We don't strictly need it. That commit isn't in what Sasha tested, however.
 
-Regards,
-Andreas
 
--- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
