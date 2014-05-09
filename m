@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550AbaEIKDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 06:03:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48381 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756531AbaEIKDu (ORCPT
+	id S1756571AbaEIKD6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 06:03:58 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:35711 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756531AbaEIKD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 06:03:50 -0400
-Date: Fri, 9 May 2014 12:03:46 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: riel@redhat.com
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, mgorman@suse.de,
-        chegu_vinod@hp.com
-Subject: Re: [PATCH 2/4] sched,numa: weigh nearby nodes for task placement on
- complex NUMA topologies
-Message-ID: <20140509100346.GS30445@twins.programming.kicks-ass.net>
-References: <1399569811-14362-1-git-send-email-riel@redhat.com>
- <1399569811-14362-3-git-send-email-riel@redhat.com>
+	Fri, 9 May 2014 06:03:56 -0400
+Message-ID: <536CA80A.60201@atmel.com>
+Date: Fri, 9 May 2014 12:03:54 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="icsXL8FABjDeMLkQ"
-Content-Disposition: inline
-In-Reply-To: <1399569811-14362-3-git-send-email-riel@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] misc: atmel_pwm: only build for supported platforms
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <1399560990-1402858-1-git-send-email-arnd@arndb.de> <1399560990-1402858-17-git-send-email-arnd@arndb.de>
+In-Reply-To: <1399560990-1402858-17-git-send-email-arnd@arndb.de>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/05/2014 16:56, Arnd Bergmann :
+> There is architecture code in mach-at91 that depends on the
+> CONFIG_ATMEL_PWM symbol in order to call the soc-specific
+> at91_add_device_pwm function. While all of this is about code
+> that will be removed in the future, using DT probing and
+> the PWM framework, we currently get a build failure:
+> 
+> arch/arm/mach-at91/built-in.o: In function `at91_pwm_leds':
+> arch/arm/mach-at91/leds.c:88: undefined reference to `at91_add_device_pwm'
+> 
+> This patch ensures we only try to build this driver on
+> platforms on which it will build and work.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---icsXL8FABjDeMLkQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-On Thu, May 08, 2014 at 01:23:29PM -0400, riel@redhat.com wrote:
->  static inline unsigned long task_weight(struct task_struct *p, int nid)
->  {
-> -	unsigned long total_faults;
-> +	unsigned long total_faults, score;
-> =20
->  	if (!p->numa_faults_memory)
->  		return 0;
-> @@ -940,15 +997,32 @@ static inline unsigned long task_weight(struct task=
-_struct *p, int nid)
->  	if (!total_faults)
->  		return 0;
-> =20
-> -	return 1000 * task_faults(p, nid) / total_faults;
-> +	score =3D 1000 * task_faults(p, nid);
-> +	score +=3D nearby_nodes_score(p, nid, true);
-> +
-> +	score /=3D total_faults;
-> +
-> +	return score;
->  }
+Thanks,
 
-So you add an O(nr_nodes) loop to task_weight(), but that in itself is
-already called from O(nr_nodes) loops, yielding a total complexity of
-O(nr_nodes^2).
+> ---
+>  drivers/misc/Kconfig | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+> index fe2230c..ce29342 100644
+> --- a/drivers/misc/Kconfig
+> +++ b/drivers/misc/Kconfig
+> @@ -53,7 +53,8 @@ config AD525X_DPOT_SPI
+>  
+>  config ATMEL_PWM
+>  	tristate "Atmel AT32/AT91 PWM support"
+> -	depends on HAVE_CLK && (AVR32 || ARCH_AT91 || COMPILE_TEST)
+> +	depends on HAVE_CLK
+> +	depends on AVR32 || AT91SAM9263 || AT91SAM9RL || AT91SAM9G45
+>  	help
+>  	  This option enables device driver support for the PWM channels
+>  	  on certain Atmel processors.  Pulse Width Modulation is used for
+> 
 
-This might be fine, but algorithmic complexity should very much be a
-part of the changelog I think.
 
---icsXL8FABjDeMLkQ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTbKgCAAoJEHZH4aRLwOS641IP/0oGnZasOIsx6HIAgekyWian
-DevpkYIk6TZ+7WhnyVKuUMegYlzQgMnnsIJbeiZ3i9LZBIkK1W+jxKBh/JEnT2Qd
-ecDHEwCABjGEKa4XTyG0h2oYLMTgtNuWvNulhcfYw8KzKcQalKaNPJVtm0wPTugX
-y2dMplAPPnp6H2gVveuBu6QtdjwdafHV7lE7lrzjGFv3nfIJDTEdInhthXqGV2Jy
-PfE1272niRueOqzBTGXqWt2DhQpfJZ3MqaP2XGwa+XONooz9fe118Qcg1qR3ZCyg
-wGmi+FEuxHDCbY/QbmycBNfCl9t+YAy7SPKjay5jKr0BJ70oRGvjHXtXNCgtHiTP
-a7rPu+3jpCxzrj5lwUTjWQrze2fNwp9vnI2L2GD7o7SQ3kAY7hIePHBlEIkkVAUn
-hv5Q9Ymy79b0/s5FE+QiTs0Cl/hLHDQUozM69UMbwCyHB3jvgrJgK/sWqGi+x8BT
-q/7XFSsCUkBwHM49e7LSJWvE/qkj3c87aryitZyoiy3ztubs971PvYBEoA4pAqj6
-eU/J+p6HxvyJuoQpgocCQnud10g5mi/PpE4iNsbO+bAhIg8iZnt10lNfLwsq7kM7
-qV21GPtLLrxmFmNpXPeIrprklvKDmZxabagg57hnk122YGwtFizepYB2ZMttaPDX
-m+bxFJGBcr+GPzI8/i9b
-=E/X9
------END PGP SIGNATURE-----
-
---icsXL8FABjDeMLkQ--
+-- 
+Nicolas Ferre
