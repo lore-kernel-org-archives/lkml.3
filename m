@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619AbaEIOOI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 10:14:08 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54969 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753367AbaEIOOG (ORCPT
+	id S1756681AbaEIOPY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 10:15:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49432 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036AbaEIOPX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 10:14:06 -0400
-Date: Fri, 9 May 2014 16:13:56 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>, Aubrey Li <aubrey.li@intel.com>
-Subject: Re: [PATCH] PM / suspend: Always use deepest C-state in the "freeze"
- sleep state
-Message-ID: <20140509141356.GA1811@xo-6d-61-c0.localdomain>
-References: <2548502.zJ1no3NhRc@vostro.rjw.lan>
- <20140509073835.GB4965@xo-6d-61-c0.localdomain>
- <2485687.UrJORvS9e7@vostro.rjw.lan>
+	Fri, 9 May 2014 10:15:23 -0400
+Date: Fri, 9 May 2014 16:15:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: mingo@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        luto@amacapital.net, nicolas.pitre@linaro.org,
+        daniel.lezcano@linaro.org, umgwanakikbuti@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC][PATCH 6/8] sched,idle: Avoid spurious wakeup IPIs
+Message-ID: <20140509141520.GV2844@laptop.programming.kicks-ass.net>
+References: <20140411134243.160989490@infradead.org>
+ <20140411135218.478299389@infradead.org>
+ <CAAG0J9_q1KsUx10-XAb7AJnxv2ehctg6q1KME7ahsk1OZV8vZQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <2485687.UrJORvS9e7@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAAG0J9_q1KsUx10-XAb7AJnxv2ehctg6q1KME7ahsk1OZV8vZQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2014-05-09 13:26:47, Rafael J. Wysocki wrote:
-> On Friday, May 09, 2014 09:38:35 AM Pavel Machek wrote:
-> > On Mon 2014-05-05 00:51:54, Rafael J. Wysocki wrote:
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > 
-> > > If freeze_enter() is called, we want to bypass the current cpuidle
-> > > governor and always use the deepest available (that is, not disabled)
-> > > C-state, because we want to save as much energy as reasonably possible
-> > > then and runtime latency constraints don't matter at that point, since
-> > > the system is in a sleep state anyway.
-> > 
-> > Would there be way to pass the parameter "go to deepest" instead of adding
-> > global state for this?
+On Fri, May 09, 2014 at 02:37:27PM +0100, James Hogan wrote:
+> Hi Peter,
 > 
-> I'm not sure what you mean?  A parameter of what in particular?  And where
-> to pass it?
+> On 11 April 2014 14:42, Peter Zijlstra <peterz@infradead.org> wrote:
+> > +       return !(fetch_or(&ti->flags, _TIF_NEED_RESCHED) & _TIF_POLLING_NRFLAG);
+> 
+> This breaks the build on metag, and I suspect arm64 too:
 
-Currently the code is:
+Yep, I just got a patch for arm64.
 
-static void freeze_enter(void)
-{
-+ cpuidle_use_deepest_state(true);
-  cpuidle_resume();
-  wait_event(suspend_freeze_wait_head, suspend_freeze_wake);
-  cpuidle_pause();
-+ cpuidle_use_deepest_state(false);
-}
+> kernel/sched/core.c In function ‘set_nr_and_not_polling’:
+> kernel/sched/core.c +531 : error: ‘_TIF_POLLING_NRFLAG’ undeclared
+> 
+> since metag/arm64 define TIF_POLLING_NRFLAG but not
+> _TIF_POLLING_NRFLAG. Could you please fix that prior to your patch to
+> avoid breaking bisection?
 
-. I believe it would be better if you did
+Ingo, is there any git magic to make that happen? Can we have a tree
+with 2 patches (one for ARM64 and one for metag) before the sched/core
+tree?
 
-cpuidle_resume(GOTO_DEEPEST_C_STATE)
+> BTW what is it that determines whether an arch needs TIF_POLLING_NRFLAG?
 
-instead of having global state.
+Any SMP arch that has a polling idle function of any kind (including the
+default cpu_idle_poll()).
 
-Thanks,
-										Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+That said, even if that's true, not having TIF_POLLING_NRFLAG isn't
+fatal, just sub-optimal in that we'll send an unconditional IPI to wake
+the CPU even though its polling TIF_NEED_RESCHED and doesn't need
+anything other than that write to wake up.
+
+Most archs have (x86) hlt or (arm) wfi like idle instructions, and if
+that is your only possible idle function, you'll require the interrupt
+to wake up and there's really no point to having the POLLING bit.
+
+Lastly, having the POLLING bit and not needing it is similarly non-fatal.
