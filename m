@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159AbaEIJOc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 05:14:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40921 "EHLO mx2.suse.de"
+	id S1756536AbaEIJOv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 05:14:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40934 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750783AbaEIJOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 05:14:30 -0400
+	id S1750783AbaEIJOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 05:14:50 -0400
 From: Petr Mladek <pmladek@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Kay Sievers <kay@vrfy.org>, Jiri Kosina <jkosina@suse.cz>,
         Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
         linux-kernel@vger.kernel.org, Petr Mladek <pmladek@suse.cz>
-Subject: [RFC PATCH 07/11] printk: right ordering of the cont buffers from NMI context
-Date: Fri,  9 May 2014 11:11:01 +0200
-Message-Id: <1399626665-29817-8-git-send-email-pmladek@suse.cz>
+Subject: [RFC PATCH 08/11] printk: try hard to print Oops message in NMI context
+Date: Fri,  9 May 2014 11:11:02 +0200
+Message-Id: <1399626665-29817-9-git-send-email-pmladek@suse.cz>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1399626665-29817-1-git-send-email-pmladek@suse.cz>
 References: <1399626665-29817-1-git-send-email-pmladek@suse.cz>
@@ -25,73 +25,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using the NMI log buffer, continuous messages were sometimes mixed
-after merging to the main log buffer.
+Oops messages are important for debugging. We should try harder to get them into
+the main ring buffer and print them to the console. This is problematic in NMI
+context because the needed locks might already be taken.
 
-The problems are solved by the following two tricks. First, continuous messages
-are always put into the NMI log buffer if it already contains something. Second,
-the main cont buffer is always flushed before merging any message from the NMI
-log buffer.
-
-Note that the second part of a continuous message always has to be the first
-message in the NMI log buffer. If the first part goes to the main log buffer,
-we have the lock for the main log buffer and merge all previous messages.
-
-The only drawback is that we check "nmi_cont" without having "nmi_logbuf_lock".
-Well, parallel NMIs are very rare. In fact, they should not happen. In the
-worst case, we crate some mess in the log.
-
-I tested this a lot. I still see that a single line might get split into two
-lines from time to time. In each case, this patch helped a lot. Especially it
-fixed problems with ordering of the line parts.
+What we can do, though, is to zap all printk locks. We already do this
+when a printk recursion is detected. This should be safe because the system
+is crashing and there shouldn't be any printk caller by now. In case somebody
+manages to grab the logbuf_lock after zap_locks then we just fallback to the
+NMI ring buffer and hope that someone else will merge the messages strings and
+flush the buffer.
 
 Signed-off-by: Petr Mladek <pmladek@suse.cz>
 ---
- kernel/printk/printk.c | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ kernel/printk/printk.c | 22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 12435f3ef2d4..7c992b8f44a4 100644
+index 7c992b8f44a4..cc6e77f6d72b 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
-@@ -1905,6 +1905,7 @@ static void merge_nmi_delayed_printk(void)
- 	unsigned long nmi_first_id, nmi_next_id;
- 	u32 old_main_next_idx;
- 	u64 old_main_next_seq;
-+	int main_cont_flushed = 0;
- 
- 	while (true) {
- 		/*
-@@ -1917,6 +1918,15 @@ static void merge_nmi_delayed_printk(void)
- 		if (likely(nmi_merge_seq == seq_from_id(nmi_next_id)))
- 			return;
- 
-+		/*
-+		 * The main cont buffer might include the first part of the
-+		 * first message from NMI context.
-+		 */
-+		if (unlikely(!main_cont_flushed)) {
-+			cont_flush(&main_log, LOG_CONT);
-+			main_cont_flushed = 1;
-+		}
-+
- 		/* check if we lost some messages */
- 		nmi_first_id = ACCESS_ONCE(nmi_log.nmi.first_id);
- 		if (nmi_seq_is_invalid(nmi_merge_seq,
-@@ -2030,7 +2040,12 @@ asmlinkage int vprintk_emit(int facility, int level,
+@@ -2036,16 +2036,26 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	 * when we managed to preempt the currently running printk from NMI
+ 	 * context. When we are not sure, rather copy the current message
+ 	 * into NMI ring buffer and merge it later.
++	 *
++	 * Special case are Oops messages from NMI context. We try hard to print
++	 * them. So we forcefully drop existing locks, try to pass them via the
++	 * main log buffer, and even later push them to the console.
+ 	 */
  	if (likely(!in_nmi())) {
  		raw_spin_lock(&main_logbuf_lock);
  	} else {
--		if (!raw_spin_trylock(&main_logbuf_lock)) {
-+		/*
-+		 * Always use NMI ring buffer if something is already
-+		 * in the cont buffer.
-+		 */
-+		if ((nmi_cont.len && nmi_cont.owner == current) ||
-+		    !raw_spin_trylock(&main_logbuf_lock)) {
+ 		/*
+ 		 * Always use NMI ring buffer if something is already
+-		 * in the cont buffer.
++		 * in the cont buffer, except for Oops.
+ 		 */
+-		if ((nmi_cont.len && nmi_cont.owner == current) ||
+-		    !raw_spin_trylock(&main_logbuf_lock)) {
++		bool force_nmi_logbuf = nmi_cont.len &&
++			nmi_cont.owner == current &&
++			!oops_in_progress;
++
++		if (oops_in_progress)
++			zap_locks();
++
++		if (force_nmi_logbuf || !raw_spin_trylock(&main_logbuf_lock)) {
  			if (!nmi_log.buf) {
  				lockdep_on();
  				local_irq_restore(flags);
+@@ -2178,8 +2188,12 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	/*
+ 	 * If called from the scheduler or NMI context, we can not get console
+ 	 * without a possible deadlock.
++	 *
++	 * The only exception are Oops messages from NMI context where all
++	 * relevant locks have been forcefully dropped above. We have to try
++	 * to get the console, otherwise the last messages would get lost.
+ 	 */
+-	if (in_sched || in_nmi())
++	if (in_sched || (in_nmi() && !oops_in_progress))
+ 		return printed_len;
+ 
+ 	/*
 -- 
 1.8.4
 
