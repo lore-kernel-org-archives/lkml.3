@@ -1,112 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969AbaEIWaN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 18:30:13 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:42864 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098AbaEIWaL (ORCPT
+	id S1756007AbaEIWcq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 18:32:46 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:49721 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754728AbaEIWco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 18:30:11 -0400
-Date: Fri, 9 May 2014 15:30:04 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 01/45] rcutorture: Add forward-progress
- checking for writer
-Message-ID: <20140509223004.GZ8754@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140429002455.GA15461@linux.vnet.ibm.com>
- <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140507211649.GA27924@cloud>
- <20140507234313.GP8754@linux.vnet.ibm.com>
- <20140509155230.GA4152@thin>
- <20140509173658.GV8754@linux.vnet.ibm.com>
- <20140509193246.GC13050@jtriplet-mobl1>
+	Fri, 9 May 2014 18:32:44 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 1/3] PM / sleep: Flag to speed up suspend-resume of runtime-suspended devices
+Date: Sat, 10 May 2014 00:49:25 +0200
+Message-ID: <1599191.L8hnSpOETp@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1405082110330.13708-100000@netrider.rowland.org>
+References: <Pine.LNX.4.44L0.1405082110330.13708-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140509193246.GC13050@jtriplet-mobl1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050922-7164-0000-0000-000001A4BDB4
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 12:32:46PM -0700, Josh Triplett wrote:
-> On Fri, May 09, 2014 at 10:36:58AM -0700, Paul E. McKenney wrote:
-> > On Fri, May 09, 2014 at 08:52:31AM -0700, Josh Triplett wrote:
-> > > On Wed, May 07, 2014 at 04:43:13PM -0700, Paul E. McKenney wrote:
-> > > > On Wed, May 07, 2014 at 02:16:49PM -0700, josh@joshtriplett.org wrote:
-> > > > > On Mon, Apr 28, 2014 at 05:24:49PM -0700, Paul E. McKenney wrote:
-> > > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > > > 
-> > > > > > The rcutorture output currently does not distinguish between stalls in
-> > > > > > the RCU implementation and stalls in the rcu_torture_writer() kthreads.
-> > > > > > This commit therefore adds some diagnostics to help distinguish between
-> > > > > > these two conditions, at least for the non-SRCU implementations.  (SRCU
-> > > > > > does not provide evidence of update-side forward progress by design.)
-> > > > > > 
-> > > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > > 
-> > > > > The concept makes sense, and the writer state annotations seem like a
-> > > > > useful debugging mechanism, but having RCU know about RCU torture types
-> > > > > seems fundamentally wrong.  This mechanism accesses rcu_state, which is
-> > > > > already implementation-specific, so why not just only define the
-> > > > > function for the RCU implementations that support it, and then have a
-> > > > > function pointer in the torture-test structure to report a stall?
-> > > > 
-> > > > Ouch.  It is worse than that!  When running RCU-bh or RCU-sched,
-> > > > the current code incorrectly returns the statistics for RCU.
-> > > > So I do need some way for rcutorture to tell RCU which flavor
-> > > > it is testing.
-> > > > 
-> > > > One thing I could do would be to pass in a pointer to the call_rcu()
-> > > > function (cur_ops->call from rcutorture's viewpoint), then scan the
-> > > > rcu_state structures looking for the selected flavor (rsp->call from
-> > > > tree.c's viewpoint).  In the SRCU and RCU-busted cases, the flavor would
-> > > > not be found, and I could then just set everything to zero.
-> > > > 
-> > > > Does that seem reasonable, or is there a better way to do this?
-> > > 
-> > > That search seems rather too hackish; why not just declare one
-> > > stats-returning function per RCU flavor, and put the pointer to the
-> > > corresponding function in the structure for each test type?
-> > 
-> > The problem is that rcutorture doesn't know anything about the structures,
-> > as those are internal to the implementation.  All it knows is which
-> > functions it is using.  I -could- EXPORT_SYMBOL_GPL() the rcu_state
-> > structures to modules (they are already non-static), then rename
-> > TINY_RCU's rcu_ctrlblk to rcu_state to allow the needed type punning,
-> > then do some special-case thing for SRCU, and put a pointer to whatever
-> > in rcu_torture_ops, but that was feeling a bit hackish as well.
-> > 
-> > So what did you have in mind to allow rcutorture to communicate the
-> > rcuflavor to the underlying RCU implementation?
+On Thursday, May 08, 2014 09:52:18 PM Alan Stern wrote:
+> On Thu, 8 May 2014, Rafael J. Wysocki wrote:
 > 
-> Rather than EXPORT_SYMBOL_GPLing the rcu_state structures, just
-> EXPORT_SYMBOL_GPL one version of rcutorture_get_gp_data per RCU flavor.
-> (And hide them all behind #ifdef CONFIG_RCU_TORTURE_TEST.)  Then add a
-> get_gp_data field to rcu_torture_ops; if NULL, skip the stats.  (Or put
-> a no-op version in rcutorture.)
+> > Well, no.
+> > 
+> > The reason why that doesn't work is because ->prepare() callbacks are
+> > executed in the reverse order, so the perent's ones will be run before
+> > the ->prepare() of the children.  Thus if ->prepare() sets the flag
+> > with the expectation that ->suspend() (and the subsequent callbacks)
+> > won't be executed, that expectation may not be met actually.
+> 
+> That's true also if the flag gets set in ->suspend(), isn't it?  A
+> driver may set direct_resume in its ->suspend() callback, expecting
+> that the subsequent callbacks won't be executed.  But if a descendant
+> hasn't also set its flag then the callbacks _will_ be executed.
 
-But that would require me to provide these same exports from TINY_RCU,
-which does not need them.
+No, that's not possible with the current patch, because __device_suspend() is
+executed for descendants first and then for ancestors and it clears
+direct_suspend for the parents of devices that don't have it set.  This means
+that the ancestor's ->suspend() will see the flag clear if it is unset for
+any of its descendants.
 
-How about exporting integers identifying the flavors of RCU to rcutorture,
-which rcutorture can then pass to rcutorture_get_gp_data()?  This allows
-TINY_RCU to provide a trivial static inline function.  TREE_RCU and
-TREE_PREEMPT_RCU can keep an array of pointers to the corresponding
-rcu_state structure, with NULL pointers for flavors of RCU that don't
-have any data to provide.
+IOW, the only case in which the ancestor's ->suspend() sees the flag set is
+when it has been set for all of its descendants.  Thus, if it leaves the
+flag set, the late/early and noirq callbacks won't be executed for it.
 
-Would that help?
+Now, there is a reason for concern in that, because ->suspend() may set the
+flag as a result of an error and that may lead to unexpected consequences.
 
-							Thanx, Paul
+> > So I'm going to do what I said above.  I prefer it anyway. :-)
+> 
+> In your most recent patch (and in the earlier ones too), after you call
+> dev's ->suspend() routine, if dev->power.direct_resume isn't set then
+> you clear dev->parent->direct_resume.  But what good will that do if
+> dev->parent's ->suspend() routine turns the flag back on when it gets
+> called later?
+
+In fact, ->suspend() is not supposed to set the flag when it is clear.
+It can clear it when it is set, which means that we have "normal" suspend.
+
+> I can think of two ways to make this work.
+> 
+> 	Expect subsystems and drivers to set the flag during 
+> 	->suspend().  Turn on the flag in every device during 
+> 	device_prepare().  Then in __device_suspend(), remember the
+> 	flag's value and turn it off before invoking the callback.
+
+That doesn't work, because ->suspend() has to decide whether or not
+to resume the device and do things it would do normally, so it needs to know
+the value of the flag.
+
+>       If the flag is on again when the callback returns, set the flag 
+> 	back to the remembered value.  If the flag ends up being off
+> 	then turn off the parent's flag.
+
+That'd be too late.  The only thing we can do to kind of protect the PM
+core from errors in drivers in that case would be to remember the value of
+the flag before calling ->suspend() and return an error if it the flag after
+->suspend() is set, but it wasn't before.
+
+> 	Expect subsystems and drivers to set the flag during 
+> 	->prepare().  Whenever a callback returns with the flag not
+> 	set, clear the flag in all of the device's ancestors.
+> 
+> Both are somewhat awkward, and both involve turning the flag off after 
+> the callback has turned it on.
+
+After the callback set it on while it shouldn't, it might have done something
+wrong already.
+
+> Also, how do you expect direct_resume to work with the PCI subsystem?  
+> Will the PCI core set the flag appropriately on behalf of the driver?
+
+Yes.
+
+> If the core does set the flag, will it invoke the driver's ->suspend()
+> callback or skip the callback?
+
+It will skip the driver's callback.  [It would actually help if you looked
+at patch [3/3] which is there to illustrate my idea of how to do those
+things in a subsystem.]
+
+> If it invokes the driver's callback but
+> leaves the device in runtime suspend, what happens if the driver
+> expects the device always to be at full power when its ->suspend()  
+> routine runs?  If the core skips the driver's ->suspend() callback,
+> what happens if one of the device's children did not set direct_resume 
+> and so the later PM callbacks do get invoked?
+
+Then the parent will have direct_resume unset.  That is not a concern.
+The only concern to me is possible errors in ->suspend() setting the
+flag when it shouldn't.
+
+> Several of these questions are a lot easier to answer if the flag gets 
+> set during ->prepare() rather than ->suspend().
+
+I agree with that, but I have one concern about this approach.  Namely,
+in that case the PM core has to use pm_runtime_resume() or equivalent to
+resume devices with the flag set during the device resume stage.  Now,
+in the next step we may want to leave certain devices suspended at that
+point and the PM core has no way to tell which ones.  Also subsystems
+don't really have a chance to tell it about that (they would need to
+know in advance during ->prepare(), which is kind of unrealistic, or
+perhaps it isn't).
+
+However, if ->resume() is called for devices with the flag set, like in
+my most recent patch, the subsystem may decide not to resume the device
+if it knows enough about it.
+
+This pretty much is my only concern here, so I'm open to ideas how to deal
+with leaving devices suspended (if possible) during the device resume stage. :-)
+
+For one, postponing the resume to ->complete() is an option, but it will have
+to be done with care, because the ->complete() callbacks are executed
+sequentially, so calling pm_runtime_resume() from there is rather out of the
+question.
+
+Rafael
 
