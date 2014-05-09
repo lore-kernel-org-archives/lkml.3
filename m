@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519AbaEIOJh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 10:09:37 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:42659 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753305AbaEIOJg (ORCPT
+	id S1756633AbaEIOJn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 10:09:43 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:47998 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305AbaEIOJj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 10:09:36 -0400
+	Fri, 9 May 2014 10:09:39 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: "arnd@arndb.de" <arnd@arndb.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "Liviu.Dudau@arm.com" <Liviu.Dudau@arm.com>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v3 1/4] DMA-API: Clarify physical/bus address distinction
+Thread-Topic: [PATCH v3 1/4] DMA-API: Clarify physical/bus address
+ distinction
+Thread-Index: AQHPav7rY3Hbna9wuUCRk9/uot3ABps4OooAgACFaIA=
+Date: Fri, 9 May 2014 14:09:31 +0000
+Message-ID: <1399644571.2166.1.camel@dabdike.int.hansenpartnership.com>
+References: <20140508204257.17877.4639.stgit@bhelgaas-glaptop.roam.corp.google.com>
+	 <20140508204854.17877.59304.stgit@bhelgaas-glaptop.roam.corp.google.com>
+	 <119388463.n2RtThRsle@wuerfel>
+In-Reply-To: <119388463.n2RtThRsle@wuerfel>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.46.150.111]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <F9A78C8550E6F341B1E21250C650F40C@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <20140509105149.GH4963@mwanda>
-References: <20140509100606.GA6479@devel.8.8.4.4>
-	<20140509105149.GH4963@mwanda>
-Date: Fri, 9 May 2014 23:09:35 +0900
-Message-ID: <CAHb8M2AopFJGhgZOu_hbn2YWvMgeuFz2zK2uYo4Fnt6kACKSOg@mail.gmail.com>
-Subject: Re: [PATCH 2/5] staging: cxt1e1: remove dead code in musycc.c
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: gregkh@linuxfoundation.org, himangi774@gmail.com, sachin.kamat@linaro.org,
-        fempsci@gmail.com, nandu.hgowda@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-09 19:51 GMT+09:00, Dan Carpenter <dan.carpenter@oracle.com>:
-> On Fri, May 09, 2014 at 07:06:06PM +0900, Daeseok Youn wrote:
->> Removes "#if 0" blocks.
->>
->> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
->> ---
->> Dan,
->>  I decided to leave musycc_dump_rxbuffer_ring(ch, 0) which is commented
->>  out and make a block as "RLD_DEBUG". Because i think this block need to
->> debug
->>  with define "RLD_DEBUG". If I am wrong, let me know.
->>
->
-> This change should maybe have been in a separate patch.  It's a border
-> line thing.  But definitely, it should have been mentioned in the
-> changelog.
->
-> Btw, you can use `git citool` to add or remove lines from a
-> commit.  Highlight and right click on the lines you want to add or
-> remove.
-Thanks for the tip. I used "git add -p" after "git rebase" and "git
-reset HEAD" for
-spliting a patch.
-But I have a question, Do I have to resend rest of patches after
-spliting this patch?
-In this case, 2/5 is splited to two, it doesn't need to rebase but
-numbering of patches are changed.
+On Fri, 2014-05-09 at 08:12 +0200, Arnd Bergmann wrote:
+> On Thursday 08 May 2014 14:48:54 Bjorn Helgaas wrote:
+> > The DMA-API documentation sometimes refers to "physical addresses" when it
+> > really means "bus addresses."  Sometimes these are identical, but they may
+> > be different if the bridge leading to the bus performs address translation.
+> > Update the documentation to use "bus address" when appropriate.
+> > 
+> > Also, consistently capitalize "DMA", use parens with function names, use
+> > dev_printk() in examples, and reword a few sections for clarity.
+> > 
+> > No functional change; documentation changes only.
+> > 
+> > Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> 
+> Looks great!
+> 
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
 
->
-> I don't really care either way if you keep it or delete it.
-Ok. I will leave this.
+Yes, from me too (probably only patches 1-2, since that's only what I
+directly wrote originally); thanks for listening to the arguments and
+persevering.
 
-Thanks for review.
+Acked-by: James Bottomley <jbottomley@Parallels.com>
 
-Regards,
-Daeseok Youn
+James
 
->
-> regards,
-> dan carpenter
->
->
