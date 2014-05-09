@@ -1,103 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756871AbaEIPq6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 11:46:58 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:36439 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754063AbaEIPq5 (ORCPT
+	id S1756919AbaEIPrZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 11:47:25 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:47096 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756880AbaEIPrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 11:46:57 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 3/3] CMA: always treat free cma pages as non-free on watermark checking
-In-Reply-To: <1399509144-8898-4-git-send-email-iamjoonsoo.kim@lge.com>
-Organization: http://mina86.com/
-References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com> <1399509144-8898-4-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140509:linux-mm@kvack.org::47ReBGKVbf2qhLLX:000000000000000000000000000000000000000000008X+
-X-Hashcash: 1:20:140509:linux-kernel@vger.kernel.org::K2IGrY22q+I5pYUa:00000000000000000000000000000000004JC
-X-Hashcash: 1:20:140509:mgorman@suse.de::u0VqgUPMQIOg0VSk:000ElT
-X-Hashcash: 1:20:140509:iamjoonsoo.kim@lge.com::jMODyFp0GXXMaewK:0000000000000000000000000000000000000000L/5
-X-Hashcash: 1:20:140509:akpm@linux-foundation.org::Sldmi56S23zG6Bh8:0000000000000000000000000000000000001E6R
-X-Hashcash: 1:20:140509:heesub.shin@samsung.com::/UY1cjyEuguVO4vq:000000000000000000000000000000000000001kFu
-X-Hashcash: 1:20:140509:m.szyprowski@samsung.com::1Y4XhlBXPXMnW1C4:00000000000000000000000000000000000002tFP
-X-Hashcash: 1:20:140509:lauraa@codeaurora.org::qPgBE4aT23FxY7iB:00000000000000000000000000000000000000004Hzj
-X-Hashcash: 1:20:140509:riel@redhat.com::20UieBUv2/DNE/0P:003jR7
-X-Hashcash: 1:20:140509:hannes@cmpxchg.org::55kNHvp0qz7Mbwfp:00000000000000000000000000000000000000000005pAj
-X-Hashcash: 1:20:140509:iamjoonsoo.kim@lge.com::EFibjMK+v1QRpwbO:0000000000000000000000000000000000000006rHj
-X-Hashcash: 1:20:140509:minchan@kernel.org::U/rdXRvAgGCoy05p:00000000000000000000000000000000000000000007rUa
-Date: Fri, 09 May 2014 08:46:50 -0700
-Message-ID: <xa1t1tw3x8d1.fsf@mina86.com>
+	Fri, 9 May 2014 11:47:22 -0400
+Message-ID: <536CF887.7020903@free-electrons.com>
+Date: Fri, 09 May 2014 17:47:19 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+To: Lee Jones <lee.jones@linaro.org>,
+        Brian Norris <computersforpeace@gmail.com>
+CC: devicetree@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
+        linux-kernel@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>, linux-mtd@lists.infradead.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Lucas Stach <l.stach@pengutronix.de>
+Subject: Re: [PATCH v3 1/9] mtd: nand: define struct nand_timings
+References: <1394647664-8258-1-git-send-email-b.brezillon.dev@gmail.com> <1394647664-8258-2-git-send-email-b.brezillon.dev@gmail.com> <20140430175157.GB2497@norris-Latitude-E6410> <20140508142930.GC5767@lee--X1>
+In-Reply-To: <20140508142930.GC5767@lee--X1>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, May 07 2014, Joonsoo Kim wrote:
-> commit d95ea5d1('cma: fix watermark checking') introduces ALLOC_CMA flag
-> for alloc flag and treats free cma pages as free pages if this flag is
-> passed to watermark checking. Intention of that patch is that movable page
-> allocation can be be handled from cma reserved region without starting
-> kswapd. Now, previous patch changes the behaviour of allocator that
-> movable allocation uses the page on cma reserved region aggressively,
-> so this watermark hack isn't needed anymore. Therefore remove it.
+On 08/05/2014 16:29, Lee Jones wrote:
+>>> Define a struct containing the standard NAND timings as described in NAND
+>>> datasheets.
+>>>
+>>> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
+>>> ---
+>>>  include/linux/mtd/nand.h |   49 ++++++++++++++++++++++++++++++++++++++++++++++
+>>>  1 file changed, 49 insertions(+)
+>>>
+>>> diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+>>> index 389b3c5..f3ff3a3 100644
+>>> --- a/include/linux/mtd/nand.h
+>>> +++ b/include/linux/mtd/nand.h
+> [...]
 >
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>>> + * Parameters)
+>> Please document the units for these fields here. It looks like you're
+>> using picoseconds.
+> Can't we leave this open to interpretation?  For instance, it's more
+> convenient for our driver to handle these as nano second values.
+>
+>>> + *
+>>> + */
+>>> +
+>> Extra blank line.
+>>
+>>> +struct nand_sdr_timings {
+>>> +	u32 tALH_min;
+>>> +	u32 tADL_min;
+>>> +	u32 tALS_min;
+>>> +	u32 tAR_min;
+>>> +	u32 tCEA_max;
+>>> +	u32 tCEH_min;
+>>> +	u32 tCH_min;
+>>> +	u32 tCHZ_max;
+>>> +	u32 tCLH_min;
+>>> +	u32 tCLR_min;
+>>> +	u32 tCLS_min;
+>>> +	u32 tCOH_min;
+>>> +	u32 tCS_min;
+> 	u32 tCSD_min;
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+This is related to ddr2 timings, and this structure only define sdr
+related timings.
+
+>>> +	u32 tDH_min;
+>>> +	u32 tDS_min;
+>>> +	u32 tFEAT_max;
+>>> +	u32 tIR_min;
+>>> +	u32 tITC_max;
+> 	u32 tR_max;
+
+Actually this one cannot be retrieved from the ONFI timing mode, you'll
+have to read bytes 137 and 138 in the parameter page.
+Hence I got rid of it in the first place. Then I considered adding all
+those missing timings in another structure (see [1]).
+
+I noticed you posted something similar on the MTD mailing list (and
+Lucas was waiting for the feature too).
+Could we work together to propose something that fulfills all our needs ?
+
+Here's what I need:
+- get detailled timings to be able to configure the sunxi NAND
+controller appropriately
+- a way to get these timings on non-ONFi NANDs (the proposed solution is
+exposing the closest  supported ONFI timing mode in the NAND chip DT
+node, but I'm open to any new proposal).
 
 
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+Best Regards,
 
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Boris
 
---==-=-=
-Content-Type: text/plain
+[1] http://lists.infradead.org/pipermail/linux-mtd/2014-March/052525.html
 
 
---==-=-=
-Content-Type: application/pgp-signature; name="signature.asc"
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTbPhqAAoJECBgQBJQdR/0W00P/2lA4due77ZgrKd3+b1G+hZW
-54DbdgQdTTJZQJZGeCtCKx/v9O4nY6suKmeGQXpleMog4BGEUa/+UMVM8ZGZSwYv
-DZjqTM4l/lwuK4fU0jEdSKwBmpYL9PnvtLhduY6iEuqW4zxqqZFo3Hkp5fdi++eh
-XSUl2TTD/p97HqIJrRCjNsBwk67iQ06uH1Xn3BPdPFem4sXiyyuUbWwv2+kwcfJk
-OICFmLXgMw4SDybGcADT7KTHp94BpDmqIOK4fu+hOGoGYzEQ0ECPZDnVgILRAbc/
-mzecpMZWKYdsr/QXboAO7BU9V23x1DedJsJs87/Vq6MjB0PRUIAhUA4q52aI4Q9p
-i03xO9ulah32J38Xium37xXmTj1unKd2V92q+nyJWd8tMTyAwiTwFZycU7WoeT+7
-oSUzVXfqW/Lq9idLFyALyRjs7iq0ofaeW1xaQs+qeVNK/Pq6X0NtEsB8n2AEjZuh
-Upy2h873IHhpT/YM4ZmxkL0VihqZOd6ofojgGXAj3Z+M9z8iQMEYeV9SwxM0URy0
-d3IFE1fR0zWWZGJeWikKuv+iQk1lqIpD7fyEcqHJER2F8SBirtKFtIxbNec1tXEU
-vbPOogilTy8lzdRq9dlft/iF93ogOcGAzGSrgtJshYlMdsH7yWWN0d/KCYjjuF7T
-Q0ACZTmO0v/QIsNfEU4y
-=BUaR
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
