@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757107AbaEISDt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 14:03:49 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:8589 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753262AbaEISDs (ORCPT
+	id S1757145AbaEISIb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 14:08:31 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45648 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137AbaEISI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 14:03:48 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuMXADsXbVNXQw5R/2dsb2JhbABZgwaCQaoKBAEBAQEBAQUBmhQCAoEZF3SCZhwjGIECJBOIRQHRMIVWiBhkhEcBA48kiiIBiwOHf4M4O4Ew
-Date: Fri, 9 May 2014 20:03:43 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 1/1] kernel/hung_task.c: convert simple_strtoul to
- kstrtouint
-Message-Id: <20140509200343.11682de148f3efbcab46fba4@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 9 May 2014 14:08:29 -0400
+From: Kumar Gala <galak@codeaurora.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Kumar Gala <galak@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Andy Gross <agross@codeaurora.org>
+Subject: [PATCH] pinctrl: qcom: ipq8064: Fix naming convention
+Date: Fri,  9 May 2014 13:08:25 -0500
+Message-Id: <1399658905-12415-1-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sysctl_hung_task_panic has been changed to unsigned int.
-use kstrtouint instead of obsolete simple_strtoul
+Drop underscore in spdif_groups to match all other groups.
 
-Inspired-By: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
 ---
- kernel/hung_task.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/pinctrl/pinctrl-ipq8064.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/hung_task.c b/kernel/hung_task.c
-index 06bb141..06db124 100644
---- a/kernel/hung_task.c
-+++ b/kernel/hung_task.c
-@@ -52,8 +52,10 @@ unsigned int __read_mostly sysctl_hung_task_panic =
+diff --git a/drivers/pinctrl/pinctrl-ipq8064.c b/drivers/pinctrl/pinctrl-ipq8064.c
+index 54aba9f..acafea4 100644
+--- a/drivers/pinctrl/pinctrl-ipq8064.c
++++ b/drivers/pinctrl/pinctrl-ipq8064.c
+@@ -366,7 +366,7 @@ static const char * const sdc1_groups[] = {
+ };
  
- static int __init hung_task_panic_setup(char *str)
- {
--	sysctl_hung_task_panic = simple_strtoul(str, NULL, 0);
-+	int rc = kstrtouint(str, 0, &sysctl_hung_task_panic);
+ static const char * const spdif_groups[] = {
+-	"gpio_10", "gpio_48",
++	"gpio10", "gpio48",
+ };
  
-+	if (rc)
-+		return rc;
- 	return 1;
- }
- __setup("hung_task_panic=", hung_task_panic_setup);
+ static const char * const nand_groups[] = {
 -- 
-1.8.4.5
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
