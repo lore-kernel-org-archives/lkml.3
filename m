@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939AbaEIJIM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 05:08:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48110 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005AbaEIJIK (ORCPT
+	id S1756246AbaEIJIl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 05:08:41 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:46758 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005AbaEIJIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 05:08:10 -0400
-Date: Fri, 9 May 2014 11:08:05 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        daniel.lezcano@linaro.org, alex.shi@linaro.org,
-        preeti@linux.vnet.ibm.com, efault@gmx.de, vincent.guittot@linaro.org,
-        morten.rasmussen@arm.com, aswin@hp.com
-Subject: Re: [PATCH 2/2] sched: Fix next_balance logic in rebalance_domains()
- and idle_balance()
-Message-ID: <20140509090805.GK30445@twins.programming.kicks-ass.net>
-References: <1398725155-7591-1-git-send-email-jason.low2@hp.com>
- <1398725155-7591-3-git-send-email-jason.low2@hp.com>
- <1399568364.2030.9.camel@j-VirtualBox>
- <20140508173835.GB9838@gmail.com>
- <1399587244.2030.59.camel@j-VirtualBox>
- <1399596562.2200.7.camel@j-VirtualBox>
+	Fri, 9 May 2014 05:08:38 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VmlJMtejgecKmNHY"
-Content-Disposition: inline
-In-Reply-To: <1399596562.2200.7.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140508135852.387473090@infradead.org>
+References: <20140508135840.956784204@infradead.org>
+	<20140508135852.387473090@infradead.org>
+Date: Fri, 9 May 2014 11:08:37 +0200
+X-Google-Sender-Auth: ohBRxkkvdzN2Z53zUy8OV_A6dmk
+Message-ID: <CAMuHMdUrG6pR0_6VhL8P_=HDmVBQxa9kinRm=AFxddyHQFBNeQ@mail.gmail.com>
+Subject: Re: [PATCH 11/20] arch,m68k: Fold atomic_ops
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Peter,
 
---VmlJMtejgecKmNHY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, May 8, 2014 at 3:58 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> +#ifdef CONFIG_RMW_INSNS
+>
+> -static inline void atomic_sub(int i, atomic_t *v)
+> -{
+> -       __asm__ __volatile__("subl %1,%0" : "+m" (*v) : ASM_DI (i));
+> -}
+> +#define ATOMIC_OP(op, c_op, asm_op)                                    \
+> +static inline void atomic_##op(int i, atomic_t *v)                     \
+> +{                                                                      \
+> +       __asm__ __volatile__(#asm_op "l %1,%0" : "+m" (*v) : ASM_DI (i));\
+> +}                                                                      \
 
-On Thu, May 08, 2014 at 05:49:22PM -0700, Jason Low wrote:
-> On Thu, 2014-05-08 at 15:14 -0700, Jason Low wrote:
-> > Hi Ingo, Peter,
-> >=20
-> > Were there NULL domains on the test system? If so, I think we can
-> > address the problem by doing update_next_balance() only if the below
-> > rcu_dereference_check_sched_domain() returns a non-null domain.
->=20
-> Also, below is a patch which has the change:
->=20
+> +#else
+> +
+> +#define ATOMIC_OP(op, c_op, asm_op)                                    \
+> +static inline void atomic_##op(int i, atomic_t *v)                     \
+> +{                                                                      \
+> +       __asm__ __volatile__(#asm_op "l %1,%0" : "+m" (*v) : ASM_DI (i));\
+> +}                                                                      \
 
-Thanks, and yes, NULL domains are a perfectly normal thing to have
-(though not common on normal boot paths).
+These two chunks are identical, so please move them out of the #ifdef.
 
---VmlJMtejgecKmNHY
-Content-Type: application/pgp-signature
+Gr{oetje,eeting}s,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+                        Geert
 
-iQIcBAEBAgAGBQJTbJr1AAoJEHZH4aRLwOS6NcYQAKX6ijtWOWfBLoMBDXjIepRx
-hGOWc55Xx6kjVZZQQ8+C6XlBdDHKyteLGuFuYR4Rx1g31I3BW7YnBi2yn3HF0LoP
-pKCRZOBPgA2Lo2XWBE9B2SYhoSgQMacsu+mXnuWEsia+oEQQCEsjJIBOiA/f2XQq
-3YXUSWZklVJGRSkmQsDMYJhtPfRT9FAqMt3ApgA+f/l9ezFmKFyTMs8Tmi19ZoY+
-HpyG1tFkMB0YYyniFW13qUcikwEOy4N0aexcYt0pqwfthBoYPWDIejY2y2SfxGOM
-P8KVg76YjJ03wmP6/OR/qH/JE7PM5I+x5pb+hquU5wbo9mFAJOPSdaInhBPzAGGt
-dWei7+b68riMHFG6Ir8P6BGeIFELy7u75VsnuZ82CQmIyRIuCyr0Zgf1AltLJHlZ
-0c/xqqARo6YsxeREC0dmPt4Dkgv1CiB8GC2H3WX8EDBcQjUrTMsuQA154/8xUwvU
-eUil2QF6GDGOfNz2I4q/+IBqQRtHH2LbhoO0Lt+eNqcfcOFdAAXjbsW9rlQa3eZz
-jZhZRLm7LuLx2DxbekCvRg/YwRRqpvC+64XLhNbKkOIqkTxXsr+eOeBJLkm9x/jC
-FdFcfccrPRw5HbVYr/XCHfCDpLECxCalrE8wjCqGYOlYw7YVr41SkmQvTDiapd76
-9spWFZQGhodL5t/qTVp/
-=Sv+o
------END PGP SIGNATURE-----
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
---VmlJMtejgecKmNHY--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
