@@ -1,47 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758008AbaEIVo1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 17:44:27 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38885 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757836AbaEIVoY (ORCPT
+	id S1758076AbaEIVp0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 17:45:26 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:6636 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757812AbaEIVpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 17:44:24 -0400
-Date: Fri, 9 May 2014 23:44:38 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Theodore Ts'o" <tytso@mit.edu>
-cc: linux-kernel@vger.kernel.org, ksummit-discuss@lists.linuxfoundation.org
-Subject: Re: [Ksummit-discuss] Reminder for kernel summit nominations
-In-Reply-To: <20140509152319.GA26823@thunk.org>
-Message-ID: <alpine.DEB.2.02.1405092333080.6261@ionos.tec.linutronix.de>
-References: <20140509152319.GA26823@thunk.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 9 May 2014 17:45:25 -0400
+Date: Fri, 9 May 2014 14:45:42 -0700
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Andy Gross <agross@codeaurora.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [Patch v2] pinctrl: msm: Add more MSM8X74 pin definitions
+Message-ID: <20140509214541.GB25733@sonymobile.com>
+References: <1399657974-32695-1-git-send-email-agross@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1399657974-32695-1-git-send-email-agross@codeaurora.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ted,
+On Fri 09 May 10:52 PDT 2014, Andy Gross wrote:
 
-On Fri, 9 May 2014, Theodore Ts'o wrote:
-> People selected algorithmically
-> ===============================
-> Thomas Gleixner
+> This patch adds pin definitiones for the MSM8x74 TLMM.  New definitions
+> include:
+> 
+> BLSP devices (I2C, UART, UART flow control, SPI, and UIM), mi2s, gp clk, pdm,
+> gcc clk, cci_timer, cci_i2c, cam_clk, hsic, tsif, sdc3, sdc4, and other assorted
+> pins.
+> 
+> Signed-off-by: Andy Gross <agross@codeaurora.org>
 
-please remove me right away from all algorithmical or other selection
-procedures. I'm not going to be in Chicago for KS no matter whether I
-get an invite or not. 
+Awesome stuff, only have some minor comments.
 
-Simply because it conflicts with my annual summer vacation fun. That
-means helping my wife to run the kitchen of our church community kids
-summer camp.
+> +       MSM_MUX_blsp_uart1,
+> +       MSM_MUX_blsp_uart1_flow,
+[...]
+> +static const char * const blsp_uim1_groups[] = { "gpio0", "gpio1" };
+> +static const char * const blsp_uart1_flow_groups[] = { "gpio2", "gpio3" };
 
-No technical problem on earth can be more interesting than that!
+You don't need to separate uart and flow control into two different functions
+here.  If you have gpio0-gpio3 in a group named uart1 both of the following
+snippets are valid:
 
-Thanks
+uart1 {
+	pins = "gpio0", "gpio1";
+	function = "uart1";
+};
 
-	Thomas
+uart1 {
+	pins = "gpio0", "gpio1", "gpio2", "gpio3";
+	function = "uart1";
+};
+
+This is how I had to handle gsbis in family a, where a gsbi is pairs of pins
+with different configurations.
+
+[...]
+> +static const char * const hdmi_cec_groups[] = { "gpio31" };
+> +static const char * const hdmi_ddc_groups[] = { "gpio32", "gpio33" };
+> +static const char * const hdmi_hpd_groups[] = { "gpio34" };
+
+As with the uart vs uart_flow you could group these as "hdmi", but maybe not as
+useful.
+
+[...]
+> +       PINGROUP(35,  NA, sdc3, NA, NA, NA, NA, NA),
+> +       PINGROUP(36,  NA, sdc3, NA, NA, NA, NA, NA),
+> +       PINGROUP(37,  NA, sdc3, NA, NA, NA, NA, NA),
+> +       PINGROUP(38,  NA, sdc3, NA, NA, NA, NA, NA),
+> +       PINGROUP(39,  NA, sdc3, NA, NA, NA, NA, NA),
+> +       PINGROUP(40,  NA, sdc3, NA, NA, NA, NA, NA),
+> +       PINGROUP(41,  NA, blsp_spi7, blsp_uart7, blsp_uim7, NA, NA, NA),
+> +       PINGROUP(42,  NA, blsp_spi7, blsp_uart7, blsp_uim7, NA, NA, NA),
+> +       PINGROUP(43,  NA, blsp_spi7, blsp_uart7_flow, blsp_i2c7, NA, NA, NA),
+> +       PINGROUP(44,  NA, blsp_spi7, blsp_uart7_flow, blsp_i2c7, NA, NA, NA),
+
+I was expecting wcnss, bt and fm as function 1 for pins 35-44. Adding those and
+I think we have everything we use in our devices.
+
+[...]
+> +       PINGROUP(72,  NA, spkr_mi2s, NA, NA, NA, NA, NA),
+
+spkr_mi2s is function 1 for pin 72.
+
+Regards,
+Bjorn
