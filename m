@@ -1,46 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756847AbaEIPzX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 11:55:23 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37330 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754499AbaEIPzV (ORCPT
+	id S1756953AbaEIPzp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 11:55:45 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:54169 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756796AbaEIPzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 11:55:21 -0400
-Date: Fri, 9 May 2014 17:55:15 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Daniel Bristot de Oliveira <bristot@redhat.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org
-Subject: Re: [RFC PATCH RT] netconsole: enable netconsole on PREEMPT_RT
-Message-ID: <20140509155515.GJ29014@linutronix.de>
-References: <31fa5b74f8e6267f9b7f906c791d1ddf7d550771.1398788759.git.bristot@redhat.com>
- <536256EC.1060909@windriver.com>
- <5367E23B.7060908@redhat.com>
+	Fri, 9 May 2014 11:55:43 -0400
+Message-ID: <536CFA78.9050609@codethink.co.uk>
+Date: Fri, 09 May 2014 16:55:36 +0100
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+Organization: Codethink Limited.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5367E23B.7060908@redhat.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, chris@printf.net, anton@enomsg.org
+CC: alexandre.belloni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] mmc: sdhci: add a driver for Berlin SoCs
+References: <1397652011-21284-1-git-send-email-antoine.tenart@free-electrons.com> <1397652011-21284-2-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1397652011-21284-2-git-send-email-antoine.tenart@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Daniel Bristot de Oliveira | 2014-05-05 16:10:51 [-0300]:
+On 16/04/14 13:40, Antoine Ténart wrote:
+> Add a Driver to support the SDHCI controller of the Marvell Berlin SoCs.
+> This controller supports 3 sockets.
 
->Figure out why it was disabled is one objective of this RFC :-).
+[snip]
 
-The patch first appeared in patch-3.2-rt10.patch. Haven't seen it in
-v3.0-rt1 nor in in the first v3.2-rcX-rt1. I would assume that it was
-something locking specific.
-I haven't seen any lockdep splat in current v3.14-RT. Therefore I'm
-going to drop that hunk from the patch so it can be enabled again.
+> +
+> +static struct sdhci_ops sdhci_berlin_ops = {
+> +	.get_max_clock = sdhci_pltfm_clk_get_max_clock,
+> +};
+> +
+> +static struct sdhci_pltfm_data sdhci_berlin2_pdata = {
+> +	.quirks	= SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN |
+> +		  SDHCI_QUIRK_BROKEN_ADMA |
+> +		  SDHCI_QUIRK_BROKEN_TIMEOUT_VAL,
+> +	.ops = &sdhci_berlin_ops,
+> +};
+> +
+> +static struct sdhci_pltfm_data sdhci_berlin2q_pdata = {
+> +	.quirks	= SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN |
+> +		  SDHCI_QUIRK_INVERTED_WRITE_PROTECT |
+> +		  SDHCI_QUIRK_BROKEN_TIMEOUT_VAL,
+> +	.ops = &sdhci_berlin_ops,
+> +};
+> +
+> +static const struct of_device_id sdhci_berlin_of_match_table[] = {
+> +	{
+> +		.compatible = "marvell,berlin2-sdhci",
+> +		.data = &sdhci_berlin2_pdata,
+> +	},
+> +	{
+> +		.compatible = "marvell,berlin2cd-sdhci",
+> +		.data = &sdhci_berlin2_pdata,
+> +	},
+> +	{
+> +		.compatible = "marvell,berlin2q-sdhci",
+> +		.data = &sdhci_berlin2q_pdata,
+> +	},
+> +	{}
 
-Since I don't really know why it was disabled in v3.2 I think it is
-best not to backport this change unless someone figures out the real
-reason and provides proof that it works in the older kernel as well.
+I think the hardware names should be used instead of the
+quirks the hardware has (broken wp / broken adma)
 
-Sebastian
+
+
+-- 
+Ben Dooks				http://www.codethink.co.uk/
+Senior Engineer				Codethink - Providing Genius
