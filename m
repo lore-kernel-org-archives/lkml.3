@@ -1,127 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758014AbaEIVc5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 17:32:57 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:49995 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932287AbaEIVbx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932307AbaEIVbx (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 9 May 2014 17:31:53 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 12/14] cgroup: convert cgroup_has_live_children() into css_has_online_children()
-Date: Fri,  9 May 2014 17:31:29 -0400
-Message-Id: <1399671091-23867-13-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1399671091-23867-1-git-send-email-tj@kernel.org>
-References: <1399671091-23867-1-git-send-email-tj@kernel.org>
+Received: from smtprelay0181.hostedemail.com ([216.40.44.181]:58384 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757972AbaEIVbu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 17:31:50 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3167:3352:3653:3866:3867:3868:3870:3871:5007:6119:7652:10004:10400:10848:11026:11473:11658:11914:12043:12438:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: peace37_fbf39635a433
+X-Filterd-Recvd-Size: 2233
+Message-ID: <1399671106.2912.21.camel@joe-AO725>
+Subject: [PATCH] checkpatch: Warn on #defines ending in semicolon
+From: Joe Perches <joe@perches.com>
+To: Borislav Petkov <bp@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Andres Freund <andres@anarazel.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andy Whitcroft <apw@canonical.com>
+Date: Fri, 09 May 2014 14:31:46 -0700
+In-Reply-To: <20140509103303.GC16058@pd.tnic>
+References: <1399598957-7011-1-git-send-email-andres@anarazel.de>
+	 <1399598957-7011-3-git-send-email-andres@anarazel.de>
+	 <20140509075730.GB16058@pd.tnic> <20140509103303.GC16058@pd.tnic>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that cgroup liveliness and css onliness are the same state,
-convert cgroup_has_live_children() into css_has_online_children() so
-that it can be used for actual csses too.  The function now uses
-css_for_each_child() for iteration and is published.
+Using a #define ending in a semicolon is poor style
+and can lead to unexpected code paths being executed.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Warn on uses of these #define types:
+
+	#define foo[(...)] bar;
+	#define foo[(...)]	\
+		bar;
+
+Original-patch-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/linux/cgroup.h |  2 ++
- kernel/cgroup.c        | 32 ++++++++++++++++++++------------
- 2 files changed, 22 insertions(+), 12 deletions(-)
+ scripts/checkpatch.pl | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 2cf2063..c8eb66e 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -868,6 +868,8 @@ css_next_descendant_post(struct cgroup_subsys_state *pos,
- 	for ((pos) = css_next_descendant_post(NULL, (css)); (pos);	\
- 	     (pos) = css_next_descendant_post((pos), (css)))
- 
-+bool css_has_online_children(struct cgroup_subsys_state *css);
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 34eb216..3b5651a 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3782,6 +3782,17 @@ sub process {
+ 					WARN("DO_WHILE_MACRO_WITH_TRAILING_SEMICOLON",
+ 					     "do {} while (0) macros should not be semicolon terminated\n" . "$herectx");
+ 				}
++			} elsif ($dstat =~ /^\+\s*#\s*define\s+$Ident.*;\s*$/) {
++				$ctx =~ s/\n*$//;
++				my $cnt = statement_rawlines($ctx);
++				my $herectx = $here . "\n";
 +
- /* A css_task_iter should be treated as an opaque object */
- struct css_task_iter {
- 	struct cgroup_subsys		*ss;
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index a0cfe36..0b16631 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -175,7 +175,6 @@ static int need_forkexit_callback __read_mostly;
- static struct cftype cgroup_base_files[];
- 
- static void cgroup_put(struct cgroup *cgrp);
--static bool cgroup_has_live_children(struct cgroup *cgrp);
- static int rebind_subsystems(struct cgroup_root *dst_root,
- 			     unsigned int ss_mask);
- static int cgroup_destroy_locked(struct cgroup *cgrp);
-@@ -1768,7 +1767,7 @@ static void cgroup_kill_sb(struct super_block *sb)
- 	 * This prevents new mounts by disabling percpu_ref_tryget_live().
- 	 * cgroup_mount() may wait for @root's release.
- 	 */
--	if (cgroup_has_live_children(&root->cgrp))
-+	if (css_has_online_children(&root->cgrp.self))
- 		cgroup_put(&root->cgrp);
- 	else
- 		percpu_ref_kill(&root->cgrp.self.refcnt);
-@@ -3290,19 +3289,28 @@ css_next_descendant_post(struct cgroup_subsys_state *pos,
- 	return pos->parent;
- }
- 
--static bool cgroup_has_live_children(struct cgroup *cgrp)
-+/**
-+ * css_has_online_children - does a css have online children
-+ * @css: the target css
-+ *
-+ * Returns %true if @css has any online children; otherwise, %false.  This
-+ * function can be called from any context but the caller is responsible
-+ * for synchronizing against on/offlining as necessary.
-+ */
-+bool css_has_online_children(struct cgroup_subsys_state *css)
- {
--	struct cgroup *child;
-+	struct cgroup_subsys_state *child;
-+	bool ret = false;
- 
- 	rcu_read_lock();
--	list_for_each_entry_rcu(child, &cgrp->self.children, self.sibling) {
--		if (!cgroup_is_dead(child)) {
--			rcu_read_unlock();
--			return true;
-+	css_for_each_child(child, css) {
-+		if (css->flags & CSS_ONLINE) {
-+			ret = true;
-+			break;
++				for (my $n = 0; $n < $cnt; $n++) {
++					$herectx .= raw_line($linenr, $n) . "\n";
++				}
++
++				WARN("TRAILING_SEMICOLON",
++				     "macros should not use a trailing semicolon\n" . "$herectx");
+ 			}
  		}
- 	}
- 	rcu_read_unlock();
--	return false;
-+	return ret;
- }
  
- /**
-@@ -4534,7 +4542,7 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- 	 * ->self.children as dead children linger on it while being
- 	 * drained; otherwise, "rmdir parent/child parent" may fail.
- 	 */
--	if (cgroup_has_live_children(cgrp))
-+	if (css_has_online_children(&cgrp->self))
- 		return -EBUSY;
- 
- 	/*
-@@ -5006,8 +5014,8 @@ void cgroup_exit(struct task_struct *tsk)
- 
- static void check_for_release(struct cgroup *cgrp)
- {
--	if (cgroup_is_releasable(cgrp) &&
--	    list_empty(&cgrp->cset_links) && !cgroup_has_live_children(cgrp)) {
-+	if (cgroup_is_releasable(cgrp) && list_empty(&cgrp->cset_links) &&
-+	    !css_has_online_children(&cgrp->self)) {
- 		/*
- 		 * Control Group is currently removeable. If it's not
- 		 * already queued for a userspace notification, queue
--- 
-1.9.0
+
 
