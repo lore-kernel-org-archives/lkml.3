@@ -1,141 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462AbaEIVe0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 17:34:26 -0400
-Received: from mail-by2on0083.outbound.protection.outlook.com ([207.46.100.83]:63115
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757470AbaEIVeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 17:34:22 -0400
-X-Greylist: delayed 2155 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 May 2014 17:34:21 EDT
-Date: Fri, 9 May 2014 16:29:14 -0500
-From: Kim Phillips <kim.phillips@freescale.com>
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, Andy Whitcroft <apw@canonical.com>
-Subject: Re: [PATCH] checkpatch: Make --strict a default for files in
- drivers/net and net/
-Message-ID: <20140509162914.8f8ac84b3a973820a21e5c2d@freescale.com>
-In-Reply-To: <1399668975.2912.14.camel@joe-AO725>
-References: <487acde009f61607863704e5dd9da7f151cf5be8.1399486274.git.joe@perches.com>
-	<20140509153748.e2467ab487404f07e818719e@freescale.com>
-	<1399668975.2912.14.camel@joe-AO725>
-Organization: Freescale Semiconductor, Inc.
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(24454002)(199002)(189002)(51704005)(377424004)(164054003)(87936001)(88136002)(89996001)(81342001)(81156002)(33646001)(81542001)(87286001)(44976005)(79102001)(19580395003)(62966002)(23726002)(6806004)(83322001)(74662001)(74502001)(93916002)(50226001)(4396001)(36756003)(31966008)(20776003)(47776003)(69596002)(84676001)(68736004)(80022001)(50466002)(64706001)(77156001)(83072002)(2009001)(86362001)(92726001)(50986999)(46406003)(19580405001)(76482001)(76176999)(77096999)(21056001)(92566001)(100306002)(77982001)(46102001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB028;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Forefront-PRVS: 02065A9E77
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Kim.Phillips@freescale.com; 
-X-OriginatorOrg: freescale.com
+	id S932485AbaEIVet (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 17:34:49 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:49530 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757915AbaEIVbp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 17:31:45 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 06/14] cgroup: move cgroup->sibling and ->children into cgroup_subsys_state
+Date: Fri,  9 May 2014 17:31:23 -0400
+Message-Id: <1399671091-23867-7-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1399671091-23867-1-git-send-email-tj@kernel.org>
+References: <1399671091-23867-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 May 2014 13:56:15 -0700
-Joe Perches <joe@perches.com> wrote:
+We're moving towards using cgroup_subsys_states as the fundamental
+structural blocks.  Let's move cgroup->sibling and ->children into
+cgroup_subsys_state.  This is pure move without functional change and
+only cgroup->self's fields are actually used.  Other csses will make
+use of the fields later.
 
-> On Fri, 2014-05-09 at 15:37 -0500, Kim Phillips wrote:
-> > On Wed, 7 May 2014 11:13:26 -0700
-> > Joe Perches <joe@perches.com> wrote:
-> > 
-> > > Networking files are generally more strictly conformant to
-> > > linux-kernel style
-> > 
-> > checkpatch disagrees :) :
-> > 
-> > {drivers/}net/ :            ~10.8 CHECKs per .[hc] file
-> > everything else:            ~10   CHECKs per .[hc] file
-> > no net, no drivers/staging:  ~8.6 CHECKs per .[hc] file
-> > 
-> > (see [1] below for details).
-> > 
-> > > +		if ($found_file) {
-> > > +			if ($realfile =~ m@^(drivers/net/|net/)@) {
-> > 
-> > this isn't easily extensible/scalable to other subsystems, or
-> > say something like "all Freescale drivers."  Having it configurable
-> > in .checkpatch.conf might be a better solution, but I don't believe
-> > networking should be the only subsystem that can take advantage of
-> > the extra checkpatch CHECKs.
-> 
-> staging probably could too.
+While at it, update init_and_link_css() so that it zeroes the whole
+css before initializing it and remove explicit zeroing of ->flags.
 
-why call staging out to be subject to stricter checks than the rest
-of the kernel, when it's code that's _known_ to be non-compliant?
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ include/linux/cgroup.h | 11 ++++-------
+ kernel/cgroup.c        | 38 ++++++++++++++++++++------------------
+ 2 files changed, 24 insertions(+), 25 deletions(-)
 
-> > Can we enable --strict universally in the Linux kernel, maybe like
-> > so:?
-> 
-> I don't think that's appropriate (yet?).
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 5fda088..db8d8c2 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -68,6 +68,10 @@ struct cgroup_subsys_state {
+ 	/* PI: the parent css */
+ 	struct cgroup_subsys_state *parent;
+ 
++	/* siblings list anchored at the parent's ->children */
++	struct list_head sibling;
++	struct list_head children;
++
+ 	/*
+ 	 * PI: Subsys-unique ID.  0 is unused and root is always 1.  The
+ 	 * matching css can be looked up using css_from_id().
+@@ -166,13 +170,6 @@ struct cgroup {
+ 	 */
+ 	int populated_cnt;
+ 
+-	/*
+-	 * We link our 'sibling' struct into our parent's 'children'.
+-	 * Our children link their 'sibling' into our 'children'.
+-	 */
+-	struct list_head sibling;	/* my parent's children */
+-	struct list_head children;	/* my children */
+-
+ 	struct kernfs_node *kn;		/* cgroup kernfs entry */
+ 	struct kernfs_node *populated_kn; /* kn for "cgroup.subtree_populated" */
+ 
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index d61c716..3d6c0aa 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -378,7 +378,7 @@ static int notify_on_release(const struct cgroup *cgrp)
+ 
+ /* iterate over child cgrps, lock should be held throughout iteration */
+ #define cgroup_for_each_live_child(child, cgrp)				\
+-	list_for_each_entry((child), &(cgrp)->children, sibling)	\
++	list_for_each_entry((child), &(cgrp)->self.children, self.sibling) \
+ 		if (({ lockdep_assert_held(&cgroup_mutex);		\
+ 		       cgroup_is_dead(child); }))			\
+ 			;						\
+@@ -870,7 +870,7 @@ static void cgroup_destroy_root(struct cgroup_root *root)
+ 	mutex_lock(&cgroup_mutex);
+ 
+ 	BUG_ON(atomic_read(&root->nr_cgrps));
+-	BUG_ON(!list_empty(&cgrp->children));
++	BUG_ON(!list_empty(&cgrp->self.children));
+ 
+ 	/* Rebind all subsystems back to the default hierarchy */
+ 	rebind_subsystems(&cgrp_dfl_root, root->subsys_mask);
+@@ -1432,7 +1432,7 @@ static int cgroup_remount(struct kernfs_root *kf_root, int *flags, char *data)
+ 	}
+ 
+ 	/* remounting is not allowed for populated hierarchies */
+-	if (!list_empty(&root->cgrp.children)) {
++	if (!list_empty(&root->cgrp.self.children)) {
+ 		ret = -EBUSY;
+ 		goto out_unlock;
+ 	}
+@@ -1512,8 +1512,8 @@ static void init_cgroup_housekeeping(struct cgroup *cgrp)
+ 	struct cgroup_subsys *ss;
+ 	int ssid;
+ 
+-	INIT_LIST_HEAD(&cgrp->sibling);
+-	INIT_LIST_HEAD(&cgrp->children);
++	INIT_LIST_HEAD(&cgrp->self.sibling);
++	INIT_LIST_HEAD(&cgrp->self.children);
+ 	INIT_LIST_HEAD(&cgrp->cset_links);
+ 	INIT_LIST_HEAD(&cgrp->release_list);
+ 	INIT_LIST_HEAD(&cgrp->pidlists);
+@@ -1612,7 +1612,7 @@ static int cgroup_setup_root(struct cgroup_root *root, unsigned int ss_mask)
+ 		link_css_set(&tmp_links, cset, root_cgrp);
+ 	up_write(&css_set_rwsem);
+ 
+-	BUG_ON(!list_empty(&root_cgrp->children));
++	BUG_ON(!list_empty(&root_cgrp->self.children));
+ 	BUG_ON(atomic_read(&root->nr_cgrps) != 1);
+ 
+ 	kernfs_activate(root_cgrp->kn);
+@@ -3127,11 +3127,11 @@ css_next_child(struct cgroup_subsys_state *pos_css,
+ 	 * cgroup is removed or iteration and removal race.
+ 	 */
+ 	if (!pos) {
+-		next = list_entry_rcu(cgrp->children.next, struct cgroup, sibling);
++		next = list_entry_rcu(cgrp->self.children.next, struct cgroup, self.sibling);
+ 	} else if (likely(!cgroup_is_dead(pos))) {
+-		next = list_entry_rcu(pos->sibling.next, struct cgroup, sibling);
++		next = list_entry_rcu(pos->self.sibling.next, struct cgroup, self.sibling);
+ 	} else {
+-		list_for_each_entry_rcu(next, &cgrp->children, sibling)
++		list_for_each_entry_rcu(next, &cgrp->self.children, self.sibling)
+ 			if (next->serial_nr > pos->serial_nr)
+ 				break;
+ 	}
+@@ -3141,12 +3141,12 @@ css_next_child(struct cgroup_subsys_state *pos_css,
+ 	 * the next sibling; however, it might have @ss disabled.  If so,
+ 	 * fast-forward to the next enabled one.
+ 	 */
+-	while (&next->sibling != &cgrp->children) {
++	while (&next->self.sibling != &cgrp->self.children) {
+ 		struct cgroup_subsys_state *next_css = cgroup_css(next, parent_css->ss);
+ 
+ 		if (next_css)
+ 			return next_css;
+-		next = list_entry_rcu(next->sibling.next, struct cgroup, sibling);
++		next = list_entry_rcu(next->self.sibling.next, struct cgroup, self.sibling);
+ 	}
+ 	return NULL;
+ }
+@@ -3282,7 +3282,7 @@ static bool cgroup_has_live_children(struct cgroup *cgrp)
+ 	struct cgroup *child;
+ 
+ 	rcu_read_lock();
+-	list_for_each_entry_rcu(child, &cgrp->children, sibling) {
++	list_for_each_entry_rcu(child, &cgrp->self.children, self.sibling) {
+ 		if (!cgroup_is_dead(child)) {
+ 			rcu_read_unlock();
+ 			return true;
+@@ -4143,7 +4143,7 @@ static void css_release_work_fn(struct work_struct *work)
+ 	} else {
+ 		/* cgroup release path */
+ 		mutex_lock(&cgroup_mutex);
+-		list_del_rcu(&cgrp->sibling);
++		list_del_rcu(&cgrp->self.sibling);
+ 		mutex_unlock(&cgroup_mutex);
+ 
+ 		cgroup_idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
+@@ -4167,9 +4167,11 @@ static void init_and_link_css(struct cgroup_subsys_state *css,
+ {
+ 	cgroup_get(cgrp);
+ 
++	memset(css, 0, sizeof(*css));
+ 	css->cgroup = cgrp;
+ 	css->ss = ss;
+-	css->flags = 0;
++	INIT_LIST_HEAD(&css->sibling);
++	INIT_LIST_HEAD(&css->children);
+ 
+ 	if (cgroup_parent(cgrp)) {
+ 		css->parent = cgroup_css(cgroup_parent(cgrp), ss);
+@@ -4343,7 +4345,7 @@ static int cgroup_mkdir(struct kernfs_node *parent_kn, const char *name,
+ 	cgrp->serial_nr = cgroup_serial_nr_next++;
+ 
+ 	/* allocation complete, commit to creation */
+-	list_add_tail_rcu(&cgrp->sibling, &cgroup_parent(cgrp)->children);
++	list_add_tail_rcu(&cgrp->self.sibling, &cgroup_parent(cgrp)->self.children);
+ 	atomic_inc(&root->nr_cgrps);
+ 	cgroup_get(parent);
+ 
+@@ -4506,9 +4508,9 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+ 		return -EBUSY;
+ 
+ 	/*
+-	 * Make sure there's no live children.  We can't test ->children
+-	 * emptiness as dead children linger on it while being destroyed;
+-	 * otherwise, "rmdir parent/child parent" may fail with -EBUSY.
++	 * Make sure there's no live children.  We can't test emptiness of
++	 * ->self.children as dead children linger on it while being
++	 * drained; otherwise, "rmdir parent/child parent" may fail.
+ 	 */
+ 	if (cgroup_has_live_children(cgrp))
+ 		return -EBUSY;
+-- 
+1.9.0
 
-why not?  checkpatch CHECKs seem reasonably stable AFAICT.
-
-> Anyone that wants --strict checking can either add
-> it on the command line
-
-most aren't aware of --strict, and even if they are, easily forget
-to add it.
-
-> or create a .checkpatch.conf
-> file with --strict in it.
-
-right, but since checkpatch already has internal knowledge of the
-linux kernel, I thought it inappropriate to add a .checkpatch.conf,
-and use the $tree switch.
-
-> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> []
-> > @@ -228,6 +228,7 @@ if ($tree) {
-> >                 print "Must be run from the top-level dir. of a kernel tree\n";
-> >                 exit(2);
-> >         }
-> > +       $check = 1;
-> >  }
-> >  
-> >  my $emitted_corrupt = 0;
-> > 
-> > fwiw, --strict has been set unconditionally in u-boot's
-> > .checkpatch.conf for over a year now, and has significantly reduced
-> > patch revision churn for simple mistakes like parenthesis alignment,
-> > spaces after a cast and/or before a semicolon...
-> 
-> Good to know.
-
-would an alternative option be to promote CHECKs like parentheses
-alignment to WARN status?
-
-> > [1] the following were run on kernel v3.15-rc4-260-g38583f0:
-> > 
-> > for i in `git ls-files | grep -v '^net/' | grep -v '^drivers/net/' | grep \\\.[ch]$`; do scripts/checkpatch.pl --strict -f $i; done | grep ^CHECK: | wc -l
-> > 328329
-> > git ls-files | grep -v '^net/' | grep -v '^drivers/net/' | grep \\\.[ch]$ | wc -l
-> > 32754
-> > => 32754 / 328329 ~= 10 CHECKs per file.[ch] for everything outside of {drivers/}net/.
-> > 
-> > for i in `git ls-files net/ drivers/net/ | grep \\\.[ch]$`; do scripts/checkpatch.pl --strict -f $i; done | grep ^CHECK: | wc -l
-> > 40431
-> > git ls-files net/ drivers/net/ | grep \\\.[ch]$ | wc -l
-> > 3742
-> > => {drivers/}net/: 40431 / 3742 = 10.8 CHECKs per file.[hc]
-> > 
-> > for i in `git ls-files | grep -v '^net/' | grep -v '^drivers/net/' | grep -v '^drivers/staging/' | grep \\\.[ch]$`; do scripts/checkpatch.pl --strict -f $i; done | grep ^CHECK: | wc -l
-> > 262005
-> > git ls-files | grep -v '^net/' | grep -v '^drivers/net/' | grep -v '^drivers/staging/' | grep \\\.[ch]$ | wc -l
-> > 30479
-> > => no net, no staging:  262005 / 30479  =  8.6 CHECKs per file.[hc]
-> 
-> Try that with a per-file "wc -l" for checks per LOC
-
-good point, that reinforces the statement back for networking :) :
-
-{drivers/}net/ :            0.013 CHECKs per .[hc] file line
-everything else:            0.43  CHECKs per .[hc] file line
-no net, no drivers/staging: 0.38  CHECKs per .[hc] file line
-
-Thanks,
-
-Kim
