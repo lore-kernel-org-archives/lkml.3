@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996AbaEIHeb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 03:34:31 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:56849 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116AbaEIHe3 (ORCPT
+	id S1754703AbaEIHej (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 03:34:39 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:59541 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116AbaEIHeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 03:34:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 1/2] input: fix ps2/serio module dependency
-Date: Fri, 09 May 2014 09:34:26 +0200
-Message-ID: <4385062.1bvKsSrGCq@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140508155931.GA11672@core.coreip.homeip.net>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <1399560990-1402858-15-git-send-email-arnd@arndb.de> <20140508155931.GA11672@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:YnYmdy3kE0iM/HdrCqO8+MegTQFLU9+nViZbVewlnv+
- 9SZ6TV9ryuFzJ6jXoRMEN2+a2EXsfLoqy53+Kn4vRuhHTdKJ8N
- EN5VFYjdK+JScdmmviye/G5Lu17JpyHrILEnSDXAZzq6YeJlzO
- wRnm3/yfrhF/sQVqAZzedEE0CrLkyIeUqFUKx2rd5myXa4nFht
- V4c2FCiEzsedEGWa/dyr7cNdX8YLMW2iqV0CoACf8PcaxA2vLF
- eUHEdBbdJkrxVlMNde72OK3EzyChAgaqnYWYwZS7TNbjSfWgi3
- 4tanxouMPAhESZ3kz/+etCVHKLlkb29GnQykF+1cIm/V4XLG3V
- anRhGT8WEoYeToajFnCs=
+	Fri, 9 May 2014 03:34:36 -0400
+Message-ID: <1399620873.5200.68.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched: wake up task on prev_cpu if not in
+ SD_WAKE_AFFINE domain with cpu
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        morten.rasmussen@arm.com, mingo@kernel.org,
+        george.mccollister@gmail.com, ktkhai@parallels.com
+Date: Fri, 09 May 2014 09:34:33 +0200
+In-Reply-To: <20140509012743.67d4006d@annuminas.surriel.com>
+References: <20140502004237.79dd3de6@annuminas.surriel.com>
+	 <1399011219.5233.55.camel@marge.simpson.net> <53633B81.1080403@redhat.com>
+	 <1399016273.5233.94.camel@marge.simpson.net> <536379D0.8070306@redhat.com>
+	 <1399030032.5233.142.camel@marge.simpson.net> <5363B793.9010208@redhat.com>
+	 <20140506115448.GH11096@twins.programming.kicks-ass.net>
+	 <536943C9.4030502@redhat.com>
+	 <20140506203916.GQ17778@laptop.programming.kicks-ass.net>
+	 <536C3B69.1000208@redhat.com>
+	 <20140509012743.67d4006d@annuminas.surriel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 May 2014 08:59:31 Dmitry Torokhov wrote:
-> Hi Arnd,
+On Fri, 2014-05-09 at 01:27 -0400, Rik van Riel wrote: 
+> On Thu, 08 May 2014 22:20:25 -0400
+> Rik van Riel <riel@redhat.com> wrote:
 > 
-> On Thu, May 08, 2014 at 04:56:26PM +0200, Arnd Bergmann wrote:
-> > @@ -71,7 +71,7 @@ config KEYBOARD_ATKBD
-> >       default y
-> >       select SERIO
-> >       select SERIO_LIBPS2
-> > -     select SERIO_I8042 if X86
-> > +     select SERIO_I8042 if X86 || ARCH_MIGHT_HAVE_PC_SERIO
+> > Looks like SD_BALANCE_WAKE is not gotten from the sd flags at
+> > all, but passed into select_task_rq by try_to_wake_up, as a
+> > hard coded sd_flags argument.
 > 
-> x86 also selects ARCH_MIGHT_HAVE_PC_SERIO so shouldn't this be
+> > Should we do that, if SD_WAKE_BALANCE is not set for any sched domain?
 > 
->         select SERIO_I8042 if ARCH_MIGHT_HAVE_PC_SERIO
+> I answered my own question. The sd_flag SD_WAKE_BALANCE simply means
+> "this is a wakeup of a previously existing task, please place it
+> properly".
 > 
-> ?
-> 
-> I can fix it up on my side if you agree.
+> However, it appears that the current code will fall back to the large
+> loop with select_idlest_group and friends, if prev_cpu and cpu are not
+> part of the same SD_WAKE_AFFINE sched domain. That is a bug...
 
-Yes, sounds good, thanks!
+ttwu(): cpu = select_task_rq(p, p->wake_cpu, SD_BALANCE_WAKE, wake_flags);
 
-	Arnd
+We pass SD_BALANCE_WAKE for a normal wakeup, so sd will only be set if
+we encounter a domain during traversal where Joe User has told us to do
+(expensive) wake balancing before we hit a domain shared by waker/wakee.
+
+The user can turn SD_WAKE_AFFINE off beyond socket, and we'll not pull
+cross node on wakeup.
+
+Or, you could create an override button to say despite SD_WAKE_AFFINE
+perhaps having been set during domain construction (because of some
+pseudo-random numbers), don't do that if we have a preferred node, or
+just make that automatically part of having numa scheduling enabled, and
+don't bother wasting cycles if preferred && this != preferred.
+
+-Mike  
+
