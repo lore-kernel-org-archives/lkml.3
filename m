@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685AbaEILOP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 07:14:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:44763 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755521AbaEILL7 (ORCPT
+	id S1756688AbaEILPU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 07:15:20 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:41575 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753387AbaEILPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 07:11:59 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: Chen-Yu Tsai <wens@csie.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Hans de Goede <hdegoede@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v3 2/7] reset: sunxi: allow MFD subdevices probe
-Date: Fri,  9 May 2014 13:11:46 +0200
-Message-Id: <1399633911-7094-3-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1399633911-7094-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1399633911-7094-1-git-send-email-boris.brezillon@free-electrons.com>
+	Fri, 9 May 2014 07:15:18 -0400
+Date: Fri, 9 May 2014 12:15:13 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com,
+        peter.chen@freescale.com
+Subject: Re: [PATCH] mfd: syscon: Include linux/err.h to fix build error
+Message-ID: <20140509111513.GT5767@lee--X1>
+References: <1399633660-17897-1-git-send-email-tushar.behera@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1399633660-17897-1-git-send-email-tushar.behera@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current implementation uses sunxi_reset_init function for both early
-init and platform device probe.
+On Fri, 09 May 2014, Tushar Behera wrote:
 
-The sunxi_reset_init function uses DT to retrieve device resources, which
-will be an issue if reset controllers are registered from an MFD device
-that define resources from mfd_cell definition.
+> commit df73de9b0d412 ("mfd: syscon: Return -ENOSYS if CONFIG_MFD_SYSCON
+> is not enabled") introduced fallbacks for APIs, but missed out on adding
+> the header file. This would work only if linux/err.h is also included
+> in the source code from where this file is included. It would be better
+> to include linux/err.h in file to remove possible build errors.
+> 
+> Without this patch, we get following and similar build errors if this
+> header file is included in some source file and CONFIG_MFD_SYSCON is
+> not enabled.
+> 
+> include/linux/mfd/syscon.h: In function ‘syscon_node_to_regmap’:
+> include/linux/mfd/syscon.h:30:2: error: implicit declaration of function ‘ERR_PTR’ [-Werror=implicit-function-declaration]
+>   return ERR_PTR(-ENOSYS);
+>   ^
+> include/linux/mfd/syscon.h:30:18: error: ‘ENOSYS’ undeclared (first use in this function)
+>   return ERR_PTR(-ENOSYS);
+>                   ^
+> 
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> ---
+>  include/linux/mfd/syscon.h |    2 ++
+>  1 file changed, 2 insertions(+)
 
-Moreover, we can make of devm functions when we're in the probe context.
+Applied, thanks.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/reset/reset-sunxi.c | 21 ++++++++++++++++++---
- 1 file changed, 18 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/reset/reset-sunxi.c b/drivers/reset/reset-sunxi.c
-index 695bd34..a94e7a7 100644
---- a/drivers/reset/reset-sunxi.c
-+++ b/drivers/reset/reset-sunxi.c
-@@ -145,7 +145,24 @@ MODULE_DEVICE_TABLE(of, sunxi_reset_dt_ids);
- 
- static int sunxi_reset_probe(struct platform_device *pdev)
- {
--	return sunxi_reset_init(pdev->dev.of_node);
-+	struct sunxi_reset_data *data;
-+	struct resource *res;
-+
-+	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	data->membase = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(data->membase))
-+		return PTR_ERR(data->membase);
-+
-+	data->rcdev.owner = THIS_MODULE;
-+	data->rcdev.nr_resets = resource_size(res) * 32;
-+	data->rcdev.ops = &sunxi_reset_ops;
-+	data->rcdev.of_node = pdev->dev.of_node;
-+
-+	return reset_controller_register(&data->rcdev);
- }
- 
- static int sunxi_reset_remove(struct platform_device *pdev)
-@@ -153,8 +170,6 @@ static int sunxi_reset_remove(struct platform_device *pdev)
- 	struct sunxi_reset_data *data = platform_get_drvdata(pdev);
- 
- 	reset_controller_unregister(&data->rcdev);
--	iounmap(data->membase);
--	kfree(data);
- 
- 	return 0;
- }
 -- 
-1.8.3.2
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
