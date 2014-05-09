@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329AbaEIVOb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 17:14:31 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:36082 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757812AbaEIVNs (ORCPT
+	id S1757707AbaEIVOs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 17:14:48 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:55971 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757429AbaEIVOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 17:13:48 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 7/9] cgroup: bounce css release through css->destroy_work
-Date: Fri,  9 May 2014 17:13:33 -0400
-Message-Id: <1399670015-23463-8-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1399670015-23463-1-git-send-email-tj@kernel.org>
-References: <1399670015-23463-1-git-send-email-tj@kernel.org>
+	Fri, 9 May 2014 17:14:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH] drivers/char/mem.c: Add /dev/ioports, supporting 16-bit and 32-bit ports
+Date: Fri, 09 May 2014 23:12:51 +0200
+Message-ID: <4366326.1D6xUnlac7@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <536D406D.2080508@zytor.com>
+References: <20140509191914.GA7286@jtriplet-mobl1> <9233735.5FfZoZovqP@wuerfel> <536D406D.2080508@zytor.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:svp0cnnpK3Zk31CDVE1NQ5pMBJAoh/P6eyLtR1uF4gB
+ sUTfrd8ydGihl1o0UCV0pvqDVk3JyLF/h/UZSWVONXGbnmFwZv
+ kNHs8D515TelRSAXt+vqegUYLLtkpQV4lLI8qlqEuFzb6DLXys
+ 6B21BDCkXUhaBj0gWyC9sJH3i5AMSfMHl2PMKgnVWQ/L5FLv6n
+ VaSxxbOja9UdtjhQoZ3wMoq6bpnJN9c8hJUoRw9zQjjzUBlraB
+ AIR1YvEP7w5/UoU7CDgLng+pm7DVtKBH5C/hrhspOydov9HhQU
+ Vd7xH42rbadsGwZbL5F+fMo2Nf8JgrqDNssNnn7+CNwP4zDmIR
+ O4c9tHDukcmQsUb/wgFk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-css release is planned to do more and would require process context.
-Bounce it through css->destroy_work.
+On Friday 09 May 2014 13:54:05 H. Peter Anvin wrote:
+> On 05/09/2014 12:58 PM, Arnd Bergmann wrote:
+> > On Friday 09 May 2014 12:19:16 Josh Triplett wrote:
+> > 
+> >> +    if (!access_ok(VERIFY_WRITE, buf, count))
+> >> +            return -EFAULT;
+> >> +    if (port > 65535)
+> >> +            return 0;
+> > 
+> > This should probably test against IO_SPACE_LIMIT, which may be zero,
+> > something larger than 65536 or even ULONG_MAX, depending on the
+> > architecture.
+> > 
+> > In cases where this IO_SPACE_LIMIT is zero or ULONG_MAX, we should
+> > probably disallow access completely. The former case is for architectures
+> > that don't have any I/O ports, the other is either a mistake, or is
+> > used when inb is defined as readb, and the port numbers are just virtual
+> > addresses.
+> > 
+> 
+> PCI supports a 32-bit I/O address space, so if the architecture permits
+> it, having a 32-bit I/O space is perfectly legitimate.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/cgroup.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+Right, but on all 32-bit architectures other than x86, the I/O ports
+are mapped into physical memory addresses, which means you can't
+map all of the I/O space into the CPU address space. On 64-bit
+architectures you can, but then it's UINT_MAX, not ULONG_MAX.
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index bb67acb..b382383 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4125,10 +4125,10 @@ static void css_free_rcu_fn(struct rcu_head *rcu_head)
- 	queue_work(cgroup_destroy_wq, &css->destroy_work);
- }
- 
--static void css_release(struct percpu_ref *ref)
-+static void css_release_work_fn(struct work_struct *work)
- {
- 	struct cgroup_subsys_state *css =
--		container_of(ref, struct cgroup_subsys_state, refcnt);
-+		container_of(work, struct cgroup_subsys_state, destroy_work);
- 	struct cgroup_subsys *ss = css->ss;
- 
- 	cgroup_idr_remove(&ss->css_idr, css->id);
-@@ -4136,6 +4136,15 @@ static void css_release(struct percpu_ref *ref)
- 	call_rcu(&css->rcu_head, css_free_rcu_fn);
- }
- 
-+static void css_release(struct percpu_ref *ref)
-+{
-+	struct cgroup_subsys_state *css =
-+		container_of(ref, struct cgroup_subsys_state, refcnt);
-+
-+	INIT_WORK(&css->destroy_work, css_release_work_fn);
-+	queue_work(cgroup_destroy_wq, &css->destroy_work);
-+}
-+
- static void init_and_link_css(struct cgroup_subsys_state *css,
- 			      struct cgroup_subsys *ss, struct cgroup *cgrp)
- {
--- 
-1.9.0
+There is also the theoretical case of machines mapping a window
+of I/O addresses with portnumber==phys_addr as we normally do
+for PCI memory space, but I haven't seen anyone actually do that.
+Practically every PCI implementation (if they have I/O space at all)
+maps a small number of ports (65536 or 1048576 mostly) starting at
+port number zero to a fixed physical CPU address.
 
+> It is worth noting that /dev/port has the same problem.
+
+Right. We should fix that, too.
+
+> However, if we're going to have these devices I'm wondering if having
+> /dev/portw and /dev/portl (or something like that) might not make sense,
+> rather than requiring a system call per transaction.
+
+Actually the behavior of /dev/port for >1 byte writes seems questionable
+already: There are very few devices on which writing to consecutive
+port numbers makes sense. Normally you just want to write a series
+of bytes (or 16/32 bit words) into the same port number instead,
+as the outsb()/outsw()/outsl() functions do.
+
+	Arnd
