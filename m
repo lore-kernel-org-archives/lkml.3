@@ -1,109 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757748AbaEIV2T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 17:28:19 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:37287 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056AbaEIV2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 17:28:18 -0400
-Date: Fri, 9 May 2014 15:28:10 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Jingoo Han <jg1.han@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] mtd: orion-nand: fix build error with ARMv4
-Message-ID: <20140509212810.GF18257@obsidianresearch.com>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
- <1399560990-1402858-1-git-send-email-arnd@arndb.de>
- <1399560990-1402858-4-git-send-email-arnd@arndb.de>
- <20140509184505.GA30330@arch.cereza>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140509184505.GA30330@arch.cereza>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1757869AbaEIVbh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 17:31:37 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:36325 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757603AbaEIVbf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 17:31:35 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org
+Subject: [PATCHSET cgroup/for-3.16] cgroup: iterate cgroup_subsys_states directly
+Date: Fri,  9 May 2014 17:31:17 -0400
+Message-Id: <1399671091-23867-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 03:45:05PM -0300, Ezequiel Garcia wrote:
+Hello,
 
-> I gave this a try in order to answer Arnd's performance
-> question. First of all, the patch seems wrong. I guess it's because
-> readsl reads 4-bytes pieces, instead of 8-bytes.
-> 
-> This patch below is tested (but not completely, see below) and works:
+Currently, while csses (cgroup_subsys_states) have ->parent linkage
+too, only cgroups form full tree through their ->children and
+->sibling fields and css iterations naturally is implemented by
+iterating cgroups and then dereferencing the css for the specified
+subsystem.
 
-Compilers are better now, I think you can just ditch the weirdness:
+There are now use cases where controllers need to iterate through
+csses regardless of their online state as long as they have positive
+reference.  This can't easily be achieved by iterating cgroups because
+its css pointer array needs to be cleared on offline and there may be
+multiple dying csses for a cgroup for the same subsystem and there's
+only one pointer per cgroup-subsystem pair.
 
-uint64_t *from;
-uint64_t *to;
-void foo()
-{
-	for (unsigned int I = 0; I != 1000; I++)
-		*to++ = *from;
-}
+This patchset moves ->children and ->sibling from cgroup to css and
+link all csses in proper trees and then make css iterators walk csses
+directly instead of going through cgroups.  This achieves iteration of
+all non-released csses while also simplifying the iteration
+implementation.  This is also in line with the general direction of
+using csses as the primary structural component.
 
-Using even gcc 4.6.3 gives good code:
+This patchset contains the following fourteen patches.
 
-(v6)
-.L2:
-        ldrd    r2, [ip]
-        strd    r2, [r1], #8
-        cmp     r1, r0
+ 0001-cgroup-remove-css_parent.patch
+ 0002-cgroup-remove-pointless-has-tasks-children-test-from.patch
+ 0003-memcg-update-memcg_has_children-to-use-css_next_chil.patch
+ 0004-device_cgroup-remove-direct-access-to-cgroup-childre.patch
+ 0005-cgroup-remove-cgroup-parent.patch
+ 0006-cgroup-move-cgroup-sibling-and-children-into-cgroup_.patch
+ 0007-cgroup-link-all-cgroup_subsys_states-in-their-siblin.patch
+ 0008-cgroup-move-cgroup-serial_nr-into-cgroup_subsys_stat.patch
+ 0009-cgroup-introduce-CSS_RELEASED-and-reduce-css-iterati.patch
+ 0010-cgroup-iterate-cgroup_subsys_states-directly.patch
+ 0011-cgroup-use-CSS_ONLINE-instead-of-CGRP_DEAD.patch
+ 0012-cgroup-convert-cgroup_has_live_children-into-css_has.patch
+ 0013-device_cgroup-use-css_has_online_children-instead-of.patch
+ 0014-cgroup-implement-css_tryget.patch
 
-(v4)
-.L2:
-        ldmia   ip, {r0-r1}
-        stmia   r3!, {r0-r1}
-        cmp     r3, r2
+0001-0004 are prep patches.
 
-For correctness this v4 version does require that the cpu executes the
-ldmia reads in increasing address order, and never in any other
-order. AFAIK the periphal is just a simple fifo that basically ignores
-the address.
+0005-0008 move fields from cgroup to css and link csses in tree
+structure instead of cgroups.
 
-memcpy_fromio is not as good since it will never align if the buffer
-is unaligned, while this version does.
+0009-0010 implement direct css iteration.
 
-The below gives:
+0011-0013 convert a cgroup based interface to a css one, which is now
+possible as both are the same in terms of the tree structure, and fix
+devcg brekage using it.
 
-  c8:   ea000002        b       d8 <orion_nand_read_buf+0x84>
-  cc:   e5dc0000        ldrb    r0, [ip]
-  d0:   e7c30001        strb    r0, [r3, r1]
-  d4:   e2811001        add     r1, r1, #1
-  d8:   e1510002        cmp     r1, r2
+0014 implements css_tryget() which is to be used to gain access to
+offline but not-yet-released csses.
 
-Which looks the same as the asm version to me.
+This pachset is on top of
 
-diff --git a/drivers/mtd/nand/orion_nand.c b/drivers/mtd/nand/orion_nand.c
-index dc9d07f34b8a..fea1597f623e 100644
---- a/drivers/mtd/nand/orion_nand.c
-+++ b/drivers/mtd/nand/orion_nand.c
-@@ -95,16 +95,13 @@ static void orion_nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
- 	}
- 	buf64 = (uint64_t *)buf;
- 	while (i < len/8) {
--		/*
--		 * Since GCC has no proper constraint (PR 43518)
--		 * force x variable to r2/r3 registers as ldrd instruction
--		 * requires first register to be even.
--		 */
--		register uint64_t x asm ("r2");
--
--		asm volatile ("ldrd\t%0, [%1]" : "=&r" (x) : "r" (io_base));
--		buf64[i++] = x;
-+#ifdef CONFIG_64BIT
-+		buf64[i++] = readq_relaxed(io_base);
-+#else
-+		buf64[i++] = *(const volatile u64 __force *)io_base;
-+#endif
- 	}
-+
- 	i *= 8;
- 	while (i < len)
- 		buf[i++] = readb(io_base);
+ b9a63d0116e8 ("Merge branch 'for-3.16' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu into for-3.16")
+ + [1] [PATCHSET v2 cgroup/for-3.16] cgroup: post unified hierarchy fixes and updates
+ + [2] (REFRESHED) [PATCHSET cgroup/for-3.16] cgroup: implement cftype->write()
+ + [3] (REFRESHED) [PATCHSET cgroup/for-3.16] cgroup: remove cgroup_tree_mutex
+ + [4] [PATCHSET cgroup/for-3.16] cgroup: use css->refcnt for cgroup reference counting
+
+and available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-direct-css-iteration
+
+diffstat follows.  Thanks.
+
+ block/blk-cgroup.h           |    2 
+ include/linux/cgroup.h       |  122 +++++++++++---------
+ kernel/cgroup.c              |  257 ++++++++++++++++++++++++-------------------
+ kernel/cgroup_freezer.c      |    2 
+ kernel/cpuset.c              |    2 
+ kernel/sched/core.c          |    2 
+ kernel/sched/cpuacct.c       |    2 
+ mm/hugetlb_cgroup.c          |    2 
+ mm/memcontrol.c              |   45 +++----
+ net/core/netclassid_cgroup.c |    2 
+ net/core/netprio_cgroup.c    |    2 
+ security/device_cgroup.c     |   17 --
+ 12 files changed, 251 insertions(+), 206 deletions(-)
+
+--
+tejun
+
+[1] http://lkml.kernel.org/g/1399663975-315-1-git-send-email-tj@kernel.org
+[2] http://lkml.kernel.org/g/20140509195059.GE4486@htj.dyndns.org
+[3] http://lkml.kernel.org/g/20140509195827.GG4486@htj.dyndns.org
+[4] http://lkml.kernel.org/g/1399670015-23463-1-git-send-email-tj@kernel.org
