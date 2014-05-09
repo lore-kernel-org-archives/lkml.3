@@ -1,103 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071AbaEILod (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 07:44:33 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:58303 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752626AbaEILob (ORCPT
+	id S1755891AbaEILqL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 07:46:11 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:37587 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142AbaEILqJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 07:44:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, linux-iio@vger.kernel.org,
-        Josh Wu <josh.wu@atmel.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH v2 2/2] iio:adc: at91 requires the input subsystem
-Date: Fri, 09 May 2014 13:43:57 +0200
-Message-ID: <4163305.otOGv8yVK1@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <536CA78C.5070603@atmel.com>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <1399560990-1402858-13-git-send-email-arnd@arndb.de> <536CA78C.5070603@atmel.com>
+	Fri, 9 May 2014 07:46:09 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:zt9oJnwpS7ko9AueAOJx1qEFODhXVARcU2JoVyc0dFO
- 5njMm4IMeecIzjgAtucaJunhuwGCf1XnL2N4tHgAgCWtzbPrM5
- c+2arBMBGDZKDefuYNK5fen5vAA9gNo4+Bhzs6o8oyol4mREiH
- gLblgjTQZLauy5kTPP2Yq01sOGqGKpSdLespiRmTFGjNfKfULZ
- FWeObZGrv29OuLPTrKqTQNAptBRCkYL6tEaHuJkIN2VoqT92Bh
- XltmtKC9Kya0koEY0NsXyOiiGZ/6/FpEV54yd5e6jg8GAqWtJb
- REeASDSK8jmXN/UZLCyOdfegG0fM4HBljgRBbWZ8aXag1gOkw7
- 9c0sketp3IoF1v20MJ2o=
+In-Reply-To: <20140430111308.GA11829@linutronix.de>
+References: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de>
+	<1395505004-22650-7-git-send-email-bigeasy@linutronix.de>
+	<5331F6D5.7070809@gmail.com>
+	<53427718.30406@linutronix.de>
+	<CANk1AXSuBGj3vZ7knKmHTwDZLTkvVFT42Lt9ZTdk-E+sp=xQ+g@mail.gmail.com>
+	<20140430111308.GA11829@linutronix.de>
+Date: Fri, 9 May 2014 13:46:08 +0200
+Message-ID: <CACRpkdb6wh9ah7ivNvU44j79LqFEVv-keAVxK8jO7h5LJsP5zg@mail.gmail.com>
+Subject: Re: [PATCH 6/7 v2] gpio: dwapb: use a second irq chip
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Jamie Iles <jamie@jamieiles.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Alan Tull <atull@altera.com>, Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 09 May 2014 12:01:48 Nicolas Ferre wrote:
-> On 08/05/2014 16:56, Arnd Bergmann :
-> > Building the at91 adc driver with CONFIG_INPUT disabled results in this
-> > build error:
-> > 
-> > ERROR: "input_event" [drivers/iio/adc/at91_adc.ko] undefined!
-> > ERROR: "input_unregister_device" [drivers/iio/adc/at91_adc.ko] undefined!
-> > ERROR: "input_free_device" [drivers/iio/adc/at91_adc.ko] undefined!
-> > ERROR: "input_register_device" [drivers/iio/adc/at91_adc.ko] undefined!
-> > ERROR: "input_set_abs_params" [drivers/iio/adc/at91_adc.ko] undefined!
-> > ERROR: "input_allocate_device" [drivers/iio/adc/at91_adc.ko] undefined!
-> > 
-> > To make sure we can build random configurations, this turns on CONFIG_INPUT
-> > whenever CONFIG_AT91_ADC is enabled.
-> 
-> Isn't it a "select" instead of "depends" that is required then?
+On Wed, Apr 30, 2014 at 1:13 PM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
 
-It seems I fixed the patch at some point but didn't update the message.
+> Right new have one irq chip running always in level mode. It would nicer
+> to have two irq chips where one is handling level type interrupts and
+> the other one is doing edge interrupts. So we can have at runtime two users
+> where one is using edge and the other level.
+>
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> ---
+> I am very sorry for the delay. I assumed that I've already fixed the
+> patch sent it out. Just realized that it was not the case.
+>
+> v1…v2:
+>     - using the lopp again but breaking the assignment of type and
+>       handler out of the loop as suggested by delicious quinoa.
 
-In general, we should not mix 'depends on' and 'select' for the same symbol,
-since that causes extra confusion.
+Can I have an ACK from Jamie &&|| Alan on this patch so I can apply
+it?
 
-In case of CONFIG_INPUT, almost all the users do 'depends on INPUT', with
-a few exceptions that seem to be done in error.
-Updated patch below.
-
-	Arnd
-
-8<----
-
->From 4679d63b24a681d9c6afcfdde266bae0f940e90b Mon Sep 17 00:00:00 2001
-From: Arnd Bergmann <arnd@arndb.de>
-Date: Wed, 9 Apr 2014 17:18:10 +0200
-Subject: [PATCH] [SUBMITTED] iio:adc: at91 requires the input subsystem
-
-Building the at91 adc driver with CONFIG_INPUT disabled results in this
-build error:
-
-ERROR: "input_event" [drivers/iio/adc/at91_adc.ko] undefined!
-ERROR: "input_unregister_device" [drivers/iio/adc/at91_adc.ko] undefined!
-ERROR: "input_free_device" [drivers/iio/adc/at91_adc.ko] undefined!
-ERROR: "input_register_device" [drivers/iio/adc/at91_adc.ko] undefined!
-ERROR: "input_set_abs_params" [drivers/iio/adc/at91_adc.ko] undefined!
-ERROR: "input_allocate_device" [drivers/iio/adc/at91_adc.ko] undefined!
-
-To make sure we can build random configurations, this adds a Kconfig
-dependency on CONFIG_INPUT, as we do for other similar drivers.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-iio@vger.kernel.org
-Cc: Josh Wu <josh.wu@atmel.com>
-Cc: Jonathan Cameron <jic23@kernel.org>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
-
-diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
-index 90f596d..a80d236 100644
---- a/drivers/iio/adc/Kconfig
-+++ b/drivers/iio/adc/Kconfig
-@@ -110,6 +110,7 @@ config AD799X
- config AT91_ADC
- 	tristate "Atmel AT91 ADC"
- 	depends on ARCH_AT91
-+	depends on INPUT
- 	select IIO_BUFFER
- 	select IIO_TRIGGERED_BUFFER
- 	select SYSFS
-
+Yours,
+Linus Walleij
