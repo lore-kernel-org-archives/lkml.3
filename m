@@ -1,108 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204AbaEIJcG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 05:32:06 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46304 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818AbaEIJcE (ORCPT
+	id S1756313AbaEIJfH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 05:35:07 -0400
+Received: from smtprelay.synopsys.com ([198.182.60.111]:41838 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537AbaEIJfE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 05:32:04 -0400
-Date: Fri, 9 May 2014 11:31:54 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Vojtech Pavlik <vojtech@suse.cz>, Michael Matz <matz@suse.de>,
-        Jiri Kosina <jkosina@suse.cz>, Udo Seidel <udoseidel@gmx.de>
-Subject: kgr: dealing with optimalizations? (was Re: [RFC 06/16] kgr: add
- Documentat)ion
-Message-ID: <20140509093154.GA4877@xo-6d-61-c0.localdomain>
-References: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
- <1398868249-26169-7-git-send-email-jslaby@suse.cz>
- <20140506110312.GA15033@xo-6d-61-c0.localdomain>
+	Fri, 9 May 2014 05:35:04 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Peter Zijlstra <peterz@infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 03/20] arch,arc: Fold atomic_ops
+Thread-Topic: [PATCH 03/20] arch,arc: Fold atomic_ops
+Thread-Index: AQHPasXpGvX/3Pye7ki8B6tFh1WNPw==
+Date: Fri, 9 May 2014 09:34:51 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA230751A6AB58E@IN01WEMBXA.internal.synopsys.com>
+References: <20140508135840.956784204@infradead.org>
+ <20140508135851.886055622@infradead.org>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.93]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140506110312.GA15033@xo-6d-61-c0.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Peter,
 
-Ok, one big question: you are replacing single functions, and assume that's ok, right?
+Minor point below, otherwise looks good.
 
-But ... is it ok? gcc is allowed to do optimalization on whole source file (and whole source
-tree with LTO).  How do you prevent situation where changing function foo() breaks optimalization
-in function bar()?
+On Thursday 08 May 2014 07:30 PM, Peter Zijlstra wrote:
+> Many of the atomic op implementations are the same except for one
+> instruction; fold the lot into a few CPP macros and reduce LoC.
+>
+> This also prepares for easy addition of new ops.
+>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Vineet Gupta <vgupta@synopsys.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  arch/arc/include/asm/atomic.h |  194 ++++++++++++++----------------------------
+>  1 file changed, 68 insertions(+), 126 deletions(-)
+>
+> --- a/arch/arc/include/asm/atomic.h
+> +++ b/arch/arc/include/asm/atomic.h
+> @@ -25,79 +25,36 @@
+>  
+>  #define atomic_set(v, i) (((v)->counter) = (i))
+>  
+> -static inline void atomic_add(int i, atomic_t *v)
+> -{
+> -	unsigned int temp;
+> -
+> -	__asm__ __volatile__(
+> -	"1:	llock   %0, [%1]	\n"
+> -	"	add     %0, %0, %2	\n"
+> -	"	scond   %0, [%1]	\n"
+> -	"	bnz     1b		\n"
+> -	: "=&r"(temp)	/* Early clobber, to prevent reg reuse */
+> -	: "r"(&v->counter), "ir"(i)
+> -	: "cc");
+> -}
+> -
+> -static inline void atomic_sub(int i, atomic_t *v)
+> -{
+> -	unsigned int temp;
+> -
+> -	__asm__ __volatile__(
+> -	"1:	llock   %0, [%1]	\n"
+> -	"	sub     %0, %0, %2	\n"
+> -	"	scond   %0, [%1]	\n"
+> -	"	bnz     1b		\n"
+> -	: "=&r"(temp)
+> -	: "r"(&v->counter), "ir"(i)
+> -	: "cc");
+> -}
+> -
+> -/* add and also return the new value */
+> -static inline int atomic_add_return(int i, atomic_t *v)
+> -{
+> -	unsigned int temp;
+> -
+> -	__asm__ __volatile__(
+> -	"1:	llock   %0, [%1]	\n"
+> -	"	add     %0, %0, %2	\n"
+> -	"	scond   %0, [%1]	\n"
+> -	"	bnz     1b		\n"
+> -	: "=&r"(temp)
+> -	: "r"(&v->counter), "ir"(i)
+> -	: "cc");
+> -
+> -	return temp;
+> -}
+> -
+> -static inline int atomic_sub_return(int i, atomic_t *v)
+> -{
+> -	unsigned int temp;
+> -
+> -	__asm__ __volatile__(
+> -	"1:	llock   %0, [%1]	\n"
+> -	"	sub     %0, %0, %2	\n"
+> -	"	scond   %0, [%1]	\n"
+> -	"	bnz     1b		\n"
+> -	: "=&r"(temp)
+> -	: "r"(&v->counter), "ir"(i)
+> -	: "cc");
+> -
+> -	return temp;
+> -}
+> -
+> -static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
+> -{
+> -	unsigned int temp;
+> -
+> -	__asm__ __volatile__(
+> -	"1:	llock   %0, [%1]	\n"
+> -	"	bic     %0, %0, %2	\n"
+> -	"	scond   %0, [%1]	\n"
+> -	"	bnz     1b		\n"
+> -	: "=&r"(temp)
+> -	: "r"(addr), "ir"(mask)
+> -	: "cc");
+> +#define ATOMIC_OP(op, c_op, asm_op)					\
+> +static inline void atomic_##op(int i, atomic_t *v)			\
+> +{									\
+> +	unsigned int temp;						\
+> +									\
+> +	__asm__ __volatile__(						\
+> +	"1:	llock   %0, [%1]	\n"				\
+> +	"	" #asm_op " %0, %0, %2	\n"				\
+> +	"	scond   %0, [%1]	\n"				\
+> +	"	bnz     1b		\n"				\
+> +	: "=&r"(temp)	/* Early clobber, to prevent reg reuse */	\
+> +	: "r"(&v->counter), "ir"(i)					\
+> +	: "cc");							\
+> +}									\
+> +
+> +#define ATOMIC_OP_RETURN(op, c_op, asm_op)				\
+> +static inline int atomic_##op##_return(int i, atomic_t *v)		\
+> +{									\
+> +	unsigned int temp;						\
+> +									\
+> +	__asm__ __volatile__(						\
+> +	"1:	llock   %0, [%1]	\n"				\
+> +	"	" #asm_op " %0, %0, %2	\n"				\
+> +	"	scond   %0, [%1]	\n"				\
+> +	"	bnz     1b		\n"				\
+> +	: "=&r"(temp)							\
+> +	: "r"(&v->counter), "ir"(i)					\
+> +	: "cc");							\
+> +									\
+> +	return temp;							\
+>  }
+>  
+>  #else	/* !CONFIG_ARC_HAS_LLSC */
+> @@ -126,6 +83,7 @@ static inline void atomic_set(atomic_t *
+>  	v->counter = i;
+>  	atomic_ops_unlock(flags);
+>  }
+> +
+>  #endif
+>  
+>  /*
+> @@ -133,63 +91,47 @@ static inline void atomic_set(atomic_t *
+>   * Locking would change to irq-disabling only (UP) and spinlocks (SMP)
+>   */
+>  
+> -static inline void atomic_add(int i, atomic_t *v)
+> -{
+> -	unsigned long flags;
+> -
+> -	atomic_ops_lock(flags);
+> -	v->counter += i;
+> -	atomic_ops_unlock(flags);
+> -}
+> -
+> -static inline void atomic_sub(int i, atomic_t *v)
+> -{
+> -	unsigned long flags;
+> -
+> -	atomic_ops_lock(flags);
+> -	v->counter -= i;
+> -	atomic_ops_unlock(flags);
+> -}
+> -
+> -static inline int atomic_add_return(int i, atomic_t *v)
+> -{
+> -	unsigned long flags;
+> -	unsigned long temp;
+> -
+> -	atomic_ops_lock(flags);
+> -	temp = v->counter;
+> -	temp += i;
+> -	v->counter = temp;
+> -	atomic_ops_unlock(flags);
+> -
+> -	return temp;
+> -}
+> -
+> -static inline int atomic_sub_return(int i, atomic_t *v)
+> -{
+> -	unsigned long flags;
+> -	unsigned long temp;
+> -
+> -	atomic_ops_lock(flags);
+> -	temp = v->counter;
+> -	temp -= i;
+> -	v->counter = temp;
+> -	atomic_ops_unlock(flags);
+> -
+> -	return temp;
+> -}
+> -
+> -static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
+> -{
+> -	unsigned long flags;
+> -
+> -	atomic_ops_lock(flags);
+> -	*addr &= ~mask;
+> -	atomic_ops_unlock(flags);
+> +#define ATOMIC_OP(op, c_op, asm_op)					\
+> +static inline void atomic_##op(int i, atomic_t *v)			\
+> +{									\
+> +	unsigned long flags;						\
+> +									\
+> +	atomic_ops_lock(flags);						\
+> +	v->counter c_op i;						\
+> +	atomic_ops_unlock(flags);					\
+> +}
+> +
+> +#define ATOMIC_OP_RETURN(op, c_op)					\
+> +static inline int atomic_##op##_return(int i, atomic_t *v)		\
+> +{									\
+> +	unsigned long flags;						\
+> +	unsigned long temp;						\
+> +									\
+> +	atomic_ops_lock(flags);						\
+> +	temp = v->counter;						\
+> +	temp c_op i;							\
+> +	v->counter = temp;						\
+> +	atomic_ops_unlock(flags);					\
+> +									\
+> +	return temp;							\
+>  }
+>  
+>  #endif /* !CONFIG_ARC_HAS_LLSC */
+>  
+> +#define ATOMIC_OPS(op, c_op, asm_op)					\
+> +	ATOMIC_OP(op, c_op, asm_op)					\
+> +	ATOMIC_OP_RETURN(op, c_op, asm_op)
+> +
+> +ATOMIC_OPS(add, +=, add)
+> +ATOMIC_OPS(sub, -=, sub)
+> +ATOMIC_OP(and, &=, and)
+> +
+> +#define atomic_clear_mask(mask, v) atomic_and(~(mask), (v))
 
-Is turning off inter-procedural and inter-module optimalizations needed for kgraft to work?
+Given that ARC has instruction to do just that, can we keep below instead.
 
-Best regards,
-											Pavel
+ATOMIC_OP(clear_mask, ~=, bic)
 
-On Tue 2014-05-06 13:03:12, Pavel Machek wrote:
-> Hi!
-> 
-> > This is a text provided by Udo and polished.
-> > 
-> > Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> > Cc: Udo Seidel <udoseidel@gmx.de>
-> > ---
-> >  Documentation/kgr.txt | 26 ++++++++++++++++++++++++++
-> >  1 file changed, 26 insertions(+)
-> >  create mode 100644 Documentation/kgr.txt
-> > 
-> > diff --git a/Documentation/kgr.txt b/Documentation/kgr.txt
-> > new file mode 100644
-> > index 000000000000..5b62415641cf
-> > --- /dev/null
-> > +++ b/Documentation/kgr.txt
-> > @@ -0,0 +1,26 @@
-> > +Live Kernel Patching with kGraft
-> > +--------------------------------
-> > +
-> > +Written by Udo Seidel <udoseidel at gmx dot de>
-> > +Based on the Blog entry by Vojtech Pavlik
-> > +
-> > +April 2014
-> > +
-> > +kGraft's developement was started by the SUSE Labs. kGraft builds on
-> > +technologies and ideas that are already present in the kernel: ftrace
-> > +and its mcount-based reserved space in function headers, the
-> > +INT3/IPI-NMI patching also used in jumplabels, and RCU-like update of
-> > +code that does not require stopping the kernel. For more information
-> > +about ftrace please checkout the Documentation shipped with the kernel
-> > +or search for howtos and explanations on the Internet.
-> 
-> This should really provide filename in Documentation/ directory it is refering to.
-> 
-> > +A kGraft patch is a kernel module and fully relies on the in-kernel
-> > +module loader to link the new code with the kernel.  Thanks to all
-> > +that, the design can be nicely minimalistic.
-> 
-> I feel some more details would be nice here.
-> 
-> > +While kGraft is, by choice, limited to replacing whole functions and
-> > +constants they reference, this does not limit the set of code patches
-> > +that can be applied significantly.  kGraft offers tools to assist in
-> > +creating the live patch modules, identifying which functions need to
-> > +be replaced based on a patch, and creating the patch module source
-> > +code. They are located in /tools/kgraft/.
-> 
-> For what functions it does not work? Anything used in interrupt context?
-> What about assembly? What happens if that function uses &label to
-> do some magic?
-> 
-> -- 
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+(see asm version of atomic_clear_mask)
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+-Vineet
+
+> +
+> +#undef ATOMIC_OPS
+> +#undef ATOMIC_OP_RETURN
+> +#undef ATOMIC_OP
+> +
+>  /**
+>   * __atomic_add_unless - add unless the number is a given value
+>   * @v: pointer of type atomic_t
+>
+>
+>
+
