@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095AbaEICu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 22:50:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43613 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395AbaEICuZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 22:50:25 -0400
-Date: Fri, 9 May 2014 04:50:14 +0200
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-doc@vger.kernel.org,
-        Joerg Roedel <joro@8bytes.org>, Randy Dunlap <rdunlap@infradead.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, linux-kernel@vger.kernel.org,
-        James Bottomley <jbottomley@parallels.com>, linux-pci@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH v3 2/4] DMA-API: Change dma_declare_coherent_memory() CPU
- address to phys_addr_t
-Message-ID: <20140509025014.GE21085@kroah.com>
-References: <20140508204257.17877.4639.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140508204900.17877.3108.stgit@bhelgaas-glaptop.roam.corp.google.com>
+	id S932154AbaEICul (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 22:50:41 -0400
+Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:50613
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754859AbaEICuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 May 2014 22:50:35 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rdunlap@infradead.org>, <gregkh@linuxfoundation.org>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <linux@arm.linux.org.uk>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        "Xiubo Li" <Li.Xiubo@freescale.com>
+Subject: [PATCHv4 0/2] add DT endianness binding support.
+Date: Fri, 9 May 2014 10:04:31 +0800
+Message-ID: <1399601073-19278-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(979002)(6009001)(189002)(199002)(97736001)(62966002)(2009001)(87286001)(81156002)(99396002)(77156001)(50226001)(88136002)(81542001)(87936001)(21056001)(80022001)(47776003)(6806004)(68736004)(69596002)(44976005)(19580395003)(83322001)(20776003)(79102001)(64706001)(84676001)(86362001)(4396001)(76482001)(89996001)(77982001)(50466002)(93916002)(81342001)(48376002)(50986999)(31966008)(77096999)(74502001)(74662001)(46102001)(92726001)(2201001)(92566001)(83072002)(85852003)(36756003)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB505;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140508204900.17877.3108.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Forefront-PRVS: 02065A9E77
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 02:49:00PM -0600, Bjorn Helgaas wrote:
-> dma_declare_coherent_memory() takes two addresses for a region of memory: a
-> "bus_addr" and a "device_addr".  I think the intent is that "bus_addr" is
-> the physical address a *CPU* would use to access the region, and
-> "device_addr" is the bus address the *device* would use to address the
-> region.
-> 
-> Rename "bus_addr" to "phys_addr" and change its type to phys_addr_t.
-> Most callers already supply a phys_addr_t for this argument.  The others
-> supply a 32-bit integer (a constant, unsigned int, or __u32) and need no
-> change.
-> 
-> Use "unsigned long", not phys_addr_t, to hold PFNs.
-> 
-> No functional change (this could theoretically fix a truncation in a config
-> with 32-bit dma_addr_t and 64-bit phys_addr_t, but I don't think there are
-> any such cases involving this code).
-> 
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+Changes in V4:
+- Fix one comment from Markus Pargmann.
+- Fix some comments.
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Changes in V3:
+- Follow Mark Rutland's advice.
+- Document common case of the endianess usage.
+
+Changes in V2:
+- Namespace the properties using the prefix sring.
+- Add one binding ducomentation off regmap.
+
+
+
+
+Xiubo Li (2):
+  dt/bindings: Add the DT binding documentation for endianness
+  regmap: add DT endianness binding support.
+
+ .../devicetree/bindings/endianness/endianness.txt  |  48 +++++++
+ drivers/base/regmap/regmap-i2c.c                   |   2 +
+ drivers/base/regmap/regmap-spi.c                   |   2 +
+ drivers/base/regmap/regmap.c                       | 147 +++++++++++++++++++--
+ 4 files changed, 188 insertions(+), 11 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/endianness/endianness.txt
+
+-- 
+1.8.4
+
