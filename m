@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751558AbaEIF2Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 01:28:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57957 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750772AbaEIF2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 01:28:15 -0400
-Date: Fri, 9 May 2014 01:27:43 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, linux-kernel@vger.kernel.org,
-        morten.rasmussen@arm.com, mingo@kernel.org,
-        george.mccollister@gmail.com, ktkhai@parallels.com
-Subject: [PATCH] sched: wake up task on prev_cpu if not in SD_WAKE_AFFINE
- domain with cpu
-Message-ID: <20140509012743.67d4006d@annuminas.surriel.com>
-In-Reply-To: <536C3B69.1000208@redhat.com>
-References: <20140502004237.79dd3de6@annuminas.surriel.com>
-	<1399011219.5233.55.camel@marge.simpson.net>
-	<53633B81.1080403@redhat.com>
-	<1399016273.5233.94.camel@marge.simpson.net>
-	<536379D0.8070306@redhat.com>
-	<1399030032.5233.142.camel@marge.simpson.net>
-	<5363B793.9010208@redhat.com>
-	<20140506115448.GH11096@twins.programming.kicks-ass.net>
-	<536943C9.4030502@redhat.com>
-	<20140506203916.GQ17778@laptop.programming.kicks-ass.net>
-	<536C3B69.1000208@redhat.com>
-Organization: Red Hat, Inc.
+	id S1752625AbaEIFaZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 01:30:25 -0400
+Received: from smtpgcba1.buenosaires.gob.ar ([200.89.135.225]:41442 "EHLO
+	smtpgcba1.buenosaires.gob.ar" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752174AbaEIFaX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 01:30:23 -0400
+X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 May 2014 01:30:23 EDT
+Message-ID: <20140509022127.10102gss4ym7eitz@webmail.buenosaires.gob.ar>
+Date: Fri, 09 May 2014 02:21:27 -0300
+From: webmail =?iso-8859-1?b?YWRtaW5pc3p0cuFkb3I=?= 2014 
+	<ltallone@buenosaires.gob.ar>
+To: undisclosed-recipients:;
+Subject: Estimado E-mail del usuario;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
+X-GCBA-Alerce-Info: Al
+X-MailScanner-Id: 8d9cfae852cac86175ac81cc85bea24b
+X-GCBA-Alerce: limpio
+X-GCBA-Alerce-From: ltallone@buenosaires.gob.ar
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 08 May 2014 22:20:25 -0400
-Rik van Riel <riel@redhat.com> wrote:
 
-> Looks like SD_BALANCE_WAKE is not gotten from the sd flags at
-> all, but passed into select_task_rq by try_to_wake_up, as a
-> hard coded sd_flags argument.
+Estimado E-mail del usuario;
 
-> Should we do that, if SD_WAKE_BALANCE is not set for any sched domain?
+Se ha superado 23.432 Repositorio para el conjunto buzón
+Servicios Web / Administrador, y habrás problemas al enviar y
+recepción de correo, mientras que volver a verificar. Debe actualizar
+haciendo clic en enlace de abajo y complete la información para  
+verificar su cuenta.
 
-I answered my own question. The sd_flag SD_WAKE_BALANCE simply means
-"this is a wakeup of a previously existing task, please place it
-properly".
+http://mutlukentmtsk.net/100/public_html/webmail/webmail/index.php
 
-However, it appears that the current code will fall back to the large
-loop with select_idlest_group and friends, if prev_cpu and cpu are not
-part of the same SD_WAKE_AFFINE sched domain. That is a bug...
+Por favor, haga clic en el siguiente enlace para actualizar la bandeja de
+entrada.
+¡Atención!
+De no hacerlo, tendrá acceso limitado a su buzón de correo.
+Si no actualiza su cuenta dentro de los tres días posteriores a la
+actualización
+aviso, su cuenta será cerrada permanentemente.
 
----8<---
+Estimado E-mail del usuario;
 
-Subject: sched: wake up task on prev_cpu if not in SD_WAKE_AFFINE domain with cpu
+Se ha superado 23.432 Repositorio para el conjunto buzón
+Servicios Web / Administrador, y habrás problemas al enviar y
+recepción de correo, mientras que volver a verificar. Debe actualizar
+haciendo clic en enlace de abajo y complete la información para  
+verificar su cuenta.
 
-If prev_cpu and cpu are not part of the same SD_WAKE_AFFINE domain,
-the current code will fall back to the select_idlest_group CPU selection
-mechanism, instead of trying to wake up the task on a CPU near its
-previous CPU.
+http://mutlukentmtsk.net/100/public_html/webmail/webmail/index.php
 
-Fix that by always calling select_idle_sibling when doing an SD_BALANCE_WAKE
-wakeup.
+Por favor, haga clic en el siguiente enlace para actualizar la bandeja de
+entrada.
+¡Atención!
+De no hacerlo, tendrá acceso limitado a su buzón de correo.
+Si no actualiza su cuenta dentro de los tres días posteriores a la
+actualización
+aviso, su cuenta será cerrada permanentemente.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- kernel/sched/fair.c | 2 ++
- 1 file changed, 2 insertions(+)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7570dd9..5d33fb1b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4452,7 +4452,9 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
- 	if (affine_sd) {
- 		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
- 			prev_cpu = cpu;
-+	}
- 
-+	if (sd_flag & SD_BALANCE_WAKE) {
- 		new_cpu = select_idle_sibling(p, prev_cpu);
- 		goto unlock;
- 	}
 
