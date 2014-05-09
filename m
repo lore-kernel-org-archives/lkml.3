@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091AbaEIBQJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 May 2014 21:16:09 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:20522 "EHLO
+	id S932219AbaEIBRS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 May 2014 21:17:18 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:14884 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753280AbaEIBQH (ORCPT
+	with ESMTP id S1754410AbaEIBRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 21:16:07 -0400
+	Thu, 8 May 2014 21:17:17 -0400
 X-IronPort-AV: E=Sophos;i="4.97,1014,1389715200"; 
-   d="scan'208";a="30283063"
-Message-ID: <536C1E50.5020806@cn.fujitsu.com>
-Date: Fri, 9 May 2014 09:16:16 +0900
+   d="scan'208";a="30283094"
+Message-ID: <536C1E97.3080701@cn.fujitsu.com>
+Date: Fri, 9 May 2014 09:17:27 +0900
 From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-CC: <rostedt@goodmis.org>, <peterz@infradead.org>, <bsegall@google.com>,
-        <mingo@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: Distinguish sched_wakeup event when wake up a
- task which did schedule out or not.
-References: <53683B14.3060702@cn.fujitsu.com> <1399341154-11785-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-In-Reply-To: <1399341154-11785-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+To: <rostedt@goodmis.org>
+CC: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] tracing: Use inline task_nice() to get rid of
+ an open coded implementation of it.
+References: <20140318221533.45c479bd@gandalf.local.home> <1399531103-920-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+In-Reply-To: <1399531103-920-1-git-send-email-yangds.fnst@cn.fujitsu.com>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.167.226.49]
@@ -28,65 +28,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi steven, does this version look good to you?
+Hi steven, as you request, I resend this patch now when function task_nice()
+is already in mainline. Do you want to take it?
 
-Thanx :)
-
-On 05/06/2014 10:52 AM, Dongsheng Yang wrote:
-> ttwu_do_wakeup() is called when the task's state is switched back to
-> TASK_RUNNING, whether or not the task actually scheduled out. Tracing
-> the wakeup event when the task never scheduled out is quite confusing.
->
-> This patch take the use of 'success' parameter in sched_wakeup tracepoint,
-> to indicate that the task we are waking up did schedule out or just
-> change its state to TASK_RUNNING.
->
-> success is true:
-> 	task was out of run queue and sleeping, we are really wake it up.
-> success is false:
-> 	taks was on run queue all the time and we just change its state
-> 	to TASK_RUNNING.
+On 05/08/2014 03:38 PM, Dongsheng Yang wrote:
+> Function task_nice() was reimplemented as inline function, we can use it here
+> to replace the open coded implementation.
 >
 > Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+> cc: Steven Rostedt <rostedt@goodmis.org>
 > ---
->   kernel/sched/core.c | 5 ++++-
->   1 file changed, 4 insertions(+), 1 deletion(-)
+>   kernel/trace/trace.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 9074c6d..14b9fe4 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1420,6 +1420,7 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
->   {
->   	activate_task(rq, p, en_flags);
->   	p->on_rq = 1;
-> +	trace_sched_wakeup(p, true);
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 737b0ef..f296adc 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -1015,7 +1015,7 @@ __update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
+>   	else
+>   		max_data->uid = task_uid(tsk);
 >   
->   	/* if a worker is waking up, notify workqueue */
->   	if (p->flags & PF_WQ_WORKER)
-> @@ -1433,7 +1434,6 @@ static void
->   ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
->   {
->   	check_preempt_curr(rq, p, wake_flags);
-> -	trace_sched_wakeup(p, true);
+> -	max_data->nice = tsk->static_prio - 20 - MAX_RT_PRIO;
+> +	max_data->nice = task_nice(tsk);
+>   	max_data->policy = tsk->policy;
+>   	max_data->rt_priority = tsk->rt_priority;
 >   
->   	p->state = TASK_RUNNING;
->   #ifdef CONFIG_SMP
-> @@ -1481,6 +1481,7 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
->   	if (p->on_rq) {
->   		/* check_preempt_curr() may use rq clock */
->   		update_rq_clock(rq);
-> +		trace_sched_wakeup(p, false);
->   		ttwu_do_wakeup(rq, p, wake_flags);
->   		ret = 1;
->   	}
-> @@ -1675,6 +1676,8 @@ static void try_to_wake_up_local(struct task_struct *p)
->   
->   	if (!p->on_rq)
->   		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
-> +	else
-> +		trace_sched_wakeup(p, false);
->   
->   	ttwu_do_wakeup(rq, p, 0);
->   	ttwu_stat(p, smp_processor_id(), 0);
 
