@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552AbaEITf1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 15:35:27 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:53963 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756400AbaEITc7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 15:32:59 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/7] cgroup: fix offlining child waiting in cgroup_subtree_control_write()
-Date: Fri,  9 May 2014 15:32:49 -0400
-Message-Id: <1399663975-315-2-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1399663975-315-1-git-send-email-tj@kernel.org>
-References: <1399663975-315-1-git-send-email-tj@kernel.org>
+	id S1757586AbaEITgh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 15:36:37 -0400
+Received: from mail-bl2lp0203.outbound.protection.outlook.com ([207.46.163.203]:14470
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756765AbaEITgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 15:36:36 -0400
+Date: Fri, 9 May 2014 14:36:14 -0500
+From: Scott Wood <scottwood@freescale.com>
+To: Tiejun Chen <tiejun.chen@windriver.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [v6,3/5] powerpc/book3e: support kgdb for kernel space
+Message-ID: <20140509193614.GA28739@home.buserror.net>
+References: <1382520685-11609-4-git-send-email-tiejun.chen@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1382520685-11609-4-git-send-email-tiejun.chen@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2601:2:5800:3f7:b074:a81c:8d02:b651]
+X-ClientProxiedBy: BN1PR08CA0037.namprd08.prod.outlook.com (10.242.217.165)
+ To DM2PR03MB400.namprd03.prod.outlook.com (10.141.84.153)
+X-Forefront-PRVS: 02065A9E77
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(51704005)(24454002)(76482001)(77982001)(2009001)(33656001)(46406003)(4396001)(64706001)(20776003)(47776003)(31966008)(46102001)(74502001)(74662001)(42186004)(21056001)(97756001)(81342001)(19580395003)(83322001)(53416003)(19580405001)(23726002)(50466002)(69596002)(81542001)(101416001)(83506001)(86362001)(79102001)(92726001)(54356999)(80022001)(92566001)(83072002)(50986999)(76176999)(81156002)(87976001)(21314002)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB400;H:home.buserror.net;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Authentication-Results: spf=none (sender IP is )
+ smtp.mailfrom=scottwood@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup_subtree_control_write() waits for offline to complete
-child-by-child before enabling a controller; however, it has a couple
-bugs.
+On Wed, Oct 23, 2013 at 05:31:23PM +0800, Tiejun Chen wrote:
+> Currently we need to skip this for supporting KGDB.
+> 
+> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+> 
+> ---
+> arch/powerpc/kernel/exceptions-64e.S |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/powerpc/kernel/exceptions-64e.S b/arch/powerpc/kernel/exceptions-64e.S
+> index a55cf62..0b750c6 100644
+> --- a/arch/powerpc/kernel/exceptions-64e.S
+> +++ b/arch/powerpc/kernel/exceptions-64e.S
+> @@ -597,11 +597,13 @@ kernel_dbg_exc:
+>  	rfdi
+>  
+>  	/* Normal debug exception */
+> +1:	andi.	r14,r11,MSR_PR;		/* check for userspace again */
+> +#ifndef CONFIG_KGDB
+>  	/* XXX We only handle coming from userspace for now since we can't
+>  	 *     quite save properly an interrupted kernel state yet
+>  	 */
+> -1:	andi.	r14,r11,MSR_PR;		/* check for userspace again */
+>  	beq	kernel_dbg_exc;		/* if from kernel mode */
+> +#endif
 
-* It doesn't initialize the wait_queue_t.  This can lead to infinite
-  hang on the following schedule() among other things.
+Now that we have support for properly saving state on special level
+exceptions, that should be used here.  With the above patch, what happens
+if e.g. a debug exception fires during a TLB miss, and the kgdb handler
+takes its own TLB miss accessing the serial port?
 
-* It forgets to pin the child before releasing cgroup_tree_mutex and
-  performing schedule().  The child may already be gone by the time it
-  wakes up and invokes finish_wait().  Pin the child being waited on.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/cgroup.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 9db1a96..95fc66b 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2594,16 +2594,18 @@ retry:
- 			 * cases, wait till it's gone using offline_waitq.
- 			 */
- 			cgroup_for_each_live_child(child, cgrp) {
--				wait_queue_t wait;
-+				DEFINE_WAIT(wait);
- 
- 				if (!cgroup_css(child, ss))
- 					continue;
- 
-+				cgroup_get(child);
- 				prepare_to_wait(&child->offline_waitq, &wait,
- 						TASK_UNINTERRUPTIBLE);
- 				mutex_unlock(&cgroup_tree_mutex);
- 				schedule();
- 				finish_wait(&child->offline_waitq, &wait);
-+				cgroup_put(child);
- 				goto retry;
- 			}
- 
--- 
-1.9.0
-
+-Scott
