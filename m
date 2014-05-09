@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153AbaEIQRB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 12:17:01 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:53751 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757132AbaEIQQ6 (ORCPT
+	id S1757008AbaEIQT5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 12:19:57 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:22045 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755298AbaEIQTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 12:16:58 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: cl@linux.com, akpm@linux-foundation.org, mhocko@suse.cz,
-        hannes@cmpxchg.org, riel@redhat.com, minchan@kernel.org,
-        zhangyanfei@cn.fujitsu.com, hanpt@linux.vnet.ibm.com,
-        sasha.levin@oracle.com, oleg@redhat.com, fabf@skynet.be,
-        mgorman@suse.de, aarcange@redhat.com, cldu@marvell.com,
-        nasa4836@gmail.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: use a irq-safe __mod_zone_page_state in mlocked_vma_newpage()
-Date: Sat, 10 May 2014 00:16:48 +0800
-Message-Id: <1399652208-18987-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 2.0.0-rc1
+	Fri, 9 May 2014 12:19:55 -0400
+Message-ID: <536D00F8.8030801@oracle.com>
+Date: Fri, 09 May 2014 12:23:20 -0400
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: tglx@linutronix.de, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        stefani@seibold.net, luto@amacapital.net, konrad.wilk@oracle.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] time: Cast tv_nsec to u64 for proper shifting in update_vsyscall()
+References: <1399648287-15178-1-git-send-email-boris.ostrovsky@oracle.com> <536CF7B3.4040705@zytor.com> <536CFB79.7030602@oracle.com> <536CFC3C.5030706@zytor.com>
+In-Reply-To: <536CFC3C.5030706@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->You are changing from the irq safe variant to __mod_zone_page_state which
->is *not* irq safe. Its legit to do so since presumably irqs are disabled
->anyways so you do not have to worry about irq safeness of
->__mod_zone_page_state.
+On 05/09/2014 12:03 PM, H. Peter Anvin wrote:
+> On 05/09/2014 08:59 AM, Boris Ostrovsky wrote:
+>> On 05/09/2014 11:43 AM, H. Peter Anvin wrote:
+>>> On 05/09/2014 08:11 AM, Boris Ostrovsky wrote:
+>>>> With tk->wall_to_monotonic.tv_nsec being a 32-bit value on 32-bit
+>>>> systems, (tk->wall_to_monotonic.tv_nsec << tk->shift) in
+>>>> update_vsyscall()
+>>>> may lose upper bits or, worse, add them since compiler will do this:
+>>>>      (u64)(tk->wall_to_monotonic.tv_nsec << tk->shift)
+>>>> instead of
+>>>>      ((u64)tk->wall_to_monotonic.tv_nsec << tk->shift)
+>>>>
+>>>> So if, for example, tv_nsec is 0x800000 and shift is 8 we will end up
+>>>> with 0xffffffff80000000 instead of 0x80000000. And then we are stuck in
+>>>> the subsequent 'while' loop.
+>>>>
+>>>> We need explicit cast.
+>>>>
+>>>> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+>>>> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>>> Cc: stable@vger.kernel.org
+>>> This is needed in stable only for v3.14, right?
+>> I suspect anything that has commit 650ea024 needs to be fixed. I see
+>> this code, for example, in 3.12 (it used to be in vsyscall_64.c).
+>>
+> But you're talking about 32-bit platforms.  Vsyscalls aren't used on
+> x86-32 until 3.14.  Am I missing something?
 
->Please update the description. Its a bit confusing right now.
+Oh, yes, of course. I was just looking at code without thinking. 3.14 
+only then.
 
-Hi, Christoph, I'm sorry for the misleading phrasing. 
-Would be this one OK? Thanks.
-
---------<8---------
-mm: use a light-weight __mod_zone_page_state in mlocked_vma_newpage()
-
-mlocked_vma_newpage() is only called in fault path by
-page_add_new_anon_rmap(), which is called on a *new* page.
-And such page is initially only visible via the pagetables, and the
-pte is locked while calling page_add_new_anon_rmap(), so we need not
-use an irq-safe mod_zone_page_state() here, using a light-weight version
-__mod_zone_page_state() would be OK.
-
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- mm/internal.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/internal.h b/mm/internal.h
-index 07b6736..69079b1 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -196,7 +196,7 @@ static inline int mlocked_vma_newpage(struct vm_area_struct *vma,
- 		return 0;
- 
- 	if (!TestSetPageMlocked(page)) {
--		mod_zone_page_state(page_zone(page), NR_MLOCK,
-+		__mod_zone_page_state(page_zone(page), NR_MLOCK,
- 				    hpage_nr_pages(page));
- 		count_vm_event(UNEVICTABLE_PGMLOCKED);
- 	}
--- 
-2.0.0-rc1
+-boris
 
