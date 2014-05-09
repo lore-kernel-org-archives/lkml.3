@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935AbaEIHts (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 03:49:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:60195 "EHLO mga02.intel.com"
+	id S1753124AbaEIHy5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 03:54:57 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40541 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752161AbaEIHtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 03:49:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1016,1389772800"; 
-   d="scan'208";a="508881627"
-Date: Fri, 9 May 2014 10:49:42 +0300
-From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-To: Lad Prabhakar <prabhakar.csengg@gmail.com>
-Cc: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
-        alsa-devel@alsa-project.org, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: Re: [alsa-devel] [PATCH] sound: soc: intel: remove unneeded
- dependency from Makefile
-Message-ID: <20140509074942.GA19551@mylly>
-References: <1399526771-28422-1-git-send-email-prabhakar.csengg@gmail.com>
+	id S1751221AbaEIHy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 03:54:56 -0400
+Date: Fri, 9 May 2014 09:54:52 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andres Freund <andres@anarazel.de>
+Cc: Borislav Petkov <bp@suse.de>, x86@kernel.org, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/2] x86: Fix typo preventing msr_set/clear_bit from
+ having an effect
+Message-ID: <20140509075452.GA16058@pd.tnic>
+References: <1399598957-7011-1-git-send-email-andres@anarazel.de>
+ <1399598957-7011-2-git-send-email-andres@anarazel.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1399526771-28422-1-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1399598957-7011-2-git-send-email-andres@anarazel.de>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 10:56:11AM +0530, Lad Prabhakar wrote:
-> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+On Fri, May 09, 2014 at 03:29:16AM +0200, Andres Freund wrote:
+> Due to a typo the msr accessor function introduced in
+> 22085a66c2fab6cf9b9393c056a3600a6b4735de didn't have any lasting
+> effects because they accidentally wrote the old value back.
 > 
-> this patch removes drops the entries form Makefile, fixing
-> following issues when make clean was run,
+> After c0a639ad0bc6b178b46996bd1f821a04643e2bde this at the very least
+> this causes cpuid limits not to be lifted on some cpus leading to
+> missing capabilities for those.
 > 
-> scripts/Makefile.clean:17: sound/soc/intel/board/Makefile: No such file or directory
-> scripts/Makefile.clean:17: sound/soc/intel/sst/Makefile: No such file or directory
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Signed-off-by: Andres Freund <andres@anarazel.de>
+> Cc: Borislav Petkov <bp@suse.de>
+> Cc: H. Peter Anvin <hpa@linux.intel.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
 > ---
->  Found this issue on linux-next not sure if this is fixed in
->  sound subsystem tree.
+>  arch/x86/lib/msr.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/lib/msr.c b/arch/x86/lib/msr.c
+> index db9db44..4362373 100644
+> --- a/arch/x86/lib/msr.c
+> +++ b/arch/x86/lib/msr.c
+> @@ -76,7 +76,7 @@ static inline int __flip_bit(u32 msr, u8 bit, bool set)
+>  	if (m1.q == m.q)
+>  		return 0;
 >  
-This hit me too and was introduced in 1eee978f4258
-("ASoC: Intel: split the pcm and compress to different files").
+> -	err = msr_write(msr, &m);
+> +	err = msr_write(msr, &m1);
+>  	if (err)
+>  		return err;
 
-Vinod, do you have something coming soon to these Makefiles or would it be
-better take this now?
+Good catch, thanks, and sorry about the screwup! :-[
 
-Tested-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
