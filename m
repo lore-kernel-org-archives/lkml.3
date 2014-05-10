@@ -1,198 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757793AbaEJA3Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 20:29:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17651 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757124AbaEJA2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756965AbaEJA2L (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 9 May 2014 20:28:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33918 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755387AbaEJA2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 20:28:09 -0400
 From: Richard Guy Briggs <rgb@redhat.com>
 To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
         containers@lists.linux-foundation.org
 Cc: Richard Guy Briggs <rgb@redhat.com>, arozansk@redhat.com, serge@hallyn.com,
         ebiederm@xmission.com, eparis@redhat.com, sgrubb@redhat.com
-Subject: [PATCH V2 3/6] namespaces: expose namespace instance serial number in proc_ns_operations
-Date: Fri,  9 May 2014 20:27:24 -0400
-Message-Id: <7fcf5794689302e990b3f4aa73b72968eec72295.1399681022.git.rgb@redhat.com>
-In-Reply-To: <cover.1399681022.git.rgb@redhat.com>
-References: <cover.1399681022.git.rgb@redhat.com>
-In-Reply-To: <cover.1399681022.git.rgb@redhat.com>
-References: <cover.1399681022.git.rgb@redhat.com>
+Subject: [PATCH V2 0/6] namespaces: log namespaces per task
+Date: Fri,  9 May 2014 20:27:21 -0400
+Message-Id: <cover.1399681022.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expose the namespace instance serial number for each namespace type in the proc
-namespace operations structure to make it available for the proc filesystem.
+The purpose is to track namespaces in use by logged processes from the
+perspective of init_*_ns.  The first patch defines a function to generate them
+and assigns them.  The second patch provides an example of usage for
+audit_log_task_info() which is used by syscall audits, among others.
+audit_log_task() and audit_common_recv_message() would be other potential use
+cases.
 
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
----
- fs/namespace.c           |    7 +++++++
- include/linux/proc_ns.h  |    1 +
- ipc/namespace.c          |    8 ++++++++
- kernel/pid_namespace.c   |    7 +++++++
- kernel/user_namespace.c  |    7 +++++++
- kernel/utsname.c         |    8 ++++++++
- net/core/net_namespace.c |    7 +++++++
- 7 files changed, 45 insertions(+), 0 deletions(-)
+Use a serial number per namespace (unique across one boot of one kernel)
+instead of the inode number (which is claimed to have had the right to change
+reserved and is not necessarily unique if there is more than one proc fs).  It
+could be argued that the inode numbers have now become a defacto interface and
+can't change now, but I'm proposing this approach to see if this helps address
+some of the objections to the earlier patchset.
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index b4a31aa..69d269f 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -3014,6 +3014,12 @@ static unsigned int mntns_inum(void *ns)
- 	return mnt_ns->proc_inum;
- }
- 
-+static unsigned long long mntns_snum(void *ns)
-+{
-+	struct mnt_namespace *mnt_ns = ns;
-+	return mnt_ns->serial_num;
-+}
-+
- const struct proc_ns_operations mntns_operations = {
- 	.name		= "mnt",
- 	.type		= CLONE_NEWNS,
-@@ -3021,4 +3027,5 @@ const struct proc_ns_operations mntns_operations = {
- 	.put		= mntns_put,
- 	.install	= mntns_install,
- 	.inum		= mntns_inum,
-+	.snum		= mntns_snum,
- };
-diff --git a/include/linux/proc_ns.h b/include/linux/proc_ns.h
-index 34a1e10..aebb3a2 100644
---- a/include/linux/proc_ns.h
-+++ b/include/linux/proc_ns.h
-@@ -14,6 +14,7 @@ struct proc_ns_operations {
- 	void (*put)(void *ns);
- 	int (*install)(struct nsproxy *nsproxy, void *ns);
- 	unsigned int (*inum)(void *ns);
-+	unsigned long long (*snum)(void *ns);
- };
- 
- struct proc_ns {
-diff --git a/ipc/namespace.c b/ipc/namespace.c
-index 76dac5c..0669c2d 100644
---- a/ipc/namespace.c
-+++ b/ipc/namespace.c
-@@ -191,6 +191,13 @@ static unsigned int ipcns_inum(void *vp)
- 	return ns->proc_inum;
- }
- 
-+static unsigned long long ipcns_snum(void *vp)
-+{
-+	struct ipc_namespace *ns = vp;
-+
-+	return ns->serial_num;
-+}
-+
- const struct proc_ns_operations ipcns_operations = {
- 	.name		= "ipc",
- 	.type		= CLONE_NEWIPC,
-@@ -198,4 +205,5 @@ const struct proc_ns_operations ipcns_operations = {
- 	.put		= ipcns_put,
- 	.install	= ipcns_install,
- 	.inum		= ipcns_inum,
-+	.snum		= ipcns_snum,
- };
-diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-index c24f207..1dd2eb2 100644
---- a/kernel/pid_namespace.c
-+++ b/kernel/pid_namespace.c
-@@ -368,6 +368,12 @@ static unsigned int pidns_inum(void *ns)
- 	return pid_ns->proc_inum;
- }
- 
-+static unsigned long long pidns_snum(void *ns)
-+{
-+	struct pid_namespace *pid_ns = ns;
-+	return pid_ns->serial_num;
-+}
-+
- const struct proc_ns_operations pidns_operations = {
- 	.name		= "pid",
- 	.type		= CLONE_NEWPID,
-@@ -375,6 +381,7 @@ const struct proc_ns_operations pidns_operations = {
- 	.put		= pidns_put,
- 	.install	= pidns_install,
- 	.inum		= pidns_inum,
-+	.snum		= pidns_snum,
- };
- 
- static __init int pid_namespaces_init(void)
-diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index 750241c..0b1ba1c 100644
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -890,6 +890,12 @@ static unsigned int userns_inum(void *ns)
- 	return user_ns->proc_inum;
- }
- 
-+static unsigned long long userns_snum(void *ns)
-+{
-+	struct user_namespace *user_ns = ns;
-+	return user_ns->serial_num;
-+}
-+
- const struct proc_ns_operations userns_operations = {
- 	.name		= "user",
- 	.type		= CLONE_NEWUSER,
-@@ -897,6 +903,7 @@ const struct proc_ns_operations userns_operations = {
- 	.put		= userns_put,
- 	.install	= userns_install,
- 	.inum		= userns_inum,
-+	.snum		= userns_snum,
- };
- 
- static __init int user_namespaces_init(void)
-diff --git a/kernel/utsname.c b/kernel/utsname.c
-index d0cf7b5..c8ca860 100644
---- a/kernel/utsname.c
-+++ b/kernel/utsname.c
-@@ -132,6 +132,13 @@ static unsigned int utsns_inum(void *vp)
- 	return ns->proc_inum;
- }
- 
-+static unsigned long long utsns_snum(void *vp)
-+{
-+	struct uts_namespace *ns = vp;
-+
-+	return ns->serial_num;
-+}
-+
- const struct proc_ns_operations utsns_operations = {
- 	.name		= "uts",
- 	.type		= CLONE_NEWUTS,
-@@ -139,4 +146,5 @@ const struct proc_ns_operations utsns_operations = {
- 	.put		= utsns_put,
- 	.install	= utsns_install,
- 	.inum		= utsns_inum,
-+	.snum		= utsns_snum,
- };
-diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index e0b8528..e16dc0e 100644
---- a/net/core/net_namespace.c
-+++ b/net/core/net_namespace.c
-@@ -667,6 +667,12 @@ static unsigned int netns_inum(void *ns)
- 	return net->proc_inum;
- }
- 
-+static unsigned long long netns_snum(void *ns)
-+{
-+	struct net *net = ns;
-+	return net->serial_num;
-+}
-+
- const struct proc_ns_operations netns_operations = {
- 	.name		= "net",
- 	.type		= CLONE_NEWNET,
-@@ -674,5 +680,6 @@ const struct proc_ns_operations netns_operations = {
- 	.put		= netns_put,
- 	.install	= netns_install,
- 	.inum		= netns_inum,
-+	.snum		= netns_snum,
- };
- #endif
--- 
-1.7.1
+There could also have messages added to track the creation and the destruction
+of namespaces, listing the parent for hierarchical namespaces such as pidns,
+userns, and listing other ids for non-hierarchical namespaces, as well as other
+information to help identify a namespace.
+
+There has been some progress made for audit in net namespaces and pid
+namespaces since this previous thread.  net namespaces are now served as peers
+by one auditd in the init_net namespace with processes in a non-init_net
+namespace being able to write records if they are in the init_user_ns and have
+CAP_AUDIT_WRITE.  Processes in a non-init_pid_ns can now similarly write
+records.  As for CAP_AUDIT_READ, I just posted a patchset to check capabilities
+of userspace processes that try to join netlink broadcast groups.
+
+
+Questions:
+Is there a way to link serial numbers of namespaces involved in migration of a
+container to another kernel?  It sounds like what is needed is a part of a
+mangement application that is able to pull the audit rcords from constituent
+hosts to build an audit trail of a container.
+
+What additional events should list this information?
+
+Does this present any problematic information leaks?  Only CAP_AUDIT_CONTROL
+(and proposed CAP_AUDIT_READ) in init_user_ns can get to this information in
+the init namespace at the moment from audit.  *However*, the addition of the
+proc/<pid>/ns/*_snum does make it available to other processes now.
+
+
+Proposed output format:
+This differs slightly from Aristeu's patch because of the label conflict with
+"pid=" due to including it in existing records rather than it being a seperate
+record.  The serial numbers are printed in hex.
+	type=SYSCALL msg=audit(1399651071.433:72): arch=c000003e syscall=272 success=yes exit=0 a0=40000000 a1=ffffffffffffffff a2=0 a3=22 items=0 ppid=1 pid=483 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="(t-daemon)" exe="/usr/lib/systemd/systemd" netns=97 utsns=2 ipcns=1 pidns=4 userns=3 mntns=5 subj=system_u:system_r:init_t:s0 key=(null)
+
+The third patch adds access functions to get to the serial numbers in a similar
+way to inode access for namespace proc operations.
+
+The fourth patch implements, as suggested by Serge Hallyn, making these serial
+numbers available in /proc/self/ns/{ipc,mnt,net,pid,user,uts}_snum.  I chose
+"snum" instead of "seq" for consistency with inum and there are a number of
+other uses of "seq" in the namespace code.
+
+**Although it works as expected, I'm not that happy with that patch because it
+duplicates a lot of code, including minor changes to proc_ns_follow_link(),
+proc_ns_readlink(), ns_dname().  The only way I could see to get that
+information into those functions would be through dentry.  Maybe the
+information I need is already in there in d_name or d_iname?  Or I could add a
+flag to d_flags (there are 9 bits unused?) but that flag isn't useful for any
+other types of entries, so I'm not so keen to pollute it.
+
+The fifth patch exposes proc's ns entries structure which lists a number of
+useful operations per namespace type for other subsystems to use.
+
+The sixth patch converts the audit namespace serial number logging over to use
+the ns_entries access methods.
+
+The two audit patches should really be squashed down to one if the exposure of
+ns_entries is ok.
+
+
+Note: This set does not try to solve the non-init namespace audit messages and
+auditd problem yet.  That will come later, likely with additional auditd
+instances running in another namespace with a limited ability to influence the
+master auditd.  I echo Eric B's idea that messages destined for different
+namespaces would have to be tailored for that namespace with references that
+make sense (such as the right pid number reported to that pid namespace, and
+not leaking info about parents or peers).
+
+v1 -> v2:
+	Avoid rollover by switching from an int to a long long.
+	Change rollover behaviour from simply avoiding zero to raising a BUG.
+	Expose serial numbers in /proc/<pid>/ns/*_snum.
+	Expose ns_entries and use it in audit.
+
+Richard Guy Briggs (6):
+  namespaces: assign each namespace instance a serial number
+  audit: log namespace serial numbers
+  namespaces: expose namespace instance serial number in
+    proc_ns_operations
+  namespaces: expose ns instance serial numbers in proc
+  namespaces: expose ns_entries
+  audit: convert namespace serial number logging to use proc ns_entries
+
+ fs/mount.h                     |    1 +
+ fs/namespace.c                 |    8 ++
+ fs/proc/namespaces.c           |  152 ++++++++++++++++++++++++++++++++++++----
+ include/linux/audit.h          |    7 ++
+ include/linux/ipc_namespace.h  |    1 +
+ include/linux/nsproxy.h        |    8 ++
+ include/linux/pid_namespace.h  |    1 +
+ include/linux/proc_ns.h        |    2 +
+ include/linux/user_namespace.h |    1 +
+ include/linux/utsname.h        |    1 +
+ include/net/net_namespace.h    |    1 +
+ init/version.c                 |    1 +
+ ipc/msgutil.c                  |    1 +
+ ipc/namespace.c                |   10 +++
+ kernel/audit.c                 |   21 +++++-
+ kernel/nsproxy.c               |   20 +++++
+ kernel/pid.c                   |    1 +
+ kernel/pid_namespace.c         |    9 +++
+ kernel/user.c                  |    1 +
+ kernel/user_namespace.c        |    9 +++
+ kernel/utsname.c               |   10 +++
+ net/core/net_namespace.c       |   11 +++-
+ 22 files changed, 262 insertions(+), 15 deletions(-)
 
