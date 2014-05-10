@@ -1,129 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410AbaEJWsp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 18:48:45 -0400
-Received: from powered.by.root24.eu ([91.121.15.64]:43617 "EHLO Root24.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753109AbaEJWso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 18:48:44 -0400
-Message-ID: <536EACCB.9070307@ionic.de>
-Date: Sun, 11 May 2014 00:48:43 +0200
-From: Mihai Moldovan <ionic@ionic.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1757379AbaEJXfn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 19:35:43 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:49555 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752174AbaEJXfl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 May 2014 19:35:41 -0400
+Message-ID: <536EB79C.2080308@oracle.com>
+Date: Sat, 10 May 2014 19:34:52 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Subject: Re: NULL pointer dereference in netfilter
-References: <536EA8BB.4090403@ionic.de>
-In-Reply-To: <536EA8BB.4090403@ionic.de>
+To: Ingo Molnar <mingo@kernel.org>, acme@ghostprotocols.net,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: perf: invalid memory access in perf_swevent_del
 X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms080105030005070608060200"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+Hi all,
 
---------------ms080105030005070608060200
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+While fuzzing with trinity inside a KVM tools guest running the latest -next
+kernel I've stumbled on the following spew:
 
-Actually, may I be seeing just another incarnation of
-http://www.spinics.net/lists/netfilter-devel/msg31134.html?
+[ 6795.260300] BUG: unable to handle kernel paging request at ffff88002e36b5b8
+[ 6795.261530] IP: perf_swevent_del (include/linux/list.h:617 include/linux/rculist.h:345 kernel/events/core.c:5671)
+[ 6795.262689] PGD 26bc6067 PUD 26bc7067 PMD 705e61067 PTE 800000002e36b060
+[ 6795.264634] Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 6795.266144] Dumping ftrace buffer:
+[ 6795.267203]    (ftrace buffer empty)
+[ 6795.268272] Modules linked in:
+[ 6795.269159] CPU: 40 PID: 13449 Comm: trinity-c263 Tainted: G    B   W     3.15.0-rc4-next-20140508-sasha-00020-gec9304b-dirty #452
+[ 6795.270163] task: ffff8800183d3000 ti: ffff880018356000 task.ti: ffff880018356000
+[ 6795.270163] RIP: perf_swevent_del (include/linux/list.h:617 include/linux/rculist.h:345 kernel/events/core.c:5671)
+[ 6795.270163] RSP: 0000:ffff880018357c80  EFLAGS: 00010046
+[ 6795.270163] RAX: 0000000000000000 RBX: ffff8800183c9290 RCX: ffff880016b06c48
+[ 6795.270163] RDX: ffff88002e36b5b8 RSI: 0000000000000000 RDI: ffff8800183c9290
+[ 6795.270163] RBP: ffff880018357c80 R08: ffff880016b06d88 R09: 0000000000000005
+[ 6795.270163] R10: ffff8800183d3000 R11: 0000000000000000 R12: ffff880016b06d7c
+[ 6795.270163] R13: ffff880224fdbd90 R14: ffff880224fdbd94 R15: 0000008d7161175a
+[ 6795.270163] FS:  00007f068aa56700(0000) GS:ffff880224e00000(0000) knlGS:0000000000000000
+[ 6795.270163] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 6795.270163] CR2: ffff88002e36b5b8 CR3: 0000000018361000 CR4: 00000000000006a0
+[ 6795.270163] DR0: 00000000006df000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 6795.270163] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[ 6795.270163] Stack:
+[ 6795.270163]  ffff880018357cd0 ffffffff9f2780fb ffff880018357ca0 ffff880016b06d88
+[ 6795.270163]  ffff880018357cd0 ffff880016b06c48 ffff880224fdbd90 ffff880224fdbd94
+[ 6795.270163]  ffff880016b06d7c ffff880016b06d38 ffff880018357d30 ffffffff9f2784f6
+[ 6795.270163] Call Trace:
+[ 6795.270163] event_sched_out.isra.46 (include/linux/perf_event.h:634 kernel/events/core.c:1416)
+[ 6795.270163] group_sched_out (kernel/events/core.c:1440)
+[ 6795.270163] ctx_sched_out (kernel/events/core.c:2167 (discriminator 2))
+[ 6795.270163] __perf_event_task_sched_out (kernel/events/core.c:2342 kernel/events/core.c:2367)
+[ 6795.270163] ? __perf_event_task_sched_out (include/linux/rcupdate.h:867 kernel/events/core.c:2296 kernel/events/core.c:2367)
+[ 6795.270163] ? update_curr (kernel/sched/stats.h:259 kernel/sched/fair.c:721)
+[ 6795.270163] perf_event_task_sched_out (include/linux/perf_event.h:690)
+[ 6795.270163] ? set_next_entity (kernel/sched/fair.c:7708 kernel/sched/fair.c:2891)
+[ 6795.270163] ? pick_next_task_fair (kernel/sched/fair.c:4761)
+[ 6795.270163] ? sched_clock (arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
+[ 6795.270163] ? sched_clock_cpu (kernel/sched/clock.c:311)
+[ 6795.270163] __schedule (kernel/sched/core.c:2077 kernel/sched/core.c:2115 kernel/sched/core.c:2239 kernel/sched/core.c:2728)
+[ 6795.270163] ? _raw_spin_unlock (arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183)
+[ 6795.270163] ? context_tracking_user_exit (arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:182 (discriminator 2))
+[ 6795.270163] schedule (kernel/sched/core.c:2765)
+[ 6795.270163] schedule_user (kernel/sched/core.c:2778 include/linux/jump_label.h:105 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:20 kernel/sched/core.c:2779)
+[ 6795.270163] retint_careful (arch/x86/kernel/entry_64.S:1109)
+[ 6795.270163] Code: 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 5d c3 66 2e 0f 1f 84 00 00 00 00 00 48 8b 47 40 55 48 8b 57 48 48 89 e5 48 85 c0 <48> 89 02 74 04 48 89 50 08 49 b8 00 02 20 00 00 00 ad de 5d 4c
+[ 6795.270163] RIP perf_swevent_del (include/linux/list.h:617 include/linux/rculist.h:345 kernel/events/core.c:5671)
+[ 6795.270163]  RSP <ffff880018357c80>
+[ 6795.270163] CR2: ffff88002e36b5b8
 
-If so, applying https://lkml.org/lkml/2014/3/27/294 seems appropriate.
 
-Could anybody please confirm this?
-
-
-
-Mihai
-
-
---------------ms080105030005070608060200
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIMkTCC
-BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
-MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
-dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
-aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
-aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
-KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
-8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
-DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
-2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
-zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
-Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
-HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
-MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
-dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
-c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
-Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
-c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
-UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
-p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
-+HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
-hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
-hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
-0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
-AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
-XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIGVTCCBT2gAwIBAgICR5UwDQYJKoZIhvcNAQEL
-BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
-ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
-bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xNDAzMTkwNDMzMzFa
-Fw0xNjAzMTgxNTIzMjJaMHYxCzAJBgNVBAYTAkRFMRswGQYDVQQIExJCYWRlbi1XdWVydHRl
-bWJlcmcxEjAQBgNVBAcTCUthcmxzcnVoZTEXMBUGA1UEAxMOTWloYWkgTW9sZG92YW4xHTAb
-BgkqhkiG9w0BCQEWDmlvbmljQGlvbmljLmRlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
-CgKCAQEAy1U08dzMfc3SpuUBHL+ZgUQJs4gX7DLBAr89BAoQkIEkMhlEGJ1OGBqvbOuGBlyd
-l/BSa/vrkTFqrHjxs4UhYG/nide97RsalQ39eolmd/WSn1I0M3Ohg/LAnCt2v9mMx1Sx8QpE
-jzLVvdMwO4mEJWH4+w8e8bLLIzN66/rAuD0EVeyWJh6pggCjI+Y59t0aqI7vzjcqgJGtmwHZ
-VPtBhWP3jsDUhLjwxUeydFEwteh/fpo3czx4aKKMH0K53HHGfGZHl5IK/E8ZdL+veF4JSRs5
-nCKAikwbtua3sMY1ejPRc2L5CyZAJvmfaKjBCi5/3j/DxYrEK+sH32AYUxbgYQIDAQABo4IC
-1DCCAtAwCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsG
-AQUFBwMEMB0GA1UdDgQWBBSaZelU6HGlOzMKCINjBgsaA/nXxTAfBgNVHSMEGDAWgBSuVYNv
-7DHKufcd+q9rMfPIHeOsuzAZBgNVHREEEjAQgQ5pb25pY0Bpb25pYy5kZTCCAUwGA1UdIASC
-AUMwggE/MIIBOwYLKwYBBAGBtTcBAgMwggEqMC4GCCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0
-YXJ0c3NsLmNvbS9wb2xpY3kucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBDZXJ0
-aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
-IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMiBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0
-aGUgU3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQg
-cHVycG9zZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25z
-LjA2BgNVHR8ELzAtMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1Mi1jcmwu
-Y3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNz
-bC5jb20vc3ViL2NsYXNzMi9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3Rh
-cnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczIuY2xpZW50LmNhLmNydDAjBgNVHRIEHDAahhho
-dHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQELBQADggEBAH650RIseEtEpaRd
-Av66u9KEu5mxHpRH8IopkCkwGBk95sSKSWVqJ6XbTHywi66GAqQ7LPlD5ittkhTlYtyst8vb
-FLaafu6Ous2UDZhqJH1NHfRaG6m0Qt2Zm7KQsaxIhBEYFqqMxSq2E8DQU6WUB473bEqToVx+
-pumW+T/KSnHq+FfCGSPvXtwkRP4eiJmvNPZKhGRk3RPkT3LzA380mX6DpcqEQ1a8TmsFBZ7c
-AMa7KKDe4YnxDFSE/2C1WA5bibpmkCGa+R/0KBBWxDrzNUv6W8Ui6OzpkHTaqg+c9NpC1wDl
-xt3r8GaytqtcHfB2VEbPd0Hrd+zrDh3co8/SkqgxggPaMIID1gIBATCBkzCBjDELMAkGA1UE
-BhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFs
-IENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFy
-eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgJHlTAJBgUrDgMCGgUAoIICGzAYBgkqhkiG9w0B
-CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xNDA1MTAyMjQ4NDNaMCMGCSqGSIb3
-DQEJBDEWBBTfoM/4/W5p3Xsf1GJc2ey3AH7P+zBsBgkqhkiG9w0BCQ8xXzBdMAsGCWCGSAFl
-AwQBKjALBglghkgBZQMEAQIwCgYIKoZIhvcNAwcwDgYIKoZIhvcNAwICAgCAMA0GCCqGSIb3
-DQMCAgFAMAcGBSsOAwIHMA0GCCqGSIb3DQMCAgEoMIGkBgkrBgEEAYI3EAQxgZYwgZMwgYwx
-CzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUg
-RGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAy
-IFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQICR5UwgaYGCyqGSIb3DQEJEAILMYGW
-oIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMi
-U2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20g
-Q2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAkeVMA0GCSqGSIb3DQEB
-AQUABIIBABpjLDXU6IwX2Mw96PpbK74MxiyJEi6giQ74gdGyFdUXDfFcUM6+1ENG3hp/fi+Y
-nKVsCgjBlEsGt6aC+3da3V0LrWEfbN66IEPEmNB9Ev5Kj7Zj5qgcpjj/KF5T62OThJjfXtIZ
-eJ5cn1cBwItlRe1Jp+dirA41IL6MoX11RlOal2jykWMRFEqtJUkAM8XiJXBujv+ig3cp1oO6
-ZP9nQ6XZdrpSbP8HoNhSvddzXj4uBPs23YOmHVCnpxE6Rm1AkRi8VqEaeRDJj9MrUu2j/XhJ
-iXV1krT/DBDePk3XUvNGTOzi6LaaCKvSx6RY2Ilq2lRZkB008cCG66iDCu27Dz0AAAAAAAA=
---------------ms080105030005070608060200--
+Thanks,
+Sasha
