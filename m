@@ -1,163 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076AbaEJHBS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 03:01:18 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:35401 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473AbaEJG74 (ORCPT
+	id S1757176AbaEJHCP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 03:02:15 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:16497 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756627AbaEJHCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 02:59:56 -0400
-X-AuditID: cbfee61a-b7f2b6d000006c4d-9e-536dce69943f
-From: y@samsung.com
+	Sat, 10 May 2014 03:02:08 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-76-536dceefb286
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
 Cc: kgene.kim@samsung.com, t.figa@samsung.com, arnd@arndb.de,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Abraham <thomas.abraham@linaro.org>
-Subject: [PATCH v3 3/6] ARM: EXYNOS: Remove soc_is_exynos4/5 from exynos.c
-Date: Sat, 10 May 2014 16:18:04 +0900
-Message-id: <1399706287-13919-4-git-send-email-y@samsung.com>
+        Pankaj Dubey <pankaj.dubey@samsung.com>
+Subject: [PATCH v3 4/6] ARM:  EXYNOS: Remove unused header inclusion from
+ hotplug.c
+Date: Sat, 10 May 2014 16:20:17 +0900
+Message-id: <1399706419-13976-5-git-send-email-pankaj.dubey@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1399706287-13919-1-git-send-email-y@samsung.com>
+In-reply-to: <1399706419-13976-1-git-send-email-pankaj.dubey@samsung.com>
 References: <1399706287-13919-1-git-send-email-y@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrALMWRmVeSWpSXmKPExsVy+t9jAd3Mc7nBBs2NphZ/Jx1jt+hdcJXN
-	YtPja6wWl3fNYbOYcX4fk8Xty7wWi7Z+YbdYP+M1i8WxGUsYHTg9Wpp72Dx+/5rE6HHn2h42
-	j81L6j36tqxi9Pi8SS6ALYrLJiU1J7MstUjfLoEro6fnJGPBXfmKtVPOszQwfpDqYuTkkBAw
-	kTi0/QgThC0mceHeerYuRi4OIYFFjBJ7e3azQDhtTBKrX29j7GLk4GATEJaYekALpEFEIFvi
-	SuN9ZpAaZoF9jBIz26eygCSEBbwktr+/wQxiswioSmz+85MRxOYVsJX4sAtkGwfQNgWJOZNs
-	QMKcAnYS17Y1g7UKAZVMOXqYcQIj7wJGhlWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYweH2
-	TGoH48oGi0OMAhyMSjy8BW9zgoVYE8uKK3MPMUpwMCuJ8K44mBssxJuSWFmVWpQfX1Sak1p8
-	iFGag0VJnPdAq3WgkEB6YklqdmpqQWoRTJaJg1OqgVHGaN3BsvpVa9ka5ZNVf77Y3mous2od
-	62W+t3sfmUq8rTk6v2QL78n1Ik3z2wPnRqTa7Q+u7rW++yvN+61FS2OpR2Ll1rN6k8Xv2uZ+
-	bPcNt079cn2zzF19DQ+rJ/NjXh13XNce/2aDyE3NGwub5rrNLpv4fvJ+sTcNT2beOi5vZenT
-	6/uIVUGJpTgj0VCLuag4EQAZDaKpMwIAAA==
+ <1399706419-13976-1-git-send-email-pankaj.dubey@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t8zY93353KDDT5dNbD4O+kYu0Xvgqts
+	FpseX2O1uLxrDpvFjPP7mCwWbf3CbrF+xmsWB3aP378mMXpsXlLv0bdlFaPH501yASxRXDYp
+	qTmZZalF+nYJXBkbVm1gLtjPUjF9w0P2BsYHzF2MnBwSAiYSJ64/hLLFJC7cW8/WxcjFISSw
+	jFHi6eRWVpiiD4s2sUIkFjFKtD2bxALhtDFJNN++zwJSxSagK/Hk/VywUSIC2RJXGu+D2cwC
+	6RIP3k4AmyQsECqxdFY/WD2LgKrE1c1zmEBsXgEPifsvPwDVcwBtU5CYM8kGJMwp4Cmx40cX
+	G4gtJFAjsbzhBSPEQZPZJeb/zIEYIyDxbfIhFohWWYlNB6CekZQ4uOIGywRG4QWMDKsYRVML
+	kguKk9KLTPWKE3OLS/PS9ZLzczcxQgJ74g7G+wesDzEmA42byCwlmpwPjIy8knhDYzMjC1MT
+	U2Mjc0sz0oSVxHnTHyUFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamDMLDp1ZNdLtXO2wf/n
+	fmQQLmT5+ZxdZYeGt0XhWmY5r8dvdj+6b9l7hu+BwdYX2nVP5PJnXPl6qbDm+4WnhkI/N218
+	sZiR8ez8m9KCszefP6jBuX+fR1KU+oONptNmcs+Qq7+61+rw136jXA+529MuFm64JvmXYXKH
+	0pGahF8MCyUv5X39K+C+TYmlOCPRUIu5qDgRAL4E3TCCAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t9jAd3353KDDZradS3+TjrGbtG74Cqb
+	xabH11gtLu+aw2Yx4/w+JotFW7+wW6yf8ZrFgd3j969JjB6bl9R79G1ZxejxeZNcAEtUA6NN
+	RmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtAFSgpliTml
+	QKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCOsaMDas2MBfsZ6mYvuEhewPjA+YuRk4O
+	CQETiQ+LNrFC2GISF+6tZ+ti5OIQEljEKNH2bBILhNPGJNF8+z4LSBWbgK7Ek/dzwbpFBLIl
+	rjTeB7OZBdIlHrydADZJWCBUYumsfrB6FgFViaub5zCB2LwCHhL3X34AqucA2qYgMWeSDUiY
+	U8BTYsePLjYQW0igRmJ5wwvGCYy8CxgZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIER84z
+	qR2MKxssDjEKcDAq8fAWvM0JFmJNLCuuzD3EKMHBrCTCu+JgbrAQb0piZVVqUX58UWlOavEh
+	xmSgoyYyS4km5wOjOq8k3tDYxMzI0sjMwsjE3Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4
+	OKUaGAMeGvQEaKf6xH++PI1HUaSe98L5vXLJv95ptHxeu4hVLMu/9GXqmcrcVTnHNFfxxMY+
+	LO90+Lej0Nz9w61HtxP9umdbL/L5Pn/mbJf3ubLVBesuLp23olR8SdmxW9kC/sldqV8Mfsz/
+	GvL4j3lx5ZNnup5q7SKm63e4mC4QMqizu6f4JnqbjhJLcUaioRZzUXEiAChbIHHgAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
+This patch removed "plat/cpu.h" inclusion from hotplug.c as it
+is not required.
 
-This patch removes usage of soc_is_exynos4/5 from exynos.c.
-For this we need to separate machine descriptors for exynos4
-and exynos5. While doing this patch does some consolidation also.
-
-CC: Russell King <linux@arm.linux.org.uk>
-CC: Thomas Abraham <thomas.abraham@linaro.org>
 Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
 ---
- arch/arm/mach-exynos/exynos.c            |   52 +++++++++++++++++++-----------
- arch/arm/plat-samsung/include/plat/cpu.h |    3 --
- 2 files changed, 33 insertions(+), 22 deletions(-)
+ arch/arm/mach-exynos/hotplug.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-index 09063ee..9902e52 100644
---- a/arch/arm/mach-exynos/exynos.c
-+++ b/arch/arm/mach-exynos/exynos.c
-@@ -202,20 +202,6 @@ static const struct of_device_id exynos_dt_pmu_match[] = {
- 	{},
- };
+diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
+index 0243ef3..5e19601 100644
+--- a/arch/arm/mach-exynos/hotplug.c
++++ b/arch/arm/mach-exynos/hotplug.c
+@@ -19,8 +19,6 @@
+ #include <asm/cp15.h>
+ #include <asm/smp_plat.h>
  
--/*
-- * exynos_map_io
-- *
-- * register the standard cpu IO areas
-- */
--static void __init exynos_map_io(void)
--{
--	if (soc_is_exynos4())
--		iotable_init(exynos4_iodesc, ARRAY_SIZE(exynos4_iodesc));
+-#include <plat/cpu.h>
 -
--	if (soc_is_exynos5())
--		iotable_init(exynos5_iodesc, ARRAY_SIZE(exynos5_iodesc));
--}
--
- static void __init exynos_init_io(void)
- {
- 	debug_ll_io_init();
-@@ -224,8 +210,18 @@ static void __init exynos_init_io(void)
- 
- 	/* detect cpu id and rev. */
- 	s5p_init_cpu(S5P_VA_CHIPID);
-+}
-+
-+static void __init exynos5_init_io(void)
-+{
-+	exynos_init_io();
-+	iotable_init(exynos5_iodesc, ARRAY_SIZE(exynos5_iodesc));
-+}
- 
--	exynos_map_io();
-+static void __init exynos4_init_io(void)
-+{
-+	exynos_init_io();
-+	iotable_init(exynos4_iodesc, ARRAY_SIZE(exynos4_iodesc));
- }
- 
- struct bus_type exynos_subsys = {
-@@ -293,11 +289,15 @@ static void __init exynos_dt_machine_init(void)
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- }
- 
--static char const *exynos_dt_compat[] __initconst = {
-+static char const *exynos4_dt_compat[] __initconst = {
- 	"samsung,exynos4",
- 	"samsung,exynos4210",
- 	"samsung,exynos4212",
- 	"samsung,exynos4412",
-+	NULL
-+};
-+
-+static char const *exynos5_dt_compat[] __initconst = {
- 	"samsung,exynos5",
- 	"samsung,exynos5250",
- 	"samsung,exynos5420",
-@@ -321,15 +321,29 @@ static void __init exynos_reserve(void)
- #endif
- }
- 
--DT_MACHINE_START(EXYNOS_DT, "SAMSUNG EXYNOS (Flattened Device Tree)")
-+DT_MACHINE_START(EXYNOS5_DT, "SAMSUNG EXYNOS (Flattened Device Tree)")
-+	/* Maintainer: Thomas Abraham <thomas.abraham@linaro.org> */
-+	/* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
-+	.smp		= smp_ops(exynos_smp_ops),
-+	.map_io		= exynos5_init_io,
-+	.init_early	= exynos_firmware_init,
-+	.init_machine	= exynos_dt_machine_init,
-+	.init_late	= exynos_init_late,
-+	.dt_compat	= exynos5_dt_compat,
-+	.restart	= exynos_restart,
-+	.reserve	= exynos_reserve,
-+MACHINE_END
-+
-+
-+DT_MACHINE_START(EXYNOS4_DT, "SAMSUNG EXYNOS (Flattened Device Tree)")
- 	/* Maintainer: Thomas Abraham <thomas.abraham@linaro.org> */
- 	/* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
- 	.smp		= smp_ops(exynos_smp_ops),
--	.map_io		= exynos_init_io,
-+	.map_io		= exynos4_init_io,
- 	.init_early	= exynos_firmware_init,
- 	.init_machine	= exynos_dt_machine_init,
- 	.init_late	= exynos_init_late,
--	.dt_compat	= exynos_dt_compat,
-+	.dt_compat	= exynos4_dt_compat,
- 	.restart	= exynos_restart,
- 	.reserve	= exynos_reserve,
- MACHINE_END
-diff --git a/arch/arm/plat-samsung/include/plat/cpu.h b/arch/arm/plat-samsung/include/plat/cpu.h
-index 5992b8d..18a9a00 100644
---- a/arch/arm/plat-samsung/include/plat/cpu.h
-+++ b/arch/arm/plat-samsung/include/plat/cpu.h
-@@ -166,9 +166,6 @@ IS_SAMSUNG_CPU(exynos5440, EXYNOS5440_SOC_ID, EXYNOS5_SOC_MASK)
- # define soc_is_exynos5440()	0
- #endif
- 
--#define soc_is_exynos4() (soc_is_exynos4210() || soc_is_exynos4212() || \
--			  soc_is_exynos4412())
--#define soc_is_exynos5() (soc_is_exynos5250() || soc_is_exynos5420())
- 
- #define IODESC_ENT(x) { (unsigned long)S3C24XX_VA_##x, __phys_to_pfn(S3C24XX_PA_##x), S3C24XX_SZ_##x, MT_DEVICE }
+ #include "common.h"
+ #include "regs-pmu.h"
  
 -- 
 1.7.10.4
