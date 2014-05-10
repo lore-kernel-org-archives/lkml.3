@@ -1,97 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116AbaEJOC3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 10:02:29 -0400
-Received: from mout.gmx.net ([212.227.15.15]:55105 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752845AbaEJOC2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 10:02:28 -0400
-Date: Sat, 10 May 2014 18:02:17 +0200
-From: Andreas Werner <wernerandy@gmx.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, khali@linux-fr.org, andreas.werner@men.de
-Subject: Re: Question: hwmon: Adding addtitional sysfs entries
-Message-ID: <20140510160217.GA775@awedesk.fritz.box>
-References: <20140510132238.GA28364@awedesk.fritz.box>
- <536E1C4D.9030206@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <536E1C4D.9030206@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V03:K0:3Ma6TLlI2a8MG3ZWG8ZSj2G4nrLhJP7oi6xhDe89tlO/JZfYABM
- TNB/JHjB7pk1NYuTfTs/0lGyaplbh0Ug4qy0Qogb8kR24jMjoyRIG/nU7dleP19xuOKoTAS
- DpPQvSaMibgqsAdqqi0g4eLMUcg4gQi6lKIKSaS949P1hwPohVBQyvKfn1k4GRRaxU/Q9Oa
- 9HvCMHhDsx8viW1qlTEjg==
+	id S1757241AbaEJODH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 10:03:07 -0400
+Received: from ns.horizon.com ([71.41.210.147]:16108 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756798AbaEJODF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 May 2014 10:03:05 -0400
+Date: 10 May 2014 10:03:04 -0400
+Message-ID: <20140510140304.15690.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, tj@kernel.org
+Subject: Re: [PATCH 1/2] Add lib/glob.c
+Cc: akpm@linux-foundation.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@redhat.com,
+        torvalds@linux-foundation.org
+In-Reply-To: <20140510122309.GB4721@mtj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 10, 2014 at 05:32:13AM -0700, Guenter Roeck wrote:
-> On 05/10/2014 06:22 AM, Andreas Werner wrote:
-> >Hi,
-> >i am currently working on an implemenation of my Board Management Controller (BMC).
-> >
-> >This Controller is a MCR assembled on almost all of our Compact PCI or Compact PCI Serial
-> >Cards as well as on some other CPU Boards.
-> >
-> >The BMC includes LED´s, Watchdog, Voltage Monitoring and some other features.
-> >I have already implemented an MFD driver, LED and Watchdog driver.
-> >
-> >Currently i am working on the hwmon implemenation. This includes for the first step the
-> >voltage monitoring.
-> >
-> >The BMC has some other feature which are not supported by any of the subsystem.
-> >  - Errorcounter (Board status)
-> >  - Power Failure status
-> >  - Operating ours
+Thanks a lot for the feedback!
+
+> On Fri, May 09, 2014 at 11:13:56PM -0400, George Spelvin wrote:
+>> +/**
+>> + * glob_match - Shell-style pattern matching, like !fnmatch(pat, str, 0)
+>> + * @pat: Pattern to match.  Metacharacters are ?, *, [ and \.
+>> + *       (And, inside character classes, !, - and ].)
+
+> @ARG lines should be contained in a single line.  Just "Pattern to
+> match." should do.  With detailed description in the body.
+
+Huh, Documentation/kernel-doc-nano-HOWTO.txt (lines 57-59, to be precise)
+implies otherwise pretty strongly.  But I can certainly change it.
+
+> Just adding glob.o to lib-y should be enough.  It will be excluded
+> from linking if unused.
+
+Will that work right if the caller is a module?  What will it get linked
+into, the main kernel binary or the module?
+
+A significant and very helpful simplification; I just want to be sure
+it works right.
+
+>> +#ifdef UNITTEST
+>> +/* To do a basic sanity test, "cc -DUNITTEST glob.c" and run a.out. */
+>> +
+>> +#include <stdbool.h>
+>> +#define __pure __attribute__((pure))
+>> +#define NOP(x)
+>> +#define EXPORT_SYMBOL NOP	/* Two stages to avoid checkpatch complaints */
+
+> These things tend to bitrot.  Let's please keep testing harness out of
+> tree.
+
+Damn, when separated it bitrots a lot faster.  That's *is* my testing
+harness, and I wanted to keep it close so it has a chance on hell of
+being used by someone who updates it.
+
+Especially given that the function's interface is quite rigidly defined,
+do you really think there will be a lot of rot?
+
+> Do we make library routines separate modules usually?
+
+A large number of files in lib/ are implemented that way (lib/crc-ccitt.c,
+just for one example), and that's what I copied.  But if I just do the
+obj-y thing, all that goes away
+
+>> +bool __pure
+>> +glob_match(char const *pat, char const *str)
+>
+> The whole thing fits in a single 80 column line, right?
 > 
-> Guess you mean hours here.
+> bool __pure glob_match(char const *pat, char const *str)
 
-Yes sorry my mistake.
+Whoops, a residue of my personal code style.  (I like to left-align
+function names in definitions so they're easy to search for with ^func.)
+But it's not kernel style.  Will fix.
 
-> 
-> >  - Do software reset, do cold reset
-> >  - Set power modes
-> >  - Backplate Geographical Address
-> >
-> >These are all informations related to the Board where the BMC is assembled to.
-> >I think all those features could be part of the hwmon implementation.
-> >
-> Why ?
+>> +{
+>> +	/*
+>> +	 * Backtrack to previous * on mismatch and retry starting one
+>> +	 * character later in the string.  Because * matches all characters
+>> +	 * (no exception for /), it can be easily proved that there's
+>> +	 * never a need to backtrack multiple levels.
+>> +	 */
+>> +	char const *back_pat = 0, *back_str = back_str;
 
-As all of the settings are CPU board related i thought it will be an good idea
-to put as much settings as possible to a group to one subsystem.
-This would be easier for the User Application.
+> Blank line here.
 
-> 
-> >Is it possible to add "custom" sysfs entries in my hwmon driver to support all these features?
-> >Does lm-sensor ingore those custom features or is it a problem for lm-sensors?
-> >
-> >What is the normal way to add those features?
-> >
-> 
-> The hwmon subsystem isn't really the correct location for this functionality.
-> Power management should be done with a regulator driver (possibly power).
-> The other attributes and functionality would better fit into the mfd core
-> driver.
-> 
+I had considered the "/*" start of the following block comment as visually
+enough separation between variable declarations and statements, but sure,
+I can add one.
 
-MFD Core sounds good. That is also perfect for the User App. 
+> I haven't delved into the actual implementation.  Looks sane on the
+> first glance.
 
-> You might want to tie the reset functions into the system reset functionality.
+That's the part I'm least worried about, actually.
 
-I do not understand this. Is there another subsystem or something like that
-were I can put the Reset stuff to?
+> Again, I don't really think the userland testing code belongs here.
+> If you want to keep them, please make it in-kernel selftesting.  We
+> don't really want to keep code which can't get built and tested in
+> kernel tree proper.
 
-> 
-> Guenter
-> 
+I'll see if I can figure out how to do that.  Simple as it is, I hate to
+throw away regression tests.
 
-
-I guess the hwmon subsys is the right place for the voltage monitoring (3,3V, 5V etc) isn´t it?
-
-
-Regards Andy
+Thank you very much.
