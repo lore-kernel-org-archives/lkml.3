@@ -1,81 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757088AbaEJOfv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 10:35:51 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:57679 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755096AbaEJOfu (ORCPT
+	id S1757272AbaEJO5D (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 10:57:03 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:62935 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754832AbaEJO5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 10:35:50 -0400
-Date: Sat, 10 May 2014 10:35:49 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-cc: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, <kishon@ti.com>,
-        <hdegoede@redhat.com>, Boris Brezillon <boris@free-electrons.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <kevin.z.m.zh@gmail.com>,
-        <sunny@allwinnertech.com>, <shuge@allwinnertech.com>,
-        <zhuzhenhua@allwinnertech.com>, <linux-sunxi@googlegroups.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: Re: [PATCH v2 4/7] usb: ehci-platform: add optional reset controller
- retrieval
-In-Reply-To: <1399726619-30150-5-git-send-email-maxime.ripard@free-electrons.com>
-Message-ID: <Pine.LNX.4.44L0.1405101023510.1268-100000@netrider.rowland.org>
+	Sat, 10 May 2014 10:57:00 -0400
+Date: Sat, 10 May 2014 16:56:51 +0200
+From: Pawel Lebioda <pawel.lebioda89@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix missing a blank line after declaration for usbip
+Message-ID: <20140510145650.GA30555@ThinkPad>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/mixed; boundary="pf9I7BMVVzbSWLtt"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 May 2014, Maxime Ripard wrote:
 
-> From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> 
-> On the Allwinner's A31 SoC the reset line connected to the EHCI IP has to
-> be deasserted for the EHCI block to be usable.
-> 
-> Add support for an optional reset controller that will be deasserted on
-> power off and asserted on power on.
-> 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+--pf9I7BMVVzbSWLtt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This basically is good. fine.  I have only two comments, and one of
-them is a matter of taste rather than substance.
+Hi,
 
-> @@ -206,6 +208,19 @@ static int ehci_platform_probe(struct platform_device *dev)
->  				break;
->  			}
->  		}
-> +
-> +		priv->rst = devm_reset_control_get_optional(&dev->dev,
-> +							    NULL);
+Please find attached patch which fixes most of 
+"Missing blank line after declaration" in drivers/staging/usbip
+directory.
 
-I hate the style that matches arguments on a continuation line with the
-opening paren of the function call, for a couple of reasons.  Instead I
-simply indent continuation lines by two or more tab stops.  But some
-people seem to be incurably attached to it.
+There are still two WARNINGS reported which refers to the struct
+declaration, and it seems to be a problem with the checkpatck.pl script.
 
-> +		if (IS_ERR(priv->rst)) {
-> +			err = PTR_ERR(priv->rst);
-> +			if (err == -EPROBE_DEFER)
-> +				goto err_put_clks;
-> +			priv->rst = NULL;
-> +		} else {
-> +			err = reset_control_deassert(priv->rst);
-> +			if (err)
-> +				goto err_put_clks;
-> +		}
->  	}
->  
->  	if (pdata->big_endian_desc)
+Regards
+Pawel Lebioda
 
-The new code was added inside an "if" statement, which will cause it to
-apply only to OF devices.  Is there any reason not to put the new code
-outside the "if" statement, so it applies to all devices?
+--pf9I7BMVVzbSWLtt
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="usbip-blank-lines.patch"
 
-Alan Stern
+>From 6fba281794ce0466e88c785123f906b7d3654bc2 Mon Sep 17 00:00:00 2001
+From: Pawel Lebioda <pawel.lebioda89@gmail.com>
+Date: Sat, 10 May 2014 16:35:50 +0200
+Subject: [PATCH] Fix missing a blank line after declaration for usbip
 
+---
+ drivers/staging/usbip/stub_dev.c                      | 1 +
+ drivers/staging/usbip/stub_tx.c                       | 1 +
+ drivers/staging/usbip/usbip_common.h                  | 2 ++
+ drivers/staging/usbip/userspace/libsrc/usbip_common.c | 2 +-
+ drivers/staging/usbip/userspace/src/usbip_attach.c    | 1 +
+ drivers/staging/usbip/userspace/src/usbipd.c          | 6 +++++-
+ drivers/staging/usbip/vhci_hcd.c                      | 2 ++
+ 7 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
+index de692d7..51d0c71 100644
+--- a/drivers/staging/usbip/stub_dev.c
++++ b/drivers/staging/usbip/stub_dev.c
+@@ -99,6 +99,7 @@ static ssize_t store_sockfd(struct device *dev, struct device_attribute *attr,
+ 
+ 	if (sockfd != -1) {
+ 		int err;
++
+ 		dev_info(dev, "stub up\n");
+ 
+ 		spin_lock_irq(&sdev->ud.lock);
+diff --git a/drivers/staging/usbip/stub_tx.c b/drivers/staging/usbip/stub_tx.c
+index 1622563..38fe551 100644
+--- a/drivers/staging/usbip/stub_tx.c
++++ b/drivers/staging/usbip/stub_tx.c
+@@ -218,6 +218,7 @@ static int stub_send_ret_submit(struct stub_device *sdev)
+ 			 */
+ 
+ 			int i;
++
+ 			for (i = 0; i < urb->number_of_packets; i++) {
+ 				iov[iovnum].iov_base = urb->transfer_buffer +
+ 					urb->iso_frame_desc[i].offset;
+diff --git a/drivers/staging/usbip/usbip_common.h b/drivers/staging/usbip/usbip_common.h
+index f555d83..4da3866 100644
+--- a/drivers/staging/usbip/usbip_common.h
++++ b/drivers/staging/usbip/usbip_common.h
+@@ -321,12 +321,14 @@ int usbip_event_happened(struct usbip_device *ud);
+ static inline int interface_to_busnum(struct usb_interface *interface)
+ {
+ 	struct usb_device *udev = interface_to_usbdev(interface);
++
+ 	return udev->bus->busnum;
+ }
+ 
+ static inline int interface_to_devnum(struct usb_interface *interface)
+ {
+ 	struct usb_device *udev = interface_to_usbdev(interface);
++
+ 	return udev->devnum;
+ }
+ 
+diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_common.c b/drivers/staging/usbip/userspace/libsrc/usbip_common.c
+index 238bf5b..05a7443 100644
+--- a/drivers/staging/usbip/userspace/libsrc/usbip_common.c
++++ b/drivers/staging/usbip/userspace/libsrc/usbip_common.c
+@@ -75,6 +75,7 @@ const char *usbip_speed_string(int num)
+ void dump_usb_interface(struct usbip_usb_interface *uinf)
+ {
+ 	char buff[100];
++
+ 	usbip_names_get_class(buff, sizeof(buff),
+ 			uinf->bInterfaceClass,
+ 			uinf->bInterfaceSubClass,
+@@ -86,7 +87,6 @@ void dump_usb_device(struct usbip_usb_device *udev)
+ {
+ 	char buff[100];
+ 
+-
+ 	dbg("%-20s = %s", "path",  udev->path);
+ 	dbg("%-20s = %s", "busid", udev->busid);
+ 
+diff --git a/drivers/staging/usbip/userspace/src/usbip_attach.c b/drivers/staging/usbip/userspace/src/usbip_attach.c
+index 716a79e..d58a14d 100644
+--- a/drivers/staging/usbip/userspace/src/usbip_attach.c
++++ b/drivers/staging/usbip/userspace/src/usbip_attach.c
+@@ -56,6 +56,7 @@ static int record_connection(char *host, char *port, char *busid, int rhport)
+ 		/* if VHCI_STATE_PATH exists, then it better be a directory */
+ 		if (errno == EEXIST) {
+ 			struct stat s;
++
+ 			ret = stat(VHCI_STATE_PATH, &s);
+ 			if (ret < 0)
+ 				return -1;
+diff --git a/drivers/staging/usbip/userspace/src/usbipd.c b/drivers/staging/usbip/userspace/src/usbipd.c
+index 2cae4ce..b32047a 100644
+--- a/drivers/staging/usbip/userspace/src/usbipd.c
++++ b/drivers/staging/usbip/userspace/src/usbipd.c
+@@ -372,6 +372,7 @@ static int listen_all_addrinfo(struct addrinfo *ai_head, int sockfdlist[],
+ 
+ 	for (ai = ai_head; ai && nsockfd < maxsockfd; ai = ai->ai_next) {
+ 		int sock;
++
+ 		addrinfo_to_text(ai, ai_buf, ai_buf_size);
+ 		dbg("opening %s", ai_buf);
+ 		sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+@@ -461,7 +462,9 @@ static void write_pid_file()
+ {
+ 	if (pid_file) {
+ 		dbg("creating pid file %s", pid_file);
+-		FILE *fp = fopen(pid_file, "w");
++		FILE *fp;
++
++		fp = fopen(pid_file, "w");
+ 		if (!fp) {
+ 			err("pid_file: %s: %d (%s)",
+ 			    pid_file, errno, strerror(errno));
+@@ -602,6 +605,7 @@ int main(int argc, char *argv[])
+ 	int daemonize = 0;
+ 	int ipv4 = 0, ipv6 = 0;
+ 	int opt, rc = -1;
++
+ 	pid_file = NULL;
+ 
+ 	usbip_use_stderr = 1;
+diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
+index 70e1755..0007d30 100644
+--- a/drivers/staging/usbip/vhci_hcd.c
++++ b/drivers/staging/usbip/vhci_hcd.c
+@@ -635,6 +635,7 @@ static int vhci_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
+ 
+ 	{
+ 		int ret = 0;
++
+ 		ret = usb_hcd_check_unlink_urb(hcd, urb, status);
+ 		if (ret) {
+ 			spin_unlock(&the_controller->lock);
+@@ -885,6 +886,7 @@ static int vhci_start(struct usb_hcd *hcd)
+ 
+ 	for (rhport = 0; rhport < VHCI_NPORTS; rhport++) {
+ 		struct vhci_device *vdev = &vhci->vdev[rhport];
++
+ 		vhci_device_init(vdev);
+ 		vdev->rhport = rhport;
+ 	}
+-- 
+1.8.3.2
+Signed-off-by: Pawel Lebioda <pawel.lebioda89@gmail.com>
+
+--pf9I7BMVVzbSWLtt--
