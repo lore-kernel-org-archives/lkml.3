@@ -1,108 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241AbaEJODH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 10:03:07 -0400
-Received: from ns.horizon.com ([71.41.210.147]:16108 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756798AbaEJODF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 10:03:05 -0400
-Date: 10 May 2014 10:03:04 -0400
-Message-ID: <20140510140304.15690.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, tj@kernel.org
-Subject: Re: [PATCH 1/2] Add lib/glob.c
-Cc: akpm@linux-foundation.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mingo@redhat.com,
-        torvalds@linux-foundation.org
-In-Reply-To: <20140510122309.GB4721@mtj.dyndns.org>
+	id S1756806AbaEJONJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 10:13:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53141 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752845AbaEJONG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 May 2014 10:13:06 -0400
+Date: Sat, 10 May 2014 16:13:00 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v10 09/19] qspinlock: Prepare for unfair lock support
+Message-ID: <20140510141300.GE30445@twins.programming.kicks-ass.net>
+References: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com>
+ <1399474907-22206-10-git-send-email-Waiman.Long@hp.com>
+ <20140508190649.GR2844@laptop.programming.kicks-ass.net>
+ <536D7EA4.4060301@hp.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gb4bweTRjl1pQhan"
+Content-Disposition: inline
+In-Reply-To: <536D7EA4.4060301@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks a lot for the feedback!
 
-> On Fri, May 09, 2014 at 11:13:56PM -0400, George Spelvin wrote:
->> +/**
->> + * glob_match - Shell-style pattern matching, like !fnmatch(pat, str, 0)
->> + * @pat: Pattern to match.  Metacharacters are ?, *, [ and \.
->> + *       (And, inside character classes, !, - and ].)
+--gb4bweTRjl1pQhan
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> @ARG lines should be contained in a single line.  Just "Pattern to
-> match." should do.  With detailed description in the body.
+On Fri, May 09, 2014 at 09:19:32PM -0400, Waiman Long wrote:
+> On 05/08/2014 03:06 PM, Peter Zijlstra wrote:
+> >On Wed, May 07, 2014 at 11:01:37AM -0400, Waiman Long wrote:
+> >>If unfair lock is supported, the lock acquisition loop at the end of
+> >>the queue_spin_lock_slowpath() function may need to detect the fact
+> >>the lock can be stolen. Code are added for the stolen lock detection.
+> >>
+> >>A new qhead macro is also defined as a shorthand for mcs.locked.
+> >NAK, unfair should be a pure test-and-set lock.
+>=20
+> I have performance data showing that a simple test-and-set lock does not
+> scale well. That is the primary reason of ditching the test-and-set lock =
+and
+> use a more complicated scheme which scales better.
 
-Huh, Documentation/kernel-doc-nano-HOWTO.txt (lines 57-59, to be precise)
-implies otherwise pretty strongly.  But I can certainly change it.
+Nobody should give a fuck about scalability in this case anyway.
 
-> Just adding glob.o to lib-y should be enough.  It will be excluded
-> from linking if unused.
+Also, as I explained/asked earlier:
 
-Will that work right if the caller is a module?  What will it get linked
-into, the main kernel binary or the module?
+  lkml.kernel.org/r/20140314083001.GN27965@twins.programming.kicks-ass.net
 
-A significant and very helpful simplification; I just want to be sure
-it works right.
+Lock holder preemption is _way_ worse with any kind of queueing. You've
+not explained how the simple 3 cpu example in that email gets better
+performance than a test-and-set lock.
 
->> +#ifdef UNITTEST
->> +/* To do a basic sanity test, "cc -DUNITTEST glob.c" and run a.out. */
->> +
->> +#include <stdbool.h>
->> +#define __pure __attribute__((pure))
->> +#define NOP(x)
->> +#define EXPORT_SYMBOL NOP	/* Two stages to avoid checkpatch complaints */
+> Also, it will be hard to
+> make the unfair test-and-set lock code to coexist nicely with PV spinlock
+> code.
 
-> These things tend to bitrot.  Let's please keep testing harness out of
-> tree.
+That's just complete crap as the test-and-set lock is like 3 lines of
+code.
 
-Damn, when separated it bitrots a lot faster.  That's *is* my testing
-harness, and I wanted to keep it close so it has a chance on hell of
-being used by someone who updates it.
+--gb4bweTRjl1pQhan
+Content-Type: application/pgp-signature
 
-Especially given that the function's interface is quite rigidly defined,
-do you really think there will be a lot of rot?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> Do we make library routines separate modules usually?
+iQIcBAEBAgAGBQJTbjPsAAoJEHZH4aRLwOS6DHoQAI8k9IXmkcWjHX8w+HY70xEC
+5r+6ofM4q2UqO92eoq7fCDKxRIHw8N0IL1HwmXL80IayZgm5l9KEm6b8eMzRAGUo
+dhKqnAU1Fx2T0Qq+AES5PBHscwz7cbWA6wkxzkW4BqHuzI0oa6KpVo1sXsFdurpp
+zgbGY+CwfvCHc9EYiG5zrxGyqerICuSoh+JnLx/upwsI7qwtepNzH0BmJuY30kr6
+HZQ5tH4gFC6IT9Lb7zRCi8PYU+KWfQxEFB5gKwKpqr+Tl+QrZQf/hNyuA8tbGrZo
+4JdguKqshFxqCpQ5KER+Is6vgryVxGzxWfBWskICYsORxX59RGHzWfUN56a+tgNG
+lHa+mQDn9OT1jcLxZvadBecMGhEP+yIrXN90/laPSXS5UZlla7WWLcDR+qi65EWY
+dJuaCsmvRqD5qqnUfa9ScWlQO9pC1jZ/QJKPPwS/dh7MpiHkWkmbY7+quBq64xof
+Kjy6qxGkm+4FpgoUlOw4cvLnmgbsWc8Z8sHPI/E0og/47ZGzpg0Uprbo/GZ2tSLQ
+eJni0kbQnulnlSoCQLvdhGWLhV5ZxGSBs3nlqKzqBDI8r2/p4Bd7D7eRd3jwTVWu
+l57WRcuAPduyBK/2LWY6epnQW3IiC+ShpcX2qBeCWFeoZyZAGMP43aZFcuD3aDXR
+TcUPJ51KjXE+eyEQpsNp
+=fEVE
+-----END PGP SIGNATURE-----
 
-A large number of files in lib/ are implemented that way (lib/crc-ccitt.c,
-just for one example), and that's what I copied.  But if I just do the
-obj-y thing, all that goes away
-
->> +bool __pure
->> +glob_match(char const *pat, char const *str)
->
-> The whole thing fits in a single 80 column line, right?
-> 
-> bool __pure glob_match(char const *pat, char const *str)
-
-Whoops, a residue of my personal code style.  (I like to left-align
-function names in definitions so they're easy to search for with ^func.)
-But it's not kernel style.  Will fix.
-
->> +{
->> +	/*
->> +	 * Backtrack to previous * on mismatch and retry starting one
->> +	 * character later in the string.  Because * matches all characters
->> +	 * (no exception for /), it can be easily proved that there's
->> +	 * never a need to backtrack multiple levels.
->> +	 */
->> +	char const *back_pat = 0, *back_str = back_str;
-
-> Blank line here.
-
-I had considered the "/*" start of the following block comment as visually
-enough separation between variable declarations and statements, but sure,
-I can add one.
-
-> I haven't delved into the actual implementation.  Looks sane on the
-> first glance.
-
-That's the part I'm least worried about, actually.
-
-> Again, I don't really think the userland testing code belongs here.
-> If you want to keep them, please make it in-kernel selftesting.  We
-> don't really want to keep code which can't get built and tested in
-> kernel tree proper.
-
-I'll see if I can figure out how to do that.  Simple as it is, I hate to
-throw away regression tests.
-
-Thank you very much.
+--gb4bweTRjl1pQhan--
