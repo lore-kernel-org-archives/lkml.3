@@ -1,58 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527AbaEJLXu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 07:23:50 -0400
-Received: from mout.gmx.net ([212.227.15.19]:49989 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744AbaEJLXs convert rfc822-to-8bit (ORCPT
+	id S1755019AbaEJLjr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 07:39:47 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:33303 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753141AbaEJLjp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 07:23:48 -0400
-Date: Sat, 10 May 2014 15:22:38 +0200
-From: Andreas Werner <wernerandy@gmx.de>
-To: linux-kernel@vger.kernel.org
-Cc: khali@linux-fr.org, linux@roeck-us.net, andreas.werner@men.de
-Subject: Question: hwmon: Adding addtitional sysfs entries
-Message-ID: <20140510132238.GA28364@awedesk.fritz.box>
+	Sat, 10 May 2014 07:39:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1399716396.580639659@f244.i.mail.ru>
+References: <1399715823-19839-1-git-send-email-gautam.vivek@samsung.com>
+	<1399715823-19839-2-git-send-email-gautam.vivek@samsung.com>
+	<1399716396.580639659@f244.i.mail.ru>
+Date: Sat, 10 May 2014 17:09:44 +0530
+X-Google-Sender-Auth: 1aDsiLlfgUQYqfJfP_MWDOHonEU
+Message-ID: <CAFp+6iGZ6i6a95O4UhWRQc6QdknK4AgVOh+fSKdRZcAhmgn-Rw@mail.gmail.com>
+Subject: Re: [PATCH 1/6] usb: host: ehci-exynos: Use devm_ioremap_resource
+ instead of devm_ioremap
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        linux-tegra <linux-tegra@vger.kernel.org>,
+        "thierry.reding" <thierry.reding@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V03:K0:1QcD67Yc5vurJYyR0YU67SiRyt7G1vu9MlcEd+67eQiCZCQkGYC
- hZTN7azy2Y9meCIFiuOS/T7a1ooGyj9YN0JvBeFMTSNLjUhsbr6r+UpQh7C5vFspunTgJtj
- T0pHnT3PKzHx4F/W9uY75FNLZWHA3Shz80f6xG66b/NM4HngXyE0QKcZwcnLZzgaHG+T0zc
- GKmzjfvafBjgwjOAT74ow==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
-i am currently working on an implemenation of my Board Management Controller (BMC).
 
-This Controller is a MCR assembled on almost all of our Compact PCI or Compact PCI Serial
-Cards as well as on some other CPU Boards.
 
-The BMC includes LED�s, Watchdog, Voltage Monitoring and some other features.
-I have already implemented an MFD driver, LED and Watchdog driver.
+On Sat, May 10, 2014 at 3:36 PM, Alexander Shiyan <shc_work@mail.ru> wrote:
+> Sat, 10 May 2014 15:26:58 +0530 от Vivek Gautam <gautam.vivek@samsung.com>:
+>> Using devm_ioremap_resource() API should actually be preferred over
+>> devm_ioremap(), since the former request the mem region first and then
+>> gives back the ioremap'ed memory pointer.
+>> devm_ioremap_resource() calls request_mem_region(), therby preventing
+>> other drivers to make any overlapping call to the same region.
+>>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> ---
+>>  drivers/usb/host/ehci-exynos.c |    3 +--
+>>  1 file changed, 1 insertion(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/usb/host/ehci-exynos.c b/drivers/usb/host/ehci-exynos.c
+>> index 7f425ac..bccb6f1 100644
+>> --- a/drivers/usb/host/ehci-exynos.c
+>> +++ b/drivers/usb/host/ehci-exynos.c
+>> @@ -135,9 +135,8 @@ skip_phy:
+>>
+>>       hcd->rsrc_start = res->start;
+>>       hcd->rsrc_len = resource_size(res);
+>> -     hcd->regs = devm_ioremap(&pdev->dev, res->start, hcd->rsrc_len);
+>> +     hcd->regs = devm_ioremap_resource(&pdev->dev, res);
+>>       if (!hcd->regs) {
+>> -             dev_err(&pdev->dev, "Failed to remap I/O memory\n");
+>>               err = -ENOMEM;
+>>               goto fail_io;
+>>       }
+>
+> You should check this as:
+>
+> if (IS_ERR(hcd->regs)) {
+> err = PTR_ERR(hcd->regs);
+> ...
 
-Currently i am working on the hwmon implemenation. This includes for the first step the
-voltage monitoring.
+Thanks for pointing out. Will change this.
 
-The BMC has some other feature which are not supported by any of the subsystem.
- - Errorcounter (Board status)
- - Power Failure status
- - Operating ours
- - Do software reset, do cold reset
- - Set power modes
- - Backplate Geographical Address
+>
+> Same in other patches in this series.
+>
+> ---
+>
 
-These are all informations related to the Board where the BMC is assembled to.
-I think all those features could be part of the hwmon implementation.
 
-Is it possible to add "custom" sysfs entries in my hwmon driver to support all these features?
-Does lm-sensor ingore those custom features or is it a problem for lm-sensors?
 
-What is the normal way to add those features?
-
-Regards
-Andy
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
