@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123AbaEJPCg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 11:02:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18400 "EHLO mx1.redhat.com"
+	id S1753615AbaEJPCl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 11:02:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22342 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752525AbaEJPCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 11:02:33 -0400
-Subject: [PATCH v3 01/15] PCI: Add DMA alias iterator
+	id S1753226AbaEJPCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 May 2014 11:02:39 -0400
+Subject: [PATCH v3 02/15] PCI: quirk pci_for_each_dma_alias()
 From: Alex Williamson <alex.williamson@redhat.com>
 To: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
 Cc: bhelgaas@google.com, acooks@gmail.com, linux-kernel@vger.kernel.org,
         linux@horizon.com
-Date: Sat, 10 May 2014 09:02:29 -0600
-Message-ID: <20140510150229.2997.39465.stgit@bling.home>
+Date: Sat, 10 May 2014 09:02:35 -0600
+Message-ID: <20140510150235.2997.88101.stgit@bling.home>
 In-Reply-To: <20140510145619.2997.429.stgit@bling.home>
 References: <20140510145619.2997.429.stgit@bling.home>
 User-Agent: StGit/0.17-dirty
@@ -23,122 +23,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In a mixed PCI/PCI-X/PCI-e topology, bridges can take ownership of
-transactions, replacing the original requester ID with their own.
-Sometimes we just want to know the resulting device or resulting
-alias, sometimes we want each step in the chain.  This iterator
-allows either usage.  When an endpoint is connected via an unbroken
-chain of PCIe switches and root ports, it has no alias and its
-requester ID is visible to the root bus.  When PCI/X get in the way,
-we pick up aliases for bridges.
-
-The reason why we potentially care about each step in the path is
-because of PCI-X.  PCI-X has the concept of a requester ID, but
-bridges may or may not take ownership of various types of
-transactions.  We therefore leave it to the consumer of this function
-to prune out what they don't care about rather than attempt to flatten
-the alias ourselves.
+There are a few broken devices that use the requester ID of a different
+function in the slot for their DMA.  To handle these, add a bitmap to
+struct pci_dev (using an alignment gap) that quirks can populate.  As
+we iterate over the device and bus DMA aliases, also iterate over any
+bits in the map.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- drivers/pci/search.c |   70 ++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/pci.h  |    4 +++
- 2 files changed, 74 insertions(+)
+ drivers/pci/search.c |   21 +++++++++++++++++++++
+ include/linux/pci.h  |    2 ++
+ 2 files changed, 23 insertions(+)
 
 diff --git a/drivers/pci/search.c b/drivers/pci/search.c
-index 4a1b972..5601cdb 100644
+index 5601cdb..ad698b2 100644
 --- a/drivers/pci/search.c
 +++ b/drivers/pci/search.c
-@@ -18,6 +18,76 @@ DECLARE_RWSEM(pci_bus_sem);
- EXPORT_SYMBOL_GPL(pci_bus_sem);
+@@ -37,6 +37,27 @@ int pci_for_each_dma_alias(struct pci_dev *pdev,
+ 	if (ret)
+ 		return ret;
  
- /*
-+ * pci_for_each_dma_alias - Iterate over DMA aliases for a device
-+ * @pdev: starting downstream device
-+ * @fn: function to call for each alias
-+ * @data: opaque data to pass to @fn
-+ *
-+ * Starting @pdev, walk up the bus calling @fn for each possible alias
-+ * of @pdev at the root bus.
-+ */
-+int pci_for_each_dma_alias(struct pci_dev *pdev,
-+			   int (*fn)(struct pci_dev *pdev,
-+				     u16 alias, void *data), void *data)
-+{
-+	struct pci_bus *bus;
-+	int ret;
++	/*
++	 * dma_func_alias provides a bitmap of other function numbers on
++	 * this same PCI slot to use as DMA aliases.
++	 */
++	if (unlikely(pdev->dma_func_alias)) {
++		u8 map = pdev->dma_func_alias & ~(1 << PCI_FUNC(pdev->devfn));
++		int func;
 +
-+	ret = fn(pdev, PCI_DEVID(pdev->bus->number, pdev->devfn), data);
-+	if (ret)
-+		return ret;
-+
-+	for (bus = pdev->bus; !pci_is_root_bus(bus); bus = bus->parent) {
-+		struct pci_dev *tmp;
-+
-+		/* Skip virtual buses */
-+		if (!bus->self)
-+			continue;
-+
-+		tmp = bus->self;
-+
-+		/*
-+		 * PCIe-to-PCI/X bridges alias transactions from downstream
-+		 * devices using the subordinate bus number (PCI Express to
-+		 * PCI/PCI-X Bridge Spec, rev 1.0, sec 2.3).  For all cases
-+		 * where the upstream bus is PCI/X we alias to the bridge
-+		 * (there are various conditions in the previous reference
-+		 * where the bridge may take ownership of transactions, even
-+		 * when the secondary interface is PCI-X).
-+		 */
-+		if (pci_is_pcie(tmp)) {
-+			switch (pci_pcie_type(tmp)) {
-+			case PCI_EXP_TYPE_ROOT_PORT:
-+			case PCI_EXP_TYPE_UPSTREAM:
-+			case PCI_EXP_TYPE_DOWNSTREAM:
++		for (func = 0; map && func < 8; func++, map >>= 1) {
++			if (!(map & 1))
 +				continue;
-+			case PCI_EXP_TYPE_PCI_BRIDGE:
-+				ret = fn(tmp,
-+					 PCI_DEVID(tmp->subordinate->number,
-+						   PCI_DEVFN(0, 0)), data);
-+				if (ret)
-+					return ret;
-+				continue;
-+			case PCI_EXP_TYPE_PCIE_BRIDGE:
-+				ret = fn(tmp,
-+					 PCI_DEVID(tmp->bus->number,
-+						   tmp->devfn), data);
-+				if (ret)
-+					return ret;
-+				continue;
-+			}
-+		} else {
-+			ret = fn(tmp, PCI_DEVID(tmp->bus->number, tmp->devfn),
-+				 data);
++
++			ret = fn(pdev,
++				 PCI_DEVID(pdev->bus->number,
++					   PCI_DEVFN(PCI_SLOT(pdev->devfn),
++					   func)), data);
 +			if (ret)
 +				return ret;
 +		}
 +	}
 +
-+	return ret;
-+}
-+
-+/*
-  * find the upstream PCIe-to-PCI bridge of a PCI device
-  * if the device is PCIE, return NULL
-  * if the device isn't connected to a PCIe bridge (that is its parent is a
+ 	for (bus = pdev->bus; !pci_is_root_bus(bus); bus = bus->parent) {
+ 		struct pci_dev *tmp;
+ 
 diff --git a/include/linux/pci.h b/include/linux/pci.h
-index aab57b4..14b074b 100644
+index 14b074b..b4c97d2 100644
 --- a/include/linux/pci.h
 +++ b/include/linux/pci.h
-@@ -1795,6 +1795,10 @@ static inline struct eeh_dev *pci_dev_to_eeh_dev(struct pci_dev *pdev)
- }
- #endif
+@@ -268,6 +268,8 @@ struct pci_dev {
+ 	u8		rom_base_reg;	/* which config register controls the ROM */
+ 	u8		pin;		/* which interrupt pin this device uses */
+ 	u16		pcie_flags_reg;	/* cached PCIe Capabilities Register */
++	u8		dma_func_alias;	/* bitmap of functions used as DMA
++					   aliases for this device */
  
-+int pci_for_each_dma_alias(struct pci_dev *pdev,
-+			   int (*fn)(struct pci_dev *pdev,
-+				     u16 alias, void *data), void *data);
-+
- /**
-  * pci_find_upstream_pcie_bridge - find upstream PCIe-to-PCI bridge of a device
-  * @pdev: the PCI device
+ 	struct pci_driver *driver;	/* which driver has allocated this device */
+ 	u64		dma_mask;	/* Mask of the bits of bus address this
 
