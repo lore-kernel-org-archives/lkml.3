@@ -1,99 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755812AbaEJMUi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 08:20:38 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40880 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754716AbaEJMUg (ORCPT
+	id S1756644AbaEJMVn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 08:21:43 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:40634 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755350AbaEJMVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 08:20:36 -0400
-Date: Sat, 10 May 2014 14:20:36 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        hughd@google.com, viresh.kumar@linaro.org,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: vmstat: On demand vmstat workers V4
-In-Reply-To: <20140509234745.GB8754@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.02.1405101407290.6261@ionos.tec.linutronix.de>
-References: <alpine.DEB.2.10.1405081033090.23786@gentwo.org> <20140508142903.c2ef166c95d2b8acd0d7ea7d@linux-foundation.org> <alpine.DEB.2.02.1405090003120.6261@ionos.tec.linutronix.de> <alpine.DEB.2.10.1405090949170.11318@gentwo.org>
- <alpine.DEB.2.02.1405091659350.6261@ionos.tec.linutronix.de> <alpine.DEB.2.10.1405091027040.11318@gentwo.org> <alpine.DEB.2.02.1405092358390.6261@ionos.tec.linutronix.de> <20140509234745.GB8754@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sat, 10 May 2014 08:21:41 -0400
+Date: Sat, 10 May 2014 08:21:38 -0400
+From: Tejun Heo <tj@kernel.org>
+To: George Spelvin <linux@horizon.com>
+Cc: akpm@linux-foundation.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@redhat.com,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH 1/2] Add lib/glob.c
+Message-ID: <20140510122138.GA4721@mtj.dyndns.org>
+References: <20140313121032.GA9981@htj.dyndns.org>
+ <20140510031356.22726.qmail@ns.horizon.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140510031356.22726.qmail@ns.horizon.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 May 2014, Paul E. McKenney wrote:
+Hello,
 
-> On Sat, May 10, 2014 at 12:57:15AM +0200, Thomas Gleixner wrote:
-> > On Fri, 9 May 2014, Christoph Lameter wrote:
-> > > On Fri, 9 May 2014, Thomas Gleixner wrote:
-> > > > I understand why you want to get this done by a housekeeper, I just
-> > > > did not understand why we need this whole move it around business is
-> > > > required.
-> > > 
-> > > This came about because of another objection against having it simply
-> > > fixed to a processor. After all that processor may be disabled etc etc.
-> > 
-> > I really regret that I did not pay more attention (though my cycle
-> > constraints simply do not allow it).
-> 
-> As far as I can see, the NO_HZ_FULL timekeeping CPU is always zero.  If it
-> can change in NO_HZ_FULL kernels, RCU will do some very strange things!
+On Fri, May 09, 2014 at 11:13:56PM -0400, George Spelvin wrote:
+> +config GLOB
+> +	tristate
+> +#	(Prompt disabled to reduce kbuild clutter until someone needs it.)
+> +#	prompt "glob_match() function"
+> +	help
+> +	  This option provides a glob_match function for performing simple
+> +	  text pattern matching.  It is primarily used by the ATA code
+> +	  to blacklist particular drive models, but other device drivers
+> +	  may need similar functionality.
+> +
+> +	  All in-kernel drivers that require this function automatically
+> +	  select this option.  Say N unless you are compiling an out-of
+> +	  tree driver which tells you it depend on it.
 
-Good. I seriously hope it stays that way.
+Just adding glob.o to lib-y should be enough.  It will be excluded
+from linking if unused.
 
-> One possible issue here is that Christoph's patch is unconditional.
-> It takes effect for both NO_HZ_FULL and !NO_HZ_FULL.  If I recall
-> correctly, the timekeeping CPU -can- change in !NO_HZ_FULL kernels,
-> which might be what Christoph was trying to take into account.
+> +#ifdef UNITTEST
+> +/* To do a basic sanity test, "cc -DUNITTEST glob.c" and run a.out. */
+> +
+> +#include <stdbool.h>
+> +#define __pure __attribute__((pure))
+> +#define NOP(x)
+> +#define EXPORT_SYMBOL NOP	/* Two stages to avoid checkpatch complaints */
 
-Ok. Sorry, I was just in a lousy mood after wasting half a day in
-reviewing even lousier patches related to that NO_HZ* muck.
+These things tend to bitrot.  Let's please keep testing harness out of
+tree.
 
-So, right with NO_HZ_IDLE the time keeper can move around and
-housekeeping stuff might want to move around as well.
+> +#else
+> +
+> +#include <linux/module.h>
+> +#include <linux/glob.h>
+> +
+> +MODULE_DESCRIPTION("glob(7) matching");
+> +MODULE_LICENSE("Dual MIT/GPL");
 
-But it's not necessary a good idea to bundle that with the timekeeper,
-as under certain conditions the timekeeper duty can move around fast
-and left unassigned again when the system is fully idle.
+Do we make library routines separate modules usually?
 
-And we really do not want a gazillion of sites which implement a
-metric ton of different ways to connect some random housekeeping jobs
-with the timekeeper.
+...
+> +bool __pure
+> +glob_match(char const *pat, char const *str)
 
-So the proper solution to this is to have either a thread or a
-dedicated housekeeping worker, which is placed by the scheduler
-depending on the system configuration and workload.
+The whole thing fits in a single 80 column line, right?
 
-That way it can be kept at cpu0 for the nohz=off and the nohz_full
-case. In the nohz_idle case we can have different placement
-algorithms. On a big/little ARM machine you probably want to keep it
-on the first cpu of one or the other cluster. And there might be other
-constraints on servers.
+bool __pure glob_match(char const *pat, char const *str)
 
-So we are way better of with a generic facility, where the various
-housekeeping jobs can be queued.
+> +{
+> +	/*
+> +	 * Backtrack to previous * on mismatch and retry starting one
+> +	 * character later in the string.  Because * matches all characters
+> +	 * (no exception for /), it can be easily proved that there's
+> +	 * never a need to backtrack multiple levels.
+> +	 */
+> +	char const *back_pat = 0, *back_str = back_str;
 
-Does that make sense?
+Blank line here.
 
-Thanks,
+I haven't delved into the actual implementation.  Looks sane on the
+first glance.
 
-	tglx
+> +#ifdef UNITTEST
+> +
+> +/* Test code */
+> +#include <stdio.h>
+> +#include <stdlib.h>
+> +struct glob_test {
+> +	char const *pat, *str;
+> +	bool expected;
+> +};
+> +
+> +static void
+> +test(struct glob_test const *g)
+> +{
+> +	bool match = glob_match(g->pat, g->str);
+> +
+> +	printf("\"%s\" vs. \"%s\": %s %s\n", g->pat, g->str,
+> +		match ? "match" : "mismatch",
+> +		match == g->expected ? "OK" : "*** ERROR ***");
+> +	if (match != g->expected)
+> +		exit(1);
+> +}
+> +
+> +static struct glob_test const tests[] = {
+> +	{ "a", "a", true },
+...
+> +	{ "*ab*cd*", "abcabcabcabcefg", false }
+> +};
+> +
+> +int
+> +main(void)
+> +{
+> +	size_t i;
+> +
+> +	for (i = 0; i < sizeof(tests)/sizeof(*tests); i++)
+> +		test(tests + i);
+> +
+> +	return 0;
+> +}
+> +
+> +#endif	/* UNITTEST */
 
+Again, I don't really think the userland testing code belongs here.
+If you wanna keep them, please make it in-kernel selftesting.  We
+don't really wanna keep code which can't get built and tested in
+kernel tree proper.
 
+Thanks.
+
+-- 
+tejun
