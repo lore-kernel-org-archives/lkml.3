@@ -1,117 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757936AbaEJPEE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 11:04:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16578 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757847AbaEJPD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 11:03:59 -0400
-Subject: [PATCH v3 15/15] PCI: Remove pci_get_dma_source()
-From: Alex Williamson <alex.williamson@redhat.com>
-To: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
-Cc: bhelgaas@google.com, acooks@gmail.com, linux-kernel@vger.kernel.org,
-        linux@horizon.com
-Date: Sat, 10 May 2014 09:03:54 -0600
-Message-ID: <20140510150354.2997.57688.stgit@bling.home>
-In-Reply-To: <20140510145619.2997.429.stgit@bling.home>
-References: <20140510145619.2997.429.stgit@bling.home>
-User-Agent: StGit/0.17-dirty
+	id S932290AbaEJPEz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 11:04:55 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:56166 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932092AbaEJPEw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 May 2014 11:04:52 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: "fabf@skynet.be" <fabf@skynet.be>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/1 RESEND] drivers/scsi/sd.c: remove positive test on
+ unsigned value
+Thread-Topic: [PATCH 1/1 RESEND] drivers/scsi/sd.c: remove positive test on
+ unsigned value
+Thread-Index: AQHPbD21si5bP1ei/UmkEXeMqeg60Zs6Xz4A
+Date: Sat, 10 May 2014 15:04:50 +0000
+Message-ID: <1399734290.2528.0.camel@dabdike.int.hansenpartnership.com>
+References: <20140510124958.b231a1d64d12ecdf97aff393@skynet.be>
+In-Reply-To: <20140510124958.b231a1d64d12ecdf97aff393@skynet.be>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.46.150.111]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <CD678F8CDC538C469518C1984E45ABDB@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It has no users; replaced by dma_func_alias.
+On Sat, 2014-05-10 at 12:49 +0200, Fabian Frederick wrote:
+> val is unsigned.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- drivers/pci/quirks.c |   51 --------------------------------------------------
- include/linux/pci.h  |    5 -----
- 2 files changed, 56 deletions(-)
+Please send to linux-scsi@vger.kernel.org ... this is one of Martin's I
+think.
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 652b49e..df814a2 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -3404,57 +3404,6 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_JMICRON,
- 			 PCI_DEVICE_ID_JMICRON_JMB388_ESD,
- 			 quirk_dma_func1_alias);
- 
--static struct pci_dev *pci_func_0_dma_source(struct pci_dev *dev)
--{
--	if (!PCI_FUNC(dev->devfn))
--		return pci_dev_get(dev);
--
--	return pci_get_slot(dev->bus, PCI_DEVFN(PCI_SLOT(dev->devfn), 0));
--}
--
--static const struct pci_dev_dma_source {
--	u16 vendor;
--	u16 device;
--	struct pci_dev *(*dma_source)(struct pci_dev *dev);
--} pci_dev_dma_source[] = {
--	/*
--	 * https://bugzilla.redhat.com/show_bug.cgi?id=605888
--	 *
--	 * Some Ricoh devices use the function 0 source ID for DMA on
--	 * other functions of a multifunction device.  The DMA devices
--	 * is therefore function 0, which will have implications of the
--	 * iommu grouping of these devices.
--	 */
--	{ PCI_VENDOR_ID_RICOH, 0xe822, pci_func_0_dma_source },
--	{ PCI_VENDOR_ID_RICOH, 0xe230, pci_func_0_dma_source },
--	{ PCI_VENDOR_ID_RICOH, 0xe832, pci_func_0_dma_source },
--	{ PCI_VENDOR_ID_RICOH, 0xe476, pci_func_0_dma_source },
--	{ 0 }
--};
--
--/*
-- * IOMMUs with isolation capabilities need to be programmed with the
-- * correct source ID of a device.  In most cases, the source ID matches
-- * the device doing the DMA, but sometimes hardware is broken and will
-- * tag the DMA as being sourced from a different device.  This function
-- * allows that translation.  Note that the reference count of the
-- * returned device is incremented on all paths.
-- */
--struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
--{
--	const struct pci_dev_dma_source *i;
--
--	for (i = pci_dev_dma_source; i->dma_source; i++) {
--		if ((i->vendor == dev->vendor ||
--		     i->vendor == (u16)PCI_ANY_ID) &&
--		    (i->device == dev->device ||
--		     i->device == (u16)PCI_ANY_ID))
--			return i->dma_source(dev);
--	}
--
--	return pci_dev_get(dev);
--}
--
- /*
-  * AMD has indicated that the devices below do not support peer-to-peer
-  * in any system where they are found in the southbridge with an AMD
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 64184d5..c7183be 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1532,16 +1532,11 @@ enum pci_fixup_pass {
- 
- #ifdef CONFIG_PCI_QUIRKS
- void pci_fixup_device(enum pci_fixup_pass pass, struct pci_dev *dev);
--struct pci_dev *pci_get_dma_source(struct pci_dev *dev);
- int pci_dev_specific_acs_enabled(struct pci_dev *dev, u16 acs_flags);
- void pci_dev_specific_enable_acs(struct pci_dev *dev);
- #else
- static inline void pci_fixup_device(enum pci_fixup_pass pass,
- 				    struct pci_dev *dev) { }
--static inline struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
--{
--	return pci_dev_get(dev);
--}
- static inline int pci_dev_specific_acs_enabled(struct pci_dev *dev,
- 					       u16 acs_flags)
- {
+James
+
+> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>  drivers/scsi/sd.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+> index efcbcd1..b54d4f8 100644
+> --- a/drivers/scsi/sd.c
+> +++ b/drivers/scsi/sd.c
+> @@ -296,7 +296,7 @@ protection_type_store(struct device *dev, struct device_attribute *attr,
+>  	if (err)
+>  		return err;
+>  
+> -	if (val >= 0 && val <= SD_DIF_TYPE3_PROTECTION)
+> +	if (val <= SD_DIF_TYPE3_PROTECTION)
+>  		sdkp->protection_type = val;
+>  
+>  	return count;
+
 
