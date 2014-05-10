@@ -1,159 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757783AbaEJNBz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 09:01:55 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50811 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756180AbaEJNAN (ORCPT
+	id S1755511AbaEJNOb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 09:14:31 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:61293 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754468AbaEJNOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 09:00:13 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        kishon@ti.com, hdegoede@redhat.com
-Cc: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v2 3/7] phy: usb: sunxi: Introduce Allwinner A31 USB PHY support
-Date: Sat, 10 May 2014 07:56:55 -0500
-Message-Id: <1399726619-30150-4-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399726619-30150-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1399726619-30150-1-git-send-email-maxime.ripard@free-electrons.com>
+	Sat, 10 May 2014 09:14:30 -0400
+Date: Sat, 10 May 2014 15:14:25 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        hughd@google.com, viresh.kumar@linaro.org,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: vmstat: On demand vmstat workers V4
+Message-ID: <20140510131422.GA13660@localhost.localdomain>
+References: <alpine.DEB.2.10.1405081033090.23786@gentwo.org>
+ <20140508142903.c2ef166c95d2b8acd0d7ea7d@linux-foundation.org>
+ <alpine.DEB.2.02.1405090003120.6261@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1405090949170.11318@gentwo.org>
+ <alpine.DEB.2.02.1405091659350.6261@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1405091027040.11318@gentwo.org>
+ <alpine.DEB.2.02.1405092358390.6261@ionos.tec.linutronix.de>
+ <20140509234745.GB8754@linux.vnet.ibm.com>
+ <20140510004843.GB32393@localhost.localdomain>
+ <alpine.DEB.2.02.1405101423360.6261@ionos.tec.linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1405101423360.6261@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The USB phy controller in the A31 differs mostly from the older controllers
-because it has a clock dedicated for each phy, while the older ones were having
-a single clock for all the phys.
+On Sat, May 10, 2014 at 02:31:28PM +0200, Thomas Gleixner wrote:
+> On Sat, 10 May 2014, Frederic Weisbecker wrote:
+> > But I still have the plan to make the timekeeper use the full sysidle
+> > facility in order to adaptively get to dynticks idle.
+> > 
+> > Reminder for others: in NO_HZ_FULL, the timekeeper (always CPU 0) stays
+> > completely periodic. It can't enter in dynticks idle mode because it
+> > must maintain timekeeping on behalf of full dynticks CPUs. So that's
+> > a power issue.
+> > 
+> > But Paul has a feature in RCU that lets us know when all CPUs are idle
+> > and the timekeeper can finally sleep. Then when a full nohz CPU wakes
+> > up from idle, it sends an IPI to the timekeeper if needed so the latter
+> > restarts timekeeping maintainance.
+> >
+> > It's not complicated to add to the timer code.
+> > Most of the code is already there, in RCU, for a while already.
+> > 
+> > Are we keeping that direction? 
+> 
+> So the idea is that the timekeeper stays on cpu0, but if everything is
+> idle it is allowed to take a long nap as well. So if some other cpu
+> wakes up it updates timekeeping without taking over the time keeper
+> duty and if it has work to do, it kicks cpu0 into gear. If it just
+> goes back to sleep, then nothing to do.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
----
- drivers/phy/phy-sun4i-usb.c | 35 ++++++++++++++++++++++++++---------
- 1 file changed, 26 insertions(+), 9 deletions(-)
+Exactly! Except perhaps the last sentence "If it just goes back to sleep,
+then nothing to do.", I didn't think about that although this special case
+is quite frequent indeed when an interrupt fires on idle but no task is woken up.
 
-diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
-index e6e6c4ba7145..8bd89430d945 100644
---- a/drivers/phy/phy-sun4i-usb.c
-+++ b/drivers/phy/phy-sun4i-usb.c
-@@ -61,7 +61,6 @@
- #define MAX_PHYS			3
- 
- struct sun4i_usb_phy_data {
--	struct clk *clk;
- 	void __iomem *base;
- 	struct mutex mutex;
- 	int num_phys;
-@@ -71,6 +70,7 @@ struct sun4i_usb_phy_data {
- 		void __iomem *pmu;
- 		struct regulator *vbus;
- 		struct reset_control *reset;
-+		struct clk *clk;
- 		int index;
- 	} phys[MAX_PHYS];
- };
-@@ -146,13 +146,13 @@ static int sun4i_usb_phy_init(struct phy *_phy)
- 	struct sun4i_usb_phy_data *data = to_sun4i_usb_phy_data(phy);
- 	int ret;
- 
--	ret = clk_prepare_enable(data->clk);
-+	ret = clk_prepare_enable(phy->clk);
- 	if (ret)
- 		return ret;
- 
- 	ret = reset_control_deassert(phy->reset);
- 	if (ret) {
--		clk_disable_unprepare(data->clk);
-+		clk_disable_unprepare(phy->clk);
- 		return ret;
- 	}
- 
-@@ -170,11 +170,10 @@ static int sun4i_usb_phy_init(struct phy *_phy)
- static int sun4i_usb_phy_exit(struct phy *_phy)
- {
- 	struct sun4i_usb_phy *phy = phy_get_drvdata(_phy);
--	struct sun4i_usb_phy_data *data = to_sun4i_usb_phy_data(phy);
- 
- 	sun4i_usb_phy_passby(phy, 0);
- 	reset_control_assert(phy->reset);
--	clk_disable_unprepare(data->clk);
-+	clk_disable_unprepare(phy->clk);
- 
- 	return 0;
- }
-@@ -228,8 +227,10 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
- 	struct phy_provider *phy_provider;
- 	struct reset_control *reset;
- 	struct regulator *vbus;
-+	bool dedicated_clocks;
- 	struct resource *res;
- 	struct phy *phy;
-+	struct clk *clk;
- 	char name[16];
- 	int i;
- 
-@@ -249,15 +250,20 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
- 	else
- 		data->disc_thresh = 2;
- 
-+	if (of_device_is_compatible(np, "allwinner,sun6i-a31-usb-phy"))
-+		dedicated_clocks = true;
-+
- 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "phy_ctrl");
- 	data->base = devm_ioremap_resource(dev, res);
- 	if (IS_ERR(data->base))
- 		return PTR_ERR(data->base);
- 
--	data->clk = devm_clk_get(dev, "usb_phy");
--	if (IS_ERR(data->clk)) {
--		dev_err(dev, "could not get usb_phy clock\n");
--		return PTR_ERR(data->clk);
-+	if (!dedicated_clocks) {
-+		clk = devm_clk_get(dev, "usb_phy");
-+		if (IS_ERR(clk)) {
-+			dev_err(dev, "could not get usb_phy clock\n");
-+			return PTR_ERR(clk);
-+		}
- 	}
- 
- 	/* Skip 0, 0 is the phy for otg which is not yet supported. */
-@@ -270,6 +276,15 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
- 			vbus = NULL;
- 		}
- 
-+		if (dedicated_clocks) {
-+			snprintf(name, sizeof(name), "usb%d_phy", i);
-+			clk = devm_clk_get(dev, name);
-+			if (IS_ERR(clk)) {
-+				dev_err(dev, "failed to get clock %s\n", name);
-+				return PTR_ERR(clk);
-+			}
-+		}
-+
- 		snprintf(name, sizeof(name), "usb%d_reset", i);
- 		reset = devm_reset_control_get(dev, name);
- 		if (IS_ERR(reset)) {
-@@ -296,6 +311,7 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
- 		data->phys[i].pmu = pmu;
- 		data->phys[i].vbus = vbus;
- 		data->phys[i].reset = reset;
-+		data->phys[i].clk = clk;
- 		data->phys[i].index = i;
- 		phy_set_drvdata(phy, &data->phys[i]);
- 	}
-@@ -311,6 +327,7 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
- static const struct of_device_id sun4i_usb_phy_of_match[] = {
- 	{ .compatible = "allwinner,sun4i-a10-usb-phy" },
- 	{ .compatible = "allwinner,sun5i-a13-usb-phy" },
-+	{ .compatible = "allwinner,sun6i-a31-usb-phy" },
- 	{ .compatible = "allwinner,sun7i-a20-usb-phy" },
- 	{ },
- };
--- 
-1.9.1
+Maybe I should move the code that fires the IPI to cpu0, if it is sleeping,
+on irq exit (the plan was to do it right away on irq enter) and fire it
+only if need_resched().
 
+> 
+> No objections from my side.
+
+Great! Thanks for checking that!
+
+> 
+> Thanks,
+> 
+> 	tglx
+> 
