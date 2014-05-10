@@ -1,51 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808AbaEJJJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 05:09:56 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:46613 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754210AbaEJJJx (ORCPT
+	id S1755198AbaEJJKX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 05:10:23 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50045 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754608AbaEJJKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 05:09:53 -0400
+	Sat, 10 May 2014 05:10:20 -0400
+Date: Sat, 10 May 2014 11:10:18 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org, Bo Shen <voice.shen@atmel.com>
+Subject: Re: [PATCH 1/2] ARM: at91: add PWM pinctrl to SAMA5D3
+Message-ID: <20140510091017.GA22329@piout.net>
+References: <a5a0a9b8090f80f40daf3a13849b3961d9d617d6.1399642907.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <20140506084749.GT26890@mwanda>
-References: <1399364528-3727-1-git-send-email-martink@posteo.de>
-	<20140506084749.GT26890@mwanda>
-Date: Sat, 10 May 2014 02:09:52 -0700
-X-Google-Sender-Auth: g9kBryiU01KX9O_tehmQ3L8kaVs
-Message-ID: <CANeU7Qkpg3_mYEYqZpT2zy__6z0q8KDNB=gDH9oMY8UtQNu0+Q@mail.gmail.com>
-Subject: Re: [PATCH] staging: rtl8192u: initialize array in C compliant way
-From: Christopher Li <sparse@chrisli.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Martin Kepplinger <martink@posteo.de>,
-        Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, burzalodowa@gmail.com,
-        Linux-Sparse <linux-sparse@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <a5a0a9b8090f80f40daf3a13849b3961d9d617d6.1399642907.git.nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 6, 2014 at 1:47 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
->> diff --git a/drivers/staging/rtl8192u/ieee80211/rtl819x_TSProc.c b/drivers/staging/rtl8192u/ieee80211/rtl819x_TSProc.c
->> index 426f223..c96dbab 100644
->> --- a/drivers/staging/rtl8192u/ieee80211/rtl819x_TSProc.c
->> +++ b/drivers/staging/rtl8192u/ieee80211/rtl819x_TSProc.c
->> @@ -241,7 +241,7 @@ static PTS_COMMON_INFO SearchAdmitTRStream(struct ieee80211_device *ieee,
->>  {
->>       //DIRECTION_VALUE       dir;
->>       u8      dir;
->> -     bool                            search_dir[4] = {0, 0, 0, 0};
->> +     bool                            search_dir[4] = {0};
->
-> That's weird.  The original code is valid but it generates a sparse
-> warning.
+Hi Nicolas,
 
-Sorry for the late reply. I see what is going on already. The bits_to_bytes()
-function is buggy for bool type. Bool is the only type has bits less than 8.
-It truncates the bool byte size to 0. As a result, the array layout function
-convert_index() always set the expr->init_offset to 0 for bool type:
+On 09/05/2014 at 15:44:27 +0200, Nicolas Ferre wrote :
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+>  arch/arm/boot/dts/sama5d3.dtsi | 82 ++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 82 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
+> index 9caa06b3641e..ed7943745f23 100644
+> --- a/arch/arm/boot/dts/sama5d3.dtsi
+> +++ b/arch/arm/boot/dts/sama5d3.dtsi
+> @@ -583,6 +583,88 @@
+>  					};
+>  				};
+>  
+> +				pwm0 {
+> +					pinctrl_pwm0_pwmh0_0: pwm0_pwmh0-0 {
+> +						atmel,pins =
+> +							<AT91_PIOA 20 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PA20 periph B, conflicts with ISI_D4 and LCDDAT20 */
 
-"e->init_offset = from * bits_to_bytes(e->ctype->bit_size);"
+Didn't we decide at some point to stop adding comments for the pinctrl ?
+At least, I would say that "PA20 periph B" doesn't add any useful
+information.
 
-Chris
+> +					};
+> +					pinctrl_pwm0_pwmh0_1: pwm0_pwmh0-1 {
+> +						atmel,pins =
+> +							<AT91_PIOB 0 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB0 periph B, conflicts with GTX0 */
+> +					};
+> +
+> +					pinctrl_pwm0_pwmh1_0: pwm0_pwmh1-0 {
+> +						atmel,pins =
+> +							<AT91_PIOA 22 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PA22 periph B, conflicts with ISI_D6 and LCDDAT22 */
+> +					};
+> +					pinctrl_pwm0_pwmh1_1: pwm0_pwmh1-1 {
+> +						atmel,pins =
+> +							<AT91_PIOB 4 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB4 periph B, conflicts with GRX0 */
+> +					};
+> +					pinctrl_pwm0_pwmh1_2: pwm0_pwmh1-2 {
+> +						atmel,pins =
+> +							<AT91_PIOB 27 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* PB27 periph C, conflicts with G125CKO and RTS1 */
+> +					};
+> +
+> +					pinctrl_pwm0_pwmh2_0: pwm0_pwmh2-0 {
+> +						atmel,pins =
+> +							<AT91_PIOB 8 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB8 periph B, conflicts with GTXCK */
+> +					};
+> +					pinctrl_pwm0_pwmh2_1: pwm0_pwmh2-1 {
+> +						atmel,pins =
+> +							<AT91_PIOD 5 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* PD5 periph C, conflicts with MCI0_DA4 and TIOA0 */
+> +					};
+> +
+> +					pinctrl_pwm0_pwmh3_0: pwm0_pwmh3-0 {
+> +						atmel,pins =
+> +							<AT91_PIOB 12 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB12 periph B, conflicts with GRXDV */
+> +					};
+> +					pinctrl_pwm0_pwmh3_1: pwm0_pwmh3-1 {
+> +						atmel,pins =
+> +							<AT91_PIOD 7 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* PD7 periph C, conflicts with MCI0_DA6 and TCLK0 */
+> +					};
+> +
+> +					pinctrl_pwm0_pwml0_0: pwm0_pwml0-0 {
+> +						atmel,pins =
+> +							<AT91_PIOA 21 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PA21 periph B, conflicts with ISI_D5 and LCDDAT21 */
+> +					};
+> +					pinctrl_pwm0_pwml0_1: pwm0_pwml0-1 {
+> +						atmel,pins =
+> +							<AT91_PIOB 1 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB1 periph B, conflicts with GTX1 */
+> +					};
+
+I would group pwm0_pwmhx and pwm0_pwmlx together.
+
+> +
+> +					pinctrl_pwm0_pwml1_0: pwm0_pwml1-0 {
+> +						atmel,pins =
+> +							<AT91_PIOA 23 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PA23 periph B, conflicts with ISI_D7 and LCDDAT23 */
+> +					};
+> +					pinctrl_pwm0_pwml1_1: pwm0_pwml1-1 {
+> +						atmel,pins =
+> +							<AT91_PIOB 5 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB5 periph B, conflicts with GRX1 */
+> +					};
+> +					pinctrl_pwm0_pwml1_2: pwm0_pwml1-2 {
+> +						atmel,pins =
+> +							<AT91_PIOE 31 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PE31 periph B, conflicts with IRQ */
+> +					};
+> +
+
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
