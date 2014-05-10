@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961AbaEJEPJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 00:15:09 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:63226 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716AbaEJEPH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 00:15:07 -0400
-Message-ID: <1399695303.5146.21.camel@marge.simpson.net>
-Subject: Re: [ANNOUNCE] 3.14.3-rt5
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Date: Sat, 10 May 2014 06:15:03 +0200
-In-Reply-To: <20140509181214.GK29014@linutronix.de>
-References: <20140509181214.GK29014@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751479AbaEJElz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 00:41:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41345 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750871AbaEJEly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 May 2014 00:41:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1022,1389772800"; 
+   d="scan'208";a="538006261"
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: joe@perches.com, akpm@linux-foundation.org
+Cc: David Ertman <davidx.m.ertman@intel.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [PATCH] checkpatch.pl: Fix checkpatch false positive due to ternary operator break
+Date: Fri,  9 May 2014 21:41:51 -0700
+Message-Id: <1399696911-6550-1-git-send-email-jeffrey.t.kirsher@intel.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-09 at 20:12 +0200, Sebastian Andrzej Siewior wrote:
+From: David Ertman <davidx.m.ertman@intel.com>
 
-> Known issues:
-> 
->       - bcache is disabled.
-> 
->       - lazy preempt on x86_64 leads to a crash with some load.
+Using the intuitive breaking of a ternary operator used in the
+initialization of a variable in its declaration:
 
-That is only with NO_HZ_FUL enabled here.  Box blows the stack during
-task exit, eyeballing hasn't spotted the why.
+type var = FOO ?
+           BAR :
+           FEE;
 
-> - CPU hotplug works in general. Steven's test script however
->         deadlocks usually on the second invocation.
+is causing a checkpatch warning:
+"WARNING:SPACING: networking uses a blank line after declarations"
 
-My 64 core box runs for up to 14 hours, and never deadlocks.. it
-explodes in what looks like it should be an impossible manner instead.
+Checkpatch is checking for the ternary operators at the beginning of the
+lines after the initial break like the following:
 
--Mike
+type var = FOO
+           ? BAR
+           : FEE;
+
+Change checkpatch so that it is checking fot the correct breaking of ternary
+operators used in networking variable declaration/initialization.
+
+Signed-off-by: Dave Ertman <davidx.m.ertman@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+---
+ scripts/checkpatch.pl | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 34eb216..baabf1c 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2269,12 +2269,13 @@ sub process {
+ 		if ($realfile =~ m@^(drivers/net/|net/)@ &&
+ 		    $prevline =~ /^\+\s+$Declare\s+$Ident/ &&
+ 		    !($prevline =~ /(?:$Compare|$Assignment|$Operators)\s*$/ ||
+-		      $prevline =~ /(?:\{\s*|\\)$/) &&		#extended lines
++		      $prevline =~ /(?:\{\s*|\\)$/ ||		#extended lines
++		      $prevline =~ /(?:[\?\:])$/) &&		#ternary ops
+ 		    $sline =~ /^\+\s+/ &&			#Not at char 1
+ 		    !($sline =~ /^\+\s+$Declare/ ||
+ 		      $sline =~ /^\+\s+$Ident\s+$Ident/ ||	#eg: typedef foo
+ 		      $sline =~ /^\+\s+(?:union|struct|enum|typedef)\b/ ||
+-		      $sline =~ /^\+\s+(?:$|[\{\}\.\#\"\?\:\(])/ ||
++		      $sline =~ /^\+\s+(?:$|[\{\}\.\#\"\(])/ ||
+ 		      $sline =~ /^\+\s+\(?\s*(?:$Compare|$Assignment|$Operators)/)) {
+ 			WARN("SPACING",
+ 			     "networking uses a blank line after declarations\n" . $hereprev);
+-- 
+1.9.0
 
