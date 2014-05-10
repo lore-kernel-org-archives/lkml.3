@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375AbaEJGiZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 02:38:25 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:14528 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaEJGiW (ORCPT
+	id S1756526AbaEJGiq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 02:38:46 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:25984 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754164AbaEJGia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 02:38:22 -0400
-X-AuditID: cbfee68f-b7eff6d000002b70-9b-536dc95d40ef
+	Sat, 10 May 2014 02:38:30 -0400
+X-AuditID: cbfee68d-b7f4e6d000004845-07-536dc965ea14
 From: Pankaj Dubey <pankaj.dubey@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
 Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
         chow.kim@samsung.com, yg1004.jang@samsung.com,
         vikas.sajjan@samsung.com, Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH v4 00/11] ARM: Exynos: PMU cleanup and refactoring for using DT
-Date: Sat, 10 May 2014 15:56:27 +0900
-Message-id: <1399704998-13321-1-git-send-email-pankaj.dubey@samsung.com>
+Subject: [PATCH v4 11/11] ARM: EXYNOS: Move PMU specific definitions from
+ common.h
+Date: Sat, 10 May 2014 15:56:38 +0900
+Message-id: <1399704998-13321-12-git-send-email-pankaj.dubey@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t8zI93Yk7nBBu9mcVssm3SXzaJ3wVU2
-	i02Pr7FaXN41h81ixvl9TBa3L/NaLNr6hd1i/YzXLBY3n21nstjRsprFgcujpbmHzWPzknqP
-	vi2rGD0+b5ILYInisklJzcksSy3St0vgylg+8y9bwXyjimf9m5gbGP+odzFyckgImEgs/3GU
-	FcIWk7hwbz1bFyMXh5DAMkaJtx8uMsMUzT96lxkiMZ1RYsLPq1BVbUwS12atYQOpYhPQlXjy
-	fi5Yh4hAtsSVxvtgHcwCuxklGhvngRUJC/hLzDm4Amwfi4CqxMK5f1hAbF4BD4n2D/1ANRxA
-	6xQk5kyyAemVEOhnl1g/ez4jRL2AxLfJh1ggamQlNh2Auk5S4uCKGywTGAUXMDKsYhRNLUgu
-	KE5KLzLWK07MLS7NS9dLzs/dxAgJ5P4djHcPWB9iTAYaN5FZSjQ5HxgJeSXxhsZmRhamJqbG
-	RuaWZqQJK4nz3n+YFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBcSL7sqMr4lYf2cdbJzyt
-	uSbfVqnLraZfYn34jlNuT/ttml2rb0qKef9JmZ7fdG/XpA2X19xjUJrHZH/wtRDzvFksGZeC
-	y07PnrBH/8jUib37yiM+aSdvYphWu/H7Gzn5R997z15/U5RZxSPBWR1W+o3/eFzC7QP/DHi2
-	bSpgF7VZvv5OJKNUnBJLcUaioRZzUXEiAH1Q9G16AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCIsWRmVeSWpSXmKPExsVy+t9jQd3Yk7nBBvt3s1osm3SXzaJ3wVU2
+In-reply-to: <1399704998-13321-1-git-send-email-pankaj.dubey@samsung.com>
+References: <1399704998-13321-1-git-send-email-pankaj.dubey@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t8zI93Uk7nBBnc6BC2WTbrLZtG74Cqb
+	xabH11gtLu+aw2Yx4/w+Jovbl3ktFm39wm6xfsZrFoubz7YzWexoWc3iwOXR0tzD5rF5Sb1H
+	35ZVjB6fN8kFsERx2aSk5mSWpRbp2yVwZdyYvZyx4JF4Ref11YwNjG+Fuxg5OSQETCQ2f+5n
+	hrDFJC7cW8/WxcjFISSwjFFiyt4udpiil10XoRLTGSWWzdvGAuG0MUl8eHqLCaSKTUBX4sn7
+	uWCjRASyJa403mcGKWIW2M0o0dg4jw0kISwQInFg2kRWEJtFQFWia+kSsAZeAU+Jpd1HgaZy
+	AK1TkJgzyQYkzAkU/vp1Mdh8IQEPiQfdS8FmSgisYpf4fKqJHWKOgMS3yYegemUlNh2AekdS
+	4uCKGywTGIUXMDKsYhRNLUguKE5KLzLUK07MLS7NS9dLzs/dxAgJ/N4djLcPWB9iTAYaN5FZ
+	SjQ5Hxg5eSXxhsZmRhamJqbGRuaWZqQJK4nzJj1MChISSE8sSc1OTS1ILYovKs1JLT7EyMTB
+	KdXAaP7VoGnudoNdfL84VMtOdWquny3KN6fjx4SvN+y8zua7R/jUWnxN5V3MWO00TXGr/5TP
+	4uEKBr2XZ5okeW5QFp1Z18Tebnxk1Tmb360HGDUn/Mx46sptEs6/tPGV4RqOLwvP3Nl9tLvy
+	Gc8ByUM1Wglzlv+XVegWXWNzsHvHvG0Lf2zbZHc4S4mlOCPRUIu5qDgRAHDZG0CSAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jQd3Uk7nBBqtn8Vgsm3SXzaJ3wVU2
 	i02Pr7FaXN41h81ixvl9TBa3L/NaLNr6hd1i/YzXLBY3n21nstjRsprFgcujpbmHzWPzknqP
 	vi2rGD0+b5ILYIlqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy
-	8QnQdcvMAbpHSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYx5ixfOZftoL5
-	RhXP+jcxNzD+Ue9i5OSQEDCRmH/0LjOELSZx4d56ti5GLg4hgemMEhN+XoVy2pgkrs1awwZS
-	xSagK/Hk/VywDhGBbIkrjfeZQYqYBXYzSjQ2zgMrEhbwl5hzcAUriM0ioCqxcO4fFhCbV8BD
-	ov1DP1ANB9A6BYk5k2wmMHIvYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcJ8+kdzCu
-	arA4xCjAwajEw1v4NidYiDWxrLgy9xCjBAezkgjvioO5wUK8KYmVValF+fFFpTmpxYcYk4GW
-	T2SWEk3OB8ZwXkm8obGJmZGlkZmFkYm5OWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUw
-	+jJYPz3Z/3HRtPcrbTjfPnEOOdX14bGh16/nR1SnCXDWP1hbJLum08/36BzJP198U2Kyl8fp
-	xFo/Tey6E/yLUfX75dvsfEU761heuc08XOqxZ0PCVu9PqVO6MqOqpj7NOCAv/ohR7e/XlQIB
-	p44cPtk14YHg5XU7H9x4rns3pPays03B8jU3eJRYijMSDbWYi4oTAbAK5IXXAgAA
+	8QnQdcvMAbpHSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYx5hxY/ZyxoJH
+	4hWd11czNjC+Fe5i5OSQEDCReNl1kQ3CFpO4cG89kM3FISQwnVFi2bxtLBBOG5PEh6e3mECq
+	2AR0JZ68n8sMYosIZEtcabzPDFLELLCbUaKxcR7YKGGBEIkD0yaygtgsAqoSXUuXgDXwCnhK
+	LO0+CjSVA2idgsScSTYgYU6g8Nevi8HmCwl4SDzoXso8gZF3ASPDKkbR1ILkguKk9FxDveLE
+	3OLSvHS95PzcTYzguHomtYNxZYPFIUYBDkYlHt6CtznBQqyJZcWVuYcYJTiYlUR4VxzMDRbi
+	TUmsrEotyo8vKs1JLT7EmAx01ERmKdHkfGDM55XEGxqbmBlZGplZGJmYm5MmrCTOe6DVOlBI
+	ID2xJDU7NbUgtQhmCxMHp1QD42yePw3MSkLvCqPTqp7O+3hKlOnl/02OS0x79n2V39a+9cm6
+	aT+Vo1TUn30MqLszJcpN85pi0bm0qfp525nZTjM3si+dWDp53dodEb8y2g908s175Nh6rezq
+	L//tBy5VXdIyW7Hi17efN1n6HXjT2Uuqmk8V6mn/3ljikeo1ba728bz/mcUy15RYijMSDbWY
+	i4oTASjW5zfvAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -48,126 +52,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series, does some minor cleanup of exynos machine files.
-It also modifies Exynos Power Management Unit (PMU) related code for
-converting it into a platform_driver. This is also preparation for moving
-PMU related code out of machine folder into a either "drivers/mfd", or
-"drivers/power" or some other suitable place so that ARM64 based SoC can
-utilize common piece of code.
+From: Young-Gun Jang <yg1004.jang@samsung.com>
 
-These patches require change in Exynos4 SoC dtsi files, which has been
-posted as separate patch series. 
+This patch moves PMU specific definitions into a new file
+as exynos-pmu.h. This will help in making PMU implementation
+independent of common.h header.
 
-These patches are created on top of Kukjin Kim's for-next (v3.15-rc1 tag)
-branch and on top of Daniel Lezcano's Exynos cpuidle refactor patches [2].
-
-These patches depends on following three patch series:
-[1] mfd: syscon: Support early initialization
-    https://lkml.org/lkml/2014/4/8/239
-[2] Daniel Lezcano's Exynos cpuidle refactor patches
-    http://thread.gmane.org/gmane.linux.kernel.samsung-soc/29085
-[3] Allow NULL property in syscon_early_regmap_lookup_by_phandle
-    https://lkml.org/lkml/2014/5/10/10 and
-    https://lkml.org/lkml/2014/4/29/661
-
-We have tested these patches on SMDK5250 board for System boot and
-Arndale (Exynos5250) board for System boot and PMU initialization and S2R.
-
-For testing on Arndale (Exynos5250) board:
-Tested-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-
-Changes Since v3:
- - Addressed build fail issue in exynos.c as reported by Sachin Kamat.
- - Optimized exynos_pmu_probe function by removing exynos_pmu_data_init
-   as suggested by Vikas Sajjan.
- - Rebased on top of Sysram patches by Sachin Kamat.
- - Modified syscon_early_regmap_lookup_by_phandle and
-   syscon_regmap_lookup_by_phandle function call to pass property as NULL.
-
-Changes Since v2:
- - Rebased on top of Daniel Lezcano's Exynos cpuidle refactor patches.
- - Removed exynos_cpuidle_init and exynos_cpufreq_init code as suggested
-   by Tomasz Figa.
- - Removed early mapping of PMU base address from exynos.c and removed
-   "get_exynos_pmuaddr" function. Instead of this added code in platsmp.c
-   to get PMU base address using of_iomap as suggested by Tomasz Figa.
- - Converted PMU implementation into platform_driver by using static
-   platform_device method. 
-
-Changes Since v1:
- - Rebased on latest for-next of Kukjin Kim's tree.
- - Added patch: "Make exynos machine_ops as static". 
-	For making more cleanup in "mach-exynos/common.h"
-	as suggested by Tomasz Figa.
- - Addressed comments of Tomasz Figa for cleaning "mach-exynos/common.h".
- - Updated patch: Remove file path from comment section
-	As suggested by Michel Simek, instead of updating file path
-	lets remove them from each file under "mach-exynos".
-	Even though Kukjin pointed out that there is similar patch pending from
-	Sachin/Tushar but since I could not find I have included this here. If
-	I have missed something please point to any existing such patch.
- - Updated patch: Add support for mapping PMU base address via DT
-	- Removed __initdata from declaration of "exynos_pmu_base", as it caused
-	kernel crash as pointed out by Vikas Sajjan.
-	- Added support for Syscon initialization and getting PMU regmap handle
-	as suggested by Sylwester. Since current implementation of early
-	intialization [1] has limitation that "early_syscon_init" requires
-	DT to be unflattened and system should be able to allocate memory,
-	we can't use regmap handles for platsmp.c file as "smp_secondary_init"
-	will be called before DT unflattening. So I have kept both method for
-	accessing PMU base address. platsmp.c will use ioremmaped address where
-	as rest other files can use regmap handle.
- - Added patch: Remove "linux/bug.h" from pmu.c.
- - Updated patch: Refactored code for PMU register mapping via DT
-	- Modified to use regmap_read/write when using regmap handle.
- - Added patch: Move "mach/map.h" inclusion from regs-pmu.h to platsmp.c
- - Added patch: Add device tree based initialization support for PMU.
-	- Convert existing PMU implementation to be a device tree based 
-	 before moving it to "drivers/mfd" folder. As suggested by Bartlomiej.
-	- Dropped making a platform_driver for PMU, as currently PMU binding
-	has two compatibility strings as "samsung, exynosxxx-pmu", "syscon",
-	once we	enable MFD_SYSCON config option, current "syscon" driver probe
-	gets called and PMU probe never gets called. So modified PMU
-	initialization code to scan DT and match against supported compatiblity
-	string in driver code, and once we get matching node use that for
-	accessing PMU regmap handle using "syscon_early_regmap_lookup_by_phandle".
-	If there is any better solution please suggest.
-
-Pankaj Dubey (7):
-  ARM: EXYNOS: Make exynos machine_ops as static
-  ARM: EXYNOS: Move cpufreq and cpuidle device registration to
-    init_machine
-  ARM: EXYNOS: Remove file path from comment section
-  ARM: EXYNOS: Remove "linux/bug.h" from pmu.c
-  ARM: EXYNOS: Refactored code for using PMU address via DT
-  ARM: EXYNOS: Move "mach/map.h" inclusion from regs-pmu.h to platsmp.c
-  ARM: EXYNOS: Add platform driver support for Exynos PMU.
-
-Young-Gun Jang (4):
-  ARM: EXYNOS: Move SYSREG definition into sys-reg specific file.
-  ARM: EXYNOS: Remove regs-pmu.h header dependency from pm_domain
-  ARM: EXYNOS: Add support for mapping PMU base address via DT
-  ARM: EXYNOS: Move PMU specific definitions from common.h
-
- arch/arm/Kconfig                             |    1 +
- arch/arm/mach-exynos/common.h                |   27 +-
- arch/arm/mach-exynos/exynos-pmu.h            |   31 ++
- arch/arm/mach-exynos/exynos.c                |   84 +++--
- arch/arm/mach-exynos/headsmp.S               |    2 -
- arch/arm/mach-exynos/hotplug.c               |    7 +-
- arch/arm/mach-exynos/include/mach/map.h      |    3 -
- arch/arm/mach-exynos/include/mach/memory.h   |    3 +-
- arch/arm/mach-exynos/platsmp.c               |   42 ++-
- arch/arm/mach-exynos/pm.c                    |   79 ++--
- arch/arm/mach-exynos/pm_domains.c            |    8 +-
- arch/arm/mach-exynos/pmu.c                   |  271 +++++++++++---
- arch/arm/mach-exynos/regs-pmu.h              |  512 +++++++++++++-------------
- arch/arm/mach-exynos/regs-sys.h              |   22 ++
- arch/arm/plat-samsung/include/plat/map-s5p.h |    1 -
- 15 files changed, 665 insertions(+), 428 deletions(-)
+Signed-off-by: Young-Gun Jang <yg1004.jang@samsung.com>
+Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+---
+ arch/arm/mach-exynos/common.h     |   17 -----------------
+ arch/arm/mach-exynos/exynos-pmu.h |   31 +++++++++++++++++++++++++++++++
+ arch/arm/mach-exynos/pm.c         |    1 +
+ arch/arm/mach-exynos/pmu.c        |    2 +-
+ 4 files changed, 33 insertions(+), 18 deletions(-)
  create mode 100644 arch/arm/mach-exynos/exynos-pmu.h
- create mode 100644 arch/arm/mach-exynos/regs-sys.h
 
+diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
+index 58b2b5d..abcb074 100644
+--- a/arch/arm/mach-exynos/common.h
++++ b/arch/arm/mach-exynos/common.h
+@@ -37,24 +37,7 @@ extern struct smp_operations exynos_smp_ops;
+ 
+ extern void exynos_cpu_die(unsigned int cpu);
+ 
+-/* PMU(Power Management Unit) support */
+-
+-#define PMU_TABLE_END	(-1U)
+-
+-enum sys_powerdown {
+-	SYS_AFTR,
+-	SYS_LPA,
+-	SYS_SLEEP,
+-	NUM_SYS_POWERDOWN,
+-};
+-
+ extern unsigned long l2x0_regs_phys;
+-struct exynos_pmu_conf {
+-	unsigned int offset;
+-	unsigned int val[NUM_SYS_POWERDOWN];
+-};
+-
+-extern void exynos_sys_powerdown_conf(enum sys_powerdown mode);
+ extern void exynos_enter_aftr(void);
+ 
+ extern struct regmap *get_exynos_pmuregmap(void);
+diff --git a/arch/arm/mach-exynos/exynos-pmu.h b/arch/arm/mach-exynos/exynos-pmu.h
+new file mode 100644
+index 0000000..16ff036
+--- /dev/null
++++ b/arch/arm/mach-exynos/exynos-pmu.h
+@@ -0,0 +1,31 @@
++/*
++ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
++ *		http://www.samsung.com
++ *
++ * Header for EXYNOS PMU Driver support
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __EXYNOS_PMU_H
++#define __EXYNOS_PMU_H
++
++#define PMU_TABLE_END	(-1U)
++
++enum sys_powerdown {
++	SYS_AFTR,
++	SYS_LPA,
++	SYS_SLEEP,
++	NUM_SYS_POWERDOWN,
++};
++
++struct exynos_pmu_conf {
++	unsigned int offset;
++	unsigned int val[NUM_SYS_POWERDOWN];
++};
++
++extern void exynos_sys_powerdown_conf(enum sys_powerdown mode);
++
++#endif /* __EXYNOS_PMU_H */
+diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
+index ee427d7..a7a1b7f 100644
+--- a/arch/arm/mach-exynos/pm.c
++++ b/arch/arm/mach-exynos/pm.c
+@@ -38,6 +38,7 @@
+ #include "common.h"
+ #include "regs-pmu.h"
+ #include "regs-sys.h"
++#include "exynos-pmu.h"
+ 
+ static struct regmap *pmu_regmap;
+ 
+diff --git a/arch/arm/mach-exynos/pmu.c b/arch/arm/mach-exynos/pmu.c
+index 6a7fa8e..50c33c9 100644
+--- a/arch/arm/mach-exynos/pmu.c
++++ b/arch/arm/mach-exynos/pmu.c
+@@ -16,7 +16,7 @@
+ #include <linux/slab.h>
+ #include <linux/mfd/syscon.h>
+ 
+-#include "common.h"
++#include "exynos-pmu.h"
+ #include "regs-pmu.h"
+ 
+ struct exynos_pmu_data {
 -- 
 1.7.10.4
 
