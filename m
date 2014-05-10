@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757722AbaEJAcj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 20:32:39 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:50095 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932427AbaEJAbs (ORCPT
+	id S1757857AbaEJAc4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 20:32:56 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:52589 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932394AbaEJAbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 20:31:48 -0400
+	Fri, 9 May 2014 20:31:41 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Wim Van Sebroeck <wim@iguana.be>,
@@ -17,9 +17,9 @@ Cc: Wim Van Sebroeck <wim@iguana.be>,
         Russell King <linux@arm.linux.org.uk>,
         Jonas Jensen <jonas.jensen@gmail.com>, linux-kernel@vger.kernel.org,
         Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 4/5] watchdog: moxart: Register reboot handler with watchdog subsystem
-Date: Fri,  9 May 2014 17:31:22 -0700
-Message-Id: <1399681883-891-5-git-send-email-linux@roeck-us.net>
+Subject: [PATCH v2 2/5] arm64: Support reboot through watchdog subsystem
+Date: Fri,  9 May 2014 17:31:20 -0700
+Message-Id: <1399681883-891-3-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399681883-891-1-git-send-email-linux@roeck-us.net>
 References: <1399681883-891-1-git-send-email-linux@roeck-us.net>
@@ -27,79 +27,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The watchdog subsystem now provides an API to trigger a system reboot.
-Register with it.
+The watchdog subsystem provides an API to perform a system reboot.
+Use it.
 
-Tested-by: Jonas Jensen <jonas.jensen@gmail.com>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v2: No change
 
- drivers/watchdog/moxart_wdt.c | 20 ++++++++------------
- 1 file changed, 8 insertions(+), 12 deletions(-)
+ arch/arm64/kernel/process.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/watchdog/moxart_wdt.c b/drivers/watchdog/moxart_wdt.c
-index 4aa3a8a..b83646b 100644
---- a/drivers/watchdog/moxart_wdt.c
-+++ b/drivers/watchdog/moxart_wdt.c
-@@ -19,8 +19,6 @@
- #include <linux/watchdog.h>
- #include <linux/moduleparam.h>
+diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
+index 6391485..29c2bc0 100644
+--- a/arch/arm64/kernel/process.c
++++ b/arch/arm64/kernel/process.c
+@@ -42,6 +42,7 @@
+ #include <linux/hw_breakpoint.h>
+ #include <linux/personality.h>
+ #include <linux/notifier.h>
++#include <linux/watchdog.h>
  
--#include <asm/system_misc.h>
--
- #define REG_COUNT			0x4
- #define REG_MODE			0x8
- #define REG_ENABLE			0xC
-@@ -31,15 +29,16 @@ struct moxart_wdt_dev {
- 	unsigned int clock_frequency;
- };
+ #include <asm/compat.h>
+ #include <asm/cacheflush.h>
+@@ -144,6 +145,8 @@ void machine_restart(char *cmd)
+ 	if (arm_pm_restart)
+ 		arm_pm_restart(reboot_mode, cmd);
  
--static struct moxart_wdt_dev *moxart_restart_ctx;
--
- static int heartbeat;
- 
--static void moxart_wdt_restart(enum reboot_mode reboot_mode, const char *cmd)
-+static void moxart_wdt_reboot(struct watchdog_device *wdt_dev,
-+			      enum reboot_mode mode, const char *cmd)
- {
--	writel(1, moxart_restart_ctx->base + REG_COUNT);
--	writel(0x5ab9, moxart_restart_ctx->base + REG_MODE);
--	writel(0x03, moxart_restart_ctx->base + REG_ENABLE);
-+	struct moxart_wdt_dev *moxart_wdt = watchdog_get_drvdata(wdt_dev);
++	watchdog_do_reboot(reboot_mode, cmd);
 +
-+	writel(1, moxart_wdt->base + REG_COUNT);
-+	writel(0x5ab9, moxart_wdt->base + REG_MODE);
-+	writel(0x03, moxart_wdt->base + REG_ENABLE);
- }
- 
- static int moxart_wdt_stop(struct watchdog_device *wdt_dev)
-@@ -81,6 +80,7 @@ static const struct watchdog_ops moxart_wdt_ops = {
- 	.owner          = THIS_MODULE,
- 	.start          = moxart_wdt_start,
- 	.stop           = moxart_wdt_stop,
-+	.reboot		= moxart_wdt_reboot,
- 	.set_timeout    = moxart_wdt_set_timeout,
- };
- 
-@@ -136,9 +136,6 @@ static int moxart_wdt_probe(struct platform_device *pdev)
- 	if (err)
- 		return err;
- 
--	moxart_restart_ctx = moxart_wdt;
--	arm_pm_restart = moxart_wdt_restart;
--
- 	dev_dbg(dev, "Watchdog enabled (heartbeat=%d sec, nowayout=%d)\n",
- 		moxart_wdt->dev.timeout, nowayout);
- 
-@@ -149,7 +146,6 @@ static int moxart_wdt_remove(struct platform_device *pdev)
- {
- 	struct moxart_wdt_dev *moxart_wdt = platform_get_drvdata(pdev);
- 
--	arm_pm_restart = NULL;
- 	moxart_wdt_stop(&moxart_wdt->dev);
- 	watchdog_unregister_device(&moxart_wdt->dev);
- 
+ 	/*
+ 	 * Whoops - the architecture was unable to reboot.
+ 	 */
 -- 
 1.9.1
 
