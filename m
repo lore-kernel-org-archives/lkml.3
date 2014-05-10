@@ -1,98 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479AbaEJDqa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 23:46:30 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:59761 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaEJDq3 (ORCPT
+	id S1754072AbaEJDyz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 23:54:55 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:33754 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315AbaEJDyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 23:46:29 -0400
-X-Originating-IP: 50.43.32.211
-Date: Fri, 9 May 2014 20:46:16 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 20/45] torture: Include "Stopping" string to
- torture_kthread_stopping()
-Message-ID: <20140510034616.GB8451@thin>
-References: <20140429002455.GA15461@linux.vnet.ibm.com>
- <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1398731133-18925-20-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140507213736.GL27924@cloud>
- <20140510001346.GC8754@linux.vnet.ibm.com>
- <20140510001657.GB7553@thin>
- <20140510004259.GG8754@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140510004259.GG8754@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 9 May 2014 23:54:54 -0400
+Message-ID: <1399694090.5146.13.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched: wake up task on prev_cpu if not in
+ SD_WAKE_AFFINE domain with cpu
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        morten.rasmussen@arm.com, mingo@kernel.org,
+        george.mccollister@gmail.com, ktkhai@parallels.com
+Date: Sat, 10 May 2014 05:54:50 +0200
+In-Reply-To: <536D1B6D.8060004@redhat.com>
+References: <20140502004237.79dd3de6@annuminas.surriel.com>
+	 <1399011219.5233.55.camel@marge.simpson.net> <53633B81.1080403@redhat.com>
+	 <1399016273.5233.94.camel@marge.simpson.net> <536379D0.8070306@redhat.com>
+	 <1399030032.5233.142.camel@marge.simpson.net> <5363B793.9010208@redhat.com>
+	 <20140506115448.GH11096@twins.programming.kicks-ass.net>
+	 <536943C9.4030502@redhat.com>
+	 <20140506203916.GQ17778@laptop.programming.kicks-ass.net>
+	 <536C3B69.1000208@redhat.com>
+	 <20140509012743.67d4006d@annuminas.surriel.com>
+	 <1399620873.5200.68.camel@marge.simpson.net> <536CE48E.2060305@redhat.com>
+	 <1399649042.31219.47.camel@marge.simpson.net> <536CF346.6080009@redhat.com>
+	 <1399658123.5187.2.camel@marge.simpson.net> <536D1B6D.8060004@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 05:42:59PM -0700, Paul E. McKenney wrote:
-> On Fri, May 09, 2014 at 05:16:57PM -0700, Josh Triplett wrote:
-> > On Fri, May 09, 2014 at 05:13:46PM -0700, Paul E. McKenney wrote:
-> > > On Wed, May 07, 2014 at 02:37:36PM -0700, josh@joshtriplett.org wrote:
-> > > > On Mon, Apr 28, 2014 at 05:25:08PM -0700, Paul E. McKenney wrote:
-> > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > > 
-> > > > > Currently, torture_kthread_stopping() prints only the name of the
-> > > > > kthread that is stopping, which can be unedifying.  This commit therefore
-> > > > > adds "Stopping" to make things more evident.
-> > > > > 
-> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > > Feedback below.
-> > > > 
-> > > > >  kernel/torture.c | 5 ++++-
-> > > > >  1 file changed, 4 insertions(+), 1 deletion(-)
-> > > > > 
-> > > > > diff --git a/kernel/torture.c b/kernel/torture.c
-> > > > > index acc9afc2f26e..f329848c3eee 100644
-> > > > > --- a/kernel/torture.c
-> > > > > +++ b/kernel/torture.c
-> > > > > @@ -674,8 +674,11 @@ EXPORT_SYMBOL_GPL(torture_must_stop_irq);
-> > > > >   */
-> > > > >  void torture_kthread_stopping(char *title)
-> > > > >  {
-> > > > > +	char buf[128];
-> > > > > +
-> > > > > +	snprintf(buf, sizeof(buf), "Stopping %s", title);
-> > > > >  	if (verbose)
-> > > > > -		VERBOSE_TOROUT_STRING(title);
-> > > > > +		VERBOSE_TOROUT_STRING(buf);
-> > > > 
-> > > > This seems like a case where the macro has led to poorer code; rather
-> > > > than using sprintf into a temporary buffer, this should just print.
-> > > > Please consider fixing the output macros to allow formats, as the pr_*
-> > > > macros do.
-> > > > 
-> > > > Also, why do you need "if (verbose)" if the name of the macro has
-> > > > VERBOSE_ in it; shouldn't that mean it checks verbosity itself?
-> > > > (Another good reason not to create a unique verbosity level mechanism,
-> > > > and to use the kernel mechanisms instead.)
-> > > 
-> > > Good catch, removed the redundant "if (verbose)".
-> > > 
-> > > My attempts in the past to leverage existing in-kernel verbosity controls
-> > > has caused problems such as the output appearing or not depending on
-> > > the distro in question.
-> > 
-> > That aside, though, what do you think about making the macros accept
-> > format strings and arguments, in the style of pr_* and pr_fmt?
-> 
-> If I end up needing this in a few more cases, then it would indeed be
-> worth it.
+On Fri, 2014-05-09 at 14:16 -0400, Rik van Riel wrote:
 
-I'd argue that it's worth it already: doing snprintf into a temporary
-buffer seems ridiculous here, when without these macros you'd just call
-pr_foo("Stopping %s\n", title);
+> That leaves the big question: do we want to fall back to
+> prev_cpu if it is not idle, and it has an idle sibling,
+> or would it be better to find an idle sibling of prev_cpu
+> when we wake up a task?
 
-- Josh Triplett
+Yes.  If there was A correct answer, this stuff would be a lot easier.
+
+-Mike
+
