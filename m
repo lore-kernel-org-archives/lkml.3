@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627AbaEJKuG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 06:50:06 -0400
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:11027 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754716AbaEJKuD (ORCPT
+	id S1754758AbaEJLBG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 07:01:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40575 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744AbaEJLBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 06:50:03 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgkWAAQDblNXQCSg/2dsb2JhbABZgwaCQXypFwoFAZoVAgKBFxd0glMTHCMYgQIkE4hFAdFNhVaIGGSERwEDjyWKIgGTB4M4O4Ew
-Date: Sat, 10 May 2014 12:49:58 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1 RESEND] drivers/scsi/sd.c: remove positive test on
- unsigned value
-Message-Id: <20140510124958.b231a1d64d12ecdf97aff393@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 10 May 2014 07:01:04 -0400
+Date: Sat, 10 May 2014 13:01:15 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, arvind.chauhan@arm.com, preeti@linux.vnet.ibm.com,
+        khilman@linaro.org
+Subject: Re: [PATCH 2/2] tick: SHUTDOWN event-dev if no events are required
+ for KTIME_MAX
+In-Reply-To: <alpine.DEB.2.02.1405091728450.6261@ionos.tec.linutronix.de>
+Message-ID: <alpine.DEB.2.02.1405101256430.6261@ionos.tec.linutronix.de>
+References: <cover.1399623699.git.viresh.kumar@linaro.org> <0fe81b08a8aa32912ce7b4a015fdc09b6e3830e3.1399623699.git.viresh.kumar@linaro.org> <alpine.DEB.2.02.1405091728450.6261@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-val is unsigned.
+On Fri, 9 May 2014, Thomas Gleixner wrote:
+> On Fri, 9 May 2014, Viresh Kumar wrote:
+> So the right thing to do this is:
+> 
+> 1A) Change the prototype of the set_mode callback to return int and
+>     fixup all users. Either add the missing default clause or remove
+>     the existing BUG()/ pr_err()/whatever handling in the existing
+>     default clause and return a UNIQUE error code.
+> 
+>     I know I should have done that from the very beginning, but in
+>     hindsight one could have done everything better.
+> 
+>     coccinelle is your friend (if you need help ask me or Julia
+>     Lawall). But it's going to be quite some manual work on top.
 
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/scsi/sd.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+There is even a better way to do that:
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index efcbcd1..b54d4f8 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -296,7 +296,7 @@ protection_type_store(struct device *dev, struct device_attribute *attr,
- 	if (err)
- 		return err;
- 
--	if (val >= 0 && val <= SD_DIF_TYPE3_PROTECTION)
-+	if (val <= SD_DIF_TYPE3_PROTECTION)
- 		sdkp->protection_type = val;
- 
- 	return count;
--- 
-1.8.4.5
+1) Create a new callback set_state() which has an
+   int return value.
 
+2) Make the callsites do
+
+   if (dev->set_state) {
+      ret = dev->set_state();
+      handle_return_value();
+   } else
+      dev->set_mode();
+
+3) Convert implementations one by one to use the new callback
+
+4) Remove the set_mode callback
+
+5) Implement new features.
+
+Thanks,
+
+	tglx
