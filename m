@@ -1,87 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938AbaEJKlA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 06:41:00 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:28730 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753141AbaEJKk7 (ORCPT
+	id S1757257AbaEJKlR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 06:41:17 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45077 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757094AbaEJKlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 06:40:59 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgQWACABblNXQCSg/2dsb2JhbABZgwaDPakXCgUBmhUCAoEXF3SCZhwjGIECJBOIRQHRUIVWiHyERwEDjyWKIgGLBIgDgzg7
-Date: Sat, 10 May 2014 12:40:53 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1 RESEND] arch/m68k/apollo/config.c: convert printk to
- pr_foo()
-Message-Id: <20140510124053.6bfffd5cb30aa88a7464d080@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 10 May 2014 06:41:15 -0400
+Message-ID: <536E02AD.9000201@kernel.org>
+Date: Sat, 10 May 2014 11:42:53 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org
+CC: Josh Wu <josh.wu@atmel.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] iio:adc: at91 requires the input subsystem
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <1399560990-1402858-13-git-send-email-arnd@arndb.de> <536CA78C.5070603@atmel.com> <4163305.otOGv8yVK1@wuerfel> <536CD0C9.4040603@atmel.com>
+In-Reply-To: <536CD0C9.4040603@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-no level printk converted to pr_info
+On 09/05/14 13:57, Nicolas Ferre wrote:
+> On 09/05/2014 13:43, Arnd Bergmann :
+>> On Friday 09 May 2014 12:01:48 Nicolas Ferre wrote:
+>>> On 08/05/2014 16:56, Arnd Bergmann :
+>>>> Building the at91 adc driver with CONFIG_INPUT disabled results in this
+>>>> build error:
+>>>>
+>>>> ERROR: "input_event" [drivers/iio/adc/at91_adc.ko] undefined!
+>>>> ERROR: "input_unregister_device" [drivers/iio/adc/at91_adc.ko] undefined!
+>>>> ERROR: "input_free_device" [drivers/iio/adc/at91_adc.ko] undefined!
+>>>> ERROR: "input_register_device" [drivers/iio/adc/at91_adc.ko] undefined!
+>>>> ERROR: "input_set_abs_params" [drivers/iio/adc/at91_adc.ko] undefined!
+>>>> ERROR: "input_allocate_device" [drivers/iio/adc/at91_adc.ko] undefined!
+>>>>
+>>>> To make sure we can build random configurations, this turns on CONFIG_INPUT
+>>>> whenever CONFIG_AT91_ADC is enabled.
+>>>
+>>> Isn't it a "select" instead of "depends" that is required then?
+>>
+>> It seems I fixed the patch at some point but didn't update the message.
+>>
+>> In general, we should not mix 'depends on' and 'select' for the same symbol,
+>> since that causes extra confusion.
+>>
+>> In case of CONFIG_INPUT, almost all the users do 'depends on INPUT', with
+>> a few exceptions that seem to be done in error.
+>
+> Ok, that makes sense.
+>
+>
+>> Updated patch below.
+>
+> Thanks Arnd.
+>
+>> 	Arnd
+>>
+>> 8<----
+>>
+>> >From 4679d63b24a681d9c6afcfdde266bae0f940e90b Mon Sep 17 00:00:00 2001
+>> From: Arnd Bergmann <arnd@arndb.de>
+>> Date: Wed, 9 Apr 2014 17:18:10 +0200
+>> Subject: [PATCH] [SUBMITTED] iio:adc: at91 requires the input subsystem
+>>
+>> Building the at91 adc driver with CONFIG_INPUT disabled results in this
+>> build error:
+>>
+>> ERROR: "input_event" [drivers/iio/adc/at91_adc.ko] undefined!
+>> ERROR: "input_unregister_device" [drivers/iio/adc/at91_adc.ko] undefined!
+>> ERROR: "input_free_device" [drivers/iio/adc/at91_adc.ko] undefined!
+>> ERROR: "input_register_device" [drivers/iio/adc/at91_adc.ko] undefined!
+>> ERROR: "input_set_abs_params" [drivers/iio/adc/at91_adc.ko] undefined!
+>> ERROR: "input_allocate_device" [drivers/iio/adc/at91_adc.ko] undefined!
+>>
+>> To make sure we can build random configurations, this adds a Kconfig
+>> dependency on CONFIG_INPUT, as we do for other similar drivers.
+>>
+>> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>> Cc: linux-iio@vger.kernel.org
+>> Cc: Josh Wu <josh.wu@atmel.com>
+>> Cc: Jonathan Cameron <jic23@kernel.org>
+>> Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
+>
+>
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>
+Applied to the togreg branch of iio.git.  Thanks,
 
-This is untested
-
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- arch/m68k/apollo/config.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
-
-diff --git a/arch/m68k/apollo/config.c b/arch/m68k/apollo/config.c
-index 9268c0f..42d393f 100644
---- a/arch/m68k/apollo/config.c
-+++ b/arch/m68k/apollo/config.c
-@@ -65,8 +65,8 @@ int __init apollo_parse_bootinfo(const struct bi_record *record)
- 
- static void __init dn_setup_model(void)
- {
--	printk("Apollo hardware found: ");
--	printk("[%s]\n", apollo_models[apollo_model - APOLLO_DN3000]);
-+	pr_info("Apollo hardware found: ");
-+	pr_cont("[%s]\n", apollo_models[apollo_model - APOLLO_DN3000]);
- 
- 	switch(apollo_model) {
- 		case APOLLO_UNKNOWN:
-@@ -197,8 +197,10 @@ void dn_sched_init(irq_handler_t timer_routine)
- 	*(volatile unsigned char *)(pica+1)&=(~8);
- 
- #if 0
--	printk("*(0x10803) %02x\n",*(volatile unsigned char *)(apollo_timer + 0x3));
--	printk("*(0x10803) %02x\n",*(volatile unsigned char *)(apollo_timer + 0x3));
-+	pr_info("*(0x10803) %02x\n",
-+		*(volatile unsigned char *)(apollo_timer + 0x3));
-+	pr_info("*(0x10803) %02x\n",
-+		*(volatile unsigned char *)(apollo_timer + 0x3));
- #endif
- 
- 	if (request_irq(IRQ_APOLLO, dn_timer_int, 0, "time", timer_routine))
-@@ -236,12 +238,10 @@ int dn_dummy_hwclk(int op, struct rtc_time *t) {
- 
- }
- 
--int dn_dummy_set_clock_mmss(unsigned long nowtime) {
--
--  printk("set_clock_mmss\n");
--
--  return 0;
--
-+int dn_dummy_set_clock_mmss(unsigned long nowtime)
-+{
-+	pr_info("set_clock_mmss\n");
-+	return 0;
- }
- 
- void dn_dummy_reset(void) {
--- 
-1.8.4.5
+Jonathan
+> Bye,
+>
+>>
+>> diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+>> index 90f596d..a80d236 100644
+>> --- a/drivers/iio/adc/Kconfig
+>> +++ b/drivers/iio/adc/Kconfig
+>> @@ -110,6 +110,7 @@ config AD799X
+>>   config AT91_ADC
+>>   	tristate "Atmel AT91 ADC"
+>>   	depends on ARCH_AT91
+>> +	depends on INPUT
+>>   	select IIO_BUFFER
+>>   	select IIO_TRIGGERED_BUFFER
+>>   	select SYSFS
+>>
+>>
+>>
+>
+>
 
