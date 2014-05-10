@@ -1,33 +1,39 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728AbaEHOiQ (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Thu, 8 May 2014 10:38:16 -0400
-Received: from mail01-esl-se-ins.cygrids.net ([85.118.201.69]:63367 "EHLO
-	mail01-esl-se-ins.cygrids.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753442AbaEHOiM (ORCPT
+	id S1757397AbaEJSRR (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Sat, 10 May 2014 14:17:17 -0400
+Received: from outrelay02.libero.it ([212.52.84.102]:33874 "EHLO
+	outrelay02.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545AbaEJSRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 May 2014 10:38:12 -0400
-X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 May 2014 10:38:12 EDT
-X-MDAV-Processed: mail01-esl-se-ins.cygrids.net, Thu, 08 May 2014 16:32:06 +0200
-X-Spam-Processed: mail01-esl-se-ins.cygrids.net, Thu, 08 May 2014 16:32:06 +0200
-	(not processed: message was sent from localhost)
-X-Authenticated-Sender: johanwiktor@bjarred.net
-X-MDRemoteIP: 10.3.0.15
-X-Return-Path: johanwiktor@bjarred.net
-X-Envelope-From: johanwiktor@bjarred.net
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Date: Thu, 08 May 2014 16:32:03 +0200
-From: "Johan Wiktor" <johanwiktor@bjarred.net>
-Subject: hello
+	Sat, 10 May 2014 14:17:16 -0400
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A0C0206.536E6CAD.0085,ss=1,re=0.000,fgs=0
+X-libjamoibt: 1587
+Message-ID: <209573079.1219301399745709350.JavaMail.defaultUser@defaultHost>
+Date: Sat, 10 May 2014 20:15:09 +0200 (CEST)
+From: jenjenlove <jenjequeen@libero.it>
+Reply-To: jenjenjenlove01@yahoo.com
+Subject: Hello
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Message-ID: <WC20140508143203.640068@bjarred.net>
-X-Mailer: WorldClient 11.0.3
+Content-Type: text/plain;charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-SenderIP: 41.82.29.86
+X-libjamv: mxHaQu316TY=
+X-libjamsun: tK0spMFtIuQOHXcqkTg4duvUDN0S/jaSMvJldbU6ogE=
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-you have won $300,000.00 contact aluyijy@yahoo.com for winning claims call our customer service 
-on this number:+44 702-409-9031
-
-
+Hello
+how are you today hope fine
+and full of life i am Jen
+by name i come across
+your account profile and i
+like it then i say let me drop a
+note so you can contact me
+back with my email (jenjenjenlove01@yahoo.com)
+so that i can send you my pics and more
+details about me the will can know
+each other very well,
+yours miss Jen
