@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757721AbaEJBTS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 21:19:18 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:50113 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378AbaEJBTR (ORCPT
+	id S1757845AbaEJBT5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 21:19:57 -0400
+Received: from g5t1627.atlanta.hp.com ([15.192.137.10]:7087 "EHLO
+	g5t1627.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755778AbaEJBTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 21:19:17 -0400
-Date: Fri, 9 May 2014 18:19:13 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Richard Weinberger <richard@nod.at>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Mike Snitzer <snitzer@redhat.com>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] UBI: fix rb_tree node comparison in add_map
-Message-ID: <20140510011913.GH28907@ld-irv-0074>
-References: <20140321195403.GA32529@redhat.com>
- <532CD1CB.4070707@nod.at>
+	Fri, 9 May 2014 21:19:55 -0400
+Message-ID: <536D7EA4.4060301@hp.com>
+Date: Fri, 09 May 2014 21:19:32 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <532CD1CB.4070707@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v10 09/19] qspinlock: Prepare for unfair lock support
+References: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com> <1399474907-22206-10-git-send-email-Waiman.Long@hp.com> <20140508190649.GR2844@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140508190649.GR2844@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Artem,
+On 05/08/2014 03:06 PM, Peter Zijlstra wrote:
+> On Wed, May 07, 2014 at 11:01:37AM -0400, Waiman Long wrote:
+>> If unfair lock is supported, the lock acquisition loop at the end of
+>> the queue_spin_lock_slowpath() function may need to detect the fact
+>> the lock can be stolen. Code are added for the stolen lock detection.
+>>
+>> A new qhead macro is also defined as a shorthand for mcs.locked.
+> NAK, unfair should be a pure test-and-set lock.
 
-On Sat, Mar 22, 2014 at 12:56:59AM +0100, Richard Weinberger wrote:
-> Am 21.03.2014 20:54, schrieb Mike Snitzer:
-> > The comparisons used in add_vol() shouldn't be identical.  Pretty sure
-> > the following is correct but it is completely untested.
-> > 
-> > Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-> > ---
-> >  drivers/mtd/ubi/fastmap.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > NOTE: I stumbled upon this code while implementing some rb_tree code
-> >       (and looking for some existing rb_tree code as a reference).
-> 
-> Thanks a lot for pointing this out!
-> 
-> Acked-by: Richard Weinberger <richard@nod.at>
+I have performance data showing that a simple test-and-set lock does not 
+scale well. That is the primary reason of ditching the test-and-set lock 
+and use a more complicated scheme which scales better. Also, it will be 
+hard to make the unfair test-and-set lock code to coexist nicely with PV 
+spinlock code.
 
-Bump?
+>>   /**
+>>    * get_qlock - Set the lock bit and own the lock
+>> - * @lock: Pointer to queue spinlock structure
+>> + * @lock : Pointer to queue spinlock structure
+>> + * Return: 1 if lock acquired, 0 otherwise
+>>    *
+>>    * This routine should only be called when the caller is the only one
+>>    * entitled to acquire the lock.
+>>    */
+>> -static __always_inline void get_qlock(struct qspinlock *lock)
+>> +static __always_inline int get_qlock(struct qspinlock *lock)
+>>   {
+>>   	struct __qspinlock *l = (void *)lock;
+>>
+>>   	barrier();
+>>   	ACCESS_ONCE(l->locked) = _Q_LOCKED_VAL;
+>>   	barrier();
+>> +	return 1;
+>>   }
+> and here you make a horribly named function more horrible;
+> try_set_locked() is that its now.
 
-I'm passing through my queue, and I occasionally see some obvious,
-reviewed fixes like this one. Typically, you get around to them
-eventually, but you never know. Do you prefer the "bump"?
+Will do.
 
-Brian
+-Longman
