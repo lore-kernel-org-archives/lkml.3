@@ -1,199 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757403AbaEJPIq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 11:08:46 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:35445 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755931AbaEJPIp (ORCPT
+	id S1751600AbaEJP3T (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 11:29:19 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:51586 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaEJP3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 11:08:45 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtgbAKNAblNXQCSg/2dsb2JhbABZgwaDPakYBAEBAQEBAQUBmhUCAoETF3SCUxMcIxiBAiQTiEUB0F+FVoh8hEcBA48liiIBkweDODs
-Date: Sat, 10 May 2014 17:08:38 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>, tytso <tytso@mit.edu>
-Subject: [PATCH 1/1] FS/EXT4: use generic kvfree
-Message-Id: <20140510170838.5d684f9af146ebe69ce6bbc0@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 10 May 2014 11:29:18 -0400
+Date: Sat, 10 May 2014 17:29:02 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: rostedt@goodmis.org, bsegall@google.com, mingo@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: Distinguish sched_wakeup event when wake up a
+ task which did schedule out or not.
+Message-ID: <20140510152902.GW11096@twins.programming.kicks-ass.net>
+References: <53683B14.3060702@cn.fujitsu.com>
+ <1399341154-11785-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KMIs29sPfC/9Gbii"
+Content-Disposition: inline
+In-Reply-To: <1399341154-11785-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove ext4_kvfree and use generic one added in
 
-39f1f78d53b9bcb
-("nick kvfree() from apparmor")
+--KMIs29sPfC/9Gbii
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc:  Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/ext4/ext4.h    |  1 -
- fs/ext4/mballoc.c |  7 ++++---
- fs/ext4/resize.c  |  7 ++++---
- fs/ext4/super.c   | 20 ++++++--------------
- 4 files changed, 14 insertions(+), 21 deletions(-)
+On Tue, May 06, 2014 at 10:52:34AM +0900, Dongsheng Yang wrote:
+> ttwu_do_wakeup() is called when the task's state is switched back to
+> TASK_RUNNING, whether or not the task actually scheduled out. Tracing
+> the wakeup event when the task never scheduled out is quite confusing.
+>=20
+> This patch take the use of 'success' parameter in sched_wakeup tracepoint,
+> to indicate that the task we are waking up did schedule out or just
+> change its state to TASK_RUNNING.
+>=20
+> success is true:
+> 	task was out of run queue and sleeping, we are really wake it up.
+> success is false:
+> 	taks was on run queue all the time and we just change its state
+> 	to TASK_RUNNING.
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 66946aa..d525025 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2203,7 +2203,6 @@ extern int ext4_superblock_csum_verify(struct super_block *sb,
- extern void ext4_superblock_csum_set(struct super_block *sb);
- extern void *ext4_kvmalloc(size_t size, gfp_t flags);
- extern void *ext4_kvzalloc(size_t size, gfp_t flags);
--extern void ext4_kvfree(void *ptr);
- extern int ext4_alloc_flex_bg_array(struct super_block *sb,
- 				    ext4_group_t ngroup);
- extern const char *ext4_decode_error(struct super_block *sb, int errno,
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index c8238a2..19b8b0b 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -27,6 +27,7 @@
- #include <linux/module.h>
- #include <linux/slab.h>
- #include <trace/events/ext4.h>
-+#include <linux/mm.h>
- 
- #ifdef CONFIG_EXT4_DEBUG
- ushort ext4_mballoc_debug __read_mostly;
-@@ -2346,7 +2347,7 @@ int ext4_mb_alloc_groupinfo(struct super_block *sb, ext4_group_t ngroups)
- 	if (sbi->s_group_info) {
- 		memcpy(new_groupinfo, sbi->s_group_info,
- 		       sbi->s_group_info_size * sizeof(*sbi->s_group_info));
--		ext4_kvfree(sbi->s_group_info);
-+		kvfree(sbi->s_group_info);
- 	}
- 	sbi->s_group_info = new_groupinfo;
- 	sbi->s_group_info_size = size / sizeof(*sbi->s_group_info);
-@@ -2483,7 +2484,7 @@ err_freebuddy:
- 		kfree(sbi->s_group_info[i]);
- 	iput(sbi->s_buddy_cache);
- err_freesgi:
--	ext4_kvfree(sbi->s_group_info);
-+	kvfree(sbi->s_group_info);
- 	return -ENOMEM;
- }
- 
-@@ -2698,7 +2699,7 @@ int ext4_mb_release(struct super_block *sb)
- 			EXT4_DESC_PER_BLOCK_BITS(sb);
- 		for (i = 0; i < num_meta_group_infos; i++)
- 			kfree(sbi->s_group_info[i]);
--		ext4_kvfree(sbi->s_group_info);
-+		kvfree(sbi->s_group_info);
- 	}
- 	kfree(sbi->s_mb_offsets);
- 	kfree(sbi->s_mb_maxs);
-diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
-index f3b84cd..06821ef 100644
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -13,6 +13,7 @@
- 
- #include <linux/errno.h>
- #include <linux/slab.h>
-+#include <linux/mm.h>
- 
- #include "ext4_jbd2.h"
- 
-@@ -848,7 +849,7 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
- 	n_group_desc[gdb_num] = gdb_bh;
- 	EXT4_SB(sb)->s_group_desc = n_group_desc;
- 	EXT4_SB(sb)->s_gdb_count++;
--	ext4_kvfree(o_group_desc);
-+	kvfree(o_group_desc);
- 
- 	le16_add_cpu(&es->s_reserved_gdt_blocks, -1);
- 	err = ext4_handle_dirty_super(handle, sb);
-@@ -858,7 +859,7 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
- 	return err;
- 
- exit_inode:
--	ext4_kvfree(n_group_desc);
-+	kvfree(n_group_desc);
- 	brelse(iloc.bh);
- exit_dind:
- 	brelse(dind);
-@@ -901,7 +902,7 @@ static int add_new_gdb_meta_bg(struct super_block *sb,
- 	n_group_desc[gdb_num] = gdb_bh;
- 	EXT4_SB(sb)->s_group_desc = n_group_desc;
- 	EXT4_SB(sb)->s_gdb_count++;
--	ext4_kvfree(o_group_desc);
-+	kvfree(o_group_desc);
- 	err = ext4_journal_get_write_access(handle, gdb_bh);
- 	if (unlikely(err))
- 		brelse(gdb_bh);
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 6f9e6fa..8e12c3d 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -43,6 +43,7 @@
- 
- #include <linux/kthread.h>
- #include <linux/freezer.h>
-+#include <linux/mm.h>
- 
- #include "ext4.h"
- #include "ext4_extents.h"	/* Needed for trace points definition */
-@@ -179,15 +180,6 @@ void *ext4_kvzalloc(size_t size, gfp_t flags)
- 	return ret;
- }
- 
--void ext4_kvfree(void *ptr)
--{
--	if (is_vmalloc_addr(ptr))
--		vfree(ptr);
--	else
--		kfree(ptr);
--
--}
--
- ext4_fsblk_t ext4_block_bitmap(struct super_block *sb,
- 			       struct ext4_group_desc *bg)
- {
-@@ -814,8 +806,8 @@ static void ext4_put_super(struct super_block *sb)
- 
- 	for (i = 0; i < sbi->s_gdb_count; i++)
- 		brelse(sbi->s_group_desc[i]);
--	ext4_kvfree(sbi->s_group_desc);
--	ext4_kvfree(sbi->s_flex_groups);
-+	kvfree(sbi->s_group_desc);
-+	kvfree(sbi->s_flex_groups);
- 	percpu_counter_destroy(&sbi->s_freeclusters_counter);
- 	percpu_counter_destroy(&sbi->s_freeinodes_counter);
- 	percpu_counter_destroy(&sbi->s_dirs_counter);
-@@ -1969,7 +1961,7 @@ int ext4_alloc_flex_bg_array(struct super_block *sb, ext4_group_t ngroup)
- 		memcpy(new_groups, sbi->s_flex_groups,
- 		       (sbi->s_flex_groups_allocated *
- 			sizeof(struct flex_groups)));
--		ext4_kvfree(sbi->s_flex_groups);
-+		kvfree(sbi->s_flex_groups);
- 	}
- 	sbi->s_flex_groups = new_groups;
- 	sbi->s_flex_groups_allocated = size / sizeof(struct flex_groups);
-@@ -4224,7 +4216,7 @@ failed_mount3:
- 	ext4_es_unregister_shrinker(sbi);
- 	del_timer_sync(&sbi->s_err_report);
- 	if (sbi->s_flex_groups)
--		ext4_kvfree(sbi->s_flex_groups);
-+		kvfree(sbi->s_flex_groups);
- 	percpu_counter_destroy(&sbi->s_freeclusters_counter);
- 	percpu_counter_destroy(&sbi->s_freeinodes_counter);
- 	percpu_counter_destroy(&sbi->s_dirs_counter);
-@@ -4237,7 +4229,7 @@ failed_mount2a:
- failed_mount2:
- 	for (i = 0; i < db_count; i++)
- 		brelse(sbi->s_group_desc[i]);
--	ext4_kvfree(sbi->s_group_desc);
-+	kvfree(sbi->s_group_desc);
- failed_mount:
- 	ext4_ext_release(sb);
- 	if (sbi->s_chksum_driver)
--- 
-1.8.4.5
+No, I think this patch is crap and doesn't actually change anything
+much, at best it simply reduces the size of the race window.
+
+I also think you're trying to solve something that cannot be solved.
+
+So the fundamental wait loop is:
+
+  for (;;) {
+	set_current_state(TASK_UNINTERRUPTIBLE);
+	if (cond)
+		break;
+	schedule();
+  }
+  __set_task_state(TASK_RUNNING);
+
+And the fundamental wakeup is:
+
+  cond =3D true;
+  wake_up_process(TASK_NORMAL);
+
+And this is very much on purpose a lock-free but strictly ordered
+scenario. It is a variation of:
+
+  X =3D Y =3D 0
+
+  (wait)	(wake)
+  [w] X =3D 1	[w] Y =3D 1
+  MB		MB
+  [r] Y		[r] X
+
+[ where: X :=3D state, Y :=3D cond ]
+
+And we all 'know' that the only provided guarantee is that:
+  X=3D=3D0 && Y=3D=3D0
+is impossible -- but only that, all 3 other states are observable.
+
+This guarantee means that its impossible to both miss the condition and
+the wakeup; iow. it guarantees fwd progress.
+
+OTOH its fundamentally racy, nothing guarantees we will not 'observe' both
+the condition and the wakeup.
+
+The setting of .success=3Dfalse when ->on_rq is actively wrong, suppose
+the waiter has already observed cond=3D=3Dfalse but has not yet gotten to
+schedule(), at that point the wakeup happens and sees ->on_rq=3D=3D1. The
+wakeup is still very much a real wakeup.
+
+If it were not for that wakeup the waiter would have gone to sleep and
+missed the update of condition.
+
+So no.. not going to happen. And certainly not with such a crappy
+Changelog.
+
+And a frozen seafood of choice lobbed at Steven for not seeing this :-)
+
+
+--KMIs29sPfC/9Gbii
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTbkW+AAoJEHZH4aRLwOS6ptAP/3xaiKzBNh1guUGT2iJmmGSd
+ekewxG8+XF7kf1UdH+Z1XCKDtGOoU6ADNtVpNaTrtanLs5eFVMM5t2ceu/jXVDRy
+X8C9rvITdyai6/ItSB2XQW7z97Isk0UpMKxRGIgeSnhk2sb2R9LenfvA8tnPaoFc
+fKb9n6uZeNXDSmg964DnngS3Xlnt/f5zbsxzFtHNKvhVLfbjRyLlzcmliYyLXU8B
+8qjq9zXIFoSiddbDYk5uPnvm7kaPawoxmPr8woWwOoXlMLPQ8O8HswHkYXQL6k8a
+o663vvRub7kkYKzuJQ7mo0B/7XkFJ9yoJQ/g0PaBja68IQSRPbbBgGIp5cC7YMy/
+vV/pzYw9XrWgg827YxFpsf9X6Kc+LBYmOyM9EHRcnQuc2ceRIuf+kECQyDxCPWPX
+IUM/lXqFNNp2DMJViikDa3PkBLnnKJax44evxd395n4Xu7mtbO06YTd0w6/4R/Bu
+glV/dUzRTCXSgiHVrCXKFTpcY71hOhRyw92eirRlaL7JebnOeQWruYQb9p/vwQn7
+gTQzUk2jXy30+88VkD5TaTRXs/8i2jLL+XlhAxMCiMoHiJJAluEvS/chzFOWzcNo
+x8MxdxflPCAbcsN+G74qAeCYdMW4YBweR1A9VWztxEsiagQZp5uYCMAJQCoZNx2I
+nBgdpqdV9lTZQHWrkA3b
+=F/Fv
+-----END PGP SIGNATURE-----
+
+--KMIs29sPfC/9Gbii--
