@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259AbaEJHS1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 03:18:27 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:54622 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755930AbaEJHSZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 03:18:25 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: akpm@linux-foundation.org, riel@redhat.com, aarcange@redhat.com,
-        nasa4836@gmail.com, fabf@skynet.be, zhangyanfei@cn.fujitsu.com,
-        sasha.levin@oracle.com, mgorman@suse.de, oleg@redhat.com,
-        n-horiguchi@ah.jp.nec.com, iamjoonsoo.kim@lge.com,
-        kirill.shutemov@linux.intel.com, liwanp@linux.vnet.ibm.com,
-        gorcunov@gmail.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] mm: rename mlocked_vma_newpage to newpage_in_mlocked_vma
-Date: Sat, 10 May 2014 15:18:08 +0800
-Message-Id: <7ab379a001bd44ed980a884f819178cffe7df577.1399705884.git.nasa4836@gmail.com>
-X-Mailer: git-send-email 2.0.0-rc1
-In-Reply-To: <1d32d83e54542050dba3f711a8d10b1e951a9a58.1399705884.git.nasa4836@gmail.com>
-References: <1d32d83e54542050dba3f711a8d10b1e951a9a58.1399705884.git.nasa4836@gmail.com>
+	id S1752664AbaEJHYo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 03:24:44 -0400
+Received: from mout.web.de ([212.227.15.14]:55108 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751155AbaEJHYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 May 2014 03:24:42 -0400
+Message-ID: <536DD432.30809@web.de>
+Date: Sat, 10 May 2014 09:24:34 +0200
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>, pbonzini@redhat.com
+CC: Nadav Amit <namit@cs.technion.ac.il>, gleb@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] KVM: x86: Fix CR3 reserved bits check in long mode
+References: <1397777591-6147-1-git-send-email-namit@cs.technion.ac.il> <1397781312-6885-1-git-send-email-namit@cs.technion.ac.il> <1397781312-6885-2-git-send-email-namit@cs.technion.ac.il> <536DD1AC.9070605@web.de>
+In-Reply-To: <536DD1AC.9070605@web.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="6cVpu5c3dAkwrImlH1Qt3WELfb2b4NoX0"
+X-Provags-ID: V03:K0:WBz3ZZI+ZF3fXnfWz+nS40KT8UnJ1fSGLlPiLbMdrn366NCKEiL
+ y97q6mTeCvLGiDn+IebN1vdw6Lu8Jn5bJjMY3whSGxzmOeNU4U/2yb3CY7VZyHa03CG65Fx
+ H0lM9FIzO43sJOYfUFa2QKEis13LSeZKeBLWPVmD4VCKoU7/2v6xUJOlAR324GkXALNWaPN
+ bDw6f2DUQ3VoDilbjsBLA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mlocked_vma_newpage is used to determine if a new page is mapped into
-a *mlocked* vma. It is poorly named, so rename it to newpage_in_mlocked_vma.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--6cVpu5c3dAkwrImlH1Qt3WELfb2b4NoX0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+From: Jan Kiszka <jan.kiszka@siemens.com>
+
+Regression of 346874c9: PAE is set in long mode, but that does not mean
+we have valid PDPTRs.
+
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- mm/internal.h | 4 ++--
- mm/rmap.c     | 4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/kvm/x86.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/mm/internal.h b/mm/internal.h
-index 20abafb..35efd79 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -183,7 +183,7 @@ static inline void munlock_vma_pages_all(struct vm_area_struct *vma)
- 	munlock_vma_pages_range(vma, vma->vm_start, vma->vm_end);
- }
- 
--extern int mlocked_vma_newpage(struct vm_area_struct *vma,
-+extern int newpage_in_mlocked_vma(struct vm_area_struct *vma,
- 				struct page *page);
- /*
-  * must be called with vma's mmap_sem held for read or write, and page locked.
-@@ -227,7 +227,7 @@ extern unsigned long vma_address(struct page *page,
- 				 struct vm_area_struct *vma);
- #endif
- #else /* !CONFIG_MMU */
--static inline int mlocked_vma_newpage(struct vm_area_struct *v, struct page *p)
-+static inline int newpage_in_mlocked_vma(struct vm_area_struct *v, struct page *p)
- {
- 	return 0;
- }
-diff --git a/mm/rmap.c b/mm/rmap.c
-index a9d02ef..9ff6915 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1014,7 +1014,7 @@ void do_page_add_anon_rmap(struct page *page,
-  * pte is locked while calling page_add_new_anon_rmap(), so using a
-  * light-weight version __mod_zone_page_state() would be OK.
-  */
--int mlocked_vma_newpage(struct vm_area_struct *vma,
-+int newpage_in_mlocked_vma(struct vm_area_struct *vma,
- 					struct page *page)
- {
- 	VM_BUG_ON_PAGE(PageLRU(page), page);
-@@ -1050,7 +1050,7 @@ void page_add_new_anon_rmap(struct page *page,
- 	__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
- 			hpage_nr_pages(page));
- 	__page_set_anon_rmap(page, vma, address, 1);
--	if (!mlocked_vma_newpage(vma, page)) {
-+	if (!newpage_in_mlocked_vma(vma, page)) {
- 		SetPageActive(page);
- 		lru_cache_add(page);
- 	} else
--- 
-2.0.0-rc1
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index c5582c3..198aac8 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -701,10 +701,11 @@ int kvm_set_cr3(struct kvm_vcpu *vcpu, unsigned lon=
+g cr3)
+ 		return 0;
+ 	}
+=20
+-	if (is_long_mode(vcpu) && (cr3 & CR3_L_MODE_RESERVED_BITS))
+-		return 1;
+-	if (is_pae(vcpu) && is_paging(vcpu) &&
+-	    !load_pdptrs(vcpu, vcpu->arch.walk_mmu, cr3))
++	if (is_long_mode(vcpu)) {
++		if (cr3 & CR3_L_MODE_RESERVED_BITS)
++			return 1;
++	} else if (is_pae(vcpu) && is_paging(vcpu) &&
++		   !load_pdptrs(vcpu, vcpu->arch.walk_mmu, cr3))
+ 		return 1;
+=20
+ 	vcpu->arch.cr3 =3D cr3;
+--=20
+1.8.1.1.298.ge7eed54
 
+
+--6cVpu5c3dAkwrImlH1Qt3WELfb2b4NoX0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlNt1DMACgkQitSsb3rl5xTRHwCfQDOXl6v5pk4LT4SkWN3tOHYc
+4BgAoJxyTGZ1/gpAtxyyhkHdHcp/2/8C
+=rvJ8
+-----END PGP SIGNATURE-----
+
+--6cVpu5c3dAkwrImlH1Qt3WELfb2b4NoX0--
