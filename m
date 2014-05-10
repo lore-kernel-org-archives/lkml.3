@@ -1,218 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757547AbaEJWXx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 18:23:53 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:62874 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753109AbaEJWXv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 18:23:51 -0400
-From: Larry Bassel <larry.bassel@linaro.org>
-To: catalin.marinas@arm.com, will.deacon@arm.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, khilman@linaro.org,
-        Larry Bassel <larry.bassel@linaro.org>
-Subject: [PATCH v2] arm64: Support arch_irq_work_raise() via self IPIs
-Date: Sat, 10 May 2014 15:23:41 -0700
-Message-Id: <1399760621-10954-1-git-send-email-larry.bassel@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
+	id S1756836AbaEJWiS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 18:38:18 -0400
+Received: from powered.by.root24.eu ([91.121.15.64]:43550 "EHLO Root24.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752174AbaEJWiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 May 2014 18:38:16 -0400
+X-Greylist: delayed 408 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 May 2014 18:38:16 EDT
+Message-ID: <536EA8BB.4090403@ionic.de>
+Date: Sun, 11 May 2014 00:31:23 +0200
+From: Mihai Moldovan <ionic@ionic.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Subject: NULL pointer dereference in netfilter
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms040206000104070205070903"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support for arch_irq_work_raise() was missing from
-arm64 (a prerequisite for FULL_NOHZ).
+This is a cryptographically signed message in MIME format.
 
-This patch is based on the arm32 patches ARM 7872/1
-and 7887/1 which port cleanly.
+--------------ms040206000104070205070903
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-commit bf18525fd793101df42a1344ecc48b49b62e48c9
-Author: Stephen Boyd <sboyd@codeaurora.org>
-Date:   Tue Oct 29 20:32:56 2013 +0100
+Hi
 
-    ARM: 7872/1: Support arch_irq_work_raise() via self IPIs
+earlier today, I experienced a kernel panic due to a NULL pointer derefer=
+ence
+somewhere in the netfilter subsystem.
 
-    By default, IRQ work is run from the tick interrupt (see
-    irq_work_run() in update_process_times()). When we're in full
-    NOHZ mode, restarting the tick requires the use of IRQ work and
-    if the only place we run IRQ work is in the tick interrupt we
-    have an unbreakable cycle. Implement arch_irq_work_raise() via
-    self IPIs to break this cycle and get the tick started again.
-    Note that we implement this via IPIs which are only available on
-    SMP builds. This shouldn't be a problem because full NOHZ is only
-    supported on SMP builds anyway.
+Full kernel output (may contain typos):
 
-    Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-    Reviewed-by: Kevin Hilman <khilman@linaro.org>
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[360412.114033] BUG: unable to handle kernel NULL pointer dereference at
+0000000000000010
+[360412.115643] IP: [<ffffffff81865efe>] nf_nat_setup_info+0x56e/0x900
+[360412.117244] PGD: 0
+[360412.117337] Oops: 0002 [#3] SMP
+[360412.117337] Modules linked in: ath9k ath9k_common ath9k_hw ath mac802=
+11
+cfg80211 xt_conntrack xt_dscp kvm_intel kvm hfcsusb mISDN_core e1000e cp2=
+10x
+i915 rfkil ptp video pps_core drm_kms_helper backlight [last unloaded: cf=
+g80211]
+[360412.117337] CPU: 2 PID: 0 Comm: swapper/2 Tainted: G       D    O
+3.14.2-OSS4.2 #2
+[360412.117337] Hardware name:                  /DQ45CB, BIOS
+CBQ4510H.86A.0133.2011.0810.1010 08/10/2011
+[360412.117337] task: ffff8802321c5540 ti: ffff8802321f4000 task.ti:
+ffff8802321f40000
+[360412.117337] RIP: 0010:[<ffffffff81865efe>]  [<ffffffff81865efe>]
+nf_nat_setup_info+0x56e/0x900
+[360412.117337] RSP: 0018:ffff88023bd03668   EFLAGS: 000010246
+[360412.117337] RAX: 0000000000000000 RBX: ffff8800b073d380 RCX: 00000000=
+0ae3d87f
+[360412.117337] RDX: ffff88021cdc9800 RSI: 00000000b8061897 RDI: ffffffff=
+824808b8
+[360412.117337] RBP: ffff88023bd03748 R08: ffff88003773e000 R09: ffffffff=
+820ac780
+[360412.117337] R10: ffff88021cdc9800 R11: ffff88021cdc98e0 R12: 00000000=
+0000235d
+[360412.117337] R13: 0000000000000000 R14: ffff88023bd03698 R15: ffff8802=
+3bd036c0
+[360412.117337] FS:  0000000000000000(0000) GS:ffff88023bd00000(0000)
+knlGS:0000000000000000
+[360412.117337] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[360412.117337] CR2: 0000000000000010 CR3: 000000000200b000 CR4: 00000000=
+000407e0
+[360412.117337] Stack:
+[360412.117337]  ffffffff820ac780 ffffffff81d905b0 ffff88023bd036c0 fffff=
+fff820ac780
+[360412.117337]  ffffffff81d964e0 ffffffff81d906a0 00000000df8e782a 00000=
+00000000000
+[360412.117337]  8343b75500027f96 0000000000000000 0006bb0600000000 00000=
+0008343b755
+[360412.117337] Call Trace:
+[360412.117337]  <IRQ>
+[360412.117337]  [<ffffffff81874e9f>] xt_snat_target_v0+0x6f/0x90
+[360412.117337]  [<ffffffff818e0453>] ipt_do_table+0x2c3/0x6c0
+[360412.117337]  [<ffffffff818e04b6>] ? ipt_do_table+0x326/0x6c0
+[360412.117337]  [<ffffffff818e0d07>] nf_nat_ipv6_fn+0x1d7/0x330
+[360412.117337]  [<ffffffff81888e20>] ? __ip_append_data.isra.43+0xa30/0x=
+a30
+[360412.117337]  [<ffffffff818e1068>] nf_nat_ipv4_out+0x58/0x100
+[360412.117337]  [<ffffffff81888e20>] ? __ip_append_data.isra.43+0xa30/0x=
+a30
+[360412.117337]  [<ffffffff81846b75>] nf_iterate+0x85/0xb0
+[360412.117337]  [<ffffffff81888e20>] ? __ip_append_data.isra.43+0xa30/0x=
+a30
+[360412.117337]  [<ffffffff81846c0c>] nf_hook_slow+0x6c/0x130
+[360412.117337]  [<ffffffff81888e20>] ? __ip_append_data.isra.43+0xa30/0x=
+a30
+[360412.117337]  [<ffffffff81889bb2>] ip_output+0x82/0x90
+[360412.117337]  [<ffffffff81889314>] ip_local_out+0x24/0x30
+[360412.117337]  [<ffffffff818e2182>] reject_tg+0x4d2/0x4e0
+[360412.117337]  [<ffffffff818e0453>] ipt_do_table+0x2c3/0x6c0
+[360412.117337]  [<ffffffff81883f30>] ? ip_rcv_finish+0x360/0x360
+[360412.117337]  [<ffffffff818e0924>] iptable_filter_hook+0x34/0x70
+[360412.117337]  [<ffffffff81846b75>] nf_iterate+0x85/0xb0
+[360412.117337]  [<ffffffff81883f30>] ? ip_rcv_finish+0x360/0x360
+[360412.117337]  [<ffffffff81846c0c>] nf_hook_slow+0x6c/0x130
+[360412.117337]  [<ffffffff81883f30>] ? ip_rcv_finish+0x360/0x360
+[360412.117337]  [<ffffffff81884303>] ip_local_deliver+0x73/0x80
+[360412.117337]  [<ffffffff81883c53>] ip_rcv_finish+0x83/0x360
+[360412.117337]  [<ffffffff818845b8>] ip_rcv+0x2a8/0x3e0
+[360412.117337]  [<ffffffff817e7bb2>] __netif_receive_skb_core+0x632/0x7a=
+0
+[360412.117337]  [<ffffffff817e7d3c>] __netif_receive_skb+0x1c/0x70
+[360412.117337]  [<ffffffff817e7e2c>] process_backlog+0x9c/0x170
+[360412.117337]  [<ffffffff817e823b>] net_rx_action+0xfb/0x1a0
+[360412.117337]  [<ffffffff810c3e65>] __do_softirq+0xd5/0x1f0
+[360412.117337]  [<ffffffff810c4185>] irq_exit+0x95/0xa0
+[360412.117337]  [<ffffffff81003d82>] do_IRQ+0x62/0x110
+[360412.117337]  [<ffffffff81a20d67>] common_interrupt_0x67/0x67
+[360412.117337]  <EOI>
+[360412.117337]  [<ffffffff81791ce6>] ? cpuidle_enter_state+0x56/0xd0
+[360412.117337]  [<ffffffff81791ce2>] ? cpuidle_enter_state+0x52/0xd0
+[360412.117337]  [<ffffffff81791dfa>] cpuidle_idle_call+0x9a/0x140
+[360412.117337]  [<ffffffff8100afe9>] arch_cpu_idle+0x9/0x20
+[360412.117337]  [<ffffffff8110a81a>] cpu_startup_entry+0xda/0x1c0
+[360412.117337]  [<ffffffff8102a1ad>] start_secondary+0x20d/0x2c0
+[360412.117337] Code: e0 e8 a7 a9 1b 00 48 8b 93 e0 00 00 00 49 c1 ec 20 =
+48 85
+d2 74 0c 0f b6 42 11 84 c0 0f 85 93 02 00 00 31 c0 4c 8b 8d 38 ff ff ff <=
+48> 89
+58 10 49 8b 91 70 0b 00 00 4a 8d 14 e2 48 8b 0a 48 89 50
+[360412.117337] RIP  [<ffffffff81865efe>] nf_nat_setup_info+0x56e/0x900
+[360412.117337]  RSP <ffff88023bd03668>
+[360412.117337] CR2: 0000000000000010
+[360412.117337] - - -[ end trace 691638412d73c338 ]- - -
+[360412.117337] Kernel panic - not syncing: Fatal exception in interrupt
+[360412.117337] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation ra=
+nge:
+0xffffffff80000000-0xffffffff9fffffff)
+[360412.117337] drm_kms_helper: panic occurred, switching back to text co=
+nsole
 
-commit c682e51dbc9837f4aa61180775e9ca4f2a463adf
-Author: Stephen Boyd <sboyd@codeaurora.org>
-Date:   Sat Nov 9 00:38:24 2013 +0100
 
-    ARM: 7887/1: Don't smp_cross_call() on UP devices in arch_irq_work_raise()
+decodecode:
 
-    If we're running a kernel compiled with SMP_ON_UP=y and the
-    hardware only supports UP operation there isn't any
-    smp_cross_call function assigned. Unfortunately, we call
-    smp_cross_call() unconditionally in arch_irq_work_raise() and
-    crash the kernel on UP devices. Check to make sure we're running
-    on an SMP device before calling smp_cross_call() here.
+All code
+=3D=3D=3D=3D=3D=3D=3D=3D
+   0:    e0 e8                    loopne 0xffffffffffffffea
+   2:    a7                       cmpsl  %es:(%rdi),%ds:(%rsi)
+   3:    a9 1b 00 48 8b           test   $0x8b48001b,%eax
+   8:    93                       xchg   %eax,%ebx
+   9:    e0 00                    loopne 0xb
+   b:    00 00                    add    %al,(%rax)
+   d:    49 c1 ec 20              shr    $0x20,%r12
+  11:    48 85 d2                 test   %rdx,%rdx
+  14:    74 0c                    je     0x22
+  16:    0f b6 42 11              movzbl 0x11(%rdx),%eax
+  1a:    84 c0                    test   %al,%al
+  1c:    0f 85 93 02 00 00        jne    0x2b5
+  22:    31 c0                    xor    %eax,%eax
+  24:    4c 8b 8d 38 ff ff ff     mov    -0xc8(%rbp),%r9
+  2b:*    48 89 58 10              mov    %rbx,0x10(%rax)        <-- trap=
+ping
+instruction
+  2f:    49 8b 91 70 0b 00 00     mov    0xb70(%r9),%rdx
+  36:    4a 8d 14 e2              lea    (%rdx,%r12,8),%rdx
+  3a:    48 8b 0a                 mov    (%rdx),%rcx
+  3d:    48                       rex.W
+  3e:    89                       .byte 0x89
+  3f:    50                       push   %rax
 
-    Unable to handle kernel NULL pointer dereference at virtual address 00000000
-    pgd = c0004000
-    [00000000] *pgd=00000000
-    Internal error: Oops: 80000005 [#1] SMP ARM
-    Modules linked in:
-    CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-rc6-00018-g8d45144-dirty #16
-    task: de05b440 ti: de05c000 task.ti: de05c000
-    PC is at 0x0
-    LR is at arch_irq_work_raise+0x3c/0x48
-    pc : [<00000000>]    lr : [<c0019590>]    psr: 60000193
-    sp : de05dd60  ip : 00000001  fp : 00000000
-    r10: c085e2f0  r9 : de05c000  r8 : c07be0a4
-    r7 : de05c000  r6 : de05c000  r5 : c07c5778  r4 : c0824554
-    r3 : 00000000  r2 : 00000000  r1 : 00000006  r0 : c0529a58
-    Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM Segment kernel
-    Control: 10c5387d  Table: 80004019  DAC: 00000017
-    Process swapper/0 (pid: 1, stack limit = 0xde05c248)
-    Stack: (0xde05dd60 to 0xde05e000)
-    dd60: c07b9dbc c00cb2dc 00000001 c08242c0 c08242c0 60000113 c07be0a8 c00b0590
-    dd80: de05c000 c085e2f0 c08242c0 c08242c0 c1414c28 c00b07cc de05b440 c1414c28
-    dda0: c08242c0 c00b0af8 c0862bb0 c0862db0 c1414cd8 de05c028 c0824840 de05ddb8
-    ddc0: 00000000 00000009 00000001 00000024 c07be0a8 c07be0a4 de05c000 c085e2f0
-    dde0: 00000000 c004a4b0 00000010 de00d2dc 00000054 00000100 00000024 00000000
-    de00: de05c028 0000000a ffff8ae7 00200040 00000016 de05c000 60000193 de05c000
-    de20: 00000054 00000000 00000000 00000000 00000000 c004a704 00000000 de05c008
-    de40: c07ba254 c004aa1c c07c5778 c0014b70 fa200000 00000054 de05de80 c0861244
-    de60: 00000000 c0008634 de05b440 c051c778 20000113 ffffffff de05deb4 c051d0a4
-    de80: 00000001 00000001 00000000 de05b440 c082afac de057ac0 de057ac0 de0443c0
-    dea0: 00000000 00000000 00000000 00000000 c082afbc de05dec8 c009f2a0 c051c778
-    dec0: 20000113 ffffffff 00000000 c016edb0 00000000 000002b0 de057ac0 de057ac0
-    dee0: 00000000 c016ee40 c0875e50 de05df2e de057ac0 00000000 00000013 00000000
-    df00: 00000000 c016f054 de043600 de0443c0 c008eb38 de004ec0 c0875e50 c008eb44
-    df20: 00000012 00000000 00000000 3931f0f8 00000000 00000000 00000014 c0822e84
-    df40: 00000000 c008ed2c 00000000 00000000 00000000 c07b7490 c07b7490 c075ab3c
-    df60: 00000000 c00701ac 00000002 00000000 c0070160 dffadb73 7bf8edb4 00000000
-    df80: c051092c 00000000 00000000 00000000 00000000 00000000 00000000 c0510934
-    dfa0: de05aa40 00000000 c051092c c0013ce8 00000000 00000000 00000000 00000000
-    dfc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-    dfe0: 00000000 00000000 00000000 00000000 00000013 00000000 07efffe5 4dfac6f5
-    [<c0019590>] (arch_irq_work_raise+0x3c/0x48) from [<c00cb2dc>] (irq_work_queue+0xe4/0xf8)
-    [<c00cb2dc>] (irq_work_queue+0xe4/0xf8) from [<c00b0590>] (rcu_accelerate_cbs+0x1d4/0x1d8)
-    [<c00b0590>] (rcu_accelerate_cbs+0x1d4/0x1d8) from [<c00b07cc>] (rcu_start_gp+0x34/0x48)
-    [<c00b07cc>] (rcu_start_gp+0x34/0x48) from [<c00b0af8>] (rcu_process_callbacks+0x318/0x608)
-    [<c00b0af8>] (rcu_process_callbacks+0x318/0x608) from [<c004a4b0>] (__do_softirq+0x114/0x2a0)
-    [<c004a4b0>] (__do_softirq+0x114/0x2a0) from [<c004a704>] (do_softirq+0x6c/0x74)
-    [<c004a704>] (do_softirq+0x6c/0x74) from [<c004aa1c>] (irq_exit+0xac/0x100)
-    [<c004aa1c>] (irq_exit+0xac/0x100) from [<c0014b70>] (handle_IRQ+0x54/0xb4)
-    [<c0014b70>] (handle_IRQ+0x54/0xb4) from [<c0008634>] (omap3_intc_handle_irq+0x60/0x74)
-    [<c0008634>] (omap3_intc_handle_irq+0x60/0x74) from [<c051d0a4>] (__irq_svc+0x44/0x5c)
-    Exception stack(0xde05de80 to 0xde05dec8)
-    de80: 00000001 00000001 00000000 de05b440 c082afac de057ac0 de057ac0 de0443c0
-    dea0: 00000000 00000000 00000000 00000000 c082afbc de05dec8 c009f2a0 c051c778
-    dec0: 20000113 ffffffff
-    [<c051d0a4>] (__irq_svc+0x44/0x5c) from [<c051c778>] (_raw_spin_unlock_irq+0x28/0x2c)
-    [<c051c778>] (_raw_spin_unlock_irq+0x28/0x2c) from [<c016edb0>] (proc_alloc_inum+0x30/0xa8)
-    [<c016edb0>] (proc_alloc_inum+0x30/0xa8) from [<c016ee40>] (proc_register+0x18/0x130)
-    [<c016ee40>] (proc_register+0x18/0x130) from [<c016f054>] (proc_mkdir_data+0x44/0x6c)
-    [<c016f054>] (proc_mkdir_data+0x44/0x6c) from [<c008eb44>] (register_irq_proc+0x6c/0x128)
-    [<c008eb44>] (register_irq_proc+0x6c/0x128) from [<c008ed2c>] (init_irq_proc+0x74/0xb0)
-    [<c008ed2c>] (init_irq_proc+0x74/0xb0) from [<c075ab3c>] (kernel_init_freeable+0x84/0x1c8)
-    [<c075ab3c>] (kernel_init_freeable+0x84/0x1c8) from [<c0510934>] (kernel_init+0x8/0x150)
-    [<c0510934>] (kernel_init+0x8/0x150) from [<c0013ce8>] (ret_from_fork+0x14/0x2c)
-    Code: bad PC value
+Code starting with the faulting instruction
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+   0:    48 89 58 10              mov    %rbx,0x10(%rax)
+   4:    49 8b 91 70 0b 00 00     mov    0xb70(%r9),%rdx
+   b:    4a 8d 14 e2              lea    (%rdx,%r12,8),%rdx
+   f:    48 8b 0a                 mov    (%rdx),%rcx
+  12:    48                       rex.W
+  13:    89                       .byte 0x89
+  14:    50                       push   %rax
 
-    Fixes: bf18525fd79 "ARM: 7872/1: Support arch_irq_work_raise() via self IPIs"
 
-    Reported-by: Olof Johansson <olof@lixom.net>
-    Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-    Tested-by: Olof Johansson <olof@lixom.net>
-    Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+And, if it's of any interest (at least I've seen snat in there, so I'm go=
+ing
+ahead with this), one of the many rules in iptables:
 
-Changes v1 to v2:
+Chain POSTROUTING (policy ACCEPT 1836 packets, 89722 bytes)
+2189  157K SNAT       all  --  *      ppp0    0.0.0.0/0          =20
+0.0.0.0/0            to:85.183.67.131
 
-* Include ARM 7887/1 bugfix
 
-Signed-off-by: Larry Bassel <larry.bassel@linaro.org>
-Reviewed-by: Kevin Hilman <khilman@linaro.org>
----
- arch/arm64/include/asm/hardirq.h |  2 +-
- arch/arm64/kernel/smp.c          | 19 +++++++++++++++++++
- 2 files changed, 20 insertions(+), 1 deletion(-)
+Can/should I provide any more information?
 
-diff --git a/arch/arm64/include/asm/hardirq.h b/arch/arm64/include/asm/hardirq.h
-index ae4801d..0be6782 100644
---- a/arch/arm64/include/asm/hardirq.h
-+++ b/arch/arm64/include/asm/hardirq.h
-@@ -20,7 +20,7 @@
- #include <linux/threads.h>
- #include <asm/irq.h>
- 
--#define NR_IPI	5
-+#define NR_IPI	6
- 
- typedef struct {
- 	unsigned int __softirq_pending;
-diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
-index f0a141d..78c3f97 100644
---- a/arch/arm64/kernel/smp.c
-+++ b/arch/arm64/kernel/smp.c
-@@ -35,6 +35,7 @@
- #include <linux/clockchips.h>
- #include <linux/completion.h>
- #include <linux/of.h>
-+#include <linux/irq_work.h>
- 
- #include <asm/atomic.h>
- #include <asm/cacheflush.h>
-@@ -62,6 +63,7 @@ enum ipi_msg_type {
- 	IPI_CALL_FUNC_SINGLE,
- 	IPI_CPU_STOP,
- 	IPI_TIMER,
-+	IPI_IRQ_WORK,
- };
- 
- /*
-@@ -455,6 +457,14 @@ void arch_send_call_function_single_ipi(int cpu)
- 	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
- }
- 
-+#ifdef CONFIG_IRQ_WORK
-+void arch_irq_work_raise(void)
-+{
-+	if (is_smp())
-+		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
-+}
-+#endif
-+
- static const char *ipi_types[NR_IPI] = {
- #define S(x,s)	[x - IPI_RESCHEDULE] = s
- 	S(IPI_RESCHEDULE, "Rescheduling interrupts"),
-@@ -462,6 +472,7 @@ static const char *ipi_types[NR_IPI] = {
- 	S(IPI_CALL_FUNC_SINGLE, "Single function call interrupts"),
- 	S(IPI_CPU_STOP, "CPU stop interrupts"),
- 	S(IPI_TIMER, "Timer broadcast interrupts"),
-+	S(IPI_IRQ_WORK, "IRQ work interrupts"),
- };
- 
- void show_ipi_list(struct seq_file *p, int prec)
-@@ -554,6 +565,14 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
- 		break;
- #endif
- 
-+#ifdef CONFIG_IRQ_WORK
-+	case IPI_IRQ_WORK:
-+		irq_enter();
-+		irq_work_run();
-+		irq_exit();
-+		break;
-+#endif
-+
- 	default:
- 		pr_crit("CPU%u: Unknown IPI message 0x%x\n", cpu, ipinr);
- 		break;
--- 
-1.8.3.2
+Unfortunately, I don't have a full packet log of my network when the issu=
+e
+happened. It came pretty much out of the blue.
 
+
+Best regards,
+
+
+Mihai
+
+
+--------------ms040206000104070205070903
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIMkTCC
+BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
+DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
+MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
+dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
+aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
+aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
+KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
+8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
+DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
+2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
+zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
+Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
+HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
+MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
+dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
+c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
+Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
+c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
+UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
+p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
++HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
+hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
+hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
+0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
+AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
+XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIGVTCCBT2gAwIBAgICR5UwDQYJKoZIhvcNAQEL
+BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
+ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
+bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xNDAzMTkwNDMzMzFa
+Fw0xNjAzMTgxNTIzMjJaMHYxCzAJBgNVBAYTAkRFMRswGQYDVQQIExJCYWRlbi1XdWVydHRl
+bWJlcmcxEjAQBgNVBAcTCUthcmxzcnVoZTEXMBUGA1UEAxMOTWloYWkgTW9sZG92YW4xHTAb
+BgkqhkiG9w0BCQEWDmlvbmljQGlvbmljLmRlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
+CgKCAQEAy1U08dzMfc3SpuUBHL+ZgUQJs4gX7DLBAr89BAoQkIEkMhlEGJ1OGBqvbOuGBlyd
+l/BSa/vrkTFqrHjxs4UhYG/nide97RsalQ39eolmd/WSn1I0M3Ohg/LAnCt2v9mMx1Sx8QpE
+jzLVvdMwO4mEJWH4+w8e8bLLIzN66/rAuD0EVeyWJh6pggCjI+Y59t0aqI7vzjcqgJGtmwHZ
+VPtBhWP3jsDUhLjwxUeydFEwteh/fpo3czx4aKKMH0K53HHGfGZHl5IK/E8ZdL+veF4JSRs5
+nCKAikwbtua3sMY1ejPRc2L5CyZAJvmfaKjBCi5/3j/DxYrEK+sH32AYUxbgYQIDAQABo4IC
+1DCCAtAwCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsG
+AQUFBwMEMB0GA1UdDgQWBBSaZelU6HGlOzMKCINjBgsaA/nXxTAfBgNVHSMEGDAWgBSuVYNv
+7DHKufcd+q9rMfPIHeOsuzAZBgNVHREEEjAQgQ5pb25pY0Bpb25pYy5kZTCCAUwGA1UdIASC
+AUMwggE/MIIBOwYLKwYBBAGBtTcBAgMwggEqMC4GCCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0
+YXJ0c3NsLmNvbS9wb2xpY3kucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBDZXJ0
+aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
+IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMiBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0
+aGUgU3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQg
+cHVycG9zZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25z
+LjA2BgNVHR8ELzAtMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1Mi1jcmwu
+Y3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNz
+bC5jb20vc3ViL2NsYXNzMi9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3Rh
+cnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczIuY2xpZW50LmNhLmNydDAjBgNVHRIEHDAahhho
+dHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQELBQADggEBAH650RIseEtEpaRd
+Av66u9KEu5mxHpRH8IopkCkwGBk95sSKSWVqJ6XbTHywi66GAqQ7LPlD5ittkhTlYtyst8vb
+FLaafu6Ous2UDZhqJH1NHfRaG6m0Qt2Zm7KQsaxIhBEYFqqMxSq2E8DQU6WUB473bEqToVx+
+pumW+T/KSnHq+FfCGSPvXtwkRP4eiJmvNPZKhGRk3RPkT3LzA380mX6DpcqEQ1a8TmsFBZ7c
+AMa7KKDe4YnxDFSE/2C1WA5bibpmkCGa+R/0KBBWxDrzNUv6W8Ui6OzpkHTaqg+c9NpC1wDl
+xt3r8GaytqtcHfB2VEbPd0Hrd+zrDh3co8/SkqgxggPaMIID1gIBATCBkzCBjDELMAkGA1UE
+BhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFs
+IENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFy
+eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgJHlTAJBgUrDgMCGgUAoIICGzAYBgkqhkiG9w0B
+CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xNDA1MTAyMjMxMjNaMCMGCSqGSIb3
+DQEJBDEWBBT7mTfQbE1wgN7QwqXQKvoKkSnTDDBsBgkqhkiG9w0BCQ8xXzBdMAsGCWCGSAFl
+AwQBKjALBglghkgBZQMEAQIwCgYIKoZIhvcNAwcwDgYIKoZIhvcNAwICAgCAMA0GCCqGSIb3
+DQMCAgFAMAcGBSsOAwIHMA0GCCqGSIb3DQMCAgEoMIGkBgkrBgEEAYI3EAQxgZYwgZMwgYwx
+CzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUg
+RGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAy
+IFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQICR5UwgaYGCyqGSIb3DQEJEAILMYGW
+oIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMi
+U2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20g
+Q2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAkeVMA0GCSqGSIb3DQEB
+AQUABIIBAAqWhlUqbFvQueM4nfyrcxTSbqs882E2kAjyRexbvAJTgS9/YHlOrIyN7lUUUYj4
+4hj9Na/59QuvmiMlEm/rG9riBRH+A0kjoKvl99p7TSWnnlcwKvPui/m0oaDe8XZR8kU5PEWD
+elVcib7ZLcUgPEiRPVzgakBiNI+Az62vlJ+P9iDTXyK/Ec8xlCgCn3aDEgf3TQWfvpA4uHYX
+sB/RkalthBL1WMJSqWZb49pNdZ5bE6KT8qHyFTCrGItyO7MGkwMXYpjFDmW/iSEL+K4W2kft
+vPzKxzdiJoumdLKzeficS5f2iJu59WP4bok5AMdF+GmVc628DgVrOYLN/XyQHnEAAAAAAAA=
+--------------ms040206000104070205070903--
