@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756905AbaEJRGX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 13:06:23 -0400
-Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:10425 "EHLO
-	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751353AbaEJRGW (ORCPT
+	id S1755425AbaEJRPm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 13:15:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55073 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318AbaEJRPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 13:06:22 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtgbAF1bblNXQCSg/2dsb2JhbABZgwaDPakWBAEBAQEBAQUBmhUCAoEVF3SCUxMcIxiBAiQTiEUB0FWFVoh8hEcBA48liiIBiwSIA4M4Ow
-Date: Sat, 10 May 2014 19:06:16 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: jack <jack@suse.cz>, hch <hch@infradead.org>,
-        Viro <viro@zeniv.linux.org.uk>, tytso <tytso@mit.edu>,
-        akpm <akpm@linux-foundation.org>
-Subject: [PATCH V4 2/2] fs/ext4/fsync.c: generic_file_fsync call based on
- barrier flag
-Message-Id: <20140510190616.5b2f08be29de98e9cb065fd2@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 10 May 2014 13:15:40 -0400
+Message-ID: <536E5EB9.5060101@infradead.org>
+Date: Sat, 10 May 2014 10:15:37 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: akpm@linux-foundation.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+CC: Richard Weinberger <richard@nod.at>
+Subject: Re: mmotm 2014-05-09-16-17 uploaded (ptrace-ab.hi vs. net/core/filter.c)
+References: <20140509231825.22D005A4123@corp2gmr1-2.hot.corp.google.com>
+In-Reply-To: <20140509231825.22D005A4123@corp2gmr1-2.hot.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-generic_file_fsync has been updated to issue a flush for
-older filesystems.
+On 05/09/2014 04:18 PM, akpm@linux-foundation.org wrote:
+> The mm-of-the-moment snapshot 2014-05-09-16-17 has been uploaded to
+> 
+>    http://www.ozlabs.org/~akpm/mmotm/
+> 
 
-This patch tests for barrier flag in ext4 mount flags
-and calls the right function.
 
-Suggested-by: Jan Kara <jack@suse.cz>
-Suggested-by: Christoph Hellwig <hch@infradead.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/ext4/fsync.c | 4 ++++
- 1 file changed, 4 insertions(+)
+uml defconfig on x86_64: (also happens in linux-next)
 
-diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
-index a8bc47f..fa82c0a 100644
---- a/fs/ext4/fsync.c
-+++ b/fs/ext4/fsync.c
-@@ -108,6 +108,10 @@ int ext4_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
- 
- 	if (!journal) {
- 		ret = generic_file_fsync(file, start, end, datasync);
-+		if (test_opt(inode->i_sb, BARRIER))
-+			ret = generic_file_fsync(file, start, end, datasync);
-+		else
-+			ret = __generic_file_fsync(file, start, end, datasync);
- 		if (!ret && !hlist_empty(&inode->i_dentry))
- 			ret = ext4_sync_parent(inode);
- 		goto out;
+net/core/filter.c:57:0: warning: "R8" redefined [enabled by default]
+arch/x86/include/uapi/asm/ptrace-abi.h:38:0: note: this is the location of the previous definition
+
+Same warnings for R9 and R10.
+
 -- 
-1.8.4.5
-
+~Randy
