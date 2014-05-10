@@ -1,132 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871AbaEJSVq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 14:21:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53628 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353AbaEJSVn (ORCPT
+	id S1755569AbaEJStR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 14:49:17 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:47686 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029AbaEJStQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 14:21:43 -0400
-Date: Sat, 10 May 2014 20:21:34 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
-Subject: Re: [PATCH v10 08/19] qspinlock: Make a new qnode structure to
- support virtualization
-Message-ID: <20140510182134.GH13658@twins.programming.kicks-ass.net>
-References: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com>
- <1399474907-22206-9-git-send-email-Waiman.Long@hp.com>
- <20140508190459.GQ2844@laptop.programming.kicks-ass.net>
- <536D7C28.8010609@hp.com>
- <20140510141417.GF30445@twins.programming.kicks-ass.net>
+	Sat, 10 May 2014 14:49:16 -0400
+Date: Sun, 11 May 2014 00:19:00 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] char: Introduce the use of the managed version of kzalloc
+Message-ID: <20140510184859.GA6818@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="brEuL7wsLY8+TuWz"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140510141417.GF30445@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch moves data allocated using kzalloc to managed data allocated
+using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+functions. The NULL assignment to np->units is removed as there is no
+interaction between this field and sun4v_hvapi_unregister. Also, the
+labels out_free_units and out_free are removed as they are no longer
+required.
 
---brEuL7wsLY8+TuWz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The following Coccinelle semantic patch was used for making the change:
 
-On Sat, May 10, 2014 at 04:14:17PM +0200, Peter Zijlstra wrote:
-> On Fri, May 09, 2014 at 09:08:56PM -0400, Waiman Long wrote:
-> > On 05/08/2014 03:04 PM, Peter Zijlstra wrote:
-> > >On Wed, May 07, 2014 at 11:01:36AM -0400, Waiman Long wrote:
-> > >>  /*
-> > >>+ * To have additional features for better virtualization support, it=
- is
-> > >>+ * necessary to store additional data in the queue node structure. So
-> > >>+ * a new queue node structure will have to be defined and used here.
-> > >>+ */
-> > >>+struct qnode {
-> > >>+	struct mcs_spinlock mcs;
-> > >>+};
-> > >You can ditch this entire patch; its pointless, just add a new
-> > >DEFINE_PER_CPU for the para-virt muck.
-> >=20
-> > Yes, I can certainly merge it to the next one in the series. I break it=
- out
-> > to make each individual patch smaller, more single-purpose and easier to
-> > review.
->=20
-> No, don't merge it, _drop_ it. Wrapping things in a struct generates a
-> ton of pointless change.
->=20
-> Put the new data in a new DEFINE_PER_CPU and leave the existing code as
-> is.
-
-So I had a look at the resulting code:
-
-struct qnode {
-	struct mcs_spinlock mcs;
-#ifdef CONFIG_PARAVIRT_UNFAIR_LOCKS
-	int		lsteal_mask;	/* Lock stealing frequency mask	*/
-	u32		prev_tail;	/* Tail code of previous node	*/
-#ifndef CONFIG_PARAVIRT_SPINLOCKS
-	struct qnode   *qprev;		/* Previous queue node addr	*/
-#endif
-#endif
-	struct pv_qvars pv;		/* For para-virtualization	*/
+@platform@
+identifier p, probefn, removefn;
+@@
+struct platform_driver p = {
+  .probe = probefn,
+  .remove = removefn,
 };
 
-With all the bells and whistles on (say an enterprise distro), that
-single node will now fill an entire cacheline on its own.
+@prb@
+identifier platform.probefn, pdev;
+expression e, e1, e2;
+@@
+probefn(struct platform_device *pdev, ...) {
+  <+...
+- e = kzalloc(e1, e2)
++ e = devm_kzalloc(&pdev->dev, e1, e2)
+  ...
+?-kfree(e);
+  ...+>
+}
 
-That means that the normal case for normal people who stay the heck away
-=66rom virt shit will very often hit _3_ cachelines for their spin_lock().
+@rem depends on prb@
+identifier platform.removefn;
+expression e;
+@@
+removefn(...) {
+  <...
+- kfree(e);
+  ...>
+}
 
-1 - the cacheline that has the spinlock_t in,
-2 - the cacheline that has node[0].count in to find which node to use
-3 - the cacheline that has the actual right node in
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+---
+I would like to know if removing the NULL assignment is OK as it may be
+used for security to prevent it from being read before reinitialization.
 
-That's of course complete and utter crap.
+ drivers/char/hw_random/n2-drv.c | 24 +++++++-----------------
+ 1 file changed, 7 insertions(+), 17 deletions(-)
 
-Not to mention that the final result of those 19 patches is going to
-take me days to untangle :-(
+diff --git a/drivers/char/hw_random/n2-drv.c b/drivers/char/hw_random/n2-drv.c
+index 432232e..292a588 100644
+--- a/drivers/char/hw_random/n2-drv.c
++++ b/drivers/char/hw_random/n2-drv.c
+@@ -632,7 +632,7 @@ static int n2rng_probe(struct platform_device *op)
+ 	multi_capable = (match->data != NULL);
+ 
+ 	n2rng_driver_version();
+-	np = kzalloc(sizeof(*np), GFP_KERNEL);
++	np = devm_kzalloc(&op->dev, sizeof(*np), GFP_KERNEL);
+ 	if (!np)
+ 		goto out;
+ 	np->op = op;
+@@ -653,7 +653,7 @@ static int n2rng_probe(struct platform_device *op)
+ 					 &np->hvapi_minor)) {
+ 			dev_err(&op->dev, "Cannot register suitable "
+ 				"HVAPI version.\n");
+-			goto out_free;
++			goto out;
+ 		}
+ 	}
+ 
+@@ -676,15 +676,16 @@ static int n2rng_probe(struct platform_device *op)
+ 	dev_info(&op->dev, "Registered RNG HVAPI major %lu minor %lu\n",
+ 		 np->hvapi_major, np->hvapi_minor);
+ 
+-	np->units = kzalloc(sizeof(struct n2rng_unit) * np->num_units,
+-			    GFP_KERNEL);
++	np->units = devm_kzalloc(&op->dev,
++				 sizeof(struct n2rng_unit) * np->num_units,
++				 GFP_KERNEL);
+ 	err = -ENOMEM;
+ 	if (!np->units)
+ 		goto out_hvapi_unregister;
+ 
+ 	err = n2rng_init_control(np);
+ 	if (err)
+-		goto out_free_units;
++		goto out_hvapi_unregister;
+ 
+ 	dev_info(&op->dev, "Found %s RNG, units: %d\n",
+ 		 ((np->flags & N2RNG_FLAG_MULTI) ?
+@@ -697,7 +698,7 @@ static int n2rng_probe(struct platform_device *op)
+ 
+ 	err = hwrng_register(&np->hwrng);
+ 	if (err)
+-		goto out_free_units;
++		goto out_hvapi_unregister;
+ 
+ 	platform_set_drvdata(op, np);
+ 
+@@ -705,15 +706,9 @@ static int n2rng_probe(struct platform_device *op)
+ 
+ 	return 0;
+ 
+-out_free_units:
+-	kfree(np->units);
+-	np->units = NULL;
+-
+ out_hvapi_unregister:
+ 	sun4v_hvapi_unregister(HV_GRP_RNG);
+ 
+-out_free:
+-	kfree(np);
+ out:
+ 	return err;
+ }
+@@ -730,11 +725,6 @@ static int n2rng_remove(struct platform_device *op)
+ 
+ 	sun4v_hvapi_unregister(HV_GRP_RNG);
+ 
+-	kfree(np->units);
+-	np->units = NULL;
+-
+-	kfree(np);
+-
+ 	return 0;
+ }
+ 
+-- 
+1.9.1
 
-Days I don't really have because I get to go hunt bugs in existing code
-before thinking about adding shiny new stuff.
-
---brEuL7wsLY8+TuWz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTbm4mAAoJEHZH4aRLwOS6gUIQAIu9exSfTPzCbSZRj4Uf3OLI
-SPeMnqNGtwDh9KzOVL7CxEMQPDWCvJoUO19enOeJngTa/PH6BTgwOQhM8jo9oHeZ
-KuDketiRXM19OBZYuHouLj9i3wt7nAOCnF9JPqbZZVbHWJ5EG1+O/48Pt6ekNwCB
-R5HNJ3JrsyOUkFtQwArC1DrEmgkigaQQ5yypjqPs5ogn2gnC/ZFB2NRpLUh7qm7Q
-USKhawxbfSmB7Pp3pdxSaMyFGBHheX+vKtDQUUo3Z3r9UxcIl4pJHwIbHEXdYW41
-Qswhq1nmCXdTfdOh0gyxaeqDihe7rZ4JNeK0UDl0Vhh85caepw2o5lkWb8Rd0p5H
-S0vGKJP4VC3NKBsJiLBvExbV4eVSUbykA4r8ssxriCmoqyBfFAemSqLBwjC26raQ
-s+5SH+PvMuY9XDnnMIHuo1JqLFROygEOURx8NAkKAgGdX/kQAkmAA6iTINB42dkS
-kyQcLhB8QX4zJ9pMxxzoUvjUY95xQAUwUlUH/+Z3BzYAC/J56cSkDXe7qnKsbMkk
-lw733sVCP8qzCnH1H+ChGEeIbiyQl2scB7JxxWQTo7PfxBfvViDMbztcSFMIZvMU
-JuLn9QP07g3rPvbkvul2d9hOcLZG2dmTW1HNptqeT8w+/N3AZ5jjBDJcnY5V2Mp2
-tR3f7z0PjWeFUPpnD7SR
-=V3N9
------END PGP SIGNATURE-----
-
---brEuL7wsLY8+TuWz--
