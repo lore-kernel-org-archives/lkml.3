@@ -1,75 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaEJFTw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 01:19:52 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:45839 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565AbaEJFTv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 01:19:51 -0400
-X-Originating-IP: 50.43.32.211
-Date: Fri, 9 May 2014 22:19:39 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 39/45] rcutorture: Note diffs from git
- commits
-Message-ID: <20140510051938.GC8451@thin>
-References: <20140429002455.GA15461@linux.vnet.ibm.com>
- <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1398731133-18925-39-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140507221742.GQ27924@cloud>
- <20140510005124.GI8754@linux.vnet.ibm.com>
+	id S1751667AbaEJF14 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 01:27:56 -0400
+Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:45563
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750900AbaEJF1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 May 2014 01:27:54 -0400
+Date: Sat, 10 May 2014 13:27:45 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Alexander Shiyan <shc_work@mail.ru>
+CC: <linux-kernel@vger.kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>
+Subject: Re: [PATCH] pinctrl: Add i.MX1 pincontrol driver
+Message-ID: <20140510052742.GJ2870@dragon>
+References: <1399652193-17827-1-git-send-email-shc_work@mail.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20140510005124.GI8754@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1399652193-17827-1-git-send-email-shc_work@mail.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130441732722519811;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(51704005)(189002)(199002)(24454002)(81156002)(69596002)(68736004)(19580395003)(83322001)(44976005)(46406003)(19580405001)(4477795002)(80022001)(50466002)(87936001)(79102001)(2009001)(33656001)(85852003)(21056001)(84676001)(23726002)(92566001)(74502001)(81342001)(74662001)(46102001)(57986002)(54356999)(76176999)(50986999)(86362001)(77096999)(97736001)(83072002)(97756001)(4396001)(31966008)(6806004)(47776003)(81542001)(33716001)(64706001)(92726001)(558084003)(77982001)(76482001)(99396002)(20776003)(241875001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB406;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:;
+X-Forefront-PRVS: 02070414A1
+Authentication-Results: spf=softfail (sender IP is 192.88.158.2)
+ smtp.mailfrom=shawn.guo@linaro.org; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 05:51:24PM -0700, Paul E. McKenney wrote:
-> On Wed, May 07, 2014 at 03:17:42PM -0700, josh@joshtriplett.org wrote:
-> > On Mon, Apr 28, 2014 at 05:25:27PM -0700, Paul E. McKenney wrote:
-> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > The current scripting only keeps track of the git SHA-1 of the current
-> > > HEAD.  This can cause confusion in cases where testing ran in a git
-> > > tree where changes had not yet been checked in.  This commit therefore
-> > > also records the output of "git diff HEAD" to provide the information
-> > > needed to reconstruct the source tree that was tested.
-> > > 
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > 
-> > Nit below.
-> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> > 
-> > > ---
-> > >  tools/testing/selftests/rcutorture/bin/kvm.sh | 5 +++++
-> > >  1 file changed, 5 insertions(+)
-> > > 
-> > > diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> > > index 4eed2a4f42c7..91661845fdec 100644
-> > > --- a/tools/testing/selftests/rcutorture/bin/kvm.sh
-> > > +++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> > > @@ -277,6 +277,11 @@ if test -d .git
-> > >  then
-> > >  	git status >> $resdir/$ds/testid.txt
-> > >  	git rev-parse HEAD >> $resdir/$ds/testid.txt
-> > > +	git diff HEAD > $T/git-diff 2>&1
-> > > +	if test -s $T/git-diff
-> > 
-> > You don't need test here; you can use the return value of git diff.
+On Fri, May 09, 2014 at 08:16:33PM +0400, Alexander Shiyan wrote:
+> This patch adds pincontrol driver for Freescale i.MX1 SOCs.
 > 
-> Oddly enough, the "git diff" man page does not say anything about the
-> exit value.  At least not that I could find...
+> Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
 
-Look for the --exit-code option of git diff.
-
-- Josh Triplett
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
