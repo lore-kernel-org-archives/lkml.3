@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138AbaEJJqT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 05:46:19 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50256 "EHLO
+	id S1756168AbaEJJq2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 05:46:28 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50263 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754355AbaEJJqR (ORCPT
+	with ESMTP id S1755531AbaEJJqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 05:46:17 -0400
+	Sat, 10 May 2014 05:46:25 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Wolfram Sang <wsa@the-dreams.de>
 Cc: Randy Dunlap <rdunlap@infradead.org>,
@@ -16,53 +16,75 @@ Cc: Randy Dunlap <rdunlap@infradead.org>,
         linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v4 0/2] i2c: sunxi: add P2WI controller support
-Date: Sat, 10 May 2014 11:46:01 +0200
-Message-Id: <1399715163-11291-1-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v4 1/2] i2c: sunxi: add P2WI DT bindings documentation
+Date: Sat, 10 May 2014 11:46:02 +0200
+Message-Id: <1399715163-11291-2-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1399715163-11291-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1399715163-11291-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+P2WI (Push/Pull 2 Wire Interface) is an SMBus like bus used to communicate
+with some PMICs (like the AXP221).
 
-This series adds support for the P2WI block used by some Allwinner
-boards to interface with the AXP221 PMIC.
+Document P2WI DT bindings which are pretty much the same as the one defined
+for the marvell's mv64xxx controller.
 
-Best Regards,
-
-Boris
-
-Changes since v3:
-- update the DT bindings doc
-- fix a comment that was no longer true
-
-Changes since v2:
-- drop the initialization (switch from I2C to P2WI mode) part
-- print devm_ioremap_resource err code
-
-Changes since v1:
-- implement P2WI initilization
-- implement P2WI bus frequency configuration
-- implement address consistency check
-- fix devm_request_and_ioremap return check
-- rework the macro definitions
-- fix typos
-
-[1] http://www.spinics.net/lists/linux-i2c/msg15066.html
-[2] http://comments.gmane.org/gmane.comp.hardware.netbook.arm.sunxi/8947
-Boris BREZILLON (2):
-  i2c: sunxi: add P2WI DT bindings documentation
-  i2c: sunxi: add P2WI (Push/Pull 2 Wire Interface) controller support
-
- .../devicetree/bindings/i2c/i2c-sunxi-p2wi.txt     |  41 +++
- drivers/i2c/busses/Kconfig                         |  12 +
- drivers/i2c/busses/Makefile                        |   1 +
- drivers/i2c/busses/i2c-sun6i-p2wi.c                | 349 +++++++++++++++++++++
- 4 files changed, 403 insertions(+)
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ .../devicetree/bindings/i2c/i2c-sunxi-p2wi.txt     | 41 ++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/i2c/i2c-sunxi-p2wi.txt
- create mode 100644 drivers/i2c/busses/i2c-sun6i-p2wi.c
 
+diff --git a/Documentation/devicetree/bindings/i2c/i2c-sunxi-p2wi.txt b/Documentation/devicetree/bindings/i2c/i2c-sunxi-p2wi.txt
+new file mode 100644
+index 0000000..6b76548
+--- /dev/null
++++ b/Documentation/devicetree/bindings/i2c/i2c-sunxi-p2wi.txt
+@@ -0,0 +1,41 @@
++
++* Allwinner P2WI (Push/Pull 2 Wire Interface) controller
++
++Required properties :
++
++ - reg             : Offset and length of the register set for the device.
++ - compatible      : Should one of the following:
++                     - "allwinner,sun6i-a31-p2wi"
++ - interrupts      : The interrupt line connected to the P2WI peripheral.
++ - clocks          : The gate clk connected to the P2WI peripheral.
++ - resets          : The reset line connected to the P2WI peripheral.
++
++Optional properties :
++
++ - clock-frequency : Desired P2WI bus clock frequency in Hz. If not set the
++default frequency is 100kHz
++
++A P2WI may contain one child node encoding a P2WI slave device.
++
++Slave device properties:
++  Required properties:
++   - reg           : the I2C slave address used during the initialization
++                     process to switch from I2C to P2WI mode
++
++Example:
++
++	p2wi@01f03400 {
++		compatible = "allwinner,sun6i-a31-p2wi";
++		reg = <0x01f03400 0x400>;
++		interrupts = <0 39 4>;
++		clocks = <&apb0_gates 3>;
++		clock-frequency = <6000000>;
++		resets = <&apb0_rst 3>;
++
++		axp221: pmic@68 {
++			compatible = "x-powers,axp221";
++			reg = <0x68>;
++
++			/* ... */
++		};
++	};
 -- 
 1.8.3.2
 
