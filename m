@@ -1,102 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160AbaEJUXL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 16:23:11 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:61088 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752161AbaEJUXI (ORCPT
+	id S1757694AbaEJVBl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 17:01:41 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55159 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757055AbaEJVBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 16:23:08 -0400
-Date: Sat, 10 May 2014 13:21:58 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Jianyu Zhan <nasa4836@gmail.com>
-cc: akpm@linux-foundation.org, riel@redhat.com, aarcange@redhat.com,
-        fabf@skynet.be, zhangyanfei@cn.fujitsu.com, sasha.levin@oracle.com,
-        mgorman@suse.de, oleg@redhat.com, n-horiguchi@ah.jp.nec.com,
-        iamjoonsoo.kim@lge.com, kirill.shutemov@linux.intel.com,
-        liwanp@linux.vnet.ibm.com, gorcunov@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mm: rename mlocked_vma_newpage to
- newpage_in_mlocked_vma
-In-Reply-To: <7ab379a001bd44ed980a884f819178cffe7df577.1399705884.git.nasa4836@gmail.com>
-Message-ID: <alpine.LSU.2.11.1405101316470.1680@eggly.anvils>
-References: <1d32d83e54542050dba3f711a8d10b1e951a9a58.1399705884.git.nasa4836@gmail.com> <7ab379a001bd44ed980a884f819178cffe7df577.1399705884.git.nasa4836@gmail.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Sat, 10 May 2014 17:01:39 -0400
+Message-ID: <536E9390.5060404@infradead.org>
+Date: Sat, 10 May 2014 14:01:04 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Guenter Roeck <linux@roeck-us.net>
+CC: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas Jensen <jonas.jensen@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH 6/5] watchdog: Document reboot API
+References: <1399681883-891-1-git-send-email-linux@roeck-us.net> <536D74E3.8010609@infradead.org> <20140510162329.GA19884@roeck-us.net>
+In-Reply-To: <20140510162329.GA19884@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 May 2014, Jianyu Zhan wrote:
-
-> mlocked_vma_newpage is used to determine if a new page is mapped into
-> a *mlocked* vma. It is poorly named, so rename it to newpage_in_mlocked_vma.
+On 05/10/2014 09:23 AM, Guenter Roeck wrote:
+> Document the new reboot API functionality.
 > 
-> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
-
-newpage_in_mlocked_vma() is not as bad a name as mlocked_vma_newpage(),
-but it's not especially good either (sounds like it answers a question,
-not like it actually does something).  Please just put it into its
-sole caller and we don't need an obscuring name at all.
-
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 > ---
->  mm/internal.h | 4 ++--
->  mm/rmap.c     | 4 ++--
->  2 files changed, 4 insertions(+), 4 deletions(-)
+>  Documentation/watchdog/watchdog-kernel-api.txt | 14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
 > 
-> diff --git a/mm/internal.h b/mm/internal.h
-> index 20abafb..35efd79 100644
-> --- a/mm/internal.h
-> +++ b/mm/internal.h
-> @@ -183,7 +183,7 @@ static inline void munlock_vma_pages_all(struct vm_area_struct *vma)
->  	munlock_vma_pages_range(vma, vma->vm_start, vma->vm_end);
->  }
->  
-> -extern int mlocked_vma_newpage(struct vm_area_struct *vma,
-> +extern int newpage_in_mlocked_vma(struct vm_area_struct *vma,
->  				struct page *page);
+> diff --git a/Documentation/watchdog/watchdog-kernel-api.txt b/Documentation/watchdog/watchdog-kernel-api.txt
+> index a0438f3..f8f0f18 100644
+> --- a/Documentation/watchdog/watchdog-kernel-api.txt
+> +++ b/Documentation/watchdog/watchdog-kernel-api.txt
+> @@ -90,6 +90,8 @@ struct watchdog_ops {
+>  	int (*stop)(struct watchdog_device *);
+>  	/* optional operations */
+>  	int (*ping)(struct watchdog_device *);
+> +	void (*reboot)(struct watchdog_device *, enum reboot_mode,
+> +		       const char *);
+>  	unsigned int (*status)(struct watchdog_device *);
+>  	int (*set_timeout)(struct watchdog_device *, unsigned int);
+>  	unsigned int (*get_timeleft)(struct watchdog_device *);
+> @@ -148,6 +150,10 @@ they are supported. These optional routines/operations are:
+>    info structure).
+>  * status: this routine checks the status of the watchdog timer device. The
+>    status of the device is reported with watchdog WDIOF_* status flags/bits.
+> +* reboot: if this routine is present, it may be called to reboot the system.
+> +  Parameters are the pointer to the watchdog device, the reboot mode, and a
+> +  command string. The latter two parameters are the system reboot mode
+> +  and the cmd parameter passed to machine_restart().
+>  * set_timeout: this routine checks and changes the timeout of the watchdog
+>    timer device. It returns 0 on success, -EINVAL for "parameter out of range"
+>    and -EIO for "could not write value to the watchdog". On success this
+> @@ -224,3 +230,11 @@ the device tree (if the module timeout parameter is invalid). Best practice is
+>  to set the default timeout value as timeout value in the watchdog_device and
+>  then use this function to set the user "preferred" timeout value.
+>  This routine returns zero on success and a negative errno code for failure.
+> +
+> +The watchdog_do_reboot function can be used reboot the system. This is intended
 
-This should have vanished in the previous patch.
+                                               to reboot
 
->  /*
->   * must be called with vma's mmap_sem held for read or write, and page locked.
-> @@ -227,7 +227,7 @@ extern unsigned long vma_address(struct page *page,
->  				 struct vm_area_struct *vma);
->  #endif
->  #else /* !CONFIG_MMU */
-> -static inline int mlocked_vma_newpage(struct vm_area_struct *v, struct page *p)
-> +static inline int newpage_in_mlocked_vma(struct vm_area_struct *v, struct page *p)
+> +to be used in systems which do not have an explicit reboot capability, but
+> +implement reboot by programming the watchdog to expire immediately. If the
+> +function is called, and a watchdog driver with reboot functionality was
+> +previously registered, the reboot function of that driver will be called.
+> +Architecture code should call watchdog_do_reboot from its machine_reboot
+> +function after other means to reboot the system failed.
+> 
 
-Ditto.
+Thanks for the Doc patch.
 
-Hugh
-
->  {
->  	return 0;
->  }
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index a9d02ef..9ff6915 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -1014,7 +1014,7 @@ void do_page_add_anon_rmap(struct page *page,
->   * pte is locked while calling page_add_new_anon_rmap(), so using a
->   * light-weight version __mod_zone_page_state() would be OK.
->   */
-> -int mlocked_vma_newpage(struct vm_area_struct *vma,
-> +int newpage_in_mlocked_vma(struct vm_area_struct *vma,
->  					struct page *page)
->  {
->  	VM_BUG_ON_PAGE(PageLRU(page), page);
-> @@ -1050,7 +1050,7 @@ void page_add_new_anon_rmap(struct page *page,
->  	__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
->  			hpage_nr_pages(page));
->  	__page_set_anon_rmap(page, vma, address, 1);
-> -	if (!mlocked_vma_newpage(vma, page)) {
-> +	if (!newpage_in_mlocked_vma(vma, page)) {
->  		SetPageActive(page);
->  		lru_cache_add(page);
->  	} else
-> -- 
-> 2.0.0-rc1
+-- 
+~Randy
