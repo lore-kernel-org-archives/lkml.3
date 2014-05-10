@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372AbaEJSPZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 14:15:25 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:33069 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029AbaEJSPX (ORCPT
+	id S1756653AbaEJSQd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 14:16:33 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:58970 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754832AbaEJSQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 14:15:23 -0400
-Date: Sat, 10 May 2014 23:45:02 +0530
+	Sat, 10 May 2014 14:16:32 -0400
+Date: Sat, 10 May 2014 23:46:16 +0530
 From: Himangi Saraogi <himangi774@gmail.com>
 To: Support Opensource <support.opensource@diasemi.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Input: Introduce the use of managed version of kzalloc
-Message-ID: <20140510181502.GA6425@himangi-Dell>
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH v2] Input: Introduce the use of managed version of kzalloc
+Message-ID: <20140510181616.GA6441@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,6 +32,8 @@ Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 Acked-by: Opensource [Anthony Olech] <anthony.olech.opensource@diasemi.com>
 ---
+v2: shift semantic patch from description to below ---
+
 The following Coccinelle semantic patch was used for making the change:
 
 @platform@
