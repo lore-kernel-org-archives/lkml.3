@@ -1,116 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500AbaEJAby (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 20:31:54 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:47486 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932341AbaEJAbv (ORCPT
+	id S932449AbaEJAbt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 20:31:49 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:52189 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932424AbaEJAbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 20:31:51 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonas Jensen <jonas.jensen@gmail.com>, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v2 5/5] watchdog: sunxi: Register reboot handler with watchdog subsystem
-Date: Fri,  9 May 2014 17:31:23 -0700
-Message-Id: <1399681883-891-6-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399681883-891-1-git-send-email-linux@roeck-us.net>
-References: <1399681883-891-1-git-send-email-linux@roeck-us.net>
+	Fri, 9 May 2014 20:31:45 -0400
+Date: Fri, 9 May 2014 17:31:40 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 01/45] rcutorture: Add forward-progress
+ checking for writer
+Message-ID: <20140510003140.GE8754@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140507211649.GA27924@cloud>
+ <20140507234313.GP8754@linux.vnet.ibm.com>
+ <20140509155230.GA4152@thin>
+ <20140509173658.GV8754@linux.vnet.ibm.com>
+ <20140509193246.GC13050@jtriplet-mobl1>
+ <20140509223004.GZ8754@linux.vnet.ibm.com>
+ <20140509224052.GC5725@thin>
+ <20140509225514.GA8754@linux.vnet.ibm.com>
+ <20140510001454.GA7553@thin>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140510001454.GA7553@thin>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051000-8236-0000-0000-00000234A914
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The watchdog subsystem now provides an API to trigger a system reboot.
-Register with it.
+On Fri, May 09, 2014 at 05:14:54PM -0700, Josh Triplett wrote:
+> On Fri, May 09, 2014 at 03:55:14PM -0700, Paul E. McKenney wrote:
+> > On Fri, May 09, 2014 at 03:40:52PM -0700, Josh Triplett wrote:
+> > > On Fri, May 09, 2014 at 03:30:04PM -0700, Paul E. McKenney wrote:
+> > > > On Fri, May 09, 2014 at 12:32:46PM -0700, Josh Triplett wrote:
+> > > > > On Fri, May 09, 2014 at 10:36:58AM -0700, Paul E. McKenney wrote:
+> > > > > > On Fri, May 09, 2014 at 08:52:31AM -0700, Josh Triplett wrote:
+> > > > > > > On Wed, May 07, 2014 at 04:43:13PM -0700, Paul E. McKenney wrote:
+> > > > > > > > On Wed, May 07, 2014 at 02:16:49PM -0700, josh@joshtriplett.org wrote:
+> > > > > > > > > On Mon, Apr 28, 2014 at 05:24:49PM -0700, Paul E. McKenney wrote:
+> > > > > > > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > > > > > > > 
+> > > > > > > > > > The rcutorture output currently does not distinguish between stalls in
+> > > > > > > > > > the RCU implementation and stalls in the rcu_torture_writer() kthreads.
+> > > > > > > > > > This commit therefore adds some diagnostics to help distinguish between
+> > > > > > > > > > these two conditions, at least for the non-SRCU implementations.  (SRCU
+> > > > > > > > > > does not provide evidence of update-side forward progress by design.)
+> > > > > > > > > > 
+> > > > > > > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > > > > > > 
+> > > > > > > > > The concept makes sense, and the writer state annotations seem like a
+> > > > > > > > > useful debugging mechanism, but having RCU know about RCU torture types
+> > > > > > > > > seems fundamentally wrong.  This mechanism accesses rcu_state, which is
+> > > > > > > > > already implementation-specific, so why not just only define the
+> > > > > > > > > function for the RCU implementations that support it, and then have a
+> > > > > > > > > function pointer in the torture-test structure to report a stall?
+> > > > > > > > 
+> > > > > > > > Ouch.  It is worse than that!  When running RCU-bh or RCU-sched,
+> > > > > > > > the current code incorrectly returns the statistics for RCU.
+> > > > > > > > So I do need some way for rcutorture to tell RCU which flavor
+> > > > > > > > it is testing.
+> > > > > > > > 
+> > > > > > > > One thing I could do would be to pass in a pointer to the call_rcu()
+> > > > > > > > function (cur_ops->call from rcutorture's viewpoint), then scan the
+> > > > > > > > rcu_state structures looking for the selected flavor (rsp->call from
+> > > > > > > > tree.c's viewpoint).  In the SRCU and RCU-busted cases, the flavor would
+> > > > > > > > not be found, and I could then just set everything to zero.
+> > > > > > > > 
+> > > > > > > > Does that seem reasonable, or is there a better way to do this?
+> > > > > > > 
+> > > > > > > That search seems rather too hackish; why not just declare one
+> > > > > > > stats-returning function per RCU flavor, and put the pointer to the
+> > > > > > > corresponding function in the structure for each test type?
+> > > > > > 
+> > > > > > The problem is that rcutorture doesn't know anything about the structures,
+> > > > > > as those are internal to the implementation.  All it knows is which
+> > > > > > functions it is using.  I -could- EXPORT_SYMBOL_GPL() the rcu_state
+> > > > > > structures to modules (they are already non-static), then rename
+> > > > > > TINY_RCU's rcu_ctrlblk to rcu_state to allow the needed type punning,
+> > > > > > then do some special-case thing for SRCU, and put a pointer to whatever
+> > > > > > in rcu_torture_ops, but that was feeling a bit hackish as well.
+> > > > > > 
+> > > > > > So what did you have in mind to allow rcutorture to communicate the
+> > > > > > rcuflavor to the underlying RCU implementation?
+> > > > > 
+> > > > > Rather than EXPORT_SYMBOL_GPLing the rcu_state structures, just
+> > > > > EXPORT_SYMBOL_GPL one version of rcutorture_get_gp_data per RCU flavor.
+> > > > > (And hide them all behind #ifdef CONFIG_RCU_TORTURE_TEST.)  Then add a
+> > > > > get_gp_data field to rcu_torture_ops; if NULL, skip the stats.  (Or put
+> > > > > a no-op version in rcutorture.)
+> > > > 
+> > > > But that would require me to provide these same exports from TINY_RCU,
+> > > > which does not need them.
+> > > > 
+> > > > How about exporting integers identifying the flavors of RCU to rcutorture,
+> > > > which rcutorture can then pass to rcutorture_get_gp_data()?  This allows
+> > > > TINY_RCU to provide a trivial static inline function.  TREE_RCU and
+> > > > TREE_PREEMPT_RCU can keep an array of pointers to the corresponding
+> > > > rcu_state structure, with NULL pointers for flavors of RCU that don't
+> > > > have any data to provide.
+> > > > 
+> > > > Would that help?
+> > > 
+> > > Either way seems fine: a single function with an extra parameter or a
+> > > unique function per flavor.  But if you're going to provide the
+> > > RCU-flavor integers, they should be in RCU itself and refer to RCU
+> > > flavors, rather than being in rcutorture and refering to test types.
+> > 
+> > Fair enough, will take that approach!
+> > 
+> > I am thinking in terms of something like the following:
+> > 
+> > RCU_FLAVOR
+> > RCU_BH_FLAVOR
+> > RCU_SCHED_FLAVOR
+> > SRCU_FLAVOR
+> > OTHER_FLAVOR
+> > 
+> > The "OTHER_FLAVOR" would be what rcutorture uses for the "busted"
+> > incorrect-on-purpose flavor of RCU, which is local to rcutorture.
+> > 
+> > Seem reasonable, or would some other naming scheme be better?
+> 
+> Seems reasonable to me.  I'd call the last one "INVALID_RCU_FLAVOR" or
+> similar.
 
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v2: Rebased to v2 of Maxime's patch adding reboot support
-    to the sunxi watchdog driver.
+Even better!
 
- drivers/watchdog/sunxi_wdt.c | 22 +++++++++-------------
- 1 file changed, 9 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/watchdog/sunxi_wdt.c b/drivers/watchdog/sunxi_wdt.c
-index 60deb9d..744b6f5 100644
---- a/drivers/watchdog/sunxi_wdt.c
-+++ b/drivers/watchdog/sunxi_wdt.c
-@@ -27,8 +27,6 @@
- #include <linux/types.h>
- #include <linux/watchdog.h>
- 
--#include <asm/system_misc.h>
--
- #define WDT_MAX_TIMEOUT         16
- #define WDT_MIN_TIMEOUT         1
- #define WDT_MODE_TIMEOUT(n)     ((n) << 3)
-@@ -74,23 +72,25 @@ static const int wdt_timeout_map[] = {
- 	[16] = 0xB, /* 16s */
- };
- 
--static void __iomem *reboot_wdt_base;
--
--static void sun4i_wdt_restart(enum reboot_mode mode, const char *cmd)
-+static void sunxi_wdt_reboot(struct watchdog_device *wdt_dev,
-+			     enum reboot_mode mode, const char *cmd)
- {
-+	struct sunxi_wdt_dev *sunxi_wdt = watchdog_get_drvdata(wdt_dev);
-+
- 	/* Enable timer and set reset bit in the watchdog */
--	writel(WDT_MODE_EN | WDT_MODE_RST_EN, reboot_wdt_base + WDT_MODE);
-+	writel(WDT_MODE_EN | WDT_MODE_RST_EN,
-+	       sunxi_wdt->wdt_base + WDT_MODE);
- 
- 	/*
- 	 * Restart the watchdog. The default (and lowest) interval
- 	 * value for the watchdog is 0.5s.
- 	 */
--	writel(WDT_CTRL_RELOAD, reboot_wdt_base + WDT_CTRL);
-+	writel(WDT_CTRL_RELOAD, sunxi_wdt->wdt_base + WDT_CTRL);
- 
- 	while (1) {
- 		mdelay(5);
- 		writel(WDT_MODE_EN | WDT_MODE_RST_EN,
--		       reboot_wdt_base + WDT_MODE);
-+		       sunxi_wdt->wdt_base + WDT_MODE);
- 	}
- }
- 
-@@ -167,6 +167,7 @@ static const struct watchdog_ops sunxi_wdt_ops = {
- 	.start		= sunxi_wdt_start,
- 	.stop		= sunxi_wdt_stop,
- 	.ping		= sunxi_wdt_ping,
-+	.reboot		= sunxi_wdt_reboot,
- 	.set_timeout	= sunxi_wdt_set_timeout,
- };
- 
-@@ -205,9 +206,6 @@ static int sunxi_wdt_probe(struct platform_device *pdev)
- 	if (unlikely(err))
- 		return err;
- 
--	reboot_wdt_base = sunxi_wdt->wdt_base;
--	arm_pm_restart = sun4i_wdt_restart;
--
- 	dev_info(&pdev->dev, "Watchdog enabled (timeout=%d sec, nowayout=%d)",
- 			sunxi_wdt->wdt_dev.timeout, nowayout);
- 
-@@ -218,8 +216,6 @@ static int sunxi_wdt_remove(struct platform_device *pdev)
- {
- 	struct sunxi_wdt_dev *sunxi_wdt = platform_get_drvdata(pdev);
- 
--	arm_pm_restart = NULL;
--
- 	watchdog_unregister_device(&sunxi_wdt->wdt_dev);
- 	watchdog_set_drvdata(&sunxi_wdt->wdt_dev, NULL);
- 
--- 
-1.9.1
+							Thanx, Paul
 
