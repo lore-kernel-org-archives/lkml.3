@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758AbaEJO0G (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 10:26:06 -0400
-Received: from f256.i.mail.ru ([94.100.178.221]:40085 "EHLO f256.i.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754595AbaEJO0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 10:26:04 -0400
-X-Greylist: delayed 15560 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 May 2014 10:26:04 EDT
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?Vml2ZWsgR2F1dGFt?= <gautam.vivek@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, swarren@wwwdotorg.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        kgene.kim@samsung.com, stern@rowland.harvard.edu,
-        linux-tegra@vger.kernel.org, thierry.reding@gmail.com,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-Subject: =?UTF-8?B?UmU6IFtQQVRDSCB2MiAwLzZdIHVzYjogaG9zdDogQ2xlYW51cCBmb3IgaW9y?=
- =?UTF-8?B?ZW1hcCdpbmcgaGNkIG1lbW9yeQ==?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [5.18.98.0]
-Date: Sat, 10 May 2014 18:25:56 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1399731956.962771892@f256.i.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Mras: Ok
-X-Spam: undefined
-In-Reply-To: <1399723210-21569-1-git-send-email-gautam.vivek@samsung.com>
-References: <1399723210-21569-1-git-send-email-gautam.vivek@samsung.com>
+	id S1757088AbaEJOfv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 10:35:51 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:57679 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755096AbaEJOfu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 May 2014 10:35:50 -0400
+Date: Sat, 10 May 2014 10:35:49 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, <kishon@ti.com>,
+        <hdegoede@redhat.com>, Boris Brezillon <boris@free-electrons.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <kevin.z.m.zh@gmail.com>,
+        <sunny@allwinnertech.com>, <shuge@allwinnertech.com>,
+        <zhuzhenhua@allwinnertech.com>, <linux-sunxi@googlegroups.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: Re: [PATCH v2 4/7] usb: ehci-platform: add optional reset controller
+ retrieval
+In-Reply-To: <1399726619-30150-5-git-send-email-maxime.ripard@free-electrons.com>
+Message-ID: <Pine.LNX.4.44L0.1405101023510.1268-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4AEQMhV008924
 
-Sat, 10 May 2014 17:30:04 +0530 Ð¾Ñ‚ Vivek Gautam <gautam.vivek@samsung.com>:
-> Based on 'usb-next' branch of Greg's usb tree.
+On Sat, 10 May 2014, Maxime Ripard wrote:
+
+> From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 > 
-> devm_ioremap_resource() API is advantageous over devm_ioremap()
-> and should therefore be preferred to request any ioremap'ed address
-> for hcd.
+> On the Allwinner's A31 SoC the reset line connected to the EHCI IP has to
+> be deasserted for the EHCI block to be usable.
 > 
-> Changes from v1:
->  - Changed the way returned pointer is checked for error value
->    as pointed out in the review comment in the mailing list.
+> Add support for an optional reset controller that will be deasserted on
+> power off and asserted on power on.
+> 
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
 
-hcd->rsrc_len field can be removed entirely, since I cannot find any reason
-how this filed can be used in the drivers now.
-This is of course should be in an another series. This one looks good.
+This basically is good. fine.  I have only two comments, and one of
+them is a matter of taste rather than substance.
 
----
+> @@ -206,6 +208,19 @@ static int ehci_platform_probe(struct platform_device *dev)
+>  				break;
+>  			}
+>  		}
+> +
+> +		priv->rst = devm_reset_control_get_optional(&dev->dev,
+> +							    NULL);
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I hate the style that matches arguments on a continuation line with the
+opening paren of the function call, for a couple of reasons.  Instead I
+simply indent continuation lines by two or more tab stops.  But some
+people seem to be incurably attached to it.
+
+> +		if (IS_ERR(priv->rst)) {
+> +			err = PTR_ERR(priv->rst);
+> +			if (err == -EPROBE_DEFER)
+> +				goto err_put_clks;
+> +			priv->rst = NULL;
+> +		} else {
+> +			err = reset_control_deassert(priv->rst);
+> +			if (err)
+> +				goto err_put_clks;
+> +		}
+>  	}
+>  
+>  	if (pdata->big_endian_desc)
+
+The new code was added inside an "if" statement, which will cause it to
+apply only to OF devices.  Is there any reason not to put the new code
+outside the "if" statement, so it applies to all devices?
+
+Alan Stern
+
