@@ -1,68 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757397AbaEJTm6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 15:42:58 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:33164 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755909AbaEJTm4 (ORCPT
+	id S1754197AbaEJTxC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 15:53:02 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:35692 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006AbaEJTxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 15:42:56 -0400
-Message-ID: <536E814E.4020805@cogentembedded.com>
-Date: Sat, 10 May 2014 23:43:10 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Sat, 10 May 2014 15:53:00 -0400
+Date: Sat, 10 May 2014 12:51:44 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Jianyu Zhan <nasa4836@gmail.com>
+cc: akpm@linux-foundation.org, mgorman@suse.de, cody@linux.vnet.ibm.com,
+        liuj97@gmail.com, zhangyanfei@cn.fujitsu.com,
+        srivatsa.bhat@linux.vnet.ibm.com, dave@sr71.net,
+        iamjoonsoo.kim@lge.com, n-horiguchi@ah.jp.nec.com,
+        kirill.shutemov@linux.intel.com, schwidefsky@de.ibm.com,
+        gorcunov@gmail.com, riel@redhat.com, cl@linux.com, toshi.kani@hp.com,
+        paul.gortmaker@windriver.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mm: add comment for __mod_zone_page_stat
+In-Reply-To: <1d32d83e54542050dba3f711a8d10b1e951a9a58.1399705884.git.nasa4836@gmail.com>
+Message-ID: <alpine.LSU.2.11.1405101142300.1680@eggly.anvils>
+References: <1d32d83e54542050dba3f711a8d10b1e951a9a58.1399705884.git.nasa4836@gmail.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-To: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org
-CC: linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
-        swarren@wwwdotorg.org, kgene.kim@samsung.com, thierry.reding@gmail.com
-Subject: Re: [PATCH 5/6] usb: host: ehci-tegra: Use devm_ioremap_resource
- instead of devm_ioremap
-References: <1399715823-19839-1-git-send-email-gautam.vivek@samsung.com> <1399715823-19839-6-git-send-email-gautam.vivek@samsung.com>
-In-Reply-To: <1399715823-19839-6-git-send-email-gautam.vivek@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Sat, 10 May 2014, Jianyu Zhan wrote:
 
-On 05/10/2014 01:57 PM, Vivek Gautam wrote:
+> __mod_zone_page_stat() is not irq-safe, so it should be used carefully.
+> And it is not appropirately documented now. This patch adds comment for
+> it, and also documents for some of its call sites.
+> 
+> Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
 
-> Using devm_ioremap_resource() API should actually be preferred over
-> devm_ioremap(), since the former request the mem region first and then
-> gives back the ioremap'ed memory pointer.
-> devm_ioremap_resource() calls request_mem_region(), therby preventing
-> other drivers to make any overlapping call to the same region.
+Your original __mod_zone_page_state happened to be correct;
+but you have no understanding of why it was correct, so its
+comment was very wrong, even after you changed the irq wording.
 
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+This series just propagates your misunderstanding further,
+while providing an object lesson in how not to present a series.
+
+Sorry, you have quickly developed an unenviable reputation for
+patches which waste developers' time: please consider your
+patches much more carefully before posting them.
+
 > ---
->   drivers/usb/host/ehci-tegra.c |    3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
+>  mm/page_alloc.c |  2 ++
+>  mm/rmap.c       |  6 ++++++
+>  mm/vmstat.c     | 16 +++++++++++++++-
+>  3 files changed, 23 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 5dba293..9d6f474 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -659,6 +659,8 @@ static inline int free_pages_check(struct page *page)
+>   *
+>   * And clear the zone's pages_scanned counter, to hold off the "all pages are
+>   * pinned" detection logic.
+> + *
+> + * Note: this function should be used with irq disabled.
 
-> diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
-> index 572634c..ccc6433 100644
-> --- a/drivers/usb/host/ehci-tegra.c
-> +++ b/drivers/usb/host/ehci-tegra.c
-> @@ -411,9 +411,8 @@ static int tegra_ehci_probe(struct platform_device *pdev)
->   	}
->   	hcd->rsrc_start = res->start;
->   	hcd->rsrc_len = resource_size(res);
-> -	hcd->regs = devm_ioremap(&pdev->dev, res->start, resource_size(res));
-> +	hcd->regs = devm_ioremap_resource(&pdev->dev, res);
->   	if (!hcd->regs) {
+Correct, but I don't see that that needed saying.  This is a static
+function which is being used as intended: just because it matched your
+search for "__mod_zone_page_state" is not a reason for you to add that
+comment; irq disabled is only one of its prerequisites.
 
-    This has to be changed as well as devm_ioremap_resource() returns error, 
-not NULL.
+>   */
+>  static void free_pcppages_bulk(struct zone *zone, int count,
+>  					struct per_cpu_pages *pcp)
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 9c3e773..6078a30 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -979,6 +979,8 @@ void page_add_anon_rmap(struct page *page,
+>  /*
+>   * Special version of the above for do_swap_page, which often runs
+>   * into pages that are exclusively owned by the current process.
+> + * So we could use the irq-unsafe version __{inc|mod}_zone_page_stat
+> + * here without others racing change it in between.
 
-> -		dev_err(&pdev->dev, "Failed to remap I/O memory\n");
->   		err = -ENOMEM;
+And yet you can immediately see them being used without any test
+for "exclusive" below: why is that?  Think about it.
 
-    This needs to be changed as well, to pass up the error code 
-devm_ioremap_resource() returned.
+>   * Everybody else should continue to use page_add_anon_rmap above.
+>   */
+>  void do_page_add_anon_rmap(struct page *page,
+> @@ -1077,6 +1079,10 @@ void page_remove_rmap(struct page *page)
+>  	/*
+>  	 * Hugepages are not counted in NR_ANON_PAGES nor NR_FILE_MAPPED
+>  	 * and not charged by memcg for now.
+> +	 *
+> +	 * And we are the last user of this page, so it is safe to use
+> +	 * the irq-unsafe version __{mod|dec}_zone_page here, since we
+> +	 * have no racer.
 
-WBR, Sergei
+Again, the code is correct to be using the irq-unsafe version, but your
+comment is doubly wrong.
 
+We are not necessarily the last user of this page, merely the one that
+just now brought the mapcount down to 0.
+
+But think: what bearing would being the last user of this page have on
+the safety of using __mod_zone_page_state to adjust per-zone counters?
+
+None at all.  A page does not move from one zone to another (though its
+contents might be migrated from one page to another when safe to do so).
+
+Once upon a time, from 2.6.16 to 2.6.32, there was indeed a relevant
+and helpful comment in __page_set_anon_rmap():
+	/*
+	 * nr_mapped state can be updated without turning off
+	 * interrupts because it is not modified via interrupt.
+	 */
+	__inc_page_state(nr_mapped);
+
+The comment survived the replacement of nr_mapped, but eventually
+it got cleaned away completely.
+
+It is safe to use the irq-unsafe __mod_zone_page_stat on counters
+which are never modified via interrupt.
+
+>  	 */
+>  	if (unlikely(PageHuge(page)))
+>  		goto out;
+> diff --git a/mm/vmstat.c b/mm/vmstat.c
+> index 302dd07..778f154 100644
+> --- a/mm/vmstat.c
+> +++ b/mm/vmstat.c
+> @@ -207,7 +207,21 @@ void set_pgdat_percpu_threshold(pg_data_t *pgdat,
+>  }
+>  
+>  /*
+> - * For use when we know that interrupts are disabled.
+> + * Optimized modificatoin function.
+> + *
+> + * The code basically does the modification in two steps:
+> + *
+> + *  1. read the current counter based on the processor number
+> + *  2. modificate the counter write it back.
+> + *
+> + * So this function should be used with the guarantee that
+> + *
+> + *  1. interrupts are disabled, or
+> + *  2. interrupts are enabled, but no other sites would race to
+> + *     modify this counter in between.
+> + *
+> + * Otherwise, an irq-safe version mod_zone_page_state() should
+> + * be used instead.
+
+You are right that the comment is not good enough, but I don't trust
+your version either.  Since percpu variables are involved, it's important
+that preemption be disabled too (see comment above __inc_zone_state).
+
+I'd prefer to let Christoph write the definitive version,
+but my first stab at it would be:
+
+/*
+ * For use when we know that interrupts are disabled,
+ * or when we know that preemption is disabled and that
+ * particular counter cannot be updated from interrupt context.
+ */
+
+Hugh
+
+>   */
+>  void __mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
+>  				int delta)
+> -- 
+> 2.0.0-rc1
