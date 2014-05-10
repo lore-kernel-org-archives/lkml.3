@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919AbaEJGih (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 02:38:37 -0400
+	id S1754541AbaEJGie (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 02:38:34 -0400
 Received: from mailout3.samsung.com ([203.254.224.33]:25975 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909AbaEJGi0 (ORCPT
+	with ESMTP id S1752764AbaEJGiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 02:38:26 -0400
-X-AuditID: cbfee68f-b7eff6d000002b70-b3-536dc96055bd
+	Sat, 10 May 2014 02:38:25 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-89-536dc9605325
 From: Pankaj Dubey <pankaj.dubey@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
 Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
         chow.kim@samsung.com, yg1004.jang@samsung.com,
         vikas.sajjan@samsung.com, Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH v4 03/11] ARM: EXYNOS: Move SYSREG definition into sys-reg
- specific file.
-Date: Sat, 10 May 2014 15:56:30 +0900
-Message-id: <1399704998-13321-4-git-send-email-pankaj.dubey@samsung.com>
+Subject: [PATCH v4 02/11] ARM: EXYNOS: Move cpufreq and cpuidle device
+ registration to init_machine
+Date: Sat, 10 May 2014 15:56:29 +0900
+Message-id: <1399704998-13321-3-git-send-email-pankaj.dubey@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1399704998-13321-1-git-send-email-pankaj.dubey@samsung.com>
 References: <1399704998-13321-1-git-send-email-pankaj.dubey@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t8zA93Ek7nBBntvM1ksm3SXzaJ3wVU2
-	i02Pr7FaXN41h81ixvl9TBa3L/NaLNr6hd1i/YzXLBY3n21nstjRsprFgcujpbmHzWPzknqP
-	vi2rGD0+b5ILYInisklJzcksSy3St0vgyjh9tZOtoEe8Yt3r34wNjN+Euhg5OSQETCSu/NjK
-	DGGLSVy4t56ti5GLQ0hgGaNEx4FbzDBFaw5eZ4ZITGeUWHfgLDuE08YkMWneJDaQKjYBXYkn
-	7+eCdYgIZEtcabwP1sEssJtRorFxHliRsEC0xLdpN8GKWARUJbadvQoW5xXwkLgyaQ9TFyMH
-	0DoFiTmTbEDCnAKeEl+/LmYCsYWASh50LwWbKSGwjl1iX3s3O8QcAYlvkw+xQPTKSmw6AHW1
-	pMTBFTdYJjAKL2BkWMUomlqQXFCclF5krFecmFtcmpeul5yfu4kREvj9OxjvHrA+xJgMNG4i
-	s5Rocj4wcvJK4g2NzYwsTE1MjY3MLc1IE1YS573/MClISCA9sSQ1OzW1ILUovqg0J7X4ECMT
-	B6dUA+PUii8OV9tjX8x2v6nR1fqE71Xz+6UOe33/RVfHHYgPKzlUqLZJYefNOJ03/w68zV2j
-	9/mKfuubL1PDL1lIencHNKa23nSRrT8eV1XW7HTrxJelC0PO7Ir588T6UpbSz4AFe48Yff1/
-	tkt01bLLt3ckBx4P3LaF4+cBCfuewlkdbocavXctiypUYinOSDTUYi4qTgQAxRAX4pICAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jQd2Ek7nBBlvWWlosm3SXzaJ3wVU2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsVy+t8zI92Ek7nBBgtaBCyWTbrLZtG74Cqb
+	xabH11gtLu+aw2Yx4/w+Jovbl3ktFm39wm6xfsZrFoubz7YzWexoWc3iwOXR0tzD5rF5Sb1H
+	35ZVjB6fN8kFsERx2aSk5mSWpRbp2yVwZdw7vJOpYC5PRev7Y6wNjEu4uhg5OCQETCQe9ph0
+	MXICmWISF+6tZwOxhQSWMUrMnuQBETeRuLl/HnsXIxdQfDqjxIIZXSwQRW1MEg/m2IDYbAK6
+	Ek/ez2UGsUUEsiWuNN5nBmlgFtjNKNHYOA9sqrBAqsTftVNZQRazCKhKTF2sChLmFfCQmLns
+	PBvEPQoScyaBjeQU8JT4+nUxE8QqD4kH3UuZIe7ZxC6x96kOiM0iICDxbfIhFohWWYlNB6BK
+	JCUOrrjBMoFReAEjwypG0dSC5ILipPQiE73ixNzi0rx0veT83E2MkHCfsIPx3gHrQ4zJQOMm
+	MkuJJucD4yWvJN7Q2MzIwtTE1NjI3NKMNGElcV61R0lBQgLpiSWp2ampBalF8UWlOanFhxiZ
+	ODilGhhz/yt8umTAcFrubrzo19aEX4KvTp6ZLb9o0f/p1y6k7r8t+Vnn1oYvlT1enJY6uzcv
+	fV96MKL2pnLnHeVfD91v1u0QLOTRLhE5s7Jy9k4hoWkVUdZqzemPfO68LU55qf6EsdmoS6z+
+	edi6Z87T8isc7pcx9ulfPn7qgkITO9vS6Qu/7T4YyOihxFKckWioxVxUnAgAc95KtY0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t9jQd2Ek7nBBpPOcFssm3SXzaJ3wVU2
 	i02Pr7FaXN41h81ixvl9TBa3L/NaLNr6hd1i/YzXLBY3n21nstjRsprFgcujpbmHzWPzknqP
 	vi2rGD0+b5ILYIlqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy
-	8QnQdcvMAbpHSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYx5hx+monW0GP
-	eMW6178ZGxi/CXUxcnJICJhIrDl4nRnCFpO4cG89WxcjF4eQwHRGiXUHzrJDOG1MEpPmTWID
-	qWIT0JV48n4uWIeIQLbElcb7zCBFzAK7GSUaG+eBFQkLREt8m3YTrIhFQFVi29mrYHFeAQ+J
-	K5P2MHUxcgCtU5CYM8kGJMwp4Cnx9etiJhBbCKjkQfdS5gmMvAsYGVYxiqYWJBcUJ6XnGuoV
-	J+YWl+al6yXn525iBMfVM6kdjCsbLA4xCnAwKvHwFrzNCRZiTSwrrsw9xCjBwawkwrviYG6w
-	EG9KYmVValF+fFFpTmrxIcZkoKMmMkuJJucDYz6vJN7Q2MTMyNLIzMLIxNycNGElcd4DrdaB
-	QgLpiSWp2ampBalFMFuYODilGhhNTqvsPbl7Xo3gz8nF7Ysdnpu03Pwj1t36qmaF1r9ajQjN
-	4/Nygu4cV9/++GhQffo6v4+dG84yhflc+LtCiO8Tr9+zp8pVC/uEjq451FU1mcd68bknZjK3
-	HnqGM52fP9Vh9aEz0Q+f23YuM/eNz1ht+NKI54dBzA67phuNfNdVMvo2yOYqnJiqxFKckWio
-	xVxUnAgAgzfBe+8CAAA=
+	8QnQdcvMAbpHSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYx5hx7/BOpoK5
+	PBWt74+xNjAu4epi5OSQEDCRuLl/HjuELSZx4d56ti5GLg4hgemMEgtmdLGAJIQE2pgkHsyx
+	AbHZBHQlnryfywxiiwhkS1xpvM8M0sAssJtRorFxHhtIQlggVeLv2qmsXYwcHCwCqhJTF6uC
+	hHkFPCRmLjvPBhKWEFCQmDMJbCSngKfE16+LmSBWeUg86F7KPIGRdwEjwypG0dSC5ILipPRc
+	Q73ixNzi0rx0veT83E2M4Jh6JrWDcWWDxSFGAQ5GJR7egrc5wUKsiWXFlbmHGCU4mJVEeFcc
+	zA0W4k1JrKxKLcqPLyrNSS0+xJgMdNNEZinR5HxgvOeVxBsam5gZWRqZWRiZmJuTJqwkznug
+	1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA+P+Xxm1/jwvuF1kpc3zZk6SaQ/zfHbizaubPwoVdc7H
+	2C+Jnv7waJmBy3PzjlBFxUe/C3VPSL3dvXd/Zuy6vQIz8z7wTeBY+kjqqN2Tz8dMrCP37rL6
+	9Dtu65/4xzffF4tvCGGe9r2no25STpT+KXGnosyoK0svZcQ3mZ0Xb2Lu21dUcnalT44SS3FG
+	oqEWc1FxIgAq4fee7QIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,97 +52,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Young-Gun Jang <yg1004.jang@samsung.com>
+As exynos_cpuidle_init and exynos_cpufreq_init function have just one lines
+of code for registering platform devices. We can move these lines to
+exynos_dt_machine_init and delete exynos_cpuidle_init and exynos_cpufreq_init
+function. This will help in reducing lines of code in exynos.c, making it
+more cleaner.
 
-While making PMU implementation to be device tree based, there are
-few register offsets related with SYSREG present in regs-pmu.h, so
-let's make a new header file "regs-sys.h" to keep all such SYSREG
-related register offsets and remove them from "regs-pmu.h"
-
-Signed-off-by: Young-Gun Jang <yg1004.jang@samsung.com>
+Suggested-by: Tomasz Figa <t.figa@samsung.com>
 Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 ---
- arch/arm/mach-exynos/exynos.c   |    1 +
- arch/arm/mach-exynos/pm.c       |    1 +
- arch/arm/mach-exynos/regs-pmu.h |    3 ---
- arch/arm/mach-exynos/regs-sys.h |   22 ++++++++++++++++++++++
- 4 files changed, 24 insertions(+), 3 deletions(-)
- create mode 100644 arch/arm/mach-exynos/regs-sys.h
+ arch/arm/mach-exynos/exynos.c |   19 ++++---------------
+ 1 file changed, 4 insertions(+), 15 deletions(-)
 
 diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-index 288e414..e4a4be0 100644
+index bf8a473..288e414 100644
 --- a/arch/arm/mach-exynos/exynos.c
 +++ b/arch/arm/mach-exynos/exynos.c
-@@ -31,6 +31,7 @@
- #include "common.h"
- #include "mfc.h"
- #include "regs-pmu.h"
-+#include "regs-sys.h"
+@@ -176,19 +176,6 @@ static struct platform_device exynos_cpuidle = {
+ 	.id                = -1,
+ };
  
- #define L2_AUX_VAL 0x7C470001
- #define L2_AUX_MASK 0xC200ffff
-diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
-index b380d48..f445c49 100644
---- a/arch/arm/mach-exynos/pm.c
-+++ b/arch/arm/mach-exynos/pm.c
-@@ -36,6 +36,7 @@
- 
- #include "common.h"
- #include "regs-pmu.h"
-+#include "regs-sys.h"
- 
- /**
-  * struct exynos_wkup_irq - Exynos GIC to PMU IRQ mapping
-diff --git a/arch/arm/mach-exynos/regs-pmu.h b/arch/arm/mach-exynos/regs-pmu.h
-index 6c1d2db..b68b5cc 100644
---- a/arch/arm/mach-exynos/regs-pmu.h
-+++ b/arch/arm/mach-exynos/regs-pmu.h
-@@ -15,7 +15,6 @@
- #include <mach/map.h>
- 
- #define S5P_PMUREG(x)				(S5P_VA_PMU + (x))
--#define S5P_SYSREG(x)				(S3C_VA_SYS + (x))
- 
- #define S5P_CENTRAL_SEQ_CONFIGURATION		S5P_PMUREG(0x0200)
- 
-@@ -178,8 +177,6 @@
- 
- /* For EXYNOS5 */
- 
--#define EXYNOS5_SYS_I2C_CFG					S5P_SYSREG(0x0234)
+-void __init exynos_cpuidle_init(void)
+-{
+-	if (soc_is_exynos5440())
+-		return;
 -
- #define EXYNOS5_AUTO_WDTRESET_DISABLE				S5P_PMUREG(0x0408)
- #define EXYNOS5_MASK_WDTRESET_REQUEST				S5P_PMUREG(0x040C)
+-	platform_device_register(&exynos_cpuidle);
+-}
+-
+-void __init exynos_cpufreq_init(void)
+-{
+-	platform_device_register_simple("exynos-cpufreq", -1, NULL, 0);
+-}
+-
+ static void __init exynos_init_late(void)
+ {
+ 	if (of_machine_is_compatible("samsung,exynos5440"))
+@@ -303,8 +290,10 @@ static void __init exynos_dt_machine_init(void)
+ 		}
+ 	}
  
-diff --git a/arch/arm/mach-exynos/regs-sys.h b/arch/arm/mach-exynos/regs-sys.h
-new file mode 100644
-index 0000000..84332b0
---- /dev/null
-+++ b/arch/arm/mach-exynos/regs-sys.h
-@@ -0,0 +1,22 @@
-+/*
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-+ *             http://www.samsung.com
-+ *
-+ * EXYNOS - system register definition
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+*/
+-	exynos_cpuidle_init();
+-	exynos_cpufreq_init();
++	if (!soc_is_exynos5440())
++		platform_device_register(&exynos_cpuidle);
 +
-+#ifndef __ASM_ARCH_REGS_SYS_H
-+#define __ASM_ARCH_REGS_SYS_H __FILE__
-+
-+#include <mach/map.h>
-+
-+#define S5P_SYSREG(x)                          (S3C_VA_SYS + (x))
-+
-+/* For EXYNOS5 */
-+#define EXYNOS5_SYS_I2C_CFG                    S5P_SYSREG(0x0234)
-+
-+#endif /* __ASM_ARCH_REGS_SYS_H */
++	platform_device_register_simple("exynos-cpufreq", -1, NULL, 0);
+ 
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+ }
 -- 
 1.7.10.4
 
