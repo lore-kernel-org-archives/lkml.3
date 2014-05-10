@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997AbaEJPCy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 11:02:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60166 "EHLO mx1.redhat.com"
+	id S1757300AbaEJPDJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 11:03:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10733 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755369AbaEJPCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 11:02:52 -0400
-Subject: [PATCH v3 04/15] PCI: quirk dma_func_alias for Marvell devices
+	id S1757009AbaEJPDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 May 2014 11:03:04 -0400
+Subject: [PATCH v3 06/15] PCI: Add quirks for ASMedia and Tundra bridges
 From: Alex Williamson <alex.williamson@redhat.com>
 To: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
 Cc: bhelgaas@google.com, acooks@gmail.com, linux-kernel@vger.kernel.org,
         linux@horizon.com
-Date: Sat, 10 May 2014 09:02:47 -0600
-Message-ID: <20140510150247.2997.91416.stgit@bling.home>
+Date: Sat, 10 May 2014 09:02:59 -0600
+Message-ID: <20140510150259.2997.67187.stgit@bling.home>
 In-Reply-To: <20140510145619.2997.429.stgit@bling.home>
 References: <20140510145619.2997.429.stgit@bling.home>
 User-Agent: StGit/0.17-dirty
@@ -23,59 +23,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several Marvell devices and a JMicron device have a similar DMA
-requester ID problem to Ricoh, except they use function 1 as the
-PCIe requester ID.  Add a quirk for these to populate the DMA
-function alias bitmap.
+The quirk is intended to be extremely generic, but we only apply it
+to known offending devices.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- drivers/pci/quirks.c |   34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+ drivers/pci/quirks.c |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
 diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index ea2cb9f..c6ae46f 100644
+index c6ae46f..652b49e 100644
 --- a/drivers/pci/quirks.c
 +++ b/drivers/pci/quirks.c
-@@ -3347,6 +3347,40 @@ static void quirk_dma_func0_alias(struct pci_dev *dev)
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_RICOH, 0xe832, quirk_dma_func0_alias);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_RICOH, 0xe476, quirk_dma_func0_alias);
+@@ -3354,6 +3354,29 @@ static void quirk_dma_func1_alias(struct pci_dev *dev)
+ }
  
-+static void quirk_dma_func1_alias(struct pci_dev *dev)
+ /*
++ * A few PCIe-to-PCI bridges fail to expose a PCIe capability, resulting in
++ * using the wrong DMA alias for the device.  Some of these devices can be
++ * used as either forward or reverse bridges, so we need to test whether the
++ * device is operating in the correct mode.  We could probably apply this
++ * quirk to PCI_ANY_ID, but for now we'll just use known offenders.  The test
++ * is for a non-root, non-PCIe bridge where the upstream device is PCIe and
++ * is not a PCIe-to-PCI bridge, then @pdev is actually a PCIe-to-PCI bridge.
++ */
++static void quirk_use_pcie_bridge_dma_alias(struct pci_dev *pdev)
 +{
-+	if (PCI_FUNC(dev->devfn) != 1)
-+		dev->dma_func_alias |= (1 << 1);
++	if (!pci_is_root_bus(pdev->bus) &&
++	    pdev->hdr_type == PCI_HEADER_TYPE_BRIDGE &&
++	    !pci_is_pcie(pdev) && pci_is_pcie(pdev->bus->self) &&
++	    pci_pcie_type(pdev->bus->self) != PCI_EXP_TYPE_PCI_BRIDGE)
++		pdev->dev_flags |= PCI_DEV_FLAG_PCIE_BRIDGE_ALIAS;
 +}
++/* ASM1083/1085, https://bugzilla.kernel.org/show_bug.cgi?id=44881#c46 */
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ASMEDIA, 0x1080,
++			 quirk_use_pcie_bridge_dma_alias);
++/* Tundra 8113, https://bugzilla.kernel.org/show_bug.cgi?id=44881#c43 */
++DECLARE_PCI_FIXUP_HEADER(0x10e3, 0x8113, quirk_use_pcie_bridge_dma_alias);
 +
 +/*
-+ * Marvell 88SE9123 uses function 1 as the requester ID for DMA.  In some
-+ * SKUs function 1 is present and is a legacy IDE controller, in other
-+ * SKUs this function is not present, making this a ghost requester.
-+ * https://bugzilla.kernel.org/show_bug.cgi?id=42679
-+ */
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9123,
-+			 quirk_dma_func1_alias);
-+/* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c14 */
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9130,
-+			 quirk_dma_func1_alias);
-+/* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c47 + c57 */
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9172,
-+			 quirk_dma_func1_alias);
-+/* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c59 */
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x917a,
-+			 quirk_dma_func1_alias);
-+/* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c46 */
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x91a0,
-+			 quirk_dma_func1_alias);
-+/* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c49 */
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9230,
-+			 quirk_dma_func1_alias);
-+/* https://bugs.gentoo.org/show_bug.cgi?id=497630 */
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_JMICRON,
-+			 PCI_DEVICE_ID_JMICRON_JMB388_ESD,
-+			 quirk_dma_func1_alias);
-+
- static struct pci_dev *pci_func_0_dma_source(struct pci_dev *dev)
- {
- 	if (!PCI_FUNC(dev->devfn))
+  * Marvell 88SE9123 uses function 1 as the requester ID for DMA.  In some
+  * SKUs function 1 is present and is a legacy IDE controller, in other
+  * SKUs this function is not present, making this a ghost requester.
 
