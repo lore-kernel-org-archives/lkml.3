@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757578AbaEJPD2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 11:03:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20452 "EHLO mx1.redhat.com"
+	id S1757673AbaEJPDd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 11:03:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54770 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757513AbaEJPDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 11:03:24 -0400
-Subject: [PATCH v3 09/15] iommu/amd: Update to use PCI DMA aliases
+	id S1757513AbaEJPDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 May 2014 11:03:31 -0400
+Subject: [PATCH v3 10/15] iommu/intel: Use pci_find_dma_isolation_root() for
+ IOMMU groups
 From: Alex Williamson <alex.williamson@redhat.com>
 To: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
-Cc: bhelgaas@google.com, Joerg Roedel <joro@8bytes.org>, acooks@gmail.com,
-        linux-kernel@vger.kernel.org, linux@horizon.com
-Date: Sat, 10 May 2014 09:03:18 -0600
-Message-ID: <20140510150318.2997.67408.stgit@bling.home>
+Cc: bhelgaas@google.com, acooks@gmail.com,
+        David Woodhouse <David.Woodhouse@intel.com>, linux@horizon.com,
+        linux-kernel@vger.kernel.org
+Date: Sat, 10 May 2014 09:03:24 -0600
+Message-ID: <20140510150324.2997.69374.stgit@bling.home>
 In-Reply-To: <20140510145619.2997.429.stgit@bling.home>
 References: <20140510145619.2997.429.stgit@bling.home>
 User-Agent: StGit/0.17-dirty
@@ -23,96 +25,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AMD-Vi already has a concept of an alias provided via the IVRS table.
-This alias only handles topology based aliases, such as PCIe-to-PCI
-bridges.  When such an alias is present, we continue to use it.  When
-a platform alias is not present, we can now add a check of the device
-dma_func_alias to create our own.  Note that the current code can
-only handle a single alias of a device, and we don't attempt to change
-that here.  It would only become a factor for the requester ID seen by
-the IOMMU if PCI-X were involved anway.
-
-Since the alias is now potentially device specific rather than the
-topology based alias provided by the platform, we need to clear it
-when the device goes away.
-
-With the DMA alias and isolation infrastructure now in PCI-core, we
-could opt to ignore IVRS provided aliases.  We now do this for IOMMU
-groups.  However, for this more common use case, the "don't fix what
-isn't broken" mantra seems like the safer route.
-
-This should allow AMD-Vi to work with devices like Marvell and Ricoh
-with DMA function alias quirks.
+Drop custom code that attempts to do the exact same thing and use
+PCI provided isolation root support.  Existing IOMMU group laytout
+should not change.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: Joerg Roedel <joro@8bytes.org>
+Cc: David Woodhouse <David.Woodhouse@intel.com>
 ---
- drivers/iommu/amd_iommu.c |   37 ++++++++++++++++++++++++++++++++++---
- 1 file changed, 34 insertions(+), 3 deletions(-)
+ drivers/iommu/intel-iommu.c |   71 +++++--------------------------------------
+ 1 file changed, 8 insertions(+), 63 deletions(-)
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 3d58de4..97a2f0b 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -294,6 +294,7 @@ static int iommu_init_device(struct device *dev)
- 	struct pci_dev *pdev = to_pci_dev(dev);
- 	struct iommu_dev_data *dev_data;
- 	u16 alias;
-+	u8 func_alias;
- 	int ret;
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index f256ffc..f0e50f1 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -44,7 +44,6 @@
+ #include <asm/iommu.h>
  
- 	if (dev->archdata.iommu)
-@@ -304,6 +305,29 @@ static int iommu_init_device(struct device *dev)
- 		return -ENOMEM;
+ #include "irq_remapping.h"
+-#include "pci.h"
  
- 	alias = amd_iommu_alias_table[dev_data->devid];
-+
-+	/*
-+	 * If there is no platform provided alias (topology-based) check for
-+	 * a device quirk-based alias.  Note that a non-existent alias (ie.
-+	 * ghost alias) will also need their rlookup and dev_table setup.
-+	 * Copy these from the original device since they're both functions
-+	 * in the same slot.
-+	 */
-+	func_alias = pdev->dma_func_alias & ~(1 << PCI_FUNC(pdev->devfn));
-+	if (func_alias && alias == dev_data->devid) {
-+		WARN_ON(hweight8(func_alias) > 1);
-+		alias = PCI_DEVID(pdev->bus->number,
-+				  PCI_DEVFN(PCI_SLOT(pdev->devfn),
-+					    ffs(func_alias) - 1));
-+		if (!amd_iommu_rlookup_table[alias]) {
-+			amd_iommu_rlookup_table[alias] =
-+				amd_iommu_rlookup_table[dev_data->devid];
-+			memcpy(amd_iommu_dev_table[alias].data,
-+			       amd_iommu_dev_table[dev_data->devid].data,
-+			       sizeof(amd_iommu_dev_table[alias].data));
-+		}
-+	}
-+
- 	if (alias != dev_data->devid) {
- 		struct iommu_dev_data *alias_data;
+ #define ROOT_SIZE		VTD_PAGE_SIZE
+ #define CONTEXT_SIZE		VTD_PAGE_SIZE
+@@ -4359,12 +4358,9 @@ static int intel_iommu_domain_has_cap(struct iommu_domain *domain,
+ 	return 0;
+ }
  
-@@ -351,12 +375,19 @@ static void iommu_ignore_device(struct device *dev)
- 
- static void iommu_uninit_device(struct device *dev)
+-#define REQ_ACS_FLAGS	(PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_UF)
+-
+ static int intel_iommu_add_device(struct device *dev)
  {
-+	struct iommu_dev_data *dev_data = search_dev_data(get_device_id(dev));
-+
-+	if (!dev_data)
-+		return;
-+
- 	iommu_group_remove_device(dev);
+-	struct pci_dev *pdev = to_pci_dev(dev);
+-	struct pci_dev *bridge, *dma_pdev = NULL;
++	struct pci_dev *pdev;
+ 	struct iommu_group *group;
+ 	int ret;
+ 	u8 bus, devfn;
+@@ -4372,68 +4368,16 @@ static int intel_iommu_add_device(struct device *dev)
+ 	if (!device_to_iommu(dev, &bus, &devfn))
+ 		return -ENODEV;
  
-+	/* Unlink from alias, it may change if another device is re-plugged */
-+	dev_data->alias_data = NULL;
+-	bridge = pci_find_upstream_pcie_bridge(pdev);
+-	if (bridge) {
+-		if (pci_is_pcie(bridge))
+-			dma_pdev = pci_get_domain_bus_and_slot(
+-						pci_domain_nr(pdev->bus),
+-						bridge->subordinate->number, 0);
+-		if (!dma_pdev)
+-			dma_pdev = pci_dev_get(bridge);
+-	} else
+-		dma_pdev = pci_dev_get(pdev);
+-
+-	/* Account for quirked devices */
+-	swap_pci_ref(&dma_pdev, pci_get_dma_source(dma_pdev));
+-
+-	/*
+-	 * If it's a multifunction device that does not support our
+-	 * required ACS flags, add to the same group as lowest numbered
+-	 * function that also does not suport the required ACS flags.
+-	 */
+-	if (dma_pdev->multifunction &&
+-	    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS)) {
+-		u8 i, slot = PCI_SLOT(dma_pdev->devfn);
+-
+-		for (i = 0; i < 8; i++) {
+-			struct pci_dev *tmp;
+-
+-			tmp = pci_get_slot(dma_pdev->bus, PCI_DEVFN(slot, i));
+-			if (!tmp)
+-				continue;
+-
+-			if (!pci_acs_enabled(tmp, REQ_ACS_FLAGS)) {
+-				swap_pci_ref(&dma_pdev, tmp);
+-				break;
+-			}
+-			pci_dev_put(tmp);
+-		}
++	group = iommu_group_get(dev);
++	if (group) {
++		iommu_group_put(group);
++		return 0;
+ 	}
+ 
+-	/*
+-	 * Devices on the root bus go through the iommu.  If that's not us,
+-	 * find the next upstream device and test ACS up to the root bus.
+-	 * Finding the next device may require skipping virtual buses.
+-	 */
+-	while (!pci_is_root_bus(dma_pdev->bus)) {
+-		struct pci_bus *bus = dma_pdev->bus;
++	pdev = pci_find_dma_isolation_root(to_pci_dev(dev));
+ 
+-		while (!bus->self) {
+-			if (!pci_is_root_bus(bus))
+-				bus = bus->parent;
+-			else
+-				goto root_bus;
+-		}
++	group = iommu_group_get(&pdev->dev);
+ 
+-		if (pci_acs_path_enabled(bus->self, NULL, REQ_ACS_FLAGS))
+-			break;
+-
+-		swap_pci_ref(&dma_pdev, pci_dev_get(bus->self));
+-	}
+-
+-root_bus:
+-	group = iommu_group_get(&dma_pdev->dev);
+-	pci_dev_put(dma_pdev);
+ 	if (!group) {
+ 		group = iommu_group_alloc();
+ 		if (IS_ERR(group))
+@@ -4443,6 +4387,7 @@ root_bus:
+ 	ret = iommu_group_add_device(group, dev);
+ 
+ 	iommu_group_put(group);
 +
- 	/*
--	 * Nothing to do here - we keep dev_data around for unplugged devices
--	 * and reuse it when the device is re-plugged - not doing so would
--	 * introduce a ton of races.
-+	 * We keep dev_data around for unplugged devices and reuse it when the
-+	 * device is re-plugged - not doing so would introduce a ton of races.
- 	 */
+ 	return ret;
  }
  
 
