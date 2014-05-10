@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455AbaEJPdE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 11:33:04 -0400
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:49747 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752953AbaEJPdB (ORCPT
+	id S1756071AbaEJPqp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 11:46:45 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:45835 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964AbaEJPqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 11:33:01 -0400
-Date: Sat, 10 May 2014 12:32:28 -0300
-From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-To: devicetree@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
-Cc: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>,
-        linux-kernel@vger.kernel.org
-Subject: Why do we assign a unique (and non-deterministic) name in
- of_device_make_bus_id()
-Message-ID: <20140510153227.GA18722@arch.cereza>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Sat, 10 May 2014 11:46:44 -0400
+From: Raghavendra Ganiga <ravi23ganiga@gmail.com>
+To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org
+Cc: ravi23ganiga@gmail.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: fixed warning shown by checkpatch tool on cb_das16_cs.c file
+Date: Sat, 10 May 2014 21:16:29 +0530
+Message-Id: <1399736789-9898-1-git-send-email-ravi23ganiga@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a devicetree for a custom board with several nodes with no
-applicable reg property, such as:
+This is a patch to fix
+the warnings shown
+by checkpatch tool on file
+cb_das16_cs.c file
 
-/ {
-	backlight {
-		compatible = "pwm-backlight";
-	};
+Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
+---
+ drivers/staging/comedi/drivers/cb_das16_cs.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-	gpio-keys {
-		compatible = "gpio-keys";
-	};
-
-	rotary-encoder {
-		compatible = "rotary-encoder";
-	};
-};
-
-These nodes are then registered as devices with unique names:
-
-$ ls /sys/devices
-gpio_keys.8/	rotary_encoder.9/	backlight.6/
-
-... among others.
-
-The uniqueness is guaranteed by of_device_make_bus_id() which uses a global
-counter for all nodes with no reg property. The relevant snippet is:
-
-[..]
-/*
- * No BusID, use the node name and add a globally incremented
- * counter (and pray...)
- */
-magic = atomic_add_return(1, &bus_no_reg_magic);
-dev_set_name(dev, "%s.%d", node->name, magic - 1);
-
-Two nodes can't have the same name and get registered, hence my confusion:
-Is the unique number addition absolutely necessary? What am I missing here?
-
-Isn't a bit problematic to register devices with names that depend solely
-on probe order (i.e. non-deterministic)?
-
-For instance, hotplug event listeners matching the device name may fail if
-the device suddenly change for whatever reason.
-
-Regards,
+diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
+index 645fcb0..eb1b92d 100644
+--- a/drivers/staging/comedi/drivers/cb_das16_cs.c
++++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
+@@ -184,6 +184,7 @@ static int das16cs_ao_winsn(struct comedi_device *dev,
+ 
+ 		for (bit = 15; bit >= 0; bit--) {
+ 			int b = (d >> bit) & 0x1;
++
+ 			b <<= 1;
+ 			outw(status1 | b | 0x0000, dev->iobase + DAS16CS_MISC1);
+ 			udelay(1);
 -- 
-Ezequiel Garcia, VanguardiaSur
-www.vanguardiasur.com.ar
+1.7.10.4
+
