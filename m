@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801AbaEJKio (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 06:38:44 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45048 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756606AbaEJKim (ORCPT
+	id S1756938AbaEJKlA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 06:41:00 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:28730 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753141AbaEJKk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 06:38:42 -0400
-Message-ID: <536E0215.8070708@kernel.org>
-Date: Sat, 10 May 2014 11:40:21 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
-Subject: Re: [PATCH 1/2] iio: always select ANON_INODES
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <1399560990-1402858-1-git-send-email-arnd@arndb.de> <1399560990-1402858-12-git-send-email-arnd@arndb.de>
-In-Reply-To: <1399560990-1402858-12-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sat, 10 May 2014 06:40:59 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgQWACABblNXQCSg/2dsb2JhbABZgwaDPakXCgUBmhUCAoEXF3SCZhwjGIECJBOIRQHRUIVWiHyERwEDjyWKIgGLBIgDgzg7
+Date: Sat, 10 May 2014 12:40:53 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1 RESEND] arch/m68k/apollo/config.c: convert printk to
+ pr_foo()
+Message-Id: <20140510124053.6bfffd5cb30aa88a7464d080@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/14 15:56, Arnd Bergmann wrote:
-> Without ANON_INODES, we get this build error:
->
-> drivers/built-in.o: In function `iio_event_getfd':
-> :(.text+0x14bf18): undefined reference to `anon_inode_getfd'
->
-> All other users explicitly select this symbol, so we should
-> do the same thing here.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Jonathan Cameron <jic23@kernel.org>
-> Cc: linux-iio@vger.kernel.org
-Applied to the togreg branch of iio.git.
+no level printk converted to pr_info
 
-Thanks,
-> ---
->   drivers/iio/Kconfig | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
-> index 743485e..345395e 100644
-> --- a/drivers/iio/Kconfig
-> +++ b/drivers/iio/Kconfig
-> @@ -4,6 +4,7 @@
->
->   menuconfig IIO
->   	tristate "Industrial I/O support"
-> +	select ANON_INODES
->   	help
->   	  The industrial I/O subsystem provides a unified framework for
->   	  drivers for many different types of embedded sensors using a
->
+This is untested
+
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ arch/m68k/apollo/config.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/arch/m68k/apollo/config.c b/arch/m68k/apollo/config.c
+index 9268c0f..42d393f 100644
+--- a/arch/m68k/apollo/config.c
++++ b/arch/m68k/apollo/config.c
+@@ -65,8 +65,8 @@ int __init apollo_parse_bootinfo(const struct bi_record *record)
+ 
+ static void __init dn_setup_model(void)
+ {
+-	printk("Apollo hardware found: ");
+-	printk("[%s]\n", apollo_models[apollo_model - APOLLO_DN3000]);
++	pr_info("Apollo hardware found: ");
++	pr_cont("[%s]\n", apollo_models[apollo_model - APOLLO_DN3000]);
+ 
+ 	switch(apollo_model) {
+ 		case APOLLO_UNKNOWN:
+@@ -197,8 +197,10 @@ void dn_sched_init(irq_handler_t timer_routine)
+ 	*(volatile unsigned char *)(pica+1)&=(~8);
+ 
+ #if 0
+-	printk("*(0x10803) %02x\n",*(volatile unsigned char *)(apollo_timer + 0x3));
+-	printk("*(0x10803) %02x\n",*(volatile unsigned char *)(apollo_timer + 0x3));
++	pr_info("*(0x10803) %02x\n",
++		*(volatile unsigned char *)(apollo_timer + 0x3));
++	pr_info("*(0x10803) %02x\n",
++		*(volatile unsigned char *)(apollo_timer + 0x3));
+ #endif
+ 
+ 	if (request_irq(IRQ_APOLLO, dn_timer_int, 0, "time", timer_routine))
+@@ -236,12 +238,10 @@ int dn_dummy_hwclk(int op, struct rtc_time *t) {
+ 
+ }
+ 
+-int dn_dummy_set_clock_mmss(unsigned long nowtime) {
+-
+-  printk("set_clock_mmss\n");
+-
+-  return 0;
+-
++int dn_dummy_set_clock_mmss(unsigned long nowtime)
++{
++	pr_info("set_clock_mmss\n");
++	return 0;
+ }
+ 
+ void dn_dummy_reset(void) {
+-- 
+1.8.4.5
 
