@@ -1,115 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563AbaEJDGl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 23:06:41 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:58216 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775AbaEJDGk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 23:06:40 -0400
-Date: Fri, 9 May 2014 23:06:35 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, peterz@infradead.org,
-        tglx@linutronix.de, mingo@kernel.org, rusty@rustcorp.com.au,
-        fweisbec@gmail.com, hch@infradead.org, mgorman@suse.de,
-        riel@redhat.com, bp@suse.de, rostedt@goodmis.org, mgalbraith@suse.de,
-        ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
-        rjw@rjwysocki.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] CPU hotplug, stop-machine: Plug race-window that
- leads to "IPI-to-offline-CPU"
-Message-ID: <20140510030635.GC22539@mtj.dyndns.org>
-References: <20140506180213.14375.5904.stgit@srivatsabhat.in.ibm.com>
- <20140506180258.14375.20181.stgit@srivatsabhat.in.ibm.com>
- <20140506134054.8cd531296c8aa5d9c3eff958@linux-foundation.org>
- <20140506204248.GH27738@htj.dyndns.org>
- <536953C4.8030201@linux.vnet.ibm.com>
- <53695BCF.5040504@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53695BCF.5040504@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752819AbaEJDOB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 23:14:01 -0400
+Received: from ns.horizon.com ([71.41.210.147]:25389 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751315AbaEJDOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 23:14:00 -0400
+Date: 9 May 2014 23:13:56 -0400
+Message-ID: <20140510031356.22726.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, tj@kernel.org
+Subject: [PATCH 1/2] Add lib/glob.c
+Cc: akpm@linux-foundation.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@redhat.com,
+        torvalds@linux-foundation.org
+In-Reply-To: <20140313121032.GA9981@htj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 03:31:51AM +0530, Srivatsa S. Bhat wrote:
-> diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-> index 01fbae5..7abb361 100644
-> --- a/kernel/stop_machine.c
-> +++ b/kernel/stop_machine.c
-> @@ -165,12 +165,13 @@ static void ack_state(struct multi_stop_data *msdata)
->  		set_state(msdata, msdata->state + 1);
->  }
->  
-> +
+This is a helper function from drivers/ata/libata_core.c, where it is used
+to blacklist particular device models.  It's being moved to lib/ so other
+drivers may use it for the same purpose.
 
-Why add a new line here?
+This implementation in non-recursive, so is safe for the kernel stack.
 
->  /* This is the cpu_stop function which stops the CPU. */
->  static int multi_cpu_stop(void *data)
->  {
->  	struct multi_stop_data *msdata = data;
->  	enum multi_stop_state curstate = MULTI_STOP_NONE;
-> -	int cpu = smp_processor_id(), err = 0;
-> +	int cpu = smp_processor_id(), num_active_cpus, err = 0;
+Signed-off-by: George Spelvin <linux@horizon.com>
+---
+Finally rescued this from the back burner.  The code size will go back
+down in the second patch which removes the old implementation, although
+the number of source line reflects more comments and a test driver.
 
-	TYPE var0 = INIT0, var1, var2 = INIT2;
+The infrastructure parts of this, such as the module name and Kconfig
+declarations, are something I haven't done before, and comments are
+appreciated.
 
-looks kinda weird.  Maybe collect initialized ones to one side or
-separate out uninitialized one to a separate declaration?
+Tejun Heo <htejun@gmail.com> wrote:
+> On Wed, Mar 12, 2014 at 06:52:44PM -0400, George Spelvin wrote:
+>> Sure; I'll prepare some patches.  May I feed it through you, or
+>> is there a lib/ maintainer I need to go through?
+>
+> Please keep me cc'd but you'd probably also want to cc Linus, Andrew
+> Morton and Ingo.
 
-Also, isn't nr_active_cpus more common way of naming it?
+ include/linux/glob.h |  10 +++
+ lib/Kconfig          |  14 ++++
+ lib/Makefile         |   2 +
+ lib/glob.c           | 225 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 251 insertions(+)
+ create mode 100644 include/linux/glob.h
+ create mode 100644 lib/glob.c
 
->  	unsigned long flags;
->  	bool is_active;
->  
-> @@ -180,15 +181,38 @@ static int multi_cpu_stop(void *data)
->  	 */
->  	local_save_flags(flags);
->  
-> -	if (!msdata->active_cpus)
-> +	if (!msdata->active_cpus) {
->  		is_active = cpu == cpumask_first(cpu_online_mask);
-> -	else
-> +		num_active_cpus = 1;
-> +	} else {
->  		is_active = cpumask_test_cpu(cpu, msdata->active_cpus);
-> +		num_active_cpus = cpumask_weight(msdata->active_cpus);
-> +	}
->  
->  	/* Simple state machine */
->  	do {
->  		/* Chill out and ensure we re-read multi_stop_state. */
->  		cpu_relax();
-> +
-> +		/*
-> +		 * In the case of CPU offline, we don't want the other CPUs to
-> +		 * send IPIs to the active_cpu (the one going offline) after it
-> +		 * has entered the _DISABLE_IRQ state (because, then it will
-> +		 * notice the IPIs only after it goes offline). So ensure that
-> +		 * the active_cpu always follows the others while entering
-> +		 * each subsequent state in this state-machine.
-> +		 *
-> +		 * msdata->thread_ack tracks the number of CPUs that are yet to
-> +		 * move to the next state, during each transition. So make the
-> +		 * active_cpu(s) wait until ->thread_ack indicates that the
-> +		 * active_cpus are the only ones left to complete the transition.
-> +		 */
-> +		if (is_active) {
-> +			/* Wait until all the non-active threads ack the state */
-> +			while (atomic_read(&msdata->thread_ack) > num_active_cpus)
-> +				cpu_relax();
-> +		}
-
-Wouldn't it be cleaner to separate this out to a separate stage so
-that there are two separate DISABLE_IRQ stages - sth like
-MULTI_STOP_DISABLE_IRQ_INACTIVE and MULTI_STOP_DISABLE_IRQ_ACTIVE?
-The above adds an ad-hoc mechanism on top of the existing mechanism
-which is built to sequence similar things anyway.
-
-Thanks.
-
+diff --git a/include/linux/glob.h b/include/linux/glob.h
+new file mode 100644
+index 0000000..c990b7f
+--- /dev/null
++++ b/include/linux/glob.h
+@@ -0,0 +1,10 @@
++#ifndef _LINUX_GLOB_H
++#define _LINUX_GLOB_H
++
++#include <linux/types.h>	/* For bool */
++#include <linux/compiler.h>	/* For __pure */
++
++bool __pure glob_match(char const *pat, char const *str);
++
++#endif	/* _LINUX_GLOB_H */
++
+diff --git a/lib/Kconfig b/lib/Kconfig
+index 991c98b..5333d10 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -373,6 +373,20 @@ config CPU_RMAP
+ config DQL
+ 	bool
+ 
++config GLOB
++	tristate
++#	(Prompt disabled to reduce kbuild clutter until someone needs it.)
++#	prompt "glob_match() function"
++	help
++	  This option provides a glob_match function for performing simple
++	  text pattern matching.  It is primarily used by the ATA code
++	  to blacklist particular drive models, but other device drivers
++	  may need similar functionality.
++
++	  All in-kernel drivers that require this function automatically
++	  select this option.  Say N unless you are compiling an out-of
++	  tree driver which tells you it depend on it.
++
+ #
+ # Netlink attribute parsing support is select'ed if needed
+ #
+diff --git a/lib/Makefile b/lib/Makefile
+index 48140e3..c859f81 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -133,6 +133,8 @@ obj-$(CONFIG_CORDIC) += cordic.o
+ 
+ obj-$(CONFIG_DQL) += dynamic_queue_limits.o
+ 
++obj-$(CONFIG_GLOB) += glob.o
++
+ obj-$(CONFIG_MPILIB) += mpi/
+ obj-$(CONFIG_SIGNATURE) += digsig.o
+ 
+diff --git a/lib/glob.c b/lib/glob.c
+new file mode 100644
+index 0000000..b71ca59
+--- /dev/null
++++ b/lib/glob.c
+@@ -0,0 +1,225 @@
++#ifdef UNITTEST
++/* To do a basic sanity test, "cc -DUNITTEST glob.c" and run a.out. */
++
++#include <stdbool.h>
++#define __pure __attribute__((pure))
++#define NOP(x)
++#define EXPORT_SYMBOL NOP	/* Two stages to avoid checkpatch complaints */
++
++#else
++
++#include <linux/module.h>
++#include <linux/glob.h>
++
++MODULE_DESCRIPTION("glob(7) matching");
++MODULE_LICENSE("Dual MIT/GPL");
++
++#endif
++
++/**
++ * glob_match - Shell-style pattern matching, like !fnmatch(pat, str, 0)
++ * @pat: Pattern to match.  Metacharacters are ?, *, [ and \.
++ *       (And, inside character classes, !, - and ].)
++ * @str: String to match.  the pattern must match the entire string.
++ *
++ * Perform shell-style glob matching, returning true (1) if the match
++ * succeeds, or false (0) if it fails.
++ *
++ * This is small and simple implementation intended for device blacklists
++ * where a string is matched against a number of patterns.  Thus, it
++ * does not preprocess the patterns.  It is non-recursive, and run-time
++ * is at most quadratic: strlen(@str)*strlen(@pat).
++ *
++ * An example of the worst case is glob_match("*aaaaa", "aaaaaaaaaa");
++ * it takes 6 passes over the pattern before matching the string.
++ *
++ * Like !fnmatch(@pat, @str, 0) and unlike the shell, this does NOT
++ * treat / or leading . specially; it isn't actually used for pathnames.
++ *
++ * Note that according to glob(7) (and unlike bash), character classes
++ * are complemented by a leading !; this does not support the regex-style
++ * [^a-z] syntax.
++ *
++ * An opening bracket without a matching close is matched literally.
++ */
++bool __pure
++glob_match(char const *pat, char const *str)
++{
++	/*
++	 * Backtrack to previous * on mismatch and retry starting one
++	 * character later in the string.  Because * matches all characters
++	 * (no exception for /), it can be easily proved that there's
++	 * never a need to backtrack multiple levels.
++	 */
++	char const *back_pat = 0, *back_str = back_str;
++	/*
++	 * Loop over each token (character or class) in pat, matching
++	 * it against the remaining unmatched tail of str.  Return false
++	 * on mismatch, or true after matching the trailing nul bytes.
++	 */
++	for (;;) {
++		unsigned char c = *str++;
++		unsigned char d = *pat++;
++
++		switch (d) {
++		case '?':	/* Wildcard: anything but nul */
++			if (c == '\0')
++				return false;
++			break;
++		case '*':	/* Any-length wildcard */
++			if (*pat == '\0')	/* Optimize trailing * case */
++				return true;
++			back_pat = pat;
++			back_str = --str;	/* Allow zero-length match */
++			break;
++		case '[': {	/* Character class */
++			bool match = false, inverted = (*pat == '!');
++			char const *class = pat + inverted;
++			unsigned char a = *class++;
++
++			/*
++			 * Iterate over each span in the character class.
++			 * A span is either a single character a, or a
++			 * range a-b.
++			 */
++			do {
++				unsigned char b = a;
++
++				if (a == '\0')	/* Malformed */
++					goto literal;
++
++				if (class[0] == '-' && class[1] != ']') {
++					b = class[1];
++
++					if (b == '\0')
++						goto literal;
++
++					class += 2;
++					/* Any special action if a > b? */
++				}
++				match |= (a <= c && c <= b);
++			} while ((a = *class++) != ']');
++
++			if (match == inverted)
++				goto backtrack;
++			pat = class;
++			}
++			break;
++		case '\\':
++			d = *pat++;
++			/* FALLLTHROUGH */
++		default:	/* Literal character */
++literal:
++			if (c == d) {
++				if (d == '\0')
++					return true;
++				break;
++			}
++backtrack:
++			if (c == '\0' || !back_pat)
++				return false;	/* No point continuing */
++			/* Try again from last *, one character later in str. */
++			pat = back_pat;
++			str = ++back_str;
++			break;
++		}
++	}
++}
++EXPORT_SYMBOL(glob_match);
++
++
++#ifdef UNITTEST
++
++/* Test code */
++#include <stdio.h>
++#include <stdlib.h>
++struct glob_test {
++	char const *pat, *str;
++	bool expected;
++};
++
++static void
++test(struct glob_test const *g)
++{
++	bool match = glob_match(g->pat, g->str);
++
++	printf("\"%s\" vs. \"%s\": %s %s\n", g->pat, g->str,
++		match ? "match" : "mismatch",
++		match == g->expected ? "OK" : "*** ERROR ***");
++	if (match != g->expected)
++		exit(1);
++}
++
++static struct glob_test const tests[] = {
++	{ "a", "a", true },
++	{ "a", "b", false },
++	{ "a", "aa", false },
++	{ "a", "", false },
++	{ "", "", true },
++	{ "", "a", false },
++	{ "[a]", "a", true },
++	{ "[!a]", "a", false },
++	{ "[!a]", "b", true },
++	{ "[ab]", "a", true },
++	{ "[ab]", "b", true },
++	{ "[ab]", "c", false },
++	{ "[!ab]", "c", true },
++	{ "[a-c]", "b", true },
++	{ "[a-c]", "d", false },
++	{ "[]a-ceg-ik[]", "a", true },
++	{ "[]a-ceg-ik[]", "]", true },
++	{ "[]a-ceg-ik[]", "[", true },
++	{ "[]a-ceg-ik[]", "h", true },
++	{ "[]a-ceg-ik[]", "f", false },
++	{ "[!]a-ceg-ik[]", "h", false },
++	{ "[!]a-ceg-ik[]", "]", false },
++	{ "[!]a-ceg-ik[]", "f", true },
++	{ "[a-b-]", "-", true },
++	{ "?", "a", true },
++	{ "?", "aa", false },
++	{ "??", "a", false },
++	{ "?x?", "axb", true },
++	{ "?x?", "abx", false },
++	{ "?x?", "xab", false },
++	{ "*??", "a", false },
++	{ "*??", "ab", true },
++	{ "*??", "abc", true },
++	{ "*??", "abcd", true },
++	{ "??*", "a", false },
++	{ "??*", "ab", true },
++	{ "??*", "abc", true },
++	{ "??*", "abcd", true },
++	{ "?*?", "a", false },
++	{ "?*?", "ab", true },
++	{ "?*?", "abc", true },
++	{ "?*?", "abcd", true },
++	{ "*b", "b", true },
++	{ "*b", "ab", true },
++	{ "*b", "aab", true },
++	{ "*bc", "abbc", true },
++	{ "*bc", "bc", true },
++	{ "*bc", "bbc", true },
++	{ "*bc", "bcbc", true },
++	{ "*ac*", "abacadaeafag", true },
++	{ "*ac*ae*ag*", "abacadaeafag", true },
++	{ "*a*b*[bc]*[ef]*g*", "abacadaeafag", true },
++	{ "*a*b*[ef]*[cd]*g*", "abacadaeafag", false },
++	{ "*abcd*", "abcabcabcabcdefg", true },
++	{ "*ab*cd*", "abcabcabcabcdefg", true },
++	{ "*abcd*abcdef*", "abcabcdabcdeabcdefg", true },
++	{ "*abcd*", "abcabcabcabcefg", false },
++	{ "*ab*cd*", "abcabcabcabcefg", false }
++};
++
++int
++main(void)
++{
++	size_t i;
++
++	for (i = 0; i < sizeof(tests)/sizeof(*tests); i++)
++		test(tests + i);
++
++	return 0;
++}
++
++#endif	/* UNITTEST */
 -- 
-tejun
+1.9.2
+
