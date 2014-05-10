@@ -1,70 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887AbaEJHQT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 03:16:19 -0400
-Received: from thejh.net ([37.221.195.125]:52481 "EHLO thejh.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752870AbaEJHQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 03:16:18 -0400
-X-Greylist: delayed 511 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 May 2014 03:16:17 EDT
-Date: Sat, 10 May 2014 09:07:42 +0200
-From: Jann Horn <jann@thejh.net>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH] drivers/char/mem.c: Add /dev/ioports, supporting 16-bit
- and 32-bit ports
-Message-ID: <20140510070742.GE6099@debjann.fritz.box>
-References: <20140509191914.GA7286@jtriplet-mobl1>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="G6nVm6DDWH/FONJq"
-Content-Disposition: inline
-In-Reply-To: <20140509191914.GA7286@jtriplet-mobl1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752065AbaEJHP6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 03:15:58 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:40273 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153AbaEJHP5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 May 2014 03:15:57 -0400
+From: Jianyu Zhan <nasa4836@gmail.com>
+To: akpm@linux-foundation.org, mgorman@suse.de, cody@linux.vnet.ibm.com,
+        liuj97@gmail.com, zhangyanfei@cn.fujitsu.com,
+        srivatsa.bhat@linux.vnet.ibm.com, dave@sr71.net,
+        iamjoonsoo.kim@lge.com, n-horiguchi@ah.jp.nec.com,
+        kirill.shutemov@linux.intel.com, schwidefsky@de.ibm.com,
+        nasa4836@gmail.com, gorcunov@gmail.com, riel@redhat.com, cl@linux.com,
+        toshi.kani@hp.com, paul.gortmaker@windriver.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] mm: add comment for __mod_zone_page_stat
+Date: Sat, 10 May 2014 15:15:39 +0800
+Message-Id: <1d32d83e54542050dba3f711a8d10b1e951a9a58.1399705884.git.nasa4836@gmail.com>
+X-Mailer: git-send-email 2.0.0-rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+__mod_zone_page_stat() is not irq-safe, so it should be used carefully.
+And it is not appropirately documented now. This patch adds comment for
+it, and also documents for some of its call sites.
 
---G6nVm6DDWH/FONJq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+---
+ mm/page_alloc.c |  2 ++
+ mm/rmap.c       |  6 ++++++
+ mm/vmstat.c     | 16 +++++++++++++++-
+ 3 files changed, 23 insertions(+), 1 deletion(-)
 
-On Fri, May 09, 2014 at 12:19:16PM -0700, Josh Triplett wrote:
-> +	if (port > 65535)
-> +		return 0;
-> +	switch (count) {
-[...]
-> +	case 4:
-> +		if (__put_user(inl(port), buf) < 0)
-> +			return -EFAULT;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 5dba293..9d6f474 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -659,6 +659,8 @@ static inline int free_pages_check(struct page *page)
+  *
+  * And clear the zone's pages_scanned counter, to hold off the "all pages are
+  * pinned" detection logic.
++ *
++ * Note: this function should be used with irq disabled.
+  */
+ static void free_pcppages_bulk(struct zone *zone, int count,
+ 					struct per_cpu_pages *pcp)
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 9c3e773..6078a30 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -979,6 +979,8 @@ void page_add_anon_rmap(struct page *page,
+ /*
+  * Special version of the above for do_swap_page, which often runs
+  * into pages that are exclusively owned by the current process.
++ * So we could use the irq-unsafe version __{inc|mod}_zone_page_stat
++ * here without others racing change it in between.
+  * Everybody else should continue to use page_add_anon_rmap above.
+  */
+ void do_page_add_anon_rmap(struct page *page,
+@@ -1077,6 +1079,10 @@ void page_remove_rmap(struct page *page)
+ 	/*
+ 	 * Hugepages are not counted in NR_ANON_PAGES nor NR_FILE_MAPPED
+ 	 * and not charged by memcg for now.
++	 *
++	 * And we are the last user of this page, so it is safe to use
++	 * the irq-unsafe version __{mod|dec}_zone_page here, since we
++	 * have no racer.
+ 	 */
+ 	if (unlikely(PageHuge(page)))
+ 		goto out;
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 302dd07..778f154 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -207,7 +207,21 @@ void set_pgdat_percpu_threshold(pg_data_t *pgdat,
+ }
+ 
+ /*
+- * For use when we know that interrupts are disabled.
++ * Optimized modificatoin function.
++ *
++ * The code basically does the modification in two steps:
++ *
++ *  1. read the current counter based on the processor number
++ *  2. modificate the counter write it back.
++ *
++ * So this function should be used with the guarantee that
++ *
++ *  1. interrupts are disabled, or
++ *  2. interrupts are enabled, but no other sites would race to
++ *     modify this counter in between.
++ *
++ * Otherwise, an irq-safe version mod_zone_page_state() should
++ * be used instead.
+  */
+ void __mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
+ 				int delta)
+-- 
+2.0.0-rc1
 
-What if I attempt a four-byte read at 65535? That would access four
-out-of-bounds bytes, right?
-
---G6nVm6DDWH/FONJq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTbdA9AAoJED4KNFJOeCOoN+UQAN9GORdj+rzdWu9g22fZxEjE
-mqSGf0NUqLa6pXBlhFZqxsAa4iJ+RtXA2Ms8Q0iXsBQ401G825I6lbIGILjs9nsQ
-5Nxwuw6fh37OJi+GXdFErQ8ZxjKuYEsd7k9493az24yiLs9ImhjKJyDaUbrdB83Z
-HxqedmS7GTgeNrtkI962hin/P4PRVKdFnqGpRiNunsyNWJdlZCZuqbIy1UTJgjyj
-e/7jhg5I7Qib1+Pmo8/vYpv/Dvct5xophThEh5vtjfi6gHJjLv6GgLo7ZjC37Izl
-4nw4dJrrruxTYt4YwLT0/BbrPLUCLkvNPMqoY2QOi37VE2Fr79a8d/IvxBxI1e/e
-3/CQDF4mF6LsRHm7Oovw8sfAFbSV2YEHc4HK8NOU06nSB7mity9tQiFs8U3RjuZJ
-G8EJGPeBCYF6i13JLEquYGZVl4kNZoD5lY5zvLWR61rI1+Cv/a6WlIJsnipsxF3D
-ZGcQfupU8Cfl7OTqxogBGruUA18OCpL8HVcHx0F2hOj9SIdWshfTzflLQjHNNrTo
-cEgBnDD2yRKJFLMV8Ayog2KA9HJeEwbEiA0wL3NPoYYWBgeCe/y/NESBdEtIbRVu
-IQlAF1ws4EaPLj6FQne1X4OhPwKooClfGg4VezAvnEkC1S++SZkA7tAsnreU90cE
-hpGNKqYLq8+2CSOPjpqd
-=w033
------END PGP SIGNATURE-----
-
---G6nVm6DDWH/FONJq--
