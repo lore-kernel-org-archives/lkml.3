@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756860AbaEJJ5Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 05:57:25 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:65428 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845AbaEJJ5W (ORCPT
+	id S1754191AbaEJKDm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 06:03:42 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:60565 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853AbaEJKDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 05:57:22 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
-        swarren@wwwdotorg.org, kgene.kim@samsung.com, thierry.reding@gmail.com,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH 2/6] usb: host: ehci-msm: Use devm_ioremap_resource instead of devm_ioremap
-Date: Sat, 10 May 2014 15:26:59 +0530
-Message-Id: <1399715823-19839-3-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1399715823-19839-1-git-send-email-gautam.vivek@samsung.com>
-References: <1399715823-19839-1-git-send-email-gautam.vivek@samsung.com>
+	Sat, 10 May 2014 06:03:40 -0400
+From: Manfred Spraul <manfred@colorfullife.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, 1vier1@web.de,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: [PATCH 0/6] ipc/sem.c: Fix semctl(,,{GETNCNT,GETZCNT})
+Date: Sat, 10 May 2014 12:03:13 +0200
+Message-Id: <1399716199-26776-1-git-send-email-manfred@colorfullife.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using devm_ioremap_resource() API should actually be preferred over
-devm_ioremap(), since the former request the mem region first and then
-gives back the ioremap'ed memory pointer.
-devm_ioremap_resource() calls request_mem_region(), therby preventing
-other drivers to make any overlapping call to the same region.
+Hi all,
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
----
- drivers/usb/host/ehci-msm.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+According to the man page of semop(), semzcnt or semncnt are increased
+exactly for the operation that couldn't proceed.
 
-diff --git a/drivers/usb/host/ehci-msm.c b/drivers/usb/host/ehci-msm.c
-index f341651..99989aa 100644
---- a/drivers/usb/host/ehci-msm.c
-+++ b/drivers/usb/host/ehci-msm.c
-@@ -96,9 +96,8 @@ static int ehci_msm_probe(struct platform_device *pdev)
- 
- 	hcd->rsrc_start = res->start;
- 	hcd->rsrc_len = resource_size(res);
--	hcd->regs = devm_ioremap(&pdev->dev, hcd->rsrc_start, hcd->rsrc_len);
-+	hcd->regs = devm_ioremap_resource(&pdev->dev, res);
- 	if (!hcd->regs) {
--		dev_err(&pdev->dev, "ioremap failed\n");
- 		ret = -ENOMEM;
- 		goto put_hcd;
- 	}
--- 
-1.7.10.4
+The Linux implementation always tried to be clever and to increase the counters
+for all operations that might be the reason why a task sleeps.
 
+The following patches fix that and make the code conform to the 
+documentation.
+
+The series got fairly long, because I also noticed that semzcnt was calculated
+incorrectly.
+
+What do you think?
+I ran a few test cases, and the semncnt and semzcnt counts now match
+the expectation.
+
+Is anyone aware of an application that uses GETNCNT or GETZCNT?
+
+--
+	Manfred
