@@ -1,167 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751429AbaEJFTc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 01:19:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17885 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750871AbaEJFTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 01:19:31 -0400
-Message-ID: <1399699165.17639.151.camel@ul30vt.home>
-Subject: Re: [PATCH 03/13] PCI: quirk dma_func_alias for Ricoh devices
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Andrew Cooks <acooks@gmail.com>
-Cc: "open list:PCI SUBSYSTEM" <linux-pci@vger.kernel.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Fri, 09 May 2014 23:19:25 -0600
-In-Reply-To: <CAJtEV7YxdSWjOpaxCDF7e4MHT9axZbp5f==_k3OMYEwejnQiug@mail.gmail.com>
-References: <20140501160128.17512.23609.stgit@bling.home>
-	 <20140501162723.17512.96286.stgit@bling.home>
-	 <CAJtEV7bZ10fAE-JoTO6Gg1rg8sWxwzQUR5FkQpLZ1nTF_+dk5w@mail.gmail.com>
-	 <1399094110.24318.505.camel@ul30vt.home>
-	 <CAJtEV7YxdSWjOpaxCDF7e4MHT9axZbp5f==_k3OMYEwejnQiug@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752070AbaEJFTw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 01:19:52 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:45839 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565AbaEJFTv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 May 2014 01:19:51 -0400
+X-Originating-IP: 50.43.32.211
+Date: Fri, 9 May 2014 22:19:39 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 39/45] rcutorture: Note diffs from git
+ commits
+Message-ID: <20140510051938.GC8451@thin>
+References: <20140429002455.GA15461@linux.vnet.ibm.com>
+ <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1398731133-18925-39-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140507221742.GQ27924@cloud>
+ <20140510005124.GI8754@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140510005124.GI8754@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-05-10 at 12:46 +0800, Andrew Cooks wrote:
-> Hi Alex
+On Fri, May 09, 2014 at 05:51:24PM -0700, Paul E. McKenney wrote:
+> On Wed, May 07, 2014 at 03:17:42PM -0700, josh@joshtriplett.org wrote:
+> > On Mon, Apr 28, 2014 at 05:25:27PM -0700, Paul E. McKenney wrote:
+> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > 
+> > > The current scripting only keeps track of the git SHA-1 of the current
+> > > HEAD.  This can cause confusion in cases where testing ran in a git
+> > > tree where changes had not yet been checked in.  This commit therefore
+> > > also records the output of "git diff HEAD" to provide the information
+> > > needed to reconstruct the source tree that was tested.
+> > > 
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > 
+> > Nit below.
+> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > 
+> > > ---
+> > >  tools/testing/selftests/rcutorture/bin/kvm.sh | 5 +++++
+> > >  1 file changed, 5 insertions(+)
+> > > 
+> > > diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
+> > > index 4eed2a4f42c7..91661845fdec 100644
+> > > --- a/tools/testing/selftests/rcutorture/bin/kvm.sh
+> > > +++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
+> > > @@ -277,6 +277,11 @@ if test -d .git
+> > >  then
+> > >  	git status >> $resdir/$ds/testid.txt
+> > >  	git rev-parse HEAD >> $resdir/$ds/testid.txt
+> > > +	git diff HEAD > $T/git-diff 2>&1
+> > > +	if test -s $T/git-diff
+> > 
+> > You don't need test here; you can use the return value of git diff.
 > 
-> On Sat, May 3, 2014 at 1:15 PM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
-> > On Sat, 2014-05-03 at 10:29 +0800, Andrew Cooks wrote:
-> >> Hi Alex
-> >>
-> >> On Fri, May 2, 2014 at 12:27 AM, Alex Williamson
-> >> <alex.williamson@redhat.com> wrote:
-> >> > The existing quirk for these devices doesn't really solve the problem,
-> >> > re-implement it using the DMA alias iterator.  We'll come back later
-> >> > and remove the existing quirk and dma_source interface.
-> >> >
-> >> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> >> > ---
-> >> >  drivers/pci/quirks.c |   16 ++++++++++++++++
-> >> >  1 file changed, 16 insertions(+)
-> >> >
-> >> > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> >> > index e729206..a458c6b 100644
-> >> > --- a/drivers/pci/quirks.c
-> >> > +++ b/drivers/pci/quirks.c
-> >> > @@ -3333,6 +3333,22 @@ int pci_dev_specific_reset(struct pci_dev *dev, int probe)
-> >> >         return -ENOTTY;
-> >> >  }
-> >> >
-> >> > +static void quirk_dma_func0_alias(struct pci_dev *dev)
-> >> > +{
-> >> > +       if (PCI_SLOT(dev->devfn) != 0)
-> >> > +               dev->dma_func_alias |= (1 << 0);
-> >> > +}
-> >> > +
-> >> > +/*
-> >> > + * https://bugzilla.redhat.com/show_bug.cgi?id=605888
-> >> > + *
-> >> > + * Some Ricoh devices use function 0 as the PCIe requester ID for DMA.
-> >> > + */
-> >> > +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_RICOH, 0xe822, quirk_dma_func0_alias);
-> >> > +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_RICOH, 0xe230, quirk_dma_func0_alias);
-> >> > +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_RICOH, 0xe832, quirk_dma_func0_alias);
-> >> > +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_RICOH, 0xe832, quirk_dma_func0_alias);
-> >>
-> >> 0xe832 is listed twice.
-> >
-> > oops, copy-paste error
-> >
-> >> Previously only 0xe832 needed the dma alias on my thinkpad T410, which
-> >> has all three devices.
-> >>
-> >> > +
-> >> >  static struct pci_dev *pci_func_0_dma_source(struct pci_dev *dev)
-> >> >  {
-> >> >         if (!PCI_FUNC(dev->devfn))
-> >> >
-> >>
-> >> Unfortunately, this quirk doesn't work for me. I tried it without
-> >> modification, as well as with each alias individually. I get:
-> >>
-> >> Set context mapping for 0d:00.3
-> >> firewire_ohci 0000:0d:00.3: added OHCI v1.10 device as card 0, 4 IR +
-> >> 4 IT contexts, quirks 0x11
-> >> dmar: DRHD: handling fault status reg 2
-> >> dmar: DMAR:[DMA Read] Request device [0d:00.0] fault addr fffff000
-> >> DMAR:[fault reason 02] Present bit in context entry is clear
-> >>
-> >> I think I need to see
-> >> Set context mapping for 0d:00.0
-> >> before
-> >> Set context mapping for 0d:00.3
-> >
-> > It would actually be the reverse, we always set the device, then the
-> > alias for the device.
-> 
-> Ok, excuse my ignorance, but is there a window where the driver can
-> start doing DMA, before the alias is registered?
-> 
-> >
-> >> in the log, but it's not there. I'd love to look into this and
-> >> understand it properly, but I don't have time for the next four weeks.
-> >>
-> >> The devices are attached as follows:
-> >> BDF, device ID
-> >> 0d:00.0, e822
-> >> 0d:00.1, e230
-> >> 0d:00.3, e832
-> >>
-> >> The kernel log is attached.
-> >
-> > Hmm, there are only a few reasons why you'd never see 0d:00.3 followed
-> > by 0d:00.0...
-> >
-> > 1) dma_func_alias bit 0 isn't getting set on 0d:00.3; we are building
-> > with CONFIG_PCI_QUIRKS=y, right?
-> 
-> Yes.
-> 
-> > 2) domain_context_mapping_one called from domain_context_mapping_cb
-> > returns !0; there's only one possible non-zero return for a non-vm,
-> > non-si domain
-> 
-> domain_context_mapping_one returns 0 - I've checked.
-> 
-> > 3) something is broken in the first loop of pci_for_each_dma_alias; I'm
-> > not seeing anything obvious
-> >
-> > Anyway, appreciate an debugging you're able to fit in, my only ricoh
-> > device has only function 0.  Thanks,
-> >
-> 
-> Please note that this device works with the patch I attached to
-> https://bugzilla.kernel.org/show_bug.cgi?id=42679 (despite its many
-> faults).
+> Oddly enough, the "git diff" man page does not say anything about the
+> exit value.  At least not that I could find...
 
-Is it by chance this:
+Look for the --exit-code option of git diff.
 
-drivers/iommu/intel-iommu.c:
-static int domain_context_mapped(struct device *dev)
-{
-        struct intel_iommu *iommu;
-        u8 bus, devfn;
-
-        iommu = device_to_iommu(dev, &bus, &devfn);
-        if (!iommu)
-                return -ENODEV;
-
-        if (dev_is_pci(dev))
-
-// Should be !dev_is_pci
-
-                return device_context_mapped(iommu, bus, devfn);
-
-        return !pci_for_each_dma_alias(to_pci_dev(dev),
-                                       domain_context_mapped_cb, iommu);
-}
-
-
+- Josh Triplett
