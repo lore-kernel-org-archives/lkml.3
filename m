@@ -1,154 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569AbaEJStR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 14:49:17 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:47686 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029AbaEJStQ (ORCPT
+	id S1754595AbaEJTc6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 15:32:58 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:37325 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038AbaEJTc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 14:49:16 -0400
-Date: Sun, 11 May 2014 00:19:00 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] char: Introduce the use of the managed version of kzalloc
-Message-ID: <20140510184859.GA6818@himangi-Dell>
+	Sat, 10 May 2014 15:32:56 -0400
+X-Originating-IP: 50.43.32.211
+Date: Sat, 10 May 2014 12:32:46 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Jann Horn <jann@thejh.net>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH] drivers/char/mem.c: Add /dev/ioports, supporting 16-bit
+ and 32-bit ports
+Message-ID: <20140510193246.GA12079@thin>
+References: <20140509191914.GA7286@jtriplet-mobl1>
+ <20140510070742.GE6099@debjann.fritz.box>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140510070742.GE6099@debjann.fritz.box>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves data allocated using kzalloc to managed data allocated
-using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
-functions. The NULL assignment to np->units is removed as there is no
-interaction between this field and sun4v_hvapi_unregister. Also, the
-labels out_free_units and out_free are removed as they are no longer
-required.
+On Sat, May 10, 2014 at 09:07:42AM +0200, Jann Horn wrote:
+> On Fri, May 09, 2014 at 12:19:16PM -0700, Josh Triplett wrote:
+> > +	if (port > 65535)
+> > +		return 0;
+> > +	switch (count) {
+> [...]
+> > +	case 4:
+> > +		if (__put_user(inl(port), buf) < 0)
+> > +			return -EFAULT;
+> 
+> What if I attempt a four-byte read at 65535? That would access four
+> out-of-bounds bytes, right?
 
-The following Coccinelle semantic patch was used for making the change:
+No, it would do an ind instruction on port 65535.
 
-@platform@
-identifier p, probefn, removefn;
-@@
-struct platform_driver p = {
-  .probe = probefn,
-  .remove = removefn,
-};
-
-@prb@
-identifier platform.probefn, pdev;
-expression e, e1, e2;
-@@
-probefn(struct platform_device *pdev, ...) {
-  <+...
-- e = kzalloc(e1, e2)
-+ e = devm_kzalloc(&pdev->dev, e1, e2)
-  ...
-?-kfree(e);
-  ...+>
-}
-
-@rem depends on prb@
-identifier platform.removefn;
-expression e;
-@@
-removefn(...) {
-  <...
-- kfree(e);
-  ...>
-}
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
----
-I would like to know if removing the NULL assignment is OK as it may be
-used for security to prevent it from being read before reinitialization.
-
- drivers/char/hw_random/n2-drv.c | 24 +++++++-----------------
- 1 file changed, 7 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/char/hw_random/n2-drv.c b/drivers/char/hw_random/n2-drv.c
-index 432232e..292a588 100644
---- a/drivers/char/hw_random/n2-drv.c
-+++ b/drivers/char/hw_random/n2-drv.c
-@@ -632,7 +632,7 @@ static int n2rng_probe(struct platform_device *op)
- 	multi_capable = (match->data != NULL);
- 
- 	n2rng_driver_version();
--	np = kzalloc(sizeof(*np), GFP_KERNEL);
-+	np = devm_kzalloc(&op->dev, sizeof(*np), GFP_KERNEL);
- 	if (!np)
- 		goto out;
- 	np->op = op;
-@@ -653,7 +653,7 @@ static int n2rng_probe(struct platform_device *op)
- 					 &np->hvapi_minor)) {
- 			dev_err(&op->dev, "Cannot register suitable "
- 				"HVAPI version.\n");
--			goto out_free;
-+			goto out;
- 		}
- 	}
- 
-@@ -676,15 +676,16 @@ static int n2rng_probe(struct platform_device *op)
- 	dev_info(&op->dev, "Registered RNG HVAPI major %lu minor %lu\n",
- 		 np->hvapi_major, np->hvapi_minor);
- 
--	np->units = kzalloc(sizeof(struct n2rng_unit) * np->num_units,
--			    GFP_KERNEL);
-+	np->units = devm_kzalloc(&op->dev,
-+				 sizeof(struct n2rng_unit) * np->num_units,
-+				 GFP_KERNEL);
- 	err = -ENOMEM;
- 	if (!np->units)
- 		goto out_hvapi_unregister;
- 
- 	err = n2rng_init_control(np);
- 	if (err)
--		goto out_free_units;
-+		goto out_hvapi_unregister;
- 
- 	dev_info(&op->dev, "Found %s RNG, units: %d\n",
- 		 ((np->flags & N2RNG_FLAG_MULTI) ?
-@@ -697,7 +698,7 @@ static int n2rng_probe(struct platform_device *op)
- 
- 	err = hwrng_register(&np->hwrng);
- 	if (err)
--		goto out_free_units;
-+		goto out_hvapi_unregister;
- 
- 	platform_set_drvdata(op, np);
- 
-@@ -705,15 +706,9 @@ static int n2rng_probe(struct platform_device *op)
- 
- 	return 0;
- 
--out_free_units:
--	kfree(np->units);
--	np->units = NULL;
--
- out_hvapi_unregister:
- 	sun4v_hvapi_unregister(HV_GRP_RNG);
- 
--out_free:
--	kfree(np);
- out:
- 	return err;
- }
-@@ -730,11 +725,6 @@ static int n2rng_remove(struct platform_device *op)
- 
- 	sun4v_hvapi_unregister(HV_GRP_RNG);
- 
--	kfree(np->units);
--	np->units = NULL;
--
--	kfree(np);
--
- 	return 0;
- }
- 
--- 
-1.9.1
-
+- Josh Triplett
