@@ -1,81 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757566AbaEJRCs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 13:02:48 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:36797 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757055AbaEJRCq (ORCPT
+	id S1757702AbaEJREa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 13:04:30 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:60197 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752745AbaEJRE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 13:02:46 -0400
-From: Ming Lei <tom.leiming@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Cc: Ming Lei <tom.leiming@gmail.com>
-Subject: [PATCH 5/5] blk-mq: bitmap tag: fix wait batch for allocation
-Date: Sun, 11 May 2014 01:01:52 +0800
-Message-Id: <1399741312-10453-6-git-send-email-tom.leiming@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1399741312-10453-1-git-send-email-tom.leiming@gmail.com>
-References: <1399741312-10453-1-git-send-email-tom.leiming@gmail.com>
+	Sat, 10 May 2014 13:04:29 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtgbACFbblNXQCSg/2dsb2JhbABZgwaDPakWBAEBAQEBAQUBmhUCAoEVF3SCUxMcIxiBAiQTiEUB0FWFVoh8hEcBA48liiIBkweDODs
+Date: Sat, 10 May 2014 19:04:22 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: jack <jack@suse.cz>, hch <hch@infradead.org>,
+        Viro <viro@zeniv.linux.org.uk>, tytso <tytso@mit.edu>,
+        akpm <akpm@linux-foundation.org>
+Subject: [PATCH V4 1/2] FS: Add generic data flush to fsync
+Message-Id: <20140510190422.182ae2df3499168c45bf81e0@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One interesting point of bitmap tag allocation is that
-it may wait for at least BT_WAIT_BATCH times tag free
-for a blocked allocation. Obviously, it may hang allocation
-if the depth is smaller than BT_WAIT_BATCH.
+This patch issues a flush in generic_file_fsync.
+(Modern filesystems already do it)
 
-This patch simply sets the wait count as 1 if depth is
-smaller than BT_WAIT_BATCH to avoid the problem.
+Behaviour can be reversed using /sys/devices/.../cache_type
+or by calling __generic_file_fsync
 
-Maybe better idea is that it should be set as one ratio
-of depth(1/8 or others), but it may need more tests for
-verification.
-
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Suggested-by: Jan Kara <jack@suse.cz>
+Suggested-by: Christoph Hellwig <hch@infradead.org>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- block/blk-mq-tag.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+V4: update description
+V3: __generic_file_fsync = no flush
+V2: No additional flag
+V1: First version with MS_BARRIER flag
 
-diff --git a/block/blk-mq-tag.c b/block/blk-mq-tag.c
-index 6532aea..8e3a22d 100644
---- a/block/blk-mq-tag.c
-+++ b/block/blk-mq-tag.c
-@@ -135,6 +135,16 @@ static struct bt_wait_state *bt_wait_ptr(struct blk_mq_bitmap_tags *bt,
- 	return bs;
- }
+ fs/libfs.c         | 36 +++++++++++++++++++++++++++++++++---
+ include/linux/fs.h |  1 +
+ 2 files changed, 34 insertions(+), 3 deletions(-)
+
+diff --git a/fs/libfs.c b/fs/libfs.c
+index a184424..4877906 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -3,6 +3,7 @@
+  *	Library for filesystems writers.
+  */
  
-+static void bs_reset_wait_cnt(struct blk_mq_bitmap_tags *bt,
-+		struct bt_wait_state *bs)
-+{
-+	int cnt;
-+
-+	cnt = bt->depth < BT_WAIT_BATCH ? 1 : BT_WAIT_BATCH;
-+
-+	atomic_set(&bs->wait_cnt, cnt);
-+}
-+
- static int bt_get(struct blk_mq_bitmap_tags *bt, struct blk_mq_hw_ctx *hctx,
- 		  unsigned int *last_tag, gfp_t gfp)
++#include <linux/blkdev.h>
+ #include <linux/export.h>
+ #include <linux/pagemap.h>
+ #include <linux/slab.h>
+@@ -923,16 +924,19 @@ struct dentry *generic_fh_to_parent(struct super_block *sb, struct fid *fid,
+ EXPORT_SYMBOL_GPL(generic_fh_to_parent);
+ 
+ /**
+- * generic_file_fsync - generic fsync implementation for simple filesystems
++ * __generic_file_fsync - generic fsync implementation for simple filesystems
++ *
+  * @file:	file to synchronize
++ * @start:	start offset in bytes
++ * @end:	end offset in bytes (inclusive)
+  * @datasync:	only synchronize essential metadata if true
+  *
+  * This is a generic implementation of the fsync method for simple
+  * filesystems which track all non-inode metadata in the buffers list
+  * hanging off the address_space structure.
+  */
+-int generic_file_fsync(struct file *file, loff_t start, loff_t end,
+-		       int datasync)
++int __generic_file_fsync(struct file *file, loff_t start, loff_t end,
++				 int datasync)
  {
-@@ -160,7 +170,7 @@ static int bt_get(struct blk_mq_bitmap_tags *bt, struct blk_mq_hw_ctx *hctx,
- 			break;
+ 	struct inode *inode = file->f_mapping->host;
+ 	int err;
+@@ -952,10 +956,36 @@ int generic_file_fsync(struct file *file, loff_t start, loff_t end,
+ 	err = sync_inode_metadata(inode, 1);
+ 	if (ret == 0)
+ 		ret = err;
++
+ out:
+ 	mutex_unlock(&inode->i_mutex);
+ 	return ret;
+ }
++EXPORT_SYMBOL(__generic_file_fsync);
++
++/**
++ * generic_file_fsync - generic fsync implementation for simple filesystems
++ *			with flush
++ * @file:	file to synchronize
++ * @start:	start offset in bytes
++ * @end:	end offset in bytes (inclusive)
++ * @datasync:	only synchronize essential metadata if true
++ *
++ */
++
++int generic_file_fsync(struct file *file, loff_t start, loff_t end,
++		       int datasync)
++{
++	struct inode *inode = file->f_mapping->host;
++	int err;
++
++	err = __generic_file_fsync(file, start, end, datasync);
++	if (err)
++		return err;
++
++	return blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
++
++}
+ EXPORT_SYMBOL(generic_file_fsync);
  
- 		if (was_empty)
--			atomic_set(&bs->wait_cnt, BT_WAIT_BATCH);
-+			bs_reset_wait_cnt(bt, bs);
+ /**
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 8780312..c3f46e4 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2590,6 +2590,7 @@ extern ssize_t simple_read_from_buffer(void __user *to, size_t count,
+ extern ssize_t simple_write_to_buffer(void *to, size_t available, loff_t *ppos,
+ 		const void __user *from, size_t count);
  
- 		io_schedule();
- 	} while (1);
-@@ -243,7 +253,7 @@ static void bt_clear_tag(struct blk_mq_bitmap_tags *bt, unsigned int tag)
++extern int __generic_file_fsync(struct file *, loff_t, loff_t, int);
+ extern int generic_file_fsync(struct file *, loff_t, loff_t, int);
  
- 	bs = bt_wake_ptr(bt);
- 	if (bs && atomic_dec_and_test(&bs->wait_cnt)) {
--		atomic_set(&bs->wait_cnt, BT_WAIT_BATCH);
-+		bs_reset_wait_cnt(bt, bs);
- 		bt_index_inc(&bt->wake_index);
- 		wake_up(&bs->wait);
- 	}
+ extern int generic_check_addressable(unsigned, u64);
 -- 
-1.7.9.5
-
+1.8.4.5
