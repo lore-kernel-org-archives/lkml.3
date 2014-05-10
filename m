@@ -1,87 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330AbaEJARJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 20:17:09 -0400
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:31845 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932253AbaEJARH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 20:17:07 -0400
-X-Originating-IP: 50.43.32.211
-Date: Fri, 9 May 2014 17:16:57 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 20/45] torture: Include "Stopping" string to
- torture_kthread_stopping()
-Message-ID: <20140510001657.GB7553@thin>
-References: <20140429002455.GA15461@linux.vnet.ibm.com>
- <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1398731133-18925-20-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140507213736.GL27924@cloud>
- <20140510001346.GC8754@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140510001346.GC8754@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1757704AbaEJA2R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 20:28:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40492 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757561AbaEJA2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 20:28:16 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, arozansk@redhat.com, serge@hallyn.com,
+        ebiederm@xmission.com, eparis@redhat.com, sgrubb@redhat.com
+Subject: [PATCH V2 6/6] audit: convert namespace serial number logging to use proc ns_entries
+Date: Fri,  9 May 2014 20:27:27 -0400
+Message-Id: <d7f26c13de9ad02b10a9e334c6b13848c2dc8435.1399681022.git.rgb@redhat.com>
+In-Reply-To: <cover.1399681022.git.rgb@redhat.com>
+References: <cover.1399681022.git.rgb@redhat.com>
+In-Reply-To: <cover.1399681022.git.rgb@redhat.com>
+References: <cover.1399681022.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 05:13:46PM -0700, Paul E. McKenney wrote:
-> On Wed, May 07, 2014 at 02:37:36PM -0700, josh@joshtriplett.org wrote:
-> > On Mon, Apr 28, 2014 at 05:25:08PM -0700, Paul E. McKenney wrote:
-> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > Currently, torture_kthread_stopping() prints only the name of the
-> > > kthread that is stopping, which can be unedifying.  This commit therefore
-> > > adds "Stopping" to make things more evident.
-> > > 
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > 
-> > Feedback below.
-> > 
-> > >  kernel/torture.c | 5 ++++-
-> > >  1 file changed, 4 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/kernel/torture.c b/kernel/torture.c
-> > > index acc9afc2f26e..f329848c3eee 100644
-> > > --- a/kernel/torture.c
-> > > +++ b/kernel/torture.c
-> > > @@ -674,8 +674,11 @@ EXPORT_SYMBOL_GPL(torture_must_stop_irq);
-> > >   */
-> > >  void torture_kthread_stopping(char *title)
-> > >  {
-> > > +	char buf[128];
-> > > +
-> > > +	snprintf(buf, sizeof(buf), "Stopping %s", title);
-> > >  	if (verbose)
-> > > -		VERBOSE_TOROUT_STRING(title);
-> > > +		VERBOSE_TOROUT_STRING(buf);
-> > 
-> > This seems like a case where the macro has led to poorer code; rather
-> > than using sprintf into a temporary buffer, this should just print.
-> > Please consider fixing the output macros to allow formats, as the pr_*
-> > macros do.
-> > 
-> > Also, why do you need "if (verbose)" if the name of the macro has
-> > VERBOSE_ in it; shouldn't that mean it checks verbosity itself?
-> > (Another good reason not to create a unique verbosity level mechanism,
-> > and to use the kernel mechanisms instead.)
-> 
-> Good catch, removed the redundant "if (verbose)".
-> 
-> My attempts in the past to leverage existing in-kernel verbosity controls
-> has caused problems such as the output appearing or not depending on
-> the distro in question.
+Convert audit direct access to namespace serial numbers to insead use the proc
+namespace operations structure which lists all namespace types with a
+consistent api.
 
-That aside, though, what do you think about making the macros accept
-format strings and arguments, in the style of pr_* and pr_fmt?
+This should eventually squash down to: [audit: log namespace serial numbers]
+(which in turn will need to follow [namespaces: expose ns_entries])
 
-- Josh Trpilett
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ kernel/audit.c |   43 ++++++++++++-------------------------------
+ 1 files changed, 12 insertions(+), 31 deletions(-)
+
+diff --git a/kernel/audit.c b/kernel/audit.c
+index fe783ad..6452278 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -64,15 +64,7 @@
+ #endif
+ #include <linux/freezer.h>
+ #include <linux/tty.h>
+-#include <linux/nsproxy.h>
+-#include <linux/utsname.h>
+-#include <linux/ipc_namespace.h>
+-#include "../fs/mount.h"
+-#include <linux/mount.h>
+-#include <linux/mnt_namespace.h>
+-#include <linux/pid_namespace.h>
+-#include <net/net_namespace.h>
+-#include <linux/user_namespace.h>
++#include <linux/proc_ns.h>
+ #include <net/netns/generic.h>
+ 
+ #include "audit.h"
+@@ -1628,29 +1620,18 @@ void audit_log_session_info(struct audit_buffer *ab)
+ #ifdef CONFIG_NAMESPACES
+ void audit_log_namespace_info(struct audit_buffer *ab, struct task_struct *tsk)
+ {
+-	struct nsproxy *nsproxy;
+-
+-	rcu_read_lock();
+-	nsproxy = task_nsproxy(tsk);
+-	if (nsproxy != NULL) {
+-		audit_log_format(ab, " mntns=%llx", nsproxy->mnt_ns->serial_num);
+-#ifdef CONFIG_NET_NS
+-		audit_log_format(ab, " netns=%llx", nsproxy->net_ns->serial_num);
+-#endif
+-#ifdef CONFIG_UTS_NS
+-		audit_log_format(ab, " utsns=%llx", nsproxy->uts_ns->serial_num);
+-#endif
+-#ifdef CONFIG_IPC_NS
+-		audit_log_format(ab, " ipcns=%llx", nsproxy->ipc_ns->serial_num);
+-#endif
++	const struct proc_ns_operations **entry;
++	bool end = false;
++
++	if (!tsk)
++		return;
++	for (entry = ns_entries; !end; entry++) {
++		void *ns = (*entry)->get(tsk);
++		audit_log_format(ab, " %sns=%llx", (*entry)->name,
++				 (*entry)->snum(ns));
++		(*entry)->put(ns);
++		end = (*entry)->type == CLONE_NEWNS;
+ 	}
+-#ifdef CONFIG_PID_NS
+-	audit_log_format(ab, " pidns=%llx", task_active_pid_ns(tsk)->serial_num);
+-#endif
+-#ifdef CONFIG_USER_NS
+-	audit_log_format(ab, " userns=%llx", task_cred_xxx(tsk, user_ns)->serial_num);
+-#endif
+-	rcu_read_unlock();
+ }
+ #endif /* CONFIG_NAMESPACES */
+ 
+-- 
+1.7.1
+
