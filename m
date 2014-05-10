@@ -1,253 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757478AbaEJPDY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 11:03:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49476 "EHLO mx1.redhat.com"
+	id S1754755AbaEJPHb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 11:07:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45118 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757009AbaEJPDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 11:03:19 -0400
-Subject: [PATCH v3 08/15] iommu/amd: Use pci_find_dma_isolation_root() for
- IOMMU groups
-From: Alex Williamson <alex.williamson@redhat.com>
-To: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
-Cc: bhelgaas@google.com, Joerg Roedel <joro@8bytes.org>, acooks@gmail.com,
-        linux-kernel@vger.kernel.org, linux@horizon.com
-Date: Sat, 10 May 2014 09:03:11 -0600
-Message-ID: <20140510150311.2997.62903.stgit@bling.home>
-In-Reply-To: <20140510145619.2997.429.stgit@bling.home>
-References: <20140510145619.2997.429.stgit@bling.home>
-User-Agent: StGit/0.17-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1751052AbaEJPH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 May 2014 11:07:29 -0400
+Message-ID: <1399734444.3558.19.camel@localhost>
+Subject: Re: [PATCH V2 2/6] audit: log namespace serial numbers
+From: Eric Paris <eparis@redhat.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, arozansk@redhat.com,
+        serge@hallyn.com, ebiederm@xmission.com, sgrubb@redhat.com
+Date: Sat, 10 May 2014 11:07:24 -0400
+In-Reply-To: <e1b3ea66770e9e8d067c4fb725a6940c41ccf2f2.1399681022.git.rgb@redhat.com>
+References: <cover.1399681022.git.rgb@redhat.com>
+	 <e1b3ea66770e9e8d067c4fb725a6940c41ccf2f2.1399681022.git.rgb@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IVRS tables provides aliases, but not to the extent now provided
-by PCI core with DMA alias support and pci_find_dma_isolation_root().
-The expectation is that the kernel and IVRS will produce the same
-result for topology based aliases while the kernel will also include
-device specific DMA quirks.  We therefore drop the AMD-specific IOMMU
-group discovery in favor of the common code.  This also allows us to
-drop tracking of the IOMMU group on the alias dev_data structure.
+On Fri, 2014-05-09 at 20:27 -0400, Richard Guy Briggs wrote:
+> Log the namespace serial numbers of a task in audit_log_task_info() which
+> is used by syscall audits, among others..
+> 
+> Idea first presented:
+> 	https://www.redhat.com/archives/linux-audit/2013-March/msg00020.html
+> 
+> Typical output format would look something like:
+> 	        type=SYSCALL msg=audit(1399651071.433:72): arch=c000003e syscall=272 success=yes exit=0 a0=40000000 a1=ffffffffffffffff a2=0 a3=22 items=0 ppid=1 pid=483 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="(t-daemon)" exe="/usr/lib/systemd/systemd" netns=97 utsns=2 ipcns=1 pidns=4 userns=3 mntns=5 subj=system_u:system_r:init_t:s0 key=(null)
+> 
+> The serial numbers are printed in hex.
+> 
+> Suggested-by: Aristeu Rozanski <arozansk@redhat.com>
+> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> ---
+>  include/linux/audit.h |    7 +++++++
+>  kernel/audit.c        |   38 ++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 45 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/audit.h b/include/linux/audit.h
+> index 22cfddb..0ef404a 100644
+> --- a/include/linux/audit.h
+> +++ b/include/linux/audit.h
+> @@ -101,6 +101,13 @@ extern int __weak audit_classify_compat_syscall(int abi, unsigned syscall);
+>  struct filename;
+>  
+>  extern void audit_log_session_info(struct audit_buffer *ab);
+> +#ifdef CONFIG_NAMESPACES
+> +extern void audit_log_namespace_info(struct audit_buffer *ab, struct task_struct *tsk);
+> +#else
+> +void audit_log_namespace_info(struct audit_buffer *ab, struct task_struct *tsk)
+> +{
+> +}
+> +#endif
+>  
+>  #ifdef CONFIG_AUDIT_COMPAT_GENERIC
+>  #define audit_is_compat(arch)  (!((arch) & __AUDIT_ARCH_64BIT))
+> diff --git a/kernel/audit.c b/kernel/audit.c
+> index 59c0bbe..fe783ad 100644
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -64,7 +64,15 @@
+>  #endif
+>  #include <linux/freezer.h>
+>  #include <linux/tty.h>
+> +#include <linux/nsproxy.h>
+> +#include <linux/utsname.h>
+> +#include <linux/ipc_namespace.h>
+> +#include "../fs/mount.h"
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: Joerg Roedel <joro@8bytes.org>
----
- drivers/iommu/amd_iommu.c       |  158 ++-------------------------------------
- drivers/iommu/amd_iommu_types.h |    1 
- 2 files changed, 10 insertions(+), 149 deletions(-)
+I don't think such an include is ever a good idea and likely to get us
+SHOT by Viro...
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index c949520..3d58de4 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -46,7 +46,6 @@
- #include "amd_iommu_proto.h"
- #include "amd_iommu_types.h"
- #include "irq_remapping.h"
--#include "pci.h"
- 
- #define CMD_SET_TYPE(cmd, t) ((cmd)->data[1] |= ((t) << 28))
- 
-@@ -133,9 +132,6 @@ static void free_dev_data(struct iommu_dev_data *dev_data)
- 	list_del(&dev_data->dev_data_list);
- 	spin_unlock_irqrestore(&dev_data_list_lock, flags);
- 
--	if (dev_data->group)
--		iommu_group_put(dev_data->group);
--
- 	kfree(dev_data);
- }
- 
-@@ -264,107 +260,10 @@ static bool check_device(struct device *dev)
- 	return true;
- }
- 
--static struct pci_bus *find_hosted_bus(struct pci_bus *bus)
--{
--	while (!bus->self) {
--		if (!pci_is_root_bus(bus))
--			bus = bus->parent;
--		else
--			return ERR_PTR(-ENODEV);
--	}
--
--	return bus;
--}
--
--#define REQ_ACS_FLAGS	(PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_UF)
--
--static struct pci_dev *get_isolation_root(struct pci_dev *pdev)
--{
--	struct pci_dev *dma_pdev = pdev;
--
--	/* Account for quirked devices */
--	swap_pci_ref(&dma_pdev, pci_get_dma_source(dma_pdev));
--
--	/*
--	 * If it's a multifunction device that does not support our
--	 * required ACS flags, add to the same group as lowest numbered
--	 * function that also does not suport the required ACS flags.
--	 */
--	if (dma_pdev->multifunction &&
--	    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS)) {
--		u8 i, slot = PCI_SLOT(dma_pdev->devfn);
--
--		for (i = 0; i < 8; i++) {
--			struct pci_dev *tmp;
--
--			tmp = pci_get_slot(dma_pdev->bus, PCI_DEVFN(slot, i));
--			if (!tmp)
--				continue;
--
--			if (!pci_acs_enabled(tmp, REQ_ACS_FLAGS)) {
--				swap_pci_ref(&dma_pdev, tmp);
--				break;
--			}
--			pci_dev_put(tmp);
--		}
--	}
--
--	/*
--	 * Devices on the root bus go through the iommu.  If that's not us,
--	 * find the next upstream device and test ACS up to the root bus.
--	 * Finding the next device may require skipping virtual buses.
--	 */
--	while (!pci_is_root_bus(dma_pdev->bus)) {
--		struct pci_bus *bus = find_hosted_bus(dma_pdev->bus);
--		if (IS_ERR(bus))
--			break;
--
--		if (pci_acs_path_enabled(bus->self, NULL, REQ_ACS_FLAGS))
--			break;
--
--		swap_pci_ref(&dma_pdev, pci_dev_get(bus->self));
--	}
--
--	return dma_pdev;
--}
--
--static int use_pdev_iommu_group(struct pci_dev *pdev, struct device *dev)
--{
--	struct iommu_group *group = iommu_group_get(&pdev->dev);
--	int ret;
--
--	if (!group) {
--		group = iommu_group_alloc();
--		if (IS_ERR(group))
--			return PTR_ERR(group);
--
--		WARN_ON(&pdev->dev != dev);
--	}
--
--	ret = iommu_group_add_device(group, dev);
--	iommu_group_put(group);
--	return ret;
--}
--
--static int use_dev_data_iommu_group(struct iommu_dev_data *dev_data,
--				    struct device *dev)
--{
--	if (!dev_data->group) {
--		struct iommu_group *group = iommu_group_alloc();
--		if (IS_ERR(group))
--			return PTR_ERR(group);
--
--		dev_data->group = group;
--	}
--
--	return iommu_group_add_device(dev_data->group, dev);
--}
--
- static int init_iommu_group(struct device *dev)
- {
--	struct iommu_dev_data *dev_data;
- 	struct iommu_group *group;
--	struct pci_dev *dma_pdev;
-+	struct pci_dev *pdev;
- 	int ret;
- 
- 	group = iommu_group_get(dev);
-@@ -373,58 +272,21 @@ static int init_iommu_group(struct device *dev)
- 		return 0;
- 	}
- 
--	dev_data = find_dev_data(get_device_id(dev));
--	if (!dev_data)
--		return -ENOMEM;
--
--	if (dev_data->alias_data) {
--		u16 alias;
--		struct pci_bus *bus;
-+	pdev = pci_find_dma_isolation_root(to_pci_dev(dev));
- 
--		if (dev_data->alias_data->group)
--			goto use_group;
--
--		/*
--		 * If the alias device exists, it's effectively just a first
--		 * level quirk for finding the DMA source.
--		 */
--		alias = amd_iommu_alias_table[dev_data->devid];
--		dma_pdev = pci_get_bus_and_slot(alias >> 8, alias & 0xff);
--		if (dma_pdev) {
--			dma_pdev = get_isolation_root(dma_pdev);
--			goto use_pdev;
--		}
--
--		/*
--		 * If the alias is virtual, try to find a parent device
--		 * and test whether the IOMMU group is actualy rooted above
--		 * the alias.  Be careful to also test the parent device if
--		 * we think the alias is the root of the group.
--		 */
--		bus = pci_find_bus(0, alias >> 8);
--		if (!bus)
--			goto use_group;
-+	group = iommu_group_get(&pdev->dev);
- 
--		bus = find_hosted_bus(bus);
--		if (IS_ERR(bus) || !bus->self)
--			goto use_group;
-+	if (!group) {
-+		group = iommu_group_alloc();
-+		if (IS_ERR(group))
-+			return PTR_ERR(group);
-+	}
- 
--		dma_pdev = get_isolation_root(pci_dev_get(bus->self));
--		if (dma_pdev != bus->self || (dma_pdev->multifunction &&
--		    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS)))
--			goto use_pdev;
-+	ret = iommu_group_add_device(group, dev);
- 
--		pci_dev_put(dma_pdev);
--		goto use_group;
--	}
-+	iommu_group_put(group);
- 
--	dma_pdev = get_isolation_root(pci_dev_get(to_pci_dev(dev)));
--use_pdev:
--	ret = use_pdev_iommu_group(dma_pdev, dev);
--	pci_dev_put(dma_pdev);
- 	return ret;
--use_group:
--	return use_dev_data_iommu_group(dev_data->alias_data, dev);
- }
- 
- static int iommu_init_device(struct device *dev)
-diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
-index f1a5abf..7277a20 100644
---- a/drivers/iommu/amd_iommu_types.h
-+++ b/drivers/iommu/amd_iommu_types.h
-@@ -432,7 +432,6 @@ struct iommu_dev_data {
- 	struct iommu_dev_data *alias_data;/* The alias dev_data */
- 	struct protection_domain *domain; /* Domain the device is bound to */
- 	atomic_t bind;			  /* Domain attach reference count */
--	struct iommu_group *group;	  /* IOMMU group for virtual aliases */
- 	u16 devid;			  /* PCI Device ID */
- 	bool iommu_v2;			  /* Device can make use of IOMMUv2 */
- 	bool passthrough;		  /* Default for device is pt_domain */
+Why do we need this include?
+
+> +#include <linux/mount.h>
+> +#include <linux/mnt_namespace.h>
+>  #include <linux/pid_namespace.h>
+> +#include <net/net_namespace.h>
+> +#include <linux/user_namespace.h>
+>  #include <net/netns/generic.h>
+>  
+>  #include "audit.h"
+> @@ -1617,6 +1625,35 @@ void audit_log_session_info(struct audit_buffer *ab)
+>  	audit_log_format(ab, " auid=%u ses=%u", auid, sessionid);
+>  }
+>  
+> +#ifdef CONFIG_NAMESPACES
+> +void audit_log_namespace_info(struct audit_buffer *ab, struct task_struct *tsk)
+> +{
+> +	struct nsproxy *nsproxy;
+> +
+> +	rcu_read_lock();
+> +	nsproxy = task_nsproxy(tsk);
+> +	if (nsproxy != NULL) {
+> +		audit_log_format(ab, " mntns=%llx", nsproxy->mnt_ns->serial_num);
+> +#ifdef CONFIG_NET_NS
+> +		audit_log_format(ab, " netns=%llx", nsproxy->net_ns->serial_num);
+> +#endif
+> +#ifdef CONFIG_UTS_NS
+> +		audit_log_format(ab, " utsns=%llx", nsproxy->uts_ns->serial_num);
+> +#endif
+> +#ifdef CONFIG_IPC_NS
+> +		audit_log_format(ab, " ipcns=%llx", nsproxy->ipc_ns->serial_num);
+> +#endif
+> +	}
+> +#ifdef CONFIG_PID_NS
+> +	audit_log_format(ab, " pidns=%llx", task_active_pid_ns(tsk)->serial_num);
+> +#endif
+> +#ifdef CONFIG_USER_NS
+> +	audit_log_format(ab, " userns=%llx", task_cred_xxx(tsk, user_ns)->serial_num);
+> +#endif
+> +	rcu_read_unlock();
+> +}
+> +#endif /* CONFIG_NAMESPACES */
+> +
+>  void audit_log_key(struct audit_buffer *ab, char *key)
+>  {
+>  	audit_log_format(ab, " key=");
+> @@ -1861,6 +1898,7 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
+>  		up_read(&mm->mmap_sem);
+>  	} else
+>  		audit_log_format(ab, " exe=(null)");
+> +	audit_log_namespace_info(ab, tsk);
+>  	audit_log_task_context(ab);
+>  }
+>  EXPORT_SYMBOL(audit_log_task_info);
+
 
