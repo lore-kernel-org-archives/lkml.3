@@ -1,369 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757895AbaEJBUV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 21:20:21 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49192 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752300AbaEJBUR (ORCPT
+	id S1757267AbaEJBVs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 21:21:48 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62898 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754499AbaEJBVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 21:20:17 -0400
-Date: Fri, 9 May 2014 20:16:59 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Randy Dunlap <rdunlap@infradead.org>,
-        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
-        kevin@allwinnertech.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] i2c: sunxi: add P2WI (Push/Pull 2 Wire Interface)
- controller support
-Message-ID: <20140510011659.GH7047@lukather>
-References: <1399485515-11243-1-git-send-email-boris.brezillon@free-electrons.com>
- <1399654570-30962-1-git-send-email-boris.brezillon@free-electrons.com>
+	Fri, 9 May 2014 21:21:45 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 1/3] PM / sleep: Flag to speed up suspend-resume of runtime-suspended devices
+Date: Sat, 10 May 2014 03:38:27 +0200
+Message-ID: <2529433.Aygp7Yxy87@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <7hmweqmuve.fsf@paris.lan>
+References: <Pine.LNX.4.44L0.1405071126340.1325-100000@iolanthe.rowland.org> <2703563.1xTcfTGG98@vostro.rjw.lan> <7hmweqmuve.fsf@paris.lan>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OWym5pP/pDvoNOpg"
-Content-Disposition: inline
-In-Reply-To: <1399654570-30962-1-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday, May 09, 2014 03:48:21 PM Kevin Hilman wrote:
+> "Rafael J. Wysocki" <rjw@rjwysocki.net> writes:
+> 
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >
+> > Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
+> > resume all runtime-suspended devices during system suspend, mostly
+> > because those devices may need to be reprogrammed due to different
+> > wakeup settings for system sleep and for runtime PM.
+> >
+> > For some devices, though, it's OK to remain in runtime suspend 
+> > throughout a complete system suspend/resume cycle (if the device was in
+> > runtime suspend at the start of the cycle).  We would like to do this
+> > whenever possible, to avoid the overhead of extra power-up and power-down
+> > events.
+> >
+> > However, problems may arise because the device's descendants may require
+> > it to be at full power at various points during the cycle.  Therefore the
+> > most straightforward way to do this safely is if the device and all its
+> > descendants can remain runtime suspended until the resume stage of system
+> > resume.
+> >
+> > To this end, introduce dev->power.leave_runtime_suspended.
+> > If a subsystem or driver sets this flag during the ->prepare() callback,
+> > and if the flag is set in all of the device's descendants, and if the
+> > device is still in runtime suspend at the beginning of the ->suspend()
+> > callback, that callback is allowed to return 0 without clearing
+> > power.leave_runtime_suspended and without changing the state of the
+> > device, unless the current state of the device is not appropriate for
+> > the upcoming system sleep state (for example, the device is supposed to
+> > wake up the system from that state and its current wakeup settings are
+> > not suitable for that).  Then, the PM core will not invoke the device's
+> > ->suspend_late(), ->suspend_irq(), ->resume_irq(), ->resume_early(), or
+> > ->resume() callbacks.  
+> 
+> Up to here, this sounds great.
+> 
+> > Instead, it will invoke ->runtime_resume() during the device resume
+> > stage of system resume.
+> 
+> But this part I'm not fully following...
 
---OWym5pP/pDvoNOpg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+You're not looking at the most recent one. :-)
 
-On Fri, May 09, 2014 at 06:56:10PM +0200, Boris BREZILLON wrote:
-> The P2WI looks like an SMBus controller which only supports byte data
-> transfers. But, it differs from standard SMBus protocol on several
-> aspects:
-> - it supports only one slave device, and thus drop the address field
-> - it adds a parity bit every 8bits of data
-> - only one read access is required to read a byte (instead of a read
->   followed by a write access in standard SMBus protocol)
-> - there's no Ack bit after each byte transfer
->=20
-> This means this bus cannot be used to interface with standard SMBus
-> devices (the only known device to support this interface is the AXP221
-> PMIC).
->=20
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
-> Changes since v2:
-> - drop the initialization (switch from I2C to P2WI mode) part
-> - print devm_ioremap_resource err code
+Please look here: https://patchwork.kernel.org/patch/4139181/
 
-You'll also need to update the documentation of the DT bindings.
+> > By leaving this flag set after ->suspend(), a driver or subsystem tells
+> > the PM core that the device is runtime suspended, it is in a suitable
+> > state for system suspend (for example, the wakeup setting does not
+> > need to be changed), and it does not need to return to full
+> > power until the resume stage.
+> 
+> But taking this "leave runtime suspended" idea the next logical step,
+> why would/should a device need to return to full power at the ->resume()
+> stage?  especially when it wasn't at full power when ->suspend()
+> happened?
 
->=20
->  drivers/i2c/busses/Kconfig          |  12 ++
->  drivers/i2c/busses/Makefile         |   1 +
->  drivers/i2c/busses/i2c-sun6i-p2wi.c | 352 ++++++++++++++++++++++++++++++=
-++++++
->  3 files changed, 365 insertions(+)
->  create mode 100644 drivers/i2c/busses/i2c-sun6i-p2wi.c
->=20
-> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-> index c94db1c..09bce1c 100644
-> --- a/drivers/i2c/busses/Kconfig
-> +++ b/drivers/i2c/busses/Kconfig
-> @@ -771,6 +771,18 @@ config I2C_STU300
->  	  This driver can also be built as a module. If so, the module
->  	  will be called i2c-stu300.
-> =20
-> +config I2C_SUN6I_P2WI
-> +	tristate "Allwinner sun6i internal P2WI controller"
-> +	depends on ARCH_SUNXI
-> +	help
-> +	  If you say yes to this option, support will be included for the
-> +	  P2WI (Push/Pull 2 Wire Interface) controller embedded in some sunxi
-> +	  SOCs.
-> +	  The P2WI looks like an SMBus controller (which supports only byte
-> +	  accesses), except that it only supports one slave device.
-> +	  This interface is used to connect to specific PMIC devices (like the
-> +	  AXP221).
-> +
->  config I2C_TEGRA
->  	tristate "NVIDIA Tegra internal I2C controller"
->  	depends on ARCH_TEGRA
-> diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-> index 18d18ff..58feeb9 100644
-> --- a/drivers/i2c/busses/Makefile
-> +++ b/drivers/i2c/busses/Makefile
-> @@ -75,6 +75,7 @@ obj-$(CONFIG_I2C_SIMTEC)	+=3D i2c-simtec.o
->  obj-$(CONFIG_I2C_SIRF)		+=3D i2c-sirf.o
->  obj-$(CONFIG_I2C_ST)		+=3D i2c-st.o
->  obj-$(CONFIG_I2C_STU300)	+=3D i2c-stu300.o
-> +obj-$(CONFIG_I2C_SUN6I_P2WI)	+=3D i2c-sun6i-p2wi.o
->  obj-$(CONFIG_I2C_TEGRA)		+=3D i2c-tegra.o
->  obj-$(CONFIG_I2C_VERSATILE)	+=3D i2c-versatile.o
->  obj-$(CONFIG_I2C_WMT)		+=3D i2c-wmt.o
-> diff --git a/drivers/i2c/busses/i2c-sun6i-p2wi.c b/drivers/i2c/busses/i2c=
--sun6i-p2wi.c
-> new file mode 100644
-> index 0000000..7c859ee
-> --- /dev/null
-> +++ b/drivers/i2c/busses/i2c-sun6i-p2wi.c
-> @@ -0,0 +1,352 @@
-> +/*
-> + * P2WI (Push-Pull Two Wire Interface) bus driver.
-> + *
-> + * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public Licen=
-se
-> + * version 2.  This program is licensed "as is" without any warranty of =
-any
-> + * kind, whether express or implied.
-> + */
-> +#include <linux/kernel.h>
-> +#include <linux/slab.h>
-> +#include <linux/module.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/i2c.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/io.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/clk.h>
-> +#include <linux/err.h>
-> +#include <linux/delay.h>
-> +#include <linux/clk.h>
-> +#include <linux/reset.h>
-> +
-> +
-> +/* P2WI registers */
-> +#define P2WI_CTRL		0x0
-> +#define P2WI_CCR		0x4
-> +#define P2WI_INTE		0x8
-> +#define P2WI_INTS		0xc
-> +#define P2WI_DADDR0		0x10
-> +#define P2WI_DADDR1		0x14
-> +#define P2WI_DLEN		0x18
-> +#define P2WI_DATA0		0x1c
-> +#define P2WI_DATA1		0x20
-> +#define P2WI_LCR		0x24
-> +#define P2WI_PMCR		0x28
-> +
-> +/* CTRL fields */
-> +#define P2WI_CTRL_START_TRANS		BIT(7)
-> +#define P2WI_CTRL_ABORT_TRANS		BIT(6)
-> +#define P2WI_CTRL_GLOBAL_INT_ENB	BIT(1)
-> +#define P2WI_CTRL_SOFT_RST		BIT(0)
-> +
-> +/* CLK CTRL fields */
-> +#define P2WI_CCR_SDA_OUT_DELAY(v)	(((v) & 0x7) << 8)
-> +#define P2WI_CCR_MAX_CLK_DIV		0xff
-> +#define P2WI_CCR_CLK_DIV(v)		((v) & P2WI_CCR_MAX_CLK_DIV)
-> +
-> +/* STATUS fields */
-> +#define P2WI_INTS_TRANS_ERR_ID(v)	(((v) >> 8) & 0xff)
-> +#define P2WI_INTS_LOAD_BSY		BIT(2)
-> +#define P2WI_INTS_TRANS_ERR		BIT(1)
-> +#define P2WI_INTS_TRANS_OVER		BIT(0)
-> +
-> +/* DATA LENGTH fields*/
-> +#define P2WI_DLEN_READ			BIT(4)
-> +#define P2WI_DLEN_DATA_LENGTH(v)	((v - 1) & 0x7)
-> +
-> +/* LINE CTRL fields*/
-> +#define P2WI_LCR_SCL_STATE		BIT(5)
-> +#define P2WI_LCR_SDA_STATE		BIT(4)
-> +#define P2WI_LCR_SCL_CTL		BIT(3)
-> +#define P2WI_LCR_SCL_CTL_EN		BIT(2)
-> +#define P2WI_LCR_SDA_CTL		BIT(1)
-> +#define P2WI_LCR_SDA_CTL_EN		BIT(0)
-> +
-> +/* PMU MODE CTRL fields */
-> +#define P2WI_PMCR_PMU_INIT_SEND		BIT(31)
-> +#define P2WI_PMCR_PMU_INIT_DATA(v)	(((v) & 0xff) << 16)
-> +#define P2WI_PMCR_PMU_MODE_REG(v)	(((v) & 0xff) << 8)
-> +#define P2WI_PMCR_PMU_DEV_ADDR(v)	((v) & 0xff)
-> +
-> +#define P2WI_MAX_FREQ			6000000
-> +
-> +struct p2wi {
-> +	struct i2c_adapter adapter;
-> +	struct completion complete;
-> +	unsigned int irq;
-> +	unsigned int status;
-> +	void __iomem *regs;
-> +	struct clk *clk;
-> +	struct reset_control *rstc;
-> +	int slave_addr;
-> +};
-> +
-> +static irqreturn_t p2wi_interrupt(int irq, void *dev_id)
-> +{
-> +	struct p2wi *p2wi =3D dev_id;
-> +	unsigned long status;
-> +
-> +	status =3D readl(p2wi->regs + P2WI_INTS);
-> +	p2wi->status =3D status;
-> +
-> +	/* Clear interrupts */
-> +	status &=3D (P2WI_INTS_LOAD_BSY | P2WI_INTS_TRANS_ERR |
-> +		   P2WI_INTS_TRANS_OVER);
-> +	writel(status, p2wi->regs + P2WI_INTS);
-> +
-> +	complete(&p2wi->complete);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static u32 p2wi_functionality(struct i2c_adapter *adap)
-> +{
-> +	return I2C_FUNC_SMBUS_BYTE_DATA;
-> +}
-> +
-> +static int p2wi_smbus_xfer(struct i2c_adapter *adap, u16 addr,
-> +			   unsigned short flags, char read_write,
-> +			   u8 command, int size, union i2c_smbus_data *data)
-> +{
-> +	struct p2wi *p2wi =3D i2c_get_adapdata(adap);
-> +	unsigned long dlen =3D P2WI_DLEN_DATA_LENGTH(1);
-> +
-> +	if (addr > 0xff ||
-> +	    (p2wi->slave_addr >=3D 0 && addr !=3D p2wi->slave_addr)) {
-> +		dev_err(&adap->dev, "invalid P2WI address\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (!data)
-> +		return -EINVAL;
-> +
-> +	writel(command, p2wi->regs + P2WI_DADDR0);
-> +
-> +	if (read_write =3D=3D I2C_SMBUS_READ)
-> +		dlen |=3D P2WI_DLEN_READ;
-> +	else
-> +		writel(data->byte, p2wi->regs + P2WI_DATA0);
-> +
-> +	writel(dlen, p2wi->regs + P2WI_DLEN);
-> +
-> +	if (readl(p2wi->regs + P2WI_CTRL) & P2WI_CTRL_START_TRANS) {
-> +		dev_err(&adap->dev, "P2WI bus busy\n");
-> +		return -EBUSY;
-> +	}
-> +
-> +	reinit_completion(&p2wi->complete);
-> +
-> +	writel(P2WI_INTS_LOAD_BSY | P2WI_INTS_TRANS_ERR | P2WI_INTS_TRANS_OVER,
-> +	       p2wi->regs + P2WI_INTE);
-> +
-> +	writel(P2WI_CTRL_START_TRANS | P2WI_CTRL_GLOBAL_INT_ENB,
-> +	       p2wi->regs + P2WI_CTRL);
-> +
-> +	wait_for_completion(&p2wi->complete);
-> +
-> +	if (p2wi->status & P2WI_INTS_LOAD_BSY) {
-> +		dev_err(&adap->dev, "P2WI bus busy\n");
-> +		return -EBUSY;
-> +	}
-> +
-> +	if (p2wi->status & P2WI_INTS_TRANS_ERR) {
-> +		dev_err(&adap->dev, "P2WI bus xfer error\n");
-> +		return -ENXIO;
-> +	}
-> +
-> +	if (read_write =3D=3D I2C_SMBUS_READ)
-> +		data->byte =3D readl(p2wi->regs + P2WI_DATA0);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct i2c_algorithm p2wi_algo =3D {
-> +	.smbus_xfer =3D p2wi_smbus_xfer,
-> +	.functionality =3D p2wi_functionality,
-> +};
-> +
-> +static const struct of_device_id p2wi_of_match_table[] =3D {
-> +	{ .compatible =3D "allwinner,sun6i-a31-p2wi" },
-> +	{}
-> +};
-> +MODULE_DEVICE_TABLE(of, p2wi_of_match_table);
-> +
-> +static int p2wi_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev =3D &pdev->dev;
-> +	struct device_node *np =3D dev->of_node;
-> +	struct device_node *childnp;
-> +	unsigned long parent_clk_freq;
-> +	u32 clk_freq =3D 100000;
-> +	struct resource *r;
-> +	struct p2wi *p2wi;
-> +	u32 slave_addr;
-> +	int clk_div;
-> +	int ret;
-> +
-> +	of_property_read_u32(np, "clock-frequency", &clk_freq);
-> +	if (clk_freq > P2WI_MAX_FREQ) {
-> +		dev_err(dev,
-> +			"required clock-frequency (%u Hz) is too high (max =3D 6MHz)",
-> +			clk_freq);
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (of_get_child_count(np) > 1) {
-> +		dev_err(dev, "P2WI only supports one slave device\n");
-> +		return -EINVAL;
-> +	}
+Good question and I've been thinking about that for a while.
 
-If you return whenever you have more than one child here...
+Generally, the main reason for resuming is that on some platforms devices are
+automatically powered up by firmware and in those cases it's better to
+resume them (to make the runtime PM status reflect the physical state) and
+suspend again later.
 
-> +	p2wi =3D devm_kzalloc(dev, sizeof(struct p2wi), GFP_KERNEL);
-> +	if (!p2wi) {
-> +		dev_err(dev, "failed to allocate p2wi struct\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	p2wi->slave_addr =3D -1;
-> +
-> +	/*
-> +	 * Authorize a p2wi node without any children to be able to use an
-> +	 * i2c-dev from userpace.
-> +	 * In this case the slave_addr is set to -1 and won't be checked when
-> +	 * launching a P2WI transfer.
-> +	 *
-> +	 * If the p2wi node contains more than one child, the first one will
-> +	 * be considered as the only slave node.
+Generally speaking, subsystems that need to do that know what they are and
+that's what I was talking about in the most recent reply to Alan:
 
-=2E.. how does the second part of this comment make any sense? You won't
-even get there in such a case.
+http://marc.info/?l=linux-pm&m=139967477806094&w=4
 
-Thanks,
-Maxime
+Currently, I think, there are two options on the table really.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+ 1. Do more or less what https://patchwork.kernel.org/patch/4139181/ does
+    with a modification to check that ->suspend() doesn't "cheat" (by setting
+    the flag that had been unset before it was called).  The subsystem's
+    ->resume() would then decide what to do with the device (resume it or
+    leave it suspended).
 
---OWym5pP/pDvoNOpg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ 2. Do what Alan was suggesting, that is set the flag in ->prepare() and
+    make the PM core skip *all* of the system suspend/resume callbacks
+    for devices with that flag set and let the ->complete() callback
+    decide what to do with the device.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
+I'm leaning a bit towards 2, but still considering 1 too.
 
-iQIcBAEBAgAGBQJTbX4KAAoJEBx+YmzsjxAgH4cP+wT/ltg096A70aOMP51bN6wR
-+Svm0ZpNHtaf85rAyJnX0yQdY5FmXLg8HIPQRxmN1nXSZVQVMI6ymU4M0ZmPa+30
-VXqkbeocv++1OUKczVsY5Gm2HNSaGYsuDlDnRxDDNeASJ03o1hWTGgQ2JSjGvCvk
-xxokId3LOISUGDUZu/WZdzjRvNZy04r2OelT9YphAZzZ+FTIonviz2efRjUlQDZ7
-aJYwoWJQAtTmN+ET4qgar66+KLdlbrC1paq2G8caEFwnL3mIRQclVRgZpzdI4hgJ
-poU3DZKL0I6oEfEyJgbKZ3Vpj/zrBD5/2QYn6oD4tdQaeKu4breokNvewauqT6iZ
-J9qZlZuTm3MwNyRbENgje66ZnQyjww2tiyita7lfWNeTWmA3CCC7Is5wAjh051Ot
-uFX6hnUi42MYicvQ668222Qb4hJI+QvqkSH/dzu7wsFULkI/n9bU7AElmd+gzATx
-hDqugwRiFNVmN5Ee+Feo69IFpHLXR1v/4ziYoqEA2vsKqHeHSJEfeSLf3l9hQjBa
-Z5EOv6JoY+kzLyxIpzNDbv+pND5vgF1CQC0RtIl68aoWPpILFo610OnpvNorZ4N9
-0os2oRb4gW71Z7GERLNd5O8ael3P7MqAoRo4ajf3YbE3jMKdhXz+yaWmUfs4S167
-6erGBQr17JwOE+rVFMeT
-=emhp
------END PGP SIGNATURE-----
+Thanks!
 
---OWym5pP/pDvoNOpg--
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
