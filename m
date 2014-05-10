@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125AbaEJKrV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 06:47:21 -0400
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:39809 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751102AbaEJKrU (ORCPT
+	id S1756627AbaEJKuG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 06:50:06 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:11027 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754716AbaEJKuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 06:47:20 -0400
+	Sat, 10 May 2014 06:50:03 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgUWAAQDblNXQCSg/2dsb2JhbABZgwaDPakXCgUBmhUCAoEXF3SCUxMcIxiBAiQTiEUB0U2FVoh8hEcBA48liiIBkweBd4FBOzA
-Date: Sat, 10 May 2014 12:47:15 +0200
+X-IronPort-Anti-Spam-Result: AgkWAAQDblNXQCSg/2dsb2JhbABZgwaCQXypFwoFAZoVAgKBFxd0glMTHCMYgQIkE4hFAdFNhVaIGGSERwEDjyWKIgGTB4M4O4Ew
+Date: Sat, 10 May 2014 12:49:58 +0200
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 1/1 RESEND] drivers/pnp/resource.c: remove positive test on
- unsigned values
-Message-Id: <20140510124715.e3b574aae4c8dafb0c9aefdd@skynet.be>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1 RESEND] drivers/scsi/sd.c: remove positive test on
+ unsigned value
+Message-Id: <20140510124958.b231a1d64d12ecdf97aff393@skynet.be>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -26,37 +26,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-irq and dma are both resource_size_t (derived from phys_addr_t <-> unsigned)
+val is unsigned.
 
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/pnp/resource.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/sd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/pnp/resource.c b/drivers/pnp/resource.c
-index 01712cb..782e822 100644
---- a/drivers/pnp/resource.c
-+++ b/drivers/pnp/resource.c
-@@ -360,7 +360,7 @@ int pnp_check_irq(struct pnp_dev *dev, struct resource *res)
- 		return 1;
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index efcbcd1..b54d4f8 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -296,7 +296,7 @@ protection_type_store(struct device *dev, struct device_attribute *attr,
+ 	if (err)
+ 		return err;
  
- 	/* check if the resource is valid */
--	if (*irq < 0 || *irq > 15)
-+	if (*irq > 15)
- 		return 0;
+-	if (val >= 0 && val <= SD_DIF_TYPE3_PROTECTION)
++	if (val <= SD_DIF_TYPE3_PROTECTION)
+ 		sdkp->protection_type = val;
  
- 	/* check if the resource is reserved */
-@@ -424,7 +424,7 @@ int pnp_check_dma(struct pnp_dev *dev, struct resource *res)
- 		return 1;
- 
- 	/* check if the resource is valid */
--	if (*dma < 0 || *dma == 4 || *dma > 7)
-+	if (*dma == 4 || *dma > 7)
- 		return 0;
- 
- 	/* check if the resource is reserved */
+ 	return count;
 -- 
 1.8.4.5
 
