@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833AbaEJHCH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 03:02:07 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:27964 "EHLO
+	id S932458AbaEJHDm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 03:03:42 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:27970 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756627AbaEJHCF (ORCPT
+	with ESMTP id S1756644AbaEJHCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 03:02:05 -0400
-X-AuditID: cbfee68f-b7eff6d000002b70-d8-536dceeb4ecd
+	Sat, 10 May 2014 03:02:06 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-6a-536dceed6b99
 From: Pankaj Dubey <pankaj.dubey@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
 Cc: kgene.kim@samsung.com, t.figa@samsung.com, arnd@arndb.de,
-        Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH v3 0/6] Introducing Exynos ChipId driver
-Date: Sat, 10 May 2014 16:20:13 +0900
-Message-id: <1399706419-13976-1-git-send-email-pankaj.dubey@samsung.com>
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: [PATCH v3 1/6] i2c: s3c2410: Handle i2c sys_cfg register in i2c driver
+Date: Sat, 10 May 2014 16:20:14 +0900
+Message-id: <1399706419-13976-2-git-send-email-pankaj.dubey@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1399706287-13919-1-git-send-email-y@samsung.com>
+In-reply-to: <1399706419-13976-1-git-send-email-pankaj.dubey@samsung.com>
 References: <1399706287-13919-1-git-send-email-y@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsVy+t8zA90353KDDc7qWvyddIzdonfBVTaL
-	TY+vsVpc3jWHzWLG+X1MFou2fmG3WD/jNYsDu8fvX5MYPTYvqffo27KK0ePzJrkAligum5TU
-	nMyy1CJ9uwSujLkT4gu6lSqurjrH2sDYINnFyMkhIWAiMfHXFEYIW0ziwr31bF2MXBxCAssY
-	Jbquf2aBKbqw4hJUYhGjxJyV7SwQThuTxKcvF9hAqtgEdCWevJ/LDGKLCGRLXGm8D2YzC6RL
-	PHg7gRXEFhawkPg0czpYPYuAqsS6ra1gNq+Ah8SEbxOBbA6gbQoScybZgIQ5Bewkrm1rBjtC
-	SMBWYsrRw4wgeyUEJrNL3Ni7gwlijoDEt8mHWCB6ZSU2HWCGOFpS4uCKGywTGIUXMDKsYhRN
-	LUguKE5KLzLWK07MLS7NS9dLzs/dxAgJ6/4djHcPWB9iTAYaN5FZSjQ5HxgXeSXxhsZmRham
-	JqbGRuaWZqQJK4nz3n+YFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBUfVh/g7X5pwzi3fM
-	T954vnXDnWcJVvyOF5U7kt5cfup9K8y/jvHj4zX71OsXJ1fW/dyx6ojsoxv+ol/k372unfJ+
-	t8xf+YP/plwV8/46UWnXdd7FOxSlXiW/6WJ/YfpGubjhXvXc+XKWmnNW3VipoXEktW/VqwMH
-	07QZzZWeaGr9azo6bdE0ZmklluKMREMt5qLiRADKjTe4gQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t9jAd3X53KDDXZ9N7f4O+kYu0Xvgqts
-	FpseX2O1uLxrDpvFjPP7mCwWbf3CbrF+xmsWB3aP378mMXpsXlLv0bdlFaPH501yASxRDYw2
-	GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUAXKCmUJeaU
-	AoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgz5k6IL+hWqri66hxrA2ODZBcjJ4eE
-	gInEhRWX2CBsMYkL99YD2VwcQgKLGCXmrGxngXDamCQ+fbkAVsUmoCvx5P1cZhBbRCBb4krj
-	fTCbWSBd4sHbCawgtrCAhcSnmdPB6lkEVCXWbW0Fs3kFPCQmfJsIZHMAbVOQmDPJBiTMKWAn
-	cW1bMwuILSRgKzHl6GHGCYy8CxgZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEx80z6R2M
-	qxosDjEKcDAq8fAWvs0JFmJNLCuuzD3EKMHBrCTCu+JgbrAQb0piZVVqUX58UWlOavEhxmSg
-	oyYyS4km5wNjOq8k3tDYxMzI0sjMwsjE3Jw0YSVx3oOt1oFCAumJJanZqakFqUUwW5g4OKUa
-	GC12nT7uwTB1/+HYxACdfrfkzSumPl65Om39wWIezvNvtryJ32jf2V1fNtvF/ATnx/mnRRce
-	fWKiXpok6R31w88nIk1oof2m3dm9p94v0rl20+isXt/zZdOvBFhPcX9U3bDu6drZvEdm9Fsm
-	cMi9+3R3YXvRW8Hsks91Ce8CjL6Gfn+xe9rZOE8lluKMREMt5qLiRAA9lH+u3wIAAA==
+ <1399706419-13976-1-git-send-email-pankaj.dubey@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGIsWRmVeSWpSXmKPExsVy+t8zQ92353KDDdb3a1n8nXSM3WL+kXOs
+	Fr0LrrJZbHp8jdViYdsSFouOv18YLS7vmsNmMeP8PiaL25d5LRZt/cJu8fbOdBaL1r1H2C3W
+	z3jNYrHyxCxmBz6PluYeNo/fvyYxemxeoeWxaVUnm8fmJfUefVtWMXqcPPWExePzJrkAjigu
+	m5TUnMyy1CJ9uwSujN8tP5gKfppU/Dr8mbGB8b9WFyMnh4SAicT8FZNYIWwxiQv31rN1MXJx
+	CAksY5SY9LWTEaZo/7d2qMQiRomGU41QThuTxOdzv5hAqtgEdCWevJ/LDGKLCGRLXGm8zwxS
+	xCxwgUmic/MiNpCEsIC/xJw9p8H2sQioSrx60AUW5xXwkPh8czfQOg6gdQoScybZgIQ5BTwl
+	dvyAKBESqJFY3vCCEWSmhMBLdokVzb9ZIOYISHybfIgFoldWYtMBZoirJSUOrrjBMoFReAEj
+	wypG0dSC5ILipPQiU73ixNzi0rx0veT83E2MkDiauIPx/gHrQ4zJQOMmMkuJJucD4zCvJN7Q
+	2MzIwtTE1NjI3NKMNGElcd70R0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhil476G7n3l
+	JrQyep3wnzNzebxtV82TTXtZdkHHcp9nmOWmCeqsumGl23Zd3dE47bjdl6es0W+5TY/vDhWK
+	nF2RdSKpZiXv30uB+T5NGpYrshZprpK4tWqP66SolQyHUhiOTriid/X6jOQYL3v9Il3BKM3K
+	UratG5ZOCD0+9U5ToffRD2sc+ncpsRRnJBpqMRcVJwIA9z2H/7kCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmleLIzCtJLcpLzFFi42I5/e+xgO7bc7nBBn82Klv8nXSM3WL+kXOs
+	Fr0LrrJZbHp8jdViYdsSFouOv18YLS7vmsNmMeP8PiaL25d5LRZt/cJu8fbOdBaL1r1H2C3W
+	z3jNYrHyxCxmBz6PluYeNo/fvyYxemxeoeWxaVUnm8fmJfUefVtWMXqcPPWExePzJrkAjqgG
+	RpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoLOVFMoS
+	c0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYR1jBm/W34wFfw0qfh1+DNjA+N/rS5G
+	Tg4JAROJ/d/a2SBsMYkL99YD2VwcQgKLGCUaTjVCOW1MEp/P/WICqWIT0JV48n4uM4gtIpAt
+	caXxPjNIEbPABSaJzs2LwEYJC/hLzNlzmhXEZhFQlXj1oAsszivgIfH55m7GLkYOoHUKEnMm
+	2YCEOQU8JXb8gCgREqiRWN7wgnECI+8CRoZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMFR
+	+kx6B+OqBotDjAIcjEo8vIVvc4KFWBPLiitzDzFKcDArifCuOJgbLMSbklhZlVqUH19UmpNa
+	fIgxGeioicxSosn5wASSVxJvaGxiZmRpZGZhZGJuTpqwkjjvwVbrQCGB9MSS1OzU1ILUIpgt
+	TBycUg2MSeJ/ZbPPr/5444yF1xKdMz9+dR9awrN9wb9JXgnNEWe+cBtf/PTw7Nop/67evOHv
+	9vW229TEt1+F9h4/afg9JvVjdXLkud0XVpVG+D0+/aq+SHzTWad/bEuuT13zuMmIVeii24Gz
+	P2f2PzrLoftGp+BC4dldfuZXF3AurtA50rb3ej/D+bSrv48osRRnJBpqMRcVJwIAgyVl5BYD	AAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -49,88 +56,213 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series attempts to get rid of soc_is_exynosXXXX macros
-and eventually with the help of this series we can probably get
-rid of CONFIG_SOC_EXYNOSXXXX in near future.
-Each Exynos SoC has ChipID block which can give information about
-SoC's product Id and revision number. Currently we have single
-DT binding information for this as "samsung,exynos4210-chipid".
-But Exynos4 and Exynos5 SoC series have one small difference in
-chip Id, with resepect to product id bit-masks. So it means we
-should have separate compatible string for these different series
-of SoCs. So I have added second compatible string for handling
-this difference. 
-This patch series is based on Kukjin Kim's for-next (3.14_rc1 tag)
-and prepared on top of following patch series and it's dependent
-patch series.
+Let's handle i2c interrupt re-configuration in i2c driver. This will
+help us in removing some soc specific checks from machine files.
+Since only Exynos5250, and Exynos5420 need to do this, added syscon
+based phandle to i2c device nodes of respective SoC DT files.
+Also handle saving and restoring of SYS_I2C_CFG register during
+suspend and resume of i2c driver. This will help in removing soc
+specific check from mach-exynos/pm.c.
 
-[1]: Map SYSRAM through generic SRAM bindings by Sachin Kamat.
-	http://www.spinics.net/lists/arm-kernel/msg327677.html
-[2]: Exynos PMU cleanup and refactoring.
-	https://lkml.org/lkml/2014/4/30/44
-[3]: Introduce drivers/soc and add QCOM GSBI driver.
-	https://lkml.org/lkml/2014/4/24/520
-
-Revision 2 and it's discussion can be found here
- - https://lkml.org/lkml/2014/5/6/100
-
-Changes since v2:
- - Reorganized patches as suggested by Tomasz Figa.
- - Addressed review comments of Tomasz Figa in i2c-s3c2410.c file.
-
-Changes since v1:
- - Added patch to move i2c interrupt re-configuration code from exynos.c
-   to i2c driver, as suggested by Arnd.
- - After above patch only user of SYS_I2C_CFG register is pm.c so moving
-   save/restore of this register also into i2c driver.
- - Spiltted up exynos4 and exynos5 machine descriptors to get rid from
-   soc_is_exynos4/exynos5 kind of macros, as suggested by Arnd.
- - Changed location of chipid driver to "drivers/soc".
- - Added drivers/base/soc.c provided infrastructure to make SoC specific 
-   information avaible to user space via sysfs entry, as suggested by Arnd.
-
-
-Pankaj Dubey (6):
-  i2c: s3c2410: Handle i2c sys_cfg register in i2c driver
-  ARM: EXYNOS: Remove i2c sys configuration related code
-  ARM: EXYNOS: Remove soc_is_exynos4/5 from exynos.c
-  ARM:  EXYNOS: Remove unused header inclusion from hotplug.c
-  soc: samsung: exynos-chipid: Add Exynos Chipid driver support
-  ARM: EXYNOS: Refactoring to remove soc_is_exynos macros from exynos
-
- .../bindings/arm/samsung/exynos-chipid.txt         |   21 +++
+CC: Rob Herring <robh+dt@kernel.org>
+CC: Randy Dunlap <rdunlap@infradead.org>
+CC: Wolfram Sang <wsa@the-dreams.de>
+CC: Russell King <linux@arm.linux.org.uk>
+CC: devicetree@vger.kernel.org
+CC: linux-doc@vger.kernel.org
+CC: linux-i2c@vger.kernel.org
+Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+---
  .../devicetree/bindings/arm/samsung/sysreg.txt     |    1 +
- arch/arm/Kconfig                                   |    1 +
- arch/arm/boot/dts/exynos4.dtsi                     |    2 +-
- arch/arm/boot/dts/exynos5.dtsi                     |    7 +-
- arch/arm/boot/dts/exynos5250.dtsi                  |    4 +
- arch/arm/boot/dts/exynos5420.dtsi                  |    4 +
- arch/arm/mach-exynos/exynos.c                      |  119 ++++----------
- arch/arm/mach-exynos/hotplug.c                     |    2 -
- arch/arm/mach-exynos/include/mach/map.h            |    3 -
- arch/arm/mach-exynos/platsmp.c                     |   11 +-
- arch/arm/mach-exynos/pm.c                          |   36 ++---
- arch/arm/mach-exynos/regs-sys.h                    |   22 ---
- arch/arm/plat-samsung/include/plat/cpu.h           |   60 -------
- drivers/clk/samsung/clk-exynos4.c                  |    2 +-
- drivers/cpufreq/exynos-cpufreq.c                   |    9 +-
- drivers/cpufreq/exynos-cpufreq.h                   |    1 -
- drivers/cpufreq/exynos4x12-cpufreq.c               |    5 +-
- drivers/i2c/busses/i2c-s3c2410.c                   |   32 ++++
- drivers/soc/Kconfig                                |    1 +
- drivers/soc/Makefile                               |    1 +
- drivers/soc/samsung/Kconfig                        |   10 ++
- drivers/soc/samsung/Makefile                       |    1 +
- drivers/soc/samsung/exynos-chipid.c                |  166 ++++++++++++++++++++
- include/linux/exynos-soc.h                         |   46 ++++++
- 25 files changed, 357 insertions(+), 210 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/samsung/exynos-chipid.txt
- delete mode 100644 arch/arm/mach-exynos/regs-sys.h
- create mode 100644 drivers/soc/samsung/Kconfig
- create mode 100644 drivers/soc/samsung/Makefile
- create mode 100644 drivers/soc/samsung/exynos-chipid.c
- create mode 100644 include/linux/exynos-soc.h
+ arch/arm/boot/dts/exynos5.dtsi                     |    5 +++
+ arch/arm/boot/dts/exynos5250.dtsi                  |    4 +++
+ arch/arm/boot/dts/exynos5420.dtsi                  |    4 +++
+ drivers/i2c/busses/i2c-s3c2410.c                   |   32 ++++++++++++++++++++
+ 5 files changed, 46 insertions(+)
 
+diff --git a/Documentation/devicetree/bindings/arm/samsung/sysreg.txt b/Documentation/devicetree/bindings/arm/samsung/sysreg.txt
+index 0ab3251..fd71581 100644
+--- a/Documentation/devicetree/bindings/arm/samsung/sysreg.txt
++++ b/Documentation/devicetree/bindings/arm/samsung/sysreg.txt
+@@ -3,6 +3,7 @@ SAMSUNG S5P/Exynos SoC series System Registers (SYSREG)
+ Properties:
+  - compatible : should contain "samsung,<chip name>-sysreg", "syscon";
+    For Exynos4 SoC series it should be "samsung,exynos4-sysreg", "syscon";
++   For Exynos5 SoC series it should be "samsung,exynos5-sysreg", "syscon";
+  - reg : offset and length of the register set.
+ 
+ Example:
+diff --git a/arch/arm/boot/dts/exynos5.dtsi b/arch/arm/boot/dts/exynos5.dtsi
+index 79d0608..3027e37 100644
+--- a/arch/arm/boot/dts/exynos5.dtsi
++++ b/arch/arm/boot/dts/exynos5.dtsi
+@@ -99,4 +99,9 @@
+ 		#size-cells = <0>;
+ 		status = "disabled";
+ 	};
++
++	sys_reg: syscon@10050000 {
++		compatible = "samsung,exynos5-sysreg", "syscon";
++		reg = <0x10050000 0x400>;
++	};
+ };
+diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
+index 8d724d5..46f0233 100644
+--- a/arch/arm/boot/dts/exynos5250.dtsi
++++ b/arch/arm/boot/dts/exynos5250.dtsi
+@@ -285,6 +285,7 @@
+ 		clock-names = "i2c";
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&i2c0_bus>;
++		samsung,syscon-phandle = <&sys_reg>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -298,6 +299,7 @@
+ 		clock-names = "i2c";
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&i2c1_bus>;
++		samsung,syscon-phandle = <&sys_reg>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -311,6 +313,7 @@
+ 		clock-names = "i2c";
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&i2c2_bus>;
++		samsung,syscon-phandle = <&sys_reg>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -324,6 +327,7 @@
+ 		clock-names = "i2c";
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&i2c3_bus>;
++		samsung,syscon-phandle = <&sys_reg>;
+ 		status = "disabled";
+ 	};
+ 
+diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
+index ff496ad..762128c 100644
+--- a/arch/arm/boot/dts/exynos5420.dtsi
++++ b/arch/arm/boot/dts/exynos5420.dtsi
+@@ -517,6 +517,7 @@
+ 		clock-names = "i2c";
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&i2c0_bus>;
++		samsung,syscon-phandle = <&sys_reg>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -530,6 +531,7 @@
+ 		clock-names = "i2c";
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&i2c1_bus>;
++		samsung,syscon-phandle = <&sys_reg>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -543,6 +545,7 @@
+ 		clock-names = "i2c";
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&i2c2_bus>;
++		samsung,syscon-phandle = <&sys_reg>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -556,6 +559,7 @@
+ 		clock-names = "i2c";
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&i2c3_bus>;
++		samsung,syscon-phandle = <&sys_reg>;
+ 		status = "disabled";
+ 	};
+ 
+diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
+index ae44910..e707062 100644
+--- a/drivers/i2c/busses/i2c-s3c2410.c
++++ b/drivers/i2c/busses/i2c-s3c2410.c
+@@ -39,6 +39,8 @@
+ #include <linux/of.h>
+ #include <linux/of_gpio.h>
+ #include <linux/pinctrl/consumer.h>
++#include <linux/mfd/syscon.h>
++#include <linux/regmap.h>
+ 
+ #include <asm/irq.h>
+ 
+@@ -91,6 +93,9 @@
+ /* Max time to wait for bus to become idle after a xfer (in us) */
+ #define S3C2410_IDLE_TIMEOUT	5000
+ 
++/* Exynos5 Sysreg offset */
++#define EXYNOS5_SYS_I2C_CFG	0x0234
++
+ /* i2c controller state */
+ enum s3c24xx_i2c_state {
+ 	STATE_IDLE,
+@@ -127,6 +132,8 @@ struct s3c24xx_i2c {
+ #if defined(CONFIG_ARM_S3C24XX_CPUFREQ)
+ 	struct notifier_block	freq_transition;
+ #endif
++	struct regmap		*sysreg;
++	unsigned int		sys_i2s_cfg;
+ };
+ 
+ static struct platform_device_id s3c24xx_driver_ids[] = {
+@@ -1075,6 +1082,8 @@ static void
+ s3c24xx_i2c_parse_dt(struct device_node *np, struct s3c24xx_i2c *i2c)
+ {
+ 	struct s3c2410_platform_i2c *pdata = i2c->pdata;
++	u32 val = 0;
++	int id;
+ 
+ 	if (!np)
+ 		return;
+@@ -1084,6 +1093,23 @@ s3c24xx_i2c_parse_dt(struct device_node *np, struct s3c24xx_i2c *i2c)
+ 	of_property_read_u32(np, "samsung,i2c-slave-addr", &pdata->slave_addr);
+ 	of_property_read_u32(np, "samsung,i2c-max-bus-freq",
+ 				(u32 *)&pdata->frequency);
++	/*
++	 * Exynos5's legacy i2c controller and new high speed i2c
++	 * controller have muxed interrupt sources. By default the
++	 * interrupts for 4-channel HS-I2C controller are enabled.
++	 * If node for first four channels of legacy i2c controller
++	 * are available then re-configure the interrupts via the
++	 * system register.
++	 */
++	id = of_alias_get_id(np, "i2c");
++	i2c->sysreg = syscon_regmap_lookup_by_phandle(np,
++			"samsung,syscon-phandle");
++	if (IS_ERR(i2c->sysreg)) {
++		/* As this is not compulsory do not return error */
++		pr_info("i2c-%d skipping re-configuration of interrutps\n", id);
++		return;
++	}
++	regmap_update_bits(i2c->sysreg, EXYNOS5_SYS_I2C_CFG, BIT(id), val);
+ }
+ #else
+ static void
+@@ -1268,6 +1294,9 @@ static int s3c24xx_i2c_suspend_noirq(struct device *dev)
+ 
+ 	i2c->suspended = 1;
+ 
++	if (!IS_ERR(i2c->sysreg))
++		regmap_read(i2c->sysreg, EXYNOS5_SYS_I2C_CFG, &i2c->sys_i2s_cfg);
++
+ 	return 0;
+ }
+ 
+@@ -1276,6 +1305,9 @@ static int s3c24xx_i2c_resume(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct s3c24xx_i2c *i2c = platform_get_drvdata(pdev);
+ 
++	if (!IS_ERR(i2c->sysreg))
++		regmap_write(i2c->sysreg, i2c->sys_i2s_cfg, EXYNOS5_SYS_I2C_CFG);
++
+ 	i2c->suspended = 0;
+ 	clk_prepare_enable(i2c->clk);
+ 	s3c24xx_i2c_init(i2c);
 -- 
 1.7.10.4
 
