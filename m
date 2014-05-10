@@ -1,141 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756965AbaEJA2L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 May 2014 20:28:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33918 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755387AbaEJA2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 May 2014 20:28:09 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, arozansk@redhat.com, serge@hallyn.com,
-        ebiederm@xmission.com, eparis@redhat.com, sgrubb@redhat.com
-Subject: [PATCH V2 0/6] namespaces: log namespaces per task
-Date: Fri,  9 May 2014 20:27:21 -0400
-Message-Id: <cover.1399681022.git.rgb@redhat.com>
+	id S932331AbaEJAbV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 May 2014 20:31:21 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:43543 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757834AbaEJAbU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 May 2014 20:31:20 -0400
+Date: Fri, 9 May 2014 17:31:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: josh@joshtriplett.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 24/45] torture: Choose bzImage location
+ based on architecture
+Message-ID: <20140510003113.GD8754@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140429002455.GA15461@linux.vnet.ibm.com>
+ <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1398731133-18925-24-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140507220245.GN27924@cloud>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140507220245.GN27924@cloud>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051000-7164-0000-0000-000001A52C0B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The purpose is to track namespaces in use by logged processes from the
-perspective of init_*_ns.  The first patch defines a function to generate them
-and assigns them.  The second patch provides an example of usage for
-audit_log_task_info() which is used by syscall audits, among others.
-audit_log_task() and audit_common_recv_message() would be other potential use
-cases.
+On Wed, May 07, 2014 at 03:02:46PM -0700, josh@joshtriplett.org wrote:
+> On Mon, Apr 28, 2014 at 05:25:12PM -0700, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > Currently, the scripts hard-code arch/x86/boot/bzImage, which does not
+> > work well for other architectures.  This commit therefore provides a
+> > identify_boot_image function that selects the correct bzImage location
+> > relative to the top of the Linux source tree.  This commit also adds a
+> > --bootimage argument that allows selecting some other file, for example,
+> > "vmlinux".
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> Two issues below; with those fixed,
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> 
+> >  tools/testing/selftests/rcutorture/bin/functions.sh | 21 +++++++++++++++++++++
+> >  .../selftests/rcutorture/bin/kvm-test-1-run.sh      | 11 +++++------
+> >  tools/testing/selftests/rcutorture/bin/kvm.sh       |  8 ++++++++
+> >  3 files changed, 34 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/tools/testing/selftests/rcutorture/bin/functions.sh b/tools/testing/selftests/rcutorture/bin/functions.sh
+> > index 6b2adb29b073..efa95867e1cc 100644
+> > --- a/tools/testing/selftests/rcutorture/bin/functions.sh
+> > +++ b/tools/testing/selftests/rcutorture/bin/functions.sh
+> > @@ -76,6 +76,27 @@ configfrag_hotplug_cpu () {
+> >  	grep -q '^CONFIG_HOTPLUG_CPU=y$' "$1"
+> >  }
+> >  
+> > +# identify_boot_image qemu-cmd
+> > +#
+> > +# Returns the relative path to the kernel build image.  This will be
+> > +# arch/<arch>/boot/bzImage unless overridden with the TORTURE_BOOT_IMAGE
+> > +# environment variable.
+> > +identify_boot_image () {
+> > +	if test -n "$TORTURE_BOOT_IMAGE"
+> > +	then
+> > +		echo $TORTURE_BOOT_IMAGE
+> > +	else
+> > +		case "$1" in
+> > +		qemu-system-x86_64|qemu-system-i386)
+> > +			echo arch/x86/boot/bzImage
+> > +			;;
+> > +		qemu-system-ppc64)
+> > +			echo arch/powerpc/boot/bzImage
+> > +			;;
+> 
+> *)
+>     (fail noisily rather than silently)
 
-Use a serial number per namespace (unique across one boot of one kernel)
-instead of the inode number (which is claimed to have had the right to change
-reserved and is not necessarily unique if there is more than one proc fs).  It
-could be argued that the inode numbers have now become a defacto interface and
-can't change now, but I'm proposing this approach to see if this helps address
-some of the objections to the earlier patchset.
+Good point, fixed here and in kvm-test-1-run.sh.
 
-There could also have messages added to track the creation and the destruction
-of namespaces, listing the parent for hierarchical namespaces such as pidns,
-userns, and listing other ids for non-hierarchical namespaces, as well as other
-information to help identify a namespace.
+> > +		esac
+> > +	fi
+> > +}
+> > +
+> >  # identify_qemu builddir
+> >  #
+> >  # Returns our best guess as to which qemu command is appropriate for
+> > diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> > index 7848227aa4c1..7a95f86cc85a 100755
+> > --- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> > +++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> > @@ -94,9 +94,11 @@ fi
+> >  # CONFIG_YENTA=n
+> >  if kvm-build.sh $config_template $builddir $T
+> >  then
+> > +	QEMU="`identify_qemu $builddir/vmlinux`"
+> > +	BOOT_IMAGE="`identify_boot_image $QEMU`"
+> >  	cp $builddir/Make*.out $resdir
+> >  	cp $builddir/.config $resdir
+> > -	cp $builddir/arch/x86/boot/bzImage $resdir
+> > +	cp $builddir/$BOOT_IMAGE $resdir
+> >  	parse-build.sh $resdir/Make.out $title
+> >  	if test -f $builddir.wait
+> >  	then
+> > @@ -124,9 +126,6 @@ cd $KVM
+> >  kstarttime=`awk 'BEGIN { print systime() }' < /dev/null`
+> >  echo ' ---' `date`: Starting kernel
+> >  
+> > -# Determine the appropriate flavor of qemu command.
+> > -QEMU="`identify_qemu $builddir/vmlinux`"
+> > -
+> 
+> This change seems related but undocumented.
 
-There has been some progress made for audit in net namespaces and pid
-namespaces since this previous thread.  net namespaces are now served as peers
-by one auditd in the init_net namespace with processes in a non-init_net
-namespace being able to write records if they are in the init_user_ns and have
-CAP_AUDIT_WRITE.  Processes in a non-init_pid_ns can now similarly write
-records.  As for CAP_AUDIT_READ, I just posted a patchset to check capabilities
-of userspace processes that try to join netlink broadcast groups.
+Ah, the value of QEMU is needed above to figure out where to look for
+the image.  Added a sentence to that effect to the changelog.
 
+							Thanx, Paul
 
-Questions:
-Is there a way to link serial numbers of namespaces involved in migration of a
-container to another kernel?  It sounds like what is needed is a part of a
-mangement application that is able to pull the audit rcords from constituent
-hosts to build an audit trail of a container.
-
-What additional events should list this information?
-
-Does this present any problematic information leaks?  Only CAP_AUDIT_CONTROL
-(and proposed CAP_AUDIT_READ) in init_user_ns can get to this information in
-the init namespace at the moment from audit.  *However*, the addition of the
-proc/<pid>/ns/*_snum does make it available to other processes now.
-
-
-Proposed output format:
-This differs slightly from Aristeu's patch because of the label conflict with
-"pid=" due to including it in existing records rather than it being a seperate
-record.  The serial numbers are printed in hex.
-	type=SYSCALL msg=audit(1399651071.433:72): arch=c000003e syscall=272 success=yes exit=0 a0=40000000 a1=ffffffffffffffff a2=0 a3=22 items=0 ppid=1 pid=483 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="(t-daemon)" exe="/usr/lib/systemd/systemd" netns=97 utsns=2 ipcns=1 pidns=4 userns=3 mntns=5 subj=system_u:system_r:init_t:s0 key=(null)
-
-The third patch adds access functions to get to the serial numbers in a similar
-way to inode access for namespace proc operations.
-
-The fourth patch implements, as suggested by Serge Hallyn, making these serial
-numbers available in /proc/self/ns/{ipc,mnt,net,pid,user,uts}_snum.  I chose
-"snum" instead of "seq" for consistency with inum and there are a number of
-other uses of "seq" in the namespace code.
-
-**Although it works as expected, I'm not that happy with that patch because it
-duplicates a lot of code, including minor changes to proc_ns_follow_link(),
-proc_ns_readlink(), ns_dname().  The only way I could see to get that
-information into those functions would be through dentry.  Maybe the
-information I need is already in there in d_name or d_iname?  Or I could add a
-flag to d_flags (there are 9 bits unused?) but that flag isn't useful for any
-other types of entries, so I'm not so keen to pollute it.
-
-The fifth patch exposes proc's ns entries structure which lists a number of
-useful operations per namespace type for other subsystems to use.
-
-The sixth patch converts the audit namespace serial number logging over to use
-the ns_entries access methods.
-
-The two audit patches should really be squashed down to one if the exposure of
-ns_entries is ok.
-
-
-Note: This set does not try to solve the non-init namespace audit messages and
-auditd problem yet.  That will come later, likely with additional auditd
-instances running in another namespace with a limited ability to influence the
-master auditd.  I echo Eric B's idea that messages destined for different
-namespaces would have to be tailored for that namespace with references that
-make sense (such as the right pid number reported to that pid namespace, and
-not leaking info about parents or peers).
-
-v1 -> v2:
-	Avoid rollover by switching from an int to a long long.
-	Change rollover behaviour from simply avoiding zero to raising a BUG.
-	Expose serial numbers in /proc/<pid>/ns/*_snum.
-	Expose ns_entries and use it in audit.
-
-Richard Guy Briggs (6):
-  namespaces: assign each namespace instance a serial number
-  audit: log namespace serial numbers
-  namespaces: expose namespace instance serial number in
-    proc_ns_operations
-  namespaces: expose ns instance serial numbers in proc
-  namespaces: expose ns_entries
-  audit: convert namespace serial number logging to use proc ns_entries
-
- fs/mount.h                     |    1 +
- fs/namespace.c                 |    8 ++
- fs/proc/namespaces.c           |  152 ++++++++++++++++++++++++++++++++++++----
- include/linux/audit.h          |    7 ++
- include/linux/ipc_namespace.h  |    1 +
- include/linux/nsproxy.h        |    8 ++
- include/linux/pid_namespace.h  |    1 +
- include/linux/proc_ns.h        |    2 +
- include/linux/user_namespace.h |    1 +
- include/linux/utsname.h        |    1 +
- include/net/net_namespace.h    |    1 +
- init/version.c                 |    1 +
- ipc/msgutil.c                  |    1 +
- ipc/namespace.c                |   10 +++
- kernel/audit.c                 |   21 +++++-
- kernel/nsproxy.c               |   20 +++++
- kernel/pid.c                   |    1 +
- kernel/pid_namespace.c         |    9 +++
- kernel/user.c                  |    1 +
- kernel/user_namespace.c        |    9 +++
- kernel/utsname.c               |   10 +++
- net/core/net_namespace.c       |   11 +++-
- 22 files changed, 262 insertions(+), 15 deletions(-)
+> >  # Generate -smp qemu argument.
+> >  qemu_args="-nographic $qemu_args"
+> >  cpu_count=`configNR_CPUS.sh $config_template`
+> > @@ -151,13 +150,13 @@ boot_args="`configfrag_boot_params "$boot_args" "$config_template"`"
+> >  # Generate kernel-version-specific boot parameters
+> >  boot_args="`per_version_boot_params "$boot_args" $builddir/.config $seconds`"
+> >  
+> > -echo $QEMU $qemu_args -m 512 -kernel $builddir/arch/x86/boot/bzImage -append \"$qemu_append $boot_args\" > $resdir/qemu-cmd
+> > +echo $QEMU $qemu_args -m 512 -kernel $builddir/$BOOT_IMAGE -append \"$qemu_append $boot_args\" > $resdir/qemu-cmd
+> >  if test -n "$TORTURE_BUILDONLY"
+> >  then
+> >  	echo Build-only run specified, boot/test omitted.
+> >  	exit 0
+> >  fi
+> > -$QEMU $qemu_args -m 512 -kernel $builddir/arch/x86/boot/bzImage -append "$qemu_append $boot_args"; echo $? > $resdir/qemu-retval &
+> > +$QEMU $qemu_args -m 512 -kernel $builddir/$BOOT_IMAGE -append "$qemu_append $boot_args"; echo $? > $resdir/qemu-retval &
+> >  qemu_pid=$!
+> >  commandcompleted=0
+> >  echo Monitoring qemu job at pid $qemu_pid
+> > diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
+> > index 9b838c372698..4eed2a4f42c7 100644
+> > --- a/tools/testing/selftests/rcutorture/bin/kvm.sh
+> > +++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
+> > @@ -39,6 +39,7 @@ dryrun=""
+> >  KVM="`pwd`/tools/testing/selftests/rcutorture"; export KVM
+> >  PATH=${KVM}/bin:$PATH; export PATH
+> >  TORTURE_DEFCONFIG=defconfig
+> > +TORTURE_BOOT_IMAGE=""
+> >  TORTURE_INITRD="$KVM/initrd"; export TORTURE_INITRD
+> >  TORTURE_KMAKE_ARG=""
+> >  TORTURE_SUITE=rcu
+> > @@ -53,6 +54,7 @@ kversion=""
+> >  usage () {
+> >  	echo "Usage: $scriptname optional arguments:"
+> >  	echo "       --bootargs kernel-boot-arguments"
+> > +	echo "       --bootimage relative-path-to-kernel-boot-image"
+> >  	echo "       --buildonly"
+> >  	echo "       --configs \"config-file list\""
+> >  	echo "       --cpus N"
+> > @@ -80,6 +82,11 @@ do
+> >  		TORTURE_BOOTARGS="$2"
+> >  		shift
+> >  		;;
+> > +	--bootimage)
+> > +		checkarg --bootimage "(relative path to kernel boot image)" "$#" "$2" '[a-zA-Z0-9][a-zA-Z0-9_]*' '^--'
+> > +		TORTURE_BOOT_IMAGE="$2"
+> > +		shift
+> > +		;;
+> >  	--buildonly)
+> >  		TORTURE_BUILDONLY=1
+> >  		;;
+> > @@ -245,6 +252,7 @@ CONFIGFRAG="$CONFIGFRAG"; export CONFIGFRAG
+> >  KVM="$KVM"; export KVM
+> >  KVPATH="$KVPATH"; export KVPATH
+> >  PATH="$PATH"; export PATH
+> > +TORTURE_BOOT_IMAGE="$TORTURE_BOOT_IMAGE"; export TORTURE_BOOT_IMAGE
+> >  TORTURE_BUILDONLY="$TORTURE_BUILDONLY"; export TORTURE_BUILDONLY
+> >  TORTURE_DEFCONFIG="$TORTURE_DEFCONFIG"; export TORTURE_DEFCONFIG
+> >  TORTURE_INITRD="$TORTURE_INITRD"; export TORTURE_INITRD
+> > -- 
+> > 1.8.1.5
+> > 
+> 
 
