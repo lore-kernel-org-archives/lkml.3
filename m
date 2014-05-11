@@ -1,92 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934371AbaEKTvI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:51:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48156 "EHLO
+	id S933060AbaEKTWq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:22:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48132 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933093AbaEKTWz (ORCPT
+	with ESMTP id S933011AbaEKTWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:22:55 -0400
+	Sun, 11 May 2014 15:22:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.14 32/83] b43: Fix machine check error due to improper access of B43_MMIO_PSM_PHY_HDR
-Date: Sun, 11 May 2014 21:19:33 +0200
-Message-Id: <20140511191911.398933860@linuxfoundation.org>
+        James Hogan <james.hogan@imgtec.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Gleb Natapov <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, Sanjay Lal <sanjayl@kymasys.com>,
+        linux-mips@linux-mips.org, kvm@vger.kernel.org
+Subject: [PATCH 3.10 09/48] MIPS: KVM: Pass reserved instruction exceptions to guest
+Date: Sun, 11 May 2014 21:19:43 +0200
+Message-Id: <20140511191949.401773094@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
-References: <20140511191907.024339448@linuxfoundation.org>
+In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
+References: <20140511191948.079900414@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Rafał Miłecki <zajec5@gmail.com>
+From: James Hogan <james.hogan@imgtec.com>
 
-commit 12cd43c6ed6da7bf7c5afbd74da6959cda6d056b upstream.
+commit 15505679362270d02c449626385cb74af8905514 upstream.
 
-Register B43_MMIO_PSM_PHY_HDR is 16 bit one, so accessing it with 32b
-functions isn't safe. On my machine it causes delayed (!) CPU exception:
+Previously a reserved instruction exception while in guest code would
+cause a KVM internal error if kvm_mips_handle_ri() didn't recognise the
+instruction (including a RDHWR from an unrecognised hardware register).
 
-Disabling lock debugging due to kernel taint
-mce: [Hardware Error]: CPU 0: Machine Check Exception: 4 Bank 4: b200000000070f0f
-mce: [Hardware Error]: TSC 164083803dc
-mce: [Hardware Error]: PROCESSOR 2:20fc2 TIME 1396650505 SOCKET 0 APIC 0 microcode 0
-mce: [Hardware Error]: Run the above through 'mcelog --ascii'
-mce: [Hardware Error]: Machine check: Processor context corrupt
-Kernel panic - not syncing: Fatal machine check on current CPU
-Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
+However the guest OS should really have the opportunity to catch the
+exception so that it can take the appropriate actions such as sending a
+SIGILL to the guest user process or emulating the instruction itself.
 
-Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Therefore in these cases emulate a guest RI exception and only return
+EMULATE_FAIL if that fails, being careful to revert the PC first in case
+the exception occurred in a branch delay slot in which case the PC will
+already point to the branch target.
+
+Also turn the printk messages relating to these cases into kvm_debug
+messages so that they aren't usually visible.
+
+This allows crashme to run in the guest without killing the entire VM.
+
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Gleb Natapov <gleb@kernel.org>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Sanjay Lal <sanjayl@kymasys.com>
+Cc: linux-mips@linux-mips.org
+Cc: kvm@vger.kernel.org
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/phy_n.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ arch/mips/kvm/kvm_mips_emul.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/b43/phy_n.c
-+++ b/drivers/net/wireless/b43/phy_n.c
-@@ -5176,22 +5176,22 @@ static void b43_nphy_channel_setup(struc
- 	int ch = new_channel->hw_value;
+--- a/arch/mips/kvm/kvm_mips_emul.c
++++ b/arch/mips/kvm/kvm_mips_emul.c
+@@ -1571,17 +1571,17 @@ kvm_mips_handle_ri(unsigned long cause,
+ 			arch->gprs[rt] = kvm_read_c0_guest_userlocal(cop0);
+ #else
+ 			/* UserLocal not implemented */
+-			er = kvm_mips_emulate_ri_exc(cause, opc, run, vcpu);
++			er = EMULATE_FAIL;
+ #endif
+ 			break;
  
- 	u16 old_band_5ghz;
--	u32 tmp32;
-+	u16 tmp16;
- 
- 	old_band_5ghz =
- 		b43_phy_read(dev, B43_NPHY_BANDCTL) & B43_NPHY_BANDCTL_5GHZ;
- 	if (new_channel->band == IEEE80211_BAND_5GHZ && !old_band_5ghz) {
--		tmp32 = b43_read32(dev, B43_MMIO_PSM_PHY_HDR);
--		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32 | 4);
-+		tmp16 = b43_read16(dev, B43_MMIO_PSM_PHY_HDR);
-+		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16 | 4);
- 		b43_phy_set(dev, B43_PHY_B_BBCFG, 0xC000);
--		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32);
-+		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16);
- 		b43_phy_set(dev, B43_NPHY_BANDCTL, B43_NPHY_BANDCTL_5GHZ);
- 	} else if (new_channel->band == IEEE80211_BAND_2GHZ && old_band_5ghz) {
- 		b43_phy_mask(dev, B43_NPHY_BANDCTL, ~B43_NPHY_BANDCTL_5GHZ);
--		tmp32 = b43_read32(dev, B43_MMIO_PSM_PHY_HDR);
--		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32 | 4);
-+		tmp16 = b43_read16(dev, B43_MMIO_PSM_PHY_HDR);
-+		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16 | 4);
- 		b43_phy_mask(dev, B43_PHY_B_BBCFG, 0x3FFF);
--		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32);
-+		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16);
+ 		default:
+-			printk("RDHWR not supported\n");
++			kvm_debug("RDHWR %#x not supported @ %p\n", rd, opc);
+ 			er = EMULATE_FAIL;
+ 			break;
+ 		}
+ 	} else {
+-		printk("Emulate RI not supported @ %p: %#x\n", opc, inst);
++		kvm_debug("Emulate RI not supported @ %p: %#x\n", opc, inst);
+ 		er = EMULATE_FAIL;
  	}
  
- 	b43_chantab_phy_upload(dev, e);
+@@ -1590,6 +1590,7 @@ kvm_mips_handle_ri(unsigned long cause,
+ 	 */
+ 	if (er == EMULATE_FAIL) {
+ 		vcpu->arch.pc = curr_pc;
++		er = kvm_mips_emulate_ri_exc(cause, opc, run, vcpu);
+ 	}
+ 	return er;
+ }
 
 
