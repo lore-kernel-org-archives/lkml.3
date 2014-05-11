@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964783AbaEKT0j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:26:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48501 "EHLO
+	id S934055AbaEKT0s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:26:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48516 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932825AbaEKT0c (ORCPT
+	with ESMTP id S964785AbaEKT0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:26:32 -0400
+	Sun, 11 May 2014 15:26:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Subject: [PATCH 3.4 01/22] drivers/tty/hvc: dont free hvc_console_setup after init
-Date: Sun, 11 May 2014 21:21:09 +0200
-Message-Id: <20140511192103.942552390@linuxfoundation.org>
+        Huacai Chen <chenhc@lemote.com>, John Crispin <john@phrozen.org>,
+        "Steven J. Hill" <Steven.Hill@imgtec.com>,
+        Aurelien Jarno <aurelien@aurel32.net>,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
+Subject: [PATCH 3.4 04/22] MIPS: Hibernate: Flush TLB entries in swsusp_arch_resume()
+Date: Sun, 11 May 2014 21:21:12 +0200
+Message-Id: <20140511192104.339770099@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511192103.733723493@linuxfoundation.org>
 References: <20140511192103.733723493@linuxfoundation.org>
@@ -26,33 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+From: Huacai Chen <chenhc@lemote.com>
 
-commit 501fed45b7e8836ee9373f4d31e2d85e3db6103a upstream.
+commit c14af233fbe279d0e561ecf84f1208b1bae087ef upstream.
 
-When 'console=hvc0' is specified to the kernel parameter in x86 KVM guest,
-hvc console is setup within a kthread. However, that will cause SEGV
-and the boot will fail when the driver is builtin to the kernel,
-because currently hvc_console_setup() is annotated with '__init'. This
-patch removes '__init' to boot the guest successfully with 'console=hvc0'.
+The original MIPS hibernate code flushes cache and TLB entries in
+swsusp_arch_resume(). But they are removed in Commit 44eeab67416711
+(MIPS: Hibernation: Remove SMP TLB and cacheflushing code.). A cross-
+CPU flush is surely unnecessary because all but the local CPU have
+already been disabled. But a local flush (at least the TLB flush) is
+needed. When we do hibernation on Loongson-3 with an E1000E NIC, it is
+very easy to produce a kernel panic (kernel page fault, or unaligned
+access). The root cause is E1000E driver use vzalloc_node() to allocate
+pages, the stale TLB entries of the booting kernel will be misused by
+the resumed target kernel.
 
-Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Cc: John Crispin <john@phrozen.org>
+Cc: Steven J. Hill <Steven.Hill@imgtec.com>
+Cc: Aurelien Jarno <aurelien@aurel32.net>
+Cc: linux-mips@linux-mips.org
+Cc: Fuxin Zhang <zhangfx@lemote.com>
+Cc: Zhangjin Wu <wuzhangjin@gmail.com>
+Patchwork: https://patchwork.linux-mips.org/patch/6643/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/hvc/hvc_console.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/mips/power/hibernate.S |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/tty/hvc/hvc_console.c
-+++ b/drivers/tty/hvc/hvc_console.c
-@@ -190,7 +190,7 @@ static struct tty_driver *hvc_console_de
- 	return hvc_driver;
- }
- 
--static int __init hvc_console_setup(struct console *co, char *options)
-+static int hvc_console_setup(struct console *co, char *options)
- {	
- 	if (co->index < 0 || co->index >= MAX_NR_HVC_CONSOLES)
- 		return -ENODEV;
+--- a/arch/mips/power/hibernate.S
++++ b/arch/mips/power/hibernate.S
+@@ -44,6 +44,7 @@ LEAF(swsusp_arch_resume)
+ 	bne t1, t3, 1b
+ 	PTR_L t0, PBE_NEXT(t0)
+ 	bnez t0, 0b
++	jal local_flush_tlb_all /* Avoid TLB mismatch after kernel resume */
+ 	PTR_LA t0, saved_regs
+ 	PTR_L ra, PT_R31(t0)
+ 	PTR_L sp, PT_R29(t0)
 
 
