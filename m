@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933929AbaEKT0I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:26:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48455 "EHLO
+	id S933991AbaEKT0W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:26:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48480 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933911AbaEKT0B (ORCPT
+	with ESMTP id S933425AbaEKT0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:26:01 -0400
+	Sun, 11 May 2014 15:26:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 80/83] cpufreq: unicore32: fix typo issue for clk
-Date: Sun, 11 May 2014 21:20:21 +0200
-Message-Id: <20140511191917.372804782@linuxfoundation.org>
+        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
+Subject: [PATCH 3.10 44/48] dm thin: fix dangling bio in process_deferred_bios error path
+Date: Sun, 11 May 2014 21:20:18 +0200
+Message-Id: <20140511191954.033457231@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
-References: <20140511191907.024339448@linuxfoundation.org>
+In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
+References: <20140511191948.079900414@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Chen Gang <gang.chen.5i5j@gmail.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit b4ddad95020e65cfbbf9aee63d3bcdf682794ade upstream.
+commit fe76cd88e654124d1431bb662a0fc6e99ca811a5 upstream.
 
-Need use 'clk' instead of 'mclk', which is the original removed local
-variable.
+If unable to ensure_next_mapping() we must add the current bio, which
+was removed from the @bios list via bio_list_pop, back to the
+deferred_bios list before all the remaining @bios.
 
-The related original commit:
-
-  "652ed95 cpufreq: introduce cpufreq_generic_get() routine"
-
-The related error with allmodconfig for unicore32:
-
-    CC      drivers/cpufreq/unicore2-cpufreq.o
-  drivers/cpufreq/unicore2-cpufreq.c: In function ‘ucv2_target’:
-  drivers/cpufreq/unicore2-cpufreq.c:48: error: ‘struct cpufreq_policy’ has no member named ‘mclk’
-  make[2]: *** [drivers/cpufreq/unicore2-cpufreq.o] Error 1
-  make[1]: *** [drivers/cpufreq] Error 2
-  make: *** [drivers] Error 2
-
-Fixes: 652ed95d5fa6 (cpufreq: introduce cpufreq_generic_get() routine)
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/cpufreq/unicore2-cpufreq.c |    2 +-
+ drivers/md/dm-thin.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/cpufreq/unicore2-cpufreq.c
-+++ b/drivers/cpufreq/unicore2-cpufreq.c
-@@ -45,7 +45,7 @@ static int ucv2_target(struct cpufreq_po
- 	freqs.new = target_freq;
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -1322,9 +1322,9 @@ static void process_deferred_bios(struct
+ 		 */
+ 		if (ensure_next_mapping(pool)) {
+ 			spin_lock_irqsave(&pool->lock, flags);
++			bio_list_add(&pool->deferred_bios, bio);
+ 			bio_list_merge(&pool->deferred_bios, &bios);
+ 			spin_unlock_irqrestore(&pool->lock, flags);
+-
+ 			break;
+ 		}
  
- 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
--	ret = clk_set_rate(policy->mclk, target_freq * 1000);
-+	ret = clk_set_rate(policy->clk, target_freq * 1000);
- 	cpufreq_notify_post_transition(policy, &freqs, ret);
- 
- 	return ret;
 
 
