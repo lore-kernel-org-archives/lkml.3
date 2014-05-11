@@ -1,130 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933073AbaEKUJH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 16:09:07 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:38206 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758384AbaEKUJE (ORCPT
+	id S1758144AbaEKUQl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 16:16:41 -0400
+Received: from yotta.elopez.com.ar ([31.220.24.173]:52032 "EHLO
+	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438AbaEKUQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 16:09:04 -0400
-Message-ID: <536FD89E.8030904@linux.vnet.ibm.com>
-Date: Mon, 12 May 2014 01:37:58 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Sun, 11 May 2014 16:16:40 -0400
+From: =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>
+To: rdunlap@infradead.org
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>
+Subject: [PATCH] Documentation/DMA-API-HOWTO.txt: fix duplicated word
+Date: Sun, 11 May 2014 17:15:24 -0300
+Message-Id: <1399839324-21773-1-git-send-email-emilio@elopez.com.ar>
+X-Mailer: git-send-email 1.9.2
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, peterz@infradead.org,
-        tglx@linutronix.de, mingo@kernel.org, rusty@rustcorp.com.au,
-        fweisbec@gmail.com, hch@infradead.org, mgorman@suse.de,
-        riel@redhat.com, bp@suse.de, rostedt@goodmis.org, mgalbraith@suse.de,
-        ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
-        rjw@rjwysocki.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] CPU hotplug, stop-machine: Plug race-window that
- leads to "IPI-to-offline-CPU"
-References: <20140506180213.14375.5904.stgit@srivatsabhat.in.ibm.com> <20140506180258.14375.20181.stgit@srivatsabhat.in.ibm.com> <20140506134054.8cd531296c8aa5d9c3eff958@linux-foundation.org> <20140506204248.GH27738@htj.dyndns.org> <536953C4.8030201@linux.vnet.ibm.com> <53695BCF.5040504@linux.vnet.ibm.com> <20140510030635.GC22539@mtj.dyndns.org>
-In-Reply-To: <20140510030635.GC22539@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051120-4790-0000-0000-0000015AA37B
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2014 08:36 AM, Tejun Heo wrote:
-> On Wed, May 07, 2014 at 03:31:51AM +0530, Srivatsa S. Bhat wrote:
->> diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
->> index 01fbae5..7abb361 100644
->> --- a/kernel/stop_machine.c
->> +++ b/kernel/stop_machine.c
->> @@ -165,12 +165,13 @@ static void ack_state(struct multi_stop_data *msdata)
->>  		set_state(msdata, msdata->state + 1);
->>  }
->>  
->> +
-> 
-> Why add a new line here?
+"coherent" is written twice when it should be just once
 
-Argh, a stray newline.. will remove it.
+Signed-off-by: Emilio López <emilio@elopez.com.ar>
+---
 
-> 
->>  /* This is the cpu_stop function which stops the CPU. */
->>  static int multi_cpu_stop(void *data)
->>  {
->>  	struct multi_stop_data *msdata = data;
->>  	enum multi_stop_state curstate = MULTI_STOP_NONE;
->> -	int cpu = smp_processor_id(), err = 0;
->> +	int cpu = smp_processor_id(), num_active_cpus, err = 0;
-> 
-> 	TYPE var0 = INIT0, var1, var2 = INIT2;
-> 
-> looks kinda weird.  Maybe collect initialized ones to one side or
-> separate out uninitialized one to a separate declaration?
->
+The sentence still doesn't sound entirely correct in my head, maybe 
+someone can propose a better rewording.
 
-Yeah, now that you point out, it does look very odd. I don't
-remember why I wrote it that way in the first place! :-(
-I'll fix this in the next version. Thanks!
+ Documentation/DMA-API-HOWTO.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Also, isn't nr_active_cpus more common way of naming it?
-> 
-
-Sure, will use this convention.
-
->>  	unsigned long flags;
->>  	bool is_active;
->>  
->> @@ -180,15 +181,38 @@ static int multi_cpu_stop(void *data)
->>  	 */
->>  	local_save_flags(flags);
->>  
->> -	if (!msdata->active_cpus)
->> +	if (!msdata->active_cpus) {
->>  		is_active = cpu == cpumask_first(cpu_online_mask);
->> -	else
->> +		num_active_cpus = 1;
->> +	} else {
->>  		is_active = cpumask_test_cpu(cpu, msdata->active_cpus);
->> +		num_active_cpus = cpumask_weight(msdata->active_cpus);
->> +	}
->>  
->>  	/* Simple state machine */
->>  	do {
->>  		/* Chill out and ensure we re-read multi_stop_state. */
->>  		cpu_relax();
->> +
->> +		/*
->> +		 * In the case of CPU offline, we don't want the other CPUs to
->> +		 * send IPIs to the active_cpu (the one going offline) after it
->> +		 * has entered the _DISABLE_IRQ state (because, then it will
->> +		 * notice the IPIs only after it goes offline). So ensure that
->> +		 * the active_cpu always follows the others while entering
->> +		 * each subsequent state in this state-machine.
->> +		 *
->> +		 * msdata->thread_ack tracks the number of CPUs that are yet to
->> +		 * move to the next state, during each transition. So make the
->> +		 * active_cpu(s) wait until ->thread_ack indicates that the
->> +		 * active_cpus are the only ones left to complete the transition.
->> +		 */
->> +		if (is_active) {
->> +			/* Wait until all the non-active threads ack the state */
->> +			while (atomic_read(&msdata->thread_ack) > num_active_cpus)
->> +				cpu_relax();
->> +		}
-> 
-> Wouldn't it be cleaner to separate this out to a separate stage so
-> that there are two separate DISABLE_IRQ stages - sth like
-> MULTI_STOP_DISABLE_IRQ_INACTIVE and MULTI_STOP_DISABLE_IRQ_ACTIVE?
-> The above adds an ad-hoc mechanism on top of the existing mechanism
-> which is built to sequence similar things anyway.
->
-
-Indeed, that looks like a much more elegant method! Thanks a lot for the
-suggestion Tejun, I'll use that in the next version of the patchset.
-
-Thank you!
-
-Regards,
-Srivatsa S. Bhat
+diff --git a/Documentation/DMA-API-HOWTO.txt b/Documentation/DMA-API-HOWTO.txt
+index 5e98303..4ede25a 100644
+--- a/Documentation/DMA-API-HOWTO.txt
++++ b/Documentation/DMA-API-HOWTO.txt
+@@ -192,7 +192,7 @@ the case would look like this:
+ 		goto ignore_this_device;
+ 	}
+ 
+-The coherent coherent mask will always be able to set the same or a
++The coherent mask will always be able to set the same or a
+ smaller mask as the streaming mask. However for the rare case that a
+ device driver only uses consistent allocations, one would have to
+ check the return value from dma_set_coherent_mask().
+-- 
+1.9.2
 
