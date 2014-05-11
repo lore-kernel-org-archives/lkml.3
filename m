@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933193AbaEKTXO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:23:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48184 "EHLO
+	id S933233AbaEKTXY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:23:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933125AbaEKTXK (ORCPT
+	with ESMTP id S933212AbaEKTXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:23:10 -0400
+	Sun, 11 May 2014 15:23:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 3.10 23/48] mach64: fix cursor when character width is not a multiple of 8 pixels
-Date: Sun, 11 May 2014 21:19:57 +0200
-Message-Id: <20140511191951.259609222@linuxfoundation.org>
+        Dave Jiang <dave.jiang@intel.com>,
+        Ed Ciechanowski <ed.ciechanowski@intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 25/48] libata/ahci: accommodate tag ordered controllers
+Date: Sun, 11 May 2014 21:19:59 +0200
+Message-Id: <20140511191951.526586452@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
 References: <20140511191948.079900414@linuxfoundation.org>
@@ -27,88 +29,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 43751a1b8ee2e70ce392bf31ef3133da324e68b3 upstream.
+commit 8a4aeec8d2d6a3edeffbdfae451cdf05cbf0fefd upstream.
 
-This patch fixes the hardware cursor on mach64 when font width is not a
-multiple of 8 pixels.
+The AHCI spec allows implementations to issue commands in tag order
+rather than FIFO order:
 
-If you load such a font, the cursor is expanded to the next 8-byte
-boundary and a part of the next character after the cursor is not
-visible.
-For example, when you load a font with 12-pixel width, the cursor width
-is 16 pixels and when the cursor is displayed, 4 pixels of the next
-character are not visible.
+	5.3.2.12 P:SelectCmd
+	HBA sets pSlotLoc = (pSlotLoc + 1) mod (CAP.NCS + 1)
+	or HBA selects the command to issue that has had the
+	PxCI bit set to '1' longer than any other command
+	pending to be issued.
 
-The reason is this: atyfb_cursor is called with proper parameters to
-load an image that is 12-pixel wide. However, the number is aligned on
-the next 8-pixel boundary on the line
-"unsigned int width = (cursor->image.width + 7) >> 3;" and the whole
-function acts as it is was loading a 16-pixel image.
+The result is that commands posted sequentially (time-wise) may play out
+of sequence when issued by hardware.
 
-This patch fixes it so that the value written to the framebuffer is
-padded with 0xaaaa (the transparent pattern) when the image size it not
-a multiple of 8 pixels. The transparent pattern causes that the cursor
-will not interfere with the next character.
+This behavior has likely been hidden by drives that arrange for commands
+to complete in issue order.  However, it appears recent drives (two from
+different vendors that we have found so far) inflict out-of-order
+completions as a matter of course.  So, we need to take care to maintain
+ordered submission, otherwise we risk triggering a drive to fall out of
+sequential-io automation and back to random-io processing, which incurs
+large latency and degrades throughput.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+This issue was found in simple benchmarks where QD=2 seq-write
+performance was 30-50% *greater* than QD=32 seq-write performance.
+
+Tagging for -stable and making the change globally since it has a low
+risk-to-reward ratio.  Also, word is that recent versions of an unnamed
+OS also does it this way now.  So, drives in the field are already
+experienced with this tag ordering scheme.
+
+Cc: Dave Jiang <dave.jiang@intel.com>
+Cc: Ed Ciechanowski <ed.ciechanowski@intel.com>
+Reviewed-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/aty/mach64_cursor.c |   22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
+ drivers/ata/libata-core.c |   21 +++++++++++++--------
+ include/linux/libata.h    |    1 +
+ 2 files changed, 14 insertions(+), 8 deletions(-)
 
---- a/drivers/video/aty/mach64_cursor.c
-+++ b/drivers/video/aty/mach64_cursor.c
-@@ -5,6 +5,7 @@
- #include <linux/fb.h>
- #include <linux/init.h>
- #include <linux/string.h>
-+#include "../fb_draw.h"
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4765,21 +4765,26 @@ void swap_buf_le16(u16 *buf, unsigned in
+ static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
+ {
+ 	struct ata_queued_cmd *qc = NULL;
+-	unsigned int i;
++	unsigned int i, tag;
  
- #include <asm/io.h>
+ 	/* no command while frozen */
+ 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
+ 		return NULL;
  
-@@ -157,24 +158,33 @@ static int atyfb_cursor(struct fb_info *
- 
- 	    for (i = 0; i < height; i++) {
- 		for (j = 0; j < width; j++) {
-+			u16 l = 0xaaaa;
- 			b = *src++;
- 			m = *msk++;
- 			switch (cursor->rop) {
- 			case ROP_XOR:
- 			    // Upper 4 bits of mask data
--			    fb_writeb(cursor_bits_lookup[(b ^ m) >> 4], dst++);
-+			    l = cursor_bits_lookup[(b ^ m) >> 4] |
- 			    // Lower 4 bits of mask
--			    fb_writeb(cursor_bits_lookup[(b ^ m) & 0x0f],
--				      dst++);
-+				    (cursor_bits_lookup[(b ^ m) & 0x0f] << 8);
- 			    break;
- 			case ROP_COPY:
- 			    // Upper 4 bits of mask data
--			    fb_writeb(cursor_bits_lookup[(b & m) >> 4], dst++);
-+			    l = cursor_bits_lookup[(b & m) >> 4] |
- 			    // Lower 4 bits of mask
--			    fb_writeb(cursor_bits_lookup[(b & m) & 0x0f],
--				      dst++);
-+				    (cursor_bits_lookup[(b & m) & 0x0f] << 8);
- 			    break;
- 			}
-+			/*
-+			 * If cursor size is not a multiple of 8 characters
-+			 * we must pad it with transparent pattern (0xaaaa).
-+			 */
-+			if ((j + 1) * 8 > cursor->image.width) {
-+				l = comp(l, 0xaaaa,
-+				    (1 << ((cursor->image.width & 7) * 2)) - 1);
-+			}
-+			fb_writeb(l & 0xff, dst++);
-+			fb_writeb(l >> 8, dst++);
+-	/* the last tag is reserved for internal command. */
+-	for (i = 0; i < ATA_MAX_QUEUE - 1; i++)
+-		if (!test_and_set_bit(i, &ap->qc_allocated)) {
+-			qc = __ata_qc_from_tag(ap, i);
++	for (i = 0; i < ATA_MAX_QUEUE; i++) {
++		tag = (i + ap->last_tag + 1) % ATA_MAX_QUEUE;
++
++		/* the last tag is reserved for internal command. */
++		if (tag == ATA_TAG_INTERNAL)
++			continue;
++
++		if (!test_and_set_bit(tag, &ap->qc_allocated)) {
++			qc = __ata_qc_from_tag(ap, tag);
++			qc->tag = tag;
++			ap->last_tag = tag;
+ 			break;
  		}
- 		dst += offset;
- 	    }
+-
+-	if (qc)
+-		qc->tag = i;
++	}
+ 
+ 	return qc;
+ }
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -772,6 +772,7 @@ struct ata_port {
+ 	unsigned long		qc_allocated;
+ 	unsigned int		qc_active;
+ 	int			nr_active_links; /* #links with active qcs */
++	unsigned int		last_tag;	/* track next tag hw expects */
+ 
+ 	struct ata_link		link;		/* host default link */
+ 	struct ata_link		*slave_link;	/* see ata_slave_link_init() */
 
 
