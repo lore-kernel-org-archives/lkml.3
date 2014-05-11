@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757867AbaEKTZo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:25:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48421 "EHLO
+	id S933873AbaEKTZx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:25:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48434 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757101AbaEKTZj (ORCPT
+	with ESMTP id S1757927AbaEKTZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:25:39 -0400
+	Sun, 11 May 2014 15:25:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.14 63/83] Skip intel_crt_init for Dell XPS 8700
-Date: Sun, 11 May 2014 21:20:04 +0200
-Message-Id: <20140511191915.113379186@linuxfoundation.org>
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.14 75/83] Input: synaptics - add min/max quirk for ThinkPad T431s, L440, L540, S1 Yoga and X1
+Date: Sun, 11 May 2014 21:20:16 +0200
+Message-Id: <20140511191916.697289079@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -26,38 +28,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Giacomo Comes <comes@naic.edu>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 10b6ee4a87811a110cb01eaca01eb04da6801baf upstream.
+commit 46a2986ebbe18757c2d8c352f8fb6e0f4f0754e3 upstream.
 
-The Dell XPS 8700 has a onboard Display port and HDMI port and no VGA port.
-The call intel_crt_init freeze the machine, so skip such call.
+We expect that all the Haswell series will need such quirks, sigh.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73559
-Signed-off-by: Giacomo Comes <comes at naic.edu>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+The T431s seems to be T430 hardware in a T440s case, using the T440s touchpad,
+with the same min/max issue.
+
+The X1 Carbon 3rd generation name says 2nd while it is a 3rd generation.
+
+The X1 and T431s share a PnPID with the T540p, but the reported ranges are
+closer to those of the T440s.
+
+HdG: Squashed 5 quirk patches into one. T431s + L440 + L540 are written by me,
+S1 Yoga and X1 are written by Benjamin Tissoires.
+
+Hdg: Standardized S1 Yoga and X1 values, Yoga uses the same touchpad as the
+X240, X1 uses the same touchpad as the T440.
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_crt.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/input/mouse/synaptics.c |   42 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_crt.c
-+++ b/drivers/gpu/drm/i915/intel_crt.c
-@@ -765,6 +765,14 @@ static const struct dmi_system_id intel_
- 			DMI_MATCH(DMI_PRODUCT_NAME, "ZGB"),
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -1515,6 +1515,14 @@ static const struct dmi_system_id min_ma
+ 		.driver_data = (int []){1232, 5710, 1156, 4696},
+ 	},
+ 	{
++		/* Lenovo ThinkPad T431s */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T431"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
+ 		/* Lenovo ThinkPad T440s */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+@@ -1523,6 +1531,14 @@ static const struct dmi_system_id min_ma
+ 		.driver_data = (int []){1024, 5112, 2024, 4832},
+ 	},
+ 	{
++		/* Lenovo ThinkPad L440 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad L440"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
+ 		/* Lenovo ThinkPad T540p */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+@@ -1530,6 +1546,32 @@ static const struct dmi_system_id min_ma
  		},
+ 		.driver_data = (int []){1024, 5056, 2058, 4832},
  	},
 +	{
-+		.callback = intel_no_crt_dmi_callback,
-+		.ident = "DELL XPS 8700",
++		/* Lenovo ThinkPad L540 */
 +		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "XPS 8700"),
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad L540"),
 +		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
 +	},
++	{
++		/* Lenovo Yoga S1 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_EXACT_MATCH(DMI_PRODUCT_VERSION,
++					"ThinkPad S1 Yoga"),
++		},
++		.driver_data = (int []){1232, 5710, 1156, 4696},
++	},
++	{
++		/* Lenovo ThinkPad X1 Carbon Haswell (3rd generation) */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION,
++					"ThinkPad X1 Carbon 2nd"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
+ #endif
  	{ }
  };
- 
 
 
