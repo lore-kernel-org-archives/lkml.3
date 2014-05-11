@@ -1,42 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758108AbaEKLrz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 07:47:55 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:55799 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757950AbaEKLry (ORCPT
+	id S1758088AbaEKMMd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 08:12:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60205 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757226AbaEKMMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 07:47:54 -0400
-Message-ID: <536F6363.7060007@gmail.com>
-Date: Sun, 11 May 2014 17:17:47 +0530
-From: Paul Davies C <pauldaviesc@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-CC: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCH 2/3] Enclose complex macro with parantheses in staging/octeon-usb/octeon-hcd.c
-References: <1399795703-6681-1-git-send-email-pauldaviesc@gmail.com> <1399795703-6681-3-git-send-email-pauldaviesc@gmail.com> <20140511105546.GC6670@drone.musicnaut.iki.fi>
-In-Reply-To: <20140511105546.GC6670@drone.musicnaut.iki.fi>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 11 May 2014 08:12:31 -0400
+Message-ID: <1399810332.11946.127.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: e1000 crash on 3.15.0-rc4
+From: Ben Hutchings <ben@decadent.org.uk>
+To: bo.li.liu@oracle.com
+Cc: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 11 May 2014 13:12:12 +0100
+In-Reply-To: <20140507053245.GB15783@localhost.localdomain>
+References: <20140507053245.GB15783@localhost.localdomain>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-oRnqtAQvFS703bbize5e"
+X-Mailer: Evolution 3.12.1-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 11 May 2014 04:25 PM, Aaro Koskinen wrote:
+
+--=-oRnqtAQvFS703bbize5e
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, 2014-05-07 at 13:32 +0800, Liu Bo wrote:
 > Hi,
->
-> On Sun, May 11, 2014 at 01:38:22PM +0530, Paul Davies C wrote:
->> Complex macro is enlosed with parantheses.
-> This patch breaks compilation. I'll send patches to remove the whole macro.
->
-> A.
-I hope everything else is ok with you. I will drop PATCH 2/3 and 
-resubmit it.
+>=20
+> I'm using qemu to load kernel of 3.15.0-rc4, and with CONFIG_E1000=3Dy,
+> everying is ok, but with CONFIG_E1000=3Dm, I got the following crash:
+>=20
+> [...]
+> [    6.020409] tsc: Refined TSC clocksource calibration: 2491.912 MHz
+> [    6.074925] floppy: Unknown symbol mutex_lock (err 0)
+> [    6.128579] virtio_blk: Unknown symbol mutex_lock (err 0)
+> [    6.141264] i2c_core: Unknown symbol mutex_lock (err 0)
 
--- 
-Paul Davies C,
-CSE B.Tech. student,
-Govt. Engineering College, Thrissur.
+Really???
 
+> [    6.167490] e1000: Intel(R) PRO/1000 Network Driver - version 7.3.21-k=
+8-NAPI
+> [    6.168240] e1000: Copyright (c) 1999-2006 Intel Corporation.
+> [    6.171078] ACPI: PCI Interrupt Link [LNKC] enabled at IRQ 10
+> [    6.190295] BUG: spinlock bad magic on CPU#3, systemd-udevd/208
+[...]
+
+I think you may have rebuilt the kernel with lockdep enabled, but
+haven't also rebuilt and installed the modules with lockdep enabled.
+
+You should enable symbol versions to catch such mistakes.
+
+Ben.
+
+--=20
+Ben Hutchings
+Sturgeon's Law: Ninety percent of everything is crap.
+
+--=-oRnqtAQvFS703bbize5e
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUAU29pJue/yOyVhhEJAQr4YxAAnZSwn3NmkpIq3Ypy3KEKLxlAdV26lO7u
+PwQppS7ruY+2fzKwt6LWhXsHIj3iB1p6H7Y8H/ieq19xoe8drnoLjLshO581xbvh
+POIwnoGZeyfSDf1JQe5ix37YGx6maFn7x09QLgK2p6PFFK57KVaLoLQ7bDFkGRw6
+t1OAAdpPrIHI8UvWSAxufcWPGgBuWoaRqyLYbJfWodbIqQxJ+b9nB9soA8rv44C+
+u671AGqeu4ihDzG7u18iS2jATyuI73E7suwI3XmcIpHOb3Z/jTTtRFkMV2OtlGJS
+ComxdjTc6qzsyOLkwaMOYhcLW1g3ST4vrZcLr+6VX905QU7jlig1sXdBXxvbYCzA
+kKP4etjlWWLvCNRgGeV/xD9ii4jtjAm4//sUgX5hwZ0TOCsxZF4f2QIBKcTavJ5Z
+WfUov2NnR31JL8csFHKkrPoVwKg57E0Ql+sfCXnepLF/2XONr/Gu7rZUp71zHf7h
+2gN8QH1U+blKGeP/TSDTLdiZzkLzKCeXwKzP8va0cESWRflbYMeqSvuneydlumIS
+f711QI66lsGREActEmjfWbVREQqCxnaHKZM+wyn1SXeANDWXPGj5cpli23NAkwIa
+B719nSme0kFGNaUbBITrxGyvUE/ZFOK0ZhHgm5cK005mDjOI7Hf0+YVNrE+GMbGJ
+bxNI1WLrmPQ=
+=IVdu
+-----END PGP SIGNATURE-----
+
+--=-oRnqtAQvFS703bbize5e--
