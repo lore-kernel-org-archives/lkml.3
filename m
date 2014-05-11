@@ -1,138 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932483AbaEKWjX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 18:39:23 -0400
-Received: from mail.eperm.de ([89.247.134.16]:56909 "EHLO mail.eperm.de"
+	id S932518AbaEKWjo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 18:39:44 -0400
+Received: from mail.eperm.de ([89.247.134.16]:36857 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932433AbaEKWjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 18:39:18 -0400
+	id S932433AbaEKWjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 18:39:42 -0400
 X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
 To: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
         linux-crypto@vger.kernel.org
-Subject: [PATCH 1/2] Addition of kernel_pool
-Date: Mon, 12 May 2014 00:37:31 +0200
-Message-ID: <1539435.TLjcZda65N@myon.chronox.de>
+Subject: [PATCH 0/2] Add in-kernel /dev/random equivalent
+Date: Mon, 12 May 2014 00:36:01 +0200
+Message-ID: <1937020.H2HvEFgXrB@myon.chronox.de>
 User-Agent: KMail/4.12.5 (Linux/3.14.3-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1937020.H2HvEFgXrB@myon.chronox.de>
-References: <1937020.H2HvEFgXrB@myon.chronox.de>
 MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="nextPart1929063.BgsACCXYyd"
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel pool is intended to serve kernel-internal callers only.
-Its purpose and usage is identical to the blocking_pool.
+This is a multi-part message in MIME format.
 
-As the kernel_pool is not available to user space, user space cannot
-directly interfere with the blocking behavior when obtaining
-data from the kernel_pool. Thus, if entropy is present in the
-kernel_pool, user space can hog /dev/random and yet the kernel
-internal requestor of random numbers that are generated equally
-to the blocking_pool (i.e. with the blocking behavior) will not
-be affected until data is needed from the input_pool.
+--nextPart1929063.BgsACCXYyd
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-The patch treats the kernel_pool fully equally to the blocking and
-nonblocking pool with respect to the initialization and update. As now
-there are three output pools, the patch adds a round-robin logic for
-processing additional entropy when the input_pool is nearly full.
+Hi,
 
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
----
- drivers/char/random.c | 50 +++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 37 insertions(+), 13 deletions(-)
+as discussed in thread [1], an in-kernel equivalent to the blocking 
+/dev/random device behavior is suggested. This in-kernel blocking access to 
+the RNG can be used to seed deterministic random number generators with random 
+numbers that are directly backed by the underlying noise sources.
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 6b75713..2b53023 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -436,6 +436,7 @@ static void push_to_pool(struct work_struct *work);
- static __u32 input_pool_data[INPUT_POOL_WORDS];
- static __u32 blocking_pool_data[OUTPUT_POOL_WORDS];
- static __u32 nonblocking_pool_data[OUTPUT_POOL_WORDS];
-+static __u32 kernel_pool_data[OUTPUT_POOL_WORDS];
- 
- static struct entropy_store input_pool = {
- 	.poolinfo = &poolinfo_table[0],
-@@ -466,6 +467,17 @@ static struct entropy_store nonblocking_pool = {
- 					push_to_pool),
- };
- 
-+static struct entropy_store kernel_pool = {
-+	.poolinfo = &poolinfo_table[1],
-+	.name = "kernel",
-+	.limit = 1,
-+	.pull = &input_pool,
-+	.lock = __SPIN_LOCK_UNLOCKED(kernel_pool.lock),
-+	.pool = kernel_pool_data,
-+	.push_work = __WORK_INITIALIZER(kernel_pool.push_work,
-+					push_to_pool),
-+};
-+
- static __u32 const twist_table[8] = {
- 	0x00000000, 0x3b6e20c8, 0x76dc4190, 0x4db26158,
- 	0xedb88320, 0xd6d6a3e8, 0x9b64c2b0, 0xa00ae278 };
-@@ -674,25 +686,36 @@ retry:
- 			kill_fasync(&fasync, SIGIO, POLL_IN);
- 		}
- 		/* If the input pool is getting full, send some
--		 * entropy to the two output pools, flipping back and
-+		 * entropy to the output pools, flipping back and
- 		 * forth between them, until the output pools are 75%
- 		 * full.
- 		 */
- 		if (entropy_bits > random_write_wakeup_bits &&
- 		    r->initialized &&
- 		    r->entropy_total >= 2*random_read_wakeup_bits) {
--			static struct entropy_store *last = &blocking_pool;
--			struct entropy_store *other = &blocking_pool;
--
--			if (last == &blocking_pool)
--				other = &nonblocking_pool;
--			if (other->entropy_count <=
--			    3 * other->poolinfo->poolfracbits / 4)
--				last = other;
--			if (last->entropy_count <=
--			    3 * last->poolinfo->poolfracbits / 4) {
--				schedule_work(&last->push_work);
--				r->entropy_total = 0;
-+#define NUM_OUTPUT_POOLS 3
-+			/* as we will recalculate this variable first thing in
-+			 * the loop, it will point to the first output pool
-+			 * after the first recalculation */
-+			static int selected_pool = (NUM_OUTPUT_POOLS - 1);
-+			int i = 0;
-+			struct entropy_store *output_pools[NUM_OUTPUT_POOLS] = {
-+				&blocking_pool,
-+				&nonblocking_pool,
-+				&kernel_pool};
-+			/* select the next pool that has less than 75% fill
-+			 * rate */
-+			for (i = 0; NUM_OUTPUT_POOLS > i; i++) {
-+				struct entropy_store *p = NULL;
-+				selected_pool =
-+					(selected_pool + 1) % NUM_OUTPUT_POOLS;
-+				p = output_pools[selected_pool];
-+				if (p->entropy_count <=
-+					p->poolinfo->poolfracbits / 4) {
-+					schedule_work(&p->push_work);
-+					r->entropy_total = 0;
-+					break;
-+				}
- 			}
- 		}
- 	}
-@@ -1273,6 +1296,7 @@ static int rand_initialize(void)
- 	init_std_data(&input_pool);
- 	init_std_data(&blocking_pool);
- 	init_std_data(&nonblocking_pool);
-+	init_std_data(&kernel_pool);
- 	return 0;
- }
- early_initcall(rand_initialize);
+The following patch implements this concept by adding a third output pool, the 
+kernel_pool that is only accessible inside the kernel. That kernel_pool feeds 
+the blocking operation API calls to obtain random numbers.
+
+Please find a test kernel module attached. You can unload it even while the 
+collection process is ongoing.
+
+[1] https://lkml.org/lkml/2014/4/27/174
+
+Stephan Mueller (2):
+  Addition of kernel_pool
+  Asynchronous and syncronous API for accessing kernel_pool
+
+ drivers/char/random.c  | 163 
++++++++++++++++++++++++++++++++++++++++++++++----
+ include/linux/random.h |  16 +++++
+ 2 files changed, 166 insertions(+), 13 deletions(-)
+
 -- 
 1.9.0
+--nextPart1929063.BgsACCXYyd
+Content-Disposition: attachment; filename="lrng-asym.c"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/x-csrc; charset="UTF-8"; name="lrng-asym.c"
 
+/* Test module for verifying the correct operation of the
+ * SP800-90A DRBG
+ *
+ * Use: compile, load into the kernel and observe dmesg
+ *
+ * Written by: Stephan Mueller <smueller@chronox.de>
+ * Copyright (c) 2014
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ *                          NO WARRANTY
+ *
+ *  BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
+ *  FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN
+ *  OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
+ *  PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED
+ *  OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE ENTIRE RISK AS
+ *  TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD THE
+ *  PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING,
+ *  REPAIR OR CORRECTION.
+ *
+ *  IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
+ *  WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
+ *  REDISTRIBUTE THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES,
+ *  INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING
+ *  OUT OF THE USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED
+ *  TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY
+ *  YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER
+ *  PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGES.
+ */
+
+#include <linux/random.h>
+#include <linux/module.h>
+#include <linux/slab.h> /* needed for kzalloc */
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Stephan Mueller <smueller@chronox.de>");
+MODULE_DESCRIPTION("Test module for verifying the correct operation of async LRNG operation");
+
+static struct random_work my_work;
+static struct random_work my_work1;
+static struct random_work my_work2;
+static struct random_work my_work3;
+static struct random_work my_work4;
+static struct random_work my_work5;
+static struct random_work my_work6;
+static struct random_work my_work7;
+static struct random_work my_work8;
+static struct random_work my_work9;
+#define LEN 1024
+static char buffer[LEN];
+
+void lrng_cb(void *buf, ssize_t buflen)
+{
+	printk("received %d bytes\n", (int)buflen);
+}
+
+static void cn(struct random_work *work)
+{
+	get_blocking_random_bytes_cancel(work);
+	cancel_work_sync(&work->rw_work);
+}
+
+static int __init lrng_init(void)
+{
+	get_blocking_random_bytes_cb(NULL, &my_work, buffer, LEN, lrng_cb);
+	get_blocking_random_bytes_cb(NULL, &my_work1, buffer, LEN, lrng_cb);
+	get_blocking_random_bytes_cb(NULL, &my_work2, buffer, LEN, lrng_cb);
+	get_blocking_random_bytes_cb(NULL, &my_work3, buffer, LEN, lrng_cb);
+	get_blocking_random_bytes_cb(NULL, &my_work4, buffer, LEN, lrng_cb);
+	get_blocking_random_bytes_cb(NULL, &my_work5, buffer, LEN, lrng_cb);
+	get_blocking_random_bytes_cb(NULL, &my_work6, buffer, LEN, lrng_cb);
+	get_blocking_random_bytes_cb(NULL, &my_work7, buffer, LEN, lrng_cb);
+	get_blocking_random_bytes_cb(NULL, &my_work8, buffer, LEN, lrng_cb);
+	get_blocking_random_bytes_cb(NULL, &my_work9, buffer, LEN, lrng_cb);
+
+	/* cancel one work to see that work can be canceled independent from
+	 * others */
+	cn(&my_work);
+	return 0;
+}
+
+void __exit lrng_exit(void)
+{
+	cn(&my_work1);
+	cn(&my_work2);
+	cn(&my_work3);
+	cn(&my_work4);
+	cn(&my_work5);
+	cn(&my_work6);
+	cn(&my_work7);
+	cn(&my_work8);
+	cn(&my_work9);
+}
+
+module_init(lrng_init);
+module_exit(lrng_exit);
+
+
+--nextPart1929063.BgsACCXYyd--
 
