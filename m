@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933569AbaEKTYj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:24:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48307 "EHLO
+	id S933526AbaEKTYb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:24:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48289 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933545AbaEKTYd (ORCPT
+	with ESMTP id S933487AbaEKTYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:24:33 -0400
+	Sun, 11 May 2014 15:24:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.14 50/83] rtlwifi: rtl8188ee: Fix too long disable of IRQs
-Date: Sun, 11 May 2014 21:19:51 +0200
-Message-Id: <20140511191913.640671498@linuxfoundation.org>
+Subject: [PATCH 3.10 34/48] rtlwifi: rtl8192se: Fix too long disable of IRQs
+Date: Sun, 11 May 2014 21:20:08 +0200
+Message-Id: <20140511191952.739157206@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
-References: <20140511191907.024339448@linuxfoundation.org>
+In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
+References: <20140511191948.079900414@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 6b6392715856d563719991e9ce95e773491a8983 upstream.
+commit 2610decdd0b3808ba20471a999835cfee5275f98 upstream.
 
 In commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 entitled "rtlwifi:
 rtl8192ce: Fix too long disable of IRQs", Olivier Langlois
 <olivier@trillion01.com> fixed a problem caused by an extra long disabling
-of interrupts. This patch makes the same fix for rtl8188ee.
+of interrupts. This patch makes the same fix for rtl8192se.
 
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8188ee/hw.c |   20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192se/hw.c |   27 +++++++++++++++++++++------
+ 1 file changed, 21 insertions(+), 6 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
-@@ -1025,9 +1025,20 @@ int rtl88ee_hw_init(struct ieee80211_hw
- 	bool rtstatus = true;
- 	int err = 0;
- 	u8 tmp_u1b, u1byte;
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
+@@ -955,7 +955,7 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
+ 	struct rtl_efuse *rtlefuse = rtl_efuse(rtl_priv(hw));
+ 	u8 tmp_byte = 0;
+-
 +	unsigned long flags;
+ 	bool rtstatus = true;
+ 	u8 tmp_u1b;
+ 	int err = false;
+@@ -967,6 +967,16 @@ int rtl92se_hw_init(struct ieee80211_hw
  
- 	RT_TRACE(rtlpriv, COMP_INIT, DBG_LOUD, "Rtl8188EE hw init\n");
- 	rtlpriv->rtlhal.being_init_adapter = true;
+ 	rtlpci->being_init_adapter = true;
+ 
 +	/* As this function can take a very long time (up to 350 ms)
 +	 * and can be called with irqs disabled, reenable the irqs
 +	 * to let the other devices continue being serviced.
@@ -66,39 +71,57 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 +
  	rtlpriv->intf_ops->disable_aspm(hw);
  
- 	tmp_u1b = rtl_read_byte(rtlpriv, REG_SYS_CLKR+1);
-@@ -1043,7 +1054,7 @@ int rtl88ee_hw_init(struct ieee80211_hw
- 	if (rtstatus != true) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "Init MAC failed\n");
- 		err = 1;
--		return err;
+ 	/* 1. MAC Initialize */
+@@ -984,7 +994,8 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
+ 			 "Failed to download FW. Init HW without FW now... "
+ 			 "Please copy FW into /lib/firmware/rtlwifi\n");
+-		return 1;
++		err = 1;
 +		goto exit;
  	}
  
- 	err = rtl88e_download_fw(hw, false);
-@@ -1051,8 +1062,7 @@ int rtl88ee_hw_init(struct ieee80211_hw
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
- 			 "Failed to download FW. Init HW without FW now..\n");
- 		err = 1;
--		rtlhal->fw_ready = false;
--		return err;
+ 	/* After FW download, we have to reset MAC register */
+@@ -997,7 +1008,8 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 	/* 3. Initialize MAC/PHY Config by MACPHY_reg.txt */
+ 	if (!rtl92s_phy_mac_config(hw)) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "MAC Config failed\n");
+-		return rtstatus;
++		err = rtstatus;
 +		goto exit;
- 	} else {
- 		rtlhal->fw_ready = true;
  	}
-@@ -1135,10 +1145,12 @@ int rtl88ee_hw_init(struct ieee80211_hw
+ 
+ 	/* because last function modify RCR, so we update
+@@ -1016,7 +1028,8 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 	/* 4. Initialize BB After MAC Config PHY_reg.txt, AGC_Tab.txt */
+ 	if (!rtl92s_phy_bb_config(hw)) {
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_EMERG, "BB Config failed\n");
+-		return rtstatus;
++		err = rtstatus;
++		goto exit;
  	}
- 	rtl_write_byte(rtlpriv, REG_NAV_CTRL+2,  ((30000+127)/128));
- 	rtl88e_dm_init(hw);
+ 
+ 	/* 5. Initiailze RF RAIO_A.txt RF RAIO_B.txt */
+@@ -1033,7 +1046,8 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 
+ 	if (!rtl92s_phy_rf_config(hw)) {
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "RF Config failed\n");
+-		return rtstatus;
++		err = rtstatus;
++		goto exit;
+ 	}
+ 
+ 	/* After read predefined TXT, we must set BB/MAC/RF
+@@ -1122,8 +1136,9 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 
+ 	rtlpriv->cfg->ops->led_control(hw, LED_CTL_POWER_ON);
+ 	rtl92s_dm_init(hw);
 +exit:
 +	local_irq_restore(flags);
- 	rtlpriv->rtlhal.being_init_adapter = false;
- 	RT_TRACE(rtlpriv, COMP_INIT, DBG_LOUD, "end of Rtl8188EE hw init %x\n",
- 		 err);
--	return 0;
-+	return err;
+ 	rtlpci->being_init_adapter = false;
+-
+ 	return err;
  }
  
- static enum version_8188e _rtl88ee_read_chip_version(struct ieee80211_hw *hw)
 
 
