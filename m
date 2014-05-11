@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757933AbaEKBRR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 21:17:17 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:60305 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983AbaEKBRQ (ORCPT
+	id S1757563AbaEKBah (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 21:30:37 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:44020 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550AbaEKBag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 21:17:16 -0400
-Date: Sat, 10 May 2014 18:17:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
+	Sat, 10 May 2014 21:30:36 -0400
+Date: Sun, 11 May 2014 03:30:31 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Christoph Lameter <cl@linux.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
@@ -23,10 +23,8 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Christoph Lameter <cl@linux.com>,
         Peter Zijlstra <peterz@infradead.org>,
         John Stultz <john.stultz@linaro.org>
 Subject: Re: vmstat: On demand vmstat workers V4
-Message-ID: <20140511011708.GD4827@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140508142903.c2ef166c95d2b8acd0d7ea7d@linux-foundation.org>
- <alpine.DEB.2.02.1405090003120.6261@ionos.tec.linutronix.de>
+Message-ID: <20140511013029.GC13660@localhost.localdomain>
+References: <alpine.DEB.2.02.1405090003120.6261@ionos.tec.linutronix.de>
  <alpine.DEB.2.10.1405090949170.11318@gentwo.org>
  <alpine.DEB.2.02.1405091659350.6261@ionos.tec.linutronix.de>
  <alpine.DEB.2.10.1405091027040.11318@gentwo.org>
@@ -35,69 +33,64 @@ References: <20140508142903.c2ef166c95d2b8acd0d7ea7d@linux-foundation.org>
  <20140510004843.GB32393@localhost.localdomain>
  <alpine.DEB.2.02.1405101423360.6261@ionos.tec.linutronix.de>
  <20140510131422.GA13660@localhost.localdomain>
+ <20140511011708.GD4827@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140510131422.GA13660@localhost.localdomain>
+In-Reply-To: <20140511011708.GD4827@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051101-1344-0000-0000-00000178FEB5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 10, 2014 at 03:14:25PM +0200, Frederic Weisbecker wrote:
-> On Sat, May 10, 2014 at 02:31:28PM +0200, Thomas Gleixner wrote:
-> > On Sat, 10 May 2014, Frederic Weisbecker wrote:
-> > > But I still have the plan to make the timekeeper use the full sysidle
-> > > facility in order to adaptively get to dynticks idle.
+On Sat, May 10, 2014 at 06:17:08PM -0700, Paul E. McKenney wrote:
+> On Sat, May 10, 2014 at 03:14:25PM +0200, Frederic Weisbecker wrote:
+> > On Sat, May 10, 2014 at 02:31:28PM +0200, Thomas Gleixner wrote:
+> > > On Sat, 10 May 2014, Frederic Weisbecker wrote:
+> > > > But I still have the plan to make the timekeeper use the full sysidle
+> > > > facility in order to adaptively get to dynticks idle.
+> > > > 
+> > > > Reminder for others: in NO_HZ_FULL, the timekeeper (always CPU 0) stays
+> > > > completely periodic. It can't enter in dynticks idle mode because it
+> > > > must maintain timekeeping on behalf of full dynticks CPUs. So that's
+> > > > a power issue.
+> > > > 
+> > > > But Paul has a feature in RCU that lets us know when all CPUs are idle
+> > > > and the timekeeper can finally sleep. Then when a full nohz CPU wakes
+> > > > up from idle, it sends an IPI to the timekeeper if needed so the latter
+> > > > restarts timekeeping maintainance.
+> > > >
+> > > > It's not complicated to add to the timer code.
+> > > > Most of the code is already there, in RCU, for a while already.
+> > > > 
+> > > > Are we keeping that direction? 
 > > > 
-> > > Reminder for others: in NO_HZ_FULL, the timekeeper (always CPU 0) stays
-> > > completely periodic. It can't enter in dynticks idle mode because it
-> > > must maintain timekeeping on behalf of full dynticks CPUs. So that's
-> > > a power issue.
-> > > 
-> > > But Paul has a feature in RCU that lets us know when all CPUs are idle
-> > > and the timekeeper can finally sleep. Then when a full nohz CPU wakes
-> > > up from idle, it sends an IPI to the timekeeper if needed so the latter
-> > > restarts timekeeping maintainance.
-> > >
-> > > It's not complicated to add to the timer code.
-> > > Most of the code is already there, in RCU, for a while already.
-> > > 
-> > > Are we keeping that direction? 
-> > 
-> > So the idea is that the timekeeper stays on cpu0, but if everything is
-> > idle it is allowed to take a long nap as well. So if some other cpu
-> > wakes up it updates timekeeping without taking over the time keeper
-> > duty and if it has work to do, it kicks cpu0 into gear. If it just
-> > goes back to sleep, then nothing to do.
-
-Hmmm...  If RCU is supposed to ignore the fact that one of the other
-CPUs woke up momentarily, we will need to adjust things a bit.
-
-> Exactly! Except perhaps the last sentence "If it just goes back to sleep,
-> then nothing to do.", I didn't think about that although this special case
-> is quite frequent indeed when an interrupt fires on idle but no task is woken up.
+> > > So the idea is that the timekeeper stays on cpu0, but if everything is
+> > > idle it is allowed to take a long nap as well. So if some other cpu
+> > > wakes up it updates timekeeping without taking over the time keeper
+> > > duty and if it has work to do, it kicks cpu0 into gear. If it just
+> > > goes back to sleep, then nothing to do.
 > 
-> Maybe I should move the code that fires the IPI to cpu0, if it is sleeping,
-> on irq exit (the plan was to do it right away on irq enter) and fire it
-> only if need_resched().
+> Hmmm...  If RCU is supposed to ignore the fact that one of the other
+> CPUs woke up momentarily, we will need to adjust things a bit.
 
-And of course if that code path contains any RCU read-side critical
-sections, RCU absolutely cannot ignore that CPU's momentary wakeup.
+Maybe not that much actually.
 
-							Thanx, Paul
-
-> > No objections from my side.
 > 
-> Great! Thanks for checking that!
+> > Exactly! Except perhaps the last sentence "If it just goes back to sleep,
+> > then nothing to do.", I didn't think about that although this special case
+> > is quite frequent indeed when an interrupt fires on idle but no task is woken up.
+> > 
+> > Maybe I should move the code that fires the IPI to cpu0, if it is sleeping,
+> > on irq exit (the plan was to do it right away on irq enter) and fire it
+> > only if need_resched().
 > 
-> > 
-> > Thanks,
-> > 
-> > 	tglx
-> > 
-> 
+> And of course if that code path contains any RCU read-side critical
+> sections, RCU absolutely cannot ignore that CPU's momentary wakeup.
 
+Sure the core RCU still needs to know that the CPU went out of dynticks the
+time of the irq, so we keep the rcu_irq_enter/rcu_irq_exit calls.
+
+But if the CPU only wakes up to serve an IRQ, it doesn't need to tell the RCU
+sysidle detection about it. The irq entry fixup jiffies on dynticks idle mode,
+this should be enough.
