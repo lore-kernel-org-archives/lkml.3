@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039AbaEKBmt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 21:42:49 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:43652 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757263AbaEKBl4 (ORCPT
+	id S1757887AbaEKBrx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 21:47:53 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46898 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221AbaEKBrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 21:41:56 -0400
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, linux@arm.linux.org.uk,
-        daniel.lezcano@linaro.org, tglx@linutronix.de, matthias.bgg@gmail.com,
-        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
-        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
-        heiko.stuebner@bq.com, olof@lixom.net, sebastian.hesselbarth@gmail.com,
-        sboyd@codeaurora.org, gregory.clement@free-electrons.com,
-        arnd@arndb.de, robherring2@gmail.com, marc.zyngier@arm.com,
-        maxime.ripard@free-electrons.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 2/4] dt-bindings: add mtk-timer bindings
-Date: Sun, 11 May 2014 03:41:01 +0200
-Message-Id: <1399772463-859-3-git-send-email-matthias.bgg@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1399772463-859-1-git-send-email-matthias.bgg@gmail.com>
-References: <1399772463-859-1-git-send-email-matthias.bgg@gmail.com>
+	Sat, 10 May 2014 21:47:52 -0400
+Date: Sat, 10 May 2014 21:47:50 -0400 (EDT)
+Message-Id: <20140510.214750.1194823540790487670.davem@davemloft.net>
+To: tj@kernel.org
+Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hannes@cmpxchg.org, vgoyal@redhat.com, axboe@kernel.dk,
+        a.p.zijlstra@chello.nl, mhocko@suse.cz, nhorman@tuxdriver.com
+Subject: Re: [PATCH 01/14] cgroup: remove css_parent()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1399671091-23867-2-git-send-email-tj@kernel.org>
+References: <1399671091-23867-1-git-send-email-tj@kernel.org>
+	<1399671091-23867-2-git-send-email-tj@kernel.org>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 10 May 2014 18:47:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add binding documentation for the General Porpose Timer driver of
-the Mediatek SoCs.
+From: Tejun Heo <tj@kernel.org>
+Date: Fri,  9 May 2014 17:31:18 -0400
 
-Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
----
- .../devicetree/bindings/timer/mediatek,mtk-timer.txt    | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
+> cgroup in general is moving towards using cgroup_subsys_state as the
+> fundamental structural component and css_parent() was introduced to
+> convert from using cgroup->parent to css->parent.  It was quite some
+> time ago and we're moving forward with making css more prominent.
+> 
+> This patch drops the trivial wrapper css_parent() and let the users
+> dereference css->parent.  While at it, explicitly mark fields of css
+> which are public and immutable.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-diff --git a/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt b/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
-new file mode 100644
-index 0000000..a36eb0f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
-@@ -0,0 +1,17 @@
-+Mediatek MT6598, MT6577 and MT6572 Timers
-+---------------------------------------
-+
-+Required properties:
-+- compatible: Should be "mediatek,mtk6589-timer"
-+- reg: Should contain location and length for timers register.
-+- clocks : phandle to the clock source, normaly a 13 MHz fixed system clock
-+		and a 32 KHz fixed RTC clock.
-+
-+Examples:
-+
-+	timer {
-+		compatible = "mediatek,mtk6589-timer";
-+		reg = <0x10008000 0x80>;
-+		interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
-+		clocks = <&system_clk>, <&rtc_clk>;
-+	};
--- 
-1.8.1.2
+For networking bits:
 
+Acked-by: David S. Miller <davem@davemloft.net>
