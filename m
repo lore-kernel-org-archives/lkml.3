@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934248AbaEKTdW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:33:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48488 "EHLO
+	id S934317AbaEKTdm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:33:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48485 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933982AbaEKT0V (ORCPT
+	with ESMTP id S933975AbaEKT0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:26:21 -0400
+	Sun, 11 May 2014 15:26:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.10 46/48] Input: synaptics - add min/max quirk for ThinkPad T431s, L440, L540, S1 Yoga and X1
-Date: Sun, 11 May 2014 21:20:20 +0200
-Message-Id: <20140511191954.299781620@linuxfoundation.org>
+        Raphos <raphoszap@laposte.net>, Jeff Layton <jlayton@redhat.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.10 45/48] lockd: ensure we tear down any live sockets when socket creation fails during lockd_up
+Date: Sun, 11 May 2014 21:20:19 +0200
+Message-Id: <20140511191954.170131253@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
 References: <20140511191948.079900414@linuxfoundation.org>
@@ -28,99 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 46a2986ebbe18757c2d8c352f8fb6e0f4f0754e3 upstream.
+commit 679b033df48422191c4cac52b610d9980e019f9b upstream.
 
-We expect that all the Haswell series will need such quirks, sigh.
+We had a Fedora ABRT report with a stack trace like this:
 
-The T431s seems to be T430 hardware in a T440s case, using the T440s touchpad,
-with the same min/max issue.
+kernel BUG at net/sunrpc/svc.c:550!
+invalid opcode: 0000 [#1] SMP
+[...]
+CPU: 2 PID: 913 Comm: rpc.nfsd Not tainted 3.13.6-200.fc20.x86_64 #1
+Hardware name: Hewlett-Packard HP ProBook 4740s/1846, BIOS 68IRR Ver. F.40 01/29/2013
+task: ffff880146b00000 ti: ffff88003f9b8000 task.ti: ffff88003f9b8000
+RIP: 0010:[<ffffffffa0305fa8>]  [<ffffffffa0305fa8>] svc_destroy+0x128/0x130 [sunrpc]
+RSP: 0018:ffff88003f9b9de0  EFLAGS: 00010206
+RAX: ffff88003f829628 RBX: ffff88003f829600 RCX: 00000000000041ee
+RDX: 0000000000000000 RSI: 0000000000000286 RDI: 0000000000000286
+RBP: ffff88003f9b9de8 R08: 0000000000017360 R09: ffff88014fa97360
+R10: ffffffff8114ce57 R11: ffffea00051c9c00 R12: ffff88003f829600
+R13: 00000000ffffff9e R14: ffffffff81cc7cc0 R15: 0000000000000000
+FS:  00007f4fde284840(0000) GS:ffff88014fa80000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007f4fdf5192f8 CR3: 00000000a569a000 CR4: 00000000001407e0
+Stack:
+ ffff88003f792300 ffff88003f9b9e18 ffffffffa02de02a 0000000000000000
+ ffffffff81cc7cc0 ffff88003f9cb000 0000000000000008 ffff88003f9b9e60
+ ffffffffa033bb35 ffffffff8131c86c ffff88003f9cb000 ffff8800a5715008
+Call Trace:
+ [<ffffffffa02de02a>] lockd_up+0xaa/0x330 [lockd]
+ [<ffffffffa033bb35>] nfsd_svc+0x1b5/0x2f0 [nfsd]
+ [<ffffffff8131c86c>] ? simple_strtoull+0x2c/0x50
+ [<ffffffffa033c630>] ? write_pool_threads+0x280/0x280 [nfsd]
+ [<ffffffffa033c6bb>] write_threads+0x8b/0xf0 [nfsd]
+ [<ffffffff8114efa4>] ? __get_free_pages+0x14/0x50
+ [<ffffffff8114eff6>] ? get_zeroed_page+0x16/0x20
+ [<ffffffff811dec51>] ? simple_transaction_get+0xb1/0xd0
+ [<ffffffffa033c098>] nfsctl_transaction_write+0x48/0x80 [nfsd]
+ [<ffffffff811b8b34>] vfs_write+0xb4/0x1f0
+ [<ffffffff811c3f99>] ? putname+0x29/0x40
+ [<ffffffff811b9569>] SyS_write+0x49/0xa0
+ [<ffffffff810fc2a6>] ? __audit_syscall_exit+0x1f6/0x2a0
+ [<ffffffff816962e9>] system_call_fastpath+0x16/0x1b
+Code: 31 c0 e8 82 db 37 e1 e9 2a ff ff ff 48 8b 07 8b 57 14 48 c7 c7 d5 c6 31 a0 48 8b 70 20 31 c0 e8 65 db 37 e1 e9 f4 fe ff ff 0f 0b <0f> 0b 66 0f 1f 44 00 00 0f 1f 44 00 00 55 48 89 e5 41 56 41 55
+RIP  [<ffffffffa0305fa8>] svc_destroy+0x128/0x130 [sunrpc]
+ RSP <ffff88003f9b9de0>
 
-The X1 Carbon 3rd generation name says 2nd while it is a 3rd generation.
+Evidently, we created some lockd sockets and then failed to create
+others. make_socks then returned an error and we tried to tear down the
+svc, but svc->sv_permsocks was not empty so we ended up tripping over
+the BUG() in svc_destroy().
 
-The X1 and T431s share a PnPID with the T540p, but the reported ranges are
-closer to those of the T440s.
+Fix this by ensuring that we tear down any live sockets we created when
+socket creation is going to return an error.
 
-HdG: Squashed 5 quirk patches into one. T431s + L440 + L540 are written by me,
-S1 Yoga and X1 are written by Benjamin Tissoires.
-
-Hdg: Standardized S1 Yoga and X1 values, Yoga uses the same touchpad as the
-X240, X1 uses the same touchpad as the T440.
-
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Fixes: 786185b5f8abefa (SUNRPC: move per-net operations from...)
+Reported-by: Raphos <raphoszap@laposte.net>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Reviewed-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/synaptics.c |   42 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 42 insertions(+)
+ fs/lockd/svc.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -1515,6 +1515,14 @@ static const struct dmi_system_id min_ma
- 		.driver_data = (int []){1232, 5710, 1156, 4696},
- 	},
- 	{
-+		/* Lenovo ThinkPad T431s */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T431"),
-+		},
-+		.driver_data = (int []){1024, 5112, 2024, 4832},
-+	},
-+	{
- 		/* Lenovo ThinkPad T440s */
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-@@ -1523,6 +1531,14 @@ static const struct dmi_system_id min_ma
- 		.driver_data = (int []){1024, 5112, 2024, 4832},
- 	},
- 	{
-+		/* Lenovo ThinkPad L440 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad L440"),
-+		},
-+		.driver_data = (int []){1024, 5112, 2024, 4832},
-+	},
-+	{
- 		/* Lenovo ThinkPad T540p */
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-@@ -1530,6 +1546,32 @@ static const struct dmi_system_id min_ma
- 		},
- 		.driver_data = (int []){1024, 5056, 2058, 4832},
- 	},
-+	{
-+		/* Lenovo ThinkPad L540 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad L540"),
-+		},
-+		.driver_data = (int []){1024, 5112, 2024, 4832},
-+	},
-+	{
-+		/* Lenovo Yoga S1 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_EXACT_MATCH(DMI_PRODUCT_VERSION,
-+					"ThinkPad S1 Yoga"),
-+		},
-+		.driver_data = (int []){1232, 5710, 1156, 4696},
-+	},
-+	{
-+		/* Lenovo ThinkPad X1 Carbon Haswell (3rd generation) */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION,
-+					"ThinkPad X1 Carbon 2nd"),
-+		},
-+		.driver_data = (int []){1024, 5112, 2024, 4832},
-+	},
- #endif
- 	{ }
- };
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -235,6 +235,7 @@ out_err:
+ 	if (warned++ == 0)
+ 		printk(KERN_WARNING
+ 			"lockd_up: makesock failed, error=%d\n", err);
++	svc_shutdown_net(serv, net);
+ 	return err;
+ }
+ 
 
 
