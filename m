@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934324AbaEKTey (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:34:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48464 "EHLO
+	id S934337AbaEKTfL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:35:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48461 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933915AbaEKT0G (ORCPT
+	with ESMTP id S932644AbaEKT0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:26:06 -0400
+	Sun, 11 May 2014 15:26:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jens Axboe <axboe@fb.com>, Laszlo Ersek <lersek@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 72/83] lib/percpu_counter.c: fix bad percpu counter state during suspend
-Date: Sun, 11 May 2014 21:20:13 +0200
-Message-Id: <20140511191916.306744156@linuxfoundation.org>
+        Gerd Hoffmann <kraxel@redhat.com>, Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.14 81/83] drm: cirrus: add power management support
+Date: Sun, 11 May 2014 21:20:22 +0200
+Message-Id: <20140511191917.498524115@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -28,59 +26,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jens Axboe <axboe@fb.com>
+From: Gerd Hoffmann <kraxel@redhat.com>
 
-commit e39435ce68bb4685288f78b1a7e24311f7ef939f upstream.
+commit 2f1e800799bf478494cec3573cd63eb34ca89c9d upstream.
 
-I got a bug report yesterday from Laszlo Ersek in which he states that
-his kvm instance fails to suspend.  Laszlo bisected it down to this
-commit 1cf7e9c68fe8 ("virtio_blk: blk-mq support") where virtio-blk is
-converted to use the blk-mq infrastructure.
+cirrus kms driver lacks power management support, thus
+the vga display doesn't work any more after S3 resume.
 
-After digging a bit, it became clear that the issue was with the queue
-drain.  blk-mq tracks queue usage in a percpu counter, which is
-incremented on request alloc and decremented when the request is freed.
-The initial hunt was for an inconsistency in blk-mq, but everything
-seemed fine.  In fact, the counter only returned crazy values when
-suspend was in progress.
+Fix this by adding suspend and resume functions.
+Also make the mode_set function unblank the screen.
 
-When a CPU is unplugged, the percpu counters merges that CPU state with
-the general state.  blk-mq takes care to register a hotcpu notifier with
-the appropriate priority, so we know it runs after the percpu counter
-notifier.  However, the percpu counter notifier only merges the state
-when the CPU is fully gone.  This leaves a state transition where the
-CPU going away is no longer in the online mask, yet it still holds
-private values.  This means that in this state, percpu_counter_sum()
-returns invalid results, and the suspend then hangs waiting for
-abs(dead-cpu-value) requests to complete which of course will never
-happen.
-
-Fix this by clearing the state earlier, so we never have a case where
-the CPU isn't in online mask but still holds private state.  This bug
-has been there since forever, I guess we don't have a lot of users where
-percpu counters needs to be reliable during the suspend cycle.
-
-Signed-off-by: Jens Axboe <axboe@fb.com>
-Reported-by: Laszlo Ersek <lersek@redhat.com>
-Tested-by: Laszlo Ersek <lersek@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/percpu_counter.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/cirrus/cirrus_drv.c  |   42 +++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/cirrus/cirrus_mode.c |    3 ++
+ 2 files changed, 45 insertions(+)
 
---- a/lib/percpu_counter.c
-+++ b/lib/percpu_counter.c
-@@ -169,7 +169,7 @@ static int percpu_counter_hotcpu_callbac
- 	struct percpu_counter *fbc;
+--- a/drivers/gpu/drm/cirrus/cirrus_drv.c
++++ b/drivers/gpu/drm/cirrus/cirrus_drv.c
+@@ -11,6 +11,7 @@
+ #include <linux/module.h>
+ #include <linux/console.h>
+ #include <drm/drmP.h>
++#include <drm/drm_crtc_helper.h>
  
- 	compute_batch_value();
--	if (action != CPU_DEAD)
-+	if (action != CPU_DEAD && action != CPU_DEAD_FROZEN)
- 		return NOTIFY_OK;
+ #include "cirrus_drv.h"
  
- 	cpu = (unsigned long)hcpu;
+@@ -75,6 +76,41 @@ static void cirrus_pci_remove(struct pci
+ 	drm_put_dev(dev);
+ }
+ 
++static int cirrus_pm_suspend(struct device *dev)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct drm_device *drm_dev = pci_get_drvdata(pdev);
++	struct cirrus_device *cdev = drm_dev->dev_private;
++
++	drm_kms_helper_poll_disable(drm_dev);
++
++	if (cdev->mode_info.gfbdev) {
++		console_lock();
++		fb_set_suspend(cdev->mode_info.gfbdev->helper.fbdev, 1);
++		console_unlock();
++	}
++
++	return 0;
++}
++
++static int cirrus_pm_resume(struct device *dev)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct drm_device *drm_dev = pci_get_drvdata(pdev);
++	struct cirrus_device *cdev = drm_dev->dev_private;
++
++	drm_helper_resume_force_mode(drm_dev);
++
++	if (cdev->mode_info.gfbdev) {
++		console_lock();
++		fb_set_suspend(cdev->mode_info.gfbdev->helper.fbdev, 0);
++		console_unlock();
++	}
++
++	drm_kms_helper_poll_enable(drm_dev);
++	return 0;
++}
++
+ static const struct file_operations cirrus_driver_fops = {
+ 	.owner = THIS_MODULE,
+ 	.open = drm_open,
+@@ -103,11 +139,17 @@ static struct drm_driver driver = {
+ 	.dumb_destroy = drm_gem_dumb_destroy,
+ };
+ 
++static const struct dev_pm_ops cirrus_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(cirrus_pm_suspend,
++				cirrus_pm_resume)
++};
++
+ static struct pci_driver cirrus_pci_driver = {
+ 	.name = DRIVER_NAME,
+ 	.id_table = pciidlist,
+ 	.probe = cirrus_pci_probe,
+ 	.remove = cirrus_pci_remove,
++	.driver.pm = &cirrus_pm_ops,
+ };
+ 
+ static int __init cirrus_init(void)
+--- a/drivers/gpu/drm/cirrus/cirrus_mode.c
++++ b/drivers/gpu/drm/cirrus/cirrus_mode.c
+@@ -308,6 +308,9 @@ static int cirrus_crtc_mode_set(struct d
+ 
+ 	WREG_HDR(hdr);
+ 	cirrus_crtc_do_set_base(crtc, old_fb, x, y, 0);
++
++	/* Unblank (needed on S3 resume, vgabios doesn't do it then) */
++	outb(0x20, 0x3c0);
+ 	return 0;
+ }
+ 
 
 
