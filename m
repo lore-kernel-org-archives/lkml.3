@@ -1,144 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934064AbaEKTyu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:54:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48088 "EHLO
+	id S934402AbaEKTzN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:55:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48075 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932889AbaEKTWO (ORCPT
+	with ESMTP id S932818AbaEKTWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:22:14 -0400
+	Sun, 11 May 2014 15:22:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Arnaud Ebalard <arno@natisbad.org>,
-        Alexander Reuter <Alexander.Reuter@gmx.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 33/83] Revert "net: mvneta: fix usage as a module on RGMII configurations"
-Date: Sun, 11 May 2014 21:19:34 +0200
-Message-Id: <20140511191911.535287970@linuxfoundation.org>
+        Peter Hurley <peter@hurleysoftware.com>, Jiri Slaby <jslaby@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 3.10 03/48] n_tty: Fix n_tty_write crash when echoing in raw mode
+Date: Sun, 11 May 2014 21:19:37 +0200
+Message-Id: <20140511191948.550740144@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
-References: <20140511191907.024339448@linuxfoundation.org>
+In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
+References: <20140511191948.079900414@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit cc6ca3023f2c2bbcd062e9d4cf6afc2ba2821ada upstream.
+commit 4291086b1f081b869c6d79e5b7441633dc3ace00 upstream.
 
-This reverts commit e3a8786c10e75903f1269474e21fe8cb49c3a670. While
-this commit allows to use the mvneta driver as a module on some
-configurations, it breaks other configurations even if mvneta is used
-built-in.
+The tty atomic_write_lock does not provide an exclusion guarantee for
+the tty driver if the termios settings are LECHO & !OPOST.  And since
+it is unexpected and not allowed to call TTY buffer helpers like
+tty_insert_flip_string concurrently, this may lead to crashes when
+concurrect writers call pty_write. In that case the following two
+writers:
+* the ECHOing from a workqueue and
+* pty_write from the process
+race and can overflow the corresponding TTY buffer like follows.
 
-This breakage is due to the fact that on some RGMII platforms, the PCS
-bit has to be set, and on some other platforms, it has to be
-cleared. At the moment, we lack informations to know exactly the
-significance of this bit (the datasheet only says "enables PCS"), and
-so we can't produce a patch that will work on all platforms at this
-point. And since this change is breaking the network completely for
-many users, it's much better to revert it for now. We'll come back
-later with a proper fix that takes into account all platforms.
+If we look into tty_insert_flip_string_fixed_flag, there is:
+  int space = __tty_buffer_request_room(port, goal, flags);
+  struct tty_buffer *tb = port->buf.tail;
+  ...
+  memcpy(char_buf_ptr(tb, tb->used), chars, space);
+  ...
+  tb->used += space;
 
-Basically:
+so the race of the two can result in something like this:
+              A                                B
+__tty_buffer_request_room
+                                  __tty_buffer_request_room
+memcpy(buf(tb->used), ...)
+tb->used += space;
+                                  memcpy(buf(tb->used), ...) ->BOOM
 
- * Armada XP GP is configured as RGMII-ID, and needs the PCS bit to be
-   set.
- * Armada 370 Mirabox is configured as RGMII-ID, and needs the PCS bit
-   to be cleared.
+B's memcpy is past the tty_buffer due to the previous A's tb->used
+increment.
 
-And at the moment, we don't know how to make the distinction between
-those two cases. One hint is that the Armada XP GP appears in fact to
-be using a QSGMII connection with the PHY (Quad-SGMII), but
-configuring it as SGMII doesn't work, while RGMII-ID works. This needs
-more investigation, but in the mean time, let's unbreak the network
-for all those users.
+Since the N_TTY line discipline input processing can output
+concurrently with a tty write, obtain the N_TTY ldisc output_lock to
+serialize echo output with normal tty writes.  This ensures the tty
+buffer helper tty_insert_flip_string is not called concurrently and
+everything is fine.
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Reported-by: Arnaud Ebalard <arno@natisbad.org>
-Reported-by: Alexander Reuter <Alexander.Reuter@gmx.net>
-Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=73401
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Note that this is nicely reproducible by an ordinary user using
+forkpty and some setup around that (raw termios + ECHO). And it is
+present in kernels at least after commit
+d945cb9cce20ac7143c2de8d88b187f62db99bdc (pty: Rework the pty layer to
+use the normal buffering logic) in 2.6.31-rc3.
+
+js: add more info to the commit log
+js: switch to bool
+js: lock unconditionally
+js: lock only the tty->ops->write call
+
+References: CVE-2014-0196
+Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/marvell/mvneta.c |   41 +++++++++++++++++++++++++++-------
- 1 file changed, 33 insertions(+), 8 deletions(-)
+ drivers/tty/n_tty.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -89,9 +89,8 @@
- #define      MVNETA_TX_IN_PRGRS                  BIT(1)
- #define      MVNETA_TX_FIFO_EMPTY                BIT(8)
- #define MVNETA_RX_MIN_FRAME_SIZE                 0x247c
--#define MVNETA_SERDES_CFG			 0x24A0
-+#define MVNETA_SGMII_SERDES_CFG			 0x24A0
- #define      MVNETA_SGMII_SERDES_PROTO		 0x0cc7
--#define      MVNETA_RGMII_SERDES_PROTO		 0x0667
- #define MVNETA_TYPE_PRIO                         0x24bc
- #define      MVNETA_FORCE_UNI                    BIT(21)
- #define MVNETA_TXQ_CMD_1                         0x24e4
-@@ -712,6 +711,35 @@ static void mvneta_rxq_bm_disable(struct
- 	mvreg_write(pp, MVNETA_RXQ_CONFIG_REG(rxq->id), val);
- }
- 
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -2066,8 +2066,12 @@ static ssize_t n_tty_write(struct tty_st
+ 			if (tty->ops->flush_chars)
+ 				tty->ops->flush_chars(tty);
+ 		} else {
++			struct n_tty_data *ldata = tty->disc_data;
 +
-+
-+/* Sets the RGMII Enable bit (RGMIIEn) in port MAC control register */
-+static void mvneta_gmac_rgmii_set(struct mvneta_port *pp, int enable)
-+{
-+	u32  val;
-+
-+	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
-+
-+	if (enable)
-+		val |= MVNETA_GMAC2_PORT_RGMII;
-+	else
-+		val &= ~MVNETA_GMAC2_PORT_RGMII;
-+
-+	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
-+}
-+
-+/* Config SGMII port */
-+static void mvneta_port_sgmii_config(struct mvneta_port *pp)
-+{
-+	u32 val;
-+
-+	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
-+	val |= MVNETA_GMAC2_PCS_ENABLE;
-+	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
-+
-+	mvreg_write(pp, MVNETA_SGMII_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
-+}
-+
- /* Start the Ethernet port RX and TX activity */
- static void mvneta_port_up(struct mvneta_port *pp)
- {
-@@ -2729,15 +2757,12 @@ static void mvneta_port_power_up(struct
- 	mvreg_write(pp, MVNETA_UNIT_INTR_CAUSE, 0);
- 
- 	if (phy_mode == PHY_INTERFACE_MODE_SGMII)
--		mvreg_write(pp, MVNETA_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
--	else
--		mvreg_write(pp, MVNETA_SERDES_CFG, MVNETA_RGMII_SERDES_PROTO);
-+		mvneta_port_sgmii_config(pp);
- 
--	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
--
--	val |= MVNETA_GMAC2_PCS_ENABLE | MVNETA_GMAC2_PORT_RGMII;
-+	mvneta_gmac_rgmii_set(pp, 1);
- 
- 	/* Cancel Port Reset */
-+	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
- 	val &= ~MVNETA_GMAC2_PORT_RESET;
- 	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
- 
+ 			while (nr > 0) {
++				mutex_lock(&ldata->output_lock);
+ 				c = tty->ops->write(tty, b, nr);
++				mutex_unlock(&ldata->output_lock);
+ 				if (c < 0) {
+ 					retval = c;
+ 					goto break_out;
 
 
