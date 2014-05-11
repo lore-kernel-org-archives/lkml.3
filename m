@@ -1,75 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933590AbaEKTYl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:24:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48312 "EHLO
+	id S933569AbaEKTYj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:24:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48307 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932725AbaEKTYf (ORCPT
+	with ESMTP id S933545AbaEKTYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:24:35 -0400
+	Sun, 11 May 2014 15:24:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Terry Barnaby <terry1@beam.ltd.uk>, Jeff Layton <jlayton@redhat.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.10 30/48] locks: allow __break_lease to sleep even when break_time is 0
-Date: Sun, 11 May 2014 21:20:04 +0200
-Message-Id: <20140511191952.198106907@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.14 50/83] rtlwifi: rtl8188ee: Fix too long disable of IRQs
+Date: Sun, 11 May 2014 21:19:51 +0200
+Message-Id: <20140511191913.640671498@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 4991a628a789dc5954e98e79476d9808812292ec upstream.
+commit 6b6392715856d563719991e9ce95e773491a8983 upstream.
 
-A fl->fl_break_time of 0 has a special meaning to the lease break code
-that basically means "never break the lease". knfsd uses this to ensure
-that leases don't disappear out from under it.
+In commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 entitled "rtlwifi:
+rtl8192ce: Fix too long disable of IRQs", Olivier Langlois
+<olivier@trillion01.com> fixed a problem caused by an extra long disabling
+of interrupts. This patch makes the same fix for rtl8188ee.
 
-Unfortunately, the code in __break_lease can end up passing this value
-to wait_event_interruptible as a timeout, which prevents it from going
-to sleep at all. This causes __break_lease to spin in a tight loop and
-causes soft lockups.
-
-Fix this by ensuring that we pass a minimum value of 1 as a timeout
-instead.
-
-Cc: J. Bruce Fields <bfields@fieldses.org>
-Reported-by: Terry Barnaby <terry1@beam.ltd.uk>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/locks.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8188ee/hw.c |   20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1243,11 +1243,10 @@ int __break_lease(struct inode *inode, u
+--- a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
+@@ -1025,9 +1025,20 @@ int rtl88ee_hw_init(struct ieee80211_hw
+ 	bool rtstatus = true;
+ 	int err = 0;
+ 	u8 tmp_u1b, u1byte;
++	unsigned long flags;
  
- restart:
- 	break_time = flock->fl_break_time;
--	if (break_time != 0) {
-+	if (break_time != 0)
- 		break_time -= jiffies;
--		if (break_time == 0)
--			break_time++;
--	}
-+	if (break_time == 0)
-+		break_time++;
- 	locks_insert_block(flock, new_fl);
- 	unlock_flocks();
- 	error = wait_event_interruptible_timeout(new_fl->fl_wait,
+ 	RT_TRACE(rtlpriv, COMP_INIT, DBG_LOUD, "Rtl8188EE hw init\n");
+ 	rtlpriv->rtlhal.being_init_adapter = true;
++	/* As this function can take a very long time (up to 350 ms)
++	 * and can be called with irqs disabled, reenable the irqs
++	 * to let the other devices continue being serviced.
++	 *
++	 * It is safe doing so since our own interrupts will only be enabled
++	 * in a subsequent step.
++	 */
++	local_save_flags(flags);
++	local_irq_enable();
++
+ 	rtlpriv->intf_ops->disable_aspm(hw);
+ 
+ 	tmp_u1b = rtl_read_byte(rtlpriv, REG_SYS_CLKR+1);
+@@ -1043,7 +1054,7 @@ int rtl88ee_hw_init(struct ieee80211_hw
+ 	if (rtstatus != true) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "Init MAC failed\n");
+ 		err = 1;
+-		return err;
++		goto exit;
+ 	}
+ 
+ 	err = rtl88e_download_fw(hw, false);
+@@ -1051,8 +1062,7 @@ int rtl88ee_hw_init(struct ieee80211_hw
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
+ 			 "Failed to download FW. Init HW without FW now..\n");
+ 		err = 1;
+-		rtlhal->fw_ready = false;
+-		return err;
++		goto exit;
+ 	} else {
+ 		rtlhal->fw_ready = true;
+ 	}
+@@ -1135,10 +1145,12 @@ int rtl88ee_hw_init(struct ieee80211_hw
+ 	}
+ 	rtl_write_byte(rtlpriv, REG_NAV_CTRL+2,  ((30000+127)/128));
+ 	rtl88e_dm_init(hw);
++exit:
++	local_irq_restore(flags);
+ 	rtlpriv->rtlhal.being_init_adapter = false;
+ 	RT_TRACE(rtlpriv, COMP_INIT, DBG_LOUD, "end of Rtl8188EE hw init %x\n",
+ 		 err);
+-	return 0;
++	return err;
+ }
+ 
+ static enum version_8188e _rtl88ee_read_chip_version(struct ieee80211_hw *hw)
 
 
