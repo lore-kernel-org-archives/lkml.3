@@ -1,176 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934216AbaEKTqg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:46:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48236 "EHLO
+	id S964887AbaEKTrD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:47:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48226 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933237AbaEKTXs (ORCPT
+	with ESMTP id S933290AbaEKTXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:23:48 -0400
+	Sun, 11 May 2014 15:23:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilya Dryomov <ilya.dryomov@inktank.com>,
-        Josh Durgin <josh.durgin@inktank.com>
-Subject: [PATCH 3.14 41/83] crush: fix off-by-one errors in total_tries refactor
-Date: Sun, 11 May 2014 21:19:42 +0200
-Message-Id: <20140511191912.566314924@linuxfoundation.org>
+        Vineet Gupta <vgupta@synopsys.com>
+Subject: [PATCH 3.10 19/48] ARC: Entry Handler tweaks: Optimize away redundant IRQ_DISABLE_SAVE
+Date: Sun, 11 May 2014 21:19:53 +0200
+Message-Id: <20140511191950.724190228@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
-References: <20140511191907.024339448@linuxfoundation.org>
+In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
+References: <20140511191948.079900414@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
+From: Vineet Gupta <vgupta@synopsys.com>
 
-commit 48a163dbb517eba13643bf404a0d695c1ab0a60d upstream.
+commit fce16bc35ae4a45634f3dc348d8d297a25c277cf upstream.
 
-Back in 27f4d1f6bc32c2ed7b2c5080cbd58b14df622607 we refactored the CRUSH
-code to allow adjustment of the retry counts on a per-pool basis.  That
-commit had an off-by-one bug: the previous "tries" counter was a *retry*
-count, not a *try* count, but the new code was passing in 1 meaning
-there should be no retries.
+In the exception return path, for both U/K cases, intr are already
+disabled (for various existing reasons). So when we drop down to
+@restore_regs, we need not redo that.
 
-Fix the ftotal vs tries comparison to use < instead of <= to fix the
-problem.  Note that the original code used <= here, which means the
-global "choose_total_tries" tunable is actually counting retries.
-Compensate for that by adding 1 in crush_do_rule when we pull the tunable
-into the local variable.
+There was subtle issue - when intr were NOT being disabled for
+ret-to-kernel-but-no-preemption case - now fixed by moving the
+IRQ_DISABLE further up in @resume_kernel_mode.
 
-This was noticed looking at output from a user provided osdmap.
-Unfortunately the map doesn't illustrate the change in mapping behavior
-and I haven't managed to construct one yet that does.  Inspection of the
-crush debug output now aligns with prior versions, though.
+So what do we gain:
 
-Reflects ceph.git commit 795704fd615f0b008dcc81aa088a859b2d075138.
+* Shaves off a few insn in return path.
 
-Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
-Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
+* Eliminates the need for IRQ_DISABLE_SAVE assembler macro for ARCv2
+  hence allows for entry code sharing.
+
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ceph/crush/mapper.c |   46 +++++++++++++++++++++++++++-------------------
- 1 file changed, 27 insertions(+), 19 deletions(-)
+ arch/arc/include/asm/irqflags.h |    7 -------
+ arch/arc/kernel/entry.S         |   10 +++++-----
+ 2 files changed, 5 insertions(+), 12 deletions(-)
 
---- a/net/ceph/crush/mapper.c
-+++ b/net/ceph/crush/mapper.c
-@@ -292,8 +292,8 @@ static int is_out(const struct crush_map
-  * @outpos: our position in that vector
-  * @tries: number of attempts to make
-  * @recurse_tries: number of attempts to have recursive chooseleaf make
-- * @local_tries: localized retries
-- * @local_fallback_tries: localized fallback retries
-+ * @local_retries: localized retries
-+ * @local_fallback_retries: localized fallback retries
-  * @recurse_to_leaf: true if we want one device under each item of given type (chooseleaf instead of choose)
-  * @out2: second output vector for leaf items (if @recurse_to_leaf)
-  */
-@@ -304,8 +304,8 @@ static int crush_choose_firstn(const str
- 			       int *out, int outpos,
- 			       unsigned int tries,
- 			       unsigned int recurse_tries,
--			       unsigned int local_tries,
--			       unsigned int local_fallback_tries,
-+			       unsigned int local_retries,
-+			       unsigned int local_fallback_retries,
- 			       int recurse_to_leaf,
- 			       int *out2)
- {
-@@ -344,9 +344,9 @@ static int crush_choose_firstn(const str
- 					reject = 1;
- 					goto reject;
- 				}
--				if (local_fallback_tries > 0 &&
-+				if (local_fallback_retries > 0 &&
- 				    flocal >= (in->size>>1) &&
--				    flocal > local_fallback_tries)
-+				    flocal > local_fallback_retries)
- 					item = bucket_perm_choose(in, x, r);
- 				else
- 					item = crush_bucket_choose(in, x, r);
-@@ -393,8 +393,8 @@ static int crush_choose_firstn(const str
- 							 x, outpos+1, 0,
- 							 out2, outpos,
- 							 recurse_tries, 0,
--							 local_tries,
--							 local_fallback_tries,
-+							 local_retries,
-+							 local_fallback_retries,
- 							 0,
- 							 NULL) <= outpos)
- 							/* didn't get leaf */
-@@ -420,14 +420,14 @@ reject:
- 					ftotal++;
- 					flocal++;
+--- a/arch/arc/include/asm/irqflags.h
++++ b/arch/arc/include/asm/irqflags.h
+@@ -137,13 +137,6 @@ static inline void arch_unmask_irq(unsig
+ 	flag	\scratch
+ .endm
  
--					if (collide && flocal <= local_tries)
-+					if (collide && flocal <= local_retries)
- 						/* retry locally a few times */
- 						retry_bucket = 1;
--					else if (local_fallback_tries > 0 &&
--						 flocal <= in->size + local_fallback_tries)
-+					else if (local_fallback_retries > 0 &&
-+						 flocal <= in->size + local_fallback_retries)
- 						/* exhaustive bucket search */
- 						retry_bucket = 1;
--					else if (ftotal <= tries)
-+					else if (ftotal < tries)
- 						/* then retry descent */
- 						retry_descent = 1;
- 					else
-@@ -640,10 +640,18 @@ int crush_do_rule(const struct crush_map
- 	__u32 step;
- 	int i, j;
- 	int numrep;
--	int choose_tries = map->choose_total_tries;
--	int choose_local_tries = map->choose_local_tries;
--	int choose_local_fallback_tries = map->choose_local_fallback_tries;
-+	/*
-+	 * the original choose_total_tries value was off by one (it
-+	 * counted "retries" and not "tries").  add one.
-+	 */
-+	int choose_tries = map->choose_total_tries + 1;
- 	int choose_leaf_tries = 0;
-+	/*
-+	 * the local tries values were counted as "retries", though,
-+	 * and need no adjustment
-+	 */
-+	int choose_local_retries = map->choose_local_tries;
-+	int choose_local_fallback_retries = map->choose_local_fallback_tries;
+-.macro IRQ_DISABLE_SAVE  scratch, save
+-	lr	\scratch, [status32]
+-	mov	\save, \scratch		/* Make a copy */
+-	bic	\scratch, \scratch, (STATUS_E1_MASK | STATUS_E2_MASK)
+-	flag	\scratch
+-.endm
+-
+ .macro IRQ_ENABLE  scratch
+ 	lr	\scratch, [status32]
+ 	or	\scratch, \scratch, (STATUS_E1_MASK | STATUS_E2_MASK)
+--- a/arch/arc/kernel/entry.S
++++ b/arch/arc/kernel/entry.S
+@@ -653,6 +653,9 @@ resume_kernel_mode:
  
- 	if ((__u32)ruleno >= map->max_rules) {
- 		dprintk(" bad ruleno %d\n", ruleno);
-@@ -677,12 +685,12 @@ int crush_do_rule(const struct crush_map
+ #ifdef CONFIG_PREEMPT
  
- 		case CRUSH_RULE_SET_CHOOSE_LOCAL_TRIES:
- 			if (curstep->arg1 > 0)
--				choose_local_tries = curstep->arg1;
-+				choose_local_retries = curstep->arg1;
- 			break;
++	; This is a must for preempt_schedule_irq()
++	IRQ_DISABLE	r9
++
+ 	; Can't preempt if preemption disabled
+ 	GET_CURR_THR_INFO_FROM_SP   r10
+ 	ld  r8, [r10, THREAD_INFO_PREEMPT_COUNT]
+@@ -662,8 +665,6 @@ resume_kernel_mode:
+ 	ld  r9, [r10, THREAD_INFO_FLAGS]
+ 	bbit0  r9, TIF_NEED_RESCHED, restore_regs
  
- 		case CRUSH_RULE_SET_CHOOSE_LOCAL_FALLBACK_TRIES:
- 			if (curstep->arg1 > 0)
--				choose_local_fallback_tries = curstep->arg1;
-+				choose_local_fallback_retries = curstep->arg1;
- 			break;
+-	IRQ_DISABLE	r9
+-
+ 	; Invoke PREEMPTION
+ 	bl      preempt_schedule_irq
  
- 		case CRUSH_RULE_CHOOSELEAF_FIRSTN:
-@@ -734,8 +742,8 @@ int crush_do_rule(const struct crush_map
- 						o+osize, j,
- 						choose_tries,
- 						recurse_tries,
--						choose_local_tries,
--						choose_local_fallback_tries,
-+						choose_local_retries,
-+						choose_local_fallback_retries,
- 						recurse_to_leaf,
- 						c+osize);
- 				} else {
+@@ -676,12 +677,11 @@ resume_kernel_mode:
+ ;
+ ; Restore the saved sys context (common exit-path for EXCPN/IRQ/Trap)
+ ; IRQ shd definitely not happen between now and rtie
++; All 2 entry points to here already disable interrupts
+ 
+ restore_regs :
+ 
+-	; Disable Interrupts while restoring reg-file back
+-	; XXX can this be optimised out
+-	IRQ_DISABLE_SAVE    r9, r10	;@r10 has prisitine (pre-disable) copy
++	lr	r10, [status32]
+ 
+ #ifdef CONFIG_ARC_CURR_IN_REG
+ 	; Restore User R25
 
 
