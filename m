@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758213AbaEKT5J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:57:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48025 "EHLO
+	id S1758233AbaEKT5h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:57:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48017 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932713AbaEKTVa (ORCPT
+	with ESMTP id S932688AbaEKTVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:21:30 -0400
+	Sun, 11 May 2014 15:21:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve Dickson <steved@redhat.com>,
+        Neil Brown <neilb@suse.de>,
         Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.14 26/83] SUNRPC: Ensure call_connect_status() deals correctly with SOFTCONN tasks
-Date: Sun, 11 May 2014 21:19:27 +0200
-Message-Id: <20140511191910.628589474@linuxfoundation.org>
+Subject: [PATCH 3.14 25/83] SUNRPC: Ensure that call_connect times out correctly
+Date: Sun, 11 May 2014 21:19:26 +0200
+Message-Id: <20140511191910.492800268@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -27,38 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Dickson <steved@redhat.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 1fa3e2eb9db07f30a605c66d1a2fdde4b24e74d5 upstream.
+commit 485f2251782f7c44299c491d4676a8a01428d191 upstream.
 
-Don't schedule an rpc_delay before checking to see if the task
-is a SOFTCONN because the tk_callback from the delay (__rpc_atrun)
-clears the task status before the rpc_exit_task can be run.
+When the server is unavailable due to a networking error, etc, we want
+the RPC client to respect the timeout delays when attempting to reconnect.
 
-Signed-off-by: Steve Dickson <steved@redhat.com>
-Fixes: 561ec1603171c (SUNRPC: call_connect_status should recheck...)
-Link: http://lkml.kernel.org/r/5329CF7C.7090308@RedHat.com
+Reported-by: Neil Brown <neilb@suse.de>
+Fixes: 561ec1603171 (SUNRPC: call_connect_status should recheck bind..)
 Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/clnt.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/sunrpc/clnt.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
 --- a/net/sunrpc/clnt.c
 +++ b/net/sunrpc/clnt.c
-@@ -1803,10 +1803,10 @@ call_connect_status(struct rpc_task *tas
+@@ -1798,10 +1798,6 @@ call_connect_status(struct rpc_task *tas
+ 	trace_rpc_connect_status(task, status);
+ 	task->tk_status = 0;
+ 	switch (status) {
+-		/* if soft mounted, test if we've timed out */
+-	case -ETIMEDOUT:
+-		task->tk_action = call_timeout;
+-		return;
+ 	case -ECONNREFUSED:
+ 	case -ECONNRESET:
  	case -ECONNABORTED:
- 	case -ENETUNREACH:
- 	case -EHOSTUNREACH:
--		/* retry with existing socket, after a delay */
--		rpc_delay(task, 3*HZ);
+@@ -1812,7 +1808,9 @@ call_connect_status(struct rpc_task *tas
  		if (RPC_IS_SOFTCONN(task))
  			break;
-+		/* retry with existing socket, after a delay */
-+		rpc_delay(task, 3*HZ);
  	case -EAGAIN:
- 		/* Check for timeouts before looping back to call_bind */
- 	case -ETIMEDOUT:
+-		task->tk_action = call_bind;
++		/* Check for timeouts before looping back to call_bind */
++	case -ETIMEDOUT:
++		task->tk_action = call_timeout;
+ 		return;
+ 	case 0:
+ 		clnt->cl_stats->netreconn++;
 
 
