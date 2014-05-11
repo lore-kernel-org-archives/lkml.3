@@ -1,92 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933214AbaEKTXV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:23:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48191 "EHLO
+	id S934130AbaEKTsz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:48:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48194 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933125AbaEKTXQ (ORCPT
+	with ESMTP id S933200AbaEKTXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:23:16 -0400
+	Sun, 11 May 2014 15:23:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 24/48] b43: Fix machine check error due to improper access of B43_MMIO_PSM_PHY_HDR
-Date: Sun, 11 May 2014 21:19:58 +0200
-Message-Id: <20140511191951.392323915@linuxfoundation.org>
+        Jouni Malinen <j@w1.fi>, Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.14 45/83] mac80211: fix software remain-on-channel implementation
+Date: Sun, 11 May 2014 21:19:46 +0200
+Message-Id: <20140511191913.066535420@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Rafał Miłecki <zajec5@gmail.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 12cd43c6ed6da7bf7c5afbd74da6959cda6d056b upstream.
+commit 115b943a6ea12656088fa1ff6634c0d30815e55b upstream.
 
-Register B43_MMIO_PSM_PHY_HDR is 16 bit one, so accessing it with 32b
-functions isn't safe. On my machine it causes delayed (!) CPU exception:
+Jouni reported that when doing off-channel transmissions mixed
+with on-channel transmissions, the on-channel ones ended up on
+the off-channel in some cases.
 
-Disabling lock debugging due to kernel taint
-mce: [Hardware Error]: CPU 0: Machine Check Exception: 4 Bank 4: b200000000070f0f
-mce: [Hardware Error]: TSC 164083803dc
-mce: [Hardware Error]: PROCESSOR 2:20fc2 TIME 1396650505 SOCKET 0 APIC 0 microcode 0
-mce: [Hardware Error]: Run the above through 'mcelog --ascii'
-mce: [Hardware Error]: Machine check: Processor context corrupt
-Kernel panic - not syncing: Fatal machine check on current CPU
-Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
+The reason for that is that during the refactoring of the off-
+channel code, I lost the part that stopped all activity and as
+a consequence the on-channel frames (including data frames)
+were no longer queued but would be transmitted on the temporary
+channel.
 
-Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fix this by simply restoring the lost activity stop call.
+
+Fixes: 2eb278e083549 ("mac80211: unify SW/offload remain-on-channel")
+Reported-by: Jouni Malinen <j@w1.fi>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/phy_n.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ net/mac80211/offchannel.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/b43/phy_n.c
-+++ b/drivers/net/wireless/b43/phy_n.c
-@@ -5175,22 +5175,22 @@ static void b43_nphy_channel_setup(struc
- 	int ch = new_channel->hw_value;
+--- a/net/mac80211/offchannel.c
++++ b/net/mac80211/offchannel.c
+@@ -355,6 +355,7 @@ void ieee80211_sw_roc_work(struct work_s
+ 		struct ieee80211_roc_work *dep;
  
- 	u16 old_band_5ghz;
--	u32 tmp32;
-+	u16 tmp16;
+ 		/* start this ROC */
++		ieee80211_offchannel_stop_vifs(local);
  
- 	old_band_5ghz =
- 		b43_phy_read(dev, B43_NPHY_BANDCTL) & B43_NPHY_BANDCTL_5GHZ;
- 	if (new_channel->band == IEEE80211_BAND_5GHZ && !old_band_5ghz) {
--		tmp32 = b43_read32(dev, B43_MMIO_PSM_PHY_HDR);
--		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32 | 4);
-+		tmp16 = b43_read16(dev, B43_MMIO_PSM_PHY_HDR);
-+		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16 | 4);
- 		b43_phy_set(dev, B43_PHY_B_BBCFG, 0xC000);
--		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32);
-+		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16);
- 		b43_phy_set(dev, B43_NPHY_BANDCTL, B43_NPHY_BANDCTL_5GHZ);
- 	} else if (new_channel->band == IEEE80211_BAND_2GHZ && old_band_5ghz) {
- 		b43_phy_mask(dev, B43_NPHY_BANDCTL, ~B43_NPHY_BANDCTL_5GHZ);
--		tmp32 = b43_read32(dev, B43_MMIO_PSM_PHY_HDR);
--		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32 | 4);
-+		tmp16 = b43_read16(dev, B43_MMIO_PSM_PHY_HDR);
-+		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16 | 4);
- 		b43_phy_mask(dev, B43_PHY_B_BBCFG, 0x3FFF);
--		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32);
-+		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16);
- 	}
- 
- 	b43_chantab_phy_upload(dev, e);
+ 		/* switch channel etc */
+ 		ieee80211_recalc_idle(local);
 
 
