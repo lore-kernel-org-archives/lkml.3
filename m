@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932773AbaEKTVn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:21:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48038 "EHLO
+	id S932886AbaEKTWJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:22:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48068 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932672AbaEKTVi (ORCPT
+	with ESMTP id S932866AbaEKTWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:21:38 -0400
+	Sun, 11 May 2014 15:22:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.14 19/83] powerpc/tm: Disable IRQ in tm_recheckpoint
-Date: Sun, 11 May 2014 21:19:20 +0200
-Message-Id: <20140511191909.703576501@linuxfoundation.org>
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.14 23/83] ASoC: dapm: Fix widget double free with auto-disable DAPM kcontrol
+Date: Sun, 11 May 2014 21:19:24 +0200
+Message-Id: <20140511191910.210736188@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -27,156 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
 
-commit e6b8fd028b584ffca7a7255b8971f254932c9fce upstream.
+commit 2697e4fb9209dfe1d1b24c92d254158f63d4bc8e upstream.
 
-We can't take an IRQ when we're about to do a trechkpt as our GPR state is set
-to user GPR values.
+Commit 9e1fda4ae158 ("ASoC: dapm: Implement mixer input auto-disable")
+is trying to free the widget it allocated by snd_soc_dapm_new_control()
+call in dapm_kcontrol_data_alloc() by adding kfree(data->widget) to
+dapm_kcontrol_free().
 
-We've hit this when running some IBM Java stress tests in the lab resulting in
-the following dump:
+This is causing a widget double free with auto-disabled DAPM kcontrols
+in sound card unregistration because widgets are already freed before
+dapm_kcontrol_free() is called.
 
-  cpu 0x3f: Vector: 700 (Program Check) at [c000000007eb3d40]
-      pc: c000000000050074: restore_gprs+0xc0/0x148
-      lr: 00000000b52a8184
-      sp: ac57d360
-     msr: 8000000100201030
-    current = 0xc00000002c500000
-    paca    = 0xc000000007dbfc00     softe: 0     irq_happened: 0x00
-      pid   = 34535, comm = Pooled Thread #
-  R00 = 00000000b52a8184   R16 = 00000000b3e48fda
-  R01 = 00000000ac57d360   R17 = 00000000ade79bd8
-  R02 = 00000000ac586930   R18 = 000000000fac9bcc
-  R03 = 00000000ade60000   R19 = 00000000ac57f930
-  R04 = 00000000f6624918   R20 = 00000000ade79be8
-  R05 = 00000000f663f238   R21 = 00000000ac218a54
-  R06 = 0000000000000002   R22 = 000000000f956280
-  R07 = 0000000000000008   R23 = 000000000000007e
-  R08 = 000000000000000a   R24 = 000000000000000c
-  R09 = 00000000b6e69160   R25 = 00000000b424cf00
-  R10 = 0000000000000181   R26 = 00000000f66256d4
-  R11 = 000000000f365ec0   R27 = 00000000b6fdcdd0
-  R12 = 00000000f66400f0   R28 = 0000000000000001
-  R13 = 00000000ada71900   R29 = 00000000ade5a300
-  R14 = 00000000ac2185a8   R30 = 00000000f663f238
-  R15 = 0000000000000004   R31 = 00000000f6624918
-  pc  = c000000000050074 restore_gprs+0xc0/0x148
-  cfar= c00000000004fe28 dont_restore_vec+0x1c/0x1a4
-  lr  = 00000000b52a8184
-  msr = 8000000100201030   cr  = 24804888
-  ctr = 0000000000000000   xer = 0000000000000000   trap =  700
+Reason for that is all widgets are added into dapm->card->widgets list
+in snd_soc_dapm_new_control() and freed in dapm_free_widgets() during
+execution of snd_soc_dapm_free().
 
-This moves tm_recheckpoint to a C function and moves the tm_restore_sprs into
-that function.  It then adds IRQ disabling over the trechkpt critical section.
-It also sets the TEXASR FS in the signals code to ensure this is never set now
-that we explictly write the TM sprs in tm_recheckpoint.
+Now snd_soc_dapm_free() calls for different DAPM contexts happens before
+snd_card_free() call from where the call chain to dapm_kcontrol_free()
+begins:
 
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+soc_cleanup_card_resources()
+  soc_remove_dai_links()
+    soc_remove_link_dais()
+      snd_soc_dapm_free(&cpu_dai->dapm)
+    soc_remove_link_components()
+      soc_remove_platform()
+        snd_soc_dapm_free(&platform->dapm)
+      soc_remove_codec()
+        snd_soc_dapm_free(&codec->dapm)
+  snd_soc_dapm_free(&card->dapm)
+  snd_card_free()
+    snd_card_do_free()
+      snd_device_free_all()
+        snd_device_free()
+          snd_ctl_dev_free()
+            snd_ctl_remove()
+              snd_ctl_free_one()
+                dapm_kcontrol_free()
+
+This wasn't making harm with ordinary DAPM kcontrols since data->widget is NULL for
+them.
+
+Fixes: 9e1fda4ae158 (ASoC: dapm: Implement mixer input auto-disable)
+Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/reg.h  |    1 +
- arch/powerpc/kernel/process.c   |   34 ++++++++++++++++++++++++++++------
- arch/powerpc/kernel/signal_32.c |    2 ++
- arch/powerpc/kernel/signal_64.c |    2 ++
- arch/powerpc/kernel/tm.S        |    2 +-
- 5 files changed, 34 insertions(+), 7 deletions(-)
+ sound/soc/soc-dapm.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/arch/powerpc/include/asm/reg.h
-+++ b/arch/powerpc/include/asm/reg.h
-@@ -213,6 +213,7 @@
- #define SPRN_ACOP	0x1F	/* Available Coprocessor Register */
- #define SPRN_TFIAR	0x81	/* Transaction Failure Inst Addr   */
- #define SPRN_TEXASR	0x82	/* Transaction EXception & Summary */
-+#define   TEXASR_FS	__MASK(63-36)	/* Transaction Failure Summary */
- #define SPRN_TEXASRU	0x83	/* ''	   ''	   ''	 Upper 32  */
- #define SPRN_TFHAR	0x80	/* Transaction Failure Handler Addr */
- #define SPRN_CTRLF	0x088
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -610,6 +610,31 @@ out_and_saveregs:
- 	tm_save_sprs(thr);
- }
- 
-+extern void __tm_recheckpoint(struct thread_struct *thread,
-+			      unsigned long orig_msr);
-+
-+void tm_recheckpoint(struct thread_struct *thread,
-+		     unsigned long orig_msr)
-+{
-+	unsigned long flags;
-+
-+	/* We really can't be interrupted here as the TEXASR registers can't
-+	 * change and later in the trecheckpoint code, we have a userspace R1.
-+	 * So let's hard disable over this region.
-+	 */
-+	local_irq_save(flags);
-+	hard_irq_disable();
-+
-+	/* The TM SPRs are restored here, so that TEXASR.FS can be set
-+	 * before the trecheckpoint and no explosion occurs.
-+	 */
-+	tm_restore_sprs(thread);
-+
-+	__tm_recheckpoint(thread, orig_msr);
-+
-+	local_irq_restore(flags);
-+}
-+
- static inline void tm_recheckpoint_new_task(struct task_struct *new)
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -251,7 +251,6 @@ static int dapm_kcontrol_data_alloc(stru
+ static void dapm_kcontrol_free(struct snd_kcontrol *kctl)
  {
- 	unsigned long msr;
-@@ -628,13 +653,10 @@ static inline void tm_recheckpoint_new_t
- 	if (!new->thread.regs)
- 		return;
- 
--	/* The TM SPRs are restored here, so that TEXASR.FS can be set
--	 * before the trecheckpoint and no explosion occurs.
--	 */
--	tm_restore_sprs(&new->thread);
--
--	if (!MSR_TM_ACTIVE(new->thread.regs->msr))
-+	if (!MSR_TM_ACTIVE(new->thread.regs->msr)){
-+		tm_restore_sprs(&new->thread);
- 		return;
-+	}
- 	msr = new->thread.tm_orig_msr;
- 	/* Recheckpoint to restore original checkpointed register state. */
- 	TM_DEBUG("*** tm_recheckpoint of pid %d "
---- a/arch/powerpc/kernel/signal_32.c
-+++ b/arch/powerpc/kernel/signal_32.c
-@@ -881,6 +881,8 @@ static long restore_tm_user_regs(struct
- 	 * transactional versions should be loaded.
- 	 */
- 	tm_enable();
-+	/* Make sure the transaction is marked as failed */
-+	current->thread.tm_texasr |= TEXASR_FS;
- 	/* This loads the checkpointed FP/VEC state, if used */
- 	tm_recheckpoint(&current->thread, msr);
- 	/* Get the top half of the MSR */
---- a/arch/powerpc/kernel/signal_64.c
-+++ b/arch/powerpc/kernel/signal_64.c
-@@ -527,6 +527,8 @@ static long restore_tm_sigcontexts(struc
- 	}
- #endif
- 	tm_enable();
-+	/* Make sure the transaction is marked as failed */
-+	current->thread.tm_texasr |= TEXASR_FS;
- 	/* This loads the checkpointed FP/VEC state, if used */
- 	tm_recheckpoint(&current->thread, msr);
- 
---- a/arch/powerpc/kernel/tm.S
-+++ b/arch/powerpc/kernel/tm.S
-@@ -307,7 +307,7 @@ dont_backup_fp:
- 	 *	Call with IRQs off, stacks get all out of sync for
- 	 *	some periods in here!
- 	 */
--_GLOBAL(tm_recheckpoint)
-+_GLOBAL(__tm_recheckpoint)
- 	mfcr	r5
- 	mflr	r0
- 	stw	r5, 8(r1)
+ 	struct dapm_kcontrol_data *data = snd_kcontrol_chip(kctl);
+-	kfree(data->widget);
+ 	kfree(data->wlist);
+ 	kfree(data);
+ }
 
 
