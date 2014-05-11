@@ -1,146 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070AbaEKQfj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 12:35:39 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59874 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754226AbaEKQfi (ORCPT
+	id S1755792AbaEKQpl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 12:45:41 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:58978 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948AbaEKQpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 12:35:38 -0400
-Date: Sun, 11 May 2014 18:35:31 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dongsheng Yang <dongsheng081251@gmail.com>
-Cc: "yangds.fnst" <yangds.fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, mingo@redhat.com,
-        bsegall@google.com
-Subject: Re: Fwd: [PATCH] sched: Distinguish sched_wakeup event when wake up
- a task which did schedule out or not.
-Message-ID: <20140511163531.GG30445@twins.programming.kicks-ass.net>
-References: <53683B14.3060702@cn.fujitsu.com>
- <1399341154-11785-1-git-send-email-yangds.fnst@cn.fujitsu.com>
- <20140510152902.GW11096@twins.programming.kicks-ass.net>
- <536F90BE.2080806@gmail.com>
- <CA+qeAOr_PrBuo+qfjNoaZyHF21p=8UgQy1oZOjAxahhYTyrvLQ@mail.gmail.com>
+	Sun, 11 May 2014 12:45:38 -0400
+Date: Sun, 11 May 2014 17:45:30 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, tytso@mit.edu
+Subject: Re: [GIT PULL] Detaching mounts on unlink for 3.15
+Message-ID: <20140511164530.GB18016@ZenIV.linux.org.uk>
+References: <87zjjp3e7w.fsf@x220.int.ebiederm.org>
+ <87ppkl1xb7.fsf@x220.int.ebiederm.org>
+ <20140413215242.GP18016@ZenIV.linux.org.uk>
+ <87y4z8uzqw.fsf_-_@x220.int.ebiederm.org>
+ <87ppkhc4pp.fsf@x220.int.ebiederm.org>
+ <87ha5r3emw.fsf_-_@x220.int.ebiederm.org>
+ <20140417202237.GA18016@ZenIV.linux.org.uk>
+ <87tx9rwsz4.fsf@x220.int.ebiederm.org>
+ <20140417221203.GC18016@ZenIV.linux.org.uk>
+ <20140420054108.GQ18016@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZbmePlECXulV3R7u"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+qeAOr_PrBuo+qfjNoaZyHF21p=8UgQy1oZOjAxahhYTyrvLQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140420054108.GQ18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Apr 20, 2014 at 06:41:08AM +0100, Al Viro wrote:
+> 	<do task_work_add or schedule_delayed_work song and dance>
+> right in the end of mntput_no_expire().  OK, now I have something that
+> looks like a complete solution.  The last missing bit is to take all
+> filp_close() of acct->file to kernel thread, and have them done via
+> __fput_sync() there.  Then auto-close (done from cleanup_mnt()) will
+> consist of shutting down all affected acct and waiting for that kernel
+> thread to run through everything currently in its queue.  That'll take
+> care of waiting until acct(NULL) done by somebody else gets through closing
+> the file and through corresponding mntput().  And *those* mntput() also
+> can be synchronous - they are clones of the one we hadn't finished shutting
+> down yet, so both dput() and deactivate_super() will bugger off immediately.
+> So we just mark those instead-of-mnt_pin() clones as MNT_INTERNAL.  Voila.
+> After that ->mnt_pinned crap dies, acct auto-close ought to be race-free
+> and we get the actual fs shutdown guaranteed to be on shallow stack, without
+> extra context switches, etc. in the normal case.
 
---ZbmePlECXulV3R7u
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sigh...  It's really messy.
+	All versions since lazy fput introduction have acct_auto_close()
+doing the wrong thing on r/o remount of superblock; we want the damn file
+closed *before* we go further than acct_auto_close().  Worse, we are
+holding ->s_umount there, so any kind of waiting would have to be very
+careful to avoid deadlocks.  What's more, prevention of open for write
+hits acct_auto_close(), so even if we wait there, we still have a window
+when new acct file could be opened and not auto-closed.
+	All versions have problems with acct_process() in the middle of
+umount(); originally it was a blatant call of ->write() happening without
+any regard for file getting closed, then it was file getting written to
+and closed in the middle of fs shutdown, then - write/close capable of
+pushing fs shutdown past the return from umount(2).
+	All versions have problems with acct(NULL) vs. umount - the latter
+does not wait for the former.  Eric's patches plug that one, but there's
+a serious deadlock potential.
 
-On Sun, May 11, 2014 at 11:24:22PM +0800, Dongsheng Yang wrote:
-> Actually, this patch does not attempt to solve the race condition.
-> It only want to avoid sched:sched_wakeup with success=3D=3Dtrue in
-> a fake wakeup, as explained below.
->=20
-> > So the fundamental wait loop is:
-> >
-> >    for (;;) {
-> >         set_current_state(TASK_UNINTERRUPTIBLE);
-> >         if (cond)
-> >                 break;
-> >         schedule();
-> >    }
-> >    __set_task_state(TASK_RUNNING);
-> >
-> > And the fundamental wakeup is:
-> >
-> >    cond =3D true;
-> >    wake_up_process(TASK_NORMAL);
-> >
-> > And this is very much on purpose a lock-free but strictly ordered
-> > scenario. It is a variation of:
-> >
-> >    X =3D Y =3D 0
-> >
-> >    (wait)       (wake)
-> >    [w] X =3D 1    [w] Y =3D 1
-> >    MB           MB
-> >    [r] Y                [r] X
-> >
-> > [ where: X :=3D state, Y :=3D cond ]
-> >
-> > And we all 'know' that the only provided guarantee is that:
-> >    X=3D=3D0 && Y=3D=3D0
-> > is impossible -- but only that, all 3 other states are observable.
-> >
-> > This guarantee means that its impossible to both miss the condition and
-> > the wakeup; iow. it guarantees fwd progress.
-> >
-> > OTOH its fundamentally racy, nothing guarantees we will not 'observe' b=
-oth
-> > the condition and the wakeup.
-> >
-> > The setting of .success=3Dfalse when ->on_rq is actively wrong, suppose
-> > the waiter has already observed cond=3D=3Dfalse but has not yet gotten =
-to
-> > schedule(), at that point the wakeup happens and sees ->on_rq=3D=3D1. T=
-he
-> > wakeup is still very much a real wakeup.
->=20
->=20
-> Yes, if a wakeup happens before schedule(), wakeup
-> sees ->on_rq=3D=3D1. Then we can get an event with .success=3D=3Dfalse.
-> But I think it is not a real wakeup. :(
->=20
-> Yes, at this moment, maybe the task is already out of run queue.
-> But *this* wakeup did not move it back to run queue, it only
-> change the state of it to TASK_RUNNING. I believe the next
-> wakeup for this task will do the real wake up moving it back
-> to run queue.
->=20
-> And if scheduler really wake it up, we can get an event with success=3D=
-=3Dtrue.
->=20
-> Anyway, what I want with this patch is to make scheduler raise accurate
-> events when waking up a task.
->=20
-> If a wakeup only change the state of task, raise a event with success=3D=
-=3Dfalse.
-> If a wakeup move a task back to runqueue, .success=3D=3Dtrue.
->=20
-> It means, we do not need to care about the task is on_rq or not currently,
-> the value of .success is decided by the behavior we did in the function
-> of try_to_wake_up().
->=20
-> Wish I explain myself clearly.
-
-So if the wait side has already observed cond=3D=3Dfalse, then without the
-wakeup, which still potentially has ->on_rq =3D=3D true, it would block.
-Therefore the wakeup is a _real_ wakeup.
-
-We fundamentally cannot know, on the wake side, if the wait side has or
-has not observed cond, and therefore the distinction you're trying to
-make is a false one.
-
---ZbmePlECXulV3R7u
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTb6bNAAoJEHZH4aRLwOS60LYP/2QLjQD8PAz46dAC6M/rdhQA
-5xMBWODgPV0G8iA0iDLPKOEh56ttzuN/1UxPjPEfqAJXMc/Rpc8HDKlFN7vh+Bbu
-WKWwrNlulMnx6bOwqODT3yhfdLBCv3Q3Jh/Ofv27qBcvC/el7M/Il68kWTS1YbHK
-qLrT6ER7HKWBHtHypQwk7bbV+m4YeWpaqyiDL+oiSNjle3GVNltv+O5k1Cz9PmkP
-HjREzcWeWXgIeG0Xn+xZuJcF5jXsC4xTzB2AParOkx5T6+sHnPemBrtl/trbykXu
-XRs9QXf9Ru/Uegwjcv5EMpJ706hMF1WuvujnzxO5aM6v35fG5M9InyV01zqlJVpk
-SRU+Bi82FD0sTCAysslNVTzl990ydBY2PITthGipJpSvTBohyF7mS07fGxl15j5c
-xV7COilMuDlvMCCAFUi/EHdKhsQV33lZfaQmv+O3RKhGnJJ9J1TjOOKk9Sea/Ib5
-eHVTzhELlAp7Hsso7zdelqQGUjyvus22OZQfteNItgMZvpuPuu/+ZEsxzrhpVl59
-24X/+A0F2ixPxsECDf5gtOZJLY6tQl0VN7PQKDhtE/vLfI1yN1OX+amXvBvCVKO1
-DFCCGgVqQpvqd5abPm4zx5FAHF6qS6+qqeZ/hB1BeZBsXLK60MIgVLTPlX3BnWux
-TFyjND/aR68BpoPW5MRa
-=QJlM
------END PGP SIGNATURE-----
-
---ZbmePlECXulV3R7u--
+Who the hell had thought that auto-close was a good thing to have?  Neither
+BSD (where the whole thing originated) nor original Linux implementation
+did that - umount /var while accounting was turned on would simply say
+that /var was busy and fail...  And no, simply ripping that idiocy out
+won't fly - while Debian has /etc/init.d/acct stop turning the sucker off,
+Fedora psacct doesn't do anything of that sort and relies on auto-close
+instead, so getting rid of auto-close will lead to such boxen failing to
+unmount /var on shutdown ;-/
