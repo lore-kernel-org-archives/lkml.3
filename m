@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933843AbaEKTZj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:25:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48410 "EHLO
+	id S964815AbaEKThg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:37:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48417 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933781AbaEKTZe (ORCPT
+	with ESMTP id S933824AbaEKTZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:25:34 -0400
+	Sun, 11 May 2014 15:25:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, Tang Chen <tangchen@cn.fujitsu.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>
-Subject: [PATCH 3.14 70/83] aio: v4 ensure access to ctx->ring_pages is correctly serialised for migration
-Date: Sun, 11 May 2014 21:20:11 +0200
-Message-Id: <20140511191916.039840688@linuxfoundation.org>
+        Raphos <raphoszap@laposte.net>, Jeff Layton <jlayton@redhat.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.14 71/83] lockd: ensure we tear down any live sockets when socket creation fails during lockd_up
+Date: Sun, 11 May 2014 21:20:12 +0200
+Message-Id: <20140511191916.176140233@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -29,302 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin LaHaise <bcrl@kvack.org>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit fa8a53c39f3fdde98c9eace6a9b412143f0f6ed6 upstream.
+commit 679b033df48422191c4cac52b610d9980e019f9b upstream.
 
-As reported by Tang Chen, Gu Zheng and Yasuaki Isimatsu, the following issues
-exist in the aio ring page migration support.
+We had a Fedora ABRT report with a stack trace like this:
 
-As a result, for example, we have the following problem:
+kernel BUG at net/sunrpc/svc.c:550!
+invalid opcode: 0000 [#1] SMP
+[...]
+CPU: 2 PID: 913 Comm: rpc.nfsd Not tainted 3.13.6-200.fc20.x86_64 #1
+Hardware name: Hewlett-Packard HP ProBook 4740s/1846, BIOS 68IRR Ver. F.40 01/29/2013
+task: ffff880146b00000 ti: ffff88003f9b8000 task.ti: ffff88003f9b8000
+RIP: 0010:[<ffffffffa0305fa8>]  [<ffffffffa0305fa8>] svc_destroy+0x128/0x130 [sunrpc]
+RSP: 0018:ffff88003f9b9de0  EFLAGS: 00010206
+RAX: ffff88003f829628 RBX: ffff88003f829600 RCX: 00000000000041ee
+RDX: 0000000000000000 RSI: 0000000000000286 RDI: 0000000000000286
+RBP: ffff88003f9b9de8 R08: 0000000000017360 R09: ffff88014fa97360
+R10: ffffffff8114ce57 R11: ffffea00051c9c00 R12: ffff88003f829600
+R13: 00000000ffffff9e R14: ffffffff81cc7cc0 R15: 0000000000000000
+FS:  00007f4fde284840(0000) GS:ffff88014fa80000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007f4fdf5192f8 CR3: 00000000a569a000 CR4: 00000000001407e0
+Stack:
+ ffff88003f792300 ffff88003f9b9e18 ffffffffa02de02a 0000000000000000
+ ffffffff81cc7cc0 ffff88003f9cb000 0000000000000008 ffff88003f9b9e60
+ ffffffffa033bb35 ffffffff8131c86c ffff88003f9cb000 ffff8800a5715008
+Call Trace:
+ [<ffffffffa02de02a>] lockd_up+0xaa/0x330 [lockd]
+ [<ffffffffa033bb35>] nfsd_svc+0x1b5/0x2f0 [nfsd]
+ [<ffffffff8131c86c>] ? simple_strtoull+0x2c/0x50
+ [<ffffffffa033c630>] ? write_pool_threads+0x280/0x280 [nfsd]
+ [<ffffffffa033c6bb>] write_threads+0x8b/0xf0 [nfsd]
+ [<ffffffff8114efa4>] ? __get_free_pages+0x14/0x50
+ [<ffffffff8114eff6>] ? get_zeroed_page+0x16/0x20
+ [<ffffffff811dec51>] ? simple_transaction_get+0xb1/0xd0
+ [<ffffffffa033c098>] nfsctl_transaction_write+0x48/0x80 [nfsd]
+ [<ffffffff811b8b34>] vfs_write+0xb4/0x1f0
+ [<ffffffff811c3f99>] ? putname+0x29/0x40
+ [<ffffffff811b9569>] SyS_write+0x49/0xa0
+ [<ffffffff810fc2a6>] ? __audit_syscall_exit+0x1f6/0x2a0
+ [<ffffffff816962e9>] system_call_fastpath+0x16/0x1b
+Code: 31 c0 e8 82 db 37 e1 e9 2a ff ff ff 48 8b 07 8b 57 14 48 c7 c7 d5 c6 31 a0 48 8b 70 20 31 c0 e8 65 db 37 e1 e9 f4 fe ff ff 0f 0b <0f> 0b 66 0f 1f 44 00 00 0f 1f 44 00 00 55 48 89 e5 41 56 41 55
+RIP  [<ffffffffa0305fa8>] svc_destroy+0x128/0x130 [sunrpc]
+ RSP <ffff88003f9b9de0>
 
-            thread 1                      |              thread 2
-                                          |
-aio_migratepage()                         |
- |-> take ctx->completion_lock            |
- |-> migrate_page_copy(new, old)          |
- |   *NOW*, ctx->ring_pages[idx] == old   |
-                                          |
-                                          |    *NOW*, ctx->ring_pages[idx] == old
-                                          |    aio_read_events_ring()
-                                          |     |-> ring = kmap_atomic(ctx->ring_pages[0])
-                                          |     |-> ring->head = head;          *HERE, write to the old ring page*
-                                          |     |-> kunmap_atomic(ring);
-                                          |
- |-> ctx->ring_pages[idx] = new           |
- |   *BUT NOW*, the content of            |
- |    ring_pages[idx] is old.             |
- |-> release ctx->completion_lock         |
+Evidently, we created some lockd sockets and then failed to create
+others. make_socks then returned an error and we tried to tear down the
+svc, but svc->sv_permsocks was not empty so we ended up tripping over
+the BUG() in svc_destroy().
 
-As above, the new ring page will not be updated.
+Fix this by ensuring that we tear down any live sockets we created when
+socket creation is going to return an error.
 
-Fix this issue, as well as prevent races in aio_ring_setup() by holding
-the ring_lock mutex during kioctx setup and page migration.  This avoids
-the overhead of taking another spinlock in aio_read_events_ring() as Tang's
-and Gu's original fix did, pushing the overhead into the migration code.
-
-Note that to handle the nesting of ring_lock inside of mmap_sem, the
-migratepage operation uses mutex_trylock().  Page migration is not a 100%
-critical operation in this case, so the ocassional failure can be
-tolerated.  This issue was reported by Sasha Levin.
-
-Based on feedback from Linus, avoid the extra taking of ctx->completion_lock.
-Instead, make page migration fully serialised by mapping->private_lock, and
-have aio_free_ring() simply disconnect the kioctx from the mapping by calling
-put_aio_ring_file() before touching ctx->ring_pages[].  This simplifies the
-error handling logic in aio_migratepage(), and should improve robustness.
-
-v4: always do mutex_unlock() in cases when kioctx setup fails.
-
-Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Fixes: 786185b5f8abefa (SUNRPC: move per-net operations from...)
+Reported-by: Raphos <raphoszap@laposte.net>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Reviewed-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/aio.c |  120 +++++++++++++++++++++++++++++++++++----------------------------
- 1 file changed, 67 insertions(+), 53 deletions(-)
+ fs/lockd/svc.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -52,7 +52,8 @@
- struct aio_ring {
- 	unsigned	id;	/* kernel internal index number */
- 	unsigned	nr;	/* number of io_events */
--	unsigned	head;
-+	unsigned	head;	/* Written to by userland or under ring_lock
-+				 * mutex by aio_read_events_ring(). */
- 	unsigned	tail;
- 
- 	unsigned	magic;
-@@ -243,6 +244,11 @@ static void aio_free_ring(struct kioctx
- {
- 	int i;
- 
-+	/* Disconnect the kiotx from the ring file.  This prevents future
-+	 * accesses to the kioctx from page migration.
-+	 */
-+	put_aio_ring_file(ctx);
-+
- 	for (i = 0; i < ctx->nr_pages; i++) {
- 		struct page *page;
- 		pr_debug("pid(%d) [%d] page->count=%d\n", current->pid, i,
-@@ -254,8 +260,6 @@ static void aio_free_ring(struct kioctx
- 		put_page(page);
- 	}
- 
--	put_aio_ring_file(ctx);
--
- 	if (ctx->ring_pages && ctx->ring_pages != ctx->internal_pages) {
- 		kfree(ctx->ring_pages);
- 		ctx->ring_pages = NULL;
-@@ -283,29 +287,38 @@ static int aio_migratepage(struct addres
- {
- 	struct kioctx *ctx;
- 	unsigned long flags;
-+	pgoff_t idx;
- 	int rc;
- 
- 	rc = 0;
- 
--	/* Make sure the old page hasn't already been changed */
-+	/* mapping->private_lock here protects against the kioctx teardown.  */
- 	spin_lock(&mapping->private_lock);
- 	ctx = mapping->private_data;
--	if (ctx) {
--		pgoff_t idx;
--		spin_lock_irqsave(&ctx->completion_lock, flags);
--		idx = old->index;
--		if (idx < (pgoff_t)ctx->nr_pages) {
--			if (ctx->ring_pages[idx] != old)
--				rc = -EAGAIN;
--		} else
--			rc = -EINVAL;
--		spin_unlock_irqrestore(&ctx->completion_lock, flags);
-+	if (!ctx) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	/* The ring_lock mutex.  The prevents aio_read_events() from writing
-+	 * to the ring's head, and prevents page migration from mucking in
-+	 * a partially initialized kiotx.
-+	 */
-+	if (!mutex_trylock(&ctx->ring_lock)) {
-+		rc = -EAGAIN;
-+		goto out;
-+	}
-+
-+	idx = old->index;
-+	if (idx < (pgoff_t)ctx->nr_pages) {
-+		/* Make sure the old page hasn't already been changed */
-+		if (ctx->ring_pages[idx] != old)
-+			rc = -EAGAIN;
- 	} else
- 		rc = -EINVAL;
--	spin_unlock(&mapping->private_lock);
- 
- 	if (rc != 0)
--		return rc;
-+		goto out_unlock;
- 
- 	/* Writeback must be complete */
- 	BUG_ON(PageWriteback(old));
-@@ -314,38 +327,26 @@ static int aio_migratepage(struct addres
- 	rc = migrate_page_move_mapping(mapping, new, old, NULL, mode, 1);
- 	if (rc != MIGRATEPAGE_SUCCESS) {
- 		put_page(new);
--		return rc;
-+		goto out_unlock;
- 	}
- 
--	/* We can potentially race against kioctx teardown here.  Use the
--	 * address_space's private data lock to protect the mapping's
--	 * private_data.
-+	/* Take completion_lock to prevent other writes to the ring buffer
-+	 * while the old page is copied to the new.  This prevents new
-+	 * events from being lost.
- 	 */
--	spin_lock(&mapping->private_lock);
--	ctx = mapping->private_data;
--	if (ctx) {
--		pgoff_t idx;
--		spin_lock_irqsave(&ctx->completion_lock, flags);
--		migrate_page_copy(new, old);
--		idx = old->index;
--		if (idx < (pgoff_t)ctx->nr_pages) {
--			/* And only do the move if things haven't changed */
--			if (ctx->ring_pages[idx] == old)
--				ctx->ring_pages[idx] = new;
--			else
--				rc = -EAGAIN;
--		} else
--			rc = -EINVAL;
--		spin_unlock_irqrestore(&ctx->completion_lock, flags);
--	} else
--		rc = -EBUSY;
--	spin_unlock(&mapping->private_lock);
-+	spin_lock_irqsave(&ctx->completion_lock, flags);
-+	migrate_page_copy(new, old);
-+	BUG_ON(ctx->ring_pages[idx] != old);
-+	ctx->ring_pages[idx] = new;
-+	spin_unlock_irqrestore(&ctx->completion_lock, flags);
- 
--	if (rc == MIGRATEPAGE_SUCCESS)
--		put_page(old);
--	else
--		put_page(new);
-+	/* The old page is no longer accessible. */
-+	put_page(old);
- 
-+out_unlock:
-+	mutex_unlock(&ctx->ring_lock);
-+out:
-+	spin_unlock(&mapping->private_lock);
- 	return rc;
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -235,6 +235,7 @@ out_err:
+ 	if (warned++ == 0)
+ 		printk(KERN_WARNING
+ 			"lockd_up: makesock failed, error=%d\n", err);
++	svc_shutdown_net(serv, net);
+ 	return err;
  }
- #endif
-@@ -380,7 +381,7 @@ static int aio_setup_ring(struct kioctx
- 	file = aio_private_file(ctx, nr_pages);
- 	if (IS_ERR(file)) {
- 		ctx->aio_ring_file = NULL;
--		return -EAGAIN;
-+		return -ENOMEM;
- 	}
  
- 	ctx->aio_ring_file = file;
-@@ -415,7 +416,7 @@ static int aio_setup_ring(struct kioctx
- 
- 	if (unlikely(i != nr_pages)) {
- 		aio_free_ring(ctx);
--		return -EAGAIN;
-+		return -ENOMEM;
- 	}
- 
- 	ctx->mmap_size = nr_pages * PAGE_SIZE;
-@@ -429,7 +430,7 @@ static int aio_setup_ring(struct kioctx
- 	if (IS_ERR((void *)ctx->mmap_base)) {
- 		ctx->mmap_size = 0;
- 		aio_free_ring(ctx);
--		return -EAGAIN;
-+		return -ENOMEM;
- 	}
- 
- 	pr_debug("mmap address: 0x%08lx\n", ctx->mmap_base);
-@@ -556,6 +557,10 @@ static int ioctx_add_table(struct kioctx
- 					rcu_read_unlock();
- 					spin_unlock(&mm->ioctx_lock);
- 
-+					/* While kioctx setup is in progress,
-+					 * we are protected from page migration
-+					 * changes ring_pages by ->ring_lock.
-+					 */
- 					ring = kmap_atomic(ctx->ring_pages[0]);
- 					ring->id = ctx->id;
- 					kunmap_atomic(ring);
-@@ -640,24 +645,28 @@ static struct kioctx *ioctx_alloc(unsign
- 
- 	ctx->max_reqs = nr_events;
- 
--	if (percpu_ref_init(&ctx->users, free_ioctx_users))
--		goto err;
--
--	if (percpu_ref_init(&ctx->reqs, free_ioctx_reqs))
--		goto err;
--
- 	spin_lock_init(&ctx->ctx_lock);
- 	spin_lock_init(&ctx->completion_lock);
- 	mutex_init(&ctx->ring_lock);
-+	/* Protect against page migration throughout kiotx setup by keeping
-+	 * the ring_lock mutex held until setup is complete. */
-+	mutex_lock(&ctx->ring_lock);
- 	init_waitqueue_head(&ctx->wait);
- 
- 	INIT_LIST_HEAD(&ctx->active_reqs);
- 
-+	if (percpu_ref_init(&ctx->users, free_ioctx_users))
-+		goto err;
-+
-+	if (percpu_ref_init(&ctx->reqs, free_ioctx_reqs))
-+		goto err;
-+
- 	ctx->cpu = alloc_percpu(struct kioctx_cpu);
- 	if (!ctx->cpu)
- 		goto err;
- 
--	if (aio_setup_ring(ctx) < 0)
-+	err = aio_setup_ring(ctx);
-+	if (err < 0)
- 		goto err;
- 
- 	atomic_set(&ctx->reqs_available, ctx->nr_events - 1);
-@@ -683,6 +692,9 @@ static struct kioctx *ioctx_alloc(unsign
- 	if (err)
- 		goto err_cleanup;
- 
-+	/* Release the ring_lock mutex now that all setup is complete. */
-+	mutex_unlock(&ctx->ring_lock);
-+
- 	pr_debug("allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
- 		 ctx, ctx->user_id, mm, ctx->nr_events);
- 	return ctx;
-@@ -692,6 +704,7 @@ err_cleanup:
- err_ctx:
- 	aio_free_ring(ctx);
- err:
-+	mutex_unlock(&ctx->ring_lock);
- 	free_percpu(ctx->cpu);
- 	free_percpu(ctx->reqs.pcpu_count);
- 	free_percpu(ctx->users.pcpu_count);
-@@ -1024,6 +1037,7 @@ static long aio_read_events_ring(struct
- 
- 	mutex_lock(&ctx->ring_lock);
- 
-+	/* Access to ->ring_pages here is protected by ctx->ring_lock. */
- 	ring = kmap_atomic(ctx->ring_pages[0]);
- 	head = ring->head;
- 	tail = ring->tail;
 
 
