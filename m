@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933105AbaEKTW4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:22:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48152 "EHLO
+	id S934371AbaEKTvI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:51:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48156 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933084AbaEKTWw (ORCPT
+	with ESMTP id S933093AbaEKTWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:22:52 -0400
+	Sun, 11 May 2014 15:22:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gopesh Kumar Chaudhary <gopchaud@in.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 3.10 11/48] virtio_balloon: dont softlockup on huge balloon changes.
-Date: Sun, 11 May 2014 21:19:45 +0200
-Message-Id: <20140511191949.667850383@linuxfoundation.org>
+        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.14 32/83] b43: Fix machine check error due to improper access of B43_MMIO_PSM_PHY_HDR
+Date: Sun, 11 May 2014 21:19:33 +0200
+Message-Id: <20140511191911.398933860@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+From: Rafał Miłecki <zajec5@gmail.com>
 
-commit 1f74ef0f2d7d692fcd615621e0e734c3e7771413 upstream.
+commit 12cd43c6ed6da7bf7c5afbd74da6959cda6d056b upstream.
 
-When adding or removing 100G from a balloon:
+Register B43_MMIO_PSM_PHY_HDR is 16 bit one, so accessing it with 32b
+functions isn't safe. On my machine it causes delayed (!) CPU exception:
 
-    BUG: soft lockup - CPU#0 stuck for 22s! [vballoon:367]
+Disabling lock debugging due to kernel taint
+mce: [Hardware Error]: CPU 0: Machine Check Exception: 4 Bank 4: b200000000070f0f
+mce: [Hardware Error]: TSC 164083803dc
+mce: [Hardware Error]: PROCESSOR 2:20fc2 TIME 1396650505 SOCKET 0 APIC 0 microcode 0
+mce: [Hardware Error]: Run the above through 'mcelog --ascii'
+mce: [Hardware Error]: Machine check: Processor context corrupt
+Kernel panic - not syncing: Fatal machine check on current CPU
+Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
 
-We have a wait_event_interruptible(), but the condition is always true
-(more ballooning to do) so we don't ever sleep.  We also have a
-wait_event() for the host to ack, but that is also always true as QEMU
-is synchronous for balloon operations.
-
-Reported-by: Gopesh Kumar Chaudhary <gopchaud@in.ibm.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/virtio/virtio_balloon.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/wireless/b43/phy_n.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -311,6 +311,12 @@ static int balloon(void *_vballoon)
- 		else if (diff < 0)
- 			leak_balloon(vb, -diff);
- 		update_balloon_size(vb);
-+
-+		/*
-+		 * For large balloon changes, we could spend a lot of time
-+		 * and always have work to do.  Be nice if preempt disabled.
-+		 */
-+		cond_resched();
+--- a/drivers/net/wireless/b43/phy_n.c
++++ b/drivers/net/wireless/b43/phy_n.c
+@@ -5176,22 +5176,22 @@ static void b43_nphy_channel_setup(struc
+ 	int ch = new_channel->hw_value;
+ 
+ 	u16 old_band_5ghz;
+-	u32 tmp32;
++	u16 tmp16;
+ 
+ 	old_band_5ghz =
+ 		b43_phy_read(dev, B43_NPHY_BANDCTL) & B43_NPHY_BANDCTL_5GHZ;
+ 	if (new_channel->band == IEEE80211_BAND_5GHZ && !old_band_5ghz) {
+-		tmp32 = b43_read32(dev, B43_MMIO_PSM_PHY_HDR);
+-		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32 | 4);
++		tmp16 = b43_read16(dev, B43_MMIO_PSM_PHY_HDR);
++		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16 | 4);
+ 		b43_phy_set(dev, B43_PHY_B_BBCFG, 0xC000);
+-		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32);
++		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16);
+ 		b43_phy_set(dev, B43_NPHY_BANDCTL, B43_NPHY_BANDCTL_5GHZ);
+ 	} else if (new_channel->band == IEEE80211_BAND_2GHZ && old_band_5ghz) {
+ 		b43_phy_mask(dev, B43_NPHY_BANDCTL, ~B43_NPHY_BANDCTL_5GHZ);
+-		tmp32 = b43_read32(dev, B43_MMIO_PSM_PHY_HDR);
+-		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32 | 4);
++		tmp16 = b43_read16(dev, B43_MMIO_PSM_PHY_HDR);
++		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16 | 4);
+ 		b43_phy_mask(dev, B43_PHY_B_BBCFG, 0x3FFF);
+-		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32);
++		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16);
  	}
- 	return 0;
- }
+ 
+ 	b43_chantab_phy_upload(dev, e);
 
 
