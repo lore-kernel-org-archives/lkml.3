@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934194AbaEKTe1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:34:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48473 "EHLO
+	id S934324AbaEKTey (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:34:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48464 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933911AbaEKT0L (ORCPT
+	with ESMTP id S933915AbaEKT0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:26:11 -0400
+	Sun, 11 May 2014 15:26:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.10 42/48] Skip intel_crt_init for Dell XPS 8700
-Date: Sun, 11 May 2014 21:20:16 +0200
-Message-Id: <20140511191953.762160746@linuxfoundation.org>
+        Jens Axboe <axboe@fb.com>, Laszlo Ersek <lersek@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 72/83] lib/percpu_counter.c: fix bad percpu counter state during suspend
+Date: Sun, 11 May 2014 21:20:13 +0200
+Message-Id: <20140511191916.306744156@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Giacomo Comes <comes@naic.edu>
+From: Jens Axboe <axboe@fb.com>
 
-commit 10b6ee4a87811a110cb01eaca01eb04da6801baf upstream.
+commit e39435ce68bb4685288f78b1a7e24311f7ef939f upstream.
 
-The Dell XPS 8700 has a onboard Display port and HDMI port and no VGA port.
-The call intel_crt_init freeze the machine, so skip such call.
+I got a bug report yesterday from Laszlo Ersek in which he states that
+his kvm instance fails to suspend.  Laszlo bisected it down to this
+commit 1cf7e9c68fe8 ("virtio_blk: blk-mq support") where virtio-blk is
+converted to use the blk-mq infrastructure.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73559
-Signed-off-by: Giacomo Comes <comes at naic.edu>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+After digging a bit, it became clear that the issue was with the queue
+drain.  blk-mq tracks queue usage in a percpu counter, which is
+incremented on request alloc and decremented when the request is freed.
+The initial hunt was for an inconsistency in blk-mq, but everything
+seemed fine.  In fact, the counter only returned crazy values when
+suspend was in progress.
+
+When a CPU is unplugged, the percpu counters merges that CPU state with
+the general state.  blk-mq takes care to register a hotcpu notifier with
+the appropriate priority, so we know it runs after the percpu counter
+notifier.  However, the percpu counter notifier only merges the state
+when the CPU is fully gone.  This leaves a state transition where the
+CPU going away is no longer in the online mask, yet it still holds
+private values.  This means that in this state, percpu_counter_sum()
+returns invalid results, and the suspend then hangs waiting for
+abs(dead-cpu-value) requests to complete which of course will never
+happen.
+
+Fix this by clearing the state earlier, so we never have a case where
+the CPU isn't in online mask but still holds private state.  This bug
+has been there since forever, I guess we don't have a lot of users where
+percpu counters needs to be reliable during the suspend cycle.
+
+Signed-off-by: Jens Axboe <axboe@fb.com>
+Reported-by: Laszlo Ersek <lersek@redhat.com>
+Tested-by: Laszlo Ersek <lersek@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_crt.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ lib/percpu_counter.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_crt.c
-+++ b/drivers/gpu/drm/i915/intel_crt.c
-@@ -717,6 +717,14 @@ static const struct dmi_system_id intel_
- 			DMI_MATCH(DMI_PRODUCT_NAME, "ZGB"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_crt_dmi_callback,
-+		.ident = "DELL XPS 8700",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "XPS 8700"),
-+		},
-+	},
- 	{ }
- };
+--- a/lib/percpu_counter.c
++++ b/lib/percpu_counter.c
+@@ -169,7 +169,7 @@ static int percpu_counter_hotcpu_callbac
+ 	struct percpu_counter *fbc;
  
+ 	compute_batch_value();
+-	if (action != CPU_DEAD)
++	if (action != CPU_DEAD && action != CPU_DEAD_FROZEN)
+ 		return NOTIFY_OK;
+ 
+ 	cpu = (unsigned long)hcpu;
 
 
