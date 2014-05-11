@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758085AbaEKXeQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 19:34:16 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:59995 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757367AbaEKXeH (ORCPT
+	id S1758242AbaEKXfh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 19:35:37 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:52214 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753720AbaEKXeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 19:34:07 -0400
+	Sun, 11 May 2014 19:34:05 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
         Thomas Gleixner <tglx@linutronix.de>,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/5] irq_work: Force non-lazy works on IPI
-Date: Mon, 12 May 2014 01:33:54 +0200
-Message-Id: <1399851237-2226-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 1/5] irq_work: Architecture support for remote irq work raise
+Date: Mon, 12 May 2014 01:33:53 +0200
+Message-Id: <1399851237-2226-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1399851237-2226-1-git-send-email-fweisbec@gmail.com>
 References: <1399851237-2226-1-git-send-email-fweisbec@gmail.com>
@@ -26,182 +30,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As we plan to handle the full nohz IPI using irq work, we need to
-enforce non-lazy works outside the tick because it's called under
-hrtimer lock. This is not desired from the nohz callback revaluating the
-tick because it can take hrtimer lock itself.
+We are going to extend irq work to support remote queuing.
+
+So lets add a cpu argument to arch_irq_work_raise(). The architectures
+willing to support that must then provide the backend to raise irq work
+IPIs remotely.
+
+Initial support is provided for x86 and ARM since they are easily
+extended. The other archs that overwrite arch_irq_work_raise() seem
+to use local clock interrupts and therefore need deeper rewrite of their
+irq work support to implement remote raising.
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: David S. Miller <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Kevin Hilman <khilman@linaro.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- include/linux/irq_work.h |  1 +
- kernel/irq_work.c        | 58 ++++++++++++++++++++++++++----------------------
- kernel/timer.c           |  2 +-
- 3 files changed, 34 insertions(+), 27 deletions(-)
+ arch/Kconfig               | 12 ++++++++++++
+ arch/alpha/kernel/time.c   |  3 ++-
+ arch/arm/Kconfig           |  1 +
+ arch/arm/kernel/smp.c      |  4 ++--
+ arch/powerpc/kernel/time.c |  3 ++-
+ arch/sparc/kernel/pcr.c    |  3 ++-
+ arch/x86/Kconfig           |  1 +
+ arch/x86/kernel/irq_work.c | 10 ++--------
+ kernel/irq_work.c          |  4 ++--
+ 9 files changed, 26 insertions(+), 15 deletions(-)
 
-diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
-index 19ae05d..429b1ba 100644
---- a/include/linux/irq_work.h
-+++ b/include/linux/irq_work.h
-@@ -34,6 +34,7 @@ void init_irq_work(struct irq_work *work, void (*func)(struct irq_work *))
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 97ff872..3a38356 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -472,6 +472,18 @@ config HAVE_IRQ_EXIT_ON_IRQ_STACK
+ 	  This spares a stack switch and improves cache usage on softirq
+ 	  processing.
  
- bool irq_work_queue(struct irq_work *work);
- void irq_work_run(void);
-+void irq_work_run_tick(void);
- void irq_work_sync(struct irq_work *work);
++config HAVE_IRQ_WORK_IPI
++	bool
++	help
++	  Architecture supports raising irq work interrupts both locally and
++	  remotely. Without this capability, we can only trigger local irq works
++	  loosely handled by the generic timer tick with the bad implications
++	  coming along: the irq work is subject to HZ latency and it runs under
++	  the tick random locking scenario (possibly holding hrtimer lock).
++
++	  This capability is required on configs running with a very minimized
++	  tick rate like full dynticks.
++
+ #
+ # ABI hall of shame
+ #
+diff --git a/arch/alpha/kernel/time.c b/arch/alpha/kernel/time.c
+index ee39cee..2ff0c61 100644
+--- a/arch/alpha/kernel/time.c
++++ b/arch/alpha/kernel/time.c
+@@ -60,8 +60,9 @@ DEFINE_PER_CPU(u8, irq_work_pending);
+ #define test_irq_work_pending()      __get_cpu_var(irq_work_pending)
+ #define clear_irq_work_pending()     __get_cpu_var(irq_work_pending) = 0
+ 
+-void arch_irq_work_raise(void)
++void arch_irq_work_raise(int cpu)
+ {
++	WARN_ON_ONCE(cpu != smp_processor_id());
+ 	set_irq_work_pending_flag();
+ }
+ 
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index db3c541..7edce21 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -46,6 +46,7 @@ config ARM
+ 	select HAVE_HW_BREAKPOINT if (PERF_EVENTS && (CPU_V6 || CPU_V6K || CPU_V7))
+ 	select HAVE_IDE if PCI || ISA || PCMCIA
+ 	select HAVE_IRQ_TIME_ACCOUNTING
++	select HAVE_IRQ_WORK_IPI
+ 	select HAVE_KERNEL_GZIP
+ 	select HAVE_KERNEL_LZ4
+ 	select HAVE_KERNEL_LZMA
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 7c4fada..042a800 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -454,10 +454,10 @@ void arch_send_call_function_single_ipi(int cpu)
+ }
  
  #ifdef CONFIG_IRQ_WORK
+-void arch_irq_work_raise(void)
++void arch_irq_work_raise(int cpu)
+ {
+ 	if (is_smp())
+-		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
++		smp_cross_call(cpumask_of(cpu), IPI_IRQ_WORK);
+ }
+ #endif
+ 
+diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
+index 122a580..4de25f4 100644
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -464,9 +464,10 @@ DEFINE_PER_CPU(u8, irq_work_pending);
+ 
+ #endif /* 32 vs 64 bit */
+ 
+-void arch_irq_work_raise(void)
++void arch_irq_work_raise(int cpu)
+ {
+ 	preempt_disable();
++	WARN_ON_ONCE(cpu != smp_processor_id());
+ 	set_irq_work_pending_flag();
+ 	set_dec(1);
+ 	preempt_enable();
+diff --git a/arch/sparc/kernel/pcr.c b/arch/sparc/kernel/pcr.c
+index 269af58..0e5bfd9 100644
+--- a/arch/sparc/kernel/pcr.c
++++ b/arch/sparc/kernel/pcr.c
+@@ -43,8 +43,9 @@ void __irq_entry deferred_pcr_work_irq(int irq, struct pt_regs *regs)
+ 	set_irq_regs(old_regs);
+ }
+ 
+-void arch_irq_work_raise(void)
++void arch_irq_work_raise(int cpu)
+ {
++	WARN_ON_ONCE(cpu != smp_processor_id());
+ 	set_softint(1 << PIL_DEFERRED_PCR_WORK);
+ }
+ 
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 25d2c6f..b06f3fd 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -130,6 +130,7 @@ config X86
+ 	select HAVE_CC_STACKPROTECTOR
+ 	select GENERIC_CPU_AUTOPROBE
+ 	select HAVE_ARCH_AUDITSYSCALL
++	select HAVE_IRQ_WORK_IPI
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool y
+diff --git a/arch/x86/kernel/irq_work.c b/arch/x86/kernel/irq_work.c
+index 1de84e3..500ec1f 100644
+--- a/arch/x86/kernel/irq_work.c
++++ b/arch/x86/kernel/irq_work.c
+@@ -38,13 +38,7 @@ __visible void smp_trace_irq_work_interrupt(struct pt_regs *regs)
+ 	exiting_irq();
+ }
+ 
+-void arch_irq_work_raise(void)
++void arch_irq_work_raise(int cpu)
+ {
+-#ifdef CONFIG_X86_LOCAL_APIC
+-	if (!cpu_has_apic)
+-		return;
+-
+-	apic->send_IPI_self(IRQ_WORK_VECTOR);
+-	apic_wait_icr_idle();
+-#endif
++	apic->send_IPI_mask(cpumask_of(cpu), IRQ_WORK_VECTOR);
+ }
 diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index 2559383..0a554a6 100644
+index a82170e..2559383 100644
 --- a/kernel/irq_work.c
 +++ b/kernel/irq_work.c
-@@ -19,8 +19,8 @@
- #include <asm/processor.h>
+@@ -48,7 +48,7 @@ static bool irq_work_claim(struct irq_work *work)
+ 	return true;
+ }
  
- 
--static DEFINE_PER_CPU(struct llist_head, irq_work_list);
--static DEFINE_PER_CPU(int, irq_work_raised);
-+static DEFINE_PER_CPU(struct llist_head, lazy_list);
-+static DEFINE_PER_CPU(struct llist_head, raised_list);
- 
- /*
-  * Claim the entry so that no one else will poke at it.
-@@ -63,14 +63,14 @@ void __weak arch_irq_work_raise(int cpu)
-  */
- bool irq_work_queue(struct irq_work *work)
+-void __weak arch_irq_work_raise(void)
++void __weak arch_irq_work_raise(int cpu)
  {
-+	unsigned long flags;
-+
- 	/* Only queue if not already pending */
- 	if (!irq_work_claim(work))
- 		return false;
- 
- 	/* Queue the entry and raise the IPI if needed. */
--	preempt_disable();
--
--	llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
-+	local_irq_save(flags);
- 
  	/*
- 	 * If the work is not "lazy" or the tick is stopped, raise the irq
-@@ -78,11 +78,13 @@ bool irq_work_queue(struct irq_work *work)
- 	 * for the next tick.
+ 	 * Lame architectures will get the timer tick callback
+@@ -79,7 +79,7 @@ bool irq_work_queue(struct irq_work *work)
  	 */
  	if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
--		if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
-+		if (llist_add(&work->llnode, &__get_cpu_var(raised_list)))
- 			arch_irq_work_raise(smp_processor_id());
-+	} else {
-+		llist_add(&work->llnode, &__get_cpu_var(lazy_list));
+ 		if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
+-			arch_irq_work_raise();
++			arch_irq_work_raise(smp_processor_id());
  	}
  
--	preempt_enable();
-+	local_irq_restore(flags);
- 
- 	return true;
- }
-@@ -90,10 +92,7 @@ EXPORT_SYMBOL_GPL(irq_work_queue);
- 
- bool irq_work_needs_cpu(void)
- {
--	struct llist_head *this_list;
--
--	this_list = &__get_cpu_var(irq_work_list);
--	if (llist_empty(this_list))
-+	if (llist_empty(&__get_cpu_var(lazy_list)))
- 		return false;
- 
- 	/* All work should have been flushed before going offline */
-@@ -102,28 +101,18 @@ bool irq_work_needs_cpu(void)
- 	return true;
- }
- 
--static void __irq_work_run(void)
-+static void __irq_work_run(struct llist_head *list)
- {
- 	unsigned long flags;
- 	struct irq_work *work;
--	struct llist_head *this_list;
- 	struct llist_node *llnode;
- 
--
--	/*
--	 * Reset the "raised" state right before we check the list because
--	 * an NMI may enqueue after we find the list empty from the runner.
--	 */
--	__this_cpu_write(irq_work_raised, 0);
--	barrier();
--
--	this_list = &__get_cpu_var(irq_work_list);
--	if (llist_empty(this_list))
-+	if (llist_empty(list))
- 		return;
- 
- 	BUG_ON(!irqs_disabled());
- 
--	llnode = llist_del_all(this_list);
-+	llnode = llist_del_all(list);
- 	while (llnode != NULL) {
- 		work = llist_entry(llnode, struct irq_work, llnode);
- 
-@@ -155,11 +144,27 @@ static void __irq_work_run(void)
- void irq_work_run(void)
- {
- 	BUG_ON(!in_irq());
--	__irq_work_run();
-+	__irq_work_run(&__get_cpu_var(raised_list));
-+	__irq_work_run(&__get_cpu_var(lazy_list));
- }
- EXPORT_SYMBOL_GPL(irq_work_run);
- 
- /*
-+ * Run the lazy irq_work entries on this cpu from the tick. But let
-+ * the IPI handle the others. Some works may require to work outside
-+ * the tick due to its locking dependencies (hrtimer lock).
-+ */
-+void irq_work_run_tick(void)
-+{
-+	BUG_ON(!in_irq());
-+#ifndef CONFIG_HAVE_IRQ_WORK_IPI
-+	/* No IPI support, we don't have the choice... */
-+	__irq_work_run(&__get_cpu_var(raised_list));
-+#endif
-+	__irq_work_run(&__get_cpu_var(lazy_list));
-+}
-+
-+/*
-  * Synchronize against the irq_work @entry, ensures the entry is not
-  * currently in use.
-  */
-@@ -183,7 +188,8 @@ static int irq_work_cpu_notify(struct notifier_block *self,
- 		/* Called from stop_machine */
- 		if (WARN_ON_ONCE(cpu != smp_processor_id()))
- 			break;
--		__irq_work_run();
-+		__irq_work_run(&__get_cpu_var(raised_list));
-+		__irq_work_run(&__get_cpu_var(lazy_list));
- 		break;
- 	default:
- 		break;
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 3bb01a3..0251dfa 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1384,7 +1384,7 @@ void update_process_times(int user_tick)
- 	rcu_check_callbacks(cpu, user_tick);
- #ifdef CONFIG_IRQ_WORK
- 	if (in_irq())
--		irq_work_run();
-+		irq_work_run_tick();
- #endif
- 	scheduler_tick();
- 	run_posix_cpu_timers(p);
+ 	preempt_enable();
 -- 
 1.8.3.1
 
