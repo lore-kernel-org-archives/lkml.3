@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932492AbaEKTUm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:20:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47935 "EHLO
+	id S1757608AbaEKTU4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:20:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47943 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755717AbaEKTUj (ORCPT
+	with ESMTP id S932476AbaEKTUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:20:39 -0400
+	Sun, 11 May 2014 15:20:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Manfred Schlaegl <manfred.schlaegl@gmx.at>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 3.14 03/83] tty: Fix lockless tty buffer race
-Date: Sun, 11 May 2014 21:19:04 +0200
-Message-Id: <20140511191907.466953477@linuxfoundation.org>
+        Peter Hurley <peter@hurleysoftware.com>, Jiri Slaby <jslaby@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 3.14 04/83] n_tty: Fix n_tty_write crash when echoing in raw mode
+Date: Sun, 11 May 2014 21:19:05 +0200
+Message-Id: <20140511191907.601301722@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -29,83 +30,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Hurley <peter@hurleysoftware.com>
 
-commit 62a0d8d7c2b29f92850e4ee3c38e5dfd936e92b2 upstream.
+commit 4291086b1f081b869c6d79e5b7441633dc3ace00 upstream.
 
-Commit 6a20dbd6caa2358716136144bf524331d70b1e03,
-"tty: Fix race condition between __tty_buffer_request_room and flush_to_ldisc"
-correctly identifies an unsafe race condition between
-__tty_buffer_request_room() and flush_to_ldisc(), where the consumer
-flush_to_ldisc() prematurely advances the head before consuming the
-last of the data committed. For example:
+The tty atomic_write_lock does not provide an exclusion guarantee for
+the tty driver if the termios settings are LECHO & !OPOST.  And since
+it is unexpected and not allowed to call TTY buffer helpers like
+tty_insert_flip_string concurrently, this may lead to crashes when
+concurrect writers call pty_write. In that case the following two
+writers:
+* the ECHOing from a workqueue and
+* pty_write from the process
+race and can overflow the corresponding TTY buffer like follows.
 
-           CPU 0                     |            CPU 1
-__tty_buffer_request_room            | flush_to_ldisc
-  ...                                |   ...
-                                     |   count = head->commit - head->read
-  n = tty_buffer_alloc()             |
-  b->commit = b->used                |
-  b->next = n                        |
-                                     |   if (!count)                /* T */
-                                     |     if (head->next == NULL)  /* F */
-                                     |     buf->head = head->next
+If we look into tty_insert_flip_string_fixed_flag, there is:
+  int space = __tty_buffer_request_room(port, goal, flags);
+  struct tty_buffer *tb = port->buf.tail;
+  ...
+  memcpy(char_buf_ptr(tb, tb->used), chars, space);
+  ...
+  tb->used += space;
 
-In this case, buf->head has been advanced but head->commit may have
-been updated with a new value.
+so the race of the two can result in something like this:
+              A                                B
+__tty_buffer_request_room
+                                  __tty_buffer_request_room
+memcpy(buf(tb->used), ...)
+tb->used += space;
+                                  memcpy(buf(tb->used), ...) ->BOOM
 
-Instead of reintroducing an unnecessary lock, fix the race locklessly.
-Read the commit-next pair in the reverse order of writing, which guarantees
-the commit value read is the latest value written if the head is
-advancing.
+B's memcpy is past the tty_buffer due to the previous A's tb->used
+increment.
 
-Reported-by: Manfred Schlaegl <manfred.schlaegl@gmx.at>
+Since the N_TTY line discipline input processing can output
+concurrently with a tty write, obtain the N_TTY ldisc output_lock to
+serialize echo output with normal tty writes.  This ensures the tty
+buffer helper tty_insert_flip_string is not called concurrently and
+everything is fine.
+
+Note that this is nicely reproducible by an ordinary user using
+forkpty and some setup around that (raw termios + ECHO). And it is
+present in kernels at least after commit
+d945cb9cce20ac7143c2de8d88b187f62db99bdc (pty: Rework the pty layer to
+use the normal buffering logic) in 2.6.31-rc3.
+
+js: add more info to the commit log
+js: switch to bool
+js: lock unconditionally
+js: lock only the tty->ops->write call
+
+References: CVE-2014-0196
+Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/tty_buffer.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ drivers/tty/n_tty.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/tty/tty_buffer.c
-+++ b/drivers/tty/tty_buffer.c
-@@ -258,7 +258,11 @@ static int __tty_buffer_request_room(str
- 			n->flags = flags;
- 			buf->tail = n;
- 			b->commit = b->used;
--			smp_mb();
-+			/* paired w/ barrier in flush_to_ldisc(); ensures the
-+			 * latest commit value can be read before the head is
-+			 * advanced to the next buffer
-+			 */
-+			smp_wmb();
- 			b->next = n;
- 		} else if (change)
- 			size = 0;
-@@ -444,17 +448,24 @@ static void flush_to_ldisc(struct work_s
- 
- 	while (1) {
- 		struct tty_buffer *head = buf->head;
-+		struct tty_buffer *next;
- 		int count;
- 
- 		/* Ldisc or user is trying to gain exclusive access */
- 		if (atomic_read(&buf->priority))
- 			break;
- 
-+		next = head->next;
-+		/* paired w/ barrier in __tty_buffer_request_room();
-+		 * ensures commit value read is not stale if the head
-+		 * is advancing to the next buffer
-+		 */
-+		smp_rmb();
- 		count = head->commit - head->read;
- 		if (!count) {
--			if (head->next == NULL)
-+			if (next == NULL)
- 				break;
--			buf->head = head->next;
-+			buf->head = next;
- 			tty_buffer_free(port, head);
- 			continue;
- 		}
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -2356,8 +2356,12 @@ static ssize_t n_tty_write(struct tty_st
+ 			if (tty->ops->flush_chars)
+ 				tty->ops->flush_chars(tty);
+ 		} else {
++			struct n_tty_data *ldata = tty->disc_data;
++
+ 			while (nr > 0) {
++				mutex_lock(&ldata->output_lock);
+ 				c = tty->ops->write(tty, b, nr);
++				mutex_unlock(&ldata->output_lock);
+ 				if (c < 0) {
+ 					retval = c;
+ 					goto break_out;
 
 
