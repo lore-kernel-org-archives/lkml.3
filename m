@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933796AbaEKT6v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:58:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47988 "EHLO
+	id S934028AbaEKT7K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:59:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47984 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932614AbaEKTVI (ORCPT
+	with ESMTP id S932600AbaEKTVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:21:08 -0400
+	Sun, 11 May 2014 15:21:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gopesh Kumar Chaudhary <gopchaud@in.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 3.14 14/83] virtio_balloon: dont softlockup on huge balloon changes.
-Date: Sun, 11 May 2014 21:19:15 +0200
-Message-Id: <20140511191909.023605930@linuxfoundation.org>
+        Huacai Chen <chenhc@lemote.com>, John Crispin <john@phrozen.org>,
+        "Steven J. Hill" <Steven.Hill@imgtec.com>,
+        Aurelien Jarno <aurelien@aurel32.net>,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
+Subject: [PATCH 3.14 13/83] MIPS: Hibernate: Flush TLB entries in swsusp_arch_resume()
+Date: Sun, 11 May 2014 21:19:14 +0200
+Message-Id: <20140511191908.883612521@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -27,41 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+From: Huacai Chen <chenhc@lemote.com>
 
-commit 1f74ef0f2d7d692fcd615621e0e734c3e7771413 upstream.
+commit c14af233fbe279d0e561ecf84f1208b1bae087ef upstream.
 
-When adding or removing 100G from a balloon:
+The original MIPS hibernate code flushes cache and TLB entries in
+swsusp_arch_resume(). But they are removed in Commit 44eeab67416711
+(MIPS: Hibernation: Remove SMP TLB and cacheflushing code.). A cross-
+CPU flush is surely unnecessary because all but the local CPU have
+already been disabled. But a local flush (at least the TLB flush) is
+needed. When we do hibernation on Loongson-3 with an E1000E NIC, it is
+very easy to produce a kernel panic (kernel page fault, or unaligned
+access). The root cause is E1000E driver use vzalloc_node() to allocate
+pages, the stale TLB entries of the booting kernel will be misused by
+the resumed target kernel.
 
-    BUG: soft lockup - CPU#0 stuck for 22s! [vballoon:367]
-
-We have a wait_event_interruptible(), but the condition is always true
-(more ballooning to do) so we don't ever sleep.  We also have a
-wait_event() for the host to ack, but that is also always true as QEMU
-is synchronous for balloon operations.
-
-Reported-by: Gopesh Kumar Chaudhary <gopchaud@in.ibm.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Cc: John Crispin <john@phrozen.org>
+Cc: Steven J. Hill <Steven.Hill@imgtec.com>
+Cc: Aurelien Jarno <aurelien@aurel32.net>
+Cc: linux-mips@linux-mips.org
+Cc: Fuxin Zhang <zhangfx@lemote.com>
+Cc: Zhangjin Wu <wuzhangjin@gmail.com>
+Patchwork: https://patchwork.linux-mips.org/patch/6643/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/virtio/virtio_balloon.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/mips/power/hibernate.S |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -310,6 +310,12 @@ static int balloon(void *_vballoon)
- 		else if (diff < 0)
- 			leak_balloon(vb, -diff);
- 		update_balloon_size(vb);
-+
-+		/*
-+		 * For large balloon changes, we could spend a lot of time
-+		 * and always have work to do.  Be nice if preempt disabled.
-+		 */
-+		cond_resched();
- 	}
- 	return 0;
- }
+--- a/arch/mips/power/hibernate.S
++++ b/arch/mips/power/hibernate.S
+@@ -43,6 +43,7 @@ LEAF(swsusp_arch_resume)
+ 	bne t1, t3, 1b
+ 	PTR_L t0, PBE_NEXT(t0)
+ 	bnez t0, 0b
++	jal local_flush_tlb_all /* Avoid TLB mismatch after kernel resume */
+ 	PTR_LA t0, saved_regs
+ 	PTR_L ra, PT_R31(t0)
+ 	PTR_L sp, PT_R29(t0)
 
 
