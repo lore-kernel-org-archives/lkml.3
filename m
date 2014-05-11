@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757923AbaEKXnq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 19:43:46 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52228 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752336AbaEKXnp convert rfc822-to-8bit (ORCPT
+	id S1757579AbaEKXx3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 19:53:29 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:39468 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbaEKXx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 19:43:45 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: bug: acpi ata_bay dock reminds undocked
-Date: Mon, 12 May 2014 02:00:29 +0200
-Message-ID: <2639498.hrETOnLRn5@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <201405111749.18796@pali>
-References: <201404292216.41256@pali> <201404301124.51110@pali> <201405111749.18796@pali>
+	Sun, 11 May 2014 19:53:27 -0400
+Message-ID: <53700D71.1090201@landley.net>
+Date: Sun, 11 May 2014 18:53:21 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+To: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Building sh4 without CONFIG_EXPERT.
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, May 11, 2014 05:49:17 PM Pali Rohár wrote:
-> 
-> --nextPart2204083.pLeiedbUui
-> Content-Type: Text/Plain;
->   charset="utf-8"
-> Content-Transfer-Encoding: quoted-printable
-> 
-> On Wednesday 30 April 2014 11:24:50 Pali Roh=C3=A1r wrote:
-> > On Tuesday 29 April 2014 23:35:42 Rafael J. Wysocki wrote:
-> > > On Tuesday, April 29, 2014 11:00:01 PM Pali Roh=C3=A1r wrote:
-> > > > On Tuesday 29 April 2014 22:55:07 Rafael J. Wysocki wrote:
-> > > > > Which kernel version(s) have you tried?
-> > > >=20
-> > > > 3.15-rc3
-> > >=20
-> > > Does it work with 3.14(.x) by chance?
-> >=20
-> > Tested with 3.14 and 3.8. Same problem, not working.
-> 
-> BUMP!
-> 
-> Rafael, do you need some other information?
+I got sh4 to work under QEMU years ago as part of my aboriginal linux
+project, which builds the smallest Linux system capable of rebuilding
+itself natively from source code. (You can download and run the system
+images from http://landley.net/aboriginal/bin if you're curious.)
 
-I'll take care of this when I have the time, OK?
+One of the goals of Aboriginal is to make different architectures behave
+the same way, and one of the ways I do that is by having a basic kernel
+miniconfig file defining the config symbols common across platforms:
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+  http://landley.net/hg/aboriginal/file/1651/sources/baseconfig-linux
+
+And then append target-specific chunks, ala the LINUX_CONFIG sections
+from each of:
+
+  http://landley.net/hg/aboriginal/file/1651/sources/targets
+
+The problem is, the sh4 target's target-specific chunk is an INSANE 45
+config symbols (armv5l needs 15 symbols, powerpc needs 16, i686 needs 7,
+mips needs 6...) and the reason for the verbosity is that sh4 forces on
+CONFIG_EXPERT.
+
+As far as I can tell, the only reason sh4 is forcing on CONFIG_EXPERT is
+to get CONFIG_PATA_PLATFORM. The patch to make sh4 _not_ force on
+CONFIG_EXPERT is just:
+
+diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
+index 834b67c..7d0d44d 100644
+--- a/arch/sh/Kconfig
++++ b/arch/sh/Kconfig
+@@ -1,7 +1,7 @@
+ config SUPERH
+ 	def_bool y
+ 	select ARCH_MIGHT_HAVE_PC_PARPORT
+-	select EXPERT
++	select HAVE_PATA_PLATFORM
+ 	select CLKDEV_LOOKUP
+ 	select HAVE_IDE if HAS_IOPORT_MAP
+ 	select HAVE_MEMBLOCK
+
+Which swaps EXPERT for HAVE_PATA_PLATFORM, so I can still provide a hard
+drive qemu can see as /dev/sda. The result builds, boots, and works for
+me in very basic smoke testing, and lets me get my sh4-specific config
+symbol set down to 27 symbols.
+
+(P.S. I have no idea why hitting ctrl-C kills the _emulator_ rather than
+passing it along to the emulated system. The other qemu targets don't do
+that...)
+
+Rob
+
+P.S. I'm using linux 3.14, qemu 2.0, and the sh4 cross compiler
+toolchain from the URL at the top of the post. I can be more explicit if
+you care...
