@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964815AbaEKThg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:37:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48417 "EHLO
+	id S964824AbaEKTh5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:37:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48403 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933824AbaEKTZh (ORCPT
+	with ESMTP id S933815AbaEKTZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:25:37 -0400
+	Sun, 11 May 2014 15:25:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Raphos <raphoszap@laposte.net>, Jeff Layton <jlayton@redhat.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.14 71/83] lockd: ensure we tear down any live sockets when socket creation fails during lockd_up
-Date: Sun, 11 May 2014 21:20:12 +0200
-Message-Id: <20140511191916.176140233@linuxfoundation.org>
+        Joel Fernandes <joelf@ti.com>, Jon Ringle <jringle@gridpoint.com>,
+        Alexander Holler <holler@ahsoftware.de>, Sekhar Nori <nsekhar@ti.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH 3.14 69/83] dma: edma: fix incorrect SG list handling
+Date: Sun, 11 May 2014 21:20:10 +0200
+Message-Id: <20140511191915.911605573@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -28,79 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Sekhar Nori <nsekhar@ti.com>
 
-commit 679b033df48422191c4cac52b610d9980e019f9b upstream.
+commit 5fc68a6cad658e45dca3e0a6607df3a8e5df4ef9 upstream.
 
-We had a Fedora ABRT report with a stack trace like this:
+The code to handle any length SG lists calls edma_resume()
+even before edma_start() is called. This is incorrect
+because edma_resume() enables edma events on the channel
+after which CPU (in edma_start) cannot clear posted
+events by writing to ECR (per the EDMA user's guide).
 
-kernel BUG at net/sunrpc/svc.c:550!
-invalid opcode: 0000 [#1] SMP
-[...]
-CPU: 2 PID: 913 Comm: rpc.nfsd Not tainted 3.13.6-200.fc20.x86_64 #1
-Hardware name: Hewlett-Packard HP ProBook 4740s/1846, BIOS 68IRR Ver. F.40 01/29/2013
-task: ffff880146b00000 ti: ffff88003f9b8000 task.ti: ffff88003f9b8000
-RIP: 0010:[<ffffffffa0305fa8>]  [<ffffffffa0305fa8>] svc_destroy+0x128/0x130 [sunrpc]
-RSP: 0018:ffff88003f9b9de0  EFLAGS: 00010206
-RAX: ffff88003f829628 RBX: ffff88003f829600 RCX: 00000000000041ee
-RDX: 0000000000000000 RSI: 0000000000000286 RDI: 0000000000000286
-RBP: ffff88003f9b9de8 R08: 0000000000017360 R09: ffff88014fa97360
-R10: ffffffff8114ce57 R11: ffffea00051c9c00 R12: ffff88003f829600
-R13: 00000000ffffff9e R14: ffffffff81cc7cc0 R15: 0000000000000000
-FS:  00007f4fde284840(0000) GS:ffff88014fa80000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007f4fdf5192f8 CR3: 00000000a569a000 CR4: 00000000001407e0
-Stack:
- ffff88003f792300 ffff88003f9b9e18 ffffffffa02de02a 0000000000000000
- ffffffff81cc7cc0 ffff88003f9cb000 0000000000000008 ffff88003f9b9e60
- ffffffffa033bb35 ffffffff8131c86c ffff88003f9cb000 ffff8800a5715008
-Call Trace:
- [<ffffffffa02de02a>] lockd_up+0xaa/0x330 [lockd]
- [<ffffffffa033bb35>] nfsd_svc+0x1b5/0x2f0 [nfsd]
- [<ffffffff8131c86c>] ? simple_strtoull+0x2c/0x50
- [<ffffffffa033c630>] ? write_pool_threads+0x280/0x280 [nfsd]
- [<ffffffffa033c6bb>] write_threads+0x8b/0xf0 [nfsd]
- [<ffffffff8114efa4>] ? __get_free_pages+0x14/0x50
- [<ffffffff8114eff6>] ? get_zeroed_page+0x16/0x20
- [<ffffffff811dec51>] ? simple_transaction_get+0xb1/0xd0
- [<ffffffffa033c098>] nfsctl_transaction_write+0x48/0x80 [nfsd]
- [<ffffffff811b8b34>] vfs_write+0xb4/0x1f0
- [<ffffffff811c3f99>] ? putname+0x29/0x40
- [<ffffffff811b9569>] SyS_write+0x49/0xa0
- [<ffffffff810fc2a6>] ? __audit_syscall_exit+0x1f6/0x2a0
- [<ffffffff816962e9>] system_call_fastpath+0x16/0x1b
-Code: 31 c0 e8 82 db 37 e1 e9 2a ff ff ff 48 8b 07 8b 57 14 48 c7 c7 d5 c6 31 a0 48 8b 70 20 31 c0 e8 65 db 37 e1 e9 f4 fe ff ff 0f 0b <0f> 0b 66 0f 1f 44 00 00 0f 1f 44 00 00 55 48 89 e5 41 56 41 55
-RIP  [<ffffffffa0305fa8>] svc_destroy+0x128/0x130 [sunrpc]
- RSP <ffff88003f9b9de0>
+Because of this EDMA transfers fail to start if due
+to some reason there is a pending EDMA event registered
+even before EDMA transfers are started. This can happen if
+an EDMA event is a byproduct of device initialization.
 
-Evidently, we created some lockd sockets and then failed to create
-others. make_socks then returned an error and we tried to tear down the
-svc, but svc->sv_permsocks was not empty so we ended up tripping over
-the BUG() in svc_destroy().
+Fix this by calling edma_resume() only if it is not the
+first batch of MAX_NR_SG elements.
 
-Fix this by ensuring that we tear down any live sockets we created when
-socket creation is going to return an error.
+Without this patch, MMC/SD fails to function on DA850 EVM
+with DMA. The behaviour is triggered by specific IP and
+this can explain why the issue was not reported before
+(example with MMC/SD on AM335x).
 
-Fixes: 786185b5f8abefa (SUNRPC: move per-net operations from...)
-Reported-by: Raphos <raphoszap@laposte.net>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Reviewed-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Tested on DA850 EVM and AM335x EVM-SK using MMC/SD card.
+
+Cc: Joel Fernandes <joelf@ti.com>
+Acked-by: Joel Fernandes <joelf@ti.com>
+Tested-by: Jon Ringle <jringle@gridpoint.com>
+Tested-by: Alexander Holler <holler@ahsoftware.de>
+Reported-by: Jon Ringle <jringle@gridpoint.com>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/svc.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/dma/edma.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/fs/lockd/svc.c
-+++ b/fs/lockd/svc.c
-@@ -235,6 +235,7 @@ out_err:
- 	if (warned++ == 0)
- 		printk(KERN_WARNING
- 			"lockd_up: makesock failed, error=%d\n", err);
-+	svc_shutdown_net(serv, net);
- 	return err;
- }
+--- a/drivers/dma/edma.c
++++ b/drivers/dma/edma.c
+@@ -182,11 +182,13 @@ static void edma_execute(struct edma_cha
+ 				  echan->ecc->dummy_slot);
+ 	}
  
+-	edma_resume(echan->ch_num);
+-
+ 	if (edesc->processed <= MAX_NR_SG) {
+ 		dev_dbg(dev, "first transfer starting %d\n", echan->ch_num);
+ 		edma_start(echan->ch_num);
++	} else {
++		dev_dbg(dev, "chan: %d: completed %d elements, resuming\n",
++			echan->ch_num, edesc->processed);
++		edma_resume(echan->ch_num);
+ 	}
+ 
+ 	/*
 
 
