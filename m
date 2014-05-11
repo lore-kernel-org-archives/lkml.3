@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757608AbaEKTU4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:20:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47943 "EHLO
+	id S932520AbaEKTUu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:20:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47949 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932476AbaEKTUl (ORCPT
+	with ESMTP id S1757351AbaEKTUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:20:41 -0400
+	Sun, 11 May 2014 15:20:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>, Jiri Slaby <jslaby@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 3.14 04/83] n_tty: Fix n_tty_write crash when echoing in raw mode
-Date: Sun, 11 May 2014 21:19:05 +0200
-Message-Id: <20140511191907.601301722@linuxfoundation.org>
+        Matthew Daley <mattd@bugfuzz.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 06/83] floppy: dont write kernel-only members to FDRAWCMD ioctl output
+Date: Sun, 11 May 2014 21:19:07 +0200
+Message-Id: <20140511191907.877372479@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -28,82 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Hurley <peter@hurleysoftware.com>
+From: Matthew Daley <mattd@bugfuzz.com>
 
-commit 4291086b1f081b869c6d79e5b7441633dc3ace00 upstream.
+commit 2145e15e0557a01b9195d1c7199a1b92cb9be81f upstream.
 
-The tty atomic_write_lock does not provide an exclusion guarantee for
-the tty driver if the termios settings are LECHO & !OPOST.  And since
-it is unexpected and not allowed to call TTY buffer helpers like
-tty_insert_flip_string concurrently, this may lead to crashes when
-concurrect writers call pty_write. In that case the following two
-writers:
-* the ECHOing from a workqueue and
-* pty_write from the process
-race and can overflow the corresponding TTY buffer like follows.
+Do not leak kernel-only floppy_raw_cmd structure members to userspace.
+This includes the linked-list pointer and the pointer to the allocated
+DMA space.
 
-If we look into tty_insert_flip_string_fixed_flag, there is:
-  int space = __tty_buffer_request_room(port, goal, flags);
-  struct tty_buffer *tb = port->buf.tail;
-  ...
-  memcpy(char_buf_ptr(tb, tb->used), chars, space);
-  ...
-  tb->used += space;
-
-so the race of the two can result in something like this:
-              A                                B
-__tty_buffer_request_room
-                                  __tty_buffer_request_room
-memcpy(buf(tb->used), ...)
-tb->used += space;
-                                  memcpy(buf(tb->used), ...) ->BOOM
-
-B's memcpy is past the tty_buffer due to the previous A's tb->used
-increment.
-
-Since the N_TTY line discipline input processing can output
-concurrently with a tty write, obtain the N_TTY ldisc output_lock to
-serialize echo output with normal tty writes.  This ensures the tty
-buffer helper tty_insert_flip_string is not called concurrently and
-everything is fine.
-
-Note that this is nicely reproducible by an ordinary user using
-forkpty and some setup around that (raw termios + ECHO). And it is
-present in kernels at least after commit
-d945cb9cce20ac7143c2de8d88b187f62db99bdc (pty: Rework the pty layer to
-use the normal buffering logic) in 2.6.31-rc3.
-
-js: add more info to the commit log
-js: switch to bool
-js: lock unconditionally
-js: lock only the tty->ops->write call
-
-References: CVE-2014-0196
-Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Matthew Daley <mattd@bugfuzz.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_tty.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/block/floppy.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -2356,8 +2356,12 @@ static ssize_t n_tty_write(struct tty_st
- 			if (tty->ops->flush_chars)
- 				tty->ops->flush_chars(tty);
- 		} else {
-+			struct n_tty_data *ldata = tty->disc_data;
-+
- 			while (nr > 0) {
-+				mutex_lock(&ldata->output_lock);
- 				c = tty->ops->write(tty, b, nr);
-+				mutex_unlock(&ldata->output_lock);
- 				if (c < 0) {
- 					retval = c;
- 					goto break_out;
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -3053,7 +3053,10 @@ static int raw_cmd_copyout(int cmd, void
+ 	int ret;
+ 
+ 	while (ptr) {
+-		ret = copy_to_user(param, ptr, sizeof(*ptr));
++		struct floppy_raw_cmd cmd = *ptr;
++		cmd.next = NULL;
++		cmd.kernel_data = NULL;
++		ret = copy_to_user(param, &cmd, sizeof(cmd));
+ 		if (ret)
+ 			return -EFAULT;
+ 		param += sizeof(struct floppy_raw_cmd);
 
 
