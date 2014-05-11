@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757901AbaEKEzT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 00:55:19 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60747 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751367AbaEKEzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 00:55:16 -0400
-Date: Sun, 11 May 2014 00:54:59 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 14/14] cgroup: implement css_tryget()
-Message-ID: <20140511045459.GA25009@cmpxchg.org>
-References: <1399671091-23867-1-git-send-email-tj@kernel.org>
- <1399671091-23867-15-git-send-email-tj@kernel.org>
+	id S1755320AbaEKFYp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 01:24:45 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:40313 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232AbaEKFYn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 01:24:43 -0400
+Date: Sun, 11 May 2014 07:24:38 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "S. Lockwood-Childs" <sjl@dent.vctlabs.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [GIT PULL] liblockdep fixes for v3.15
+Message-ID: <20140511052438.GA22436@gmail.com>
+References: <536BC719.3060206@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1399671091-23867-15-git-send-email-tj@kernel.org>
+In-Reply-To: <536BC719.3060206@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 05:31:31PM -0400, Tejun Heo wrote:
-> Implement css_tryget() which tries to grab a cgroup_subsys_state's
-> reference as long as it already hasn't reached zero.  Combined with
-> the recent css iterator changes to include offline && !released csses
-> during traversal, this can be used to access csses regardless of its
-> online state.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  include/linux/cgroup.h | 16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
-> 
-> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-> index c8eb66e..6dd3867 100644
-> --- a/include/linux/cgroup.h
-> +++ b/include/linux/cgroup.h
-> @@ -111,6 +111,22 @@ static inline void css_get(struct cgroup_subsys_state *css)
->  }
->  
->  /**
-> + * css_tryget - try to obtain a reference on the specified css
-> + * @css: target css
-> + *
-> + * Obtain a reference on @css unless it already has reached zero and is
-> + * being released.  This function doesn't care whether @css is on or
-> + * offline.  The caller naturally needs to ensure that @css is accessible
-> + * but doesn't have to be holding a reference on it - IOW, RCU protected
-> + * access is good enough for this function.  Returns %true if a reference
-> + * count was successfully obtained; %false otherwise.
-> + */
-> +static inline bool css_tryget(struct cgroup_subsys_state *css)
-> +{
-> +	return percpu_ref_tryget(&css->refcnt);
-> +}
 
-percpu_ref_tryget() fails once killed (transitioned from per-cpu to
-atomic mode), but exactly this happens during offlining and so this
-would actually be equivalent to css_tryget_online(), no?
+* Sasha Levin <sasha.levin@oracle.com> wrote:
+
+> The following changes since commit d1db0eea852497762cab43b905b879dfcd3b8987:
+> 
+>   Linux 3.15-rc3 (2014-04-27 19:29:27 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/sashal/linux.git liblockdep-fixes-3.15
+> 
+> for you to fetch changes up to ad3b564deb91c67ff9621255307ed31da870c8f7:
+> 
+>   tools/liblockdep: Remove all build files when doing make clean (2014-05-08 13:55:13 -0400)
+> 
+> ----------------------------------------------------------------
+> S. Lockwood-Childs (1):
+>       tools/liblockdep: Build liblockdep from tools/Makefile
+> 
+> Sasha Levin (1):
+>       tools/liblockdep: Remove all build files when doing make clean
+> 
+>  tools/Makefile             | 6 ++++++
+>  tools/lib/lockdep/Makefile | 5 ++---
+>  2 files changed, 8 insertions(+), 3 deletions(-)
+
+Pulled, thanks Sasha!
+
+	Ingo
