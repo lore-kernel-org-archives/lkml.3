@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934337AbaEKTfL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:35:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48461 "EHLO
+	id S934342AbaEKTfl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:35:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48452 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932644AbaEKT0E (ORCPT
+	with ESMTP id S933855AbaEKTZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:26:04 -0400
+	Sun, 11 May 2014 15:25:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerd Hoffmann <kraxel@redhat.com>, Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.14 81/83] drm: cirrus: add power management support
-Date: Sun, 11 May 2014 21:20:22 +0200
-Message-Id: <20140511191917.498524115@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 79/83] ACPI / processor: Fix failure of loading acpi-cpufreq driver
+Date: Sun, 11 May 2014 21:20:20 +0200
+Message-Id: <20140511191917.236711029@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -26,106 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerd Hoffmann <kraxel@redhat.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 2f1e800799bf478494cec3573cd63eb34ca89c9d upstream.
+commit 4985c32ee4241d1aba1beeac72294faa46aaff10 upstream.
 
-cirrus kms driver lacks power management support, thus
-the vga display doesn't work any more after S3 resume.
+According commit d640113fe (ACPI: processor: fix acpi_get_cpuid for UP
+processor),  BIOS may not provide _MAT or MADT tables and acpi_get_apicid()
+always returns -1. For these cases, original code will pass apic_id with
+vaule of -1 to acpi_map_cpuid() and it will check the acpi_id. If acpi_id
+is equal to zero, ignores apic_id and return zero for CPU0.
 
-Fix this by adding suspend and resume functions.
-Also make the mode_set function unblank the screen.
+Commit b981513 (ACPI / scan: bail out early if failed to parse APIC
+ID for CPU) changed the behavior. Return ENODEV when find apic_id is
+less than zero after calling acpi_get_apicid(). This causes acpi-cpufreq
+driver fails to be loaded on some machines. This patch is to fix it.
 
-Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Fixes: b981513f806d (ACPI / scan: bail out early if failed to parse APIC ID for CPU)
+References: https://bugzilla.kernel.org/show_bug.cgi?id=73781
+Reported-and-tested-by: KATO Hiroshi <katoh@mikage.ne.jp>
+Reported-and-tested-by: Stuart Foster <smf.linux@ntlworld.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/cirrus/cirrus_drv.c  |   42 +++++++++++++++++++++++++++++++++++
- drivers/gpu/drm/cirrus/cirrus_mode.c |    3 ++
- 2 files changed, 45 insertions(+)
+ drivers/acpi/acpi_processor.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/cirrus/cirrus_drv.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_drv.c
-@@ -11,6 +11,7 @@
- #include <linux/module.h>
- #include <linux/console.h>
- #include <drm/drmP.h>
-+#include <drm/drm_crtc_helper.h>
+--- a/drivers/acpi/acpi_processor.c
++++ b/drivers/acpi/acpi_processor.c
+@@ -170,6 +170,9 @@ static int acpi_processor_hotadd_init(st
+ 	acpi_status status;
+ 	int ret;
  
- #include "cirrus_drv.h"
++	if (pr->apic_id == -1)
++		return -ENODEV;
++
+ 	status = acpi_evaluate_integer(pr->handle, "_STA", NULL, &sta);
+ 	if (ACPI_FAILURE(status) || !(sta & ACPI_STA_DEVICE_PRESENT))
+ 		return -ENODEV;
+@@ -260,10 +263,8 @@ static int acpi_processor_get_info(struc
+ 	}
  
-@@ -75,6 +76,41 @@ static void cirrus_pci_remove(struct pci
- 	drm_put_dev(dev);
- }
+ 	apic_id = acpi_get_apicid(pr->handle, device_declaration, pr->acpi_id);
+-	if (apic_id < 0) {
++	if (apic_id < 0)
+ 		acpi_handle_debug(pr->handle, "failed to get CPU APIC ID.\n");
+-		return -ENODEV;
+-	}
+ 	pr->apic_id = apic_id;
  
-+static int cirrus_pm_suspend(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct drm_device *drm_dev = pci_get_drvdata(pdev);
-+	struct cirrus_device *cdev = drm_dev->dev_private;
-+
-+	drm_kms_helper_poll_disable(drm_dev);
-+
-+	if (cdev->mode_info.gfbdev) {
-+		console_lock();
-+		fb_set_suspend(cdev->mode_info.gfbdev->helper.fbdev, 1);
-+		console_unlock();
-+	}
-+
-+	return 0;
-+}
-+
-+static int cirrus_pm_resume(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct drm_device *drm_dev = pci_get_drvdata(pdev);
-+	struct cirrus_device *cdev = drm_dev->dev_private;
-+
-+	drm_helper_resume_force_mode(drm_dev);
-+
-+	if (cdev->mode_info.gfbdev) {
-+		console_lock();
-+		fb_set_suspend(cdev->mode_info.gfbdev->helper.fbdev, 0);
-+		console_unlock();
-+	}
-+
-+	drm_kms_helper_poll_enable(drm_dev);
-+	return 0;
-+}
-+
- static const struct file_operations cirrus_driver_fops = {
- 	.owner = THIS_MODULE,
- 	.open = drm_open,
-@@ -103,11 +139,17 @@ static struct drm_driver driver = {
- 	.dumb_destroy = drm_gem_dumb_destroy,
- };
- 
-+static const struct dev_pm_ops cirrus_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(cirrus_pm_suspend,
-+				cirrus_pm_resume)
-+};
-+
- static struct pci_driver cirrus_pci_driver = {
- 	.name = DRIVER_NAME,
- 	.id_table = pciidlist,
- 	.probe = cirrus_pci_probe,
- 	.remove = cirrus_pci_remove,
-+	.driver.pm = &cirrus_pm_ops,
- };
- 
- static int __init cirrus_init(void)
---- a/drivers/gpu/drm/cirrus/cirrus_mode.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_mode.c
-@@ -308,6 +308,9 @@ static int cirrus_crtc_mode_set(struct d
- 
- 	WREG_HDR(hdr);
- 	cirrus_crtc_do_set_base(crtc, old_fb, x, y, 0);
-+
-+	/* Unblank (needed on S3 resume, vgabios doesn't do it then) */
-+	outb(0x20, 0x3c0);
- 	return 0;
- }
- 
+ 	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
 
 
