@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758233AbaEKT5h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:57:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48017 "EHLO
+	id S933649AbaEKT6A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:58:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48008 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932688AbaEKTVY (ORCPT
+	with ESMTP id S932657AbaEKTVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:21:24 -0400
+	Sun, 11 May 2014 15:21:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Brown <neilb@suse.de>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.14 25/83] SUNRPC: Ensure that call_connect times out correctly
-Date: Sun, 11 May 2014 21:19:26 +0200
-Message-Id: <20140511191910.492800268@linuxfoundation.org>
+        Richard Weinberger <richard@nod.at>, Paul Bolle <pebolle@tiscali.nl>,
+        Vineet Gupta <vgupta@synopsys.com>
+Subject: [PATCH 3.14 24/83] ARC: Remove ARC_HAS_COH_RTSC
+Date: Sun, 11 May 2014 21:19:25 +0200
+Message-Id: <20140511191910.353580630@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -27,45 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Richard Weinberger <richard@nod.at>
 
-commit 485f2251782f7c44299c491d4676a8a01428d191 upstream.
+commit d345ea2892ae7a2b70f84cf881c20731e43e4993 upstream.
 
-When the server is unavailable due to a networking error, etc, we want
-the RPC client to respect the timeout delays when attempting to reconnect.
+The symbol is an orphan, get rid of it.
 
-Reported-by: Neil Brown <neilb@suse.de>
-Fixes: 561ec1603171 (SUNRPC: call_connect_status should recheck bind..)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Fixes: 7d0857a54aed ("ARC: [SMP] Disallow RTSC")
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Acked-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/clnt.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ arch/arc/plat-arcfpga/Kconfig |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -1798,10 +1798,6 @@ call_connect_status(struct rpc_task *tas
- 	trace_rpc_connect_status(task, status);
- 	task->tk_status = 0;
- 	switch (status) {
--		/* if soft mounted, test if we've timed out */
--	case -ETIMEDOUT:
--		task->tk_action = call_timeout;
--		return;
- 	case -ECONNREFUSED:
- 	case -ECONNRESET:
- 	case -ECONNABORTED:
-@@ -1812,7 +1808,9 @@ call_connect_status(struct rpc_task *tas
- 		if (RPC_IS_SOFTCONN(task))
- 			break;
- 	case -EAGAIN:
--		task->tk_action = call_bind;
-+		/* Check for timeouts before looping back to call_bind */
-+	case -ETIMEDOUT:
-+		task->tk_action = call_timeout;
- 		return;
- 	case 0:
- 		clnt->cl_stats->netreconn++;
+--- a/arch/arc/plat-arcfpga/Kconfig
++++ b/arch/arc/plat-arcfpga/Kconfig
+@@ -33,7 +33,6 @@ config ISS_SMP_EXTN
+ 	bool "ARC SMP Extensions (ISS Models only)"
+ 	default n
+ 	depends on SMP
+-	select ARC_HAS_COH_RTSC
+ 	help
+ 	  SMP Extensions to ARC700, in a "simulation only" Model, supported in
+ 	  ARC ISS (Instruction Set Simulator).
 
 
