@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757648AbaEKV44 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 17:56:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2020 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755717AbaEKV4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 17:56:55 -0400
-Date: Sun, 11 May 2014 23:55:22 +0200
-From: Mateusz Guzik <mguzik@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: xiaoming.wang@intel.com, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, chuansheng.liu@intel.com,
-        dongxing.zhang@intel.com
-Subject: Re: [PATCH] net: ipv4: current group_info should be put after using.
-Message-ID: <20140511215521.GA12224@mguzik.redhat.com>
-References: <1397493045.2575.8.camel@wxm-ubuntu>
- <20140413.225407.1762639913754561393.davem@davemloft.net>
+	id S932165AbaEKWg2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 18:36:28 -0400
+Received: from mail-sn2on0223.outbound.o365filtering.com ([157.56.87.223]:7068
+	"EHLO na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750741AbaEKWgZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 18:36:25 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+Subject: RE: [PATCH net-next,v2] Add support for netvsc build without
+ CONFIG_SYSFS flag
+Thread-Topic: [PATCH net-next,v2] Add support for netvsc build without
+ CONFIG_SYSFS flag
+Thread-Index: AQHPavY3Dri7j1SZlEG37cKge/6wwZs3nCwA//+Lt3CABKtZgIAAIHd4
+Date: Sun, 11 May 2014 22:35:40 +0000
+Message-ID: <3fd83bc0e76c452386c15516a32c9cb3@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1399581693-25050-1-git-send-email-haiyangz@microsoft.com>
+	 <20140508.164458.157597820665207475.davem@davemloft.net>
+	 <b641d25465f44cae8c7c9a680a31594d@DFM-DB3MBX15-06.exchange.corp.microsoft.com>,<1399813625.11946.138.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <1399813625.11946.138.camel@deadeye.wl.decadent.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140413.225407.1762639913754561393.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(199002)(189002)(377454003)(164054003)(51704005)(64706001)(74706001)(50466002)(74876001)(94946001)(93886001)(93136001)(23726002)(93516002)(94316002)(92566001)(90146001)(74366001)(20776003)(81342001)(47776003)(76796001)(79102001)(76786001)(85306002)(19580395003)(84676001)(81816001)(44976005)(83322001)(19580405001)(68736004)(81542001)(46406003)(2009001)(97736001)(98676001)(77982001)(81686001)(97756001)(97336001)(95416001)(86612001)(97186001)(56816006)(47976003)(65816002)(63696004)(56776002)(59766002)(80022001)(99396002)(47736002)(51856002)(31966008)(47446003)(95666003)(66066001)(69226001)(53806002)(49866002)(54356002)(4396001)(54316003)(50986002)(76482001)(21056001)(74502001)(74662001)(46102001)(6806004)(83072002)(85852003)(2656002)(87266001)(87936001)(33646001)(142933001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2SR01MB595;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Exchange-Antispam-Report-Test: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 020877E0CB
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 13, 2014 at 10:54:07PM -0400, David Miller wrote:
-> From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
-> Date: Mon, 14 Apr 2014 12:30:45 -0400
-> 
-> > Plug a group_info refcount leak in ping_init.
-> > group_info is only needed during initialization and 
-> > the code failed to release the reference on exit.
-> > While here move grabbing the reference to a place 
-> > where it is actually needed.
-> > 
-> > Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-> > Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
-> > Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
-> 
-> Applied and queued up for -stable, thanks.
+> ________________________________________
+> From: Ben Hutchings <ben@decadent.org.uk>
+> Sent: Sunday, May 11, 2014 9:07 AM
+> To: Haiyang Zhang
+> I think most other drivers have a 1-1 mapping between hardware RX queues
+> and the RX queue indices reported to Linux.  It appears that in this
+> case sub_channel_index is the 'hardware' queue number, but you think
+> there is not a 1-1 mapping.  Why is that?
 
-I see this only made its way to 3.12 kernel, what is holding up inclusion
-in other kernels? (or maybe this question should be directed at someone
-else?)
-
-The bug was introduced with:
-commit c319b4d76b9e583a5d88d6bf190e079c4e43213d
-Author: Vasiliy Kulikov <segoon@openwall.com>
-Date:   Fri May 13 10:01:00 2011 +0000
-    net: ipv4: add IPPROTO_ICMP socket kind
-
-starting with 3.0.
+Actually, it is 1-1 mapping. The number of channels equals to the number of
+queues. In my updated patch (v3) the unnecessary "% ndev->real_num_rx_queues"
+has been removed.
 
 Thanks,
--- 
-Mateusz Guzik
+- Haiyang
