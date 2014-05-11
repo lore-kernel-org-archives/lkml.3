@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934097AbaEKT1B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:27:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48546 "EHLO
+	id S934079AbaEKT0y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:26:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48531 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932809AbaEKT04 (ORCPT
+	with ESMTP id S934053AbaEKT0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:26:56 -0400
+	Sun, 11 May 2014 15:26:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 3.4 09/22] matroxfb: restore the registers M_ACCESS and M_PITCH
-Date: Sun, 11 May 2014 21:21:17 +0200
-Message-Id: <20140511192105.038449572@linuxfoundation.org>
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.4 07/22] crypto: ghash-clmulni-intel - use C implementation for setkey()
+Date: Sun, 11 May 2014 21:21:15 +0200
+Message-Id: <20140511192104.760549965@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511192103.733723493@linuxfoundation.org>
 References: <20140511192103.733723493@linuxfoundation.org>
@@ -27,157 +28,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 
-commit a772d4736641ec1b421ad965e13457c17379fc86 upstream.
+commit 8ceee72808d1ae3fb191284afc2257a2be964725 upstream.
 
-When X11 is running and the user switches back to console, the card
-modifies the content of registers M_MACCESS and M_PITCH in periodic
-intervals.
+The GHASH setkey() function uses SSE registers but fails to call
+kernel_fpu_begin()/kernel_fpu_end(). Instead of adding these calls, and
+then having to deal with the restriction that they cannot be called from
+interrupt context, move the setkey() implementation to the C domain.
 
-This patch fixes it by restoring the content of these registers before
-issuing any accelerator command.
+Note that setkey() does not use any particular SSE features and is not
+expected to become a performance bottleneck.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+Fixes: 0e1227d356e9b (crypto: ghash - Add PCLMULQDQ accelerated implementation)
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/matrox/matroxfb_accel.c |   38 +++++++++++++++++++++++++---------
- drivers/video/matrox/matroxfb_base.h  |    2 +
- 2 files changed, 30 insertions(+), 10 deletions(-)
+ arch/x86/crypto/ghash-clmulni-intel_asm.S  |   28 ----------------------------
+ arch/x86/crypto/ghash-clmulni-intel_glue.c |   14 +++++++++++---
+ 2 files changed, 11 insertions(+), 31 deletions(-)
 
---- a/drivers/video/matrox/matroxfb_accel.c
-+++ b/drivers/video/matrox/matroxfb_accel.c
-@@ -192,10 +192,18 @@ void matrox_cfbX_init(struct matrox_fb_i
- 	minfo->accel.m_dwg_rect = M_DWG_TRAP | M_DWG_SOLID | M_DWG_ARZERO | M_DWG_SGNZERO | M_DWG_SHIFTZERO;
- 	if (isMilleniumII(minfo)) minfo->accel.m_dwg_rect |= M_DWG_TRANSC;
- 	minfo->accel.m_opmode = mopmode;
-+	minfo->accel.m_access = maccess;
-+	minfo->accel.m_pitch = mpitch;
- }
+--- a/arch/x86/crypto/ghash-clmulni-intel_asm.S
++++ b/arch/x86/crypto/ghash-clmulni-intel_asm.S
+@@ -24,10 +24,6 @@
+ .align 16
+ .Lbswap_mask:
+ 	.octa 0x000102030405060708090a0b0c0d0e0f
+-.Lpoly:
+-	.octa 0xc2000000000000000000000000000001
+-.Ltwo_one:
+-	.octa 0x00000001000000000000000000000001
  
- EXPORT_SYMBOL(matrox_cfbX_init);
+ #define DATA	%xmm0
+ #define SHASH	%xmm1
+@@ -131,27 +127,3 @@ ENTRY(clmul_ghash_update)
+ 	movups DATA, (%rdi)
+ .Lupdate_just_ret:
+ 	ret
+-
+-/*
+- * void clmul_ghash_setkey(be128 *shash, const u8 *key);
+- *
+- * Calculate hash_key << 1 mod poly
+- */
+-ENTRY(clmul_ghash_setkey)
+-	movaps .Lbswap_mask, BSWAP
+-	movups (%rsi), %xmm0
+-	PSHUFB_XMM BSWAP %xmm0
+-	movaps %xmm0, %xmm1
+-	psllq $1, %xmm0
+-	psrlq $63, %xmm1
+-	movaps %xmm1, %xmm2
+-	pslldq $8, %xmm1
+-	psrldq $8, %xmm2
+-	por %xmm1, %xmm0
+-	# reduction
+-	pshufd $0b00100100, %xmm2, %xmm1
+-	pcmpeqd .Ltwo_one, %xmm1
+-	pand .Lpoly, %xmm1
+-	pxor %xmm1, %xmm0
+-	movups %xmm0, (%rdi)
+-	ret
+--- a/arch/x86/crypto/ghash-clmulni-intel_glue.c
++++ b/arch/x86/crypto/ghash-clmulni-intel_glue.c
+@@ -30,8 +30,6 @@ void clmul_ghash_mul(char *dst, const be
+ void clmul_ghash_update(char *dst, const char *src, unsigned int srclen,
+ 			const be128 *shash);
  
-+static void matrox_accel_restore_maccess(struct matrox_fb_info *minfo)
-+{
-+	mga_outl(M_MACCESS, minfo->accel.m_access);
-+	mga_outl(M_PITCH, minfo->accel.m_pitch);
-+}
-+
- static void matrox_accel_bmove(struct matrox_fb_info *minfo, int vxres, int sy,
- 			       int sx, int dy, int dx, int height, int width)
- {
-@@ -207,7 +215,8 @@ static void matrox_accel_bmove(struct ma
- 	CRITBEGIN
- 
- 	if ((dy < sy) || ((dy == sy) && (dx <= sx))) {
--		mga_fifo(2);
-+		mga_fifo(4);
-+		matrox_accel_restore_maccess(minfo);
- 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_SGNZERO |
- 			 M_DWG_BFCOL | M_DWG_REPLACE);
- 		mga_outl(M_AR5, vxres);
-@@ -215,7 +224,8 @@ static void matrox_accel_bmove(struct ma
- 		start = sy*vxres+sx+curr_ydstorg(minfo);
- 		end = start+width;
- 	} else {
--		mga_fifo(3);
-+		mga_fifo(5);
-+		matrox_accel_restore_maccess(minfo);
- 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_BFCOL | M_DWG_REPLACE);
- 		mga_outl(M_SGN, 5);
- 		mga_outl(M_AR5, -vxres);
-@@ -224,7 +234,8 @@ static void matrox_accel_bmove(struct ma
- 		start = end+width;
- 		dy += height-1;
- 	}
--	mga_fifo(4);
-+	mga_fifo(6);
-+	matrox_accel_restore_maccess(minfo);
- 	mga_outl(M_AR0, end);
- 	mga_outl(M_AR3, start);
- 	mga_outl(M_FXBNDRY, ((dx+width)<<16) | dx);
-@@ -246,7 +257,8 @@ static void matrox_accel_bmove_lin(struc
- 	CRITBEGIN
- 
- 	if ((dy < sy) || ((dy == sy) && (dx <= sx))) {
--		mga_fifo(2);
-+		mga_fifo(4);
-+		matrox_accel_restore_maccess(minfo);
- 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_SGNZERO |
- 			M_DWG_BFCOL | M_DWG_REPLACE);
- 		mga_outl(M_AR5, vxres);
-@@ -254,7 +266,8 @@ static void matrox_accel_bmove_lin(struc
- 		start = sy*vxres+sx+curr_ydstorg(minfo);
- 		end = start+width;
- 	} else {
--		mga_fifo(3);
-+		mga_fifo(5);
-+		matrox_accel_restore_maccess(minfo);
- 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_BFCOL | M_DWG_REPLACE);
- 		mga_outl(M_SGN, 5);
- 		mga_outl(M_AR5, -vxres);
-@@ -263,7 +276,8 @@ static void matrox_accel_bmove_lin(struc
- 		start = end+width;
- 		dy += height-1;
- 	}
--	mga_fifo(5);
-+	mga_fifo(7);
-+	matrox_accel_restore_maccess(minfo);
- 	mga_outl(M_AR0, end);
- 	mga_outl(M_AR3, start);
- 	mga_outl(M_FXBNDRY, ((dx+width)<<16) | dx);
-@@ -298,7 +312,8 @@ static void matroxfb_accel_clear(struct
- 
- 	CRITBEGIN
- 
--	mga_fifo(5);
-+	mga_fifo(7);
-+	matrox_accel_restore_maccess(minfo);
- 	mga_outl(M_DWGCTL, minfo->accel.m_dwg_rect | M_DWG_REPLACE);
- 	mga_outl(M_FCOL, color);
- 	mga_outl(M_FXBNDRY, ((sx + width) << 16) | sx);
-@@ -341,7 +356,8 @@ static void matroxfb_cfb4_clear(struct m
- 	width >>= 1;
- 	sx >>= 1;
- 	if (width) {
--		mga_fifo(5);
-+		mga_fifo(7);
-+		matrox_accel_restore_maccess(minfo);
- 		mga_outl(M_DWGCTL, minfo->accel.m_dwg_rect | M_DWG_REPLACE2);
- 		mga_outl(M_FCOL, bgx);
- 		mga_outl(M_FXBNDRY, ((sx + width) << 16) | sx);
-@@ -415,7 +431,8 @@ static void matroxfb_1bpp_imageblit(stru
- 
- 	CRITBEGIN
- 
--	mga_fifo(3);
-+	mga_fifo(5);
-+	matrox_accel_restore_maccess(minfo);
- 	if (easy)
- 		mga_outl(M_DWGCTL, M_DWG_ILOAD | M_DWG_SGNZERO | M_DWG_SHIFTZERO | M_DWG_BMONOWF | M_DWG_LINEAR | M_DWG_REPLACE);
- 	else
-@@ -425,7 +442,8 @@ static void matroxfb_1bpp_imageblit(stru
- 	fxbndry = ((xx + width - 1) << 16) | xx;
- 	mmio = minfo->mmio.vbase;
- 
--	mga_fifo(6);
-+	mga_fifo(8);
-+	matrox_accel_restore_maccess(minfo);
- 	mga_writel(mmio, M_FXBNDRY, fxbndry);
- 	mga_writel(mmio, M_AR0, ar0);
- 	mga_writel(mmio, M_AR3, 0);
---- a/drivers/video/matrox/matroxfb_base.h
-+++ b/drivers/video/matrox/matroxfb_base.h
-@@ -307,6 +307,8 @@ struct matrox_accel_data {
- #endif
- 	u_int32_t	m_dwg_rect;
- 	u_int32_t	m_opmode;
-+	u_int32_t	m_access;
-+	u_int32_t	m_pitch;
+-void clmul_ghash_setkey(be128 *shash, const u8 *key);
+-
+ struct ghash_async_ctx {
+ 	struct cryptd_ahash *cryptd_tfm;
  };
+@@ -58,13 +56,23 @@ static int ghash_setkey(struct crypto_sh
+ 			const u8 *key, unsigned int keylen)
+ {
+ 	struct ghash_ctx *ctx = crypto_shash_ctx(tfm);
++	be128 *x = (be128 *)key;
++	u64 a, b;
  
- struct v4l2_queryctrl;
+ 	if (keylen != GHASH_BLOCK_SIZE) {
+ 		crypto_shash_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
+ 		return -EINVAL;
+ 	}
+ 
+-	clmul_ghash_setkey(&ctx->shash, key);
++	/* perform multiplication by 'x' in GF(2^128) */
++	a = be64_to_cpu(x->a);
++	b = be64_to_cpu(x->b);
++
++	ctx->shash.a = (__be64)((b << 1) | (a >> 63));
++	ctx->shash.b = (__be64)((a << 1) | (b >> 63));
++
++	if (a >> 63)
++		ctx->shash.b ^= cpu_to_be64(0xc2);
+ 
+ 	return 0;
+ }
 
 
