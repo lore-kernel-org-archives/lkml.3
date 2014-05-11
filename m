@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964871AbaEKTnN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:43:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48303 "EHLO
+	id S964884AbaEKTnl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:43:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48299 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933523AbaEKTYa (ORCPT
+	with ESMTP id S932623AbaEKTY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:24:30 -0400
+	Sun, 11 May 2014 15:24:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 29/48] mac80211: exclude AP_VLAN interfaces from tx power calculation
-Date: Sun, 11 May 2014 21:20:03 +0200
-Message-Id: <20140511191952.063700876@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.14 49/83] rtlwifi: rtl8723ae: Fix too long disable of IRQs
+Date: Sun, 11 May 2014 21:19:50 +0200
+Message-Id: <20140511191913.564687148@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 764152ff66f4a8be1f9d7981e542ffdaa5bd7aff upstream.
+commit bfc1010c418a22cbebd8b1bd1e75dad6a527a609 upstream.
 
-Their power value is initialized to zero. This patch fixes an issue
-where the configured power drops to the minimum value when AP_VLAN
-interfaces are created/removed.
+In commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 entitled "rtlwifi:
+rtl8192ce: Fix too long disable of IRQs", Olivier Langlois
+<olivier@trillion01.com> fixed a problem caused by an extra long disabling
+of interrupts. This patch makes the same fix for rtl8723ae.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/main.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/rtlwifi/rtl8723ae/hw.c |   18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
---- a/net/mac80211/main.c
-+++ b/net/mac80211/main.c
-@@ -157,6 +157,8 @@ static u32 ieee80211_hw_conf_chan(struct
- 	list_for_each_entry_rcu(sdata, &local->interfaces, list) {
- 		if (!rcu_access_pointer(sdata->vif.chanctx_conf))
- 			continue;
-+		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
-+			continue;
- 		power = min(power, sdata->vif.bss_conf.txpower);
+--- a/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
+@@ -880,14 +880,25 @@ int rtl8723ae_hw_init(struct ieee80211_h
+ 	bool rtstatus = true;
+ 	int err;
+ 	u8 tmp_u1b;
++	unsigned long flags;
+ 
+ 	rtlpriv->rtlhal.being_init_adapter = true;
++	/* As this function can take a very long time (up to 350 ms)
++	 * and can be called with irqs disabled, reenable the irqs
++	 * to let the other devices continue being serviced.
++	 *
++	 * It is safe doing so since our own interrupts will only be enabled
++	 * in a subsequent step.
++	 */
++	local_save_flags(flags);
++	local_irq_enable();
++
+ 	rtlpriv->intf_ops->disable_aspm(hw);
+ 	rtstatus = _rtl8712e_init_mac(hw);
+ 	if (rtstatus != true) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "Init MAC failed\n");
+ 		err = 1;
+-		return err;
++		goto exit;
  	}
- 	rcu_read_unlock();
+ 
+ 	err = rtl8723ae_download_fw(hw);
+@@ -895,8 +906,7 @@ int rtl8723ae_hw_init(struct ieee80211_h
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
+ 			 "Failed to download FW. Init HW without FW now..\n");
+ 		err = 1;
+-		rtlhal->fw_ready = false;
+-		return err;
++		goto exit;
+ 	} else {
+ 		rtlhal->fw_ready = true;
+ 	}
+@@ -971,6 +981,8 @@ int rtl8723ae_hw_init(struct ieee80211_h
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE, "under 1.5V\n");
+ 	}
+ 	rtl8723ae_dm_init(hw);
++exit:
++	local_irq_restore(flags);
+ 	rtlpriv->rtlhal.being_init_adapter = false;
+ 	return err;
+ }
 
 
