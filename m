@@ -1,102 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757797AbaEKGCW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 02:02:22 -0400
-Received: from [162.105.203.56] ([162.105.203.56]:45649 "EHLO
-	mail.sei.pku.edu.cn" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332AbaEKGCU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 02:02:20 -0400
-X-Greylist: delayed 2356 seconds by postgrey-1.27 at vger.kernel.org; Sun, 11 May 2014 02:02:20 EDT
-From: "Yuan Pengfei" <yuanpf12@sei.pku.edu.cn>
-To: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] gcov: add support for GCC 4.9
-Date: Sun, 11 May 2014 13:22:53 +0800
-Message-ID: <001d01cf6cd9$0efba6b0$2cf2f410$@sei.pku.edu.cn>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 15.0
-Thread-Index: Ac9s2NAcTC6E9oW9SimQpzcqX9R4MQ==
-Content-Language: zh-cn
-X-Spam_score: -102.9
-X-Spam_score_int: -1028
-X-Spam_bar: ---------------------------------------------------
+	id S932141AbaEKGCq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 02:02:46 -0400
+Received: from ns.horizon.com ([71.41.210.147]:40317 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757913AbaEKGCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 02:02:45 -0400
+Date: 11 May 2014 02:02:39 -0400
+Message-ID: <20140511060239.22063.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, tj@kernel.org
+Subject: Re: [PATCH 1/2] Add lib/glob.c
+Cc: akpm@linux-foundation.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@redhat.com,
+        torvalds@linux-foundation.org
+In-Reply-To: <20140510122138.GA4721@mtj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yuan Pengfei <coolypf@qq.com>
+On Sat, 10 May 2014 08:21:38 -0400, Tejun Heo wrote:
+> On Fri, May 09, 2014 at 11:13:56PM -0400, George Spelvin wrote:
+>> +config GLOB
+>> +	tristate
+>> +#	(Prompt disabled to reduce kbuild clutter until someone needs it.)
+>> +#	prompt "glob_match() function"
+>> +	help
+>> +	  This option provides a glob_match function for performing simple
+>> +	  text pattern matching.  It is primarily used by the ATA code
+>> +	  to blacklist particular drive models, but other device drivers
+>> +	  may need similar functionality.
+>> +
+>> +	  All in-kernel drivers that require this function automatically
+>> +	  select this option.  Say N unless you are compiling an out-of
+>> +	  tree driver which tells you it depend on it.
 
-This patch handles the gcov-related changes in GCC 4.9:
-  A new counter (time profile) is added.
-See http://gcc.gnu.org/gcc-4.9/changes.html
-Signed-off-by: Yuan Pengfei <coolypf@qq.com>
----
- kernel/gcov/base.c    | 6 ++++++
- kernel/gcov/gcc_3_4.c | 2 +-
- kernel/gcov/gcc_4_7.c | 7 ++++++-
- 3 files changed, 13 insertions(+), 2 deletions(-)
+> Just adding glob.o to lib-y should be enough.  It will be excluded
+> from linking if unused.
 
-diff --git a/kernel/gcov/base.c b/kernel/gcov/base.c
-index f45b75b..b358a80 100644
---- a/kernel/gcov/base.c
-+++ b/kernel/gcov/base.c
-@@ -85,6 +85,12 @@ void __gcov_merge_ior(gcov_type *counters, unsigned int
-n_counters)
- }
- EXPORT_SYMBOL(__gcov_merge_ior);
- 
-+void __gcov_merge_time_profile(gcov_type *counters, unsigned int
-n_counters)
-+{
-+ /* Unused. */
-+}
-+EXPORT_SYMBOL(__gcov_merge_time_profile);
-+
- /**
-  * gcov_enable_events - enable event reporting through gcov_event()
-  *
-diff --git a/kernel/gcov/gcc_3_4.c b/kernel/gcov/gcc_3_4.c
-index 27bc88a..1c1f425 100644
---- a/kernel/gcov/gcc_3_4.c
-+++ b/kernel/gcov/gcc_3_4.c
-@@ -269,7 +269,7 @@ struct gcov_info *gcov_info_dup(struct gcov_info *info)
-  dup->counts[i].num = ctr->num;
-  dup->counts[i].merge = ctr->merge;
-  dup->counts[i].values = vmalloc(size);
-- if (!dup->counts[i].values)
-+ if (size && !dup->counts[i].values)
-  goto err_free;
-  memcpy(dup->counts[i].values, ctr->values, size);
-  }
-diff --git a/kernel/gcov/gcc_4_7.c b/kernel/gcov/gcc_4_7.c
-index 2c6e463..7f74b59 100644
---- a/kernel/gcov/gcc_4_7.c
-+++ b/kernel/gcov/gcc_4_7.c
-@@ -18,7 +18,12 @@
- #include <linux/vmalloc.h>
- #include "gcov.h"
- 
-+#if __GNUC__ == 4 && __GNUC_MINOR__ >= 9
-+#define GCOV_COUNTERS 9
-+#else
- #define GCOV_COUNTERS 8
-+#endif
-+
- #define GCOV_TAG_FUNCTION_LENGTH 3
- 
- static struct gcov_info *gcov_info_head;
-@@ -290,7 +295,7 @@ struct gcov_info *gcov_info_dup(struct gcov_info *info)
- 
-  dci_ptr->values = vmalloc(cv_size);
- 
-- if (!dci_ptr->values)
-+ if (cv_size && !dci_ptr->values)
-  goto err_free;
- 
-  dci_ptr->num = sci_ptr->num;
--- 
-2.0.0.rc2
+But, I just confirmed, it will also be excluded from linking if
+CONFIG_ATA=m.  See for example commit b4d3ba3346f0 where some helpers
+had to be moved from lib-y to obj-y to fix module load errors.
+(Thanks to Randy Dunlap for this example.)
 
+>> +#else
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/glob.h>
+>> +
+>> +MODULE_DESCRIPTION("glob(7) matching");
+>> +MODULE_LICENSE("Dual MIT/GPL");
+
+> Do we make library routines separate modules usually?
+
+There are basically three options I can see:
+1) Make it non-configurable and always include the code in the kernel
+   using oby-y, and just accept the wasted space if CONFIG_ATA=n
+2) Make it a boolean option, so CONFIG_ATA=m will force CONFIG_GLOB=y and
+   it will be included in the static kernel but unused until the module
+   is loaded.
+3) Make it a tristate option, which compiles into the kernel if
+   CONFIG_ATA=y (the common case), and is its own module if CONFIG_ATA=m.
+   An awful lot of the files in lib/ take this approach.
+
+Do you have a preference?  Option 3 is the current status.
+
+(Revised patch will come when I have the self-test converted.)
