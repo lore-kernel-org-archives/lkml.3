@@ -1,107 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757821AbaEKBjF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 May 2014 21:39:05 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:35169 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550AbaEKBjB (ORCPT
+	id S1757919AbaEKBlv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 May 2014 21:41:51 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:33074 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757263AbaEKBlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 21:39:01 -0400
-Date: Sat, 10 May 2014 18:38:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        hughd@google.com, viresh.kumar@linaro.org,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: vmstat: On demand vmstat workers V4
-Message-ID: <20140511013854.GL4827@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.DEB.2.10.1405090949170.11318@gentwo.org>
- <alpine.DEB.2.02.1405091659350.6261@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1405091027040.11318@gentwo.org>
- <alpine.DEB.2.02.1405092358390.6261@ionos.tec.linutronix.de>
- <20140509234745.GB8754@linux.vnet.ibm.com>
- <20140510004843.GB32393@localhost.localdomain>
- <alpine.DEB.2.02.1405101423360.6261@ionos.tec.linutronix.de>
- <20140510131422.GA13660@localhost.localdomain>
- <20140511011708.GD4827@linux.vnet.ibm.com>
- <20140511013029.GC13660@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140511013029.GC13660@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051101-1344-0000-0000-000001790880
+	Sat, 10 May 2014 21:41:47 -0400
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, linux@arm.linux.org.uk,
+        daniel.lezcano@linaro.org, tglx@linutronix.de, matthias.bgg@gmail.com,
+        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
+        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
+        heiko.stuebner@bq.com, olof@lixom.net, sebastian.hesselbarth@gmail.com,
+        sboyd@codeaurora.org, gregory.clement@free-electrons.com,
+        arnd@arndb.de, robherring2@gmail.com, marc.zyngier@arm.com,
+        maxime.ripard@free-electrons.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 0/4] arm: Add basic support for Mediatek Cortex-A7 SoCs
+Date: Sun, 11 May 2014 03:40:59 +0200
+Message-Id: <1399772463-859-1-git-send-email-matthias.bgg@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 11, 2014 at 03:30:31AM +0200, Frederic Weisbecker wrote:
-> On Sat, May 10, 2014 at 06:17:08PM -0700, Paul E. McKenney wrote:
-> > On Sat, May 10, 2014 at 03:14:25PM +0200, Frederic Weisbecker wrote:
-> > > On Sat, May 10, 2014 at 02:31:28PM +0200, Thomas Gleixner wrote:
-> > > > On Sat, 10 May 2014, Frederic Weisbecker wrote:
-> > > > > But I still have the plan to make the timekeeper use the full sysidle
-> > > > > facility in order to adaptively get to dynticks idle.
-> > > > > 
-> > > > > Reminder for others: in NO_HZ_FULL, the timekeeper (always CPU 0) stays
-> > > > > completely periodic. It can't enter in dynticks idle mode because it
-> > > > > must maintain timekeeping on behalf of full dynticks CPUs. So that's
-> > > > > a power issue.
-> > > > > 
-> > > > > But Paul has a feature in RCU that lets us know when all CPUs are idle
-> > > > > and the timekeeper can finally sleep. Then when a full nohz CPU wakes
-> > > > > up from idle, it sends an IPI to the timekeeper if needed so the latter
-> > > > > restarts timekeeping maintainance.
-> > > > >
-> > > > > It's not complicated to add to the timer code.
-> > > > > Most of the code is already there, in RCU, for a while already.
-> > > > > 
-> > > > > Are we keeping that direction? 
-> > > > 
-> > > > So the idea is that the timekeeper stays on cpu0, but if everything is
-> > > > idle it is allowed to take a long nap as well. So if some other cpu
-> > > > wakes up it updates timekeeping without taking over the time keeper
-> > > > duty and if it has work to do, it kicks cpu0 into gear. If it just
-> > > > goes back to sleep, then nothing to do.
-> > 
-> > Hmmm...  If RCU is supposed to ignore the fact that one of the other
-> > CPUs woke up momentarily, we will need to adjust things a bit.
-> 
-> Maybe not that much actually.
-> 
-> > 
-> > > Exactly! Except perhaps the last sentence "If it just goes back to sleep,
-> > > then nothing to do.", I didn't think about that although this special case
-> > > is quite frequent indeed when an interrupt fires on idle but no task is woken up.
-> > > 
-> > > Maybe I should move the code that fires the IPI to cpu0, if it is sleeping,
-> > > on irq exit (the plan was to do it right away on irq enter) and fire it
-> > > only if need_resched().
-> > 
-> > And of course if that code path contains any RCU read-side critical
-> > sections, RCU absolutely cannot ignore that CPU's momentary wakeup.
-> 
-> Sure the core RCU still needs to know that the CPU went out of dynticks the
-> time of the irq, so we keep the rcu_irq_enter/rcu_irq_exit calls.
-> 
-> But if the CPU only wakes up to serve an IRQ, it doesn't need to tell the RCU
-> sysidle detection about it. The irq entry fixup jiffies on dynticks idle mode,
-> this should be enough.
+Second round for the basic support of the mt6589 SoC from Mediatek.
 
-As long as you pass me in a hint so that RCU knows which case it is
-dealing with.  ;-)
+I droped the patch which introduced low-level-debug for the Soc, because of
+the missing serial device driver. This would prohibit the use of a multi-
+platform kernel with this series. I will re-submit the patch for low-level-
+debugging, when the serial driver got committed.
 
-							Thanx, Paul
+I added support for the Aquaris5 mobile phone, although at the moment you can't
+really do anything with the phone. I also renamed the mtk6589.dtsi to 
+mt6589.dtsi as it better reflects the SoC name given by Mediatek.
+
+---
+This patch set adds basic support for the Mediatek Cortex-A7 SoCs.
+Support is quite basic, as the only component working up to now are the
+timers.
+
+The patch series is build against torvalds/master tree.
+
+Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+
+Changes for v2:
+1. Clocksource timer
+- Delete unused parts for sched_clock_source
+- Use irq_request instead of setup_irq
+- Remove unused SMP parts
+- Fix some style issues
+- use of_address_to resource and request_mem_region
+- delete use of named clock
+- select CLKSRC_MMIO in driver Kconfig
+
+2. DT bindings
+- delete named clock bindings
+
+3. Basic SoC support
+- Clean-up Kconfig
+- Add documentation of the SoC compatible property 
+- DTS: rename SoC file to mt6589.dts
+- DTS: Delete not present cache controller
+- DTS: Add missing GICv2 properties
+- DTS: Change clock names
+- DTS: Add Aquaris5 board
+
+4. Add earlyprintk
+- patch droped until serial driver is available
+
+5. Add support for Aquaris5 mobile phone
+
+---
+
+Matthias Brugger (4):
+  clocksource: Add support for the Mediatek SoCs
+  dt-bindings: add mtk-timer bindings
+  arm: add basic support for Mediatek MT6589 boards
+  arm: mediatek: add dts for Aquaris5 mobile phone
+
+ .../devicetree/bindings/arm/mediatek-mt65xx.txt    |   8 +
+ .../bindings/timer/mediatek,mtk-timer.txt          |  17 ++
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ arch/arm/Kconfig                                   |   2 +
+ arch/arm/Makefile                                  |   1 +
+ arch/arm/boot/dts/mt6589-aquaris5.dts              |  25 +++
+ arch/arm/boot/dts/mt6589.dtsi                      |  93 ++++++++
+ arch/arm/mach-mediatek/Kconfig                     |   6 +
+ arch/arm/mach-mediatek/Makefile                    |   1 +
+ arch/arm/mach-mediatek/mediatek.c                  |  38 ++++
+ drivers/clocksource/Kconfig                        |   4 +
+ drivers/clocksource/Makefile                       |   1 +
+ drivers/clocksource/mtk_timer.c                    | 240 +++++++++++++++++++++
+ 13 files changed, 437 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/mediatek-mt65xx.txt
+ create mode 100644 Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
+ create mode 100644 arch/arm/boot/dts/mt6589-aquaris5.dts
+ create mode 100644 arch/arm/boot/dts/mt6589.dtsi
+ create mode 100644 arch/arm/mach-mediatek/Kconfig
+ create mode 100644 arch/arm/mach-mediatek/Makefile
+ create mode 100644 arch/arm/mach-mediatek/mediatek.c
+ create mode 100644 drivers/clocksource/mtk_timer.c
+
+-- 
+1.8.1.2
 
