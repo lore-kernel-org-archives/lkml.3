@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934170AbaEKTdC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:33:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48496 "EHLO
+	id S934248AbaEKTdW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:33:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48488 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933994AbaEKT00 (ORCPT
+	with ESMTP id S933982AbaEKT0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:26:26 -0400
+	Sun, 11 May 2014 15:26:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerd Hoffmann <kraxel@redhat.com>, Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.10 48/48] drm: cirrus: add power management support
-Date: Sun, 11 May 2014 21:20:22 +0200
-Message-Id: <20140511191954.546239829@linuxfoundation.org>
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.10 46/48] Input: synaptics - add min/max quirk for ThinkPad T431s, L440, L540, S1 Yoga and X1
+Date: Sun, 11 May 2014 21:20:20 +0200
+Message-Id: <20140511191954.299781620@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
 References: <20140511191948.079900414@linuxfoundation.org>
@@ -26,106 +28,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerd Hoffmann <kraxel@redhat.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 2f1e800799bf478494cec3573cd63eb34ca89c9d upstream.
+commit 46a2986ebbe18757c2d8c352f8fb6e0f4f0754e3 upstream.
 
-cirrus kms driver lacks power management support, thus
-the vga display doesn't work any more after S3 resume.
+We expect that all the Haswell series will need such quirks, sigh.
 
-Fix this by adding suspend and resume functions.
-Also make the mode_set function unblank the screen.
+The T431s seems to be T430 hardware in a T440s case, using the T440s touchpad,
+with the same min/max issue.
 
-Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+The X1 Carbon 3rd generation name says 2nd while it is a 3rd generation.
+
+The X1 and T431s share a PnPID with the T540p, but the reported ranges are
+closer to those of the T440s.
+
+HdG: Squashed 5 quirk patches into one. T431s + L440 + L540 are written by me,
+S1 Yoga and X1 are written by Benjamin Tissoires.
+
+Hdg: Standardized S1 Yoga and X1 values, Yoga uses the same touchpad as the
+X240, X1 uses the same touchpad as the T440.
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/cirrus/cirrus_drv.c  |   42 +++++++++++++++++++++++++++++++++++
- drivers/gpu/drm/cirrus/cirrus_mode.c |    3 ++
- 2 files changed, 45 insertions(+)
+ drivers/input/mouse/synaptics.c |   42 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
 
---- a/drivers/gpu/drm/cirrus/cirrus_drv.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_drv.c
-@@ -11,6 +11,7 @@
- #include <linux/module.h>
- #include <linux/console.h>
- #include <drm/drmP.h>
-+#include <drm/drm_crtc_helper.h>
- 
- #include "cirrus_drv.h"
- 
-@@ -75,6 +76,41 @@ static void cirrus_pci_remove(struct pci
- 	drm_put_dev(dev);
- }
- 
-+static int cirrus_pm_suspend(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct drm_device *drm_dev = pci_get_drvdata(pdev);
-+	struct cirrus_device *cdev = drm_dev->dev_private;
-+
-+	drm_kms_helper_poll_disable(drm_dev);
-+
-+	if (cdev->mode_info.gfbdev) {
-+		console_lock();
-+		fb_set_suspend(cdev->mode_info.gfbdev->helper.fbdev, 1);
-+		console_unlock();
-+	}
-+
-+	return 0;
-+}
-+
-+static int cirrus_pm_resume(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct drm_device *drm_dev = pci_get_drvdata(pdev);
-+	struct cirrus_device *cdev = drm_dev->dev_private;
-+
-+	drm_helper_resume_force_mode(drm_dev);
-+
-+	if (cdev->mode_info.gfbdev) {
-+		console_lock();
-+		fb_set_suspend(cdev->mode_info.gfbdev->helper.fbdev, 0);
-+		console_unlock();
-+	}
-+
-+	drm_kms_helper_poll_enable(drm_dev);
-+	return 0;
-+}
-+
- static const struct file_operations cirrus_driver_fops = {
- 	.owner = THIS_MODULE,
- 	.open = drm_open,
-@@ -105,11 +141,17 @@ static struct drm_driver driver = {
- 	.dumb_destroy = cirrus_dumb_destroy,
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -1515,6 +1515,14 @@ static const struct dmi_system_id min_ma
+ 		.driver_data = (int []){1232, 5710, 1156, 4696},
+ 	},
+ 	{
++		/* Lenovo ThinkPad T431s */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T431"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
+ 		/* Lenovo ThinkPad T440s */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+@@ -1523,6 +1531,14 @@ static const struct dmi_system_id min_ma
+ 		.driver_data = (int []){1024, 5112, 2024, 4832},
+ 	},
+ 	{
++		/* Lenovo ThinkPad L440 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad L440"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
+ 		/* Lenovo ThinkPad T540p */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+@@ -1530,6 +1546,32 @@ static const struct dmi_system_id min_ma
+ 		},
+ 		.driver_data = (int []){1024, 5056, 2058, 4832},
+ 	},
++	{
++		/* Lenovo ThinkPad L540 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad L540"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
++		/* Lenovo Yoga S1 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_EXACT_MATCH(DMI_PRODUCT_VERSION,
++					"ThinkPad S1 Yoga"),
++		},
++		.driver_data = (int []){1232, 5710, 1156, 4696},
++	},
++	{
++		/* Lenovo ThinkPad X1 Carbon Haswell (3rd generation) */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION,
++					"ThinkPad X1 Carbon 2nd"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
+ #endif
+ 	{ }
  };
- 
-+static const struct dev_pm_ops cirrus_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(cirrus_pm_suspend,
-+				cirrus_pm_resume)
-+};
-+
- static struct pci_driver cirrus_pci_driver = {
- 	.name = DRIVER_NAME,
- 	.id_table = pciidlist,
- 	.probe = cirrus_pci_probe,
- 	.remove = cirrus_pci_remove,
-+	.driver.pm = &cirrus_pm_ops,
- };
- 
- static int __init cirrus_init(void)
---- a/drivers/gpu/drm/cirrus/cirrus_mode.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_mode.c
-@@ -308,6 +308,9 @@ static int cirrus_crtc_mode_set(struct d
- 
- 	WREG_HDR(hdr);
- 	cirrus_crtc_do_set_base(crtc, old_fb, x, y, 0);
-+
-+	/* Unblank (needed on S3 resume, vgabios doesn't do it then) */
-+	outb(0x20, 0x3c0);
- 	return 0;
- }
- 
 
 
