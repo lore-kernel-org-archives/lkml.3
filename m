@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933078AbaEKTWt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:22:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48137 "EHLO
+	id S933124AbaEKTXA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:23:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933036AbaEKTWo (ORCPT
+	with ESMTP id S933075AbaEKTWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:22:44 -0400
+	Sun, 11 May 2014 15:22:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mikulas Patocka <mpatocka@redhat.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 3.14 30/83] mach64: use unaligned access
-Date: Sun, 11 May 2014 21:19:31 +0200
-Message-Id: <20140511191911.166738023@linuxfoundation.org>
+Subject: [PATCH 3.14 31/83] mach64: fix cursor when character width is not a multiple of 8 pixels
+Date: Sun, 11 May 2014 21:19:32 +0200
+Message-Id: <20140511191911.282917409@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -29,44 +29,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit c29dd8696dc5dbd50b3ac441b8a26751277ba520 upstream.
+commit 43751a1b8ee2e70ce392bf31ef3133da324e68b3 upstream.
 
-This patch fixes mach64 to use unaligned access to the font bitmap.
+This patch fixes the hardware cursor on mach64 when font width is not a
+multiple of 8 pixels.
 
-This fixes unaligned access warning on sparc64 when 14x8 font is loaded.
+If you load such a font, the cursor is expanded to the next 8-byte
+boundary and a part of the next character after the cursor is not
+visible.
+For example, when you load a font with 12-pixel width, the cursor width
+is 16 pixels and when the cursor is displayed, 4 pixels of the next
+character are not visible.
 
-On x86(64), unaligned access is handled in hardware, so both functions
-le32_to_cpup and get_unaligned_le32 perform the same operation.
+The reason is this: atyfb_cursor is called with proper parameters to
+load an image that is 12-pixel wide. However, the number is aligned on
+the next 8-pixel boundary on the line
+"unsigned int width = (cursor->image.width + 7) >> 3;" and the whole
+function acts as it is was loading a 16-pixel image.
 
-On RISC machines, unaligned access is not handled in hardware, so we
-better use get_unaligned_le32 to avoid the unaligned trap and warning.
+This patch fixes it so that the value written to the framebuffer is
+padded with 0xaaaa (the transparent pattern) when the image size it not
+a multiple of 8 pixels. The transparent pattern causes that the cursor
+will not interfere with the next character.
 
 Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/aty/mach64_accel.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/video/aty/mach64_cursor.c |   22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
---- a/drivers/video/aty/mach64_accel.c
-+++ b/drivers/video/aty/mach64_accel.c
-@@ -4,6 +4,7 @@
-  */
- 
- #include <linux/delay.h>
-+#include <asm/unaligned.h>
+--- a/drivers/video/aty/mach64_cursor.c
++++ b/drivers/video/aty/mach64_cursor.c
+@@ -5,6 +5,7 @@
  #include <linux/fb.h>
- #include <video/mach64.h>
- #include "atyfb.h"
-@@ -419,7 +420,7 @@ void atyfb_imageblit(struct fb_info *inf
- 		u32 *pbitmap, dwords = (src_bytes + 3) / 4;
- 		for (pbitmap = (u32*)(image->data); dwords; dwords--, pbitmap++) {
- 			wait_for_fifo(1, par);
--			aty_st_le32(HOST_DATA0, le32_to_cpup(pbitmap), par);
-+			aty_st_le32(HOST_DATA0, get_unaligned_le32(pbitmap), par);
- 		}
- 	}
+ #include <linux/init.h>
+ #include <linux/string.h>
++#include "../fb_draw.h"
  
+ #include <asm/io.h>
+ 
+@@ -157,24 +158,33 @@ static int atyfb_cursor(struct fb_info *
+ 
+ 	    for (i = 0; i < height; i++) {
+ 		for (j = 0; j < width; j++) {
++			u16 l = 0xaaaa;
+ 			b = *src++;
+ 			m = *msk++;
+ 			switch (cursor->rop) {
+ 			case ROP_XOR:
+ 			    // Upper 4 bits of mask data
+-			    fb_writeb(cursor_bits_lookup[(b ^ m) >> 4], dst++);
++			    l = cursor_bits_lookup[(b ^ m) >> 4] |
+ 			    // Lower 4 bits of mask
+-			    fb_writeb(cursor_bits_lookup[(b ^ m) & 0x0f],
+-				      dst++);
++				    (cursor_bits_lookup[(b ^ m) & 0x0f] << 8);
+ 			    break;
+ 			case ROP_COPY:
+ 			    // Upper 4 bits of mask data
+-			    fb_writeb(cursor_bits_lookup[(b & m) >> 4], dst++);
++			    l = cursor_bits_lookup[(b & m) >> 4] |
+ 			    // Lower 4 bits of mask
+-			    fb_writeb(cursor_bits_lookup[(b & m) & 0x0f],
+-				      dst++);
++				    (cursor_bits_lookup[(b & m) & 0x0f] << 8);
+ 			    break;
+ 			}
++			/*
++			 * If cursor size is not a multiple of 8 characters
++			 * we must pad it with transparent pattern (0xaaaa).
++			 */
++			if ((j + 1) * 8 > cursor->image.width) {
++				l = comp(l, 0xaaaa,
++				    (1 << ((cursor->image.width & 7) * 2)) - 1);
++			}
++			fb_writeb(l & 0xff, dst++);
++			fb_writeb(l >> 8, dst++);
+ 		}
+ 		dst += offset;
+ 	    }
 
 
