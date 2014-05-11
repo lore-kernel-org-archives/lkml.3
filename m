@@ -1,368 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964857AbaEKTke (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:40:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48357 "EHLO
+	id S964866AbaEKTkz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:40:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48353 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933684AbaEKTZC (ORCPT
+	with ESMTP id S933678AbaEKTY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:25:02 -0400
+	Sun, 11 May 2014 15:24:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 3.14 58/83] tgafb: fix data copying
-Date: Sun, 11 May 2014 21:19:59 +0200
-Message-Id: <20140511191914.664392469@linuxfoundation.org>
+        Marek Vasut <marex@denx.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.10 37/48] gpio: mxs: Allow for recursive enable_irq_wake() call
+Date: Sun, 11 May 2014 21:20:11 +0200
+Message-Id: <20140511191953.109596734@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
-References: <20140511191907.024339448@linuxfoundation.org>
+In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
+References: <20140511191948.079900414@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Marek Vasut <marex@denx.de>
 
-commit 6b0df6827bb6fcacb158dff29ad0a62d6418b534 upstream.
+commit a585f87c863e4e1d496459d382b802bf5ebe3717 upstream.
 
-The functions for data copying copyarea_foreward_8bpp and
-copyarea_backward_8bpp are buggy, they produce screen corruption.
+The scenario here is that someone calls enable_irq_wake() from somewhere
+in the code. This will result in the lockdep producing a backtrace as can
+be seen below. In my case, this problem is triggered when using the wl1271
+(TI WlCore) driver found in drivers/net/wireless/ti/ .
 
-This patch fixes the functions and moves the logic to one function
-"copyarea_8bpp". For simplicity, the function only handles copying that
-is aligned on 8 pixes. If we copy an unaligned area, generic function
-cfb_copyarea is used.
+The problem cause is rather obvious from the backtrace, but let's outline
+the dependency. enable_irq_wake() grabs the IRQ buslock in irq_set_irq_wake(),
+which in turns calls mxs_gpio_set_wake_irq() . But mxs_gpio_set_wake_irq()
+calls enable_irq_wake() again on the one-level-higher IRQ , thus it tries to
+grab the IRQ buslock again in irq_set_irq_wake() . Because the spinlock in
+irq_set_irq_wake()->irq_get_desc_buslock()->__irq_get_desc_lock() is not
+marked as recursive, lockdep will spew the stuff below.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+We know we can safely re-enter the lock, so use IRQ_GC_INIT_NESTED_LOCK to
+fix the spew.
+
+ =============================================
+ [ INFO: possible recursive locking detected ]
+ 3.10.33-00012-gf06b763-dirty #61 Not tainted
+ ---------------------------------------------
+ kworker/0:1/18 is trying to acquire lock:
+  (&irq_desc_lock_class){-.-...}, at: [<c00685f0>] __irq_get_desc_lock+0x48/0x88
+
+ but task is already holding lock:
+  (&irq_desc_lock_class){-.-...}, at: [<c00685f0>] __irq_get_desc_lock+0x48/0x88
+
+ other info that might help us debug this:
+  Possible unsafe locking scenario:
+
+        CPU0
+        ----
+   lock(&irq_desc_lock_class);
+   lock(&irq_desc_lock_class);
+
+  *** DEADLOCK ***
+
+  May be due to missing lock nesting notation
+
+ 3 locks held by kworker/0:1/18:
+  #0:  (events){.+.+.+}, at: [<c0036308>] process_one_work+0x134/0x4a4
+  #1:  ((&fw_work->work)){+.+.+.}, at: [<c0036308>] process_one_work+0x134/0x4a4
+  #2:  (&irq_desc_lock_class){-.-...}, at: [<c00685f0>] __irq_get_desc_lock+0x48/0x88
+
+ stack backtrace:
+ CPU: 0 PID: 18 Comm: kworker/0:1 Not tainted 3.10.33-00012-gf06b763-dirty #61
+ Workqueue: events request_firmware_work_func
+ [<c0013eb4>] (unwind_backtrace+0x0/0xf0) from [<c0011c74>] (show_stack+0x10/0x14)
+ [<c0011c74>] (show_stack+0x10/0x14) from [<c005bb08>] (__lock_acquire+0x140c/0x1a64)
+ [<c005bb08>] (__lock_acquire+0x140c/0x1a64) from [<c005c6a8>] (lock_acquire+0x9c/0x104)
+ [<c005c6a8>] (lock_acquire+0x9c/0x104) from [<c051d5a4>] (_raw_spin_lock_irqsave+0x44/0x58)
+ [<c051d5a4>] (_raw_spin_lock_irqsave+0x44/0x58) from [<c00685f0>] (__irq_get_desc_lock+0x48/0x88)
+ [<c00685f0>] (__irq_get_desc_lock+0x48/0x88) from [<c0068e78>] (irq_set_irq_wake+0x20/0xf4)
+ [<c0068e78>] (irq_set_irq_wake+0x20/0xf4) from [<c027260c>] (mxs_gpio_set_wake_irq+0x1c/0x24)
+ [<c027260c>] (mxs_gpio_set_wake_irq+0x1c/0x24) from [<c0068cf4>] (set_irq_wake_real+0x30/0x44)
+ [<c0068cf4>] (set_irq_wake_real+0x30/0x44) from [<c0068ee4>] (irq_set_irq_wake+0x8c/0xf4)
+ [<c0068ee4>] (irq_set_irq_wake+0x8c/0xf4) from [<c0310748>] (wlcore_nvs_cb+0x10c/0x97c)
+ [<c0310748>] (wlcore_nvs_cb+0x10c/0x97c) from [<c02be5e8>] (request_firmware_work_func+0x38/0x58)
+ [<c02be5e8>] (request_firmware_work_func+0x38/0x58) from [<c0036394>] (process_one_work+0x1c0/0x4a4)
+ [<c0036394>] (process_one_work+0x1c0/0x4a4) from [<c0036a4c>] (worker_thread+0x138/0x394)
+ [<c0036a4c>] (worker_thread+0x138/0x394) from [<c003cb74>] (kthread+0xa4/0xb0)
+ [<c003cb74>] (kthread+0xa4/0xb0) from [<c000ee00>] (ret_from_fork+0x14/0x34)
+ wlcore: loaded
+
+Signed-off-by: Marek Vasut <marex@denx.de>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/tgafb.c |  264 +++++++++-----------------------------------------
- 1 file changed, 51 insertions(+), 213 deletions(-)
+ drivers/gpio/gpio-mxs.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/video/tgafb.c
-+++ b/drivers/video/tgafb.c
-@@ -1139,222 +1139,57 @@ copyarea_line_32bpp(struct fb_info *info
- 	__raw_writel(TGA_MODE_SBM_24BPP|TGA_MODE_SIMPLE, tga_regs+TGA_MODE_REG);
+--- a/drivers/gpio/gpio-mxs.c
++++ b/drivers/gpio/gpio-mxs.c
+@@ -214,7 +214,8 @@ static void __init mxs_gpio_init_gc(stru
+ 	ct->regs.ack = PINCTRL_IRQSTAT(port) + MXS_CLR;
+ 	ct->regs.mask = PINCTRL_IRQEN(port);
+ 
+-	irq_setup_generic_chip(gc, IRQ_MSK(32), 0, IRQ_NOREQUEST, 0);
++	irq_setup_generic_chip(gc, IRQ_MSK(32), IRQ_GC_INIT_NESTED_LOCK,
++			       IRQ_NOREQUEST, 0);
  }
  
--/* The general case of forward copy in 8bpp mode.  */
-+/* The (almost) general case of backward copy in 8bpp mode.  */
- static inline void
--copyarea_foreward_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
--		       u32 height, u32 width, u32 line_length)
-+copyarea_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
-+	      u32 height, u32 width, u32 line_length,
-+	      const struct fb_copyarea *area)
- {
- 	struct tga_par *par = (struct tga_par *) info->par;
--	unsigned long i, copied, left;
--	unsigned long dpos, spos, dalign, salign, yincr;
--	u32 smask_first, dmask_first, dmask_last;
--	int pixel_shift, need_prime, need_second;
--	unsigned long n64, n32, xincr_first;
-+	unsigned i, yincr;
-+	int depos, sepos, backward, last_step, step;
-+	u32 mask_last;
-+	unsigned n32;
- 	void __iomem *tga_regs;
- 	void __iomem *tga_fb;
- 
--	yincr = line_length;
--	if (dy > sy) {
--		dy += height - 1;
--		sy += height - 1;
--		yincr = -yincr;
--	}
--
--	/* Compute the offsets and alignments in the frame buffer.
--	   More than anything else, these control how we do copies.  */
--	dpos = dy * line_length + dx;
--	spos = sy * line_length + sx;
--	dalign = dpos & 7;
--	salign = spos & 7;
--	dpos &= -8;
--	spos &= -8;
--
--	/* Compute the value for the PIXELSHIFT register.  This controls
--	   both non-co-aligned source and destination and copy direction.  */
--	if (dalign >= salign)
--		pixel_shift = dalign - salign;
--	else
--		pixel_shift = 8 - (salign - dalign);
--
--	/* Figure out if we need an additional priming step for the
--	   residue register.  */
--	need_prime = (salign > dalign);
--	if (need_prime)
--		dpos -= 8;
--
--	/* Begin by copying the leading unaligned destination.  Copy enough
--	   to make the next destination address 32-byte aligned.  */
--	copied = 32 - (dalign + (dpos & 31));
--	if (copied == 32)
--		copied = 0;
--	xincr_first = (copied + 7) & -8;
--	smask_first = dmask_first = (1ul << copied) - 1;
--	smask_first <<= salign;
--	dmask_first <<= dalign + need_prime*8;
--	if (need_prime && copied > 24)
--		copied -= 8;
--	left = width - copied;
--
--	/* Care for small copies.  */
--	if (copied > width) {
--		u32 t;
--		t = (1ul << width) - 1;
--		t <<= dalign + need_prime*8;
--		dmask_first &= t;
--		left = 0;
--	}
--
--	/* Attempt to use 64-byte copies.  This is only possible if the
--	   source and destination are co-aligned at 64 bytes.  */
--	n64 = need_second = 0;
--	if ((dpos & 63) == (spos & 63)
--	    && (height == 1 || line_length % 64 == 0)) {
--		/* We may need a 32-byte copy to ensure 64 byte alignment.  */
--		need_second = (dpos + xincr_first) & 63;
--		if ((need_second & 32) != need_second)
--			printk(KERN_ERR "tgafb: need_second wrong\n");
--		if (left >= need_second + 64) {
--			left -= need_second;
--			n64 = left / 64;
--			left %= 64;
--		} else
--			need_second = 0;
--	}
--
--	/* Copy trailing full 32-byte sections.  This will be the main
--	   loop if the 64 byte loop can't be used.  */
--	n32 = left / 32;
--	left %= 32;
--
--	/* Copy the trailing unaligned destination.  */
--	dmask_last = (1ul << left) - 1;
--
--	tga_regs = par->tga_regs_base;
--	tga_fb = par->tga_fb_base;
--
--	/* Set up the MODE and PIXELSHIFT registers.  */
--	__raw_writel(TGA_MODE_SBM_8BPP|TGA_MODE_COPY, tga_regs+TGA_MODE_REG);
--	__raw_writel(pixel_shift, tga_regs+TGA_PIXELSHIFT_REG);
--	wmb();
--
--	for (i = 0; i < height; ++i) {
--		unsigned long j;
--		void __iomem *sfb;
--		void __iomem *dfb;
--
--		sfb = tga_fb + spos;
--		dfb = tga_fb + dpos;
--		if (dmask_first) {
--			__raw_writel(smask_first, sfb);
--			wmb();
--			__raw_writel(dmask_first, dfb);
--			wmb();
--			sfb += xincr_first;
--			dfb += xincr_first;
--		}
--
--		if (need_second) {
--			__raw_writel(0xffffffff, sfb);
--			wmb();
--			__raw_writel(0xffffffff, dfb);
--			wmb();
--			sfb += 32;
--			dfb += 32;
--		}
--
--		if (n64 && (((unsigned long)sfb | (unsigned long)dfb) & 63))
--			printk(KERN_ERR
--			       "tgafb: misaligned copy64 (s:%p, d:%p)\n",
--			       sfb, dfb);
--
--		for (j = 0; j < n64; ++j) {
--			__raw_writel(sfb - tga_fb, tga_regs+TGA_COPY64_SRC);
--			wmb();
--			__raw_writel(dfb - tga_fb, tga_regs+TGA_COPY64_DST);
--			wmb();
--			sfb += 64;
--			dfb += 64;
--		}
--
--		for (j = 0; j < n32; ++j) {
--			__raw_writel(0xffffffff, sfb);
--			wmb();
--			__raw_writel(0xffffffff, dfb);
--			wmb();
--			sfb += 32;
--			dfb += 32;
--		}
--
--		if (dmask_last) {
--			__raw_writel(0xffffffff, sfb);
--			wmb();
--			__raw_writel(dmask_last, dfb);
--			wmb();
--		}
--
--		spos += yincr;
--		dpos += yincr;
-+	/* Do acceleration only if we are aligned on 8 pixels */
-+	if ((dx | sx | width) & 7) {
-+		cfb_copyarea(info, area);
-+		return;
- 	}
- 
--	/* Reset the MODE register to normal.  */
--	__raw_writel(TGA_MODE_SBM_8BPP|TGA_MODE_SIMPLE, tga_regs+TGA_MODE_REG);
--}
--
--/* The (almost) general case of backward copy in 8bpp mode.  */
--static inline void
--copyarea_backward_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
--		       u32 height, u32 width, u32 line_length,
--		       const struct fb_copyarea *area)
--{
--	struct tga_par *par = (struct tga_par *) info->par;
--	unsigned long i, left, yincr;
--	unsigned long depos, sepos, dealign, sealign;
--	u32 mask_first, mask_last;
--	unsigned long n32;
--	void __iomem *tga_regs;
--	void __iomem *tga_fb;
--
- 	yincr = line_length;
- 	if (dy > sy) {
- 		dy += height - 1;
- 		sy += height - 1;
- 		yincr = -yincr;
- 	}
-+	backward = dy == sy && dx > sx && dx < sx + width;
- 
- 	/* Compute the offsets and alignments in the frame buffer.
- 	   More than anything else, these control how we do copies.  */
--	depos = dy * line_length + dx + width;
--	sepos = sy * line_length + sx + width;
--	dealign = depos & 7;
--	sealign = sepos & 7;
--
--	/* ??? The documentation appears to be incorrect (or very
--	   misleading) wrt how pixel shifting works in backward copy
--	   mode, i.e. when PIXELSHIFT is negative.  I give up for now.
--	   Do handle the common case of co-aligned backward copies,
--	   but frob everything else back on generic code.  */
--	if (dealign != sealign) {
--		cfb_copyarea(info, area);
--		return;
--	}
--
--	/* We begin the copy with the trailing pixels of the
--	   unaligned destination.  */
--	mask_first = (1ul << dealign) - 1;
--	left = width - dealign;
--
--	/* Care for small copies.  */
--	if (dealign > width) {
--		mask_first ^= (1ul << (dealign - width)) - 1;
--		left = 0;
--	}
-+	depos = dy * line_length + dx;
-+	sepos = sy * line_length + sx;
-+	if (backward)
-+		depos += width, sepos += width;
- 
- 	/* Next copy full words at a time.  */
--	n32 = left / 32;
--	left %= 32;
-+	n32 = width / 32;
-+	last_step = width % 32;
- 
- 	/* Finally copy the unaligned head of the span.  */
--	mask_last = -1 << (32 - left);
-+	mask_last = (1ul << last_step) - 1;
-+
-+	if (!backward) {
-+		step = 32;
-+		last_step = 32;
-+	} else {
-+		step = -32;
-+		last_step = -last_step;
-+		sepos -= 32;
-+		depos -= 32;
-+	}
- 
- 	tga_regs = par->tga_regs_base;
- 	tga_fb = par->tga_fb_base;
-@@ -1371,25 +1206,33 @@ copyarea_backward_8bpp(struct fb_info *i
- 
- 		sfb = tga_fb + sepos;
- 		dfb = tga_fb + depos;
--		if (mask_first) {
--			__raw_writel(mask_first, sfb);
--			wmb();
--			__raw_writel(mask_first, dfb);
--			wmb();
--		}
- 
--		for (j = 0; j < n32; ++j) {
--			sfb -= 32;
--			dfb -= 32;
-+		for (j = 0; j < n32; j++) {
-+			if (j < 2 && j + 1 < n32 && !backward &&
-+			    !(((unsigned long)sfb | (unsigned long)dfb) & 63)) {
-+				do {
-+					__raw_writel(sfb - tga_fb, tga_regs+TGA_COPY64_SRC);
-+					wmb();
-+					__raw_writel(dfb - tga_fb, tga_regs+TGA_COPY64_DST);
-+					wmb();
-+					sfb += 64;
-+					dfb += 64;
-+					j += 2;
-+				} while (j + 1 < n32);
-+				j--;
-+				continue;
-+			}
- 			__raw_writel(0xffffffff, sfb);
- 			wmb();
- 			__raw_writel(0xffffffff, dfb);
- 			wmb();
-+			sfb += step;
-+			dfb += step;
- 		}
- 
- 		if (mask_last) {
--			sfb -= 32;
--			dfb -= 32;
-+			sfb += last_step - step;
-+			dfb += last_step - step;
- 			__raw_writel(mask_last, sfb);
- 			wmb();
- 			__raw_writel(mask_last, dfb);
-@@ -1450,14 +1293,9 @@ tgafb_copyarea(struct fb_info *info, con
- 	else if (bpp == 32)
- 		cfb_copyarea(info, area);
- 
--	/* Detect overlapping source and destination that requires
--	   a backward copy.  */
--	else if (dy == sy && dx > sx && dx < sx + width)
--		copyarea_backward_8bpp(info, dx, dy, sx, sy, height,
--				       width, line_length, area);
- 	else
--		copyarea_foreward_8bpp(info, dx, dy, sx, sy, height,
--				       width, line_length);
-+		copyarea_8bpp(info, dx, dy, sx, sy, height,
-+			      width, line_length, area);
- }
- 
- 
+ static int mxs_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
 
 
