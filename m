@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758252AbaEKUAF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 16:00:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47963 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757351AbaEKTUy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932553AbaEKTUy (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 11 May 2014 15:20:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47945 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755717AbaEKTUo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 15:20:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.14 09/83] KVM: async_pf: mm->mm_users can not pin apf->mm
-Date: Sun, 11 May 2014 21:19:10 +0200
-Message-Id: <20140511191908.320176620@linuxfoundation.org>
+        Matthew Daley <mattd@bugfuzz.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 05/83] floppy: ignore kernel-only members in FDRAWCMD ioctl input
+Date: Sun, 11 May 2014 21:19:06 +0200
+Message-Id: <20140511191907.738640916@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -26,65 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Matthew Daley <mattd@bugfuzz.com>
 
-commit 41c22f626254b9dc0376928cae009e73d1b6a49a upstream.
+commit ef87dbe7614341c2e7bfe8d32fcb7028cc97442c upstream.
 
-get_user_pages(mm) is simply wrong if mm->mm_users == 0 and exit_mmap/etc
-was already called (or is in progress), mm->mm_count can only pin mm->pgd
-and mm_struct itself.
+Always clear out these floppy_raw_cmd struct members after copying the
+entire structure from userspace so that the in-kernel version is always
+valid and never left in an interdeterminate state.
 
-Change kvm_setup_async_pf/async_pf_execute to inc/dec mm->mm_users.
-
-kvm_create_vm/kvm_destroy_vm play with ->mm_count too but this case looks
-fine at first glance, it seems that this ->mm is only used to verify that
-current->mm == kvm->mm.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Matthew Daley <mattd@bugfuzz.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- virt/kvm/async_pf.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/block/floppy.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/virt/kvm/async_pf.c
-+++ b/virt/kvm/async_pf.c
-@@ -85,7 +85,7 @@ static void async_pf_execute(struct work
- 	if (waitqueue_active(&vcpu->wq))
- 		wake_up_interruptible(&vcpu->wq);
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -3107,10 +3107,11 @@ loop:
+ 		return -ENOMEM;
+ 	*rcmd = ptr;
+ 	ret = copy_from_user(ptr, param, sizeof(*ptr));
+-	if (ret)
+-		return -EFAULT;
+ 	ptr->next = NULL;
+ 	ptr->buffer_length = 0;
++	ptr->kernel_data = NULL;
++	if (ret)
++		return -EFAULT;
+ 	param += sizeof(struct floppy_raw_cmd);
+ 	if (ptr->cmd_count > 33)
+ 			/* the command may now also take up the space
+@@ -3126,7 +3127,6 @@ loop:
+ 	for (i = 0; i < 16; i++)
+ 		ptr->reply[i] = 0;
+ 	ptr->resultcode = 0;
+-	ptr->kernel_data = NULL;
  
--	mmdrop(mm);
-+	mmput(mm);
- 	kvm_put_kvm(vcpu->kvm);
- }
- 
-@@ -98,7 +98,7 @@ void kvm_clear_async_pf_completion_queue
- 				   typeof(*work), queue);
- 		list_del(&work->queue);
- 		if (cancel_work_sync(&work->work)) {
--			mmdrop(work->mm);
-+			mmput(work->mm);
- 			kvm_put_kvm(vcpu->kvm); /* == work->vcpu->kvm */
- 			kmem_cache_free(async_pf_cache, work);
- 		}
-@@ -162,7 +162,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *
- 	work->addr = gfn_to_hva(vcpu->kvm, gfn);
- 	work->arch = *arch;
- 	work->mm = current->mm;
--	atomic_inc(&work->mm->mm_count);
-+	atomic_inc(&work->mm->mm_users);
- 	kvm_get_kvm(work->vcpu->kvm);
- 
- 	/* this can't really happen otherwise gfn_to_pfn_async
-@@ -180,7 +180,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *
- 	return 1;
- retry_sync:
- 	kvm_put_kvm(work->vcpu->kvm);
--	mmdrop(work->mm);
-+	mmput(work->mm);
- 	kmem_cache_free(async_pf_cache, work);
- 	return 0;
- }
+ 	if (ptr->flags & (FD_RAW_READ | FD_RAW_WRITE)) {
+ 		if (ptr->length <= 0)
 
 
