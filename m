@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934308AbaEKTrz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:47:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48213 "EHLO
+	id S934323AbaEKTsW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:48:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48202 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933251AbaEKTXb (ORCPT
+	with ESMTP id S933225AbaEKTXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:23:31 -0400
+	Sun, 11 May 2014 15:23:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Chris Samuel <chris@csamuel.org>, Marc MERLIN <marc@merlins.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.14 38/83] libata: Update queued trim blacklist for M5x0 drives
-Date: Sun, 11 May 2014 21:19:39 +0200
-Message-Id: <20140511191912.241969634@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.14 46/83] mac80211: exclude AP_VLAN interfaces from tx power calculation
+Date: Sun, 11 May 2014 21:19:47 +0200
+Message-Id: <20140511191913.180337513@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -28,42 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit d121f7d0cbb875abce249dbf7eb191f9bafe80b7 upstream.
+commit 764152ff66f4a8be1f9d7981e542ffdaa5bd7aff upstream.
 
-Crucial/Micron M500 drives properly support queued DSM TRIM starting
-with firmware MU05. Update the blacklist so we only disable queued trim
-for older firmware releases.
+Their power value is initialized to zero. This patch fixes an issue
+where the configured power drops to the minimum value when AP_VLAN
+interfaces are created/removed.
 
-Early M550 series drives suffer from the same issue as M500. A bugfix
-firmware is in the pipeline but not ready yet. Until then, blacklist
-queued trim for M550.
-
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Cc: Chris Samuel <chris@csamuel.org>
-Cc: Marc MERLIN <marc@merlins.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/mac80211/main.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4224,8 +4224,10 @@ static const struct ata_blacklist_entry
- 	{ "PIONEER DVD-RW  DVR-216D",	NULL,	ATA_HORKAGE_NOSETXFER },
- 
- 	/* devices that don't properly handle queued TRIM commands */
--	{ "Micron_M500*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
--	{ "Crucial_CT???M500SSD*",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Micron_M500*",		"MU0[1-4]*",	ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Crucial_CT???M500SSD*",	"MU0[1-4]*",	ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Micron_M550*",		NULL,		ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Crucial_CT???M550SSD*",	NULL,		ATA_HORKAGE_NO_NCQ_TRIM, },
- 
- 	/*
- 	 * Some WD SATA-I drives spin up and down erratically when the link
+--- a/net/mac80211/main.c
++++ b/net/mac80211/main.c
+@@ -148,6 +148,8 @@ static u32 ieee80211_hw_conf_chan(struct
+ 	list_for_each_entry_rcu(sdata, &local->interfaces, list) {
+ 		if (!rcu_access_pointer(sdata->vif.chanctx_conf))
+ 			continue;
++		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
++			continue;
+ 		power = min(power, sdata->vif.bss_conf.txpower);
+ 	}
+ 	rcu_read_unlock();
 
 
