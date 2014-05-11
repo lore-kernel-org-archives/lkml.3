@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758063AbaEKKC5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 06:02:57 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:37385 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757512AbaEKKCy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 06:02:54 -0400
-Message-ID: <536F4ACA.3040300@gmail.com>
-Date: Sun, 11 May 2014 12:02:50 +0200
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        Dave Jones <davej@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Wei Liu <wei.liu2@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: debug_dma_assert_idle - snd_hda_intel - cpu touching an active
- dma mapped cacheline
-References: <534F01D1.9000206@gmail.com> <534F858B.4060208@ladisch.de> <53500CDB.8050802@gmail.com> <53570F1F.1000709@gmail.com> <53575099.1030501@gmail.com> <5361D69E.1060802@gmail.com> <53684172.6090402@gmail.com> <536A0777.1050407@gmail.com>
-In-Reply-To: <536A0777.1050407@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758097AbaEKKFH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 06:05:07 -0400
+Received: from ns.horizon.com ([71.41.210.147]:64302 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1758069AbaEKKFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 06:05:04 -0400
+Date: 11 May 2014 06:05:02 -0400
+Message-ID: <20140511100502.1491.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, pavel@ucw.cz
+Subject: [PATCH 2/3] drivers/mmc/host/mmc_spi.c: Use get/put_unaligned_be32
+Cc: arik@wizery.com, david.gnedt@davizone.at, eliad@wizery.com,
+        jan.nikitenko@gmail.com, laurent.pinchart+renesas@ideasonboard.com,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-spi@vger.kernel.org, linux-wireless@vger.kernel.org,
+        linville@tuxdriver.com, luca@coelho.fi, tony@atomide.com
+In-Reply-To: <20140511100211.1334.qmail@ns.horizon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Very minor source and binary size reduction.
 
-------------[ cut here ]------------
-WARNING: CPU: 2 PID: 628 at lib/dma-debug.c:593 debug_dma_assert_idle+0x159/0x1d0()
-snd_hda_intel 0000:00:07.0: DMA-API: cpu touching an active dma mapped cacheline [cln=0x03074000]
-CPU: 2 PID: 628 Comm: lightdm Not tainted 3.15.0-0.rc5.git0.1.fc21.i686+debug #1
-Call Trace:
- [<c0ae737d>] dump_stack+0x48/0x60
- [<c04547b2>] warn_slowpath_common+0x82/0xa0
- [<c0754d99>] ? debug_dma_assert_idle+0x159/0x1d0
- [<c0754d99>] ? debug_dma_assert_idle+0x159/0x1d0
- [<c045480e>] warn_slowpath_fmt+0x3e/0x60
- [<c0754d99>] debug_dma_assert_idle+0x159/0x1d0
- [<c058a149>] ? anon_vma_prepare+0x29/0x140
- [<c057e56e>] do_wp_page+0xce/0x890
- [<c0580b72>] handle_mm_fault+0x662/0xb70
- [<c0af3667>] __do_page_fault+0x1a7/0x5d0
- [<c04e1057>] ? SyS_futex+0x97/0x180
- [<c04b1b00>] ? trace_hardirqs_on_caller+0x1c0/0x1e0
- [<c04b1a7c>] ? trace_hardirqs_on_caller+0x13c/0x1e0
- [<c0af3a90>] ? __do_page_fault+0x5d0/0x5d0
- [<c0af3aaa>] do_page_fault+0x1a/0x20
- [<c0af0484>] error_code+0x6c/0x74
----[ end trace b400a64c04aed387 ]---
-Mapped at:
- [<c0752e42>] debug_dma_alloc_coherent+0x22/0x70
- [<f80c3e90>] snd_dma_alloc_pages+0x170/0x260 [snd_pcm]
- [<f80c3fe2>] snd_dma_alloc_pages_fallback+0x62/0x90 [snd_pcm]
- [<f80c43b0>] snd_malloc_sgbuf_pages+0xf0/0x211 [snd_pcm]
- [<f80c3f23>] snd_dma_alloc_pages+0x203/0x260 [snd_pcm]
+Signed-off-by: George Spelvin <linux@horizon.com>
+---
+I spotted this while making the previous crc7 change.
 
+This looks simple enough, but I don't actually have one of these devices to test.
+At least one other careful desk-check is solicited.
 
-poma
+ drivers/mmc/host/mmc_spi.c | 18 ++++++------------
+ 1 file changed, 6 insertions(+), 12 deletions(-)
 
+diff --git a/drivers/mmc/host/mmc_spi.c b/drivers/mmc/host/mmc_spi.c
+index 338e2202ea..cc8d4a6099 100644
+--- a/drivers/mmc/host/mmc_spi.c
++++ b/drivers/mmc/host/mmc_spi.c
+@@ -448,7 +448,6 @@ mmc_spi_command_send(struct mmc_spi_host *host,
+ {
+ 	struct scratch		*data = host->data;
+ 	u8			*cp = data->status;
+-	u32			arg = cmd->arg;
+ 	int			status;
+ 	struct spi_transfer	*t;
+ 
+@@ -465,14 +464,12 @@ mmc_spi_command_send(struct mmc_spi_host *host,
+ 	 * We init the whole buffer to all-ones, which is what we need
+ 	 * to write while we're reading (later) response data.
+ 	 */
+-	memset(cp++, 0xff, sizeof(data->status));
++	memset(cp, 0xff, sizeof(data->status));
+ 
+-	*cp++ = 0x40 | cmd->opcode;
+-	*cp++ = (u8)(arg >> 24);
+-	*cp++ = (u8)(arg >> 16);
+-	*cp++ = (u8)(arg >> 8);
+-	*cp++ = (u8)arg;
+-	*cp++ = crc7_be(0, &data->status[1], 5) | 0x01;
++	cp[1] = 0x40 | cmd->opcode;
++	put_unaligned_be32(cmd->arg, cp+2);
++	cp[6] = crc7_be(0, cp+1, 5) | 0x01;
++	cp += 7;
+ 
+ 	/* Then, read up to 13 bytes (while writing all-ones):
+ 	 *  - N(CR) (== 1..8) bytes of all-ones
+@@ -711,10 +708,7 @@ mmc_spi_writeblock(struct mmc_spi_host *host, struct spi_transfer *t,
+ 	 * so we have to cope with this situation and check the response
+ 	 * bit-by-bit. Arggh!!!
+ 	 */
+-	pattern  = scratch->status[0] << 24;
+-	pattern |= scratch->status[1] << 16;
+-	pattern |= scratch->status[2] << 8;
+-	pattern |= scratch->status[3];
++	pattern = get_unaligned_be32(scratch->status);
+ 
+ 	/* First 3 bit of pattern are undefined */
+ 	pattern |= 0xE0000000;
+-- 
+1.9.2
 
