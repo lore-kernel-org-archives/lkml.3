@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933952AbaEKT0P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:26:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48471 "EHLO
+	id S934194AbaEKTe1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:34:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48473 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933931AbaEKT0I (ORCPT
+	with ESMTP id S933911AbaEKT0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:26:08 -0400
+	Sun, 11 May 2014 15:26:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        George Spelvin <linux@horizon.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.14 83/83] x86-64, build: Fix stack protector Makefile breakage with 32-bit userland
-Date: Sun, 11 May 2014 21:20:24 +0200
-Message-Id: <20140511191917.766931499@linuxfoundation.org>
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.10 42/48] Skip intel_crt_init for Dell XPS 8700
+Date: Sun, 11 May 2014 21:20:16 +0200
+Message-Id: <20140511191953.762160746@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
-References: <20140511191907.024339448@linuxfoundation.org>
+In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
+References: <20140511191948.079900414@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: George Spelvin <linux@horizon.com>
+From: Giacomo Comes <comes@naic.edu>
 
-commit 14262d67fe348018af368a07430fbc06eadeabb1 upstream.
+commit 10b6ee4a87811a110cb01eaca01eb04da6801baf upstream.
 
-If you are using a 64-bit kernel with 32-bit userland, then
-scripts/gcc-x86_64-has-stack-protector.sh invokes 32-bit gcc
-with -mcmodel=kernel, which produces:
+The Dell XPS 8700 has a onboard Display port and HDMI port and no VGA port.
+The call intel_crt_init freeze the machine, so skip such call.
 
-<stdin>:1:0: error: code model 'kernel' not supported in the 32 bit mode
-
-and trips the "broken compiler" test at arch/x86/Makefile:120.
-
-There are several places a fix is possible, but the following seems
-cleanest.  (But it's minimal; it would also be possible to factor
-out a bunch of stuff from the two branches of the if.)
-
-Signed-off-by: George Spelvin <linux@horizon.com>
-Link: http://lkml.kernel.org/r/20140507210552.7581.qmail@ns.horizon.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73559
+Signed-off-by: Giacomo Comes <comes at naic.edu>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/Makefile |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/i915/intel_crt.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -79,6 +79,7 @@ else
-         UTS_MACHINE := x86_64
-         CHECKFLAGS += -D__x86_64__ -m64
- 
-+        biarch := -m64
-         KBUILD_AFLAGS += -m64
-         KBUILD_CFLAGS += -m64
+--- a/drivers/gpu/drm/i915/intel_crt.c
++++ b/drivers/gpu/drm/i915/intel_crt.c
+@@ -717,6 +717,14 @@ static const struct dmi_system_id intel_
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "ZGB"),
+ 		},
+ 	},
++	{
++		.callback = intel_no_crt_dmi_callback,
++		.ident = "DELL XPS 8700",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "XPS 8700"),
++		},
++	},
+ 	{ }
+ };
  
 
 
