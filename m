@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934100AbaEKTiU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:38:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48401 "EHLO
+	id S934191AbaEKTil (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:38:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48398 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933770AbaEKTZ3 (ORCPT
+	with ESMTP id S933793AbaEKTZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:25:29 -0400
+	Sun, 11 May 2014 15:25:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marian Csontos <mcsontos@redhat.com>, Joe Thornber <ejt@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.14 68/83] dm cache: fix a lock-inversion
-Date: Sun, 11 May 2014 21:20:09 +0200
-Message-Id: <20140511191915.780719435@linuxfoundation.org>
+        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
+Subject: [PATCH 3.14 67/83] dm thin: fix dangling bio in process_deferred_bios error path
+Date: Sun, 11 May 2014 21:20:08 +0200
+Message-Id: <20140511191915.671965044@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -27,174 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit 0596661f0a16d9d69bf1033320e70b6ff52b5e81 upstream.
+commit fe76cd88e654124d1431bb662a0fc6e99ca811a5 upstream.
 
-When suspending a cache the policy is walked and the individual policy
-hints written to the metadata via sync_metadata().  This led to this
-lock order:
+If unable to ensure_next_mapping() we must add the current bio, which
+was removed from the @bios list via bio_list_pop, back to the
+deferred_bios list before all the remaining @bios.
 
-      policy->lock
-        cache_metadata->root_lock
-
-When loading the cache target the policy is populated while the metadata
-lock is held:
-
-      cache_metadata->root_lock
-         policy->lock
-
-Fix this potential lock-inversion (ABBA) deadlock in sync_metadata() by
-ensuring the cache_metadata root_lock is held whilst all the hints are
-written, rather than being repeatedly locked while policy->lock is held
-(as was the case with each callout that policy_walk_mappings() made to
-the old save_hint() method).
-
-Found by turning on the CONFIG_PROVE_LOCKING ("Lock debugging: prove
-locking correctness") build option.  However, it is not clear how the
-LOCKDEP reported paths can lead to a deadlock since the two paths,
-suspending a target and loading a target, never occur at the same time.
-But that doesn't mean the same lock-inversion couldn't have occurred
-elsewhere.
-
-Reported-by: Marian Csontos <mcsontos@redhat.com>
-Signed-off-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-metadata.c |   35 +++++++++++++++++------------------
- drivers/md/dm-cache-metadata.h |    9 +--------
- drivers/md/dm-cache-target.c   |   28 ++--------------------------
- 3 files changed, 20 insertions(+), 52 deletions(-)
+ drivers/md/dm-thin.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/dm-cache-metadata.c
-+++ b/drivers/md/dm-cache-metadata.c
-@@ -1245,22 +1245,12 @@ static int begin_hints(struct dm_cache_m
- 	return 0;
- }
- 
--int dm_cache_begin_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *policy)
-+static int save_hint(void *context, dm_cblock_t cblock, dm_oblock_t oblock, uint32_t hint)
- {
-+	struct dm_cache_metadata *cmd = context;
-+	__le32 value = cpu_to_le32(hint);
- 	int r;
- 
--	down_write(&cmd->root_lock);
--	r = begin_hints(cmd, policy);
--	up_write(&cmd->root_lock);
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -1392,9 +1392,9 @@ static void process_deferred_bios(struct
+ 		 */
+ 		if (ensure_next_mapping(pool)) {
+ 			spin_lock_irqsave(&pool->lock, flags);
++			bio_list_add(&pool->deferred_bios, bio);
+ 			bio_list_merge(&pool->deferred_bios, &bios);
+ 			spin_unlock_irqrestore(&pool->lock, flags);
 -
--	return r;
--}
--
--static int save_hint(struct dm_cache_metadata *cmd, dm_cblock_t cblock,
--		     uint32_t hint)
--{
--	int r;
--	__le32 value = cpu_to_le32(hint);
- 	__dm_bless_for_disk(&value);
+ 			break;
+ 		}
  
- 	r = dm_array_set_value(&cmd->hint_info, cmd->hint_root,
-@@ -1270,16 +1260,25 @@ static int save_hint(struct dm_cache_met
- 	return r;
- }
- 
--int dm_cache_save_hint(struct dm_cache_metadata *cmd, dm_cblock_t cblock,
--		       uint32_t hint)
-+static int write_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *policy)
- {
- 	int r;
- 
--	if (!hints_array_initialized(cmd))
--		return 0;
-+	r = begin_hints(cmd, policy);
-+	if (r) {
-+		DMERR("begin_hints failed");
-+		return r;
-+	}
-+
-+	return policy_walk_mappings(policy, save_hint, cmd);
-+}
-+
-+int dm_cache_write_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *policy)
-+{
-+	int r;
- 
- 	down_write(&cmd->root_lock);
--	r = save_hint(cmd, cblock, hint);
-+	r = write_hints(cmd, policy);
- 	up_write(&cmd->root_lock);
- 
- 	return r;
---- a/drivers/md/dm-cache-metadata.h
-+++ b/drivers/md/dm-cache-metadata.h
-@@ -128,14 +128,7 @@ void dm_cache_dump(struct dm_cache_metad
-  * rather than querying the policy for each cblock, we let it walk its data
-  * structures and fill in the hints in whatever order it wishes.
-  */
--
--int dm_cache_begin_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *p);
--
--/*
-- * requests hints for every cblock and stores in the metadata device.
-- */
--int dm_cache_save_hint(struct dm_cache_metadata *cmd,
--		       dm_cblock_t cblock, uint32_t hint);
-+int dm_cache_write_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *p);
- 
- /*
-  * Query method.  Are all the blocks in the cache clean?
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -2600,30 +2600,6 @@ static int write_discard_bitset(struct c
- 	return 0;
- }
- 
--static int save_hint(void *context, dm_cblock_t cblock, dm_oblock_t oblock,
--		     uint32_t hint)
--{
--	struct cache *cache = context;
--	return dm_cache_save_hint(cache->cmd, cblock, hint);
--}
--
--static int write_hints(struct cache *cache)
--{
--	int r;
--
--	r = dm_cache_begin_hints(cache->cmd, cache->policy);
--	if (r) {
--		DMERR("dm_cache_begin_hints failed");
--		return r;
--	}
--
--	r = policy_walk_mappings(cache->policy, save_hint, cache);
--	if (r)
--		DMERR("policy_walk_mappings failed");
--
--	return r;
--}
--
- /*
-  * returns true on success
-  */
-@@ -2641,7 +2617,7 @@ static bool sync_metadata(struct cache *
- 
- 	save_stats(cache);
- 
--	r3 = write_hints(cache);
-+	r3 = dm_cache_write_hints(cache->cmd, cache->policy);
- 	if (r3)
- 		DMERR("could not write hints");
- 
-@@ -3114,7 +3090,7 @@ static void cache_io_hints(struct dm_tar
- 
- static struct target_type cache_target = {
- 	.name = "cache",
--	.version = {1, 3, 0},
-+	.version = {1, 4, 0},
- 	.module = THIS_MODULE,
- 	.ctr = cache_ctr,
- 	.dtr = cache_dtr,
 
 
