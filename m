@@ -1,135 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698AbaEKPYY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 11:24:24 -0400
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:37421 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948AbaEKPYX (ORCPT
+	id S1755352AbaEKPt3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 11:49:29 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:36053 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082AbaEKPtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 11:24:23 -0400
+	Sun, 11 May 2014 11:49:25 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: bug: acpi ata_bay dock reminds undocked
+Date: Sun, 11 May 2014 17:49:17 +0200
+User-Agent: KMail/1.13.7 (Linux/3.15.0-031500rc5-generic; KDE/4.13.0; x86_64; ; )
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <201404292216.41256@pali> <13218778.k5mvMTodWa@vostro.rjw.lan> <201404301124.51110@pali>
+In-Reply-To: <201404301124.51110@pali>
 MIME-Version: 1.0
-In-Reply-To: <536F90BE.2080806@gmail.com>
-References: <53683B14.3060702@cn.fujitsu.com>
-	<1399341154-11785-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-	<20140510152902.GW11096@twins.programming.kicks-ass.net>
-	<536F90BE.2080806@gmail.com>
-Date: Sun, 11 May 2014 23:24:22 +0800
-Message-ID: <CA+qeAOr_PrBuo+qfjNoaZyHF21p=8UgQy1oZOjAxahhYTyrvLQ@mail.gmail.com>
-Subject: Fwd: [PATCH] sched: Distinguish sched_wakeup event when wake up a
- task which did schedule out or not.
-From: Dongsheng Yang <dongsheng081251@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "yangds.fnst" <yangds.fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, mingo@redhat.com,
-        bsegall@google.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed;
+  boundary="nextPart2204083.pLeiedbUui";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201405111749.18796@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2014 11:29 PM, Peter Zijlstra wrote:
->
-> On Tue, May 06, 2014 at 10:52:34AM +0900, Dongsheng Yang wrote:
->>
->> ttwu_do_wakeup() is called when the task's state is switched back to
->> TASK_RUNNING, whether or not the task actually scheduled out. Tracing
->> the wakeup event when the task never scheduled out is quite confusing.
->>
->> This patch take the use of 'success' parameter in sched_wakeup tracepoint,
->> to indicate that the task we are waking up did schedule out or just
->> change its state to TASK_RUNNING.
->>
->> success is true:
->>         task was out of run queue and sleeping, we are really wake it up.
->> success is false:
->>         taks was on run queue all the time and we just change its state
->>         to TASK_RUNNING.
->
-> No, I think this patch is crap and doesn't actually change anything
-> much, at best it simply reduces the size of the race window.
->
-> I also think you're trying to solve something that cannot be solved.
+--nextPart2204083.pLeiedbUui
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
+On Wednesday 30 April 2014 11:24:50 Pali Roh=C3=A1r wrote:
+> On Tuesday 29 April 2014 23:35:42 Rafael J. Wysocki wrote:
+> > On Tuesday, April 29, 2014 11:00:01 PM Pali Roh=C3=A1r wrote:
+> > > On Tuesday 29 April 2014 22:55:07 Rafael J. Wysocki wrote:
+> > > > Which kernel version(s) have you tried?
+> > >=20
+> > > 3.15-rc3
+> >=20
+> > Does it work with 3.14(.x) by chance?
+>=20
+> Tested with 3.14 and 3.8. Same problem, not working.
 
-Actually, this patch does not attempt to solve the race condition.
-It only want to avoid sched:sched_wakeup with success==true in
-a fake wakeup, as explained below.
+BUMP!
 
-> So the fundamental wait loop is:
->
->    for (;;) {
->         set_current_state(TASK_UNINTERRUPTIBLE);
->         if (cond)
->                 break;
->         schedule();
->    }
->    __set_task_state(TASK_RUNNING);
->
-> And the fundamental wakeup is:
->
->    cond = true;
->    wake_up_process(TASK_NORMAL);
->
-> And this is very much on purpose a lock-free but strictly ordered
-> scenario. It is a variation of:
->
->    X = Y = 0
->
->    (wait)       (wake)
->    [w] X = 1    [w] Y = 1
->    MB           MB
->    [r] Y                [r] X
->
-> [ where: X := state, Y := cond ]
->
-> And we all 'know' that the only provided guarantee is that:
->    X==0 && Y==0
-> is impossible -- but only that, all 3 other states are observable.
->
-> This guarantee means that its impossible to both miss the condition and
-> the wakeup; iow. it guarantees fwd progress.
->
-> OTOH its fundamentally racy, nothing guarantees we will not 'observe' both
-> the condition and the wakeup.
->
-> The setting of .success=false when ->on_rq is actively wrong, suppose
-> the waiter has already observed cond==false but has not yet gotten to
-> schedule(), at that point the wakeup happens and sees ->on_rq==1. The
-> wakeup is still very much a real wakeup.
+Rafael, do you need some other information?
 
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Yes, if a wakeup happens before schedule(), wakeup
-sees ->on_rq==1. Then we can get an event with .success==false.
-But I think it is not a real wakeup. :(
+--nextPart2204083.pLeiedbUui
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Yes, at this moment, maybe the task is already out of run queue.
-But *this* wakeup did not move it back to run queue, it only
-change the state of it to TASK_RUNNING. I believe the next
-wakeup for this task will do the real wake up moving it back
-to run queue.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-And if scheduler really wake it up, we can get an event with success==true.
+iEYEABECAAYFAlNvm/4ACgkQi/DJPQPkQ1IgwwCgvRIVC1uSR7W9mcqQIC4YG73Z
+gk4AoKtzEpx0DH/12Bsul+Cmax6bdbzr
+=y7gi
+-----END PGP SIGNATURE-----
 
-Anyway, what I want with this patch is to make scheduler raise accurate
-events when waking up a task.
-
-If a wakeup only change the state of task, raise a event with success==false.
-If a wakeup move a task back to runqueue, .success==true.
-
-It means, we do not need to care about the task is on_rq or not currently,
-the value of .success is decided by the behavior we did in the function
-of try_to_wake_up().
-
-Wish I explain myself clearly.
-
-Thanx :)
-
->
-> If it were not for that wakeup the waiter would have gone to sleep and
-> missed the update of condition.
->
-> So no.. not going to happen. And certainly not with such a crappy
-> Changelog.
->
-> And a frozen seafood of choice lobbed at Steven for not seeing this :-)
->
+--nextPart2204083.pLeiedbUui--
