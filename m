@@ -1,232 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900AbaEKU03 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 16:26:29 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34861 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758005AbaEKUYw (ORCPT
+	id S932974AbaEKU1C (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 16:27:02 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:35694 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757787AbaEKUYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 16:24:52 -0400
+	Sun, 11 May 2014 16:24:51 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>,
+Cc: Mike Turquette <mturquette@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
         Antoine Tenart <antoine.tenart@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/8] clk: berlin: add driver for BG2x simple PLLs
-Date: Sun, 11 May 2014 22:24:37 +0200
-Message-Id: <1399839881-29895-5-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 2/8] clk: berlin: add clock binding docs for Marvell Berlin2 SoCs
+Date: Sun, 11 May 2014 22:24:35 +0200
+Message-Id: <1399839881-29895-3-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1399839881-29895-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1399839881-29895-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+This adds mandatory device tree binding documentation for the clock related
+IP found on Marvell Berlin2 (BG2, BG2CD, and BG2Q) SoCs.
 
-This is a clock driver for the simple PLLs found on Berlin SoCs.
-With repect to PLL registers and features, BG2/BG2CD and BG2Q are
-slightly different, e.g. different allowed VCO dividers and bit
-shifts.
-
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
 Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 Cc: Antoine Tenart <antoine.tenart@free-electrons.com>
+Cc: devicetree@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/clk/berlin/Makefile      |   2 +-
- drivers/clk/berlin/berlin2-pll.c | 171 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 172 insertions(+), 1 deletion(-)
- create mode 100644 drivers/clk/berlin/berlin2-pll.c
+ .../devicetree/bindings/clock/berlin2-clock.txt    | 169 +++++++++++++++++++++
+ 1 file changed, 169 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/berlin2-clock.txt
 
-diff --git a/drivers/clk/berlin/Makefile b/drivers/clk/berlin/Makefile
-index 5905733fc7c7..9d3490e9782f 100644
---- a/drivers/clk/berlin/Makefile
-+++ b/drivers/clk/berlin/Makefile
-@@ -1 +1 @@
--obj-y += berlin2-avpll.o
-+obj-y += berlin2-avpll.o berlin2-pll.o
-diff --git a/drivers/clk/berlin/berlin2-pll.c b/drivers/clk/berlin/berlin2-pll.c
+diff --git a/Documentation/devicetree/bindings/clock/berlin2-clock.txt b/Documentation/devicetree/bindings/clock/berlin2-clock.txt
 new file mode 100644
-index 000000000000..ca2805fffdf2
+index 000000000000..3da87a488402
 --- /dev/null
-+++ b/drivers/clk/berlin/berlin2-pll.c
-@@ -0,0 +1,171 @@
-+/*
-+ * Copyright (c) 2014 Marvell Technology Group Ltd.
-+ *
-+ * Alexandre Belloni <alexandre.belloni@free-electrons.com>
-+ * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/clk-provider.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/slab.h>
-+#include <asm/div64.h>
++++ b/Documentation/devicetree/bindings/clock/berlin2-clock.txt
+@@ -0,0 +1,169 @@
++* Marvell Berlin2 clock bindings
 +
-+struct berlin2_pll_map {
-+	const u8 vcodiv[16];
-+	u8 mult;
-+	u8 fbdiv_shift;
-+	u8 rfdiv_shift;
-+	u8 divsel_shift;
++Marvell Berlin2 (BG2, BG2CD, BG2Q) share the same IP for PLLs and clocks,
++with some minor differences in features and register layout. The below
++describes the individual clock related IP:
++
++* Audio/Video PLL
++
++The Audio/Video PLL (AVPLL) is a dual-VCO PLL with 8 channels each. Each
++of the VCOs can sythesize a single VCO frequency based on a single input
++reference clock. Each of the 8 channels then, can derive an output clock
++from that VCO frequency by various dividers/multipliers.
++
++Required properties:
++- compatible: shall be "marvell,berlin2-avpll"
++- reg: address and length of the corresponding AVPLL registers
++- #clock-cells: shall be set to 2
++- clocks: single clock specifier referencing the AVPLL input clock
++
++To ease match-up with the desired AVPLL output clock, clock specifiers
++referencing AVPLL clocks shall contain two cells. The first refers to
++the VCO (0=AVPLL_A, 1=AVPLL_B) while the second refers to the corresponding
++channel starting with 1. For example, to reference AVPLL_B3 the clock
++specifier shall be: <&avpll 1 3>.
++
++Example:
++
++avpll: pll@ea0040 {
++	compatible = "marvell,berlin2-avpll";
++	#clock-cells = <2>;
++	reg = <0xea0050 0x100>;
++	clocks = <&refclk>;
 +};
 +
-+struct berlin2_pll {
-+	struct clk_hw hw;
-+	void __iomem *base;
-+	struct berlin2_pll_map map;
++* Simple PLLs
++
++Simple PLLs are memory mapped PLLs that can sythesize a single output clock
++based on a single input reference clock.
++
++Required properties:
++- compatible: shall be one of the following:
++	"marvell,berlin2-pll" for Berlin BG2/BG2CD PLLs
++	"marvell,berlin2q-pll" for Berlin BG2Q PLLs
++- reg: address and length of the corresponding PLL registers
++- #clock-cells: shall be set to 0
++- clocks: single clock specifier referencing the PLL input clock
++
++Example:
++
++cpupll: pll@ea003c {
++	compatible = "marvell,berlin2-pll";
++	#clock-cells = <0>;
++	reg = <0xea003c 0x14>;
++	clocks = <&refclk>;
 +};
 +
-+#define to_berlin2_pll(hw) container_of(hw, struct berlin2_pll, hw)
++* Single-register clock dividers
 +
-+#define SPLL_CTRL0	0x00
-+#define SPLL_CTRL1	0x04
-+#define SPLL_CTRL2	0x08
-+#define SPLL_CTRL3	0x0c
-+#define SPLL_CTRL4	0x10
++Single-register clock dividers are complex divider cells, allowing
++to divide a reference clock with a set of fixed dividers. Also they
++comprise and input clock mux with bypass and an ouput clock gate.
 +
-+#define FBDIV_MASK	0x1ff
-+#define RFDIV_MASK	0x1f
-+#define DIVSEL_MASK	0xf
++Required properties:
++- compatible: shall be "marvell,berlin2-clk-div"
++- reg: address and length of the corresponding DIV registers
++- #clock-cells: shall be set to 0
++- clocks: clock specifiers referencing the DIV input clocks
++- clock-names: array of strings describing the clock specifiers above.
++    Allowed clock-names are "mux_bypass" for the clock mux bypass selection
++    and "muxN" (N=0..7) for each of the 8 possible clock mux inputs.
 +
-+/*
-+ * The output frequency formula for the pll is:
-+ * clkout = fbdiv / refdiv * parent / vcodiv
-+ */
-+static unsigned long
-+berlin2_pll_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
-+{
-+	struct berlin2_pll *pll = to_berlin2_pll(hw);
-+	struct berlin2_pll_map *map = &pll->map;
-+	u32 val, fbdiv, rfdiv, vcodivsel, vcodiv;
-+	u64 rate = parent_rate;
++Example:
 +
-+	val = readl_relaxed(pll->base + SPLL_CTRL0);
-+	fbdiv = (val >> map->fbdiv_shift) & FBDIV_MASK;
-+	rfdiv = (val >> map->rfdiv_shift) & RFDIV_MASK;
-+	if (rfdiv == 0) {
-+		pr_warn("%s has zero rfdiv\n", __clk_get_name(hw->clk));
-+		rfdiv = 1;
-+	}
-+
-+	val = readl_relaxed(pll->base + SPLL_CTRL1);
-+	vcodivsel = (val >> map->divsel_shift) & DIVSEL_MASK;
-+	vcodiv = map->vcodiv[vcodivsel];
-+	if (vcodiv == 0) {
-+		pr_warn("%s has zero vcodiv (index %d)\n",
-+			__clk_get_name(hw->clk), vcodivsel);
-+		vcodiv = 1;
-+	}
-+
-+	rate *= fbdiv * map->mult;
-+	do_div(rate, rfdiv * vcodiv);
-+
-+	return (unsigned long)rate;
-+}
-+
-+static const struct clk_ops berlin2_pll_ops = {
-+	.recalc_rate	= berlin2_pll_recalc_rate,
++gfx3dcore_clk: clock@ea022c {
++	compatible = "marvell,berlin2-clk-div";
++	#clock-cells = <0>;
++	reg = <0xea0022c 0x4>;
++	clocks = <&syspll>,
++		<&avpll AVPLL_B 4>, <&avpll AVPLL_B 5>,
++		<&avpll AVPLL_B 6>, <&avpll AVPLL_B 7>;
++	clock-names = "mux_bypass",
++		"mux0", "mux1", "mux2", "mux3";
 +};
 +
-+static struct clk * __init
-+berlin2_pll_register(const struct berlin2_pll_map *map,
-+		     void __iomem *base, const char *name,
-+		     const char *parent_name, unsigned long flags)
-+{
-+	struct clk_init_data init;
-+	struct berlin2_pll *pll;
++* SoC-specific core clocks
 +
-+	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
-+	if (!pll)
-+		return ERR_PTR(-ENOMEM);
++In addition to the above, there is a register set dealing with SoC
++specific clock dividers, muxes, and gates. There is also the complex
++divider cell used above, but instead of independent registers, they
++share a common set of registers. The core clocks are represented by
++a single DT node providing access to the remaining clocks.
 +
-+	/* copy pll_map to allow __initconst */
-+	memcpy(&pll->map, map, sizeof(*map));
-+	pll->base = base;
-+	pll->hw.init = &init;
-+	init.name = name;
-+	init.ops = &berlin2_pll_ops;
-+	init.parent_names = &parent_name;
-+	init.num_parents = 1;
-+	init.flags = flags;
++Required properties:
++- compatible: shall be one of
++	"marvell,berlin2-core-clocks" for BG2/BG2CD SoCs
++	"marvell,berlin2q-core-clocks" for BG2Q SoCs
++- reg: address and length of the corresponding clock registers
++- #clock-cells: shall be set to 1
++- clocks: clock specifiers referencing the core clock input clocks
++- clock-names: array of strings describing the clock specifiers above.
++    Allowed clock-names for the reference clocks are
++      "refclk", "syspll", "mempll", "cpupll"
++    also Audio/Video PLL clocks shall be named with
++      "avpll_VN" (V=0...1 for AVPLL_A and AVPLL_B, N=1..8 for the
++      corresponding reference input from AVPLL).
 +
-+	return clk_register(NULL, &pll->hw);
-+}
++Optional properties for BG2/BG2CD SoCs:
++- clocks/clock-names: in addition to the allowed clock names above,
++    there is an external video clock input that shall be named "video_ext0".
 +
-+static const struct berlin2_pll_map bg2_pll_map __initconst = {
-+	.vcodiv		= {10, 15, 20, 25, 30, 40, 50, 60, 80},
-+	.mult		= 10,
-+	.fbdiv_shift	= 6,
-+	.rfdiv_shift	= 1,
-+	.divsel_shift	= 7,
++Clocks provided by core clocks shall be referenced by a clock specifier
++indexing one of the provided clocks. A SoC-specific list of available clocks
++is below the example.
++
++Example:
++coreclk: clock@ea0150 {
++	compatible = "marvell,berlin2-core-clocks";
++	#clock-cells = <1>;
++	reg = <0xea0150 0x1c>;
++	clocks = <&refclk>, <&syspll>, <&mempll>, <&cpupll>,
++		<&avpll 0 1>, <&avpll 0 2>,
++		<&avpll 0 3>, <&avpll 0 4>,
++		<&avpll 0 5>, <&avpll 0 6>,
++		<&avpll 0 7>, <&avpll 0 8>,
++		<&avpll 1 1>, <&avpll 1 2>,
++		<&avpll 1 3>, <&avpll 1 4>,
++		<&avpll 1 5>, <&avpll 1 6>,
++		<&avpll 1 7>, <&avpll 1 8>,
++		<&externalvideoclk>;
++	clock-names = "refclk", "syspll", "mempll", "cpupll",
++		"avpll_a1", "avpll_a2", "avpll_a3", "avpll_a4",
++		"avpll_a5", "avpll_a6", "avpll_a7", "avpll_a8",
++		"avpll_b1", "avpll_b2", "avpll_b3", "avpll_b4",
++		"avpll_b5", "avpll_b6", "avpll_b7", "avpll_b8",
++		"video_ext0";
 +};
 +
-+static const struct berlin2_pll_map bg2q_pll_map __initconst = {
-+	.vcodiv		= {1, 0, 2, 0, 3, 4, 0, 6, 8},
-+	.mult		= 1,
-+	.fbdiv_shift	= 7,
-+	.rfdiv_shift	= 2,
-+	.divsel_shift	= 9,
-+};
-+
-+static const struct of_device_id pll_matches[] __initconst = {
-+	{ .compatible = "marvell,berlin2-pll", .data = &bg2_pll_map },
-+	{ .compatible = "marvell,berlin2q-pll", .data = &bg2q_pll_map },
-+	{ }
-+};
-+
-+static void __init berlin2_pll_of_setup(struct device_node *np)
-+{
-+	const struct of_device_id *match = of_match_node(pll_matches, np);
-+	const struct berlin2_pll_map *map = match->data;
-+	void __iomem *base;
-+	struct clk *refclk;
-+	struct clk *pll;
-+	char *pll_name;
-+
-+	base = of_iomap(np, 0);
-+	if (!base) {
-+		pr_err("%s: Unable to map pll register\n", np->full_name);
-+		return;
-+	}
-+
-+	refclk = of_clk_get(np, 0);
-+	if (IS_ERR(refclk)) {
-+		pr_err("%s: Missing reference clock\n", np->full_name);
-+		iounmap(base);
-+		return;
-+	}
-+
-+	pll_name = of_clk_create_name(np);
-+	pll = berlin2_pll_register(map, base, pll_name,
-+				   __clk_get_name(refclk), 0);
-+	if (!IS_ERR(pll))
-+		of_clk_add_provider(np, of_clk_src_simple_get, pll);
-+
-+	clk_put(refclk);
-+	kfree(pll_name);
-+}
-+CLK_OF_DECLARE(berlin2_pll, "marvell,berlin2-pll", berlin2_pll_of_setup);
-+CLK_OF_DECLARE(berlin2q_pll, "marvell,berlin2q-pll", berlin2_pll_of_setup);
++* BG2/BG2CD core clock indicies:
++0  - SYS
++1  - CPU
++2  - DRMFIGO
++3  - CFG
++4  - GFX
++5  - ZSP
++6  - PERIF
++7  - PCUBE
++8  - VSCOPE
++9  - NFC_ECC
++10 - VPP
++11 - APP
++12 - AUDIO0
++23 - AUDIO2
++14 - AUDIO3
++15 - AUDIO1
++16 - GETH0
++17 - GETH1
++18 - SATA
++19 - AHBAPB
++20 - USB0
++21 - USB1
++22 - PBRIDGE
++23 - SDIO0
++24 - SDIO1
++25 - NFC
++26 - SMEMC
++27 - AUDIOHD
++28 - VIDEO0
++29 - VIDEO1
++30 - VIDEO2
 -- 
 1.9.1
 
