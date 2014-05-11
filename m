@@ -1,155 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934168AbaEKTlV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:41:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48349 "EHLO
+	id S934206AbaEKTln (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:41:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48329 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933661AbaEKTY4 (ORCPT
+	with ESMTP id S933620AbaEKTYq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:24:56 -0400
+	Sun, 11 May 2014 15:24:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 3.14 57/83] tgafb: fix mode setting with fbset
-Date: Sun, 11 May 2014 21:19:58 +0200
-Message-Id: <20140511191914.582902680@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.10 41/48] mtd: sm_ftl: heap corruption in sm_create_sysfs_attributes()
+Date: Sun, 11 May 2014 21:20:15 +0200
+Message-Id: <20140511191953.624553508@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
-References: <20140511191907.024339448@linuxfoundation.org>
+In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
+References: <20140511191948.079900414@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 624966589041deb32a2626ee2e176e8274581101 upstream.
+commit b4c233057771581698a13694ab6f33b48ce837dc upstream.
 
-Mode setting in the TGA driver is broken for these reasons:
+We always put a NUL terminator one space past the end of the "vendor"
+buffer.  Walter Harms also pointed out that this should just use
+kstrndup().
 
-- info->fix.line_length is set just once in tgafb_init_fix function. If
-  we change videomode, info->fix.line_length is not recalculated - so
-  the video mode is changed but the screen is corrupted because of wrong
-  info->fix.line_length.
+Fixes: 7d17c02a01a1 ('mtd: Add new SmartMedia/xD FTL')
 
-- info->fix.smem_len is set in tgafb_init_fix to the size of the default
-  video mode (640x480). If we set a higher resolution,
-  info->fix.smem_len is smaller than the current screen size, preventing
-  the userspace program from mapping the framebuffer.
-
-This patch fixes it:
-
-- info->fix.line_length initialization is moved to tgafb_set_par so that
-  it is recalculated with each mode change.
-
-- info->fix.smem_len is set to a fixed value representing the real
-  amount of video ram (the values are taken from xfree86 driver).
-
-- add a check to tgafb_check_var to prevent us from setting a videomode
-  that doesn't fit into videoram.
-
-- in tgafb_register, tgafb_init_fix is moved upwards, to be called
-  before fb_find_mode (because fb_find_mode already needs the videoram
-  size set in tgafb_init_fix).
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/tgafb.c |   18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ drivers/mtd/sm_ftl.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
---- a/drivers/video/tgafb.c
-+++ b/drivers/video/tgafb.c
-@@ -182,6 +182,8 @@ tgafb_check_var(struct fb_var_screeninfo
+--- a/drivers/mtd/sm_ftl.c
++++ b/drivers/mtd/sm_ftl.c
+@@ -59,15 +59,12 @@ struct attribute_group *sm_create_sysfs_
+ 	struct attribute_group *attr_group;
+ 	struct attribute **attributes;
+ 	struct sm_sysfs_attribute *vendor_attribute;
++	char *vendor;
  
- 	if (var->xres_virtual != var->xres || var->yres_virtual != var->yres)
- 		return -EINVAL;
-+	if (var->xres * var->yres * (var->bits_per_pixel >> 3) > info->fix.smem_len)
-+		return -EINVAL;
- 	if (var->nonstd)
- 		return -EINVAL;
- 	if (1000000000 / var->pixclock > TGA_PLL_MAX_FREQ)
-@@ -262,6 +264,7 @@ tgafb_set_par(struct fb_info *info)
- 	par->yres = info->var.yres;
- 	par->pll_freq = pll_freq = 1000000000 / info->var.pixclock;
- 	par->bits_per_pixel = info->var.bits_per_pixel;
-+	info->fix.line_length = par->xres * (par->bits_per_pixel >> 3);
+-	int vendor_len = strnlen(ftl->cis_buffer + SM_CIS_VENDOR_OFFSET,
+-					SM_SMALL_PAGE - SM_CIS_VENDOR_OFFSET);
+-
+-	char *vendor = kmalloc(vendor_len, GFP_KERNEL);
++	vendor = kstrndup(ftl->cis_buffer + SM_CIS_VENDOR_OFFSET,
++			  SM_SMALL_PAGE - SM_CIS_VENDOR_OFFSET, GFP_KERNEL);
+ 	if (!vendor)
+ 		goto error1;
+-	memcpy(vendor, ftl->cis_buffer + SM_CIS_VENDOR_OFFSET, vendor_len);
+-	vendor[vendor_len] = 0;
  
- 	tga_type = par->tga_type;
+ 	/* Initialize sysfs attributes */
+ 	vendor_attribute =
+@@ -78,7 +75,7 @@ struct attribute_group *sm_create_sysfs_
+ 	sysfs_attr_init(&vendor_attribute->dev_attr.attr);
  
-@@ -1470,6 +1473,7 @@ tgafb_init_fix(struct fb_info *info)
- 	int tga_bus_tc = TGA_BUS_TC(par->dev);
- 	u8 tga_type = par->tga_type;
- 	const char *tga_type_name = NULL;
-+	unsigned memory_size;
- 
- 	switch (tga_type) {
- 	case TGA_TYPE_8PLANE:
-@@ -1477,22 +1481,27 @@ tgafb_init_fix(struct fb_info *info)
- 			tga_type_name = "Digital ZLXp-E1";
- 		if (tga_bus_tc)
- 			tga_type_name = "Digital ZLX-E1";
-+		memory_size = 2097152;
- 		break;
- 	case TGA_TYPE_24PLANE:
- 		if (tga_bus_pci)
- 			tga_type_name = "Digital ZLXp-E2";
- 		if (tga_bus_tc)
- 			tga_type_name = "Digital ZLX-E2";
-+		memory_size = 8388608;
- 		break;
- 	case TGA_TYPE_24PLUSZ:
- 		if (tga_bus_pci)
- 			tga_type_name = "Digital ZLXp-E3";
- 		if (tga_bus_tc)
- 			tga_type_name = "Digital ZLX-E3";
-+		memory_size = 16777216;
- 		break;
- 	}
--	if (!tga_type_name)
-+	if (!tga_type_name) {
- 		tga_type_name = "Unknown";
-+		memory_size = 16777216;
-+	}
- 
- 	strlcpy(info->fix.id, tga_type_name, sizeof(info->fix.id));
- 
-@@ -1502,9 +1511,8 @@ tgafb_init_fix(struct fb_info *info)
- 			    ? FB_VISUAL_PSEUDOCOLOR
- 			    : FB_VISUAL_DIRECTCOLOR);
- 
--	info->fix.line_length = par->xres * (par->bits_per_pixel >> 3);
- 	info->fix.smem_start = (size_t) par->tga_fb_base;
--	info->fix.smem_len = info->fix.line_length * par->yres;
-+	info->fix.smem_len = memory_size;
- 	info->fix.mmio_start = (size_t) par->tga_regs_base;
- 	info->fix.mmio_len = 512;
- 
-@@ -1628,6 +1636,9 @@ static int tgafb_register(struct device
- 		modedb_tga = &modedb_tc;
- 		modedbsize_tga = 1;
- 	}
-+
-+	tgafb_init_fix(info);
-+
- 	ret = fb_find_mode(&info->var, info,
- 			   mode_option ? mode_option : mode_option_tga,
- 			   modedb_tga, modedbsize_tga, NULL,
-@@ -1645,7 +1656,6 @@ static int tgafb_register(struct device
- 	}
- 
- 	tgafb_set_par(info);
--	tgafb_init_fix(info);
- 
- 	if (register_framebuffer(info) < 0) {
- 		printk(KERN_ERR "tgafb: Could not register framebuffer\n");
+ 	vendor_attribute->data = vendor;
+-	vendor_attribute->len = vendor_len;
++	vendor_attribute->len = strlen(vendor);
+ 	vendor_attribute->dev_attr.attr.name = "vendor";
+ 	vendor_attribute->dev_attr.attr.mode = S_IRUGO;
+ 	vendor_attribute->dev_attr.show = sm_attr_show;
 
 
