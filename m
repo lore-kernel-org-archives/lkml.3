@@ -1,41 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273AbaEKRrz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 13:47:55 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:48714 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663AbaEKRrw (ORCPT
+	id S1757538AbaEKS3Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 14:29:24 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43804 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687AbaEKS3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 13:47:52 -0400
-Message-ID: <536FB7C4.4060803@gmail.com>
-Date: Sun, 11 May 2014 19:47:48 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Sun, 11 May 2014 14:29:23 -0400
+Date: Sun, 11 May 2014 20:29:30 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Pavel Machek <pavel@ucw.cz>
+cc: Borislav Petkov <bp@alien8.de>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Mike Galbraith <mgalbraith@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] CPU hotplug: Slow down hotplug operations
+In-Reply-To: <20140511170234.GA2681@xo-6d-61-c0.localdomain>
+Message-ID: <alpine.DEB.2.02.1405112026580.6261@ionos.tec.linutronix.de>
+References: <1399492661-891-1-git-send-email-bp@alien8.de> <20140507130655.9f7c46de8cb39726079458fb@linux-foundation.org> <alpine.DEB.2.02.1405072214420.6261@ionos.tec.linutronix.de> <20140507202655.GI16722@pd.tnic>
+ <20140511170234.GA2681@xo-6d-61-c0.localdomain>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mtk.manpages@gmail.com, Juri Lelli <juri.lelli@gmail.com>,
-        Dario Faggioli <raistlin@linux.it>, Ingo Molnar <mingo@elte.hu>,
-        lkml <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: [BUG] sched_setattr() SCHED_DEADLINE hangs system
-References: <536F8F0E.7020301@gmail.com>
-In-Reply-To: <536F8F0E.7020301@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2014 04:54 PM, Michael Kerrisk (man-pages) wrote:
-> $ time sudo ./t_sched_setattr d 18446744072 18446744072 18446744073
+On Sun, 11 May 2014, Pavel Machek wrote:
+> Well. If you add the delay, you'll mask real problems and cause regressions when
+> the delay is removed -- because fix-hotplug will probably take time to get right.
 > 
-> 'd' here means use SCHED_DEADLINE, then the remaining arguments
-> are the Runtime, Deadline, and Period, expressed in *seconds*.
-> (Those number by the way are just a little below 2^64.)
+> Bad idea, AFAICT.
 
-I wasn't being 100% clear there. I mean to say: Those numbers are,
-when converted to nanoseconds, just a little below 2^64.
+Agreed, but Boris is right, that the current duct tape hackery needs
+to stop. And the delay was the desperate attempt to wake up people to
+focus on replacing the current mess instead of making it more
+entangled.
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Thanks,
+
+	tglx
