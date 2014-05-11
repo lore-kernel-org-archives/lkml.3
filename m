@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166AbaEKT4d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:56:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48044 "EHLO
+	id S1758191AbaEKT4u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:56:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48033 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932751AbaEKTVk (ORCPT
+	with ESMTP id S932734AbaEKTVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:21:40 -0400
+	Sun, 11 May 2014 15:21:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.14 20/83] powerpc: Fix Oops in rtas_stop_self()
-Date: Sun, 11 May 2014 21:19:21 +0200
-Message-Id: <20140511191909.838857845@linuxfoundation.org>
+        Vineet Gupta <vgupta@synopsys.com>,
+        Anton Kolesov <Anton.Kolesov@synopsys.com>,
+        Francois Bedard <Francois.Bedard@synopsys.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 27/83] ARC: !PREEMPT: Ensure Return to kernel mode is IRQ safe
+Date: Sun, 11 May 2014 21:19:28 +0200
+Message-Id: <20140511191910.756830473@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -27,46 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zhong <zhong@linux.vnet.ibm.com>
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 
-commit 4fb8d027dca0236c811272d342cf185569d91311 upstream.
+commit 8aa9e85adac609588eeec356e5a85059b3b819ba upstream.
 
-commit 41dd03a9 may cause Oops in rtas_stop_self().
+There was a very small race window where resume to kernel mode from a
+Exception Path (or pure kernel mode which is true for most of ARC
+exceptions anyways), was not disabling interrupts in restore_regs,
+clobbering the exception regs
 
-The reason is that the rtas_args was moved into stack space. For a box
-with more that 4GB RAM, the stack could easily be outside 32bit range,
-but RTAS is 32bit.
+Anton found the culprit call flow (after many sleepless nights)
 
-So the patch moves rtas_args away from stack by adding static before
-it.
+| 1. we got a Trap from user land
+| 2. started to service it.
+| 3. While doing some stuff on user-land memory (I think it is padzero()),
+|     we got a DataTlbMiss
+| 4. On return from it we are taking "resume_kernel_mode" path
+| 5. NEED_RESHED is not set, so we go to "return from exception" path in
+|     restore regs.
+| 6. there seems to be IRQ happening
 
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Anton Kolesov <Anton.Kolesov@synopsys.com>
+Cc: Francois Bedard <Francois.Bedard@synopsys.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/pseries/hotplug-cpu.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/arc/kernel/entry.S |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/arch/powerpc/platforms/pseries/hotplug-cpu.c
-+++ b/arch/powerpc/platforms/pseries/hotplug-cpu.c
-@@ -88,13 +88,14 @@ void set_default_offline_state(int cpu)
+--- a/arch/arc/kernel/entry.S
++++ b/arch/arc/kernel/entry.S
+@@ -614,11 +614,13 @@ resume_user_mode_begin:
  
- static void rtas_stop_self(void)
- {
--	struct rtas_args args = {
--		.token = cpu_to_be32(rtas_stop_self_token),
-+	static struct rtas_args args = {
- 		.nargs = 0,
- 		.nret = 1,
- 		.rets = &args.args[0],
- 	};
+ resume_kernel_mode:
  
-+	args.token = cpu_to_be32(rtas_stop_self_token);
+-#ifdef CONFIG_PREEMPT
+-
+-	; This is a must for preempt_schedule_irq()
++	; Disable Interrupts from this point on
++	; CONFIG_PREEMPT: This is a must for preempt_schedule_irq()
++	; !CONFIG_PREEMPT: To ensure restore_regs is intr safe
+ 	IRQ_DISABLE	r9
+ 
++#ifdef CONFIG_PREEMPT
 +
- 	local_irq_disable();
- 
- 	BUG_ON(rtas_stop_self_token == RTAS_UNKNOWN_SERVICE);
+ 	; Can't preempt if preemption disabled
+ 	GET_CURR_THR_INFO_FROM_SP   r10
+ 	ld  r8, [r10, THREAD_INFO_PREEMPT_COUNT]
 
 
