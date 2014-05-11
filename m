@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758148AbaEKXeS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 19:34:18 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:46323 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757911AbaEKXeK (ORCPT
+	id S1758085AbaEKXeQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 19:34:16 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:59995 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757367AbaEKXeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 19:34:10 -0400
+	Sun, 11 May 2014 19:34:07 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 4/5] nohz: Move full nohz kick to its own IPI
-Date: Mon, 12 May 2014 01:33:56 +0200
-Message-Id: <1399851237-2226-5-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 2/5] irq_work: Force non-lazy works on IPI
+Date: Mon, 12 May 2014 01:33:54 +0200
+Message-Id: <1399851237-2226-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1399851237-2226-1-git-send-email-fweisbec@gmail.com>
 References: <1399851237-2226-1-git-send-email-fweisbec@gmail.com>
@@ -26,15 +26,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the irq work subsystem can queue remote callbacks, it's
-a perfect fit to safely queue IPIs when interrupts are disabled
-without worrying about concurrent callers.
-
-Lets use it for the full dynticks kick to notify a CPU that it's
-exiting single task mode.
-
-This unbloats a bit the scheduler IPI that the nohz code was abusing
-for its cool "callable anywhere/anytime" properties.
+As we plan to handle the full nohz IPI using irq work, we need to
+enforce non-lazy works outside the tick because it's called under
+hrtimer lock. This is not desired from the nohz callback revaluating the
+tick because it can take hrtimer lock itself.
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -45,113 +40,168 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- include/linux/tick.h     |  9 ++++++++-
- kernel/sched/core.c      |  5 +----
- kernel/sched/sched.h     |  2 +-
- kernel/time/Kconfig      |  2 ++
- kernel/time/tick-sched.c | 10 ++++++----
- 5 files changed, 18 insertions(+), 10 deletions(-)
+ include/linux/irq_work.h |  1 +
+ kernel/irq_work.c        | 58 ++++++++++++++++++++++++++----------------------
+ kernel/timer.c           |  2 +-
+ 3 files changed, 34 insertions(+), 27 deletions(-)
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index b84773c..8a4987f 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -181,7 +181,13 @@ static inline bool tick_nohz_full_cpu(int cpu)
+diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
+index 19ae05d..429b1ba 100644
+--- a/include/linux/irq_work.h
++++ b/include/linux/irq_work.h
+@@ -34,6 +34,7 @@ void init_irq_work(struct irq_work *work, void (*func)(struct irq_work *))
  
- extern void tick_nohz_init(void);
- extern void __tick_nohz_full_check(void);
--extern void tick_nohz_full_kick(void);
-+extern void tick_nohz_full_kick_cpu(int cpu);
-+
-+static inline void tick_nohz_full_kick(void)
-+{
-+	tick_nohz_full_kick_cpu(smp_processor_id());
-+}
-+
- extern void tick_nohz_full_kick_all(void);
- extern void __tick_nohz_task_switch(struct task_struct *tsk);
- #else
-@@ -189,6 +195,7 @@ static inline void tick_nohz_init(void) { }
- static inline bool tick_nohz_full_enabled(void) { return false; }
- static inline bool tick_nohz_full_cpu(int cpu) { return false; }
- static inline void __tick_nohz_full_check(void) { }
-+static inline void tick_nohz_full_kick_cpu(int cpu) { }
- static inline void tick_nohz_full_kick(void) { }
- static inline void tick_nohz_full_kick_all(void) { }
- static inline void __tick_nohz_task_switch(struct task_struct *tsk) { }
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 268a45e..00ac248 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1500,9 +1500,7 @@ void scheduler_ipi(void)
- 	 */
- 	preempt_fold_need_resched();
+ bool irq_work_queue(struct irq_work *work);
+ void irq_work_run(void);
++void irq_work_run_tick(void);
+ void irq_work_sync(struct irq_work *work);
  
--	if (llist_empty(&this_rq()->wake_list)
--			&& !tick_nohz_full_cpu(smp_processor_id())
--			&& !got_nohz_idle_kick())
-+	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick())
- 		return;
+ #ifdef CONFIG_IRQ_WORK
+diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+index 2559383..0a554a6 100644
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -19,8 +19,8 @@
+ #include <asm/processor.h>
  
- 	/*
-@@ -1519,7 +1517,6 @@ void scheduler_ipi(void)
- 	 * somewhat pessimize the simple resched case.
- 	 */
- 	irq_enter();
--	tick_nohz_full_check();
- 	sched_ttwu_pending();
  
- 	/*
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 456e492..6089e00 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1225,7 +1225,7 @@ static inline void inc_nr_running(struct rq *rq)
- 		if (tick_nohz_full_cpu(rq->cpu)) {
- 			/* Order rq->nr_running write against the IPI */
- 			smp_wmb();
--			smp_send_reschedule(rq->cpu);
-+			tick_nohz_full_kick_cpu(rq->cpu);
- 		}
-        }
- #endif
-diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
-index f448513..27f1f63 100644
---- a/kernel/time/Kconfig
-+++ b/kernel/time/Kconfig
-@@ -101,6 +101,8 @@ config NO_HZ_FULL
- 	depends on HAVE_CONTEXT_TRACKING
- 	# VIRT_CPU_ACCOUNTING_GEN dependency
- 	depends on HAVE_VIRT_CPU_ACCOUNTING_GEN
-+	# tickless irq work
-+	depends on HAVE_IRQ_WORK_IPI
- 	select NO_HZ_COMMON
- 	select RCU_USER_QS
- 	select RCU_NOCB_CPU
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 6558b7a..3d63944 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -224,13 +224,15 @@ static DEFINE_PER_CPU(struct irq_work, nohz_full_kick_work) = {
- };
+-static DEFINE_PER_CPU(struct llist_head, irq_work_list);
+-static DEFINE_PER_CPU(int, irq_work_raised);
++static DEFINE_PER_CPU(struct llist_head, lazy_list);
++static DEFINE_PER_CPU(struct llist_head, raised_list);
  
  /*
-- * Kick the current CPU if it's full dynticks in order to force it to
-+ * Kick the CPU if it's full dynticks in order to force it to
-  * re-evaluate its dependency on the tick and restart it if necessary.
+  * Claim the entry so that no one else will poke at it.
+@@ -63,14 +63,14 @@ void __weak arch_irq_work_raise(int cpu)
   */
--void tick_nohz_full_kick(void)
-+void tick_nohz_full_kick_cpu(int cpu)
+ bool irq_work_queue(struct irq_work *work)
  {
--	if (tick_nohz_full_cpu(smp_processor_id()))
--		irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
-+	if (!tick_nohz_full_cpu(cpu))
-+		return;
++	unsigned long flags;
 +
-+	irq_work_queue_on(&per_cpu(nohz_full_kick_work, cpu), cpu);
+ 	/* Only queue if not already pending */
+ 	if (!irq_work_claim(work))
+ 		return false;
+ 
+ 	/* Queue the entry and raise the IPI if needed. */
+-	preempt_disable();
+-
+-	llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
++	local_irq_save(flags);
+ 
+ 	/*
+ 	 * If the work is not "lazy" or the tick is stopped, raise the irq
+@@ -78,11 +78,13 @@ bool irq_work_queue(struct irq_work *work)
+ 	 * for the next tick.
+ 	 */
+ 	if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
+-		if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
++		if (llist_add(&work->llnode, &__get_cpu_var(raised_list)))
+ 			arch_irq_work_raise(smp_processor_id());
++	} else {
++		llist_add(&work->llnode, &__get_cpu_var(lazy_list));
+ 	}
+ 
+-	preempt_enable();
++	local_irq_restore(flags);
+ 
+ 	return true;
+ }
+@@ -90,10 +92,7 @@ EXPORT_SYMBOL_GPL(irq_work_queue);
+ 
+ bool irq_work_needs_cpu(void)
+ {
+-	struct llist_head *this_list;
+-
+-	this_list = &__get_cpu_var(irq_work_list);
+-	if (llist_empty(this_list))
++	if (llist_empty(&__get_cpu_var(lazy_list)))
+ 		return false;
+ 
+ 	/* All work should have been flushed before going offline */
+@@ -102,28 +101,18 @@ bool irq_work_needs_cpu(void)
+ 	return true;
  }
  
- static void nohz_full_kick_ipi(void *info)
+-static void __irq_work_run(void)
++static void __irq_work_run(struct llist_head *list)
+ {
+ 	unsigned long flags;
+ 	struct irq_work *work;
+-	struct llist_head *this_list;
+ 	struct llist_node *llnode;
+ 
+-
+-	/*
+-	 * Reset the "raised" state right before we check the list because
+-	 * an NMI may enqueue after we find the list empty from the runner.
+-	 */
+-	__this_cpu_write(irq_work_raised, 0);
+-	barrier();
+-
+-	this_list = &__get_cpu_var(irq_work_list);
+-	if (llist_empty(this_list))
++	if (llist_empty(list))
+ 		return;
+ 
+ 	BUG_ON(!irqs_disabled());
+ 
+-	llnode = llist_del_all(this_list);
++	llnode = llist_del_all(list);
+ 	while (llnode != NULL) {
+ 		work = llist_entry(llnode, struct irq_work, llnode);
+ 
+@@ -155,11 +144,27 @@ static void __irq_work_run(void)
+ void irq_work_run(void)
+ {
+ 	BUG_ON(!in_irq());
+-	__irq_work_run();
++	__irq_work_run(&__get_cpu_var(raised_list));
++	__irq_work_run(&__get_cpu_var(lazy_list));
+ }
+ EXPORT_SYMBOL_GPL(irq_work_run);
+ 
+ /*
++ * Run the lazy irq_work entries on this cpu from the tick. But let
++ * the IPI handle the others. Some works may require to work outside
++ * the tick due to its locking dependencies (hrtimer lock).
++ */
++void irq_work_run_tick(void)
++{
++	BUG_ON(!in_irq());
++#ifndef CONFIG_HAVE_IRQ_WORK_IPI
++	/* No IPI support, we don't have the choice... */
++	__irq_work_run(&__get_cpu_var(raised_list));
++#endif
++	__irq_work_run(&__get_cpu_var(lazy_list));
++}
++
++/*
+  * Synchronize against the irq_work @entry, ensures the entry is not
+  * currently in use.
+  */
+@@ -183,7 +188,8 @@ static int irq_work_cpu_notify(struct notifier_block *self,
+ 		/* Called from stop_machine */
+ 		if (WARN_ON_ONCE(cpu != smp_processor_id()))
+ 			break;
+-		__irq_work_run();
++		__irq_work_run(&__get_cpu_var(raised_list));
++		__irq_work_run(&__get_cpu_var(lazy_list));
+ 		break;
+ 	default:
+ 		break;
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 3bb01a3..0251dfa 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1384,7 +1384,7 @@ void update_process_times(int user_tick)
+ 	rcu_check_callbacks(cpu, user_tick);
+ #ifdef CONFIG_IRQ_WORK
+ 	if (in_irq())
+-		irq_work_run();
++		irq_work_run_tick();
+ #endif
+ 	scheduler_tick();
+ 	run_posix_cpu_timers(p);
 -- 
 1.8.3.1
 
