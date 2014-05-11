@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933032AbaEKTWk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:22:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48121 "EHLO
+	id S933078AbaEKTWt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:22:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48137 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933011AbaEKTWg (ORCPT
+	with ESMTP id S933036AbaEKTWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:22:36 -0400
+	Sun, 11 May 2014 15:22:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.10 08/48] KVM: ioapic: fix assignment of ioapic->rtc_status.pending_eoi (CVE-2014-0155)
-Date: Sun, 11 May 2014 21:19:42 +0200
-Message-Id: <20140511191949.268912003@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 3.14 30/83] mach64: use unaligned access
+Date: Sun, 11 May 2014 21:19:31 +0200
+Message-Id: <20140511191911.166738023@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 5678de3f15010b9022ee45673f33bcfc71d47b60 upstream.
+commit c29dd8696dc5dbd50b3ac441b8a26751277ba520 upstream.
 
-QE reported that they got the BUG_ON in ioapic_service to trigger.
-I cannot reproduce it, but there are two reasons why this could happen.
+This patch fixes mach64 to use unaligned access to the font bitmap.
 
-The less likely but also easiest one, is when kvm_irq_delivery_to_apic
-does not deliver to any APIC and returns -1.
+This fixes unaligned access warning on sparc64 when 14x8 font is loaded.
 
-Because irqe.shorthand == 0, the kvm_for_each_vcpu loop in that
-function is never reached.  However, you can target the similar loop in
-kvm_irq_delivery_to_apic_fast; just program a zero logical destination
-address into the IOAPIC, or an out-of-range physical destination address.
+On x86(64), unaligned access is handled in hardware, so both functions
+le32_to_cpup and get_unaligned_le32 perform the same operation.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+On RISC machines, unaligned access is not handled in hardware, so we
+better use get_unaligned_le32 to avoid the unaligned trap and warning.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- virt/kvm/ioapic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/video/aty/mach64_accel.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/virt/kvm/ioapic.c
-+++ b/virt/kvm/ioapic.c
-@@ -306,7 +306,7 @@ static int ioapic_deliver(struct kvm_ioa
- 		BUG_ON(ioapic->rtc_status.pending_eoi != 0);
- 		ret = kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe,
- 				ioapic->rtc_status.dest_map);
--		ioapic->rtc_status.pending_eoi = ret;
-+		ioapic->rtc_status.pending_eoi = (ret < 0 ? 0 : ret);
- 	} else
- 		ret = kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe, NULL);
+--- a/drivers/video/aty/mach64_accel.c
++++ b/drivers/video/aty/mach64_accel.c
+@@ -4,6 +4,7 @@
+  */
+ 
+ #include <linux/delay.h>
++#include <asm/unaligned.h>
+ #include <linux/fb.h>
+ #include <video/mach64.h>
+ #include "atyfb.h"
+@@ -419,7 +420,7 @@ void atyfb_imageblit(struct fb_info *inf
+ 		u32 *pbitmap, dwords = (src_bytes + 3) / 4;
+ 		for (pbitmap = (u32*)(image->data); dwords; dwords--, pbitmap++) {
+ 			wait_for_fifo(1, par);
+-			aty_st_le32(HOST_DATA0, le32_to_cpup(pbitmap), par);
++			aty_st_le32(HOST_DATA0, get_unaligned_le32(pbitmap), par);
+ 		}
+ 	}
  
 
 
