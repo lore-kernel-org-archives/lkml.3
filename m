@@ -1,96 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934284AbaEKTpJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:45:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48262 "EHLO
+	id S933377AbaEKTX5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:23:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48246 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933410AbaEKTYE (ORCPT
+	with ESMTP id S933323AbaEKTXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:24:04 -0400
+	Sun, 11 May 2014 15:23:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
+        Felix Fietkau <nbd@openwrt.org>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 31/48] rtlwifi: rtl8723ae: Fix too long disable of IRQs
-Date: Sun, 11 May 2014 21:20:05 +0200
-Message-Id: <20140511191952.335025761@linuxfoundation.org>
+Subject: [PATCH 3.14 47/83] ath9k: fix ready time of the multicast buffer queue
+Date: Sun, 11 May 2014 21:19:48 +0200
+Message-Id: <20140511191913.309947557@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit bfc1010c418a22cbebd8b1bd1e75dad6a527a609 upstream.
+commit 3b3e0efb5c72c4fc940af50b33626b8a78a907dc upstream.
 
-In commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 entitled "rtlwifi:
-rtl8192ce: Fix too long disable of IRQs", Olivier Langlois
-<olivier@trillion01.com> fixed a problem caused by an extra long disabling
-of interrupts. This patch makes the same fix for rtl8723ae.
+qi->tqi_readyTime is written directly to registers that expect
+microseconds as unit instead of TU.
+When setting the CABQ ready time, cur_conf->beacon_interval is in TU, so
+convert it to microseconds before passing it to ath9k_hw.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+This should hopefully fix some Tx DMA issues with buffered multicast
+frames in AP mode.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8723ae/hw.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ drivers/net/wireless/ath/ath9k/xmit.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
-@@ -880,14 +880,25 @@ int rtl8723ae_hw_init(struct ieee80211_h
- 	bool rtstatus = true;
- 	int err;
- 	u8 tmp_u1b;
-+	unsigned long flags;
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -1698,7 +1698,7 @@ int ath_cabq_update(struct ath_softc *sc
  
- 	rtlpriv->rtlhal.being_init_adapter = true;
-+	/* As this function can take a very long time (up to 350 ms)
-+	 * and can be called with irqs disabled, reenable the irqs
-+	 * to let the other devices continue being serviced.
-+	 *
-+	 * It is safe doing so since our own interrupts will only be enabled
-+	 * in a subsequent step.
-+	 */
-+	local_save_flags(flags);
-+	local_irq_enable();
-+
- 	rtlpriv->intf_ops->disable_aspm(hw);
- 	rtstatus = _rtl8712e_init_mac(hw);
- 	if (rtstatus != true) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "Init MAC failed\n");
- 		err = 1;
--		return err;
-+		goto exit;
- 	}
+ 	ath9k_hw_get_txq_props(sc->sc_ah, qnum, &qi);
  
- 	err = rtl8723ae_download_fw(hw);
-@@ -895,8 +906,7 @@ int rtl8723ae_hw_init(struct ieee80211_h
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
- 			 "Failed to download FW. Init HW without FW now..\n");
- 		err = 1;
--		rtlhal->fw_ready = false;
--		return err;
-+		goto exit;
- 	} else {
- 		rtlhal->fw_ready = true;
- 	}
-@@ -971,6 +981,8 @@ int rtl8723ae_hw_init(struct ieee80211_h
- 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE, "under 1.5V\n");
- 	}
- 	rtl8723ae_dm_init(hw);
-+exit:
-+	local_irq_restore(flags);
- 	rtlpriv->rtlhal.being_init_adapter = false;
- 	return err;
- }
+-	qi.tqi_readyTime = (cur_conf->beacon_interval *
++	qi.tqi_readyTime = (TU_TO_USEC(cur_conf->beacon_interval) *
+ 			    ATH_CABQ_READY_TIME) / 100;
+ 	ath_txq_update(sc, qnum, &qi);
+ 
 
 
