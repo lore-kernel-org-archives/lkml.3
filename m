@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933331AbaEKTXr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:23:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48229 "EHLO
+	id S933306AbaEKTXk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:23:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48223 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933237AbaEKTXm (ORCPT
+	with ESMTP id S933237AbaEKTXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:23:42 -0400
+	Sun, 11 May 2014 15:23:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Johannes Berg <johannes.berg@intel.com>,
         Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.14 40/83] iwlwifi: mvm: disable uAPSD due to bugs in the firmware
-Date: Sun, 11 May 2014 21:19:41 +0200
-Message-Id: <20140511191912.458734117@linuxfoundation.org>
+Subject: [PATCH 3.14 39/83] iwlwifi: dvm: take mutex when sending SYNC BT config command
+Date: Sun, 11 May 2014 21:19:40 +0200
+Message-Id: <20140511191912.378748741@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -28,30 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit a82dda6cd492b8c88952be6f6527f3656f7ac585 upstream.
+commit 82e5a649453a3cf23516277abb84273768a1592b upstream.
 
-The current firmware advertises support for uAPSD, but
-critical bugs force us to disable the feature.
-When a fixed firmware will be available, we will be able to
-re-enable uAPSD.
+There is a flow in which we send the host command in SYNC
+mode, but we don't take priv->mutex.
 
+Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=1046495
+
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/mac80211.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/dvm/main.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-@@ -179,7 +179,7 @@ int iwl_mvm_mac_setup_register(struct iw
- 	    !iwlwifi_mod_params.sw_crypto)
- 		hw->flags |= IEEE80211_HW_MFP_CAPABLE;
+--- a/drivers/net/wireless/iwlwifi/dvm/main.c
++++ b/drivers/net/wireless/iwlwifi/dvm/main.c
+@@ -252,13 +252,17 @@ static void iwl_bg_bt_runtime_config(str
+ 	struct iwl_priv *priv =
+ 		container_of(work, struct iwl_priv, bt_runtime_config);
  
--	if (mvm->fw->ucode_capa.flags & IWL_UCODE_TLV_FLAGS_UAPSD_SUPPORT) {
-+	if (0 && mvm->fw->ucode_capa.flags & IWL_UCODE_TLV_FLAGS_UAPSD_SUPPORT) {
- 		hw->flags |= IEEE80211_HW_SUPPORTS_UAPSD;
- 		hw->uapsd_queues = IWL_UAPSD_AC_INFO;
- 		hw->uapsd_max_sp_len = IWL_UAPSD_MAX_SP;
++	mutex_lock(&priv->mutex);
+ 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
+-		return;
++		goto out;
+ 
+ 	/* dont send host command if rf-kill is on */
+ 	if (!iwl_is_ready_rf(priv))
+-		return;
++		goto out;
++
+ 	iwlagn_send_advance_bt_config(priv);
++out:
++	mutex_unlock(&priv->mutex);
+ }
+ 
+ static void iwl_bg_bt_full_concurrency(struct work_struct *work)
 
 
