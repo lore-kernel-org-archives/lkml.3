@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932699AbaEKTVZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:21:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48013 "EHLO
+	id S932646AbaEKTVP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:21:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47995 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932672AbaEKTVV (ORCPT
+	with ESMTP id S932476AbaEKTVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:21:21 -0400
+	Sun, 11 May 2014 15:21:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Daley <mattd@bugfuzz.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 04/48] floppy: ignore kernel-only members in FDRAWCMD ioctl input
-Date: Sun, 11 May 2014 21:19:38 +0200
-Message-Id: <20140511191948.690091529@linuxfoundation.org>
+        Heinz Graalfs <graalfs@linux.vnet.ibm.com>,
+        Joel Stanley <joel@jms.id.au>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 3.14 15/83] tools/virtio: add a missing )
+Date: Sun, 11 May 2014 21:19:16 +0200
+Message-Id: <20140511191909.167081167@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Matthew Daley <mattd@bugfuzz.com>
+From: Joel Stanley <joel@jms.id.au>
 
-commit ef87dbe7614341c2e7bfe8d32fcb7028cc97442c upstream.
+commit be40d5ccab34d579512d932fc1c6cfaffe9d1551 upstream.
 
-Always clear out these floppy_raw_cmd struct members after copying the
-entire structure from userspace so that the in-kernel version is always
-valid and never left in an interdeterminate state.
+Fixes the following build failure:
 
-Signed-off-by: Matthew Daley <mattd@bugfuzz.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+ cc -g -O2 -Wall -I. -I ../../usr/include/ -Wno-pointer-sign
+   -fno-strict-overflow -fno-strict-aliasing -fno-common -MMD
+   -U_FORTIFY_SOURCE   -c -o virtio_test.o virtio_test.c
+ virtio_test.c: In function ‘run_test’:
+ virtio_test.c:176:7: error: expected ‘)’ before ‘r’
+         r = -1;
+         ^
+
+Fixes: 53c18c9906441 (virtio_test: verify if virtqueue_kick() succeeded)
+Cc: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+Signed-off-by: Joel Stanley <joel@jms.id.au>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/floppy.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ tools/virtio/virtio_test.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -3107,10 +3107,11 @@ loop:
- 		return -ENOMEM;
- 	*rcmd = ptr;
- 	ret = copy_from_user(ptr, param, sizeof(*ptr));
--	if (ret)
--		return -EFAULT;
- 	ptr->next = NULL;
- 	ptr->buffer_length = 0;
-+	ptr->kernel_data = NULL;
-+	if (ret)
-+		return -EFAULT;
- 	param += sizeof(struct floppy_raw_cmd);
- 	if (ptr->cmd_count > 33)
- 			/* the command may now also take up the space
-@@ -3126,7 +3127,6 @@ loop:
- 	for (i = 0; i < 16; i++)
- 		ptr->reply[i] = 0;
- 	ptr->resultcode = 0;
--	ptr->kernel_data = NULL;
- 
- 	if (ptr->flags & (FD_RAW_READ | FD_RAW_WRITE)) {
- 		if (ptr->length <= 0)
+--- a/tools/virtio/virtio_test.c
++++ b/tools/virtio/virtio_test.c
+@@ -172,7 +172,7 @@ static void run_test(struct vdev_info *d
+ 							 GFP_ATOMIC);
+ 				if (likely(r == 0)) {
+ 					++started;
+-					if (unlikely(!virtqueue_kick(vq->vq))
++					if (unlikely(!virtqueue_kick(vq->vq)))
+ 						r = -1;
+ 				}
+ 			} else
 
 
