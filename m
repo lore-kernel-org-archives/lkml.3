@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932447AbaEKTUh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:20:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47929 "EHLO
+	id S932492AbaEKTUm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:20:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47935 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932389AbaEKTUd (ORCPT
+	with ESMTP id S1755717AbaEKTUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:20:33 -0400
+	Sun, 11 May 2014 15:20:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Subject: [PATCH 3.14 01/83] drivers/tty/hvc: dont free hvc_console_setup after init
-Date: Sun, 11 May 2014 21:19:02 +0200
-Message-Id: <20140511191907.211016910@linuxfoundation.org>
+        Manfred Schlaegl <manfred.schlaegl@gmx.at>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 3.14 03/83] tty: Fix lockless tty buffer race
+Date: Sun, 11 May 2014 21:19:04 +0200
+Message-Id: <20140511191907.466953477@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -26,33 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit 501fed45b7e8836ee9373f4d31e2d85e3db6103a upstream.
+commit 62a0d8d7c2b29f92850e4ee3c38e5dfd936e92b2 upstream.
 
-When 'console=hvc0' is specified to the kernel parameter in x86 KVM guest,
-hvc console is setup within a kthread. However, that will cause SEGV
-and the boot will fail when the driver is builtin to the kernel,
-because currently hvc_console_setup() is annotated with '__init'. This
-patch removes '__init' to boot the guest successfully with 'console=hvc0'.
+Commit 6a20dbd6caa2358716136144bf524331d70b1e03,
+"tty: Fix race condition between __tty_buffer_request_room and flush_to_ldisc"
+correctly identifies an unsafe race condition between
+__tty_buffer_request_room() and flush_to_ldisc(), where the consumer
+flush_to_ldisc() prematurely advances the head before consuming the
+last of the data committed. For example:
 
-Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+           CPU 0                     |            CPU 1
+__tty_buffer_request_room            | flush_to_ldisc
+  ...                                |   ...
+                                     |   count = head->commit - head->read
+  n = tty_buffer_alloc()             |
+  b->commit = b->used                |
+  b->next = n                        |
+                                     |   if (!count)                /* T */
+                                     |     if (head->next == NULL)  /* F */
+                                     |     buf->head = head->next
+
+In this case, buf->head has been advanced but head->commit may have
+been updated with a new value.
+
+Instead of reintroducing an unnecessary lock, fix the race locklessly.
+Read the commit-next pair in the reverse order of writing, which guarantees
+the commit value read is the latest value written if the head is
+advancing.
+
+Reported-by: Manfred Schlaegl <manfred.schlaegl@gmx.at>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/hvc/hvc_console.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/tty_buffer.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/drivers/tty/hvc/hvc_console.c
-+++ b/drivers/tty/hvc/hvc_console.c
-@@ -190,7 +190,7 @@ static struct tty_driver *hvc_console_de
- 	return hvc_driver;
- }
+--- a/drivers/tty/tty_buffer.c
++++ b/drivers/tty/tty_buffer.c
+@@ -258,7 +258,11 @@ static int __tty_buffer_request_room(str
+ 			n->flags = flags;
+ 			buf->tail = n;
+ 			b->commit = b->used;
+-			smp_mb();
++			/* paired w/ barrier in flush_to_ldisc(); ensures the
++			 * latest commit value can be read before the head is
++			 * advanced to the next buffer
++			 */
++			smp_wmb();
+ 			b->next = n;
+ 		} else if (change)
+ 			size = 0;
+@@ -444,17 +448,24 @@ static void flush_to_ldisc(struct work_s
  
--static int __init hvc_console_setup(struct console *co, char *options)
-+static int hvc_console_setup(struct console *co, char *options)
- {	
- 	if (co->index < 0 || co->index >= MAX_NR_HVC_CONSOLES)
- 		return -ENODEV;
+ 	while (1) {
+ 		struct tty_buffer *head = buf->head;
++		struct tty_buffer *next;
+ 		int count;
+ 
+ 		/* Ldisc or user is trying to gain exclusive access */
+ 		if (atomic_read(&buf->priority))
+ 			break;
+ 
++		next = head->next;
++		/* paired w/ barrier in __tty_buffer_request_room();
++		 * ensures commit value read is not stale if the head
++		 * is advancing to the next buffer
++		 */
++		smp_rmb();
+ 		count = head->commit - head->read;
+ 		if (!count) {
+-			if (head->next == NULL)
++			if (next == NULL)
+ 				break;
+-			buf->head = head->next;
++			buf->head = next;
+ 			tty_buffer_free(port, head);
+ 			continue;
+ 		}
 
 
