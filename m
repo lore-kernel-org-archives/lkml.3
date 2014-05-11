@@ -1,71 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934113AbaEKTcl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:32:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48504 "EHLO
+	id S934170AbaEKTdC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:33:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48496 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934019AbaEKT0e (ORCPT
+	with ESMTP id S933994AbaEKT00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:26:34 -0400
+	Sun, 11 May 2014 15:26:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Daley <mattd@bugfuzz.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 02/22] floppy: ignore kernel-only members in FDRAWCMD ioctl input
-Date: Sun, 11 May 2014 21:21:10 +0200
-Message-Id: <20140511192104.071185991@linuxfoundation.org>
+        Gerd Hoffmann <kraxel@redhat.com>, Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.10 48/48] drm: cirrus: add power management support
+Date: Sun, 11 May 2014 21:20:22 +0200
+Message-Id: <20140511191954.546239829@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511192103.733723493@linuxfoundation.org>
-References: <20140511192103.733723493@linuxfoundation.org>
+In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
+References: <20140511191948.079900414@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Matthew Daley <mattd@bugfuzz.com>
+From: Gerd Hoffmann <kraxel@redhat.com>
 
-commit ef87dbe7614341c2e7bfe8d32fcb7028cc97442c upstream.
+commit 2f1e800799bf478494cec3573cd63eb34ca89c9d upstream.
 
-Always clear out these floppy_raw_cmd struct members after copying the
-entire structure from userspace so that the in-kernel version is always
-valid and never left in an interdeterminate state.
+cirrus kms driver lacks power management support, thus
+the vga display doesn't work any more after S3 resume.
 
-Signed-off-by: Matthew Daley <mattd@bugfuzz.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fix this by adding suspend and resume functions.
+Also make the mode_set function unblank the screen.
+
+Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/floppy.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/cirrus/cirrus_drv.c  |   42 +++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/cirrus/cirrus_mode.c |    3 ++
+ 2 files changed, 45 insertions(+)
 
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -3112,10 +3112,11 @@ loop:
- 		return -ENOMEM;
- 	*rcmd = ptr;
- 	ret = copy_from_user(ptr, param, sizeof(*ptr));
--	if (ret)
--		return -EFAULT;
- 	ptr->next = NULL;
- 	ptr->buffer_length = 0;
-+	ptr->kernel_data = NULL;
-+	if (ret)
-+		return -EFAULT;
- 	param += sizeof(struct floppy_raw_cmd);
- 	if (ptr->cmd_count > 33)
- 			/* the command may now also take up the space
-@@ -3131,7 +3132,6 @@ loop:
- 	for (i = 0; i < 16; i++)
- 		ptr->reply[i] = 0;
- 	ptr->resultcode = 0;
--	ptr->kernel_data = NULL;
+--- a/drivers/gpu/drm/cirrus/cirrus_drv.c
++++ b/drivers/gpu/drm/cirrus/cirrus_drv.c
+@@ -11,6 +11,7 @@
+ #include <linux/module.h>
+ #include <linux/console.h>
+ #include <drm/drmP.h>
++#include <drm/drm_crtc_helper.h>
  
- 	if (ptr->flags & (FD_RAW_READ | FD_RAW_WRITE)) {
- 		if (ptr->length <= 0)
+ #include "cirrus_drv.h"
+ 
+@@ -75,6 +76,41 @@ static void cirrus_pci_remove(struct pci
+ 	drm_put_dev(dev);
+ }
+ 
++static int cirrus_pm_suspend(struct device *dev)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct drm_device *drm_dev = pci_get_drvdata(pdev);
++	struct cirrus_device *cdev = drm_dev->dev_private;
++
++	drm_kms_helper_poll_disable(drm_dev);
++
++	if (cdev->mode_info.gfbdev) {
++		console_lock();
++		fb_set_suspend(cdev->mode_info.gfbdev->helper.fbdev, 1);
++		console_unlock();
++	}
++
++	return 0;
++}
++
++static int cirrus_pm_resume(struct device *dev)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct drm_device *drm_dev = pci_get_drvdata(pdev);
++	struct cirrus_device *cdev = drm_dev->dev_private;
++
++	drm_helper_resume_force_mode(drm_dev);
++
++	if (cdev->mode_info.gfbdev) {
++		console_lock();
++		fb_set_suspend(cdev->mode_info.gfbdev->helper.fbdev, 0);
++		console_unlock();
++	}
++
++	drm_kms_helper_poll_enable(drm_dev);
++	return 0;
++}
++
+ static const struct file_operations cirrus_driver_fops = {
+ 	.owner = THIS_MODULE,
+ 	.open = drm_open,
+@@ -105,11 +141,17 @@ static struct drm_driver driver = {
+ 	.dumb_destroy = cirrus_dumb_destroy,
+ };
+ 
++static const struct dev_pm_ops cirrus_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(cirrus_pm_suspend,
++				cirrus_pm_resume)
++};
++
+ static struct pci_driver cirrus_pci_driver = {
+ 	.name = DRIVER_NAME,
+ 	.id_table = pciidlist,
+ 	.probe = cirrus_pci_probe,
+ 	.remove = cirrus_pci_remove,
++	.driver.pm = &cirrus_pm_ops,
+ };
+ 
+ static int __init cirrus_init(void)
+--- a/drivers/gpu/drm/cirrus/cirrus_mode.c
++++ b/drivers/gpu/drm/cirrus/cirrus_mode.c
+@@ -308,6 +308,9 @@ static int cirrus_crtc_mode_set(struct d
+ 
+ 	WREG_HDR(hdr);
+ 	cirrus_crtc_do_set_base(crtc, old_fb, x, y, 0);
++
++	/* Unblank (needed on S3 resume, vgabios doesn't do it then) */
++	outb(0x20, 0x3c0);
+ 	return 0;
+ }
+ 
 
 
