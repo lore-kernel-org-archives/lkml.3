@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933787AbaEKTZY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:25:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48382 "EHLO
+	id S933768AbaEKTZU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:25:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48375 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933741AbaEKTZP (ORCPT
+	with ESMTP id S933733AbaEKTZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:25:15 -0400
+	Sun, 11 May 2014 15:25:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Miller <almiller_1@yahoo.co.uk>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 35/48] rtlwifi: rtl8192se: Fix regression due to commit 1bf4bbb
-Date: Sun, 11 May 2014 21:20:09 +0200
-Message-Id: <20140511191952.877985084@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.14 60/83] mtd: diskonchip: mem resource name is not optional
+Date: Sun, 11 May 2014 21:20:01 +0200
+Message-Id: <20140511191914.895049228@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit 5f9186990ec4579ee5b7a99b3254c29eda479f36 upstream.
+commit 86e4bbc766b9456f583f2fc3c4f6c623b422af88 upstream.
 
-Beginning with kernel 3.13, this driver fails on some systems. The problem
-was bisected to:
+Passing a name to request_mem_region() isn't optional and can't just
+be NULL. Passing NULL causes a NULL ptr deref later in the boot
+process.
 
-Commit 1bf4bbb4024dcdab5e57634dd8ae1072d42a53ac
-Author: Felix Fietkau <nbd@openwrt.org>
-Title: mac80211: send control port protocol frames to the VO queue
-
-There is noting wrong with the above commit. The regression occurs because
-V0 queue on RTL8192SE cards uses priority 6, not the usual 7. The fix is to
-modify the rtl8192se routine that sets the correct transmit queue.
-
-Bug: https://bugzilla.kernel.org/show_bug.cgi?id=74541
-
-Reported-by: Alex Miller <almiller_1@yahoo.co.uk>
-Tested-by: Alex Miller <almiller_1@yahoo.co.uk>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Tested-by: Alexander Shiyan <shc_work@mail.ru>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192se/trx.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/mtd/nand/diskonchip.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
-@@ -49,6 +49,12 @@ static u8 _rtl92se_map_hwqueue_to_fwqueu
- 	if (ieee80211_is_nullfunc(fc))
- 		return QSLT_HIGH;
+--- a/drivers/mtd/nand/diskonchip.c
++++ b/drivers/mtd/nand/diskonchip.c
+@@ -1438,7 +1438,7 @@ static int __init doc_probe(unsigned lon
+ 	int reg, len, numchips;
+ 	int ret = 0;
  
-+	/* Kernel commit 1bf4bbb4024dcdab changed EAPOL packets to use
-+	 * queue V0 at priority 7; however, the RTL8192SE appears to have
-+	 * that queue at priority 6
-+	 */
-+	if (skb->priority == 7)
-+		return QSLT_VO;
- 	return skb->priority;
- }
- 
+-	if (!request_mem_region(physadr, DOC_IOREMAP_LEN, NULL))
++	if (!request_mem_region(physadr, DOC_IOREMAP_LEN, "DiskOnChip"))
+ 		return -EBUSY;
+ 	virtadr = ioremap(physadr, DOC_IOREMAP_LEN);
+ 	if (!virtadr) {
 
 
