@@ -1,119 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964866AbaEKTkz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:40:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48353 "EHLO
+	id S934168AbaEKTlV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:41:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48349 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933678AbaEKTY7 (ORCPT
+	with ESMTP id S933661AbaEKTY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:24:59 -0400
+	Sun, 11 May 2014 15:24:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marek Vasut <marex@denx.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.10 37/48] gpio: mxs: Allow for recursive enable_irq_wake() call
-Date: Sun, 11 May 2014 21:20:11 +0200
-Message-Id: <20140511191953.109596734@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 3.14 57/83] tgafb: fix mode setting with fbset
+Date: Sun, 11 May 2014 21:19:58 +0200
+Message-Id: <20140511191914.582902680@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Marek Vasut <marex@denx.de>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit a585f87c863e4e1d496459d382b802bf5ebe3717 upstream.
+commit 624966589041deb32a2626ee2e176e8274581101 upstream.
 
-The scenario here is that someone calls enable_irq_wake() from somewhere
-in the code. This will result in the lockdep producing a backtrace as can
-be seen below. In my case, this problem is triggered when using the wl1271
-(TI WlCore) driver found in drivers/net/wireless/ti/ .
+Mode setting in the TGA driver is broken for these reasons:
 
-The problem cause is rather obvious from the backtrace, but let's outline
-the dependency. enable_irq_wake() grabs the IRQ buslock in irq_set_irq_wake(),
-which in turns calls mxs_gpio_set_wake_irq() . But mxs_gpio_set_wake_irq()
-calls enable_irq_wake() again on the one-level-higher IRQ , thus it tries to
-grab the IRQ buslock again in irq_set_irq_wake() . Because the spinlock in
-irq_set_irq_wake()->irq_get_desc_buslock()->__irq_get_desc_lock() is not
-marked as recursive, lockdep will spew the stuff below.
+- info->fix.line_length is set just once in tgafb_init_fix function. If
+  we change videomode, info->fix.line_length is not recalculated - so
+  the video mode is changed but the screen is corrupted because of wrong
+  info->fix.line_length.
 
-We know we can safely re-enter the lock, so use IRQ_GC_INIT_NESTED_LOCK to
-fix the spew.
+- info->fix.smem_len is set in tgafb_init_fix to the size of the default
+  video mode (640x480). If we set a higher resolution,
+  info->fix.smem_len is smaller than the current screen size, preventing
+  the userspace program from mapping the framebuffer.
 
- =============================================
- [ INFO: possible recursive locking detected ]
- 3.10.33-00012-gf06b763-dirty #61 Not tainted
- ---------------------------------------------
- kworker/0:1/18 is trying to acquire lock:
-  (&irq_desc_lock_class){-.-...}, at: [<c00685f0>] __irq_get_desc_lock+0x48/0x88
+This patch fixes it:
 
- but task is already holding lock:
-  (&irq_desc_lock_class){-.-...}, at: [<c00685f0>] __irq_get_desc_lock+0x48/0x88
+- info->fix.line_length initialization is moved to tgafb_set_par so that
+  it is recalculated with each mode change.
 
- other info that might help us debug this:
-  Possible unsafe locking scenario:
+- info->fix.smem_len is set to a fixed value representing the real
+  amount of video ram (the values are taken from xfree86 driver).
 
-        CPU0
-        ----
-   lock(&irq_desc_lock_class);
-   lock(&irq_desc_lock_class);
+- add a check to tgafb_check_var to prevent us from setting a videomode
+  that doesn't fit into videoram.
 
-  *** DEADLOCK ***
+- in tgafb_register, tgafb_init_fix is moved upwards, to be called
+  before fb_find_mode (because fb_find_mode already needs the videoram
+  size set in tgafb_init_fix).
 
-  May be due to missing lock nesting notation
-
- 3 locks held by kworker/0:1/18:
-  #0:  (events){.+.+.+}, at: [<c0036308>] process_one_work+0x134/0x4a4
-  #1:  ((&fw_work->work)){+.+.+.}, at: [<c0036308>] process_one_work+0x134/0x4a4
-  #2:  (&irq_desc_lock_class){-.-...}, at: [<c00685f0>] __irq_get_desc_lock+0x48/0x88
-
- stack backtrace:
- CPU: 0 PID: 18 Comm: kworker/0:1 Not tainted 3.10.33-00012-gf06b763-dirty #61
- Workqueue: events request_firmware_work_func
- [<c0013eb4>] (unwind_backtrace+0x0/0xf0) from [<c0011c74>] (show_stack+0x10/0x14)
- [<c0011c74>] (show_stack+0x10/0x14) from [<c005bb08>] (__lock_acquire+0x140c/0x1a64)
- [<c005bb08>] (__lock_acquire+0x140c/0x1a64) from [<c005c6a8>] (lock_acquire+0x9c/0x104)
- [<c005c6a8>] (lock_acquire+0x9c/0x104) from [<c051d5a4>] (_raw_spin_lock_irqsave+0x44/0x58)
- [<c051d5a4>] (_raw_spin_lock_irqsave+0x44/0x58) from [<c00685f0>] (__irq_get_desc_lock+0x48/0x88)
- [<c00685f0>] (__irq_get_desc_lock+0x48/0x88) from [<c0068e78>] (irq_set_irq_wake+0x20/0xf4)
- [<c0068e78>] (irq_set_irq_wake+0x20/0xf4) from [<c027260c>] (mxs_gpio_set_wake_irq+0x1c/0x24)
- [<c027260c>] (mxs_gpio_set_wake_irq+0x1c/0x24) from [<c0068cf4>] (set_irq_wake_real+0x30/0x44)
- [<c0068cf4>] (set_irq_wake_real+0x30/0x44) from [<c0068ee4>] (irq_set_irq_wake+0x8c/0xf4)
- [<c0068ee4>] (irq_set_irq_wake+0x8c/0xf4) from [<c0310748>] (wlcore_nvs_cb+0x10c/0x97c)
- [<c0310748>] (wlcore_nvs_cb+0x10c/0x97c) from [<c02be5e8>] (request_firmware_work_func+0x38/0x58)
- [<c02be5e8>] (request_firmware_work_func+0x38/0x58) from [<c0036394>] (process_one_work+0x1c0/0x4a4)
- [<c0036394>] (process_one_work+0x1c0/0x4a4) from [<c0036a4c>] (worker_thread+0x138/0x394)
- [<c0036a4c>] (worker_thread+0x138/0x394) from [<c003cb74>] (kthread+0xa4/0xb0)
- [<c003cb74>] (kthread+0xa4/0xb0) from [<c000ee00>] (ret_from_fork+0x14/0x34)
- wlcore: loaded
-
-Signed-off-by: Marek Vasut <marex@denx.de>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpio-mxs.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/video/tgafb.c |   18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
---- a/drivers/gpio/gpio-mxs.c
-+++ b/drivers/gpio/gpio-mxs.c
-@@ -214,7 +214,8 @@ static void __init mxs_gpio_init_gc(stru
- 	ct->regs.ack = PINCTRL_IRQSTAT(port) + MXS_CLR;
- 	ct->regs.mask = PINCTRL_IRQEN(port);
+--- a/drivers/video/tgafb.c
++++ b/drivers/video/tgafb.c
+@@ -182,6 +182,8 @@ tgafb_check_var(struct fb_var_screeninfo
  
--	irq_setup_generic_chip(gc, IRQ_MSK(32), 0, IRQ_NOREQUEST, 0);
-+	irq_setup_generic_chip(gc, IRQ_MSK(32), IRQ_GC_INIT_NESTED_LOCK,
-+			       IRQ_NOREQUEST, 0);
- }
+ 	if (var->xres_virtual != var->xres || var->yres_virtual != var->yres)
+ 		return -EINVAL;
++	if (var->xres * var->yres * (var->bits_per_pixel >> 3) > info->fix.smem_len)
++		return -EINVAL;
+ 	if (var->nonstd)
+ 		return -EINVAL;
+ 	if (1000000000 / var->pixclock > TGA_PLL_MAX_FREQ)
+@@ -262,6 +264,7 @@ tgafb_set_par(struct fb_info *info)
+ 	par->yres = info->var.yres;
+ 	par->pll_freq = pll_freq = 1000000000 / info->var.pixclock;
+ 	par->bits_per_pixel = info->var.bits_per_pixel;
++	info->fix.line_length = par->xres * (par->bits_per_pixel >> 3);
  
- static int mxs_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
+ 	tga_type = par->tga_type;
+ 
+@@ -1470,6 +1473,7 @@ tgafb_init_fix(struct fb_info *info)
+ 	int tga_bus_tc = TGA_BUS_TC(par->dev);
+ 	u8 tga_type = par->tga_type;
+ 	const char *tga_type_name = NULL;
++	unsigned memory_size;
+ 
+ 	switch (tga_type) {
+ 	case TGA_TYPE_8PLANE:
+@@ -1477,22 +1481,27 @@ tgafb_init_fix(struct fb_info *info)
+ 			tga_type_name = "Digital ZLXp-E1";
+ 		if (tga_bus_tc)
+ 			tga_type_name = "Digital ZLX-E1";
++		memory_size = 2097152;
+ 		break;
+ 	case TGA_TYPE_24PLANE:
+ 		if (tga_bus_pci)
+ 			tga_type_name = "Digital ZLXp-E2";
+ 		if (tga_bus_tc)
+ 			tga_type_name = "Digital ZLX-E2";
++		memory_size = 8388608;
+ 		break;
+ 	case TGA_TYPE_24PLUSZ:
+ 		if (tga_bus_pci)
+ 			tga_type_name = "Digital ZLXp-E3";
+ 		if (tga_bus_tc)
+ 			tga_type_name = "Digital ZLX-E3";
++		memory_size = 16777216;
+ 		break;
+ 	}
+-	if (!tga_type_name)
++	if (!tga_type_name) {
+ 		tga_type_name = "Unknown";
++		memory_size = 16777216;
++	}
+ 
+ 	strlcpy(info->fix.id, tga_type_name, sizeof(info->fix.id));
+ 
+@@ -1502,9 +1511,8 @@ tgafb_init_fix(struct fb_info *info)
+ 			    ? FB_VISUAL_PSEUDOCOLOR
+ 			    : FB_VISUAL_DIRECTCOLOR);
+ 
+-	info->fix.line_length = par->xres * (par->bits_per_pixel >> 3);
+ 	info->fix.smem_start = (size_t) par->tga_fb_base;
+-	info->fix.smem_len = info->fix.line_length * par->yres;
++	info->fix.smem_len = memory_size;
+ 	info->fix.mmio_start = (size_t) par->tga_regs_base;
+ 	info->fix.mmio_len = 512;
+ 
+@@ -1628,6 +1636,9 @@ static int tgafb_register(struct device
+ 		modedb_tga = &modedb_tc;
+ 		modedbsize_tga = 1;
+ 	}
++
++	tgafb_init_fix(info);
++
+ 	ret = fb_find_mode(&info->var, info,
+ 			   mode_option ? mode_option : mode_option_tga,
+ 			   modedb_tga, modedbsize_tga, NULL,
+@@ -1645,7 +1656,6 @@ static int tgafb_register(struct device
+ 	}
+ 
+ 	tgafb_set_par(info);
+-	tgafb_init_fix(info);
+ 
+ 	if (register_framebuffer(info) < 0) {
+ 		printk(KERN_ERR "tgafb: Could not register framebuffer\n");
 
 
