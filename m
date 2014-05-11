@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932726AbaEKTVb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:21:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48021 "EHLO
+	id S932624AbaEKTVJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:21:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47976 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932672AbaEKTV1 (ORCPT
+	with ESMTP id S932476AbaEKTVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:21:27 -0400
+	Sun, 11 May 2014 15:21:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Daley <mattd@bugfuzz.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 05/48] floppy: dont write kernel-only members to FDRAWCMD ioctl output
-Date: Sun, 11 May 2014 21:19:39 +0200
-Message-Id: <20140511191948.853109710@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>, Paul Mackerras <paulus@samba.org>,
+        Scott Wood <scottwood@freescale.com>
+Subject: [PATCH 3.14 12/83] KVM: PPC: Book3S HV: Fix KVM hang with CONFIG_KVM_XICS=n
+Date: Sun, 11 May 2014 21:19:13 +0200
+Message-Id: <20140511191908.745932527@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Matthew Daley <mattd@bugfuzz.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 2145e15e0557a01b9195d1c7199a1b92cb9be81f upstream.
+commit 7505258c5fcb0a1cc3c76a47b4cf9506d21d10e6 upstream.
 
-Do not leak kernel-only floppy_raw_cmd structure members to userspace.
-This includes the linked-list pointer and the pointer to the allocated
-DMA space.
+I noticed KVM is broken when KVM in-kernel XICS emulation
+(CONFIG_KVM_XICS) is disabled.
 
-Signed-off-by: Matthew Daley <mattd@bugfuzz.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The problem was introduced in 48eaef05 (KVM: PPC: Book3S HV: use
+xics_wake_cpu only when defined). It used CONFIG_KVM_XICS to wrap
+xics_wake_cpu, where CONFIG_PPC_ICP_NATIVE should have been
+used.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Acked-by: Scott Wood <scottwood@freescale.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/floppy.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/powerpc/kvm/book3s_hv.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -3053,7 +3053,10 @@ static int raw_cmd_copyout(int cmd, void
- 	int ret;
+--- a/arch/powerpc/kvm/book3s_hv.c
++++ b/arch/powerpc/kvm/book3s_hv.c
+@@ -86,7 +86,7 @@ static void kvmppc_fast_vcpu_kick_hv(str
  
- 	while (ptr) {
--		ret = copy_to_user(param, ptr, sizeof(*ptr));
-+		struct floppy_raw_cmd cmd = *ptr;
-+		cmd.next = NULL;
-+		cmd.kernel_data = NULL;
-+		ret = copy_to_user(param, &cmd, sizeof(cmd));
- 		if (ret)
- 			return -EFAULT;
- 		param += sizeof(struct floppy_raw_cmd);
+ 	/* CPU points to the first thread of the core */
+ 	if (cpu != me && cpu >= 0 && cpu < nr_cpu_ids) {
+-#ifdef CONFIG_KVM_XICS
++#ifdef CONFIG_PPC_ICP_NATIVE
+ 		int real_cpu = cpu + vcpu->arch.ptid;
+ 		if (paca[real_cpu].kvm_hstate.xics_phys)
+ 			xics_wake_cpu(real_cpu);
+@@ -1360,9 +1360,7 @@ static void kvmppc_start_thread(struct k
+ 	smp_wmb();
+ #if defined(CONFIG_PPC_ICP_NATIVE) && defined(CONFIG_SMP)
+ 	if (cpu != smp_processor_id()) {
+-#ifdef CONFIG_KVM_XICS
+ 		xics_wake_cpu(cpu);
+-#endif
+ 		if (vcpu->arch.ptid)
+ 			++vc->n_woken;
+ 	}
 
 
