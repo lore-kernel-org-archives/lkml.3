@@ -1,91 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326AbaEKMP3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 08:15:29 -0400
-Received: from mailp.voltaire.com ([193.47.165.129]:56347 "EHLO mellanox.co.il"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758100AbaEKMPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 08:15:24 -0400
-From: Or Gerlitz <ogerlitz@mellanox.com>
-To: roland@kernel.org, amirv@mellanox.com
-Cc: linux-rdma@vger.kernel.org, saeedm@mellanox.com,
-        Or Gerlitz <ogerlitz@mellanox.com>, Jiri Kosina <jkosina@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, netdev@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v1 for-next 0/3] IB: Use GFP_NOIO calls in IPoIB connected mode TX path 
-Date: Sun, 11 May 2014 15:15:09 +0300
-Message-Id: <1399810512-30774-1-git-send-email-ogerlitz@mellanox.com>
-X-Mailer: git-send-email 1.7.8.2
+	id S1758068AbaEKMby (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 08:31:54 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:44610 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757226AbaEKMbx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 08:31:53 -0400
+From: Jianyu Zhan <nasa4836@gmail.com>
+To: akpm@linux-foundation.org, hughd@google.com, riel@redhat.com,
+        nasa4836@gmail.com, mgorman@suse.de, zhangyanfei@cn.fujitsu.com,
+        aarcange@redhat.com, fabf@skynet.be, sasha.levin@oracle.com,
+        oleg@redhat.com, n-horiguchi@ah.jp.nec.com, iamjoonsoo.kim@lge.com,
+        kirill.shutemov@linux.intel.com, gorcunov@gmail.com, cl@linux.com,
+        dave.hansen@linux.intel.com, toshi.kani@hp.com,
+        paul.gortmaker@windriver.com, srivatsa.bhat@linux.vnet.ibm.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mm: add comment for __mod_zone_page_stat
+Date: Sun, 11 May 2014 20:31:40 +0800
+Message-Id: <1399811500-14472-1-git-send-email-nasa4836@gmail.com>
+X-Mailer: git-send-email 2.0.0-rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roland,
+>Your original __mod_zone_page_state happened to be correct;
+>but you have no understanding of why it was correct, so its
+>comment was very wrong, even after you changed the irq wording.
+>
+>This series just propagates your misunderstanding further,
+>while providing an object lesson in how not to present a series.
+>
+>Sorry, you have quickly developed an unenviable reputation for
+>patches which waste developers' time: please consider your
+>patches much more carefully before posting them.
 
-This series is a refactored form of the one posted by Jiri Kosina 
-to LKML and netdev according to the discussion that followed
-and the guidelines you provided here https://lkml.org/lkml/2014/3/5/250
+Hi, Hugh.
 
-Basically, the functionality changes introduced by this series fully 
-reside on the IB side of things, so I am only posting the actual patches 
-to linux-rdma with CC on the cover-letter to the lists that were on V0.
+I'm sorry for my misunderstanding in the previous patches. I should
+have given them more thought. I'm really sorry. {palmface} X 3
 
-Or.
+And I am really appreciated for your detailed comments and your patience
+with me such a noob;-) Today I've spent some time on digging into
+the history to figure out what is under the hood.
 
-As described in the change log of patch #2 this series comes to address 
-a problem whereby NFS client writes would enter uninterruptible sleep 
-forever. The issue happened when using NFS over IPoIB connected mode.
+>I'd prefer to let Christoph write the definitive version,
+>but my first stab at it would be:
+>
+>/*
+> * For use when we know that interrupts are disabled,
+> * or when we know that preemption is disabled and that
+> * particular counter cannot be updated from interrupt context.
+> */
 
-The problem encountered was described as follows: it's not memory
-reclamation that is the problem as such. There is an indirect dependency
-between network filesystems writing back pages and ipoib_cm_tx_init()
-due to how a kworker is used. Page reclaim cannot make forward progress
-until ipoib_cm_tx_init() succeeds and it is stuck in page reclaim itself
-waiting for network transmission. Ordinarily this situation may be
-avoided by having the caller use GFP_NOFS but ipoib_cm_tx_init()
-does not have that information.
+ Seconded. Christoph, would you please write a comment? I've written
+ a new one based on Hugh's, would you please also take a look? Thanks.
 
-To address this, we take a more general approach vs. V0 and generalize 
-the solution such that when the new QP creation flag is provided, the
-HW driver should use a GFP_NOIO for the memory allocations related
-to the new QP.
+>Once upon a time, from 2.6.16 to 2.6.32, there was indeed a relevant
+>and helpful comment in __page_set_anon_rmap():
+>        /*
+>         * nr_mapped state can be updated without turning off
+>         * interrupts because it is not modified via interrupt.
+>         */
+>        __inc_page_state(nr_mapped);
+>
+>The comment survived the replacement of nr_mapped, but eventually
+>it got cleaned away completely.
+>
+>It is safe to use the irq-unsafe __mod_zone_page_stat on counters
+>which are never modified via interrupt.
+>You are right that the comment is not good enough, but I don't trust
+>your version either.  Since percpu variables are involved, it's important
+>that preemption be disabled too (see comment above __inc_zone_state).
 
-changes from V0:
- - removed the module param for IPoIB, the connected mode code would
-   attempt to use GFP_NOIO for the QP creation and fallback to GFP_KERNEL
-   (as before) if the HW driver doesn't support that. This approach will let
-   
+Thanks for clarifying this. I checked the history, this is my understanding
+, correct me if I am wrong, thanks!
 
-Jiri Kosina (1):
-  mlx4: Enhance the QP creation path to use a given GFP directive
+__mod_zone_page_stat() should be called with irq-off, this is a strongest
+gurantee for safety. For a weaker gurantee, preemte-disable is needed and
+in this situation, the item counter in question should not be modified in
+interrupt context.
 
-Or Gerlitz (2):
-  IB: Return error when QP creation are provided for driver not supporting that
-  IB: Add a QP creation flag to allow specifying a NOIO allocation directive
+It is essential to have such gurantees, because __mod_zone_page_stat()
+is a two-step operation : read-percpu-couter-then-modify-it.
+(Need comments. Christoph, do I misunderstand it?)
 
- drivers/infiniband/hw/mlx4/cq.c                    |    6 ++--
- drivers/infiniband/hw/mlx4/mlx4_ib.h               |    1 +
- drivers/infiniband/hw/mlx4/qp.c                    |   30 +++++++++++--------
- drivers/infiniband/hw/mlx4/srq.c                   |    7 ++--
- drivers/infiniband/hw/qib/qib_qp.c                 |    3 +-
- drivers/infiniband/hw/usnic/usnic_ib_verbs.c       |    3 ++
- drivers/infiniband/ulp/ipoib/ipoib_cm.c            |   19 ++++++++++--
- drivers/net/ethernet/mellanox/mlx4/alloc.c         |   27 +++++++++--------
- drivers/net/ethernet/mellanox/mlx4/cq.c            |    4 +-
- drivers/net/ethernet/mellanox/mlx4/en_rx.c         |    6 ++--
- drivers/net/ethernet/mellanox/mlx4/en_tx.c         |    2 +-
- drivers/net/ethernet/mellanox/mlx4/icm.c           |    7 ++--
- drivers/net/ethernet/mellanox/mlx4/icm.h           |    3 +-
- drivers/net/ethernet/mellanox/mlx4/mlx4.h          |    4 +-
- drivers/net/ethernet/mellanox/mlx4/mr.c            |   17 ++++++-----
- drivers/net/ethernet/mellanox/mlx4/qp.c            |   20 ++++++------
- .../net/ethernet/mellanox/mlx4/resource_tracker.c  |    4 +-
- drivers/net/ethernet/mellanox/mlx4/srq.c           |    4 +-
- include/linux/mlx4/device.h                        |   10 ++++--
- include/rdma/ib_verbs.h                            |    1 +
- 20 files changed, 104 insertions(+), 74 deletions(-)
+For for all other call sites of __mod_zone_page_stat() in the patch,
+I think your comment is right, it is because they are not modified in
+interrupt context, so we could safely use __mod_zone_page_stat().
+ 
+But for the call site in page_add_new_anon_rmap(), I think my previous
+wording is appropriate: mlocked_vma_newpage() is only called in fault path
+by page_add_new_anon_rmap() on a *new* page, which is initially only visible
+via the pagetables, and the pte is locked while calling page_add_new_anon_rmap(),
+so we are not afraid of others seeing it a this point, not even modifying it.
+so whether is could be modified in interrupt context or not does matter, but it
+is not the key point here.
 
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
+I've renewed the patch. And in this patch, I also change page_add_new_anon_rmap to
+use __mod_zone_page_stat(), since they are quite relative to be in one patch.
+
+Thanks for your review. I am appreciated for your comments. Andrew, Christoph,
+would you please review it? Thansk.
+
+-----<8-----
+mm: use the light version __mod_zone_page_state in mlocked_vma_newpage()
+
+mlocked_vma_newpage() is only called in fault path by
+page_add_new_anon_rmap(), which is called on a *new* page.
+And such page is initially only visible via the pagetables, and the
+pte is locked while calling page_add_new_anon_rmap(), so we need not
+use an irq-safe mod_zone_page_state() here, using a light-weight version
+__mod_zone_page_state() would be OK.
+
+This patch also documents __mod_zone_page_state() and some of its
+callsites.
+
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+Suggested-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+---
+ mm/internal.h |  9 ++++++++-
+ mm/rmap.c     | 11 +++++++++++
+ mm/vmstat.c   |  5 ++++-
+ 3 files changed, 23 insertions(+), 2 deletions(-)
+
+diff --git a/mm/internal.h b/mm/internal.h
+index 07b6736..7140c9b 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -196,7 +196,14 @@ static inline int mlocked_vma_newpage(struct vm_area_struct *vma,
+ 		return 0;
+ 
+ 	if (!TestSetPageMlocked(page)) {
+-		mod_zone_page_state(page_zone(page), NR_MLOCK,
++		/*
++		 * We use the irq-unsafe __mod_zone_page_stat because
++		 * 1. this counter is not modified in interrupt context, and
++		 * 2. pte lock is held, and this a newpage, which is initially
++		 *    only visible via the pagetables. So this would exclude
++		 *    racy processes from preemting us and to modify it.
++		 */
++		__mod_zone_page_state(page_zone(page), NR_MLOCK,
+ 				    hpage_nr_pages(page));
+ 		count_vm_event(UNEVICTABLE_PGMLOCKED);
+ 	}
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 9c3e773..0700253 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -986,6 +986,12 @@ void do_page_add_anon_rmap(struct page *page,
+ {
+ 	int first = atomic_inc_and_test(&page->_mapcount);
+ 	if (first) {
++		/*
++		 * We use the irq-unsafe __{inc|mod}_zone_page_stat because
++		 * 1. these counters are not modified in interrupt context, and
++		 * 2. pte lock is held, this would exclude racy processes from
++		 *    preemting us and to modify these counters.
++		 */
+ 		if (PageTransHuge(page))
+ 			__inc_zone_page_state(page,
+ 					      NR_ANON_TRANSPARENT_HUGEPAGES);
+@@ -1077,6 +1083,11 @@ void page_remove_rmap(struct page *page)
+ 	/*
+ 	 * Hugepages are not counted in NR_ANON_PAGES nor NR_FILE_MAPPED
+ 	 * and not charged by memcg for now.
++	 *
++	 * We use the irq-unsafe __{inc|mod}_zone_page_stat because
++	 * 1. these counters are not modified in interrupt context, and
++	 * 2. pte lock is held, this would exclude racy processes from
++	 *    preemting us and to modify these counters.
+ 	 */
+ 	if (unlikely(PageHuge(page)))
+ 		goto out;
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 302dd07..e6db98d 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -207,7 +207,10 @@ void set_pgdat_percpu_threshold(pg_data_t *pgdat,
+ }
+ 
+ /*
+- * For use when we know that interrupts are disabled.
++ * For use when we know that either
++ *  1. interrupts are disabled, or
++ *  2. preemption is disabled and that particular counter cannot be
++ *     updated from interrupt context.
+  */
+ void __mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
+ 				int delta)
+-- 
+2.0.0-rc1
+
