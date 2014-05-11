@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758557AbaELCXH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 22:23:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:8857 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758541AbaELCXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758542AbaELCXD (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 11 May 2014 22:23:03 -0400
+Received: from mga01.intel.com ([192.55.52.88]:8842 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758522AbaELCW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 22:22:57 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1032,1389772800"; 
-   d="scan'208";a="530200876"
+   d="scan'208";a="530200845"
 From: Yuyang Du <yuyang.du@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, rafael.j.wysocki@intel.com,
         linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
@@ -19,9 +19,9 @@ Cc: arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
         ajaya.durg@intel.com, harinarayanan.seshadri@intel.com,
         jacob.jun.pan@linux.intel.com, fengguang.wu@intel.com,
         yuyang.du@intel.com
-Subject: [RFC PATCH 12/12 v2] Intercept RT scheduler
-Date: Mon, 12 May 2014 02:17:01 +0800
-Message-Id: <1399832221-8314-13-git-send-email-yuyang.du@intel.com>
+Subject: [RFC PATCH 06/12 v2] Attach CPU topology to specify each sched_domain's workload consolidation
+Date: Mon, 12 May 2014 02:16:55 +0800
+Message-Id: <1399832221-8314-7-git-send-email-yuyang.du@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1399832221-8314-1-git-send-email-yuyang.du@intel.com>
 References: <1399832221-8314-1-git-send-email-yuyang.du@intel.com>
@@ -29,84 +29,188 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We intercept load balancing to contain the load and load balancing in
-the consolidated CPUs according to our consolidating mechanism.
-
-In RT scheduler, we also skip pulling/selecting task to the idle
-non-consolidated CPUs. This is pretty provocative.
+Defined SD_WORKLOAD_CONSOLIDATION flag in sched_domain. When this flag is
+set, the workload consolidation applies to that domain. In addition, a
+consolidating_coeff is defined in sched_domain to specify the degree of
+consolidation in that domain.
 
 Signed-off-by: Yuyang Du <yuyang.du@intel.com>
 ---
- kernel/sched/rt.c |   25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ include/linux/sched.h    |   13 +++++++++++++
+ include/linux/topology.h |   16 ++++++++++++++++
+ kernel/sched/core.c      |   41 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 70 insertions(+)
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index bd2267a..f8141fb 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1217,6 +1217,9 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
- {
- 	struct task_struct *curr;
- 	struct rq *rq;
-+#ifdef CONFIG_WORKLOAD_CONSOLIDATION
-+	int do_find = 0;
-+#endif
- 
- 	if (p->nr_cpus_allowed == 1)
- 		goto out;
-@@ -1230,6 +1233,11 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
- 	rcu_read_lock();
- 	curr = ACCESS_ONCE(rq->curr); /* unlocked access */
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 25f54c7..f3f7d4a 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -877,6 +877,12 @@ enum cpu_idle_type {
+ #define SD_OVERLAP		0x2000	/* sched_domains of this level overlap */
+ #define SD_NUMA			0x4000	/* cross-node balancing */
  
 +#ifdef CONFIG_WORKLOAD_CONSOLIDATION
-+	if (workload_consolidation_cpu_shielded(cpu))
-+		do_find = 1;
-+#endif
-+
- 	/*
- 	 * If the current task on @p's runqueue is an RT task, then
- 	 * try to see if we can wake this RT task up on another
-@@ -1252,9 +1260,15 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
- 	 * This test is optimistic, if we get it wrong the load-balancer
- 	 * will have to sort it out.
- 	 */
-+#ifdef CONFIG_WORKLOAD_CONSOLIDATION
-+	if (do_find || (curr && unlikely(rt_task(curr)) &&
-+	    (curr->nr_cpus_allowed < 2 ||
-+	     curr->prio <= p->prio))) {
++#define SD_WORKLOAD_CONSOLIDATION	0x8000	/* Higher concurrency in front */
 +#else
- 	if (curr && unlikely(rt_task(curr)) &&
- 	    (curr->nr_cpus_allowed < 2 ||
- 	     curr->prio <= p->prio)) {
-+#endif
- 		int target = find_lowest_rq(p);
- 
- 		if (target != -1)
-@@ -1460,6 +1474,12 @@ static int find_lowest_rq(struct task_struct *task)
- 	if (!cpupri_find(&task_rq(task)->rd->cpupri, task, lowest_mask))
- 		return -1; /* No targets found */
- 
-+#ifdef CONFIG_WORKLOAD_CONSOLIDATION
-+	workload_consolidation_nonshielded_mask(this_cpu, lowest_mask);
-+	if (!cpumask_weight(lowest_mask))
-+		return -1;
++#define SD_WORKLOAD_CONSOLIDATION	0
 +#endif
 +
- 	/*
- 	 * At this point we have built a mask of cpus representing the
- 	 * lowest priority tasks in the system.  Now we want to elect
-@@ -1687,6 +1707,11 @@ static int pull_rt_task(struct rq *this_rq)
- 	if (likely(!rt_overloaded(this_rq)))
- 		return 0;
+ extern int __weak arch_sd_sibiling_asym_packing(void);
+ 
+ struct sched_domain_attr {
+@@ -960,6 +966,13 @@ struct sched_domain {
+ 		struct rcu_head rcu;	/* used during destruction */
+ 	};
  
 +#ifdef CONFIG_WORKLOAD_CONSOLIDATION
-+	if (workload_consolidation_cpu_shielded(this_cpu))
-+		return 0;
++	unsigned int total_groups;			/* total groups number */
++	unsigned int group_number;			/* this CPU's group sequence */
++	unsigned int consolidating_coeff;	/* consolidating coefficient */
++	struct sched_group *first_group;	/* ordered by CPU number */
 +#endif
 +
+ 	unsigned int span_weight;
  	/*
- 	 * Match the barrier from rt_set_overloaded; this guarantees that if we
- 	 * see overloaded we must also see the rto_mask bit.
+ 	 * Span of all CPUs in this domain.
+diff --git a/include/linux/topology.h b/include/linux/topology.h
+index 7062330..334f83e 100644
+--- a/include/linux/topology.h
++++ b/include/linux/topology.h
+@@ -66,6 +66,16 @@ int arch_update_cpu_topology(void);
+ #define PENALTY_FOR_NODE_WITH_CPUS	(1)
+ #endif
+ 
++#ifdef CONFIG_WORKLOAD_CONSOLIDATION
++#ifndef WORKLOAD_CONSOLIDATION_INIT
++#define WORKLOAD_CONSOLIDATION_INIT(n) .consolidating_coeff = (n),
++#endif
++#else
++#ifndef WORKLOAD_CONSOLIDATION_INIT
++#define WORKLOAD_CONSOLIDATION_INIT(n)
++#endif
++#endif
++
+ /*
+  * Below are the 3 major initializers used in building sched_domains:
+  * SD_SIBLING_INIT, for SMT domains
+@@ -102,12 +112,14 @@ int arch_update_cpu_topology(void);
+ 				| 0*SD_SERIALIZE			\
+ 				| 0*SD_PREFER_SIBLING			\
+ 				| arch_sd_sibling_asym_packing()	\
++				| 0*SD_WORKLOAD_CONSOLIDATION	\
+ 				,					\
+ 	.last_balance		= jiffies,				\
+ 	.balance_interval	= 1,					\
+ 	.smt_gain		= 1178,	/* 15% */			\
+ 	.max_newidle_lb_cost	= 0,					\
+ 	.next_decay_max_lb_cost	= jiffies,				\
++	WORKLOAD_CONSOLIDATION_INIT(0)				\
+ }
+ #endif
+ #endif /* CONFIG_SCHED_SMT */
+@@ -134,11 +146,13 @@ int arch_update_cpu_topology(void);
+ 				| 0*SD_SHARE_CPUPOWER			\
+ 				| 1*SD_SHARE_PKG_RESOURCES		\
+ 				| 0*SD_SERIALIZE			\
++				| 1*SD_WORKLOAD_CONSOLIDATION	\
+ 				,					\
+ 	.last_balance		= jiffies,				\
+ 	.balance_interval	= 1,					\
+ 	.max_newidle_lb_cost	= 0,					\
+ 	.next_decay_max_lb_cost	= jiffies,				\
++	WORKLOAD_CONSOLIDATION_INIT(180)			\
+ }
+ #endif
+ #endif /* CONFIG_SCHED_MC */
+@@ -167,11 +181,13 @@ int arch_update_cpu_topology(void);
+ 				| 0*SD_SHARE_PKG_RESOURCES		\
+ 				| 0*SD_SERIALIZE			\
+ 				| 1*SD_PREFER_SIBLING			\
++				| 1*SD_WORKLOAD_CONSOLIDATION	\
+ 				,					\
+ 	.last_balance		= jiffies,				\
+ 	.balance_interval	= 1,					\
+ 	.max_newidle_lb_cost	= 0,					\
+ 	.next_decay_max_lb_cost	= jiffies,				\
++	WORKLOAD_CONSOLIDATION_INIT(180)			\
+ }
+ #endif
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 0236455..cd92f2d 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4843,7 +4843,11 @@ set_table_entry(struct ctl_table *entry,
+ static struct ctl_table *
+ sd_alloc_ctl_domain_table(struct sched_domain *sd)
+ {
++#ifdef CONFIG_WORKLOAD_CONSOLIDATION
++	struct ctl_table *table = sd_alloc_ctl_entry(15);
++#else
+ 	struct ctl_table *table = sd_alloc_ctl_entry(14);
++#endif
+ 
+ 	if (table == NULL)
+ 		return NULL;
+@@ -4876,7 +4880,13 @@ sd_alloc_ctl_domain_table(struct sched_domain *sd)
+ 		sizeof(long), 0644, proc_doulongvec_minmax, false);
+ 	set_table_entry(&table[12], "name", sd->name,
+ 		CORENAME_MAX_SIZE, 0444, proc_dostring, false);
++#ifdef CONFIG_WORKLOAD_CONSOLIDATION
++	set_table_entry(&table[13], "consolidating_coeff", &sd->consolidating_coeff,
++		sizeof(int), 0644, proc_dointvec, false);
++	/* &table[14] is terminator */
++#else
+ 	/* &table[13] is terminator */
++#endif
+ 
+ 	return table;
+ }
+@@ -5497,6 +5507,33 @@ static void update_top_cache_domain(int cpu)
+ 	rcu_assign_pointer(per_cpu(sd_asym, cpu), sd);
+ }
+ 
++#ifdef CONFIG_WORKLOAD_CONSOLIDATION
++static void update_domain_extra_info(struct sched_domain *sd)
++{
++	while (sd) {
++		int i = 0, j = 0, first, min = INT_MAX;
++		struct sched_group *group;
++
++		group = sd->groups;
++		first = group_first_cpu(group);
++		do {
++			int k = group_first_cpu(group);
++			i += 1;
++			if (k < first)
++				j += 1;
++			if (k < min) {
++				sd->first_group = group;
++				min = k;
++			}
++		} while (group = group->next, group != sd->groups);
++
++		sd->total_groups = i;
++		sd->group_number = j;
++		sd = sd->parent;
++	}
++}
++#endif
++
+ /*
+  * Attach the domain 'sd' to 'cpu' as its base domain. Callers must
+  * hold the hotplug lock.
+@@ -5545,6 +5582,10 @@ cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
+ 	destroy_sched_domains(tmp, cpu);
+ 
+ 	update_top_cache_domain(cpu);
++
++#ifdef CONFIG_WORKLOAD_CONSOLIDATION
++	update_domain_extra_info(sd);
++#endif
+ }
+ 
+ /* cpus with isolated domains */
 -- 
 1.7.9.5
 
