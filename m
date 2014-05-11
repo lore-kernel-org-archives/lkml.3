@@ -1,182 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932986AbaEKTWc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:22:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48110 "EHLO
+	id S934178AbaEKTxP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:53:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48113 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932924AbaEKTW1 (ORCPT
+	with ESMTP id S932964AbaEKTW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:22:27 -0400
+	Sun, 11 May 2014 15:22:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.10 15/48] powerpc/tm: Disable IRQ in tm_recheckpoint
-Date: Sun, 11 May 2014 21:19:49 +0200
-Message-Id: <20140511191950.197880405@linuxfoundation.org>
+        Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-ide@vger.kernel.org
+Subject: [PATCH 3.14 36/83] ahci: Ensure "MSI Revert to Single Message" mode is not enforced
+Date: Sun, 11 May 2014 21:19:37 +0200
+Message-Id: <20140511191911.954666115@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Alexander Gordeev <agordeev@redhat.com>
 
-commit e6b8fd028b584ffca7a7255b8971f254932c9fce upstream.
+commit ab0f9e78b97f5193dd38b3757b42b6fbded05fb7 upstream.
 
-We can't take an IRQ when we're about to do a trechkpt as our GPR state is set
-to user GPR values.
+The AHCI specification allows hardware to choose to revert to
+single MSI mode when fewer messages are allocated than requested.
+Yet, at least ICH10 chipset reverts to single MSI mode even when
+enough messages are allocated in some cases (see below).
 
-We've hit this when running some IBM Java stress tests in the lab resulting in
-the following dump:
+This update forces the driver to not rely on initialization of
+multiple MSIs mode alone and always check if "MSI Revert to
+Single Message" (MRSM) mode was enforced by the controller and
+fallback to the single MSI mode in case it did.
 
-  cpu 0x3f: Vector: 700 (Program Check) at [c000000007eb3d40]
-      pc: c000000000050074: restore_gprs+0xc0/0x148
-      lr: 00000000b52a8184
-      sp: ac57d360
-     msr: 8000000100201030
-    current = 0xc00000002c500000
-    paca    = 0xc000000007dbfc00     softe: 0     irq_happened: 0x00
-      pid   = 34535, comm = Pooled Thread #
-  R00 = 00000000b52a8184   R16 = 00000000b3e48fda
-  R01 = 00000000ac57d360   R17 = 00000000ade79bd8
-  R02 = 00000000ac586930   R18 = 000000000fac9bcc
-  R03 = 00000000ade60000   R19 = 00000000ac57f930
-  R04 = 00000000f6624918   R20 = 00000000ade79be8
-  R05 = 00000000f663f238   R21 = 00000000ac218a54
-  R06 = 0000000000000002   R22 = 000000000f956280
-  R07 = 0000000000000008   R23 = 000000000000007e
-  R08 = 000000000000000a   R24 = 000000000000000c
-  R09 = 00000000b6e69160   R25 = 00000000b424cf00
-  R10 = 0000000000000181   R26 = 00000000f66256d4
-  R11 = 000000000f365ec0   R27 = 00000000b6fdcdd0
-  R12 = 00000000f66400f0   R28 = 0000000000000001
-  R13 = 00000000ada71900   R29 = 00000000ade5a300
-  R14 = 00000000ac2185a8   R30 = 00000000f663f238
-  R15 = 0000000000000004   R31 = 00000000f6624918
-  pc  = c000000000050074 restore_gprs+0xc0/0x148
-  cfar= c00000000004fe28 dont_restore_vec+0x1c/0x1a4
-  lr  = 00000000b52a8184
-  msr = 8000000100201030   cr  = 24804888
-  ctr = 0000000000000000   xer = 0000000000000000   trap =  700
+That prevents a situation when the driver configured multiple
+per-port IRQ handlers, but the controller sends all port's
+interrupts to a single IRQ, which could easily screw up the
+interrupt handling and lead to delays and possibly crashes.
 
-This moves tm_recheckpoint to a C function and moves the tm_restore_sprs into
-that function.  It then adds IRQ disabling over the trechkpt critical section.
-It also sets the TEXASR FS in the signals code to ensure this is never set now
-that we explictly write the TM sprs in tm_recheckpoint.
+The fix was tested on a 6-port controller that successfully
+reverted to the single MSI mode:
 
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+00:1f.2 SATA controller: Intel Corporation 82801JI (ICH10 Family) SATA
+AHCI Controller (prog-if 01 [AHCI 1.0])
+	Subsystem: Super Micro Computer Inc Device 10a7
+	Flags: bus master, 66MHz, medium devsel, latency 0, IRQ 101
+	I/O ports at f110 [size=8]
+	I/O ports at f100 [size=4]
+	I/O ports at f0f0 [size=8]
+	I/O ports at f0e0 [size=4]
+	I/O ports at f020 [size=32]
+	Memory at fbf00000 (32-bit, non-prefetchable) [size=2K]
+	Capabilities: [80] MSI: Enable+ Count=1/16 Maskable- 64bit-
+	Capabilities: [70] Power Management version 3
+	Capabilities: [a8] SATA HBA v1.0
+	Capabilities: [b0] PCI Advanced Features
+	Kernel driver in use: ahci
+
+With 6 ports just 8 MSI vectors should be enough, but the adapter
+enforces the MRSM mode when less than 16 vectors are written to
+the Multiple Messages Enable PCI register. I instigated MRSM mode
+by forcing @nvec to 8 in ahci_init_interrupts().
+
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-ide@vger.kernel.org
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/reg.h  |    1 +
- arch/powerpc/kernel/process.c   |   34 ++++++++++++++++++++++++++++------
- arch/powerpc/kernel/signal_32.c |    2 ++
- arch/powerpc/kernel/signal_64.c |    2 ++
- arch/powerpc/kernel/tm.S        |    2 +-
- 5 files changed, 34 insertions(+), 7 deletions(-)
+ drivers/ata/ahci.c |    9 ++++++++-
+ drivers/ata/ahci.h |    1 +
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/include/asm/reg.h
-+++ b/arch/powerpc/include/asm/reg.h
-@@ -208,6 +208,7 @@
- #define SPRN_ACOP	0x1F	/* Available Coprocessor Register */
- #define SPRN_TFIAR	0x81	/* Transaction Failure Inst Addr   */
- #define SPRN_TEXASR	0x82	/* Transaction EXception & Summary */
-+#define   TEXASR_FS	__MASK(63-36)	/* Transaction Failure Summary */
- #define SPRN_TEXASRU	0x83	/* ''	   ''	   ''	 Upper 32  */
- #define SPRN_TFHAR	0x80	/* Transaction Failure Handler Addr */
- #define SPRN_CTRLF	0x088
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -523,6 +523,31 @@ out_and_saveregs:
- 	tm_save_sprs(thr);
- }
- 
-+extern void __tm_recheckpoint(struct thread_struct *thread,
-+			      unsigned long orig_msr);
-+
-+void tm_recheckpoint(struct thread_struct *thread,
-+		     unsigned long orig_msr)
-+{
-+	unsigned long flags;
-+
-+	/* We really can't be interrupted here as the TEXASR registers can't
-+	 * change and later in the trecheckpoint code, we have a userspace R1.
-+	 * So let's hard disable over this region.
-+	 */
-+	local_irq_save(flags);
-+	hard_irq_disable();
-+
-+	/* The TM SPRs are restored here, so that TEXASR.FS can be set
-+	 * before the trecheckpoint and no explosion occurs.
-+	 */
-+	tm_restore_sprs(thread);
-+
-+	__tm_recheckpoint(thread, orig_msr);
-+
-+	local_irq_restore(flags);
-+}
-+
- static inline void tm_recheckpoint_new_task(struct task_struct *new)
- {
- 	unsigned long msr;
-@@ -541,13 +566,10 @@ static inline void tm_recheckpoint_new_t
- 	if (!new->thread.regs)
- 		return;
- 
--	/* The TM SPRs are restored here, so that TEXASR.FS can be set
--	 * before the trecheckpoint and no explosion occurs.
--	 */
--	tm_restore_sprs(&new->thread);
--
--	if (!MSR_TM_ACTIVE(new->thread.regs->msr))
-+	if (!MSR_TM_ACTIVE(new->thread.regs->msr)){
-+		tm_restore_sprs(&new->thread);
- 		return;
-+	}
- 	msr = new->thread.tm_orig_msr;
- 	/* Recheckpoint to restore original checkpointed register state. */
- 	TM_DEBUG("*** tm_recheckpoint of pid %d "
---- a/arch/powerpc/kernel/signal_32.c
-+++ b/arch/powerpc/kernel/signal_32.c
-@@ -863,6 +863,8 @@ static long restore_tm_user_regs(struct
- 	 * transactional versions should be loaded.
- 	 */
- 	tm_enable();
-+	/* Make sure the transaction is marked as failed */
-+	current->thread.tm_texasr |= TEXASR_FS;
- 	/* This loads the checkpointed FP/VEC state, if used */
- 	tm_recheckpoint(&current->thread, msr);
- 	/* Get the top half of the MSR */
---- a/arch/powerpc/kernel/signal_64.c
-+++ b/arch/powerpc/kernel/signal_64.c
-@@ -513,6 +513,8 @@ static long restore_tm_sigcontexts(struc
- 	}
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -1163,7 +1163,7 @@ static inline void ahci_gtf_filter_worka
  #endif
- 	tm_enable();
-+	/* Make sure the transaction is marked as failed */
-+	current->thread.tm_texasr |= TEXASR_FS;
- 	/* This loads the checkpointed FP/VEC state, if used */
- 	tm_recheckpoint(&current->thread, msr);
  
---- a/arch/powerpc/kernel/tm.S
-+++ b/arch/powerpc/kernel/tm.S
-@@ -296,7 +296,7 @@ dont_backup_fp:
- 	 *	Call with IRQs off, stacks get all out of sync for
- 	 *	some periods in here!
- 	 */
--_GLOBAL(tm_recheckpoint)
-+_GLOBAL(__tm_recheckpoint)
- 	mfcr	r5
- 	mflr	r0
- 	std	r5, 8(r1)
+ static int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
+-			 struct ahci_host_priv *hpriv)
++				struct ahci_host_priv *hpriv)
+ {
+ 	int rc, nvec;
+ 
+@@ -1189,6 +1189,13 @@ static int ahci_init_interrupts(struct p
+ 	else if (rc > 0)
+ 		goto single_msi;
+ 
++	/* fallback to single MSI mode if the controller enforced MRSM mode */
++	if (readl(hpriv->mmio + HOST_CTL) & HOST_MRSM) {
++		pci_disable_msi(pdev);
++		printk(KERN_INFO "ahci: MRSM is on, fallback to single MSI\n");
++		goto single_msi;
++	}
++
+ 	return nvec;
+ 
+ single_msi:
+--- a/drivers/ata/ahci.h
++++ b/drivers/ata/ahci.h
+@@ -91,6 +91,7 @@ enum {
+ 	/* HOST_CTL bits */
+ 	HOST_RESET		= (1 << 0),  /* reset controller; self-clear */
+ 	HOST_IRQ_EN		= (1 << 1),  /* global IRQ enable */
++	HOST_MRSM		= (1 << 2),  /* MSI Revert to Single Message */
+ 	HOST_AHCI_EN		= (1 << 31), /* AHCI enabled */
+ 
+ 	/* HOST_CAP bits */
 
 
