@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934055AbaEKT0s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:26:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48516 "EHLO
+	id S934097AbaEKT1B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:27:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48546 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964785AbaEKT0j (ORCPT
+	with ESMTP id S932809AbaEKT04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:26:39 -0400
+	Sun, 11 May 2014 15:26:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Huacai Chen <chenhc@lemote.com>, John Crispin <john@phrozen.org>,
-        "Steven J. Hill" <Steven.Hill@imgtec.com>,
-        Aurelien Jarno <aurelien@aurel32.net>,
-        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Subject: [PATCH 3.4 04/22] MIPS: Hibernate: Flush TLB entries in swsusp_arch_resume()
-Date: Sun, 11 May 2014 21:21:12 +0200
-Message-Id: <20140511192104.339770099@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 3.4 09/22] matroxfb: restore the registers M_ACCESS and M_PITCH
+Date: Sun, 11 May 2014 21:21:17 +0200
+Message-Id: <20140511192105.038449572@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511192103.733723493@linuxfoundation.org>
 References: <20140511192103.733723493@linuxfoundation.org>
@@ -30,45 +27,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huacai Chen <chenhc@lemote.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit c14af233fbe279d0e561ecf84f1208b1bae087ef upstream.
+commit a772d4736641ec1b421ad965e13457c17379fc86 upstream.
 
-The original MIPS hibernate code flushes cache and TLB entries in
-swsusp_arch_resume(). But they are removed in Commit 44eeab67416711
-(MIPS: Hibernation: Remove SMP TLB and cacheflushing code.). A cross-
-CPU flush is surely unnecessary because all but the local CPU have
-already been disabled. But a local flush (at least the TLB flush) is
-needed. When we do hibernation on Loongson-3 with an E1000E NIC, it is
-very easy to produce a kernel panic (kernel page fault, or unaligned
-access). The root cause is E1000E driver use vzalloc_node() to allocate
-pages, the stale TLB entries of the booting kernel will be misused by
-the resumed target kernel.
+When X11 is running and the user switches back to console, the card
+modifies the content of registers M_MACCESS and M_PITCH in periodic
+intervals.
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Cc: John Crispin <john@phrozen.org>
-Cc: Steven J. Hill <Steven.Hill@imgtec.com>
-Cc: Aurelien Jarno <aurelien@aurel32.net>
-Cc: linux-mips@linux-mips.org
-Cc: Fuxin Zhang <zhangfx@lemote.com>
-Cc: Zhangjin Wu <wuzhangjin@gmail.com>
-Patchwork: https://patchwork.linux-mips.org/patch/6643/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+This patch fixes it by restoring the content of these registers before
+issuing any accelerator command.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/power/hibernate.S |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/video/matrox/matroxfb_accel.c |   38 +++++++++++++++++++++++++---------
+ drivers/video/matrox/matroxfb_base.h  |    2 +
+ 2 files changed, 30 insertions(+), 10 deletions(-)
 
---- a/arch/mips/power/hibernate.S
-+++ b/arch/mips/power/hibernate.S
-@@ -44,6 +44,7 @@ LEAF(swsusp_arch_resume)
- 	bne t1, t3, 1b
- 	PTR_L t0, PBE_NEXT(t0)
- 	bnez t0, 0b
-+	jal local_flush_tlb_all /* Avoid TLB mismatch after kernel resume */
- 	PTR_LA t0, saved_regs
- 	PTR_L ra, PT_R31(t0)
- 	PTR_L sp, PT_R29(t0)
+--- a/drivers/video/matrox/matroxfb_accel.c
++++ b/drivers/video/matrox/matroxfb_accel.c
+@@ -192,10 +192,18 @@ void matrox_cfbX_init(struct matrox_fb_i
+ 	minfo->accel.m_dwg_rect = M_DWG_TRAP | M_DWG_SOLID | M_DWG_ARZERO | M_DWG_SGNZERO | M_DWG_SHIFTZERO;
+ 	if (isMilleniumII(minfo)) minfo->accel.m_dwg_rect |= M_DWG_TRANSC;
+ 	minfo->accel.m_opmode = mopmode;
++	minfo->accel.m_access = maccess;
++	minfo->accel.m_pitch = mpitch;
+ }
+ 
+ EXPORT_SYMBOL(matrox_cfbX_init);
+ 
++static void matrox_accel_restore_maccess(struct matrox_fb_info *minfo)
++{
++	mga_outl(M_MACCESS, minfo->accel.m_access);
++	mga_outl(M_PITCH, minfo->accel.m_pitch);
++}
++
+ static void matrox_accel_bmove(struct matrox_fb_info *minfo, int vxres, int sy,
+ 			       int sx, int dy, int dx, int height, int width)
+ {
+@@ -207,7 +215,8 @@ static void matrox_accel_bmove(struct ma
+ 	CRITBEGIN
+ 
+ 	if ((dy < sy) || ((dy == sy) && (dx <= sx))) {
+-		mga_fifo(2);
++		mga_fifo(4);
++		matrox_accel_restore_maccess(minfo);
+ 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_SGNZERO |
+ 			 M_DWG_BFCOL | M_DWG_REPLACE);
+ 		mga_outl(M_AR5, vxres);
+@@ -215,7 +224,8 @@ static void matrox_accel_bmove(struct ma
+ 		start = sy*vxres+sx+curr_ydstorg(minfo);
+ 		end = start+width;
+ 	} else {
+-		mga_fifo(3);
++		mga_fifo(5);
++		matrox_accel_restore_maccess(minfo);
+ 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_BFCOL | M_DWG_REPLACE);
+ 		mga_outl(M_SGN, 5);
+ 		mga_outl(M_AR5, -vxres);
+@@ -224,7 +234,8 @@ static void matrox_accel_bmove(struct ma
+ 		start = end+width;
+ 		dy += height-1;
+ 	}
+-	mga_fifo(4);
++	mga_fifo(6);
++	matrox_accel_restore_maccess(minfo);
+ 	mga_outl(M_AR0, end);
+ 	mga_outl(M_AR3, start);
+ 	mga_outl(M_FXBNDRY, ((dx+width)<<16) | dx);
+@@ -246,7 +257,8 @@ static void matrox_accel_bmove_lin(struc
+ 	CRITBEGIN
+ 
+ 	if ((dy < sy) || ((dy == sy) && (dx <= sx))) {
+-		mga_fifo(2);
++		mga_fifo(4);
++		matrox_accel_restore_maccess(minfo);
+ 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_SGNZERO |
+ 			M_DWG_BFCOL | M_DWG_REPLACE);
+ 		mga_outl(M_AR5, vxres);
+@@ -254,7 +266,8 @@ static void matrox_accel_bmove_lin(struc
+ 		start = sy*vxres+sx+curr_ydstorg(minfo);
+ 		end = start+width;
+ 	} else {
+-		mga_fifo(3);
++		mga_fifo(5);
++		matrox_accel_restore_maccess(minfo);
+ 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_BFCOL | M_DWG_REPLACE);
+ 		mga_outl(M_SGN, 5);
+ 		mga_outl(M_AR5, -vxres);
+@@ -263,7 +276,8 @@ static void matrox_accel_bmove_lin(struc
+ 		start = end+width;
+ 		dy += height-1;
+ 	}
+-	mga_fifo(5);
++	mga_fifo(7);
++	matrox_accel_restore_maccess(minfo);
+ 	mga_outl(M_AR0, end);
+ 	mga_outl(M_AR3, start);
+ 	mga_outl(M_FXBNDRY, ((dx+width)<<16) | dx);
+@@ -298,7 +312,8 @@ static void matroxfb_accel_clear(struct
+ 
+ 	CRITBEGIN
+ 
+-	mga_fifo(5);
++	mga_fifo(7);
++	matrox_accel_restore_maccess(minfo);
+ 	mga_outl(M_DWGCTL, minfo->accel.m_dwg_rect | M_DWG_REPLACE);
+ 	mga_outl(M_FCOL, color);
+ 	mga_outl(M_FXBNDRY, ((sx + width) << 16) | sx);
+@@ -341,7 +356,8 @@ static void matroxfb_cfb4_clear(struct m
+ 	width >>= 1;
+ 	sx >>= 1;
+ 	if (width) {
+-		mga_fifo(5);
++		mga_fifo(7);
++		matrox_accel_restore_maccess(minfo);
+ 		mga_outl(M_DWGCTL, minfo->accel.m_dwg_rect | M_DWG_REPLACE2);
+ 		mga_outl(M_FCOL, bgx);
+ 		mga_outl(M_FXBNDRY, ((sx + width) << 16) | sx);
+@@ -415,7 +431,8 @@ static void matroxfb_1bpp_imageblit(stru
+ 
+ 	CRITBEGIN
+ 
+-	mga_fifo(3);
++	mga_fifo(5);
++	matrox_accel_restore_maccess(minfo);
+ 	if (easy)
+ 		mga_outl(M_DWGCTL, M_DWG_ILOAD | M_DWG_SGNZERO | M_DWG_SHIFTZERO | M_DWG_BMONOWF | M_DWG_LINEAR | M_DWG_REPLACE);
+ 	else
+@@ -425,7 +442,8 @@ static void matroxfb_1bpp_imageblit(stru
+ 	fxbndry = ((xx + width - 1) << 16) | xx;
+ 	mmio = minfo->mmio.vbase;
+ 
+-	mga_fifo(6);
++	mga_fifo(8);
++	matrox_accel_restore_maccess(minfo);
+ 	mga_writel(mmio, M_FXBNDRY, fxbndry);
+ 	mga_writel(mmio, M_AR0, ar0);
+ 	mga_writel(mmio, M_AR3, 0);
+--- a/drivers/video/matrox/matroxfb_base.h
++++ b/drivers/video/matrox/matroxfb_base.h
+@@ -307,6 +307,8 @@ struct matrox_accel_data {
+ #endif
+ 	u_int32_t	m_dwg_rect;
+ 	u_int32_t	m_opmode;
++	u_int32_t	m_access;
++	u_int32_t	m_pitch;
+ };
+ 
+ struct v4l2_queryctrl;
 
 
