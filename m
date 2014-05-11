@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758044AbaEKTxn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:53:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48102 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932875AbaEKTWW (ORCPT
+	id S1758140AbaEKTx4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:53:56 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:37445 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758075AbaEKTxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:22:22 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.10 14/48] powerpc/compat: 32-bit little endian machine name is ppcle, not ppc
-Date: Sun, 11 May 2014 21:19:48 +0200
-Message-Id: <20140511191950.074549894@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Sun, 11 May 2014 15:53:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <ea072022-5c98-4b69-b0e1-6beff47fa5e1@googlegroups.com>
+References: <1399173287.6962.3.camel@phoenix>
+	<CABjd4Yw=U4S0H4bqhrnuHbt3hYVke7GbOeGgPpVJfGhLJ=iWyQ@mail.gmail.com>
+	<ea072022-5c98-4b69-b0e1-6beff47fa5e1@googlegroups.com>
+Date: Sun, 11 May 2014 23:53:52 +0400
+Message-ID: <CABjd4YyPsNP3YT8Y7BoS-SMe8=dkZDs=dj7vcvL5soLNVZ_3aQ@mail.gmail.com>
+Subject: Re: [PATCH RESEND] irqchip: vt8500: Properly mask the interrupt in irq_mask()
+From: Alexey Charkov <alchark@gmail.com>
+To: "VT8500/WM8505 Linux Kernel" 
+	<vt8500-wm8505-linux-kernel@googlegroups.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Tony Prisk <linux@prisktech.co.nz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+2014-05-11 23:29 GMT+04:00 lautriv <lautriv.himself@gmail.com>:
+> Alexey, i wonder how you can tell "all works fine" since 8850 is still
+> vomiting a bunch when it comes to I2C or GPIO. Maybe i missed some changes
+> there ?
 
-------------------
+I've never noticed anything like that on my machine... Note though
+that I don't use I2C actively (or at all), and I'm currently on
+mainline 3.15-rc2 with just Rhine patches on top (upstream for 3.16)
+and some changes in dts to suit my netbook. GPIO works fine for me -
+I've only applied another one-liner to make 'echo high > direction'
+work (also upstream now).
 
-From: Anton Blanchard <anton@samba.org>
+I've got a fully functioning Fedora 20 on my WM8850 (except sound and
+other known-missing parts, of course). It's updating KDE4 as I type
+:-)
 
-commit 422b9b9684db3c511e65c91842275c43f5910ae9 upstream.
-
-I noticed this when testing setarch. No, we don't magically
-support a big endian userspace on a little endian kernel.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/powerpc/include/asm/compat.h |    4 ++++
- 1 file changed, 4 insertions(+)
-
---- a/arch/powerpc/include/asm/compat.h
-+++ b/arch/powerpc/include/asm/compat.h
-@@ -8,7 +8,11 @@
- #include <linux/sched.h>
- 
- #define COMPAT_USER_HZ		100
-+#ifdef __BIG_ENDIAN__
- #define COMPAT_UTS_MACHINE	"ppc\0\0"
-+#else
-+#define COMPAT_UTS_MACHINE	"ppcle\0\0"
-+#endif
- 
- typedef u32		compat_size_t;
- typedef s32		compat_ssize_t;
-
-
+Best,
+Alexey
