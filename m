@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933807AbaEKTZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:25:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48391 "EHLO
+	id S934100AbaEKTiU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:38:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48401 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933770AbaEKTZV (ORCPT
+	with ESMTP id S933770AbaEKTZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:25:21 -0400
+	Sun, 11 May 2014 15:25:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.14 65/83] dm transaction manager: fix corruption due to non-atomic transaction commit
-Date: Sun, 11 May 2014 21:20:06 +0200
-Message-Id: <20140511191915.374070188@linuxfoundation.org>
+        Marian Csontos <mcsontos@redhat.com>, Joe Thornber <ejt@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.14 68/83] dm cache: fix a lock-inversion
+Date: Sun, 11 May 2014 21:20:09 +0200
+Message-Id: <20140511191915.780719435@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -28,154 +29,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joe Thornber <ejt@redhat.com>
 
-commit a9d45396f5956d0b615c7ae3b936afd888351a47 upstream.
+commit 0596661f0a16d9d69bf1033320e70b6ff52b5e81 upstream.
 
-The persistent-data library used by dm-thin, dm-cache, etc is
-transactional.  If anything goes wrong, such as an io error when writing
-new metadata or a power failure, then we roll back to the last
-transaction.
+When suspending a cache the policy is walked and the individual policy
+hints written to the metadata via sync_metadata().  This led to this
+lock order:
 
-Atomicity when committing a transaction is achieved by:
+      policy->lock
+        cache_metadata->root_lock
 
-a) Never overwriting data from the previous transaction.
-b) Writing the superblock last, after all other metadata has hit the
-   disk.
+When loading the cache target the policy is populated while the metadata
+lock is held:
 
-This commit and the following commit ("dm: take care to copy the space
-map roots before locking the superblock") fix a bug associated with (b).
-When committing it was possible for the superblock to still be written
-in spite of an io error occurring during the preceeding metadata flush.
-With these commits we're careful not to take the write lock out on the
-superblock until after the metadata flush has completed.
+      cache_metadata->root_lock
+         policy->lock
 
-Change the transaction manager's semantics for dm_tm_commit() to assume
-all data has been flushed _before_ the single superblock that is passed
-in.
+Fix this potential lock-inversion (ABBA) deadlock in sync_metadata() by
+ensuring the cache_metadata root_lock is held whilst all the hints are
+written, rather than being repeatedly locked while policy->lock is held
+(as was the case with each callout that policy_walk_mappings() made to
+the old save_hint() method).
 
-As a prerequisite, split the block manager's block unlocking and
-flushing by simplifying dm_bm_flush_and_unlock() to dm_bm_flush().  Now
-the unlocking must be done separately.
+Found by turning on the CONFIG_PROVE_LOCKING ("Lock debugging: prove
+locking correctness") build option.  However, it is not clear how the
+LOCKDEP reported paths can lead to a deadlock since the two paths,
+suspending a target and loading a target, never occur at the same time.
+But that doesn't mean the same lock-inversion couldn't have occurred
+elsewhere.
 
-This issue was discovered by forcing io errors at the crucial time
-using dm-flakey.
-
+Reported-by: Marian Csontos <mcsontos@redhat.com>
 Signed-off-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-metadata.c                      |    3 ++-
- drivers/md/persistent-data/dm-block-manager.c       |   15 ++-------------
- drivers/md/persistent-data/dm-block-manager.h       |    3 +--
- drivers/md/persistent-data/dm-transaction-manager.c |    5 +++--
- drivers/md/persistent-data/dm-transaction-manager.h |   17 ++++++++---------
- 5 files changed, 16 insertions(+), 27 deletions(-)
+ drivers/md/dm-cache-metadata.c |   35 +++++++++++++++++------------------
+ drivers/md/dm-cache-metadata.h |    9 +--------
+ drivers/md/dm-cache-target.c   |   28 ++--------------------------
+ 3 files changed, 20 insertions(+), 52 deletions(-)
 
 --- a/drivers/md/dm-cache-metadata.c
 +++ b/drivers/md/dm-cache-metadata.c
-@@ -530,8 +530,9 @@ static int __begin_transaction_flags(str
- 	disk_super = dm_block_data(sblock);
- 	update_flags(disk_super, mutator);
- 	read_superblock_fields(cmd, disk_super);
-+	dm_bm_unlock(sblock);
- 
--	return dm_bm_flush_and_unlock(cmd->bm, sblock);
-+	return dm_bm_flush(cmd->bm);
+@@ -1245,22 +1245,12 @@ static int begin_hints(struct dm_cache_m
+ 	return 0;
  }
  
- static int __begin_transaction(struct dm_cache_metadata *cmd)
---- a/drivers/md/persistent-data/dm-block-manager.c
-+++ b/drivers/md/persistent-data/dm-block-manager.c
-@@ -595,25 +595,14 @@ int dm_bm_unlock(struct dm_block *b)
- }
- EXPORT_SYMBOL_GPL(dm_bm_unlock);
- 
--int dm_bm_flush_and_unlock(struct dm_block_manager *bm,
--			   struct dm_block *superblock)
-+int dm_bm_flush(struct dm_block_manager *bm)
+-int dm_cache_begin_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *policy)
++static int save_hint(void *context, dm_cblock_t cblock, dm_oblock_t oblock, uint32_t hint)
  {
++	struct dm_cache_metadata *cmd = context;
++	__le32 value = cpu_to_le32(hint);
+ 	int r;
+ 
+-	down_write(&cmd->root_lock);
+-	r = begin_hints(cmd, policy);
+-	up_write(&cmd->root_lock);
+-
+-	return r;
+-}
+-
+-static int save_hint(struct dm_cache_metadata *cmd, dm_cblock_t cblock,
+-		     uint32_t hint)
+-{
+-	int r;
+-	__le32 value = cpu_to_le32(hint);
+ 	__dm_bless_for_disk(&value);
+ 
+ 	r = dm_array_set_value(&cmd->hint_info, cmd->hint_root,
+@@ -1270,16 +1260,25 @@ static int save_hint(struct dm_cache_met
+ 	return r;
+ }
+ 
+-int dm_cache_save_hint(struct dm_cache_metadata *cmd, dm_cblock_t cblock,
+-		       uint32_t hint)
++static int write_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *policy)
+ {
+ 	int r;
+ 
+-	if (!hints_array_initialized(cmd))
+-		return 0;
++	r = begin_hints(cmd, policy);
++	if (r) {
++		DMERR("begin_hints failed");
++		return r;
++	}
++
++	return policy_walk_mappings(policy, save_hint, cmd);
++}
++
++int dm_cache_write_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *policy)
++{
++	int r;
+ 
+ 	down_write(&cmd->root_lock);
+-	r = save_hint(cmd, cblock, hint);
++	r = write_hints(cmd, policy);
+ 	up_write(&cmd->root_lock);
+ 
+ 	return r;
+--- a/drivers/md/dm-cache-metadata.h
++++ b/drivers/md/dm-cache-metadata.h
+@@ -128,14 +128,7 @@ void dm_cache_dump(struct dm_cache_metad
+  * rather than querying the policy for each cblock, we let it walk its data
+  * structures and fill in the hints in whatever order it wishes.
+  */
+-
+-int dm_cache_begin_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *p);
+-
+-/*
+- * requests hints for every cblock and stores in the metadata device.
+- */
+-int dm_cache_save_hint(struct dm_cache_metadata *cmd,
+-		       dm_cblock_t cblock, uint32_t hint);
++int dm_cache_write_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *p);
+ 
+ /*
+  * Query method.  Are all the blocks in the cache clean?
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -2600,30 +2600,6 @@ static int write_discard_bitset(struct c
+ 	return 0;
+ }
+ 
+-static int save_hint(void *context, dm_cblock_t cblock, dm_oblock_t oblock,
+-		     uint32_t hint)
+-{
+-	struct cache *cache = context;
+-	return dm_cache_save_hint(cache->cmd, cblock, hint);
+-}
+-
+-static int write_hints(struct cache *cache)
+-{
 -	int r;
 -
- 	if (bm->read_only)
- 		return -EPERM;
- 
--	r = dm_bufio_write_dirty_buffers(bm->bufio);
--	if (unlikely(r)) {
--		dm_bm_unlock(superblock);
+-	r = dm_cache_begin_hints(cache->cmd, cache->policy);
+-	if (r) {
+-		DMERR("dm_cache_begin_hints failed");
 -		return r;
 -	}
 -
--	dm_bm_unlock(superblock);
+-	r = policy_walk_mappings(cache->policy, save_hint, cache);
+-	if (r)
+-		DMERR("policy_walk_mappings failed");
 -
- 	return dm_bufio_write_dirty_buffers(bm->bufio);
- }
--EXPORT_SYMBOL_GPL(dm_bm_flush_and_unlock);
-+EXPORT_SYMBOL_GPL(dm_bm_flush);
- 
- void dm_bm_prefetch(struct dm_block_manager *bm, dm_block_t b)
- {
---- a/drivers/md/persistent-data/dm-block-manager.h
-+++ b/drivers/md/persistent-data/dm-block-manager.h
-@@ -105,8 +105,7 @@ int dm_bm_unlock(struct dm_block *b);
-  *
-  * This method always blocks.
+-	return r;
+-}
+-
+ /*
+  * returns true on success
   */
--int dm_bm_flush_and_unlock(struct dm_block_manager *bm,
--			   struct dm_block *superblock);
-+int dm_bm_flush(struct dm_block_manager *bm);
+@@ -2641,7 +2617,7 @@ static bool sync_metadata(struct cache *
  
- /*
-  * Request data is prefetched into the cache.
---- a/drivers/md/persistent-data/dm-transaction-manager.c
-+++ b/drivers/md/persistent-data/dm-transaction-manager.c
-@@ -154,7 +154,7 @@ int dm_tm_pre_commit(struct dm_transacti
- 	if (r < 0)
- 		return r;
+ 	save_stats(cache);
  
--	return 0;
-+	return dm_bm_flush(tm->bm);
- }
- EXPORT_SYMBOL_GPL(dm_tm_pre_commit);
+-	r3 = write_hints(cache);
++	r3 = dm_cache_write_hints(cache->cmd, cache->policy);
+ 	if (r3)
+ 		DMERR("could not write hints");
  
-@@ -164,8 +164,9 @@ int dm_tm_commit(struct dm_transaction_m
- 		return -EWOULDBLOCK;
+@@ -3114,7 +3090,7 @@ static void cache_io_hints(struct dm_tar
  
- 	wipe_shadow_table(tm);
-+	dm_bm_unlock(root);
- 
--	return dm_bm_flush_and_unlock(tm->bm, root);
-+	return dm_bm_flush(tm->bm);
- }
- EXPORT_SYMBOL_GPL(dm_tm_commit);
- 
---- a/drivers/md/persistent-data/dm-transaction-manager.h
-+++ b/drivers/md/persistent-data/dm-transaction-manager.h
-@@ -38,18 +38,17 @@ struct dm_transaction_manager *dm_tm_cre
- /*
-  * We use a 2-phase commit here.
-  *
-- * i) In the first phase the block manager is told to start flushing, and
-- * the changes to the space map are written to disk.  You should interrogate
-- * your particular space map to get detail of its root node etc. to be
-- * included in your superblock.
-+ * i) Make all changes for the transaction *except* for the superblock.
-+ * Then call dm_tm_pre_commit() to flush them to disk.
-  *
-- * ii) @root will be committed last.  You shouldn't use more than the
-- * first 512 bytes of @root if you wish the transaction to survive a power
-- * failure.  You *must* have a write lock held on @root for both stage (i)
-- * and (ii).  The commit will drop the write lock.
-+ * ii) Lock your superblock.  Update.  Then call dm_tm_commit() which will
-+ * unlock the superblock and flush it.  No other blocks should be updated
-+ * during this period.  Care should be taken to never unlock a partially
-+ * updated superblock; perform any operations that could fail *before* you
-+ * take the superblock lock.
-  */
- int dm_tm_pre_commit(struct dm_transaction_manager *tm);
--int dm_tm_commit(struct dm_transaction_manager *tm, struct dm_block *root);
-+int dm_tm_commit(struct dm_transaction_manager *tm, struct dm_block *superblock);
- 
- /*
-  * These methods are the only way to get hold of a writeable block.
+ static struct target_type cache_target = {
+ 	.name = "cache",
+-	.version = {1, 3, 0},
++	.version = {1, 4, 0},
+ 	.module = THIS_MODULE,
+ 	.ctr = cache_ctr,
+ 	.dtr = cache_dtr,
 
 
