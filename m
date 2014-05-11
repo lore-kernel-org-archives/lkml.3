@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933400AbaEKTYA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:24:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48240 "EHLO
+	id S933427AbaEKTYF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:24:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48257 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933353AbaEKTXv (ORCPT
+	with ESMTP id S933353AbaEKTYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:23:51 -0400
+	Sun, 11 May 2014 15:24:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.10 16/48] s390/chsc: fix SEI usage on old FW levels
-Date: Sun, 11 May 2014 21:19:50 +0200
-Message-Id: <20140511191950.332685045@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.10 26/48] iwlwifi: dvm: take mutex when sending SYNC BT config command
+Date: Sun, 11 May 2014 21:20:00 +0200
+Message-Id: <20140511191951.662354596@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
 References: <20140511191948.079900414@linuxfoundation.org>
@@ -28,70 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 06cd7a874ec6e09d151aeb1fa8600e14f1ff89f6 upstream.
+commit 82e5a649453a3cf23516277abb84273768a1592b upstream.
 
-Using a notification type mask for the store event information chsc
-is unsupported on some firmware levels. Retry SEI with that mask set
-to zero (which is the old way of requesting only channel subsystem
-related events).
+There is a flow in which we send the host command in SYNC
+mode, but we don't take priv->mutex.
 
-Reported-and-tested-by: Stefan Haberland <stefan.haberland@de.ibm.com>
-Reviewed-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=1046495
+
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/cio/chsc.c |   22 +++++++++++++++++-----
- 1 file changed, 17 insertions(+), 5 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/main.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/s390/cio/chsc.c
-+++ b/drivers/s390/cio/chsc.c
-@@ -500,18 +500,27 @@ static void chsc_process_sei_nt0(struct
+--- a/drivers/net/wireless/iwlwifi/dvm/main.c
++++ b/drivers/net/wireless/iwlwifi/dvm/main.c
+@@ -252,13 +252,17 @@ static void iwl_bg_bt_runtime_config(str
+ 	struct iwl_priv *priv =
+ 		container_of(work, struct iwl_priv, bt_runtime_config);
  
- static void chsc_process_event_information(struct chsc_sei *sei, u64 ntsm)
- {
--	do {
-+	static int ntsm_unsupported;
++	mutex_lock(&priv->mutex);
+ 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
+-		return;
++		goto out;
+ 
+ 	/* dont send host command if rf-kill is on */
+ 	if (!iwl_is_ready_rf(priv))
+-		return;
++		goto out;
 +
-+	while (true) {
- 		memset(sei, 0, sizeof(*sei));
- 		sei->request.length = 0x0010;
- 		sei->request.code = 0x000e;
--		sei->ntsm = ntsm;
-+		if (!ntsm_unsupported)
-+			sei->ntsm = ntsm;
- 
- 		if (chsc(sei))
- 			break;
- 
- 		if (sei->response.code != 0x0001) {
--			CIO_CRW_EVENT(2, "chsc: sei failed (rc=%04x)\n",
--				      sei->response.code);
-+			CIO_CRW_EVENT(2, "chsc: sei failed (rc=%04x, ntsm=%llx)\n",
-+				      sei->response.code, sei->ntsm);
-+
-+			if (sei->response.code == 3 && sei->ntsm) {
-+				/* Fallback for old firmware. */
-+				ntsm_unsupported = 1;
-+				continue;
-+			}
- 			break;
- 		}
- 
-@@ -527,7 +536,10 @@ static void chsc_process_event_informati
- 			CIO_CRW_EVENT(2, "chsc: unhandled nt: %d\n", sei->nt);
- 			break;
- 		}
--	} while (sei->u.nt0_area.flags & 0x80);
-+
-+		if (!(sei->u.nt0_area.flags & 0x80))
-+			break;
-+	}
+ 	iwlagn_send_advance_bt_config(priv);
++out:
++	mutex_unlock(&priv->mutex);
  }
  
- /*
+ static void iwl_bg_bt_full_concurrency(struct work_struct *work)
 
 
