@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934165AbaEKT1R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:27:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48562 "EHLO
+	id S933990AbaEKT3W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:29:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48577 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934104AbaEKT1H (ORCPT
+	with ESMTP id S932809AbaEKT1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:27:07 -0400
+	Sun, 11 May 2014 15:27:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jiang <dave.jiang@intel.com>,
-        Ed Ciechanowski <ed.ciechanowski@intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.4 13/22] libata/ahci: accommodate tag ordered controllers
-Date: Sun, 11 May 2014 21:21:21 +0200
-Message-Id: <20140511192105.616338520@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.4 16/22] rtlwifi: rtl8192se: Fix too long disable of IRQs
+Date: Sun, 11 May 2014 21:21:24 +0200
+Message-Id: <20140511192105.996223862@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511192103.733723493@linuxfoundation.org>
 References: <20140511192103.733723493@linuxfoundation.org>
@@ -29,96 +27,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 8a4aeec8d2d6a3edeffbdfae451cdf05cbf0fefd upstream.
+commit 2610decdd0b3808ba20471a999835cfee5275f98 upstream.
 
-The AHCI spec allows implementations to issue commands in tag order
-rather than FIFO order:
+In commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 entitled "rtlwifi:
+rtl8192ce: Fix too long disable of IRQs", Olivier Langlois
+<olivier@trillion01.com> fixed a problem caused by an extra long disabling
+of interrupts. This patch makes the same fix for rtl8192se.
 
-	5.3.2.12 P:SelectCmd
-	HBA sets pSlotLoc = (pSlotLoc + 1) mod (CAP.NCS + 1)
-	or HBA selects the command to issue that has had the
-	PxCI bit set to '1' longer than any other command
-	pending to be issued.
-
-The result is that commands posted sequentially (time-wise) may play out
-of sequence when issued by hardware.
-
-This behavior has likely been hidden by drives that arrange for commands
-to complete in issue order.  However, it appears recent drives (two from
-different vendors that we have found so far) inflict out-of-order
-completions as a matter of course.  So, we need to take care to maintain
-ordered submission, otherwise we risk triggering a drive to fall out of
-sequential-io automation and back to random-io processing, which incurs
-large latency and degrades throughput.
-
-This issue was found in simple benchmarks where QD=2 seq-write
-performance was 30-50% *greater* than QD=32 seq-write performance.
-
-Tagging for -stable and making the change globally since it has a low
-risk-to-reward ratio.  Also, word is that recent versions of an unnamed
-OS also does it this way now.  So, drives in the field are already
-experienced with this tag ordering scheme.
-
-Cc: Dave Jiang <dave.jiang@intel.com>
-Cc: Ed Ciechanowski <ed.ciechanowski@intel.com>
-Reviewed-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |   21 +++++++++++++--------
- include/linux/libata.h    |    1 +
- 2 files changed, 14 insertions(+), 8 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192se/hw.c |   27 +++++++++++++++++++++------
+ 1 file changed, 21 insertions(+), 6 deletions(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4700,21 +4700,26 @@ void swap_buf_le16(u16 *buf, unsigned in
- static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
- {
- 	struct ata_queued_cmd *qc = NULL;
--	unsigned int i;
-+	unsigned int i, tag;
- 
- 	/* no command while frozen */
- 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
- 		return NULL;
- 
--	/* the last tag is reserved for internal command. */
--	for (i = 0; i < ATA_MAX_QUEUE - 1; i++)
--		if (!test_and_set_bit(i, &ap->qc_allocated)) {
--			qc = __ata_qc_from_tag(ap, i);
-+	for (i = 0; i < ATA_MAX_QUEUE; i++) {
-+		tag = (i + ap->last_tag + 1) % ATA_MAX_QUEUE;
-+
-+		/* the last tag is reserved for internal command. */
-+		if (tag == ATA_TAG_INTERNAL)
-+			continue;
-+
-+		if (!test_and_set_bit(tag, &ap->qc_allocated)) {
-+			qc = __ata_qc_from_tag(ap, tag);
-+			qc->tag = tag;
-+			ap->last_tag = tag;
- 			break;
- 		}
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
+@@ -922,7 +922,7 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
+ 	struct rtl_efuse *rtlefuse = rtl_efuse(rtl_priv(hw));
+ 	u8 tmp_byte = 0;
 -
--	if (qc)
--		qc->tag = i;
-+	}
++	unsigned long flags;
+ 	bool rtstatus = true;
+ 	u8 tmp_u1b;
+ 	int err = false;
+@@ -934,6 +934,16 @@ int rtl92se_hw_init(struct ieee80211_hw
  
- 	return qc;
+ 	rtlpci->being_init_adapter = true;
+ 
++	/* As this function can take a very long time (up to 350 ms)
++	 * and can be called with irqs disabled, reenable the irqs
++	 * to let the other devices continue being serviced.
++	 *
++	 * It is safe doing so since our own interrupts will only be enabled
++	 * in a subsequent step.
++	 */
++	local_save_flags(flags);
++	local_irq_enable();
++
+ 	rtlpriv->intf_ops->disable_aspm(hw);
+ 
+ 	/* 1. MAC Initialize */
+@@ -951,7 +961,8 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
+ 			 "Failed to download FW. Init HW without FW now... "
+ 			 "Please copy FW into /lib/firmware/rtlwifi\n");
+-		return 1;
++		err = 1;
++		goto exit;
+ 	}
+ 
+ 	/* After FW download, we have to reset MAC register */
+@@ -964,7 +975,8 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 	/* 3. Initialize MAC/PHY Config by MACPHY_reg.txt */
+ 	if (!rtl92s_phy_mac_config(hw)) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "MAC Config failed\n");
+-		return rtstatus;
++		err = rtstatus;
++		goto exit;
+ 	}
+ 
+ 	/* Make sure BB/RF write OK. We should prevent enter IPS. radio off. */
+@@ -974,7 +986,8 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 	/* 4. Initialize BB After MAC Config PHY_reg.txt, AGC_Tab.txt */
+ 	if (!rtl92s_phy_bb_config(hw)) {
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_EMERG, "BB Config failed\n");
+-		return rtstatus;
++		err = rtstatus;
++		goto exit;
+ 	}
+ 
+ 	/* 5. Initiailze RF RAIO_A.txt RF RAIO_B.txt */
+@@ -1010,7 +1023,8 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 
+ 	if (!rtl92s_phy_rf_config(hw)) {
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "RF Config failed\n");
+-		return rtstatus;
++		err = rtstatus;
++		goto exit;
+ 	}
+ 
+ 	/* After read predefined TXT, we must set BB/MAC/RF
+@@ -1084,8 +1098,9 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 
+ 	rtlpriv->cfg->ops->led_control(hw, LED_CTL_POWER_ON);
+ 	rtl92s_dm_init(hw);
++exit:
++	local_irq_restore(flags);
+ 	rtlpci->being_init_adapter = false;
+-
+ 	return err;
  }
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -762,6 +762,7 @@ struct ata_port {
- 	unsigned long		qc_allocated;
- 	unsigned int		qc_active;
- 	int			nr_active_links; /* #links with active qcs */
-+	unsigned int		last_tag;	/* track next tag hw expects */
  
- 	struct ata_link		link;		/* host default link */
- 	struct ata_link		*slave_link;	/* see ata_slave_link_init() */
 
 
