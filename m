@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060AbaEKTWq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:22:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48132 "EHLO
+	id S934384AbaEKTvk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:51:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48146 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933011AbaEKTWl (ORCPT
+	with ESMTP id S933061AbaEKTWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:22:41 -0400
+	Sun, 11 May 2014 15:22:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Hogan <james.hogan@imgtec.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Sanjay Lal <sanjayl@kymasys.com>,
-        linux-mips@linux-mips.org, kvm@vger.kernel.org
-Subject: [PATCH 3.10 09/48] MIPS: KVM: Pass reserved instruction exceptions to guest
-Date: Sun, 11 May 2014 21:19:43 +0200
-Message-Id: <20140511191949.401773094@linuxfoundation.org>
+        Huacai Chen <chenhc@lemote.com>, John Crispin <john@phrozen.org>,
+        "Steven J. Hill" <Steven.Hill@imgtec.com>,
+        Aurelien Jarno <aurelien@aurel32.net>,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
+Subject: [PATCH 3.10 10/48] MIPS: Hibernate: Flush TLB entries in swsusp_arch_resume()
+Date: Sun, 11 May 2014 21:19:44 +0200
+Message-Id: <20140511191949.532289351@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
 References: <20140511191948.079900414@linuxfoundation.org>
@@ -29,72 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Hogan <james.hogan@imgtec.com>
+From: Huacai Chen <chenhc@lemote.com>
 
-commit 15505679362270d02c449626385cb74af8905514 upstream.
+commit c14af233fbe279d0e561ecf84f1208b1bae087ef upstream.
 
-Previously a reserved instruction exception while in guest code would
-cause a KVM internal error if kvm_mips_handle_ri() didn't recognise the
-instruction (including a RDHWR from an unrecognised hardware register).
+The original MIPS hibernate code flushes cache and TLB entries in
+swsusp_arch_resume(). But they are removed in Commit 44eeab67416711
+(MIPS: Hibernation: Remove SMP TLB and cacheflushing code.). A cross-
+CPU flush is surely unnecessary because all but the local CPU have
+already been disabled. But a local flush (at least the TLB flush) is
+needed. When we do hibernation on Loongson-3 with an E1000E NIC, it is
+very easy to produce a kernel panic (kernel page fault, or unaligned
+access). The root cause is E1000E driver use vzalloc_node() to allocate
+pages, the stale TLB entries of the booting kernel will be misused by
+the resumed target kernel.
 
-However the guest OS should really have the opportunity to catch the
-exception so that it can take the appropriate actions such as sending a
-SIGILL to the guest user process or emulating the instruction itself.
-
-Therefore in these cases emulate a guest RI exception and only return
-EMULATE_FAIL if that fails, being careful to revert the PC first in case
-the exception occurred in a branch delay slot in which case the PC will
-already point to the branch target.
-
-Also turn the printk messages relating to these cases into kvm_debug
-messages so that they aren't usually visible.
-
-This allows crashme to run in the guest without killing the entire VM.
-
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Gleb Natapov <gleb@kernel.org>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Sanjay Lal <sanjayl@kymasys.com>
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Cc: John Crispin <john@phrozen.org>
+Cc: Steven J. Hill <Steven.Hill@imgtec.com>
+Cc: Aurelien Jarno <aurelien@aurel32.net>
 Cc: linux-mips@linux-mips.org
-Cc: kvm@vger.kernel.org
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Fuxin Zhang <zhangfx@lemote.com>
+Cc: Zhangjin Wu <wuzhangjin@gmail.com>
+Patchwork: https://patchwork.linux-mips.org/patch/6643/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kvm/kvm_mips_emul.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/mips/power/hibernate.S |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/mips/kvm/kvm_mips_emul.c
-+++ b/arch/mips/kvm/kvm_mips_emul.c
-@@ -1571,17 +1571,17 @@ kvm_mips_handle_ri(unsigned long cause,
- 			arch->gprs[rt] = kvm_read_c0_guest_userlocal(cop0);
- #else
- 			/* UserLocal not implemented */
--			er = kvm_mips_emulate_ri_exc(cause, opc, run, vcpu);
-+			er = EMULATE_FAIL;
- #endif
- 			break;
- 
- 		default:
--			printk("RDHWR not supported\n");
-+			kvm_debug("RDHWR %#x not supported @ %p\n", rd, opc);
- 			er = EMULATE_FAIL;
- 			break;
- 		}
- 	} else {
--		printk("Emulate RI not supported @ %p: %#x\n", opc, inst);
-+		kvm_debug("Emulate RI not supported @ %p: %#x\n", opc, inst);
- 		er = EMULATE_FAIL;
- 	}
- 
-@@ -1590,6 +1590,7 @@ kvm_mips_handle_ri(unsigned long cause,
- 	 */
- 	if (er == EMULATE_FAIL) {
- 		vcpu->arch.pc = curr_pc;
-+		er = kvm_mips_emulate_ri_exc(cause, opc, run, vcpu);
- 	}
- 	return er;
- }
+--- a/arch/mips/power/hibernate.S
++++ b/arch/mips/power/hibernate.S
+@@ -43,6 +43,7 @@ LEAF(swsusp_arch_resume)
+ 	bne t1, t3, 1b
+ 	PTR_L t0, PBE_NEXT(t0)
+ 	bnez t0, 0b
++	jal local_flush_tlb_all /* Avoid TLB mismatch after kernel resume */
+ 	PTR_LA t0, saved_regs
+ 	PTR_L ra, PT_R31(t0)
+ 	PTR_L sp, PT_R29(t0)
 
 
