@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934336AbaEKTtO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:49:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48186 "EHLO
+	id S934349AbaEKTto (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:49:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48178 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933180AbaEKTXN (ORCPT
+	with ESMTP id S933153AbaEKTXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:23:13 -0400
+	Sun, 11 May 2014 15:23:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Michael Braun <michael-dev@fami-braun.de>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.14 44/83] mac80211: fix suspend vs. authentication race
-Date: Sun, 11 May 2014 21:19:45 +0200
-Message-Id: <20140511191912.926853494@linuxfoundation.org>
+Subject: [PATCH 3.14 43/83] mac80211: fix WPA with VLAN on AP side with ps-sta again
+Date: Sun, 11 May 2014 21:19:44 +0200
+Message-Id: <20140511191912.808217268@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -26,97 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Michael Braun <michael-dev@fami-braun.de>
 
-commit 1a1cb744de160ee70086a77afff605bbc275d291 upstream.
+commit 112c44b2df0984121a52fbda89425843b8e1a457 upstream.
 
-Since Stanislaw's patch removing the quiescing code, mac80211 had
-a race regarding suspend vs. authentication: as cfg80211 doesn't
-track authentication attempts, it can't abort them. Therefore the
-attempts may be kept running while suspending, which can lead to
-all kinds of issues, in at least some cases causing an error in
-iwlmvm firmware.
+commit de74a1d9032f4d37ea453ad2a647e1aff4cd2591
+  "mac80211: fix WPA with VLAN on AP side with ps-sta"
+fixed an issue where queued multicast packets would
+be sent out encrypted with the key of an other bss.
 
-Fix this by aborting the authentication attempt when suspending.
+commit "7cbf9d017dbb5e3276de7d527925d42d4c11e732"
+  "mac80211: fix oops on mesh PS broadcast forwarding"
+essentially reverted it, because vif.type cannot be AP_VLAN
+due to the check to vif.type in ieee80211_get_buffered_bc before.
 
-Fixes: 12e7f517029d ("mac80211: cleanup generic suspend/resume procedures")
+As the later commit intended to fix the MESH case, fix it
+by checking for IFTYPE_AP instead of IFTYPE_AP_VLAN.
+
+Fixes: 7cbf9d017dbb ("mac80211: fix oops on mesh PS broadcast forwarding")
+Signed-off-by: Michael Braun <michael-dev@fami-braun.de>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/ieee80211_i.h |    1 +
- net/mac80211/mlme.c        |   26 ++++++++++++++++++++++++++
- net/mac80211/pm.c          |   14 +++++++++++---
- 3 files changed, 38 insertions(+), 3 deletions(-)
+ net/mac80211/tx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -1385,6 +1385,7 @@ void ieee80211_sta_reset_conn_monitor(st
- void ieee80211_mgd_stop(struct ieee80211_sub_if_data *sdata);
- void ieee80211_mgd_conn_tx_status(struct ieee80211_sub_if_data *sdata,
- 				  __le16 fc, bool acked);
-+void ieee80211_mgd_quiesce(struct ieee80211_sub_if_data *sdata);
- void ieee80211_sta_restart(struct ieee80211_sub_if_data *sdata);
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -2909,7 +2909,7 @@ ieee80211_get_buffered_bc(struct ieee802
+ 				cpu_to_le16(IEEE80211_FCTL_MOREDATA);
+ 		}
  
- /* IBSS code */
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -3504,6 +3504,32 @@ static void ieee80211_restart_sta_timer(
- }
- 
- #ifdef CONFIG_PM
-+void ieee80211_mgd_quiesce(struct ieee80211_sub_if_data *sdata)
-+{
-+	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
-+	u8 frame_buf[IEEE80211_DEAUTH_FRAME_LEN];
-+
-+	sdata_lock(sdata);
-+
-+	if (ifmgd->auth_data) {
-+		/*
-+		 * If we are trying to authenticate while suspending, cfg80211
-+		 * won't know and won't actually abort those attempts, thus we
-+		 * need to do that ourselves.
-+		 */
-+		ieee80211_send_deauth_disassoc(sdata,
-+					       ifmgd->auth_data->bss->bssid,
-+					       IEEE80211_STYPE_DEAUTH,
-+					       WLAN_REASON_DEAUTH_LEAVING,
-+					       false, frame_buf);
-+		ieee80211_destroy_auth_data(sdata, false);
-+		cfg80211_tx_mlme_mgmt(sdata->dev, frame_buf,
-+				      IEEE80211_DEAUTH_FRAME_LEN);
-+	}
-+
-+	sdata_unlock(sdata);
-+}
-+
- void ieee80211_sta_restart(struct ieee80211_sub_if_data *sdata)
- {
- 	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
---- a/net/mac80211/pm.c
-+++ b/net/mac80211/pm.c
-@@ -100,10 +100,18 @@ int __ieee80211_suspend(struct ieee80211
- 
- 	/* remove all interfaces that were created in the driver */
- 	list_for_each_entry(sdata, &local->interfaces, list) {
--		if (!ieee80211_sdata_running(sdata) ||
--		    sdata->vif.type == NL80211_IFTYPE_AP_VLAN ||
--		    sdata->vif.type == NL80211_IFTYPE_MONITOR)
-+		if (!ieee80211_sdata_running(sdata))
- 			continue;
-+		switch (sdata->vif.type) {
-+		case NL80211_IFTYPE_AP_VLAN:
-+		case NL80211_IFTYPE_MONITOR:
-+			continue;
-+		case NL80211_IFTYPE_STATION:
-+			ieee80211_mgd_quiesce(sdata);
-+			break;
-+		default:
-+			break;
-+		}
- 
- 		drv_remove_interface(local, sdata);
- 	}
+-		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
++		if (sdata->vif.type == NL80211_IFTYPE_AP)
+ 			sdata = IEEE80211_DEV_TO_SUB_IF(skb->dev);
+ 		if (!ieee80211_tx_prepare(sdata, &tx, skb))
+ 			break;
 
 
