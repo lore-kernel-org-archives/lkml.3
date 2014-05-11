@@ -1,166 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758126AbaEKMeM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 08:34:12 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:50757 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757245AbaEKMeI (ORCPT
+	id S1758160AbaEKMfK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 08:35:10 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53048 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757245AbaEKMfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 08:34:08 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: akpm@linux-foundation.org, hughd@google.com, riel@redhat.com,
-        aarcange@redhat.com, nasa4836@gmail.com, oleg@redhat.com,
-        fabf@skynet.be, zhangyanfei@cn.fujitsu.com, mgorman@suse.de,
-        sasha.levin@oracle.com, cldu@marvell.com, n-horiguchi@ah.jp.nec.com,
-        iamjoonsoo.kim@lge.com, kirill.shutemov@linux.intel.com,
-        xemul@parallels.com, gorcunov@gmail.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] mm: use a light-weight __mod_zone_page_state in mlocked_vma_newpage()
-Date: Sun, 11 May 2014 20:33:52 +0800
-Message-Id: <1399811632-14712-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 2.0.0-rc1
+	Sun, 11 May 2014 08:35:05 -0400
+Date: Sun, 11 May 2014 06:56:27 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rdunlap@infradead.org, linux@arm.linux.org.uk,
+        daniel.lezcano@linaro.org, tglx@linutronix.de,
+        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
+        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
+        heiko.stuebner@bq.com, olof@lixom.net, sebastian.hesselbarth@gmail.com,
+        sboyd@codeaurora.org, gregory.clement@free-electrons.com,
+        arnd@arndb.de, robherring2@gmail.com, marc.zyngier@arm.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/4] arm: add basic support for Mediatek MT6589 boards
+Message-ID: <20140511045627.GS7047@lukather>
+References: <1399772463-859-1-git-send-email-matthias.bgg@gmail.com>
+ <1399772463-859-4-git-send-email-matthias.bgg@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="en9/O5YN3eJ0yPaf"
+Content-Disposition: inline
+In-Reply-To: <1399772463-859-4-git-send-email-matthias.bgg@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->I completely agree with Andrew's suggestion that you move the code
->from mm/internal.h to its sole callsite in mm/rmap.c; but I much
->prefer his "probably better ... open-coding its logic into
->page_add_new_anon_rmap()".
->
->That saves you from having to dream up a satisfactory alternative name,
->and a lengthy comment, and let's everybody see just what's going on.
 
- Hi, also thanks for the detailed comments!!!
+--en9/O5YN3eJ0yPaf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- Yes, I also agree. But I just saw that mlocked_vma_newpage() is used 
- as a test stament in page_add_new_anon_rmap(), like:
+Hi,
 
-    if (!mlocked_vma_newpage())
-	...
-    else
-	...
+On Sun, May 11, 2014 at 03:41:02AM +0200, Matthias Brugger wrote:
+> This adds a generic devicetree board file and a dtsi for boards
+> based on the MT6589 SoCs from Mediatek.
+>=20
+> Apart from the generic parts (gic, clocks) the only component
+> currently supported are the timers.
+>=20
+> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+> ---
+>  .../devicetree/bindings/arm/mediatek-mt65xx.txt    |  8 ++
+>  .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+>  arch/arm/Kconfig                                   |  2 +
+>  arch/arm/Makefile                                  |  1 +
+>  arch/arm/boot/dts/mt6589.dtsi                      | 93 ++++++++++++++++=
+++++++
+>  arch/arm/mach-mediatek/Kconfig                     |  6 ++
+>  arch/arm/mach-mediatek/Makefile                    |  1 +
+>  arch/arm/mach-mediatek/mediatek.c                  | 38 +++++++++
+>  8 files changed, 150 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/mediatek-mt65xx=
+=2Etxt
+>  create mode 100644 arch/arm/boot/dts/mt6589.dtsi
+>  create mode 100644 arch/arm/mach-mediatek/Kconfig
+>  create mode 100644 arch/arm/mach-mediatek/Makefile
+>  create mode 100644 arch/arm/mach-mediatek/mediatek.c
 
- It is quite clear code logic for reading, so I think it is appropriate
- to still make it a function. But that's OK, I've folded it into 
- page_add_new_anon_rmap() in the new patch, see below. 
-  
->The function-in-internal.h thing dates from an interim in which,
->running short of page flags, we were not confident that we wanted
->to dedicate one to PageMlocked: not all configs had it and internal.h
->was somewhere to hide the #ifdefs.  Well, PageMlocked is there only
->when CONFIG_MMU, but mm/rmap.c is only built for CONFIG_MMU anyway.
->In previous commit(mm: use the light version __mod_zone_page_state in
->mlocked_vma_newpage()) a irq-unsafe __mod_zone_page_state is used.
->And as suggested by Andrew, to reduce the risks that new call sites
->incorrectly using mlocked_vma_newpage() without knowing they are adding
->racing, this patch folds mlocked_vma_newpage() into its only call site,
->page_add_new_anon_rmap, to make it open-cocded.
+This probably should belong into different patches.
 
- Thanks for telling me this, which be not be learned from code.
+Something like:
+  - one to document the prefix
+  - one to add mach-mediatek
+  - one to add the DTSI
 
------<8-----
-mm: fold mlocked_vma_newpage() into its only call site
-    
-In previous commit(mm: use the light version __mod_zone_page_state in
-mlocked_vma_newpage()) a irq-unsafe __mod_zone_page_state is used.
-And as suggested by Andrew, to reduce the risks that new call sites
-incorrectly using mlocked_vma_newpage() without knowing they are adding
-racing, this patch folds mlocked_vma_newpage() into its only call site,
-page_add_new_anon_rmap, to make it open-cocded.
+>=20
+> diff --git a/Documentation/devicetree/bindings/arm/mediatek-mt65xx.txt b/=
+Documentation/devicetree/bindings/arm/mediatek-mt65xx.txt
+> new file mode 100644
+> index 0000000..d6ac71f
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/mediatek-mt65xx.txt
+> @@ -0,0 +1,8 @@
+> +Mediatek MT6589 Platforms Device Tree Bindings
+> +
+> +Boards with a SoC of the Mediatek MT6589 shall have the following proper=
+ty:
+> +
+> +Required root node property:
+> +
+> +compatible: must contain "mediatek,mt6589"
+> +
+> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Docu=
+mentation/devicetree/bindings/vendor-prefixes.txt
+> index abc3080..73f9e4c 100644
+> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> @@ -75,6 +75,7 @@ linux	Linux-specific binding
+>  lsi	LSI Corp. (LSI Logic)
+>  marvell	Marvell Technology Group Ltd.
+>  maxim	Maxim Integrated Products
+> +mediatek	MediaTek Inc.
+>  microchip	Microchip Technology Inc.
+>  mosaixtech	Mosaix Technologies, Inc.
+>  moxa	Moxa
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index db3c541..0fc8acd 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -997,6 +997,8 @@ source "arch/arm/mach-mv78xx0/Kconfig"
+> =20
+>  source "arch/arm/mach-imx/Kconfig"
+> =20
+> +source "arch/arm/mach-mediatek/Kconfig"
+> +
+>  source "arch/arm/mach-mxs/Kconfig"
+> =20
+>  source "arch/arm/mach-netx/Kconfig"
+> diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+> index 41c1931..8ce9774 100644
+> --- a/arch/arm/Makefile
+> +++ b/arch/arm/Makefile
+> @@ -170,6 +170,7 @@ machine-$(CONFIG_ARCH_MSM)		+=3D msm
+>  machine-$(CONFIG_ARCH_MV78XX0)		+=3D mv78xx0
+>  machine-$(CONFIG_ARCH_MVEBU)		+=3D mvebu
+>  machine-$(CONFIG_ARCH_MXC)		+=3D imx
+> +machine-$(CONFIG_ARCH_MEDIATEK)		+=3D mediatek
+>  machine-$(CONFIG_ARCH_MXS)		+=3D mxs
+>  machine-$(CONFIG_ARCH_NETX)		+=3D netx
+>  machine-$(CONFIG_ARCH_NOMADIK)		+=3D nomadik
+> diff --git a/arch/arm/boot/dts/mt6589.dtsi b/arch/arm/boot/dts/mt6589.dtsi
+> new file mode 100644
+> index 0000000..2af140d
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/mt6589.dtsi
+> @@ -0,0 +1,93 @@
+> +/*
+> + * Copyright (c) 2014 MundoReader S.L.
+> + * Author: Matthias Brugger <matthias.bgg@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <dt-bindings/interrupt-controller/irq.h>
+> +#include <dt-bindings/interrupt-controller/arm-gic.h>
+> +#include "skeleton.dtsi"
+> +
+> +/ {
+> +	compatible =3D "mediatek,mt6589";
+> +	interrupt-parent =3D <&gic>;
+> +
+> +	cpus {
+> +		#address-cells =3D <1>;
+> +		#size-cells =3D <0>;
+> +
+> +		cpu@0 {
+> +			device_type =3D "cpu";
+> +			compatible =3D "arm,cortex-a7";
+> +			reg =3D <0x0>;
+> +		};
+> +		cpu@1 {
+> +			device_type =3D "cpu";
+> +			compatible =3D "arm,cortex-a7";
+> +			reg =3D <0x1>;
+> +		};
+> +		cpu@2 {
+> +			device_type =3D "cpu";
+> +			compatible =3D "arm,cortex-a7";
+> +			reg =3D <0x2>;
+> +		};
+> +		cpu@3 {
+> +			device_type =3D "cpu";
+> +			compatible =3D "arm,cortex-a7";
+> +			reg =3D <0x3>;
+> +		};
+> +
+> +	};
+> +
+> +	clocks {
+> +		#address-cells =3D <1>;
+> +		#size-cells =3D <1>;
+> +		ranges;
+> +
+> +		dummy13m: dummy13m {
+> +			compatible =3D "fixed-clock";
+> +			clock-frequency =3D <13000000>;
+> +			#clock-cells =3D <0>;
+> +		};
+> +
+> +		dummy32k: dummy32k {
+> +			compatible =3D "fixed-clock";
+> +			clock-frequency =3D <32000>;
+> +			#clock-cells =3D <0>;
+> +		};
+> +	};
+> +
+> +	soc {
+> +		#address-cells =3D <1>;
+> +		#size-cells =3D <1>;
+> +		compatible =3D "simple-bus";
+> +		clock-ranges;
+> +		ranges;
+> +
+> +		gic: interrupt-controller@10212000 {
+> +			compatible =3D "arm,cortex-a9-gic";
 
-Suggested-by: Andrew Morton <akpm@linux-foundation.org>
-Suggested-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- mm/internal.h | 31 -------------------------------
- mm/rmap.c     | 22 +++++++++++++++++++---
- 2 files changed, 19 insertions(+), 34 deletions(-)
+cortex-a15-gic would probably be more appropriate?
 
-diff --git a/mm/internal.h b/mm/internal.h
-index 7140c9b..29f3dc8 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -184,33 +184,6 @@ static inline void munlock_vma_pages_all(struct vm_area_struct *vma)
- }
- 
- /*
-- * Called only in fault path, to determine if a new page is being
-- * mapped into a LOCKED vma.  If it is, mark page as mlocked.
-- */
--static inline int mlocked_vma_newpage(struct vm_area_struct *vma,
--				    struct page *page)
--{
--	VM_BUG_ON_PAGE(PageLRU(page), page);
--
--	if (likely((vma->vm_flags & (VM_LOCKED | VM_SPECIAL)) != VM_LOCKED))
--		return 0;
--
--	if (!TestSetPageMlocked(page)) {
--		/*
--		 * We use the irq-unsafe __mod_zone_page_stat because
--		 * 1. this counter is not modified in interrupt context, and
--		 * 2. pte lock is held, and this a newpage, which is initially
--		 *    only visible via the pagetables. So this would exclude
--		 *    racy processes from preemting us and to modify it.
--		 */
--		__mod_zone_page_state(page_zone(page), NR_MLOCK,
--				    hpage_nr_pages(page));
--		count_vm_event(UNEVICTABLE_PGMLOCKED);
--	}
--	return 1;
--}
--
--/*
-  * must be called with vma's mmap_sem held for read or write, and page locked.
-  */
- extern void mlock_vma_page(struct page *page);
-@@ -252,10 +225,6 @@ extern unsigned long vma_address(struct page *page,
- 				 struct vm_area_struct *vma);
- #endif
- #else /* !CONFIG_MMU */
--static inline int mlocked_vma_newpage(struct vm_area_struct *v, struct page *p)
--{
--	return 0;
--}
- static inline void clear_page_mlock(struct page *page) { }
- static inline void mlock_vma_page(struct page *page) { }
- static inline void mlock_migrate_page(struct page *new, struct page *old) { }
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 0700253..b7bf67b 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1030,11 +1030,27 @@ void page_add_new_anon_rmap(struct page *page,
- 	__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
- 			hpage_nr_pages(page));
- 	__page_set_anon_rmap(page, vma, address, 1);
--	if (!mlocked_vma_newpage(vma, page)) {
-+
-+	VM_BUG_ON_PAGE(PageLRU(page), page);
-+	if (likely((vma->vm_flags & (VM_LOCKED | VM_SPECIAL)) != VM_LOCKED)) {
- 		SetPageActive(page);
- 		lru_cache_add(page);
--	} else
--		add_page_to_unevictable_list(page);
-+		return;
-+	}
-+
-+	if (!TestSetPageMlocked(page)) {
-+		/*
-+		 * We use the irq-unsafe __mod_zone_page_stat because
-+		 * 1. this counter is not modified in interrupt context, and
-+		 * 2. pte lock is held, and this a newpage, which is initially
-+		 *    only visible via the pagetables. So this would exclude
-+		 *    racy processes from preemting us and to modify it.
-+		 */
-+		__mod_zone_page_state(page_zone(page), NR_MLOCK,
-+				    hpage_nr_pages(page));
-+		count_vm_event(UNEVICTABLE_PGMLOCKED);
-+	}
-+	add_page_to_unevictable_list(page);
- }
- 
- /**
--- 
-2.0.0-rc1
+> +			interrupt-controller;
+> +			#interrupt-cells =3D <3>;
+> +			reg =3D <0x10211000 0x1000>,
+> +			      <0x10212000 0x1000>,
+> +			      <0x10214000 0x2000>,
+> +			      <0x10216000 0x2000>;
+> +		};
+> +
+> +		timer: timer@10008000 {
+> +			compatible =3D "mediatek,mtk6589-timer";
+> +			reg =3D <0x10008000 0x80>;
+> +			interrupts =3D <GIC_SPI 113 IRQ_TYPE_EDGE_RISING>;
+> +			clocks =3D <&dummy13m>, <&dummy32k>;
+> +		};
 
+Usually, we try to order the nodes by physical addresses in the DT.
+
+> +	};
+> +};
+> diff --git a/arch/arm/mach-mediatek/Kconfig b/arch/arm/mach-mediatek/Kcon=
+fig
+> new file mode 100644
+> index 0000000..2c043a2
+> --- /dev/null
+> +++ b/arch/arm/mach-mediatek/Kconfig
+> @@ -0,0 +1,6 @@
+> +config ARCH_MEDIATEK
+> +	bool "Mediatek MT6589 SoC" if ARCH_MULTI_V7
+> +	select ARM_GIC
+> +	select MTK_TIMER
+> +	help
+> +	  Support for Mediatek Cortex-A7 Quad-Core-SoC MT6589.
+> diff --git a/arch/arm/mach-mediatek/Makefile b/arch/arm/mach-mediatek/Mak=
+efile
+> new file mode 100644
+> index 0000000..43e619f
+> --- /dev/null
+> +++ b/arch/arm/mach-mediatek/Makefile
+> @@ -0,0 +1 @@
+> +obj-$(CONFIG_ARCH_MEDIATEK) +=3D mediatek.o
+> diff --git a/arch/arm/mach-mediatek/mediatek.c b/arch/arm/mach-mediatek/m=
+ediatek.c
+> new file mode 100644
+> index 0000000..0487fc7
+> --- /dev/null
+> +++ b/arch/arm/mach-mediatek/mediatek.c
+> @@ -0,0 +1,38 @@
+> +/*
+> + * Device Tree support for Mediatek SoCs
+> + *
+> + * Copyright (c) 2014 MundoReader S.L.
+> + * Author: Matthias Brugger <matthias.bgg@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/irqchip.h>
+> +#include <asm/mach/arch.h>
+> +#include <asm/mach/map.h>
+> +
+> +static void __init mediatek_dt_init(void)
+> +{
+> +	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+> +}
+
+This is the default, you can remove it.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--en9/O5YN3eJ0yPaf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTbwL6AAoJEBx+YmzsjxAgew0P+wSE3vEvUBfltm1vF+3NPyXK
+QEKk4YcNFkrO/xSI1nJdynDZaotAfAOj3oEyLXT7ODT/04Dvn7ANanomxiwWy+2T
+Av8n588oeq/hxOBYJiS9wACn0aK3uMScK2eoUVEgw6R6ssGxl8o05jzyH1djQJ+f
+a1M0WcjlGMIbJ13R1RQgXl6L95HmcZDd7FJoAr2k3QjPgkYnEW7W233rnXfo2h8j
+9NrlyQdmt7MjML2F/l3wEQntk9mHAz5wLLws12TJ0Xo/DbAZZTKlJqdKWKr+30GW
+65eL0VVtuF78jSVktC3XtwviZ+SQuz4S2xuIdNz0lKGesXSazhxE3JGc4+aiDDvn
+5gK5m4avU7lMXDgIgJhcI1ulZadWc1nyZhPqoQ18Zhinuly1JNVTsqpJyTMHNhtZ
+alJdPS5uUdG4glPdFJVbL6Gq1ZIj3YWKUgW8+vUuYncarWy+sr/bXc7F1AzPprKS
+Bg5uI2RgU2w6Q389QHoTWFme/qIViu4WGp3BOSalEZrmM5zhgwUSJqA1klwL8JfJ
+epwxbx/5FaN+rl97rQqKm2ErHS6V7gCzyUcSyk/QTG2C/4Jc99ksBvYpN2ic7pU2
+GrYkwgTMTNOQskboFtbjpqcUyHPBG6GV3RuY5V3xkeMux8Kw1/0ILJdSL4mz+/RT
+llwb8b6dwbbWTxm9n1Wq
+=RvCv
+-----END PGP SIGNATURE-----
+
+--en9/O5YN3eJ0yPaf--
