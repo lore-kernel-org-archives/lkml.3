@@ -1,172 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518AbaEKWjo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 18:39:44 -0400
-Received: from mail.eperm.de ([89.247.134.16]:36857 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932433AbaEKWjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 18:39:42 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-Subject: [PATCH 0/2] Add in-kernel /dev/random equivalent
-Date: Mon, 12 May 2014 00:36:01 +0200
-Message-ID: <1937020.H2HvEFgXrB@myon.chronox.de>
-User-Agent: KMail/4.12.5 (Linux/3.14.3-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
+	id S932558AbaEKWka (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 18:40:30 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50185 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932523AbaEKWk3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 18:40:29 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <536FFC55.2080009@roeck-us.net>
+Date: Sun, 11 May 2014 15:40:21 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="nextPart1929063.BgsACCXYyd"
-Content-Transfer-Encoding: 7Bit
+To: Josef Gajdusek <atx@atx.name>, jdelvare@suse.de
+CC: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/hwmon/emc1403.c: add support for emc1412
+References: <20140511130023.GA501@dashie>
+In-Reply-To: <20140511130023.GA501@dashie>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+On 05/11/2014 06:00 AM, Josef Gajdusek wrote:
+> Adds support for emc1412.
+>
+It is customary to explain the difference to already supported chips
+and what changes were made to support the new chip(s).
 
---nextPart1929063.BgsACCXYyd
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+> ---
+> diff --git a/drivers/hwmon/emc1403.c b/drivers/hwmon/emc1403.c
+> index 90ec117..47a98a7 100644
+> --- a/drivers/hwmon/emc1403.c
+> +++ b/drivers/hwmon/emc1403.c
+> @@ -40,7 +40,7 @@
+>
+>   struct thermal_data {
+>   	struct i2c_client *client;
+> -	const struct attribute_group *groups[3];
+> +	const struct attribute_group *groups[2];
 
-Hi,
+The purpose of having more than one group is to simplify support for optional
+features while at the same time avoiding duplication. This is why there used to be
+two groups (plus an unused entry for list termination).
 
-as discussed in thread [1], an in-kernel equivalent to the blocking 
-/dev/random device behavior is suggested. This in-kernel blocking access to 
-the RNG can be used to seed deterministic random number generators with random 
-numbers that are directly backed by the underlying noise sources.
+Separating and duplicating all attributes into one group per supported chip
+type defeats that purpose. Please don't do that, and revert the related changes.
 
-The following patch implements this concept by adding a third output pool, the 
-kernel_pool that is only accessible inside the kernel. That kernel_pool feeds 
-the blocking operation API calls to obtain random numbers.
+This should not be reduced to two entries, but increased to four or even five;
+see below.
 
-Please find a test kernel module attached. You can unload it even while the 
-collection process is ongoing.
+>   	struct mutex mutex;
+>   	/*
+>   	 * Cache the hyst value so we don't keep re-reading it. In theory
+> @@ -252,6 +252,28 @@ static SENSOR_DEVICE_ATTR(temp4_crit_hyst, S_IRUGO | S_IWUSR,
+>   static SENSOR_DEVICE_ATTR_2(power_state, S_IRUGO | S_IWUSR,
+>   	show_bit, store_bit, 0x03, 0x40);
+>
+> +
+> +static struct attribute *emc1412_attrs[] = {
+> +	&sensor_dev_attr_temp1_min.dev_attr.attr,
+> +	&sensor_dev_attr_temp1_max.dev_attr.attr,
+> +	&sensor_dev_attr_temp1_crit.dev_attr.attr,
+> +	&sensor_dev_attr_temp1_input.dev_attr.attr,
+> +	&sensor_dev_attr_temp1_crit_hyst.dev_attr.attr,
+> +
+> +	&sensor_dev_attr_temp2_min.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_max.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_crit.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_input.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_crit_hyst.dev_attr.attr,
+> +
+> +	&sensor_dev_attr_power_state.dev_attr.attr,
+> +	NULL
+> +};
+> +
+This should become the core attribute group, ie the list of attributes supported
+by all chips.
 
-[1] https://lkml.org/lkml/2014/4/27/174
+The EMC1412 does support alarms, so I would suggest to add another optional
+group for EMC1412 alarms (needed because the alarm register and bits are not
+compatible to the registers/bits used by other chips supported by this driver).
 
-Stephan Mueller (2):
-  Addition of kernel_pool
-  Asynchronous and syncronous API for accessing kernel_pool
+> +static const struct attribute_group emc1412_group = {
+> +		.attrs = emc1412_attrs,
+> +};
+> +
+>   static struct attribute *emc1403_attrs[] = {
+>   	&sensor_dev_attr_temp1_min.dev_attr.attr,
+>   	&sensor_dev_attr_temp1_max.dev_attr.attr,
+> @@ -261,6 +283,7 @@ static struct attribute *emc1403_attrs[] = {
+>   	&sensor_dev_attr_temp1_max_alarm.dev_attr.attr,
+>   	&sensor_dev_attr_temp1_crit_alarm.dev_attr.attr,
+>   	&sensor_dev_attr_temp1_crit_hyst.dev_attr.attr,
+> +
+>   	&sensor_dev_attr_temp2_min.dev_attr.attr,
+>   	&sensor_dev_attr_temp2_max.dev_attr.attr,
+>   	&sensor_dev_attr_temp2_crit.dev_attr.attr,
+> @@ -269,6 +292,7 @@ static struct attribute *emc1403_attrs[] = {
+>   	&sensor_dev_attr_temp2_max_alarm.dev_attr.attr,
+>   	&sensor_dev_attr_temp2_crit_alarm.dev_attr.attr,
+>   	&sensor_dev_attr_temp2_crit_hyst.dev_attr.attr,
+> +
+>   	&sensor_dev_attr_temp3_min.dev_attr.attr,
+>   	&sensor_dev_attr_temp3_max.dev_attr.attr,
+>   	&sensor_dev_attr_temp3_crit.dev_attr.attr,
+> @@ -277,6 +301,7 @@ static struct attribute *emc1403_attrs[] = {
+>   	&sensor_dev_attr_temp3_max_alarm.dev_attr.attr,
+>   	&sensor_dev_attr_temp3_crit_alarm.dev_attr.attr,
+>   	&sensor_dev_attr_temp3_crit_hyst.dev_attr.attr,
+> +
+>   	&sensor_dev_attr_power_state.dev_attr.attr,
+>   	NULL
+>   };
 
- drivers/char/random.c  | 163 
-+++++++++++++++++++++++++++++++++++++++++++++----
- include/linux/random.h |  16 +++++
- 2 files changed, 166 insertions(+), 13 deletions(-)
+Modify this group to list the attributes only supported by EMC1403
+and compatible chips (on top of the core or emc1412 group).
 
--- 
-1.9.0
---nextPart1929063.BgsACCXYyd
-Content-Disposition: attachment; filename="lrng-asym.c"
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/x-csrc; charset="UTF-8"; name="lrng-asym.c"
+> @@ -286,6 +311,33 @@ static const struct attribute_group emc1403_group = {
+>   };
+>
+>   static struct attribute *emc1404_attrs[] = {
+> +	&sensor_dev_attr_temp1_min.dev_attr.attr,
+> +	&sensor_dev_attr_temp1_max.dev_attr.attr,
+> +	&sensor_dev_attr_temp1_crit.dev_attr.attr,
+> +	&sensor_dev_attr_temp1_input.dev_attr.attr,
+> +	&sensor_dev_attr_temp1_min_alarm.dev_attr.attr,
+> +	&sensor_dev_attr_temp1_max_alarm.dev_attr.attr,
+> +	&sensor_dev_attr_temp1_crit_alarm.dev_attr.attr,
+> +	&sensor_dev_attr_temp1_crit_hyst.dev_attr.attr,
+> +
+> +	&sensor_dev_attr_temp2_min.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_max.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_crit.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_input.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_min_alarm.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_max_alarm.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_crit_alarm.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_crit_hyst.dev_attr.attr,
+> +
+> +	&sensor_dev_attr_temp3_min.dev_attr.attr,
+> +	&sensor_dev_attr_temp3_max.dev_attr.attr,
+> +	&sensor_dev_attr_temp3_crit.dev_attr.attr,
+> +	&sensor_dev_attr_temp3_input.dev_attr.attr,
+> +	&sensor_dev_attr_temp3_min_alarm.dev_attr.attr,
+> +	&sensor_dev_attr_temp3_max_alarm.dev_attr.attr,
+> +	&sensor_dev_attr_temp3_crit_alarm.dev_attr.attr,
+> +	&sensor_dev_attr_temp3_crit_hyst.dev_attr.attr,
+> +
+This is exactly what you don't want to do; it is unnecessary duplication.
+There was a reason for having the second group on top of the first one,
+as explained above.
 
-/* Test module for verifying the correct operation of the
- * SP800-90A DRBG
- *
- * Use: compile, load into the kernel and observe dmesg
- *
- * Written by: Stephan Mueller <smueller@chronox.de>
- * Copyright (c) 2014
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- *                          NO WARRANTY
- *
- *  BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
- *  FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN
- *  OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
- *  PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED
- *  OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- *  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE ENTIRE RISK AS
- *  TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD THE
- *  PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING,
- *  REPAIR OR CORRECTION.
- *
- *  IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
- *  WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
- *  REDISTRIBUTE THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES,
- *  INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING
- *  OUT OF THE USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED
- *  TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY
- *  YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER
- *  PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGES.
- */
+>   	&sensor_dev_attr_temp4_min.dev_attr.attr,
+>   	&sensor_dev_attr_temp4_max.dev_attr.attr,
+>   	&sensor_dev_attr_temp4_crit.dev_attr.attr,
+> @@ -294,6 +346,8 @@ static struct attribute *emc1404_attrs[] = {
+>   	&sensor_dev_attr_temp4_max_alarm.dev_attr.attr,
+>   	&sensor_dev_attr_temp4_crit_alarm.dev_attr.attr,
+>   	&sensor_dev_attr_temp4_crit_hyst.dev_attr.attr,
+> +
+> +	&sensor_dev_attr_power_state.dev_attr.attr,
+>   	NULL
+>   };
+>
+> @@ -301,11 +355,13 @@ static const struct attribute_group emc1404_group = {
+>   	.attrs = emc1404_attrs,
+>   };
+>
+> +
+> +
 
-#include <linux/random.h>
-#include <linux/module.h>
-#include <linux/slab.h> /* needed for kzalloc */
+Unnecessary empty lines and unnecessary whitespace change.
 
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Stephan Mueller <smueller@chronox.de>");
-MODULE_DESCRIPTION("Test module for verifying the correct operation of async LRNG operation");
+>   static int emc1403_detect(struct i2c_client *client,
+>   			struct i2c_board_info *info)
+>   {
+>   	int id;
+> -	/* Check if thermal chip is SMSC and EMC1403 or EMC1423 */
+> +	/* Check whether the chip is SMSC and get its type */
 
-static struct random_work my_work;
-static struct random_work my_work1;
-static struct random_work my_work2;
-static struct random_work my_work3;
-static struct random_work my_work4;
-static struct random_work my_work5;
-static struct random_work my_work6;
-static struct random_work my_work7;
-static struct random_work my_work8;
-static struct random_work my_work9;
-#define LEN 1024
-static char buffer[LEN];
+This change makes the comment pretty much worthless. It used to describe
+what the function is doing, which is no longer the case after your change.
 
-void lrng_cb(void *buf, ssize_t buflen)
-{
-	printk("received %d bytes\n", (int)buflen);
-}
+>
+>   	id = i2c_smbus_read_byte_data(client, THERMAL_SMSC_ID_REG);
+>   	if (id != 0x5d)
+> @@ -313,6 +369,9 @@ static int emc1403_detect(struct i2c_client *client,
+>
+>   	id = i2c_smbus_read_byte_data(client, THERMAL_PID_REG);
+>   	switch (id) {
+> +	case 0x20:
+> +		strlcpy(info->type, "emc1412", I2C_NAME_SIZE);
+> +		break;
+>   	case 0x21:
+>   		strlcpy(info->type, "emc1403", I2C_NAME_SIZE);
+>   		break;
+> @@ -330,9 +389,9 @@ static int emc1403_detect(struct i2c_client *client,
+>   	}
+>
+>   	id = i2c_smbus_read_byte_data(client, THERMAL_REVISION_REG);
+> -	if (id != 0x01)
+> +	if (id != 0x01 && id != 0x04) {
+>   		return -ENODEV;
 
-static void cn(struct random_work *work)
-{
-	get_blocking_random_bytes_cancel(work);
-	cancel_work_sync(&work->rw_work);
-}
+This should be a separate patch, as it applies to emc1403/emc1404 as well,
+so we can backport it into -stable.
 
-static int __init lrng_init(void)
-{
-	get_blocking_random_bytes_cb(NULL, &my_work, buffer, LEN, lrng_cb);
-	get_blocking_random_bytes_cb(NULL, &my_work1, buffer, LEN, lrng_cb);
-	get_blocking_random_bytes_cb(NULL, &my_work2, buffer, LEN, lrng_cb);
-	get_blocking_random_bytes_cb(NULL, &my_work3, buffer, LEN, lrng_cb);
-	get_blocking_random_bytes_cb(NULL, &my_work4, buffer, LEN, lrng_cb);
-	get_blocking_random_bytes_cb(NULL, &my_work5, buffer, LEN, lrng_cb);
-	get_blocking_random_bytes_cb(NULL, &my_work6, buffer, LEN, lrng_cb);
-	get_blocking_random_bytes_cb(NULL, &my_work7, buffer, LEN, lrng_cb);
-	get_blocking_random_bytes_cb(NULL, &my_work8, buffer, LEN, lrng_cb);
-	get_blocking_random_bytes_cb(NULL, &my_work9, buffer, LEN, lrng_cb);
+> -
+> +	}
+>   	return 0;
+>   }
+>
+> @@ -351,9 +410,17 @@ static int emc1403_probe(struct i2c_client *client,
+>   	mutex_init(&data->mutex);
+>   	data->hyst_valid = jiffies - 1;		/* Expired */
+>
+> -	data->groups[0] = &emc1403_group;
+> -	if (id->driver_data)
+> -		data->groups[1] = &emc1404_group;
+> +	switch (id->driver_data) {
+> +	case 0:
+> +		data->groups[0] = &emc1412_group;
+> +		break;
+> +	case 1:
+> +		data->groups[0] = &emc1403_group;
+> +		break;
+> +	case 2:
+> +		data->groups[0] = &emc1404_group;
+> +		break;
+> +	}
+>
+Not acceptable. Again, there is a reason for having multiple attribute groups.
 
-	/* cancel one work to see that work can be canceled independent from
-	 * others */
-	cn(&my_work);
-	return 0;
-}
+>   	hwmon_dev = hwmon_device_register_with_groups(&client->dev,
+>   						      client->name, data,
+> @@ -366,14 +433,19 @@ static int emc1403_probe(struct i2c_client *client,
+>   }
+>
+>   static const unsigned short emc1403_address_list[] = {
+> -	0x18, 0x29, 0x4c, 0x4d, I2C_CLIENT_END
+> +	/* emc1403/emc1404/emc1423/emc1424 */
+> +	0x4c, 0x4d, 0x18, 0x29,
+> +	/* emc1412 */
+> +	0x5c, 0x4c, 0x6c, 0x1c, 0x3c, I2C_CLIENT_END
 
-void __exit lrng_exit(void)
-{
-	cn(&my_work1);
-	cn(&my_work2);
-	cn(&my_work3);
-	cn(&my_work4);
-	cn(&my_work5);
-	cn(&my_work6);
-	cn(&my_work7);
-	cn(&my_work8);
-	cn(&my_work9);
-}
+No duplication of addresses, and addresses are by convention in order.
+Jean, any addresses which should not be scanned ?
 
-module_init(lrng_init);
-module_exit(lrng_exit);
+>   };
+>
+> +/* Last number in name indicates the amount of channels */
+>   static const struct i2c_device_id emc1403_idtable[] = {
+> -	{ "emc1403", 0 },
+> -	{ "emc1404", 1 },
+> -	{ "emc1423", 0 },
+> -	{ "emc1424", 1 },
+> +	{ "emc1412", 0 },
+> +	{ "emc1403", 1 },
+> +	{ "emc1423", 1 },
+> +	{ "emc1404", 2 },
+> +	{ "emc1424", 2 },
 
+It may be time to introduce an enum for supported chip variants.
+Also, the list is by custom in alphabetical order.
 
---nextPart1929063.BgsACCXYyd--
+Guenter
 
