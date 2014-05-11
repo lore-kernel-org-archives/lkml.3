@@ -1,126 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964830AbaEKTjW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:39:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48386 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933751AbaEKTZS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933750AbaEKTZS (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 11 May 2014 15:25:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48370 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932484AbaEKTZK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 15:25:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Morgan Mears <Morgan.Mears@netapp.com>,
-        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>,
-        Heinz Mauelshagen <heinzm@redhat.com>
-Subject: [PATCH 3.14 64/83] dm cache: prevent corruption caused by discard_block_size > cache_block_size
-Date: Sun, 11 May 2014 21:20:05 +0200
-Message-Id: <20140511191915.219767016@linuxfoundation.org>
+        Herve Codina <Herve.CODINA@celad.com>, Josh Wu <josh.wu@atmel.com>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.10 39/48] mtd: atmel_nand: Disable subpage NAND write when using Atmel PMECC
+Date: Sun, 11 May 2014 21:20:13 +0200
+Message-Id: <20140511191953.392069907@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
-References: <20140511191907.024339448@linuxfoundation.org>
+In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
+References: <20140511191948.079900414@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Herve Codina <Herve.CODINA@celad.com>
 
-commit d132cc6d9e92424bb9d4fd35f5bd0e55d583f4be upstream.
+commit 90445ff6241e2a13445310803e2efa606c61f276 upstream.
 
-If the discard block size is larger than the cache block size we will
-not properly quiesce IO to a region that is about to be discarded.  This
-results in a race between a cache migration where no copy is needed, and
-a write to an adjacent cache block that's within the same large discard
-block.
+Crash detected on sam5d35 and its pmecc nand ecc controller.
 
-Workaround this by limiting the discard_block_size to cache_block_size.
-Also limit the max_discard_sectors to cache_block_size.
+The problem was a call to chip->ecc.hwctl from nand_write_subpage_hwecc
+(nand_base.c) when we write a sub page.
+chip->ecc.hwctl function is not set when we are using PMECC controller.
+As a workaround, set NAND_NO_SUBPAGE_WRITE for PMECC controller in
+order to disable sub page access in nand_write_page.
 
-A more comprehensive fix that introduces range locking support in the
-bio_prison and proper quiescing of a discard range that spans multiple
-cache blocks is already in development.
-
-Reported-by: Morgan Mears <Morgan.Mears@netapp.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
-Acked-by: Heinz Mauelshagen <heinzm@redhat.com>
+Signed-off-by: Herve Codina <Herve.CODINA@celad.com>
+Acked-by: Josh Wu <josh.wu@atmel.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-target.c |   37 +++----------------------------------
- 1 file changed, 3 insertions(+), 34 deletions(-)
+ drivers/mtd/nand/atmel_nand.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -239,7 +239,7 @@ struct cache {
- 	 */
- 	dm_dblock_t discard_nr_blocks;
- 	unsigned long *discard_bitset;
--	uint32_t discard_block_size; /* a power of 2 times sectors per block */
-+	uint32_t discard_block_size;
- 
- 	/*
- 	 * Rather than reconstructing the table line for the status we just
-@@ -2171,35 +2171,6 @@ static int create_cache_policy(struct ca
- 	return 0;
- }
- 
--/*
-- * We want the discard block size to be a power of two, at least the size
-- * of the cache block size, and have no more than 2^14 discard blocks
-- * across the origin.
-- */
--#define MAX_DISCARD_BLOCKS (1 << 14)
--
--static bool too_many_discard_blocks(sector_t discard_block_size,
--				    sector_t origin_size)
--{
--	(void) sector_div(origin_size, discard_block_size);
--
--	return origin_size > MAX_DISCARD_BLOCKS;
--}
--
--static sector_t calculate_discard_block_size(sector_t cache_block_size,
--					     sector_t origin_size)
--{
--	sector_t discard_block_size;
--
--	discard_block_size = roundup_pow_of_two(cache_block_size);
--
--	if (origin_size)
--		while (too_many_discard_blocks(discard_block_size, origin_size))
--			discard_block_size *= 2;
--
--	return discard_block_size;
--}
--
- #define DEFAULT_MIGRATION_THRESHOLD 2048
- 
- static int cache_create(struct cache_args *ca, struct cache **result)
-@@ -2321,9 +2292,7 @@ static int cache_create(struct cache_arg
+--- a/drivers/mtd/nand/atmel_nand.c
++++ b/drivers/mtd/nand/atmel_nand.c
+@@ -1096,6 +1096,7 @@ static int __init atmel_pmecc_nand_init_
+ 		goto err_pmecc_data_alloc;
  	}
- 	clear_bitset(cache->dirty_bitset, from_cblock(cache->cache_size));
  
--	cache->discard_block_size =
--		calculate_discard_block_size(cache->sectors_per_block,
--					     cache->origin_sectors);
-+	cache->discard_block_size = cache->sectors_per_block;
- 	cache->discard_nr_blocks = oblock_to_dblock(cache, cache->origin_blocks);
- 	cache->discard_bitset = alloc_bitset(from_dblock(cache->discard_nr_blocks));
- 	if (!cache->discard_bitset) {
-@@ -3120,7 +3089,7 @@ static void set_discard_limits(struct ca
- 	/*
- 	 * FIXME: these limits may be incompatible with the cache device
- 	 */
--	limits->max_discard_sectors = cache->discard_block_size * 1024;
-+	limits->max_discard_sectors = cache->discard_block_size;
- 	limits->discard_granularity = cache->discard_block_size << SECTOR_SHIFT;
- }
++	nand_chip->options |= NAND_NO_SUBPAGE_WRITE;
+ 	nand_chip->ecc.read_page = atmel_nand_pmecc_read_page;
+ 	nand_chip->ecc.write_page = atmel_nand_pmecc_write_page;
  
 
 
