@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934254AbaEKT1i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:27:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48596 "EHLO
+	id S964797AbaEKT1o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:27:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48700 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934190AbaEKT1e (ORCPT
+	with ESMTP id S934190AbaEKT1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:27:34 -0400
+	Sun, 11 May 2014 15:27:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
-Subject: [PATCH 3.4 22/22] dm thin: fix dangling bio in process_deferred_bios error path
-Date: Sun, 11 May 2014 21:21:30 +0200
-Message-Id: <20140511192106.807939335@linuxfoundation.org>
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.4 21/22] Skip intel_crt_init for Dell XPS 8700
+Date: Sun, 11 May 2014 21:21:29 +0200
+Message-Id: <20140511192106.679552292@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511192103.733723493@linuxfoundation.org>
 References: <20140511192103.733723493@linuxfoundation.org>
@@ -26,34 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Giacomo Comes <comes@naic.edu>
 
-commit fe76cd88e654124d1431bb662a0fc6e99ca811a5 upstream.
+commit 10b6ee4a87811a110cb01eaca01eb04da6801baf upstream.
 
-If unable to ensure_next_mapping() we must add the current bio, which
-was removed from the @bios list via bio_list_pop, back to the
-deferred_bios list before all the remaining @bios.
+The Dell XPS 8700 has a onboard Display port and HDMI port and no VGA port.
+The call intel_crt_init freeze the machine, so skip such call.
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73559
+Signed-off-by: Giacomo Comes <comes at naic.edu>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_crt.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -1446,9 +1446,9 @@ static void process_deferred_bios(struct
- 		 */
- 		if (ensure_next_mapping(pool)) {
- 			spin_lock_irqsave(&pool->lock, flags);
-+			bio_list_add(&pool->deferred_bios, bio);
- 			bio_list_merge(&pool->deferred_bios, &bios);
- 			spin_unlock_irqrestore(&pool->lock, flags);
--
- 			break;
- 		}
+--- a/drivers/gpu/drm/i915/intel_crt.c
++++ b/drivers/gpu/drm/i915/intel_crt.c
+@@ -579,6 +579,14 @@ static const struct dmi_system_id intel_
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "ZGB"),
+ 		},
+ 	},
++	{
++		.callback = intel_no_crt_dmi_callback,
++		.ident = "DELL XPS 8700",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "XPS 8700"),
++		},
++	},
+ 	{ }
+ };
  
 
 
