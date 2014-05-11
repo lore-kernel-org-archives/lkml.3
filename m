@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758122AbaEKLeV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 07:34:21 -0400
-Received: from www85.your-server.de ([213.133.104.85]:55581 "EHLO
-	www85.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757805AbaEKLeU (ORCPT
+	id S932388AbaEKLeq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 07:34:46 -0400
+Received: from [31.31.75.104] ([31.31.75.104]:47026 "EHLO twilight"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757805AbaEKLep convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 07:34:20 -0400
-X-Greylist: delayed 1808 seconds by postgrey-1.27 at vger.kernel.org; Sun, 11 May 2014 07:34:20 EDT
-From: Olaf Dietsche <olaf--list.linux-kernel@olafdietsche.de>
-To: linux-kernel@vger.kernel.org
-Cc: Bart van der Meulen <bartvdrmeulen@gmail.com>
-Subject: [PATCH] 3.3-3.14: access permission filesystem
-Date: Sun, 11 May 2014 13:04:05 +0200
-Message-ID: <877g5s4lwa.fsf@olafdietsche.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Authenticated-Sender: olaf@olafdietsche.de
+	Sun, 11 May 2014 07:34:45 -0400
+X-Greylist: delayed 423 seconds by postgrey-1.27 at vger.kernel.org; Sun, 11 May 2014 07:34:45 EDT
+Mime-Version: 1.0
+Date: Sun, 11 May 2014 11:27:38 +0000
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <b9f6fe08e91b81bfd870105ab36a531c@rainloop.atalax.net>
+X-Mailer: RainLoop/1.6.5.902
+From: atx@atx.name
+Subject: Re[2]: [PATCH] drivers/hwmon: bugfix and support for emc1412 in
+ emc1403.c
+To: "Jean Delvare" <jdelvare@suse.de>
+Cc: linux@roeck-us.net, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20140511131228.019bdba5@endymion.delvare>
+References: <20140511131228.019bdba5@endymion.delvare>
+ <20140511103152.GA5631@dashie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I finally came around updating the accessfs module to Linux 3.14.
+May 11 2014 1:12 PM, "Jean Delvare"  wrote: 
 
-This patch adds a new permission managing file system. Furthermore, it
-adds two modules, which make use of this file system.
+> Hi Josef,
+> 
+> On Sun, 11 May 2014 12:31:52 +0200, Josef Gajdusek wrote:
+> 
+> 
+>> Adds support for emc1412 to emc1403.c + minor bugfix
+>> 
+>> * Renamed generic thermal_* prefixed names to emc1403_*
+>> 
+>> 
+>> Why? This adds a lot of noise to your patch and the benefit isn't
+>> obvious. If you really want to do that, then it should be a separate
+>> patch.
+>> 
+>> 
+>>> * Fixed set_hyst being broken (i. e. writing 86000 set hysteresis to 84000)
+>>> 
+>> 
+>> 
+>> Bug fixes should be sent as separate patches, so that they can be
+>> ported back to stable, long-term and distribution kernels.
+>> 
+>> 
+>> * Added support for emc1412
+>> 
+>> Signed-off-by: Josef Gajdusek 
+>> 
+>> +MODULE_ALIAS("i2c:emc1403");
+>> 
+> 
+> 
+> Why add an alias which is already present?
+> 
+> --
+> Jean Delvare
+> SUSE L3 Support
+> 
 
-One module allows granting capabilities based on user-/groupid. The
-second module allows to grant access to lower numbered ports based on
-user-/groupid, too.
 
-Changes:
-- Update up to 3.14
-- Included patches from Bart van der Meulen
-  + register accessfs with the LSM system
-  + clear I_NEW flag to prevent busy inodes on umount
+Hello,
+thanks for your feedback. I am going to split and change the patches as you suggested and then resend within few hours.
 
-The patches are available at:
-<http://www.olafdietsche.de/linux/accessfs/>
-
-and at github 
-
-<https://github.com/olafdietsche/linux-accessfs>
-
-in the accessfs branch.
-
-Regards, Olaf
+Josef Gajdusek <atx@atx.name>
