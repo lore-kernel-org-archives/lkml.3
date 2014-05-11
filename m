@@ -1,168 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757843AbaEKUiN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 16:38:13 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:35764 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757711AbaEKUiJ (ORCPT
+	id S1757531AbaEKUqf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 16:46:35 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:41755 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663AbaEKUqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 16:38:09 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 2/2] CPU hotplug,
- stop-machine: Plug race-window that leads to "IPI-to-offline-CPU"
-To: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org, tj@kernel.org,
-        rusty@rustcorp.com.au, akpm@linux-foundation.org, fweisbec@gmail.com,
-        hch@infradead.org
-Cc: mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
-        mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Date: Mon, 12 May 2014 02:07:04 +0530
-Message-ID: <20140511203657.17152.79234.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20140511203617.17152.21133.stgit@srivatsabhat.in.ibm.com>
-References: <20140511203617.17152.21133.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Sun, 11 May 2014 16:46:34 -0400
+Message-ID: <1399841186.8629.6.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2] ipc,shm: document new limits in the uapi header
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: mtk.manpages@gmail.com
+Cc: Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, aswin@hp.com,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Sun, 11 May 2014 13:46:26 -0700
+In-Reply-To: <CAKgNAkgZ+7=EB4jkCdvq5EK1ce03rq9j+rEss9N1XnUQytBcGg@mail.gmail.com>
+References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
+	 <CAKgNAkjuU68hgyMOVGBVoBTOhhGdBytQh6H0ExiLoXfujKyP_w@mail.gmail.com>
+	 <1399406800.13799.20.camel@buesod1.americas.hpqcorp.net>
+	 <CAKgNAkjOKP7P9veOpnokNkVXSszVZt5asFsNp7rm7AXJdjcLLA@mail.gmail.com>
+	 <1399414081.30629.2.camel@buesod1.americas.hpqcorp.net>
+	 <5369C43D.1000206@gmail.com>
+	 <1399486965.4567.9.camel@buesod1.americas.hpqcorp.net>
+	 <1399490251.4567.24.camel@buesod1.americas.hpqcorp.net>
+	 <CAKgNAkgZ+7=EB4jkCdvq5EK1ce03rq9j+rEss9N1XnUQytBcGg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051120-9574-0000-0000-00000D86F069
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During CPU offline, stop-machine is used to take control over all the online
-CPUs (via the per-cpu stopper thread) and then run take_cpu_down() on the CPU
-that is to be taken offline.
+On Fri, 2014-05-09 at 10:44 +0200, Michael Kerrisk (man-pages) wrote:
+> On Wed, May 7, 2014 at 9:17 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> > This is useful in the future and allows users to
+> > better understand the reasoning behind the changes.
+> >
+> > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> > ---
+> >  include/uapi/linux/shm.h | 15 +++++++++------
+> >  1 file changed, 9 insertions(+), 6 deletions(-)
+> >
+> > diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
+> > index 74e786d..3400b6e 100644
+> > --- a/include/uapi/linux/shm.h
+> > +++ b/include/uapi/linux/shm.h
+> > @@ -8,17 +8,20 @@
+> >  #endif
+> >
+> >  /*
+> > - * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
+> > - * be modified by sysctl.
+> > + * SHMMNI, SHMMAX and SHMALL are the default upper limits which can be
+> > + * modified by sysctl. Both SHMMAX and SHMALL have their default values
+> > + * to the maximum limit which is as large as it can be without helping
+> > + * userspace overflow the values. There is really nothing the kernel
+> > + * can do to avoid this any further. It is therefore not advised to
+> > + * make them any larger. These limits are suitable for both 32 and
+> > + * 64-bit systems.
+> 
+> I somehow find that text still rather impenetrable. What about this:
+> 
+> SHMMNI, SHMMAX and SHMALL are default upper limits which can be
+> modified by sysctl. The SHMMAX and SHMALL values have been chosen to
+> be as large possible without facilitating scenarios where userspace
+> causes overflows when adjusting the limits via operations of the form
+> "retrieve current limit; add X; update limit". It is therefore not
+> advised to make SHMMAX and SHMALL any larger. These limits are
+> suitable for both 32 and 64-bit systems.
 
-But stop-machine itself has several stages: _PREPARE, _DISABLE_IRQ, _RUN etc.
-The important thing to note here is that the _DISABLE_IRQ stage comes much
-later after starting stop-machine, and hence there is a large window where
-other CPUs can send IPIs to the CPU going offline. As a result, we can
-encounter a scenario as depicted below, which causes IPIs to be sent to the
-CPU going offline, and that CPU notices them *after* it has gone offline,
-triggering the "IPI-to-offline-CPU" warning from the smp-call-function code.
+I don't really have much preference, imho both read pretty much the
+same, specially considering this is still code after all. If you guys
+really prefer updating it, let me know and I'll send a v3. But perhaps
+your text is a bit more suitable in the svipc manpage?
 
-
-              CPU 1                                         CPU 2
-          (Online CPU)                               (CPU going offline)
-
-       Enter _PREPARE stage                          Enter _PREPARE stage
-
-                                                     Enter _DISABLE_IRQ stage
-
-
-                                                   =
-       Got a device interrupt,                     | Didn't notice the IPI
-       and the interrupt handler                   | since interrupts were
-       called smp_call_function()                  | disabled on this CPU.
-       and sent an IPI to CPU 2.                   |
-                                                   =
-
-
-       Enter _DISABLE_IRQ stage
-
-
-       Enter _RUN stage                              Enter _RUN stage
-
-                                  =
-       Busy loop with interrupts  |                  Invoke take_cpu_down()
-       disabled.                  |                  and take CPU 2 offline
-                                  =
-
-
-       Enter _EXIT stage                             Enter _EXIT stage
-
-       Re-enable interrupts                          Re-enable interrupts
-
-                                                     The pending IPI is noted
-                                                     immediately, but alas,
-                                                     the CPU is offline at
-                                                     this point.
-
-
-
-So, as we can observe from this scenario, the IPI was sent when CPU 2 was
-still online, and hence it was perfectly legal. But unfortunately it was
-noted only after CPU 2 went offline, resulting in the warning from the
-IPI handling code. In other words, the fault was not at the sender, but
-at the receiver side - and if we look closely, the real bug is in the
-stop-machine sequence itself.
-
-The problem here is that the CPU going offline disabled its local interrupts
-(by entering _DISABLE_IRQ phase) *before* the other CPUs. And that's the
-reason why it was not able to respond to the IPI before going offline.
-
-A simple solution to this problem is to ensure that the CPU going offline
-disables its interrupts only *after* the other CPUs do the same thing.
-To achieve this, split the _DISABLE_IRQ state into 2 parts:
-
-1st part: MULTI_STOP_DISABLE_IRQ_INACTIVE, where only the non-active CPUs
-(i.e., the "other" CPUs) disable their interrupts.
-
-2nd part: MULTI_STOP_DISABLE_IRQ_ACTIVE, where the active CPU (i.e., the
-CPU going offline) disables its interrupts.
-
-With this in place, the CPU going offline will always be the last one to
-disable interrupts. After this step, no further IPIs can be sent to the
-outgoing CPU, since all the other CPUs would be executing the stop-machine
-code with interrupts disabled. And by the time stop-machine ends, the CPU
-would have gone offline and disappeared from the cpu_online_mask, and hence
-future invocations of smp_call_function() and friends will automatically
-prune that CPU out. Thus, we can guarantee that no CPU will end up
-*inadvertently* sending IPIs to an offline CPU.
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- kernel/stop_machine.c |   25 ++++++++++++++++++++++---
- 1 file changed, 22 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-index 01fbae5..cac8590 100644
---- a/kernel/stop_machine.c
-+++ b/kernel/stop_machine.c
-@@ -130,8 +130,10 @@ enum multi_stop_state {
- 	MULTI_STOP_NONE,
- 	/* Awaiting everyone to be scheduled. */
- 	MULTI_STOP_PREPARE,
--	/* Disable interrupts. */
--	MULTI_STOP_DISABLE_IRQ,
-+	/* Disable interrupts on CPUs not in ->active_cpus mask. */
-+	MULTI_STOP_DISABLE_IRQ_INACTIVE,
-+	/* Disable interrupts on CPUs in ->active_cpus mask. */
-+	MULTI_STOP_DISABLE_IRQ_ACTIVE,
- 	/* Run the function */
- 	MULTI_STOP_RUN,
- 	/* Exit */
-@@ -189,10 +191,27 @@ static int multi_cpu_stop(void *data)
- 	do {
- 		/* Chill out and ensure we re-read multi_stop_state. */
- 		cpu_relax();
-+
-+		/*
-+		 * In the case of CPU offline, we don't want the other CPUs to
-+		 * send IPIs to the active_cpu (the one going offline) after it
-+		 * has disabled interrupts in the _DISABLE_IRQ state (because,
-+		 * then it will notice the IPIs only after it goes offline). So
-+		 * we split this state into _INACTIVE and _ACTIVE, and thereby
-+		 * ensure that the active_cpu disables interrupts only after
-+		 * the other CPUs do the same thing.
-+		 */
-+
- 		if (msdata->state != curstate) {
- 			curstate = msdata->state;
- 			switch (curstate) {
--			case MULTI_STOP_DISABLE_IRQ:
-+			case MULTI_STOP_DISABLE_IRQ_INACTIVE:
-+				if (is_active)
-+					break;
-+
-+				/* Else, fall-through */
-+
-+			case MULTI_STOP_DISABLE_IRQ_ACTIVE:
- 				local_irq_disable();
- 				hard_irq_disable();
- 				break;
+Thanks,
+Davidlohr
 
