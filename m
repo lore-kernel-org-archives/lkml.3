@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934191AbaEKTil (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:38:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48398 "EHLO
+	id S933787AbaEKTZY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:25:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48382 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933793AbaEKTZ0 (ORCPT
+	with ESMTP id S933741AbaEKTZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:25:26 -0400
+	Sun, 11 May 2014 15:25:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
-Subject: [PATCH 3.14 67/83] dm thin: fix dangling bio in process_deferred_bios error path
-Date: Sun, 11 May 2014 21:20:08 +0200
-Message-Id: <20140511191915.671965044@linuxfoundation.org>
+        Alex Miller <almiller_1@yahoo.co.uk>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 35/48] rtlwifi: rtl8192se: Fix regression due to commit 1bf4bbb
+Date: Sun, 11 May 2014 21:20:09 +0200
+Message-Id: <20140511191952.877985084@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
-References: <20140511191907.024339448@linuxfoundation.org>
+In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
+References: <20140511191948.079900414@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit fe76cd88e654124d1431bb662a0fc6e99ca811a5 upstream.
+commit 5f9186990ec4579ee5b7a99b3254c29eda479f36 upstream.
 
-If unable to ensure_next_mapping() we must add the current bio, which
-was removed from the @bios list via bio_list_pop, back to the
-deferred_bios list before all the remaining @bios.
+Beginning with kernel 3.13, this driver fails on some systems. The problem
+was bisected to:
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
+Commit 1bf4bbb4024dcdab5e57634dd8ae1072d42a53ac
+Author: Felix Fietkau <nbd@openwrt.org>
+Title: mac80211: send control port protocol frames to the VO queue
+
+There is noting wrong with the above commit. The regression occurs because
+V0 queue on RTL8192SE cards uses priority 6, not the usual 7. The fix is to
+modify the rtl8192se routine that sets the correct transmit queue.
+
+Bug: https://bugzilla.kernel.org/show_bug.cgi?id=74541
+
+Reported-by: Alex Miller <almiller_1@yahoo.co.uk>
+Tested-by: Alex Miller <almiller_1@yahoo.co.uk>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/rtl8192se/trx.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -1392,9 +1392,9 @@ static void process_deferred_bios(struct
- 		 */
- 		if (ensure_next_mapping(pool)) {
- 			spin_lock_irqsave(&pool->lock, flags);
-+			bio_list_add(&pool->deferred_bios, bio);
- 			bio_list_merge(&pool->deferred_bios, &bios);
- 			spin_unlock_irqrestore(&pool->lock, flags);
--
- 			break;
- 		}
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
+@@ -49,6 +49,12 @@ static u8 _rtl92se_map_hwqueue_to_fwqueu
+ 	if (ieee80211_is_nullfunc(fc))
+ 		return QSLT_HIGH;
+ 
++	/* Kernel commit 1bf4bbb4024dcdab changed EAPOL packets to use
++	 * queue V0 at priority 7; however, the RTL8192SE appears to have
++	 * that queue at priority 6
++	 */
++	if (skb->priority == 7)
++		return QSLT_VO;
+ 	return skb->priority;
+ }
  
 
 
