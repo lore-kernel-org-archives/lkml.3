@@ -1,46 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359AbaEKIJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 04:09:29 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:45204 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757601AbaEKIIl (ORCPT
+	id S1757939AbaEKI2Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 04:28:25 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:32950 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038AbaEKI2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 04:08:41 -0400
-From: Paul Davies C <pauldaviesc@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, aaro.koskinen@iki.fi,
-        devel@driverdev.osuosl.org, Paul Davies C <pauldaviesc@gmail.com>
-Subject: [PATCH 2/3] Enclose complex macro with parantheses in staging/octeon-usb/octeon-hcd.c
-Date: Sun, 11 May 2014 13:38:22 +0530
-Message-Id: <1399795703-6681-3-git-send-email-pauldaviesc@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1399795703-6681-1-git-send-email-pauldaviesc@gmail.com>
-References: <1399795703-6681-1-git-send-email-pauldaviesc@gmail.com>
+	Sun, 11 May 2014 04:28:20 -0400
+Date: Sun, 11 May 2014 10:28:11 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: George Spelvin <linux@horizon.com>
+Cc: jan.nikitenko@gmail.com, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linville@tuxdriver.com,
+        arik@wizery.com, coelho@ti.com, david.gnedt@davizone.at,
+        eliad@wizery.com, laurent.pinchart+renesas@ideasonboard.com,
+        luca@coelho.fi, tony@atomide.com
+Subject: Re: [PATCH] lib/crc7: Shift crc7() output left 1 bit
+Message-ID: <20140511082811.GA2695@xo-6d-61-c0.localdomain>
+References: <20140511043526.18113.qmail@ns.horizon.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140511043526.18113.qmail@ns.horizon.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Complex macro is enlosed with parantheses.
+On Sun 2014-05-11 00:35:26, George Spelvin wrote:
+> This eliminates a 1-bit left shift in every single caller,
+> and also makes the inner loop of the CRC computation more efficient.
+> 
+> And purged #include <linux/crc7.h> from files that don't use it at all.
 
-Signed-off-by: Paul Davies C <pauldaviesc@gmail.com>
----
- drivers/staging/octeon-usb/octeon-hcd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Looks good, but should not function name change when functionality got
+completely different?
 
-diff --git a/drivers/staging/octeon-usb/octeon-hcd.c b/drivers/staging/octeon-usb/octeon-hcd.c
-index a65d6f8..d03095a 100644
---- a/drivers/staging/octeon-usb/octeon-hcd.c
-+++ b/drivers/staging/octeon-usb/octeon-hcd.c
-@@ -246,7 +246,7 @@ enum cvmx_usb_pipe_flags {
- };
- 
- /* Normal prefetch that use the pref instruction. */
--#define CVMX_PREFETCH(address, offset) asm volatile ("pref %[type], %[off](%[rbase])" : : [rbase] "d" (address), [off] "I" (offset), [type] "n" (0))
-+#define CVMX_PREFETCH(address, offset) (asm volatile ("pref %[type], %[off](%[rbase])" : : [rbase] "d" (address), [off] "I" (offset), [type] "n" (0)))
- 
- /* Maximum number of times to retry failed transactions */
- #define MAX_RETRIES		3
+								Pavel
+
+
+> 
+> Signed-off-by: George Spelvin <linux@horizon.com>
+> ---
+> Since all of the affected drivers are officially orphaned, this is
+> being sent to a hodge-podge of people who touched the files recently.
+> Assuming the MMC people don't complain, is it okay to send this through
+> the wireless tree?
+> 
+>  drivers/mmc/host/mmc_spi.c           |  2 +-
+>  drivers/net/wireless/ti/wl1251/acx.c |  1 -
+>  drivers/net/wireless/ti/wl1251/cmd.c |  1 -
+>  drivers/net/wireless/ti/wl1251/spi.c |  3 +-
+>  drivers/net/wireless/ti/wlcore/spi.c |  3 +-
+>  include/linux/crc7.h                 |  2 +-
+>  lib/crc7.c                           | 74 ++++++++++++++++++++----------------
+>  7 files changed, 45 insertions(+), 41 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/mmc_spi.c b/drivers/mmc/host/mmc_spi.c
+> index 0a87e56913..2c9e879c09 100644
+> --- a/drivers/mmc/host/mmc_spi.c
+> +++ b/drivers/mmc/host/mmc_spi.c
+> @@ -472,7 +472,7 @@ mmc_spi_command_send(struct mmc_spi_host *host,
+>  	*cp++ = (u8)(arg >> 16);
+>  	*cp++ = (u8)(arg >> 8);
+>  	*cp++ = (u8)arg;
+> -	*cp++ = (crc7(0, &data->status[1], 5) << 1) | 0x01;
+> +	*cp++ = crc7(0, &data->status[1], 5) | 0x01;
+>  
+>  	/* Then, read up to 13 bytes (while writing all-ones):
+>  	 *  - N(CR) (== 1..8) bytes of all-ones
+> diff --git a/drivers/net/wireless/ti/wl1251/acx.c b/drivers/net/wireless/ti/wl1251/acx.c
+> index 5a4ec56c83..5695628757 100644
+> --- a/drivers/net/wireless/ti/wl1251/acx.c
+> +++ b/drivers/net/wireless/ti/wl1251/acx.c
+> @@ -2,7 +2,6 @@
+>  
+>  #include <linux/module.h>
+>  #include <linux/slab.h>
+> -#include <linux/crc7.h>
+>  
+>  #include "wl1251.h"
+>  #include "reg.h"
+> diff --git a/drivers/net/wireless/ti/wl1251/cmd.c b/drivers/net/wireless/ti/wl1251/cmd.c
+> index bf1fa18b97..ede31f048e 100644
+> --- a/drivers/net/wireless/ti/wl1251/cmd.c
+> +++ b/drivers/net/wireless/ti/wl1251/cmd.c
+> @@ -2,7 +2,6 @@
+>  
+>  #include <linux/module.h>
+>  #include <linux/slab.h>
+> -#include <linux/crc7.h>
+>  #include <linux/etherdevice.h>
+>  
+>  #include "wl1251.h"
+> diff --git a/drivers/net/wireless/ti/wl1251/spi.c b/drivers/net/wireless/ti/wl1251/spi.c
+> index b06d36d993..47875fc6be 100644
+> --- a/drivers/net/wireless/ti/wl1251/spi.c
+> +++ b/drivers/net/wireless/ti/wl1251/spi.c
+> @@ -122,8 +122,7 @@ static void wl1251_spi_wake(struct wl1251 *wl)
+>  	crc[3] = cmd[6];
+>  	crc[4] = cmd[5];
+>  
+> -	cmd[4] |= crc7(0, crc, WSPI_INIT_CMD_CRC_LEN) << 1;
+> -	cmd[4] |= WSPI_INIT_CMD_END;
+> +	cmd[4] = crc7(0, crc, WSPI_INIT_CMD_CRC_LEN) | WSPI_INIT_CMD_END;
+>  
+>  	t.tx_buf = cmd;
+>  	t.len = WSPI_INIT_CMD_LEN;
+> diff --git a/drivers/net/wireless/ti/wlcore/spi.c b/drivers/net/wireless/ti/wlcore/spi.c
+> index dbe826dd7c..8b3e38e453 100644
+> --- a/drivers/net/wireless/ti/wlcore/spi.c
+> +++ b/drivers/net/wireless/ti/wlcore/spi.c
+> @@ -151,8 +151,7 @@ static void wl12xx_spi_init(struct device *child)
+>  	crc[3] = cmd[6];
+>  	crc[4] = cmd[5];
+>  
+> -	cmd[4] |= crc7(0, crc, WSPI_INIT_CMD_CRC_LEN) << 1;
+> -	cmd[4] |= WSPI_INIT_CMD_END;
+> +	cmd[4] = crc7(0, crc, WSPI_INIT_CMD_CRC_LEN) | WSPI_INIT_CMD_END;
+>  
+>  	t.tx_buf = cmd;
+>  	t.len = WSPI_INIT_CMD_LEN;
+> diff --git a/include/linux/crc7.h b/include/linux/crc7.h
+> index 1786e772d5..d2155dc953 100644
+> --- a/include/linux/crc7.h
+> +++ b/include/linux/crc7.h
+> @@ -6,7 +6,7 @@ extern const u8 crc7_syndrome_table[256];
+>  
+>  static inline u8 crc7_byte(u8 crc, u8 data)
+>  {
+> -	return crc7_syndrome_table[(crc << 1) ^ data];
+> +	return crc7_syndrome_table[crc ^ data];
+>  }
+>  
+>  extern u8 crc7(u8 crc, const u8 *buffer, size_t len);
+> diff --git a/lib/crc7.c b/lib/crc7.c
+> index f1c3a144ce..4a73b26e7a 100644
+> --- a/lib/crc7.c
+> +++ b/lib/crc7.c
+> @@ -10,40 +10,45 @@
+>  #include <linux/crc7.h>
+>  
+>  
+> -/* Table for CRC-7 (polynomial x^7 + x^3 + 1) */
+> +/*
+> + * Table for CRC-7 (polynomial x^7 + x^3 + 1).
+> + * This is a big-endian CRC (msbit is highest power of x),
+> + * aligned so the msbit of the byte is the x^6 coefficient
+> + * and the lsbit is not used.
+> + */
+>  const u8 crc7_syndrome_table[256] = {
+> -	0x00, 0x09, 0x12, 0x1b, 0x24, 0x2d, 0x36, 0x3f,
+> -	0x48, 0x41, 0x5a, 0x53, 0x6c, 0x65, 0x7e, 0x77,
+> -	0x19, 0x10, 0x0b, 0x02, 0x3d, 0x34, 0x2f, 0x26,
+> -	0x51, 0x58, 0x43, 0x4a, 0x75, 0x7c, 0x67, 0x6e,
+> -	0x32, 0x3b, 0x20, 0x29, 0x16, 0x1f, 0x04, 0x0d,
+> -	0x7a, 0x73, 0x68, 0x61, 0x5e, 0x57, 0x4c, 0x45,
+> -	0x2b, 0x22, 0x39, 0x30, 0x0f, 0x06, 0x1d, 0x14,
+> -	0x63, 0x6a, 0x71, 0x78, 0x47, 0x4e, 0x55, 0x5c,
+> -	0x64, 0x6d, 0x76, 0x7f, 0x40, 0x49, 0x52, 0x5b,
+> -	0x2c, 0x25, 0x3e, 0x37, 0x08, 0x01, 0x1a, 0x13,
+> -	0x7d, 0x74, 0x6f, 0x66, 0x59, 0x50, 0x4b, 0x42,
+> -	0x35, 0x3c, 0x27, 0x2e, 0x11, 0x18, 0x03, 0x0a,
+> -	0x56, 0x5f, 0x44, 0x4d, 0x72, 0x7b, 0x60, 0x69,
+> -	0x1e, 0x17, 0x0c, 0x05, 0x3a, 0x33, 0x28, 0x21,
+> -	0x4f, 0x46, 0x5d, 0x54, 0x6b, 0x62, 0x79, 0x70,
+> -	0x07, 0x0e, 0x15, 0x1c, 0x23, 0x2a, 0x31, 0x38,
+> -	0x41, 0x48, 0x53, 0x5a, 0x65, 0x6c, 0x77, 0x7e,
+> -	0x09, 0x00, 0x1b, 0x12, 0x2d, 0x24, 0x3f, 0x36,
+> -	0x58, 0x51, 0x4a, 0x43, 0x7c, 0x75, 0x6e, 0x67,
+> -	0x10, 0x19, 0x02, 0x0b, 0x34, 0x3d, 0x26, 0x2f,
+> -	0x73, 0x7a, 0x61, 0x68, 0x57, 0x5e, 0x45, 0x4c,
+> -	0x3b, 0x32, 0x29, 0x20, 0x1f, 0x16, 0x0d, 0x04,
+> -	0x6a, 0x63, 0x78, 0x71, 0x4e, 0x47, 0x5c, 0x55,
+> -	0x22, 0x2b, 0x30, 0x39, 0x06, 0x0f, 0x14, 0x1d,
+> -	0x25, 0x2c, 0x37, 0x3e, 0x01, 0x08, 0x13, 0x1a,
+> -	0x6d, 0x64, 0x7f, 0x76, 0x49, 0x40, 0x5b, 0x52,
+> -	0x3c, 0x35, 0x2e, 0x27, 0x18, 0x11, 0x0a, 0x03,
+> -	0x74, 0x7d, 0x66, 0x6f, 0x50, 0x59, 0x42, 0x4b,
+> -	0x17, 0x1e, 0x05, 0x0c, 0x33, 0x3a, 0x21, 0x28,
+> -	0x5f, 0x56, 0x4d, 0x44, 0x7b, 0x72, 0x69, 0x60,
+> -	0x0e, 0x07, 0x1c, 0x15, 0x2a, 0x23, 0x38, 0x31,
+> -	0x46, 0x4f, 0x54, 0x5d, 0x62, 0x6b, 0x70, 0x79
+> +	0x00, 0x12, 0x24, 0x36, 0x48, 0x5a, 0x6c, 0x7e,
+> +	0x90, 0x82, 0xb4, 0xa6, 0xd8, 0xca, 0xfc, 0xee,
+> +	0x32, 0x20, 0x16, 0x04, 0x7a, 0x68, 0x5e, 0x4c,
+> +	0xa2, 0xb0, 0x86, 0x94, 0xea, 0xf8, 0xce, 0xdc,
+> +	0x64, 0x76, 0x40, 0x52, 0x2c, 0x3e, 0x08, 0x1a,
+> +	0xf4, 0xe6, 0xd0, 0xc2, 0xbc, 0xae, 0x98, 0x8a,
+> +	0x56, 0x44, 0x72, 0x60, 0x1e, 0x0c, 0x3a, 0x28,
+> +	0xc6, 0xd4, 0xe2, 0xf0, 0x8e, 0x9c, 0xaa, 0xb8,
+> +	0xc8, 0xda, 0xec, 0xfe, 0x80, 0x92, 0xa4, 0xb6,
+> +	0x58, 0x4a, 0x7c, 0x6e, 0x10, 0x02, 0x34, 0x26,
+> +	0xfa, 0xe8, 0xde, 0xcc, 0xb2, 0xa0, 0x96, 0x84,
+> +	0x6a, 0x78, 0x4e, 0x5c, 0x22, 0x30, 0x06, 0x14,
+> +	0xac, 0xbe, 0x88, 0x9a, 0xe4, 0xf6, 0xc0, 0xd2,
+> +	0x3c, 0x2e, 0x18, 0x0a, 0x74, 0x66, 0x50, 0x42,
+> +	0x9e, 0x8c, 0xba, 0xa8, 0xd6, 0xc4, 0xf2, 0xe0,
+> +	0x0e, 0x1c, 0x2a, 0x38, 0x46, 0x54, 0x62, 0x70,
+> +	0x82, 0x90, 0xa6, 0xb4, 0xca, 0xd8, 0xee, 0xfc,
+> +	0x12, 0x00, 0x36, 0x24, 0x5a, 0x48, 0x7e, 0x6c,
+> +	0xb0, 0xa2, 0x94, 0x86, 0xf8, 0xea, 0xdc, 0xce,
+> +	0x20, 0x32, 0x04, 0x16, 0x68, 0x7a, 0x4c, 0x5e,
+> +	0xe6, 0xf4, 0xc2, 0xd0, 0xae, 0xbc, 0x8a, 0x98,
+> +	0x76, 0x64, 0x52, 0x40, 0x3e, 0x2c, 0x1a, 0x08,
+> +	0xd4, 0xc6, 0xf0, 0xe2, 0x9c, 0x8e, 0xb8, 0xaa,
+> +	0x44, 0x56, 0x60, 0x72, 0x0c, 0x1e, 0x28, 0x3a,
+> +	0x4a, 0x58, 0x6e, 0x7c, 0x02, 0x10, 0x26, 0x34,
+> +	0xda, 0xc8, 0xfe, 0xec, 0x92, 0x80, 0xb6, 0xa4,
+> +	0x78, 0x6a, 0x5c, 0x4e, 0x30, 0x22, 0x14, 0x06,
+> +	0xe8, 0xfa, 0xcc, 0xde, 0xa0, 0xb2, 0x84, 0x96,
+> +	0x2e, 0x3c, 0x0a, 0x18, 0x66, 0x74, 0x42, 0x50,
+> +	0xbe, 0xac, 0x9a, 0x88, 0xf6, 0xe4, 0xd2, 0xc0,
+> +	0x1c, 0x0e, 0x38, 0x2a, 0x54, 0x46, 0x70, 0x62,
+> +	0x8c, 0x9e, 0xa8, 0xba, 0xc4, 0xd6, 0xe0, 0xf2
+>  };
+>  EXPORT_SYMBOL(crc7_syndrome_table);
+>  
+> @@ -55,6 +60,9 @@ EXPORT_SYMBOL(crc7_syndrome_table);
+>   * Context: any
+>   *
+>   * Returns the updated CRC7 value.
+> + * The CRC7 is left-aligned in the byte (the lsbit is always 0), as that
+> + * makes the computation easier, and all callers want it in that form.
+> + *
+>   */
+>  u8 crc7(u8 crc, const u8 *buffer, size_t len)
+>  {
+> -- 
+> 1.9.2
+
 -- 
-1.7.9.5
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
