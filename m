@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933911AbaEKTuM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:50:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48175 "EHLO
+	id S934366AbaEKTuo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:50:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48160 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933135AbaEKTXF (ORCPT
+	with ESMTP id S933084AbaEKTW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:23:05 -0400
+	Sun, 11 May 2014 15:22:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 3.10 22/48] mach64: use unaligned access
-Date: Sun, 11 May 2014 21:19:56 +0200
-Message-Id: <20140511191951.123722668@linuxfoundation.org>
+        Vassili Karpov <av1474@comtv.ru>, Sergey Dyasly <dserrg@gmail.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        hujianyang <hujianyang@huawei.com>
+Subject: [PATCH 3.10 07/48] ARM: 7840/1: LPAE: dont reject mapping /dev/mem above 4GB
+Date: Sun, 11 May 2014 21:19:41 +0200
+Message-Id: <20140511191949.129664388@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
 References: <20140511191948.079900414@linuxfoundation.org>
@@ -27,46 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Sergey Dyasly <dserrg@gmail.com>
 
-commit c29dd8696dc5dbd50b3ac441b8a26751277ba520 upstream.
+commit 3159f372354e8e1f5dee714663d705dd2c7e0759 upstream.
 
-This patch fixes mach64 to use unaligned access to the font bitmap.
+With LPAE enabled, physical address space is larger than 4GB. Allow mapping any
+part of it via /dev/mem by using PHYS_MASK to determine valid range.
 
-This fixes unaligned access warning on sparc64 when 14x8 font is loaded.
+PHYS_MASK covers 40 bits with LPAE enabled and 32 bits otherwise.
 
-On x86(64), unaligned access is handled in hardware, so both functions
-le32_to_cpup and get_unaligned_le32 perform the same operation.
-
-On RISC machines, unaligned access is not handled in hardware, so we
-better use get_unaligned_le32 to avoid the unaligned trap and warning.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Reported-by: Vassili Karpov <av1474@comtv.ru>
+Signed-off-by: Sergey Dyasly <dserrg@gmail.com>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: hujianyang <hujianyang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/aty/mach64_accel.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/mm/mmap.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/drivers/video/aty/mach64_accel.c
-+++ b/drivers/video/aty/mach64_accel.c
-@@ -4,6 +4,7 @@
+--- a/arch/arm/mm/mmap.c
++++ b/arch/arm/mm/mmap.c
+@@ -204,13 +204,11 @@ int valid_phys_addr_range(phys_addr_t ad
+ }
+ 
+ /*
+- * We don't use supersection mappings for mmap() on /dev/mem, which
+- * means that we can't map the memory area above the 4G barrier into
+- * userspace.
++ * Do not allow /dev/mem mappings beyond the supported physical range.
   */
+ int valid_mmap_phys_addr_range(unsigned long pfn, size_t size)
+ {
+-	return !(pfn + (size >> PAGE_SHIFT) > 0x00100000);
++	return (pfn + (size >> PAGE_SHIFT)) <= (1 + (PHYS_MASK >> PAGE_SHIFT));
+ }
  
- #include <linux/delay.h>
-+#include <asm/unaligned.h>
- #include <linux/fb.h>
- #include <video/mach64.h>
- #include "atyfb.h"
-@@ -419,7 +420,7 @@ void atyfb_imageblit(struct fb_info *inf
- 		u32 *pbitmap, dwords = (src_bytes + 3) / 4;
- 		for (pbitmap = (u32*)(image->data); dwords; dwords--, pbitmap++) {
- 			wait_for_fifo(1, par);
--			aty_st_le32(HOST_DATA0, le32_to_cpup(pbitmap), par);
-+			aty_st_le32(HOST_DATA0, get_unaligned_le32(pbitmap), par);
- 		}
- 	}
- 
+ #ifdef CONFIG_STRICT_DEVMEM
 
 
