@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757651AbaEKVFc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 17:05:32 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:56954 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755504AbaEKVFa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 17:05:30 -0400
-X-Originating-IP: 50.43.32.211
-Date: Sun, 11 May 2014 14:05:19 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Jann Horn <jann@thejh.net>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH] drivers/char/mem.c: Add /dev/ioports, supporting 16-bit
- and 32-bit ports
-Message-ID: <20140511210514.GB6056@thin>
-References: <20140509191914.GA7286@jtriplet-mobl1>
- <20140510070742.GE6099@debjann.fritz.box>
- <20140510193246.GA12079@thin>
- <20140511125006.GA16197@debjann.fritz.box>
+	id S1757975AbaEKVGH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 17:06:07 -0400
+Received: from smtp2-g21.free.fr ([212.27.42.2]:40229 "EHLO smtp2-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757777AbaEKVGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 17:06:04 -0400
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
+To: linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: [PATCH] ab8500-fg: Fix use of uninitialized variable in error path
+Date: Sun, 11 May 2014 23:05:49 +0200
+Message-Id: <1399842349-22395-1-git-send-email-vincent.stehle@laposte.net>
+X-Mailer: git-send-email 2.0.0.rc0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140511125006.GA16197@debjann.fritz.box>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 11, 2014 at 02:50:06PM +0200, Jann Horn wrote:
-> On Sat, May 10, 2014 at 12:32:46PM -0700, Josh Triplett wrote:
-> > On Sat, May 10, 2014 at 09:07:42AM +0200, Jann Horn wrote:
-> > > On Fri, May 09, 2014 at 12:19:16PM -0700, Josh Triplett wrote:
-> > > > +	if (port > 65535)
-> > > > +		return 0;
-> > > > +	switch (count) {
-> > > [...]
-> > > > +	case 4:
-> > > > +		if (__put_user(inl(port), buf) < 0)
-> > > > +			return -EFAULT;
-> > > 
-> > > What if I attempt a four-byte read at 65535? That would access four
-> > > out-of-bounds bytes, right?
-> > 
-> > No, it would do an ind instruction on port 65535.
-> 
-> Yes, on x86. What about other architectures?
+Fix the use of an uninitialized variable i as iterator (instead of j) in
+function ab8500_fg_sysfs_psy_create_attrs error path.
 
-That's a good point; on architectures that map I/O to memory, this
-device should check port+count rather than port.  Is there a reliable
-#define that identifies architectures with that property, other than
-CONFIG_X86?
+This fixes the following compilation warning:
 
-- Josh Triplett
+  drivers/power/ab8500_fg.c: In function ‘ab8500_fg_probe’:
+  drivers/power/ab8500_fg.c:2989:27: warning: ‘i’ may be used uninitialized in this function [-Wuninitialized]
+  drivers/power/ab8500_fg.c:2972:15: note: ‘i’ was declared here
+
+While at it, remove j and use i instead, to stay consistent with the driver's
+coding style, and split line for checkpatch.pl.
+
+Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+---
+
+Hi,
+
+This starts from a compilation warning but is most probably a real bug.
+
+This can be seen with e.g. mainline and x86 allyesconfig.
+
+Best regards,
+
+V.
+
+ drivers/power/ab8500_fg.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
+index 3cb4178..fb65ea2 100644
+--- a/drivers/power/ab8500_fg.c
++++ b/drivers/power/ab8500_fg.c
+@@ -2969,7 +2969,7 @@ static struct device_attribute ab8505_fg_sysfs_psy_attrs[] = {
+ 
+ static int ab8500_fg_sysfs_psy_create_attrs(struct device *dev)
+ {
+-	unsigned int i, j;
++	unsigned int i;
+ 	struct power_supply *psy = dev_get_drvdata(dev);
+ 	struct ab8500_fg *di;
+ 
+@@ -2978,14 +2978,15 @@ static int ab8500_fg_sysfs_psy_create_attrs(struct device *dev)
+ 	if (((is_ab8505(di->parent) || is_ab9540(di->parent)) &&
+ 	     abx500_get_chip_id(dev->parent) >= AB8500_CUT2P0)
+ 	    || is_ab8540(di->parent)) {
+-		for (j = 0; j < ARRAY_SIZE(ab8505_fg_sysfs_psy_attrs); j++)
+-			if (device_create_file(dev, &ab8505_fg_sysfs_psy_attrs[j]))
++		for (i = 0; i < ARRAY_SIZE(ab8505_fg_sysfs_psy_attrs); i++)
++			if (device_create_file(dev,
++						&ab8505_fg_sysfs_psy_attrs[i]))
+ 				goto sysfs_psy_create_attrs_failed_ab8505;
+ 	}
+ 	return 0;
+ sysfs_psy_create_attrs_failed_ab8505:
+ 	dev_err(dev, "Failed creating sysfs psy attrs for ab8505.\n");
+-	while (j--)
++	while (i--)
+ 		device_remove_file(dev, &ab8505_fg_sysfs_psy_attrs[i]);
+ 
+ 	return -EIO;
+-- 
+2.0.0.rc0
+
