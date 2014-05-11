@@ -1,105 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757817AbaEKEud (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 00:50:33 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52152 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751275AbaEKEuK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 00:50:10 -0400
-Date: Sun, 11 May 2014 06:49:53 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rdunlap@infradead.org, linux@arm.linux.org.uk,
-        daniel.lezcano@linaro.org, tglx@linutronix.de,
-        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
-        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
-        heiko.stuebner@bq.com, olof@lixom.net, sebastian.hesselbarth@gmail.com,
-        sboyd@codeaurora.org, gregory.clement@free-electrons.com,
-        arnd@arndb.de, robherring2@gmail.com, marc.zyngier@arm.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 2/4] dt-bindings: add mtk-timer bindings
-Message-ID: <20140511044953.GR7047@lukather>
-References: <1399772463-859-1-git-send-email-matthias.bgg@gmail.com>
- <1399772463-859-3-git-send-email-matthias.bgg@gmail.com>
+	id S1757901AbaEKEzT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 00:55:19 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:60747 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751367AbaEKEzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 00:55:16 -0400
+Date: Sun, 11 May 2014 00:54:59 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 14/14] cgroup: implement css_tryget()
+Message-ID: <20140511045459.GA25009@cmpxchg.org>
+References: <1399671091-23867-1-git-send-email-tj@kernel.org>
+ <1399671091-23867-15-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="htVlOAOs/VIaEhiC"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1399772463-859-3-git-send-email-matthias.bgg@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1399671091-23867-15-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---htVlOAOs/VIaEhiC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Sun, May 11, 2014 at 03:41:01AM +0200, Matthias Brugger wrote:
-> Add binding documentation for the General Porpose Timer driver of
-> the Mediatek SoCs.
->=20
-> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+On Fri, May 09, 2014 at 05:31:31PM -0400, Tejun Heo wrote:
+> Implement css_tryget() which tries to grab a cgroup_subsys_state's
+> reference as long as it already hasn't reached zero.  Combined with
+> the recent css iterator changes to include offline && !released csses
+> during traversal, this can be used to access csses regardless of its
+> online state.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
 > ---
->  .../devicetree/bindings/timer/mediatek,mtk-timer.txt    | 17 +++++++++++=
-++++++
->  1 file changed, 17 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/timer/mediatek,mtk-=
-timer.txt
->=20
-> diff --git a/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.t=
-xt b/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
-> new file mode 100644
-> index 0000000..a36eb0f
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
-> @@ -0,0 +1,17 @@
-> +Mediatek MT6598, MT6577 and MT6572 Timers
-> +---------------------------------------
-> +
-> +Required properties:
-> +- compatible: Should be "mediatek,mtk6589-timer"
-> +- reg: Should contain location and length for timers register.
-> +- clocks : phandle to the clock source, normaly a 13 MHz fixed system cl=
-ock
-> +		and a 32 KHz fixed RTC clock.
+>  include/linux/cgroup.h | 16 ++++++++++++++++
+>  1 file changed, 16 insertions(+)
+> 
+> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+> index c8eb66e..6dd3867 100644
+> --- a/include/linux/cgroup.h
+> +++ b/include/linux/cgroup.h
+> @@ -111,6 +111,22 @@ static inline void css_get(struct cgroup_subsys_state *css)
+>  }
+>  
+>  /**
+> + * css_tryget - try to obtain a reference on the specified css
+> + * @css: target css
+> + *
+> + * Obtain a reference on @css unless it already has reached zero and is
+> + * being released.  This function doesn't care whether @css is on or
+> + * offline.  The caller naturally needs to ensure that @css is accessible
+> + * but doesn't have to be holding a reference on it - IOW, RCU protected
+> + * access is good enough for this function.  Returns %true if a reference
+> + * count was successfully obtained; %false otherwise.
+> + */
+> +static inline bool css_tryget(struct cgroup_subsys_state *css)
+> +{
+> +	return percpu_ref_tryget(&css->refcnt);
+> +}
 
-If you don't want to use clock names for this, you should put the
-order that you require them to be.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---htVlOAOs/VIaEhiC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTbwFxAAoJEBx+YmzsjxAgjTUP/07b10LNYrPUaf4TqIJdiDEf
-M2dYE/eTkAZ5LQQWvKEBDU/aExFY+m8qFvCQ4Mkvldg3Uxofi+ZYpFlqyVHfo2sP
-BaMxm5DIry9ENM62JCTo6giRRZL+gwc97uEvSO26wO4A6HtdRJIiIcAmE1Dk/Bou
-Da/kB4P/ueYbMOEuLxGNmQS7xttrV1bGHj125mZU93gqZwoPlyeikLEHuvj4EoNh
-9tQCDIPrmiToH2wlIu62nG6KJid/fxW7fJHomRcD2YJnRUt970mb9blfJkWPQAKm
-sR9qTb+5YB2ooFBohajyyT8JCmGNHoiWHY1ukO5uLHKHIqFA03aMkl1dc+VlWxZY
-pLesLn/jg1LjsmK3/5BCIggCpOtzY5GxenidwJ5PrYP2tGFxX5dYLswQkQ0wM/QB
-LDV0LQ7ahmEh1/vA25eeAHqF0Jipw4tmfyIi5jsOxerI9Nph9f+Ahd/mZYuD/b2x
-shskvkl+v4VXdxtHjzNE61L0i6x3XRy+wqanWC6sLdf2UC8dGWgWac8PNZ4i5qlZ
-ijOKmxRW9j1IXz39L7jIpsYnAW7DN3EZCczIqLjAKNmXbeTQmH8mpzIn0f+76rHK
-VT1ToDV6ToXidjYbJmjy9d9jiEOxCxxfDxwWCNjpq8Qo/r1CtUt++9kPVkMA/ego
-0PW7ndeCb/WpaFp7poJq
-=lO9e
------END PGP SIGNATURE-----
-
---htVlOAOs/VIaEhiC--
+percpu_ref_tryget() fails once killed (transitioned from per-cpu to
+atomic mode), but exactly this happens during offlining and so this
+would actually be equivalent to css_tryget_online(), no?
