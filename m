@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933655AbaEKTYw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:24:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48333 "EHLO
+	id S933698AbaEKTZF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:25:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48338 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932725AbaEKTYs (ORCPT
+	with ESMTP id S933646AbaEKTYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:24:48 -0400
+	Sun, 11 May 2014 15:24:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.14 62/83] mtd: sm_ftl: heap corruption in sm_create_sysfs_attributes()
-Date: Sun, 11 May 2014 21:20:03 +0200
-Message-Id: <20140511191915.046416913@linuxfoundation.org>
+        Andrew Bresticker <abrestic@chromium.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.14 56/83] pinctrl: as3722: fix handling of GPIO invert bit
+Date: Sun, 11 May 2014 21:19:57 +0200
+Message-Id: <20140511191914.452028303@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -27,53 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Andrew Bresticker <abrestic@chromium.org>
 
-commit b4c233057771581698a13694ab6f33b48ce837dc upstream.
+commit a73d2e30b46787d478275db36c19222020e29dc5 upstream.
 
-We always put a NUL terminator one space past the end of the "vendor"
-buffer.  Walter Harms also pointed out that this should just use
-kstrndup().
+The AS3722_GPIO_INV bit will always be blindly overwritten by
+as3722_pinctrl_gpio_set_direction() and will be ignored when
+setting the value of the GPIO in as3722_gpio_set() since the
+enable_gpio_invert flag is never set.  This will cause an
+initially inverted GPIO to toggle when requested as an output,
+which could be problematic if, for example, the GPIO controls
+a critical regulator.
 
-Fixes: 7d17c02a01a1 ('mtd: Add new SmartMedia/xD FTL')
+Instead of setting up the enable_gpio_invert flag, just leave
+the invert bit alone and check it before setting the GPIO value.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/sm_ftl.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ drivers/pinctrl/pinctrl-as3722.c |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
---- a/drivers/mtd/sm_ftl.c
-+++ b/drivers/mtd/sm_ftl.c
-@@ -59,15 +59,12 @@ static struct attribute_group *sm_create
- 	struct attribute_group *attr_group;
- 	struct attribute **attributes;
- 	struct sm_sysfs_attribute *vendor_attribute;
-+	char *vendor;
+--- a/drivers/pinctrl/pinctrl-as3722.c
++++ b/drivers/pinctrl/pinctrl-as3722.c
+@@ -64,7 +64,6 @@ struct as3722_pin_function {
+ };
  
--	int vendor_len = strnlen(ftl->cis_buffer + SM_CIS_VENDOR_OFFSET,
--					SM_SMALL_PAGE - SM_CIS_VENDOR_OFFSET);
+ struct as3722_gpio_pin_control {
+-	bool enable_gpio_invert;
+ 	unsigned mode_prop;
+ 	int io_function;
+ };
+@@ -320,10 +319,8 @@ static int as3722_pinctrl_gpio_set_direc
+ 		return mode;
+ 	}
+ 
+-	if (as_pci->gpio_control[offset].enable_gpio_invert)
+-		mode |= AS3722_GPIO_INV;
 -
--	char *vendor = kmalloc(vendor_len, GFP_KERNEL);
-+	vendor = kstrndup(ftl->cis_buffer + SM_CIS_VENDOR_OFFSET,
-+			  SM_SMALL_PAGE - SM_CIS_VENDOR_OFFSET, GFP_KERNEL);
- 	if (!vendor)
- 		goto error1;
--	memcpy(vendor, ftl->cis_buffer + SM_CIS_VENDOR_OFFSET, vendor_len);
--	vendor[vendor_len] = 0;
+-	return as3722_write(as3722, AS3722_GPIOn_CONTROL_REG(offset), mode);
++	return as3722_update_bits(as3722, AS3722_GPIOn_CONTROL_REG(offset),
++				AS3722_GPIO_MODE_MASK, mode);
+ }
  
- 	/* Initialize sysfs attributes */
- 	vendor_attribute =
-@@ -78,7 +75,7 @@ static struct attribute_group *sm_create
- 	sysfs_attr_init(&vendor_attribute->dev_attr.attr);
+ static const struct pinmux_ops as3722_pinmux_ops = {
+@@ -496,10 +493,18 @@ static void as3722_gpio_set(struct gpio_
+ {
+ 	struct as3722_pctrl_info *as_pci = to_as_pci(chip);
+ 	struct as3722 *as3722 = as_pci->as3722;
+-	int en_invert = as_pci->gpio_control[offset].enable_gpio_invert;
++	int en_invert;
+ 	u32 val;
+ 	int ret;
  
- 	vendor_attribute->data = vendor;
--	vendor_attribute->len = vendor_len;
-+	vendor_attribute->len = strlen(vendor);
- 	vendor_attribute->dev_attr.attr.name = "vendor";
- 	vendor_attribute->dev_attr.attr.mode = S_IRUGO;
- 	vendor_attribute->dev_attr.show = sm_attr_show;
++	ret = as3722_read(as3722, AS3722_GPIOn_CONTROL_REG(offset), &val);
++	if (ret < 0) {
++		dev_err(as_pci->dev,
++			"GPIO_CONTROL%d_REG read failed: %d\n", offset, ret);
++		return;
++	}
++	en_invert = !!(val & AS3722_GPIO_INV);
++
+ 	if (value)
+ 		val = (en_invert) ? 0 : AS3722_GPIOn_SIGNAL(offset);
+ 	else
 
 
