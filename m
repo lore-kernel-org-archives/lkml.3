@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934317AbaEKTdm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:33:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48485 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933975AbaEKT0T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933974AbaEKT0T (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 11 May 2014 15:26:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48476 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933936AbaEKT0O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 15:26:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Raphos <raphoszap@laposte.net>, Jeff Layton <jlayton@redhat.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.10 45/48] lockd: ensure we tear down any live sockets when socket creation fails during lockd_up
-Date: Sun, 11 May 2014 21:20:19 +0200
-Message-Id: <20140511191954.170131253@linuxfoundation.org>
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.10 43/48] dm transaction manager: fix corruption due to non-atomic transaction commit
+Date: Sun, 11 May 2014 21:20:17 +0200
+Message-Id: <20140511191953.898796186@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
 References: <20140511191948.079900414@linuxfoundation.org>
@@ -28,79 +26,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 679b033df48422191c4cac52b610d9980e019f9b upstream.
+commit a9d45396f5956d0b615c7ae3b936afd888351a47 upstream.
 
-We had a Fedora ABRT report with a stack trace like this:
+The persistent-data library used by dm-thin, dm-cache, etc is
+transactional.  If anything goes wrong, such as an io error when writing
+new metadata or a power failure, then we roll back to the last
+transaction.
 
-kernel BUG at net/sunrpc/svc.c:550!
-invalid opcode: 0000 [#1] SMP
-[...]
-CPU: 2 PID: 913 Comm: rpc.nfsd Not tainted 3.13.6-200.fc20.x86_64 #1
-Hardware name: Hewlett-Packard HP ProBook 4740s/1846, BIOS 68IRR Ver. F.40 01/29/2013
-task: ffff880146b00000 ti: ffff88003f9b8000 task.ti: ffff88003f9b8000
-RIP: 0010:[<ffffffffa0305fa8>]  [<ffffffffa0305fa8>] svc_destroy+0x128/0x130 [sunrpc]
-RSP: 0018:ffff88003f9b9de0  EFLAGS: 00010206
-RAX: ffff88003f829628 RBX: ffff88003f829600 RCX: 00000000000041ee
-RDX: 0000000000000000 RSI: 0000000000000286 RDI: 0000000000000286
-RBP: ffff88003f9b9de8 R08: 0000000000017360 R09: ffff88014fa97360
-R10: ffffffff8114ce57 R11: ffffea00051c9c00 R12: ffff88003f829600
-R13: 00000000ffffff9e R14: ffffffff81cc7cc0 R15: 0000000000000000
-FS:  00007f4fde284840(0000) GS:ffff88014fa80000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007f4fdf5192f8 CR3: 00000000a569a000 CR4: 00000000001407e0
-Stack:
- ffff88003f792300 ffff88003f9b9e18 ffffffffa02de02a 0000000000000000
- ffffffff81cc7cc0 ffff88003f9cb000 0000000000000008 ffff88003f9b9e60
- ffffffffa033bb35 ffffffff8131c86c ffff88003f9cb000 ffff8800a5715008
-Call Trace:
- [<ffffffffa02de02a>] lockd_up+0xaa/0x330 [lockd]
- [<ffffffffa033bb35>] nfsd_svc+0x1b5/0x2f0 [nfsd]
- [<ffffffff8131c86c>] ? simple_strtoull+0x2c/0x50
- [<ffffffffa033c630>] ? write_pool_threads+0x280/0x280 [nfsd]
- [<ffffffffa033c6bb>] write_threads+0x8b/0xf0 [nfsd]
- [<ffffffff8114efa4>] ? __get_free_pages+0x14/0x50
- [<ffffffff8114eff6>] ? get_zeroed_page+0x16/0x20
- [<ffffffff811dec51>] ? simple_transaction_get+0xb1/0xd0
- [<ffffffffa033c098>] nfsctl_transaction_write+0x48/0x80 [nfsd]
- [<ffffffff811b8b34>] vfs_write+0xb4/0x1f0
- [<ffffffff811c3f99>] ? putname+0x29/0x40
- [<ffffffff811b9569>] SyS_write+0x49/0xa0
- [<ffffffff810fc2a6>] ? __audit_syscall_exit+0x1f6/0x2a0
- [<ffffffff816962e9>] system_call_fastpath+0x16/0x1b
-Code: 31 c0 e8 82 db 37 e1 e9 2a ff ff ff 48 8b 07 8b 57 14 48 c7 c7 d5 c6 31 a0 48 8b 70 20 31 c0 e8 65 db 37 e1 e9 f4 fe ff ff 0f 0b <0f> 0b 66 0f 1f 44 00 00 0f 1f 44 00 00 55 48 89 e5 41 56 41 55
-RIP  [<ffffffffa0305fa8>] svc_destroy+0x128/0x130 [sunrpc]
- RSP <ffff88003f9b9de0>
+Atomicity when committing a transaction is achieved by:
 
-Evidently, we created some lockd sockets and then failed to create
-others. make_socks then returned an error and we tried to tear down the
-svc, but svc->sv_permsocks was not empty so we ended up tripping over
-the BUG() in svc_destroy().
+a) Never overwriting data from the previous transaction.
+b) Writing the superblock last, after all other metadata has hit the
+   disk.
 
-Fix this by ensuring that we tear down any live sockets we created when
-socket creation is going to return an error.
+This commit and the following commit ("dm: take care to copy the space
+map roots before locking the superblock") fix a bug associated with (b).
+When committing it was possible for the superblock to still be written
+in spite of an io error occurring during the preceeding metadata flush.
+With these commits we're careful not to take the write lock out on the
+superblock until after the metadata flush has completed.
 
-Fixes: 786185b5f8abefa (SUNRPC: move per-net operations from...)
-Reported-by: Raphos <raphoszap@laposte.net>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Reviewed-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Change the transaction manager's semantics for dm_tm_commit() to assume
+all data has been flushed _before_ the single superblock that is passed
+in.
+
+As a prerequisite, split the block manager's block unlocking and
+flushing by simplifying dm_bm_flush_and_unlock() to dm_bm_flush().  Now
+the unlocking must be done separately.
+
+This issue was discovered by forcing io errors at the crucial time
+using dm-flakey.
+
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/svc.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/md/dm-cache-metadata.c                      |    3 ++-
+ drivers/md/persistent-data/dm-block-manager.c       |   15 ++-------------
+ drivers/md/persistent-data/dm-block-manager.h       |    3 +--
+ drivers/md/persistent-data/dm-transaction-manager.c |    5 +++--
+ drivers/md/persistent-data/dm-transaction-manager.h |   17 ++++++++---------
+ 5 files changed, 16 insertions(+), 27 deletions(-)
 
---- a/fs/lockd/svc.c
-+++ b/fs/lockd/svc.c
-@@ -235,6 +235,7 @@ out_err:
- 	if (warned++ == 0)
- 		printk(KERN_WARNING
- 			"lockd_up: makesock failed, error=%d\n", err);
-+	svc_shutdown_net(serv, net);
- 	return err;
+--- a/drivers/md/dm-cache-metadata.c
++++ b/drivers/md/dm-cache-metadata.c
+@@ -511,8 +511,9 @@ static int __begin_transaction_flags(str
+ 	disk_super = dm_block_data(sblock);
+ 	update_flags(disk_super, mutator);
+ 	read_superblock_fields(cmd, disk_super);
++	dm_bm_unlock(sblock);
+ 
+-	return dm_bm_flush_and_unlock(cmd->bm, sblock);
++	return dm_bm_flush(cmd->bm);
  }
  
+ static int __begin_transaction(struct dm_cache_metadata *cmd)
+--- a/drivers/md/persistent-data/dm-block-manager.c
++++ b/drivers/md/persistent-data/dm-block-manager.c
+@@ -595,25 +595,14 @@ int dm_bm_unlock(struct dm_block *b)
+ }
+ EXPORT_SYMBOL_GPL(dm_bm_unlock);
+ 
+-int dm_bm_flush_and_unlock(struct dm_block_manager *bm,
+-			   struct dm_block *superblock)
++int dm_bm_flush(struct dm_block_manager *bm)
+ {
+-	int r;
+-
+ 	if (bm->read_only)
+ 		return -EPERM;
+ 
+-	r = dm_bufio_write_dirty_buffers(bm->bufio);
+-	if (unlikely(r)) {
+-		dm_bm_unlock(superblock);
+-		return r;
+-	}
+-
+-	dm_bm_unlock(superblock);
+-
+ 	return dm_bufio_write_dirty_buffers(bm->bufio);
+ }
+-EXPORT_SYMBOL_GPL(dm_bm_flush_and_unlock);
++EXPORT_SYMBOL_GPL(dm_bm_flush);
+ 
+ void dm_bm_set_read_only(struct dm_block_manager *bm)
+ {
+--- a/drivers/md/persistent-data/dm-block-manager.h
++++ b/drivers/md/persistent-data/dm-block-manager.h
+@@ -105,8 +105,7 @@ int dm_bm_unlock(struct dm_block *b);
+  *
+  * This method always blocks.
+  */
+-int dm_bm_flush_and_unlock(struct dm_block_manager *bm,
+-			   struct dm_block *superblock);
++int dm_bm_flush(struct dm_block_manager *bm);
+ 
+ /*
+  * Switches the bm to a read only mode.  Once read-only mode
+--- a/drivers/md/persistent-data/dm-transaction-manager.c
++++ b/drivers/md/persistent-data/dm-transaction-manager.c
+@@ -154,7 +154,7 @@ int dm_tm_pre_commit(struct dm_transacti
+ 	if (r < 0)
+ 		return r;
+ 
+-	return 0;
++	return dm_bm_flush(tm->bm);
+ }
+ EXPORT_SYMBOL_GPL(dm_tm_pre_commit);
+ 
+@@ -164,8 +164,9 @@ int dm_tm_commit(struct dm_transaction_m
+ 		return -EWOULDBLOCK;
+ 
+ 	wipe_shadow_table(tm);
++	dm_bm_unlock(root);
+ 
+-	return dm_bm_flush_and_unlock(tm->bm, root);
++	return dm_bm_flush(tm->bm);
+ }
+ EXPORT_SYMBOL_GPL(dm_tm_commit);
+ 
+--- a/drivers/md/persistent-data/dm-transaction-manager.h
++++ b/drivers/md/persistent-data/dm-transaction-manager.h
+@@ -38,18 +38,17 @@ struct dm_transaction_manager *dm_tm_cre
+ /*
+  * We use a 2-phase commit here.
+  *
+- * i) In the first phase the block manager is told to start flushing, and
+- * the changes to the space map are written to disk.  You should interrogate
+- * your particular space map to get detail of its root node etc. to be
+- * included in your superblock.
++ * i) Make all changes for the transaction *except* for the superblock.
++ * Then call dm_tm_pre_commit() to flush them to disk.
+  *
+- * ii) @root will be committed last.  You shouldn't use more than the
+- * first 512 bytes of @root if you wish the transaction to survive a power
+- * failure.  You *must* have a write lock held on @root for both stage (i)
+- * and (ii).  The commit will drop the write lock.
++ * ii) Lock your superblock.  Update.  Then call dm_tm_commit() which will
++ * unlock the superblock and flush it.  No other blocks should be updated
++ * during this period.  Care should be taken to never unlock a partially
++ * updated superblock; perform any operations that could fail *before* you
++ * take the superblock lock.
+  */
+ int dm_tm_pre_commit(struct dm_transaction_manager *tm);
+-int dm_tm_commit(struct dm_transaction_manager *tm, struct dm_block *root);
++int dm_tm_commit(struct dm_transaction_manager *tm, struct dm_block *superblock);
+ 
+ /*
+  * These methods are the only way to get hold of a writeable block.
 
 
