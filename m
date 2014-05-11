@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933750AbaEKTZS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:25:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48370 "EHLO
+	id S933732AbaEKTZM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:25:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48365 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932484AbaEKTZK (ORCPT
+	with ESMTP id S932504AbaEKTZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:25:10 -0400
+	Sun, 11 May 2014 15:25:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Herve Codina <Herve.CODINA@celad.com>, Josh Wu <josh.wu@atmel.com>,
         Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.10 39/48] mtd: atmel_nand: Disable subpage NAND write when using Atmel PMECC
-Date: Sun, 11 May 2014 21:20:13 +0200
-Message-Id: <20140511191953.392069907@linuxfoundation.org>
+Subject: [PATCH 3.14 59/83] mtd: atmel_nand: Disable subpage NAND write when using Atmel PMECC
+Date: Sun, 11 May 2014 21:20:00 +0200
+Message-Id: <20140511191914.755929118@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
@@ -50,8 +50,8 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/mtd/nand/atmel_nand.c
 +++ b/drivers/mtd/nand/atmel_nand.c
-@@ -1096,6 +1096,7 @@ static int __init atmel_pmecc_nand_init_
- 		goto err_pmecc_data_alloc;
+@@ -1220,6 +1220,7 @@ static int atmel_pmecc_nand_init_params(
+ 		goto err;
  	}
  
 +	nand_chip->options |= NAND_NO_SUBPAGE_WRITE;
