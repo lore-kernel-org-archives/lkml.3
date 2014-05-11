@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964824AbaEKTh5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:37:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48403 "EHLO
+	id S933807AbaEKTZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:25:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48391 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933815AbaEKTZb (ORCPT
+	with ESMTP id S933770AbaEKTZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:25:31 -0400
+	Sun, 11 May 2014 15:25:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joel Fernandes <joelf@ti.com>, Jon Ringle <jringle@gridpoint.com>,
-        Alexander Holler <holler@ahsoftware.de>, Sekhar Nori <nsekhar@ti.com>,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: [PATCH 3.14 69/83] dma: edma: fix incorrect SG list handling
-Date: Sun, 11 May 2014 21:20:10 +0200
-Message-Id: <20140511191915.911605573@linuxfoundation.org>
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.14 65/83] dm transaction manager: fix corruption due to non-atomic transaction commit
+Date: Sun, 11 May 2014 21:20:06 +0200
+Message-Id: <20140511191915.374070188@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -28,61 +26,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sekhar Nori <nsekhar@ti.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 5fc68a6cad658e45dca3e0a6607df3a8e5df4ef9 upstream.
+commit a9d45396f5956d0b615c7ae3b936afd888351a47 upstream.
 
-The code to handle any length SG lists calls edma_resume()
-even before edma_start() is called. This is incorrect
-because edma_resume() enables edma events on the channel
-after which CPU (in edma_start) cannot clear posted
-events by writing to ECR (per the EDMA user's guide).
+The persistent-data library used by dm-thin, dm-cache, etc is
+transactional.  If anything goes wrong, such as an io error when writing
+new metadata or a power failure, then we roll back to the last
+transaction.
 
-Because of this EDMA transfers fail to start if due
-to some reason there is a pending EDMA event registered
-even before EDMA transfers are started. This can happen if
-an EDMA event is a byproduct of device initialization.
+Atomicity when committing a transaction is achieved by:
 
-Fix this by calling edma_resume() only if it is not the
-first batch of MAX_NR_SG elements.
+a) Never overwriting data from the previous transaction.
+b) Writing the superblock last, after all other metadata has hit the
+   disk.
 
-Without this patch, MMC/SD fails to function on DA850 EVM
-with DMA. The behaviour is triggered by specific IP and
-this can explain why the issue was not reported before
-(example with MMC/SD on AM335x).
+This commit and the following commit ("dm: take care to copy the space
+map roots before locking the superblock") fix a bug associated with (b).
+When committing it was possible for the superblock to still be written
+in spite of an io error occurring during the preceeding metadata flush.
+With these commits we're careful not to take the write lock out on the
+superblock until after the metadata flush has completed.
 
-Tested on DA850 EVM and AM335x EVM-SK using MMC/SD card.
+Change the transaction manager's semantics for dm_tm_commit() to assume
+all data has been flushed _before_ the single superblock that is passed
+in.
 
-Cc: Joel Fernandes <joelf@ti.com>
-Acked-by: Joel Fernandes <joelf@ti.com>
-Tested-by: Jon Ringle <jringle@gridpoint.com>
-Tested-by: Alexander Holler <holler@ahsoftware.de>
-Reported-by: Jon Ringle <jringle@gridpoint.com>
-Signed-off-by: Sekhar Nori <nsekhar@ti.com>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+As a prerequisite, split the block manager's block unlocking and
+flushing by simplifying dm_bm_flush_and_unlock() to dm_bm_flush().  Now
+the unlocking must be done separately.
+
+This issue was discovered by forcing io errors at the crucial time
+using dm-flakey.
+
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/edma.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/md/dm-cache-metadata.c                      |    3 ++-
+ drivers/md/persistent-data/dm-block-manager.c       |   15 ++-------------
+ drivers/md/persistent-data/dm-block-manager.h       |    3 +--
+ drivers/md/persistent-data/dm-transaction-manager.c |    5 +++--
+ drivers/md/persistent-data/dm-transaction-manager.h |   17 ++++++++---------
+ 5 files changed, 16 insertions(+), 27 deletions(-)
 
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -182,11 +182,13 @@ static void edma_execute(struct edma_cha
- 				  echan->ecc->dummy_slot);
- 	}
+--- a/drivers/md/dm-cache-metadata.c
++++ b/drivers/md/dm-cache-metadata.c
+@@ -530,8 +530,9 @@ static int __begin_transaction_flags(str
+ 	disk_super = dm_block_data(sblock);
+ 	update_flags(disk_super, mutator);
+ 	read_superblock_fields(cmd, disk_super);
++	dm_bm_unlock(sblock);
  
--	edma_resume(echan->ch_num);
+-	return dm_bm_flush_and_unlock(cmd->bm, sblock);
++	return dm_bm_flush(cmd->bm);
+ }
+ 
+ static int __begin_transaction(struct dm_cache_metadata *cmd)
+--- a/drivers/md/persistent-data/dm-block-manager.c
++++ b/drivers/md/persistent-data/dm-block-manager.c
+@@ -595,25 +595,14 @@ int dm_bm_unlock(struct dm_block *b)
+ }
+ EXPORT_SYMBOL_GPL(dm_bm_unlock);
+ 
+-int dm_bm_flush_and_unlock(struct dm_block_manager *bm,
+-			   struct dm_block *superblock)
++int dm_bm_flush(struct dm_block_manager *bm)
+ {
+-	int r;
 -
- 	if (edesc->processed <= MAX_NR_SG) {
- 		dev_dbg(dev, "first transfer starting %d\n", echan->ch_num);
- 		edma_start(echan->ch_num);
-+	} else {
-+		dev_dbg(dev, "chan: %d: completed %d elements, resuming\n",
-+			echan->ch_num, edesc->processed);
-+		edma_resume(echan->ch_num);
- 	}
+ 	if (bm->read_only)
+ 		return -EPERM;
  
- 	/*
+-	r = dm_bufio_write_dirty_buffers(bm->bufio);
+-	if (unlikely(r)) {
+-		dm_bm_unlock(superblock);
+-		return r;
+-	}
+-
+-	dm_bm_unlock(superblock);
+-
+ 	return dm_bufio_write_dirty_buffers(bm->bufio);
+ }
+-EXPORT_SYMBOL_GPL(dm_bm_flush_and_unlock);
++EXPORT_SYMBOL_GPL(dm_bm_flush);
+ 
+ void dm_bm_prefetch(struct dm_block_manager *bm, dm_block_t b)
+ {
+--- a/drivers/md/persistent-data/dm-block-manager.h
++++ b/drivers/md/persistent-data/dm-block-manager.h
+@@ -105,8 +105,7 @@ int dm_bm_unlock(struct dm_block *b);
+  *
+  * This method always blocks.
+  */
+-int dm_bm_flush_and_unlock(struct dm_block_manager *bm,
+-			   struct dm_block *superblock);
++int dm_bm_flush(struct dm_block_manager *bm);
+ 
+ /*
+  * Request data is prefetched into the cache.
+--- a/drivers/md/persistent-data/dm-transaction-manager.c
++++ b/drivers/md/persistent-data/dm-transaction-manager.c
+@@ -154,7 +154,7 @@ int dm_tm_pre_commit(struct dm_transacti
+ 	if (r < 0)
+ 		return r;
+ 
+-	return 0;
++	return dm_bm_flush(tm->bm);
+ }
+ EXPORT_SYMBOL_GPL(dm_tm_pre_commit);
+ 
+@@ -164,8 +164,9 @@ int dm_tm_commit(struct dm_transaction_m
+ 		return -EWOULDBLOCK;
+ 
+ 	wipe_shadow_table(tm);
++	dm_bm_unlock(root);
+ 
+-	return dm_bm_flush_and_unlock(tm->bm, root);
++	return dm_bm_flush(tm->bm);
+ }
+ EXPORT_SYMBOL_GPL(dm_tm_commit);
+ 
+--- a/drivers/md/persistent-data/dm-transaction-manager.h
++++ b/drivers/md/persistent-data/dm-transaction-manager.h
+@@ -38,18 +38,17 @@ struct dm_transaction_manager *dm_tm_cre
+ /*
+  * We use a 2-phase commit here.
+  *
+- * i) In the first phase the block manager is told to start flushing, and
+- * the changes to the space map are written to disk.  You should interrogate
+- * your particular space map to get detail of its root node etc. to be
+- * included in your superblock.
++ * i) Make all changes for the transaction *except* for the superblock.
++ * Then call dm_tm_pre_commit() to flush them to disk.
+  *
+- * ii) @root will be committed last.  You shouldn't use more than the
+- * first 512 bytes of @root if you wish the transaction to survive a power
+- * failure.  You *must* have a write lock held on @root for both stage (i)
+- * and (ii).  The commit will drop the write lock.
++ * ii) Lock your superblock.  Update.  Then call dm_tm_commit() which will
++ * unlock the superblock and flush it.  No other blocks should be updated
++ * during this period.  Care should be taken to never unlock a partially
++ * updated superblock; perform any operations that could fail *before* you
++ * take the superblock lock.
+  */
+ int dm_tm_pre_commit(struct dm_transaction_manager *tm);
+-int dm_tm_commit(struct dm_transaction_manager *tm, struct dm_block *root);
++int dm_tm_commit(struct dm_transaction_manager *tm, struct dm_block *superblock);
+ 
+ /*
+  * These methods are the only way to get hold of a writeable block.
 
 
