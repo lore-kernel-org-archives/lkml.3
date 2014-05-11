@@ -1,63 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933779AbaEKTy1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:54:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48093 "EHLO
+	id S934064AbaEKTyu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:54:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48088 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932903AbaEKTWQ (ORCPT
+	with ESMTP id S932889AbaEKTWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:22:16 -0400
+	Sun, 11 May 2014 15:22:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tyler Stachecki <tstache1@binghamton.edu>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.10 13/48] [SCSI] mpt2sas: Dont disable device twice at suspend.
-Date: Sun, 11 May 2014 21:19:47 +0200
-Message-Id: <20140511191949.936377344@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnaud Ebalard <arno@natisbad.org>,
+        Alexander Reuter <Alexander.Reuter@gmx.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 33/83] Revert "net: mvneta: fix usage as a module on RGMII configurations"
+Date: Sun, 11 May 2014 21:19:34 +0200
+Message-Id: <20140511191911.535287970@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tyler Stachecki <tstache1@binghamton.edu>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit af61e27c3f77c7623b5335590ae24b6a5c323e22 upstream.
+commit cc6ca3023f2c2bbcd062e9d4cf6afc2ba2821ada upstream.
 
-On suspend, _scsih_suspend calls mpt2sas_base_free_resources, which
-in turn calls pci_disable_device if the device is enabled prior to
-suspending. However, _scsih_suspend also calls pci_disable_device
-itself.
+This reverts commit e3a8786c10e75903f1269474e21fe8cb49c3a670. While
+this commit allows to use the mvneta driver as a module on some
+configurations, it breaks other configurations even if mvneta is used
+built-in.
 
-Thus, in the event that the device is enabled prior to suspending,
-pci_disable_device will be called twice. This patch removes the
-duplicate call to pci_disable_device in _scsi_suspend as it is both
-unnecessary and results in a kernel oops.
+This breakage is due to the fact that on some RGMII platforms, the PCS
+bit has to be set, and on some other platforms, it has to be
+cleared. At the moment, we lack informations to know exactly the
+significance of this bit (the datasheet only says "enables PCS"), and
+so we can't produce a patch that will work on all platforms at this
+point. And since this change is breaking the network completely for
+many users, it's much better to revert it for now. We'll come back
+later with a proper fix that takes into account all platforms.
 
-Signed-off-by: Tyler Stachecki <tstache1@binghamton.edu>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Basically:
+
+ * Armada XP GP is configured as RGMII-ID, and needs the PCS bit to be
+   set.
+ * Armada 370 Mirabox is configured as RGMII-ID, and needs the PCS bit
+   to be cleared.
+
+And at the moment, we don't know how to make the distinction between
+those two cases. One hint is that the Armada XP GP appears in fact to
+be using a QSGMII connection with the PHY (Quad-SGMII), but
+configuring it as SGMII doesn't work, while RGMII-ID works. This needs
+more investigation, but in the mean time, let's unbreak the network
+for all those users.
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Reported-by: Arnaud Ebalard <arno@natisbad.org>
+Reported-by: Alexander Reuter <Alexander.Reuter@gmx.net>
+Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=73401
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/net/ethernet/marvell/mvneta.c |   41 +++++++++++++++++++++++++++-------
+ 1 file changed, 33 insertions(+), 8 deletions(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -8174,7 +8174,6 @@ _scsih_suspend(struct pci_dev *pdev, pm_
- 
- 	mpt2sas_base_free_resources(ioc);
- 	pci_save_state(pdev);
--	pci_disable_device(pdev);
- 	pci_set_power_state(pdev, device_state);
- 	return 0;
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -89,9 +89,8 @@
+ #define      MVNETA_TX_IN_PRGRS                  BIT(1)
+ #define      MVNETA_TX_FIFO_EMPTY                BIT(8)
+ #define MVNETA_RX_MIN_FRAME_SIZE                 0x247c
+-#define MVNETA_SERDES_CFG			 0x24A0
++#define MVNETA_SGMII_SERDES_CFG			 0x24A0
+ #define      MVNETA_SGMII_SERDES_PROTO		 0x0cc7
+-#define      MVNETA_RGMII_SERDES_PROTO		 0x0667
+ #define MVNETA_TYPE_PRIO                         0x24bc
+ #define      MVNETA_FORCE_UNI                    BIT(21)
+ #define MVNETA_TXQ_CMD_1                         0x24e4
+@@ -712,6 +711,35 @@ static void mvneta_rxq_bm_disable(struct
+ 	mvreg_write(pp, MVNETA_RXQ_CONFIG_REG(rxq->id), val);
  }
+ 
++
++
++/* Sets the RGMII Enable bit (RGMIIEn) in port MAC control register */
++static void mvneta_gmac_rgmii_set(struct mvneta_port *pp, int enable)
++{
++	u32  val;
++
++	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
++
++	if (enable)
++		val |= MVNETA_GMAC2_PORT_RGMII;
++	else
++		val &= ~MVNETA_GMAC2_PORT_RGMII;
++
++	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
++}
++
++/* Config SGMII port */
++static void mvneta_port_sgmii_config(struct mvneta_port *pp)
++{
++	u32 val;
++
++	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
++	val |= MVNETA_GMAC2_PCS_ENABLE;
++	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
++
++	mvreg_write(pp, MVNETA_SGMII_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
++}
++
+ /* Start the Ethernet port RX and TX activity */
+ static void mvneta_port_up(struct mvneta_port *pp)
+ {
+@@ -2729,15 +2757,12 @@ static void mvneta_port_power_up(struct
+ 	mvreg_write(pp, MVNETA_UNIT_INTR_CAUSE, 0);
+ 
+ 	if (phy_mode == PHY_INTERFACE_MODE_SGMII)
+-		mvreg_write(pp, MVNETA_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
+-	else
+-		mvreg_write(pp, MVNETA_SERDES_CFG, MVNETA_RGMII_SERDES_PROTO);
++		mvneta_port_sgmii_config(pp);
+ 
+-	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
+-
+-	val |= MVNETA_GMAC2_PCS_ENABLE | MVNETA_GMAC2_PORT_RGMII;
++	mvneta_gmac_rgmii_set(pp, 1);
+ 
+ 	/* Cancel Port Reset */
++	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
+ 	val &= ~MVNETA_GMAC2_PORT_RESET;
+ 	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
+ 
 
 
