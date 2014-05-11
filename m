@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758419AbaELCWF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 22:22:05 -0400
-Received: from mga11.intel.com ([192.55.52.93]:46323 "EHLO mga11.intel.com"
+	id S1758462AbaELCWT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 22:22:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:53169 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758401AbaELCV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 22:21:58 -0400
+	id S1758422AbaELCWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 22:22:13 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1032,1389772800"; 
-   d="scan'208";a="530200531"
+   d="scan'208";a="530200634"
 From: Yuyang Du <yuyang.du@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, rafael.j.wysocki@intel.com,
         linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
@@ -19,132 +19,459 @@ Cc: arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
         ajaya.durg@intel.com, harinarayanan.seshadri@intel.com,
         jacob.jun.pan@linux.intel.com, fengguang.wu@intel.com,
         yuyang.du@intel.com
-Subject: =?UTF-8?q?=5BRFC=20PATCH=2000/12=20v2=5D=20A=20new=20CPU=20load=20metric=20for=20power-efficient=20scheduler=3A=20CPU=20ConCurrency?=
-Date: Mon, 12 May 2014 02:16:49 +0800
-Message-Id: <1399832221-8314-1-git-send-email-yuyang.du@intel.com>
+Subject: [RFC PATCH 03/12 v2] CPU ConCurrency calculation
+Date: Mon, 12 May 2014 02:16:52 +0800
+Message-Id: <1399832221-8314-4-git-send-email-yuyang.du@intel.com>
 X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1399832221-8314-1-git-send-email-yuyang.du@intel.com>
+References: <1399832221-8314-1-git-send-email-yuyang.du@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo, PeterZ, Rafael, and others,
-
-The current scheduler’s load balancing is completely work-conserving. In some
-workload, generally low CPU utilization but immersed with CPU bursts of
-transient tasks, migrating task to engage all available CPUs for
-work-conserving can lead to significant overhead: cache locality loss,
-idle/active HW state transitional latency and power, shallower idle state,
-etc, which are both power and performance inefficient especially for today’s
-low power processors in mobile. 
-
-This RFC introduces a sense of idleness-conserving into work-conserving (by
-all means, we really don’t want to be overwhelming in only one way). But to
-what extent the idleness-conserving should be, bearing in mind that we don’t
-want to sacrifice performance? We first need a load/idleness indicator to that
-end.
-
-Thanks to CFS’s “model an ideal, precise multi-tasking CPU”, tasks can be seen
-as concurrently running (the tasks in the runqueue). So it is natural to use
-task concurrency as load indicator. Having said that, we do two things:
+It is natural to use task concurrency (running tasks in the rq) as load
+indicator. We calculate CC from task concurrency by two steps:
 
 1) Divide continuous time into periods of time, and average task concurrency
 in period, for tolerating the transient bursts:
+
 a = sum(concurrency * time) / period
+
 2) Exponentially decay past periods, and synthesize them all, for hysteresis
 to load drops or resilience to load rises (let f be decaying factor, and a_x
 the xth period average since period 0):
+
 s = a_n + f^1 * a_n-1 + f^2 * a_n-2 +, ..., + f^(n-1) * a_1 + f^n * a_0
 
-We name this load indicator as CPU ConCurrency (CC): task concurrency
-determines how many CPUs are needed to be running concurrently.
-
-Another two ways of how to interpret CC:
-
-1) the current work-conserving load balance also uses CC, but instantaneous
-CC.
-
-2) CC vs. CPU utilization. CC is runqueue-length-weighted CPU utilization. If
-we change: "a = sum(concurrency * time) / period" to "a' = sum(1 * time) /
-period". Then a' is just about the CPU utilization. And the way we weight
-runqueue-length is the simplest one (excluding the exponential decays, and you
-may have other ways).
-
-To track CC, we intercept the scheduler in 1) enqueue, 2) dequeue, 3)
-scheduler tick, and 4) enter/exit idle.
-
-After CC, in the consolidation part, we do 1) attach the CPU topology to be
-adaptive beyond our experimental platforms, and 2) intercept the current load
-balance for load and load balancing containment.
-
-Currently, CC is per CPU. To consolidate, the formula is based on a heuristic.
-Suppose we have 2 CPUs, their task concurrency over time is ('-' means no
-task, 'x' having tasks):
-
-1)
-CPU0: ---xxxx---------- (CC[0])
-CPU1: ---------xxxx---- (CC[1])
-
-2)
-CPU0: ---xxxx---------- (CC[0])
-CPU1: ---xxxx---------- (CC[1])
-
-If we consolidate CPU0 and CPU1, the consolidated CC will be: CC' = CC[0] +
-CC[1] for case 1 and CC'' = (CC[0] + CC[1]) * 2 for case 2. For the cases in
-between case 1 and 2 in terms of how xxx overlaps, the CC should be between
-CC' and CC''. So, we uniformly use this condition for consolidation (suppose
-we consolidate m CPUs to n CPUs, m > n):
-
-(CC[0] + CC[1] + ... + CC[m-2] + CC[m-1]) * (n + log(m-n)) >=<? (1 * n) * n *
-consolidating_coefficient
-
-The consolidating_coefficient could be like 100% or more or less.
-
-By CC, we implemented a Workload Consolidation patch on two Intel mobile
-platforms (a quad-core composed of two dual-core modules): contain load and
-load balancing in the first dual-core when aggregated CC low, and if not in
-the full quad-core. Results show that we got power savings and no substantial
-performance regression (even gains for some). The workloads we used to
-evaluate the Workload Consolidation include 1) 50+ perf/ux benchmarks (almost
-all of the magazine ones), and 2) ~10 power workloads, of course, they are the
-easiest ones, such as browsing, audio, video, recording, imaging, etc. The
-current half-life is 1 period, and the period was 32ms, and now 64ms for more
-aggressive consolidation.
-
-v2:
-- Data type defined in formation
-
-Yuyang Du (12):
-  CONFIG for CPU ConCurrency
-  Init CPU ConCurrency
-  CPU ConCurrency calculation
-  CPU ConCurrency tracking
-  CONFIG for Workload Consolidation
-  Attach CPU topology to specify each sched_domain's workload
-    consolidation
-  CPU ConCurrency API for Workload Consolidation
-  Intercept wakeup/fork/exec load balancing
-  Intercept idle balancing
-  Intercept periodic nohz idle balancing
-  Intercept periodic load balancing
-  Intercept RT scheduler
-
- arch/x86/Kconfig             |   21 +
- include/linux/sched.h        |   13 +
+Signed-off-by: Yuyang Du <yuyang.du@intel.com>
+---
  include/linux/sched/sysctl.h |    8 +
- include/linux/topology.h     |   16 +
- kernel/sched/Makefile        |    1 +
- kernel/sched/concurrency.c   |  928 ++++++++++++++++++++++++++++++++++++++++++
- kernel/sched/core.c          |   46 +++
- kernel/sched/fair.c          |  131 +++++-
- kernel/sched/rt.c            |   25 ++
- kernel/sched/sched.h         |   36 ++
- kernel/sysctl.c              |   16 +
- 11 files changed, 1232 insertions(+), 9 deletions(-)
- create mode 100644 kernel/sched/concurrency.c
+ kernel/sched/concurrency.c   |  344 ++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/sched.h         |    2 +
+ kernel/sysctl.c              |   16 ++
+ 4 files changed, 370 insertions(+)
 
+diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
+index 8045a55..ec52b3f 100644
+--- a/include/linux/sched/sysctl.h
++++ b/include/linux/sched/sysctl.h
+@@ -36,6 +36,14 @@ extern unsigned int sysctl_sched_min_granularity;
+ extern unsigned int sysctl_sched_wakeup_granularity;
+ extern unsigned int sysctl_sched_child_runs_first;
+ 
++#ifdef CONFIG_CPU_CONCURRENCY
++extern unsigned int sysctl_concurrency_sum_period;
++extern unsigned int sysctl_concurrency_decay_rate;
++extern int concurrency_decay_rate_handler(struct ctl_table *table, int write,
++					void __user *buffer,
++					size_t *lenp, loff_t *ppos);
++#endif
++
+ enum sched_tunable_scaling {
+ 	SCHED_TUNABLESCALING_NONE,
+ 	SCHED_TUNABLESCALING_LOG,
+diff --git a/kernel/sched/concurrency.c b/kernel/sched/concurrency.c
+index 50e08a2..da26dd7 100644
+--- a/kernel/sched/concurrency.c
++++ b/kernel/sched/concurrency.c
+@@ -10,6 +10,331 @@
+ 
+ #include "sched.h"
+ 
++/*
++ * the sum period of time is 2^26 ns (~64) by default
++ */
++unsigned int sysctl_concurrency_sum_period = 26UL;
++
++/*
++ * the number of sum periods, after which the original
++ * will be reduced/decayed to half
++ */
++unsigned int sysctl_concurrency_decay_rate = 1UL;
++
++/*
++ * the contrib period of time is 2^10 (~1us) by default,
++ * us has better precision than ms, and
++ * 1024 makes use of faster shift than div
++ */
++static unsigned int cc_contrib_period = 10UL;
++
++/*
++ * the concurrency is scaled up for decaying,
++ * thus, concurrency 1 is effectively 2^cc_resolution (1024),
++ * which can be halved by 10 half-life periods
++ */
++static unsigned int cc_resolution = 10UL;
++
++/*
++ * after this number of half-life periods, even
++ * (1>>32)-1 (which is sufficiently large) is less than 1
++ */
++static unsigned int cc_decay_max_pds = 32UL;
++
++static inline u32 cc_scale_up(unsigned int c)
++{
++	return c << cc_resolution;
++}
++
++static inline u32 cc_scale_down(unsigned int c)
++{
++	return c >> cc_resolution;
++}
++
++/* from nanoseconds to sum periods */
++static inline u64 cc_sum_pds(u64 n)
++{
++	return n >> sysctl_concurrency_sum_period;
++}
++
++/* from sum period to timestamp in ns */
++static inline u64 cc_timestamp(u64 p)
++{
++	return p << sysctl_concurrency_sum_period;
++}
++
++/*
++ * from nanoseconds to contrib periods, because
++ * ns so risky that can overflow cc->contrib
++ */
++static inline u64 cc_contrib_pds(u64 n)
++{
++	return n >> cc_contrib_period;
++}
++
++/*
++ * cc_decay_factor only works for 32bit integer,
++ * cc_decay_factor_x, x indicates the number of periods
++ * as half-life (sysctl_concurrency_decay_rate)
++ */
++static const u32 cc_decay_factor_1[] = {
++	0xFFFFFFFF,
++};
++
++static const u32 cc_decay_factor_2[] = {
++	0xFFFFFFFF, 0xB504F333,
++};
++
++static const u32 cc_decay_factor_4[] = {
++	0xFFFFFFFF, 0xD744FCCA, 0xB504F333, 0x9837F051,
++};
++
++static const u32 cc_decay_factor_8[] = {
++	0xFFFFFFFF, 0xEAC0C6E7, 0xD744FCCA, 0xC5672A11,
++	0xB504F333, 0xA5FED6A9, 0x9837F051, 0x8B95C1E3,
++};
++
++/* by default sysctl_concurrency_decay_rate */
++static const u32 *cc_decay_factor =
++	cc_decay_factor_1;
++
++/*
++ * cc_decayed_sum depends on cc_resolution (fixed 10),
++ * cc_decayed_sum_x, x indicates the number of periods
++ * as half-life (sysctl_concurrency_decay_rate)
++ */
++static const u32 cc_decayed_sum_1[] = {
++	0, 512, 768, 896, 960, 992,
++	1008, 1016, 1020, 1022, 1023,
++};
++
++static const u32 cc_decayed_sum_2[] = {
++	0, 724, 1235, 1597, 1853, 2034, 2162, 2252,
++	2316, 2361, 2393, 2416, 2432, 2443, 2451,
++	2457, 2461, 2464, 2466, 2467, 2468, 2469,
++};
++
++static const u32 cc_decayed_sum_4[] = {
++	0, 861, 1585, 2193, 2705, 3135, 3497, 3801, 4057,
++	4272, 4453, 4605, 4733, 4840, 4930, 5006, 5070,
++	5124, 5169, 5207, 5239, 5266, 5289, 5308, 5324,
++	5337, 5348, 5358, 5366, 5373, 5379, 5384, 5388,
++	5391, 5394, 5396, 5398, 5400, 5401, 5402, 5403,
++	5404, 5405, 5406,
++};
++
++static const u32 cc_decayed_sum_8[] = {
++	0, 939, 1800, 2589, 3313, 3977, 4585, 5143,
++	5655, 6124, 6554, 6949, 7311, 7643, 7947, 8226,
++	8482, 8717, 8932, 9129, 9310, 9476, 9628, 9767,
++	9895, 10012, 10120, 10219, 10309, 10392, 10468, 10538,
++	10602, 10661, 10715, 10764, 10809, 10850, 10888, 10923,
++	10955, 10984, 11011, 11036, 11059, 11080, 11099, 11116,
++	11132, 11147, 11160, 11172, 11183, 11193, 11203, 11212,
++	11220, 11227, 11234, 11240, 11246, 11251, 11256, 11260,
++	11264, 11268, 11271, 11274, 11277, 11280, 11282, 11284,
++	11286, 11288, 11290, 11291, 11292, 11293, 11294, 11295,
++	11296, 11297, 11298, 11299, 11300, 11301, 11302,
++};
++
++/* by default sysctl_concurrency_decay_rate */
++static const u32 *cc_decayed_sum = cc_decayed_sum_1;
++
++/*
++ * the last index of cc_decayed_sum array
++ */
++static u32 cc_decayed_sum_len =
++	sizeof(cc_decayed_sum_1) / sizeof(cc_decayed_sum_1[0]) - 1;
++
++/*
++ * sysctl handler to update decay rate
++ */
++int concurrency_decay_rate_handler(struct ctl_table *table, int write,
++		void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	int ret = proc_dointvec(table, write, buffer, lenp, ppos);
++
++	if (ret || !write)
++		return ret;
++
++	switch (sysctl_concurrency_decay_rate) {
++	case 1:
++		cc_decay_factor = cc_decay_factor_1;
++		cc_decayed_sum = cc_decayed_sum_1;
++		cc_decayed_sum_len = sizeof(cc_decayed_sum_1) /
++			sizeof(cc_decayed_sum_1[0]) - 1;
++		break;
++	case 2:
++		cc_decay_factor = cc_decay_factor_2;
++		cc_decayed_sum = cc_decayed_sum_2;
++		cc_decayed_sum_len = sizeof(cc_decayed_sum_2) /
++			sizeof(cc_decayed_sum_2[0]) - 1;
++		break;
++	case 4:
++		cc_decay_factor = cc_decay_factor_4;
++		cc_decayed_sum = cc_decayed_sum_4;
++		cc_decayed_sum_len = sizeof(cc_decayed_sum_4) /
++			sizeof(cc_decayed_sum_4[0]) - 1;
++		break;
++	case 8:
++		cc_decay_factor = cc_decay_factor_8;
++		cc_decayed_sum = cc_decayed_sum_8;
++		cc_decayed_sum_len = sizeof(cc_decayed_sum_8) /
++			sizeof(cc_decayed_sum_8[0]) - 1;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	cc_decay_max_pds *= sysctl_concurrency_decay_rate;
++
++	return 0;
++}
++
++/*
++ * decay concurrency at some decay rate
++ */
++static inline u64 decay_cc(u64 cc, u64 periods)
++{
++	u32 periods_l;
++
++	if (periods <= 0)
++		return cc;
++
++	if (unlikely(periods >= cc_decay_max_pds))
++		return 0;
++
++	/* now period is not too large */
++	periods_l = (u32)periods;
++	if (periods_l >= sysctl_concurrency_decay_rate) {
++		cc >>= periods_l / sysctl_concurrency_decay_rate;
++		periods_l %= sysctl_concurrency_decay_rate;
++	}
++
++	if (!periods_l)
++		return cc;
++
++	cc *= cc_decay_factor[periods_l];
++
++	return cc >> 32;
++}
++
++/*
++ * add missed periods by predefined constants
++ */
++static inline u64 cc_missed_pds(u64 periods)
++{
++	if (periods <= 0)
++		return 0;
++
++	if (periods > cc_decayed_sum_len)
++		periods = cc_decayed_sum_len;
++
++	return cc_decayed_sum[periods];
++}
++
++/*
++ * scale up nr_running, because we decay
++ */
++static inline u32 cc_weight(unsigned int nr_running)
++{
++	/*
++	 * scaling factor, this should be tunable
++	 */
++	return cc_scale_up(nr_running);
++}
++
++static inline void
++__update_concurrency(struct rq *rq, u64 now, struct cpu_concurrency_t *cc)
++{
++	u64 sum_pds, sum_pds_s, sum_pds_e;
++	u64 contrib_pds, ts_contrib, contrib_pds_one;
++	u64 sum_now = 0;
++	u32 weight;
++	int updated = 0;
++
++	/*
++	 * guarantee contrib_timestamp always >= sum_timestamp,
++	 * and sum_timestamp is at period boundary
++	 */
++	if (now <= cc->sum_timestamp) {
++		cc->sum_timestamp = cc_timestamp(cc_sum_pds(now));
++		cc->contrib_timestamp = now;
++		return;
++	}
++
++	weight = cc_weight(cc->nr_running);
++
++	/* start and end of sum periods */
++	sum_pds_s = cc_sum_pds(cc->sum_timestamp);
++	sum_pds_e = cc_sum_pds(now);
++	sum_pds = sum_pds_e - sum_pds_s;
++	/* number of contrib periods in one sum period */
++	contrib_pds_one = cc_contrib_pds(cc_timestamp(1));
++
++	/*
++	 * if we have passed at least one period,
++	 * we need to do four things:
++	 */
++	if (sum_pds) {
++		/* 1) complete the last period */
++		ts_contrib = cc_timestamp(sum_pds_s + 1);
++		contrib_pds = cc_contrib_pds(ts_contrib);
++		contrib_pds -= cc_contrib_pds(cc->contrib_timestamp);
++
++		if (likely(contrib_pds))
++			cc->contrib += weight * contrib_pds;
++
++		cc->contrib = div64_u64(cc->contrib, contrib_pds_one);
++
++		cc->sum += cc->contrib;
++		cc->contrib = 0;
++
++		/* 2) update/decay them */
++		cc->sum = decay_cc(cc->sum, sum_pds);
++		sum_now = decay_cc(cc->sum, sum_pds - 1);
++
++		/* 3) compensate missed periods if any */
++		sum_pds -= 1;
++		cc->sum += cc->nr_running * cc_missed_pds(sum_pds);
++		sum_now += cc->nr_running * cc_missed_pds(sum_pds - 1);
++		updated = 1;
++
++		/* 4) update contrib timestamp to period boundary */
++		ts_contrib = cc_timestamp(sum_pds_e);
++
++		cc->sum_timestamp = ts_contrib;
++		cc->contrib_timestamp = ts_contrib;
++	}
++
++	/* current period */
++	contrib_pds = cc_contrib_pds(now);
++	contrib_pds -= cc_contrib_pds(cc->contrib_timestamp);
++
++	if (likely(contrib_pds))
++		cc->contrib += weight * contrib_pds;
++
++	/* new nr_running for next update */
++	cc->nr_running = rq->nr_running;
++
++	/*
++	 * we need to account for the current sum period,
++	 * if now has passed 1/2 of sum period, we contribute,
++	 * otherwise, we use the last complete sum period
++	 */
++	contrib_pds = cc_contrib_pds(now - cc->sum_timestamp);
++
++	if (contrib_pds > contrib_pds_one / 2) {
++		sum_now = div64_u64(cc->contrib, contrib_pds);
++		sum_now += cc->sum;
++		updated = 1;
++	}
++
++	if (updated == 1)
++		cc->sum_now = sum_now;
++	cc->contrib_timestamp = now;
++}
++
+ void init_cpu_concurrency(struct rq *rq)
+ {
+ 	rq->concurrency.sum = 0;
+@@ -19,4 +344,23 @@ void init_cpu_concurrency(struct rq *rq)
+ 	rq->concurrency.sum_timestamp = ULLONG_MAX;
+ 	rq->concurrency.contrib_timestamp = ULLONG_MAX;
+ }
++
++/*
++ * we update cpu concurrency at:
++ * 1) enqueue task, which increases concurrency
++ * 2) dequeue task, which decreases concurrency
++ * 3) periodic scheduler tick, in case no en/dequeue for long
++ * 4) enter and exit idle
++ */
++void update_cpu_concurrency(struct rq *rq)
++{
++	/*
++	 * protected under rq->lock
++	 */
++	struct cpu_concurrency_t *cc = &rq->concurrency;
++	u64 now = rq->clock;
++
++	__update_concurrency(rq, now, cc);
++}
++
+ #endif
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index f1c9235..a4043ed 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1220,8 +1220,10 @@ extern void resched_cpu(int cpu);
+ 
+ #ifdef CONFIG_CPU_CONCURRENCY
+ extern void init_cpu_concurrency(struct rq *rq);
++extern void update_cpu_concurrency(struct rq *rq);
+ #else
+ static inline void init_cpu_concurrency(struct rq *rq) {}
++static inline void update_cpu_concurrency(struct rq *rq) {}
+ #endif
+ 
+ extern struct rt_bandwidth def_rt_bandwidth;
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 74f5b58..91ba467 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1090,6 +1090,22 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ #endif
++#ifdef CONFIG_CPU_CONCURRENCY
++	{
++		.procname	= "concurrency_sum_period",
++		.data		= &sysctl_concurrency_sum_period,
++		.maxlen		= sizeof(sysctl_concurrency_sum_period),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
++		.procname	= "concurrency_decay_rate",
++		.data		= &sysctl_concurrency_decay_rate,
++		.maxlen		= sizeof(sysctl_concurrency_decay_rate),
++		.mode		= 0644,
++		.proc_handler	= concurrency_decay_rate_handler,
++	},
++#endif
+ 	{ }
+ };
+ 
 -- 
 1.7.9.5
 
