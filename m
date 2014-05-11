@@ -1,68 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933969AbaEKTqL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:46:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48249 "EHLO
+	id S934216AbaEKTqg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:46:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48236 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933364AbaEKTX4 (ORCPT
+	with ESMTP id S933237AbaEKTXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:23:56 -0400
+	Sun, 11 May 2014 15:23:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Braun <michael-dev@fami-braun.de>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 27/48] mac80211: fix WPA with VLAN on AP side with ps-sta again
-Date: Sun, 11 May 2014 21:20:01 +0200
-Message-Id: <20140511191951.796459480@linuxfoundation.org>
+        Ilya Dryomov <ilya.dryomov@inktank.com>,
+        Josh Durgin <josh.durgin@inktank.com>
+Subject: [PATCH 3.14 41/83] crush: fix off-by-one errors in total_tries refactor
+Date: Sun, 11 May 2014 21:19:42 +0200
+Message-Id: <20140511191912.566314924@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Michael Braun <michael-dev@fami-braun.de>
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
 
-commit 112c44b2df0984121a52fbda89425843b8e1a457 upstream.
+commit 48a163dbb517eba13643bf404a0d695c1ab0a60d upstream.
 
-commit de74a1d9032f4d37ea453ad2a647e1aff4cd2591
-  "mac80211: fix WPA with VLAN on AP side with ps-sta"
-fixed an issue where queued multicast packets would
-be sent out encrypted with the key of an other bss.
+Back in 27f4d1f6bc32c2ed7b2c5080cbd58b14df622607 we refactored the CRUSH
+code to allow adjustment of the retry counts on a per-pool basis.  That
+commit had an off-by-one bug: the previous "tries" counter was a *retry*
+count, not a *try* count, but the new code was passing in 1 meaning
+there should be no retries.
 
-commit "7cbf9d017dbb5e3276de7d527925d42d4c11e732"
-  "mac80211: fix oops on mesh PS broadcast forwarding"
-essentially reverted it, because vif.type cannot be AP_VLAN
-due to the check to vif.type in ieee80211_get_buffered_bc before.
+Fix the ftotal vs tries comparison to use < instead of <= to fix the
+problem.  Note that the original code used <= here, which means the
+global "choose_total_tries" tunable is actually counting retries.
+Compensate for that by adding 1 in crush_do_rule when we pull the tunable
+into the local variable.
 
-As the later commit intended to fix the MESH case, fix it
-by checking for IFTYPE_AP instead of IFTYPE_AP_VLAN.
+This was noticed looking at output from a user provided osdmap.
+Unfortunately the map doesn't illustrate the change in mapping behavior
+and I haven't managed to construct one yet that does.  Inspection of the
+crush debug output now aligns with prior versions, though.
 
-Fixes: 7cbf9d017dbb ("mac80211: fix oops on mesh PS broadcast forwarding")
-Signed-off-by: Michael Braun <michael-dev@fami-braun.de>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reflects ceph.git commit 795704fd615f0b008dcc81aa088a859b2d075138.
+
+Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/tx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ceph/crush/mapper.c |   46 +++++++++++++++++++++++++++-------------------
+ 1 file changed, 27 insertions(+), 19 deletions(-)
 
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -2711,7 +2711,7 @@ ieee80211_get_buffered_bc(struct ieee802
- 				cpu_to_le16(IEEE80211_FCTL_MOREDATA);
- 		}
+--- a/net/ceph/crush/mapper.c
++++ b/net/ceph/crush/mapper.c
+@@ -292,8 +292,8 @@ static int is_out(const struct crush_map
+  * @outpos: our position in that vector
+  * @tries: number of attempts to make
+  * @recurse_tries: number of attempts to have recursive chooseleaf make
+- * @local_tries: localized retries
+- * @local_fallback_tries: localized fallback retries
++ * @local_retries: localized retries
++ * @local_fallback_retries: localized fallback retries
+  * @recurse_to_leaf: true if we want one device under each item of given type (chooseleaf instead of choose)
+  * @out2: second output vector for leaf items (if @recurse_to_leaf)
+  */
+@@ -304,8 +304,8 @@ static int crush_choose_firstn(const str
+ 			       int *out, int outpos,
+ 			       unsigned int tries,
+ 			       unsigned int recurse_tries,
+-			       unsigned int local_tries,
+-			       unsigned int local_fallback_tries,
++			       unsigned int local_retries,
++			       unsigned int local_fallback_retries,
+ 			       int recurse_to_leaf,
+ 			       int *out2)
+ {
+@@ -344,9 +344,9 @@ static int crush_choose_firstn(const str
+ 					reject = 1;
+ 					goto reject;
+ 				}
+-				if (local_fallback_tries > 0 &&
++				if (local_fallback_retries > 0 &&
+ 				    flocal >= (in->size>>1) &&
+-				    flocal > local_fallback_tries)
++				    flocal > local_fallback_retries)
+ 					item = bucket_perm_choose(in, x, r);
+ 				else
+ 					item = crush_bucket_choose(in, x, r);
+@@ -393,8 +393,8 @@ static int crush_choose_firstn(const str
+ 							 x, outpos+1, 0,
+ 							 out2, outpos,
+ 							 recurse_tries, 0,
+-							 local_tries,
+-							 local_fallback_tries,
++							 local_retries,
++							 local_fallback_retries,
+ 							 0,
+ 							 NULL) <= outpos)
+ 							/* didn't get leaf */
+@@ -420,14 +420,14 @@ reject:
+ 					ftotal++;
+ 					flocal++;
  
--		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
-+		if (sdata->vif.type == NL80211_IFTYPE_AP)
- 			sdata = IEEE80211_DEV_TO_SUB_IF(skb->dev);
- 		if (!ieee80211_tx_prepare(sdata, &tx, skb))
+-					if (collide && flocal <= local_tries)
++					if (collide && flocal <= local_retries)
+ 						/* retry locally a few times */
+ 						retry_bucket = 1;
+-					else if (local_fallback_tries > 0 &&
+-						 flocal <= in->size + local_fallback_tries)
++					else if (local_fallback_retries > 0 &&
++						 flocal <= in->size + local_fallback_retries)
+ 						/* exhaustive bucket search */
+ 						retry_bucket = 1;
+-					else if (ftotal <= tries)
++					else if (ftotal < tries)
+ 						/* then retry descent */
+ 						retry_descent = 1;
+ 					else
+@@ -640,10 +640,18 @@ int crush_do_rule(const struct crush_map
+ 	__u32 step;
+ 	int i, j;
+ 	int numrep;
+-	int choose_tries = map->choose_total_tries;
+-	int choose_local_tries = map->choose_local_tries;
+-	int choose_local_fallback_tries = map->choose_local_fallback_tries;
++	/*
++	 * the original choose_total_tries value was off by one (it
++	 * counted "retries" and not "tries").  add one.
++	 */
++	int choose_tries = map->choose_total_tries + 1;
+ 	int choose_leaf_tries = 0;
++	/*
++	 * the local tries values were counted as "retries", though,
++	 * and need no adjustment
++	 */
++	int choose_local_retries = map->choose_local_tries;
++	int choose_local_fallback_retries = map->choose_local_fallback_tries;
+ 
+ 	if ((__u32)ruleno >= map->max_rules) {
+ 		dprintk(" bad ruleno %d\n", ruleno);
+@@ -677,12 +685,12 @@ int crush_do_rule(const struct crush_map
+ 
+ 		case CRUSH_RULE_SET_CHOOSE_LOCAL_TRIES:
+ 			if (curstep->arg1 > 0)
+-				choose_local_tries = curstep->arg1;
++				choose_local_retries = curstep->arg1;
  			break;
+ 
+ 		case CRUSH_RULE_SET_CHOOSE_LOCAL_FALLBACK_TRIES:
+ 			if (curstep->arg1 > 0)
+-				choose_local_fallback_tries = curstep->arg1;
++				choose_local_fallback_retries = curstep->arg1;
+ 			break;
+ 
+ 		case CRUSH_RULE_CHOOSELEAF_FIRSTN:
+@@ -734,8 +742,8 @@ int crush_do_rule(const struct crush_map
+ 						o+osize, j,
+ 						choose_tries,
+ 						recurse_tries,
+-						choose_local_tries,
+-						choose_local_fallback_tries,
++						choose_local_retries,
++						choose_local_fallback_retries,
+ 						recurse_to_leaf,
+ 						c+osize);
+ 				} else {
 
 
