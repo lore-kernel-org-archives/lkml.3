@@ -1,101 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758195AbaEKMuR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 08:50:17 -0400
-Received: from thejh.net ([37.221.195.125]:53192 "EHLO thejh.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758168AbaEKMuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 08:50:12 -0400
-Date: Sun, 11 May 2014 14:50:06 +0200
-From: Jann Horn <jann@thejh.net>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH] drivers/char/mem.c: Add /dev/ioports, supporting 16-bit
- and 32-bit ports
-Message-ID: <20140511125006.GA16197@debjann.fritz.box>
-References: <20140509191914.GA7286@jtriplet-mobl1>
- <20140510070742.GE6099@debjann.fritz.box>
- <20140510193246.GA12079@thin>
+	id S1758106AbaEKNAa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 09:00:30 -0400
+Received: from we2-f167.wedos.net ([46.28.105.74]:55362 "EHLO
+	we2-f167.wedos.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757226AbaEKNA2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 09:00:28 -0400
+Date: Sun, 11 May 2014 15:00:23 +0200
+From: Josef Gajdusek <atx@atx.name>
+To: jdelvare@suse.de
+Cc: linux@roeck-us.net, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/hwmon/emc1403.c: add support for emc1412
+Message-ID: <20140511130023.GA501@dashie>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bg08WKrSYDhXBjb5"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140510193246.GA12079@thin>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Adds support for emc1412.
 
---bg08WKrSYDhXBjb5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+---
+diff --git a/drivers/hwmon/emc1403.c b/drivers/hwmon/emc1403.c
+index 90ec117..47a98a7 100644
+--- a/drivers/hwmon/emc1403.c
++++ b/drivers/hwmon/emc1403.c
+@@ -40,7 +40,7 @@
+ 
+ struct thermal_data {
+ 	struct i2c_client *client;
+-	const struct attribute_group *groups[3];
++	const struct attribute_group *groups[2];
+ 	struct mutex mutex;
+ 	/*
+ 	 * Cache the hyst value so we don't keep re-reading it. In theory
+@@ -252,6 +252,28 @@ static SENSOR_DEVICE_ATTR(temp4_crit_hyst, S_IRUGO | S_IWUSR,
+ static SENSOR_DEVICE_ATTR_2(power_state, S_IRUGO | S_IWUSR,
+ 	show_bit, store_bit, 0x03, 0x40);
+ 
++
++static struct attribute *emc1412_attrs[] = {
++	&sensor_dev_attr_temp1_min.dev_attr.attr,
++	&sensor_dev_attr_temp1_max.dev_attr.attr,
++	&sensor_dev_attr_temp1_crit.dev_attr.attr,
++	&sensor_dev_attr_temp1_input.dev_attr.attr,
++	&sensor_dev_attr_temp1_crit_hyst.dev_attr.attr,
++
++	&sensor_dev_attr_temp2_min.dev_attr.attr,
++	&sensor_dev_attr_temp2_max.dev_attr.attr,
++	&sensor_dev_attr_temp2_crit.dev_attr.attr,
++	&sensor_dev_attr_temp2_input.dev_attr.attr,
++	&sensor_dev_attr_temp2_crit_hyst.dev_attr.attr,
++
++	&sensor_dev_attr_power_state.dev_attr.attr,
++	NULL
++};
++
++static const struct attribute_group emc1412_group = {
++		.attrs = emc1412_attrs,
++};
++
+ static struct attribute *emc1403_attrs[] = {
+ 	&sensor_dev_attr_temp1_min.dev_attr.attr,
+ 	&sensor_dev_attr_temp1_max.dev_attr.attr,
+@@ -261,6 +283,7 @@ static struct attribute *emc1403_attrs[] = {
+ 	&sensor_dev_attr_temp1_max_alarm.dev_attr.attr,
+ 	&sensor_dev_attr_temp1_crit_alarm.dev_attr.attr,
+ 	&sensor_dev_attr_temp1_crit_hyst.dev_attr.attr,
++
+ 	&sensor_dev_attr_temp2_min.dev_attr.attr,
+ 	&sensor_dev_attr_temp2_max.dev_attr.attr,
+ 	&sensor_dev_attr_temp2_crit.dev_attr.attr,
+@@ -269,6 +292,7 @@ static struct attribute *emc1403_attrs[] = {
+ 	&sensor_dev_attr_temp2_max_alarm.dev_attr.attr,
+ 	&sensor_dev_attr_temp2_crit_alarm.dev_attr.attr,
+ 	&sensor_dev_attr_temp2_crit_hyst.dev_attr.attr,
++
+ 	&sensor_dev_attr_temp3_min.dev_attr.attr,
+ 	&sensor_dev_attr_temp3_max.dev_attr.attr,
+ 	&sensor_dev_attr_temp3_crit.dev_attr.attr,
+@@ -277,6 +301,7 @@ static struct attribute *emc1403_attrs[] = {
+ 	&sensor_dev_attr_temp3_max_alarm.dev_attr.attr,
+ 	&sensor_dev_attr_temp3_crit_alarm.dev_attr.attr,
+ 	&sensor_dev_attr_temp3_crit_hyst.dev_attr.attr,
++
+ 	&sensor_dev_attr_power_state.dev_attr.attr,
+ 	NULL
+ };
+@@ -286,6 +311,33 @@ static const struct attribute_group emc1403_group = {
+ };
+ 
+ static struct attribute *emc1404_attrs[] = {
++	&sensor_dev_attr_temp1_min.dev_attr.attr,
++	&sensor_dev_attr_temp1_max.dev_attr.attr,
++	&sensor_dev_attr_temp1_crit.dev_attr.attr,
++	&sensor_dev_attr_temp1_input.dev_attr.attr,
++	&sensor_dev_attr_temp1_min_alarm.dev_attr.attr,
++	&sensor_dev_attr_temp1_max_alarm.dev_attr.attr,
++	&sensor_dev_attr_temp1_crit_alarm.dev_attr.attr,
++	&sensor_dev_attr_temp1_crit_hyst.dev_attr.attr,
++
++	&sensor_dev_attr_temp2_min.dev_attr.attr,
++	&sensor_dev_attr_temp2_max.dev_attr.attr,
++	&sensor_dev_attr_temp2_crit.dev_attr.attr,
++	&sensor_dev_attr_temp2_input.dev_attr.attr,
++	&sensor_dev_attr_temp2_min_alarm.dev_attr.attr,
++	&sensor_dev_attr_temp2_max_alarm.dev_attr.attr,
++	&sensor_dev_attr_temp2_crit_alarm.dev_attr.attr,
++	&sensor_dev_attr_temp2_crit_hyst.dev_attr.attr,
++
++	&sensor_dev_attr_temp3_min.dev_attr.attr,
++	&sensor_dev_attr_temp3_max.dev_attr.attr,
++	&sensor_dev_attr_temp3_crit.dev_attr.attr,
++	&sensor_dev_attr_temp3_input.dev_attr.attr,
++	&sensor_dev_attr_temp3_min_alarm.dev_attr.attr,
++	&sensor_dev_attr_temp3_max_alarm.dev_attr.attr,
++	&sensor_dev_attr_temp3_crit_alarm.dev_attr.attr,
++	&sensor_dev_attr_temp3_crit_hyst.dev_attr.attr,
++
+ 	&sensor_dev_attr_temp4_min.dev_attr.attr,
+ 	&sensor_dev_attr_temp4_max.dev_attr.attr,
+ 	&sensor_dev_attr_temp4_crit.dev_attr.attr,
+@@ -294,6 +346,8 @@ static struct attribute *emc1404_attrs[] = {
+ 	&sensor_dev_attr_temp4_max_alarm.dev_attr.attr,
+ 	&sensor_dev_attr_temp4_crit_alarm.dev_attr.attr,
+ 	&sensor_dev_attr_temp4_crit_hyst.dev_attr.attr,
++
++	&sensor_dev_attr_power_state.dev_attr.attr,
+ 	NULL
+ };
+ 
+@@ -301,11 +355,13 @@ static const struct attribute_group emc1404_group = {
+ 	.attrs = emc1404_attrs,
+ };
+ 
++
++
+ static int emc1403_detect(struct i2c_client *client,
+ 			struct i2c_board_info *info)
+ {
+ 	int id;
+-	/* Check if thermal chip is SMSC and EMC1403 or EMC1423 */
++	/* Check whether the chip is SMSC and get its type */
+ 
+ 	id = i2c_smbus_read_byte_data(client, THERMAL_SMSC_ID_REG);
+ 	if (id != 0x5d)
+@@ -313,6 +369,9 @@ static int emc1403_detect(struct i2c_client *client,
+ 
+ 	id = i2c_smbus_read_byte_data(client, THERMAL_PID_REG);
+ 	switch (id) {
++	case 0x20:
++		strlcpy(info->type, "emc1412", I2C_NAME_SIZE);
++		break;
+ 	case 0x21:
+ 		strlcpy(info->type, "emc1403", I2C_NAME_SIZE);
+ 		break;
+@@ -330,9 +389,9 @@ static int emc1403_detect(struct i2c_client *client,
+ 	}
+ 
+ 	id = i2c_smbus_read_byte_data(client, THERMAL_REVISION_REG);
+-	if (id != 0x01)
++	if (id != 0x01 && id != 0x04) {
+ 		return -ENODEV;
+-
++	}
+ 	return 0;
+ }
+ 
+@@ -351,9 +410,17 @@ static int emc1403_probe(struct i2c_client *client,
+ 	mutex_init(&data->mutex);
+ 	data->hyst_valid = jiffies - 1;		/* Expired */
+ 
+-	data->groups[0] = &emc1403_group;
+-	if (id->driver_data)
+-		data->groups[1] = &emc1404_group;
++	switch (id->driver_data) {
++	case 0:
++		data->groups[0] = &emc1412_group;
++		break;
++	case 1:
++		data->groups[0] = &emc1403_group;
++		break;
++	case 2:
++		data->groups[0] = &emc1404_group;
++		break;
++	}
+ 
+ 	hwmon_dev = hwmon_device_register_with_groups(&client->dev,
+ 						      client->name, data,
+@@ -366,14 +433,19 @@ static int emc1403_probe(struct i2c_client *client,
+ }
+ 
+ static const unsigned short emc1403_address_list[] = {
+-	0x18, 0x29, 0x4c, 0x4d, I2C_CLIENT_END
++	/* emc1403/emc1404/emc1423/emc1424 */
++	0x4c, 0x4d, 0x18, 0x29,
++	/* emc1412 */
++	0x5c, 0x4c, 0x6c, 0x1c, 0x3c, I2C_CLIENT_END
+ };
+ 
++/* Last number in name indicates the amount of channels */
+ static const struct i2c_device_id emc1403_idtable[] = {
+-	{ "emc1403", 0 },
+-	{ "emc1404", 1 },
+-	{ "emc1423", 0 },
+-	{ "emc1424", 1 },
++	{ "emc1412", 0 },
++	{ "emc1403", 1 },
++	{ "emc1423", 1 },
++	{ "emc1404", 2 },
++	{ "emc1424", 2 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, emc1403_idtable);
 
-On Sat, May 10, 2014 at 12:32:46PM -0700, Josh Triplett wrote:
-> On Sat, May 10, 2014 at 09:07:42AM +0200, Jann Horn wrote:
-> > On Fri, May 09, 2014 at 12:19:16PM -0700, Josh Triplett wrote:
-> > > +	if (port > 65535)
-> > > +		return 0;
-> > > +	switch (count) {
-> > [...]
-> > > +	case 4:
-> > > +		if (__put_user(inl(port), buf) < 0)
-> > > +			return -EFAULT;
-> >=20
-> > What if I attempt a four-byte read at 65535? That would access four
-> > out-of-bounds bytes, right?
->=20
-> No, it would do an ind instruction on port 65535.
-
-Yes, on x86. What about other architectures?
-
-http://lxr.free-electrons.com/source/arch/m68k/include/asm/io_mm.h#L110
-110 #define inl     mcf_pci_inl
-
-http://lxr.free-electrons.com/source/arch/m68k/platform/coldfire/pci.c#L163
-163 u32 mcf_pci_inl(u32 addr)
-164 {
-165         return le32_to_cpu(__raw_readl(iospace + (addr & PCI_IO_MASK)));
-166 }
-
-http://lxr.free-electrons.com/source/arch/m68k/platform/coldfire/pci.c#L37
- 37 #define PCI_IO_SIZE     0x00010000              /* 64k */
- 38 #define PCI_IO_MASK     (PCI_IO_SIZE - 1)
-
-http://lxr.free-electrons.com/source/arch/m68k/include/asm/raw_io.h#L54
- 54 #define __raw_readl in_be32
-
-http://lxr.free-electrons.com/source/arch/m68k/include/asm/raw_io.h#L36
- 36 #define in_be32(addr) \
- 37     ({ u32 __v =3D (*(__force volatile u32 *) (addr)); __v; })
-
-As far as I can see, you'd get a slightly out-of-bounds read here. Or
-is that feature only intended for x86?
-
---bg08WKrSYDhXBjb5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTb3H+AAoJED4KNFJOeCOoRokQAI0JrZzgC//sThV9GvPFLZuc
-SkGP37/8y8B7GUl6gL5L3NhH+HIbcwB6GhudArSPSPdMaRQCQsOHC0J5xbz+Vq86
-mL1S2Jt99f3K0GlGW1V8r1FeLoNI9CwXYkjbjrnV9BZzQey++Ge/NDaLn/wlqgn5
-FzqOQ40thRBfvmigQ3uYYx7+xKK6qp0Ajb10Gsa9mjsMC8h08onbp72f6PGm3I1O
-tpO7SmoOqe3t4zWplreeifobayCgcR1ZGNCoEVl9tlvktKiyLgboYArnUrJWsurg
-/ep68wFv7wSoC32+rnCp1XPY9vuZpwrGeT31eA8hvpv5nRTpJqtqW0F1nsUnOTPj
-XsZ46LVs9pZ7I+rOiKB0t7xsiBIFLTPrDSK1HkBY+ui7uFxnl6n0+Z69loidRba+
-0OoQtbYaucESzH6rhwg2VZjWytpecmXcQnC9zELbmx4Mpx2Lku5KKkVZ8uxdN5Kb
-9oFrqmo8U8R++oKUcMvkYUa9dpknCf3/9XXnbQMnOp8JATSvdIkN/6bimLFR5AaE
-s9A/phMq1LLugcOCIohIjfc81pERs2psgonAJ1LX9R64Vf81gSP5rXgZ+EcVyQmV
-hZA9KzpMl7hg72z+ei4rgdOuDfl7R6XwGY4nPsW2BQ7aCTxJQMYL13MRmrtUCfeq
-4B3LSiqk334g1X+cfY2h
-=RVUG
------END PGP SIGNATURE-----
-
---bg08WKrSYDhXBjb5--
