@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757626AbaEKSsS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 14:48:18 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55200 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751687AbaEKSsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 14:48:16 -0400
-Date: Sun, 11 May 2014 20:48:08 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Mike Galbraith <mgalbraith@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] CPU hotplug: Slow down hotplug operations
-Message-ID: <20140511184808.GC15527@pd.tnic>
-References: <1399492661-891-1-git-send-email-bp@alien8.de>
- <20140507130655.9f7c46de8cb39726079458fb@linux-foundation.org>
- <alpine.DEB.2.02.1405072214420.6261@ionos.tec.linutronix.de>
- <20140507202655.GI16722@pd.tnic>
- <20140511170234.GA2681@xo-6d-61-c0.localdomain>
- <alpine.DEB.2.02.1405112026580.6261@ionos.tec.linutronix.de>
+	id S1757680AbaEKSw3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 14:52:29 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:44101 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755373AbaEKSw2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 14:52:28 -0400
+Date: Sun, 11 May 2014 14:52:24 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dongsheng Yang <dongsheng081251@gmail.com>,
+        "yangds.fnst" <yangds.fnst@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, mingo@redhat.com, bsegall@google.com
+Subject: Re: [PATCH] sched: Distinguish sched_wakeup event when wake up a
+ task which did schedule out or not.
+Message-ID: <20140511145224.00412e59@gandalf.local.home>
+In-Reply-To: <20140511163531.GG30445@twins.programming.kicks-ass.net>
+References: <53683B14.3060702@cn.fujitsu.com>
+	<1399341154-11785-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+	<20140510152902.GW11096@twins.programming.kicks-ass.net>
+	<536F90BE.2080806@gmail.com>
+	<CA+qeAOr_PrBuo+qfjNoaZyHF21p=8UgQy1oZOjAxahhYTyrvLQ@mail.gmail.com>
+	<20140511163531.GG30445@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1405112026580.6261@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 11, 2014 at 08:29:30PM +0200, Thomas Gleixner wrote:
-> On Sun, 11 May 2014, Pavel Machek wrote:
-> > Well. If you add the delay, you'll mask real problems and cause regressions when
-> > the delay is removed -- because fix-hotplug will probably take time to get right.
-> > 
-> > Bad idea, AFAICT.
+On Sun, 11 May 2014 18:35:31 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
+
+
+> So if the wait side has already observed cond==false, then without the
+> wakeup, which still potentially has ->on_rq == true, it would block.
+> Therefore the wakeup is a _real_ wakeup.
 > 
-> Agreed, but Boris is right, that the current duct tape hackery needs
-> to stop. And the delay was the desperate attempt to wake up people to
-> focus on replacing the current mess instead of making it more
-> entangled.
+> We fundamentally cannot know, on the wake side, if the wait side has or
+> has not observed cond, and therefore the distinction you're trying to
+> make is a false one.
 
-I think Pavel is missing the point: the delay will be removed with the
-rewrite of cpu hotplug, after it actually works reliably. Then we won't
-need delay anyway.
+I believe you may be misunderstanding Dongsheng. It has nothing to do
+with the wake condition. But the "success" is basically saying, "did I
+move the task on to the run queue?". That's a relevant piece of
+information that the wake up event isn't currently showing.
 
--- 
-Regards/Gruss,
-    Boris.
+Let me ask you this; with Donsheng's patch, will there ever be a
+sched_switch event when the wakeup event sees 'false' and the
+sched_switch event see the task with a state other than "R"? And if so,
+how did the task doing the wakeup event, wake up that task?
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+-- Steve
