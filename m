@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934366AbaEKTuo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:50:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48160 "EHLO
+	id S933105AbaEKTW4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:22:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48152 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933084AbaEKTW5 (ORCPT
+	with ESMTP id S933084AbaEKTWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:22:57 -0400
+	Sun, 11 May 2014 15:22:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vassili Karpov <av1474@comtv.ru>, Sergey Dyasly <dserrg@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        hujianyang <hujianyang@huawei.com>
-Subject: [PATCH 3.10 07/48] ARM: 7840/1: LPAE: dont reject mapping /dev/mem above 4GB
-Date: Sun, 11 May 2014 21:19:41 +0200
-Message-Id: <20140511191949.129664388@linuxfoundation.org>
+        Gopesh Kumar Chaudhary <gopchaud@in.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 3.10 11/48] virtio_balloon: dont softlockup on huge balloon changes.
+Date: Sun, 11 May 2014 21:19:45 +0200
+Message-Id: <20140511191949.667850383@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
 References: <20140511191948.079900414@linuxfoundation.org>
@@ -29,43 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergey Dyasly <dserrg@gmail.com>
+From: Rusty Russell <rusty@rustcorp.com.au>
 
-commit 3159f372354e8e1f5dee714663d705dd2c7e0759 upstream.
+commit 1f74ef0f2d7d692fcd615621e0e734c3e7771413 upstream.
 
-With LPAE enabled, physical address space is larger than 4GB. Allow mapping any
-part of it via /dev/mem by using PHYS_MASK to determine valid range.
+When adding or removing 100G from a balloon:
 
-PHYS_MASK covers 40 bits with LPAE enabled and 32 bits otherwise.
+    BUG: soft lockup - CPU#0 stuck for 22s! [vballoon:367]
 
-Reported-by: Vassili Karpov <av1474@comtv.ru>
-Signed-off-by: Sergey Dyasly <dserrg@gmail.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: hujianyang <hujianyang@huawei.com>
+We have a wait_event_interruptible(), but the condition is always true
+(more ballooning to do) so we don't ever sleep.  We also have a
+wait_event() for the host to ack, but that is also always true as QEMU
+is synchronous for balloon operations.
+
+Reported-by: Gopesh Kumar Chaudhary <gopchaud@in.ibm.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/mmap.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/virtio/virtio_balloon.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/arch/arm/mm/mmap.c
-+++ b/arch/arm/mm/mmap.c
-@@ -204,13 +204,11 @@ int valid_phys_addr_range(phys_addr_t ad
+--- a/drivers/virtio/virtio_balloon.c
++++ b/drivers/virtio/virtio_balloon.c
+@@ -311,6 +311,12 @@ static int balloon(void *_vballoon)
+ 		else if (diff < 0)
+ 			leak_balloon(vb, -diff);
+ 		update_balloon_size(vb);
++
++		/*
++		 * For large balloon changes, we could spend a lot of time
++		 * and always have work to do.  Be nice if preempt disabled.
++		 */
++		cond_resched();
+ 	}
+ 	return 0;
  }
- 
- /*
-- * We don't use supersection mappings for mmap() on /dev/mem, which
-- * means that we can't map the memory area above the 4G barrier into
-- * userspace.
-+ * Do not allow /dev/mem mappings beyond the supported physical range.
-  */
- int valid_mmap_phys_addr_range(unsigned long pfn, size_t size)
- {
--	return !(pfn + (size >> PAGE_SHIFT) > 0x00100000);
-+	return (pfn + (size >> PAGE_SHIFT)) <= (1 + (PHYS_MASK >> PAGE_SHIFT));
- }
- 
- #ifdef CONFIG_STRICT_DEVMEM
 
 
