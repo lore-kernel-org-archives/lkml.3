@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932520AbaEKTUu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:20:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47949 "EHLO
+	id S932574AbaEKTVA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:21:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47965 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757351AbaEKTUq (ORCPT
+	with ESMTP id S932476AbaEKTU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:20:46 -0400
+	Sun, 11 May 2014 15:20:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Daley <mattd@bugfuzz.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 06/83] floppy: dont write kernel-only members to FDRAWCMD ioctl output
-Date: Sun, 11 May 2014 21:19:07 +0200
-Message-Id: <20140511191907.877372479@linuxfoundation.org>
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.14 10/83] KVM: ioapic: fix assignment of ioapic->rtc_status.pending_eoi (CVE-2014-0155)
+Date: Sun, 11 May 2014 21:19:11 +0200
+Message-Id: <20140511191908.479143748@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
 References: <20140511191907.024339448@linuxfoundation.org>
@@ -27,35 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Daley <mattd@bugfuzz.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit 2145e15e0557a01b9195d1c7199a1b92cb9be81f upstream.
+commit 5678de3f15010b9022ee45673f33bcfc71d47b60 upstream.
 
-Do not leak kernel-only floppy_raw_cmd structure members to userspace.
-This includes the linked-list pointer and the pointer to the allocated
-DMA space.
+QE reported that they got the BUG_ON in ioapic_service to trigger.
+I cannot reproduce it, but there are two reasons why this could happen.
 
-Signed-off-by: Matthew Daley <mattd@bugfuzz.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The less likely but also easiest one, is when kvm_irq_delivery_to_apic
+does not deliver to any APIC and returns -1.
+
+Because irqe.shorthand == 0, the kvm_for_each_vcpu loop in that
+function is never reached.  However, you can target the similar loop in
+kvm_irq_delivery_to_apic_fast; just program a zero logical destination
+address into the IOAPIC, or an out-of-range physical destination address.
+
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/floppy.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ virt/kvm/ioapic.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -3053,7 +3053,10 @@ static int raw_cmd_copyout(int cmd, void
- 	int ret;
+--- a/virt/kvm/ioapic.c
++++ b/virt/kvm/ioapic.c
+@@ -306,7 +306,7 @@ static int ioapic_deliver(struct kvm_ioa
+ 		BUG_ON(ioapic->rtc_status.pending_eoi != 0);
+ 		ret = kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe,
+ 				ioapic->rtc_status.dest_map);
+-		ioapic->rtc_status.pending_eoi = ret;
++		ioapic->rtc_status.pending_eoi = (ret < 0 ? 0 : ret);
+ 	} else
+ 		ret = kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe, NULL);
  
- 	while (ptr) {
--		ret = copy_to_user(param, ptr, sizeof(*ptr));
-+		struct floppy_raw_cmd cmd = *ptr;
-+		cmd.next = NULL;
-+		cmd.kernel_data = NULL;
-+		ret = copy_to_user(param, &cmd, sizeof(cmd));
- 		if (ret)
- 			return -EFAULT;
- 		param += sizeof(struct floppy_raw_cmd);
 
 
