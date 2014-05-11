@@ -1,60 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932863AbaEKTWC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:22:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48064 "EHLO
+	id S932773AbaEKTVn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:21:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48038 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932818AbaEKTV7 (ORCPT
+	with ESMTP id S932672AbaEKTVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:21:59 -0400
+	Sun, 11 May 2014 15:21:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Welling <mwelling@ieee.org>
-Subject: [PATCH 3.10 02/48] tty: serial: 8250_core.c Bug fix for Exar chips.
-Date: Sun, 11 May 2014 21:19:36 +0200
-Message-Id: <20140511191948.425239782@linuxfoundation.org>
+        Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.14 19/83] powerpc/tm: Disable IRQ in tm_recheckpoint
+Date: Sun, 11 May 2014 21:19:20 +0200
+Message-Id: <20140511191909.703576501@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Michael Welling <mwelling@ieee.org>
+From: Michael Neuling <mikey@neuling.org>
 
-commit b790f210fe8423eff881b2a8a93ba5dbc45534d0 upstream.
+commit e6b8fd028b584ffca7a7255b8971f254932c9fce upstream.
 
-The sleep function was updated to put the serial port to sleep only when necessary.
-This appears to resolve the errant behavior of the driver as described in
-Kernel Bug 61961 – "My Exar Corp. XR17C/D152 Dual PCI UART modem does not
-work with 3.8.0".
+We can't take an IRQ when we're about to do a trechkpt as our GPR state is set
+to user GPR values.
 
-Signed-off-by: Michael Welling <mwelling@ieee.org>
+We've hit this when running some IBM Java stress tests in the lab resulting in
+the following dump:
+
+  cpu 0x3f: Vector: 700 (Program Check) at [c000000007eb3d40]
+      pc: c000000000050074: restore_gprs+0xc0/0x148
+      lr: 00000000b52a8184
+      sp: ac57d360
+     msr: 8000000100201030
+    current = 0xc00000002c500000
+    paca    = 0xc000000007dbfc00     softe: 0     irq_happened: 0x00
+      pid   = 34535, comm = Pooled Thread #
+  R00 = 00000000b52a8184   R16 = 00000000b3e48fda
+  R01 = 00000000ac57d360   R17 = 00000000ade79bd8
+  R02 = 00000000ac586930   R18 = 000000000fac9bcc
+  R03 = 00000000ade60000   R19 = 00000000ac57f930
+  R04 = 00000000f6624918   R20 = 00000000ade79be8
+  R05 = 00000000f663f238   R21 = 00000000ac218a54
+  R06 = 0000000000000002   R22 = 000000000f956280
+  R07 = 0000000000000008   R23 = 000000000000007e
+  R08 = 000000000000000a   R24 = 000000000000000c
+  R09 = 00000000b6e69160   R25 = 00000000b424cf00
+  R10 = 0000000000000181   R26 = 00000000f66256d4
+  R11 = 000000000f365ec0   R27 = 00000000b6fdcdd0
+  R12 = 00000000f66400f0   R28 = 0000000000000001
+  R13 = 00000000ada71900   R29 = 00000000ade5a300
+  R14 = 00000000ac2185a8   R30 = 00000000f663f238
+  R15 = 0000000000000004   R31 = 00000000f6624918
+  pc  = c000000000050074 restore_gprs+0xc0/0x148
+  cfar= c00000000004fe28 dont_restore_vec+0x1c/0x1a4
+  lr  = 00000000b52a8184
+  msr = 8000000100201030   cr  = 24804888
+  ctr = 0000000000000000   xer = 0000000000000000   trap =  700
+
+This moves tm_recheckpoint to a C function and moves the tm_restore_sprs into
+that function.  It then adds IRQ disabling over the trechkpt critical section.
+It also sets the TEXASR FS in the signals code to ensure this is never set now
+that we explictly write the TM sprs in tm_recheckpoint.
+
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250_core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/include/asm/reg.h  |    1 +
+ arch/powerpc/kernel/process.c   |   34 ++++++++++++++++++++++++++++------
+ arch/powerpc/kernel/signal_32.c |    2 ++
+ arch/powerpc/kernel/signal_64.c |    2 ++
+ arch/powerpc/kernel/tm.S        |    2 +-
+ 5 files changed, 34 insertions(+), 7 deletions(-)
 
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -555,7 +555,7 @@ static void serial8250_set_sleep(struct
- 	 */
- 	if ((p->port.type == PORT_XR17V35X) ||
- 	   (p->port.type == PORT_XR17D15X)) {
--		serial_out(p, UART_EXAR_SLEEP, 0xff);
-+		serial_out(p, UART_EXAR_SLEEP, sleep ? 0xff : 0);
- 		return;
- 	}
+--- a/arch/powerpc/include/asm/reg.h
++++ b/arch/powerpc/include/asm/reg.h
+@@ -213,6 +213,7 @@
+ #define SPRN_ACOP	0x1F	/* Available Coprocessor Register */
+ #define SPRN_TFIAR	0x81	/* Transaction Failure Inst Addr   */
+ #define SPRN_TEXASR	0x82	/* Transaction EXception & Summary */
++#define   TEXASR_FS	__MASK(63-36)	/* Transaction Failure Summary */
+ #define SPRN_TEXASRU	0x83	/* ''	   ''	   ''	 Upper 32  */
+ #define SPRN_TFHAR	0x80	/* Transaction Failure Handler Addr */
+ #define SPRN_CTRLF	0x088
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -610,6 +610,31 @@ out_and_saveregs:
+ 	tm_save_sprs(thr);
+ }
  
++extern void __tm_recheckpoint(struct thread_struct *thread,
++			      unsigned long orig_msr);
++
++void tm_recheckpoint(struct thread_struct *thread,
++		     unsigned long orig_msr)
++{
++	unsigned long flags;
++
++	/* We really can't be interrupted here as the TEXASR registers can't
++	 * change and later in the trecheckpoint code, we have a userspace R1.
++	 * So let's hard disable over this region.
++	 */
++	local_irq_save(flags);
++	hard_irq_disable();
++
++	/* The TM SPRs are restored here, so that TEXASR.FS can be set
++	 * before the trecheckpoint and no explosion occurs.
++	 */
++	tm_restore_sprs(thread);
++
++	__tm_recheckpoint(thread, orig_msr);
++
++	local_irq_restore(flags);
++}
++
+ static inline void tm_recheckpoint_new_task(struct task_struct *new)
+ {
+ 	unsigned long msr;
+@@ -628,13 +653,10 @@ static inline void tm_recheckpoint_new_t
+ 	if (!new->thread.regs)
+ 		return;
+ 
+-	/* The TM SPRs are restored here, so that TEXASR.FS can be set
+-	 * before the trecheckpoint and no explosion occurs.
+-	 */
+-	tm_restore_sprs(&new->thread);
+-
+-	if (!MSR_TM_ACTIVE(new->thread.regs->msr))
++	if (!MSR_TM_ACTIVE(new->thread.regs->msr)){
++		tm_restore_sprs(&new->thread);
+ 		return;
++	}
+ 	msr = new->thread.tm_orig_msr;
+ 	/* Recheckpoint to restore original checkpointed register state. */
+ 	TM_DEBUG("*** tm_recheckpoint of pid %d "
+--- a/arch/powerpc/kernel/signal_32.c
++++ b/arch/powerpc/kernel/signal_32.c
+@@ -881,6 +881,8 @@ static long restore_tm_user_regs(struct
+ 	 * transactional versions should be loaded.
+ 	 */
+ 	tm_enable();
++	/* Make sure the transaction is marked as failed */
++	current->thread.tm_texasr |= TEXASR_FS;
+ 	/* This loads the checkpointed FP/VEC state, if used */
+ 	tm_recheckpoint(&current->thread, msr);
+ 	/* Get the top half of the MSR */
+--- a/arch/powerpc/kernel/signal_64.c
++++ b/arch/powerpc/kernel/signal_64.c
+@@ -527,6 +527,8 @@ static long restore_tm_sigcontexts(struc
+ 	}
+ #endif
+ 	tm_enable();
++	/* Make sure the transaction is marked as failed */
++	current->thread.tm_texasr |= TEXASR_FS;
+ 	/* This loads the checkpointed FP/VEC state, if used */
+ 	tm_recheckpoint(&current->thread, msr);
+ 
+--- a/arch/powerpc/kernel/tm.S
++++ b/arch/powerpc/kernel/tm.S
+@@ -307,7 +307,7 @@ dont_backup_fp:
+ 	 *	Call with IRQs off, stacks get all out of sync for
+ 	 *	some periods in here!
+ 	 */
+-_GLOBAL(tm_recheckpoint)
++_GLOBAL(__tm_recheckpoint)
+ 	mfcr	r5
+ 	mflr	r0
+ 	stw	r5, 8(r1)
 
 
