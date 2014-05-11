@@ -1,109 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934402AbaEKTzN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 15:55:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48075 "EHLO
+	id S934411AbaEKTzl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 15:55:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48061 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932818AbaEKTWG (ORCPT
+	with ESMTP id S932838AbaEKTV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 15:22:06 -0400
+	Sun, 11 May 2014 15:21:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>, Jiri Slaby <jslaby@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 3.10 03/48] n_tty: Fix n_tty_write crash when echoing in raw mode
-Date: Sun, 11 May 2014 21:19:37 +0200
-Message-Id: <20140511191948.550740144@linuxfoundation.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 3.14 22/83] s390/bpf,jit: initialize A register if 1st insn is BPF_S_LDX_B_MSH
+Date: Sun, 11 May 2014 21:19:23 +0200
+Message-Id: <20140511191910.082722691@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140511191948.079900414@linuxfoundation.org>
-References: <20140511191948.079900414@linuxfoundation.org>
+In-Reply-To: <20140511191907.024339448@linuxfoundation.org>
+References: <20140511191907.024339448@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Peter Hurley <peter@hurleysoftware.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit 4291086b1f081b869c6d79e5b7441633dc3ace00 upstream.
+commit 6e0de817594c61f3b392a9245deeb09609ec707d upstream.
 
-The tty atomic_write_lock does not provide an exclusion guarantee for
-the tty driver if the termios settings are LECHO & !OPOST.  And since
-it is unexpected and not allowed to call TTY buffer helpers like
-tty_insert_flip_string concurrently, this may lead to crashes when
-concurrect writers call pty_write. In that case the following two
-writers:
-* the ECHOing from a workqueue and
-* pty_write from the process
-race and can overflow the corresponding TTY buffer like follows.
+The A register needs to be initialized to zero in the prolog if the
+first instruction of the BPF program is BPF_S_LDX_B_MSH to prevent
+leaking the content of %r5 to user space.
 
-If we look into tty_insert_flip_string_fixed_flag, there is:
-  int space = __tty_buffer_request_room(port, goal, flags);
-  struct tty_buffer *tb = port->buf.tail;
-  ...
-  memcpy(char_buf_ptr(tb, tb->used), chars, space);
-  ...
-  tb->used += space;
-
-so the race of the two can result in something like this:
-              A                                B
-__tty_buffer_request_room
-                                  __tty_buffer_request_room
-memcpy(buf(tb->used), ...)
-tb->used += space;
-                                  memcpy(buf(tb->used), ...) ->BOOM
-
-B's memcpy is past the tty_buffer due to the previous A's tb->used
-increment.
-
-Since the N_TTY line discipline input processing can output
-concurrently with a tty write, obtain the N_TTY ldisc output_lock to
-serialize echo output with normal tty writes.  This ensures the tty
-buffer helper tty_insert_flip_string is not called concurrently and
-everything is fine.
-
-Note that this is nicely reproducible by an ordinary user using
-forkpty and some setup around that (raw termios + ECHO). And it is
-present in kernels at least after commit
-d945cb9cce20ac7143c2de8d88b187f62db99bdc (pty: Rework the pty layer to
-use the normal buffering logic) in 2.6.31-rc3.
-
-js: add more info to the commit log
-js: switch to bool
-js: lock unconditionally
-js: lock only the tty->ops->write call
-
-References: CVE-2014-0196
-Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_tty.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/s390/net/bpf_jit_comp.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -2066,8 +2066,12 @@ static ssize_t n_tty_write(struct tty_st
- 			if (tty->ops->flush_chars)
- 				tty->ops->flush_chars(tty);
- 		} else {
-+			struct n_tty_data *ldata = tty->disc_data;
-+
- 			while (nr > 0) {
-+				mutex_lock(&ldata->output_lock);
- 				c = tty->ops->write(tty, b, nr);
-+				mutex_unlock(&ldata->output_lock);
- 				if (c < 0) {
- 					retval = c;
- 					goto break_out;
+--- a/arch/s390/net/bpf_jit_comp.c
++++ b/arch/s390/net/bpf_jit_comp.c
+@@ -276,7 +276,6 @@ static void bpf_jit_noleaks(struct bpf_j
+ 	case BPF_S_LD_W_IND:
+ 	case BPF_S_LD_H_IND:
+ 	case BPF_S_LD_B_IND:
+-	case BPF_S_LDX_B_MSH:
+ 	case BPF_S_LD_IMM:
+ 	case BPF_S_LD_MEM:
+ 	case BPF_S_MISC_TXA:
 
 
