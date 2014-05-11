@@ -1,64 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758153AbaEKMtz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 08:49:55 -0400
-Received: from mail0.toppoint.de ([217.70.197.20]:55229 "EHLO
-	mail0.toppoint.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758002AbaEKMtx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 08:49:53 -0400
-Date: Sun, 11 May 2014 12:46:34 +0000
-From: Wilfried Klaebe <w-lkml@lebenslange-mailadresse.de>
-To: Anish Khurana <anish.khurana130181@gmail.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-rdma@vger.kernel.org,
-        linux-acenic@sunsite.dk, nios2-dev@lists.rocketboards.org,
-        linuxppc-dev@lists.ozlabs.org, e1000-devel@lists.sourceforge.net,
-        devel@linuxdriverproject.org, linux-usb@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        linux-wireless@vger.kernel.org, xen-devel@lists.xenproject.org,
-        linux-s390@vger.kernel.org, devel@driverdev.osuosl.org,
-        b.a.t.m.a.n@lists.open-mesh.org, bridge@lists.linux-foundation.org,
-        dev@openvswitch.org, trivial@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [resend] net: get rid of SET_ETHTOOL_OPS
-Message-ID: <20140511124633.GD7875@kaos.lebenslange-mailadresse.de>
-Mail-Followup-To: Anish Khurana <anish.khurana130181@gmail.com>,
-	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-	"David S. Miller" <davem@davemloft.net>, linux-rdma@vger.kernel.org,
-	linux-acenic@sunsite.dk, nios2-dev@lists.rocketboards.org,
-	linuxppc-dev@lists.ozlabs.org, e1000-devel@lists.sourceforge.net,
-	devel@linuxdriverproject.org, linux-usb@vger.kernel.org,
-	virtualization@lists.linux-foundation.org,
-	linux-wireless@vger.kernel.org, xen-devel@lists.xenproject.org,
-	linux-s390@vger.kernel.org, devel@driverdev.osuosl.org,
-	b.a.t.m.a.n@lists.open-mesh.org, bridge@lists.linux-foundation.org,
-	dev@openvswitch.org, trivial@kernel.org,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <20140511001231.GC7875@kaos.lebenslange-mailadresse.de>
- <CANKiNjV7qrx-556DJk0qcOopnBs4NnKy51POEeZ7LpbdjX35OQ@mail.gmail.com>
+	id S1758195AbaEKMuR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 08:50:17 -0400
+Received: from thejh.net ([37.221.195.125]:53192 "EHLO thejh.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758168AbaEKMuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 08:50:12 -0400
+Date: Sun, 11 May 2014 14:50:06 +0200
+From: Jann Horn <jann@thejh.net>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH] drivers/char/mem.c: Add /dev/ioports, supporting 16-bit
+ and 32-bit ports
+Message-ID: <20140511125006.GA16197@debjann.fritz.box>
+References: <20140509191914.GA7286@jtriplet-mobl1>
+ <20140510070742.GE6099@debjann.fritz.box>
+ <20140510193246.GA12079@thin>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bg08WKrSYDhXBjb5"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CANKiNjV7qrx-556DJk0qcOopnBs4NnKy51POEeZ7LpbdjX35OQ@mail.gmail.com>
-X-message-flag: Get yourself a real email client. http://www.mutt.org/
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140510193246.GA12079@thin>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sun, May 11, 2014 at 01:13:47PM +0530 schrieb Anish Khurana:
-> SET_ETHTOOL_OPS is equivalent to :
-> #define SET_ETHTOOL_OPS(netdev,ops) \
->     ( (netdev)->ethtool_ops = (ops) )
-> 
-> how it makes difference  removing this code and replacing with the
-> code mentioned ?
 
-It doesn't change anything in the resulting binaries. The whole point
-is to remove the macro, which is something Dave wants to happen.
+--bg08WKrSYDhXBjb5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Kind regards,
-Wilfried
+On Sat, May 10, 2014 at 12:32:46PM -0700, Josh Triplett wrote:
+> On Sat, May 10, 2014 at 09:07:42AM +0200, Jann Horn wrote:
+> > On Fri, May 09, 2014 at 12:19:16PM -0700, Josh Triplett wrote:
+> > > +	if (port > 65535)
+> > > +		return 0;
+> > > +	switch (count) {
+> > [...]
+> > > +	case 4:
+> > > +		if (__put_user(inl(port), buf) < 0)
+> > > +			return -EFAULT;
+> >=20
+> > What if I attempt a four-byte read at 65535? That would access four
+> > out-of-bounds bytes, right?
+>=20
+> No, it would do an ind instruction on port 65535.
 
+Yes, on x86. What about other architectures?
+
+http://lxr.free-electrons.com/source/arch/m68k/include/asm/io_mm.h#L110
+110 #define inl     mcf_pci_inl
+
+http://lxr.free-electrons.com/source/arch/m68k/platform/coldfire/pci.c#L163
+163 u32 mcf_pci_inl(u32 addr)
+164 {
+165         return le32_to_cpu(__raw_readl(iospace + (addr & PCI_IO_MASK)));
+166 }
+
+http://lxr.free-electrons.com/source/arch/m68k/platform/coldfire/pci.c#L37
+ 37 #define PCI_IO_SIZE     0x00010000              /* 64k */
+ 38 #define PCI_IO_MASK     (PCI_IO_SIZE - 1)
+
+http://lxr.free-electrons.com/source/arch/m68k/include/asm/raw_io.h#L54
+ 54 #define __raw_readl in_be32
+
+http://lxr.free-electrons.com/source/arch/m68k/include/asm/raw_io.h#L36
+ 36 #define in_be32(addr) \
+ 37     ({ u32 __v =3D (*(__force volatile u32 *) (addr)); __v; })
+
+As far as I can see, you'd get a slightly out-of-bounds read here. Or
+is that feature only intended for x86?
+
+--bg08WKrSYDhXBjb5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTb3H+AAoJED4KNFJOeCOoRokQAI0JrZzgC//sThV9GvPFLZuc
+SkGP37/8y8B7GUl6gL5L3NhH+HIbcwB6GhudArSPSPdMaRQCQsOHC0J5xbz+Vq86
+mL1S2Jt99f3K0GlGW1V8r1FeLoNI9CwXYkjbjrnV9BZzQey++Ge/NDaLn/wlqgn5
+FzqOQ40thRBfvmigQ3uYYx7+xKK6qp0Ajb10Gsa9mjsMC8h08onbp72f6PGm3I1O
+tpO7SmoOqe3t4zWplreeifobayCgcR1ZGNCoEVl9tlvktKiyLgboYArnUrJWsurg
+/ep68wFv7wSoC32+rnCp1XPY9vuZpwrGeT31eA8hvpv5nRTpJqtqW0F1nsUnOTPj
+XsZ46LVs9pZ7I+rOiKB0t7xsiBIFLTPrDSK1HkBY+ui7uFxnl6n0+Z69loidRba+
+0OoQtbYaucESzH6rhwg2VZjWytpecmXcQnC9zELbmx4Mpx2Lku5KKkVZ8uxdN5Kb
+9oFrqmo8U8R++oKUcMvkYUa9dpknCf3/9XXnbQMnOp8JATSvdIkN/6bimLFR5AaE
+s9A/phMq1LLugcOCIohIjfc81pERs2psgonAJ1LX9R64Vf81gSP5rXgZ+EcVyQmV
+hZA9KzpMl7hg72z+ei4rgdOuDfl7R6XwGY4nPsW2BQ7aCTxJQMYL13MRmrtUCfeq
+4B3LSiqk334g1X+cfY2h
+=RVUG
+-----END PGP SIGNATURE-----
+
+--bg08WKrSYDhXBjb5--
