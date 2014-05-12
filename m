@@ -1,118 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914AbaELJ1g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 05:27:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18285 "EHLO mx1.redhat.com"
+	id S1755063AbaELJ2a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 05:28:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30023 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754647AbaELJ1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 05:27:34 -0400
+	id S1752710AbaELJ22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 05:28:28 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Dongsheng <yangds.fnst@cn.fujitsu.com>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 3/6] perf tools: Clarify the output of perf sched map.
-Date: Mon, 12 May 2014 11:27:10 +0200
-Message-Id: <1399886833-15472-4-git-send-email-jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>,
+        Irina Tirdea <irina.tirdea@intel.com>, Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 5/6] perf tools: Get rid of on_exit() feature test
+Date: Mon, 12 May 2014 11:27:12 +0200
+Message-Id: <1399886833-15472-6-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1399886833-15472-1-git-send-email-jolsa@kernel.org>
 References: <1399886833-15472-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dongsheng <yangds.fnst@cn.fujitsu.com>
+From: Namhyung Kim <namhyung@kernel.org>
 
-In output of perf sched map, any shortname of thread will be explained
-at the first time when it appear.
+The on_exit() function was only used in perf record but it's gone in
+previous patch.
 
-Example:
-              *A0       228836.978985 secs A0 => perf:23032
-          *.   A0       228836.979016 secs B0 => swapper:0
-           .  *C0       228836.979099 secs C0 => migration/3:22
-  *A0      .   C0       228836.979115 secs
-   A0      .  *.        228836.979115 secs
-
-But B0, which is explained as swapper:0 did not appear in the
-left part of output. Instead, we use '.' as the shortname of
-swapper:0. So the comment of "B0 => swapper:0" is not easy to
-understand.
-
-This patch clarify the output of perf sched map with not allocating
-one letter-number shortname for swapper:0 and print ". => swapper:0"
-as the explanation for swapper:0.
-
-Example:
-              *A0       228836.978985 secs A0 => perf:23032
-          * .  A0       228836.979016 secs .  => swapper:0
-            . *B0       228836.979099 secs B0 => migration/3:22
-  *A0       .  B0       228836.979115 secs
-   A0       . * .       228836.979115 secs
-   A0     *C0   .       228836.979225 secs C0 => ksoftirqd/2:18
-   A0     *D0   .       228836.979236 secs D0 => rcu_sched:7
-
-Signed-off-by: Dongsheng <yangds.fnst@cn.fujitsu.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1399354741-19522-1-git-send-email-yangds.fnst@cn.fujitsu.com
-[ small style fixes to make checkpatch happy ]
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Stephane Eranian <eranian@google.com>
+Cc: Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>
+Cc: Irina Tirdea <irina.tirdea@intel.com>
+Link: http://lkml.kernel.org/r/1399855645-25815-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/builtin-sched.c | 35 ++++++++++++++++++++---------------
- 1 file changed, 20 insertions(+), 15 deletions(-)
+ tools/perf/builtin-record.c                     | 31 -------------------------
+ tools/perf/config/Makefile                      |  8 -------
+ tools/perf/config/feature-checks/Makefile       |  4 ----
+ tools/perf/config/feature-checks/test-all.c     |  5 ----
+ tools/perf/config/feature-checks/test-on-exit.c | 16 -------------
+ 5 files changed, 64 deletions(-)
+ delete mode 100644 tools/perf/config/feature-checks/test-on-exit.c
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 4f0dd21..2579215 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1300,17 +1300,25 @@ static int map_switch_event(struct perf_sched *sched, struct perf_evsel *evsel,
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 2e0d484..e4c85b8 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -30,37 +30,6 @@
+ #include <sched.h>
+ #include <sys/mman.h>
  
- 	new_shortname = 0;
- 	if (!sched_in->shortname[0]) {
--		sched_in->shortname[0] = sched->next_shortname1;
--		sched_in->shortname[1] = sched->next_shortname2;
+-#ifndef HAVE_ON_EXIT_SUPPORT
+-#ifndef ATEXIT_MAX
+-#define ATEXIT_MAX 32
+-#endif
+-static int __on_exit_count = 0;
+-typedef void (*on_exit_func_t) (int, void *);
+-static on_exit_func_t __on_exit_funcs[ATEXIT_MAX];
+-static void *__on_exit_args[ATEXIT_MAX];
+-static int __exitcode = 0;
+-static void __handle_on_exit_funcs(void);
+-static int on_exit(on_exit_func_t function, void *arg);
+-#define exit(x) (exit)(__exitcode = (x))
 -
--		if (sched->next_shortname1 < 'Z') {
--			sched->next_shortname1++;
-+		if (!strcmp(thread__comm_str(sched_in), "swapper")) {
-+			/*
-+			 * Don't allocate a letter-number for swapper:0
-+			 * as a shortname. Instead, we use '.' for it.
-+			 */
-+			sched_in->shortname[0] = '.';
-+			sched_in->shortname[1] = ' ';
- 		} else {
--			sched->next_shortname1='A';
--			if (sched->next_shortname2 < '9') {
--				sched->next_shortname2++;
-+			sched_in->shortname[0] = sched->next_shortname1;
-+			sched_in->shortname[1] = sched->next_shortname2;
-+
-+			if (sched->next_shortname1 < 'Z') {
-+				sched->next_shortname1++;
- 			} else {
--				sched->next_shortname2='0';
-+				sched->next_shortname1 = 'A';
-+				if (sched->next_shortname2 < '9')
-+					sched->next_shortname2++;
-+				else
-+					sched->next_shortname2 = '0';
- 			}
- 		}
- 		new_shortname = 1;
-@@ -1322,12 +1330,9 @@ static int map_switch_event(struct perf_sched *sched, struct perf_evsel *evsel,
- 		else
- 			printf("*");
+-static int on_exit(on_exit_func_t function, void *arg)
+-{
+-	if (__on_exit_count == ATEXIT_MAX)
+-		return -ENOMEM;
+-	else if (__on_exit_count == 0)
+-		atexit(__handle_on_exit_funcs);
+-	__on_exit_funcs[__on_exit_count] = function;
+-	__on_exit_args[__on_exit_count++] = arg;
+-	return 0;
+-}
+-
+-static void __handle_on_exit_funcs(void)
+-{
+-	int i;
+-	for (i = 0; i < __on_exit_count; i++)
+-		__on_exit_funcs[i] (__exitcode, __on_exit_args[i]);
+-}
+-#endif
  
--		if (sched->curr_thread[cpu]) {
--			if (sched->curr_thread[cpu]->tid)
--				printf("%2s ", sched->curr_thread[cpu]->shortname);
--			else
--				printf(".  ");
--		} else
-+		if (sched->curr_thread[cpu])
-+			printf("%2s ", sched->curr_thread[cpu]->shortname);
-+		else
- 			printf("   ");
- 	}
+ struct record {
+ 	struct perf_tool	tool;
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 150c84c..f2edc59 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -174,7 +174,6 @@ CORE_FEATURE_TESTS =			\
+ 	libpython-version		\
+ 	libslang			\
+ 	libunwind			\
+-	on-exit				\
+ 	stackprotector-all		\
+ 	timerfd				\
+ 	libdw-dwarf-unwind
+@@ -200,7 +199,6 @@ VF_FEATURE_TESTS =			\
+ 	libelf-getphdrnum		\
+ 	libelf-mmap			\
+ 	libpython-version		\
+-	on-exit				\
+ 	stackprotector-all		\
+ 	timerfd				\
+ 	libunwind-debug-frame		\
+@@ -571,12 +569,6 @@ ifneq ($(filter -lbfd,$(EXTLIBS)),)
+   CFLAGS += -DHAVE_LIBBFD_SUPPORT
+ endif
  
+-ifndef NO_ON_EXIT
+-  ifeq ($(feature-on-exit), 1)
+-    CFLAGS += -DHAVE_ON_EXIT_SUPPORT
+-  endif
+-endif
+-
+ ifndef NO_BACKTRACE
+   ifeq ($(feature-backtrace), 1)
+     CFLAGS += -DHAVE_BACKTRACE_SUPPORT
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 2da103c..64c84e5 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -24,7 +24,6 @@ FILES=					\
+ 	test-libslang.bin		\
+ 	test-libunwind.bin		\
+ 	test-libunwind-debug-frame.bin	\
+-	test-on-exit.bin		\
+ 	test-stackprotector-all.bin	\
+ 	test-timerfd.bin		\
+ 	test-libdw-dwarf-unwind.bin
+@@ -133,9 +132,6 @@ test-liberty-z.bin:
+ test-cplus-demangle.bin:
+ 	$(BUILD) -liberty
+ 
+-test-on-exit.bin:
+-	$(BUILD)
+-
+ test-backtrace.bin:
+ 	$(BUILD)
+ 
+diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
+index fc37eb3..fe5c1e5 100644
+--- a/tools/perf/config/feature-checks/test-all.c
++++ b/tools/perf/config/feature-checks/test-all.c
+@@ -69,10 +69,6 @@
+ # include "test-libbfd.c"
+ #undef main
+ 
+-#define main main_test_on_exit
+-# include "test-on-exit.c"
+-#undef main
+-
+ #define main main_test_backtrace
+ # include "test-backtrace.c"
+ #undef main
+@@ -110,7 +106,6 @@ int main(int argc, char *argv[])
+ 	main_test_gtk2(argc, argv);
+ 	main_test_gtk2_infobar(argc, argv);
+ 	main_test_libbfd();
+-	main_test_on_exit();
+ 	main_test_backtrace();
+ 	main_test_libnuma();
+ 	main_test_timerfd();
+diff --git a/tools/perf/config/feature-checks/test-on-exit.c b/tools/perf/config/feature-checks/test-on-exit.c
+deleted file mode 100644
+index 8e88b16..0000000
+--- a/tools/perf/config/feature-checks/test-on-exit.c
++++ /dev/null
+@@ -1,16 +0,0 @@
+-#include <stdio.h>
+-#include <stdlib.h>
+-
+-static void exit_fn(int status, void *__data)
+-{
+-	printf("exit status: %d, data: %d\n", status, *(int *)__data);
+-}
+-
+-static int data = 123;
+-
+-int main(void)
+-{
+-	on_exit(exit_fn, &data);
+-
+-	return 321;
+-}
 -- 
 1.8.3.1
 
