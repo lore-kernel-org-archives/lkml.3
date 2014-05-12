@@ -1,103 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758653AbaELOhD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 10:37:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58971 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758627AbaELOhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 10:37:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1035,1389772800"; 
-   d="scan'208";a="510312067"
-Message-ID: <5370DC83.3030406@intel.com>
-Date: Mon, 12 May 2014 22:36:51 +0800
-From: Jet Chen <jet.chen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1758674AbaELOhP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 10:37:15 -0400
+Received: from bay0-omc1-s14.bay0.hotmail.com ([65.54.190.25]:59109 "EHLO
+	bay0-omc1-s14.bay0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758627AbaELOhK convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 10:37:10 -0400
+X-TMN: [XDT09WmwHjnjb92MHI3EjYwoF+H0euti]
+X-Originating-Email: [pintu.k@outlook.com]
+Message-ID: <BAY169-W1156E6803829CAB545274BCEF350@phx.gbl>
+From: Pintu Kumar <pintu.k@outlook.com>
+To: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>
+Subject: RE: Questions regarding DMA buffer sharing using IOMMU
+Date: Mon, 12 May 2014 20:07:10 +0530
+Importance: Normal
+In-Reply-To: <5218408.5YRJXjS4BX@wuerfel>
+References: <BAY169-W12541AD089785F8BFBD4E26EF350@phx.gbl>,<5218408.5YRJXjS4BX@wuerfel>
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: mingo@kernel.org, fengguang.wu@intel.com, linux-ia64@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [sched] BUG: unable to handle kernel paging request at 093cd001
-References: <53708067.7050700@intel.com> <1399888324-2007-1-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1399888324-2007-1-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 May 2014 14:37:10.0077 (UTC) FILETIME=[A8086ED0:01CF6DEF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2014 05:52 PM, Vincent Guittot wrote:
-> Hi,
-> 
-> Does this patch solve your issue ?
-> 
+Hi,
+Thanks for the reply.
 
-Sorry, this patch doesn't work. The issue is still there.
+----------------------------------------
+> From: arnd@arndb.de
+> To: linux-arm-kernel@lists.infradead.org
+> CC: pintu.k@outlook.com; linux-mm@kvack.org; linux-kernel@vger.kernel.org; linaro-mm-sig@lists.linaro.org
+> Subject: Re: Questions regarding DMA buffer sharing using IOMMU
+> Date: Mon, 12 May 2014 14:00:57 +0200
+>
+> On Monday 12 May 2014 15:12:41 Pintu Kumar wrote:
+>> Hi,
+>> I have some queries regarding IOMMU and CMA buffer sharing.
+>> We have an embedded linux device (kernel 3.10, RAM: 256Mb) in
+>> which camera and codec supports IOMMU but the display does not support IOMMU.
+>> Thus for camera capture we are using iommu buffers using
+>> ION/DMABUF. But for all display rendering we are using CMA buffers.
+>> So, the question is how to achieve buffer sharing (zero-copy)
+>> between Camera and Display using only IOMMU?
+>> Currently we are achieving zero-copy using CMA. And we are
+>> exploring options to use IOMMU.
+>> Now we wanted to know which option is better? To use IOMMU or CMA?
+>> If anybody have come across these design please share your thoughts and results.
+>
+> There is a slight performance overhead in using the IOMMU in general,
+> because the IOMMU has to fetch the page table entries from memory
+> at least some of the time.
 
-[    0.036000] x86: Booting SMP configuration:
-[    0.036000] .... node  #0, CPUs:      #1
-[    0.004000] Initializing CPU#1
-[    0.008000] kvm-clock: cpu 1, msr 0:13ffb081, secondary cpu clock
-[    0.008000] masked ExtINT on CPU#1
-[    0.008000] numa_add_cpu cpu 1 node 0: mask now 0-1
-[    0.052085] x86: Booted up 1 node, 2 CPUs
-[    0.052023] KVM setup async PF for cpu 1
-[    0.052023] kvm-stealtime: cpu 1, msr 13851980
-[    0.053075] smpboot: Total of 2 processors activated (10774.44 BogoMIPS)
-[    0.053878] BUG: unable to handle kernel paging request at 02f63001
-[    0.054403] IP: [<d026eba3>] build_sched_domains+0x252/0x1545
-[    0.054863] *pdpt = 0000000000000000 *pde = f000ff53f000ff53
-[    0.055337] Oops: 0000 [#1] SMP
-[    0.055616] Modules linked in:
-[    0.055871] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc2-00066-g7a15434 #1
-[    0.056000] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[    0.056000] task: d3050000 ti: d304c000 task.ti: d304c000
-[    0.056000] EIP: 0060:[<d026eba3>] EFLAGS: 00010202 CPU: 0
-[    0.056000] EIP is at build_sched_domains+0x252/0x1545
-[    0.056000] EAX: 00000001 EBX: d30031f0 ECX: 0000001e EDX: 02f63000
-[    0.056000] ESI: 00000000 EDI: d30031f0 EBP: d304df44 ESP: d304dee0
-[    0.056000]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-[    0.056000] CR0: 8005003b CR2: 02f63001 CR3: 108ed000 CR4: 000006f0
-[    0.056000] Stack:
-[    0.056000]  00000002 00000000 00000000 d026fd5f 000000d0 d30066d0 00000002 d03b9d70
-[    0.056000]  d3003180 d3003200 d30066c0 d3006360 00000000 00000000 d30031d0 d30066c8
-[    0.056000]  d30031c0 00000000 00000000 d3003200 d08e6d14 d3041000 d30066c0 00000008
-[    0.056000] Call Trace:
-[    0.056000]  [<d026fd5f>] ? build_sched_domains+0x140e/0x1545
-[    0.056000]  [<d03b9d70>] ? alloc_cpumask_var_node+0x1f/0x77
-[    0.056000]  [<d074ec9a>] sched_init_smp+0x350/0x3c9
-[    0.056000]  [<d0737b85>] kernel_init_freeable+0x6e/0x187
-[    0.056000]  [<d0266d9d>] ? finish_task_switch+0x3e/0xfa
-[    0.056000]  [<d04fda4a>] kernel_init+0xb/0xcc
-[    0.056000]  [<d05120c1>] ret_from_kernel_thread+0x21/0x30
-[    0.056000]  [<d04fda3f>] ? rest_init+0xbf/0xbf
-[    0.056000] Code: 00 31 73 d0 8b 0c 11 85 c9 74 0a f6 41 3d 20 0f 85 b9 00 00 00 8b 04 02 e8 80 5f 0b 00 8b 43 04 85 c0 74 0f 8b 14 b5 00 31 73 d0 <8b> 04 10 e8 6a 5f 0b 00 8b 43 08 85 c0 74 0f 8b 14 b5 00 31 73
-[    0.056000] EIP: [<d026eba3>] build_sched_domains+0x252/0x1545 SS:ESP 0068:d304dee0
-[    0.056000] CR2: 0000000002f63001
-[    0.056000] ---[ end trace 528da1c27c66605c ]---
-[    0.056000] Kernel panic - not syncing: Fatal exception
+Ok, we need to check performance later
 
+>
+> If that overhead is within the constraints you have for transfers between
+> camera and codec, you are always better off using IOMMU since that
+> means you don't have to do memory migration.
 
-> A null line is missing at the end of the array for NUMA case.
-> My test was passed thanks to a null data after the allocated array 
-> 
-> regards,
-> Vincent
-> ---
->  kernel/sched/core.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 4ea7b3f..941da33 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -6232,7 +6232,7 @@ static void sched_init_numa(void)
->  	}
->  
->  	/* Compute default topology size */
-> -	for (i = 0; sched_domain_topology[i].mask; i++);
-> +	for (i = 1; sched_domain_topology[i].mask; i++);
->  
->  	tl = kzalloc((i + level) *
->  			sizeof(struct sched_domain_topology_level), GFP_KERNEL);
-> 
+Transfer between camera is codec is fine. But our major concern is single buffer 
+sharing between camera & display. Here camera supports iommu but display does not support iommu.
+Is it possible to render camera preview (iommu buffers) on display (not iommu and required physical contiguous overlay memory)?
+
+Also is it possible to buffer sharing between 2 iommu supported devices?
+
+>
+> Note however, that we don't have a way to describe IOMMU relations
+> to devices in DT, so whatever you come up with to do this will most
+> likely be incompatible with what we do in future kernel versions.
+>
+> Arnd
+ 		 	   		  
