@@ -1,192 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943AbaELSWy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 14:22:54 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:53032 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750838AbaELSWw (ORCPT
+	id S1755053AbaELSXK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 14:23:10 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:35980 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753649AbaELSXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 14:22:52 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuUJABwRcVNbsHLF/2dsb2JhbABZgwascwEFAZobAYEZF3SCJQEBBAEnExwjBQsIAw4KFRk5HgYTiDkMAc89F4VWiHwHCoQ2AQOPJYoiAYsEiAODODs
-Date: Mon, 12 May 2014 20:22:49 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        akpm <akpm@linux-foundation.org>, Davidlohr Bueso <davidlohr@hp.com>,
-        Li Zefan <lizefan@huawei.com>, cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH V3] MM: make vmpressure_win dynamic
-Message-Id: <20140512202249.8f5b8475ba2c5018585e68b1@skynet.be>
-In-Reply-To: <20140512075537.GA9564@dhcp22.suse.cz>
-References: <20140510085217.24a34794f0e4a4881c8eec0b@skynet.be>
-	<20140512075537.GA9564@dhcp22.suse.cz>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 12 May 2014 14:23:07 -0400
+Message-ID: <53711188.3050901@linaro.org>
+Date: Mon, 12 May 2014 11:23:04 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: George Spelvin <linux@horizon.com>
+CC: linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [rough draft PATCH] avoid stalls on the timekeeping seqlock
+References: <20140512162141.22331.qmail@ns.horizon.com>
+In-Reply-To: <20140512162141.22331.qmail@ns.horizon.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 May 2014 09:55:37 +0200
-Michal Hocko <mhocko@suse.cz> wrote:
+On 05/12/2014 09:21 AM, George Spelvin wrote:
+> Here's a non-working rough draft of that idea I suggested to make
+> reading the time non-blocking, even if an update is in progress.
+>
+> Basically, it uses the idea proposed in a comment in update_wall_time,
+> switching pointers so there's always one valid structure.
+>
+> This is non-working because last year the NTP variables lost their
+> own locking and inherited the timekeeping locks I am redesigning.
+> I haven't updated NTP yet.
 
-> On Sat 10-05-14 08:52:17, Fabian Frederick wrote:
-> > This patch addresses TODO featuring in original version :
-> 
-> This is the 3rd version of the patch and I still fail to see the
-> motivation other than addressing a TODO which doesn't sound like a
-> sufficient justification to me. Why is the new scheme needed in the
-> first place? Why is calculate_normal_threshold a proper scheme?
-Nothing more than trying to have that value dynamic.
-As no one seems interested, let's just forget about that patch :)
+An important part here is that the NTP state is really tied to the
+current timekeeping structure. When everything was updated in lockstep,
+we split the locks to simplify some of the locking rules. But when we
+added the mirrored update in 3.10 (which is a lighter version of what
+you're proposing), we had to go back to using the same locking for
+everything.
 
-Regards,
-Fabian
-> 
-> > "Make the window size depend on machine size, as we do for vmstat"
-> > 
-> > It initializes vmpressure_win in vmstat using calculate_normal_threshold()
-> > based on each zone/cpu * SWAP_CLUSTER_SIZE instead of
-> > static SWAP_CLUSTER_MAX * 16 = 512
-> > 
-> > Some values :
-> > 
-> > CPU	MB	VMPRESSURE
-> > 8	512	1024
-> > 1	1024 	320
-> > 2	1024 	640
-> > 2	2048 	768
-> > 4	2048	1152
-> > 1	4096 	640
-> > 4	4096 	1920
-> > ...
-> > 
-> > (No maximum vmpressure value currently defined)
-> > 
-> > cf mm/vmstat.c: calculate_normal_threshold for further values
-> > 
-> > vmpressure_win is refreshed through cpu notifier and exposed read-only in
-> > /proc/sys/vm/vmpressure_win
-> > 
-> > Cc: Tejun Heo <tj@kernel.org>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Michal Hocko <mhocko@suse.cz>
-> > Cc: Davidlohr Bueso <davidlohr@hp.com>
-> > Cc: Li Zefan <lizefan@huawei.com>
-> > Cc: cgroups@vger.kernel.org
-> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> > ---
-> > V3:
-> >   -Further description
-> >   -sysctl handler / ulong
-> >   -Cc list
-> > 
-> > V2: Suggestions by Andrew Morton
-> >   -Expose vmpressure_win
-> >   -Remove spinlock
-> > 
-> >  include/linux/swap.h | 4 ++++
-> >  kernel/sysctl.c      | 9 +++++++++
-> >  mm/vmpressure.c      | 4 +---
-> >  mm/vmstat.c          | 6 ++++++
-> >  4 files changed, 20 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/include/linux/swap.h b/include/linux/swap.h
-> > index 3507115..886897d 100644
-> > --- a/include/linux/swap.h
-> > +++ b/include/linux/swap.h
-> > @@ -354,6 +354,10 @@ extern int vm_swappiness;
-> >  extern int remove_mapping(struct address_space *mapping, struct page *page);
-> >  extern unsigned long vm_total_pages;
-> >  
-> > +#ifdef CONFIG_MEMCG
-> > +extern unsigned long vmpressure_win;
-> > +#endif
-> > +
-> >  #ifdef CONFIG_NUMA
-> >  extern int zone_reclaim_mode;
-> >  extern int sysctl_min_unmapped_ratio;
-> > diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> > index 74f5b58..c0c5ea6 100644
-> > --- a/kernel/sysctl.c
-> > +++ b/kernel/sysctl.c
-> > @@ -1202,6 +1202,15 @@ static struct ctl_table vm_table[] = {
-> >  		.mode           = 0444 /* read-only */,
-> >  		.proc_handler   = pdflush_proc_obsolete,
-> >  	},
-> > +#ifdef CONFIG_MEMCG
-> > +	{
-> > +		.procname	= "vmpressure_window",
-> > +		.data		= &vmpressure_win,
-> > +		.maxlen		= sizeof(vmpressure_win),
-> > +		.mode		= 0444,
-> > +		.proc_handler	= proc_doulongvec_minmax,
-> > +	},
-> > +#endif
-> >  	{
-> >  		.procname	= "swappiness",
-> >  		.data		= &vm_swappiness,
-> > diff --git a/mm/vmpressure.c b/mm/vmpressure.c
-> > index d4042e7..d738670 100644
-> > --- a/mm/vmpressure.c
-> > +++ b/mm/vmpressure.c
-> > @@ -35,10 +35,8 @@
-> >   * As the vmscan reclaimer logic works with chunks which are multiple of
-> >   * SWAP_CLUSTER_MAX, it makes sense to use it for the window size as well.
-> >   *
-> > - * TODO: Make the window size depend on machine size, as we do for vmstat
-> > - * thresholds. Currently we set it to 512 pages (2MB for 4KB pages).
-> >   */
-> > -static const unsigned long vmpressure_win = SWAP_CLUSTER_MAX * 16;
-> > +unsigned long vmpressure_win = SWAP_CLUSTER_MAX * 16;
-> >  
-> >  /*
-> >   * These thresholds are used when we account memory pressure through
-> > diff --git a/mm/vmstat.c b/mm/vmstat.c
-> > index 302dd07..ede68fd 100644
-> > --- a/mm/vmstat.c
-> > +++ b/mm/vmstat.c
-> > @@ -20,6 +20,7 @@
-> >  #include <linux/writeback.h>
-> >  #include <linux/compaction.h>
-> >  #include <linux/mm_inline.h>
-> > +#include <linux/swap.h>
-> >  
-> >  #include "internal.h"
-> >  
-> > @@ -163,11 +164,13 @@ void refresh_zone_stat_thresholds(void)
-> >  	struct zone *zone;
-> >  	int cpu;
-> >  	int threshold;
-> > +	unsigned long new_vmpressure_win = 0;
-> >  
-> >  	for_each_populated_zone(zone) {
-> >  		unsigned long max_drift, tolerate_drift;
-> >  
-> >  		threshold = calculate_normal_threshold(zone);
-> > +		new_vmpressure_win += threshold;
-> >  
-> >  		for_each_online_cpu(cpu)
-> >  			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
-> > @@ -184,6 +187,9 @@ void refresh_zone_stat_thresholds(void)
-> >  			zone->percpu_drift_mark = high_wmark_pages(zone) +
-> >  					max_drift;
-> >  	}
-> > +#ifdef CONFIG_MEMCG
-> > +	vmpressure_win = new_vmpressure_win * SWAP_CLUSTER_MAX;
-> > +#endif
-> >  }
-> >  
-> >  void set_pgdat_percpu_threshold(pg_data_t *pgdat,
-> > -- 
-> > 1.8.4.5
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
+Matheiu took a similar swing last year, and in doing so moved most of
+the ntp state into the timekeeper. This seemed like a nice cleanup, but
+since his appraoch ran into trouble, and stalled out, so we didn't get
+the cleaup patches merged either.
+
+You can check his series out here:
+    https://lkml.org/lkml/2013/9/14/136
 
 
--- 
-Fabian Frederick <fabf@skynet.be>
+> One interesting possibility is that the write side of the locking
+> is identical to a standard seqlock.  It would be possible to
+> divide the timekeeping variables into non-blocking variables which
+> are mirrored, and ones that require stalling during write
+> seqlock updates.
+>
+> But that's somewhat deeper magic than I've attempted so far.
+> This is a demonstration of the idea.
+>
+> Does it seem worth pursuing?
+
+
+So again, I'd love to find a way to make it work, but I worry that the
+freq changes make the non-blocking route not very feasible (though my
+concerns may be overwrought - so feel free to push back here).
+
+There's also the extra complexity of the vdso updates, which basically
+are a similar update to a separate arch specific subsystem, which is
+currently done under the lock. So that would have to get unified in this
+non-blocking update as well.
+
+
+A few small notes below:
+
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index f7df8ea217..0dfa4aa6fb 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -29,15 +29,15 @@
+>  #include "timekeeping_internal.h"
+>  
+>  #define TK_CLEAR_NTP		(1 << 0)
+> -#define TK_MIRROR		(1 << 1)
+>  #define TK_CLOCK_WAS_SET	(1 << 2)
+>  
+> -static struct timekeeper timekeeper;
+> +static struct timekeeper timekeeper[2];
+>  static DEFINE_RAW_SPINLOCK(timekeeper_lock);
+> +/* The following is NOT used as a standard seqlock */
+>  static seqcount_t timekeeper_seq;
+> -static struct timekeeper shadow_timekeeper;
+>  
+>  /* flag for if timekeeping is suspended */
+> +/* Q: What are the locking rules for this variable? */
+>  int __read_mostly timekeeping_suspended;
+
+Really this is a left over bit that needs to be cleaned up and moved to
+the timekeeping structure. Its just a global flag that we use to make
+sure nothing calls into timekeeping logic while we're suspended, and was
+added to sort out a few suspend/resume issues that cropped up when the
+original generic timkeeping core was added.
+
+
+> @@ -291,6 +289,89 @@ static void timekeeping_forward_now(struct timekeeper *tk)
+>  }
+>  
+>  /**
+> + * timekeeper_write_begin: Return a timekeeper that can be updated.
+> + *
+> + * Must be called with the timekeeper_lock held.
+> + */
+> +static inline struct timekeeper *timekeeper_write_begin(void)
+> +{
+> +	bool b;
+> +
+> +	write_seqcount_begin(&timekeeper_seq);
+> +	b = (timekeeper_seq.sequence >> 1) & 1;
+> +	timekeeper[!b] = timekeeper[b];
+> +	return timekeeper + !b;
+> +}
+> +
+> +/**
+> + * timekeeper_write_end: Finish write, mark the modified timekeeper as current.
+> + *
+> + * Must be called with the timekeeper_lock held.
+> + */
+> +static inline void timekeeper_write_end(void)
+> +{
+> +	write_seqcount_end(&timekeeper_seq);
+> +}
+> +
+> +/**
+> + * __timekeeper_current: Return the current (for reading) timekeeper
+> + * @seq: The current sequence number
+> + *
+> + * Return the timekeeper corresponding to the given sequence number.
+> + */
+> +static inline struct timekeeper const *__timekeeper_current(unsigned seq)
+> +{
+> +	return timekeeper + ((seq >> 1) & 1);
+> +}
+> +
+> +/**
+> + * timekeeper_current: Return the current (for reading) timekeeper
+> + *
+> + * On rare occasions, we want the current timekeeper without obtaining
+> + * the seqlock.  For example, if we hold the timekeeper_loc but don't
+> + * intend to write it.
+> + */
+> +static inline struct timekeeper const *timekeeper_current(void)
+> +{
+> +	return __timekeeper_current(timekeeper_seq.sequence);
+> +}
+> +
+> +/**
+> + * timekeeper_read_begin: Begin reading a timekeeper.
+> + * @seqp: Pointer to variable to receive sequence number.
+> + *	(Because this is inline, the compiler can optimize out
+> + *	the memory access.)
+> + *
+> + * Returns a pointer to a readable timekeeper structure.
+> + *
+> + * Because we have two timekeeper structures that we ping-pong
+> + * between, this never blocks.  Only if there are two calls
+> + * to timekeeper_write_begin between read_begin and read_retry
+> + * will a retry be forced.
+> + */
+> +static inline struct timekeeper const *timekeeper_read_begin(unsigned *seqp)
+> +{
+> +	unsigned seq = ACCESS_ONCE(timekeeper_seq.sequence);
+> +	smp_rmb();
+> +	*seqp = seq &= ~1u;
+> +	return __timekeeper_current(seq);
+> +}
+> +
+> +/**
+> + * timekeeper_read_retry: Return true if read was inconsistent, must retry
+> + * @seq: The return value from timekeeper_read_begin
+> + *
+> + * Because we ping-pong between two timekeeper structures, the window
+> + * of validity is wider than a normal seqlock, and a retry is very
+> + * unlikely.
+> + */
+> +static inline bool timekeeper_read_retry(unsigned seq)
+> +{
+> +	unsigned delta = timekeeper_seq.sequence - seq;
+> +	return unlikely(delta > 2);
+> +}
+
+This all looks very clean and nice! I suspect even if the non-blocking
+logic doesn't work out, there's probably some similar style cleanups
+that could be done to make the current mirroring code nicer to read.
+
+thanks
+-john
+
+
