@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726AbaELBmQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:42:16 -0400
-Received: from 1wt.eu ([62.212.114.60]:34455 "EHLO 1wt.eu"
+	id S1754980AbaELCLS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 22:11:18 -0400
+Received: from 1wt.eu ([62.212.114.60]:34501 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752479AbaELBmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:42:07 -0400
-Message-Id: <20140512003206.094381906@1wt.eu>
+	id S1752657AbaELBmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:42:14 -0400
+Message-Id: <20140512003203.384736824@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:34:10 +0200
+Date: Mon, 12 May 2014 02:33:06 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dave Jones <davej@redhat.com>, YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        Brad Figg <brad.figg@canonical.com>,
-        Tim Gardner <tim.gardner@canonical.com>, Willy Tarreau <w@1wt.eu>
-Subject: [ 130/143] ipv6: call udp_push_pending_frames when uncorking a socket with
+Cc: Eric Dumazet <edumazet@google.com>, Neal Cardwell <ncardwell@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 066/143] tcp: cubic: fix bug in bictcp_acked()
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,137 +23,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- AF_INET pending data
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Eric Dumazet <edumazet@google.com>
 
-CVE-2013-4162
+[ Upstream commit cd6b423afd3c08b27e1fed52db828ade0addbc6b ]
 
-BugLink: http://bugs.launchpad.net/bugs/1205070
+While investigating about strange increase of retransmit rates
+on hosts ~24 days after boot, Van found hystart was disabled
+if ca->epoch_start was 0, as following condition is true
+when tcp_time_stamp high order bit is set.
 
-We accidentally call down to ip6_push_pending_frames when uncorking
-pending AF_INET data on a ipv6 socket. This results in the following
-splat (from Dave Jones):
+(s32)(tcp_time_stamp - ca->epoch_start) < HZ
 
-skbuff: skb_under_panic: text:ffffffff816765f6 len:48 put:40 head:ffff88013deb6df0 data:ffff88013deb6dec tail:0x2c end:0xc0 dev:<NULL>
-------------[ cut here ]------------
-kernel BUG at net/core/skbuff.c:126!
-invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Modules linked in: dccp_ipv4 dccp 8021q garp bridge stp dlci mpoa snd_seq_dummy sctp fuse hidp tun bnep nfnetlink scsi_transport_iscsi rfcomm can_raw can_bcm af_802154 appletalk caif_socket can caif ipt_ULOG x25 rose af_key pppoe pppox ipx phonet irda llc2 ppp_generic slhc p8023 psnap p8022 llc crc_ccitt atm bluetooth
-+netrom ax25 nfc rfkill rds af_rxrpc coretemp hwmon kvm_intel kvm crc32c_intel snd_hda_codec_realtek ghash_clmulni_intel microcode pcspkr snd_hda_codec_hdmi snd_hda_intel snd_hda_codec snd_hwdep usb_debug snd_seq snd_seq_device snd_pcm e1000e snd_page_alloc snd_timer ptp snd pps_core soundcore xfs libcrc32c
-CPU: 2 PID: 8095 Comm: trinity-child2 Not tainted 3.10.0-rc7+ #37
-task: ffff8801f52c2520 ti: ffff8801e6430000 task.ti: ffff8801e6430000
-RIP: 0010:[<ffffffff816e759c>]  [<ffffffff816e759c>] skb_panic+0x63/0x65
-RSP: 0018:ffff8801e6431de8  EFLAGS: 00010282
-RAX: 0000000000000086 RBX: ffff8802353d3cc0 RCX: 0000000000000006
-RDX: 0000000000003b90 RSI: ffff8801f52c2ca0 RDI: ffff8801f52c2520
-RBP: ffff8801e6431e08 R08: 0000000000000000 R09: 0000000000000000
-R10: 0000000000000001 R11: 0000000000000001 R12: ffff88022ea0c800
-R13: ffff88022ea0cdf8 R14: ffff8802353ecb40 R15: ffffffff81cc7800
-FS:  00007f5720a10740(0000) GS:ffff880244c00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000005862000 CR3: 000000022843c000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-Stack:
- ffff88013deb6dec 000000000000002c 00000000000000c0 ffffffff81a3f6e4
- ffff8801e6431e18 ffffffff8159a9aa ffff8801e6431e90 ffffffff816765f6
- ffffffff810b756b 0000000700000002 ffff8801e6431e40 0000fea9292aa8c0
-Call Trace:
- [<ffffffff8159a9aa>] skb_push+0x3a/0x40
- [<ffffffff816765f6>] ip6_push_pending_frames+0x1f6/0x4d0
- [<ffffffff810b756b>] ? mark_held_locks+0xbb/0x140
- [<ffffffff81694919>] udp_v6_push_pending_frames+0x2b9/0x3d0
- [<ffffffff81694660>] ? udplite_getfrag+0x20/0x20
- [<ffffffff8162092a>] udp_lib_setsockopt+0x1aa/0x1f0
- [<ffffffff811cc5e7>] ? fget_light+0x387/0x4f0
- [<ffffffff816958a4>] udpv6_setsockopt+0x34/0x40
- [<ffffffff815949f4>] sock_common_setsockopt+0x14/0x20
- [<ffffffff81593c31>] SyS_setsockopt+0x71/0xd0
- [<ffffffff816f5d54>] tracesys+0xdd/0xe2
-Code: 00 00 48 89 44 24 10 8b 87 d8 00 00 00 48 89 44 24 08 48 8b 87 e8 00 00 00 48 c7 c7 c0 04 aa 81 48 89 04 24 31 c0 e8 e1 7e ff ff <0f> 0b 55 48 89 e5 0f 0b 55 48 89 e5 0f 0b 55 48 89 e5 0f 0b 55
-RIP  [<ffffffff816e759c>] skb_panic+0x63/0x65
- RSP <ffff8801e6431de8>
+Quoting Van :
 
-This patch adds a check if the pending data is of address family AF_INET
-and directly calls udp_push_ending_frames from udp_v6_push_pending_frames
-if that is the case.
+ At initialization & after every loss ca->epoch_start is set to zero so
+ I believe that the above line will turn off hystart as soon as the 2^31
+ bit is set in tcp_time_stamp & hystart will stay off for 24 days.
+ I think we've observed that cubic's restart is too aggressive without
+ hystart so this might account for the higher drop rate we observe.
 
-This bug was found by Dave Jones with trinity.
-
-(Also move the initialization of fl6 below the AF_INET check, even if
-not strictly necessary.)
-
-Cc: Dave Jones <davej@redhat.com>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Diagnosed-by: Van Jacobson <vanj@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-(back ported from commit 8822b64a0fa64a5dd1dfcf837c5b0be83f8c05d1)
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-Acked-by: Brad Figg <brad.figg@canonical.com>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- include/net/udp.h | 1 +
- net/ipv4/udp.c    | 3 ++-
- net/ipv6/udp.c    | 7 ++++++-
- 3 files changed, 9 insertions(+), 2 deletions(-)
+ net/ipv4/tcp_cubic.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/net/udp.h b/include/net/udp.h
-index f98abd2..702bea0 100644
---- a/include/net/udp.h
-+++ b/include/net/udp.h
-@@ -134,6 +134,7 @@ extern void	udp_err(struct sk_buff *, u32);
+diff --git a/net/ipv4/tcp_cubic.c b/net/ipv4/tcp_cubic.c
+index 71d5f2f..0d41c26 100644
+--- a/net/ipv4/tcp_cubic.c
++++ b/net/ipv4/tcp_cubic.c
+@@ -388,7 +388,7 @@ static void bictcp_acked(struct sock *sk, u32 cnt, s32 rtt_us)
+ 		return;
  
- extern int	udp_sendmsg(struct kiocb *iocb, struct sock *sk,
- 			    struct msghdr *msg, size_t len);
-+extern int udp_push_pending_frames(struct sock *sk);
- extern void	udp_flush_pending_frames(struct sock *sk);
+ 	/* Discard delay samples right after fast recovery */
+-	if ((s32)(tcp_time_stamp - ca->epoch_start) < HZ)
++	if (ca->epoch_start && (s32)(tcp_time_stamp - ca->epoch_start) < HZ)
+ 		return;
  
- extern int	udp_rcv(struct sk_buff *skb);
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index dba3c01..0b2e07f 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -513,7 +513,7 @@ static void udp4_hwcsum_outgoing(struct sock *sk, struct sk_buff *skb,
- /*
-  * Push out all pending data as one UDP datagram. Socket is locked.
-  */
--static int udp_push_pending_frames(struct sock *sk)
-+int udp_push_pending_frames(struct sock *sk)
- {
- 	struct udp_sock  *up = udp_sk(sk);
- 	struct inet_sock *inet = inet_sk(sk);
-@@ -575,6 +575,7 @@ out:
- 	up->pending = 0;
- 	return err;
- }
-+EXPORT_SYMBOL(udp_push_pending_frames);
- 
- int udp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		size_t len)
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index 3a91859..d0367eb 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -687,11 +687,16 @@ static int udp_v6_push_pending_frames(struct sock *sk)
- 	struct udphdr *uh;
- 	struct udp_sock  *up = udp_sk(sk);
- 	struct inet_sock *inet = inet_sk(sk);
--	struct flowi *fl = &inet->cork.fl;
-+	struct flowi *fl;
- 	int err = 0;
- 	int is_udplite = IS_UDPLITE(sk);
- 	__wsum csum = 0;
- 
-+	if (up->pending == AF_INET)
-+		return udp_push_pending_frames(sk);
-+
-+	fl = &inet->cork.fl;
-+
- 	/* Grab the skbuff where UDP header space exists. */
- 	if ((skb = skb_peek(&sk->sk_write_queue)) == NULL)
- 		goto out;
+ 	delay = usecs_to_jiffies(rtt_us) << 3;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
