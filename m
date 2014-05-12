@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513AbaELBoD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:44:03 -0400
-Received: from 1wt.eu ([62.212.114.60]:34755 "EHLO 1wt.eu"
+	id S1754319AbaELBty (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:49:54 -0400
+Received: from 1wt.eu ([62.212.114.60]:34770 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754372AbaELBn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:43:56 -0400
-Message-Id: <20140512003203.253098331@1wt.eu>
+	id S1754448AbaELBoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:44:01 -0400
+Message-Id: <20140512003205.475701784@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:33:03 +0200
+Date: Mon, 12 May 2014 02:33:56 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 063/143] net_sched: info leak in atm_tc_dump_class()
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 116/143] vm: add vm_iomap_memory() helper function
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,32 +24,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-[ Upstream commit 8cb3b9c3642c0263d48f31d525bcee7170eedc20 ]
+Various drivers end up replicating the code to mmap() their memory
+buffers into user space, and our core memory remapping function may be
+very flexible but it is unnecessarily complicated for the common cases
+to use.
 
-The "pvc" struct has a hole after pvc.sap_family which is not cleared.
+Our internal VM uses pfn's ("page frame numbers") which simplifies
+things for the VM, and allows us to pass physical addresses around in a
+denser and more efficient format than passing a "phys_addr_t" around,
+and having to shift it up and down by the page size.  But it just means
+that drivers end up doing that shifting instead at the interface level.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Reviewed-by: Jiri Pirko <jiri@resnulli.us>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+It also means that drivers end up mucking around with internal VM things
+like the vma details (vm_pgoff, vm_start/end) way more than they really
+need to.
+
+So this just exports a function to map a certain physical memory range
+into user space (using a phys_addr_t based interface that is much more
+natural for a driver) and hides all the complexity from the driver.
+Some drivers will still end up tweaking the vm_page_prot details for
+things like prefetching or cacheability etc, but that's actually
+relevant to the driver, rather than caring about what the page offset of
+the mapping is into the particular IO memory region.
+
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+(cherry picked from commit b4cbb197c7e7a68dbad0d491242e3ca67420c13e)
+[WT: only needed in 2.6.32 for next commit]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/sched/sch_atm.c | 1 +
- 1 file changed, 1 insertion(+)
+ include/linux/mm.h |  2 ++
+ mm/memory.c        | 47 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 49 insertions(+)
 
-diff --git a/net/sched/sch_atm.c b/net/sched/sch_atm.c
-index ab82f14..b022c59 100644
---- a/net/sched/sch_atm.c
-+++ b/net/sched/sch_atm.c
-@@ -628,6 +628,7 @@ static int atm_tc_dump_class(struct Qdisc *sch, unsigned long cl,
- 		struct sockaddr_atmpvc pvc;
- 		int state;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 11e5be6..5ef50c1 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1243,6 +1243,8 @@ int vm_insert_pfn(struct vm_area_struct *vma, unsigned long addr,
+ 			unsigned long pfn);
+ int vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
+ 			unsigned long pfn);
++int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len);
++
  
-+		memset(&pvc, 0, sizeof(pvc));
- 		pvc.sap_family = AF_ATMPVC;
- 		pvc.sap_addr.itf = flow->vcc->dev ? flow->vcc->dev->number : -1;
- 		pvc.sap_addr.vpi = flow->vcc->vpi;
+ struct page *follow_page(struct vm_area_struct *, unsigned long address,
+ 			unsigned int foll_flags);
+diff --git a/mm/memory.c b/mm/memory.c
+index 6c836d3..085b068 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1811,6 +1811,53 @@ int remap_pfn_range(struct vm_area_struct *vma, unsigned long addr,
+ }
+ EXPORT_SYMBOL(remap_pfn_range);
+ 
++/**
++ * vm_iomap_memory - remap memory to userspace
++ * @vma: user vma to map to
++ * @start: start of area
++ * @len: size of area
++ *
++ * This is a simplified io_remap_pfn_range() for common driver use. The
++ * driver just needs to give us the physical memory range to be mapped,
++ * we'll figure out the rest from the vma information.
++ *
++ * NOTE! Some drivers might want to tweak vma->vm_page_prot first to get
++ * whatever write-combining details or similar.
++ */
++int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len)
++{
++	unsigned long vm_len, pfn, pages;
++
++	/* Check that the physical memory area passed in looks valid */
++	if (start + len < start)
++		return -EINVAL;
++	/*
++	 * You *really* shouldn't map things that aren't page-aligned,
++	 * but we've historically allowed it because IO memory might
++	 * just have smaller alignment.
++	 */
++	len += start & ~PAGE_MASK;
++	pfn = start >> PAGE_SHIFT;
++	pages = (len + ~PAGE_MASK) >> PAGE_SHIFT;
++	if (pfn + pages < pfn)
++		return -EINVAL;
++
++	/* We start the mapping 'vm_pgoff' pages into the area */
++	if (vma->vm_pgoff > pages)
++		return -EINVAL;
++	pfn += vma->vm_pgoff;
++	pages -= vma->vm_pgoff;
++
++	/* Can we fit all of the mapping? */
++	vm_len = vma->vm_end - vma->vm_start;
++	if (vm_len >> PAGE_SHIFT > pages)
++		return -EINVAL;
++
++	/* Ok, let it rip */
++	return io_remap_pfn_range(vma, vma->vm_start, pfn, vm_len, vma->vm_page_prot);
++}
++EXPORT_SYMBOL(vm_iomap_memory);
++
+ static int apply_to_pte_range(struct mm_struct *mm, pmd_t *pmd,
+ 				     unsigned long addr, unsigned long end,
+ 				     pte_fn_t fn, void *data)
 -- 
 1.7.12.2.21.g234cd45.dirty
 
