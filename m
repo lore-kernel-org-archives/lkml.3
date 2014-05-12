@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490AbaELJbm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 05:31:42 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:61200 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236AbaELJbk (ORCPT
+	id S1755058AbaELJdV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 05:33:21 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:64382 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556AbaELJdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 05:31:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rdunlap@infradead.org, linux@arm.linux.org.uk,
-        daniel.lezcano@linaro.org, tglx@linutronix.de,
-        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
-        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
-        heiko.stuebner@bq.com, olof@lixom.net, sebastian.hesselbarth@gmail.com,
-        sboyd@codeaurora.org, gregory.clement@free-electrons.com,
-        robherring2@gmail.com, marc.zyngier@arm.com,
-        maxime.ripard@free-electrons.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 3/4] arm: add basic support for Mediatek MT6589 boards
-Date: Mon, 12 May 2014 11:30:15 +0200
-Message-ID: <80525303.7Oax6ZBozr@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1399772463-859-4-git-send-email-matthias.bgg@gmail.com>
-References: <1399772463-859-1-git-send-email-matthias.bgg@gmail.com> <1399772463-859-4-git-send-email-matthias.bgg@gmail.com>
+	Mon, 12 May 2014 05:33:18 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Sm3BuK8Le03+0cal+B1rqb4jcbNY7m58bocYK7Rq5O4
- 8tdddXtqJGFLja7cYW1vKUV427JOpvIW+V1s+EsWQX6LpIoSFT
- YOv34+9PAhAiK61X/2zvnIO8idQ0oe7eMeGVqJ9MXl3m4tRp3g
- WcMHuUiW9dkeZh7F7DxXwqj+BJ57k553StFZpkEEEZBePKbLdb
- UGRrBB67JoMs9YHLuEdSnP4cUJJyz3VppmimLOvwYUiB6MsI2G
- iaxu/TyI9Zpqrv2RL3zCIYW8gpsvnMZiUuiJ57FzZ/kxZfWjiA
- klHuPBstB8zBMcBC14CkK5aHQuvibu6YRQnUxtgILTkyBr2YdO
- 2a31O63wDO8Jx8EjXDe0=
+In-Reply-To: <20140510053734.AF4E9E0692@canberra.localdomain>
+References: <20140510053734.AF4E9E0692@canberra.localdomain>
+Date: Mon, 12 May 2014 11:33:17 +0200
+X-Google-Sender-Auth: cgYxywnOMkMIIk4DTwSFYlRwN0k
+Message-ID: <CAMuHMdXQaOewxwe4UoiWj4KoT2Lybug2Spg4TzXd5g_Mfi-1Dg@mail.gmail.com>
+Subject: Re: [PATCH] printk/of_serial: fix serial console cessation part way
+ through boot.
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stephen Chivers <schivers@csc.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Greg KH <gregkh@linuxfoundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        rob+dt@kernel.org, Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Proctor <cproctor@csc.com>, linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 11 May 2014 03:41:02 Matthias Brugger wrote:
-> +
-> +static void __init mediatek_dt_init(void)
-> +{
-> +       of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-> +}
-> +
-> +static const char * const mediatek_board_dt_compat[] = {
-> +       "mediatek,mt6589",
-> +       NULL,
-> +};
-> +
-> +DT_MACHINE_START(MEDIATEK_DT, "Mediatek Cortex-A7 (Device Tree)")
-> +       .init_machine   = mediatek_dt_init,
-> +       .dt_compat      = mediatek_board_dt_compat,
-> +MACHINE_END
+Hi Stephen,
 
-Since the mediatek_dt_init function now only does the default populate
-call, you can leave it out completely and keep only the compat list.
+On Sat, May 10, 2014 at 7:37 AM, Stephen Chivers <schivers@csc.com> wrote:
+> Commit 5f5c9ae56c38942623f69c3e6dc6ec78e4da2076
+> "serial_core: Unregister console in uart_remove_one_port()"
+> fixed a crash where a serial port was removed but
+> not deregistered as a console.
+>
+> There is a side effect of that commit for platforms having serial consoles
+> and of_serial configured (CONFIG_SERIAL_OF_PLATFORM). The serial console
+> is disabled midway through the boot process.
+>
+> This cessation of the serial console affects PowerPC computers
+> such as the MVME5100 and SAM440EP.
+>
+> The sequence is:
+>
+>         bootconsole [udbg0] enabled
+>         ....
+>         serial8250/16550 driver initialises and registers its UARTS,
+>         one of these is the serial console.
+>         console [ttyS0] enabled
+>         ....
+>         of_serial probes "platform" devices, registering them as it goes.
+>         One of these is the serial console.
+>         console [ttyS0] disabled.
+>
+> The disabling of the serial console is due to:
+>
+>         a.  unregister_console in printk not clearing the
+>             CONS_ENABLED bit in the console flags,
+>             even though it has announced that the console is disabled; and
 
-	Arnd
+This part re-attaches the serial console on unbind/bind with the sh-sci driver,
+too, which didn't work before. Cool, thanks!
+
+>         b.  of_platform_serial_probe in of_serial not setting the port type
+>             before it registers with serial8250_register_8250_port.
+
+This part I couldn't test.
+
+> This patch ensures that the serial console is re-enabled when of_serial
+> registers a serial port that corresponds to the designated console.
+>
+> Signed-off-by: Stephen Chivers <schivers@csc.com>
+> Tested-by: Stephen Chivers <schivers@csc.com>
+
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org> [unregister_console]
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
