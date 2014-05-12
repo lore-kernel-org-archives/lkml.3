@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758935AbaELReE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 13:34:04 -0400
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:12082 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751843AbaELReC (ORCPT
+	id S1759276AbaELRgf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 13:36:35 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:59421 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759195AbaELRge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 13:34:02 -0400
+	Mon, 12 May 2014 13:36:34 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: An8KAFsFcVNbsHLF/2dsb2JhbABZgwasagkBBQGaG4EaF3SCUxMcIxiBAiQTiEUBz0aFVoh8hEcBA48liiIBiwSIA4M4Ow
-Date: Mon, 12 May 2014 19:33:59 +0200
+X-IronPort-Anti-Spam-Result: An8KAJwFcVNbsHLF/2dsb2JhbABZgwasagkBBQGaG4EaF3SCUxMcIxiBAiQTiEUBz0aFVoh8hEcBA48liiIBiwSIA4M4Ow
+Date: Mon, 12 May 2014 19:36:31 +0200
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] net/wireless/lib80211_crypt_ccmp.c: code clean-up
-Message-Id: <20140512193359.c42773f6889bb4261672d90b@skynet.be>
+Subject: [PATCH 1/1] net/wireless/mlme.c: replace memcpy by ether_addr_copy
+Message-Id: <20140512193631.248a7ed5ede5537fd973a501@skynet.be>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -26,124 +26,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixing some checkpatch errors/warnings
+This patch also fixes some checkpatch warnings.
 
 Cc: Johannes Berg <johannes@sipsolutions.net>
 Cc: "John W. Linville" <linville@tuxdriver.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- net/wireless/lib80211_crypt_ccmp.c | 27 ++++++++++++++-------------
- 1 file changed, 14 insertions(+), 13 deletions(-)
+ net/wireless/mlme.c | 24 ++++++++++--------------
+ 1 file changed, 10 insertions(+), 14 deletions(-)
 
-diff --git a/net/wireless/lib80211_crypt_ccmp.c b/net/wireless/lib80211_crypt_ccmp.c
-index dc0e59e..1d6faef 100644
---- a/net/wireless/lib80211_crypt_ccmp.c
-+++ b/net/wireless/lib80211_crypt_ccmp.c
-@@ -83,7 +83,7 @@ static void *lib80211_ccmp_init(int key_idx)
+diff --git a/net/wireless/mlme.c b/net/wireless/mlme.c
+index c52ff59..4c43eed 100644
+--- a/net/wireless/mlme.c
++++ b/net/wireless/mlme.c
+@@ -31,8 +31,7 @@ void cfg80211_rx_assoc_resp(struct net_device *dev, struct cfg80211_bss *bss,
  
- 	return priv;
+ 	trace_cfg80211_send_rx_assoc(dev, bss);
  
--      fail:
-+fail:
- 	if (priv) {
- 		if (priv->tfm)
- 			crypto_free_cipher(priv->tfm);
-@@ -101,16 +101,17 @@ static void lib80211_ccmp_deinit(void *priv)
- 	kfree(priv);
- }
- 
--static inline void xor_block(u8 * b, u8 * a, size_t len)
-+static inline void xor_block(u8 *b, u8 *a, size_t len)
- {
- 	int i;
-+
- 	for (i = 0; i < len; i++)
- 		b[i] ^= a[i];
- }
- 
- static void ccmp_init_blocks(struct crypto_cipher *tfm,
- 			     struct ieee80211_hdr *hdr,
--			     u8 * pn, size_t dlen, u8 * b0, u8 * auth, u8 * s0)
-+			     u8 *pn, size_t dlen, u8 *b0, u8 *auth, u8 *s0)
- {
- 	u8 *pos, qc = 0;
- 	size_t aad_len;
-@@ -124,7 +125,7 @@ static void ccmp_init_blocks(struct crypto_cipher *tfm,
- 	if (a4_included)
- 		aad_len += 6;
- 	if (qc_included) {
--		pos = (u8 *) & hdr->addr4;
-+		pos = (u8 *)&hdr->addr4;
- 		if (a4_included)
- 			pos += 6;
- 		qc = *pos & 0x0f;
-@@ -135,7 +136,8 @@ static void ccmp_init_blocks(struct crypto_cipher *tfm,
- 	 * Flag (Include authentication header, M=3 (8-octet MIC),
- 	 *       L=1 (2-octet Dlen))
- 	 * Nonce: 0x00 | A2 | PN
--	 * Dlen */
-+	 * Dlen
-+	 */
- 	b0[0] = 0x59;
- 	b0[1] = qc;
- 	memcpy(b0 + 2, hdr->addr2, ETH_ALEN);
-@@ -156,7 +158,7 @@ static void ccmp_init_blocks(struct crypto_cipher *tfm,
- 	aad[2] = pos[0] & 0x8f;
- 	aad[3] = pos[1] & 0xc7;
- 	memcpy(aad + 4, hdr->addr1, 3 * ETH_ALEN);
--	pos = (u8 *) & hdr->seq_ctrl;
-+	pos = (u8 *)&hdr->seq_ctrl;
- 	aad[22] = pos[0] & 0x0f;
- 	aad[23] = 0;		/* all bits masked */
- 	memset(aad + 24, 0, 8);
-@@ -206,7 +208,7 @@ static int lib80211_ccmp_hdr(struct sk_buff *skb, int hdr_len,
- 	*pos++ = key->tx_pn[5];
- 	*pos++ = key->tx_pn[4];
- 	*pos++ = 0;
--	*pos++ = (key->key_idx << 6) | (1 << 5) /* Ext IV included */ ;
-+	*pos++ = (key->key_idx << 6) | (1 << 5); /* Ext IV included */
- 	*pos++ = key->tx_pn[3];
- 	*pos++ = key->tx_pn[2];
- 	*pos++ = key->tx_pn[1];
-@@ -261,8 +263,7 @@ static int lib80211_ccmp_encrypt(struct sk_buff *skb, int hdr_len, void *priv)
- 	return 0;
- }
- 
--/*
-- * deal with seq counter wrapping correctly.
-+/* deal with seq counter wrapping correctly.
-  * refer to timer_after() for jiffies wrapping handling
-  */
- static inline int ccmp_replay_check(u8 *pn_n, u8 *pn_o)
-@@ -311,8 +312,8 @@ static int lib80211_ccmp_decrypt(struct sk_buff *skb, int hdr_len, void *priv)
+-	/*
+-	 * This is a bit of a hack, we don't notify userspace of
++	/* This is a bit of a hack, we don't notify userspace of
+ 	 * a (re-)association reply if we tried to send a reassoc
+ 	 * and got a reject -- we only try again with an assoc
+ 	 * frame instead of reassoc.
+@@ -256,9 +255,9 @@ void cfg80211_oper_and_ht_capa(struct ieee80211_ht_cap *ht_capa,
+ 		return;
  	}
- 	keyidx >>= 6;
- 	if (key->key_idx != keyidx) {
--		printk(KERN_DEBUG "CCMP: RX tkey->key_idx=%d frame "
--		       "keyidx=%d priv=%p\n", key->key_idx, keyidx, priv);
-+		printk(KERN_DEBUG "CCMP: RX tkey->key_idx=%d frame keyidx=%d priv=%p\n",
-+		       key->key_idx, keyidx, priv);
- 		return -6;
+ 
+-	p1 = (u8*)(ht_capa);
+-	p2 = (u8*)(ht_capa_mask);
+-	for (i = 0; i<sizeof(*ht_capa); i++)
++	p1 = (u8 *)(ht_capa);
++	p2 = (u8 *)(ht_capa_mask);
++	for (i = 0; i < sizeof(*ht_capa); i++)
+ 		p1[i] &= p2[i];
+ }
+ 
+@@ -273,8 +272,8 @@ void cfg80211_oper_and_vht_capa(struct ieee80211_vht_cap *vht_capa,
+ 		return;
  	}
- 	if (!key->key_set) {
-@@ -377,7 +378,7 @@ static int lib80211_ccmp_decrypt(struct sk_buff *skb, int hdr_len, void *priv)
- 	return keyidx;
+ 
+-	p1 = (u8*)(vht_capa);
+-	p2 = (u8*)(vht_capa_mask);
++	p1 = (u8 *)(vht_capa);
++	p2 = (u8 *)(vht_capa_mask);
+ 	for (i = 0; i < sizeof(*vht_capa); i++)
+ 		p1[i] &= p2[i];
  }
+@@ -392,7 +391,7 @@ void cfg80211_mlme_down(struct cfg80211_registered_device *rdev,
+ 	if (!wdev->current_bss)
+ 		return;
  
--static int lib80211_ccmp_set_key(void *key, int len, u8 * seq, void *priv)
-+static int lib80211_ccmp_set_key(void *key, int len, u8 *seq, void *priv)
- {
- 	struct lib80211_ccmp_data *data = priv;
- 	int keyidx;
-@@ -407,7 +408,7 @@ static int lib80211_ccmp_set_key(void *key, int len, u8 * seq, void *priv)
- 	return 0;
+-	memcpy(bssid, wdev->current_bss->pub.bssid, ETH_ALEN);
++	ether_addr_copy(bssid, wdev->current_bss->pub.bssid);
+ 	cfg80211_mlme_deauth(rdev, dev, bssid, NULL, 0,
+ 			     WLAN_REASON_DEAUTH_LEAVING, false);
  }
+@@ -564,8 +563,7 @@ int cfg80211_mlme_mgmt_tx(struct cfg80211_registered_device *rdev,
+ 				break;
+ 			}
  
--static int lib80211_ccmp_get_key(void *key, int len, u8 * seq, void *priv)
-+static int lib80211_ccmp_get_key(void *key, int len, u8 *seq, void *priv)
- {
- 	struct lib80211_ccmp_data *data = priv;
- 
+-			/*
+-			 * check for IBSS DA must be done by driver as
++			/* check for IBSS DA must be done by driver as
+ 			 * cfg80211 doesn't track the stations
+ 			 */
+ 			if (wdev->iftype == NL80211_IFTYPE_ADHOC)
+@@ -589,14 +587,12 @@ int cfg80211_mlme_mgmt_tx(struct cfg80211_registered_device *rdev,
+ 				err = -EINVAL;
+ 				break;
+ 			}
+-			/*
+-			 * check for mesh DA must be done by driver as
++			/* check for mesh DA must be done by driver as
+ 			 * cfg80211 doesn't track the stations
+ 			 */
+ 			break;
+ 		case NL80211_IFTYPE_P2P_DEVICE:
+-			/*
+-			 * fall through, P2P device only supports
++			/* fall through, P2P device only supports
+ 			 * public action frames
+ 			 */
+ 		default:
 -- 
 1.9.1
