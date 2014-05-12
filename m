@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910AbaELBlh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:41:37 -0400
-Received: from 1wt.eu ([62.212.114.60]:34342 "EHLO 1wt.eu"
+	id S1752984AbaELBm1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:42:27 -0400
+Received: from 1wt.eu ([62.212.114.60]:34530 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751601AbaELBla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:41:30 -0400
-Message-Id: <20140512003201.300860164@1wt.eu>
+	id S1752876AbaELBmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:42:22 -0400
+Message-Id: <20140512003205.648149434@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:32:16 +0200
+Date: Mon, 12 May 2014 02:34:00 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 016/143] af_key: initialize satype in key_notify_policy_flush()
+Cc: Zhu Yanjun <Yanjun.Zhu@windriver.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 120/143] gianfar: disable TX vlan based on kernel 2.6.x
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,32 +22,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Zhu Yanjun <Yanjun.Zhu@windriver.com>
 
-commit 85dfb745ee40232876663ae206cba35f24ab2a40 upstream
+2.6.x kernels require a similar logic change as commit e1653c3e
+[gianfar: do vlan cleanup] and commit 51b8cbfc
+[gianfar: fix bug caused by e1653c3e] introduces for newer kernels.
 
-This field was left uninitialized. Some user daemons perform check against this
-field.
+Since there is something wrong with tx vlan of gianfar nic driver,
+in kernel(3.1+), tx vlan is disabled. But in kernel 2.6.x, tx vlan
+is still enabled. Thus,gianfar nic driver can not support vlan
+packets and non-vlan packets at the same time.
 
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Zhu Yanjun <Yanjun.Zhu@windriver.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/key/af_key.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/gianfar.c | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/net/key/af_key.c b/net/key/af_key.c
-index 03d626f..9d22e46 100644
---- a/net/key/af_key.c
-+++ b/net/key/af_key.c
-@@ -2694,6 +2694,7 @@ static int key_notify_policy_flush(struct km_event *c)
- 	hdr->sadb_msg_pid = c->pid;
- 	hdr->sadb_msg_version = PF_KEY_V2;
- 	hdr->sadb_msg_errno = (uint8_t) 0;
-+	hdr->sadb_msg_satype = SADB_SATYPE_UNSPEC;
- 	hdr->sadb_msg_len = (sizeof(struct sadb_msg) / sizeof(uint64_t));
- 	hdr->sadb_msg_reserved = 0;
- 	pfkey_broadcast(skb_out, GFP_ATOMIC, BROADCAST_ALL, NULL, c->net);
+diff --git a/drivers/net/gianfar.c b/drivers/net/gianfar.c
+index 934a28f..8aa2cf6 100644
+--- a/drivers/net/gianfar.c
++++ b/drivers/net/gianfar.c
+@@ -365,7 +365,7 @@ static int gfar_probe(struct of_device *ofdev,
+ 	priv->vlgrp = NULL;
+ 
+ 	if (priv->device_flags & FSL_GIANFAR_DEV_HAS_VLAN)
+-		dev->features |= NETIF_F_HW_VLAN_TX | NETIF_F_HW_VLAN_RX;
++		dev->features |= NETIF_F_HW_VLAN_RX;
+ 
+ 	if (priv->device_flags & FSL_GIANFAR_DEV_HAS_EXTENDED_HASH) {
+ 		priv->extended_hash = 1;
+@@ -1451,12 +1451,6 @@ static void gfar_vlan_rx_register(struct net_device *dev,
+ 	priv->vlgrp = grp;
+ 
+ 	if (grp) {
+-		/* Enable VLAN tag insertion */
+-		tempval = gfar_read(&priv->regs->tctrl);
+-		tempval |= TCTRL_VLINS;
+-
+-		gfar_write(&priv->regs->tctrl, tempval);
+-
+ 		/* Enable VLAN tag extraction */
+ 		tempval = gfar_read(&priv->regs->rctrl);
+ 		tempval |= (RCTRL_VLEX | RCTRL_PRSDEP_INIT);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
