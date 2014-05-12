@@ -1,116 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626AbaELBoQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:44:16 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:23405 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754391AbaELBoK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:44:10 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-f3-53702768884c
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Kishon Vijay Abraham I'" <kishon@ti.com>
-Cc: "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Santosh Shilimkar'" <santosh.shilimkar@ti.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-pci@vger.kernel.org, rogerq@ti.com,
-        balajitk@ti.com, "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Marek Vasut'" <marex@denx.de>, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1399383244-14556-1-git-send-email-kishon@ti.com>
- <4764413.ZAEU5S5p0p@wuerfel> <000201cf6a9c$9dd295e0$d977c1a0$%han@samsung.com>
- <6882241.amuhzvbd8n@wuerfel> <536CC0F1.301@ti.com>
-In-reply-to: <536CC0F1.301@ti.com>
-Subject: Re: [PATCH 06/17] pci: host: pcie-designware: Use *base-mask* for
- configuring the iATU
-Date: Mon, 12 May 2014 10:44:07 +0900
-Message-id: <006501cf6d83$a9f39510$fddabf30$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9rfYQyISNCWJM3SyCQ07rYhQEJoQCBYzPg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+ZoW6GekGwwZvHnBZ/Jx1jt5g6eTub
-	xZKmDIv5R86xWlxeeInV4sLTHjaLTY+vsVosbFvCYnF51xw2i9lL+lkszs47zmbxpq2R0aLn
-	kZbF6741zA58Hr9/TWL0mDfrBIvHgk2lHpuX1Hv0bVnF6HH8xnYmj8+b5ALYo7hsUlJzMstS
-	i/TtErgy/s78wVRwWaBi49QpTA2MW3m7GDk5JARMJH60rmGEsMUkLtxbz9bFyMUhJLCMUeJK
-	dysrTNG0o/OgEosYJT6/ncEI4fxmlLj84wY7SBWbgJrEly+HwWwRAR2JhafXM4MUMQvMZpZ4
-	MPMgK0THYUaJln2fmUCqOAWUJGZe7mEBsYUFEiWOnb0E1s0ioCrxaPUTMJtXwFai8dtfJghb
-	UOLH5Htg9cwCWhLrdx5ngrDlJTaveQu0jQPoVnWJR391IY4wkjjz/C4jRImIxL4X78CulhBY
-	yiGx5OxRRohdAhLfJh9igeiVldh0gBniZUmJgytusExglJiFZPMsJJtnIdk8C8mKBYwsqxhF
-	UwuSC4qT0otM9YoTc4tL89L1kvNzNzFCksLEHYz3D1gfYkwGWj+RWUo0OR+YVPJK4g2NzYws
-	TE1MjY3MLc1IE1YS501/lBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgZG54P3S9HvXPRRm
-	T3oktum4rlLKGye54pNNC04Ldma/jBXOapUWsHps6r933vQS9udvdictq1uwfXvCqdN7gx55
-	nii/w/eo7ML6d2HLlhz7n8GjFtz8LkvlvLTLG8asuD8OidXmkodeCC508n2/STPw48M2lS1f
-	ZQuWTNX9atJQ05bj3GKxs0OJpTgj0VCLuag4EQDXzdL3IAMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFKsWRmVeSWpSXmKPExsVy+t9jAd0M9YJgg94lLBZ/Jx1jt5g6eTub
-	xZKmDIv5R86xWlxeeInV4sLTHjaLTY+vsVosbAMqu7xrDpvF7CX9LBZn5x1ns3jT1sho0fNI
-	y+J13xpmBz6P378mMXrMm3WCxWPBplKPzUvqPfq2rGL0OH5jO5PH501yAexRDYw2GamJKalF
-	Cql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUAHKymUJeaUAoUCEouL
-	lfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgz/s78wVRwWaBi49QpTA2MW3m7GDk5JARMJKYd
-	nccGYYtJXLi3Hsjm4hASWMQo8fntDEYI5zejxOUfN9hBqtgE1CS+fDkMZosI6EgsPL2eGaSI
-	WWA2s8SDmQdZIToOM0q07PvMBFLFKaAkMfNyDwuILSyQKHHs7CWwbhYBVYlHq5+A2bwCthKN
-	3/4yQdiCEj8m3wOrZxbQkli/8zgThC0vsXnNW6BtHEC3qks8+qsLcYSRxJnndxkhSkQk9r14
-	xziBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEp5xn0jsY
-	VzVYHGIU4GBU4uH9wFAQLMSaWFZcmXuIUYKDWUmEdzILUIg3JbGyKrUoP76oNCe1+BBjMtCj
-	E5mlRJPzgekwryTe0NjEzMjSyMzCyMTcnDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoY
-	HT8stz6w7YwHl48GY881hudxWc/sl7sb7c5/7Px4YoCAqK13/KQJErt2ykrXeH7ibU+dmHU0
-	0NhKY1HKxAcTq4Lm8NYlfjnhmPB5VmnFqn1i/f+eRbHazQzQ29sSd/O72tWuli/pR6L0ti5W
-	E13KsuvxpdU3GffFNZubLzjX/D1iwp85L1sjlViKMxINtZiLihMBH2Uhun0DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S932131AbaELBol (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:44:41 -0400
+Received: from 1wt.eu ([62.212.114.60]:34810 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932089AbaELBoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:44:39 -0400
+Message-Id: <20140512003205.520549802@1wt.eu>
+User-Agent: quilt/0.48-1
+Date: Mon, 12 May 2014 02:33:57 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Willy Tarreau <w@1wt.eu>
+Subject: [ 117/143] Fix a few incorrectly checked [io_]remap_pfn_range() calls
+In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 09, 2014 8:50 PM, Kishon Vijay Abraham I wrote:
-> On Thursday 08 May 2014 02:48 PM, Arnd Bergmann wrote:
-> > On Thursday 08 May 2014 18:05:11 Jingoo Han wrote:
-> >> On Tuesday, May 06, 2014 10:59 PM, Arnd Bergmann wrote:
-> >>> On Tuesday 06 May 2014 19:03:52 Kishon Vijay Abraham I wrote:
-> >>>> In DRA7, the cpu sees 32bit address, but the pcie controller can see only 28bit
-> >>>> address. So whenever the cpu issues a read/write request, the 4 most
-> >>>> significant bits are used by L3 to determine the target controller.
-> >>>> For example, the cpu reserves 0x2000_0000 - 0x2FFF_FFFF for PCIe controller but
-> >>>> the PCIe controller will see only (0x000_0000 - 0xFFF_FFF). So for programming
-> >>>> the outbound translation window the *base* should be programmed as 0x000_0000.
-> >>>> Whenever we try to write to say 0x2000_0000, it will be translated to whatever
-> >>>> we have programmed in the translation window with base as 0x000_0000.
-> >>>>
-> >>>> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> >>>> Cc: Marek Vasut <marex@denx.de>
-> >>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> >>>> Acked-by: Jingoo Han <jg1.han@samsung.com>
-> >>>> Acked-by: Mohit Kumar <mohit.kumar@st.com>
-> >>>
-> >>> Sorry, but NAK.
-> >>>
-> >>> We have a standard 'dma-ranges' property to handle this, so use it.
-> >>>
-> >>> See the x-gene PCIe driver patches for an example. Please also talk
-> >>> to Santosh about it, as he is implementing generic support for
-> >>> parsing dma-ranges in platform devices at the moment.
-> >>
-> >> Hi Arnd,
-> >>
-> >> Do you mean the following patch?
-> >> http://www.spinics.net/lists/kernel/msg1737725.html
-> >>
-> >
-> > That is the patch Santosh did for platform devices, which is related but not
-> > what I meant here. For the PCI inbound window setup, please have a look
-> > at https://lkml.org/lkml/2014/3/19/607
-> 
-> For some reason lkml is not showing any contents. Do you have a different link?
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
-Hi Kishon,
+------------------
 
-Please refer to the following link. :-)
-http://www.spinics.net/lists/linux-pci/msg29855.html
+From: Linus Torvalds <torvalds@linux-foundation.org>
+
+Nico Golde reports a few straggling uses of [io_]remap_pfn_range() that
+really should use the vm_iomap_memory() helper.  This trivially converts
+two of them to the helper, and comments about why the third one really
+needs to continue to use remap_pfn_range(), and adds the missing size
+check.
+
+Reported-by: Nico Golde <nico@ngolde.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+(cherry picked from commit 7314e613d5ff9f0934f7a0f74ed7973b903315d1)
+[wt: vm_flags were absent in mainline, Ben removed them in 3.2, but
+ I kept them to minimize changes and avoid any side effect]
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+---
+ drivers/uio/uio.c        | 16 +++++++++++++++-
+ drivers/video/au1100fb.c | 26 +-------------------------
+ drivers/video/au1200fb.c | 26 +-------------------------
+ 3 files changed, 17 insertions(+), 51 deletions(-)
+
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index e941367..e3804d3 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -669,16 +669,30 @@ static int uio_mmap_physical(struct vm_area_struct *vma)
+ {
+ 	struct uio_device *idev = vma->vm_private_data;
+ 	int mi = uio_find_mem_index(vma);
++	struct uio_mem *mem;
+ 	if (mi < 0)
+ 		return -EINVAL;
++	mem = idev->info->mem + mi;
++
++	if (vma->vm_end - vma->vm_start > mem->size)
++		return -EINVAL;
+ 
+ 	vma->vm_flags |= VM_IO | VM_RESERVED;
+ 
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+ 
++	/*
++	 * We cannot use the vm_iomap_memory() helper here,
++	 * because vma->vm_pgoff is the map index we looked
++	 * up above in uio_find_mem_index(), rather than an
++	 * actual page offset into the mmap.
++	 *
++	 * So we just do the physical mmap without a page
++	 * offset.
++	 */
+ 	return remap_pfn_range(vma,
+ 			       vma->vm_start,
+-			       idev->info->mem[mi].addr >> PAGE_SHIFT,
++			       mem->addr >> PAGE_SHIFT,
+ 			       vma->vm_end - vma->vm_start,
+ 			       vma->vm_page_prot);
+ }
+diff --git a/drivers/video/au1100fb.c b/drivers/video/au1100fb.c
+index a699aab..745e5b3 100644
+--- a/drivers/video/au1100fb.c
++++ b/drivers/video/au1100fb.c
+@@ -392,39 +392,15 @@ void au1100fb_fb_rotate(struct fb_info *fbi, int angle)
+ int au1100fb_fb_mmap(struct fb_info *fbi, struct vm_area_struct *vma)
+ {
+ 	struct au1100fb_device *fbdev;
+-	unsigned int len;
+-	unsigned long start=0, off;
+ 
+ 	fbdev = to_au1100fb_device(fbi);
+ 
+-	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT)) {
+-		return -EINVAL;
+-	}
+-
+-	start = fbdev->fb_phys & PAGE_MASK;
+-	len = PAGE_ALIGN((start & ~PAGE_MASK) + fbdev->fb_len);
+-
+-	off = vma->vm_pgoff << PAGE_SHIFT;
+-
+-	if ((vma->vm_end - vma->vm_start + off) > len) {
+-		return -EINVAL;
+-	}
+-
+-	off += start;
+-	vma->vm_pgoff = off >> PAGE_SHIFT;
+-
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+ 	pgprot_val(vma->vm_page_prot) |= (6 << 9); //CCA=6
+ 
+ 	vma->vm_flags |= VM_IO;
+ 
+-	if (io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
+-				vma->vm_end - vma->vm_start,
+-				vma->vm_page_prot)) {
+-		return -EAGAIN;
+-	}
+-
+-	return 0;
++	return vm_iomap_memory(vma, fbdev->fb_phys, fbdev->fb_len);
+ }
+ 
+ /* fb_cursor
+diff --git a/drivers/video/au1200fb.c b/drivers/video/au1200fb.c
+index 0d96f1d..5d6e509 100644
+--- a/drivers/video/au1200fb.c
++++ b/drivers/video/au1200fb.c
+@@ -1241,42 +1241,18 @@ static int au1200fb_fb_blank(int blank_mode, struct fb_info *fbi)
+  * method mainly to allow the use of the TLB streaming flag (CCA=6)
+  */
+ static int au1200fb_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
+-
+ {
+-	unsigned int len;
+-	unsigned long start=0, off;
+ 	struct au1200fb_device *fbdev = (struct au1200fb_device *) info;
+ 
+ #ifdef CONFIG_PM
+ 	au1xxx_pm_access(LCD_pm_dev);
+ #endif
+-
+-	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT)) {
+-		return -EINVAL;
+-	}
+-
+-	start = fbdev->fb_phys & PAGE_MASK;
+-	len = PAGE_ALIGN((start & ~PAGE_MASK) + fbdev->fb_len);
+-
+-	off = vma->vm_pgoff << PAGE_SHIFT;
+-
+-	if ((vma->vm_end - vma->vm_start + off) > len) {
+-		return -EINVAL;
+-	}
+-
+-	off += start;
+-	vma->vm_pgoff = off >> PAGE_SHIFT;
+-
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+ 	pgprot_val(vma->vm_page_prot) |= _CACHE_MASK; /* CCA=7 */
+ 
+ 	vma->vm_flags |= VM_IO;
+ 
+-	return io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
+-				  vma->vm_end - vma->vm_start,
+-				  vma->vm_page_prot);
+-
+-	return 0;
++	return vm_iomap_memory(vma, fbdev->fb_phys, fbdev->fb_len);
+ }
+ 
+ static void set_global(u_int cmd, struct au1200_lcd_global_regs_t *pdata)
+-- 
+1.7.12.2.21.g234cd45.dirty
 
 
-Best regards,
-Jingoo Han
 
