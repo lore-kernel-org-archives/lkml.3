@@ -1,94 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349AbaELIwb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 04:52:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49294 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaELIw3 (ORCPT
+	id S1751560AbaELI4P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 04:56:15 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:35829 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaELI4M convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 04:52:29 -0400
-Date: Mon, 12 May 2014 01:51:58 -0700
-From: tip-bot for Viresh Kumar <tipbot@zytor.com>
-Message-ID: <tip-84ea7fe37908254c3bd90910921f6e1045c1747a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        viresh.kumar@linaro.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        viresh.kumar@linaro.org, tglx@linutronix.de
-In-Reply-To: <81999e148745fc51bbcd0615823fbab9b2e87e23.1399882253.git.viresh.kumar@linaro.org>
-References: <81999e148745fc51bbcd0615823fbab9b2e87e23.1399882253.git.viresh.kumar@linaro.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] hrtimer:
-  Set expiry time before switch_hrtimer_base()
-Git-Commit-ID: 84ea7fe37908254c3bd90910921f6e1045c1747a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 12 May 2014 04:56:12 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <6a8ffca8-d586-46f6-96e5-4e132ba0f368@googlegroups.com>
+References: <d641a69a-01b4-443d-b121-48d13f46ee03@googlegroups.com> <6a8ffca8-d586-46f6-96e5-4e132ba0f368@googlegroups.com>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Mon, 12 May 2014 16:55:51 +0800
+X-Google-Sender-Auth: Pj0rUTRjSE72Nas1K8C-0UJC5Kg
+Message-ID: <CAGb2v66OgDgznWF5_2Yoiy_zb2_YNV-REsfhZ3QqBN-tkOJpZQ@mail.gmail.com>
+Subject: Re: [linux-sunxi] Re: [PATCH v4 01/03] ARM: sunxi: Add documentation
+ for sunxi consumer infrared devices
+To: linux-sunxi <linux-sunxi@googlegroups.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "maxime.ripard" <maxime.ripard@free-electrons.com>,
+        devicetree <devicetree@vger.kernel.org>, linux-doc@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  84ea7fe37908254c3bd90910921f6e1045c1747a
-Gitweb:     http://git.kernel.org/tip/84ea7fe37908254c3bd90910921f6e1045c1747a
-Author:     Viresh Kumar <viresh.kumar@linaro.org>
-AuthorDate: Mon, 12 May 2014 13:42:29 +0530
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 12 May 2014 10:47:39 +0200
+Hi,
 
-hrtimer: Set expiry time before switch_hrtimer_base()
+On Wed, Apr 30, 2014 at 6:54 PM, Александр Берсенев <bay@hackerdom.ru> wrote:
+> [PATCH v4 01/03] ARM: sunxi: Add documentation for sunxi consumer infrared
+> devices
+>
+> This patch adds documentation for Device-Tree bindings for sunxi IR
+> controller.
+>
+> Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
+> Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
+>
+> diff --git a/Documentation/devicetree/bindings/media/sunxi-ir.txt
+> b/Documentation/devicetree/bindings/media/sunxi-ir.txt
+> new file mode 100644
+> index 0000000..d502cf4
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/media/sunxi-ir.txt
+> @@ -0,0 +1,23 @@
+> +Device-Tree bindings for SUNXI IR controller found in sunXi SoC family
+> +
+> +Required properties:
+> +- compatible    : should be "allwinner,sun7i-a20-ir";
+> +- clocks    : list of clock specifiers, corresponding to
+> +      entries in clock-names property;
+> +- clock-names    : should contain "apb0_ir0" and "ir0" entries;
+> +- interrupts    : should contain IR IRQ number;
+> +- reg    : should contain IO map address for IR.
+> +
+> +Optional properties:
+> +- linux,rc-map-name : Remote control map name.
+> +
+> +Example:
+> +
+> +ir0: ir@01c21800 {
+> +       compatible = "allwinner,sun7i-a20-ir";
+> +       clocks = <&apb0_gates 6>, <&ir0_clk>;
+> +       clock-names = "apb0_ir0", "ir0";
+> +       interrupts = <0 5 1>;
+> +       reg = <0x01C21800 0x40>;
+> +       linux,rc-map-name = "rc-rc6-mce";
 
-switch_hrtimer_base() calls hrtimer_check_target() which ensures that
-we do not migrate a timer to a remote cpu if the timer expires before
-the current programmed expiry time on that remote cpu.
+You seem to be mixing spaces and tabs here, with spaces in front.
+(Gmail messed this up. See the original post.)
+Please stick to using tabs first, and spaces for alignment.
 
-But __hrtimer_start_range_ns() calls switch_hrtimer_base() before the
-new expiry time is set. So the sanity check in hrtimer_check_target()
-is operating on stale or even uninitialized data.
 
-Update expiry time before calling switch_hrtimer_base().
+ChenYu
 
-[ tglx: Rewrote changelog once again ]
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org
-Cc: linaro-networking@linaro.org
-Cc: fweisbec@gmail.com
-Cc: arvind.chauhan@arm.com
-Link: http://lkml.kernel.org/r/81999e148745fc51bbcd0615823fbab9b2e87e23.1399882253.git.viresh.kumar@linaro.org
-Cc: stable@vger.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/hrtimer.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 6b715c0..e0501fe 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -990,11 +990,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 	/* Remove an active timer from the queue: */
- 	ret = remove_hrtimer(timer, base);
- 
--	/* Switch the timer base, if necessary: */
--	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
--
- 	if (mode & HRTIMER_MODE_REL) {
--		tim = ktime_add_safe(tim, new_base->get_time());
-+		tim = ktime_add_safe(tim, base->get_time());
- 		/*
- 		 * CONFIG_TIME_LOW_RES is a temporary way for architectures
- 		 * to signal that they simply return xtime in
-@@ -1009,6 +1006,9 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 
- 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
- 
-+	/* Switch the timer base, if necessary: */
-+	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
-+
- 	timer_stats_hrtimer_set_start_info(timer);
- 
- 	leftmost = enqueue_hrtimer(timer, new_base);
+> +};
+>
+>
+> среда, 30 апреля 2014 г., 16:51:12 UTC+6 пользователь Александр Берсенев
+> написал:
+>>
+>> This patch introduces Consumer IR(CIR) support for sunxi boards.
+>>
+>> This is based on Alexsey Shestacov's work based on the original driver
+>> supplied by Allwinner.
