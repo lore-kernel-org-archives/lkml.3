@@ -1,104 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774AbaELLZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 07:25:27 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:51933 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbaELLZZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 07:25:25 -0400
+	id S1754821AbaELLZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 07:25:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8511 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752980AbaELLZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 07:25:57 -0400
+Date: Mon, 12 May 2014 07:25:41 -0400
+From: Brian Foster <bfoster@redhat.com>
+To: Namjae Jeon <namjae.jeon@samsung.com>
+Cc: "'Dave Chinner'" <david@fromorbit.com>, "'Theodore Ts'o'" <tytso@mit.edu>,
+        linux-fsdevel@vger.kernel.org,
+        "'linux-ext4'" <linux-ext4@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        "'Ashish Sangwan'" <a.sangwan@samsung.com>, xfs@oss.sgi.com
+Subject: Re: [PATCH v2 2/10] xfs: Add support FALLOC_FL_INSERT_RANGE for
+ fallocate
+Message-ID: <20140512112541.GA62831@bfoster.bfoster>
+References: <003801cf6aa7$f1f87b70$d5e97250$@samsung.com>
+ <20140509152440.GA32489@laptop.bfoster>
+ <005601cf6dc6$82573820$8705a860$@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKMK7uHLSfW0wN-uXMejOcnvaYpZfVSfSh7+NpqAUBCOvbK2eg@mail.gmail.com>
-References: <CADDKRnCwxmJ8RonvZaizTT9R1jPU++tPPSQAH5OKD5=h9bQhMA@mail.gmail.com>
-	<CAKMK7uG20sF403PJcmWTD=kPF9seV4sXZpp9_hEq3LvV3kK5Hg@mail.gmail.com>
-	<CADDKRnB1DCzgjX-q-cgFFW48uT5r5MUcuc5D6chekEET5dFxxA@mail.gmail.com>
-	<20140509161438.GH31479@strange.amr.corp.intel.com>
-	<20140509170335.GZ18465@intel.com>
-	<CADDKRnAiQawK6vi0XO2FDdfGDbcwWQzdeu-rfEU8viJzARO+yQ@mail.gmail.com>
-	<CAKMK7uHLSfW0wN-uXMejOcnvaYpZfVSfSh7+NpqAUBCOvbK2eg@mail.gmail.com>
-Date: Mon, 12 May 2014 13:25:24 +0200
-Message-ID: <CADDKRnCzHQw7_Cr2jpZ7qC50hrdmr0XRaYyMxaOSaqihNGccDA@mail.gmail.com>
-Subject: Re: [Intel-gfx] [3.14.0-rc4] regression: drm FIFO underruns
-From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: =?UTF-8?B?VmlsbGUgU3lyasOkbMOk?= <ville.syrjala@linux.intel.com>,
-        Damien Lespiau <damien.lespiau@intel.com>,
-        David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <005601cf6dc6$82573820$8705a860$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-11 18:49 GMT+02:00 Daniel Vetter <daniel.vetter@ffwll.ch>:
-> On Sat, May 10, 2014 at 10:52 AM, Jörg Otte <jrg.otte@gmail.com> wrote:
->>> On Fri, May 09, 2014 at 05:14:38PM +0100, Damien Lespiau wrote:
->>>> On Fri, May 09, 2014 at 06:11:37PM +0200, Jörg Otte wrote:
->>>> > > Jörg, can you please boot with drm.debug=0xe, reproduce the issue and
->>>> > > then attach the complete dmesg? Please make sure that the dmesg
->>>> > > contains the boot-up stuff too.
->>>> > >
->>>> > > Thanks, Daniel
->>>> > Here it is. I should mention it only happens at boot-up.
->>>>
->>>> [    0.374095] [drm] Wrong MCH_SSKPD value: 0x20100406
->>>> [    0.374096] [drm] This can cause pipe underruns and display issues.
->>>> [    0.374097] [drm] Please upgrade your BIOS to fix this.
->>>
->>> That can be a factor, but I think we may have some more general issue
->>> in the modeset sequence which causes these to get reported. I'm getting
->>> some on my machine as well where SSKPD looks more sane. Maybe we turn on
->>> the error reporting too early or something.
->>>
->>> But I'm not going to spend time worrying about these before my previous
->>> watermark stuff gets merged. Also the underrun reporting code itself
->>> would need some kind of rewrite to be really useful.
->>>
->>> If the display doesn't blank out during use everything is more or less
->>> fine and you can ignore these errors. It's quite likely that the
->>> errors were always present and you didn't know it. We just made them
->>> more prominent recently.
->>>
->>> --
->>> Ville Syrjälä
->>> Intel OTC
->>
->> It comes out on the boot-up screen which is normally clean. So it becomes
->> highly visible for anyone.
->
-> To make sure that you're only seeing this at boot up and not elseplace
-> please check that it doesn't show up when you do anything of the
-> below:
-> a) suspend/resume
-> b) changing the output mode (e.g. with xrandr --mode)
-> c) changing the output pipe (e.g. with xrandr --crtc)
-> d) all of the above but with heavy system load, e.g. compile kernels
-> with make -j <num-cores*2>
->
-> Also please test the latest drm-intel-nightly branch from
-> http://cgit.freedesktop.org/drm-intel to make sure we haven't yet
-> fixed this in our -next branch.
->
+On Mon, May 12, 2014 at 06:42:37PM +0900, Namjae Jeon wrote:
+> 
+> > > +xfs_bmap_split_extent(
+> > > +	struct xfs_inode	*ip,
+> > > +	xfs_fileoff_t		split_fsb,
+> > > +	xfs_extnum_t		*split_ext)
+> > > +{
+> > > +	struct xfs_mount        *mp = ip->i_mount;
+> > > +	struct xfs_trans	*tp;
+> > > +	struct xfs_bmap_free	free_list;
+> > > +	xfs_fsblock_t		firstfsb;
+> > > +	int			committed;
+> > > +	int			error;
+> > > +
+> > > +	tp = xfs_trans_alloc(mp, XFS_TRANS_DIOSTRAT);
+> > > +	error = xfs_trans_reserve(tp, &M_RES(mp)->tr_write,
+> > > +			XFS_DIOSTRAT_SPACE_RES(mp, 0), 0);
+> > > +
+> > > +	if (error) {
+> > > +		/*
+> > > +		 * Free the transaction structure.
+> > > +		 */
+> > > +		ASSERT(XFS_FORCED_SHUTDOWN(mp));
+> > 
+> Hi, Brian.
+> > As in the other patch, we're attempting to reserve fs blocks for the
+> > transaction, so ENOSPC is a possibility that I think the assert should
+> > accommodate.
+> How about removing the ASSERT completely as suggessted by Dave
+> in other thread?
+> 
 
-Ok, that was a lot of homework ;)
+Yeah, that works too. If Dave prefers to just remove these asserts
+that's fine with me. I just wanted to make sure we aren't adding
+spurious asserts for valid failures.
 
-I checked a,b,d):  All worked without FIFO underruns.
+> > 
+...
+> > > diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+> > > index 97855c5..392b029 100644
+> > > --- a/fs/xfs/xfs_file.c
+> > > +++ b/fs/xfs/xfs_file.c
+> > > @@ -760,7 +760,8 @@ xfs_file_fallocate(
+> > >  	if (!S_ISREG(inode->i_mode))
+> > >  		return -EINVAL;
+> > >  	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
+> > > -		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE))
+> > > +		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE |
+> > > +		     FALLOC_FL_INSERT_RANGE))
+> > >  		return -EOPNOTSUPP;
+> > >
+> > >  	xfs_ilock(ip, XFS_IOLOCK_EXCL);
+> > > @@ -790,6 +791,40 @@ xfs_file_fallocate(
+> > >  		error = xfs_collapse_file_space(ip, offset, len);
+> > >  		if (error)
+> > >  			goto out_unlock;
+> > > +	} else if (mode & FALLOC_FL_INSERT_RANGE) {
+> > > +		unsigned blksize_mask = (1 << inode->i_blkbits) - 1;
+> > > +		struct iattr iattr;
+> > > +
+> > > +		if (offset & blksize_mask || len & blksize_mask) {
+> > > +			error = -EINVAL;
+> > > +			goto out_unlock;
+> > > +		}
+> > > +
+> > > +		/* Check for wrap through zero */
+> > > +		if (inode->i_size + len > inode->i_sb->s_maxbytes) {
+> > > +			error = -EFBIG;
+> > > +			goto out_unlock;
+> > > +		}
+> > > +
+> > > +		/* Offset should be less than i_size */
+> > > +		if (offset >= i_size_read(inode)) {
+> > > +			error = -EINVAL;
+> > > +			goto out_unlock;
+> > > +		}
+> > > +
+> > > +		/*
+> > > +		 * The first thing we do is to expand file to
+> > > +		 * avoid data loss if there is error while shifting
+> > > +		 */
+> > > +		iattr.ia_valid = ATTR_SIZE;
+> > > +		iattr.ia_size = i_size_read(inode) + len;
+> > > +		error = xfs_setattr_size(ip, &iattr);
+> > > +		if (error)
+> > > +			goto out_unlock;
+> > 
+> > I don't necessarily know that it's problematic to do the setattr before
+> > the bmap fixup. We'll have a chance for partial completion of this
+> > operation either way. But I'm not a fan of the code duplication here.
+> > This also still skips the time update in the event of insert space
+> > failure, though perhaps that's not such a big deal if we're returning an
+> > error.
+> > 
+> > I think it would be better to leave things organized as before and
+> > introduce an error2 variable and a &nrshifts or some such parameter to
+> > xfs_insert_file_space() that initializes to 0 and returns the number of
+> > record shifts. The caller can then decide whether it's appropriate to
+> > break out immediately or do the inode size update and return the error.
+> > 
+> > Perhaps not the cleanest thing in the world, but also not the first
+> > place we would use 'error2' to manage error priorities (grep around for
+> > it)...
+> Yes, Right. I also thought such sequence at first. But we should consider
+> sudden power off and unplug device case during shifting extent.
+> While we are in the middle of shifitng extents and if there is sudden
+> power failure user can still think that data is lost as we won't get any
+> chance to update the file size in these cases.
+> Updating file size before the shifitng operation can start will prevent this.
+> 
+> Thanks.
 
-For c): I must admit I don't know what --crtc is good for and
-the man page isn't very useful. I can't enter a meaningful command.
+Hmm, fair point. That seems less critical to me than the general error
+sequence, but if we want to handle that case I think we could still fix
+the duplication in xfs_file_fallocate(). We could possibly factor out
+the common bits (update time and set size) into a helper, or what seems
+a bit cleaner on first thought, move the bulk of the (mode &
+FALLOC_FL_INSERT_RANGE) block to after the common part. Then the
+function looks something like this:
 
-Branch drm-intel-nightly as of
-ed60c27 drm-intel-nightly: 2014y-05m-09d-21h-51m-45s integration manifest
-looks badly:
-   - KDE splash screen on boot-up is not visible
-   - x-windows don't have title and menu bars
-   - KDE system menu is not visible
-   - moving windows around destroys its content
-apart from that: Via control key I can open a terminal and I checked
-a,b), both worked without FIFO underruns.
+	...
+	xfs_ilock();
 
-Thanks, Jörg
+	/* pre-inode fixup ops */
+	if (mode & ...) {
+		...
+	} else if (mode & FALLOC_FL_INSERT_RANGE) {
+		/* comment as to what's going on here :) */
+
+		/* error checks */
+
+		new_size = ...;
+		do_file_insert = 1;
+	}
+	...
+	xfs_trans_ichgtime();
+	xfs_setattr_size();
+	...
+
+	/*
+	 * Some operations are performed after the inode size is updated. For
+	 * example, insert range expands the address space of the file, shifts
+	 * all subsequent extents over and allocates space into the hole.
+	 * Updating the size first ensures that shifted extents aren't left
+	 * hanging past EOF in the event of a crash or failure.
+	 */
+	if (do_file_insert) {
+		/* alloc space */
+		...
+	}
+	...
+
+That seems a bit cleaner to me, but I'm not wedded to it. Thoughts? It
+might be worth soliciting some other thoughts/ideas before reworking it.
+Thanks.
+
+Brian
+
+> > 
+> > Brian
+> > 
+> > > +
+> > > +		error = xfs_insert_file_space(ip, offset, len);
+> > > +		if (error)
+> > > +			goto out_unlock;
+> > >  	} else {
+> > >  		if (!(mode & FALLOC_FL_KEEP_SIZE) &&
+> > >  		    offset + len > i_size_read(inode)) {
+> 
