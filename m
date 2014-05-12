@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814AbaELKqT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 06:46:19 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:46738 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582AbaELKqS (ORCPT
+	id S1755822AbaELKrU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 06:47:20 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:51962 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751604AbaELKrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 06:46:18 -0400
-Message-ID: <5370A672.1050103@redhat.com>
-Date: Mon, 12 May 2014 12:46:10 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@web.de>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: Nadav Amit <namit@cs.technion.ac.il>, gleb@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: x86: Fix CR3 reserved bits check in long mode
-References: <1397777591-6147-1-git-send-email-namit@cs.technion.ac.il> <1397781312-6885-1-git-send-email-namit@cs.technion.ac.il> <1397781312-6885-2-git-send-email-namit@cs.technion.ac.il> <536DD1AC.9070605@web.de> <536DD432.30809@web.de>
-In-Reply-To: <536DD432.30809@web.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	Mon, 12 May 2014 06:47:18 -0400
+Date: Mon, 12 May 2014 11:47:11 +0100
+From: Ian Molton <ian.molton@codethink.co.uk>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Ben Dooks <ben@trinity.fluff.org>, linux-mmc <linux-mmc@vger.kernel.org>,
+        Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] MAINTAINERS: mmc: Update email for host driver
+ maintainer
+Message-Id: <20140512114711.0b054752611662e5a9f041d3@codethink.co.uk>
+In-Reply-To: <CAPDyKFruGqNdMGrpa0=_mtUqjon0ZT5f8G=24TOYLHbobT-zMw@mail.gmail.com>
+References: <1399541098-5104-1-git-send-email-ulf.hansson@linaro.org>
+	<20140508153734.GY4400@trinity.fluff.org>
+	<CAPDyKFruGqNdMGrpa0=_mtUqjon0ZT5f8G=24TOYLHbobT-zMw@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 10/05/2014 09:24, Jan Kiszka ha scritto:
-> From: Jan Kiszka <jan.kiszka@siemens.com>
->
-> Regression of 346874c9: PAE is set in long mode, but that does not mean
-> we have valid PDPTRs.
->
-> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
-> ---
->  arch/x86/kvm/x86.c | 9 +++++----
->  1 file changed, 5 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index c5582c3..198aac8 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -701,10 +701,11 @@ int kvm_set_cr3(struct kvm_vcpu *vcpu, unsigned long cr3)
->  		return 0;
->  	}
->
-> -	if (is_long_mode(vcpu) && (cr3 & CR3_L_MODE_RESERVED_BITS))
-> -		return 1;
-> -	if (is_pae(vcpu) && is_paging(vcpu) &&
-> -	    !load_pdptrs(vcpu, vcpu->arch.walk_mmu, cr3))
-> +	if (is_long_mode(vcpu)) {
-> +		if (cr3 & CR3_L_MODE_RESERVED_BITS)
-> +			return 1;
-> +	} else if (is_pae(vcpu) && is_paging(vcpu) &&
-> +		   !load_pdptrs(vcpu, vcpu->arch.walk_mmu, cr3))
->  		return 1;
->
->  	vcpu->arch.cr3 = cr3;
->
+On Fri, 9 May 2014 15:10:51 +0200
+Ulf Hansson <ulf.hansson@linaro.org> wrote:
 
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+> On 8 May 2014 17:37, Ben Dooks <ben@trinity.fluff.org> wrote:
+> > On Thu, May 08, 2014 at 11:24:58AM +0200, Ulf Hansson wrote:
+> >> Update Ian Molton's email, the maintainer for tmio/sh_mobile_sdhci.
+> >>
+> >> Cc: Ian Molton <ian.molton@codethink.co.uk>
+> >> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+> >
+> > I think he still has the previous address, so you may want to keep it.
+> 
+> Actually he responded to me off-list, yesterday. He told me he was
+> happy with that change.
+> 
+> Additionally, I have several times got bounces on his old one. :-)
 
-will apply tomorrow, thanks.
+Yes, I'm happy with it. I've not got time to properly see to the older address, although Ben is correct in saying that it is still a valid address.
 
-Paolo
+-Ian
