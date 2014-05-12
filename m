@@ -1,93 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758342AbaELVgC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 17:36:02 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:35000 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756141AbaELVf5 (ORCPT
+	id S1758592AbaELVhL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 17:37:11 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:45683 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758420AbaELVhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 17:35:57 -0400
-Date: Mon, 12 May 2014 17:35:53 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 05/10 V2] workqueue: separate iteration role from
- worker_idr
-Message-ID: <20140512213553.GE18959@mtj.dyndns.org>
-References: <20140505150514.GI11231@htj.dyndns.org>
- <1399877792-13046-1-git-send-email-laijs@cn.fujitsu.com>
- <1399877792-13046-6-git-send-email-laijs@cn.fujitsu.com>
+	Mon, 12 May 2014 17:37:09 -0400
+Date: Mon, 12 May 2014 17:37:05 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Clark Williams <williams@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: [patch 0/3] futex/rtmutex: Fix issues exposed by trinity
+Message-ID: <20140512173705.0bbdb675@gandalf.local.home>
+In-Reply-To: <20140512190438.314125476@linutronix.de>
+References: <20140512190438.314125476@linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399877792-13046-6-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 02:56:17PM +0800, Lai Jiangshan wrote:
-> worker_idr has the iteration(iterating for attached workers) and worker ID
-                              ^
-Please put a space before an opening parenthses.  It becomes a lot
-easier on the eyes.
+On Mon, 12 May 2014 20:45:32 -0000
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-> duties. These two duties are not necessary tied together. We can separate
-                                   necessarily
+ 
+>    Steven, I told you more than once, that your damned performance and
+>    feature mania is completely unacceptable.
 
-> them and use a list for tracking attached workers and iteration
+
+Yes you have, and now you are yelling at me for something I did 3 years
+ago. But this isn't one of my "performance and feature mania" things
+you bitched at me about. This is something *you* asked me to look at!
+
+http://marc.info/?l=linux-kernel&m=129242481625261
+
+The "stress test" you recommend back then was just to port it to -rt
+and test it there. Which I did, and it found various issues where I
+helped Lai fix.
+
 > 
-> After separation, we can add the rescuer workers to the list for iteration
-> in future. worker_idr can't add rescuer workers due to rescuer workers
-> can't allocate id from worker_idr.
+>    When the patch was posted, you were reviewing it. When I wanted to
+>    test it, it did not apply and you told me you'll fix it and pick it
+>    up. Sure you made it apply and you sticked it into a git tree and
+>    let Ingo pull it.
+> 
+>    I didn't pay much attention as I was happy with the idea in
+>    general. I trusted your review and judgement. My problem.
+> 
+>    Why on earth did you merge that patch even if the changelog mentions
+>    that Documentation was left stale and the tester broken?
 
-Explaining how that'd be beneficial and justifies this change would be
-nice.
+Sure, I should have pushed Lai for that at the time. Lessons learned. I
+was expecting he would do so after we got to a final version of the
+patch but I was also working on other things at the time and forgot to
+remind him.
 
-...
->  /**
-> - * for_each_pool_worker - iterate through all workers of a worker_pool
-> - * @worker: iteration cursor
-> - * @wi: integer used for iteration
-> - * @pool: worker_pool to iterate workers of
-> - *
-> - * This must be called with @pool->manager_mutex.
-> - *
-> - * The if/else clause exists only for the lockdep assertion and can be
-> - * ignored.
-> - */
-> -#define for_each_pool_worker(worker, wi, pool)				\
-> -	idr_for_each_entry(&(pool)->worker_idr, (worker), (wi))		\
-> -		if (({ lockdep_assert_held(&pool->manager_mutex); false; })) { } \
-> -		else
+I'm surprised you didn't mention to me to make sure the documentation
+and test case got fixed before this went further. In fact, that was
+never mentioned. These patches went through 4 revisions over a month,
+and I even posted another RFC for them to get into the -rt tree.
 
-Hmmm.... don't we still want the lockdep protection?
 
-> @@ -1772,6 +1759,8 @@ static struct worker *create_worker(struct worker_pool *pool)
->  
->  	/* successful, commit the pointer to idr */
+> 
+>    This is beyond sloppy and outright stupid.
 
-	/* successful, commit it to idr and link on the workers list */
+Thomas, listen to yourself. You are calling something that got in
+without updating the documentation and test case "beyond sloppy and
+outright stupid". Sure, I'll agree it was a little sloppy, and today I'm
+more on the ball to get things like this right (as we push much harder
+today on documentation coming in along with code changes). But the
+change log had:
 
->  	idr_replace(&pool->worker_idr, worker, worker->id);
-> +	/* successful, attach the worker to the pool */
+    need updated after this patch is accepted
+    1) Document/*
+    2) the testcase scripts/rt-tester/t4-l2-pi-deboost.tst
 
-and lose the above line.
+I agree this should be fixed, but you temper tantrum over this seems a
+bit over the top.
 
-> diff --git a/kernel/workqueue_internal.h b/kernel/workqueue_internal.h
-> index 7e2204d..c44abc3 100644
-> --- a/kernel/workqueue_internal.h
-> +++ b/kernel/workqueue_internal.h
-> @@ -37,6 +37,7 @@ struct worker {
->  	struct task_struct	*task;		/* I: worker task */
->  	struct worker_pool	*pool;		/* I: the associated pool */
->  						/* L: for rescuers */
-> +	struct list_head	node;		/* M: attached to the pool */
 
-						/* M: anchored at pool->workers */
+> 
+>    Get this fixed now!
+> 
+>    And those fixes are not going to be merged without my Reviewed-by.
+> 
+>    I'm not going to let your multi-reader patches anywhere near RT,
+>    unless this Documentation and tester issue is resolved.
+> 
+>    After that I'm going through them with a fine comb, as I really lost
+>    the last modicom of hope, that you can do something without leaving
+>    trainwrecks left and right.
 
-Thanks.
 
--- 
-tejun
+And it boils down to this. In the past, I have screwed up where you
+were the one (and usually the only one) that got hit by that mess. But
+now you seem to take any little mistake done by me as a sign of
+complete incompetence.
+
+I'm sorry you feel this way.
+
+I'll try to fix this up as I get a chance (I still have a day job to
+do).
+
+-- Steve
+
+
