@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404AbaELLym (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 07:54:42 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:42199 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559AbaELLyl (ORCPT
+	id S1756052AbaELLzm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 07:55:42 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:60453 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752AbaELLzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 07:54:41 -0400
-X-Original-SENDERIP: 165.186.175.39
-X-Original-MAILFROM: gioh.kim@lge.com
-From: "gioh.kim" <gioh.kim@lge.com>
-To: Sumit Semwal <sumit.semwal@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-media@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: gunho.lee@lge.com, gioh.kim@lge.com
-Subject: [PATCH] Documentation/dma-buf-sharing.txt: update API descriptions
-Date: Mon, 12 May 2014 20:48:12 +0900
-Message-Id: <1399895292-29520-1-git-send-email-gioh.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 12 May 2014 07:55:40 -0400
+Subject: Re: [PATCH v1.1 2/16 update 3] arcmsr:  Adding code to support
+ MSI-X interrupt
+From: ching <ching2048@areca.com.tw>
+To: Tomas Henzl <thenzl@redhat.com>
+Cc: jbottomley@parallels.com, dan.carpenter@oracle.com, agordeev@redhat.com,
+        linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <536CB8EB.3040401@redhat.com>
+References: <1399463548.23184.6.camel@localhost>
+	 <536A43AF.6060908@redhat.com> <1399549025.25794.4.camel@localhost>
+	 <536CB8EB.3040401@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 12 May 2014 19:55:33 +0800
+Message-ID: <1399895733.4349.2.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "gioh.kim" <gioh.kim@lge.com>
+Hi Tomas,
 
-update some descriptions for API arguments and descriptions.
-
-Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+Thanks for your remind again.
+The patch 17/17 will be as following.
 ---
- Documentation/dma-buf-sharing.txt |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
-index 505e711..1ea89b8 100644
---- a/Documentation/dma-buf-sharing.txt
-+++ b/Documentation/dma-buf-sharing.txt
-@@ -56,7 +56,7 @@ The dma_buf buffer sharing API usage contains the following steps:
- 				     size_t size, int flags,
- 				     const char *exp_name)
- 
--   If this succeeds, dma_buf_export allocates a dma_buf structure, and returns a
-+   If this succeeds, dma_buf_export_named allocates a dma_buf structure, and returns a
-    pointer to the same. It also associates an anonymous file with this buffer,
-    so it can be exported. On failure to allocate the dma_buf object, it returns
-    NULL.
-@@ -66,7 +66,7 @@ The dma_buf buffer sharing API usage contains the following steps:
- 
-    Exporting modules which do not wish to provide any specific name may use the
-    helper define 'dma_buf_export()', with the same arguments as above, but
--   without the last argument; a __FILE__ pre-processor directive will be
-+   without the last argument; a KBUILD_MODNAME pre-processor directive will be
-    inserted in place of 'exp_name' instead.
- 
- 2. Userspace gets a handle to pass around to potential buffer-users
-@@ -76,7 +76,7 @@ The dma_buf buffer sharing API usage contains the following steps:
-    drivers and/or processes.
- 
-    Interface:
--      int dma_buf_fd(struct dma_buf *dmabuf)
-+      int dma_buf_fd(struct dma_buf *dmabuf, int flags)
- 
-    This API installs an fd for the anonymous file associated with this buffer;
-    returns either 'fd', or error.
-@@ -157,7 +157,9 @@ to request use of buffer for allocation.
-    "dma_buf->ops->" indirection from the users of this interface.
- 
-    In struct dma_buf_ops, unmap_dma_buf is defined as
--      void (*unmap_dma_buf)(struct dma_buf_attachment *, struct sg_table *);
-+      void (*unmap_dma_buf)(struct dma_buf_attachment *,
-+                            struct sg_table *,
-+                            enum dma_data_direction);
- 
-    unmap_dma_buf signifies the end-of-DMA for the attachment provided. Like
-    map_dma_buf, this API also must be implemented by the exporter.
--- 
-1.7.9.5
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-08 17:45:34.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-12 10:50:28.000000000 +0800
+@@ -778,12 +778,11 @@ static int arcmsr_probe(struct pci_dev *
+ 	}
+ 	error = scsi_add_host(host, &pdev->dev);
+ 	if(error){
+-		goto RAID_controller_stop;
++		goto free_ccb_pool;
+ 	}
+ 	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
+ 		goto scsi_host_remove;
+ 	arcmsr_iop_init(acb);
+-    	scsi_scan_host(host);
+ 	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
+ 	atomic_set(&acb->rq_map_token, 16);
+ 	atomic_set(&acb->ante_token_value, 16);
+@@ -795,13 +794,17 @@ static int arcmsr_probe(struct pci_dev *
+ 	add_timer(&acb->eternal_timer);
+ 	if(arcmsr_alloc_sysfs_attr(acb))
+ 		goto out_free_sysfs;
++    	scsi_scan_host(host);
+ 	return 0;
+ out_free_sysfs:
+-scsi_host_remove:
+-	scsi_remove_host(host);
+-RAID_controller_stop:
++	del_timer_sync(&acb->eternal_timer);
++	flush_scheduled_work();
+ 	arcmsr_stop_adapter_bgrb(acb);
+ 	arcmsr_flush_adapter_cache(acb);
++	arcmsr_free_irq(pdev, acb);
++scsi_host_remove:
++	scsi_remove_host(host);
++free_ccb_pool:
+ 	arcmsr_free_ccb_pool(acb);
+ free_hbb_mu:
+ 	arcmsr_free_mu(acb);
+
+
+
+On Fri, 2014-05-09 at 13:15 +0200, Tomas Henzl wrote:
+> On 05/08/2014 01:37 PM, ching wrote:
+> > Hi Tomas,
+> >
+> > Thanks for your suggestion.
+> > I will add a new patch 17/17 at last.
+> 
+> This additional patch was meant for moving the scsi_scan_host, because it's
+> nor related to the ms-x interrupts. Probably  the maintainer will prefer
+> a single patch which changes msi-x at once, I don't care.
+> To the patch below - you should also free the allocated irqs as I wrote previously.
+> 
+> Cheers,
+> Tomas
+> 
+
 
