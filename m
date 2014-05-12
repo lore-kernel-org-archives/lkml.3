@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758457AbaELQI5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:08:57 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:49448 "EHLO
+	id S1758318AbaELQIz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:08:55 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:51534 "EHLO
 	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755124AbaELQIw (ORCPT
+	by vger.kernel.org with ESMTP id S1751159AbaELQIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 May 2014 12:08:52 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
@@ -14,11 +14,10 @@ To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
 Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Olivier Bideau <olivier.bideau@st.com>
-Subject: [PATCH 04/12] drivers: clk: st: STiH407: Support for A9 MUX Clocks
-Date: Mon, 12 May 2014 18:06:32 +0200
-Message-Id: <1399910800-12847-5-git-send-email-gabriel.fernandez@linaro.org>
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [PATCH 12/12] drivers: clk: st: Use round to closest divider flag
+Date: Mon, 12 May 2014 18:06:40 +0200
+Message-Id: <1399910800-12847-13-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399910800-12847-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1399910800-12847-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -28,41 +27,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch supports the A9-mux clocks used by ClockGenA9
+This patch uses CLK_DIVIDER_ROUND_CLOSEST flag to specify
+the divider has to round to closest div.
 
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Signed-off-by: Olivier Bideau <olivier.bideau@st.com>
 ---
- drivers/clk/st/clkgen-mux.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/clk/st/clkgen-mux.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/clk/st/clkgen-mux.c b/drivers/clk/st/clkgen-mux.c
-index a329906..9bdedc8 100644
+index 9bdedc8..79dc40b 100644
 --- a/drivers/clk/st/clkgen-mux.c
 +++ b/drivers/clk/st/clkgen-mux.c
-@@ -580,6 +580,11 @@ static struct clkgen_mux_data stih416_a9_mux_data = {
- 	.shift = 0,
- 	.width = 2,
- };
-+static struct clkgen_mux_data stih407_a9_mux_data = {
-+	.offset = 0x1a4,
-+	.shift = 1,
-+	.width = 2,
-+};
+@@ -774,7 +774,8 @@ void __init st_of_clkgen_vcc_setup(struct device_node *np)
+ 		div->reg = reg + VCC_DIV_OFFSET;
+ 		div->shift = 2 * i;
+ 		div->width = 2;
+-		div->flags = CLK_DIVIDER_POWER_OF_TWO;
++		div->flags = CLK_DIVIDER_POWER_OF_TWO |
++			CLK_DIVIDER_ROUND_CLOSEST;
  
- static struct of_device_id mux_of_match[] = {
- 	{
-@@ -610,6 +615,10 @@ static struct of_device_id mux_of_match[] = {
- 		.compatible = "st,stih416-clkgen-a9-mux",
- 		.data = &stih416_a9_mux_data,
- 	},
-+	{
-+		.compatible = "st,stih407-clkgen-a9-mux",
-+		.data = &stih407_a9_mux_data,
-+	},
- 	{}
- };
- 
+ 		mux->reg = reg + VCC_MUX_OFFSET;
+ 		mux->shift = 2 * i;
 -- 
 1.9.1
 
