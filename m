@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447AbaELJR3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 05:17:29 -0400
+	id S1755612AbaELJSa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 05:18:30 -0400
 Received: from top.free-electrons.com ([176.31.233.9]:56969 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755292AbaELJRD (ORCPT
+	with ESMTP id S1755261AbaELJRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 05:17:03 -0400
+	Mon, 12 May 2014 05:17:02 -0400
 From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
 	<antoine.tenart@free-electrons.com>
 To: sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com
@@ -17,9 +17,9 @@ Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?=
         jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
         linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 5/6] ARM: berlin: add the AHCI node for the BG2Q
-Date: Mon, 12 May 2014 11:16:56 +0200
-Message-Id: <1399886217-20474-6-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v2 2/6] Documentation: bindings: add the Berlin SATA PHY
+Date: Mon, 12 May 2014 11:16:53 +0200
+Message-Id: <1399886217-20474-3-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399886217-20474-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1399886217-20474-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -30,39 +30,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The BG2Q has an AHCI SATA controller. Add the corresponding nodes
-(AHCI, SATA PHY) in its device tree.
+The Berlin SATA PHY drives the PHY related to the SATA interface and
+allows to power up/down each PHY independently. Add the corresponding
+documentation.
 
 Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 ---
- arch/arm/boot/dts/berlin2q.dtsi | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ Documentation/devicetree/bindings/phy/berlin-sata-phy.txt | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
 
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-index 07452a7483fa..99338a2d11a6 100644
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -183,6 +183,20 @@
- 			};
- 		};
- 
-+		ahci: sata@e90000 {
-+			compatible = "marvell,berlin-ahci";
-+			reg = <0xe90000 0x1000>;
-+			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
-+			status = "disabled";
-+		};
+diff --git a/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt b/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
+new file mode 100644
+index 000000000000..6d1cf5e11cfc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
+@@ -0,0 +1,15 @@
++Berlin SATA PHY
++---------------
 +
-+		sata_phy: phy@e900a0 {
-+			compatible = "marvell,berlin-sata-phy";
-+			reg = <0xe900a0 0x10>;
-+			#phy-cells = <1>;
-+			status = "disabled";
-+		};
++Required properties:
++- compatible: "marvell,berlin-sata-phy"
++- #phy-cells: from the generic PHY bindings, must be 1
++- reg: address and length of the register
 +
- 		apb@fc0000 {
- 			compatible = "simple-bus";
- 			#address-cells = <1>;
++Example:
++	sata_phy0: phy@f7e900a0 {
++		compatible = "marvell,berlin-sata-phy";
++		reg = <0xf7e900a0 0x10>;
++		#phy-cells = <1>;
++		status = "okay";
++	};
 -- 
 1.9.1
 
