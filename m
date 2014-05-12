@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544AbaELGeU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 02:34:20 -0400
-Received: from mail.fireflyinternet.com ([87.106.93.118]:50563 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753015AbaELGeR (ORCPT
+	id S1752380AbaELGpm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 02:45:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33286 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822AbaELGpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 02:34:17 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
-Date: Mon, 12 May 2014 07:33:55 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Dave Airlie <airlied@gmail.com>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Meyer <thomas@m3y3r.de>
-Subject: Re: [Intel-gfx] 3.15-rc5: Regression in i915 driver?
-Message-ID: <20140512063355.GA3813@nuc-i3427.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Dave Airlie <airlied@gmail.com>,
-	"intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Thomas Meyer <thomas@m3y3r.de>
-References: <1399796911.2442.7.camel@localhost.localdomain>
- <CAPM=9tzwkwSTC2i=KWSxmHkG74fXyyh8JiTzEaDwNgg-J_G7cw@mail.gmail.com>
- <CAKMK7uG4Gnn_sY44Ci8VbRhJQf8=5s_dod4tRX+PDYYs1EYFsQ@mail.gmail.com>
+	Mon, 12 May 2014 02:45:41 -0400
+Date: Mon, 12 May 2014 08:45:33 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: mingo@redhat.com, rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, arjan.van.de.ven@intel.com,
+        len.brown@intel.com, alan.cox@intel.com, mark.gross@intel.com,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        rajeev.d.muralidhar@intel.com, vishwesh.m.rudramuni@intel.com,
+        nicole.chalhoub@intel.com, ajaya.durg@intel.com,
+        harinarayanan.seshadri@intel.com, jacob.jun.pan@linux.intel.com,
+        fengguang.wu@intel.com
+Subject: Re: [RFC PATCH 00/12 v2] A new CPU load metric for power-efficient
+ scheduler: CPU ConCurrency
+Message-ID: <20140512064533.GH30445@twins.programming.kicks-ass.net>
+References: <1399832221-8314-1-git-send-email-yuyang.du@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jz7tQN4RWHemAAHb"
 Content-Disposition: inline
-In-Reply-To: <CAKMK7uG4Gnn_sY44Ci8VbRhJQf8=5s_dod4tRX+PDYYs1EYFsQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1399832221-8314-1-git-send-email-yuyang.du@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 11, 2014 at 07:40:57PM +0200, Daniel Vetter wrote:
-> On Sun, May 11, 2014 at 11:02 AM, Dave Airlie <airlied@gmail.com> wrote:
-> > On 11 May 2014 18:28, Thomas Meyer <thomas@m3y3r.de> wrote:
-> >> Hi,
-> >>
-> >> 3.14.3 works as expected.
-> >> 3.15-rc5 shows a strange behaviour: When resuming from ram the X server
-> >> seems to be disfunctional.
-> >>
-> >> I see this WARNING in the kernel log before suspend to ram in the early
-> >> boot process:
-> 
-> Doesn't ring a bell really.
 
-Same symptoms as
-https://bugs.freedesktop.org/show_bug.cgi?id=76554
--Chris
+--jz7tQN4RWHemAAHb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+On Mon, May 12, 2014 at 02:16:49AM +0800, Yuyang Du wrote:
+
+Yes, just what we need, more patches while we haven't had the time to
+look at the old set yet :-(
+
+--jz7tQN4RWHemAAHb
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTcG4HAAoJEHZH4aRLwOS6SygP/AhxO5WIOv00SIZql/x3HiGB
+eQ+eqXRnF32QSReowFuB+CTP5COb5BT3MTQYHuK3oXOzd2Kj43sil4HHTq/mJU3A
+gG7jfaokT7WDSPKRbKpYMWWNi/suVsQnMYP+mOH/l7lV9sle+rJPWra6nI1crF5v
+JVRkX8HInvEL9b02W+HhFQHmgL9iwdmRVEQcREUK9MDbrP1ipESi6xUi0lBQGi1w
+fn8PY60dSxrIJDI1Xx7v/rezk3ETyoA6d3E6aEc63fUniJlFMCQVk0LRnFX84q3Q
+MKCFefc4BV3JP2RuNl19bRQz8kfHLJxdJGOH3RvvBiAaP1cCRuN8zB+0LHucRuEf
+t6jC8I5hBD+cuGfdthLU0hyud5MVyjg0JGIDqbDMTRzN7eI40oK0rav0cPV7YUpv
+mPr23ozhqv7ubnbFOjnhRMuHfrdCCmwXyLTuZZEKnZhnL8+Zy45wFfU9HiqtRqwm
+fpixRutJYpxclv6EbF08AH5C94Zbi0vz9YUrstcQB8Bubo+HHeMY5tTsUyK+MWNk
+JxudYxjkPe5/oSmvU/GMcCTRpt1z6hf7oTqIQOjKPjuuT5lro8xnpp/2JrXEqrqw
+uX36Qng+L566rbiX5imVDBBEOd/+6PaNlKQj80R1rfdpMN3RX5Wiuh87cqKvsykx
+WX4UPL2UvpV6urk7RDLG
+=wWuI
+-----END PGP SIGNATURE-----
+
+--jz7tQN4RWHemAAHb--
