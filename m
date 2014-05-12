@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932467AbaELBpR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:45:17 -0400
-Received: from 1wt.eu ([62.212.114.60]:34825 "EHLO 1wt.eu"
+	id S932501AbaELBpZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:45:25 -0400
+Received: from 1wt.eu ([62.212.114.60]:34826 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932299AbaELBpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:45:14 -0400
-Message-Id: <20140512003202.836489832@1wt.eu>
+	id S932299AbaELBpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:45:19 -0400
+Message-Id: <20140512003205.607397016@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:32:53 +0200
+Date: Mon, 12 May 2014 02:33:59 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 053/143] sunvnet: vnet_port_remove must call unregister_netdev
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 119/143] x86, fpu, amd: Clear exceptions in AMD FXSAVE workaround
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,32 +22,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-[ Upstream commit aabb9875d02559ab9b928cd6f259a5cc4c21a589 ]
+Before we do an EMMS in the AMD FXSAVE information leak workaround we
+need to clear any pending exceptions, otherwise we trap with a
+floating-point exception inside this code.
 
-The missing call to unregister_netdev() leaves the interface active
-after the driver is unloaded by rmmod.
-
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: halfdog <me@halfdog.net>
+Tested-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/CA%2B55aFxQnY_PCG_n4=0w-VG=YLXL-yr7oMxyy0WU2gCBAf3ydg@mail.gmail.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+(cherry picked from commit 26bef1318adc1b3a530ecc807ef99346db2aa8b0)
+[wt: in 2.6.32, patch applies to arch/x86/include/asm/i387.h. There's
+ no static_cpu_has() so we use boot_cpu_has() like other kernels do
+ with gcc3.
+]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/net/sunvnet.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/include/asm/i387.h | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/sunvnet.c b/drivers/net/sunvnet.c
-index bc74db0..b6d0348 100644
---- a/drivers/net/sunvnet.c
-+++ b/drivers/net/sunvnet.c
-@@ -1260,6 +1260,8 @@ static int vnet_port_remove(struct vio_dev *vdev)
- 		dev_set_drvdata(&vdev->dev, NULL);
- 
- 		kfree(port);
-+
-+		unregister_netdev(vp->dev);
- 	}
- 	return 0;
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index 0b20bbb..cb42fad 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -242,12 +242,13 @@ clear_state:
+ 	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
+ 	   is pending.  Clear the x87 state here by setting it to fixed
+ 	   values. safe_address is a random variable that should be in L1 */
+-	alternative_input(
+-		GENERIC_NOP8 GENERIC_NOP2,
+-		"emms\n\t"	  	/* clear stack tags */
+-		"fildl %[addr]", 	/* set F?P to defined value */
+-		X86_FEATURE_FXSAVE_LEAK,
+-		[addr] "m" (safe_address));
++	if (unlikely(boot_cpu_has(X86_FEATURE_FXSAVE_LEAK))) {
++		asm volatile(
++			"fnclex\n\t"
++			"emms\n\t"
++			"fildl %[addr]"        /* set F?P to defined value */
++			: : [addr] "m" (safe_address));
++	}
+ end:
+ 	task_thread_info(tsk)->status &= ~TS_USEDFPU;
  }
 -- 
 1.7.12.2.21.g234cd45.dirty
