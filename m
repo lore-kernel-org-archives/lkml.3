@@ -1,82 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751870AbaELFLo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 01:11:44 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:54997 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbaELFLn (ORCPT
+	id S1752077AbaELFMt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 01:12:49 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:41879 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326AbaELFMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 01:11:43 -0400
-Date: Mon, 12 May 2014 01:11:41 -0400 (EDT)
-Message-Id: <20140512.011141.74073195599318391.davem@davemloft.net>
-To: xufeng.zhang@windriver.com
-Cc: steffen.klassert@secunet.com, herbert@gondor.apana.org.au,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] af_key: return error when meet errors on
- sendmsg() syscall
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1399614455-10551-1-git-send-email-xufeng.zhang@windriver.com>
-References: <1399614455-10551-1-git-send-email-xufeng.zhang@windriver.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 11 May 2014 22:11:43 -0700 (PDT)
+	Mon, 12 May 2014 01:12:48 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Mon, 12 May 2014 14:15:05 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Weijie Yang <weijie.yang@samsung.com>
+Cc: "'Joonsoo Kim'" <js1304@gmail.com>,
+        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
+        "'Davidlohr Bueso'" <davidlohr@hp.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Seth Jennings'" <sjennings@variantweb.net>,
+        "'Nitin Gupta'" <ngupta@vflare.org>,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Bob Liu'" <bob.liu@oracle.com>,
+        "'Dan Streetman'" <ddstreet@ieee.org>,
+        "'Heesub Shin'" <heesub.shin@samsung.com>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'Linux-MM'" <linux-mm@kvack.org>
+Subject: Re: [PATCH] zram: remove global tb_lock by using lock-free CAS
+Message-ID: <20140512051505.GB32617@bbox>
+References: <20140505152014.GA8551@cerebellum.variantweb.net>
+ <1399312844.2570.28.camel@buesod1.americas.hpqcorp.net>
+ <20140505134615.04cb627bb2784cabcb844655@linux-foundation.org>
+ <1399328550.2646.5.camel@buesod1.americas.hpqcorp.net>
+ <000001cf69c9$5776f330$0664d990$%yang@samsung.com>
+ <20140507085743.GA31680@bbox>
+ <CAL1ERfOXNrfKqMVs-Yz8yJjKKU3L5fjUEOb0Aeyqc37py-BWEg@mail.gmail.com>
+ <CAAmzW4Pn2VUEnQ8FyOaBffqfUiHt6ocLEEvyaJrSKmTjaNp_wQ@mail.gmail.com>
+ <20140508062418.GF5282@bbox>
+ <000001cf6c16$afe73800$0fb5a800$%yang@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000001cf6c16$afe73800$0fb5a800$%yang@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xufeng Zhang <xufeng.zhang@windriver.com>
-Date: Fri, 9 May 2014 13:47:35 +0800
-
-> Current implementation for pfkey_sendmsg() always return success
-> no matter whether or not error happens during this syscall,
-> this is incompatible with the general send()/sendmsg() API:
->   man send
->     RETURN VALUE
->       On success, these calls return the number of characters sent.
->       On error, -1 is returned, and errno is set appropriately.
+On Sat, May 10, 2014 at 02:10:08PM +0800, Weijie Yang wrote:
+> On Thu, May 8, 2014 at 2:24 PM, Minchan Kim <minchan@kernel.org> wrote:
+> > On Wed, May 07, 2014 at 11:52:59PM +0900, Joonsoo Kim wrote:
+> >> >> Most popular use of zram is the in-memory swap for small embedded system
+> >> >> so I don't want to increase memory footprint without good reason although
+> >> >> it makes synthetic benchmark. Alhought it's 1M for 1G, it isn't small if we
+> >> >> consider compression ratio and real free memory after boot
+> >>
+> >> We can use bit spin lock and this would not increase memory footprint for 32 bit
+> >> platform.
+> >
+> > Sounds like a idea.
+> > Weijie, Do you mind testing with bit spin lock?
 > 
-> One side effect this problem introduces is that we can't determine
-> when to resend the message when the previous send() fails because
-> it was interrupted by signals.
-> We detect such a problem when racoon is sending SADBADD message to
-> add SAD entry in the kernel, but sometimes kernel is responding with
-> "Interrupted system call"(-EINTR) error.
+> Yes, I re-test them.
+> This time, I test each case 10 times, and take the average(KS/s).
+> (the test machine and method are same like previous mail's)
 > 
-> Check the send implementation of strongswan, it has below logic:
->   pfkey_send_socket()
->   {
->   	...
->   	while (TRUE)
->   	{
->         	len = send(socket, in, in_len, 0);
+> Iozone test result:
 > 
->   		if (len != in_len)
->   		{
->   			case EINTR:
->   				/* interrupted, try again */
->   				continue;
->   			...
->   		}
->   	}
->   	...
-> }
-> So it makes sense to return errors for send() syscall.      
+>       Test       BASE     CAS   spinlock   rwlock  bit_spinlock
+> --------------------------------------------------------------
+>  Initial write  1381094   1425435   1422860   1423075   1421521
+>        Rewrite  1529479   1641199   1668762   1672855   1654910
+>           Read  8468009  11324979  11305569  11117273  10997202
+>        Re-read  8467476  11260914  11248059  11145336  10906486
+>   Reverse Read  6821393   8106334   8282174   8279195   8109186
+>    Stride read  7191093   8994306   9153982   8961224   9004434
+>    Random read  7156353   8957932   9167098   8980465   8940476
+> Mixed workload  4172747   5680814   5927825   5489578   5972253
+>   Random write  1483044   1605588   1594329   1600453   1596010
+>         Pwrite  1276644   1303108   1311612   1314228   1300960
+>          Pread  4324337   4632869   4618386   4457870   4500166
 > 
-> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+> Fio test result:
+> 
+>     Test     base     CAS    spinlock    rwlock  bit_spinlock
+> -------------------------------------------------------------
+> seq-write   933789   999357   1003298    995961   1001958
+>  seq-read  5634130  6577930   6380861   6243912   6230006
+>    seq-rw  1405687  1638117   1640256   1633903   1634459
+>   rand-rw  1386119  1614664   1617211   1609267   1612471
+> 
+> 
+> The base is v3.15.0-rc3, the others are per-meta entry lock.
+> Every optimization method shows higher performance than the base, however,
+> it is hard to say which method is the most appropriate.
 
-I disagree.
+It's not too big between CAS and bit_spinlock so I prefer general method.
 
-If pfkey_error() is successful, the error will be reported in the AF_KEY
-message that is broadcast, there is no reason for sendmsg to return an
-error.  The message was sucessfully sent, there was no problem with it's
-passage into the AF_KEY layer.
+> 
+> To bit_spinlock, the modified code is mainly like this:
+> 
+> +#define ZRAM_FLAG_SHIFT 16
+> +
+> enum zram_pageflags {
+>  	/* Page consists entirely of zeros */
+> -	ZRAM_ZERO,
+> +	ZRAM_ZERO = ZRAM_FLAG_SHIFT + 1,
+> +	ZRAM_ACCESS,
+>  
+>  	__NR_ZRAM_PAGEFLAGS,
+>  };
+>  
+>  /* Allocated for each disk page */
+>  struct table {
+>  	unsigned long handle;
+> -	u16 size;	/* object size (excluding header) */
+> -	u8 flags;
+> +	unsigned long value;
 
-Like netlink, operational responses come in packets, not error codes.
+Why does we need to change flags and size "unsigned long value"?
+Couldn't we use existing flags with just adding new ZRAM_TABLE_LOCK?
 
-However, if pfkey_error() fails, we must do pass back the original
-error code because it's a last ditch effort to prevent information
-from being lost.
 
-That's why 'err' must be preserved when pfkey_error() returns zero.
+>  } __aligned(4);
+> 
+> The lower ZRAM_FLAG_SHIFT bits of table.value is size, the higher bits
+> is for zram_pageflags. By this means, it doesn't increase any memory
+> overhead on both 32-bit and 64-bit system.
+> 
+> Any complaint or suggestions are welcomed.
+
+Anyway, I'd like to go this way.
+Pz, resend formal patch with a number.
+
+Thanks!
+
+> 
+> >>
+> >> Thanks.
+> >>
+> >> --
+> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >> the body to majordomo@kvack.org.  For more info on Linux MM,
+> >> see: http://www.linux-mm.org/ .
+> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >
+> > --
+> > Kind regards,
+> > Minchan Kim
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
