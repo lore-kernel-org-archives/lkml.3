@@ -1,56 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597AbaELMYz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 08:24:55 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:37556 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510AbaELMYy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 08:24:54 -0400
-Date: Mon, 12 May 2014 14:24:52 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>
-Subject: Re: SCHED_DEADLINE, sched_getscheduler(), and sched_getparam()
-Message-ID: <20140512122452.GB13467@laptop.programming.kicks-ass.net>
-References: <CAKgNAkiA23kAFyXQkFV4z0aUE+y5K7AFNwRW+4LqwAyVj=tQtQ@mail.gmail.com>
+	id S1756102AbaELMZX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 08:25:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45945 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751925AbaELMZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 08:25:21 -0400
+Message-ID: <5370BD76.2060908@ti.com>
+Date: Mon, 12 May 2014 17:54:22 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CAKgNAkiA23kAFyXQkFV4z0aUE+y5K7AFNwRW+4LqwAyVj=tQtQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Hans de Goede <hdegoede@redhat.com>, Chen-Yu Tsai <wens@csie.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>
+CC: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, <stern@rowland.harvard.edu>,
+        Boris Brezillon <boris@free-electrons.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-usb <linux-usb@vger.kernel.org>, <kevin.z.m.zh@gmail.com>,
+        <sunny@allwinnertech.com>, Shuge <shuge@allwinnertech.com>,
+        <zhuzhenhua@allwinnertech.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [linux-sunxi] [PATCH v2 3/7] phy: usb: sunxi: Introduce Allwinner
+ A31 USB PHY support
+References: <1399726619-30150-1-git-send-email-maxime.ripard@free-electrons.com> <1399726619-30150-4-git-send-email-maxime.ripard@free-electrons.com> <CAGb2v65Pstk6MqEeK838VUpNXw2cQH8K66Oo4oG3__zzWO3pig@mail.gmail.com> <5370B78A.7060709@redhat.com>
+In-Reply-To: <5370B78A.7060709@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 02:09:58PM +0200, Michael Kerrisk (man-pages) wrote:
-> Hi Peter,
+Hi,
+
+On Monday 12 May 2014 05:29 PM, Hans de Goede wrote:
+> Hi,
 > 
-> Looking at the code of sched_getparam() and sched_setscheduler() (to
-> see what might need to land in the man pagea with respect to
-> SCHED_DEADLINE changes), I see that the former fails (EINVAL) if the
-> target is a SCHED_DEADLINE process, while the latter succeeds
-> (returning SCHED_DEADLINE).
+> On 05/12/2014 11:14 AM, Chen-Yu Tsai wrote:
+>> Hi,
+>>
+>> On Sat, May 10, 2014 at 8:56 PM, Maxime Ripard
+>> <maxime.ripard@free-electrons.com> wrote:
+>>> The USB phy controller in the A31 differs mostly from the older controllers
+>>> because it has a clock dedicated for each phy, while the older ones were having
+>>> a single clock for all the phys.
+>>>
+>>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+>>> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+>>> ---
+>>>  drivers/phy/phy-sun4i-usb.c | 35 ++++++++++++++++++++++++++---------
+>>>  1 file changed, 26 insertions(+), 9 deletions(-)
+>>>
+>>> diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
+>>> index e6e6c4ba7145..8bd89430d945 100644
+>>> --- a/drivers/phy/phy-sun4i-usb.c
+>>> +++ b/drivers/phy/phy-sun4i-usb.c
+>>> @@ -61,7 +61,6 @@
+>>>  #define MAX_PHYS                       3
+>>>
+>>>  struct sun4i_usb_phy_data {
+>>> -       struct clk *clk;
+>>>         void __iomem *base;
+>>>         struct mutex mutex;
+>>>         int num_phys;
+>>> @@ -71,6 +70,7 @@ struct sun4i_usb_phy_data {
+>>>                 void __iomem *pmu;
+>>>                 struct regulator *vbus;
+>>>                 struct reset_control *reset;
+>>> +               struct clk *clk;
+>>>                 int index;
+>>>         } phys[MAX_PHYS];
+>>>  };
+>>> @@ -146,13 +146,13 @@ static int sun4i_usb_phy_init(struct phy *_phy)
+>>>         struct sun4i_usb_phy_data *data = to_sun4i_usb_phy_data(phy);
+>>>         int ret;
+>>>
+>>> -       ret = clk_prepare_enable(data->clk);
+>>> +       ret = clk_prepare_enable(phy->clk);
+>>>         if (ret)
+>>>                 return ret;
+>>>
+>>>         ret = reset_control_deassert(phy->reset);
+>>>         if (ret) {
+>>> -               clk_disable_unprepare(data->clk);
+>>> +               clk_disable_unprepare(phy->clk);
+>>>                 return ret;
+>>>         }
+>>>
+>>> @@ -170,11 +170,10 @@ static int sun4i_usb_phy_init(struct phy *_phy)
+>>>  static int sun4i_usb_phy_exit(struct phy *_phy)
+>>>  {
+>>>         struct sun4i_usb_phy *phy = phy_get_drvdata(_phy);
+>>> -       struct sun4i_usb_phy_data *data = to_sun4i_usb_phy_data(phy);
+>>>
+>>>         sun4i_usb_phy_passby(phy, 0);
+>>>         reset_control_assert(phy->reset);
+>>> -       clk_disable_unprepare(data->clk);
+>>> +       clk_disable_unprepare(phy->clk);
+>>>
+>>>         return 0;
+>>>  }
+>>> @@ -228,8 +227,10 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
+>>>         struct phy_provider *phy_provider;
+>>>         struct reset_control *reset;
+>>>         struct regulator *vbus;
+>>> +       bool dedicated_clocks;
+>>
+>> No default?
+>>
+>>>         struct resource *res;
+>>>         struct phy *phy;
+>>> +       struct clk *clk;
+>>>         char name[16];
+>>>         int i;
+>>>
+>>> @@ -249,15 +250,20 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
+>>>         else
+>>>                 data->disc_thresh = 2;
+>>>
+>>> +       if (of_device_is_compatible(np, "allwinner,sun6i-a31-usb-phy"))
+>>> +               dedicated_clocks = true;
+>>> +
+>>
+>> dedicated_clocks is more than likely to be true from leftover data
+>> on the stack. This results in the usb phy driver probe failing, and
+>> the usb host drivers left in perpetual probe deferral on my Cubietruck.
+>>
+>> Adding an else section fixes this.
 > 
-> The sched_setscheduler() seems fine, but what's the rationale for
-> having sched_getparam() fail in this case, rather than just returning
-> a sched_priority of zero (since sched_priority is in any case unused,
-> as for SCHED_OTHER, right)? My point is that the change seems to
-> needlessly break applications that employ sched_getparam(). Maybe I am
-> missing something...
+> Good catch, fixed this in the sunxi-devel branch for now (until Maxime sends a new version).
 
-s/setscheduler/getscheduler/ ?
-
-I'm a proponent of fail hard instead of fail silently and muddle on.
-
-And while we can fully and correctly return sched_getscheduler() we
-cannot do so for sched_getparam().
-
-Returning sched_param::sched_priority == 0 for DEADLINE would also break
-the symmetry between sched_setparam() and sched_getparam(), both will
-fail for SCHED_DEADLINE.
-
-
+so I wont be taking this patch in my tree. Anyway FWIW
+Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
+> 
+> Regards,
+> 
+> Hans
+> 
