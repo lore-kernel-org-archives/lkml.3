@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932435AbaELBz7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:55:59 -0400
-Received: from 1wt.eu ([62.212.114.60]:34694 "EHLO 1wt.eu"
+	id S1755780AbaELB4S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:56:18 -0400
+Received: from 1wt.eu ([62.212.114.60]:34693 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753865AbaELBnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:43:13 -0400
-Message-Id: <20140512003203.876294671@1wt.eu>
+	id S1753854AbaELBnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:43:12 -0400
+Message-Id: <20140512003205.251889846@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:33:18 +0200
+Date: Mon, 12 May 2014 02:33:51 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Eric Dumazet <edumazet@google.com>,
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
         "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 078/143] ipv4: fix possible seqlock deadlock
+Subject: [ 111/143] isdnloop: Validate NUL-terminated strings from user.
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,37 +23,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
 
-[ Upstream commit c9e9042994d37cbc1ee538c500e9da1bb9d1bcdf ]
+[ Upstream commit 77bc6bed7121936bb2e019a8c336075f4c8eef62 ]
 
-ip4_datagram_connect() being called from process context,
-it should use IP_INC_STATS() instead of IP_INC_STATS_BH()
-otherwise we can deadlock on 32bit arches, or get corruptions of
-SNMP counters.
+Return -EINVAL unless all of user-given strings are correctly
+NUL-terminated.
 
-Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/ipv4/datagram.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/isdn/isdnloop/isdnloop.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/net/ipv4/datagram.c b/net/ipv4/datagram.c
-index 5e6c5a0..30aeb26 100644
---- a/net/ipv4/datagram.c
-+++ b/net/ipv4/datagram.c
-@@ -52,7 +52,7 @@ int ip4_datagram_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
- 			       inet->sport, usin->sin_port, sk, 1);
- 	if (err) {
- 		if (err == -ENETUNREACH)
--			IP_INC_STATS_BH(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
-+			IP_INC_STATS(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
- 		return err;
- 	}
- 
+diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
+index bf4168b..4267d48 100644
+--- a/drivers/isdn/isdnloop/isdnloop.c
++++ b/drivers/isdn/isdnloop/isdnloop.c
+@@ -1071,6 +1071,12 @@ isdnloop_start(isdnloop_card * card, isdnloop_sdef * sdefp)
+ 		return -EBUSY;
+ 	if (copy_from_user((char *) &sdef, (char *) sdefp, sizeof(sdef)))
+ 		return -EFAULT;
++
++	for (i = 0; i < 3; i++) {
++		if (!memchr(sdef.num[i], 0, sizeof(sdef.num[i])))
++			return -EINVAL;
++	}
++
+ 	spin_lock_irqsave(&card->isdnloop_lock, flags);
+ 	switch (sdef.ptype) {
+ 		case ISDN_PTYPE_EURO:
 -- 
 1.7.12.2.21.g234cd45.dirty
 
