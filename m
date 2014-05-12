@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241AbaELJ3O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 05:29:14 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:36489 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888AbaELJ3M (ORCPT
+	id S1754234AbaELJa0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 05:30:26 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:53479 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813AbaELJaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 05:29:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140511212514.GV7047@lukather>
-References: <1399621082-10712-1-git-send-email-linus.walleij@linaro.org>
-	<20140511212514.GV7047@lukather>
-Date: Mon, 12 May 2014 11:29:11 +0200
-Message-ID: <CACRpkdZip4S7ySAVA4xtXxU-Y5DeXfVjK67aJOe_RiXG7iT15g@mail.gmail.com>
-Subject: Re: [PATCH] RFT: pinctrl: sunxi: convert to GPIO irqchip helpers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 12 May 2014 05:30:24 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: tglx@linutronix.de
+Cc: linaro-kernel@lists.linaro.org, linaro-networking@linaro.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        arvind.chauhan@arm.com, daniel.lezcano@linaro.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [RFC 0/2] clockevents: add ->set_dev_mode() to struct clock_event_device
+Date: Mon, 12 May 2014 15:00:04 +0530
+Message-Id: <cover.1399886467.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 2.0.0.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 11, 2014 at 11:25 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
+Hi Thomas,
 
-> What I did so far is having a single domain, with the same handler
-> registered for all the interrupts, and the various interrupts from the
-> various banks just being at a different offsets in the domain.
->
-> Basically, something like that:
-> http://code.bulix.org/ym3zuv-86191
->
-> Do you know if it would be possible to use the generic gpiolib
-> behaviour in such a case?
+As suggested by you (https://lkml.org/lkml/2014/5/10/86), here is an attempt to
+implement first two steps for fixing the bigger problem.
 
-Basically the helpers are for the simple case where every pin
-can fire an independent interrupt.
+This patchset is about adding ->set_dev_mode() to struct clock_event_device with
+return type 'int'. To achieve that return type of clockevents_set_mode() is also
+changed to propagate failures.
 
-Since there is just one single irqdomain for the entire chip, the
-helpers require that all mappings go through the same domain.
+Let me know if this is what you wanted to see or I screwed up again :(
 
-If having several domains or other split-up results in more
-elegant code, then code another solution locally, because we
-just want to cover the generic cases, the special cases will still
-be special.
+I will then start updating drivers one by one (100 drivers AFAICT). I will try to
+fix them in separate patches and will post them together in a single patchset.
+And because the number is going to be over 100, let me know how do you want me
+to send that..
 
-Unless you see some really elegant way forward of course...
-always choose the most elegand refactoring if you can.
+Viresh Kumar (2):
+  clockevents: return 'int' from clockevents_set_mode()
+  clockevents: add ->set_dev_mode() to struct clock_event_device
 
-Yours,
-Linus Walleij
+ arch/arm/common/bL_switcher.c |  5 +++--
+ include/linux/clockchips.h    |  7 +++++--
+ kernel/time/clockevents.c     | 34 +++++++++++++++++++++++++---------
+ kernel/time/tick-broadcast.c  | 25 ++++++++++++++++---------
+ kernel/time/tick-common.c     |  6 +++---
+ kernel/time/tick-oneshot.c    |  6 +++---
+ kernel/time/timer_list.c      |  9 +++++++--
+ 7 files changed, 62 insertions(+), 30 deletions(-)
+
+-- 
+2.0.0.rc2
+
