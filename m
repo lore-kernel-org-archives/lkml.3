@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758294AbaELOIQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 10:08:16 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42556 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756090AbaELOIO (ORCPT
+	id S1758394AbaELOIb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 10:08:31 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:41458 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758337AbaELOI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 10:08:14 -0400
-Date: Mon, 12 May 2014 10:08:13 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Vivek Gautam <gautam.vivek@samsung.com>
-cc: linux-usb@vger.kernel.org, <linux-samsung-soc@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <gregkh@linuxfoundation.org>,
-        <swarren@wwwdotorg.org>, <kgene.kim@samsung.com>,
-        <thierry.reding@gmail.com>, <shc_work@mail.ru>
-Subject: Re: [PATCH v2 0/6] usb: host: Cleanup for ioremap'ing hcd memory
-In-Reply-To: <1399723210-21569-1-git-send-email-gautam.vivek@samsung.com>
-Message-ID: <Pine.LNX.4.44L0.1405121007410.1202-100000@iolanthe.rowland.org>
+	Mon, 12 May 2014 10:08:29 -0400
+Message-ID: <5370D5E4.5040001@linaro.org>
+Date: Mon, 12 May 2014 16:08:36 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux PM list <linux-pm@vger.kernel.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Aubrey Li <aubrey.li@intel.com>
+Subject: Re: [PATCH] PM / suspend: Always use deepest C-state in the "freeze"
+ sleep state
+References: <2548502.zJ1no3NhRc@vostro.rjw.lan>
+In-Reply-To: <2548502.zJ1no3NhRc@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 May 2014, Vivek Gautam wrote:
+On 05/05/2014 12:51 AM, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>
+> If freeze_enter() is called, we want to bypass the current cpuidle
+> governor and always use the deepest available (that is, not disabled)
+> C-state, because we want to save as much energy as reasonably possible
+> then and runtime latency constraints don't matter at that point, since
+> the system is in a sleep state anyway.
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>
+> This is on top of https://patchwork.kernel.org/patch/4071541/ .
+>
 
-> Based on 'usb-next' branch of Greg's usb tree.
-> 
-> devm_ioremap_resource() API is advantageous over devm_ioremap()
-> and should therefore be preferred to request any ioremap'ed address
-> for hcd.
-> 
-> Changes from v1:
->  - Changed the way returned pointer is checked for error value
->    as pointed out in the review comment in the mailing list.
-> 
-> Vivek Gautam (6):
->   usb: host: ehci-exynos: Use devm_ioremap_resource instead of
->     devm_ioremap
->   usb: host: ehci-msm: Use devm_ioremap_resource instead of
->     devm_ioremap
->   usb: host: ehci-mv: Use devm_ioremap_resource instead of devm_ioremap
->   usb: host: ehci-spear: Use devm_ioremap_resource instead of
->     devm_ioremap
->   usb: host: ehci-tegra: Use devm_ioremap_resource instead of
->     devm_ioremap
->   usb: host: ohci-exynos: Use devm_ioremap_resource instead of
->     devm_ioremap
-> 
->  drivers/usb/host/ehci-exynos.c |    7 +++----
->  drivers/usb/host/ehci-msm.c    |    7 +++----
->  drivers/usb/host/ehci-mv.c     |   16 ++++++----------
->  drivers/usb/host/ehci-spear.c  |   13 +++----------
->  drivers/usb/host/ehci-tegra.c  |    7 +++----
->  drivers/usb/host/ohci-exynos.c |    7 +++----
->  6 files changed, 21 insertions(+), 36 deletions(-)
+Wouldn't make sense to revisit play_dead instead ?
 
-For all six patches,
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
