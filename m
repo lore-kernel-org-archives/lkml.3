@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758311AbaELQO1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:14:27 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:46460 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754760AbaELQOZ (ORCPT
+	id S1758765AbaELQPs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:15:48 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49188 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751159AbaELQPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 12:14:25 -0400
-Date: Mon, 12 May 2014 09:14:15 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Josef Gajdusek <atx@atx.name>
-Cc: jdelvare@suse.de, lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/hwmon/emc1403.c: add support for emc14x2
-Message-ID: <20140512161415.GA16770@roeck-us.net>
-References: <20140512123409.GB16252@dashie>
+	Mon, 12 May 2014 12:15:43 -0400
+Date: Mon, 12 May 2014 17:12:46 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
+        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 1/8] ftrace: make CALLER_ADDRx macros more generic
+Message-ID: <20140512161246.GC4880@arm.com>
+References: <1394862048-28758-1-git-send-email-takahiro.akashi@linaro.org>
+ <1398851676-16389-1-git-send-email-takahiro.akashi@linaro.org>
+ <1398851676-16389-2-git-send-email-takahiro.akashi@linaro.org>
+ <20140502151957.6978d870@gandalf.local.home>
+ <20140512155811.GB4880@arm.com>
+ <20140512120535.041030dd@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140512123409.GB16252@dashie>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140512120535.041030dd@gandalf.local.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Josef,
+Hey Steve,
 
-On Mon, May 12, 2014 at 02:34:09PM +0200, Josef Gajdusek wrote:
-> Adds support for emc1402/emc1412/emc1422 temperature monitoring chips.
-> This line of sensors does only have 2 channels (internal and external) in comparison to the emc14x3 (3 channels) and emc14x4 (4 channels) lines.
+On Mon, May 12, 2014 at 05:05:35PM +0100, Steven Rostedt wrote:
+> On Mon, 12 May 2014 16:58:11 +0100
+> Will Deacon <will.deacon@arm.com> wrote:
 > 
-> Signed-off-by: Josef Gajdusek <atx@atx.name>
-
-Applied, with a couple of minor adjustments.
-
-> ---
-
-[ ... ]
->  
->  static const unsigned short emc1403_address_list[] = {
-> -	0x18, 0x29, 0x4c, 0x4d, I2C_CLIENT_END
-> +	0x18, 0x29, 0x1c, 0x4c, 0x4d, 0x5c, I2C_CLIENT_END
-
-Changed to numerical order.
-
->  };
->  
-> +/* Last number in name indicates the amount of channels */
-
-I found that comment a bit confusing, so I changed it to
-
-/* Last digit of chip name indicates number of channels */
-
->  static const struct i2c_device_id emc1403_idtable[] = {
-> -	{ "emc1403", 0 },
-> -	{ "emc1404", 1 },
-> -	{ "emc1423", 0 },
-> -	{ "emc1424", 1 },
-> +	{ "emc1402", emc1402 },
-> +	{ "emc1403", emc1403 },
-> +	{ "emc1404", emc1404 },
-> +	{ "emc1422", emc1402 },
-> +	{ "emc1423", emc1403 },
-> +	{ "emc1424", emc1404 },
-
-Wonder if we should list the emc141x chips here. Jean, any thoughts ?
-
->  	{ }
->  };
->  MODULE_DEVICE_TABLE(i2c, emc1403_idtable);
+> > Akashi: did you get around to posting a new version of this patch? We can't
+> > take your arm64 patches until you get the core stuff merged...
 > 
+> I haven't seen any patches yet.
+> 
+> What I can also do is to create a separate branch based on mainline,
+> and just apply this change to the core. Then you could pull that branch
+> with a note to Linus that it is also in my tree with the common
+> ancestor.
+> 
+> If he pulls your work first, he'll only get that change from my tree,
+> and if he pulls mine first it doesn't matter as all the changes will be
+> there.
+> 
+> This is something he said at Kernel Summit that was normal procedure if
+> there's a change in one tree that another tree is dependent on.
 
-It would be nice to also have support for the alarms on EMC14x2,
-but that can be a separate patch.
+That sounds great, and nicely solves the dependency between our trees for
+3.16 at the same time.
 
-Thanks,
-Guenter
+If you point us at the branch and promise not to rebase it, that would be
+fantastic.
+
+Cheers,
+
+Will
