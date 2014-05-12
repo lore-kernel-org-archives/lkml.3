@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758683AbaELOvA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 10:51:00 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60189 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755697AbaELOu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 10:50:58 -0400
-Date: Mon, 12 May 2014 09:49:28 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        <linux-rdma@vger.kernel.org>, <linux-acenic@sunsite.dk>,
-        <nios2-dev@lists.rocketboards.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <e1000-devel@lists.sourceforge.net>, <devel@linuxdriverproject.org>,
-        <linux-usb@vger.kernel.org>,
-        <virtualization@lists.linux-foundation.org>,
-        <linux-wireless@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        <linux-s390@vger.kernel.org>, <devel@driverdev.osuosl.org>,
-        <b.a.t.m.a.n@lists.open-mesh.org>, <bridge@lists.linux-foundation.org>,
-        <dev@openvswitch.org>, <trivial@kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [resend] net: get rid of SET_ETHTOOL_OPS
-Message-ID: <20140512144928.GA31882@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140511001231.GC7875@kaos.lebenslange-mailadresse.de>
+	id S1758719AbaELOwQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 10:52:16 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:43688 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758227AbaELOwO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 10:52:14 -0400
+Message-ID: <5370E026.5040105@linaro.org>
+Date: Mon, 12 May 2014 16:52:22 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bp/iNruPH9dso1Pn"
-Content-Disposition: inline
-In-Reply-To: <20140511001231.GC7875@kaos.lebenslange-mailadresse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux PM list <linux-pm@vger.kernel.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Aubrey Li <aubrey.li@intel.com>
+Subject: Re: [PATCH] PM / suspend: Always use deepest C-state in the "freeze"
+ sleep state
+References: <2548502.zJ1no3NhRc@vostro.rjw.lan> <5370D5E4.5040001@linaro.org> <5370D85C.3090505@linux.intel.com>
+In-Reply-To: <5370D85C.3090505@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bp/iNruPH9dso1Pn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/12/2014 04:19 PM, Li, Aubrey wrote:
+> On 2014/5/12 22:08, Daniel Lezcano wrote:
+>> On 05/05/2014 12:51 AM, Rafael J. Wysocki wrote:
+>>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>>
+>>> If freeze_enter() is called, we want to bypass the current cpuidle
+>>> governor and always use the deepest available (that is, not disabled)
+>>> C-state, because we want to save as much energy as reasonably possible
+>>> then and runtime latency constraints don't matter at that point, since
+>>> the system is in a sleep state anyway.
+>>>
+>>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>> ---
+>>>
+>>> This is on top of https://patchwork.kernel.org/patch/4071541/ .
+>>>
+>>
+>> Wouldn't make sense to revisit play_dead instead ?
+>>
+> play_dead() is broken.
+>
+> Even if it works, we still should rely on cpuidle driver to place the
+> CPUs into the deepest c-state, because there is no architectural way to
+> enter deepest c-state and what play_dead() does is a bad assumption.
 
-On Sun, May 11, 2014 at 12:12:32AM +0000, Wilfried Klaebe wrote:
-> net: get rid of SET_ETHTOOL_OPS
->=20
-> Dave Miller mentioned he'd like to see SET_ETHTOOL_OPS gone.
-> This does that.
->=20
-> Mostly done via coccinelle script:
-> @@
-> struct ethtool_ops *ops;
-> struct net_device *dev;
-> @@
-> -       SET_ETHTOOL_OPS(dev, ops);
-> +       dev->ethtool_ops =3D ops;
->=20
-> Compile tested only, but I'd seriously wonder if this broke anything.
->=20
-> Suggested-by: Dave Miller <davem@davemloft.net>
-> Signed-off-by: Wilfried Klaebe <w-lkml@lebenslange-mailadresse.de>
+Ok, let me rephrase it. Why not revisiting cpuidle_play_dead instead ?
 
-for drivers/usb/gadget/:
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
---=20
-balbi
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
---bp/iNruPH9dso1Pn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTcN94AAoJEIaOsuA1yqRE2R0P/RhVi/Qfz54HMVfE28wnFO0q
-QnlKuoHAVxYrJGy2DMEWK0M3Pur63qxiFZjkcZeoltPuas2EyP/SYGeb7RssNOSt
-jLvDOYvpOF6UVmmz+FMPXXDHjOwjlZI/GKLpAnpnBsUUjH1KAHiYQztgZaIr+tAC
-u09I9dYOPzEiZS0JVsS2H3OMzmjD0qEAIyJD/8JCSyTTod8TV/8M4oIupKyvamR4
-lI8L+9pNJlzc1q9lk8JdLg0uX5nFwkN3LElRESG865TMNTkMhsK+t1Xwj22LBJYL
-aB5o2Fdt1z0PPvpcRu8Yq6NvGFRXjufFXt+ERizVIo4ZYyGoE+8SvG134PDSkL3E
-GN6C+SmC/eoN4KZqh9sDEINNYSsnW7/qzwKOfjUt6vnBJQtMeOvFs6N11JBe5XGm
-OdS5NVjt8E9ojjN82eg8xYHM69GW8fUgsTDstLA67mOiKTLhTbZtSTT3Vxc91fJf
-FRN+zqJ1haKeNThtM0WP15V7YEcaNuO0ImGoX4OUgWOCCwvbrlTQesC+ndbj4fA+
-Eoa9CWBXt+7yR7iPHRbvn1aOexmXT+kBMN0z3CzHSuBDHdFAvNKZQapR9IsSEZbD
-nTGr4DCWBVQBTkzt9eKslLeRwS53guWFS9veXqbL9XZMAP6oCbeiVPzb9FnW+vb4
-w8H5mRK9If342xMOpRq0
-=//u0
------END PGP SIGNATURE-----
-
---bp/iNruPH9dso1Pn--
