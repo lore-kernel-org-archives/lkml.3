@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759284AbaELQ5W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:57:22 -0400
-Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:53173 "EHLO
-	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759265AbaELQ5T (ORCPT
+	id S932173AbaELQ5b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:57:31 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:60074 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047AbaELQ52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 12:57:19 -0400
-Date: Mon, 12 May 2014 11:57:15 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Jianyu Zhan <nasa4836@gmail.com>
-cc: akpm@linux-foundation.org, riel@redhat.com, aarcange@redhat.com,
-        oleg@redhat.com, cldu@marvell.com, fabf@skynet.be,
-        sasha.levin@oracle.com, zhangyanfei@cn.fujitsu.com,
-        iamjoonsoo.kim@lge.com, n-horiguchi@ah.jp.nec.com,
-        kirill.shutemov@linux.intel.com, liwanp@linux.vnet.ibm.com,
-        gorcunov@gmail.com, minchan@kernel.org, dave.hansen@linux.intel.com,
-        toshi.kani@hp.com, paul.gortmaker@windriver.com,
-        srivatsa.bhat@linux.vnet.ibm.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 1/3] mm: add comment for __mod_zone_page_stat
-In-Reply-To: <1399912423-25601-1-git-send-email-nasa4836@gmail.com>
-Message-ID: <alpine.DEB.2.10.1405121155220.26638@gentwo.org>
-References: <1399912423-25601-1-git-send-email-nasa4836@gmail.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 12 May 2014 12:57:28 -0400
+From: Alexander Holler <holler@ahsoftware.de>
+To: linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Jon Loeliger <jdl@jdl.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Alexander Holler <holler@ahsoftware.de>
+Subject: [RFC PATCH 8/9] dt: deps: dts: kirkwood: dockstar: add dependency ehci -> usb power regulator
+Date: Mon, 12 May 2014 18:47:59 +0200
+Message-Id: <1399913280-6915-9-git-send-email-holler@ahsoftware.de>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
+References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 May 2014, Jianyu Zhan wrote:
+This serves as an example how easy it is to fix an initialization order
+if the order depends on the DT. No source code changes will be necessary.
 
-> diff --git a/mm/internal.h b/mm/internal.h
-> index 07b6736..53d439e 100644
-> --- a/mm/internal.h
-> +++ b/mm/internal.h
-> @@ -196,7 +196,12 @@ static inline int mlocked_vma_newpage(struct vm_area_struct *vma,
->  		return 0;
->
->  	if (!TestSetPageMlocked(page)) {
-> -		mod_zone_page_state(page_zone(page), NR_MLOCK,
-> +		/*
-> +		 * We use the irq-unsafe __mod_zone_page_stat because
-> +		 * this counter is not modified from interrupt context, and the
-> +		 * pte lock is held(spinlock), which implies preemtion disabled.
+If you look at the dependency graph for the dockstar, you will see that
+there is no dependency between ehci and the usb power regulator. This
+ends up with the fact that the regulator will be initialized after ehci.
 
-Preemption is mis-spelled throughout.
+Fix this by adding one dependency to the .dts.
 
-Otherwise
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+---
+ arch/arm/boot/dts/kirkwood-dockstar.dts | 4 ++++
+ arch/arm/boot/dts/kirkwood.dtsi         | 2 +-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
-Reviewed-by: Christoph Lameter <cl@linux.com>
+diff --git a/arch/arm/boot/dts/kirkwood-dockstar.dts b/arch/arm/boot/dts/kirkwood-dockstar.dts
+index f31312e..0ca7456 100644
+--- a/arch/arm/boot/dts/kirkwood-dockstar.dts
++++ b/arch/arm/boot/dts/kirkwood-dockstar.dts
+@@ -106,3 +106,7 @@
+ 		phy-handle = <&ethphy0>;
+ 	};
+ };
++
++&ehci {
++	dependencies = <&usb_power>;
++};
+diff --git a/arch/arm/boot/dts/kirkwood.dtsi b/arch/arm/boot/dts/kirkwood.dtsi
+index 6abf44d..54a1223 100644
+--- a/arch/arm/boot/dts/kirkwood.dtsi
++++ b/arch/arm/boot/dts/kirkwood.dtsi
+@@ -185,7 +185,7 @@
+ 			status = "okay";
+ 		};
+ 
+-		ehci@50000 {
++		ehci: ehci@50000 {
+ 			compatible = "marvell,orion-ehci";
+ 			reg = <0x50000 0x1000>;
+ 			interrupts = <19>;
+-- 
+1.8.3.1
 
