@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990AbaELTzc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 15:55:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41002 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752665AbaELTzR convert rfc822-to-8bit (ORCPT
+	id S1754672AbaELT7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 15:59:21 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:54873 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567AbaELT7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 15:55:17 -0400
-Date: Mon, 12 May 2014 21:55:13 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Josef Gajdusek <atx@atx.name>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/hwmon/emc1403.c: add support for emc14x2
-Message-ID: <20140512215513.42076761@endymion.delvare>
-In-Reply-To: <20140512184727.GA9003@roeck-us.net>
-References: <20140512123409.GB16252@dashie>
-	<20140512161415.GA16770@roeck-us.net>
-	<20140512190327.4f65c90a@endymion.delvare>
-	<20140512184727.GA9003@roeck-us.net>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	Mon, 12 May 2014 15:59:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140512195050.GB5668@atomide.com>
+References: <1399686184-1594-1-git-send-email-mranostay@gmail.com>
+	<20140512195050.GB5668@atomide.com>
+Date: Mon, 12 May 2014 14:59:18 -0500
+Message-ID: <CAOCHtYiYwx_bEsyqkbUTTAbhBYESzvfBOOYeVuFXPS1dDy0ZKA@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: dts: am335x-bone-common: Add i2c2 definition
+From: Robert Nelson <robertcnelson@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Matt Ranostay <mranostay@gmail.com>, robh+dt@kernel.org,
+        mark.rutland@arm.com, Russell King <linux@arm.linux.org.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        pantelis.antoniou@gmail.com, matt.porter@linaro.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 May 2014 11:47:27 -0700, Guenter Roeck wrote:
-> The chips are not only compatible, the even have the same device IDs.
-> Maybe I missed it, but I did not find a difference.
+>>
+>> +     i2c2_pins: pinmux_i2c2_pins {
+>> +             pinctrl-single,pins = <
+>> +                     0x178 (PIN_INPUT_PULLUP | MUX_MODE3)    /* uart1_ctsn.i2c2_sda */
+>> +                     0x17c (PIN_INPUT_PULLUP | MUX_MODE3)    /* uart1_rtsn.i2c2_scl */
+>> +             >;
+>> +     };
+>> +
+>>       uart0_pins: pinmux_uart0_pins {
+>>               pinctrl-single,pins = <
+>>                       0x170 (PIN_INPUT_PULLUP | MUX_MODE0)    /* uart0_rxd.uart0_rxd */
+>>
+>> @@ -222,6 +229,15 @@
+>>
+>>  };
+>>
+>> +
+>> +&i2c2 {
+>> +     pinctrl-names = "default";
+>> +     pinctrl-0 = <&i2c2_pins>;
+>> +
+>> +     status = "okay";
+>> +     clock-frequency = <100000>;
+>> +};
+>> +
+>
+> If these pins are not used for i2c2 on some capes, this device
+> should be set to status = "disabled" state by default. Then
+> u-boot could re-enable it on the boards that have i2c2 in use.
 
-The EMC141x seem to have fewer package options (no SOIC) but better
-internal sensor accuracy (+/- 1°C instead of +/- 2°C.) The +/- 1°C
-accuracy for the external channels is also guaranteed over a wider
-temperature range. Just from a quick look at the product features,
-there may be more.
+To-date, this is the i2c bus that all capes have placed an at24 eeprom
+for cape identification.
+
+Regards,
 
 -- 
-Jean Delvare
-SUSE L3 Support
+Robert Nelson
+http://www.rcn-ee.com/
