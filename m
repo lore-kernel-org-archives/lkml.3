@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758564AbaELOU0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 10:20:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62445 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756705AbaELOUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 10:20:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1035,1389772800"; 
-   d="scan'208";a="538948816"
-Message-ID: <5370D85C.3090505@linux.intel.com>
-Date: Mon, 12 May 2014 22:19:08 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux PM list <linux-pm@vger.kernel.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, Aubrey Li <aubrey.li@intel.com>
-Subject: Re: [PATCH] PM / suspend: Always use deepest C-state in the "freeze"
- sleep state
-References: <2548502.zJ1no3NhRc@vostro.rjw.lan> <5370D5E4.5040001@linaro.org>
-In-Reply-To: <5370D5E4.5040001@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1758522AbaELOXR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 10:23:17 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58711 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758216AbaELOXQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 10:23:16 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2] ARM: at91/dt: sam9261: Fix PLL output ranges and other clocks divisors
+Date: Mon, 12 May 2014 16:22:12 +0200
+Message-Id: <1399904532-3688-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/5/12 22:08, Daniel Lezcano wrote:
-> On 05/05/2014 12:51 AM, Rafael J. Wysocki wrote:
->> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>
->> If freeze_enter() is called, we want to bypass the current cpuidle
->> governor and always use the deepest available (that is, not disabled)
->> C-state, because we want to save as much energy as reasonably possible
->> then and runtime latency constraints don't matter at that point, since
->> the system is in a sleep state anyway.
->>
->> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> ---
->>
->> This is on top of https://patchwork.kernel.org/patch/4071541/ .
->>
-> 
-> Wouldn't make sense to revisit play_dead instead ?
-> 
-play_dead() is broken.
+Argument 3 (OUT) and 4 (ICPLL) of the atmel,pll-clk-output-ranges were missing.
+Also, the at91sam9261 doesn't really have a by 3 divisor.
 
-Even if it works, we still should rely on cpuidle driver to place the
-CPUs into the deepest c-state, because there is no architectural way to
-enter deepest c-state and what play_dead() does is a bad assumption.
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+Changed in v2:
+After getting feedback from the atmel HW engineers, it appears that PLLB is not
+the same as PLLA despite what the datasheet seems to imply. The patch is updated
+to reflect that.
 
-Thanks,
--Aubrey
+ arch/arm/boot/dts/at91sam9261.dtsi | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/boot/dts/at91sam9261.dtsi b/arch/arm/boot/dts/at91sam9261.dtsi
+index 561addceb81e..44d9e5ab09c3 100644
+--- a/arch/arm/boot/dts/at91sam9261.dtsi
++++ b/arch/arm/boot/dts/at91sam9261.dtsi
+@@ -564,7 +564,8 @@
+ 					reg = <0>;
+ 					atmel,clk-input-range = <1000000 32000000>;
+ 					#atmel,pll-clk-output-range-cells = <4>;
+-					atmel,pll-clk-output-ranges = <80000000 200000000 190000000 240000000>;
++					atmel,pll-clk-output-ranges = <80000000 200000000 0 1>,
++								<190000000 240000000 2 1>;
+ 				};
+ 
+ 				pllb: pllbck {
+@@ -573,9 +574,9 @@
+ 					interrupts-extended = <&pmc AT91_PMC_LOCKB>;
+ 					clocks = <&main>;
+ 					reg = <1>;
+-					atmel,clk-input-range = <1000000 32000000>;
++					atmel,clk-input-range = <1000000 5000000>;
+ 					#atmel,pll-clk-output-range-cells = <4>;
+-					atmel,pll-clk-output-ranges = <80000000 200000000 190000000 240000000>;
++					atmel,pll-clk-output-ranges = <70000000 130000000 1 1>;
+ 				};
+ 
+ 				mck: masterck {
+@@ -584,13 +585,13 @@
+ 					interrupts-extended = <&pmc AT91_PMC_MCKRDY>;
+ 					clocks = <&clk32k>, <&main>, <&plla>, <&pllb>;
+ 					atmel,clk-output-range = <0 94000000>;
+-					atmel,clk-divisors = <1 2 4 3>;
++					atmel,clk-divisors = <1 2 4 0>;
+ 				};
+ 
+ 				usb: usbck {
+ 					compatible = "atmel,at91rm9200-clk-usb";
+ 					#clock-cells = <0>;
+-					atmel,clk-divisors = <1 2 4 3>;
++					atmel,clk-divisors = <1 2 4 0>;
+ 					clocks = <&pllb>;
+ 				};
+ 
+-- 
+1.9.1
 
