@@ -1,138 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437AbaELJao (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 05:30:44 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:35619 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754430AbaELJah (ORCPT
+	id S1755490AbaELJbm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 05:31:42 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:61200 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236AbaELJbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 05:30:37 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de
-Cc: linaro-kernel@lists.linaro.org, linaro-networking@linaro.org,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        arvind.chauhan@arm.com, daniel.lezcano@linaro.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [RFC 2/2] clockevents: add ->set_dev_mode() to struct clock_event_device
-Date: Mon, 12 May 2014 15:00:06 +0530
-Message-Id: <0e036bbf00178049b542c450eabc246b8a88f687.1399886467.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <cover.1399886467.git.viresh.kumar@linaro.org>
-References: <cover.1399886467.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1399886467.git.viresh.kumar@linaro.org>
-References: <cover.1399886467.git.viresh.kumar@linaro.org>
+	Mon, 12 May 2014 05:31:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rdunlap@infradead.org, linux@arm.linux.org.uk,
+        daniel.lezcano@linaro.org, tglx@linutronix.de,
+        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
+        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
+        heiko.stuebner@bq.com, olof@lixom.net, sebastian.hesselbarth@gmail.com,
+        sboyd@codeaurora.org, gregory.clement@free-electrons.com,
+        robherring2@gmail.com, marc.zyngier@arm.com,
+        maxime.ripard@free-electrons.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/4] arm: add basic support for Mediatek MT6589 boards
+Date: Mon, 12 May 2014 11:30:15 +0200
+Message-ID: <80525303.7Oax6ZBozr@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1399772463-859-4-git-send-email-matthias.bgg@gmail.com>
+References: <1399772463-859-1-git-send-email-matthias.bgg@gmail.com> <1399772463-859-4-git-send-email-matthias.bgg@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Sm3BuK8Le03+0cal+B1rqb4jcbNY7m58bocYK7Rq5O4
+ 8tdddXtqJGFLja7cYW1vKUV427JOpvIW+V1s+EsWQX6LpIoSFT
+ YOv34+9PAhAiK61X/2zvnIO8idQ0oe7eMeGVqJ9MXl3m4tRp3g
+ WcMHuUiW9dkeZh7F7DxXwqj+BJ57k553StFZpkEEEZBePKbLdb
+ UGRrBB67JoMs9YHLuEdSnP4cUJJyz3VppmimLOvwYUiB6MsI2G
+ iaxu/TyI9Zpqrv2RL3zCIYW8gpsvnMZiUuiJ57FzZ/kxZfWjiA
+ klHuPBstB8zBMcBC14CkK5aHQuvibu6YRQnUxtgILTkyBr2YdO
+ 2a31O63wDO8Jx8EjXDe0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a requirement to add another mode: CLOCK_EVT_MODE_ONESHOT_STOPPED
-(lkml.org/lkml/2014/5/9/508) to clockevent devices and clockevent-drivers may or
-maynot support it. And so can return failure codes on a call to ->set_mode(),
-which has a return type of 'void' as of now.
+On Sunday 11 May 2014 03:41:02 Matthias Brugger wrote:
+> +
+> +static void __init mediatek_dt_init(void)
+> +{
+> +       of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+> +}
+> +
+> +static const char * const mediatek_board_dt_compat[] = {
+> +       "mediatek,mt6589",
+> +       NULL,
+> +};
+> +
+> +DT_MACHINE_START(MEDIATEK_DT, "Mediatek Cortex-A7 (Device Tree)")
+> +       .init_machine   = mediatek_dt_init,
+> +       .dt_compat      = mediatek_board_dt_compat,
+> +MACHINE_END
 
-To fix that, add another callback ->set_dev_mode(), with return type 'int'. All
-clockevent drivers will be migrated to use this new interface later. Also mark
-->set_mode() deprecated.
+Since the mediatek_dt_init function now only does the default populate
+call, you can leave it out completely and keep only the compat list.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- include/linux/clockchips.h |  5 ++++-
- kernel/time/clockevents.c  | 26 ++++++++++++++++++++------
- kernel/time/timer_list.c   |  9 +++++++--
- 3 files changed, 31 insertions(+), 9 deletions(-)
-
-diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-index 4e7a4d3..e15836f 100644
---- a/include/linux/clockchips.h
-+++ b/include/linux/clockchips.h
-@@ -81,7 +81,8 @@ enum clock_event_mode {
-  * @mode:		operating mode assigned by the management code
-  * @features:		features
-  * @retries:		number of forced programming retries
-- * @set_mode:		set mode function
-+ * @set_dev_mode:	set state function
-+ * @set_mode:		set mode function (deprecated, use set_dev_mode instead)
-  * @broadcast:		function to broadcast events
-  * @min_delta_ticks:	minimum delta value in ticks stored for reconfiguration
-  * @max_delta_ticks:	maximum delta value in ticks stored for reconfiguration
-@@ -109,6 +110,8 @@ struct clock_event_device {
- 	unsigned long		retries;
- 
- 	void			(*broadcast)(const struct cpumask *mask);
-+	int			(*set_dev_mode)(enum clock_event_mode mode,
-+					    struct clock_event_device *);
- 	void			(*set_mode)(enum clock_event_mode mode,
- 					    struct clock_event_device *);
- 	void			(*suspend)(struct clock_event_device *);
-diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-index 8665660..3ef5997 100644
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -104,8 +104,17 @@ EXPORT_SYMBOL_GPL(clockevent_delta2ns);
- int clockevents_set_mode(struct clock_event_device *dev,
- 				 enum clock_event_mode mode)
- {
-+	int ret = 0;
-+
- 	if (dev->mode != mode) {
--		dev->set_mode(mode, dev);
-+		if (dev->set_dev_mode)
-+			ret = dev->set_dev_mode(mode, dev);
-+		else
-+			dev->set_mode(mode, dev);
-+
-+		if (unlikely(ret))
-+			return ret;
-+
- 		dev->mode = mode;
- 
- 		/*
-@@ -443,15 +452,20 @@ EXPORT_SYMBOL_GPL(clockevents_config_and_register);
- 
- int __clockevents_update_freq(struct clock_event_device *dev, u32 freq)
- {
-+	int ret = 0;
-+
- 	clockevents_config(dev, freq);
- 
- 	if (dev->mode == CLOCK_EVT_MODE_ONESHOT)
--		return clockevents_program_event(dev, dev->next_event, false);
--
--	if (dev->mode == CLOCK_EVT_MODE_PERIODIC)
--		dev->set_mode(CLOCK_EVT_MODE_PERIODIC, dev);
-+		ret = clockevents_program_event(dev, dev->next_event, false);
-+	else if (dev->mode == CLOCK_EVT_MODE_PERIODIC) {
-+		if (dev->set_dev_mode)
-+			ret = dev->set_dev_mode(CLOCK_EVT_MODE_PERIODIC, dev);
-+		else
-+			dev->set_mode(CLOCK_EVT_MODE_PERIODIC, dev);
-+	}
- 
--	return 0;
-+	return ret;
- }
- 
- /**
-diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
-index 61ed862..3d854aa 100644
---- a/kernel/time/timer_list.c
-+++ b/kernel/time/timer_list.c
-@@ -228,8 +228,13 @@ print_tickdevice(struct seq_file *m, struct tick_device *td, int cpu)
- 	print_name_offset(m, dev->set_next_event);
- 	SEQ_printf(m, "\n");
- 
--	SEQ_printf(m, " set_mode:       ");
--	print_name_offset(m, dev->set_mode);
-+	if (dev->set_dev_mode) {
-+		SEQ_printf(m, " set_dev_mode:       ");
-+		print_name_offset(m, dev->set_dev_mode);
-+	} else {
-+		SEQ_printf(m, " set_mode:       ");
-+		print_name_offset(m, dev->set_mode);
-+	}
- 	SEQ_printf(m, "\n");
- 
- 	SEQ_printf(m, " event_handler:  ");
--- 
-2.0.0.rc2
-
+	Arnd
