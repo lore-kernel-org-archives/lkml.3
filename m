@@ -1,82 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577AbaELGSh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 02:18:37 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:42404 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519AbaELGSe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 02:18:34 -0400
+	id S932077AbaELGTO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 02:19:14 -0400
+Received: from sam.nabble.com ([216.139.236.26]:58844 "EHLO sam.nabble.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753799AbaELGTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 02:19:12 -0400
+Date: Sun, 11 May 2014 23:19:11 -0700 (PDT)
+From: kakonyet <kakonyet@hotmail.com>
+To: linux-kernel@vger.kernel.org
+Message-ID: <1399875551846-858010.post@n7.nabble.com>
+Subject: Stilhaus Kitchens Complaints
 MIME-Version: 1.0
-In-Reply-To: <CAGZ6kuPzpxh-r9-KfPDOGXQXjqcthMV07Nd_dgwvBd7w+F9A+w@mail.gmail.com>
-References: <000001cf643d$69e5e350$3db1a9f0$@samsung.com>
-	<CAKohpon7W726Hxj5OJ6SnmPz3gYhAeBRr1wS3SCa3F2hSLriLQ@mail.gmail.com>
-	<5367946F.1030407@ti.com>
-	<CAKohpon-KZpSJK7PxpLjZS7sVPcYraDxb4oJHN6dxSagD+F--Q@mail.gmail.com>
-	<CAGo_u6pUVeMM9mqe5htvM1X_4pkRGEUVOA2ty4ZPfUyLcLZkrw@mail.gmail.com>
-	<CAKohpokfcptseU6ST+e_GfU6poVJxXCXMeoYCvT65060v5GJYQ@mail.gmail.com>
-	<003e01cf6984$fb950280$f2bf0780$@samsung.com>
-	<CAGo_u6o0J_T_hnmDAiYpsDxe77iKPCjuWisZJfTjYYOVGJF96A@mail.gmail.com>
-	<CAKohpo=qbj9w5=wWHEG=9c2spjbbhaDaXG+F-Lhe9QffV9sDbw@mail.gmail.com>
-	<001501cf6a5c$07bc2520$17346f60$@samsung.com>
-	<CAGo_u6rAY1Cqh6_1RPsjGMwqNSVr=yW+VgyXfEjA6V+LT-SMcQ@mail.gmail.com>
-	<000301cf6a62$413c16b0$c3b44410$@samsung.com>
-	<CAKohponiuHYjLve5ywLSGtDPPFN9a54gzZUicn1m702B2Ct3Pw@mail.gmail.com>
-	<000e01cf6b23$58fda900$0af8fb00$@samsung.com>
-	<CAKohpomX_ZXSyk7RuCyO1t8VUee5H5KN5zj1-VhDp+ZtFbF-xA@mail.gmail.com>
-	<CAGZ6kuO_N+bZpWa8uQiZUCTWscMbwAd7EL-1dbCJX9JCvFDnyQ@mail.gmail.com>
-	<536CD6BD.9000804@ti.com>
-	<CAGZ6kuPzpxh-r9-KfPDOGXQXjqcthMV07Nd_dgwvBd7w+F9A+w@mail.gmail.com>
-Date: Mon, 12 May 2014 11:48:33 +0530
-Message-ID: <CAKohpo=wJAMgRqakX_WP+QshhpCqVNnA3e3gg4=s_sHaxfqwoQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] PM / OPP: Add support for descending order for
- cpufreq table
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: jonghwan Choi <jhbird.choi@gmail.com>
-Cc: Nishanth Menon <nm@ti.com>, Jonghwan Choi <jhbird.choi@samsung.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 May 2014 17:08, jonghwan Choi <jhbird.choi@gmail.com> wrote:
-> I already considered it.
-> (But it only passes on  what cpufreq driver has to do to clock framework.
-> For changing clock rate, if changing operation just divides a rate of
-> parent it can be solved easily
-> But exycpufreq driver is  more complicated.
->
-> Previously, to change frequency, pll value and clk divider value were
-> changed in cpufreq driver.
-> Later someone moved the code which changes pll value to clock framework.
-> In there, pll values are maintained as table per frequency. And if
-> frequency is added/removed, values of
-> pll table should be changed.
-> when we change the pll value through clk_set_rate, internally  to find
-> proper pll value,  pll table is searched.
-> If proper pll value is found, that value is written into the register)
->
-> My suggestion is that all these change details should be removed
-> according to adding/removing frequency.
-> I believe that cpufreq driver just writes a specific value per
-> frequency  into the register for dvfs(Maybe other work is also needed)
->
-> If we just describe the specific value per frequency in dts file, the
-> driver will get that information through DT, and use it for DVFS.)
-> Then when a new chip is  released(if the chip has the same h/w
-> interface - register map), we only have to do as above.
+Stilhaus Kitchens Complaints. fact is that there are no stilhaus kitchens
+complaints.stilhaus
+kitchens are the only kitchen company with no complaints
 
-We also want to make your life simple, but adding this field to OPP
-table isn't the right approach for sure.
 
-Can't you calculate the divider values at run time based on a frequency?
-I think it should work. That way you can just code these calculations
-in clock driver and things would work smoothly..
+Stilhaus Kitchens Complaints <http://is.gd/ixcVJY>  
 
-If there are problems, tell us what they are and we will try to find some
-solution for you. .
+
+
+--
+View this message in context: http://linux-kernel.2935.n7.nabble.com/Stilhaus-Kitchens-Complaints-tp858010.html
+Sent from the Linux Kernel mailing list archive at Nabble.com.
