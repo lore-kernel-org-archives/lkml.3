@@ -1,111 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758929AbaELPVw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 11:21:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54579 "EHLO comal.ext.ti.com"
+	id S1758906AbaELPW7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 11:22:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25287 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758468AbaELPVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 11:21:50 -0400
-Message-ID: <5370E6F3.3050705@ti.com>
-Date: Mon, 12 May 2014 11:21:23 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1758554AbaELPW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 11:22:56 -0400
+Date: Mon, 12 May 2014 17:22:08 +0200
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v10 03/19] qspinlock: Add pending bit
+Message-ID: <20140512152208.GA12309@potion.brq.redhat.com>
+References: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com>
+ <1399474907-22206-4-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-CC: <grygorii.strashko@ti.com>, Murali Karicheri <m-karicheri2@ti.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] nand: davinci: add support for 4K page size nand devices
-References: <1399588265-7130-1-git-send-email-ivan.khoronzhuk@ti.com>
-In-Reply-To: <1399588265-7130-1-git-send-email-ivan.khoronzhuk@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399474907-22206-4-git-send-email-Waiman.Long@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 May 2014 06:31 PM, Ivan Khoronzhuk wrote:
-> From: Sandeep Paulraj <s-paulraj@ti.com>
+2014-05-07 11:01-0400, Waiman Long:
+> From: Peter Zijlstra <peterz@infradead.org>
 > 
-> It is needed for k2l keystone2 EVM which uses NAND flash with 4K page
-> size, hence add support for 4K page size nand devices.
-> 
-> Signed-off-by: Sandeep Paulraj <s-paulraj@ti.com>
-> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-> ---
-> 
-> Based on l2-mtd/master
-> 
->  drivers/mtd/nand/davinci_nand.c | 41 ++++++++++++++++++++++++++++++-----------
->  1 file changed, 30 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-> index b922c8e..24a5769 100644
-> --- a/drivers/mtd/nand/davinci_nand.c
-> +++ b/drivers/mtd/nand/davinci_nand.c
-> @@ -520,6 +520,31 @@ static struct nand_ecclayout hwecc4_2048 = {
->  	},
->  };
->  
-> +/* An ECC layout for using 4-bit ECC with large-page (4096bytes) flash,
-> + * storing ten ECC bytes plus the manufacturer's bad block marker byte,
-> + * and not overlapping the default BBT markers.
-> + */
-Comment style ....
-/*
- *
- */
+> Because the qspinlock needs to touch a second cacheline; add a pending
+> bit and allow a single in-word spinner before we punt to the second
+> cacheline.
 
-> +static struct nand_ecclayout hwecc4_4096 __initconst = {
-> +          .eccbytes = 80,
-> +          .eccpos = {
-> +                  /* at the end of spare sector */
-> +                  48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-> +                  58, 59, 60, 61, 62, 63, 64, 65, 66, 67,
-> +                  68, 69, 70, 71, 72, 73, 74, 75, 76, 77,
-> +                  78, 79, 80, 81, 82, 83, 84, 85, 86, 87,
-> +                  88, 89, 90, 91, 92, 93, 94, 95, 96, 97,
-> +                  98, 99, 100, 101, 102, 103, 104, 105, 106, 107,
-> +                  108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
-> +                  118, 119, 120, 121, 122, 123, 124, 125, 126, 127,
-> +                  },
-> +          .oobfree = {
-> +                  /* 2 bytes at offset 0 hold manufacturer badblock markers */
-> +                  {.offset = 2, .length = 46, },
-> +                  /* 5 bytes at offset 8 hold BBT markers */
-> +                  /* 8 bytes at offset 16 hold JFFS2 clean markers */
-> +         },
-> +};
-> +
->  #if defined(CONFIG_OF)
->  static const struct of_device_id davinci_nand_of_match[] = {
->  	{.compatible = "ti,davinci-nand", },
-> @@ -796,18 +821,12 @@ static int nand_davinci_probe(struct platform_device *pdev)
->  			info->chip.ecc.mode = NAND_ECC_HW_OOB_FIRST;
->  			goto syndrome_done;
->  		}
-> +		if (chunks == 8) {
-May be use some meaning macros instead of magic value '8'
+I think there is an unwanted scenario on virtual machines:
+1) VCPU sets the pending bit and start spinning.
+2) Pending VCPU gets descheduled.
+    - we have PLE and lock holder isn't running [1]
+    - the hypervisor randomly preempts us
+3) Lock holder unlocks while pending VCPU is waiting in queue.
+4) Subsequent lockers will see free lock with set pending bit and will
+   loop in trylock's 'for (;;)'
+    - the worst-case is lock starving [2]
+    - PLE can save us from wasting whole timeslice
 
-> +			info->ecclayout = hwecc4_4096;
-> +			info->chip.ecc.mode = NAND_ECC_HW_OOB_FIRST;
-> +			goto syndrome_done;
-> +		}
->  
-> -		/* 4KiB page chips are not yet supported. The eccpos from
-> -		 * nand_ecclayout cannot hold 80 bytes and change to eccpos[]
-> -		 * breaks userspace ioctl interface with mtd-utils. Once we
-> -		 * resolve this issue, NAND_ECC_HW_OOB_FIRST mode can be used
-> -		 * for the 4KiB page chips.
-> -		 *
-> -		 * TODO: Note that nand_ecclayout has now been expanded and can
-> -		 *  hold plenty of OOB entries.
-> -		 */
-> -		dev_warn(&pdev->dev, "no 4-bit ECC support yet "
-> -				"for 4KiB-page NAND\n");
->  		ret = -EIO;
->  		goto err;
->  
-> 
+Retry threshold is the easiest solution, regardless of its ugliness [4].
 
+Another minor design flaw is that formerly first VCPU gets appended to
+the tail when it decides to queue;
+is the performance gain worth it?
+
+Thanks.
+
+
+---
+1: Pause Loop Exiting is almost certain to vmexit in that case: we
+   default to 4096 TSC cycles on KVM, and pending loop is longer than 4
+   (4096/PSPIN_THRESHOLD).
+   We would also vmexit if critical section was longer than 4k.
+
+2: In this example, vpus 1 and 2 use the lock while 3 never gets there.
+   VCPU:  1      2      3
+        lock()                   // we are the holder
+              pend()             // we have pending bit
+              vmexit             // while in PSPIN_THRESHOLD loop
+        unlock()
+                     vmentry
+                     SPINNING    // for {;;} loop
+                     vmexit
+              vmentry
+              lock()
+        pend()
+        vmexit
+             unlock()
+                     vmentry
+                     SPINNING
+                     vmexit
+        vmentry
+        --- loop ---
+
+   The window is (should be) too small to happen in bare-metal.
+
+3: Pending VCPU was first in line, but when it decides to queue, it must
+   go to the tail.
+
+4:
+The idea is to prevent unfairness by queueing after a while of useless
+looping.  Magic value should be set a bit above the time it takes an
+active pending bit holder to go through the loop.  4 looks enough.
+We can use either pv_qspinlock_enabled() or cpu_has_hypervisor.
+I presume that we never want this to happen in a VM and that we won't
+have pv_qspinlock_enabled() without cpu_has_hypervisor.
+
+diff --git a/kernel/locking/qspinlock.c b/kernel/locking/qspinlock.c
+index 37b5c7f..cd45c27 100644
+--- a/kernel/locking/qspinlock.c
++++ b/kernel/locking/qspinlock.c
+@@ -573,7 +573,7 @@ static __always_inline int get_qlock(struct qspinlock *lock)
+ static inline int trylock_pending(struct qspinlock *lock, u32 *pval)
+ {
+ 	u32 old, new, val = *pval;
+-	int retry = 1;
++	int retry = 0;
+ 
+ 	/*
+ 	 * trylock || pending
+@@ -595,9 +595,9 @@ static inline int trylock_pending(struct qspinlock *lock, u32 *pval)
+ 			 * a while to see if that either bit will be cleared.
+ 			 * If that is no change, we return and be queued.
+ 			 */
+-			if (!retry)
++			if (retry)
+ 				return 0;
+-			retry--;
++			retry++;
+ 			cpu_relax();
+ 			cpu_relax();
+ 			*pval = val = atomic_read(&lock->val);
+@@ -608,7 +608,11 @@ static inline int trylock_pending(struct qspinlock *lock, u32 *pval)
+ 			 * Assuming that the pending bit holder is going to
+ 			 * set the lock bit and clear the pending bit soon,
+ 			 * it is better to wait than to exit at this point.
++			 * Our assumption does not hold on hypervisors, where
++			 * the pending bit holder doesn't have to be running.
+ 			 */
++			if (cpu_has_hypervisor && ++retry > MAGIC)
++					return 0;
+ 			cpu_relax();
+ 			*pval = val = atomic_read(&lock->val);
+ 			continue;
