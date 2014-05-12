@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194AbaELXbb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 19:31:31 -0400
-Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:35924
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752696AbaELXb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 19:31:27 -0400
-From: <tthayer@altera.com>
-To: <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>, <dinguyen@altera.com>,
-        <dougthompson@xmission.com>, <grant.likely@linaro.org>, <bp@alien8.de>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>,
-        <tthayer@altera.com>
-Subject: [PATCHv4 2/3] dts: socfpga: Add bindings for Altera SoC SDRAM EDAC
-Date: Mon, 12 May 2014 18:36:56 -0500
-Message-ID: <1399937817-2202-3-git-send-email-tthayer@altera.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1399937817-2202-1-git-send-email-tthayer@altera.com>
-References: <1399937817-2202-1-git-send-email-tthayer@altera.com>
+	id S1752468AbaELXhG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 19:37:06 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:55766 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751681AbaELXhD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 19:37:03 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: "Li, Aubrey" <aubrey.li@linux.intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Aubrey Li <aubrey.li@intel.com>
+Subject: Re: [PATCH] PM / suspend: Always use deepest C-state in the "freeze" sleep state
+Date: Tue, 13 May 2014 01:53:49 +0200
+Message-ID: <1675732.Zj8pe2mRTV@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5370E026.5040105@linaro.org>
+References: <2548502.zJ1no3NhRc@vostro.rjw.lan> <5370D85C.3090505@linux.intel.com> <5370E026.5040105@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(199002)(189002)(79102001)(77156001)(86362001)(50466002)(93916002)(47776003)(20776003)(81342001)(77982001)(36756003)(33646001)(87286001)(6806004)(44976005)(81542001)(83322001)(575784001)(80022001)(19580405001)(97736001)(87936001)(16796002)(31966008)(74502001)(74662001)(48376002)(92726001)(92566001)(86152002)(2201001)(50986999)(76176999)(4396001)(50226001)(62966002)(85852003)(19580395003)(99396002)(102836001)(89996001)(84676001)(46102001)(42186004)(2009001)(83072002)(76482001)(88136002)(921003)(1121002)(83996005)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB033;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-OriginatorOrg: altera.onmicrosoft.com
-X-Forefront-PRVS: 0209425D0A
-Authentication-Results: spf=softfail (sender IP is 66.35.236.232)
- smtp.mailfrom=tthayer@altera.com; 
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thor Thayer <tthayer@altera.com>
+On Monday, May 12, 2014 04:52:22 PM Daniel Lezcano wrote:
+> On 05/12/2014 04:19 PM, Li, Aubrey wrote:
+> > On 2014/5/12 22:08, Daniel Lezcano wrote:
+> >> On 05/05/2014 12:51 AM, Rafael J. Wysocki wrote:
+> >>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >>>
+> >>> If freeze_enter() is called, we want to bypass the current cpuidle
+> >>> governor and always use the deepest available (that is, not disabled)
+> >>> C-state, because we want to save as much energy as reasonably possible
+> >>> then and runtime latency constraints don't matter at that point, since
+> >>> the system is in a sleep state anyway.
+> >>>
+> >>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >>> ---
+> >>>
+> >>> This is on top of https://patchwork.kernel.org/patch/4071541/ .
+> >>>
+> >>
+> >> Wouldn't make sense to revisit play_dead instead ?
+> >>
+> > play_dead() is broken.
+> >
+> > Even if it works, we still should rely on cpuidle driver to place the
+> > CPUs into the deepest c-state, because there is no architectural way to
+> > enter deepest c-state and what play_dead() does is a bad assumption.
+> 
+> Ok, let me rephrase it. Why not revisiting cpuidle_play_dead instead ?
 
-Addition of the Altera SDRAM EDAC bindings and device
-tree changes to the Altera SoC project.
+Many drivers don't implement the ->enter_dead() callback.
 
-v2: Changes to SoC EDAC source code.
-
-v3: Fix typo in device tree documentation.
-
-v4: No changes - bump version for consistency.
-
-Signed-off-by: Thor Thayer <tthayer@altera.com>
----
- .../bindings/arm/altera/socfpga-sdram-edac.txt     |   12 ++++++++++++
- arch/arm/boot/dts/socfpga.dtsi                     |    5 +++++
- 2 files changed, 17 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
-
-diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
-new file mode 100644
-index 0000000..431e98b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
-@@ -0,0 +1,12 @@
-+Altera SOCFPGA SDRAM Error Detection & Correction [EDAC]
-+
-+Required properties:
-+- compatible : should contain "altr,sdram-edac";
-+- interrupts : Should contain the SDRAM ECC IRQ in the
-+	appropriate format for the IRQ controller.
-+
-+Example:
-+	sdramedac@0 {
-+		compatible = "altr,sdram-edac";
-+		interrupts = <0 39 4>;
-+	};
-diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
-index 6ce912e..a0ea69b 100644
---- a/arch/arm/boot/dts/socfpga.dtsi
-+++ b/arch/arm/boot/dts/socfpga.dtsi
-@@ -681,6 +681,11 @@
- 			reg = <0xffc25000 0x1000>;
- 		};
- 
-+		sdramedac@0 {
-+			compatible = "altr,sdram-edac";
-+			interrupts = <0 39 4>;
-+		};
-+
- 		rstmgr@ffd05000 {
- 			compatible = "altr,rst-mgr";
- 			reg = <0xffd05000 0x1000>;
 -- 
-1.7.9.5
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
