@@ -1,120 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758969AbaELQMk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:12:40 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:51535 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755911AbaELQIw (ORCPT
+	id S1758311AbaELQO1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:14:27 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:46460 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760AbaELQOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 12:08:52 -0400
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rdunlap@infradead.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH 02/12] clk: st: Adds Flexgen clock binding
-Date: Mon, 12 May 2014 18:06:30 +0200
-Message-Id: <1399910800-12847-3-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399910800-12847-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1399910800-12847-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-12_02:2014-05-12,2014-05-12,1970-01-01 signatures=0
+	Mon, 12 May 2014 12:14:25 -0400
+Date: Mon, 12 May 2014 09:14:15 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Josef Gajdusek <atx@atx.name>
+Cc: jdelvare@suse.de, lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/hwmon/emc1403.c: add support for emc14x2
+Message-ID: <20140512161415.GA16770@roeck-us.net>
+References: <20140512123409.GB16252@dashie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140512123409.GB16252@dashie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A Flexgen structure is composed by:
-- a clock cross bar (represented by a mux element)
-- a pre and final dividers (represented by a divider and gate elements)
+Hi Josef,
 
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
----
- .../devicetree/bindings/clock/st/st,clkgen.txt     |  5 +++
- .../devicetree/bindings/clock/st/st,flexgen.txt    | 48 ++++++++++++++++++++++
- 2 files changed, 53 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/st/st,flexgen.txt
+On Mon, May 12, 2014 at 02:34:09PM +0200, Josef Gajdusek wrote:
+> Adds support for emc1402/emc1412/emc1422 temperature monitoring chips.
+> This line of sensors does only have 2 channels (internal and external) in comparison to the emc14x3 (3 channels) and emc14x4 (4 channels) lines.
+> 
+> Signed-off-by: Josef Gajdusek <atx@atx.name>
 
-diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
-index 55506c2..afb65e6 100644
---- a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
-+++ b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
-@@ -32,6 +32,10 @@ address is common of all subnode.
- 		vcc_node {
- 			...
- 		};
-+
-+		flexgen_node {
-+			...
-+		};
- 		...
- 	};
- 
-@@ -45,6 +49,7 @@ Each subnode should use the binding discribe in [2]..[7]
- [5] Documentation/devicetree/bindings/clock/st,clkgen-prediv.txt
- [6] Documentation/devicetree/bindings/clock/st,vcc.txt
- [7] Documentation/devicetree/bindings/clock/st,quadfs.txt
-+[8] Documentation/devicetree/bindings/clock/st,flexgen.txt
- 
- 
- Required properties:
-diff --git a/Documentation/devicetree/bindings/clock/st/st,flexgen.txt b/Documentation/devicetree/bindings/clock/st/st,flexgen.txt
-new file mode 100644
-index 0000000..ce908dd
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/st/st,flexgen.txt
-@@ -0,0 +1,48 @@
-+Binding for a type of flexgen structure found on certain
-+STMicroelectronics consumer electronics SoC devices
-+
-+This structure includes:
-+- a clock cross bar (represented by a mux element)
-+- a pre and final dividers (represented by a divider and gate elements)
-+
-+This binding uses the common clock binding[1].
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+Required properties:
-+- compatible : shall be:
-+  "st,flexgen"
-+
-+- #clock-cells : from common clock binding; shall be set to 1.
-+
-+- clocks : from common clock binding
-+
-+- clock-output-names : From common clock binding. The block has 4
-+                       clock outputs but not all of them in a specific instance
-+                       have to be used in the SoC. If a clock name is left as
-+                       an empty string then no clock will be created for the
-+                       output associated with that string index. If fewer than
-+                       4 strings are provided then no clocks will be created
-+                       for the remaining outputs.
-+
-+Example:
-+
-+	clockgenD2@x9106000 {
-+		compatible = "st,clkgen-c32";
-+		reg = <0x9106000 0x1000>;
-+
-+		CLK_S_D2_FLEXGEN: CLK_S_D2_FLEXGEN {
-+			compatible = "st,flexgen";
-+
-+			#clock-cells = <1>;
-+			clocks = <&CLK_S_D2_QUADFS 0>,
-+				 <&CLK_S_D2_QUADFS 1>,
-+				 <&CLK_S_D2_QUADFS 2>,
-+				 <&CLK_S_D2_QUADFS 3>;
-+
-+			clock-output-names = "CLK_PIX_MAIN_DISP",
-+					     "CLK_PIX_PIP",
-+					     "CLK_PIX_GDP1",
-+					     "CLK_PIX_GDP2";
-+		};
-+	};
--- 
-1.9.1
+Applied, with a couple of minor adjustments.
 
+> ---
+
+[ ... ]
+>  
+>  static const unsigned short emc1403_address_list[] = {
+> -	0x18, 0x29, 0x4c, 0x4d, I2C_CLIENT_END
+> +	0x18, 0x29, 0x1c, 0x4c, 0x4d, 0x5c, I2C_CLIENT_END
+
+Changed to numerical order.
+
+>  };
+>  
+> +/* Last number in name indicates the amount of channels */
+
+I found that comment a bit confusing, so I changed it to
+
+/* Last digit of chip name indicates number of channels */
+
+>  static const struct i2c_device_id emc1403_idtable[] = {
+> -	{ "emc1403", 0 },
+> -	{ "emc1404", 1 },
+> -	{ "emc1423", 0 },
+> -	{ "emc1424", 1 },
+> +	{ "emc1402", emc1402 },
+> +	{ "emc1403", emc1403 },
+> +	{ "emc1404", emc1404 },
+> +	{ "emc1422", emc1402 },
+> +	{ "emc1423", emc1403 },
+> +	{ "emc1424", emc1404 },
+
+Wonder if we should list the emc141x chips here. Jean, any thoughts ?
+
+>  	{ }
+>  };
+>  MODULE_DEVICE_TABLE(i2c, emc1403_idtable);
+> 
+
+It would be nice to also have support for the alarms on EMC14x2,
+but that can be a separate patch.
+
+Thanks,
+Guenter
