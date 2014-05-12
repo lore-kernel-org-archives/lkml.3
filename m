@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268AbaELJ2r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 05:28:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19049 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753008AbaELJ1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 05:27:32 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Dongsheng <yangds.fnst@cn.fujitsu.com>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 2/6] perf tools: Adapt the TASK_STATE_TO_CHAR_STR to new value in kernel space.
-Date: Mon, 12 May 2014 11:27:09 +0200
-Message-Id: <1399886833-15472-3-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1399886833-15472-1-git-send-email-jolsa@kernel.org>
-References: <1399886833-15472-1-git-send-email-jolsa@kernel.org>
+	id S1755241AbaELJ3O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 05:29:14 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:36489 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888AbaELJ3M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 05:29:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140511212514.GV7047@lukather>
+References: <1399621082-10712-1-git-send-email-linus.walleij@linaro.org>
+	<20140511212514.GV7047@lukather>
+Date: Mon, 12 May 2014 11:29:11 +0200
+Message-ID: <CACRpkdZip4S7ySAVA4xtXxU-Y5DeXfVjK67aJOe_RiXG7iT15g@mail.gmail.com>
+Subject: Re: [PATCH] RFT: pinctrl: sunxi: convert to GPIO irqchip helpers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dongsheng <yangds.fnst@cn.fujitsu.com>
+On Sun, May 11, 2014 at 11:25 PM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
 
-Currently, TASK_STATE_TO_CHAR_STR in kernel space is already expanded to RSDTtZXxKWP,
-but it is still RSDTtZX in perf sched tool.
+> What I did so far is having a single domain, with the same handler
+> registered for all the interrupts, and the various interrupts from the
+> various banks just being at a different offsets in the domain.
+>
+> Basically, something like that:
+> http://code.bulix.org/ym3zuv-86191
+>
+> Do you know if it would be possible to use the generic gpiolib
+> behaviour in such a case?
 
-This patch update TASK_STATE_TO_CHAR_STR to the new value in kernel space.
+Basically the helpers are for the simple case where every pin
+can fire an independent interrupt.
 
-Signed-off-by: Dongsheng <yangds.fnst@cn.fujitsu.com>
-Link: http://lkml.kernel.org/r/6d2f55dc1e02c1e29a5d70bfeb9d6e8863caf2aa.1399273302.git.yangds.fnst@cn.fujitsu.com
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/builtin-sched.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Since there is just one single irqdomain for the entire chip, the
+helpers require that all mappings go through the same domain.
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 7eae501..4f0dd21 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -66,7 +66,7 @@ struct sched_atom {
- 	struct task_desc	*wakee;
- };
- 
--#define TASK_STATE_TO_CHAR_STR "RSDTtZX"
-+#define TASK_STATE_TO_CHAR_STR "RSDTtZXxKWP"
- 
- enum thread_state {
- 	THREAD_SLEEPING = 0,
--- 
-1.8.3.1
+If having several domains or other split-up results in more
+elegant code, then code another solution locally, because we
+just want to cover the generic cases, the special cases will still
+be special.
 
+Unless you see some really elegant way forward of course...
+always choose the most elegand refactoring if you can.
+
+Yours,
+Linus Walleij
