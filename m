@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570AbaELQXq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:23:46 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:59974 "EHLO
+	id S1756198AbaELQXp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:23:45 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:59980 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755737AbaELQXl (ORCPT
+	with ESMTP id S1755774AbaELQXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 May 2014 12:23:41 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
@@ -14,49 +14,51 @@ Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v2 0/4] ARM: at91: move sam9x5 SoCs and boards to the CCF
-Date: Mon, 12 May 2014 18:23:33 +0200
-Message-Id: <1399911817-4980-1-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 1/4] ARM: at91: prepare common clk transition for sam9x5 SoCs
+Date: Mon, 12 May 2014 18:23:34 +0200
+Message-Id: <1399911817-4980-2-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1399911817-4980-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1399911817-4980-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch encloses sam9x5 old clk registration in
+"#if defined(CONFIG_OLD_CLK_AT91) #endif" sections.
 
-This series moves the at91sam9x5 SoCs and the at91sam9x5-ek boards to
-the Common Clock Framework.
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/mach-at91/at91sam9x5.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-It depends on these series: [1], [2].
-
-Best Regards,
-
-Boris
-
-[1] http://lkml.iu.edu/hypermail/linux/kernel/1403.3/00074.html
-[2] http://comments.gmane.org/gmane.linux.kernel.samsung-soc/27632
-
-Boris BREZILLON (4):
-  ARM: at91: prepare common clk transition for sam9x5 SoCs
-  ARM: at91/dt: define sam9x5 clocks
-  ARM: at91/dt: define sam9x5ek's crystal frequencies
-  ARM: at91: move sam9x5 SoCs to the CCF
-
- arch/arm/boot/dts/at91sam9x5.dtsi        | 355 ++++++++++++++++++++++++++++++-
- arch/arm/boot/dts/at91sam9x5_can.dtsi    |  31 +++
- arch/arm/boot/dts/at91sam9x5_isi.dtsi    |  26 +++
- arch/arm/boot/dts/at91sam9x5_lcd.dtsi    |  26 +++
- arch/arm/boot/dts/at91sam9x5_macb0.dtsi  |  11 +
- arch/arm/boot/dts/at91sam9x5_macb1.dtsi  |  11 +
- arch/arm/boot/dts/at91sam9x5_usart3.dtsi |  11 +
- arch/arm/boot/dts/at91sam9x5cm.dtsi      |   8 +
- arch/arm/mach-at91/Kconfig               |   1 -
- arch/arm/mach-at91/at91sam9x5.c          |   6 +-
- 10 files changed, 483 insertions(+), 3 deletions(-)
- create mode 100644 arch/arm/boot/dts/at91sam9x5_can.dtsi
- create mode 100644 arch/arm/boot/dts/at91sam9x5_isi.dtsi
- create mode 100644 arch/arm/boot/dts/at91sam9x5_lcd.dtsi
-
+diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
+index 9ad781d..028268f 100644
+--- a/arch/arm/mach-at91/at91sam9x5.c
++++ b/arch/arm/mach-at91/at91sam9x5.c
+@@ -19,9 +19,10 @@
+ #include "board.h"
+ #include "soc.h"
+ #include "generic.h"
+-#include "clock.h"
+ #include "sam9_smc.h"
+ 
++#if defined(CONFIG_OLD_CLK_AT91)
++#include "clock.h"
+ /* --------------------------------------------------------------------
+  *  Clocks
+  * -------------------------------------------------------------------- */
+@@ -313,6 +314,9 @@ static void __init at91sam9x5_register_clocks(void)
+ 	clk_register(&pck0);
+ 	clk_register(&pck1);
+ }
++#else
++#define at91sam9x5_register_clocks	NULL
++#endif
+ 
+ /* --------------------------------------------------------------------
+  *  AT91SAM9x5 processor initialization
 -- 
 1.8.3.2
 
