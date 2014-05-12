@@ -1,102 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483AbaELX2f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 19:28:35 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:55960 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501AbaELX2d (ORCPT
+	id S1756023AbaELX2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 19:28:45 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64949 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751849AbaELX2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 19:28:33 -0400
-Message-ID: <1399937259.25932.1.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [RFC PATCH] ima: audit log files opened with O_DIRECT flag
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-security-module <linux-security-module@vger.kernel.org>
-Cc: "J. R. Okajima" <hooanon05g@gmail.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 12 May 2014 19:27:39 -0400
-In-Reply-To: <1399926266.6471.25.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <1399926266.6471.25.camel@dhcp-9-2-203-236.watson.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051223-7164-0000-0000-000001B4072F
+	Mon, 12 May 2014 19:28:34 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: Stratos Karafotis <stratosk@semaphore.gr>, dirk.j.brandewie@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH 4/5] intel_pstate: Remove C0 tracking
+Date: Tue, 13 May 2014 01:45:19 +0200
+Message-ID: <5584056.gWB1BqsgiU@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5370DD27.5030701@intel.com>
+References: <1399579047-5792-1-git-send-email-dirk.j.brandewie@intel.com> <5349714.j69a5Fx52S@vostro.rjw.lan> <5370DD27.5030701@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reposting unmangled version ...
+On Monday, May 12, 2014 07:39:35 AM Dirk Brandewie wrote:
+> On 05/12/2014 05:16 AM, Rafael J. Wysocki wrote:
+> > On Monday, May 12, 2014 05:27:25 AM Stratos Karafotis wrote:
+> >> Hi,
+> >>
+> >
+> > [cut]
+> >
+> >>
+> >> With this patch, my CPU (Core i7-3770 @ 3.90GHz) seems to never use lowest
+> >> frequencies. Even on an idle system I get always ~2GHz. Normally,
+> >> on an idle system it used to be 1.6GHz.
+> >> On very small loads (mp3 decoding) the CPU goes up to 2.7G GHz (it used to
+> >> be 1.6GHz)
+> >>
+> >> Reverting, this patch on my local build, the problem is resolved.
+> >
+> > Dirk, seriously, I can't regard this as a fix that can go into -rc6.
+> >
+> 
+> Ok I will resubmit after more testing
+> 
+> > Which of the other patch in the series are must-go for 3.15?  [1-2/5] I guess?
+> > And do we need [2/5] it in -stable too?
+> 
+> 1/5  is for stable it fixes a random MCE on baytrail.
+> 2/5  is for stable it should have went with the stop_cpu patch
 
-As a temporary fix, do not measure, appraise, or audit files
-opened with the O_DIRECT flag set.  Just audit log it.
+Which -stable are these two for?  All of them?
 
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: <stable@vger.kernel.org>
----
- security/integrity/ima/ima_api.c  | 10 +++++++++-
- security/integrity/ima/ima_main.c |  5 ++++-
- 2 files changed, 13 insertions(+), 2 deletions(-)
+> 5/5  can go too since it is just adding CPU IDs
 
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index ba9e4d7..d719978 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -199,6 +199,7 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
- 			    struct evm_ima_xattr_data **xattr_value,
- 			    int *xattr_len)
- {
-+	const char *audit_cause = "failed";
- 	struct inode *inode = file_inode(file);
- 	const char *filename = file->f_dentry->d_name.name;
- 	int result = 0;
-@@ -213,6 +214,12 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
- 	if (!(iint->flags & IMA_COLLECTED)) {
- 		u64 i_version = file_inode(file)->i_version;
- 
-+		if (file->f_flags & O_DIRECT) {
-+			audit_cause = "failed(directio)";
-+			result = -EACCES;
-+			goto out;
-+		}
-+	
- 		/* use default hash algorithm */
- 		hash.hdr.algo = ima_hash_algo;
- 
-@@ -233,9 +240,10 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
- 				result = -ENOMEM;
- 		}
- 	}
-+out:
- 	if (result)
- 		integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode,
--				    filename, "collect_data", "failed",
-+				    filename, "collect_data", audit_cause,
- 				    result, 0);
- 	return result;
- }
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 654111f..3e5b732 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -214,8 +214,11 @@ static int process_measurement(struct file *file, const char *filename,
- 		xattr_ptr = &xattr_value;
- 
- 	rc = ima_collect_measurement(iint, file, xattr_ptr, &xattr_len);
--	if (rc != 0)
-+	if (rc != 0) { 
-+		if (file->f_flags & O_DIRECT)
-+			rc = 0;
- 		goto out_digsig;
-+	}
- 
- 	pathname = filename ?: ima_d_path(&file->f_path, &pathbuf);
- 
+Well, I'm a bit reluctant to push that for -rc6.  There were cases where new
+IDs broke stuff that worked without them just fine.
+
+
 -- 
-1.8.1.4
-
-
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
