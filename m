@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932457AbaELB7z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:59:55 -0400
-Received: from 1wt.eu ([62.212.114.60]:34635 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753426AbaELBmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753468AbaELBmt (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 11 May 2014 21:42:49 -0400
-Message-Id: <20140512003201.342270010@1wt.eu>
+Received: from 1wt.eu ([62.212.114.60]:34624 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753362AbaELBmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:42:47 -0400
+Message-Id: <20140512003204.752495005@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:32:17 +0200
+Date: Mon, 12 May 2014 02:33:39 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 017/143] block: do not pass disk names as format strings
+Cc: Maciej Zenczykowski <maze@google.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <edumazet@google.com>, Chris Davis <chrismd@google.com>,
+        Carlo Contavalli <ccontavalli@google.com>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 099/143] net: fix ip rule iif/oif device rename
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Maciej Zenczykowski <maze@google.com>
 
-commit ffc8b30866879ed9ba62bd0a86fecdbd51cd3d19 upstream
+[ Upstream commit 946c032e5a53992ea45e062ecb08670ba39b99e3 ]
 
-Disk names may contain arbitrary strings, so they must not be
-interpreted as format strings.  It seems that only md allows arbitrary
-strings to be used for disk names, but this could allow for a local
-memory corruption from uid 0 into ring 0.
+ip rules with iif/oif references do not update:
+(detach/attach) across interface renames.
 
-CVE-2013-2851
+Signed-off-by: Maciej Zenczykowski <maze@google.com>
+CC: Willem de Bruijn <willemb@google.com>
+CC: Eric Dumazet <edumazet@google.com>
+CC: Chris Davis <chrismd@google.com>
+CC: Carlo Contavalli <ccontavalli@google.com>
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-[jmm: Backport to 2.6.32]
+Google-Bug-Id: 12936021
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/block/nbd.c   | 4 +++-
- fs/partitions/check.c | 2 +-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ net/core/fib_rules.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index 26ada47..90550ba 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -655,7 +655,9 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *lo,
+diff --git a/net/core/fib_rules.c b/net/core/fib_rules.c
+index de9eac9..06bdee7 100644
+--- a/net/core/fib_rules.c
++++ b/net/core/fib_rules.c
+@@ -633,6 +633,13 @@ static int fib_rules_event(struct notifier_block *this, unsigned long event,
+ 			attach_rules(&ops->rules_list, dev);
+ 		break;
  
- 		mutex_unlock(&lo->tx_lock);
- 
--		thread = kthread_create(nbd_thread, lo, lo->disk->disk_name);
-+		thread = kthread_create(nbd_thread, lo, "%s",
-+					lo->disk->disk_name);
++	case NETDEV_CHANGENAME:
++		list_for_each_entry(ops, &net->rules_ops, list) {
++			detach_rules(&ops->rules_list, dev);
++			attach_rules(&ops->rules_list, dev);
++		}
++		break;
 +
- 		if (IS_ERR(thread)) {
- 			mutex_lock(&lo->tx_lock);
- 			return PTR_ERR(thread);
-diff --git a/fs/partitions/check.c b/fs/partitions/check.c
-index 7b685e1..aa90d88 100644
---- a/fs/partitions/check.c
-+++ b/fs/partitions/check.c
-@@ -476,7 +476,7 @@ void register_disk(struct gendisk *disk)
- 
- 	ddev->parent = disk->driverfs_dev;
- 
--	dev_set_name(ddev, disk->disk_name);
-+	dev_set_name(ddev, "%s", disk->disk_name);
- 
- 	/* delay uevents, until we scanned partition table */
- 	dev_set_uevent_suppress(ddev, 1);
+ 	case NETDEV_UNREGISTER:
+ 		list_for_each_entry(ops, &net->rules_ops, list)
+ 			detach_rules(&ops->rules_list, dev);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
