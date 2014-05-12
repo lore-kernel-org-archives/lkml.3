@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758270AbaELNQL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 09:16:11 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:37008 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754515AbaELNQJ (ORCPT
+	id S1758310AbaELNQu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 09:16:50 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:33924 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758158AbaELNQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 09:16:09 -0400
+	Mon, 12 May 2014 09:16:49 -0400
+Message-ID: <5370C9BD.4040201@atmel.com>
+Date: Mon, 12 May 2014 15:16:45 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFw9BPoD10U1LfHbOMpHWZkvJTkMcfCs9s3urPr1YyWBxw@mail.gmail.com>
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org>
-	<CAMzpN2jx4H4p8fQr-WHxVyCHhWi0iO3WZZKyxYD7Dfa7pWkEgg@mail.gmail.com>
-	<CA+55aFwzvSiAGYfFb2R3JeVvh8_PQuOKJDrYP5C_3VQz2zhnBw@mail.gmail.com>
-	<CAMzpN2jj3dwQG7qC__8zLPhkg_ER6n4CcNxa5eg7okRN+k_VUA@mail.gmail.com>
-	<CA+55aFxr_dz3vhko1FPXhZd0ZNeGveX0oSLqUo_wyiVbxatLQw@mail.gmail.com>
-	<87k3aspd1h.fsf@wine.dyndns.org>
-	<87zjiuymiu.fsf@turtle.gmx.de>
-	<CA+55aFw9BPoD10U1LfHbOMpHWZkvJTkMcfCs9s3urPr1YyWBxw@mail.gmail.com>
-Date: Mon, 12 May 2014 09:16:08 -0400
-X-Google-Sender-Auth: ynVuJUM0KaDfcM_tejXhP-CSU_I
-Message-ID: <CA+5PVA4i1Qu_Hbz4npMCo10KdjUWTtvS4=GmYmdiMHSO8QZp2Q@mail.gmail.com>
-Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on
- 64-bit kernels
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sven Joachim <svenjoac@gmx.de>, Alexandre Julliard <julliard@winehq.org>,
-        Brian Gerst <brgerst@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, info@kobaltwit.be
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        <linux-input@vger.kernel.org>, Liam Girdwood <lrg@slimlogic.co.uk>
+CC: <linux-kernel@vger.kernel.org>, Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH 2/2] input: atmel-wm97xx: only build for AVR32
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <1399560990-1402858-1-git-send-email-arnd@arndb.de> <1399560990-1402858-16-git-send-email-arnd@arndb.de>
+In-Reply-To: <1399560990-1402858-16-git-send-email-arnd@arndb.de>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 7, 2014 at 12:57 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, May 7, 2014 at 2:18 AM, Sven Joachim <svenjoac@gmx.de> wrote:
->>
->> It seems that at least some 32-bit programs are also broken, since after
->> upgrading the kernel to 3.14.3 I can no longer start my old chess
->> database program:
+On 08/05/2014 16:56, Arnd Bergmann :
+> Building this driver on ARM/at91 always gives us this error message:
+> 
+> drivers/input/touchscreen/atmel-wm97xx.c:63:2: error: #error Unknown CPU, this driver only supports AT32AP700X CPUs.
+> 
+> Clearly this configuration is not meant to work, so let's just prevent
+> it in Kconfig. If we ever want to use it on another platform, we should
+> also pass proper resources for GPIO, IRQ and memory, which are hardcoded
+> to AT32AP700X at the moment.
 
-Now that this has hit 3.14.y stable, we have another report of this
-commit breaking something in Wine, this time MS Access 2000:
+Yes it seems so:
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1096725 (reporter now CC'd)
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-> So for backporting (and for 3.15) maybe this (TOTALLY UNTESTED) patch
-> would be acceptable.
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Mark Brown <broonie@kernel.org>
+> Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Cc: linux-input@vger.kernel.org
+> ---
+>  drivers/input/touchscreen/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+> index e2f0264..fe4c264 100644
+> --- a/drivers/input/touchscreen/Kconfig
+> +++ b/drivers/input/touchscreen/Kconfig
+> @@ -640,7 +640,7 @@ config TOUCHSCREEN_WM9713
+>  
+>  config TOUCHSCREEN_WM97XX_ATMEL
+>  	tristate "WM97xx Atmel accelerated touch"
+> -	depends on TOUCHSCREEN_WM97XX && (AVR32 || ARCH_AT91)
+> +	depends on TOUCHSCREEN_WM97XX && AVR32
+>  	help
+>  	  Say Y here for support for streaming mode with WM97xx touchscreens
+>  	  on Atmel AT91 or AVR32 systems with an AC97C module.
+> 
 
-I don't think your patch went anywhere.  I have no idea if you want to
-push that or revert or just tell people to run old apps in 32-bit
-guests at this point.  Just forwarding on the information.
 
-josh
+-- 
+Nicolas Ferre
