@@ -1,139 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658AbaELSVs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 14:21:48 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:59153 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753483AbaELSVq (ORCPT
+	id S1752943AbaELSWy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 14:22:54 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:53032 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750838AbaELSWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 14:21:46 -0400
-Date: Mon, 12 May 2014 14:21:42 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [GIT PULL] workqueue fixes for v3.15-rc5
-Message-ID: <20140512182142.GH1421@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 12 May 2014 14:22:52 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuUJABwRcVNbsHLF/2dsb2JhbABZgwascwEFAZobAYEZF3SCJQEBBAEnExwjBQsIAw4KFRk5HgYTiDkMAc89F4VWiHwHCoQ2AQOPJYoiAYsEiAODODs
+Date: Mon, 12 May 2014 20:22:49 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        akpm <akpm@linux-foundation.org>, Davidlohr Bueso <davidlohr@hp.com>,
+        Li Zefan <lizefan@huawei.com>, cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH V3] MM: make vmpressure_win dynamic
+Message-Id: <20140512202249.8f5b8475ba2c5018585e68b1@skynet.be>
+In-Reply-To: <20140512075537.GA9564@dhcp22.suse.cz>
+References: <20140510085217.24a34794f0e4a4881c8eec0b@skynet.be>
+	<20140512075537.GA9564@dhcp22.suse.cz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Mon, 12 May 2014 09:55:37 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-Fixes for two bugs in workqueue.  One is existing with internal mutex
-held in a failure path of wq_update_unbound_numa().  The other is
-subtle and unlikely use-after-possible-last-put in the rescuer logic.
-Both have been around for quite some time now and are unlikely to have
-triggered noticeably often.  All patches are marked for -stable
-backport.
+> On Sat 10-05-14 08:52:17, Fabian Frederick wrote:
+> > This patch addresses TODO featuring in original version :
+> 
+> This is the 3rd version of the patch and I still fail to see the
+> motivation other than addressing a TODO which doesn't sound like a
+> sufficient justification to me. Why is the new scheme needed in the
+> first place? Why is calculate_normal_threshold a proper scheme?
+Nothing more than trying to have that value dynamic.
+As no one seems interested, let's just forget about that patch :)
 
-The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
+Regards,
+Fabian
+> 
+> > "Make the window size depend on machine size, as we do for vmstat"
+> > 
+> > It initializes vmpressure_win in vmstat using calculate_normal_threshold()
+> > based on each zone/cpu * SWAP_CLUSTER_SIZE instead of
+> > static SWAP_CLUSTER_MAX * 16 = 512
+> > 
+> > Some values :
+> > 
+> > CPU	MB	VMPRESSURE
+> > 8	512	1024
+> > 1	1024 	320
+> > 2	1024 	640
+> > 2	2048 	768
+> > 4	2048	1152
+> > 1	4096 	640
+> > 4	4096 	1920
+> > ...
+> > 
+> > (No maximum vmpressure value currently defined)
+> > 
+> > cf mm/vmstat.c: calculate_normal_threshold for further values
+> > 
+> > vmpressure_win is refreshed through cpu notifier and exposed read-only in
+> > /proc/sys/vm/vmpressure_win
+> > 
+> > Cc: Tejun Heo <tj@kernel.org>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Michal Hocko <mhocko@suse.cz>
+> > Cc: Davidlohr Bueso <davidlohr@hp.com>
+> > Cc: Li Zefan <lizefan@huawei.com>
+> > Cc: cgroups@vger.kernel.org
+> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> > ---
+> > V3:
+> >   -Further description
+> >   -sysctl handler / ulong
+> >   -Cc list
+> > 
+> > V2: Suggestions by Andrew Morton
+> >   -Expose vmpressure_win
+> >   -Remove spinlock
+> > 
+> >  include/linux/swap.h | 4 ++++
+> >  kernel/sysctl.c      | 9 +++++++++
+> >  mm/vmpressure.c      | 4 +---
+> >  mm/vmstat.c          | 6 ++++++
+> >  4 files changed, 20 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/include/linux/swap.h b/include/linux/swap.h
+> > index 3507115..886897d 100644
+> > --- a/include/linux/swap.h
+> > +++ b/include/linux/swap.h
+> > @@ -354,6 +354,10 @@ extern int vm_swappiness;
+> >  extern int remove_mapping(struct address_space *mapping, struct page *page);
+> >  extern unsigned long vm_total_pages;
+> >  
+> > +#ifdef CONFIG_MEMCG
+> > +extern unsigned long vmpressure_win;
+> > +#endif
+> > +
+> >  #ifdef CONFIG_NUMA
+> >  extern int zone_reclaim_mode;
+> >  extern int sysctl_min_unmapped_ratio;
+> > diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> > index 74f5b58..c0c5ea6 100644
+> > --- a/kernel/sysctl.c
+> > +++ b/kernel/sysctl.c
+> > @@ -1202,6 +1202,15 @@ static struct ctl_table vm_table[] = {
+> >  		.mode           = 0444 /* read-only */,
+> >  		.proc_handler   = pdflush_proc_obsolete,
+> >  	},
+> > +#ifdef CONFIG_MEMCG
+> > +	{
+> > +		.procname	= "vmpressure_window",
+> > +		.data		= &vmpressure_win,
+> > +		.maxlen		= sizeof(vmpressure_win),
+> > +		.mode		= 0444,
+> > +		.proc_handler	= proc_doulongvec_minmax,
+> > +	},
+> > +#endif
+> >  	{
+> >  		.procname	= "swappiness",
+> >  		.data		= &vm_swappiness,
+> > diff --git a/mm/vmpressure.c b/mm/vmpressure.c
+> > index d4042e7..d738670 100644
+> > --- a/mm/vmpressure.c
+> > +++ b/mm/vmpressure.c
+> > @@ -35,10 +35,8 @@
+> >   * As the vmscan reclaimer logic works with chunks which are multiple of
+> >   * SWAP_CLUSTER_MAX, it makes sense to use it for the window size as well.
+> >   *
+> > - * TODO: Make the window size depend on machine size, as we do for vmstat
+> > - * thresholds. Currently we set it to 512 pages (2MB for 4KB pages).
+> >   */
+> > -static const unsigned long vmpressure_win = SWAP_CLUSTER_MAX * 16;
+> > +unsigned long vmpressure_win = SWAP_CLUSTER_MAX * 16;
+> >  
+> >  /*
+> >   * These thresholds are used when we account memory pressure through
+> > diff --git a/mm/vmstat.c b/mm/vmstat.c
+> > index 302dd07..ede68fd 100644
+> > --- a/mm/vmstat.c
+> > +++ b/mm/vmstat.c
+> > @@ -20,6 +20,7 @@
+> >  #include <linux/writeback.h>
+> >  #include <linux/compaction.h>
+> >  #include <linux/mm_inline.h>
+> > +#include <linux/swap.h>
+> >  
+> >  #include "internal.h"
+> >  
+> > @@ -163,11 +164,13 @@ void refresh_zone_stat_thresholds(void)
+> >  	struct zone *zone;
+> >  	int cpu;
+> >  	int threshold;
+> > +	unsigned long new_vmpressure_win = 0;
+> >  
+> >  	for_each_populated_zone(zone) {
+> >  		unsigned long max_drift, tolerate_drift;
+> >  
+> >  		threshold = calculate_normal_threshold(zone);
+> > +		new_vmpressure_win += threshold;
+> >  
+> >  		for_each_online_cpu(cpu)
+> >  			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
+> > @@ -184,6 +187,9 @@ void refresh_zone_stat_thresholds(void)
+> >  			zone->percpu_drift_mark = high_wmark_pages(zone) +
+> >  					max_drift;
+> >  	}
+> > +#ifdef CONFIG_MEMCG
+> > +	vmpressure_win = new_vmpressure_win * SWAP_CLUSTER_MAX;
+> > +#endif
+> >  }
+> >  
+> >  void set_pgdat_percpu_threshold(pg_data_t *pgdat,
+> > -- 
+> > 1.8.4.5
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
 
-  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.15-fixes
-
-for you to fetch changes up to 77668c8b559e4fe2acf2a0749c7c83cde49a5025:
-
-  workqueue: fix a possible race condition between rescuer and pwq-release (2014-04-18 12:33:29 -0400)
-
-Thanks.
-
-----------------------------------------------------------------
-Daeseok Youn (1):
-      workqueue: fix bugs in wq_update_unbound_numa() failure path
-
-Lai Jiangshan (2):
-      workqueue: make rescuer_thread() empty wq->maydays list before exiting
-      workqueue: fix a possible race condition between rescuer and pwq-release
-
- kernel/workqueue.c | 36 ++++++++++++++++++++++++++++++------
- 1 file changed, 30 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 0ee63af..8edc871 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1916,6 +1916,12 @@ static void send_mayday(struct work_struct *work)
- 
- 	/* mayday mayday mayday */
- 	if (list_empty(&pwq->mayday_node)) {
-+		/*
-+		 * If @pwq is for an unbound wq, its base ref may be put at
-+		 * any time due to an attribute change.  Pin @pwq until the
-+		 * rescuer is done with it.
-+		 */
-+		get_pwq(pwq);
- 		list_add_tail(&pwq->mayday_node, &wq->maydays);
- 		wake_up_process(wq->rescuer->task);
- 	}
-@@ -2398,6 +2404,7 @@ static int rescuer_thread(void *__rescuer)
- 	struct worker *rescuer = __rescuer;
- 	struct workqueue_struct *wq = rescuer->rescue_wq;
- 	struct list_head *scheduled = &rescuer->scheduled;
-+	bool should_stop;
- 
- 	set_user_nice(current, RESCUER_NICE_LEVEL);
- 
-@@ -2409,11 +2416,15 @@ static int rescuer_thread(void *__rescuer)
- repeat:
- 	set_current_state(TASK_INTERRUPTIBLE);
- 
--	if (kthread_should_stop()) {
--		__set_current_state(TASK_RUNNING);
--		rescuer->task->flags &= ~PF_WQ_WORKER;
--		return 0;
--	}
-+	/*
-+	 * By the time the rescuer is requested to stop, the workqueue
-+	 * shouldn't have any work pending, but @wq->maydays may still have
-+	 * pwq(s) queued.  This can happen by non-rescuer workers consuming
-+	 * all the work items before the rescuer got to them.  Go through
-+	 * @wq->maydays processing before acting on should_stop so that the
-+	 * list is always empty on exit.
-+	 */
-+	should_stop = kthread_should_stop();
- 
- 	/* see whether any pwq is asking for help */
- 	spin_lock_irq(&wq_mayday_lock);
-@@ -2445,6 +2456,12 @@ repeat:
- 		process_scheduled_works(rescuer);
- 
- 		/*
-+		 * Put the reference grabbed by send_mayday().  @pool won't
-+		 * go away while we're holding its lock.
-+		 */
-+		put_pwq(pwq);
-+
-+		/*
- 		 * Leave this pool.  If keep_working() is %true, notify a
- 		 * regular worker; otherwise, we end up with 0 concurrency
- 		 * and stalling the execution.
-@@ -2459,6 +2476,12 @@ repeat:
- 
- 	spin_unlock_irq(&wq_mayday_lock);
- 
-+	if (should_stop) {
-+		__set_current_state(TASK_RUNNING);
-+		rescuer->task->flags &= ~PF_WQ_WORKER;
-+		return 0;
-+	}
-+
- 	/* rescuers should never participate in concurrency management */
- 	WARN_ON_ONCE(!(rescuer->flags & WORKER_NOT_RUNNING));
- 	schedule();
-@@ -4100,7 +4123,8 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
- 	if (!pwq) {
- 		pr_warning("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
- 			   wq->name);
--		goto out_unlock;
-+		mutex_lock(&wq->mutex);
-+		goto use_dfl_pwq;
- 	}
- 
- 	/*
+-- 
+Fabian Frederick <fabf@skynet.be>
