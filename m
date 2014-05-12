@@ -1,78 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630AbaELIMt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 04:12:49 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:40489 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827AbaELIMq (ORCPT
+	id S1754120AbaELIPw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 04:15:52 -0400
+Received: from mx9.pku.edu.cn ([162.105.129.172]:47404 "EHLO mail.pku.edu.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752621AbaELIPu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 04:12:46 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de
-Cc: linaro-kernel@lists.linaro.org, linaro-networking@linaro.org,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        arvind.chauhan@arm.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH Resend] hrtimer: call switch_hrtimer_base() after setting new expiry time
-Date: Mon, 12 May 2014 13:42:29 +0530
-Message-Id: <81999e148745fc51bbcd0615823fbab9b2e87e23.1399882253.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
+	Mon, 12 May 2014 04:15:50 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -307.336
+Date: Mon, 12 May 2014 16:15:43 +0800 (CST)
+From: =?utf-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>
+Message-ID: <565015395.17555.1399882543611.JavaMail.root@bj-mail03.pku.edu.cn>
+In-Reply-To: <20140506134647.8eae8b38be9e503805168b8f@linux-foundation.org>
+Subject: =?utf-8?Q?=E5=9B=9E=E5=A4=8D=EF=BC=9A_Re:_[PATCH_1/1]_?=
+ =?utf-8?Q?arch/unicore32/mm/io?=
+ =?utf-8?Q?remap.c:_convert_printk/warn=5Fon_to_warn(1?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [162.105.129.123]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In switch_hrtimer_base() we are calling hrtimer_check_target() which guarantees
-this:
 
-/*
- * With HIGHRES=y we do not migrate the timer when it is expiring
- * before the next event on the target cpu because we cannot reprogram
- * the target cpu hardware and we would cause it to fire late.
- *
- * Called with cpu_base->lock of target cpu held.
- */
+----- Andrew Morton <akpm@linux-foundation.org> 写道：
+> On Tue, 6 May 2014 19:07:34 +0200 Fabian Frederick <fabf@skynet.be> wrote:
+> 
+> > +coalesce formats
+> > 
+> > (This is untested)
+> > 
+> > Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> > ---
+> >  arch/unicore32/mm/ioremap.c | 9 ++-------
+> >  1 file changed, 2 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/arch/unicore32/mm/ioremap.c b/arch/unicore32/mm/ioremap.c
+> > index 13068ee..5d9568c 100644
+> > --- a/arch/unicore32/mm/ioremap.c
+> > +++ b/arch/unicore32/mm/ioremap.c
+> > @@ -143,13 +143,8 @@ void __iomem *__uc32_ioremap_pfn_caller(unsigned long pfn,
+> >  	/*
+> >  	 * Don't allow RAM to be mapped
+> >  	 */
+> > -	if (pfn_valid(pfn)) {
+> > -		printk(KERN_WARNING "BUG: Your driver calls ioremap() on\n"
+> > -			"system memory.  This leads to architecturally\n"
+> > -			"unpredictable behaviour, and ioremap() will fail in\n"
+> > -			"the next kernel release. Please fix your driver.\n");
+> > -		WARN_ON(1);
+> > -	}
+> > +	if (pfn_valid(pfn))
+> > +		WARN(1, "BUG: Your driver calls ioremap() on\nsystem memory.  This leads to architecturally\nunpredictable behaviour, and ioremap() will fail in\nthe next kernel release. Please fix your driver.\n");
+> >  
+> 
+> I don't think that was an improvement.  Particularly with all
+> those \n's in there.
+> 
+> checkpatch is a just a guide.  It can and should be overruled by common
+> sense and taste.
+> 
+> --- a/arch/unicore32/mm/ioremap.c~arch-unicore32-mm-ioremapc-convert-printk-warn_on-to-warn1-fix
+> +++ a/arch/unicore32/mm/ioremap.c
+> @@ -144,7 +144,10 @@ void __iomem *__uc32_ioremap_pfn_caller(
+>  	 * Don't allow RAM to be mapped
+>  	 */
+>  	if (pfn_valid(pfn))
+> -		WARN(1, "BUG: Your driver calls ioremap() on\nsystem memory.  This leads to architecturally\nunpredictable behaviour, and ioremap() will fail in\nthe next kernel release. Please fix your driver.\n");
+> +		WARN(1, "BUG: Your driver calls ioremap() on\n"
+> +			"system memory.  This leads to architecturally\n"
+> +			"unpredictable behaviour, and ioremap() will fail in\n"
+> +			"the next kernel release. Please fix your driver.\n");
 
-But switch_hrtimer_base() is only called from one place, i.e.
-__hrtimer_start_range_ns() and at that point (where we call
-switch_hrtimer_base()) expiration time is not yet known as we call this routine
-later: hrtimer_set_expires_range_ns().
+A 'return NULL' is also needed to terminate this call.
+Febian, could you submit another version?
+Thanks.
 
-To fix this, we need to find the updated expiry time before calling
-switch_hrtimer_base().
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-Rebased over: v3.15-rc5
-
- kernel/hrtimer.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 6b715c0..e0501fe 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -990,11 +990,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 	/* Remove an active timer from the queue: */
- 	ret = remove_hrtimer(timer, base);
- 
--	/* Switch the timer base, if necessary: */
--	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
--
- 	if (mode & HRTIMER_MODE_REL) {
--		tim = ktime_add_safe(tim, new_base->get_time());
-+		tim = ktime_add_safe(tim, base->get_time());
- 		/*
- 		 * CONFIG_TIME_LOW_RES is a temporary way for architectures
- 		 * to signal that they simply return xtime in
-@@ -1009,6 +1006,9 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 
- 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
- 
-+	/* Switch the timer base, if necessary: */
-+	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
-+
- 	timer_stats_hrtimer_set_start_info(timer);
- 
- 	leftmost = enqueue_hrtimer(timer, new_base);
--- 
-2.0.0.rc2
+>  
+>  	type = get_mem_type(mtype);
+>  	if (!type)
+> _
+> 
 
