@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579AbaELBxA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:53:00 -0400
-Received: from 1wt.eu ([62.212.114.60]:34724 "EHLO 1wt.eu"
+	id S932148AbaELBxm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:53:42 -0400
+Received: from 1wt.eu ([62.212.114.60]:34720 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754018AbaELBnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:43:24 -0400
-Message-Id: <20140512003204.208437920@1wt.eu>
+	id S1753992AbaELBnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:43:22 -0400
+Message-Id: <20140512003201.386871159@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:33:26 +0200
+Date: Mon, 12 May 2014 02:32:18 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Vlad Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 086/143] net: core: Always propagate flag changes to interfaces
+Cc: Kees Cook <keescook@chromium.org>,
+        "John W. Linville" <linville@tuxdriver.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 018/143] b43: stop format string leaking into error msgs
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,69 +23,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Kees Cook <keescook@chromium.org>
 
-[ Upstream commit d2615bf450694c1302d86b9cc8a8958edfe4c3a4 ]
+commit e0e29b683d6784ef59bbc914eac85a04b650e63c upstream
 
-The following commit:
-    b6c40d68ff6498b7f63ddf97cf0aa818d748dee7
-    net: only invoke dev->change_rx_flags when device is UP
+The module parameter "fwpostfix" is userspace controllable, unfiltered,
+and is used to define the firmware filename. b43_do_request_fw() populates
+ctx->errors[] on error, containing the firmware filename. b43err()
+parses its arguments as a format string. For systems with b43 hardware,
+this could lead to a uid-0 to ring-0 escalation.
 
-tried to fix a problem with VLAN devices and promiscuouse flag setting.
-The issue was that VLAN device was setting a flag on an interface that
-was down, thus resulting in bad promiscuity count.
-This commit blocked flag propagation to any device that is currently
-down.
+CVE-2013-2852
 
-A later commit:
-    deede2fabe24e00bd7e246eb81cd5767dc6fcfc7
-    vlan: Don't propagate flag changes on down interfaces
-
-fixed VLAN code to only propagate flags when the VLAN interface is up,
-thus fixing the same issue as above, only localized to VLAN.
-
-The problem we have now is that if we have create a complex stack
-involving multiple software devices like bridges, bonds, and vlans,
-then it is possible that the flags would not propagate properly to
-the physical devices.  A simple examle of the scenario is the
-following:
-
-  eth0----> bond0 ----> bridge0 ---> vlan50
-
-If bond0 or eth0 happen to be down at the time bond0 is added to
-the bridge, then eth0 will never have promisc mode set which is
-currently required for operation as part of the bridge.  As a
-result, packets with vlan50 will be dropped by the interface.
-
-The only 2 devices that implement the special flag handling are
-VLAN and DSA and they both have required code to prevent incorrect
-flag propagation.  As a result we can remove the generic solution
-introduced in b6c40d68ff6498b7f63ddf97cf0aa818d748dee7 and leave
-it to the individual devices to decide whether they will block
-flag propagation or not.
-
-Reported-by: Stefan Priebe <s.priebe@profihost.ag>
-Suggested-by: Veaceslav Falico <vfalico@redhat.com>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: stable@vger.kernel.org
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/core/dev.c | 2 +-
+ drivers/net/wireless/b43/main.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index d775563..d250444 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3388,7 +3388,7 @@ static void dev_change_rx_flags(struct net_device *dev, int flags)
- {
- 	const struct net_device_ops *ops = dev->netdev_ops;
- 
--	if ((dev->flags & IFF_UP) && ops->ndo_change_rx_flags)
-+	if (ops->ndo_change_rx_flags)
- 		ops->ndo_change_rx_flags(dev, flags);
- }
- 
+diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
+index 94dae56..3cf2472 100644
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -2257,7 +2257,7 @@ static int b43_request_firmware(struct b43_wldev *dev)
+ 	for (i = 0; i < B43_NR_FWTYPES; i++) {
+ 		errmsg = ctx->errors[i];
+ 		if (strlen(errmsg))
+-			b43err(dev->wl, errmsg);
++			b43err(dev->wl, "%s", errmsg);
+ 	}
+ 	b43_print_fw_helptext(dev->wl, 1);
+ 	err = -ENOENT;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
