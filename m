@@ -1,59 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005AbaELJA4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 05:00:56 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:19899 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907AbaELJAy (ORCPT
+	id S1751934AbaELJGM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 05:06:12 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:45022 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925AbaELJGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 05:00:54 -0400
-Message-ID: <53708DAE.6080903@huawei.com>
-Date: Mon, 12 May 2014 17:00:30 +0800
-From: xiakaixu <xiakaixu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 12 May 2014 05:06:11 -0400
+Message-ID: <53708EFF.1030604@atmel.com>
+Date: Mon, 12 May 2014 11:06:07 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: kaixu xia <xiakaixu1987@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-perf-users@vger.kernel.org>, <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        Namhyung Kim <namhyung@kernel.org>, Huxinwei <huxinwei@huawei.com>,
-        <peifeiyue@huawei.com>, <fweisbec@gmail.com>
-Subject: Re: Does perf support different length of user-space hw_breakpoint?
-References: <53707DD6.2000108@huawei.com> <20140512080503.GL30445@twins.programming.kicks-ass.net> <CAGjdHukwC3cu3YOSSteXsC4_52m-YTdAAYCfXV+q5A2pnW+CKQ@mail.gmail.com> <20140512084823.GO30445@twins.programming.kicks-ass.net>
-In-Reply-To: <20140512084823.GO30445@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.111.100.238]
-X-CFilter-Loop: Reflected
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <linux-kernel@vger.kernel.org>, Bo Shen <voice.shen@atmel.com>
+Subject: Re: [PATCH 1/2] ARM: at91: add PWM pinctrl to SAMA5D3
+References: <a5a0a9b8090f80f40daf3a13849b3961d9d617d6.1399642907.git.nicolas.ferre@atmel.com> <20140510091017.GA22329@piout.net>
+In-Reply-To: <20140510091017.GA22329@piout.net>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2014/5/12 16:48, Peter Zijlstra 写道:
-> On Mon, May 12, 2014 at 04:20:44PM +0800, kaixu xia wrote:
->> 2014-05-12 16:05 GMT+08:00 Peter Zijlstra <peterz@infradead.org>:
->>
->>> On Mon, May 12, 2014 at 03:52:54PM +0800, xiakaixu wrote:
->>>> Hi guys,
->>>>
->>>> Does perf support different length of user-space hw_breakpoint,
->>>> such as  HW_BREAKPOINT_LEN_1/HW_BREAKPOINT_LEN_2/HW_BREAKPOINT_LEN_4/
->>>> HW_BREAKPOINT_LEN_8?
->>>>
->>>> Seems perf only support HW_BREAKPOINT_LEN_4/sizeof(long)
->>>> by default from the source code and simple test.
->>>>
->>>> May I have your opinions if I want to trace different bytes of
->>>> hw_breakpoint addr?
->>>
->>> Frederic?
->>>
->>
->> Sorry, can not fully understand it. Can you give more details on that?
+On 10/05/2014 11:10, Alexandre Belloni :
+> Hi Nicolas,
 > 
-> I asked Frederic to answer your question :-)
+> On 09/05/2014 at 15:44:27 +0200, Nicolas Ferre wrote :
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> ---
+>>  arch/arm/boot/dts/sama5d3.dtsi | 82 ++++++++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 82 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
+>> index 9caa06b3641e..ed7943745f23 100644
+>> --- a/arch/arm/boot/dts/sama5d3.dtsi
+>> +++ b/arch/arm/boot/dts/sama5d3.dtsi
+>> @@ -583,6 +583,88 @@
+>>  					};
+>>  				};
+>>  
+>> +				pwm0 {
+>> +					pinctrl_pwm0_pwmh0_0: pwm0_pwmh0-0 {
+>> +						atmel,pins =
+>> +							<AT91_PIOA 20 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PA20 periph B, conflicts with ISI_D4 and LCDDAT20 */
 > 
-Thanks:-)
+> Didn't we decide at some point to stop adding comments for the pinctrl ?
+> At least, I would say that "PA20 periph B" doesn't add any useful
+> information.
 
+Yes, we said that for the description and you are right saying that
+saying again the pin configuration doesn't make sense. On the other
+hand, I tend to like the "conflicts with ..." part of it (and it is
+automatically generated).
+
+So, should we keep this part?
+
+>> +					};
+>> +					pinctrl_pwm0_pwmh0_1: pwm0_pwmh0-1 {
+>> +						atmel,pins =
+>> +							<AT91_PIOB 0 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB0 periph B, conflicts with GTX0 */
+>> +					};
+>> +
+>> +					pinctrl_pwm0_pwmh1_0: pwm0_pwmh1-0 {
+>> +						atmel,pins =
+>> +							<AT91_PIOA 22 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PA22 periph B, conflicts with ISI_D6 and LCDDAT22 */
+>> +					};
+>> +					pinctrl_pwm0_pwmh1_1: pwm0_pwmh1-1 {
+>> +						atmel,pins =
+>> +							<AT91_PIOB 4 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB4 periph B, conflicts with GRX0 */
+>> +					};
+>> +					pinctrl_pwm0_pwmh1_2: pwm0_pwmh1-2 {
+>> +						atmel,pins =
+>> +							<AT91_PIOB 27 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* PB27 periph C, conflicts with G125CKO and RTS1 */
+>> +					};
+>> +
+>> +					pinctrl_pwm0_pwmh2_0: pwm0_pwmh2-0 {
+>> +						atmel,pins =
+>> +							<AT91_PIOB 8 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB8 periph B, conflicts with GTXCK */
+>> +					};
+>> +					pinctrl_pwm0_pwmh2_1: pwm0_pwmh2-1 {
+>> +						atmel,pins =
+>> +							<AT91_PIOD 5 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* PD5 periph C, conflicts with MCI0_DA4 and TIOA0 */
+>> +					};
+>> +
+>> +					pinctrl_pwm0_pwmh3_0: pwm0_pwmh3-0 {
+>> +						atmel,pins =
+>> +							<AT91_PIOB 12 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB12 periph B, conflicts with GRXDV */
+>> +					};
+>> +					pinctrl_pwm0_pwmh3_1: pwm0_pwmh3-1 {
+>> +						atmel,pins =
+>> +							<AT91_PIOD 7 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* PD7 periph C, conflicts with MCI0_DA6 and TCLK0 */
+>> +					};
+>> +
+>> +					pinctrl_pwm0_pwml0_0: pwm0_pwml0-0 {
+>> +						atmel,pins =
+>> +							<AT91_PIOA 21 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PA21 periph B, conflicts with ISI_D5 and LCDDAT21 */
+>> +					};
+>> +					pinctrl_pwm0_pwml0_1: pwm0_pwml0-1 {
+>> +						atmel,pins =
+>> +							<AT91_PIOB 1 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB1 periph B, conflicts with GTX1 */
+>> +					};
+> 
+> I would group pwm0_pwmhx and pwm0_pwmlx together.
+
+Ah, ok, I can do this, sure.
+
+> 
+>> +
+>> +					pinctrl_pwm0_pwml1_0: pwm0_pwml1-0 {
+>> +						atmel,pins =
+>> +							<AT91_PIOA 23 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PA23 periph B, conflicts with ISI_D7 and LCDDAT23 */
+>> +					};
+>> +					pinctrl_pwm0_pwml1_1: pwm0_pwml1-1 {
+>> +						atmel,pins =
+>> +							<AT91_PIOB 5 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB5 periph B, conflicts with GRX1 */
+>> +					};
+>> +					pinctrl_pwm0_pwml1_2: pwm0_pwml1-2 {
+>> +						atmel,pins =
+>> +							<AT91_PIOE 31 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PE31 periph B, conflicts with IRQ */
+>> +					};
+>> +
+> 
+
+
+-- 
+Nicolas Ferre
