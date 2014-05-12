@@ -1,59 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751641AbaELAGP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 20:06:15 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:43830 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaELAGO (ORCPT
+	id S1752282AbaELAJd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 20:09:33 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54523 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751072AbaELAJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 20:06:14 -0400
-Date: Sun, 11 May 2014 17:06:19 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH percpu/for-3.16 2/2] percpu-refcount: implement
- percpu_ref_tryget()
-Message-ID: <20140512000619.GC10617@kmo-pixel>
-References: <20140507155511.GB26540@htj.dyndns.org>
- <20140507155647.GC26540@htj.dyndns.org>
- <20140507155810.GD26540@htj.dyndns.org>
- <20140509194020.GB2276@kmo>
- <20140509194140.GC4486@htj.dyndns.org>
- <20140509195109.GC2276@kmo>
- <20140509195522.GF4486@htj.dyndns.org>
+	Sun, 11 May 2014 20:09:32 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: dirk.brandewie@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: Re: [PATCH 4/5] intel_pstate: Remove C0 tracking
+Date: Mon, 12 May 2014 02:26:16 +0200
+Message-ID: <8611014.ohD4mdM9gP@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1399579047-5792-5-git-send-email-dirk.j.brandewie@intel.com>
+References: <1399579047-5792-1-git-send-email-dirk.j.brandewie@intel.com> <1399579047-5792-5-git-send-email-dirk.j.brandewie@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140509195522.GF4486@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 03:55:22PM -0400, Tejun Heo wrote:
-> Hello,
+On Thursday, May 08, 2014 12:57:26 PM dirk.brandewie@gmail.com wrote:
+> From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 > 
-> On Fri, May 09, 2014 at 12:51:09PM -0700, Kent Overstreet wrote:
-> > Well not so much deprecated as "bad, avoid" - IMO using tryget() almost always
-> > (I haven't seen a convincing counterexample) means you screwed up your
-> > refcounting somewhere, if you need to take a ref on something whatever made that
-> > object visible to you should have its own ref.
-> > 
-> > (I think we had this debate, but that was awhile ago...)
+> Commit fcb6a15c intel_pstate: Take core C0 time into account for core busy
+> introduced a regression referenced below.  The issue with "lockup"
+> after suspend that this commit was addressing is now dealt with in the
+> suspend path.
 > 
-> Oh sure, tryget can definitely be misunderstood but RCU protected
-> iteration is one valid use case.
+> References:
+>    https://bugzilla.kernel.org/show_bug.cgi?id=66581
+>    https://bugzilla.kernel.org/show_bug.cgi?id=75121
 > 
-> 	rcu_read_lock();
-> 	locate the object of interest;
-> 	tryget[_live]() depending on the use case;
-> 	rcu_read_unlock();
-> 
-> 	access the object.
+> Reported-by: Doug Smythies <dsmythies@telus.net>
+> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-No, it's not needed with RCU... look at the aio code for an example (or don't,
-save your eyes instead).
+Do we need this in -stable?
 
-Conceptually the RCU data structure should own a refcount on the things that are
-accessible via it; that ref shouldn't be dropped until after it's removed and an
-RCU barrier has happened.
+> ---
+>  drivers/cpufreq/intel_pstate.c | 13 +------------
+>  1 file changed, 1 insertion(+), 12 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> index bb20881..4c26faf 100644
+> --- a/drivers/cpufreq/intel_pstate.c
+> +++ b/drivers/cpufreq/intel_pstate.c
+> @@ -59,7 +59,6 @@ struct sample {
+>  	int32_t core_pct_busy;
+>  	u64 aperf;
+>  	u64 mperf;
+> -	unsigned long long tsc;
+>  	int freq;
+>  };
+>  
+> @@ -100,7 +99,6 @@ struct cpudata {
+>  
+>  	u64	prev_aperf;
+>  	u64	prev_mperf;
+> -	unsigned long long prev_tsc;
+>  	struct sample sample;
+>  };
+>  
+> @@ -561,46 +559,37 @@ static inline void intel_pstate_calc_busy(struct cpudata *cpu,
+>  					struct sample *sample)
+>  {
+>  	int32_t core_pct;
+> -	int32_t c0_pct;
+>  
+>  	core_pct = div_fp(int_tofp((sample->aperf)),
+>  			int_tofp((sample->mperf)));
+>  	core_pct = mul_fp(core_pct, int_tofp(100));
+>  	FP_ROUNDUP(core_pct);
+>  
+> -	c0_pct = div_fp(int_tofp(sample->mperf), int_tofp(sample->tsc));
+> -
+>  	sample->freq = fp_toint(
+>  		mul_fp(int_tofp(cpu->pstate.max_pstate * 1000), core_pct));
+>  
+> -	sample->core_pct_busy = mul_fp(core_pct, c0_pct);
+> +	sample->core_pct_busy = core_pct;
+>  }
+>  
+>  static inline void intel_pstate_sample(struct cpudata *cpu)
+>  {
+>  	u64 aperf, mperf;
+> -	unsigned long long tsc;
+>  
+>  	rdmsrl(MSR_IA32_APERF, aperf);
+>  	rdmsrl(MSR_IA32_MPERF, mperf);
+> -	tsc = native_read_tsc();
+>  
+>  	aperf = aperf >> FRAC_BITS;
+>  	mperf = mperf >> FRAC_BITS;
+> -	tsc = tsc >> FRAC_BITS;
+>  
+>  	cpu->sample.aperf = aperf;
+>  	cpu->sample.mperf = mperf;
+> -	cpu->sample.tsc = tsc;
+>  	cpu->sample.aperf -= cpu->prev_aperf;
+>  	cpu->sample.mperf -= cpu->prev_mperf;
+> -	cpu->sample.tsc -= cpu->prev_tsc;
+>  
+>  	intel_pstate_calc_busy(cpu, &cpu->sample);
+>  
+>  	cpu->prev_aperf = aperf;
+>  	cpu->prev_mperf = mperf;
+> -	cpu->prev_tsc = tsc;
+>  }
+>  
+>  static inline void intel_pstate_set_sample_time(struct cpudata *cpu)
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
