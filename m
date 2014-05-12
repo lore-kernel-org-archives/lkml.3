@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337AbaEMEYT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 00:24:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51582 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967AbaEMEYR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 00:24:17 -0400
+	id S1752401AbaEMEjC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 00:39:02 -0400
+Received: from mga02.intel.com ([134.134.136.20]:34560 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751284AbaEMEjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 00:39:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1041,1389772800"; 
+   d="scan'208";a="510683875"
+Date: Tue, 13 May 2014 04:34:16 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Doug Smythies <dsmythies@telus.net>
+Subject: Re: [RFC PATCH] cpufreq: intel_pstate: Change the calculation of
+ next pstate
+Message-ID: <20140512203416.GB10676@intel.com>
+References: <5368255D.3090207@semaphore.gr>
+ <536BEE89.3040602@gmail.com>
+ <536CECB4.1090109@semaphore.gr>
+ <53712F4B.7000101@semaphore.gr>
+ <20140512193453.GB9351@intel.com>
+ <537198AE.3050100@semaphore.gr>
+ <20140512200140.GA10676@intel.com>
+ <53719C98.1010103@semaphore.gr>
 MIME-Version: 1.0
-In-Reply-To: <1399326447-2329-1-git-send-email-isubramanian@apm.com>
-References: <1399326447-2329-1-git-send-email-isubramanian@apm.com>
-Date: Tue, 13 May 2014 12:24:14 +0800
-Message-ID: <CACVXFVPRcPxm2a+-VDa=80Xp3w+p_+k0ng=7B9KyP8r3E=4_YA@mail.gmail.com>
-Subject: Re: [PATCH v4 0/4] net: Add APM X-Gene SoC Ethernet driver support
-From: Ming Lei <ming.lei@canonical.com>
-To: Iyappan Subramanian <isubramanian@apm.com>
-Cc: David Miller <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        jcm@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        patches@apm.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Keyur Chudgar <kchudgar@apm.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Ravi Patel <rapatel@apm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53719C98.1010103@semaphore.gr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Iyappan,
+On Tue, May 13, 2014 at 07:16:24AM +0300, Stratos Karafotis wrote:
+> On 12/05/2014 11:01 μμ, Yuyang Du wrote:
+> > On Tue, May 13, 2014 at 06:59:42AM +0300, Stratos Karafotis wrote:
+> >> Hi,
+> >>
+> >> On 12/05/2014 10:34 μμ, Yuyang Du wrote:
+> >>> On Mon, May 12, 2014 at 11:30:03PM +0300, Stratos Karafotis wrote:
+> >>>> On 09/05/2014 05:56 μμ, Stratos Karafotis wrote:
+> >>>>
+> >>>> Next performance state = min_perf + (max_perf - min_perf) * load / 100
+> >>>>
+> >>> Hi,
+> >>>
+> >>> This formula is fundamentally broken. You need to associate the load with its
+> >>> frequency.
+> >>
+> >> Could you please explain why is it broken? I think the load should be
+> >> independent from the current frequency.
+> > 
+> > Why independent? The load not (somewhat) determined by that?
+> > 
+> > 
+> 
+> Maybe, in some cases yes. But not always.
+> For example, please consider a CPU running a tight "for" loop in 100MHz
+> for a couple of seconds. This produces a load of 100%.
+> It will produce the same load (100%) in any other frequency.
+ 
+Still fundamentally wrong, because you are not making a fair
+comparison ("load" in 100MHz vs. any other freq).
 
-On Tue, May 6, 2014 at 5:47 AM, Iyappan Subramanian
-<isubramanian@apm.com> wrote:
-> Adding APM X-Gene SoC Ethernet driver.
->
-> v4: Address comments from v3 review
-> * MAINTAINERS: changed status to supported
-> * Kconfig: made default to no
-> * changed to bool data type wherever applicable
-> * cleaned up single bit set and masking code
-> * removed statistics counters masking
-> * removed unnecessary OOM message printing
-> * fixed dma_map_single and dma_unmap_single size parameter
-> * changed set bits macro body using new set_bits function
-
-I just tested the v4 against 3.15.0-rc5-next-20140512+ on mustang
-board , looks ethernet becomes very unstable with the change,
-sometimes I saw:
-
-[  301.057140] Unable to handle kernel paging request at virtual
-address ffffffc800a7cd70
-
-Also network may  become unusable after a while from booting.
-
-Another oops log found during reboot:
-
-[ 1156.315992] skbuff: skb_over_panic: text:ffffffc000435b48 len:1514
-put:1514 head:          (null) data:ffffffc3ec667dd0 tail:0x5ea
-end:0x0 dev:<NULL>
-[ 1156.329322] BUG: failure at net/core/skbuff.c:99/skb_panic()!
-[ 1156.335043] Kernel panic - not syncing: BUG!
-[ 1156.339292] CPU: 3 PID: 2710 Comm: ip Not tainted
-3.15.0-rc5-next-20140512+ #29
-[ 1156.346562] Call trace:
-[ 1156.349000] [<ffffffc000087884>] dump_backtrace+0x0/0x10c
-[ 1156.354372] [<ffffffc0000879a0>] show_stack+0x10/0x1c
-[ 1156.359398] [<ffffffc000625b50>] dump_stack+0x88/0xcc
-[ 1156.364422] [<ffffffc0006219dc>] panic+0xe4/0x228
-[ 1156.369101] [<ffffffc000626574>] skb_panic+0x78/0x7c
-[ 1156.374041] [<ffffffc0004a3e98>] skb_put+0x7c/0x8c
-[ 1156.378807] [<ffffffc000435b44>] xgene_enet_process_ring+0xcc/0x2b4
-[ 1156.385041] [<ffffffc000435e2c>] xgene_enet_close+0xb0/0xd8
-[ 1156.390583] [<ffffffc0004ad11c>] __dev_close_many+0xa0/0xd0
-[ 1156.396126] [<ffffffc0004ad170>] __dev_close+0x24/0x40
-[ 1156.401237] [<ffffffc0004b3c94>] __dev_change_flags+0xa4/0x14c
-[ 1156.407039] [<ffffffc0004b3d58>] dev_change_flags+0x1c/0x5c
-[ 1156.412582] [<ffffffc0004c046c>] do_setlink+0x250/0x6ec
-[ 1156.417779] [<ffffffc0004c1590>] rtnl_newlink+0x320/0x508
-[ 1156.423149] [<ffffffc0004c18f8>] rtnetlink_rcv_msg+0x180/0x1a0
-[ 1156.428952] [<ffffffc0004d5558>] netlink_rcv_skb+0x60/0xc4
-[ 1156.434408] [<ffffffc0004c00c4>] rtnetlink_rcv+0x1c/0x2c
-[ 1156.439692] [<ffffffc0004d4c8c>] netlink_unicast+0xcc/0x18c
-[ 1156.445234] [<ffffffc0004d5374>] netlink_sendmsg+0x57c/0x5f8
-[ 1156.450863] [<ffffffc0004992f4>] sock_sendmsg+0x68/0x84
-[ 1156.456060] [<ffffffc000499bc0>] ___sys_sendmsg+0x1ec/0x288
-[ 1156.461602] [<ffffffc00049c9cc>] __sys_sendmsg+0x3c/0x64
-[ 1156.466886] [<ffffffc00049ca00>] SyS_sendmsg+0xc/0x20
-
-
-
-Thanks
---
-Ming Lei
+Yuyang
