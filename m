@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758515AbaELNYg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 09:24:36 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:19570 "EHLO
+	id S1758538AbaELNZW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 09:25:22 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:35420 "EHLO
 	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758289AbaELNYf (ORCPT
+	with ESMTP id S1758249AbaELNZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 09:24:35 -0400
-X-Nat-Received: from [202.181.97.72]:57148 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1399901065.6206
+	Mon, 12 May 2014 09:25:20 -0400
+X-Nat-Received: from [202.181.97.72]:61257 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1399901110.24526
 To: miklos@szeredi.hu, jmorris@namei.org, john.johansen@canonical.com,
         selinux@tycho.nsa.gov
 Cc: linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: [PATCH (for 3.15) 3/5] AppArmor: Handle the rename flags.
+Subject: [PATCH (for 3.15) 4/5] TOMOYO: Handle the rename flags.
 From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 References: <201404242020.FJD18726.LOOJtOQMFVFFSH@I-love.SAKURA.ne.jp>
 	<201405012058.JEG30273.LJFHOOFMtOFQVS@I-love.SAKURA.ne.jp>
@@ -21,10 +21,10 @@ References: <201404242020.FJD18726.LOOJtOQMFVFFSH@I-love.SAKURA.ne.jp>
 	<201405120053.HJG95368.HFLQSFMOOtOVJF@I-love.SAKURA.ne.jp>
 	<201405122221.DBG43278.LOQtJSOFVFFOHM@I-love.SAKURA.ne.jp>
 In-Reply-To: <201405122221.DBG43278.LOQtJSOFVFFOHM@I-love.SAKURA.ne.jp>
-Message-Id: <201405122224.BJB51546.VJOtMSQOLOFFHF@I-love.SAKURA.ne.jp>
+Message-Id: <201405122225.BED35990.LFQHFOFVJMStOO@I-love.SAKURA.ne.jp>
 X-Mailer: Winbiff [Version 2.51 PL2]
 X-Accept-Language: ja,en,zh
-Date: Mon, 12 May 2014 22:24:25 +0900
+Date: Mon, 12 May 2014 22:25:11 +0900
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 12052014 #7893288, status: clean
@@ -32,58 +32,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 819e94ae3a6d9235196d137a39afa4e0bbd79770 Mon Sep 17 00:00:00 2001
+>From b53f2feeb60fb11a0c2d3ee3021a057bd6d71eeb Mon Sep 17 00:00:00 2001
 From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Mon, 12 May 2014 21:54:05 +0900
-Subject: [PATCH (for 3.15) 3/5] AppArmor: Handle the rename flags.
+Date: Mon, 12 May 2014 22:00:53 +0900
+Subject: [PATCH (for 3.15) 4/5] TOMOYO: Handle the rename flags.
 
-For AppArmor, the RENAME_EXCHANGE flag means "check permissions with
-reversed arguments" and "distinguish condition of source and target".
-Future patches will stop re-calculating pathnames.
+For TOMOYO, the RENAME_EXCHANGE flag means "check exchange permission once
+rather than checking rename permission twice". This patch adds exchange
+permission to TOMOYO.
 
 Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 ---
- security/apparmor/lsm.c |   22 ++++++++++++++++++++--
- 1 files changed, 20 insertions(+), 2 deletions(-)
+ security/tomoyo/common.c |    1 +
+ security/tomoyo/common.h |    5 ++++-
+ security/tomoyo/file.c   |   10 +++++++++-
+ security/tomoyo/tomoyo.c |    4 +++-
+ security/tomoyo/util.c   |    1 +
+ 5 files changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
-index c0b4366..9f21296 100644
---- a/security/apparmor/lsm.c
-+++ b/security/apparmor/lsm.c
-@@ -331,7 +331,14 @@ static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
- 		struct path_cond cond = { old_dentry->d_inode->i_uid,
- 					  old_dentry->d_inode->i_mode
- 		};
-+		struct path_cond new_cond = cond;
+diff --git a/security/tomoyo/common.c b/security/tomoyo/common.c
+index 283862a..7892485 100644
+--- a/security/tomoyo/common.c
++++ b/security/tomoyo/common.c
+@@ -36,6 +36,7 @@ const char * const tomoyo_mac_keywords[TOMOYO_MAX_MAC_INDEX
+ 	[TOMOYO_MAC_FILE_MKCHAR]     = "mkchar",
+ 	[TOMOYO_MAC_FILE_LINK]       = "link",
+ 	[TOMOYO_MAC_FILE_RENAME]     = "rename",
++	[TOMOYO_MAC_FILE_EXCHANGE]   = "exchange",
+ 	[TOMOYO_MAC_FILE_CHMOD]      = "chmod",
+ 	[TOMOYO_MAC_FILE_CHOWN]      = "chown",
+ 	[TOMOYO_MAC_FILE_CHGRP]      = "chgrp",
+diff --git a/security/tomoyo/common.h b/security/tomoyo/common.h
+index b897d48..a167c5f 100644
+--- a/security/tomoyo/common.h
++++ b/security/tomoyo/common.h
+@@ -276,6 +276,7 @@ enum tomoyo_network_acl_index {
+ enum tomoyo_path2_acl_index {
+ 	TOMOYO_TYPE_LINK,
+ 	TOMOYO_TYPE_RENAME,
++	TOMOYO_TYPE_EXCHANGE,
+ 	TOMOYO_TYPE_PIVOT_ROOT,
+ 	TOMOYO_MAX_PATH2_OPERATION
+ };
+@@ -335,6 +336,7 @@ enum tomoyo_mac_index {
+ 	TOMOYO_MAC_FILE_MKCHAR,
+ 	TOMOYO_MAC_FILE_LINK,
+ 	TOMOYO_MAC_FILE_RENAME,
++	TOMOYO_MAC_FILE_EXCHANGE,
+ 	TOMOYO_MAC_FILE_CHMOD,
+ 	TOMOYO_MAC_FILE_CHOWN,
+ 	TOMOYO_MAC_FILE_CHGRP,
+@@ -730,7 +732,8 @@ struct tomoyo_mkdev_acl {
+ };
  
-+		if (flags & RENAME_EXCHANGE) {
-+			/* Cross rename requires both inodes to exist. */
-+			new_cond.uid = new_dentry->d_inode->i_uid;
-+			new_cond.mode = new_dentry->d_inode->i_mode;
-+		}
-+retry:
- 		error = aa_path_perm(OP_RENAME_SRC, profile, &old_path, 0,
- 				     MAY_READ | AA_MAY_META_READ | MAY_WRITE |
- 				     AA_MAY_META_WRITE | AA_MAY_DELETE,
-@@ -339,7 +346,18 @@ static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
- 		if (!error)
- 			error = aa_path_perm(OP_RENAME_DEST, profile, &new_path,
- 					     0, MAY_WRITE | AA_MAY_META_WRITE |
--					     AA_MAY_CREATE, &cond);
-+					     AA_MAY_CREATE, &new_cond);
-+		if (!error && (flags & RENAME_EXCHANGE)) {
-+			struct path tmp_path = new_path;
-+			struct path_cond tmp_cond = new_cond;
-+
-+			new_path = old_path;
-+			old_path = tmp_path;
-+			new_cond = cond;
-+			cond = tmp_cond;
-+			flags = 0;
-+			goto retry;
-+		}
+ /*
+- * Structure for "file rename", "file link" and "file pivot_root" directive.
++ * Structure for "file rename", "file exchange", "file link" and
++ * "file pivot_root" directive.
+  */
+ struct tomoyo_path2_acl {
+ 	struct tomoyo_acl_info head; /* type = TOMOYO_TYPE_PATH2_ACL */
+diff --git a/security/tomoyo/file.c b/security/tomoyo/file.c
+index 4003907..5f10b76 100644
+--- a/security/tomoyo/file.c
++++ b/security/tomoyo/file.c
+@@ -38,6 +38,7 @@ const u8 tomoyo_pnnn2mac[TOMOYO_MAX_MKDEV_OPERATION] = {
+ const u8 tomoyo_pp2mac[TOMOYO_MAX_PATH2_OPERATION] = {
+ 	[TOMOYO_TYPE_LINK]       = TOMOYO_MAC_FILE_LINK,
+ 	[TOMOYO_TYPE_RENAME]     = TOMOYO_MAC_FILE_RENAME,
++	[TOMOYO_TYPE_EXCHANGE]   = TOMOYO_MAC_FILE_EXCHANGE,
+ 	[TOMOYO_TYPE_PIVOT_ROOT] = TOMOYO_MAC_FILE_PIVOT_ROOT,
+ };
  
+@@ -874,7 +875,7 @@ int tomoyo_mkdev_perm(const u8 operation, struct path *path,
+ }
+ 
+ /**
+- * tomoyo_path2_perm - Check permission for "rename", "link" and "pivot_root".
++ * tomoyo_path2_perm - Check permission for "rename", "exchange", "link" and "pivot_root".
+  *
+  * @operation: Type of operation.
+  * @path1:      Pointer to "struct path".
+@@ -916,6 +917,13 @@ int tomoyo_path2_perm(const u8 operation, struct path *path1,
+ 		tomoyo_add_slash(&buf1);
+ 		tomoyo_add_slash(&buf2);
+ 		break;
++	case TOMOYO_TYPE_EXCHANGE:
++		/* Cross rename requires both inodes to exist. */
++		if (S_ISDIR(path1->dentry->d_inode->i_mode))
++			tomoyo_add_slash(&buf1);
++		if (S_ISDIR(path2->dentry->d_inode->i_mode))
++			tomoyo_add_slash(&buf2);
++		break;
  	}
- 	return error;
+ 	r.obj = &obj;
+ 	r.param_type = TOMOYO_TYPE_PATH2_ACL;
+diff --git a/security/tomoyo/tomoyo.c b/security/tomoyo/tomoyo.c
+index ac7dd97..aa36259 100644
+--- a/security/tomoyo/tomoyo.c
++++ b/security/tomoyo/tomoyo.c
+@@ -299,7 +299,9 @@ static int tomoyo_path_rename(struct path *old_parent,
+ {
+ 	struct path path1 = { old_parent->mnt, old_dentry };
+ 	struct path path2 = { new_parent->mnt, new_dentry };
+-	return tomoyo_path2_perm(TOMOYO_TYPE_RENAME, &path1, &path2);
++	return tomoyo_path2_perm((flags & RENAME_EXCHANGE) ?
++				 TOMOYO_TYPE_EXCHANGE : TOMOYO_TYPE_RENAME,
++				 &path1, &path2);
+ }
+ 
+ /**
+diff --git a/security/tomoyo/util.c b/security/tomoyo/util.c
+index 2952ba5..649794b 100644
+--- a/security/tomoyo/util.c
++++ b/security/tomoyo/util.c
+@@ -34,6 +34,7 @@ const u8 tomoyo_index2category[TOMOYO_MAX_MAC_INDEX] = {
+ 	[TOMOYO_MAC_FILE_MKCHAR]     = TOMOYO_MAC_CATEGORY_FILE,
+ 	[TOMOYO_MAC_FILE_LINK]       = TOMOYO_MAC_CATEGORY_FILE,
+ 	[TOMOYO_MAC_FILE_RENAME]     = TOMOYO_MAC_CATEGORY_FILE,
++	[TOMOYO_MAC_FILE_EXCHANGE]   = TOMOYO_MAC_CATEGORY_FILE,
+ 	[TOMOYO_MAC_FILE_CHMOD]      = TOMOYO_MAC_CATEGORY_FILE,
+ 	[TOMOYO_MAC_FILE_CHOWN]      = TOMOYO_MAC_CATEGORY_FILE,
+ 	[TOMOYO_MAC_FILE_CHGRP]      = TOMOYO_MAC_CATEGORY_FILE,
 -- 
 1.7.1
