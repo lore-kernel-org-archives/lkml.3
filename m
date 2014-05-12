@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443AbaELJ11 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 05:27:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35775 "EHLO mx1.redhat.com"
+	id S1754598AbaELJ1d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 05:27:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44240 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752479AbaELJ1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 05:27:25 -0400
+	id S1751506AbaELJ1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 05:27:31 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 4/6] perf record: Propagate exit status of a command line workload
-Date: Mon, 12 May 2014 11:27:11 +0200
-Message-Id: <1399886833-15472-5-git-send-email-jolsa@kernel.org>
+        Adrian Hunter <adrian.hunter@intel.com>, Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 6/6] perf tools: Use tid for finding thread
+Date: Mon, 12 May 2014 11:27:13 +0200
+Message-Id: <1399886833-15472-7-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1399886833-15472-1-git-send-email-jolsa@kernel.org>
 References: <1399886833-15472-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,334 +21,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-Currently perf record doesn't propagate the exit status of a workload
-given by the command line.  But sometimes it'd useful if it's
-propagated so that a monitoring script can handle errors
-appropriately.
+I believe that passing pid (instead of tid) as the 3rd arg of the
+machine__find*_thread() was to find a main thread so that it can
+search proper map group for symbols.  However with the map sharing
+patch applied, it now can do it in any thread.
 
-To do that, it moves most of logic out of the exit handlers and run
-them directly in the __cmd_record().  The only thing needs to be done
-in the handler is propagating terminating signal so that the shell can
-terminate its loop properly when Ctrl-C was pressed.  Also it cleaned
-up the resource management code in record__exit().
+It fixes a bug when each thread has different name, it only reports a
+main thread for samples in other threads.
 
-With this change, perf record returns the child exit status in case of
-normal termination and send signal to itself when terminated by signal.
-
-Example run of Stephane's case:
-
-  $ perf record true && echo yes || echo no
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.013 MB perf.data (~589 samples) ]
-  yes
-
-  $ perf record false && echo yes || echo no
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.013 MB perf.data (~589 samples) ]
-  no
-
-Jiri's case (error in parent):
-
-  $ perf record -m 10G true && echo yes || echo no
-  rounding mmap pages size to 17179869184 bytes (4194304 pages)
-  failed to mmap with 12 (Cannot allocate memory)
-  no
-
-  $ ulimit -n 6
-  $ perf record sleep 1 && echo yes || echo no
-  failed to create 'go' pipe: Too many open files
-  Couldn't run the workload!
-  no
-
-And Peter's case (interrupted by signal):
-
-  $ while :; do perf record sleep 1; done
-  ^C[ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.014 MB perf.data (~593 samples) ]
-
-Reported-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: David Ahern <dsahern@gmail.com>
 Acked-by: Stephane Eranian <eranian@google.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1399855645-25815-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1399856202-26221-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/builtin-record.c | 127 +++++++++++++++++++++-----------------------
- 1 file changed, 60 insertions(+), 67 deletions(-)
+ tools/perf/builtin-inject.c     | 2 +-
+ tools/perf/builtin-kmem.c       | 2 +-
+ tools/perf/tests/code-reading.c | 2 +-
+ tools/perf/tests/hists_filter.c | 1 +
+ tools/perf/tests/hists_link.c   | 2 ++
+ tools/perf/util/build-id.c      | 2 +-
+ tools/perf/util/event.c         | 2 +-
+ 7 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 8ce62ef..2e0d484 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -147,29 +147,19 @@ static void sig_handler(int sig)
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 3a73875..6a3af00 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -209,7 +209,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
+ 
+ 	cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 
+-	thread = machine__findnew_thread(machine, sample->pid, sample->pid);
++	thread = machine__findnew_thread(machine, sample->pid, sample->tid);
+ 	if (thread == NULL) {
+ 		pr_err("problem processing %d event, skipping it.\n",
+ 		       event->header.type);
+diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+index f91fa437..bef3376 100644
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -235,7 +235,7 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 				struct machine *machine)
  {
- 	if (sig == SIGCHLD)
- 		child_finished = 1;
-+	else
-+		signr = sig;
+ 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
+-							sample->pid);
++							sample->tid);
  
- 	done = 1;
--	signr = sig;
- }
+ 	if (thread == NULL) {
+ 		pr_debug("problem processing %d event, skipping it.\n",
+diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
+index adf3de3..67f2d63 100644
+--- a/tools/perf/tests/code-reading.c
++++ b/tools/perf/tests/code-reading.c
+@@ -256,7 +256,7 @@ static int process_sample_event(struct machine *machine,
+ 		return -1;
+ 	}
  
--static void record__sig_exit(int exit_status __maybe_unused, void *arg)
-+static void record__sig_exit(void)
+-	thread = machine__findnew_thread(machine, sample.pid, sample.pid);
++	thread = machine__findnew_thread(machine, sample.pid, sample.tid);
+ 	if (!thread) {
+ 		pr_debug("machine__findnew_thread failed\n");
+ 		return -1;
+diff --git a/tools/perf/tests/hists_filter.c b/tools/perf/tests/hists_filter.c
+index 23dc2f4..4617a8b 100644
+--- a/tools/perf/tests/hists_filter.c
++++ b/tools/perf/tests/hists_filter.c
+@@ -69,6 +69,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 			evsel->hists.symbol_filter_str = NULL;
+ 
+ 			sample.pid = fake_samples[i].pid;
++			sample.tid = fake_samples[i].pid;
+ 			sample.ip = fake_samples[i].ip;
+ 
+ 			if (perf_event__preprocess_sample(&event, machine, &al,
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index e42d679..b009bbf 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -81,6 +81,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 			};
+ 
+ 			sample.pid = fake_common_samples[k].pid;
++			sample.tid = fake_common_samples[k].pid;
+ 			sample.ip = fake_common_samples[k].ip;
+ 			if (perf_event__preprocess_sample(&event, machine, &al,
+ 							  &sample) < 0)
+@@ -104,6 +105,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 			};
+ 
+ 			sample.pid = fake_samples[i][k].pid;
++			sample.tid = fake_samples[i][k].pid;
+ 			sample.ip = fake_samples[i][k].ip;
+ 			if (perf_event__preprocess_sample(&event, machine, &al,
+ 							  &sample) < 0)
+diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
+index 6baabe6..a904a4c 100644
+--- a/tools/perf/util/build-id.c
++++ b/tools/perf/util/build-id.c
+@@ -25,7 +25,7 @@ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
+ 	struct addr_location al;
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
+-							sample->pid);
++							sample->tid);
+ 
+ 	if (thread == NULL) {
+ 		pr_err("problem processing %d event, skipping it.\n",
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index dbcaea1..65795b8 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -788,7 +788,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
  {
--	struct record *rec = arg;
--	int status;
--
--	if (rec->evlist->workload.pid > 0) {
--		if (!child_finished)
--			kill(rec->evlist->workload.pid, SIGTERM);
--
--		wait(&status);
--		if (WIFSIGNALED(status))
--			psignal(WTERMSIG(status), rec->progname);
--	}
--
--	if (signr == -1 || signr == SIGUSR1)
-+	if (signr == -1)
- 		return;
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
+-							sample->pid);
++							sample->tid);
  
- 	signal(signr, SIG_DFL);
-+	raise(signr);
- }
- 
- static int record__open(struct record *rec)
-@@ -243,27 +233,6 @@ static int process_buildids(struct record *rec)
- 					      size, &build_id__mark_dso_hit_ops);
- }
- 
--static void record__exit(int status, void *arg)
--{
--	struct record *rec = arg;
--	struct perf_data_file *file = &rec->file;
--
--	if (status != 0)
--		return;
--
--	if (!file->is_pipe) {
--		rec->session->header.data_size += rec->bytes_written;
--
--		if (!rec->no_buildid)
--			process_buildids(rec);
--		perf_session__write_header(rec->session, rec->evlist,
--					   file->fd, true);
--		perf_session__delete(rec->session);
--		perf_evlist__delete(rec->evlist);
--		symbol__exit();
--	}
--}
--
- static void perf_event__synthesize_guest_os(struct machine *machine, void *data)
- {
- 	int err;
-@@ -344,18 +313,19 @@ static volatile int workload_exec_errno;
-  * if the fork fails, since we asked by setting its
-  * want_signal to true.
-  */
--static void workload_exec_failed_signal(int signo, siginfo_t *info,
-+static void workload_exec_failed_signal(int signo __maybe_unused,
-+					siginfo_t *info,
- 					void *ucontext __maybe_unused)
- {
- 	workload_exec_errno = info->si_value.sival_int;
- 	done = 1;
--	signr = signo;
- 	child_finished = 1;
- }
- 
- static int __cmd_record(struct record *rec, int argc, const char **argv)
- {
- 	int err;
-+	int status = 0;
- 	unsigned long waking = 0;
- 	const bool forks = argc > 0;
- 	struct machine *machine;
-@@ -367,7 +337,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 
- 	rec->progname = argv[0];
- 
--	on_exit(record__sig_exit, rec);
-+	atexit(record__sig_exit);
- 	signal(SIGCHLD, sig_handler);
- 	signal(SIGINT, sig_handler);
- 	signal(SIGTERM, sig_handler);
-@@ -388,32 +358,28 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 						    workload_exec_failed_signal);
- 		if (err < 0) {
- 			pr_err("Couldn't run the workload!\n");
-+			status = err;
- 			goto out_delete_session;
- 		}
- 	}
- 
- 	if (record__open(rec) != 0) {
- 		err = -1;
--		goto out_delete_session;
-+		goto out_child;
- 	}
- 
- 	if (!rec->evlist->nr_groups)
- 		perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
- 
--	/*
--	 * perf_session__delete(session) will be called at record__exit()
--	 */
--	on_exit(record__exit, rec);
--
- 	if (file->is_pipe) {
- 		err = perf_header__write_pipe(file->fd);
- 		if (err < 0)
--			goto out_delete_session;
-+			goto out_child;
- 	} else {
- 		err = perf_session__write_header(session, rec->evlist,
- 						 file->fd, false);
- 		if (err < 0)
--			goto out_delete_session;
-+			goto out_child;
- 	}
- 
- 	if (!rec->no_buildid
-@@ -421,7 +387,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 		pr_err("Couldn't generate buildids. "
- 		       "Use --no-buildid to profile anyway.\n");
- 		err = -1;
--		goto out_delete_session;
-+		goto out_child;
- 	}
- 
- 	machine = &session->machines.host;
-@@ -431,7 +397,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 						   process_synthesized_event);
- 		if (err < 0) {
- 			pr_err("Couldn't synthesize attrs.\n");
--			goto out_delete_session;
-+			goto out_child;
- 		}
- 
- 		if (have_tracepoints(&rec->evlist->entries)) {
-@@ -447,7 +413,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 								  process_synthesized_event);
- 			if (err <= 0) {
- 				pr_err("Couldn't record tracing data.\n");
--				goto out_delete_session;
-+				goto out_child;
- 			}
- 			rec->bytes_written += err;
- 		}
-@@ -475,7 +441,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 	err = __machine__synthesize_threads(machine, tool, &opts->target, rec->evlist->threads,
- 					    process_synthesized_event, opts->sample_address);
- 	if (err != 0)
--		goto out_delete_session;
-+		goto out_child;
- 
- 	if (rec->realtime_prio) {
- 		struct sched_param param;
-@@ -484,7 +450,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 		if (sched_setscheduler(0, SCHED_FIFO, &param)) {
- 			pr_err("Could not set realtime priority.\n");
- 			err = -1;
--			goto out_delete_session;
-+			goto out_child;
- 		}
- 	}
- 
-@@ -512,13 +478,15 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 
- 		if (record__mmap_read_all(rec) < 0) {
- 			err = -1;
--			goto out_delete_session;
-+			goto out_child;
- 		}
- 
- 		if (hits == rec->samples) {
- 			if (done)
- 				break;
- 			err = poll(rec->evlist->pollfd, rec->evlist->nr_fds, -1);
-+			if (err < 0 && errno == EINTR)
-+				err = 0;
- 			waking++;
- 		}
- 
-@@ -538,28 +506,52 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 		const char *emsg = strerror_r(workload_exec_errno, msg, sizeof(msg));
- 		pr_err("Workload failed: %s\n", emsg);
- 		err = -1;
--		goto out_delete_session;
-+		goto out_child;
- 	}
- 
--	if (quiet || signr == SIGUSR1)
--		return 0;
-+	if (!quiet) {
-+		fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
- 
--	fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
-+		/*
-+		 * Approximate RIP event size: 24 bytes.
-+		 */
-+		fprintf(stderr,
-+			"[ perf record: Captured and wrote %.3f MB %s (~%" PRIu64 " samples) ]\n",
-+			(double)rec->bytes_written / 1024.0 / 1024.0,
-+			file->path,
-+			rec->bytes_written / 24);
-+	}
- 
--	/*
--	 * Approximate RIP event size: 24 bytes.
--	 */
--	fprintf(stderr,
--		"[ perf record: Captured and wrote %.3f MB %s (~%" PRIu64 " samples) ]\n",
--		(double)rec->bytes_written / 1024.0 / 1024.0,
--		file->path,
--		rec->bytes_written / 24);
-+out_child:
-+	if (forks) {
-+		int exit_status;
- 
--	return 0;
-+		if (!child_finished)
-+			kill(rec->evlist->workload.pid, SIGTERM);
-+
-+		wait(&exit_status);
-+
-+		if (err < 0)
-+			status = err;
-+		else if (WIFEXITED(exit_status))
-+			status = WEXITSTATUS(exit_status);
-+		else if (WIFSIGNALED(exit_status))
-+			signr = WTERMSIG(exit_status);
-+	} else
-+		status = err;
-+
-+	if (!err && !file->is_pipe) {
-+		rec->session->header.data_size += rec->bytes_written;
-+
-+		if (!rec->no_buildid)
-+			process_buildids(rec);
-+		perf_session__write_header(rec->session, rec->evlist,
-+					   file->fd, true);
-+	}
- 
- out_delete_session:
- 	perf_session__delete(session);
--	return err;
-+	return status;
- }
- 
- #define BRANCH_OPT(n, m) \
-@@ -988,6 +980,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
- 
- 	err = __cmd_record(&record, argc, argv);
- out_symbol_exit:
-+	perf_evlist__delete(rec->evlist);
- 	symbol__exit();
- 	return err;
- }
+ 	if (thread == NULL)
+ 		return -1;
 -- 
 1.8.3.1
 
