@@ -1,116 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932499AbaELQ06 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:26:58 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:39907 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758887AbaELQ0y (ORCPT
+	id S1752026AbaELQ1P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:27:15 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35832 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932509AbaELQ1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 12:26:54 -0400
-Date: Mon, 12 May 2014 18:26:49 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 1/5] irq_work: Architecture support for remote irq work
- raise
-Message-ID: <20140512162641.GA28033@localhost.localdomain>
-References: <1399851237-2226-1-git-send-email-fweisbec@gmail.com>
- <1399851237-2226-2-git-send-email-fweisbec@gmail.com>
- <20140512075650.GJ30445@twins.programming.kicks-ass.net>
+	Mon, 12 May 2014 12:27:10 -0400
+Message-ID: <5370F66F.7060204@codeaurora.org>
+Date: Mon, 12 May 2014 09:27:27 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140512075650.GJ30445@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pintu Kumar <pintu.k@outlook.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>
+Subject: Re: Questions regarding DMA buffer sharing using IOMMU
+References: <BAY169-W12541AD089785F8BFBD4E26EF350@phx.gbl>,<5218408.5YRJXjS4BX@wuerfel> <BAY169-W1156E6803829CAB545274BCEF350@phx.gbl>
+In-Reply-To: <BAY169-W1156E6803829CAB545274BCEF350@phx.gbl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 09:56:50AM +0200, Peter Zijlstra wrote:
-> On Mon, May 12, 2014 at 01:33:53AM +0200, Frederic Weisbecker wrote:
-> > We are going to extend irq work to support remote queuing.
-> > 
-> > So lets add a cpu argument to arch_irq_work_raise(). The architectures
-> > willing to support that must then provide the backend to raise irq work
-> > IPIs remotely.
-> > 
-> > Initial support is provided for x86 and ARM since they are easily
-> > extended. The other archs that overwrite arch_irq_work_raise() seem
-> > to use local clock interrupts and therefore need deeper rewrite of their
-> > irq work support to implement remote raising.
-> > 
+On 5/12/2014 7:37 AM, Pintu Kumar wrote:
+> Hi,
+> Thanks for the reply.
 > 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> ----------------------------------------
+>> From: arnd@arndb.de
+>> To: linux-arm-kernel@lists.infradead.org
+>> CC: pintu.k@outlook.com; linux-mm@kvack.org; linux-kernel@vger.kernel.org; linaro-mm-sig@lists.linaro.org
+>> Subject: Re: Questions regarding DMA buffer sharing using IOMMU
+>> Date: Mon, 12 May 2014 14:00:57 +0200
+>>
+>> On Monday 12 May 2014 15:12:41 Pintu Kumar wrote:
+>>> Hi,
+>>> I have some queries regarding IOMMU and CMA buffer sharing.
+>>> We have an embedded linux device (kernel 3.10, RAM: 256Mb) in
+>>> which camera and codec supports IOMMU but the display does not support IOMMU.
+>>> Thus for camera capture we are using iommu buffers using
+>>> ION/DMABUF. But for all display rendering we are using CMA buffers.
+>>> So, the question is how to achieve buffer sharing (zero-copy)
+>>> between Camera and Display using only IOMMU?
+>>> Currently we are achieving zero-copy using CMA. And we are
+>>> exploring options to use IOMMU.
+>>> Now we wanted to know which option is better? To use IOMMU or CMA?
+>>> If anybody have come across these design please share your thoughts and results.
+>>
+>> There is a slight performance overhead in using the IOMMU in general,
+>> because the IOMMU has to fetch the page table entries from memory
+>> at least some of the time.
 > 
-> Why not borrow the smp_call_function IPI for the remote bits? We could
-> limit the 'safe from NMI' to the local works. And we validate this by
-> putting a WARN_ON(in_nmi()) in irq_work_queue_on().
-
-Right, but although I don't need it to be safe from NMI, I need it
-to be callable concurrently and when irqs are disabled.
-
-So we can't use smp_call_function_single() for that. But we can use the async
-version in which case we must keep the irq work claim. But that's
-about the same than smp_queue_function_single() we had previously
-and we are back with our csd_lock issue.
-
+> Ok, we need to check performance later
 > 
-> At some later stage we could look at maybe merging the smp_function_call
-> and irq_work into a single thing, where we have the irq_work interface
-> as async and the smp_function_call() as sync interface.
+>>
+>> If that overhead is within the constraints you have for transfers between
+>> camera and codec, you are always better off using IOMMU since that
+>> means you don't have to do memory migration.
 > 
-> But for now a quick 'hack' would be to call __irq_work_run() from
-> generic_smp_call_function_single_interrupt().
+> Transfer between camera is codec is fine. But our major concern is single buffer 
+> sharing between camera & display. Here camera supports iommu but display does not support iommu.
+> Is it possible to render camera preview (iommu buffers) on display (not iommu and required physical contiguous overlay memory)?
 > 
-> That would leave arch_irq_work_raise() as the special NMI safe local IPI
-> hook.
 
-I don't know, calling irq_work_run() from there sounds like an overkill.
+I'm pretty sure the answer is no for zero copy IOMMU buffers if one of your
+devices does not support IOMMU. If the data is coming in as individual pages
+and the hardware does not support scattered pages there isn't much you can
+do except copy to a contiguous buffer. At least with Ion, the heap types can
+be set up in a particular way such that the client need never know about the
+existence of an IOMMU or not. 
 
-Or we can encapsulate:
+> Also is it possible to buffer sharing between 2 iommu supported devices?
+> 
 
-struct remote_irq_work {
-    struct irq_work work;
-    struct call_single_data csd;
-}
+I don't see why not but there isn't a lot of information to go on here.
 
-bool irq_work_queue_on(remote_work, cpu)
-{
-   if (irq_work_claim(remote_work.work))
-      return false;
-   remote_work.csd.func = irq_work_remote_interrupt;
-   remotr_work.csd.info = work
-   smp_call_function_single_async(&remote_work.csd, cpu);
-}
+Thanks,
+Laura
 
-void irq_work_remote_interrupt(void *info)
-{
-    struct irq_work *work = info;
-
-    work->func(work);
-}
-
-And some tweaking to make csd_lock() out of the way. smp_call_function_single_async()
-don't need it.
-
-Or the two other solutions:
-
-1) expand irq_work to support remote queuing. And really this hasn't added more
-atomic operations nor smp barriers that the local queuing. The only complication
-is that we need remote raise support from arch.
-
-2) expand smp_call_function stuff with smp_queue_function_single(). As I did
-previously. It's the same than the above irq_work_queue_on() above will need to be
-conditional though.
-
-The native remote support on irq_work sounds to me the most proper. But unfortunately
-it requires support from arch that we already have with smp_function...
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
