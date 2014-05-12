@@ -1,134 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697AbaELQBW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:01:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53576 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754512AbaELQBU (ORCPT
+	id S1755453AbaELQBT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:01:19 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48477 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754512AbaELQBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 12:01:20 -0400
-Date: Mon, 12 May 2014 09:01:06 -0700
-From: tip-bot for Dongsheng <tipbot@zytor.com>
-Message-ID: <tip-6bcab4e1eaa1f669d003051ef3b87a963d8763bb@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jolsa@kernel.org, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jolsa@kernel.org, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
-In-Reply-To: <1399354741-19522-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-References: <1399354741-19522-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Clarify the output of perf sched map.
-Git-Commit-ID: 6bcab4e1eaa1f669d003051ef3b87a963d8763bb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 12 May 2014 12:01:17 -0400
+Date: Mon, 12 May 2014 16:58:11 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
+        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 1/8] ftrace: make CALLER_ADDRx macros more generic
+Message-ID: <20140512155811.GB4880@arm.com>
+References: <1394862048-28758-1-git-send-email-takahiro.akashi@linaro.org>
+ <1398851676-16389-1-git-send-email-takahiro.akashi@linaro.org>
+ <1398851676-16389-2-git-send-email-takahiro.akashi@linaro.org>
+ <20140502151957.6978d870@gandalf.local.home>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140502151957.6978d870@gandalf.local.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6bcab4e1eaa1f669d003051ef3b87a963d8763bb
-Gitweb:     http://git.kernel.org/tip/6bcab4e1eaa1f669d003051ef3b87a963d8763bb
-Author:     Dongsheng <yangds.fnst@cn.fujitsu.com>
-AuthorDate: Tue, 6 May 2014 14:39:01 +0900
-Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Mon, 12 May 2014 11:09:05 +0200
+Hi guys,
 
-perf tools: Clarify the output of perf sched map.
+On Fri, May 02, 2014 at 08:19:57PM +0100, Steven Rostedt wrote:
+> On Wed, 30 Apr 2014 18:54:29 +0900
+> AKASHI Takahiro <takahiro.akashi@linaro.org> wrote:
+> 
+> > Most archs with HAVE_ARCH_CALLER_ADDR have the almost same definitions
+> > of CALLER_ADDRx(n), and so put them into linux/ftrace.h.
+> 
+> Please add a bit more to the change log. Like what you did. Something
+> like:
+> 
+> ----
+> Most archs with HAVE_ARCH_CALLER_ADDR have pretty much the same
+> definitions of CALLER_ADDRx(n). Instead of duplicating the code for all
+> the archs, define a ftrace_return_address0() and
+> ftrace_return_address(n) that can be overwritten by the archs if they
+> need to do something different. Instead of 7 macros in every arch, we
+> now only have at most 2 (and actually only 1 as
+> ftrace_return_address0() should be the same for all archs).
+> 
+> The CALLER_ADDRx(n) will now be defined in linux/ftrace.h and use the
+> ftrace_return_address*(n?) macros. This removes a lot of the duplicate
+> code.
+> -----
+> 
+> Use that if you want :-)
 
-In output of perf sched map, any shortname of thread will be explained
-at the first time when it appear.
+Akashi: did you get around to posting a new version of this patch? We can't
+take your arm64 patches until you get the core stuff merged...
 
-Example:
-              *A0       228836.978985 secs A0 => perf:23032
-          *.   A0       228836.979016 secs B0 => swapper:0
-           .  *C0       228836.979099 secs C0 => migration/3:22
-  *A0      .   C0       228836.979115 secs
-   A0      .  *.        228836.979115 secs
-
-But B0, which is explained as swapper:0 did not appear in the
-left part of output. Instead, we use '.' as the shortname of
-swapper:0. So the comment of "B0 => swapper:0" is not easy to
-understand.
-
-This patch clarify the output of perf sched map with not allocating
-one letter-number shortname for swapper:0 and print ". => swapper:0"
-as the explanation for swapper:0.
-
-Example:
-              *A0       228836.978985 secs A0 => perf:23032
-          * .  A0       228836.979016 secs .  => swapper:0
-            . *B0       228836.979099 secs B0 => migration/3:22
-  *A0       .  B0       228836.979115 secs
-   A0       . * .       228836.979115 secs
-   A0     *C0   .       228836.979225 secs C0 => ksoftirqd/2:18
-   A0     *D0   .       228836.979236 secs D0 => rcu_sched:7
-
-Signed-off-by: Dongsheng <yangds.fnst@cn.fujitsu.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1399354741-19522-1-git-send-email-yangds.fnst@cn.fujitsu.com
-[ small style fixes to make checkpatch happy ]
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/builtin-sched.c | 35 ++++++++++++++++++++---------------
- 1 file changed, 20 insertions(+), 15 deletions(-)
-
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 4f0dd21..2579215 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1300,17 +1300,25 @@ static int map_switch_event(struct perf_sched *sched, struct perf_evsel *evsel,
- 
- 	new_shortname = 0;
- 	if (!sched_in->shortname[0]) {
--		sched_in->shortname[0] = sched->next_shortname1;
--		sched_in->shortname[1] = sched->next_shortname2;
--
--		if (sched->next_shortname1 < 'Z') {
--			sched->next_shortname1++;
-+		if (!strcmp(thread__comm_str(sched_in), "swapper")) {
-+			/*
-+			 * Don't allocate a letter-number for swapper:0
-+			 * as a shortname. Instead, we use '.' for it.
-+			 */
-+			sched_in->shortname[0] = '.';
-+			sched_in->shortname[1] = ' ';
- 		} else {
--			sched->next_shortname1='A';
--			if (sched->next_shortname2 < '9') {
--				sched->next_shortname2++;
-+			sched_in->shortname[0] = sched->next_shortname1;
-+			sched_in->shortname[1] = sched->next_shortname2;
-+
-+			if (sched->next_shortname1 < 'Z') {
-+				sched->next_shortname1++;
- 			} else {
--				sched->next_shortname2='0';
-+				sched->next_shortname1 = 'A';
-+				if (sched->next_shortname2 < '9')
-+					sched->next_shortname2++;
-+				else
-+					sched->next_shortname2 = '0';
- 			}
- 		}
- 		new_shortname = 1;
-@@ -1322,12 +1330,9 @@ static int map_switch_event(struct perf_sched *sched, struct perf_evsel *evsel,
- 		else
- 			printf("*");
- 
--		if (sched->curr_thread[cpu]) {
--			if (sched->curr_thread[cpu]->tid)
--				printf("%2s ", sched->curr_thread[cpu]->shortname);
--			else
--				printf(".  ");
--		} else
-+		if (sched->curr_thread[cpu])
-+			printf("%2s ", sched->curr_thread[cpu]->shortname);
-+		else
- 			printf("   ");
- 	}
- 
+Will
