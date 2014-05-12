@@ -1,94 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052AbaELLzm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 07:55:42 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:60453 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752AbaELLzk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 07:55:40 -0400
-Subject: Re: [PATCH v1.1 2/16 update 3] arcmsr:  Adding code to support
- MSI-X interrupt
-From: ching <ching2048@areca.com.tw>
-To: Tomas Henzl <thenzl@redhat.com>
-Cc: jbottomley@parallels.com, dan.carpenter@oracle.com, agordeev@redhat.com,
-        linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <536CB8EB.3040401@redhat.com>
-References: <1399463548.23184.6.camel@localhost>
-	 <536A43AF.6060908@redhat.com> <1399549025.25794.4.camel@localhost>
-	 <536CB8EB.3040401@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 12 May 2014 19:55:33 +0800
-Message-ID: <1399895733.4349.2.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+	id S1754529AbaELL7z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 07:59:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27128 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751115AbaELL7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 07:59:54 -0400
+Message-ID: <5370B78A.7060709@redhat.com>
+Date: Mon, 12 May 2014 13:59:06 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Chen-Yu Tsai <wens@csie.org>, linux-sunxi <linux-sunxi@googlegroups.com>
+CC: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Boris Brezillon <boris@free-electrons.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-usb <linux-usb@vger.kernel.org>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, Shuge <shuge@allwinnertech.com>,
+        zhuzhenhua@allwinnertech.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [linux-sunxi] [PATCH v2 3/7] phy: usb: sunxi: Introduce Allwinner
+ A31 USB PHY support
+References: <1399726619-30150-1-git-send-email-maxime.ripard@free-electrons.com> <1399726619-30150-4-git-send-email-maxime.ripard@free-electrons.com> <CAGb2v65Pstk6MqEeK838VUpNXw2cQH8K66Oo4oG3__zzWO3pig@mail.gmail.com>
+In-Reply-To: <CAGb2v65Pstk6MqEeK838VUpNXw2cQH8K66Oo4oG3__zzWO3pig@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomas,
+Hi,
 
-Thanks for your remind again.
-The patch 17/17 will be as following.
----
-
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-08 17:45:34.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-12 10:50:28.000000000 +0800
-@@ -778,12 +778,11 @@ static int arcmsr_probe(struct pci_dev *
- 	}
- 	error = scsi_add_host(host, &pdev->dev);
- 	if(error){
--		goto RAID_controller_stop;
-+		goto free_ccb_pool;
- 	}
- 	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
- 		goto scsi_host_remove;
- 	arcmsr_iop_init(acb);
--    	scsi_scan_host(host);
- 	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
- 	atomic_set(&acb->rq_map_token, 16);
- 	atomic_set(&acb->ante_token_value, 16);
-@@ -795,13 +794,17 @@ static int arcmsr_probe(struct pci_dev *
- 	add_timer(&acb->eternal_timer);
- 	if(arcmsr_alloc_sysfs_attr(acb))
- 		goto out_free_sysfs;
-+    	scsi_scan_host(host);
- 	return 0;
- out_free_sysfs:
--scsi_host_remove:
--	scsi_remove_host(host);
--RAID_controller_stop:
-+	del_timer_sync(&acb->eternal_timer);
-+	flush_scheduled_work();
- 	arcmsr_stop_adapter_bgrb(acb);
- 	arcmsr_flush_adapter_cache(acb);
-+	arcmsr_free_irq(pdev, acb);
-+scsi_host_remove:
-+	scsi_remove_host(host);
-+free_ccb_pool:
- 	arcmsr_free_ccb_pool(acb);
- free_hbb_mu:
- 	arcmsr_free_mu(acb);
-
-
-
-On Fri, 2014-05-09 at 13:15 +0200, Tomas Henzl wrote:
-> On 05/08/2014 01:37 PM, ching wrote:
-> > Hi Tomas,
-> >
-> > Thanks for your suggestion.
-> > I will add a new patch 17/17 at last.
+On 05/12/2014 11:14 AM, Chen-Yu Tsai wrote:
+> Hi,
 > 
-> This additional patch was meant for moving the scsi_scan_host, because it's
-> nor related to the ms-x interrupts. Probably  the maintainer will prefer
-> a single patch which changes msi-x at once, I don't care.
-> To the patch below - you should also free the allocated irqs as I wrote previously.
+> On Sat, May 10, 2014 at 8:56 PM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+>> The USB phy controller in the A31 differs mostly from the older controllers
+>> because it has a clock dedicated for each phy, while the older ones were having
+>> a single clock for all the phys.
+>>
+>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+>> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+>> ---
+>>  drivers/phy/phy-sun4i-usb.c | 35 ++++++++++++++++++++++++++---------
+>>  1 file changed, 26 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
+>> index e6e6c4ba7145..8bd89430d945 100644
+>> --- a/drivers/phy/phy-sun4i-usb.c
+>> +++ b/drivers/phy/phy-sun4i-usb.c
+>> @@ -61,7 +61,6 @@
+>>  #define MAX_PHYS                       3
+>>
+>>  struct sun4i_usb_phy_data {
+>> -       struct clk *clk;
+>>         void __iomem *base;
+>>         struct mutex mutex;
+>>         int num_phys;
+>> @@ -71,6 +70,7 @@ struct sun4i_usb_phy_data {
+>>                 void __iomem *pmu;
+>>                 struct regulator *vbus;
+>>                 struct reset_control *reset;
+>> +               struct clk *clk;
+>>                 int index;
+>>         } phys[MAX_PHYS];
+>>  };
+>> @@ -146,13 +146,13 @@ static int sun4i_usb_phy_init(struct phy *_phy)
+>>         struct sun4i_usb_phy_data *data = to_sun4i_usb_phy_data(phy);
+>>         int ret;
+>>
+>> -       ret = clk_prepare_enable(data->clk);
+>> +       ret = clk_prepare_enable(phy->clk);
+>>         if (ret)
+>>                 return ret;
+>>
+>>         ret = reset_control_deassert(phy->reset);
+>>         if (ret) {
+>> -               clk_disable_unprepare(data->clk);
+>> +               clk_disable_unprepare(phy->clk);
+>>                 return ret;
+>>         }
+>>
+>> @@ -170,11 +170,10 @@ static int sun4i_usb_phy_init(struct phy *_phy)
+>>  static int sun4i_usb_phy_exit(struct phy *_phy)
+>>  {
+>>         struct sun4i_usb_phy *phy = phy_get_drvdata(_phy);
+>> -       struct sun4i_usb_phy_data *data = to_sun4i_usb_phy_data(phy);
+>>
+>>         sun4i_usb_phy_passby(phy, 0);
+>>         reset_control_assert(phy->reset);
+>> -       clk_disable_unprepare(data->clk);
+>> +       clk_disable_unprepare(phy->clk);
+>>
+>>         return 0;
+>>  }
+>> @@ -228,8 +227,10 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
+>>         struct phy_provider *phy_provider;
+>>         struct reset_control *reset;
+>>         struct regulator *vbus;
+>> +       bool dedicated_clocks;
 > 
-> Cheers,
-> Tomas
+> No default?
 > 
+>>         struct resource *res;
+>>         struct phy *phy;
+>> +       struct clk *clk;
+>>         char name[16];
+>>         int i;
+>>
+>> @@ -249,15 +250,20 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
+>>         else
+>>                 data->disc_thresh = 2;
+>>
+>> +       if (of_device_is_compatible(np, "allwinner,sun6i-a31-usb-phy"))
+>> +               dedicated_clocks = true;
+>> +
+> 
+> dedicated_clocks is more than likely to be true from leftover data
+> on the stack. This results in the usb phy driver probe failing, and
+> the usb host drivers left in perpetual probe deferral on my Cubietruck.
+> 
+> Adding an else section fixes this.
 
+Good catch, fixed this in the sunxi-devel branch for now (until Maxime sends a new version).
 
+Regards,
+
+Hans
