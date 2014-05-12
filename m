@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498AbaELFjk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 01:39:40 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64243 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424AbaELFjj (ORCPT
+	id S1752208AbaELFq2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 01:46:28 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44660 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721AbaELFq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 01:39:39 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53705E93.803@roeck-us.net>
-Date: Sun, 11 May 2014 22:39:31 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 12 May 2014 01:46:27 -0400
+Date: Mon, 12 May 2014 07:46:25 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>
+Subject: Re: [PATCH] pinctrl: Add i.MX1 pincontrol driver
+Message-ID: <20140512054625.GD5858@pengutronix.de>
+References: <1399652193-17827-1-git-send-email-shc_work@mail.ru>
+ <20140512045113.GY5858@pengutronix.de>
+ <1399871006.529846706@f188.i.mail.ru>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH] powerpc: Fix "attempt to move .org backwards" error (again)
-References: <1399680478-4970-1-git-send-email-linux@roeck-us.net>	 <1399867920.17624.73.camel@pasglop> <1399873020.17624.79.camel@pasglop>
-In-Reply-To: <1399873020.17624.79.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1399871006.529846706@f188.i.mail.ru>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 07:46:12 up 18 days, 23:17, 33 users,  load average: 0.17, 0.08,
+ 0.06
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2014 10:37 PM, Benjamin Herrenschmidt wrote:
-> On Mon, 2014-05-12 at 14:12 +1000, Benjamin Herrenschmidt wrote:
->> On Fri, 2014-05-09 at 17:07 -0700, Guenter Roeck wrote:
->>> Commit 4e243b7 (powerpc: Fix "attempt to move .org backwards" error) fixes the
->>> allyesconfig build by moving machine_check_common to a different location.
->>> While this fixes most of the errors, both allmodconfig and allyesconfig still
->>> fail as follows.
->>>
->>> arch/powerpc/kernel/exceptions-64s.S:1315: Error: attempt to move .org backwards
->>>
->>> Fix by moving machine_check_common after the offending address.
->>
->> This suffers from the same problem as previous attempts, on some of my
->> test configs I get:
->>
->> arch/powerpc/kernel/head_64.o:(__ftr_alt_97+0xb0): relocation truncated to fit: R_PPC64_REL14 against `.text'+1c90
->> make[1]: *** [vmlinux] Error 1
->> make: *** [sub-make] Error 2
->>
->> IE, it breaks currently working configs.
->>
->> So we need to move more things around and I haven't had a chance to
->> sort it out.
->
-> Ok, I think I sorted it out for now. It's a mess and likely to break
-> again until we do something more drastic like moving everything that's
-> after 0x8000 to a separate file but for now that will do. Patch on its
-> way, I'll also shoot it to Linus today along with a few other things.
->
+On Mon, May 12, 2014 at 09:03:26AM +0400, Alexander Shiyan wrote:
+> Mon, 12 May 2014 06:51:13 +0200 от Sascha Hauer <s.hauer@pengutronix.de>:
+> > On Fri, May 09, 2014 at 08:16:33PM +0400, Alexander Shiyan wrote:
+> > > This patch adds pincontrol driver for Freescale i.MX1 SOCs.
+> > > 
+> > > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+> > > ---
+> > >  drivers/pinctrl/Kconfig        |   7 ++
+> > >  drivers/pinctrl/Makefile       |   1 +
+> > >  drivers/pinctrl/pinctrl-imx1.c | 279 +++++++++++++++++++++++++++++++++++++++++
+> > >  3 files changed, 287 insertions(+)
+> > >  create mode 100644 drivers/pinctrl/pinctrl-imx1.c
+> > 
+> > Nice. I thought about adding devicetree support for i.MX1 aswell.
+> > 
+> > Don't we need a imx1-pinfunc.h file to make use of this patch?
+> 
+> It will be added along with the DTS template for that CPU architecture.
 
-Great, thanks a lot!
+Ok.
 
-Guenter
+Sascha
 
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
