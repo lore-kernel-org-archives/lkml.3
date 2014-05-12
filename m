@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781AbaELCJn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 22:09:43 -0400
-Received: from 1wt.eu ([62.212.114.60]:34510 "EHLO 1wt.eu"
+	id S1754320AbaELCJm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 22:09:42 -0400
+Received: from 1wt.eu ([62.212.114.60]:34512 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752734AbaELBmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752479AbaELBmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 11 May 2014 21:42:17 -0400
-Message-Id: <20140512003202.631048569@1wt.eu>
+Message-Id: <20140512003205.563383127@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:32:48 +0200
+Date: Mon, 12 May 2014 02:33:58 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 048/143] ip_tunnel: fix kernel panic with icmp_dest_unreach
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Dan Williams <dcbw@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 118/143] libertas: potential oops in debugfs
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,56 +23,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit a622260254ee481747cceaaa8609985b29a31565 ]
+If we do a zero size allocation then it will oops.  Also we can't be
+sure the user passes us a NUL terminated string so I've added a
+terminator.
 
-Daniel Petre reported crashes in icmp_dst_unreach() with following call
-graph:
+This code can only be triggered by root.
 
-Daniel found a similar problem mentioned in
- http://lkml.indiana.edu/hypermail/linux/kernel/1007.0/00961.html
-
-And indeed this is the root cause : skb->cb[] contains data fooling IP
-stack.
-
-We must clear IPCB in ip_tunnel_xmit() sooner in case dst_link_failure()
-is called. Or else skb->cb[] might contain garbage from GSO segmentation
-layer.
-
-A similar fix was tested on linux-3.9, but gre code was refactored in
-linux-3.10. I'll send patches for stable kernels as well.
-
-Many thanks to Daniel for providing reports, patches and testing !
-
-Reported-by: Daniel Petre <daniel.petre@rcs-rds.ro>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+(cherry picked from commit a497e47d4aec37aaf8f13509f3ef3d1f6a717d88)
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/ipv4/ipip.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/libertas/debugfs.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv4/ipip.c b/net/ipv4/ipip.c
-index 860b5c5..49aa1ad 100644
---- a/net/ipv4/ipip.c
-+++ b/net/ipv4/ipip.c
-@@ -408,6 +408,7 @@ static netdev_tx_t ipip_tunnel_xmit(struct sk_buff *skb, struct net_device *dev)
- 	if (tos&1)
- 		tos = old_iph->tos;
+diff --git a/drivers/net/wireless/libertas/debugfs.c b/drivers/net/wireless/libertas/debugfs.c
+index 893a55c..89532a6 100644
+--- a/drivers/net/wireless/libertas/debugfs.c
++++ b/drivers/net/wireless/libertas/debugfs.c
+@@ -925,7 +925,10 @@ static ssize_t lbs_debugfs_write(struct file *f, const char __user *buf,
+ 	char *p2;
+ 	struct debug_data *d = (struct debug_data *)f->private_data;
  
-+	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
- 	if (!dst) {
- 		/* NBMA tunnel */
- 		if ((rt = skb_rtable(skb)) == NULL) {
-@@ -494,7 +495,6 @@ static netdev_tx_t ipip_tunnel_xmit(struct sk_buff *skb, struct net_device *dev)
- 	skb->transport_header = skb->network_header;
- 	skb_push(skb, sizeof(struct iphdr));
- 	skb_reset_network_header(skb);
--	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
- 	IPCB(skb)->flags &= ~(IPSKB_XFRM_TUNNEL_SIZE | IPSKB_XFRM_TRANSFORMED |
- 			      IPSKB_REROUTED);
- 	skb_dst_drop(skb);
+-	pdata = kmalloc(cnt, GFP_KERNEL);
++	if (cnt == 0)
++		return 0;
++
++	pdata = kmalloc(cnt + 1, GFP_KERNEL);
+ 	if (pdata == NULL)
+ 		return 0;
+ 
+@@ -934,6 +937,7 @@ static ssize_t lbs_debugfs_write(struct file *f, const char __user *buf,
+ 		kfree(pdata);
+ 		return 0;
+ 	}
++	pdata[cnt] = '\0';
+ 
+ 	p0 = pdata;
+ 	for (i = 0; i < num_of_items; i++) {
 -- 
 1.7.12.2.21.g234cd45.dirty
 
