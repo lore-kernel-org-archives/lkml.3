@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758784AbaELQJF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:09:05 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:51538 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755889AbaELQIw (ORCPT
+	id S1758825AbaELQJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:09:42 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:39466 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758733AbaELQJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 12:08:52 -0400
+	Mon, 12 May 2014 12:09:03 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
 To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
         mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
@@ -14,11 +14,10 @@ To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
 Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Olivier Bideau <olivier.bideau@st.com>
-Subject: [PATCH 08/12] drivers: clk: st: STiH407: Support for clockgenC0
-Date: Mon, 12 May 2014 18:06:36 +0200
-Message-Id: <1399910800-12847-9-git-send-email-gabriel.fernandez@linaro.org>
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [PATCH 11/12] drivers: clk: st: Update frequency tables for fs660c32 and fs432c65
+Date: Mon, 12 May 2014 18:06:39 +0200
+Message-Id: <1399910800-12847-12-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399910800-12847-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1399910800-12847-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -28,131 +27,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch added support for DT registration of ClockGenC0
-It includes 2 c32 type PLL and a 660 Quadfs.
+This patch extend the range of possible frequencies of the fs432c65
+and fs660c32 Quad frequency synthesizers.
 
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Signed-off-by: Olivier Bideau <olivier.bideau@st.com>
 ---
- drivers/clk/st/clkgen-fsyn.c | 47 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/clk/st/clkgen-pll.c  | 32 ++++++++++++++++++++++++++++++
- 2 files changed, 79 insertions(+)
+ drivers/clk/st/clkgen-fsyn.c | 65 ++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 57 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/clk/st/clkgen-fsyn.c b/drivers/clk/st/clkgen-fsyn.c
-index 46b29c4..68c6786 100644
+index d7a0341..97a422f 100644
 --- a/drivers/clk/st/clkgen-fsyn.c
 +++ b/drivers/clk/st/clkgen-fsyn.c
-@@ -255,6 +255,49 @@ static struct clkgen_quadfs_data st_fs660c32_F_416 = {
- 	.get_rate	= clk_fs660c32_dig_get_rate,
+@@ -50,17 +50,66 @@ static struct stm_fs fs216c65_rtbl[] = {
  };
  
-+static struct clkgen_quadfs_data st_fs660c32_C_407 = {
-+	.nrst_present = true,
-+	.nrst	= { CLKGEN_FIELD(0x2f0, 0x1, 0),
-+		    CLKGEN_FIELD(0x2f0, 0x1, 1),
-+		    CLKGEN_FIELD(0x2f0, 0x1, 2),
-+		    CLKGEN_FIELD(0x2f0, 0x1, 3) },
-+	.npda	= CLKGEN_FIELD(0x2f0, 0x1, 12),
-+	.nsb	= { CLKGEN_FIELD(0x2f0, 0x1, 8),
-+		    CLKGEN_FIELD(0x2f0, 0x1, 9),
-+		    CLKGEN_FIELD(0x2f0, 0x1, 10),
-+		    CLKGEN_FIELD(0x2f0, 0x1, 11) },
-+	.nsdiv_present = true,
-+	.nsdiv	= { CLKGEN_FIELD(0x304, 0x1, 24),
-+		    CLKGEN_FIELD(0x308, 0x1, 24),
-+		    CLKGEN_FIELD(0x30c, 0x1, 24),
-+		    CLKGEN_FIELD(0x310, 0x1, 24) },
-+	.mdiv	= { CLKGEN_FIELD(0x304, 0x1f, 15),
-+		    CLKGEN_FIELD(0x308, 0x1f, 15),
-+		    CLKGEN_FIELD(0x30c, 0x1f, 15),
-+		    CLKGEN_FIELD(0x310, 0x1f, 15) },
-+	.en	= { CLKGEN_FIELD(0x2fc, 0x1, 0),
-+		    CLKGEN_FIELD(0x2fc, 0x1, 1),
-+		    CLKGEN_FIELD(0x2fc, 0x1, 2),
-+		    CLKGEN_FIELD(0x2fc, 0x1, 3) },
-+	.ndiv	= CLKGEN_FIELD(0x2f4, 0x7, 16),
-+	.pe	= { CLKGEN_FIELD(0x304, 0x7fff, 0),
-+		    CLKGEN_FIELD(0x308, 0x7fff, 0),
-+		    CLKGEN_FIELD(0x30c, 0x7fff, 0),
-+		    CLKGEN_FIELD(0x310, 0x7fff, 0) },
-+	.sdiv	= { CLKGEN_FIELD(0x304, 0xf, 20),
-+		    CLKGEN_FIELD(0x308, 0xf, 20),
-+		    CLKGEN_FIELD(0x30c, 0xf, 20),
-+		    CLKGEN_FIELD(0x310, 0xf, 20) },
-+	.lockstatus_present = true,
-+	.lock_status = CLKGEN_FIELD(0x2A0, 0x1, 24),
-+	.powerup_polarity = 1,
-+	.standby_polarity = 1,
-+	.pll_ops	= &st_quadfs_pll_c32_ops,
-+	.rtbl		= fs660c32_rtbl,
-+	.rtbl_cnt	= ARRAY_SIZE(fs660c32_rtbl),
-+	.get_rate	= clk_fs660c32_dig_get_rate,
-+};
-+
- /**
-  * DOC: A Frequency Synthesizer that multiples its input clock by a fixed factor
-  *
-@@ -938,6 +981,10 @@ static struct of_device_id quadfs_of_match[] = {
- 		.compatible = "st,stih416-quadfs660-F",
- 		.data = (void *)&st_fs660c32_F_416
- 	},
-+	{
-+		.compatible = "st,stih407-quadfs660-C",
-+		.data = (void *)&st_fs660c32_C_407
-+	},
- 	{}
+ static struct stm_fs fs432c65_rtbl[] = {
+-	{ .mdiv = 0x1f, .pe = 0x0,	.sdiv = 0x7,	.nsdiv = 0 },	/* 625   Khz */
+-	{ .mdiv = 0x11, .pe = 0x1c72,	.sdiv = 0x2,	.nsdiv = 1 },	/* 108   MHz */
+-	{ .mdiv = 0x19, .pe = 0x121a,	.sdiv = 0x0,	.nsdiv = 1 },	/* 297   MHz */
++	{ .mdiv = 0x1f, .pe = 0x0,	.sdiv = 0x7,	.nsdiv = 0 },	/* 625     Khz */
++	{ .mdiv = 0x13, .pe = 0x777c,	.sdiv = 0x4,	.nsdiv = 1 },	/* 25.175  MHz */
++	{ .mdiv = 0x19, .pe = 0x4d35,	.sdiv = 0x2,	.nsdiv = 0 },	/* 25.200  MHz */
++	{ .mdiv = 0x11, .pe = 0x1c72,	.sdiv = 0x4,	.nsdiv = 1 },	/* 27.000  MHz */
++	{ .mdiv = 0x17, .pe = 0x28f5,	.sdiv = 0x2,	.nsdiv = 0 },	/* 27.027  MHz */
++	{ .mdiv = 0x16, .pe = 0x3359,	.sdiv = 0x2,	.nsdiv = 0 },	/* 28.320  MHz */
++	{ .mdiv = 0x1f, .pe = 0x2083,	.sdiv = 0x3,	.nsdiv = 1 },	/* 30.240  MHz */
++	{ .mdiv = 0x1e, .pe = 0x430d,	.sdiv = 0x3,	.nsdiv = 1 },	/* 31.500  MHz */
++	{ .mdiv = 0x17, .pe = 0x0,	.sdiv = 0x3,	.nsdiv = 1 },	/* 40.000  MHz */
++	{ .mdiv = 0x19, .pe = 0x121a,	.sdiv = 0x1,	.nsdiv = 0 },	/* 49.500  MHz */
++	{ .mdiv = 0x13, .pe = 0x6667,	.sdiv = 0x3,	.nsdiv = 1 },	/* 50.000  MHz */
++	{ .mdiv = 0x10, .pe = 0x1ee6,	.sdiv = 0x3,	.nsdiv = 1 },	/* 57.284  MHz */
++	{ .mdiv = 0x1d, .pe = 0x3b14,	.sdiv = 0x2,	.nsdiv = 1 },	/* 65.000  MHz */
++	{ .mdiv = 0x12, .pe = 0x7c65,	.sdiv = 0x1,	.nsdiv = 0 },	/* 71.000  MHz */
++	{ .mdiv = 0x19, .pe = 0xecd,	.sdiv = 0x2,	.nsdiv = 1 },	/* 74.176  MHz */
++	{ .mdiv = 0x19, .pe = 0x121a,	.sdiv = 0x2,	.nsdiv = 1 },	/* 74.250  MHz */
++	{ .mdiv = 0x19, .pe = 0x3334,	.sdiv = 0x2,	.nsdiv = 1 },	/* 75.000  MHz */
++	{ .mdiv = 0x18, .pe = 0x5138,	.sdiv = 0x2,	.nsdiv = 1 },	/* 78.800  MHz */
++	{ .mdiv = 0x1d, .pe = 0x77d,	.sdiv = 0x0,	.nsdiv = 0 },	/* 85.500  MHz */
++	{ .mdiv = 0x1c, .pe = 0x13d5,	.sdiv = 0x0,	.nsdiv = 0 },	/* 88.750  MHz */
++	{ .mdiv = 0x11, .pe = 0x1c72,	.sdiv = 0x2,	.nsdiv = 1 },	/* 108.000 MHz */
++	{ .mdiv = 0x17, .pe = 0x28f5,	.sdiv = 0x0,	.nsdiv = 0 },	/* 108.108 MHz */
++	{ .mdiv = 0x10, .pe = 0x6e26,	.sdiv = 0x2,	.nsdiv = 1 },	/* 118.963 MHz */
++	{ .mdiv = 0x15, .pe = 0x3e63,	.sdiv = 0x0,	.nsdiv = 0 },	/* 119.000 MHz */
++	{ .mdiv = 0x1c, .pe = 0x471d,	.sdiv = 0x1,	.nsdiv = 1 },	/* 135.000 MHz */
++	{ .mdiv = 0x19, .pe = 0xecd,	.sdiv = 0x1,	.nsdiv = 1 },	/* 148.352 MHz */
++	{ .mdiv = 0x19, .pe = 0x121a,	.sdiv = 0x1,	.nsdiv = 1 },	/* 148.500 MHz */
++	{ .mdiv = 0x19, .pe = 0x121a,	.sdiv = 0x0,	.nsdiv = 1 },	/* 297     MHz */
  };
  
-diff --git a/drivers/clk/st/clkgen-pll.c b/drivers/clk/st/clkgen-pll.c
-index f1e27f9..cb4e5b6 100644
---- a/drivers/clk/st/clkgen-pll.c
-+++ b/drivers/clk/st/clkgen-pll.c
-@@ -192,6 +192,30 @@ static struct clkgen_pll_data st_pll3200c32_407_a0 = {
- 	.ops		= &stm_pll3200c32_ops,
+ static struct stm_fs fs660c32_rtbl[] = {
+-	{ .mdiv = 0x01, .pe = 0x2aaa,	.sdiv = 0x8,	.nsdiv = 0 },	/* 600   KHz */
+-	{ .mdiv = 0x02, .pe = 0x3d33,	.sdiv = 0x0,	.nsdiv = 0 },	/* 148.5 Mhz */
+-	{ .mdiv = 0x13, .pe = 0x5bcc,	.sdiv = 0x0,	.nsdiv = 1 },	/* 297   Mhz */
+-	{ .mdiv = 0x0e, .pe = 0x1025,	.sdiv = 0x0,	.nsdiv = 1 },	/* 333   Mhz */
+-	{ .mdiv = 0x0b, .pe = 0x715f,	.sdiv = 0x0,	.nsdiv = 1 },	/* 350   Mhz */
++	{ .mdiv = 0x14, .pe = 0x376b,	.sdiv = 0x4,	.nsdiv = 1 },	/* 25.175  MHz */
++	{ .mdiv = 0x14, .pe = 0x30c3,	.sdiv = 0x4,	.nsdiv = 1 },	/* 25.200  MHz */
++	{ .mdiv = 0x10, .pe = 0x71c7,	.sdiv = 0x4,	.nsdiv = 1 },	/* 27.000  MHz */
++	{ .mdiv = 0x00, .pe = 0x47af,	.sdiv = 0x3,	.nsdiv = 0 },	/* 27.027  MHz */
++	{ .mdiv = 0x0e, .pe = 0x4e1a,	.sdiv = 0x4,	.nsdiv = 1 },	/* 28.320  MHz */
++	{ .mdiv = 0x0b, .pe = 0x534d,	.sdiv = 0x4,	.nsdiv = 1 },	/* 30.240  MHz */
++	{ .mdiv = 0x17, .pe = 0x6fbf,	.sdiv = 0x2,	.nsdiv = 0 },	/* 31.500  MHz */
++	{ .mdiv = 0x01, .pe = 0x0,	.sdiv = 0x4,	.nsdiv = 1 },	/* 40.000  MHz */
++	{ .mdiv = 0x15, .pe = 0x2aab,	.sdiv = 0x3,	.nsdiv = 1 },	/* 49.500  MHz */
++	{ .mdiv = 0x14, .pe = 0x6666,	.sdiv = 0x3,	.nsdiv = 1 },	/* 50.000  MHz */
++	{ .mdiv = 0x1d, .pe = 0x395f,	.sdiv = 0x1,	.nsdiv = 0 },	/* 57.284  MHz */
++	{ .mdiv = 0x08, .pe = 0x4ec5,	.sdiv = 0x3,	.nsdiv = 1 },	/* 65.000  MHz */
++	{ .mdiv = 0x05, .pe = 0x1770,	.sdiv = 0x3,	.nsdiv = 1 },	/* 71.000  MHz */
++	{ .mdiv = 0x03, .pe = 0x4ba7,	.sdiv = 0x3,	.nsdiv = 1 },	/* 74.176  MHz */
++	{ .mdiv = 0x0f, .pe = 0x3426,	.sdiv = 0x1,	.nsdiv = 0 },	/* 74.250  MHz */
++	{ .mdiv = 0x0e, .pe = 0x7777,	.sdiv = 0x1,	.nsdiv = 0 },	/* 75.000  MHz */
++	{ .mdiv = 0x01, .pe = 0x4053,	.sdiv = 0x3,	.nsdiv = 1 },	/* 78.800  MHz */
++	{ .mdiv = 0x09, .pe = 0x15b5,	.sdiv = 0x1,	.nsdiv = 0 },	/* 85.500  MHz */
++	{ .mdiv = 0x1b, .pe = 0x3f19,	.sdiv = 0x2,	.nsdiv = 1 },	/* 88.750  MHz */
++	{ .mdiv = 0x10, .pe = 0x71c7,	.sdiv = 0x2,	.nsdiv = 1 },	/* 108.000 MHz */
++	{ .mdiv = 0x00, .pe = 0x47af,	.sdiv = 0x1,	.nsdiv = 0 },	/* 108.108 MHz */
++	{ .mdiv = 0x0c, .pe = 0x3118,	.sdiv = 0x2,	.nsdiv = 1 },	/* 118.963 MHz */
++	{ .mdiv = 0x0c, .pe = 0x2f54,	.sdiv = 0x2,	.nsdiv = 1 },	/* 119.000 MHz */
++	{ .mdiv = 0x07, .pe = 0xe39,	.sdiv = 0x2,	.nsdiv = 1 },	/* 135.000 MHz */
++	{ .mdiv = 0x03, .pe = 0x4ba7,	.sdiv = 0x2,	.nsdiv = 1 },	/* 148.352 MHz */
++	{ .mdiv = 0x0f, .pe = 0x3426,	.sdiv = 0x0,	.nsdiv = 0 },	/* 148.500 MHz */
++	{ .mdiv = 0x03, .pe = 0x4ba7,	.sdiv = 0x1,	.nsdiv = 1 },	/* 296.704 MHz */
++	{ .mdiv = 0x03, .pe = 0x471c,	.sdiv = 0x1,	.nsdiv = 1 },	/* 297     MHz */
++	{ .mdiv = 0x1c, .pe = 0x0,	.sdiv = 0x0,	.nsdiv = 1 },	/* 352     Mhz */
  };
  
-+static struct clkgen_pll_data st_pll3200c32_407_c0_0 = {
-+	/* 407 C0 PLL0 */
-+	.pdn_status	= CLKGEN_FIELD(0x2a0,	0x1,			8),
-+	.locked_status	= CLKGEN_FIELD(0x2a0,	0x1,			24),
-+	.ndiv		= CLKGEN_FIELD(0x2a4,	C32_NDIV_MASK,		16),
-+	.idf		= CLKGEN_FIELD(0x2a4,	C32_IDF_MASK,		0x0),
-+	.num_odfs = 1,
-+	.odf		= { CLKGEN_FIELD(0x2b4, C32_ODF_MASK,		0) },
-+	.odf_gate	= { CLKGEN_FIELD(0x2b4, 0x1,			6) },
-+	.ops		= &stm_pll3200c32_ops,
-+};
-+
-+static struct clkgen_pll_data st_pll3200c32_407_c0_1 = {
-+	/* 407 C0 PLL1 */
-+	.pdn_status	= CLKGEN_FIELD(0x2c8,	0x1,			8),
-+	.locked_status	= CLKGEN_FIELD(0x2c8,	0x1,			24),
-+	.ndiv		= CLKGEN_FIELD(0x2cc,	C32_NDIV_MASK,		16),
-+	.idf		= CLKGEN_FIELD(0x2cc,	C32_IDF_MASK,		0x0),
-+	.num_odfs = 1,
-+	.odf		= { CLKGEN_FIELD(0x2dc, C32_ODF_MASK,		0) },
-+	.odf_gate	= { CLKGEN_FIELD(0x2dc, 0x1,			6) },
-+	.ops		= &stm_pll3200c32_ops,
-+};
-+
- /**
-  * DOC: Clock Generated by PLL, rate set and enabled by bootloader
-  *
-@@ -586,6 +610,14 @@ static struct of_device_id c32_pll_of_match[] = {
- 		.compatible = "st,stih407-plls-c32-a0",
- 		.data = &st_pll3200c32_407_a0,
- 	},
-+	{
-+		.compatible = "st,stih407-plls-c32-c0_0",
-+		.data = &st_pll3200c32_407_c0_0,
-+	},
-+	{
-+		.compatible = "st,stih407-plls-c32-c0_1",
-+		.data = &st_pll3200c32_407_c0_1,
-+	},
- 	{}
- };
- 
+ struct clkgen_quadfs_data {
 -- 
 1.9.1
 
