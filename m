@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758674AbaELOhP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 10:37:15 -0400
-Received: from bay0-omc1-s14.bay0.hotmail.com ([65.54.190.25]:59109 "EHLO
-	bay0-omc1-s14.bay0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758627AbaELOhK convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 10:37:10 -0400
-X-TMN: [XDT09WmwHjnjb92MHI3EjYwoF+H0euti]
-X-Originating-Email: [pintu.k@outlook.com]
-Message-ID: <BAY169-W1156E6803829CAB545274BCEF350@phx.gbl>
-From: Pintu Kumar <pintu.k@outlook.com>
-To: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>
-Subject: RE: Questions regarding DMA buffer sharing using IOMMU
-Date: Mon, 12 May 2014 20:07:10 +0530
-Importance: Normal
-In-Reply-To: <5218408.5YRJXjS4BX@wuerfel>
-References: <BAY169-W12541AD089785F8BFBD4E26EF350@phx.gbl>,<5218408.5YRJXjS4BX@wuerfel>
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 12 May 2014 14:37:10.0077 (UTC) FILETIME=[A8086ED0:01CF6DEF]
+	id S1758696AbaELOir (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 10:38:47 -0400
+Received: from s3.sipsolutions.net ([5.9.151.49]:34492 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758165AbaELOiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 10:38:46 -0400
+Message-ID: <1399905481.4337.16.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH] compiler.h: don't use temporary variable in
+ __compiletime_assert()
+From: Johannes Berg <johannes@sipsolutions.net>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Daniel Santos <daniel.santos@pobox.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-metag <linux-metag@vger.kernel.org>
+Date: Mon, 12 May 2014 16:38:01 +0200
+In-Reply-To: <5370CFAC.40705@imgtec.com>
+References: <1399530685-7749-1-git-send-email-johannes@sipsolutions.net>
+	 <5370CFAC.40705@imgtec.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.1-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
-Thanks for the reply.
 
-----------------------------------------
-> From: arnd@arndb.de
-> To: linux-arm-kernel@lists.infradead.org
-> CC: pintu.k@outlook.com; linux-mm@kvack.org; linux-kernel@vger.kernel.org; linaro-mm-sig@lists.linaro.org
-> Subject: Re: Questions regarding DMA buffer sharing using IOMMU
-> Date: Mon, 12 May 2014 14:00:57 +0200
->
-> On Monday 12 May 2014 15:12:41 Pintu Kumar wrote:
->> Hi,
->> I have some queries regarding IOMMU and CMA buffer sharing.
->> We have an embedded linux device (kernel 3.10, RAM: 256Mb) in
->> which camera and codec supports IOMMU but the display does not support IOMMU.
->> Thus for camera capture we are using iommu buffers using
->> ION/DMABUF. But for all display rendering we are using CMA buffers.
->> So, the question is how to achieve buffer sharing (zero-copy)
->> between Camera and Display using only IOMMU?
->> Currently we are achieving zero-copy using CMA. And we are
->> exploring options to use IOMMU.
->> Now we wanted to know which option is better? To use IOMMU or CMA?
->> If anybody have come across these design please share your thoughts and results.
->
-> There is a slight performance overhead in using the IOMMU in general,
-> because the IOMMU has to fetch the page table entries from memory
-> at least some of the time.
+> Unfortunately this breaks the build of today's linux-next for the Meta
+> architecture (arch/metag), which happens to use a fairly old compiler
+> (based on gcc 4.2.4) which I presume is the reason why.
 
-Ok, we need to check performance later
+That's very odd.
 
->
-> If that overhead is within the constraints you have for transfers between
-> camera and codec, you are always better off using IOMMU since that
-> means you don't have to do memory migration.
+Unfortunately, I don't have most of arch/metag, it seems, where could I
+get it? In particular no gup.c exists for metag in Linus's current tree.
 
-Transfer between camera is codec is fine. But our major concern is single buffer�
-sharing between camera & display. Here camera supports iommu but display does not support iommu.
-Is it possible to render camera preview (iommu buffers) on display (not iommu and required physical contiguous overlay memory)?
+> A bunch of compile time asserts fail, even in code which should be
+> optimised out. E.g. here's one which I analysed:
+> 
+> mm/gup.c: In function ‘follow_page_mask’:
+> mm/gup.c:208: error: size of array ‘type name’ is negative
+> 
+> Line 208 uses HPAGE_PMD_NR which expands to a HPAGE_PMD_SHIFT, which
+> expands to a BUILD_BUG(). However that line is inside an if block
+> conditioned on pmd_trans_huge(*pmd) which include/asm-generic/pgtable.h
+> defines inline to return 0, so the whole block should already be being
+> optimised out.
+> 
+> I don't understand why your patch should break things, I suspect it's
+> related to the sparse behaviour you're trying to work around, but can we
+> please drop this patch until a more portable workaround can be found?
+> I'm happy to test further patches with metag if it helps.
 
-Also is it possible to buffer sharing between 2 iommu supported devices?
+I don't really understand that either - if the compiler could prove that
+the assignment to __cond was a constant, and remember that __cond is now
+constant, I don't really see why it can't follow that through and
+consider "!(condition)" a const??
 
->
-> Note however, that we don't have a way to describe IOMMU relations
-> to devices in DT, so whatever you come up with to do this will most
-> likely be incompatible with what we do in future kernel versions.
->
-> Arnd
- 		 	   		  
+I suppose the other option for the original problem is to ignore
+_compiletime_assert() for sparse, like we do for BUG_ON(), but it'd
+probably be good to analyse more why this particular code is broken now.
+
+johannes
+
