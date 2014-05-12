@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349AbaELUmW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 16:42:22 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:39164 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755120AbaELUmU (ORCPT
+	id S1758238AbaELUn2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 16:43:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38452 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160AbaELUn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 16:42:20 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18/xJ2UeWRPADvTVv7/ZooU
-Date: Mon, 12 May 2014 13:42:13 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Robert Nelson <robertcnelson@gmail.com>
-Cc: Matt Ranostay <mranostay@gmail.com>, robh+dt@kernel.org,
-        mark.rutland@arm.com, Russell King <linux@arm.linux.org.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        pantelis.antoniou@gmail.com, matt.porter@linaro.org
-Subject: Re: [PATCH v2] ARM: dts: am335x-bone-common: Add i2c2 definition
-Message-ID: <20140512204213.GD5668@atomide.com>
-References: <1399686184-1594-1-git-send-email-mranostay@gmail.com>
- <20140512195050.GB5668@atomide.com>
- <CAOCHtYiYwx_bEsyqkbUTTAbhBYESzvfBOOYeVuFXPS1dDy0ZKA@mail.gmail.com>
- <20140512201517.GC5668@atomide.com>
- <CAOCHtYg6XpF0Gbo4iFqsFvP=QSivQQvCzov8UfxeLXMzrRYEWw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOCHtYg6XpF0Gbo4iFqsFvP=QSivQQvCzov8UfxeLXMzrRYEWw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 12 May 2014 16:43:27 -0400
+Date: Mon, 12 May 2014 13:43:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 1/2] FS/CACHEFILES: convert printk to pr_foo()
+Message-Id: <20140512134325.e16b48e91cca8ca1e3f9f63b@linux-foundation.org>
+In-Reply-To: <20140512200445.edee2954e66a1d2ec4cf31ca@skynet.be>
+References: <20140512200445.edee2954e66a1d2ec4cf31ca@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Robert Nelson <robertcnelson@gmail.com> [140512 13:27]:
-> >> >
-> >> > If these pins are not used for i2c2 on some capes, this device
-> >> > should be set to status = "disabled" state by default. Then
-> >> > u-boot could re-enable it on the boards that have i2c2 in use.
-> >>
-> >> To-date, this is the i2c bus that all capes have placed an at24 eeprom
-> >> for cape identification.
-> >
-> > And how many capes actually implement the eeprom cape identification
-> > out of the available capes? :)
+On Mon, 12 May 2014 20:04:45 +0200 Fabian Frederick <fabf@skynet.be> wrote:
+
 > 
-> Not including one off designs in someone's lab. We will never have an
-> accurate number. ;)
-> 
-> So far; just the ones that want their "cape" detected in the default
-> image currently being shipped by CircuitCo. Otherwise the few that
-> I've seen without an eeprom, usually follow this default pinmux.
-> 
-> http://elinux.org/CircuitCo:Basic_Proto_Cape
-> 
-> Which includes that i2c bus enabled.
+> --- a/fs/cachefiles/bind.c
+> +++ b/fs/cachefiles/bind.c
+> @@ -228,9 +228,8 @@ static int cachefiles_daemon_add_cache(struct cachefiles_cache *cache)
+>  	set_bit(CACHEFILES_READY, &cache->flags);
+>  	dput(root);
+>  
+> -	printk(KERN_INFO "CacheFiles:"
+> -	       " File cache on %s registered\n",
+> -	       cache->cache.identifier);
+> +	pr_info("CacheFiles: File cache on %s registered\n",
+> +		cache->cache.identifier);
 
-OK thanks for the info.
- 
-> Either case if fine with me.  As who knows when the dtc "overlay" will
-> every truly make it mainline, as the capemgr was the only real kernel
-> user of the i2c/at24 eeprom information.
+Why are we using "CacheFiles: " everywhere?  Can't this be done via pr_fmt()?
 
-Sounds like we should keep it disabled though so u-boot can be used
-to toggle it while waiting for the capemgr. That's because the board
-has a header for pins, so it's not exactly limited to just the capes.
-
-Anybody working on enabling/disabling cape dtb configurations in u-boot?
-
-Regards,
-
-Tony
