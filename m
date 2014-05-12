@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379AbaELSLp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 14:11:45 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:18950 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292AbaELSLn (ORCPT
+	id S1754242AbaELSP2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 14:15:28 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:61802 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862AbaELSP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 14:11:43 -0400
-Message-ID: <1399918300.2648.24.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 2/6] ipc/sem.c: Bugfix for semctl(,,GETZCNT)
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, 1vier1@web.de
-Date: Mon, 12 May 2014 11:11:40 -0700
-In-Reply-To: <1399716199-26776-3-git-send-email-manfred@colorfullife.com>
-References: <1399716199-26776-1-git-send-email-manfred@colorfullife.com>
-	 <1399716199-26776-2-git-send-email-manfred@colorfullife.com>
-	 <1399716199-26776-3-git-send-email-manfred@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 12 May 2014 14:15:26 -0400
+Date: Mon, 12 May 2014 14:15:23 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        cgroups@vger.kernel.org
+Subject: [GIT PULL] cgroup fixes for v3.15-rc5
+Message-ID: <20140512181523.GG1421@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-05-10 at 12:03 +0200, Manfred Spraul wrote:
-> GETZCNT is supposed to return the number of threads that wait until
-> a semaphore value becomes 0.
-> The current implementation overlooks complex operations that contain
-> both wait-for-zero operation and operations that alter at least one semaphore.
+Hello, Linus.
 
-Indeed. the pending_alter list does represent blocked processes on the
-sem. Good catch. Btw, how on earth did you run into this? reading the
-code or a real case?
+During recent restructuring, device_cgroup unified config input check
+and enforcement logic; unfortunately, it turned out to share too much.
+Aristeu's patches fix the breakage and marked for -stable backport.
 
-> 
-> The patch fixes that.
-> It's intentionally copy&paste, this will be cleaned up in the next patch.
+The other two patches are fallouts from kernfs conversion.  The blkcg
+change is temporary and will go away once kernfs internal locking gets
+simplified (patches pending).
 
-Instead I would have expected this patch to actually come after the
-count_* refactoring.
+The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
 
+  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
 
-> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+are available in the git repository at:
 
-Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.15-fixes
 
+for you to fetch changes up to 36c38fb7144aa941dc072ba8f58b2dbe509c0345:
+
+  blkcg: use trylock on blkcg_pol_mutex in blkcg_reset_stats() (2014-05-05 13:48:18 -0400)
+
+Thanks.
+
+----------------------------------------------------------------
+Aristeu Rozanski (3):
+      device_cgroup: rework device access check and exception checking
+      device_cgroup: fix the comment format for recently added functions
+      device_cgroup: check if exception removal is allowed
+
+Li Zefan (1):
+      cgroup: fix the retry path of cgroup_mount()
+
+Tejun Heo (1):
+      blkcg: use trylock on blkcg_pol_mutex in blkcg_reset_stats()
+
+ block/blk-cgroup.c       |  15 +++-
+ kernel/cgroup.c          |   8 +-
+ security/device_cgroup.c | 202 +++++++++++++++++++++++++++++++++++++----------
+ 3 files changed, 177 insertions(+), 48 deletions(-)
+
+-- 
+tejun
