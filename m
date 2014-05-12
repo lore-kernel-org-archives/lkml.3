@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827AbaELCMo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 22:12:44 -0400
-Received: from 1wt.eu ([62.212.114.60]:34475 "EHLO 1wt.eu"
+	id S1752538AbaELBmH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:42:07 -0400
+Received: from 1wt.eu ([62.212.114.60]:34449 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752382AbaELBmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:42:09 -0400
-Message-Id: <20140512003200.763002327@1wt.eu>
+	id S1752382AbaELBmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:42:01 -0400
+Message-Id: <20140512003206.139322055@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:32:03 +0200
+Date: Mon, 12 May 2014 02:34:11 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Willy Tarreau <w@1wt.eu>
-Subject: [ 003/143] Revert "x86, ptrace: fix build breakage with gcc 4.7"
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Tim Gardner <tim.gardner@canonical.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 131/143] dm snapshot: fix data corruption
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,44 +26,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Willy Tarreau <w@1wt.eu>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-This reverts commit 4ed3bb08f1698c62685278051c19f474fbf961d2.
+CVE-2013-4299
 
-As reported by Sven-Haegar Koch, this patch breaks make headers_check :
+BugLink: http://bugs.launchpad.net/bugs/1241769
 
-   CHECK   include (0 files)
-   CHECK   include/asm (54 files)
-   /home/haegar/src/2.6.32/linux/usr/include/asm/ptrace.h:5: included file 'linux/linkage.h' is not exported
+This patch fixes a particular type of data corruption that has been
+encountered when loading a snapshot's metadata from disk.
 
+When we allocate a new chunk in persistent_prepare, we increment
+ps->next_free and we make sure that it doesn't point to a metadata area
+by further incrementing it if necessary.
+
+When we load metadata from disk on device activation, ps->next_free is
+positioned after the last used data chunk. However, if this last used
+data chunk is followed by a metadata area, ps->next_free is positioned
+erroneously to the metadata area. A newly-allocated chunk is placed at
+the same location as the metadata area, resulting in data or metadata
+corruption.
+
+This patch changes the code so that ps->next_free skips the metadata
+area when metadata are loaded in function read_exceptions.
+
+The patch also moves a piece of code from persistent_prepare_exception
+to a separate function skip_metadata to avoid code duplication.
+
+CVE-2013-4299
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: stable@vger.kernel.org
+Cc: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+(back ported from commit e9c6a182649f4259db704ae15a91ac820e63b0ca)
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Acked-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/include/asm/ptrace.h | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/md/dm-snap-persistent.c | 18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
-index e668d72..0f0d908 100644
---- a/arch/x86/include/asm/ptrace.h
-+++ b/arch/x86/include/asm/ptrace.h
-@@ -2,7 +2,6 @@
- #define _ASM_X86_PTRACE_H
+diff --git a/drivers/md/dm-snap-persistent.c b/drivers/md/dm-snap-persistent.c
+index 0c74642..97c3f06 100644
+--- a/drivers/md/dm-snap-persistent.c
++++ b/drivers/md/dm-snap-persistent.c
+@@ -252,6 +252,14 @@ static chunk_t area_location(struct pstore *ps, chunk_t area)
+ 	return 1 + ((ps->exceptions_per_area + 1) * area);
+ }
  
- #include <linux/compiler.h>	/* For __user */
--#include <linux/linkage.h>	/* For asmregparm */
- #include <asm/ptrace-abi.h>
- #include <asm/processor-flags.h>
++static void skip_metadata(struct pstore *ps)
++{
++	uint32_t stride = ps->exceptions_per_area + 1;
++	chunk_t next_free = ps->next_free;
++	if (sector_div(next_free, stride) == 1)
++		ps->next_free++;
++}
++
+ /*
+  * Read or write a metadata area.  Remembering to skip the first
+  * chunk which holds the header.
+@@ -481,6 +489,8 @@ static int read_exceptions(struct pstore *ps,
  
-@@ -143,8 +142,8 @@ extern void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
- 			 int error_code, int si_code);
- void signal_fault(struct pt_regs *regs, void __user *frame, char *where);
+ 	ps->current_area--;
  
--extern asmregparm long syscall_trace_enter(struct pt_regs *);
--extern asmregparm void syscall_trace_leave(struct pt_regs *);
-+extern long syscall_trace_enter(struct pt_regs *);
-+extern void syscall_trace_leave(struct pt_regs *);
++	skip_metadata(ps);
++
+ 	return 0;
+ }
  
- static inline unsigned long regs_return_value(struct pt_regs *regs)
+@@ -587,8 +597,6 @@ static int persistent_prepare_exception(struct dm_exception_store *store,
+ 					struct dm_snap_exception *e)
  {
+ 	struct pstore *ps = get_info(store);
+-	uint32_t stride;
+-	chunk_t next_free;
+ 	sector_t size = get_dev_size(store->cow->bdev);
+ 
+ 	/* Is there enough room ? */
+@@ -601,10 +609,8 @@ static int persistent_prepare_exception(struct dm_exception_store *store,
+ 	 * Move onto the next free pending, making sure to take
+ 	 * into account the location of the metadata chunks.
+ 	 */
+-	stride = (ps->exceptions_per_area + 1);
+-	next_free = ++ps->next_free;
+-	if (sector_div(next_free, stride) == 1)
+-		ps->next_free++;
++	ps->next_free++;
++	skip_metadata(ps);
+ 
+ 	atomic_inc(&ps->pending_count);
+ 	return 0;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
