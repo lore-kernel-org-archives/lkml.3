@@ -1,60 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932600AbaELR41 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 13:56:27 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:33432 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932577AbaELR4Z (ORCPT
+	id S932619AbaELR4d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 13:56:33 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:37802 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932577AbaELR4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 13:56:25 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: An8KABQKcVNbsHLF/2dsb2JhbABZgwasagkBBQGaG4EaF3SCUxMcIxiBAiQTiEUBz0qFVoh8hEcBA48liiIBiwSIA4M4Ow
-Date: Mon, 12 May 2014 19:56:23 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Tejun Heo <tj@kernel.org>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] kernel/workqueue.c: pr_warning/pr_warn & printk/pr_info
-Message-Id: <20140512195623.bedc6e41683596d8d3b486c7@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 12 May 2014 13:56:30 -0400
+Date: Mon, 12 May 2014 13:56:27 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Li Zefan <lizefan@huawei.com>, Andrey Wagin <avagin@gmail.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        cgroups@vger.kernel.org, libcg-devel@lists.sourceforge.net
+Subject: [PATCH driver-core-linus] kernfs, sysfs, cgroup: restrict extra perm
+ check on open to sysfs
+Message-ID: <20140512175627.GE1421@htj.dyndns.org>
+References: <CANaxB-xUm3rJ-Cbp72q-rQJO5mZe1qK6qXsQM=vh0U8upJ44+A@mail.gmail.com>
+ <20140512151908.GC1421@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140512151908.GC1421@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The kernfs open method - kernfs_fop_open() - inherited extra
+permission checks from sysfs.  While the vfs layer allows ignoring the
+read/write permissions checks if the issuer has CAP_DAC_OVERRIDE,
+sysfs explicitly denied open regardless of the cap if the file doesn't
+have any of the UGO perms of the requested access or doesn't implement
+the requested operation.  It can be debated whether this was a good
+idea or not but the behavior is too subtle and dangerous to change at
+this point.
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+After cgroup got converted to kernfs, this extra perm check also got
+applied to cgroup breaking libcgroup which opens write-only files with
+O_RDWR as root.  This patch gates the extra open permission check with
+a new flag KERNFS_ROOT_EXTRA_OPEN_PERM_CHECK and enables it for sysfs.
+For sysfs, nothing changes.  For cgroup, root now can perform any
+operation regardless of the permissions as it was before kernfs
+conversion.  Note that kernfs still fails unimplemented operations
+with -EINVAL.
+
+While at it, add comments explaining KERNFS_ROOT flags.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Andrey Wagin <avagin@gmail.com>
+Cc: Li Zefan <lizefan@huawei.com>
+References: http://lkml.kernel.org/g/CANaxB-xUm3rJ-Cbp72q-rQJO5mZe1qK6qXsQM=vh0U8upJ44+A@mail.gmail.com
+Fixes: 2bd59d48ebfb ("cgroup: convert to kernfs")
 ---
- kernel/workqueue.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/kernfs/file.c       |   19 +++++++++++--------
+ fs/sysfs/mount.c       |    3 ++-
+ include/linux/kernfs.h |   19 ++++++++++++++++++-
+ 3 files changed, 31 insertions(+), 10 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 0ee63af..6824afc 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4098,8 +4098,8 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
- 	/* create a new pwq */
- 	pwq = alloc_unbound_pwq(wq, target_attrs);
- 	if (!pwq) {
--		pr_warning("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
--			   wq->name);
-+		pr_warn("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
-+			wq->name);
- 		goto out_unlock;
- 	}
+--- a/fs/kernfs/file.c
++++ b/fs/kernfs/file.c
+@@ -610,6 +610,7 @@ static void kernfs_put_open_node(struct
+ static int kernfs_fop_open(struct inode *inode, struct file *file)
+ {
+ 	struct kernfs_node *kn = file->f_path.dentry->d_fsdata;
++	struct kernfs_root *root = kernfs_root(kn);
+ 	const struct kernfs_ops *ops;
+ 	struct kernfs_open_file *of;
+ 	bool has_read, has_write, has_mmap;
+@@ -624,14 +625,16 @@ static int kernfs_fop_open(struct inode
+ 	has_write = ops->write || ops->mmap;
+ 	has_mmap = ops->mmap;
  
-@@ -4548,7 +4548,7 @@ void print_worker_info(const char *log_lvl, struct task_struct *task)
- 		probe_kernel_read(desc, worker->desc, sizeof(desc) - 1);
+-	/* check perms and supported operations */
+-	if ((file->f_mode & FMODE_WRITE) &&
+-	    (!(inode->i_mode & S_IWUGO) || !has_write))
+-		goto err_out;
+-
+-	if ((file->f_mode & FMODE_READ) &&
+-	    (!(inode->i_mode & S_IRUGO) || !has_read))
+-		goto err_out;
++	/* see the flag definition for details */
++	if (root->flags & KERNFS_ROOT_EXTRA_OPEN_PERM_CHECK) {
++		if ((file->f_mode & FMODE_WRITE) &&
++		    (!(inode->i_mode & S_IWUGO) || !has_write))
++			goto err_out;
++
++		if ((file->f_mode & FMODE_READ) &&
++		    (!(inode->i_mode & S_IRUGO) || !has_read))
++			goto err_out;
++	}
  
- 	if (fn || name[0] || desc[0]) {
--		printk("%sWorkqueue: %s %pf", log_lvl, name, fn);
-+		pr_info("%sWorkqueue: %s %pf", log_lvl, name, fn);
- 		if (desc[0])
- 			pr_cont(" (%s)", desc);
- 		pr_cont("\n");
--- 
-1.9.1
+ 	/* allocate a kernfs_open_file for the file */
+ 	error = -ENOMEM;
+--- a/fs/sysfs/mount.c
++++ b/fs/sysfs/mount.c
+@@ -63,7 +63,8 @@ int __init sysfs_init(void)
+ {
+ 	int err;
+ 
+-	sysfs_root = kernfs_create_root(NULL, 0, NULL);
++	sysfs_root = kernfs_create_root(NULL, KERNFS_ROOT_EXTRA_OPEN_PERM_CHECK,
++					NULL);
+ 	if (IS_ERR(sysfs_root))
+ 		return PTR_ERR(sysfs_root);
+ 
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -50,7 +50,24 @@ enum kernfs_node_flag {
+ 
+ /* @flags for kernfs_create_root() */
+ enum kernfs_root_flag {
+-	KERNFS_ROOT_CREATE_DEACTIVATED = 0x0001,
++	/*
++	 * kernfs_nodes are created in the deactivated state and invisible.
++	 * They require explicit kernfs_activate() to become visible.  This
++	 * can be used to make related nodes become visible atomically
++	 * after all nodes are created successfully.
++	 */
++	KERNFS_ROOT_CREATE_DEACTIVATED		= 0x0001,
++
++	/*
++	 * For regular flies, if the opener has CAP_DAC_OVERRIDE, open(2)
++	 * succeeds regardless of the RW permissions.  sysfs had an extra
++	 * layer of enforcement where open(2) fails with -EACCES regardless
++	 * of CAP_DAC_OVERRIDE if the permission doesn't have the
++	 * respective read or write access at all (none of S_IRUGO or
++	 * S_IWUGO) or the respective operation isn't implemented.  The
++	 * following flag enables that behavior.
++	 */
++	KERNFS_ROOT_EXTRA_OPEN_PERM_CHECK	= 0x0002,
+ };
+ 
+ /* type-specific structures for kernfs_node union members */
