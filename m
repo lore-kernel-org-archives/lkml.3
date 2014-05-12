@@ -1,76 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017AbaELXSU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 19:18:20 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:27533 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752642AbaELXSS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 19:18:18 -0400
-Date: Mon, 12 May 2014 19:18:14 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Clark Williams <williams@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [patch 0/3] futex/rtmutex: Fix issues exposed by trinity
-Message-ID: <20140512191814.086b15cd@gandalf.local.home>
-In-Reply-To: <alpine.DEB.2.02.1405130020050.6261@ionos.tec.linutronix.de>
-References: <20140512190438.314125476@linutronix.de>
-	<20140512173705.0bbdb675@gandalf.local.home>
-	<alpine.DEB.2.02.1405122344330.6261@ionos.tec.linutronix.de>
-	<20140512180839.2eb18000@gandalf.local.home>
-	<alpine.DEB.2.02.1405130020050.6261@ionos.tec.linutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	id S1755860AbaELXUu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 19:20:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:25550 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753552AbaELXUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 19:20:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1039,1389772800"; 
+   d="scan'208";a="510577762"
+From: Andi Kleen <andi@firstfloor.org>
+To: acme@infradead.org
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
+        eranian@google.com, namhyung@kernel.org, jolsa@redhat.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 3/9] perf, tools: Enable printing the srcline in the history v3
+Date: Mon, 12 May 2014 16:20:23 -0700
+Message-Id: <1399936829-28194-4-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1399936829-28194-1-git-send-email-andi@firstfloor.org>
+References: <1399936829-28194-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 May 2014 00:37:21 +0200 (CEST)
-Thomas Gleixner <tglx@linutronix.de> wrote:
+From: Andi Kleen <ak@linux.intel.com>
 
-> On Mon, 12 May 2014, Steven Rostedt wrote:
-> > I did admit I made a mistake. If you read the rest of my email that you
-> > cut off, I said "Sure, I should have pushed Lai for that at the time.
-> > Lessons learned. I was expecting he would do so after we got to a final
-> > version of the patch but I was also working on other things at the time
-> > and forgot to remind him."
-> > 
-> > I even stated that I'm doing better now. That means I have learned from
-> > my mistakes. And continue to do so.
-> 
-> Sure, with your latest multi reader patches you break even the compile
-> with CONFIG_DEBUG_RT_MUTEXES=y due to:
-> 
-> +               debug_rt_mutex_print_deadlock(waiter);
-> 
-> I'm really impressed by your improvements.
-> 
+For lbr-as-callgraph we need to see the line number in the history,
+because many LBR entries can be in a single function, and just
+showing the same function name many times is not useful.
 
-Really Thomas? You are judging my work flow with a patch that I posted
-as RFC hoping to get benchmarks from, which I've only received a few
-for, and I'm hoping to get more.
+When the history code is configured to sort by address, also try to
+resolve the address to a file:srcline and display this in the browser.
+If that doesn't work still display the address.
 
-I've never posted that patch for inclusion, because it does need more
-testing and even needs more cleaning up. I only posted it hoping to get
-numbers to know if it is worth pursuing or not.
+This can be also useful without LBRs for understanding which call in a large
+function (or in which inlined function) called something else.
 
-I even tell Clark not to use it as it is not ready for prime time yet.
+Contains fixes from Namhyung Kim
 
-And because you have never even acknowledged that patch until now,
-I've pretty much considered it dead.
+v2: Refactor code into common function
+v3: Fix GTK build
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/ui/browsers/hists.c | 17 -----------------
+ tools/perf/ui/gtk/hists.c      | 11 +----------
+ tools/perf/ui/stdio/hist.c     | 23 +++++++++--------------
+ tools/perf/util/callchain.c    | 29 +++++++++++++++++++++++++++++
+ tools/perf/util/callchain.h    |  5 +++++
+ tools/perf/util/machine.c      |  2 +-
+ tools/perf/util/srcline.c      |  6 ++++--
+ 7 files changed, 49 insertions(+), 44 deletions(-)
 
--- Steve
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 7ec871a..97f7f9d 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -394,23 +394,6 @@ out:
+ 	return key;
+ }
+ 
+-static char *callchain_list__sym_name(struct callchain_list *cl,
+-				      char *bf, size_t bfsize, bool show_dso)
+-{
+-	int printed;
+-
+-	if (cl->ms.sym)
+-		printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
+-	else
+-		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
+-
+-	if (show_dso)
+-		scnprintf(bf + printed, bfsize - printed, " %s",
+-			  cl->ms.map ? cl->ms.map->dso->short_name : "unknown");
+-
+-	return bf;
+-}
+-
+ #define LEVEL_OFFSET_STEP 3
+ 
+ static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *browser,
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index e395ef9..4262a9b 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -72,15 +72,6 @@ void perf_gtk__init_hpp(void)
+ 				perf_gtk__hpp_color_overhead_guest_us;
+ }
+ 
+-static void callchain_list__sym_name(struct callchain_list *cl,
+-				     char *bf, size_t bfsize)
+-{
+-	if (cl->ms.sym)
+-		scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
+-	else
+-		scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
+-}
+-
+ static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
+ 				    GtkTreeIter *parent, int col, u64 total)
+ {
+@@ -111,7 +102,7 @@ static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
+ 			scnprintf(buf, sizeof(buf), "%5.2f%%", percent);
+ 			gtk_tree_store_set(store, &iter, 0, buf, -1);
+ 
+-			callchain_list__sym_name(chain, buf, sizeof(buf));
++			callchain_list__sym_name(chain, buf, sizeof(buf), false);
+ 			gtk_tree_store_set(store, &iter, col, buf, -1);
+ 
+ 			if (need_new_parent) {
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index d59893e..edde277 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -41,6 +41,7 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
+ {
+ 	int i;
+ 	size_t ret = 0;
++	char bf[1024];
+ 
+ 	ret += callchain__fprintf_left_margin(fp, left_margin);
+ 	for (i = 0; i < depth; i++) {
+@@ -56,11 +57,8 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
+ 		} else
+ 			ret += fprintf(fp, "%s", "          ");
+ 	}
+-	if (chain->ms.sym)
+-		ret += fprintf(fp, "%s\n", chain->ms.sym->name);
+-	else
+-		ret += fprintf(fp, "0x%0" PRIx64 "\n", chain->ip);
+-
++	fputs(callchain_list__sym_name(chain, bf, sizeof(bf), false), fp);
++	fputc('\n', fp);
+ 	return ret;
+ }
+ 
+@@ -168,6 +166,7 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
+ 	struct rb_node *node;
+ 	int i = 0;
+ 	int ret = 0;
++	char bf[1024];
+ 
+ 	/*
+ 	 * If have one single callchain root, don't bother printing
+@@ -195,10 +194,8 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
+ 			} else
+ 				ret += callchain__fprintf_left_margin(fp, left_margin);
+ 
+-			if (chain->ms.sym)
+-				ret += fprintf(fp, " %s\n", chain->ms.sym->name);
+-			else
+-				ret += fprintf(fp, " %p\n", (void *)(long)chain->ip);
++			ret += fprintf(fp, "%s\n", callchain_list__sym_name(chain, bf, sizeof(bf),
++							false));
+ 
+ 			if (++entries_printed == callchain_param.print_limit)
+ 				break;
+@@ -218,6 +215,7 @@ static size_t __callchain__fprintf_flat(FILE *fp, struct callchain_node *node,
+ {
+ 	struct callchain_list *chain;
+ 	size_t ret = 0;
++	char bf[1024];
+ 
+ 	if (!node)
+ 		return 0;
+@@ -228,11 +226,8 @@ static size_t __callchain__fprintf_flat(FILE *fp, struct callchain_node *node,
+ 	list_for_each_entry(chain, &node->val, list) {
+ 		if (chain->ip >= PERF_CONTEXT_MAX)
+ 			continue;
+-		if (chain->ms.sym)
+-			ret += fprintf(fp, "                %s\n", chain->ms.sym->name);
+-		else
+-			ret += fprintf(fp, "                %p\n",
+-					(void *)(long)chain->ip);
++		ret += fprintf(fp, "                %s\n", callchain_list__sym_name(chain,
++					bf, sizeof(bf), false));
+ 	}
+ 
+ 	return ret;
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 8d9db45..56ab517 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -551,3 +551,32 @@ int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *samp
+ 		return 0;
+ 	return callchain_append(he->callchain, &callchain_cursor, sample->period);
+ }
++
++char *callchain_list__sym_name(struct callchain_list *cl,
++			       char *bf, size_t bfsize, bool show_dso)
++{
++	int printed;
++
++	if (cl->ms.sym) {
++		if (callchain_param.key == CCKEY_ADDRESS &&
++		    cl->ms.map && !cl->srcline)
++			cl->srcline = get_srcline(cl->ms.map->dso,
++						  map__rip_2objdump(cl->ms.map,
++								    cl->ip));
++		if (cl->srcline)
++			printed = scnprintf(bf, bfsize, "%s %s",
++					cl->ms.sym->name, cl->srcline);
++		else
++			printed = scnprintf(bf, bfsize, "%s",
++					    cl->ms.sym->name);
++	} else
++		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
++
++	if (show_dso)
++		scnprintf(bf + printed, bfsize - printed, " %s",
++			  cl->ms.map ?
++			  cl->ms.map->dso->short_name :
++			  "unknown");
++
++	return bf;
++}
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index be29bb8..39322ef 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -59,6 +59,7 @@ struct callchain_param {
+ struct callchain_list {
+ 	u64			ip;
+ 	struct map_symbol	ms;
++	char		       *srcline;
+ 	struct list_head	list;
+ };
+ 
+@@ -158,4 +159,8 @@ int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent
+ int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *sample);
+ 
+ extern const char record_callchain_help[];
++
++char *callchain_list__sym_name(struct callchain_list *cl,
++			       char *bf, size_t bfsize, bool show_dso);
++
+ #endif	/* __PERF_CALLCHAIN_H */
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 4e887d8..7350a5b 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1289,7 +1289,7 @@ static int add_callchain_ip(struct machine *machine,
+ 			return -EINVAL;
+ 	}
+ 
+-	return callchain_cursor_append(&callchain_cursor, ip, al.map, al.sym);
++	return callchain_cursor_append(&callchain_cursor, al.addr, al.map, al.sym);
+ }
+ 
+ #define CHASHSZ 127
+diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+index f3e4bc5..c6a7cdc 100644
+--- a/tools/perf/util/srcline.c
++++ b/tools/perf/util/srcline.c
+@@ -258,7 +258,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
+ 	const char *dso_name;
+ 
+ 	if (!dso->has_srcline)
+-		return SRCLINE_UNKNOWN;
++		goto out;
+ 
+ 	if (dso->symsrc_filename)
+ 		dso_name = dso->symsrc_filename;
+@@ -289,7 +289,9 @@ out:
+ 		dso->has_srcline = 0;
+ 		dso__free_a2l(dso);
+ 	}
+-	return SRCLINE_UNKNOWN;
++	if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
++		return SRCLINE_UNKNOWN;
++	return srcline;
+ }
+ 
+ void free_srcline(char *srcline)
+-- 
+1.9.0
+
