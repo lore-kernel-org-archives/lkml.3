@@ -1,123 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302AbaELK1R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 06:27:17 -0400
-Received: from smtprelay01.ispgateway.de ([80.67.31.28]:49982 "EHLO
-	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864AbaELK1Q (ORCPT
+	id S1756803AbaELK3S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 06:29:18 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:32742 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512AbaELK3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 06:27:16 -0400
-References: <1398561815-22033-1-git-send-email-peter@piie.net> <1399139966-10625-1-git-send-email-peter@piie.net> <1399139966-10625-5-git-send-email-peter@piie.net> <20140506105029.GC2858@e102654-lin.cambridge.arm.com>
-Message-ID: <cone.1399890428.265455.932.1000@mups>
-X-Mailer: http://www.courier-mta.org/cone/
-From: Peter Feuerer <peter@piie.net>
-To: Javi Merino <javi.merino@arm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Zhang Rui <rui.zhang@intel.com>, Andreas Mohr <andi@lisas.de>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH v3 4/6] acerhdf: Use bang-bang thermal governor
-Date: Mon, 12 May 2014 12:27:08 +0200
-Mime-Version: 1.0
-Content-Type: text/plain; format=flowed; charset="US-ASCII"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: NDA0MDk0
+	Mon, 12 May 2014 06:29:17 -0400
+X-IronPort-AV: E=Sophos;i="4.97,1034,1389744000"; 
+   d="scan'208";a="129293683"
+From: David Vrabel <david.vrabel@citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: [PATCH] x86: skip check for spurious faults for non-present faults
+Date: Mon, 12 May 2014 11:29:10 +0100
+Message-ID: <1399890550-26475-1-git-send-email-david.vrabel@citrix.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Javi,
+If a fault on a kernel address is due to a non-present page, then it
+cannot be the result of stale TLB entry from a protection change (RO
+to RW or NX to X).  Thus the pagetable walk in spurious_fault() can be
+skipped.
 
-Javi Merino writes:
+This avoids spurious_fault() oopsing in some cases if the pagetables
+it attempts to walk are not accessible.  This obscures the location of
+the original fault.
 
-> Hi Peter,
-> 
-> On Sat, May 03, 2014 at 06:59:24PM +0100, Peter Feuerer wrote:
->> acerhdf has been doing an on-off fan control using hysteresis by
->> post-manipulating the outcome of thermal subsystem trip point handling.
->> This patch enables acerhdf to use the bang-bang governor, which is
->> intended for on-off controlled fans.
->> 
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> CC: Zhang Rui <rui.zhang@intel.com>
->> Cc: Andreas Mohr <andi@lisas.de>
->> Cc: Borislav Petkov <bp@suse.de>
->> Cc: Javi Merino <javi.merino@arm.com>
->> Signed-off-by: Peter Feuerer <peter@piie.net>
->> ---
->>  drivers/platform/x86/Kconfig   |  2 +-
->>  drivers/platform/x86/acerhdf.c | 34 +++++++++++++++++++++++++++++-----
->>  2 files changed, 30 insertions(+), 6 deletions(-)
->> 
->> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
->> index 27df2c5..0c15d89 100644
->> --- a/drivers/platform/x86/Kconfig
->> +++ b/drivers/platform/x86/Kconfig
->> @@ -38,7 +38,7 @@ config ACER_WMI
->>  
->>  config ACERHDF
->>  	tristate "Acer Aspire One temperature and fan driver"
->> -	depends on THERMAL && ACPI
->> +	depends on ACPI && THERMAL_GOV_BANG_BANG
->>  	---help---
->>  	  This is a driver for Acer Aspire One netbooks. It allows to access
->>  	  the temperature sensor and to control the fan.
->> diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
->> index 176edbd..afaa849 100644
->> --- a/drivers/platform/x86/acerhdf.c
->> +++ b/drivers/platform/x86/acerhdf.c
->> @@ -50,7 +50,7 @@
->>   */
->>  #undef START_IN_KERNEL_MODE
->>  
->> -#define DRV_VER "0.5.30"
->> +#define DRV_VER "0.5.31"
->>  
->>  /*
->>   * According to the Atom N270 datasheet,
->> @@ -259,6 +259,14 @@ static const struct bios_settings_t bios_tbl[] = {
->>  
->>  static const struct bios_settings_t *bios_cfg __read_mostly;
->>  
->> +/*
->> + * this struct is used to instruct thermal layer to use bang_bang instead of
->> + * default governor for acerhdf
->> + */
->> +static struct thermal_zone_params acerhdf_zone_params = {
->> +	.governor_name = "bang_bang",
->> +};
->> +
->>  static int acerhdf_get_temp(int *temp)
->>  {
->>  	u8 read_temp;
->> @@ -440,6 +448,15 @@ static int acerhdf_get_trip_type(struct thermal_zone_device *thermal, int trip,
->>  	return 0;
->>  }
->>  
->> +static int acerhdf_get_trip_hyst(struct thermal_zone_device *thermal, int trip,
->> +				 unsigned long *temp)
->> +{
->> +	if (trip == 0)
->> +		*temp = fanon - fanoff;
->> +
->> +	return 0;
->> +}
->> +
-> 
-> I think you should only return 0 if you've updated the temperature.
-> Otherwise you're telling the calling function that everything went all
-> right but you may be leaving garbage in *temp.  What about
-> 
-> 	if (trip != 0)
-> 		return -EINVAL;
-> 
-> 	*temp = fanon - fanoff;
-> 	return 0;
+This also fixes a crash with Xen PV guests when they access entries in
+the M2P corresponding to device MMIO regions.  The M2P is mapped
+(read-only) by Xen into the kernel address space of the guest and this
+mapping may contains holes for non-RAM regions.  Read faults will
+result in calls to spurious_fault(), but because the page tables for
+the M2P mappings are not accessible by the guest the pagetable walk
+would fault.
 
-Yes, sounds good.  What about trip == 1?  This is a valid trip point for 
-acerhdf (critical) and one could argue, that it has a valid hysteresis of 
-0.  - Thus EINVAL would be wrong here.
+This was not normally a problem as MMIO mappings would not normally
+result in a M2P lookup because of the use of the _PAGE_IOMAP bit the
+PTE.  However, removing the _PAGE_IOMAP bit requires M2P lookups for
+MMIO mappings as well.
 
-thanks and kind regards,
---peter;
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+x86 maintainers, this is a prerequisite for removing Xen's usage of
+_PAGE_IOMAP so I think this is best merged via the Xen tree.
+
+See the full series at https://lkml.org/lkml/2014/4/15/390
+---
+ arch/x86/mm/fault.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 8e57229..c39e249 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -936,8 +936,10 @@ spurious_fault(unsigned long error_code, unsigned long address)
+ 	pte_t *pte;
+ 	int ret;
+ 
+-	/* Reserved-bit violation or user access to kernel space? */
+-	if (error_code & (PF_USER | PF_RSVD))
++	/* Only check for spurious faults on supervisor write or
++	   instruction faults. */
++	if (error_code != (PF_WRITE | PF_PROT)
++	    && error_code != (PF_INSTR | PF_PROT))
+ 		return 0;
+ 
+ 	pgd = init_mm.pgd + pgd_index(address);
+-- 
+1.7.10.4
+
