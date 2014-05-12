@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797AbaELQFk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:05:40 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:63619 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754370AbaELQFh (ORCPT
+	id S1755314AbaELQHR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:07:17 -0400
+Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:52828
+	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752204AbaELQHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 12:05:37 -0400
-Date: Mon, 12 May 2014 12:05:35 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
-        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 1/8] ftrace: make CALLER_ADDRx macros more generic
-Message-ID: <20140512120535.041030dd@gandalf.local.home>
-In-Reply-To: <20140512155811.GB4880@arm.com>
-References: <1394862048-28758-1-git-send-email-takahiro.akashi@linaro.org>
-	<1398851676-16389-1-git-send-email-takahiro.akashi@linaro.org>
-	<1398851676-16389-2-git-send-email-takahiro.akashi@linaro.org>
-	<20140502151957.6978d870@gandalf.local.home>
-	<20140512155811.GB4880@arm.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Mon, 12 May 2014 12:07:15 -0400
+Date: Mon, 12 May 2014 11:07:12 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Jianyu Zhan <nasa4836@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, fabf@skynet.be,
+        sasha.levin@oracle.com, oleg@redhat.com,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, iamjoonsoo.kim@lge.com,
+        kirill.shutemov@linux.intel.com, Cyrill Gorcunov <gorcunov@gmail.com>,
+        dave.hansen@linux.intel.com, toshi.kani@hp.com,
+        paul.gortmaker@windriver.com, srivatsa.bhat@linux.vnet.ibm.com,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] mm: add comment for __mod_zone_page_stat
+In-Reply-To: <CAHz2CGUfLx7DNgdNoAL0G3a9Ht6yf3bhWaojjNx91aF7L-iDQw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1405121106080.17673@gentwo.org>
+References: <1399811500-14472-1-git-send-email-nasa4836@gmail.com> <alpine.DEB.2.10.1405120858040.3090@gentwo.org> <CAHz2CGUfLx7DNgdNoAL0G3a9Ht6yf3bhWaojjNx91aF7L-iDQw@mail.gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 May 2014 16:58:11 +0100
-Will Deacon <will.deacon@arm.com> wrote:
+On Mon, 12 May 2014, Jianyu Zhan wrote:
 
-> Akashi: did you get around to posting a new version of this patch? We can't
-> take your arm64 patches until you get the core stuff merged...
+> This means they guarantee that even they are preemted the vm
+> counter won't be modified incorrectly.  Because the counter is page-related
+> (e.g., a new anon page added), and they are exclusively hold the pte lock.
 
-I haven't seen any patches yet.
-
-What I can also do is to create a separate branch based on mainline,
-and just apply this change to the core. Then you could pull that branch
-with a note to Linus that it is also in my tree with the common
-ancestor.
-
-If he pulls your work first, he'll only get that change from my tree,
-and if he pulls mine first it doesn't matter as all the changes will be
-there.
-
-This is something he said at Kernel Summit that was normal procedure if
-there's a change in one tree that another tree is dependent on.
-
--- Steve
-
+Ok. if these locations hold the pte lock then preemption is disabled and
+you are ok to use __mod_zone_page_state. Has nothing to do with the page.
