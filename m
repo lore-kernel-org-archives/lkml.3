@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139AbaELKQS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 06:16:18 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:34324 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756078AbaELKQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 06:16:14 -0400
+	id S1756191AbaELKQW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 06:16:22 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:13437 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756078AbaELKQT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 06:16:19 -0400
 X-IronPort-AV: E=Sophos;i="4.97,1034,1389744000"; 
-   d="scan'208";a="130110808"
+   d="scan'208";a="129289081"
 From: David Vrabel <david.vrabel@citrix.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -16,134 +17,113 @@ CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         <xen-devel@lists.xenproject.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        <linux-ia64@vger.kernel.org>
-Subject: [PATCH 1/2] dma: add dma_get_required_mask_from_max_pfn()
-Date: Mon, 12 May 2014 11:15:41 +0100
-Message-ID: <1399889742-26165-2-git-send-email-david.vrabel@citrix.com>
+        David Vrabel <david.vrabel@citrix.com>
+Subject: [PATCH 2/2] x86,xen: correct dma_get_required_mask() for Xen PV guests
+Date: Mon, 12 May 2014 11:15:42 +0100
+Message-ID: <1399889742-26165-3-git-send-email-david.vrabel@citrix.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1399889742-26165-1-git-send-email-david.vrabel@citrix.com>
 References: <1399889742-26165-1-git-send-email-david.vrabel@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-DLP: MIA1
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ia64 provides a duplicate of the generic dma_get_required_mask()
-because it has ARCH_HAS_GET_REQUIRED_MASK.  Provide a common
-dma_get_require_mask_max_pfn() instead.
+On systems where DMA addresses and physical addresses are not 1:1
+(such as Xen PV guests), the generic dma_get_required_mask() will not
+return the correct mask (since it uses max_pfn).
+
+Some device drivers (such as mptsas, mpt2sas) use
+dma_get_required_mask() to set device DMA masks to allow them to use
+only 32-bit DMA addresses in hardware structures.  This results in
+unnecessary use of the SWIOTLB if DMA addresses are more than 32-bits,
+impacting performance significantly.
+
+Provide an arch-specific dma_get_required_mask() that defaults to the
+generic dma_get_required_mask_from_pfn().
+
+Under Xen, the required DMA mask can then be set to always 64-bits.
 
 Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-ia64@vger.kernel.org
 ---
- arch/ia64/include/asm/machvec.h      |    2 +-
- arch/ia64/include/asm/machvec_init.h |    1 -
- arch/ia64/pci/pci.c                  |   20 --------------------
- drivers/base/platform.c              |   10 ++++++++--
- include/linux/dma-mapping.h          |    1 +
- 5 files changed, 10 insertions(+), 24 deletions(-)
+ arch/x86/include/asm/device.h  |    2 ++
+ arch/x86/kernel/pci-dma.c      |    7 +++++++
+ arch/x86/xen/pci-swiotlb-xen.c |    1 +
+ drivers/xen/swiotlb-xen.c      |    7 +++++++
+ include/xen/swiotlb-xen.h      |    4 ++++
+ 5 files changed, 21 insertions(+)
 
-diff --git a/arch/ia64/include/asm/machvec.h b/arch/ia64/include/asm/machvec.h
-index 9c39bdf..beaa47d 100644
---- a/arch/ia64/include/asm/machvec.h
-+++ b/arch/ia64/include/asm/machvec.h
-@@ -287,7 +287,7 @@ extern struct dma_map_ops *dma_get_ops(struct device *);
- # define platform_dma_get_ops		dma_get_ops
- #endif
- #ifndef platform_dma_get_required_mask
--# define  platform_dma_get_required_mask	ia64_dma_get_required_mask
-+# define  platform_dma_get_required_mask	dma_get_required_mask_from_max_pfn
- #endif
- #ifndef platform_irq_to_vector
- # define platform_irq_to_vector		__ia64_irq_to_vector
-diff --git a/arch/ia64/include/asm/machvec_init.h b/arch/ia64/include/asm/machvec_init.h
-index 37a4698..ef964b2 100644
---- a/arch/ia64/include/asm/machvec_init.h
-+++ b/arch/ia64/include/asm/machvec_init.h
-@@ -3,7 +3,6 @@
+diff --git a/arch/x86/include/asm/device.h b/arch/x86/include/asm/device.h
+index 03dd729..10bc628 100644
+--- a/arch/x86/include/asm/device.h
++++ b/arch/x86/include/asm/device.h
+@@ -13,4 +13,6 @@ struct dev_archdata {
+ struct pdev_archdata {
+ };
  
- extern ia64_mv_send_ipi_t ia64_send_ipi;
- extern ia64_mv_global_tlb_purge_t ia64_global_tlb_purge;
--extern ia64_mv_dma_get_required_mask ia64_dma_get_required_mask;
- extern ia64_mv_irq_to_vector __ia64_irq_to_vector;
- extern ia64_mv_local_vector_to_irq __ia64_local_vector_to_irq;
- extern ia64_mv_pci_get_legacy_mem_t ia64_pci_get_legacy_mem;
-diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
-index 291a582..79da21b 100644
---- a/arch/ia64/pci/pci.c
-+++ b/arch/ia64/pci/pci.c
-@@ -791,26 +791,6 @@ static void __init set_pci_dfl_cacheline_size(void)
- 	pci_dfl_cache_line_size = (1 << cci.pcci_line_size) / 4;
- }
- 
--u64 ia64_dma_get_required_mask(struct device *dev)
--{
--	u32 low_totalram = ((max_pfn - 1) << PAGE_SHIFT);
--	u32 high_totalram = ((max_pfn - 1) >> (32 - PAGE_SHIFT));
--	u64 mask;
--
--	if (!high_totalram) {
--		/* convert to mask just covering totalram */
--		low_totalram = (1 << (fls(low_totalram) - 1));
--		low_totalram += low_totalram - 1;
--		mask = low_totalram;
--	} else {
--		high_totalram = (1 << (fls(high_totalram) - 1));
--		high_totalram += high_totalram - 1;
--		mask = (((u64)high_totalram) << 32) + 0xffffffff;
--	}
--	return mask;
--}
--EXPORT_SYMBOL_GPL(ia64_dma_get_required_mask);
--
- u64 dma_get_required_mask(struct device *dev)
- {
- 	return platform_dma_get_required_mask(dev);
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 5b47210..a53ef9d 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -942,8 +942,7 @@ int __init platform_bus_init(void)
- 	return error;
- }
- 
--#ifndef ARCH_HAS_DMA_GET_REQUIRED_MASK
--u64 dma_get_required_mask(struct device *dev)
-+u64 dma_get_required_mask_from_max_pfn(struct device *dev)
- {
- 	u32 low_totalram = ((max_pfn - 1) << PAGE_SHIFT);
- 	u32 high_totalram = ((max_pfn - 1) >> (32 - PAGE_SHIFT));
-@@ -961,6 +960,13 @@ u64 dma_get_required_mask(struct device *dev)
- 	}
- 	return mask;
- }
-+EXPORT_SYMBOL_GPL(dma_get_required_mask_from_max_pfn);
++#define ARCH_HAS_DMA_GET_REQUIRED_MASK
 +
-+#ifndef ARCH_HAS_DMA_GET_REQUIRED_MASK
+ #endif /* _ASM_X86_DEVICE_H */
+diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+index f7d0672..ad2c3e2 100644
+--- a/arch/x86/kernel/pci-dma.c
++++ b/arch/x86/kernel/pci-dma.c
+@@ -135,6 +135,13 @@ void dma_generic_free_coherent(struct device *dev, size_t size, void *vaddr,
+ 		free_pages((unsigned long)vaddr, get_order(size));
+ }
+ 
 +u64 dma_get_required_mask(struct device *dev)
 +{
++	if (dma_ops->get_required_mask)
++		return dma_ops->get_required_mask(dev);
 +	return dma_get_required_mask_from_max_pfn(dev);
 +}
- EXPORT_SYMBOL_GPL(dma_get_required_mask);
- #endif
++
+ /*
+  * See <Documentation/x86/x86_64/boot-options.txt> for the iommu kernel
+  * parameter documentation.
+diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
+index 0e98e5d..a5d180a 100644
+--- a/arch/x86/xen/pci-swiotlb-xen.c
++++ b/arch/x86/xen/pci-swiotlb-xen.c
+@@ -31,6 +31,7 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
+ 	.map_page = xen_swiotlb_map_page,
+ 	.unmap_page = xen_swiotlb_unmap_page,
+ 	.dma_supported = xen_swiotlb_dma_supported,
++	.get_required_mask = xen_swiotlb_get_required_mask,
+ };
  
-diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-index fd4aee2..bc6e2b6 100644
---- a/include/linux/dma-mapping.h
-+++ b/include/linux/dma-mapping.h
-@@ -121,6 +121,7 @@ static inline int dma_coerce_mask_and_coherent(struct device *dev, u64 mask)
- 	return dma_set_mask_and_coherent(dev, mask);
+ /*
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index ebd8f21..798f62b 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -683,3 +683,10 @@ xen_swiotlb_set_dma_mask(struct device *dev, u64 dma_mask)
+ 	return 0;
  }
+ EXPORT_SYMBOL_GPL(xen_swiotlb_set_dma_mask);
++
++u64
++xen_swiotlb_get_required_mask(struct device *dev)
++{
++	return DMA_BIT_MASK(64);
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_get_required_mask);
+diff --git a/include/xen/swiotlb-xen.h b/include/xen/swiotlb-xen.h
+index 8b2eb93..6408888 100644
+--- a/include/xen/swiotlb-xen.h
++++ b/include/xen/swiotlb-xen.h
+@@ -58,4 +58,8 @@ xen_swiotlb_dma_supported(struct device *hwdev, u64 mask);
  
-+extern u64 dma_get_required_mask_from_max_pfn(struct device *dev);
- extern u64 dma_get_required_mask(struct device *dev);
- 
- static inline unsigned int dma_get_max_seg_size(struct device *dev)
+ extern int
+ xen_swiotlb_set_dma_mask(struct device *dev, u64 dma_mask);
++
++extern u64
++xen_swiotlb_get_required_mask(struct device *dev);
++
+ #endif /* __LINUX_SWIOTLB_XEN_H */
 -- 
 1.7.10.4
 
