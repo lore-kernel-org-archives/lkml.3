@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759189AbaELQ4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:56:38 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:59867 "EHLO
+	id S1759260AbaELQ5J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:57:09 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:59959 "EHLO
 	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044AbaELQ4g (ORCPT
+	with ESMTP id S1753529AbaELQ5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 12:56:36 -0400
+	Mon, 12 May 2014 12:57:05 -0400
 From: Alexander Holler <holler@ahsoftware.de>
 To: linux-kernel@vger.kernel.org
 Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -15,9 +15,9 @@ Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Grant Likely <grant.likely@linaro.org>,
         Rob Herring <robh+dt@kernel.org>,
         Alexander Holler <holler@ahsoftware.de>
-Subject: [RFC PATCH 5/9] dt: deps: register drivers based on the initialization order based on DT
-Date: Mon, 12 May 2014 18:47:56 +0200
-Message-Id: <1399913280-6915-6-git-send-email-holler@ahsoftware.de>
+Subject: [RFC PATCH 6/9] dt: deps: WIP: well done drivers
+Date: Mon, 12 May 2014 18:47:57 +0200
+Message-Id: <1399913280-6915-7-git-send-email-holler@ahsoftware.de>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
 References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
@@ -25,375 +25,208 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The init system currently calls unknown functions with almost unknown
-functionality in an almost random order.
-
-Fixing this is on a short-term basis is a bit tricky.
-
-In order to register drivers with a deterministic order, a list of all
-available in-kernel drivers is needed. Unfortunately such a list doesn't
-exist, just a list of initcalls does exist.
-
-The trick now is to first call special annotated initcalls (I call those
-"well done") for platform drivers, but not actualy starting those drivers
-by calling their probe function, but just collectiong their meta datas
-(struct platform_driver). After all those informations were collected,
-available the drivers will be started according to the previously
-determined order.
-
-The annotation of such platform drivers is necessary because it must be
-made sure that those drivers don't care if the probe is actually called in
-their initcall or later.
-
-That means that all platform drivers which already do use
-
-	module_platform_driver() or
-	module_platform_driver_probe()
-
-don't need any modification because their initcall is known and already well
-done. But all platform drivers which do use
-
-	module_init() or
-	*_initcall()
-
-have to be reviewed if they are "well done". If they are, they need a change
-like
-
-	-module_init(foo_init);
-	+well_done_platform_module_init(foo_init);
-
-or
-
-	-subsys_initcall(foo_init);
-	+well_done_platform_initcall(subsys, foo_init);
-
-to become included in the deterministic order in which platform drivers
-will be initialized.
-
-All other platform drivers will still be initialized in random order before
-platform drivers included in the deterministic order will be initialized.
-"Well done" drivers which don't appear in the order (because they don't appear
-in the DT) will be initialized after those which do appear in the order.
-
-If CONFIG_OF_DEPENDENCIES is disabled, nothing is changed at all.
-
-The long range target to fix the problem should be to include a list (array)
-of struct platform_driver in the kernel for all in-kernel platform drivers,
-instead of just initcalls. This will be easy if all platform drivers have
-become "well done".
-
-Unfortunately there are some drivers which will need quiet some changes
-to become "well done". As an example for such an initcall look e.g. at
-drivers/tty/serial/8250/8250_core.c.
+This patch contains the necessary changes for some drivers which are used
+by the boards I have. The list isn't complete (therefor the WIP) and is
+meant as an example. If considered to be mainlined, I assume these changes
+should end up in one patch for every changed driver.
 
 Signed-off-by: Alexander Holler <holler@ahsoftware.de>
 ---
- drivers/base/platform.c           | 13 +++++++
- drivers/of/of_dependencies.c      | 79 +++++++++++++++++++++++++++++++++++++++
- include/asm-generic/vmlinux.lds.h |  1 +
- include/linux/init.h              | 19 ++++++++++
- include/linux/of_dependencies.h   |  5 +++
- include/linux/platform_device.h   | 16 ++++++--
- init/main.c                       | 17 ++++++++-
- 7 files changed, 145 insertions(+), 5 deletions(-)
+ drivers/dma/mv_xor.c                       | 2 +-
+ drivers/dma/omap-dma.c                     | 2 +-
+ drivers/gpio/gpio-mvebu.c                  | 2 +-
+ drivers/gpio/gpio-twl4030.c                | 2 +-
+ drivers/i2c/busses/i2c-omap.c              | 2 +-
+ drivers/iommu/omap-iommu.c                 | 2 +-
+ drivers/mailbox/mailbox-omap2.c            | 2 +-
+ drivers/net/ethernet/marvell/mv643xx_eth.c | 2 +-
+ drivers/regulator/fixed.c                  | 2 +-
+ drivers/regulator/twl-regulator.c          | 2 +-
+ drivers/usb/host/ehci-omap.c               | 2 +-
+ drivers/usb/host/ehci-orion.c              | 2 +-
+ drivers/usb/host/ohci-omap3.c              | 2 +-
+ drivers/usb/phy/phy-generic.c              | 2 +-
+ 14 files changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index bc78848..b9c9b33 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -13,6 +13,7 @@
- #include <linux/string.h>
- #include <linux/platform_device.h>
- #include <linux/of_device.h>
-+#include <linux/of_dependencies.h>
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/dma-mapping.h>
-@@ -541,6 +542,12 @@ int __platform_driver_register(struct platform_driver *drv,
- 	if (drv->shutdown)
- 		drv->driver.shutdown = platform_drv_shutdown;
- 
-+#ifdef CONFIG_OF_DEPENDENCIES
-+	if (of_init_is_recording())
-+		/* Just record the driver */
-+		return of_init_register_platform_driver(drv);
-+	else
-+#endif
- 	return driver_register(&drv->driver);
- }
- EXPORT_SYMBOL_GPL(__platform_driver_register);
-@@ -590,8 +597,14 @@ int __init_or_module platform_driver_probe(struct platform_driver *drv,
- 
- 	/* temporary section violation during probe() */
- 	drv->probe = probe;
-+
- 	retval = code = platform_driver_register(drv);
- 
-+#ifdef CONFIG_OF_DEPENDENCIES
-+	if (of_init_is_recording())
-+		/* Just record the driver */
-+		return retval;
-+#endif
- 	/*
- 	 * Fixup that section violation, being paranoid about code scanning
- 	 * the list of drivers in order to probe new devices.  Check to see
-diff --git a/drivers/of/of_dependencies.c b/drivers/of/of_dependencies.c
-index 7905172..4af62d5 100644
---- a/drivers/of/of_dependencies.c
-+++ b/drivers/of/of_dependencies.c
-@@ -46,9 +46,12 @@ struct init_order {
- 	/* Used to keep track of parent devices in regard to the DT */
- 	uint32_t parent_by_phandle[MAX_DT_NODES+1];
- 	struct device *device_by_phandle[MAX_DT_NODES+1];
-+	struct platform_driver *platform_drivers[MAX_DT_NODES+1];
-+	unsigned count_drivers;
- };
- static struct init_order order __initdata;
- 
-+static bool is_recording;
- 
- /* Copied from drivers/of/base.c (because it's lockless). */
- static struct property * __init __of_find_property(const struct device_node *np,
-@@ -401,3 +404,79 @@ void __init of_init_free_order(void)
- 	order.count = 0;
- 	/* remove_new_phandles(); */
- }
-+
-+void __init of_init_set_recording(bool recording)
-+{
-+	is_recording = recording;
-+}
-+
-+bool of_init_is_recording(void)
-+{
-+	return is_recording;
-+}
-+
-+int of_init_register_platform_driver(struct platform_driver *drv)
-+{
-+	BUG_ON(!is_recording);
-+	order.platform_drivers[order.count_drivers++] = drv;
-+	return 0;
-+}
-+
-+void __init of_init_register_drivers(void)
-+{
-+	unsigned i, j;
-+	int rc __maybe_unused;
-+
-+	BUG_ON(is_recording);
-+	/*
-+	 * Because we already have a list of devices and drivers together
-+	 * with their compatible strings, the below code could be speed up
-+	 * by replacing the functions which are walking through lists with
-+	 * something which uses trees or hashes to compare/search strings.
-+	 * These are of_driver_match_device() and driver_find() (the latter
-+	 * is called again in driver_register().
-+	 */
-+	for (i = 0; i < order.count; ++i) {
-+		struct device_node *node = order.order[i];
-+		struct device *dev = order.device_by_phandle[node->phandle];
-+
-+		for (j = 0; j < order.count_drivers; ++j) {
-+			struct platform_driver *drv = order.platform_drivers[j];
-+
-+			if (of_driver_match_device(dev, &drv->driver)) {
-+				if (!driver_find(drv->driver.name,
-+				    drv->driver.bus))
-+					platform_driver_register(drv);
-+				if (dev->parent)
-+					device_lock(dev->parent);
-+				rc = device_attach(dev);
-+				if (dev->parent)
-+					device_unlock(dev->parent);
-+				break;
-+			}
-+		}
-+		if (j >= order.count_drivers) {
-+			/*
-+			 * No driver in the initialization order matched,
-+			 * try to attach the device, maybe a driver already
-+			 * exists (e.g. loaded pre-smp).
-+			 */
-+			if (dev->parent)
-+				device_lock(dev->parent);
-+			rc = device_attach(dev);
-+			if (dev->parent)
-+				device_unlock(dev->parent);
-+		}
-+	}
-+	/*
-+	 * Now just register all drivers, including those not used through
-+	 * the initialization order (well-done drivers which aren't listed
-+	 * in the DT or blacklisted through of_init_create_devices()).
-+	 */
-+	for (j = 0; j < order.count_drivers; ++j) {
-+		struct platform_driver *drv = order.platform_drivers[j];
-+
-+		if (!driver_find(drv->driver.name, drv->driver.bus))
-+			platform_driver_register(drv);
-+	}
-+}
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index bc2121f..cedb3b0 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -633,6 +633,7 @@
- 		INIT_CALLS_LEVEL(rootfs)				\
- 		INIT_CALLS_LEVEL(6)					\
- 		INIT_CALLS_LEVEL(7)					\
-+		INIT_CALLS_LEVEL(8)					\
- 		VMLINUX_SYMBOL(__initcall_end) = .;
- 
- #define CON_INITCALL							\
-diff --git a/include/linux/init.h b/include/linux/init.h
-index e168880..acb7dfa 100644
---- a/include/linux/init.h
-+++ b/include/linux/init.h
-@@ -209,6 +209,23 @@ extern bool initcall_debug;
- #define late_initcall(fn)		__define_initcall(fn, 7)
- #define late_initcall_sync(fn)		__define_initcall(fn, 7s)
- 
-+/*
-+ * A well_done_platform_module_init or well_done_platform_initcall
-+ * only calls platform_driver_register() or platform_driver_probe()
-+ * and ignores the return code. This is necessary because the
-+ * actual calls to platform_driver_register() or platform_driver_probe()
-+ * will be delayed when CONFIG_OF_DEPENDENCIES is enabled. This is done
-+ * to sort those calls based on the dependencies in the DT (matched to the
-+ * platform driver data).
-+ */
-+#ifdef CONFIG_OF_DEPENDENCIES
-+#define well_done_platform_module_init(fn)	__define_initcall(fn, 8)
-+#define well_done_platform_initcall(leve, fn)	__define_initcall(fn, 8)
-+#else
-+#define well_done_platform_module_init(fn)	module_init(fn)
-+#define well_done_platform_initcall(level, fn)	level ## _initcall(fn)
-+#endif
-+
- #define __initcall(fn) device_initcall(fn)
- 
- #define __exitcall(fn) \
-@@ -289,6 +306,8 @@ void __init parse_early_options(char *cmdline);
- #define rootfs_initcall(fn)		module_init(fn)
- #define device_initcall(fn)		module_init(fn)
- #define late_initcall(fn)		module_init(fn)
-+#define well_done_platform_initcall(fn)	module_init(fn)
-+#define well_done_platform_module_init(fn)	module_init(fn)
- 
- #define console_initcall(fn)		module_init(fn)
- #define security_initcall(fn)		module_init(fn)
-diff --git a/include/linux/of_dependencies.h b/include/linux/of_dependencies.h
-index e046ce2..8869162 100644
---- a/include/linux/of_dependencies.h
-+++ b/include/linux/of_dependencies.h
-@@ -58,4 +58,9 @@ extern void of_init_create_devices(const struct of_device_id *matches,
-  */
- extern void of_init_free_order(void);
- 
-+void of_init_set_recording(bool recording);
-+bool of_init_is_recording(void);
-+int of_init_register_platform_driver(struct platform_driver *drv);
-+void of_init_register_drivers(void);
-+
- #endif	/* _LINUX_OF_DEPENDENCIES_H */
-diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
-index 16f6654..b8559d9 100644
---- a/include/linux/platform_device.h
-+++ b/include/linux/platform_device.h
-@@ -215,9 +215,17 @@ static inline void platform_set_drvdata(struct platform_device *pdev,
-  * boilerplate.  Each module may only use this macro once, and
-  * calling it replaces module_init() and module_exit()
-  */
--#define module_platform_driver(__platform_driver) \
--	module_driver(__platform_driver, platform_driver_register, \
--			platform_driver_unregister)
-+#define module_platform_driver(__driver) \
-+static int __init __driver##_init(void) \
-+{ \
-+	return platform_driver_register(&(__driver)); \
-+} \
-+well_done_platform_module_init(__driver##_init); \
-+static void __exit __driver##_exit(void) \
-+{ \
-+	platform_driver_unregister(&(__driver)); \
-+} \
-+module_exit(__driver##_exit);
- 
- /* module_platform_driver_probe() - Helper macro for drivers that don't do
-  * anything special in module init/exit.  This eliminates a lot of
-@@ -230,7 +238,7 @@ static int __init __platform_driver##_init(void) \
- 	return platform_driver_probe(&(__platform_driver), \
- 				     __platform_probe);    \
- } \
--module_init(__platform_driver##_init); \
-+well_done_platform_module_init(__platform_driver##_init); \
- static void __exit __platform_driver##_exit(void) \
- { \
- 	platform_driver_unregister(&(__platform_driver)); \
-diff --git a/init/main.c b/init/main.c
-index 9c7fd4c..7591cd1 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -77,6 +77,7 @@
- #include <linux/sched_clock.h>
- #include <linux/context_tracking.h>
- #include <linux/random.h>
-+#include <linux/of_dependencies.h>
- 
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -720,6 +721,7 @@ extern initcall_t __initcall4_start[];
- extern initcall_t __initcall5_start[];
- extern initcall_t __initcall6_start[];
- extern initcall_t __initcall7_start[];
-+extern initcall_t __initcall8_start[];
- extern initcall_t __initcall_end[];
- 
- static initcall_t *initcall_levels[] __initdata = {
-@@ -731,6 +733,7 @@ static initcall_t *initcall_levels[] __initdata = {
- 	__initcall5_start,
- 	__initcall6_start,
- 	__initcall7_start,
-+	__initcall8_start,
- 	__initcall_end,
- };
- 
-@@ -744,6 +747,8 @@ static char *initcall_level_names[] __initdata = {
- 	"fs",
- 	"device",
- 	"late",
-+	/* must be the last level to become excluded in do_initcalls() */
-+	"well-done-platform-driver",
- };
- 
- static void __init do_initcall_level(int level)
-@@ -766,7 +771,7 @@ static void __init do_initcalls(void)
+diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
+index 766b68e..7f1091a 100644
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -1316,7 +1316,7 @@ static int __init mv_xor_init(void)
  {
- 	int level;
+ 	return platform_driver_register(&mv_xor_driver);
+ }
+-module_init(mv_xor_init);
++well_done_platform_module_init(mv_xor_init);
  
--	for (level = 0; level < ARRAY_SIZE(initcall_levels) - 1; level++)
-+	for (level = 0; level < ARRAY_SIZE(initcall_levels) - 3; level++)
- 		do_initcall_level(level);
+ /* it's currently unsafe to unload this module */
+ #if 0
+diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
+index 362e7c4..a523025 100644
+--- a/drivers/dma/omap-dma.c
++++ b/drivers/dma/omap-dma.c
+@@ -707,7 +707,7 @@ static int omap_dma_init(void)
+ {
+ 	return platform_driver_register(&omap_dma_driver);
+ }
+-subsys_initcall(omap_dma_init);
++well_done_platform_initcall(subsys, omap_dma_init);
+ 
+ static void __exit omap_dma_exit(void)
+ {
+diff --git a/drivers/gpio/gpio-mvebu.c b/drivers/gpio/gpio-mvebu.c
+index 3b1fd1c..c151f6e 100644
+--- a/drivers/gpio/gpio-mvebu.c
++++ b/drivers/gpio/gpio-mvebu.c
+@@ -736,4 +736,4 @@ static int __init mvebu_gpio_init(void)
+ {
+ 	return platform_driver_register(&mvebu_gpio_driver);
+ }
+-postcore_initcall(mvebu_gpio_init);
++well_done_platform_initcall(postcore, mvebu_gpio_init);
+diff --git a/drivers/gpio/gpio-twl4030.c b/drivers/gpio/gpio-twl4030.c
+index 8b88ca2..6c18f4a 100644
+--- a/drivers/gpio/gpio-twl4030.c
++++ b/drivers/gpio/gpio-twl4030.c
+@@ -618,7 +618,7 @@ static int __init gpio_twl4030_init(void)
+ {
+ 	return platform_driver_register(&gpio_twl4030_driver);
+ }
+-subsys_initcall(gpio_twl4030_init);
++well_done_platform_initcall(subsys, gpio_twl4030_init);
+ 
+ static void __exit gpio_twl4030_exit(void)
+ {
+diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
+index 90dcc2e..4df05c0 100644
+--- a/drivers/i2c/busses/i2c-omap.c
++++ b/drivers/i2c/busses/i2c-omap.c
+@@ -1352,7 +1352,7 @@ omap_i2c_init_driver(void)
+ {
+ 	return platform_driver_register(&omap_i2c_driver);
+ }
+-subsys_initcall(omap_i2c_init_driver);
++well_done_platform_initcall(subsys, omap_i2c_init_driver);
+ 
+ static void __exit omap_i2c_exit_driver(void)
+ {
+diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
+index bcd78a7..c121708 100644
+--- a/drivers/iommu/omap-iommu.c
++++ b/drivers/iommu/omap-iommu.c
+@@ -1282,7 +1282,7 @@ static int __init omap_iommu_init(void)
+ 	return platform_driver_register(&omap_iommu_driver);
+ }
+ /* must be ready before omap3isp is probed */
+-subsys_initcall(omap_iommu_init);
++well_done_platform_initcall(subsys, omap_iommu_init);
+ 
+ static void __exit omap_iommu_exit(void)
+ {
+diff --git a/drivers/mailbox/mailbox-omap2.c b/drivers/mailbox/mailbox-omap2.c
+index 42d2b89..919da67 100644
+--- a/drivers/mailbox/mailbox-omap2.c
++++ b/drivers/mailbox/mailbox-omap2.c
+@@ -347,7 +347,7 @@ static void __exit omap2_mbox_exit(void)
+ 	platform_driver_unregister(&omap2_mbox_driver);
  }
  
-@@ -787,6 +792,16 @@ static void __init do_basic_setup(void)
- 	do_ctors();
- 	usermodehelper_enable();
- 	do_initcalls();
-+#ifdef CONFIG_OF_DEPENDENCIES
-+	/* collect a list of available platform drivers */
-+	of_init_set_recording(true);
-+	do_initcall_level(ARRAY_SIZE(initcall_levels) - 2);
-+	of_init_set_recording(false);
-+	/* probe available platform drivers with deterministic order */
-+	of_init_register_drivers();
-+	/* register late drivers */
-+	do_initcall_level(ARRAY_SIZE(initcall_levels) - 3);
-+#endif
- 	random_int_secret_init();
- }
+-module_init(omap2_mbox_init);
++well_done_platform_module_init(omap2_mbox_init);
+ module_exit(omap2_mbox_exit);
  
+ MODULE_LICENSE("GPL v2");
+diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
+index a2565ce..2fcd832 100644
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -3011,7 +3011,7 @@ static int __init mv643xx_eth_init_module(void)
+ 
+ 	return rc;
+ }
+-module_init(mv643xx_eth_init_module);
++well_done_platform_module_init(mv643xx_eth_init_module);
+ 
+ static void __exit mv643xx_eth_cleanup_module(void)
+ {
+diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
+index 5ea64b9..3a71016 100644
+--- a/drivers/regulator/fixed.c
++++ b/drivers/regulator/fixed.c
+@@ -241,7 +241,7 @@ static int __init regulator_fixed_voltage_init(void)
+ {
+ 	return platform_driver_register(&regulator_fixed_voltage_driver);
+ }
+-subsys_initcall(regulator_fixed_voltage_init);
++well_done_platform_initcall(subsys, regulator_fixed_voltage_init);
+ 
+ static void __exit regulator_fixed_voltage_exit(void)
+ {
+diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+index fed28ab..646caf6 100644
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -1240,7 +1240,7 @@ static int __init twlreg_init(void)
+ {
+ 	return platform_driver_register(&twlreg_driver);
+ }
+-subsys_initcall(twlreg_init);
++well_done_platform_initcall(subsys, twlreg_init);
+ 
+ static void __exit twlreg_exit(void)
+ {
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index a24720b..19bca40 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -310,7 +310,7 @@ static int __init ehci_omap_init(void)
+ 	ehci_init_driver(&ehci_omap_hc_driver, &ehci_omap_overrides);
+ 	return platform_driver_register(&ehci_hcd_omap_driver);
+ }
+-module_init(ehci_omap_init);
++well_done_platform_module_init(ehci_omap_init);
+ 
+ static void __exit ehci_omap_cleanup(void)
+ {
+diff --git a/drivers/usb/host/ehci-orion.c b/drivers/usb/host/ehci-orion.c
+index 30d35e5..6d59923 100644
+--- a/drivers/usb/host/ehci-orion.c
++++ b/drivers/usb/host/ehci-orion.c
+@@ -298,7 +298,7 @@ static int __init ehci_orion_init(void)
+ 	ehci_init_driver(&ehci_orion_hc_driver, NULL);
+ 	return platform_driver_register(&ehci_orion_driver);
+ }
+-module_init(ehci_orion_init);
++well_done_platform_module_init(ehci_orion_init);
+ 
+ static void __exit ehci_orion_cleanup(void)
+ {
+diff --git a/drivers/usb/host/ohci-omap3.c b/drivers/usb/host/ohci-omap3.c
+index ec15aeb..26bb8d1 100644
+--- a/drivers/usb/host/ohci-omap3.c
++++ b/drivers/usb/host/ohci-omap3.c
+@@ -197,7 +197,7 @@ static int __init ohci_omap3_init(void)
+ 	ohci_init_driver(&ohci_omap3_hc_driver, NULL);
+ 	return platform_driver_register(&ohci_hcd_omap3_driver);
+ }
+-module_init(ohci_omap3_init);
++well_done_module_init(ohci_omap3_init);
+ 
+ static void __exit ohci_omap3_cleanup(void)
+ {
+diff --git a/drivers/usb/phy/phy-generic.c b/drivers/usb/phy/phy-generic.c
+index bb39498..6405efe 100644
+--- a/drivers/usb/phy/phy-generic.c
++++ b/drivers/usb/phy/phy-generic.c
+@@ -304,7 +304,7 @@ static int __init usb_phy_gen_xceiv_init(void)
+ {
+ 	return platform_driver_register(&usb_phy_gen_xceiv_driver);
+ }
+-subsys_initcall(usb_phy_gen_xceiv_init);
++well_done_platform_initcall(subsys, usb_phy_gen_xceiv_init);
+ 
+ static void __exit usb_phy_gen_xceiv_exit(void)
+ {
 -- 
 1.8.3.1
 
