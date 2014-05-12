@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734AbaELF4N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 01:56:13 -0400
-Received: from ozlabs.org ([103.22.144.67]:56180 "EHLO ozlabs.org"
+	id S1752371AbaELGK4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 02:10:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49419 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752074AbaELF4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 01:56:11 -0400
-Date: Mon, 12 May 2014 15:55:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Scott Wood <scottwood@freescale.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stuart Yoder <stuart.yoder@freescale.com>
-Subject: linux-next: build failure after merge of the fsl tree
-Message-ID: <20140512155557.5b758614@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1751746AbaELGKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 02:10:55 -0400
+Date: Mon, 12 May 2014 08:10:51 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Josef Gajdusek <atx@atx.name>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/hwmon/emc1403.c: add support for emc1412
+Message-ID: <20140512081051.29333503@endymion.delvare>
+In-Reply-To: <536FFC55.2080009@roeck-us.net>
+References: <20140511130023.GA501@dashie>
+	<536FFC55.2080009@roeck-us.net>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/elLLYofYkdxJx6jXv+M0eEG"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/elLLYofYkdxJx6jXv+M0eEG
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Guenter, Josef,
 
-Hi Scott,
+On Sun, 11 May 2014 15:40:21 -0700, Guenter Roeck wrote:
+> On 05/11/2014 06:00 AM, Josef Gajdusek wrote:
+> > @@ -366,14 +433,19 @@ static int emc1403_probe(struct i2c_client *client,
+> >   }
+> >
+> >   static const unsigned short emc1403_address_list[] = {
+> > -	0x18, 0x29, 0x4c, 0x4d, I2C_CLIENT_END
+> > +	/* emc1403/emc1404/emc1423/emc1424 */
+> > +	0x4c, 0x4d, 0x18, 0x29,
+> > +	/* emc1412 */
+> > +	0x5c, 0x4c, 0x6c, 0x1c, 0x3c, I2C_CLIENT_END
+> 
+> No duplication of addresses, and addresses are by convention in order.
+> Jean, any addresses which should not be scanned ?
 
-After merging the fsl tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+0x3c and 0x6c should indeed not be scanned, sensors-detect does not
+scan them as they aren't typically used by hwmon devices. 0x5c is
+questionable (currently scanned, but used only by a limited number of
+chips, we may drop it at some point.) 0x1c and 0x4c are OK to scan.
 
-arch/powerpc/kernel/epapr_paravirt.c: In function 'epapr_idle_init':
-arch/powerpc/kernel/epapr_paravirt.c:77:23: error: 'epapr_ev_idle' undeclar=
-ed (first use in this function)
-   ppc_md.power_save =3D epapr_ev_idle;
-                       ^
-
-Caused by commit 7762b1ed7aae ("powerpc: move epapr paravirt init of
-power_save to an initcall").
-
-I have reverted that commit for today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/elLLYofYkdxJx6jXv+M0eEG
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTcGJ5AAoJEMDTa8Ir7ZwVACUP/22wVygigCWr729ZnUuAeO0L
-hkh7xpnHGTSslOs6kfwnXcq2c0Mh94nOZTqmI5L5WPq1+bInlsEBSwoZKrzqkHov
-m3H3H94iWPD83rw6iVzvenpNvQErxZMPUSKW+WQc09byDWmTt+gm2TGARAdzoWND
-CT6958dJ0Sh1H4UQls+LJ1Pqblhx5m/2BkvZxLveeogwBZHkmqZgaWb79BAnsqsL
-pvt3V8QDgyphR4Zo8NasUUBf01Pce+A3+0UsEM67+KqPbnl99VjnPU7W29X0/ceA
-UDQEvWIsKpCKCV+sMWsb57eqD97+KFSfMGwV3j2YCO1kKRtbrn5JYLtECFQfygld
-dgpvrLJMOakxnyKK+Xy1OeCGGvAorTzKMPnq4nUfOe0bk1+snvmVCpncGLCbcxgw
-rRpXJcGxTp1TqbTrv6XVpsmEWHcbuQGJnz2uRgNFxVKI8JWMRbFn6V6Kt7H580bc
-upbMil0joLzuWzl6iYusqwuXxZOMqW7dF2OtcxwNhQh3O+869HwhCPOU7vkMtfES
-wUJvWMbUaMkT3wFfpJiMN53awjP7nN3q66CHIzIVWkQXxWsW2gVs1ha8SOjERjQj
-RaVfxqylz5w+0uueGgraAe1NmljIajKbaMIebOeUPTWXzJUgOFd5vTXGy0WShcto
-mbk7nmxrzhbDkvdCUGnH
-=m/mk
------END PGP SIGNATURE-----
-
---Sig_/elLLYofYkdxJx6jXv+M0eEG--
+-- 
+Jean Delvare
+SUSE L3 Support
