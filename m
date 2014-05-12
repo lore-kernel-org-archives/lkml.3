@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959AbaELEsR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 00:48:17 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:47503 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505AbaELEsP (ORCPT
+	id S1751603AbaELEvS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 00:51:18 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50654 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925AbaELEvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 00:48:15 -0400
-Message-ID: <5370528A.1000806@gmail.com>
-Date: Mon, 12 May 2014 12:48:10 +0800
-From: zhuyj <zyjzyj2000@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 12 May 2014 00:51:17 -0400
+Date: Mon, 12 May 2014 06:51:13 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>
+Subject: Re: [PATCH] pinctrl: Add i.MX1 pincontrol driver
+Message-ID: <20140512045113.GY5858@pengutronix.de>
+References: <1399652193-17827-1-git-send-email-shc_work@mail.ru>
 MIME-Version: 1.0
-To: eric.dumazet@gmail.com, "David S. Miller" <davem@davemloft.net>
-CC: "Tao, Yue" <Yue.Tao@windriver.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>, zhuyj <zyjzyj2000@gmail.com>
-Subject: Re: icmp: account for ICMP out errors because of socket limit
-References: <53703DC0.2070204@gmail.com>
-In-Reply-To: <53703DC0.2070204@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399652193-17827-1-git-send-email-shc_work@mail.ru>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 06:46:24 up 18 days, 22:17, 31 users,  load average: 0.17, 0.13,
+ 0.10
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Eric && David
+On Fri, May 09, 2014 at 08:16:33PM +0400, Alexander Shiyan wrote:
+> This patch adds pincontrol driver for Freescale i.MX1 SOCs.
+> 
+> Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+> ---
+>  drivers/pinctrl/Kconfig        |   7 ++
+>  drivers/pinctrl/Makefile       |   1 +
+>  drivers/pinctrl/pinctrl-imx1.c | 279 +++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 287 insertions(+)
+>  create mode 100644 drivers/pinctrl/pinctrl-imx1.c
 
-This patch is similar to the following patch.
+Nice. I thought about adding devicetree support for i.MX1 aswell.
 
-commit 1f8438a853667d48055ad38384c63e94b32c6578
-Author: Eric Dumazet <eric.dumazet@gmail.com>
-Date:   Sat Apr 3 15:09:04 2010 -0700
+Don't we need a imx1-pinfunc.h file to make use of this patch?
 
-     icmp: Account for ICMP out errors
+Sascha
 
-     When ip_append() fails because of socket limit or memory shortage,
-     increment ICMP_MIB_OUTERRORS counter, so that "netstat -s" can report
-     these errors.
-
-     LANG=C netstat -s | grep "ICMP messages failed"
-         0 ICMP messages failed
-
-     For IPV6, implement ICMP6_MIB_OUTERRORS counter as well.
-
-     # grep Icmp6OutErrors /proc/net/dev_snmp6/*
-     /proc/net/dev_snmp6/eth0:Icmp6OutErrors                     0
-     /proc/net/dev_snmp6/lo:Icmp6OutErrors                       0
-
-     Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-     Signed-off-by: David S. Miller <davem@davemloft.net>
-
-Best Regards!
-Zhu Yanjun
-
-On 05/12/2014 11:19 AM, zhuyj wrote:
-> Hi, Eric && David
->
->  ____           ______________
-> |    |         |              |
-> | PC |<------->| MIPS 32 core |
-> |____|         |______________|
->
-> When ping from a PC to a board (MIPS 32 core), because of socket limit,
-> ping echo will fail. But ICMP_MIB_OUTERRORS counter is not incremented.
-> In this case, "netstat -s" can not report these errors.
->
-> This patch will fix this problem. Now it is in the attachment. Please 
-> check it.
->
-> Best Regards!
-> Zhu Yanjun
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
