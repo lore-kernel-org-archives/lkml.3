@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905AbaELCOU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 22:14:20 -0400
-Received: from 1wt.eu ([62.212.114.60]:34454 "EHLO 1wt.eu"
+	id S1758222AbaELCOj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 22:14:39 -0400
+Received: from 1wt.eu ([62.212.114.60]:34451 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752464AbaELBmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:42:04 -0400
-Message-Id: <20140512003201.549662339@1wt.eu>
+	id S1752290AbaELBmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:42:03 -0400
+Message-Id: <20140512003203.627061916@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:32:22 +0200
+Date: Mon, 12 May 2014 02:33:12 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 022/143] HID: LG: validate HID output report details
+Cc: Ying Xue <ying.xue@windriver.com>, Jon Maloy <jon.maloy@ericsson.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 072/143] tipc: fix lockdep warning during bearer initialization
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,103 +24,178 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Ying Xue <ying.xue@windriver.com>
 
-commit 0fb6bd06e06792469acc15bbe427361b56ada528 upstream
+[ Upstream commit 4225a398c1352a7a5c14dc07277cb5cc4473983b ]
 
-A HID device could send a malicious output report that would cause the
-lg, lg3, and lg4 HID drivers to write beyond the output report allocation
-during an event, causing a heap overflow:
+When the lockdep validator is enabled, it will report the below
+warning when we enable a TIPC bearer:
 
-[  325.245240] usb 1-1: New USB device found, idVendor=046d, idProduct=c287
-...
-[  414.518960] BUG kmalloc-4096 (Not tainted): Redzone overwritten
+[ INFO: possible irq lock inversion dependency detected ]
+---------------------------------------------------------
+Possible interrupt unsafe locking scenario:
 
-Additionally, while lg2 did correctly validate the report details, it was
-cleaned up and shortened.
+        CPU0                    CPU1
+        ----                    ----
+   lock(ptype_lock);
+                                local_irq_disable();
+                                lock(tipc_net_lock);
+                                lock(ptype_lock);
+   <Interrupt>
+   lock(tipc_net_lock);
 
-CVE-2013-2893
+  *** DEADLOCK ***
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: stable@vger.kernel.org
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+the shortest dependencies between 2nd lock and 1st lock:
+  -> (ptype_lock){+.+...} ops: 10 {
+[...]
+SOFTIRQ-ON-W at:
+                      [<c1089418>] __lock_acquire+0x528/0x13e0
+                      [<c108a360>] lock_acquire+0x90/0x100
+                      [<c1553c38>] _raw_spin_lock+0x38/0x50
+                      [<c14651ca>] dev_add_pack+0x3a/0x60
+                      [<c182da75>] arp_init+0x1a/0x48
+                      [<c182dce5>] inet_init+0x181/0x27e
+                      [<c1001114>] do_one_initcall+0x34/0x170
+                      [<c17f7329>] kernel_init+0x110/0x1b2
+                      [<c155b6a2>] kernel_thread_helper+0x6/0x10
+[...]
+   ... key      at: [<c17e4b10>] ptype_lock+0x10/0x20
+   ... acquired at:
+    [<c108a360>] lock_acquire+0x90/0x100
+    [<c1553c38>] _raw_spin_lock+0x38/0x50
+    [<c14651ca>] dev_add_pack+0x3a/0x60
+    [<c8bc18d2>] enable_bearer+0xf2/0x140 [tipc]
+    [<c8bb283a>] tipc_enable_bearer+0x1ba/0x450 [tipc]
+    [<c8bb3a04>] tipc_cfg_do_cmd+0x5c4/0x830 [tipc]
+    [<c8bbc032>] handle_cmd+0x42/0xd0 [tipc]
+    [<c148e802>] genl_rcv_msg+0x232/0x280
+    [<c148d3f6>] netlink_rcv_skb+0x86/0xb0
+    [<c148e5bc>] genl_rcv+0x1c/0x30
+    [<c148d144>] netlink_unicast+0x174/0x1f0
+    [<c148ddab>] netlink_sendmsg+0x1eb/0x2d0
+    [<c1456bc1>] sock_aio_write+0x161/0x170
+    [<c1135a7c>] do_sync_write+0xac/0xf0
+    [<c11360f6>] vfs_write+0x156/0x170
+    [<c11361e2>] sys_write+0x42/0x70
+    [<c155b0df>] sysenter_do_call+0x12/0x38
+[...]
+}
+  -> (tipc_net_lock){+..-..} ops: 4 {
+[...]
+    IN-SOFTIRQ-R at:
+                     [<c108953a>] __lock_acquire+0x64a/0x13e0
+                     [<c108a360>] lock_acquire+0x90/0x100
+                     [<c15541cd>] _raw_read_lock_bh+0x3d/0x50
+                     [<c8bb874d>] tipc_recv_msg+0x1d/0x830 [tipc]
+                     [<c8bc195f>] recv_msg+0x3f/0x50 [tipc]
+                     [<c146a5fa>] __netif_receive_skb+0x22a/0x590
+                     [<c146ab0b>] netif_receive_skb+0x2b/0xf0
+                     [<c13c43d2>] pcnet32_poll+0x292/0x780
+                     [<c146b00a>] net_rx_action+0xfa/0x1e0
+                     [<c103a4be>] __do_softirq+0xae/0x1e0
+[...]
+}
 
-[jmm: backported to 2.6.32]
+>From the log, we can see three different call chains between
+CPU0 and CPU1:
+
+Time 0 on CPU0:
+
+  kernel_init()->inet_init()->dev_add_pack()
+
+At time 0, the ptype_lock is held by CPU0 in dev_add_pack();
+
+Time 1 on CPU1:
+
+  tipc_enable_bearer()->enable_bearer()->dev_add_pack()
+
+At time 1, tipc_enable_bearer() first holds tipc_net_lock, and then
+wants to take ptype_lock to register TIPC protocol handler into the
+networking stack.  But the ptype_lock has been taken by dev_add_pack()
+on CPU0, so at this time the dev_add_pack() running on CPU1 has to be
+busy looping.
+
+Time 2 on CPU0:
+
+  netif_receive_skb()->recv_msg()->tipc_recv_msg()
+
+At time 2, an incoming TIPC packet arrives at CPU0, hence
+tipc_recv_msg() will be invoked. In tipc_recv_msg(), it first wants
+to hold tipc_net_lock.  At the moment, below scenario happens:
+
+On CPU0, below is our sequence of taking locks:
+
+  lock(ptype_lock)->lock(tipc_net_lock)
+
+On CPU1, our sequence of taking locks looks like:
+
+  lock(tipc_net_lock)->lock(ptype_lock)
+
+Obviously deadlock may happen in this case.
+
+But please note the deadlock possibly doesn't occur at all when the
+first TIPC bearer is enabled.  Before enable_bearer() -- running on
+CPU1 does not hold ptype_lock, so the TIPC receive handler (i.e.
+recv_msg()) is not registered successfully via dev_add_pack(), so
+the tipc_recv_msg() cannot be called by recv_msg() even if a TIPC
+message comes to CPU0. But when the second TIPC bearer is
+registered, the deadlock can perhaps really happen.
+
+To fix it, we will push the work of registering TIPC protocol
+handler into workqueue context. After the change, both paths taking
+ptype_lock are always in process contexts, thus, the deadlock should
+never occur.
+
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
+Signed-off-by: Jon Maloy <jon.maloy@ericsson.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/hid/hid-lg2ff.c | 19 +++----------------
- drivers/hid/hid-lgff.c  | 17 ++---------------
- 2 files changed, 5 insertions(+), 31 deletions(-)
+ net/tipc/eth_media.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hid/hid-lg2ff.c b/drivers/hid/hid-lg2ff.c
-index 4e6dc6e..a260a8c 100644
---- a/drivers/hid/hid-lg2ff.c
-+++ b/drivers/hid/hid-lg2ff.c
-@@ -65,26 +65,13 @@ int lg2ff_init(struct hid_device *hid)
- 	struct hid_report *report;
- 	struct hid_input *hidinput = list_entry(hid->inputs.next,
- 						struct hid_input, list);
--	struct list_head *report_list =
--			&hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct input_dev *dev = hidinput->input;
- 	int error;
+diff --git a/net/tipc/eth_media.c b/net/tipc/eth_media.c
+index 524ba56..22453a8 100644
+--- a/net/tipc/eth_media.c
++++ b/net/tipc/eth_media.c
+@@ -56,6 +56,7 @@ struct eth_bearer {
+ 	struct tipc_bearer *bearer;
+ 	struct net_device *dev;
+ 	struct packet_type tipc_packet_type;
++	struct work_struct setup;
+ };
  
--	if (list_empty(report_list)) {
--		dev_err(&hid->dev, "no output report found\n");
-+	/* Check that the report looks ok */
-+	report = hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 7);
-+	if (!report)
- 		return -ENODEV;
--	}
--
--	report = list_entry(report_list->next, struct hid_report, list);
--
--	if (report->maxfield < 1) {
--		dev_err(&hid->dev, "output report is empty\n");
--		return -ENODEV;
--	}
--	if (report->field[0]->report_count < 7) {
--		dev_err(&hid->dev, "not enough values in the field\n");
--		return -ENODEV;
--	}
+ static struct eth_bearer eth_bearers[MAX_ETH_BEARERS];
+@@ -122,6 +123,17 @@ static int recv_msg(struct sk_buff *buf, struct net_device *dev,
+ }
  
- 	lg2ff = kmalloc(sizeof(struct lg2ff_device), GFP_KERNEL);
- 	if (!lg2ff)
-diff --git a/drivers/hid/hid-lgff.c b/drivers/hid/hid-lgff.c
-index 987abeb..df26abb 100644
---- a/drivers/hid/hid-lgff.c
-+++ b/drivers/hid/hid-lgff.c
-@@ -135,27 +135,14 @@ static void hid_lgff_set_autocenter(struct input_dev *dev, u16 magnitude)
- int lgff_init(struct hid_device* hid)
- {
- 	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
--	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct input_dev *dev = hidinput->input;
--	struct hid_report *report;
--	struct hid_field *field;
- 	const signed short *ff_bits = ff_joystick;
- 	int error;
- 	int i;
+ /**
++ * setup_bearer - setup association between Ethernet bearer and interface
++ */
++static void setup_bearer(struct work_struct *work)
++{
++	struct eth_bearer *eb_ptr =
++		container_of(work, struct eth_bearer, setup);
++
++	dev_add_pack(&eb_ptr->tipc_packet_type);
++}
++
++/**
+  * enable_bearer - attach TIPC bearer to an Ethernet interface
+  */
  
--	/* Find the report to use */
--	if (list_empty(report_list)) {
--		err_hid("No output report found");
--		return -1;
--	}
--
- 	/* Check that the report looks ok */
--	report = list_entry(report_list->next, struct hid_report, list);
--	field = report->field[0];
--	if (!field) {
--		err_hid("NULL field");
--		return -1;
--	}
-+	if (!hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 7))
-+		return -ENODEV;
+@@ -157,7 +169,8 @@ static int enable_bearer(struct tipc_bearer *tb_ptr)
+ 		eb_ptr->tipc_packet_type.af_packet_priv = eb_ptr;
+ 		INIT_LIST_HEAD(&(eb_ptr->tipc_packet_type.list));
+ 		dev_hold(dev);
+-		dev_add_pack(&eb_ptr->tipc_packet_type);
++		INIT_WORK(&eb_ptr->setup, setup_bearer);
++		schedule_work(&eb_ptr->setup);
+ 	}
  
- 	for (i = 0; i < ARRAY_SIZE(devices); i++) {
- 		if (dev->id.vendor == devices[i].idVendor &&
+ 	/* Associate TIPC bearer with Ethernet bearer */
 -- 
 1.7.12.2.21.g234cd45.dirty
 
