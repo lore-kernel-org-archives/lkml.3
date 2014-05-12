@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720AbaELBo3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:44:29 -0400
-Received: from 1wt.eu ([62.212.114.60]:34794 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754639AbaELBo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:44:26 -0400
-Message-Id: <20140512003203.045770545@1wt.eu>
-User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:32:58 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 058/143] arcnet: cleanup sizeof parameter
-In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
+	id S1755137AbaELBsJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:48:09 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:44050 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364AbaELBsG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:48:06 -0400
+MIME-Version: 1.0
+From: Hui Zhu <teawater@gmail.com>
+Date: Mon, 12 May 2014 09:47:25 +0800
+Message-ID: <CANFwon2DxQLpYS=0ja-a_xHx9RJxhUXhz+827Tv3DYsT6pfebQ@mail.gmail.com>
+Subject: KGTP (dynamic tracer for Linux kernel and applications) 20140510
+ release (add quick start script kgtp.py)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gdb@sourceware.org" <gdb@sourceware.org>, kgtp <kgtp@freelists.org>
+Cc: Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, Coly Li <colyli@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Geunsik Lim <leemgs1@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Tao Ma <taoma.tm@gmail.com>,
+        Oliver Yang <yangoliver@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+KGTP (http://teawater.github.io/kgtp/) is a comprehensive dynamic tracer for
+analysing Linux kernel and application (including Android) problems on
+production systems in real time.
 
-------------------
+I think people use KGTP first trouble is to configure complex.
+So the main change of this version is add a script kgtp.py that will
+auto setup and start KGTP and GDB in current machine.
+Then to use KGTP:
+wget https://raw.githubusercontent.com/teawater/kgtp/master/kgtp.py
+sudo python kgtp.py
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+Please goto https://github.com/teawater/kgtp/blob/release/UPDATE
+get more info about this release.
 
-[ Upstream commit 087d273caf4f7d3f2159256f255f1f432bc84a5b ]
+According to the comments of Christoph, Geoff and Andi.  I make KGTP
+function lite patch for Linux kernel upstream.  Please goto
+http://lkml.org/lkml/2013/11/21/7 to got it.
 
-This patch doesn't change the compiled code because ARC_HDR_SIZE is 4
-and sizeof(int) is 4, but the intent was to use the header size and not
-the sizeof the header size.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
----
- drivers/net/arcnet/arcnet.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/arcnet/arcnet.c b/drivers/net/arcnet/arcnet.c
-index 75a5725..e29940d 100644
---- a/drivers/net/arcnet/arcnet.c
-+++ b/drivers/net/arcnet/arcnet.c
-@@ -1008,7 +1008,7 @@ static void arcnet_rx(struct net_device *dev, int bufnum)
- 
- 	soft = &pkt.soft.rfc1201;
- 
--	lp->hw.copy_from_card(dev, bufnum, 0, &pkt, sizeof(ARC_HDR_SIZE));
-+	lp->hw.copy_from_card(dev, bufnum, 0, &pkt, ARC_HDR_SIZE);
- 	if (pkt.hard.offset[0]) {
- 		ofs = pkt.hard.offset[0];
- 		length = 256 - ofs;
--- 
-1.7.12.2.21.g234cd45.dirty
-
-
-
+Thanks,
+Hui
