@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758202AbaELCN5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 22:13:57 -0400
-Received: from 1wt.eu ([62.212.114.60]:34453 "EHLO 1wt.eu"
+	id S1755905AbaELCOU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 22:14:20 -0400
+Received: from 1wt.eu ([62.212.114.60]:34454 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752472AbaELBmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:42:05 -0400
-Message-Id: <20140512003202.336864946@1wt.eu>
+	id S1752464AbaELBmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:42:04 -0400
+Message-Id: <20140512003201.549662339@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:32:41 +0200
+Date: Mon, 12 May 2014 02:32:22 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Salam Noureddine <noureddine@aristanetworks.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 041/143] ipv6 mcast: use in6_dev_put in timer handlers instead of
+Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 022/143] HID: LG: validate HID output report details
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,52 +22,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- __in6_dev_put
 
-From: Salam Noureddine <noureddine@aristanetworks.com>
+From: Kees Cook <keescook@chromium.org>
 
-[ Upstream commit 9260d3e1013701aa814d10c8fc6a9f92bd17d643 ]
+commit 0fb6bd06e06792469acc15bbe427361b56ada528 upstream
 
-It is possible for the timer handlers to run after the call to
-ipv6_mc_down so use in6_dev_put instead of __in6_dev_put in the
-handler function in order to do proper cleanup when the refcnt
-reaches 0. Otherwise, the refcnt can reach zero without the
-inet6_dev being destroyed and we end up leaking a reference to
-the net_device and see messages like the following,
+A HID device could send a malicious output report that would cause the
+lg, lg3, and lg4 HID drivers to write beyond the output report allocation
+during an event, causing a heap overflow:
 
-unregister_netdevice: waiting for eth0 to become free. Usage count = 1
+[  325.245240] usb 1-1: New USB device found, idVendor=046d, idProduct=c287
+...
+[  414.518960] BUG kmalloc-4096 (Not tainted): Redzone overwritten
 
-Tested on linux-3.4.43.
+Additionally, while lg2 did correctly validate the report details, it was
+cleaned up and shortened.
 
-Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+CVE-2013-2893
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: stable@vger.kernel.org
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+
+[jmm: backported to 2.6.32]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/ipv6/mcast.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/hid/hid-lg2ff.c | 19 +++----------------
+ drivers/hid/hid-lgff.c  | 17 ++---------------
+ 2 files changed, 5 insertions(+), 31 deletions(-)
 
-diff --git a/net/ipv6/mcast.c b/net/ipv6/mcast.c
-index f9fcf69..99ae9e3 100644
---- a/net/ipv6/mcast.c
-+++ b/net/ipv6/mcast.c
-@@ -2208,7 +2208,7 @@ static void mld_gq_timer_expire(unsigned long data)
+diff --git a/drivers/hid/hid-lg2ff.c b/drivers/hid/hid-lg2ff.c
+index 4e6dc6e..a260a8c 100644
+--- a/drivers/hid/hid-lg2ff.c
++++ b/drivers/hid/hid-lg2ff.c
+@@ -65,26 +65,13 @@ int lg2ff_init(struct hid_device *hid)
+ 	struct hid_report *report;
+ 	struct hid_input *hidinput = list_entry(hid->inputs.next,
+ 						struct hid_input, list);
+-	struct list_head *report_list =
+-			&hid->report_enum[HID_OUTPUT_REPORT].report_list;
+ 	struct input_dev *dev = hidinput->input;
+ 	int error;
  
- 	idev->mc_gq_running = 0;
- 	mld_send_report(idev, NULL);
--	__in6_dev_put(idev);
-+	in6_dev_put(idev);
- }
+-	if (list_empty(report_list)) {
+-		dev_err(&hid->dev, "no output report found\n");
++	/* Check that the report looks ok */
++	report = hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 7);
++	if (!report)
+ 		return -ENODEV;
+-	}
+-
+-	report = list_entry(report_list->next, struct hid_report, list);
+-
+-	if (report->maxfield < 1) {
+-		dev_err(&hid->dev, "output report is empty\n");
+-		return -ENODEV;
+-	}
+-	if (report->field[0]->report_count < 7) {
+-		dev_err(&hid->dev, "not enough values in the field\n");
+-		return -ENODEV;
+-	}
  
- static void mld_ifc_timer_expire(unsigned long data)
-@@ -2221,7 +2221,7 @@ static void mld_ifc_timer_expire(unsigned long data)
- 		if (idev->mc_ifc_count)
- 			mld_ifc_start_timer(idev, idev->mc_maxdelay);
- 	}
--	__in6_dev_put(idev);
-+	in6_dev_put(idev);
- }
+ 	lg2ff = kmalloc(sizeof(struct lg2ff_device), GFP_KERNEL);
+ 	if (!lg2ff)
+diff --git a/drivers/hid/hid-lgff.c b/drivers/hid/hid-lgff.c
+index 987abeb..df26abb 100644
+--- a/drivers/hid/hid-lgff.c
++++ b/drivers/hid/hid-lgff.c
+@@ -135,27 +135,14 @@ static void hid_lgff_set_autocenter(struct input_dev *dev, u16 magnitude)
+ int lgff_init(struct hid_device* hid)
+ {
+ 	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
+-	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
+ 	struct input_dev *dev = hidinput->input;
+-	struct hid_report *report;
+-	struct hid_field *field;
+ 	const signed short *ff_bits = ff_joystick;
+ 	int error;
+ 	int i;
  
- static void mld_ifc_event(struct inet6_dev *idev)
+-	/* Find the report to use */
+-	if (list_empty(report_list)) {
+-		err_hid("No output report found");
+-		return -1;
+-	}
+-
+ 	/* Check that the report looks ok */
+-	report = list_entry(report_list->next, struct hid_report, list);
+-	field = report->field[0];
+-	if (!field) {
+-		err_hid("NULL field");
+-		return -1;
+-	}
++	if (!hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 7))
++		return -ENODEV;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(devices); i++) {
+ 		if (dev->id.vendor == devices[i].idVendor &&
 -- 
 1.7.12.2.21.g234cd45.dirty
 
