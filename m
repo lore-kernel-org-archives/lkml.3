@@ -1,236 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565AbaELAKS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 20:10:18 -0400
-Received: from gate.crashing.org ([63.228.1.57]:34080 "EHLO gate.crashing.org"
+	id S1752676AbaELALY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 20:11:24 -0400
+Received: from ozlabs.org ([103.22.144.67]:51963 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750822AbaELAKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 20:10:16 -0400
-Message-ID: <1399853330.17624.52.camel@pasglop>
-Subject: Re: [PATCH 1/5] irq_work: Architecture support for remote irq work
- raise
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Date: Mon, 12 May 2014 10:08:50 +1000
-In-Reply-To: <1399851237-2226-2-git-send-email-fweisbec@gmail.com>
-References: <1399851237-2226-1-git-send-email-fweisbec@gmail.com>
-	 <1399851237-2226-2-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751000AbaELALW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 20:11:22 -0400
+Date: Mon, 12 May 2014 10:11:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Chris Ball <chris@printf.net>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Micky Ching <micky_ching@realsil.com.cn>,
+        linux-mmc <linux-mmc@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the mmc tree with Linus' tree
+Message-ID: <20140512101115.3876b3f5@canb.auug.org.au>
+In-Reply-To: <CAPDyKFq1O-bB1Vax0uRKaF2p2AJ1FXHC6LNoLsooGx5gBdsuLA@mail.gmail.com>
+References: <20140509134455.07d7de4d@canb.auug.org.au>
+ <20140509071423.GF5767@lee--X1>
+ <CAPDyKFq1O-bB1Vax0uRKaF2p2AJ1FXHC6LNoLsooGx5gBdsuLA@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/BNg1iRPXGbdbBwPZG4NXfc9"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-12 at 01:33 +0200, Frederic Weisbecker wrote:
-> We are going to extend irq work to support remote queuing.
-> 
-> So lets add a cpu argument to arch_irq_work_raise(). The architectures
-> willing to support that must then provide the backend to raise irq work
-> IPIs remotely.
-> 
-> Initial support is provided for x86 and ARM since they are easily
-> extended. The other archs that overwrite arch_irq_work_raise() seem
-> to use local clock interrupts and therefore need deeper rewrite of their
-> irq work support to implement remote raising.
+--Sig_/BNg1iRPXGbdbBwPZG4NXfc9
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Well, looks like it's time to turn it into an IPI... It gets a bit more
-tricky because whether whacking the interrupt controller is safe to
-do from an NMI is safe or not might depend on that irq controller
-implementation...
+Hi Ulf,
 
-It looks like XICS and MPIC should be safe though, so at least we
-should be able to cover ppc64, but I'll leave ppc32 alone.
+On Fri, 9 May 2014 09:41:39 +0200 Ulf Hansson <ulf.hansson@linaro.org> wrot=
+e:
+>
+> Within this context; while Chris is being busy, I would be able to
+> help out better as co-maintainer - if we would add my published mmc
+> git tree, into your linux-next merge. Could you do that?
+>=20
+> My intent at this point, is to get patches tested in linux-next, but
+> still get them merged via Chris' mmc tree. Does that make sense?
+>=20
+> Here is my git tree:
+> git://git.linaro.org/people/ulf.hansson/mmc.git
+>=20
+> I have added a next branch, currently it points to the commit for
+> "Linux 3.15-rc4", so it holds no patches yet.
 
+Added from today. Chris, if this is a problem, give me a heads up.
+
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
+
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+        Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
+
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
+
+--=20
 Cheers,
-Ben.
+Stephen Rothwell=20
+sfr@canb.auug.org.au
 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Kevin Hilman <khilman@linaro.org>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  arch/Kconfig               | 12 ++++++++++++
->  arch/alpha/kernel/time.c   |  3 ++-
->  arch/arm/Kconfig           |  1 +
->  arch/arm/kernel/smp.c      |  4 ++--
->  arch/powerpc/kernel/time.c |  3 ++-
->  arch/sparc/kernel/pcr.c    |  3 ++-
->  arch/x86/Kconfig           |  1 +
->  arch/x86/kernel/irq_work.c | 10 ++--------
->  kernel/irq_work.c          |  4 ++--
->  9 files changed, 26 insertions(+), 15 deletions(-)
-> 
-> diff --git a/arch/Kconfig b/arch/Kconfig
-> index 97ff872..3a38356 100644
-> --- a/arch/Kconfig
-> +++ b/arch/Kconfig
-> @@ -472,6 +472,18 @@ config HAVE_IRQ_EXIT_ON_IRQ_STACK
->  	  This spares a stack switch and improves cache usage on softirq
->  	  processing.
->  
-> +config HAVE_IRQ_WORK_IPI
-> +	bool
-> +	help
-> +	  Architecture supports raising irq work interrupts both locally and
-> +	  remotely. Without this capability, we can only trigger local irq works
-> +	  loosely handled by the generic timer tick with the bad implications
-> +	  coming along: the irq work is subject to HZ latency and it runs under
-> +	  the tick random locking scenario (possibly holding hrtimer lock).
-> +
-> +	  This capability is required on configs running with a very minimized
-> +	  tick rate like full dynticks.
-> +
->  #
->  # ABI hall of shame
->  #
-> diff --git a/arch/alpha/kernel/time.c b/arch/alpha/kernel/time.c
-> index ee39cee..2ff0c61 100644
-> --- a/arch/alpha/kernel/time.c
-> +++ b/arch/alpha/kernel/time.c
-> @@ -60,8 +60,9 @@ DEFINE_PER_CPU(u8, irq_work_pending);
->  #define test_irq_work_pending()      __get_cpu_var(irq_work_pending)
->  #define clear_irq_work_pending()     __get_cpu_var(irq_work_pending) = 0
->  
-> -void arch_irq_work_raise(void)
-> +void arch_irq_work_raise(int cpu)
->  {
-> +	WARN_ON_ONCE(cpu != smp_processor_id());
->  	set_irq_work_pending_flag();
->  }
->  
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index db3c541..7edce21 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -46,6 +46,7 @@ config ARM
->  	select HAVE_HW_BREAKPOINT if (PERF_EVENTS && (CPU_V6 || CPU_V6K || CPU_V7))
->  	select HAVE_IDE if PCI || ISA || PCMCIA
->  	select HAVE_IRQ_TIME_ACCOUNTING
-> +	select HAVE_IRQ_WORK_IPI
->  	select HAVE_KERNEL_GZIP
->  	select HAVE_KERNEL_LZ4
->  	select HAVE_KERNEL_LZMA
-> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-> index 7c4fada..042a800 100644
-> --- a/arch/arm/kernel/smp.c
-> +++ b/arch/arm/kernel/smp.c
-> @@ -454,10 +454,10 @@ void arch_send_call_function_single_ipi(int cpu)
->  }
->  
->  #ifdef CONFIG_IRQ_WORK
-> -void arch_irq_work_raise(void)
-> +void arch_irq_work_raise(int cpu)
->  {
->  	if (is_smp())
-> -		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
-> +		smp_cross_call(cpumask_of(cpu), IPI_IRQ_WORK);
->  }
->  #endif
->  
-> diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-> index 122a580..4de25f4 100644
-> --- a/arch/powerpc/kernel/time.c
-> +++ b/arch/powerpc/kernel/time.c
-> @@ -464,9 +464,10 @@ DEFINE_PER_CPU(u8, irq_work_pending);
->  
->  #endif /* 32 vs 64 bit */
->  
-> -void arch_irq_work_raise(void)
-> +void arch_irq_work_raise(int cpu)
->  {
->  	preempt_disable();
-> +	WARN_ON_ONCE(cpu != smp_processor_id());
->  	set_irq_work_pending_flag();
->  	set_dec(1);
->  	preempt_enable();
-> diff --git a/arch/sparc/kernel/pcr.c b/arch/sparc/kernel/pcr.c
-> index 269af58..0e5bfd9 100644
-> --- a/arch/sparc/kernel/pcr.c
-> +++ b/arch/sparc/kernel/pcr.c
-> @@ -43,8 +43,9 @@ void __irq_entry deferred_pcr_work_irq(int irq, struct pt_regs *regs)
->  	set_irq_regs(old_regs);
->  }
->  
-> -void arch_irq_work_raise(void)
-> +void arch_irq_work_raise(int cpu)
->  {
-> +	WARN_ON_ONCE(cpu != smp_processor_id());
->  	set_softint(1 << PIL_DEFERRED_PCR_WORK);
->  }
->  
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 25d2c6f..b06f3fd 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -130,6 +130,7 @@ config X86
->  	select HAVE_CC_STACKPROTECTOR
->  	select GENERIC_CPU_AUTOPROBE
->  	select HAVE_ARCH_AUDITSYSCALL
-> +	select HAVE_IRQ_WORK_IPI
->  
->  config INSTRUCTION_DECODER
->  	def_bool y
-> diff --git a/arch/x86/kernel/irq_work.c b/arch/x86/kernel/irq_work.c
-> index 1de84e3..500ec1f 100644
-> --- a/arch/x86/kernel/irq_work.c
-> +++ b/arch/x86/kernel/irq_work.c
-> @@ -38,13 +38,7 @@ __visible void smp_trace_irq_work_interrupt(struct pt_regs *regs)
->  	exiting_irq();
->  }
->  
-> -void arch_irq_work_raise(void)
-> +void arch_irq_work_raise(int cpu)
->  {
-> -#ifdef CONFIG_X86_LOCAL_APIC
-> -	if (!cpu_has_apic)
-> -		return;
-> -
-> -	apic->send_IPI_self(IRQ_WORK_VECTOR);
-> -	apic_wait_icr_idle();
-> -#endif
-> +	apic->send_IPI_mask(cpumask_of(cpu), IRQ_WORK_VECTOR);
->  }
-> diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-> index a82170e..2559383 100644
-> --- a/kernel/irq_work.c
-> +++ b/kernel/irq_work.c
-> @@ -48,7 +48,7 @@ static bool irq_work_claim(struct irq_work *work)
->  	return true;
->  }
->  
-> -void __weak arch_irq_work_raise(void)
-> +void __weak arch_irq_work_raise(int cpu)
->  {
->  	/*
->  	 * Lame architectures will get the timer tick callback
-> @@ -79,7 +79,7 @@ bool irq_work_queue(struct irq_work *work)
->  	 */
->  	if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
->  		if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
-> -			arch_irq_work_raise();
-> +			arch_irq_work_raise(smp_processor_id());
->  	}
->  
->  	preempt_enable();
+--Sig_/BNg1iRPXGbdbBwPZG4NXfc9
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBCAAGBQJTcBGoAAoJEMDTa8Ir7ZwV1TMP/RN6RAqgS3OxvqjMuPWL19j5
+To6Eog67SCf2a0bSk24PHyRsBPRmpxHYB+ij6VzEqarqbpPg4CeNJNqAn9OUtXUe
+ugoSZEkf9aOVXu87D8damIGv+1vpv4wf0JNwMqs267i/GsZ2t2V1FZjtzeS5HgCY
+i/SMdONZsXo1eVNNZPYGqg05wwNJ7TPuOy440Te6DndmcBSKAGybSvGZn0LzQfh6
+wC7/uTtWVAUcCgHsvEVn+cFpEaoXnJ2CSHWVG2f2fXWVovq3Rizvdqg1cLnThE/f
+u1EpTHKrziPx1TxKYFpnNme++jEDX9+137pB3nxTy5W4w8jKmlgRTQEQzymO1nSe
+QLuos1LyFDChZfcClQLdJUWQHOFHUAfQzEzz/GcfRuf+sGno8v/KjBVKAs+dCn8i
+9Yv4xSAPQ9PS85gDbSP7Lv2JTbNQ38H5HpXg+mQmzUcqE/GaMyHXVgW+QfpLp9Ea
+0fwACVJHjT+dyaGSkf7tV6T001Kjfd17F+GC/Z5dl1xw0edFV38naORZLIbiZSSD
+zV7zrpAM+IiZGpTwQCyNcYFau14IMZjz9DfV4wKFtSWEog6p0OqVNcMTGqstzHxH
+JTRCYQ8PTbVoFx2bbJiDaJU9rX1wlBxv0zWvNGDgrFzQzPi79K9/X6HehW/Zf6jh
+7Wc4iss9e7gpRGhRRh/h
+=/sfq
+-----END PGP SIGNATURE-----
+
+--Sig_/BNg1iRPXGbdbBwPZG4NXfc9--
