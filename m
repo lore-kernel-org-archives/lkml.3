@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758645AbaELC0y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 22:26:54 -0400
-Received: from 1wt.eu ([62.212.114.60]:34348 "EHLO 1wt.eu"
+	id S1758656AbaELC2V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 22:28:21 -0400
+Received: from 1wt.eu ([62.212.114.60]:34331 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751614AbaELBlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:41:31 -0400
-Message-Id: <20140512003201.467029456@1wt.eu>
+	id S1751567AbaELBl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:41:27 -0400
+Message-Id: <20140512003200.969215034@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:32:20 +0200
+Date: Mon, 12 May 2014 02:32:08 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 020/143] HID: zeroplus: validate output report details
+Subject: [ 008/143] kernel/kmod.c: check for NULL in call_usermodehelper_exec()
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,62 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-commit 78214e81a1bf43740ce89bb5efda78eac2f8ef83 upstream
+If /proc/sys/kernel/core_pattern contains only "|", a NULL pointer
+dereference happens upon core dump because argv_split("") returns
+argv[0] == NULL.
 
-The zeroplus HID driver was not checking the size of allocated values
-in fields it used. A HID device could send a malicious output report
-that would cause the driver to write beyond the output report allocation
-during initialization, causing a heap overflow:
+This bug was once fixed by commit 264b83c07a84 ("usermodehelper: check
+subprocess_info->path != NULL") but was by error reintroduced by commit
+7f57cfa4e2aa ("usermodehelper: kill the sub_info->path[0] check").
 
-[ 1442.728680] usb 1-1: New USB device found, idVendor=0c12, idProduct=0005
-...
-[ 1466.243173] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
+This bug seems to exist since 2.6.19 (the version which core dump to
+pipe was added).  Depending on kernel version and config, some side
+effect might happen immediately after this oops (e.g.  kernel panic with
+2.6.32-358.18.1.el6).
 
-CVE-2013-2889
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: stable@vger.kernel.org
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-[jmm: backport to 2.6.32]
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+(cherry picked from commit 4c1c7be95c345cf2ad537a0c48e9aeadc7304527)
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/hid/hid-zpff.c | 18 +++++-------------
- 1 file changed, 5 insertions(+), 13 deletions(-)
+ kernel/kmod.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/hid/hid-zpff.c b/drivers/hid/hid-zpff.c
-index a79f0d7..5617ea9 100644
---- a/drivers/hid/hid-zpff.c
-+++ b/drivers/hid/hid-zpff.c
-@@ -68,21 +68,13 @@ static int zpff_init(struct hid_device *hid)
- 	struct hid_report *report;
- 	struct hid_input *hidinput = list_entry(hid->inputs.next,
- 						struct hid_input, list);
--	struct list_head *report_list =
--			&hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct input_dev *dev = hidinput->input;
--	int error;
-+	int i, error;
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index 8ecc509..3da09a9 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -560,6 +560,10 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info,
+ 	BUG_ON(atomic_read(&sub_info->cred->usage) != 1);
+ 	validate_creds(sub_info->cred);
  
--	if (list_empty(report_list)) {
--		dev_err(&hid->dev, "no output report found\n");
--		return -ENODEV;
--	}
--
--	report = list_entry(report_list->next, struct hid_report, list);
--
--	if (report->maxfield < 4) {
--		dev_err(&hid->dev, "not enough fields in report\n");
--		return -ENODEV;
-+	for (i = 0; i < 4; i++) {
-+		report = hid_validate_values(hid, HID_OUTPUT_REPORT, 0, i, 1);
-+		if (!report)
-+			return -ENODEV;
- 	}
- 
- 	zpff = kzalloc(sizeof(struct zpff_device), GFP_KERNEL);
++	if (!sub_info->path) {
++		call_usermodehelper_freeinfo(sub_info);
++		return -EINVAL;
++	}
+ 	helper_lock();
+ 	if (sub_info->path[0] == '\0')
+ 		goto out;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
