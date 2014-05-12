@@ -1,428 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415AbaELWbt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 18:31:49 -0400
+	id S1752576AbaELWbv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 18:31:51 -0400
 Received: from mga03.intel.com ([143.182.124.21]:51588 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751778AbaELWbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 18:31:47 -0400
+	id S1751778AbaELWbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 18:31:49 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1038,1389772800"; 
-   d="scan'208";a="431204286"
+   d="scan'208";a="431204298"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 1/2] mei: add per device configuration
-Date: Tue, 13 May 2014 01:30:53 +0300
-Message-Id: <1399933854-2665-1-git-send-email-tomas.winkler@intel.com>
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Alexander Usyskin <alexander.usyskin@intel.com>
+Subject: [char-misc-next 2/2] mei: me: move probe quirk to cfg structure
+Date: Tue, 13 May 2014 01:30:54 +0300
+Message-Id: <1399933854-2665-2-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1399933854-2665-1-git-send-email-tomas.winkler@intel.com>
+References: <1399933854-2665-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
-
-Add mei_cfg structure that holds per device configuration
-data and hooks, as the first step we add firmware
-status register offsets
+Move quirk FW type detector to cfg structure
 
 Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/hw-me.c   | 34 ++++++++++++++++++--
- drivers/misc/mei/hw-me.h   |  7 ++++-
- drivers/misc/mei/hw-txe.c  | 17 ++++++++--
- drivers/misc/mei/hw-txe.h  |  5 ++-
- drivers/misc/mei/init.c    | 24 ++++++++++++++-
- drivers/misc/mei/mei_dev.h | 27 ++++++++++++----
- drivers/misc/mei/pci-me.c  | 77 ++++++++++++++++++++++++----------------------
- drivers/misc/mei/pci-txe.c |  5 +--
- 8 files changed, 144 insertions(+), 52 deletions(-)
+ drivers/misc/mei/hw-me.c   | 37 ++++++++++++++++++++++++++++++++++++
+ drivers/misc/mei/hw-me.h   |  2 ++
+ drivers/misc/mei/mei_dev.h |  2 ++
+ drivers/misc/mei/pci-me.c  | 47 +++++++++++++---------------------------------
+ 4 files changed, 54 insertions(+), 34 deletions(-)
 
 diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
-index 016ad88..ed08118 100644
+index ed08118..6a2d272 100644
 --- a/drivers/misc/mei/hw-me.c
 +++ b/drivers/misc/mei/hw-me.c
-@@ -792,14 +792,44 @@ static const struct mei_hw_ops mei_me_hw_ops = {
+@@ -792,6 +792,30 @@ static const struct mei_hw_ops mei_me_hw_ops = {
  	.read = mei_me_read_slots
  };
  
-+#define MEI_CFG_LEGACY_HFS                      \
-+	.fw_status.count = 0
++static bool mei_me_fw_type_nm(struct pci_dev *pdev)
++{
++	u32 reg;
++	pci_read_config_dword(pdev, PCI_CFG_HFS_2, &reg);
++	/* make sure that bit 9 (NM) is up and bit 10 (DM) is down */
++	return (reg & 0x600) == 0x200;
++}
 +
-+#define MEI_CFG_ICH_HFS                        \
-+	.fw_status.count = 1,                   \
-+	.fw_status.status[0] = PCI_CFG_HFS_1
++#define MEI_CFG_FW_NM                           \
++	.quirk_probe = mei_me_fw_type_nm
 +
-+#define MEI_CFG_PCH_HFS                         \
-+	.fw_status.count = 2,                   \
-+	.fw_status.status[0] = PCI_CFG_HFS_1,   \
-+	.fw_status.status[1] = PCI_CFG_HFS_2
++static bool mei_me_fw_type_sps(struct pci_dev *pdev)
++{
++	u32 reg;
++	/* Read ME FW Status check for SPS Firmware */
++	pci_read_config_dword(pdev, PCI_CFG_HFS_1, &reg);
++	/* if bits [19:16] = 15, running SPS Firmware */
++	return (reg & 0xf0000) == 0xf0000;
++}
++
++#define MEI_CFG_FW_SPS                           \
++	.quirk_probe = mei_me_fw_type_sps
 +
 +
-+/* ICH Legacy devices */
-+const struct mei_cfg mei_me_legacy_cfg = {
-+	MEI_CFG_LEGACY_HFS,
-+};
+ #define MEI_CFG_LEGACY_HFS                      \
+ 	.fw_status.count = 0
+ 
+@@ -820,6 +844,19 @@ const struct mei_cfg mei_me_pch_cfg = {
+ 	MEI_CFG_PCH_HFS,
+ };
+ 
 +
-+/* ICH devices */
-+const struct mei_cfg mei_me_ich_cfg = {
-+	MEI_CFG_ICH_HFS,
-+};
-+
-+/* PCH devices */
-+const struct mei_cfg mei_me_pch_cfg = {
++/* PCH Cougar Point and Patsburg with quirk for Node Manager exclusion */
++const struct mei_cfg mei_me_pch_cpt_pbg_cfg = {
 +	MEI_CFG_PCH_HFS,
++	MEI_CFG_FW_NM,
++};
++
++/* PCH Lynx Point with quirk for SPS Firmware exclusion */
++const struct mei_cfg mei_me_lpt_cfg = {
++	MEI_CFG_PCH_HFS,
++	MEI_CFG_FW_SPS,
 +};
 +
  /**
   * mei_me_dev_init - allocates and initializes the mei device structure
   *
-  * @pdev: The pci device structure
-+ * @cfg: per device generation config
-  *
-  * returns The mei_device_device pointer on success, NULL on failure.
-  */
--struct mei_device *mei_me_dev_init(struct pci_dev *pdev)
-+struct mei_device *mei_me_dev_init(struct pci_dev *pdev,
-+				   const struct mei_cfg *cfg)
- {
- 	struct mei_device *dev;
- 
-@@ -808,7 +838,7 @@ struct mei_device *mei_me_dev_init(struct pci_dev *pdev)
- 	if (!dev)
- 		return NULL;
- 
--	mei_device_init(dev);
-+	mei_device_init(dev, cfg);
- 
- 	dev->ops = &mei_me_hw_ops;
- 
 diff --git a/drivers/misc/mei/hw-me.h b/drivers/misc/mei/hw-me.h
-index 0a75ab8..473aafb 100644
+index 473aafb..12b0f4b 100644
 --- a/drivers/misc/mei/hw-me.h
 +++ b/drivers/misc/mei/hw-me.h
-@@ -38,7 +38,12 @@ struct mei_me_hw {
+@@ -41,6 +41,8 @@ struct mei_me_hw {
+ extern const struct mei_cfg mei_me_legacy_cfg;
+ extern const struct mei_cfg mei_me_ich_cfg;
+ extern const struct mei_cfg mei_me_pch_cfg;
++extern const struct mei_cfg mei_me_pch_cpt_pbg_cfg;
++extern const struct mei_cfg mei_me_lpt_cfg;
  
- #define to_me_hw(dev) (struct mei_me_hw *)((dev)->hw)
- 
--struct mei_device *mei_me_dev_init(struct pci_dev *pdev);
-+extern const struct mei_cfg mei_me_legacy_cfg;
-+extern const struct mei_cfg mei_me_ich_cfg;
-+extern const struct mei_cfg mei_me_pch_cfg;
-+
-+struct mei_device *mei_me_dev_init(struct pci_dev *pdev,
-+				   const struct mei_cfg *cfg);
- 
- int mei_me_pg_set_sync(struct mei_device *dev);
- int mei_me_pg_unset_sync(struct mei_device *dev);
-diff --git a/drivers/misc/mei/hw-txe.c b/drivers/misc/mei/hw-txe.c
-index 455a6a5..9327378 100644
---- a/drivers/misc/mei/hw-txe.c
-+++ b/drivers/misc/mei/hw-txe.c
-@@ -1104,14 +1104,27 @@ static const struct mei_hw_ops mei_txe_hw_ops = {
- 
- };
- 
-+#define MEI_CFG_TXE_FW_STS                            \
-+	.fw_status.count = 2,                         \
-+	.fw_status.status[0] = PCI_CFG_TXE_FW_STS0,   \
-+	.fw_status.status[1] = PCI_CFG_TXE_FW_STS1
-+
-+const struct mei_cfg mei_txe_cfg = {
-+	MEI_CFG_TXE_FW_STS,
-+};
-+
-+
- /**
-  * mei_txe_dev_init - allocates and initializes txe hardware specific structure
-  *
-  * @pdev - pci device
-+ * @cfg - per device generation config
-+ *
-  * returns struct mei_device * on success or NULL;
-  *
-  */
--struct mei_device *mei_txe_dev_init(struct pci_dev *pdev)
-+struct mei_device *mei_txe_dev_init(struct pci_dev *pdev,
-+				    const struct mei_cfg *cfg)
- {
- 	struct mei_device *dev;
- 	struct mei_txe_hw *hw;
-@@ -1121,7 +1134,7 @@ struct mei_device *mei_txe_dev_init(struct pci_dev *pdev)
- 	if (!dev)
- 		return NULL;
- 
--	mei_device_init(dev);
-+	mei_device_init(dev, cfg);
- 
- 	hw = to_txe_hw(dev);
- 
-diff --git a/drivers/misc/mei/hw-txe.h b/drivers/misc/mei/hw-txe.h
-index e8dd2d1..e244af7 100644
---- a/drivers/misc/mei/hw-txe.h
-+++ b/drivers/misc/mei/hw-txe.h
-@@ -61,7 +61,10 @@ static inline struct mei_device *hw_txe_to_mei(struct mei_txe_hw *hw)
- 	return container_of((void *)hw, struct mei_device, hw);
- }
- 
--struct mei_device *mei_txe_dev_init(struct pci_dev *pdev);
-+extern const struct mei_cfg mei_txe_cfg;
-+
-+struct mei_device *mei_txe_dev_init(struct pci_dev *pdev,
-+	const struct mei_cfg *cfg);
- 
- irqreturn_t mei_txe_irq_quick_handler(int irq, void *dev_id);
- irqreturn_t mei_txe_irq_thread_handler(int irq, void *dev_id);
-diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index 510f378..0069292 100644
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -330,7 +330,28 @@ bool mei_write_is_idle(struct mei_device *dev)
- }
- EXPORT_SYMBOL_GPL(mei_write_is_idle);
- 
--void mei_device_init(struct mei_device *dev)
-+int mei_fw_status(struct mei_device *dev, struct mei_fw_status *fw_status)
-+{
-+	int i;
-+	const struct mei_fw_status *fw_src = &dev->cfg->fw_status;
-+
-+	if (!fw_status)
-+		return -EINVAL;
-+
-+	fw_status->count = fw_src->count;
-+	for (i = 0; i < fw_src->count && i < MEI_FW_STATUS_MAX; i++) {
-+		int ret;
-+		ret = pci_read_config_dword(dev->pdev,
-+			fw_src->status[i], &fw_status->status[i]);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(mei_fw_status);
-+
-+void mei_device_init(struct mei_device *dev, const struct mei_cfg *cfg)
- {
- 	/* setup our list array */
- 	INIT_LIST_HEAD(&dev->file_list);
-@@ -368,6 +389,7 @@ void mei_device_init(struct mei_device *dev)
- 	bitmap_set(dev->host_clients_map, 0, 1);
- 
- 	dev->pg_event = MEI_PG_EVENT_IDLE;
-+	dev->cfg      = cfg;
- }
- EXPORT_SYMBOL_GPL(mei_device_init);
- 
+ struct mei_device *mei_me_dev_init(struct pci_dev *pdev,
+ 				   const struct mei_cfg *cfg);
 diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 1aaaf0b..909d13d 100644
+index 909d13d..5c7e990 100644
 --- a/drivers/misc/mei/mei_dev.h
 +++ b/drivers/misc/mei/mei_dev.h
-@@ -379,6 +379,22 @@ enum mei_pg_state {
- 	MEI_PG_ON =  1,
+@@ -383,9 +383,11 @@ enum mei_pg_state {
+  * mei_cfg
+  *
+  * @fw_status - FW status
++ * @quirk_probe - device exclusion quirk
+  */
+ struct mei_cfg {
+ 	const struct mei_fw_status fw_status;
++	bool (*quirk_probe)(struct pci_dev *pdev);
  };
  
-+/*
-+ * mei_cfg
-+ *
-+ * @fw_status - FW status
-+ */
-+struct mei_cfg {
-+	const struct mei_fw_status fw_status;
-+};
-+
-+
-+#define MEI_PCI_DEVICE(dev, cfg) \
-+	.vendor = PCI_VENDOR_ID_INTEL, .device = (dev), \
-+	.subvendor = PCI_ANY_ID, .subdevice = PCI_ANY_ID, \
-+	.driver_data = (kernel_ulong_t)&(cfg)
-+
-+
- /**
-  * struct mei_device -  MEI private device struct
  
-@@ -390,6 +406,7 @@ enum mei_pg_state {
-  * @hbuf_depth - depth of hardware host/write buffer is slots
-  * @hbuf_is_ready - query if the host host/write buffer is ready
-  * @wr_msg - the buffer for hbm control messages
-+ * @cfg - per device generation config and ops
-  */
- struct mei_device {
- 	struct pci_dev *pdev;	/* pointer to pci device struct */
-@@ -500,6 +517,7 @@ struct mei_device {
- 
- 
- 	const struct mei_hw_ops *ops;
-+	const struct mei_cfg *cfg;
- 	char hw[0] __aligned(sizeof(void *));
- };
- 
-@@ -532,7 +550,7 @@ static inline u32 mei_slots2data(int slots)
- /*
-  * mei init function prototypes
-  */
--void mei_device_init(struct mei_device *dev);
-+void mei_device_init(struct mei_device *dev, const struct mei_cfg *cfg);
- int mei_reset(struct mei_device *dev);
- int mei_start(struct mei_device *dev);
- int mei_restart(struct mei_device *dev);
-@@ -611,6 +629,7 @@ void mei_watchdog_unregister(struct mei_device *dev);
-  * Register Access Function
-  */
- 
-+
- static inline void mei_hw_config(struct mei_device *dev)
- {
- 	dev->ops->hw_config(dev);
-@@ -698,11 +717,7 @@ static inline int mei_count_full_read_slots(struct mei_device *dev)
- 	return dev->ops->rdbuf_full_slots(dev);
- }
- 
--static inline int mei_fw_status(struct mei_device *dev,
--				struct mei_fw_status *fw_status)
--{
--	return dev->ops->fw_status(dev, fw_status);
--}
-+int mei_fw_status(struct mei_device *dev, struct mei_fw_status *fw_status);
- 
- #define FW_STS_FMT "%08X %08X"
- #define FW_STS_PRM(fw_status) \
 diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
-index 88516b0..6cb9819 100644
+index 6cb9819..1b46c64 100644
 --- a/drivers/misc/mei/pci-me.c
 +++ b/drivers/misc/mei/pci-me.c
-@@ -44,42 +44,44 @@
+@@ -72,15 +72,15 @@ static const struct pci_device_id mei_me_pci_tbl[] = {
  
- /* mei_pci_tbl - PCI Device ID Table */
- static const struct pci_device_id mei_me_pci_tbl[] = {
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_82946GZ)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_82G35)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_82Q965)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_82G965)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_82GM965)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_82GME965)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH9_82Q35)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH9_82G33)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH9_82Q33)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH9_82X38)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH9_3200)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH9_6)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH9_7)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH9_8)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH9_9)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH9_10)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH9M_1)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH9M_2)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH9M_3)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH9M_4)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH10_1)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH10_2)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH10_3)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_ICH10_4)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_IBXPK_1)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_IBXPK_2)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_CPT_1)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PBG_1)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_1)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_2)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_3)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_H)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_W)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_LP)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_HR)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_WPT_LP)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_82946GZ, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_82G35, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_82Q965, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_82G965, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_82GM965, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_82GME965, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH9_82Q35, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH9_82G33, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH9_82Q33, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH9_82X38, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH9_3200, mei_me_legacy_cfg)},
-+
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH9_6, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH9_7, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH9_8, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH9_9, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH9_10, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH9M_1, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH9M_2, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH9M_3, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH9M_4, mei_me_legacy_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH10_1, mei_me_ich_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH10_2, mei_me_ich_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH10_3, mei_me_ich_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_ICH10_4, mei_me_ich_cfg)},
-+
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_IBXPK_1, mei_me_pch_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_IBXPK_2, mei_me_pch_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_CPT_1, mei_me_pch_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_PBG_1, mei_me_pch_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_PPT_1, mei_me_pch_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_PPT_2, mei_me_pch_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_PPT_3, mei_me_pch_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_LPT_H, mei_me_pch_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_LPT_W, mei_me_pch_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_LPT_LP, mei_me_pch_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_LPT_HR, mei_me_pch_cfg)},
-+	{MEI_PCI_DEVICE(MEI_DEV_ID_WPT_LP, mei_me_pch_cfg)},
+ 	{MEI_PCI_DEVICE(MEI_DEV_ID_IBXPK_1, mei_me_pch_cfg)},
+ 	{MEI_PCI_DEVICE(MEI_DEV_ID_IBXPK_2, mei_me_pch_cfg)},
+-	{MEI_PCI_DEVICE(MEI_DEV_ID_CPT_1, mei_me_pch_cfg)},
+-	{MEI_PCI_DEVICE(MEI_DEV_ID_PBG_1, mei_me_pch_cfg)},
++	{MEI_PCI_DEVICE(MEI_DEV_ID_CPT_1, mei_me_pch_cpt_pbg_cfg)},
++	{MEI_PCI_DEVICE(MEI_DEV_ID_PBG_1, mei_me_pch_cpt_pbg_cfg)},
+ 	{MEI_PCI_DEVICE(MEI_DEV_ID_PPT_1, mei_me_pch_cfg)},
+ 	{MEI_PCI_DEVICE(MEI_DEV_ID_PPT_2, mei_me_pch_cfg)},
+ 	{MEI_PCI_DEVICE(MEI_DEV_ID_PPT_3, mei_me_pch_cfg)},
+-	{MEI_PCI_DEVICE(MEI_DEV_ID_LPT_H, mei_me_pch_cfg)},
+-	{MEI_PCI_DEVICE(MEI_DEV_ID_LPT_W, mei_me_pch_cfg)},
++	{MEI_PCI_DEVICE(MEI_DEV_ID_LPT_H, mei_me_lpt_cfg)},
++	{MEI_PCI_DEVICE(MEI_DEV_ID_LPT_W, mei_me_lpt_cfg)},
+ 	{MEI_PCI_DEVICE(MEI_DEV_ID_LPT_LP, mei_me_pch_cfg)},
+-	{MEI_PCI_DEVICE(MEI_DEV_ID_LPT_HR, mei_me_pch_cfg)},
++	{MEI_PCI_DEVICE(MEI_DEV_ID_LPT_HR, mei_me_lpt_cfg)},
+ 	{MEI_PCI_DEVICE(MEI_DEV_ID_WPT_LP, mei_me_pch_cfg)},
  
  	/* required last entry */
- 	{0, }
-@@ -143,6 +145,7 @@ no_mei:
+@@ -101,40 +101,21 @@ static inline void mei_me_unset_pm_domain(struct mei_device *dev) {}
+  * mei_quirk_probe - probe for devices that doesn't valid ME interface
+  *
+  * @pdev: PCI device structure
+- * @ent: entry into pci_device_table
++ * @cfg: per generation config
+  *
+  * returns true if ME Interface is valid, false otherwise
   */
- static int mei_me_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ static bool mei_me_quirk_probe(struct pci_dev *pdev,
+-				const struct pci_device_id *ent)
++				const struct mei_cfg *cfg)
  {
-+	const struct mei_cfg *cfg = (struct mei_cfg *)(ent->driver_data);
- 	struct mei_device *dev;
- 	struct mei_me_hw *hw;
- 	int err;
-@@ -183,7 +186,7 @@ static int mei_me_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 
- 
- 	/* allocates and initializes the mei dev structure */
--	dev = mei_me_dev_init(pdev);
-+	dev = mei_me_dev_init(pdev, cfg);
- 	if (!dev) {
- 		err = -ENOMEM;
- 		goto release_regions;
-diff --git a/drivers/misc/mei/pci-txe.c b/drivers/misc/mei/pci-txe.c
-index 2c3f562..2343c62 100644
---- a/drivers/misc/mei/pci-txe.c
-+++ b/drivers/misc/mei/pci-txe.c
-@@ -36,7 +36,7 @@
- #include "hw-txe.h"
- 
- static const struct pci_device_id mei_txe_pci_tbl[] = {
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0F18)}, /* Baytrail */
-+	{MEI_PCI_DEVICE(0x0F18, mei_txe_cfg)}, /* Baytrail */
- 	{0, }
- };
- MODULE_DEVICE_TABLE(pci, mei_txe_pci_tbl);
-@@ -69,6 +69,7 @@ static void mei_txe_pci_iounmap(struct pci_dev *pdev, struct mei_txe_hw *hw)
-  */
- static int mei_txe_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- {
-+	const struct mei_cfg *cfg = (struct mei_cfg *)(ent->driver_data);
- 	struct mei_device *dev;
- 	struct mei_txe_hw *hw;
- 	int err;
-@@ -99,7 +100,7 @@ static int mei_txe_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+-	u32 reg;
+-	/* Cougar Point || Patsburg */
+-	if (ent->device == MEI_DEV_ID_CPT_1 ||
+-	    ent->device == MEI_DEV_ID_PBG_1) {
+-		pci_read_config_dword(pdev, PCI_CFG_HFS_2, &reg);
+-		/* make sure that bit 9 (NM) is up and bit 10 (DM) is down */
+-		if ((reg & 0x600) == 0x200)
+-			goto no_mei;
+-	}
+-
+-	/* Lynx Point */
+-	if (ent->device == MEI_DEV_ID_LPT_H  ||
+-	    ent->device == MEI_DEV_ID_LPT_W  ||
+-	    ent->device == MEI_DEV_ID_LPT_HR) {
+-		/* Read ME FW Status check for SPS Firmware */
+-		pci_read_config_dword(pdev, PCI_CFG_HFS_1, &reg);
+-		/* if bits [19:16] = 15, running SPS Firmware */
+-		if ((reg & 0xf0000) == 0xf0000)
+-			goto no_mei;
++	if (cfg->quirk_probe && cfg->quirk_probe(pdev)) {
++		dev_info(&pdev->dev, "Device doesn't have valid ME Interface\n");
++		return false;
  	}
  
- 	/* allocates and initializes the mei dev structure */
--	dev = mei_txe_dev_init(pdev);
-+	dev = mei_txe_dev_init(pdev, cfg);
- 	if (!dev) {
- 		err = -ENOMEM;
- 		goto release_regions;
+ 	return true;
+-
+-no_mei:
+-	dev_info(&pdev->dev, "Device doesn't have valid ME Interface\n");
+-	return false;
+ }
++
+ /**
+  * mei_probe - Device Initialization Routine
+  *
+@@ -151,10 +132,8 @@ static int mei_me_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	int err;
+ 
+ 
+-	if (!mei_me_quirk_probe(pdev, ent)) {
+-		err = -ENODEV;
+-		goto end;
+-	}
++	if (!mei_me_quirk_probe(pdev, cfg))
++		return -ENODEV;
+ 
+ 	/* enable pci dev */
+ 	err = pci_enable_device(pdev);
 -- 
 1.9.0
 
