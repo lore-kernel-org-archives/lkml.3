@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277AbaELIKy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 04:10:54 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:46152 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816AbaELIKw (ORCPT
+	id S1753630AbaELIMt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 04:12:49 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:40489 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751827AbaELIMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 04:10:52 -0400
-Date: Mon, 12 May 2014 10:10:47 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: David Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] drm/ast: Fix double lock at PM resume
-Message-ID: <20140512081047.GC25056@phenom.ffwll.local>
-Mail-Followup-To: Takashi Iwai <tiwai@suse.de>,
-	David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org
-References: <1399616055-13427-1-git-send-email-tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399616055-13427-1-git-send-email-tiwai@suse.de>
-X-Operating-System: Linux phenom 3.14.0+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 12 May 2014 04:12:46 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: tglx@linutronix.de
+Cc: linaro-kernel@lists.linaro.org, linaro-networking@linaro.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        arvind.chauhan@arm.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH Resend] hrtimer: call switch_hrtimer_base() after setting new expiry time
+Date: Mon, 12 May 2014 13:42:29 +0530
+Message-Id: <81999e148745fc51bbcd0615823fbab9b2e87e23.1399882253.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 2.0.0.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 08:14:14AM +0200, Takashi Iwai wrote:
-> The recent commit [3ea87855: drm/helper: lock all around force mode
-> restore] introduced drm_modeset_lock_all() in
-> drm_helper_resume_force_mode() itself, while ast driver still takes
-> this lock before calling it.  Remove the caller side lock for avoid a
-> fatal deadlock.
-> 
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+In switch_hrtimer_base() we are calling hrtimer_check_target() which guarantees
+this:
 
-Oops, failed to do the audit correctly. Thanks for catching this.
+/*
+ * With HIGHRES=y we do not migrate the timer when it is expiring
+ * before the next event on the target cpu because we cannot reprogram
+ * the target cpu hardware and we would cause it to fire late.
+ *
+ * Called with cpu_base->lock of target cpu held.
+ */
 
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> ---
->  drivers/gpu/drm/ast/ast_drv.c | 2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/ast/ast_drv.c b/drivers/gpu/drm/ast/ast_drv.c
-> index 5137f15dba19..27e56dda476d 100644
-> --- a/drivers/gpu/drm/ast/ast_drv.c
-> +++ b/drivers/gpu/drm/ast/ast_drv.c
-> @@ -94,9 +94,7 @@ static int ast_drm_thaw(struct drm_device *dev)
->  	ast_post_gpu(dev);
->  
->  	drm_mode_config_reset(dev);
-> -	drm_modeset_lock_all(dev);
->  	drm_helper_resume_force_mode(dev);
-> -	drm_modeset_unlock_all(dev);
->  
->  	console_lock();
->  	ast_fbdev_set_suspend(dev, 0);
-> -- 
-> 1.9.2
-> 
+But switch_hrtimer_base() is only called from one place, i.e.
+__hrtimer_start_range_ns() and at that point (where we call
+switch_hrtimer_base()) expiration time is not yet known as we call this routine
+later: hrtimer_set_expires_range_ns().
 
+To fix this, we need to find the updated expiry time before calling
+switch_hrtimer_base().
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+Rebased over: v3.15-rc5
+
+ kernel/hrtimer.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 6b715c0..e0501fe 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -990,11 +990,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 	/* Remove an active timer from the queue: */
+ 	ret = remove_hrtimer(timer, base);
+ 
+-	/* Switch the timer base, if necessary: */
+-	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
+-
+ 	if (mode & HRTIMER_MODE_REL) {
+-		tim = ktime_add_safe(tim, new_base->get_time());
++		tim = ktime_add_safe(tim, base->get_time());
+ 		/*
+ 		 * CONFIG_TIME_LOW_RES is a temporary way for architectures
+ 		 * to signal that they simply return xtime in
+@@ -1009,6 +1006,9 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 
+ 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
+ 
++	/* Switch the timer base, if necessary: */
++	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
++
+ 	timer_stats_hrtimer_set_start_info(timer);
+ 
+ 	leftmost = enqueue_hrtimer(timer, new_base);
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+2.0.0.rc2
+
