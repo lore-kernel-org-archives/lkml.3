@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326AbaELBmp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:42:45 -0400
-Received: from 1wt.eu ([62.212.114.60]:34601 "EHLO 1wt.eu"
+	id S1756145AbaELCBl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 22:01:41 -0400
+Received: from 1wt.eu ([62.212.114.60]:34614 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753235AbaELBml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:42:41 -0400
-Message-Id: <20140512003205.169961121@1wt.eu>
+	id S1753301AbaELBmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:42:44 -0400
+Message-Id: <20140512003204.456328920@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:33:49 +0200
+Date: Mon, 12 May 2014 02:33:32 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+Cc: Sasha Levin <sasha.levin@oracle.com>,
         "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 109/143] isdnloop: several buffer overflows
+Subject: [ 092/143] net: unix: allow bind to fail on mutex lock
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,98 +23,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-[ Upstream commit 7563487cbf865284dcd35e9ef5a95380da046737 ]
+[ Upstream commit 37ab4fa7844a044dc21fde45e2a0fc2f3c3b6490 ]
 
-There are three buffer overflows addressed in this patch.
+This is similar to the set_peek_off patch where calling bind while the
+socket is stuck in unix_dgram_recvmsg() will block and cause a hung task
+spew after a while.
 
-1) In isdnloop_fake_err() we add an 'E' to a 60 character string and
-then copy it into a 60 character buffer.  I have made the destination
-buffer 64 characters and I'm changed the sprintf() to a snprintf().
+This is also the last place that did a straightforward mutex_lock(), so
+there shouldn't be any more of these patches.
 
-2) In isdnloop_parse_cmd(), p points to a 6 characters into a 60
-character buffer so we have 54 characters.  The ->eazlist[] is 11
-characters long.  I have modified the code to return if the source
-buffer is too long.
-
-3) In isdnloop_command() the cbuf[] array was 60 characters long but the
-max length of the string then can be up to 79 characters.  I made the
-cbuf array 80 characters long and changed the sprintf() to snprintf().
-I also removed the temporary "dial" buffer and changed it to use "p"
-directly.
-
-Unfortunately, we pass the "cbuf" string from isdnloop_command() to
-isdnloop_writecmd() which truncates anything over 60 characters to make
-it fit in card->omsg[].  (It can accept values up to 255 characters so
-long as there is a '\n' character every 60 characters).  For now I have
-just fixed the memory corruption bug and left the other problems in this
-driver alone.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/isdn/isdnloop/isdnloop.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ net/unix/af_unix.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
-index 92d895f..bf4168b 100644
---- a/drivers/isdn/isdnloop/isdnloop.c
-+++ b/drivers/isdn/isdnloop/isdnloop.c
-@@ -517,9 +517,9 @@ static isdnloop_stat isdnloop_cmd_table[] =
- static void
- isdnloop_fake_err(isdnloop_card * card)
- {
--	char buf[60];
-+	char buf[64];
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index bb0b008..79c1dce 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -674,7 +674,9 @@ static int unix_autobind(struct socket *sock)
+ 	int err;
+ 	unsigned int retries = 0;
  
--	sprintf(buf, "E%s", card->omsg);
-+	snprintf(buf, sizeof(buf), "E%s", card->omsg);
- 	isdnloop_fake(card, buf, -1);
- 	isdnloop_fake(card, "NAK", -1);
- }
-@@ -902,6 +902,8 @@ isdnloop_parse_cmd(isdnloop_card * card)
- 		case 7:
- 			/* 0x;EAZ */
- 			p += 3;
-+			if (strlen(p) >= sizeof(card->eazlist[0]))
-+				break;
- 			strcpy(card->eazlist[ch - 1], p);
- 			break;
- 		case 8:
-@@ -1126,7 +1128,7 @@ isdnloop_command(isdn_ctrl * c, isdnloop_card * card)
- {
- 	ulong a;
- 	int i;
--	char cbuf[60];
-+	char cbuf[80];
- 	isdn_ctrl cmd;
- 	isdnloop_cdef cdef;
+-	mutex_lock(&u->readlock);
++	err = mutex_lock_interruptible(&u->readlock);
++	if (err)
++		return err;
  
-@@ -1191,7 +1193,6 @@ isdnloop_command(isdn_ctrl * c, isdnloop_card * card)
- 				break;
- 			if ((c->arg & 255) < ISDNLOOP_BCH) {
- 				char *p;
--				char dial[50];
- 				char dcode[4];
+ 	err = 0;
+ 	if (u->addr)
+@@ -806,7 +808,9 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ 		goto out;
+ 	addr_len = err;
  
- 				a = c->arg;
-@@ -1203,10 +1204,10 @@ isdnloop_command(isdn_ctrl * c, isdnloop_card * card)
- 				} else
- 					/* Normal Dial */
- 					strcpy(dcode, "CAL");
--				strcpy(dial, p);
--				sprintf(cbuf, "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
--					dcode, dial, c->parm.setup.si1,
--				c->parm.setup.si2, c->parm.setup.eazmsn);
-+				snprintf(cbuf, sizeof(cbuf),
-+					 "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
-+					 dcode, p, c->parm.setup.si1,
-+					 c->parm.setup.si2, c->parm.setup.eazmsn);
- 				i = isdnloop_writecmd(cbuf, strlen(cbuf), 0, card);
- 			}
- 			break;
+-	mutex_lock(&u->readlock);
++	err = mutex_lock_interruptible(&u->readlock);
++	if (err)
++		goto out;
+ 
+ 	err = -EINVAL;
+ 	if (u->addr)
 -- 
 1.7.12.2.21.g234cd45.dirty
 
