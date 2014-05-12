@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558AbaELXDz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 19:03:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39785 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272AbaELXDx (ORCPT
+	id S1751993AbaELXQK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 19:16:10 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:63603 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272AbaELXQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 19:03:53 -0400
-Date: Mon, 12 May 2014 16:03:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: George Spelvin <linux@horizon.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mingo@redhat.com,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH 1/2] Add lib/glob.c
-Message-Id: <20140512160351.c0f7b25d7fa79e1cb19d6a79@linux-foundation.org>
-In-Reply-To: <20140510122138.GA4721@mtj.dyndns.org>
-References: <20140313121032.GA9981@htj.dyndns.org>
-	<20140510031356.22726.qmail@ns.horizon.com>
-	<20140510122138.GA4721@mtj.dyndns.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 12 May 2014 19:16:08 -0400
+Date: Mon, 12 May 2014 16:16:04 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mtd: Fix warning in access_ok() parameter passing
+Message-ID: <20140512231604.GT28907@ld-irv-0074>
+References: <1398969654-5672-1-git-send-email-geert@linux-m68k.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398969654-5672-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 May 2014 08:21:38 -0400 Tejun Heo <tj@kernel.org> wrote:
-
-> > +int
-> > +main(void)
-> > +{
-> > +	size_t i;
-> > +
-> > +	for (i = 0; i < sizeof(tests)/sizeof(*tests); i++)
-> > +		test(tests + i);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +#endif	/* UNITTEST */
+On Thu, May 01, 2014 at 08:40:54PM +0200, Geert Uytterhoeven wrote:
+> On m68k, where access_ok() doesn't cast the address parameter:
 > 
-> Again, I don't really think the userland testing code belongs here.
-> If you wanna keep them, please make it in-kernel selftesting.  We
-> don't really wanna keep code which can't get built and tested in
-> kernel tree proper.
+> drivers/mtd/mtdchar.c: In function 'mtdchar_write_ioctl':
+> drivers/mtd/mtdchar.c:575:4: warning: passing argument 2 of 'access_ok' makes pointer from integer without a cast [enabled by default]
+> arch/m68k/include/asm/uaccess_mm.h:17:90: note: expected 'const void *' but argument is of type '__u64'
+> drivers/mtd/mtdchar.c:576:4: warning: passing argument 2 of 'access_ok' makes pointer from integer without a cast [enabled by default]
+> arch/m68k/include/asm/uaccess_mm.h:17:90: note: expected 'const void *' but argument is of type '__u64'
+> 
+> The address parameter of access_ok() is really a userspace pointer.
+> On most architectures, access_ok() is a macro that casts the address
+> parameter, hiding issues in its users.
+> 
+> Move around and use the existing usr_data and usr_oob temporary variables
+> to kill the warnings. Add a few "consts", and make more use of the
+> temporaries while we're at it.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-If the tests don't measurably increase boot times we could run them
-unconditionally at boot.  Mark everything __init/__initdata and
-the costs are very low.  lib/plist.c does this.
+Pushed to l2-mtd.git. Thanks!
+
+Brian
