@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860AbaELGtK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 02:49:10 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34679 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752045AbaELGtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 02:49:08 -0400
-Message-ID: <53706ED6.4000509@ti.com>
-Date: Mon, 12 May 2014 12:18:54 +0530
-From: Mugunthan V N <mugunthanvnm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752900AbaELGw2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 02:52:28 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:2376 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751660AbaELGw1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 02:52:27 -0400
+X-IronPort-AV: E=Sophos;i="4.97,1033,1389715200"; 
+   d="scan'208";a="30389387"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 00/10 V2] workqueue: async worker destruction and worker attaching/detaching
+Date: Mon, 12 May 2014 14:56:12 +0800
+Message-ID: <1399877792-13046-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <20140505150514.GI11231@htj.dyndns.org>
+References: <20140505150514.GI11231@htj.dyndns.org>
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>
-CC: <davem@davemloft.net>, <balbi@ti.com>, <zonque@gmail.com>,
-        <mpa@pengutronix.de>, <tklauser@distanz.ch>
-Subject: Re: [PATCH v3 0/3] TI CPSW Cleanup
-References: <1399870281-27200-1-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1399870281-27200-1-git-send-email-george.cherian@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 May 2014 10:21 AM, George Cherian wrote:
-> This series does some minimal cleanups.
-> 	-Conversion of pr_*() to dev_*()
-> 	-Convert kzalloc to devm_kzalloc.
->
-> No functional changes.
->
-> v1 -> v2 Address review comments.
-> v2 -> v3 Remove a stale commit comment.
->
-> George Cherian (3):
->   driver net: cpsw: Convert pr_*() to dev_*() calls
->   net: davinci_mdio: Convert pr_err() to dev_err() call
->   drivers: net: davinci_cpdma: Convert kzalloc() to devm_kzalloc().
->
->  drivers/net/ethernet/ti/cpsw.c          | 50 ++++++++++++++++-----------------
->  drivers/net/ethernet/ti/davinci_cpdma.c | 35 ++++++++---------------
->  drivers/net/ethernet/ti/davinci_mdio.c  |  2 +-
->  3 files changed, 38 insertions(+), 49 deletions(-)
->
-Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
+Patch1-4: async worker destruction
 
-Regards
-Mugunthan V N
+Patch2 reduces the review burden. It will be easier to review the whole
+patchset if we know destroy_worker() is forced to destroy idle workers only.
+
+Patch5-10: worker attaching/detaching and simplify the workers management
+
+The code which attaches a worker to the pool and detaches a worker from the pool
+is unfolded in create_worker()/destroy_worker().
+The patchset moves this attaching/detaching code out and wraps them.
+
+patch3-4 moves the detaching code out from destroy_worker(), and make
+manger_mutex only protects the detaching code only rather than
+protects the whole worker-destruction path.
+
+patch5-7 makes manger_mutex only protects the attaching code rather than the
+whole worker-creation path.
+
+patch8: rename manger_mutex to attach_mutex
+patch9-10: moves the attaching code out from create_worker() and use it for
+rescuer.
+
+
+Lai Jiangshan (10):
+  workqueue: use manager lock only to protect worker_idr
+  workqueue: destroy_worker() should destroy idle workers only
+  workqueue: async worker destruction
+  workqueue: destroy worker directly in the idle timeout handler
+  workqueue: separate iteration role from worker_idr
+  workqueue: convert worker_idr to worker_ida
+  workqueue: narrow the protection range of manager_mutex
+  workqueue: rename manager_mutex to attach_mutex
+  workqueue: separate pool-attaching code out from create_worker()
+  workqueue: use generic attach/detach routine for rescuers
+
+ kernel/workqueue.c          |  401 ++++++++++++++-----------------------------
+ kernel/workqueue_internal.h |    1 +
+ 2 files changed, 126 insertions(+), 276 deletions(-)
+
+-- 
+1.7.4.4
+
