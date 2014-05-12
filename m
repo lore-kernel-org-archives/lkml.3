@@ -1,128 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758832AbaELPSJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 11:18:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35784 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756570AbaELPSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 11:18:08 -0400
-Date: Mon, 12 May 2014 17:18:06 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hannes@cmpxchg.org
-Subject: Re: [PATCH 03/14] memcg: update memcg_has_children() to use
- css_next_child()
-Message-ID: <20140512151806.GG9564@dhcp22.suse.cz>
-References: <1399671091-23867-1-git-send-email-tj@kernel.org>
- <1399671091-23867-4-git-send-email-tj@kernel.org>
+	id S1758846AbaELPTc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 11:19:32 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:43759 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758568AbaELPTb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 11:19:31 -0400
+Message-ID: <5370E65F.5080700@oracle.com>
+Date: Mon, 12 May 2014 11:18:55 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399671091-23867-4-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>
+Subject: sched,mm: gpf in task_numa_work/mempolicy
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 09-05-14 17:31:20, Tejun Heo wrote:
-> Currently, memcg_has_children() and mem_cgroup_hierarchy_write()
-> directly test cgroup->children for list emptiness.  It's semantically
-> correct in traditional hierarchies as it actually wants to test for
-> any children dead or alive; however, cgroup->children is not a
-> published field and scheduled to go away.
-> 
-> This patch moves out .use_hierarchy test out of memcg_has_children()
-> and updates it to use css_next_child() to test whether there exists
-> any children.  With .use_hierarchy test moved out, it can also be used
-> by mem_cgroup_hierarchy_write().
+Hello friendly NUMA crew,
 
-I hope we will not grow more users of memcg_has_children but it would be
-good to at least add a comment that this has to be checked by the
-caller because we consider parent/children always when use_hierarchy is
-used.
- 
-> A side note: As .use_hierarchy is going away, it doesn't really matter
-> but I'm not sure about how it's used in __memcg_activate_kmem().  The
-> condition tested by memcg_has_children() is mushy when seen from
-> userland as its result is affected by dead csses which aren't visible
-> from userland.  I think the rule would be a lot clearer if we have a
-> dedicated "freshly minted" flag which gets cleared when the first task
-> is migrated into it or the first child is created and then gate
-> activation with that.
+While fuzzing with trinity inside a KVM tools guest running the latest -next
+kernel I've stumbled on the following spew:
 
-This would work. KMEM_ACCOUNTED_ALLOWED in kmem_account_flags would be a
-candidate.
+[ 2328.642035] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 2328.644453] Dumping ftrace buffer:
+[ 2328.646204]    (ftrace buffer empty)
+[ 2328.647309] Modules linked in:
+[ 2328.648317] CPU: 47 PID: 50166 Comm: trinity-c370 Tainted: G        W     3.15.0-rc5-next-20140512-sasha-00019-ga20bc00-dirty #456
+[ 2328.650074] task: ffff880002bd8000 ti: ffff8800b9a2c000 task.ti: ffff8800b9a2c000
+[ 2328.650074] RIP: task_numa_work (include/linux/gfp.h:258 include/linux/mempolicy.h:184 kernel/sched/fair.c:1905)
+[ 2328.650074] RSP: 0018:ffff8800b9a2dea8  EFLAGS: 00010286
+[ 2328.650074] RAX: a56b6b6b6b6b6b6b RBX: ffff8800cbbbc000 RCX: ffffffffb2748a58
+[ 2328.650074] RDX: ffffffffab2a3b20 RSI: 0000000000000000 RDI: 0000000000000000
+[ 2328.650074] RBP: ffff8800b9a2def8 R08: ffff8800cbbbc4b8 R09: 0000000000000000
+[ 2328.650074] R10: 0000000000000001 R11: 0000000000000000 R12: 000000000000d18a
+[ 2328.659448] R13: 00007f7c1b649000 R14: ffff880585651600 R15: ffff880002bd8000
+[ 2328.659448] FS:  00007f7c1b647700(0000) GS:ffff8803a0e00000(0000) knlGS:0000000000000000
+[ 2328.659448] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 2328.659448] CR2: 00000000006e2000 CR3: 00000000ca3f0000 CR4: 00000000000006a0
+[ 2328.659448] DR0: 0000000000000000 DR1: 00000000006df000 DR2: 0000000000000000
+[ 2328.659448] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[ 2328.659448] Stack:
+[ 2328.659448]  ffffffffab286f35 00007f7c1b646000 ffff8800cbbbc0a8 00000000000012d1
+[ 2328.659448]  ffff8800b9a2ded8 ffffffffb193a100 0000000000000000 ffff880002bd8bb8
+[ 2328.659448]  ffff880002bd8000 0000000000000004 ffff8800b9a2df28 ffffffffab189b4e
+[ 2328.659448] Call Trace:
+[ 2328.659448] ? context_tracking_user_exit (arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:182 (discriminator 2))
+[ 2328.659448] task_work_run (kernel/task_work.c:125 (discriminator 1))
+[ 2328.659448] do_notify_resume (include/linux/tracehook.h:196 arch/x86/kernel/signal.c:753)
+[ 2328.659448] int_signal (arch/x86/kernel/entry_64.S:804)
+[ 2328.659448] Code: c3 e9 68 01 00 00 49 f7 46 50 00 44 00 00 0f 85 12 01 00 00 49 8b 86 a0 00 00 00 48 85 c0 0f 84 22 01 00 00 48 8b 80 f8 01 00 00 <48> 8b 90 48 01 00 00 b8 22 01 32 01 83 e2 0f 8d 0c 12 d3 f8 b9
+[ 2328.659448] RIP task_numa_work (include/linux/gfp.h:258 include/linux/mempolicy.h:184 kernel/sched/fair.c:1905)
+[ 2328.659448]  RSP <ffff8800b9a2dea8>
 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/memcontrol.c | 26 ++++++++++++++++----------
->  1 file changed, 16 insertions(+), 10 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 036453a..eb6e1b5 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -4834,18 +4834,23 @@ static void mem_cgroup_reparent_charges(struct mem_cgroup *memcg)
->  	} while (usage > 0);
->  }
->  
-> +/* test whether @memcg has children, dead or alive */
->  static inline bool memcg_has_children(struct mem_cgroup *memcg)
->  {
-> -	lockdep_assert_held(&memcg_create_mutex);
-> +	bool ret;
-> +
->  	/*
-> -	 * The lock does not prevent addition or deletion to the list
-> -	 * of children, but it prevents a new child from being
-> -	 * initialized based on this parent in css_online(), so it's
-> -	 * enough to decide whether hierarchically inherited
-> -	 * attributes can still be changed or not.
-> +	 * The lock does not prevent addition or deletion of children, but
-> +	 * it prevents a new child from being initialized based on this
-> +	 * parent in css_online(), so it's enough to decide whether
-> +	 * hierarchically inherited attributes can still be changed or not.
->  	 */
-> -	return memcg->use_hierarchy &&
-> -		!list_empty(&memcg->css.cgroup->children);
-> +	lockdep_assert_held(&memcg_create_mutex);
-> +
-> +	rcu_read_lock();
-> +	ret = css_next_child(NULL, &memcg->css);
-> +	rcu_read_unlock();
-> +	return ret;
->  }
->  
->  /*
-> @@ -4921,7 +4926,7 @@ static int mem_cgroup_hierarchy_write(struct cgroup_subsys_state *css,
->  	 */
->  	if ((!parent_memcg || !parent_memcg->use_hierarchy) &&
->  				(val == 1 || val == 0)) {
-> -		if (list_empty(&memcg->css.cgroup->children))
-> +		if (!memcg_has_children(memcg))
->  			memcg->use_hierarchy = val;
->  		else
->  			retval = -EBUSY;
-> @@ -5038,7 +5043,8 @@ static int __memcg_activate_kmem(struct mem_cgroup *memcg,
->  	 * of course permitted.
->  	 */
->  	mutex_lock(&memcg_create_mutex);
-> -	if (cgroup_has_tasks(memcg->css.cgroup) || memcg_has_children(memcg))
-> +	if (cgroup_has_tasks(memcg->css.cgroup) ||
-> +	    (memcg->use_hierarchy && memcg_has_children(memcg)))
->  		err = -EBUSY;
->  	mutex_unlock(&memcg_create_mutex);
->  	if (err)
-> -- 
-> 1.9.0
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+Thanks,
+Sasha
