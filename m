@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758613AbaELOo5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 10:44:57 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:33167 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758432AbaELOo4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 10:44:56 -0400
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: jet.chen@intel.com
-Cc: mingo@kernel.org, fengguang.wu@intel.com, linux-ia64@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: Re: [sched] BUG: unable to handle kernel paging request at 093cd001
-Date: Mon, 12 May 2014 16:43:40 +0200
-Message-Id: <1399905820-16943-1-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <5370DC83.3030406@intel.com>
-References: <5370DC83.3030406@intel.com>
+	id S1758606AbaELOq3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 10:46:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55300 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751839AbaELOq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 10:46:27 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jens Axboe <axboe@fb.com>
+Cc: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, <linux-mm@kvack.org>
+Subject: Re: [PATCH] Avoid always dirtying mapping->flags on O_DIRECT
+References: <20140509213907.GA20698@kernel.dk>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 12 May 2014 10:46:19 -0400
+In-Reply-To: <20140509213907.GA20698@kernel.dk> (Jens Axboe's message of "Fri,
+	9 May 2014 15:39:07 -0600")
+Message-ID: <x49r43z837o.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Jens Axboe <axboe@fb.com> writes:
 
-Sorry the previous patch, that i sent, becomes wrong after optimizing it
-Could you please try this one ?
+> Hi,
+>
+> In some testing I ran today, we end up spending 40% of the time in
+> filemap_check_errors(). That smells fishy. Looking further, this is
+> basically what happens:
+>
+> blkdev_aio_read()
+>     generic_file_aio_read()
+>         filemap_write_and_wait_range()
+>             if (!mapping->nr_pages)
+>                 filemap_check_errors()
+>
+> and filemap_check_errors() always attempts two test_and_clear_bit() on
+> the mapping flags, thus dirtying it for every single invocation. The
+> patch below tests each of these bits before clearing them, avoiding this
+> issue. In my test case (4-socket box), performance went from 1.7M IOPS
+> to 4.0M IOPS.
 
-Regards,
-Vincent
----
- kernel/sched/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+It might help to use the word cacheline somewhere in here.  ;-) Out of
+curiosity, what workload were you running?
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 4ea7b3f..205fa17 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6234,7 +6234,7 @@ static void sched_init_numa(void)
- 	/* Compute default topology size */
- 	for (i = 0; sched_domain_topology[i].mask; i++);
- 
--	tl = kzalloc((i + level) *
-+	tl = kzalloc((i + level + 1) *
- 			sizeof(struct sched_domain_topology_level), GFP_KERNEL);
- 	if (!tl)
- 		return;
--- 
-1.9.1
-
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
