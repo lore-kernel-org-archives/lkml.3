@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812AbaELCIW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 22:08:22 -0400
-Received: from 1wt.eu ([62.212.114.60]:34535 "EHLO 1wt.eu"
+	id S1752880AbaELBmW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:42:22 -0400
+Received: from 1wt.eu ([62.212.114.60]:34515 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752895AbaELBmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:42:25 -0400
-Message-Id: <20140512003201.135463494@1wt.eu>
+	id S1752743AbaELBmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:42:18 -0400
+Message-Id: <20140512003206.005845696@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:32:12 +0200
+Date: Mon, 12 May 2014 02:34:08 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Max Matveev <makc@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Peter Hurley <peter@hurleysoftware.com>, Jiri Slaby <jslaby@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 012/143] sctp: deal with multiple COOKIE_ECHO chunks
+Subject: [ 128/143] n_tty: Fix n_tty_write crash when echoing in raw mode
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,74 +26,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Matveev <makc@redhat.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit d5ccd496601b8776a516d167a6485754575dc38f upstream
+The tty atomic_write_lock does not provide an exclusion guarantee for
+the tty driver if the termios settings are LECHO & !OPOST.  And since
+it is unexpected and not allowed to call TTY buffer helpers like
+tty_insert_flip_string concurrently, this may lead to crashes when
+concurrect writers call pty_write. In that case the following two
+writers:
+* the ECHOing from a workqueue and
+* pty_write from the process
+race and can overflow the corresponding TTY buffer like follows.
 
-Attempt to reduce the number of IP packets emitted in response to single
-SCTP packet (2e3216cd) introduced a complication - if a packet contains
-two COOKIE_ECHO chunks and nothing else then SCTP state machine corks the
-socket while processing first COOKIE_ECHO and then loses the association
-and forgets to uncork the socket. To deal with the issue add new SCTP
-command which can be used to set association explictly. Use this new
-command when processing second COOKIE_ECHO chunk to restore the context
-for SCTP state machine.
+If we look into tty_insert_flip_string_fixed_flag, there is:
+  int space = __tty_buffer_request_room(port, goal, flags);
+  struct tty_buffer *tb = port->buf.tail;
+  ...
+  memcpy(char_buf_ptr(tb, tb->used), chars, space);
+  ...
+  tb->used += space;
 
-Signed-off-by: Max Matveev <makc@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[dannf: backported to Debian's 2.6.32]
+so the race of the two can result in something like this:
+              A                                B
+__tty_buffer_request_room
+                                  __tty_buffer_request_room
+memcpy(buf(tb->used), ...)
+tb->used += space;
+                                  memcpy(buf(tb->used), ...) ->BOOM
+
+B's memcpy is past the tty_buffer due to the previous A's tb->used
+increment.
+
+Since the N_TTY line discipline input processing can output
+concurrently with a tty write, obtain the N_TTY ldisc output_lock to
+serialize echo output with normal tty writes.  This ensures the tty
+buffer helper tty_insert_flip_string is not called concurrently and
+everything is fine.
+
+Note that this is nicely reproducible by an ordinary user using
+forkpty and some setup around that (raw termios + ECHO). And it is
+present in kernels at least after commit
+d945cb9cce20ac7143c2de8d88b187f62db99bdc (pty: Rework the pty layer to
+use the normal buffering logic) in 2.6.31-rc3.
+
+js: add more info to the commit log
+js: switch to bool
+js: lock unconditionally
+js: lock only the tty->ops->write call
+
+References: CVE-2014-0196
+Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+(cherry picked from commit 4291086b1f081b869c6d79e5b7441633dc3ace00)
+[wt: 2.6.32 has no n_tty_data, so output_lock is in tty, not tty->disc_data]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- include/net/sctp/command.h | 1 +
- net/sctp/sm_sideeffect.c   | 5 +++++
- net/sctp/sm_statefuns.c    | 6 ++++++
- 3 files changed, 12 insertions(+)
+ drivers/char/n_tty.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/include/net/sctp/command.h b/include/net/sctp/command.h
-index 2c55a7e..0edc14d 100644
---- a/include/net/sctp/command.h
-+++ b/include/net/sctp/command.h
-@@ -108,6 +108,7 @@ typedef enum {
- 	SCTP_CMD_UPDATE_INITTAG, /* Update peer inittag */
- 	SCTP_CMD_SEND_MSG,	 /* Send the whole use message */
- 	SCTP_CMD_SEND_NEXT_ASCONF, /* Send the next ASCONF after ACK */
-+	SCTP_CMD_SET_ASOC,	 /* Restore association context */
- 	SCTP_CMD_LAST
- } sctp_verb_t;
- 
-diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
-index ed742bf..9005d83 100644
---- a/net/sctp/sm_sideeffect.c
-+++ b/net/sctp/sm_sideeffect.c
-@@ -1676,6 +1676,11 @@ static int sctp_cmd_interpreter(sctp_event_t event_type,
- 		case SCTP_CMD_SEND_NEXT_ASCONF:
- 			sctp_cmd_send_asconf(asoc);
- 			break;
-+
-+		case SCTP_CMD_SET_ASOC:
-+			asoc = cmd->obj.asoc;
-+			break;
-+
- 		default:
- 			printk(KERN_WARNING "Impossible command: %u, %p\n",
- 			       cmd->verb, cmd->obj.ptr);
-diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-index 2f8e1c8..9e4e846 100644
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -2048,6 +2048,12 @@ sctp_disposition_t sctp_sf_do_5_2_4_dupcook(const struct sctp_endpoint *ep,
- 	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_ASOC, SCTP_ASOC(new_asoc));
- 	sctp_add_cmd_sf(commands, SCTP_CMD_DELETE_TCB, SCTP_NULL());
- 
-+	/* Restore association pointer to provide SCTP command interpeter
-+	 * with a valid context in case it needs to manipulate
-+	 * the queues */
-+	sctp_add_cmd_sf(commands, SCTP_CMD_SET_ASOC,
-+			 SCTP_ASOC((struct sctp_association *)asoc));
-+
- 	return retval;
- 
- nomem:
+diff --git a/drivers/char/n_tty.c b/drivers/char/n_tty.c
+index 2e50f4d..5269fa0 100644
+--- a/drivers/char/n_tty.c
++++ b/drivers/char/n_tty.c
+@@ -1969,7 +1969,9 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
+ 				tty->ops->flush_chars(tty);
+ 		} else {
+ 			while (nr > 0) {
++				mutex_lock(&tty->output_lock);
+ 				c = tty->ops->write(tty, b, nr);
++				mutex_unlock(&tty->output_lock);
+ 				if (c < 0) {
+ 					retval = c;
+ 					goto break_out;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
