@@ -1,149 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751110AbaELA4q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 20:56:46 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53671 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777AbaELA4p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 20:56:45 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH v2] perf tools: Use tid for finding thread
-Date: Mon, 12 May 2014 09:56:42 +0900
-Message-Id: <1399856202-26221-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.9.2
+	id S1751029AbaELBDP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:03:15 -0400
+Received: from know-smtprelay-omc-8.server.virginmedia.net ([80.0.253.72]:33117
+	"EHLO know-smtprelay-omc-8.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750810AbaELBDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:03:13 -0400
+X-Originating-IP: [81.106.150.188]
+X-Spam: 0
+X-Authority: v=2.1 cv=TM7LSjVa c=1 sm=1 tr=0 a=DGj713NdaxKrsjjgQne7PA==:117
+ a=DGj713NdaxKrsjjgQne7PA==:17 a=J0QyKEt1u0cA:10 a=EBe6uRzgOt0A:10
+ a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=NLZqzBF-AAAA:8 a=zd2uoN0lAAAA:8
+ a=Z4Rwk6OoAAAA:8 a=P6JkxrBpAAAA:8 a=ObclLZvKEjuZWZCWu1QA:9 a=QEXdDO2ut3YA:10
+ a=wu_e27o_rKQA:10 a=jbrJJM5MRmoA:10
+Date: Mon, 12 May 2014 02:03:10 +0100
+From: Ken Moffat <zarniwhoop@ntlworld.com>
+To: Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>
+Cc: Alex Deucher <alexdeucher@gmail.com>, linux-kernel@vger.kernel.org,
+        zarniwhoop@ntlworld.com
+Subject: Re: More breakage on HD7480D [ Aruba ]
+Message-ID: <20140512010310.GA4370@milliways>
+References: <20140512003405.GA3386@milliways>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140512003405.GA3386@milliways>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I believe that passing pid (instead of tid) as the 3rd arg of the
-machine__find*_thread() was to find a main thread so that it can
-search proper map group for symbols.  However with the map sharing
-patch applied, it now can do it in any thread.
+On Mon, May 12, 2014 at 01:34:06AM +0100, Ken Moffat wrote:
 
-It fixes a bug when each thread has different name, it only reports a
-main thread for samples in other threads.
+ /me swears at myself for failing to copy to lkml.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Acked-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-inject.c     | 2 +-
- tools/perf/builtin-kmem.c       | 2 +-
- tools/perf/tests/code-reading.c | 2 +-
- tools/perf/tests/hists_filter.c | 1 +
- tools/perf/tests/hists_link.c   | 2 ++
- tools/perf/util/build-id.c      | 2 +-
- tools/perf/util/event.c         | 2 +-
- 7 files changed, 8 insertions(+), 5 deletions(-)
+> Hi Christian, Alex -
+> 
+>  my A4 Trinity (Radeon HD7480D) was working fine by -rc3.  But now
+> that I've tested it in -rc5 it is again broken (the screen goes
+> blank when KMS starts).  Bisection blames:
+> 
+> 3b333c55485fef0089ae7398906599d000df195e is the first bad commit
+> commit 3b333c55485fef0089ae7398906599d000df195e
+> Author: Christian König <christian.koenig@amd.com>
+> Date:   Thu Apr 24 18:39:59 2014 +0200
+> 
+>     drm/radeon: avoid high jitter with small frac divs
+>     
+>     Signed-off-by: Christian König <christian.koenig@amd.com>
+> 
+>  Reverting that from current HEAD [
+> 
+> commit 7e338c9991ecee9c2ac7a4cee2c2e11ecb563d02
+> Merge: 9cf22e80df77 aa07c713ecfc
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> Date:   Sun May 11 18:06:13 2014 +0900
+> 
+>     Merge branch 'for-3.15' of git://linux-nfs.org/~bfields/linux
+>     
+>     Pull nfsd fixes from Bruce Fields.
+> 
+> ]
+> makes it again boot.
+> 
+>  Note to Alex - 3.15 has been an "interesting" cycle - you fixed my
+> earlier problem, despite my non-response, and thanks again for that.
+> After that, my other radeon broke after -rc2 (I retested it after
+> rc4 and found that although rc4 was broken, HEAD was fixed, so
+> thanks also for that.  Then I retested this one for -rc5.  It seems
+> that my boxes always break when I don't have time to test new
+> releases :-(
+> 
+> ĸen
+> -- 
+> das eine Mal als Tragödie, dieses Mal als Farce
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 3a7387551369..6a3af0013d68 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -209,7 +209,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
- 
- 	cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 
--	thread = machine__findnew_thread(machine, sample->pid, sample->pid);
-+	thread = machine__findnew_thread(machine, sample->pid, sample->tid);
- 	if (thread == NULL) {
- 		pr_err("problem processing %d event, skipping it.\n",
- 		       event->header.type);
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index f91fa4376f4b..bef3376bfaf3 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -235,7 +235,7 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- 				struct machine *machine)
- {
- 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
--							sample->pid);
-+							sample->tid);
- 
- 	if (thread == NULL) {
- 		pr_debug("problem processing %d event, skipping it.\n",
-diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
-index adf3de3e38d6..67f2d6323558 100644
---- a/tools/perf/tests/code-reading.c
-+++ b/tools/perf/tests/code-reading.c
-@@ -256,7 +256,7 @@ static int process_sample_event(struct machine *machine,
- 		return -1;
- 	}
- 
--	thread = machine__findnew_thread(machine, sample.pid, sample.pid);
-+	thread = machine__findnew_thread(machine, sample.pid, sample.tid);
- 	if (!thread) {
- 		pr_debug("machine__findnew_thread failed\n");
- 		return -1;
-diff --git a/tools/perf/tests/hists_filter.c b/tools/perf/tests/hists_filter.c
-index 23dc2f4d12c3..4617a8bee29b 100644
---- a/tools/perf/tests/hists_filter.c
-+++ b/tools/perf/tests/hists_filter.c
-@@ -69,6 +69,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
- 			evsel->hists.symbol_filter_str = NULL;
- 
- 			sample.pid = fake_samples[i].pid;
-+			sample.tid = fake_samples[i].pid;
- 			sample.ip = fake_samples[i].ip;
- 
- 			if (perf_event__preprocess_sample(&event, machine, &al,
-diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
-index e42d6790811a..b009bbf440d9 100644
---- a/tools/perf/tests/hists_link.c
-+++ b/tools/perf/tests/hists_link.c
-@@ -81,6 +81,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
- 			};
- 
- 			sample.pid = fake_common_samples[k].pid;
-+			sample.tid = fake_common_samples[k].pid;
- 			sample.ip = fake_common_samples[k].ip;
- 			if (perf_event__preprocess_sample(&event, machine, &al,
- 							  &sample) < 0)
-@@ -104,6 +105,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
- 			};
- 
- 			sample.pid = fake_samples[i][k].pid;
-+			sample.tid = fake_samples[i][k].pid;
- 			sample.ip = fake_samples[i][k].ip;
- 			if (perf_event__preprocess_sample(&event, machine, &al,
- 							  &sample) < 0)
-diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
-index 6baabe63182b..a904a4cfe7d3 100644
---- a/tools/perf/util/build-id.c
-+++ b/tools/perf/util/build-id.c
-@@ -25,7 +25,7 @@ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
- 	struct addr_location al;
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
--							sample->pid);
-+							sample->tid);
- 
- 	if (thread == NULL) {
- 		pr_err("problem processing %d event, skipping it.\n",
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index dbcaea1a8180..65795b835b39 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -788,7 +788,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
- {
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
--							sample->pid);
-+							sample->tid);
- 
- 	if (thread == NULL)
- 		return -1;
 -- 
-1.9.2
-
+das eine Mal als Tragödie, dieses Mal als Farce
