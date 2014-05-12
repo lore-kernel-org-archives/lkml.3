@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890AbaELBnN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:43:13 -0400
-Received: from 1wt.eu ([62.212.114.60]:34685 "EHLO 1wt.eu"
+	id S932435AbaELBz7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:55:59 -0400
+Received: from 1wt.eu ([62.212.114.60]:34694 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753833AbaELBnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:43:10 -0400
-Message-Id: <20140512003203.792818004@1wt.eu>
+	id S1753865AbaELBnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:43:13 -0400
+Message-Id: <20140512003203.876294671@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:33:16 +0200
+Date: Mon, 12 May 2014 02:33:18 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
+Cc: Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 076/143] bonding: fix two race conditions in bond_store_updelay/downdelay
+Subject: [ 078/143] ipv4: fix possible seqlock deadlock
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,66 +23,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nikolay Aleksandrov <nikolay@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit b869ccfab1e324507fa3596e3e1308444fb68227 ]
+[ Upstream commit c9e9042994d37cbc1ee538c500e9da1bb9d1bcdf ]
 
-This patch fixes two race conditions between bond_store_updelay/downdelay
-and bond_store_miimon which could lead to division by zero as miimon can
-be set to 0 while either updelay/downdelay are being set and thus miss the
-zero check in the beginning, the zero div happens because updelay/downdelay
-are stored as new_value / bond->params.miimon. Use rtnl to synchronize with
-miimon setting.
+ip4_datagram_connect() being called from process context,
+it should use IP_INC_STATS() instead of IP_INC_STATS_BH()
+otherwise we can deadlock on 32bit arches, or get corruptions of
+SNMP counters.
 
-CC: Jay Vosburgh <fubar@us.ibm.com>
-CC: Andy Gospodarek <andy@greyhouse.net>
-CC: Veaceslav Falico <vfalico@redhat.com>
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
-Acked-by: Veaceslav Falico <vfalico@redhat.com>
+Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Dave Jones <davej@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/net/bonding/bond_sysfs.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ net/ipv4/datagram.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/bonding/bond_sysfs.c b/drivers/net/bonding/bond_sysfs.c
-index 8762a27..3666a9a 100644
---- a/drivers/net/bonding/bond_sysfs.c
-+++ b/drivers/net/bonding/bond_sysfs.c
-@@ -755,6 +755,8 @@ static ssize_t bonding_store_downdelay(struct device *d,
- 	int new_value, ret = count;
- 	struct bonding *bond = to_bond(d);
- 
-+	if (!rtnl_trylock())
-+		return restart_syscall();
- 	if (!(bond->params.miimon)) {
- 		pr_err(DRV_NAME
- 		       ": %s: Unable to set down delay as MII monitoring is disabled\n",
-@@ -795,6 +797,7 @@ static ssize_t bonding_store_downdelay(struct device *d,
+diff --git a/net/ipv4/datagram.c b/net/ipv4/datagram.c
+index 5e6c5a0..30aeb26 100644
+--- a/net/ipv4/datagram.c
++++ b/net/ipv4/datagram.c
+@@ -52,7 +52,7 @@ int ip4_datagram_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+ 			       inet->sport, usin->sin_port, sk, 1);
+ 	if (err) {
+ 		if (err == -ENETUNREACH)
+-			IP_INC_STATS_BH(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
++			IP_INC_STATS(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
+ 		return err;
  	}
  
- out:
-+	rtnl_unlock();
- 	return ret;
- }
- static DEVICE_ATTR(downdelay, S_IRUGO | S_IWUSR,
-@@ -817,6 +820,8 @@ static ssize_t bonding_store_updelay(struct device *d,
- 	int new_value, ret = count;
- 	struct bonding *bond = to_bond(d);
- 
-+	if (!rtnl_trylock())
-+		return restart_syscall();
- 	if (!(bond->params.miimon)) {
- 		pr_err(DRV_NAME
- 		       ": %s: Unable to set up delay as MII monitoring is disabled\n",
-@@ -856,6 +861,7 @@ static ssize_t bonding_store_updelay(struct device *d,
- 	}
- 
- out:
-+	rtnl_unlock();
- 	return ret;
- }
- static DEVICE_ATTR(updelay, S_IRUGO | S_IWUSR,
 -- 
 1.7.12.2.21.g234cd45.dirty
 
