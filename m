@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976AbaELGQr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 02:16:47 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:17646 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752743AbaELGQj (ORCPT
+	id S1753975AbaELGU3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 02:20:29 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:34126 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937AbaELGQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 02:16:39 -0400
-X-AuditID: cbfee68e-b7fd86d0000038e3-96-537067443093
+	Mon, 12 May 2014 02:16:47 -0400
+X-AuditID: cbfee68f-b7eff6d000002b70-c9-5370674dedc8
 From: Shaik Ameer Basha <shaik.ameer@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
@@ -19,40 +19,39 @@ Cc: joro@8bytes.org, arnd@arndb.de, t.figa@samsung.com, kgene.kim@samsung.com,
         supash.ramaswamy@linaro.org, varun.sethi@freescale.com,
         joshi@samsung.com, tomasz.figa@gmail.com,
         Shaik Ameer Basha <shaik.ameer@samsung.com>
-Subject: [PATCH v13 06/19] iommu/exynos: add missing cache flush for removed
- page table entries
-Date: Mon, 12 May 2014 11:44:51 +0530
-Message-id: <1399875304-19948-7-git-send-email-shaik.ameer@samsung.com>
+Subject: [PATCH v13 09/19] iommu/exynos: use managed device helper functions
+Date: Mon, 12 May 2014 11:44:54 +0530
+Message-id: <1399875304-19948-10-git-send-email-shaik.ameer@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1399875304-19948-1-git-send-email-shaik.ameer@samsung.com>
 References: <1399875304-19948-1-git-send-email-shaik.ameer@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsWyRsSkRtclvSDYYNFkeYs7d8+xWvyddIzd
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsWyRsSkStc3vSDY4MBkA4s7d8+xWvyddIzd
 	Yv4RIOvVkR9MFgv2W1t0zt7AbvF91xd2i94FV9ksNj2+xmpxedccNosZ5/cxWVxYsZHd4l/v
 	QUaLKYsOs1ocftPOanHyTy+jxZGHu9ktWq73Mlmsn/GaxWLVrj+MFjNvrWFxEPV4cnAek8fv
 	X5MYPWY3XGTx+He4n8lj56y77B53ru1h89i8pN5j8o3ljB59W1YxenzeJOdx5egZpgDuKC6b
-	lNSczLLUIn27BK6Mn9/2shR0cVWs+LOdqYFxG0cXIyeHhICJxLKTR1khbDGJC/fWs3UxcnEI
-	CSxllNh4YDYjTNHurgtMEIlFjBLn2j8yQzgTmCSmPj7BDFLFJmAosf3eFVaQhIjAakaJvotn
-	2EEcZoHZzBJHHi0GmyUskChxdFIr2EIWAVWJiU+WsoHYvALuEvu2zAKyOYD2KUjMmWQDEuYU
-	8JD4vHoKWIkQUMmxV1fBFkgIbOGQWDPrKCPEHAGJb5MPsUD0ykpsOsAMcbakxMEVN1gmMAov
-	YGRYxSiaWpBcUJyUXmSkV5yYW1yal66XnJ+7iREYr6f/PevbwXjzgPUhxmSgcROZpUST84Hx
-	nlcSb2hsZmRhamJqbGRuaUaasJI476KHSUFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGCWf
-	X4tX/6j8TVX9OBPr2cfvoh5/tLrl5fK99YPP7tSTJsmnNm773HIoT3MLp8F0gatrzqXETvGY
-	0NGS7qHmlp73atqRIHWRmVsOz9d/x5VkqOzUfa0s2KnPxeySWb3vGW0vnY3WjtNzrkfd2vqv
-	hHl9w03Wdqez1zawX3ifXrGDr/qbw+w9L5RYijMSDbWYi4oTASXdVKrtAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOKsWRmVeSWpSXmKPExsVy+t9jAV2X9IJgg1vLRSzu3D3HavF30jF2
-	i/lHgKxXR34wWSzYb23ROXsDu8X3XV/YLXoXXGWz2PT4GqvF5V1z2CxmnN/HZHFhxUZ2i3+9
-	Bxktpiw6zGpx+E07q8XJP72MFkce7ma3aLney2SxfsZrFotVu/4wWsy8tYbFQdTjycF5TB6/
-	f01i9JjdcJHF49/hfiaPnbPusnvcubaHzWPzknqPyTeWM3r0bVnF6PF5k5zHlaNnmAK4oxoY
-	bTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOAPlVSKEvM
-	KQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYwZvz8tpeloIurYsWf7UwNjNs4uhg5
-	OSQETCR2d11ggrDFJC7cW8/WxcjFISSwiFHiXPtHZghnApPE1McnmEGq2AQMJbbfu8IKkhAR
-	WM0o0XfxDDuIwywwm1niyKPFjCBVwgKJEkcntbKC2CwCqhITnyxlA7F5Bdwl9m2ZBWRzAO1T
-	kJgzyQYkzCngIfF59RSwEiGgkmOvrrJOYORdwMiwilE0tSC5oDgpPddIrzgxt7g0L10vOT93
-	EyM4GTyT3sG4qsHiEKMAB6MSD+8HhoJgIdbEsuLK3EOMEhzMSiK8H/2BQrwpiZVVqUX58UWl
-	OanFhxiTgY6ayCwlmpwPTFR5JfGGxibmpsamliYWJmaWpAkrifMebLUOFBJITyxJzU5NLUgt
-	gtnCxMEp1cC4YM/fqLpe+c77qmHPt370iWrxnC1/WDb6zbHpVuvMZt7q+mh9jUVxlfBSoclT
-	uWdFTOAOennL94OccC3T983zwgPWF+juvND7PzR+nvq60Mc72WcGxRcdWprG72lReGCl0I1A
-	13VZMlb9859NW3eh4KHC6wjdUt87nzfUFK2f3eXVxjq5UXKrEktxRqKhFnNRcSIAbf2AB0oD	AAA=
+	lNSczLLUIn27BK6Mk7vOsBQ0SVfs3r6JsYHxg2gXIyeHhICJxIY9h9ghbDGJC/fWs3UxcnEI
+	CSxllFjecJEdpmh+01smiMQiRolf786wQDgTmCTON/4Cq2ITMJTYfu8KK0hCRGA1o0TfxTPs
+	IA6zwGxmiSOPFjOCVAkL+Egc+HsErINFQFXic8NDsDivgIfEmQf7gOIcQPsUJOZMsgEJcwKF
+	P6+ewgZiCwm4Sxx7dRVsgYTAWg6J2e9fMUPMEZD4NvkQC0SvrMSmA8wQZ0tKHFxxg2UCo/AC
+	RoZVjKKpBckFxUnpRcZ6xYm5xaV56XrJ+bmbGIHxevrfs/4djHcPWB9iTAYaN5FZSjQ5Hxjv
+	eSXxhsZmRhamJqbGRuaWZqQJK4nz3n+YFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBcfuk
+	yBOTbqcmCilqT5r88N1nzagnaW5bNi4rkF4vN32DapN0f+G3PcwL5/87dbfWd87G6rg1l7T+
+	7V5+dLmdiYylbP2eXUGtFyYVcsdWWa+Wb4t4aPA4wiz9cGWAWTNP3GTza/vqzpVt+nkrzoB5
+	bxMLp8ixmVHXrYQ4JxU/Vjsw5f92v8vb2pRYijMSDbWYi4oTAfx4nQrtAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOKsWRmVeSWpSXmKPExsVy+t9jAV3f9IJgg9bnKhZ37p5jtfg76Ri7
+	xfwjQNarIz+YLBbst7bonL2B3eL7ri/sFr0LrrJZbHp8jdXi8q45bBYzzu9jsriwYiO7xb/e
+	g4wWUxYdZrU4/Kad1eLkn15GiyMPd7NbtFzvZbJYP+M1i8WqXX8YLWbeWsPiIOrx5OA8Jo/f
+	vyYxesxuuMji8e9wP5PHzll32T3uXNvD5rF5Sb3H5BvLGT36tqxi9Pi8Sc7jytEzTAHcUQ2M
+	NhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAnyoplCXm
+	lAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM07uOsNS0CRdsXv7JsYGxg+iXYyc
+	HBICJhLzm94yQdhiEhfurWfrYuTiEBJYxCjx690ZFghnApPE+cZf7CBVbAKGEtvvXWEFSYgI
+	rGaU6Lt4hh3EYRaYzSxx5NFiRpAqYQEfiQN/j4B1sAioSnxueAgW5xXwkDjzYB9QnANon4LE
+	nEk2IGFOoPDn1VPYQGwhAXeJY6+usk5g5F3AyLCKUTS1ILmgOCk911CvODG3uDQvXS85P3cT
+	IzgZPJPawbiyweIQowAHoxIP7weGgmAh1sSy4srcQ4wSHMxKIrwf/YFCvCmJlVWpRfnxRaU5
+	qcWHGJOBjprILCWanA9MVHkl8YbGJuamxqaWJhYmZpakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C
+	2cLEwSnVwOgmGv/tiRlbQOW9r4YuLJ65X+vu/w+oYnXceijQJe74py9KNd8r/b/KTV49T3wy
+	v4HR+zPMdaYdc14IZjNJGvnXfzJ8x+n9xFnPoPSQ1YLoa1mTz7um2T+4XP347qVlL5fcW8Lh
+	2Jcn+C/MgjnzeJpTSXexlOykUL4vRbI3t99rNrx94tT9diWW4oxEQy3mouJEAHXM6ExKAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -62,39 +61,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cho KyongHo <pullip.cho@samsung.com>
 
-This commit adds cache flush for removed small and large page entries
-in exynos_iommu_unmap(). Missing cache flush of removed page table
-entries can cause missing page fault interrupt when a master IP
-accesses an unmapped area.
+This patch uses managed device helper functions in the probe().
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-Tested-by: Grant Grundler <grundler@chromium.org>
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
 Signed-off-by: Shaik Ameer Basha <shaik.ameer@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/iommu/exynos-iommu.c |   68 ++++++++++++++++--------------------------
+ 1 file changed, 25 insertions(+), 43 deletions(-)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index 4fc31fc..6915235 100644
+index be7a7b9..c86e374 100644
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -904,6 +904,7 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
- 	if (lv2ent_small(ent)) {
- 		*ent = 0;
- 		size = SPAGE_SIZE;
-+		pgtable_flush(ent, ent + 1);
- 		priv->lv2entcnt[lv1ent_offset(iova)] += 1;
- 		goto done;
- 	}
-@@ -915,6 +916,7 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
+@@ -343,8 +343,7 @@ static bool __exynos_sysmmu_disable(struct sysmmu_drvdata *data)
+ 
+ 	__raw_writel(CTRL_DISABLE, data->sfrbase + REG_MMU_CTRL);
+ 
+-	if (!IS_ERR(data->clk))
+-		clk_disable(data->clk);
++	clk_disable(data->clk);
+ 
+ 	disabled = true;
+ 	data->pgtable = 0;
+@@ -387,8 +386,7 @@ static int __exynos_sysmmu_enable(struct sysmmu_drvdata *data,
+ 		goto finish;
  	}
  
- 	memset(ent, 0, sizeof(*ent) * SPAGES_PER_LPAGE);
-+	pgtable_flush(ent, ent + SPAGES_PER_LPAGE);
+-	if (!IS_ERR(data->clk))
+-		clk_enable(data->clk);
++	clk_enable(data->clk);
  
- 	size = LPAGE_SIZE;
- 	priv->lv2entcnt[lv1ent_offset(iova)] += SPAGES_PER_LPAGE;
+ 	data->pgtable = pgtable;
+ 
+@@ -499,49 +497,43 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
+ 
+ static int exynos_sysmmu_probe(struct platform_device *pdev)
+ {
+-	int ret;
++	int irq, ret;
+ 	struct device *dev = &pdev->dev;
+ 	struct sysmmu_drvdata *data;
+ 	struct resource *res;
+ 
+-	data = kzalloc(sizeof(*data), GFP_KERNEL);
+-	if (!data) {
+-		dev_dbg(dev, "Not enough memory\n");
+-		ret = -ENOMEM;
+-		goto err_alloc;
+-	}
++	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_dbg(dev, "Unable to find IOMEM region\n");
+-		ret = -ENOENT;
+-		goto err_init;
+-	}
++	data->sfrbase = devm_ioremap_resource(dev, res);
++	if (IS_ERR(data->sfrbase))
++		return PTR_ERR(data->sfrbase);
+ 
+-	data->sfrbase = ioremap(res->start, resource_size(res));
+-	if (!data->sfrbase) {
+-		dev_dbg(dev, "Unable to map IOMEM @ PA:%#x\n", res->start);
+-		ret = -ENOENT;
+-		goto err_res;
+-	}
+-
+-	ret = platform_get_irq(pdev, 0);
+-	if (ret <= 0) {
++	irq = platform_get_irq(pdev, 0);
++	if (irq <= 0) {
+ 		dev_dbg(dev, "Unable to find IRQ resource\n");
+-		goto err_irq;
++		return irq;
+ 	}
+ 
+-	ret = request_irq(ret, exynos_sysmmu_irq, 0,
++	ret = devm_request_irq(dev, irq, exynos_sysmmu_irq, 0,
+ 				dev_name(dev), data);
+ 	if (ret) {
+-		dev_dbg(dev, "Unabled to register interrupt handler\n");
+-		goto err_irq;
++		dev_err(dev, "Unabled to register handler of irq %d\n", irq);
++		return ret;
+ 	}
+ 
+-	if (dev_get_platdata(dev)) {
+-		data->clk = clk_get(dev, "sysmmu");
+-		if (IS_ERR(data->clk))
+-			dev_dbg(dev, "No clock descriptor registered\n");
++	data->clk = devm_clk_get(dev, "sysmmu");
++	if (IS_ERR(data->clk)) {
++		dev_err(dev, "Failed to get clock!\n");
++		return PTR_ERR(data->clk);
++	} else  {
++		ret = clk_prepare(data->clk);
++		if (ret) {
++			dev_err(dev, "Failed to prepare clk\n");
++			return ret;
++		}
+ 	}
+ 
+ 	data->sysmmu = dev;
+@@ -554,17 +546,7 @@ static int exynos_sysmmu_probe(struct platform_device *pdev)
+ 
+ 	pm_runtime_enable(dev);
+ 
+-	dev_dbg(dev, "Initialized\n");
+ 	return 0;
+-err_irq:
+-	free_irq(platform_get_irq(pdev, 0), data);
+-err_res:
+-	iounmap(data->sfrbase);
+-err_init:
+-	kfree(data);
+-err_alloc:
+-	dev_err(dev, "Failed to initialize\n");
+-	return ret;
+ }
+ 
+ static struct platform_driver exynos_sysmmu_driver = {
 -- 
 1.7.9.5
 
