@@ -1,87 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971AbaELGyJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 02:54:09 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:51581 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872AbaELGyH (ORCPT
+	id S1754046AbaELGyb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 02:54:31 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:13798 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751058AbaELGxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 02:54:07 -0400
-Message-ID: <53707007.3080003@gmail.com>
-Date: Mon, 12 May 2014 08:53:59 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 12 May 2014 02:53:00 -0400
+X-IronPort-AV: E=Sophos;i="4.97,1033,1389715200"; 
+   d="scan'208";a="30389411"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 06/10 V2] workqueue: convert worker_idr to worker_ida
+Date: Mon, 12 May 2014 14:56:18 +0800
+Message-ID: <1399877792-13046-7-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1399877792-13046-1-git-send-email-laijs@cn.fujitsu.com>
+References: <20140505150514.GI11231@htj.dyndns.org>
+ <1399877792-13046-1-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mtk.manpages@gmail.com, Juri Lelli <juri.lelli@gmail.com>,
-        Dario Faggioli <raistlin@linux.it>, Ingo Molnar <mingo@elte.hu>,
-        lkml <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: [BUG] sched_setattr() SCHED_DEADLINE hangs system
-References: <536F8F0E.7020301@gmail.com>
-In-Reply-To: <536F8F0E.7020301@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2014 04:54 PM, Michael Kerrisk (man-pages) wrote:
-> [Dave: I wonder if there's anything trinity can add in the way of 
-> a test here?]
-> 
-> Hi Peter,
-> 
-> This looks like another bug in sched_setattr(). Using the program
-> below (which you might find generally helpful for testing), I'm 
-> able to reliably freeze up my x64 (Intel Core i7-3520M Processor) 
-> system for up to about a minute when I run with the following 
-> command line:
-> 
-> $ time sudo ./t_sched_setattr d 18446744072 18446744072 18446744073
-> 
-> 'd' here means use SCHED_DEADLINE, then the remaining arguments
-> are the Runtime, Deadline, and Period, expressed in *seconds*.
-> (Those number by the way are just a little below 2^64.)
-> 
-> Aside from interpreting its command-line arguments, all that the 
-> program does is call sched_setattr() and displays elapsed times.
-> (By the way, on my system I see some weird effects for time(2), 
-> presumably VDSO effects.)
-> 
-> Here's sample run:
-> 
-> time sudo ./t_sched_setattr d 18446744072 18446744072 18446744073
-> Runtime  =      18446744072000000000
-> Deadline =      18446744072000000000
-> Period   =      18446744073000000000
-> About to call sched_setattr()
-> Successful return from sched_setattr() [6 seconds]
-> 
-> real	0m40.421s
-> user	0m3.097s
-> sys	0m30.804s
-> 
-> After unfreezing the machine is fine, while the program is running,
-> the machine is pretty unresponsive.
-> 
-> I'm on kernel 3.15-rc4.
+We don't need to iterate workers via worker_idr, worker_idr is
+used for allocating/freeing ID only, so we convert it to worker_ida.
 
-Hi Peter,
+By using ida_simple_get/remove(), worker_ida can be protected by itself,
+so we don't need manager_mutex to protect it and remove the coupling,
+and we can move the ID-removal out from worker_detach_from_pool().
 
-I realize my speculation was completely off the mark. time(2) really 
-is reporting the truth, and the sched_setattr() call returns immediately.
-But it looks like with these settings the deadline scheduler gets itself
-into a confused state. The process chews up a vast amount of CPU time
-for the few actions (including process teardown) that occur after
-the sched_setattr() call, and since the SCHED_DEADLINE process has
-priority over everything else, the system locks up.
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ kernel/workqueue.c |   20 ++++++++------------
+ 1 files changed, 8 insertions(+), 12 deletions(-)
 
-Cheers,
-
-Michael
-
-
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index b6cf4d9..9f7f4ef 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -161,10 +161,11 @@ struct worker_pool {
+ 	/* see manage_workers() for details on the two manager mutexes */
+ 	struct mutex		manager_arb;	/* manager arbitration */
+ 	struct mutex		manager_mutex;	/* manager exclusion */
+-	struct idr		worker_idr;	/* M: worker IDs */
+ 	struct list_head	workers;	/* M: attached workers */
+ 	struct completion	*detach_completion; /* all workers detached */
+ 
++	struct ida		worker_ida;	/* worker IDs for task name */
++
+ 	struct workqueue_attrs	*attrs;		/* I: worker attributes */
+ 	struct hlist_node	hash_node;	/* PL: unbound_pool_hash node */
+ 	int			refcnt;		/* PL: refcnt for unbound pools */
+@@ -1681,7 +1682,6 @@ static void worker_detach_from_pool(struct worker *worker,
+ 	struct completion *detach_completion = NULL;
+ 
+ 	mutex_lock(&pool->manager_mutex);
+-	idr_remove(&pool->worker_idr, worker->id);
+ 	list_del(&worker->node);
+ 	if (list_empty(&pool->workers))
+ 		detach_completion = pool->detach_completion;
+@@ -1712,11 +1712,8 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 
+ 	lockdep_assert_held(&pool->manager_mutex);
+ 
+-	/*
+-	 * ID is needed to determine kthread name.  Allocate ID first
+-	 * without installing the pointer.
+-	 */
+-	id = idr_alloc(&pool->worker_idr, NULL, 0, 0, GFP_KERNEL);
++	/* ID is needed to determine kthread name. */
++	id = ida_simple_get(&pool->worker_ida, 0, 0, GFP_KERNEL);
+ 	if (id < 0)
+ 		goto fail;
+ 
+@@ -1757,8 +1754,6 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 	if (pool->flags & POOL_DISASSOCIATED)
+ 		worker->flags |= WORKER_UNBOUND;
+ 
+-	/* successful, commit the pointer to idr */
+-	idr_replace(&pool->worker_idr, worker, worker->id);
+ 	/* successful, attach the worker to the pool */
+ 	list_add_tail(&worker->node, &pool->workers);
+ 
+@@ -1766,7 +1761,7 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 
+ fail:
+ 	if (id >= 0)
+-		idr_remove(&pool->worker_idr, id);
++		ida_simple_remove(&pool->worker_ida, id);
+ 	kfree(worker);
+ 	return NULL;
+ }
+@@ -2233,6 +2228,7 @@ woke_up:
+ 		worker->task->flags &= ~PF_WQ_WORKER;
+ 
+ 		set_task_comm(worker->task, "kworker_dying");
++		ida_simple_remove(&pool->worker_ida, worker->id);
+ 		worker_detach_from_pool(worker, pool);
+ 		kfree(worker);
+ 		return 0;
+@@ -3469,9 +3465,9 @@ static int init_worker_pool(struct worker_pool *pool)
+ 
+ 	mutex_init(&pool->manager_arb);
+ 	mutex_init(&pool->manager_mutex);
+-	idr_init(&pool->worker_idr);
+ 	INIT_LIST_HEAD(&pool->workers);
+ 
++	ida_init(&pool->worker_ida);
+ 	INIT_HLIST_NODE(&pool->hash_node);
+ 	pool->refcnt = 1;
+ 
+@@ -3486,7 +3482,7 @@ static void rcu_free_pool(struct rcu_head *rcu)
+ {
+ 	struct worker_pool *pool = container_of(rcu, struct worker_pool, rcu);
+ 
+-	idr_destroy(&pool->worker_idr);
++	ida_destroy(&pool->worker_ida);
+ 	free_workqueue_attrs(pool->attrs);
+ 	kfree(pool);
+ }
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+1.7.4.4
+
