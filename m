@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195AbaELSLW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 14:11:22 -0400
-Received: from 1wt.eu ([62.212.114.60]:34956 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751976AbaELSLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 14:11:20 -0400
-Date: Mon, 12 May 2014 20:11:14 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Jon Maloy <jon.maloy@ericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Ying Xue <ying.xue@windriver.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [ 072/143] tipc: fix lockdep warning during bearer initialization
-Message-ID: <20140512181114.GA21727@1wt.eu>
-References: <20140512003203.627061916@1wt.eu> <5370F0F0.1020606@ericsson.com> <20140512161613.GD19173@1wt.eu> <A2BAEFC30C8FD34388F02C9B3121859D1C250675@eusaamb103.ericsson.se> <20140512171234.GA21366@1wt.eu> <537102BA.7090108@ericsson.com>
+	id S1755379AbaELSLp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 14:11:45 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:18950 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292AbaELSLn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 14:11:43 -0400
+Message-ID: <1399918300.2648.24.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 2/6] ipc/sem.c: Bugfix for semctl(,,GETZCNT)
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, 1vier1@web.de
+Date: Mon, 12 May 2014 11:11:40 -0700
+In-Reply-To: <1399716199-26776-3-git-send-email-manfred@colorfullife.com>
+References: <1399716199-26776-1-git-send-email-manfred@colorfullife.com>
+	 <1399716199-26776-2-git-send-email-manfred@colorfullife.com>
+	 <1399716199-26776-3-git-send-email-manfred@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <537102BA.7090108@ericsson.com>
-User-Agent: Mutt/1.4.2.3i
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 01:19:54PM -0400, Jon Maloy wrote:
-> On 05/12/2014 01:12 PM, Willy Tarreau wrote:
-> > On Mon, May 12, 2014 at 04:41:00PM +0000, Jon Maloy wrote:
-> >> Sorry, I should have mentioned that it is still only in net-next.
-> >> It is pretty recent.
-> > 
-> > OK indeed, got it here for reference :
-> > 
-> >   https://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=7216cd949c9bd56
-> > 
-> > But anyway, what is mentionned in this commit is a number of changes that
-> > happened between 2.6.32 and 3.15, so I hardly see how the tipc_net_lock
-> > is obsolete in 2.6.32 if it does not have all these changes. I have counted
-> > 489 commits between 2.6.32 and 3.15-rc5 touching net/tipc, so surely we
-> > cannot count on what we have to get rid of this lock.
-> > 
-> > Am I missing anything ?
-> 
-> Ok. I missed the 2.6.32 part. I withdraw my objection.
+On Sat, 2014-05-10 at 12:03 +0200, Manfred Spraul wrote:
+> GETZCNT is supposed to return the number of threads that wait until
+> a semaphore value becomes 0.
+> The current implementation overlooks complex operations that contain
+> both wait-for-zero operation and operations that alter at least one semaphore.
 
-Ah OK now it's much easier for me to understand your point :-)
-No problem, Thanks!
-Willy
+Indeed. the pending_alter list does represent blocked processes on the
+sem. Good catch. Btw, how on earth did you run into this? reading the
+code or a real case?
+
+> 
+> The patch fixes that.
+> It's intentionally copy&paste, this will be cleaned up in the next patch.
+
+Instead I would have expected this patch to actually come after the
+count_* refactoring.
+
+
+> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+
+Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
 
