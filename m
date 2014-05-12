@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932557AbaELRFS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 13:05:18 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51532 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047AbaELRFP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 13:05:15 -0400
-Message-ID: <5370FDB2.40704@wwwdotorg.org>
-Date: Mon, 12 May 2014 10:58:26 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S932582AbaELRFX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 13:05:23 -0400
+Received: from mta-out1.inet.fi ([62.71.2.199]:43263 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752047AbaELRFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 13:05:20 -0400
+Date: Mon, 12 May 2014 20:05:04 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: remap_file_pages: initialize populate before usage
+Message-ID: <20140512170504.GA30120@node.dhcp.inet.fi>
+References: <1399898454-14915-1-git-send-email-sasha.levin@oracle.com>
 MIME-Version: 1.0
-To: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org
-CC: linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
-        kgene.kim@samsung.com, thierry.reding@gmail.com, shc_work@mail.ru
-Subject: Re: [PATCH v2 5/6] usb: host: ehci-tegra: Use devm_ioremap_resource
- instead of devm_ioremap
-References: <1399723210-21569-1-git-send-email-gautam.vivek@samsung.com> <1399723210-21569-6-git-send-email-gautam.vivek@samsung.com>
-In-Reply-To: <1399723210-21569-6-git-send-email-gautam.vivek@samsung.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399898454-14915-1-git-send-email-sasha.levin@oracle.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2014 06:00 AM, Vivek Gautam wrote:
-> Using devm_ioremap_resource() API should actually be preferred over
-> devm_ioremap(), since the former request the mem region first and then
-> gives back the ioremap'ed memory pointer.
-> devm_ioremap_resource() calls request_mem_region(), therby preventing
-> other drivers to make any overlapping call to the same region.
+On Mon, May 12, 2014 at 08:40:54AM -0400, Sasha Levin wrote:
+> 'populate' wasn't initialized before being used in error paths,
+> causing panics when mm_populate() would get called with invalid
+> values.
+> 
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 
-This patch on its own works OK on Tegra. However, if a similar patch
-were to be applied to the Tegra PHY driver, then I expect that would
-break USB on Tegra. The reason is that the Tegra USB controller and PHY
-registers are interleaved a bit randomly within the same address range,
-and rather than call out which individual addresses are relevant to the
-controller and the PHY, the DT for both devices just specifies the same
-whole range, and the drivers only touch the appropriate registers within
-the range. Perhaps we should have described that as an MFD rather than
-separate DT nodes and devices, but that's not what we ended up with.
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+
+> ---
+>  mm/mmap.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index 84dcfc7..2a0e0a8 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -2591,7 +2591,7 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
+>  
+>  	struct mm_struct *mm = current->mm;
+>  	struct vm_area_struct *vma;
+> -	unsigned long populate;
+> +	unsigned long populate = 0;
+>  	unsigned long ret = -EINVAL;
+>  
+>  	pr_warn_once("%s (%d) uses deprecated remap_file_pages() syscall. "
+> -- 
+> 1.7.10.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+ Kirill A. Shutemov
