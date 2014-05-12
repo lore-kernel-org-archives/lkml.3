@@ -1,149 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756939AbaELM2T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 08:28:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27807 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755194AbaELM2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 08:28:17 -0400
-Message-ID: <5370BE33.1070604@redhat.com>
-Date: Mon, 12 May 2014 14:27:31 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755108AbaELMak (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 08:30:40 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:41366 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510AbaELMaj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 08:30:39 -0400
+Date: Mon, 12 May 2014 14:30:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>,
+        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: [BUG] sched_setattr() SCHED_DEADLINE hangs system
+Message-ID: <20140512123032.GC13467@laptop.programming.kicks-ass.net>
+References: <536F8F0E.7020301@gmail.com>
+ <53707007.3080003@gmail.com>
+ <20140512084727.GN30445@twins.programming.kicks-ass.net>
+ <CAKgNAkiGt6xV0JaddmC8pLeTe+fSEu79DNvzg8XbA-MPo_zXyg@mail.gmail.com>
 MIME-Version: 1.0
-To: linux-sunxi@googlegroups.com, Chen-Yu Tsai <wens@csie.org>
-CC: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        Boris Brezillon <boris@free-electrons.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-usb <linux-usb@vger.kernel.org>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, Shuge <shuge@allwinnertech.com>,
-        zhuzhenhua@allwinnertech.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [linux-sunxi] [PATCH v2 3/7] phy: usb: sunxi: Introduce Allwinner
- A31 USB PHY support
-References: <1399726619-30150-1-git-send-email-maxime.ripard@free-electrons.com> <1399726619-30150-4-git-send-email-maxime.ripard@free-electrons.com> <CAGb2v65Pstk6MqEeK838VUpNXw2cQH8K66Oo4oG3__zzWO3pig@mail.gmail.com> <5370B78A.7060709@redhat.com> <5370BD76.2060908@ti.com>
-In-Reply-To: <5370BD76.2060908@ti.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKgNAkiGt6xV0JaddmC8pLeTe+fSEu79DNvzg8XbA-MPo_zXyg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 05/12/2014 02:24 PM, Kishon Vijay Abraham I wrote:
-> Hi,
+On Mon, May 12, 2014 at 11:19:39AM +0200, Michael Kerrisk (man-pages) wrote:
+> Hi Peter,
 > 
-> On Monday 12 May 2014 05:29 PM, Hans de Goede wrote:
->> Hi,
->>
->> On 05/12/2014 11:14 AM, Chen-Yu Tsai wrote:
->>> Hi,
->>>
->>> On Sat, May 10, 2014 at 8:56 PM, Maxime Ripard
->>> <maxime.ripard@free-electrons.com> wrote:
->>>> The USB phy controller in the A31 differs mostly from the older controllers
->>>> because it has a clock dedicated for each phy, while the older ones were having
->>>> a single clock for all the phys.
->>>>
->>>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->>>> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
->>>> ---
->>>>  drivers/phy/phy-sun4i-usb.c | 35 ++++++++++++++++++++++++++---------
->>>>  1 file changed, 26 insertions(+), 9 deletions(-)
->>>>
->>>> diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
->>>> index e6e6c4ba7145..8bd89430d945 100644
->>>> --- a/drivers/phy/phy-sun4i-usb.c
->>>> +++ b/drivers/phy/phy-sun4i-usb.c
->>>> @@ -61,7 +61,6 @@
->>>>  #define MAX_PHYS                       3
->>>>
->>>>  struct sun4i_usb_phy_data {
->>>> -       struct clk *clk;
->>>>         void __iomem *base;
->>>>         struct mutex mutex;
->>>>         int num_phys;
->>>> @@ -71,6 +70,7 @@ struct sun4i_usb_phy_data {
->>>>                 void __iomem *pmu;
->>>>                 struct regulator *vbus;
->>>>                 struct reset_control *reset;
->>>> +               struct clk *clk;
->>>>                 int index;
->>>>         } phys[MAX_PHYS];
->>>>  };
->>>> @@ -146,13 +146,13 @@ static int sun4i_usb_phy_init(struct phy *_phy)
->>>>         struct sun4i_usb_phy_data *data = to_sun4i_usb_phy_data(phy);
->>>>         int ret;
->>>>
->>>> -       ret = clk_prepare_enable(data->clk);
->>>> +       ret = clk_prepare_enable(phy->clk);
->>>>         if (ret)
->>>>                 return ret;
->>>>
->>>>         ret = reset_control_deassert(phy->reset);
->>>>         if (ret) {
->>>> -               clk_disable_unprepare(data->clk);
->>>> +               clk_disable_unprepare(phy->clk);
->>>>                 return ret;
->>>>         }
->>>>
->>>> @@ -170,11 +170,10 @@ static int sun4i_usb_phy_init(struct phy *_phy)
->>>>  static int sun4i_usb_phy_exit(struct phy *_phy)
->>>>  {
->>>>         struct sun4i_usb_phy *phy = phy_get_drvdata(_phy);
->>>> -       struct sun4i_usb_phy_data *data = to_sun4i_usb_phy_data(phy);
->>>>
->>>>         sun4i_usb_phy_passby(phy, 0);
->>>>         reset_control_assert(phy->reset);
->>>> -       clk_disable_unprepare(data->clk);
->>>> +       clk_disable_unprepare(phy->clk);
->>>>
->>>>         return 0;
->>>>  }
->>>> @@ -228,8 +227,10 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
->>>>         struct phy_provider *phy_provider;
->>>>         struct reset_control *reset;
->>>>         struct regulator *vbus;
->>>> +       bool dedicated_clocks;
->>>
->>> No default?
->>>
->>>>         struct resource *res;
->>>>         struct phy *phy;
->>>> +       struct clk *clk;
->>>>         char name[16];
->>>>         int i;
->>>>
->>>> @@ -249,15 +250,20 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
->>>>         else
->>>>                 data->disc_thresh = 2;
->>>>
->>>> +       if (of_device_is_compatible(np, "allwinner,sun6i-a31-usb-phy"))
->>>> +               dedicated_clocks = true;
->>>> +
->>>
->>> dedicated_clocks is more than likely to be true from leftover data
->>> on the stack. This results in the usb phy driver probe failing, and
->>> the usb host drivers left in perpetual probe deferral on my Cubietruck.
->>>
->>> Adding an else section fixes this.
->>
->> Good catch, fixed this in the sunxi-devel branch for now (until Maxime sends a new version).
+> On Mon, May 12, 2014 at 10:47 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Mon, May 12, 2014 at 08:53:59AM +0200, Michael Kerrisk (man-pages) wrote:
+> >> On 05/11/2014 04:54 PM, Michael Kerrisk (man-pages) wrote:
+> >
+> >> > $ time sudo ./t_sched_setattr d 18446744072 18446744072 18446744073
+> >>
+> >> I realize my speculation was completely off the mark. time(2) really
+> >> is reporting the truth, and the sched_setattr() call returns immediately.
+> >> But it looks like with these settings the deadline scheduler gets itself
+> >> into a confused state. The process chews up a vast amount of CPU time
+> >> for the few actions (including process teardown) that occur after
+> >> the sched_setattr() call, and since the SCHED_DEADLINE process has
+> >> priority over everything else, the system locks up.
+> >
+> > Yeah, its doing something weird alright.. let me see if I can get
+> > something useful out.
 > 
-> so I wont be taking this patch in my tree. Anyway FWIW
-> Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
+> Thanks!
 
-To be clear, the sunxi-devel branch is a testing branch where I collect all the
-pending sunxi related patches, it is not a way for patches to go upstream.
+So I think its because the way we check wrapping
 
-I don't know what the exact upstreaming plan for this patch-set is,
-but logically this patch (once a fixed version is resend) should be going
-upstream through you.
+  (s64)(a - b) < 0
 
-Regards,
+This means that its impossible to tell if time went fwd or bwd with
+64bit increments. I've not entirely pinpointed where this is wrecking
+things, but it seems like a fair bet this is what's going wrong.
 
-Hans
+So I'm tempted to put a sanity check on all these values to make sure <=
+2^63. That way the wrapping logic in the kernel keeps working.
+
+And 2^63 [ns] should be plenty large enough for everyone (famous last
+words of course).
+
+> > Btw, you do know about EX_USAGE from sysexits.h ?
+> 
+> Yes, I'm peripherally aware of them, but have tended to avoid them
+> because they're not in POSIX, and don't seem to be all that widely
+> used.
+
+Ah, so then its just something weird I've picked up along the way :-)
