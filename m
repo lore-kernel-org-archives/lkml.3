@@ -1,102 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221AbaELUSy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 16:18:54 -0400
-Received: from lvk-gate.cs.msu.ru ([188.44.42.233]:59364 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751509AbaELUSx (ORCPT
+	id S1755385AbaELUUg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 16:20:36 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55629 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368AbaELUUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 16:18:53 -0400
-X-Greylist: delayed 470 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 May 2014 16:18:53 EDT
-X-Spam-ASN: 
-Date: Tue, 13 May 2014 00:10:57 +0400
-From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-To: John Stultz <john.stultz@linaro.org>
-Cc: George Spelvin <linux@horizon.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ntp: make is_error_status() use its argument
-Message-ID: <20140513001057.7deed538@tornado.gnet>
-In-Reply-To: <53710AD5.504@linaro.org>
-References: <20140512133548.31421.qmail@ns.horizon.com>
-	<53710AD5.504@linaro.org>
-Organization: LVK
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	Mon, 12 May 2014 16:20:35 -0400
+Message-ID: <53712D10.40003@wwwdotorg.org>
+Date: Mon, 12 May 2014 14:20:32 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 8bit
-X-AV-Checked: ClamAV using ClamSMTP
+To: FanWu <fwu@marvell.com>
+CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        Chao Xie <cxie4@marvell.com>, Yilu Mao <ylmao@marvell.com>,
+        Ning Jiang <njiang1@marvell.com>, Xiaofan Tian <tianxf@marvell.com>,
+        Fangsuo Wu <fswu@marvell.com>
+Subject: Re: [Pinctrl] A suggestion to avoid duplicated enabling operation
+ on a pin's setting
+References: <534B558A.3040504@marvell.com> <534F8B35.7090103@marvell.com> <5366F387.4060402@marvell.com> <5367CD62.7030205@wwwdotorg.org> <5369E891.2020309@marvell.com>
+In-Reply-To: <5369E891.2020309@marvell.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No objections from me, of course. Good catch.
+On 05/07/2014 02:02 AM, FanWu wrote:
+...
+> I think the glitch you mentioned is indeed a problem for the vendors who
+> define the "pinctrl-single,function-off" which will be activated when
+> disabling setting.
 
-В Mon, 12 May 2014 10:54:29 -0700
-John Stultz <john.stultz@linaro.org> пишет:
+"pinctrl-single,function-off" is one specific driver's way of
+configuring what happens when a mux option is disabled. The issue
+applies to all drivers that implement a mux option disable function.
 
-> On 05/12/2014 06:35 AM, George Spelvin wrote:
-> > It's an inline function always called with the global time_status
-> > as an argument, so there's zero functional difference, but the
-> > non-CONFIG_SMP version uses the passed-in argument, while the
-> > CONFIG_SMP one ignores its argument and uses the global.
-> 
-> CONFIG_NTP_PPS not CONFIG_SMP, right?
-> 
-> Good catch though, looks like the check code was re-factored out, but
-> someone forgot to use the local variable.
-> 
-> Adding Alexander since he submitted the pps logic.
-> 
-> If there's no objections, I'll queue this (with a more verbose commit
-> message) for 3.16
-> 
-> thanks
-> -john
-> 
-> 
-> >     
-> > Make it use the argument always; shorter variable names are good.
-> >
-> > Signed-off-by: George Spelvin <linux@horizon.com>
-> > ---
-> > While poking about in the code, I came across this rather odd bit.
-> > It looked worth fixing, on general principles.
-> >
-> > diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-> > index 419a52cecd..1a2aad3fff 100644
-> > --- a/kernel/time/ntp.c
-> > +++ b/kernel/time/ntp.c
-> > @@ -165,21 +165,21 @@ static inline void pps_set_freq(s64 freq)
-> >  
-> >  static inline int is_error_status(int status)
-> >  {
-> > -	return (time_status & (STA_UNSYNC|STA_CLOCKERR))
-> > +	return (status & (STA_UNSYNC|STA_CLOCKERR))
-> >  		/* PPS signal lost when either PPS time or
-> >  		 * PPS frequency synchronization requested
-> >  		 */
-> > -		|| ((time_status & (STA_PPSFREQ|STA_PPSTIME))
-> > -			&& !(time_status & STA_PPSSIGNAL))
-> > +		|| ((status & (STA_PPSFREQ|STA_PPSTIME))
-> > +			&& !(status & STA_PPSSIGNAL))
-> >  		/* PPS jitter exceeded when
-> >  		 * PPS time synchronization requested */
-> > -		|| ((time_status & (STA_PPSTIME|STA_PPSJITTER))
-> > +		|| ((status & (STA_PPSTIME|STA_PPSJITTER))
-> >  			== (STA_PPSTIME|STA_PPSJITTER))
-> >  		/* PPS wander exceeded or calibration error when
-> >  		 * PPS frequency synchronization requested
-> >  		 */
-> > -		|| ((time_status & STA_PPSFREQ)
-> > -			&& (time_status &
-> > (STA_PPSWANDER|STA_PPSERROR)));
-> > +		|| ((status & STA_PPSFREQ)
-> > +			&& (status &
-> > (STA_PPSWANDER|STA_PPSERROR))); }
-> >  
-> >  static inline void pps_fill_timex(struct timex *txc)
-> 
+...
+> I considered my previous option 1 of avoiding duplicated calling
+> enable_setting. If we want to avoid too much iteration in this solution,
+> some mark variables need to be introduced, which may make code more
+> complicated than the previous one.
 
+Probably the best thing is to just remove the concept of "disable a mux
+option". It doesn't make sense. All you can do with mux options is to
+select some specific mux option. Disabling a mux option isn't something
+that's logically possible. On some HW, perhaps you can do something
+similar by tri-stating the pin or something, but that should be an
+explicit part of the pinctrl state definition rather than an automatic
+side-effect.
 
+...
+> Maybe another topic:
+> In the original code, the Pin setting will be changed to the
+> disabled/safe state when Pin state is switched if the old setting is not
+> existed in new state rather than directly switched to the new Pin
+> setting. Also a possible glitch?
 
--- 
-  Alexander
+That's not a glitch, since it's not a temporary state. The mux setting
+starts out as configured by the old state, then switches one time to
+whatever the disable function sets it to. After that, it won't switch
+again, unless there's an explicit SW action to enable a new state.
