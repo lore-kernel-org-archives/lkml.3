@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758549AbaELN0E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 09:26:04 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:35643 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756723AbaELN0C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 09:26:02 -0400
-X-Nat-Received: from [202.181.97.72]:26719 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1399901153.24955
-To: miklos@szeredi.hu, jmorris@namei.org, john.johansen@canonical.com,
-        selinux@tycho.nsa.gov
-Cc: linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: [PATCH (for 3.15) 5/5] LSM: Remove duplicated rename handling.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201404242020.FJD18726.LOOJtOQMFVFFSH@I-love.SAKURA.ne.jp>
-	<201405012058.JEG30273.LJFHOOFMtOFQVS@I-love.SAKURA.ne.jp>
-	<201405051449.GAE81222.LOOFtFJMQFOSVH@I-love.SAKURA.ne.jp>
-	<201405120053.HJG95368.HFLQSFMOOtOVJF@I-love.SAKURA.ne.jp>
-	<201405122221.DBG43278.LOQtJSOFVFFOHM@I-love.SAKURA.ne.jp>
-In-Reply-To: <201405122221.DBG43278.LOQtJSOFVFFOHM@I-love.SAKURA.ne.jp>
-Message-Id: <201405122225.CIE09825.MFHOtOOSQVFFLJ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Mon, 12 May 2014 22:25:54 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 12052014 #7893288, status: clean
+	id S1758441AbaELN0j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 09:26:39 -0400
+Received: from mout.gmx.net ([212.227.17.20]:62656 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758263AbaELN0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 09:26:36 -0400
+MIME-Version: 1.0
+Message-ID: <trinity-5cd78acf-a478-4ae4-8901-60ccf65a80f1-1399901181699@msvc024>
+From: tbilles@gmx.com
+To: "Hans de Goede" <hdegoede@redhat.com>, "Zhang Rui" <rui.zhang@intel.com>,
+        "Len Brown" <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Aaron Lu" <aaron.lu@intel.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Possible regression: sluggish inputs
+Content-Type: text/plain; charset=UTF-8
+Importance: normal
+Date: Mon, 12 May 2014 15:26:21 +0200
+X-Priority: 3
+X-Provags-ID: V03:K0:+7FMg1mM6o2XUS7fQZNIP6MYjdjKeu/6bItCxVFT3O8
+ /uDSWCMrf/MI+dDDTSMs+36Ehs5AO2GEMezmy8kWCRgF1jVixA
+ nNwLSopxbU0DHbANWNOeaCf4b3lRa6SNqS/BNArBCdDDwEEugJ
+ JNMNPI/bwIkhOIGgazB9PB9hf8YmCw4C0SuwjCiD2vLLFdzW46
+ YxvRbDvxQiedf69oyzW/TlVosBB1a3eT4DAv9/DkyhdNaFmBNa
+ JqFqNN9Fy3z43B+07qy9/JF9U//g5luceDNR/v0M6HJH7PEOf1 GyG4F0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 479d305929c4ef600de99948f42ed633b24458b0 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Mon, 12 May 2014 22:02:30 +0900
-Subject: [PATCH (for 3.15) 5/5] LSM: Remove duplicated rename handling.
+Hi,
 
-Since all LSM modules are now ready to handle the rename flags,
-security_inode_rename() and security_path_rename() no longer need to
-call each LSM module with reversed arguments.
+On Saturday, 03 May 2014 at 20:14:03, Hans de Goede wrote:
+>On 05/03/2014 07:38 PM, tbilles@gmx.com wrote:
+>> On Saturday, 03 May 2014 at 10:00:38, Hans de Goede wrote:
+>>
+>>> I've seen this happen occasionally on my E6430 both with and without
+>>> the patch the bisect points too. I can trigger it by pressing
+>>> brightness up / down as fast as I can. Likely the dimming on
+>>> inactivity code is doing a much better job at sending brightness
+>>> change commands as fast as possible, making it easier to trigger this.
+>>> As for the commit you've bisected it too, it may be that that subtly
+>>> changes things to make the problem easier to trigger, 
+>> 
+>> I don't have auto screen dimming enabled, but there could be something
+>> else triggering it. Other than this, it all makes sense. The brightness
+>> up / down buttons always act slowly for me. I can too trigger the sluggish
+>> behaviour by pressing the brightness up or down buttons fast and
+>> simultaneously moving the mouse. So yes, your patch is not the cause
+>> of this, but for some reason it makes it easier to trigger. 
+>> 
+>>> but I distinctly remember having the same issue before I wrote that
+>>> patch.
+>> 
+>> Let me try this 'your patch reverted on top of 3.14.2' kernel for a few
+>> days to see if this behaviour shows up. Maybe I had it too, I just
+>> didn't notice, because it was less frequent.
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- security/security.c |   18 ------------------
- 1 files changed, 0 insertions(+), 18 deletions(-)
+I didn't notice this behaviour since then, but I guess that doesn't prove
+it's not there. 
 
-diff --git a/security/security.c b/security/security.c
-index 81d7ffe..fbc4968 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -439,15 +439,6 @@ int security_path_rename(struct path *old_dir, struct dentry *old_dentry,
- 	if (unlikely(IS_PRIVATE(old_dentry->d_inode) ||
- 		     (new_dentry->d_inode && IS_PRIVATE(new_dentry->d_inode))))
- 		return 0;
--
--	if (flags & RENAME_EXCHANGE) {
--		int err = security_ops->path_rename(new_dir, new_dentry,
--						    old_dir, old_dentry,
--						    flags);
--		if (err)
--			return err;
--	}
--
- 	return security_ops->path_rename(old_dir, old_dentry, new_dir,
- 					 new_dentry, flags);
- }
-@@ -540,15 +531,6 @@ int security_inode_rename(struct inode *old_dir, struct dentry *old_dentry,
-         if (unlikely(IS_PRIVATE(old_dentry->d_inode) ||
-             (new_dentry->d_inode && IS_PRIVATE(new_dentry->d_inode))))
- 		return 0;
--
--	if (flags & RENAME_EXCHANGE) {
--		int err = security_ops->inode_rename(new_dir, new_dentry,
--						     old_dir, old_dentry,
--						     flags);
--		if (err)
--			return err;
--	}
--
- 	return security_ops->inode_rename(old_dir, old_dentry,
- 					  new_dir, new_dentry, flags);
- }
--- 
-1.7.1
+I will continue using my 3.13.x kernel for the time being.
+
+Thank you, Hans, for your time.
+
+Tibor
