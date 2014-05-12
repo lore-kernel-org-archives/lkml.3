@@ -1,218 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481AbaELST4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 14:19:56 -0400
-Received: from g2t2352.austin.hp.com ([15.217.128.51]:21633 "EHLO
-	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755142AbaELSTz (ORCPT
+	id S1755142AbaELSVd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 14:21:33 -0400
+Received: from smtprelay0181.hostedemail.com ([216.40.44.181]:39045 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753511AbaELSVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 14:19:55 -0400
-Message-ID: <1399918792.2648.29.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 3/6] ipc/sem.c: remove code duplication
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, 1vier1@web.de
-Date: Mon, 12 May 2014 11:19:52 -0700
-In-Reply-To: <1399716199-26776-4-git-send-email-manfred@colorfullife.com>
-References: <1399716199-26776-1-git-send-email-manfred@colorfullife.com>
-	 <1399716199-26776-2-git-send-email-manfred@colorfullife.com>
-	 <1399716199-26776-3-git-send-email-manfred@colorfullife.com>
-	 <1399716199-26776-4-git-send-email-manfred@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Mon, 12 May 2014 14:21:32 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3872:4250:4321:4605:5007:6119:7652:7903:10004:10400:10848:11026:11232:11658:11914:12296:12438:12517:12519:12555:12740:13019:13069:13095:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: ship92_817cec1ab7b59
+X-Filterd-Recvd-Size: 2654
+Message-ID: <1399918888.9240.28.camel@joe-AO725>
+Subject: Re: [PATCH 1/1] kernel/workqueue.c: pr_warning/pr_warn &
+ printk/pr_info
+From: Joe Perches <joe@perches.com>
+To: Fabian Frederick <fabf@skynet.be>, Tejun Heo <tj@kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>
+Date: Mon, 12 May 2014 11:21:28 -0700
+In-Reply-To: <20140512195623.bedc6e41683596d8d3b486c7@skynet.be>
+References: <20140512195623.bedc6e41683596d8d3b486c7@skynet.be>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-05-10 at 12:03 +0200, Manfred Spraul wrote:
-> count_semzcnt and count_semncnt are more of less identical.
-> The patch creates a single function that either counts the number of tasks
-> waiting for zero or waiting due to a decrease operation.
-
-This is a nice cleanup.
-
-> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+On Mon, 2014-05-12 at 19:56 +0200, Fabian Frederick wrote:
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 > ---
->  ipc/sem.c | 103 ++++++++++++++++++++++++++++++--------------------------------
->  1 file changed, 50 insertions(+), 53 deletions(-)
+>  kernel/workqueue.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 > 
-> diff --git a/ipc/sem.c b/ipc/sem.c
-> index dc648f8..821aba7 100644
-> --- a/ipc/sem.c
-> +++ b/ipc/sem.c
-> @@ -47,8 +47,7 @@
->   *   Thus: Perfect SMP scaling between independent semaphore arrays.
->   *         If multiple semaphores in one array are used, then cache line
->   *         trashing on the semaphore array spinlock will limit the scaling.
-> - * - semncnt and semzcnt are calculated on demand in count_semncnt() and
-> - *   count_semzcnt()
-> + * - semncnt and semzcnt are calculated on demand in count_semcnt()
->   * - the task that performs a successful semop() scans the list of all
->   *   sleeping tasks and completes any pending operations that can be fulfilled.
->   *   Semaphores are actively given to waiting tasks (necessary for FIFO).
-> @@ -989,6 +988,31 @@ static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsop
->  		set_semotime(sma, sops);
->  }
->  
-> +/*
-> + * check_qop: Test how often a queued operation sleeps on the semaphore semnum
-> + */
-> +static int check_qop(struct sem_array *sma, int semnum, struct sem_queue *q,
-> +			bool count_zero)
-
-
-Instead of directly calling check_qop(..., true/false), how about doing
-something like the following? Should generate better code.
-
-static inline int check_qop_zero(struct sem_array *sma, int semnum, struct sem_queue q)
-{
-	return check_qop(sma, senum, q, true);
-}
-
-static linline int check_qop_nonzero(struct sem_array *sma, int semnum, struct sem_queue q)
-{
-	return check_qop(sma, senum, q, false);
-}
-
-Perhaps instead of nonzero/zero we could replace it with the standard semncnt, semzcnt.
-
-> +{
-> +	struct sembuf *sops = q->sops;
-> +	int nsops = q->nsops;
-> +	int i, semcnt;
-> +
-> +	semcnt = 0;
-> +
-> +	for (i = 0; i < nsops; i++) {
-> +		if (sops[i].sem_num != semnum)
-> +			continue;
-> +		if (sops[i].sem_flg & IPC_NOWAIT)
-> +			continue;
-> +		if (count_zero && sops[i].sem_op == 0)
-> +			semcnt++;
-> +		if (!count_zero && sops[i].sem_op < 0)
-> +			semcnt++;
-> +	}
-> +	return semcnt;
-> +}
-> +
->  /* The following counts are associated to each semaphore:
->   *   semncnt        number of tasks waiting on semval being nonzero
->   *   semzcnt        number of tasks waiting on semval being zero
-> @@ -998,66 +1022,39 @@ static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsop
->   * The counts we return here are a rough approximation, but still
->   * warrant that semncnt+semzcnt>0 if the task is on the pending queue.
->   */
-> -static int count_semncnt(struct sem_array *sma, ushort semnum)
-> +static int count_semcnt(struct sem_array *sma, ushort semnum,
-> +			bool count_zero)
->  {
-> -	int semncnt;
-> +	struct list_head *l;
->  	struct sem_queue *q;
-> +	int semcnt;
->  
-> -	semncnt = 0;
-
-nit: can we unify the declaration and assignment?
-
-> -	list_for_each_entry(q, &sma->sem_base[semnum].pending_alter, list) {
-> -		struct sembuf *sops = q->sops;
-> -		BUG_ON(sops->sem_num != semnum);
-> -		if ((sops->sem_op < 0) && !(sops->sem_flg & IPC_NOWAIT))
-> -			semncnt++;
-> -	}
-> +	semcnt = 0;
-> +	/* First: check the simple operations. They are easy to evaluate */
-> +	if (count_zero)
-> +		l = &sma->sem_base[semnum].pending_const;
-> +	else
-> +		l = &sma->sem_base[semnum].pending_alter;
->  
-> -	list_for_each_entry(q, &sma->pending_alter, list) {
-> +	list_for_each_entry(q, l, list) {
->  		struct sembuf *sops = q->sops;
-> -		int nsops = q->nsops;
-> -		int i;
-> -		for (i = 0; i < nsops; i++)
-> -			if (sops[i].sem_num == semnum
-> -			    && (sops[i].sem_op < 0)
-> -			    && !(sops[i].sem_flg & IPC_NOWAIT))
-> -				semncnt++;
-> -	}
-> -	return semncnt;
-> -}
->  
-> -static int count_semzcnt(struct sem_array *sma, ushort semnum)
-> -{
-> -	int semzcnt;
-> -	struct sem_queue *q;
-> -
-> -	semzcnt = 0;
-> -	list_for_each_entry(q, &sma->sem_base[semnum].pending_const, list) {
-> -		struct sembuf *sops = q->sops;
->  		BUG_ON(sops->sem_num != semnum);
-> -		if ((sops->sem_op == 0) && !(sops->sem_flg & IPC_NOWAIT))
-> -			semzcnt++;
-> +		BUG_ON(sops->sem_flg & IPC_NOWAIT);
-> +		BUG_ON(sops->sem_op > 0);
-> +		semcnt++;
->  	}
->  
-> -	list_for_each_entry(q, &sma->pending_const, list) {
-> -		struct sembuf *sops = q->sops;
-> -		int nsops = q->nsops;
-> -		int i;
-> -		for (i = 0; i < nsops; i++)
-> -			if (sops[i].sem_num == semnum
-> -			    && (sops[i].sem_op == 0)
-> -			    && !(sops[i].sem_flg & IPC_NOWAIT))
-> -				semzcnt++;
-> -	}
-> +	/* Then: check the complex operations. */
->  	list_for_each_entry(q, &sma->pending_alter, list) {
-> -		struct sembuf *sops = q->sops;
-> -		int nsops = q->nsops;
-> -		int i;
-> -		for (i = 0; i < nsops; i++)
-> -			if (sops[i].sem_num == semnum
-> -			    && (sops[i].sem_op == 0)
-> -			    && !(sops[i].sem_flg & IPC_NOWAIT))
-> -				semzcnt++;
-> +		semcnt += check_qop(sma, semnum, q, count_zero);
-> +	}
-> +	if (count_zero) {
-> +		list_for_each_entry(q, &sma->pending_const, list) {
-> +			semcnt += check_qop(sma, semnum, q, count_zero);
-> +		}
->  	}
-> -	return semzcnt;
-> +	return semcnt;
->  }
->  
->  /* Free a semaphore set. freeary() is called with sem_ids.rwsem locked
-> @@ -1459,10 +1456,10 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
->  		err = curr->sempid;
->  		goto out_unlock;
->  	case GETNCNT:
-> -		err = count_semncnt(sma, semnum);
-> +		err = count_semcnt(sma, semnum, 0);
->  		goto out_unlock;
->  	case GETZCNT:
-> -		err = count_semzcnt(sma, semnum);
-> +		err = count_semcnt(sma, semnum, 1);
-
-nit: use true/false in count_semcnt().
-
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 0ee63af..6824afc 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -4098,8 +4098,8 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
+>  	/* create a new pwq */
+>  	pwq = alloc_unbound_pwq(wq, target_attrs);
+>  	if (!pwq) {
+> -		pr_warning("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
+> -			   wq->name);
+> +		pr_warn("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
+> +			wq->name);
 >  		goto out_unlock;
 >  	}
 >  
+> @@ -4548,7 +4548,7 @@ void print_worker_info(const char *log_lvl, struct task_struct *task)
+>  		probe_kernel_read(desc, worker->desc, sizeof(desc) - 1);
+>  
+>  	if (fn || name[0] || desc[0]) {
+> -		printk("%sWorkqueue: %s %pf", log_lvl, name, fn);
+> +		pr_info("%sWorkqueue: %s %pf", log_lvl, name, fn);
 
-Thanks,
-Davidlohr
+Not correct.
+
+log_lvl already emits the appropriate level
+and this overrides it with KERN_INFO.
+
+The output will now be incorrect emitting
+at KERN_INFO followed by an SOH and the
+desired log level.
+
+>  		if (desc[0])
+>  			pr_cont(" (%s)", desc);
+>  		pr_cont("\n");
+
+Trivially, it likely would be a bit better to avoid
+any possible output message interleaving by using:
+
+	if (fn || name[0] || desc[0]) {
+		if (desc[0])
+			printk("%sWorkqueue: %s %pf (%s)\n",
+			       log_lvl, name, fn, desc);
+		else
+			printk("%sWorkqueue: %s %pf\n",
+			       log_lvl, name, fn);
+	}
+
+
 
