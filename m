@@ -1,188 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088AbaELBrY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:47:24 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:34781 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755053AbaELBrV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:47:21 -0400
-Date: Sun, 11 May 2014 18:47:28 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Pankaj Dubey <pankaj.dubey@samsung.com>, kgene.kim@samsung.com,
-        linux@arm.linux.org.uk, t.figa@samsung.com,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH 0/4] Introducing Exynos ChipId driver
-Message-ID: <20140512014728.GA6054@quad.lixom.net>
-References: <1399097500-4052-1-git-send-email-pankaj.dubey@samsung.com>
- <13946837.RfnRDPQdge@wuerfel>
- <536758AB.2060503@samsung.com>
- <4239261.HFHm7SU1iH@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4239261.HFHm7SU1iH@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754768AbaELBob (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:44:31 -0400
+Received: from 1wt.eu ([62.212.114.60]:34795 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752050AbaELBo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:44:27 -0400
+Message-Id: <20140512003201.838833795@1wt.eu>
+User-Agent: quilt/0.48-1
+Date: Mon, 12 May 2014 02:32:29 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 029/143] net: heap overflow in __audit_sockaddr()
+In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Taking the discussion here since Panjak pointed me to this thread when
-I commented on the latest patch set)
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
-On Mon, May 05, 2014 at 04:58:14PM +0200, Arnd Bergmann wrote:
-> On Monday 05 May 2014 18:23:55 Pankaj Dubey wrote:
-> > On 05/04/2014 12:02 AM, Arnd Bergmann wrote:
-> > > Ideally this should be done by slightly restructuring the DT
-> > > source to make all on-chip devices appear below the soc node.
-> > 
-> > Currently I can't see soc nodes in exynos4 and exynos5 DT files.
-> > So isn't it should be a separate patch first to modify all exynos4
-> > exynos5 DT files to move all devices under soc node?
-> > In that case existing chipid node will be also moved under soc node.
-> 
-> Yes, that would be good. In fact the soc node could be identical
-> to the chipid node, effectively moving everything under chipid.
-> 
-> > > We'd have to think a bit about how to best do this while
-> > > preserving compatibility with existing dts files.
-> > 
-> > Is it necessary in this case?
-> > As I have mentioned there is difference in bit-mask among exynos4
-> > and exynos5's chipid. So is this reason not sufficient to keep separate
-> > compatible for both?
-> 
-> Having two "compatible" values for exynos4 and exynos5 is not a problem,
-> and it absolutely makes sense to have more specific values in there
-> as well:
-> 
-> compatible = "samsung,exynos4210-chipid", "samsung,exynos4-chipid";
+------------------
 
-Actually, "generic" compatibles for a device isn't the right thing to do
-here. For machine-level compat it makes sense, but not for devices. There
-it should instead use the first version of the IP block.
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-> > Also even if we get some way to preserve existing compatibility, I afraid
-> > in chipid driver that implementation will not look good, at least I am not
-> > able to think of any good way. Any suggestions?
-> 
-> The compatibility I mean is to ensure everything keeps working if
-> the node is not present.
-> 
-> > > Regarding patch 4, this is not what I meant when I asked for
-> > > removing the soc_is_exynos* macros. You basically do a 1:1 replacement
-> > > using a different interface, but you still have code that does
-> > > things differently based on a global identification.
-> > I agree with what you are trying to say. But if you see recently we had some
-> > patches (cpu_idle.c: [2], pmu.c: [3])  to remove usage of such macros from
-> > exynos machine files. So only leftover files using these macros are exynos.c
-> > platsmp.c and pm.c.
-> > 
-> > For exynos.c I have tried to remove soc_is_exynos4/exynos5 by matching with
-> > compatible string in patch 1 of this series. Please let me know if that is OK?
-> 
-> I've taken a closer look at that file now. My preferred solution
-> would be to go back to having two machine descriptors as it
-> was before Sachin Kamat's "ARM: EXYNOS: Consolidate exynos4 and
-> exynos5 machine files", but keep it all in one file and consolidated
-> as much as possible, e.g.
-> 
-> static void __init exynos_dt_machine_init(void)
-> {
->        exynos_cpuidle_init();
->        exynos_cpufreq_init();
-> 
->        of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-> }
-> 
-> static void __init exynos5_dt_machine_init(void)
-> {
->        /*
->         * Exynos5's legacy i2c controller and new high speed i2c
->         * controller have muxed interrupt sources. By default the
->         * interrupts for 4-channel HS-I2C controller are enabled.
->         * If node for first four channels of legacy i2c controller
->         * are available then re-configure the interrupts via the
->         * system register.
->         */
->        struct device_node *i2c_np;
->        const char *i2c_compat = "samsung,s3c2440-i2c";
->        unsigned int tmp;
->        int id;
-> 
->        for_each_compatible_node(i2c_np, NULL, i2c_compat) {
->               if (of_device_is_available(i2c_np)) {
->                         id = of_alias_get_id(i2c_np, "i2c");
->                         if (id < 4) {
->                                   tmp = readl(EXYNOS5_SYS_I2C_CFG);
->                                   writel(tmp & ~(0x1 << id),  EXYNOS5_SYS_I2C_CFG);
->                         }
->                }
->        }
-> 
->        exynos_dt_machine_init();
-> }
-> 
-> This way you can avoid having another check of the compatible node.
-> In the long run, all of the this code should go away: The cpuidle
-> and cpufreq drivers should become normal platform drivers that
-> get probed when the devices are present (just like it's required
-> for arm64 anyway), and the EXYNOS5_SYS_I2C_CFG register should
-> get set up by an appropriate driver, e.g. the i2c driver through
-> syscon, or a pinmux driver that changes the mux between the
-> sources based on DT information, whatever fits best.
-> 
-> Similarly for exynos_map_io(), with the sysram out of the picture,
-> it can be 
-> 
-> void __init exynos4_init_io(void)
-> {
->         debug_ll_io_init();
-> 	iotable_init(exynos4_iodesc, ARRAY_SIZE(exynos4_iodesc));
-> }
-> 
-> void __init exynos5_init_io(void)
-> {
->         debug_ll_io_init();
-> 	iotable_init(exynos5_iodesc, ARRAY_SIZE(exynos4_iodesc));
-> }
-> 
-> but in the long run, it would be nicer to completely eliminate
-> exynos4_iodesc and exynos5_iodesc as well, and remove the init_io
-> functions. Note that debug_ll_io_init() is already called when
-> you have a NULL .map_io callback.
-> 
-> > Also for platsmp.c and pm.c I can think of following approaches
-> > 1: Keep these macros till we get generic solution?
-> > 2: Allow chipid driver to expose APIs to check SoC id and SoC revisions 
-> > till we get
-> > generic solution. So that at least we can remove #ifdef  based macros
-> > as soc_is_exynosXYZ.
-> > 3: Use of "of_flat_dt_is_compatible" or similar APIs in these machine files 
-> > till we get
-> > generic solution. For some cases where we want to know SoC revision let us
-> > map chipid register and get revision there itself.
-> > 
-> > Please let me know what approach you think will be good?
-> 
-> I think 1 or 2 would be better than 3. Between those two, I'm undecided,
-> but I think either way the SoC specific values would be better kept in the
-> mach-samsung directory than in plat/cpu.h or linux/exynos-chipid.h.
+[ Upstream commit 1661bf364ae9c506bc8795fef70d1532931be1e8 ]
 
-The generic solution is already there: of_machine_is_compatible() is perfectly
-sensible to use for _some_ of these inits. Cpufreq is one of the few that comes
-to mind, and maybe some of the platsmp and pm stuff.
+We need to cap ->msg_namelen or it leads to a buffer overflow when we
+to the memcpy() in __audit_sockaddr().  It requires CAP_AUDIT_CONTROL to
+exploit this bug.
 
-Note that none of them should be used in runtime, i.e. you should only use them
-at probe/setup time and maybe have a local state in the driver if needed.
+The call tree is:
+___sys_recvmsg()
+  move_addr_to_user()
+    audit_sockaddr()
+      __audit_sockaddr()
 
-I'd rather get people used to that format than everybody needing to implement
-a chipid driver now too, especially on platforms that might not even have a
-suitable chipid block to base a driver around -- not to mention having to
-fill the namespace with is_soc_*() stuff.
+Reported-by: Jüri Aedla <juri.aedla@gmail.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[wt: 2.6.32: msg_sys is a struct, not a pointer]
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+---
+ net/compat.c |  2 ++
+ net/socket.c | 24 ++++++++++++++++++++----
+ 2 files changed, 22 insertions(+), 4 deletions(-)
+
+diff --git a/net/compat.c b/net/compat.c
+index 9559afc..da3d0fc 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -69,6 +69,8 @@ int get_compat_msghdr(struct msghdr *kmsg, struct compat_msghdr __user *umsg)
+ 	    __get_user(kmsg->msg_controllen, &umsg->msg_controllen) ||
+ 	    __get_user(kmsg->msg_flags, &umsg->msg_flags))
+ 		return -EFAULT;
++	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
++		return -EINVAL;
+ 	kmsg->msg_name = compat_ptr(tmp1);
+ 	kmsg->msg_iov = compat_ptr(tmp2);
+ 	kmsg->msg_control = compat_ptr(tmp3);
+diff --git a/net/socket.c b/net/socket.c
+index bf9fc68..9f8cd74 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1863,6 +1863,16 @@ SYSCALL_DEFINE2(shutdown, int, fd, int, how)
+ #define COMPAT_NAMELEN(msg)	COMPAT_MSG(msg, msg_namelen)
+ #define COMPAT_FLAGS(msg)	COMPAT_MSG(msg, msg_flags)
+ 
++static int copy_msghdr_from_user(struct msghdr *kmsg,
++                                 struct msghdr __user *umsg)
++{
++	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
++		return -EFAULT;
++	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
++		return -EINVAL;
++	return 0;
++}
++
+ /*
+  *	BSD sendmsg interface
+  */
+@@ -1887,8 +1897,11 @@ SYSCALL_DEFINE3(sendmsg, int, fd, struct msghdr __user *, msg, unsigned, flags)
+ 		if (get_compat_msghdr(&msg_sys, msg_compat))
+ 			return -EFAULT;
+ 	}
+-	else if (copy_from_user(&msg_sys, msg, sizeof(struct msghdr)))
+-		return -EFAULT;
++	else {
++		err = copy_msghdr_from_user(&msg_sys, msg);
++		if (err)
++			return err;
++	}
+ 
+ 	sock = sockfd_lookup_light(fd, &err, &fput_needed);
+ 	if (!sock)
+@@ -1997,8 +2010,11 @@ SYSCALL_DEFINE3(recvmsg, int, fd, struct msghdr __user *, msg,
+ 		if (get_compat_msghdr(&msg_sys, msg_compat))
+ 			return -EFAULT;
+ 	}
+-	else if (copy_from_user(&msg_sys, msg, sizeof(struct msghdr)))
+-		return -EFAULT;
++	else {
++		err = copy_msghdr_from_user(&msg_sys, msg);
++		if (err)
++			return err;
++	}
+ 
+ 	sock = sockfd_lookup_light(fd, &err, &fput_needed);
+ 	if (!sock)
+-- 
+1.7.12.2.21.g234cd45.dirty
 
 
--Olof
 
