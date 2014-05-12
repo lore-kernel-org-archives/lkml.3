@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758250AbaELVGN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 17:06:13 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42754 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753160AbaELVGM (ORCPT
+	id S1758451AbaELVH7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 17:07:59 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:36299 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758300AbaELVH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 17:06:12 -0400
-Date: Mon, 12 May 2014 22:06:00 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
+	Mon, 12 May 2014 17:07:57 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19MambLHLL7qvKwBXaoeemH
+Date: Mon, 12 May 2014 14:07:48 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Robert Nelson <robertcnelson@gmail.com>
+Cc: Tom Rini <trini@ti.com>, Matt Ranostay <mranostay@gmail.com>,
+        robh+dt@kernel.org, mark.rutland@arm.com,
         Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Chiau Ee Chew <chiau.ee.chew@intel.com>,
-        Hock Leong Kweh <hock.leong.kweh@intel.com>
-Message-ID: <20140512210600.GT12304@sirena.org.uk>
-References: <1399559431-2065-1-git-send-email-mika.westerberg@linux.intel.com>
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Pantelis Antoniou <pantelis.antoniou@gmail.com>,
+        Matt Porter <matt.porter@linaro.org>
+Subject: Re: [PATCH v2] ARM: dts: am335x-bone-common: Add i2c2 definition
+Message-ID: <20140512210747.GE5668@atomide.com>
+References: <1399686184-1594-1-git-send-email-mranostay@gmail.com>
+ <20140512195050.GB5668@atomide.com>
+ <CAOCHtYiYwx_bEsyqkbUTTAbhBYESzvfBOOYeVuFXPS1dDy0ZKA@mail.gmail.com>
+ <20140512201517.GC5668@atomide.com>
+ <CAOCHtYg6XpF0Gbo4iFqsFvP=QSivQQvCzov8UfxeLXMzrRYEWw@mail.gmail.com>
+ <20140512204213.GD5668@atomide.com>
+ <CAOCHtYgg7jwxswH+mqF3RA7-0RP-nGuft+Ze-GRwu1fbA6+0Bw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RYzpe8yYzYY7Vx+e"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1399559431-2065-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Cookie: You will be successful in your work.
+In-Reply-To: <CAOCHtYgg7jwxswH+mqF3RA7-0RP-nGuft+Ze-GRwu1fbA6+0Bw@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi/pxa2xx: Prevent DMA from transferring too many bytes
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Robert Nelson <robertcnelson@gmail.com> [140512 13:58]:
+> >> Either case if fine with me.  As who knows when the dtc "overlay" will
+> >> every truly make it mainline, as the capemgr was the only real kernel
+> >> user of the i2c/at24 eeprom information.
+> >
+> > Sounds like we should keep it disabled though so u-boot can be used
+> > to toggle it while waiting for the capemgr. That's because the board
+> > has a header for pins, so it's not exactly limited to just the capes.
+> >
+> > Anybody working on enabling/disabling cape dtb configurations in u-boot?
+> 
+> Well,
+> 
+> Would Tom even approve of that in mainline u-boot? He didn't want my
+> "invert" the gpio to enable the usb hub on the older beagle xm A/B..
+> 
+> http://lists.denx.de/pipermail/u-boot/2014-January/172154.html
+> 
+> http://lists.denx.de/pipermail/u-boot/2014-January/172274.html
 
---RYzpe8yYzYY7Vx+e
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Right, no idea. But until we have some way to actually use the capes
+without conflicting dts entries, I can't merge them.
 
-On Thu, May 08, 2014 at 05:30:31PM +0300, Mika Westerberg wrote:
-> In case we are doing DMA transfer and the size of the buffer is not multiple
-> of 4 bytes the driver truncates that to 4-byte boundary and tries to handle
-> remaining bytes using PIO.
+Regards,
 
-Applied, thanks.
-
---RYzpe8yYzYY7Vx+e
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTcTe1AAoJELSic+t+oim9iXoQAIENOzS1zIzjUvmB6kvDpQNy
-cp0cMfvyGm8kHwLFrXo4IV4P5GA0XplLekVpVh2qReuGAwlm+K9CyzA1ifiTKn06
-6k3wMPW2udyeK0IcfGUd+WbdWhEmtNIb1ssJyafqlMCNt7Z6WFZR1Mts6G2voS/U
-Vw2tjBFoEi321v/xiiFre6F8jiD/4hkuoY1WKVsN/nzcm1Z/H4wSmYl6Q6b+FjvS
-Y4eJcFaYJR84GxMR23YTVdyiex9CT+1DxVRAupv6b/tENmM37JQy5N0xbIDPDOra
-Y/KiwiUByhkKE7wHAzd3a6LfQcTbO192FtpjaFagJmS3BRQEsIyjudb1PRQZB5Kb
-8FAqnDdtE08Uq5vdubcUyqT0ezeKGtihjD3Jxrq/De4GyuVs6Kbdq0p+PnJabyLd
-BMHEs9IKM+TQ4gYb/V+QUVGdix34FpAy1gMt3dLftv/eUWZR7wbUgdr/tomgTZxe
-OMXcnBo02Qhp+wRDe4loRwgo2PdlVa3wzTvxYlDZPpW5XZkPId/sL/dScMBmIqMp
-WvzN4rSkCbN22jKG9u7/KuOme62k8LpAC123179XWcOfBdYHiydgYuoX36A11Fgn
-+sV4V3oEmQ43PKWX7lv1fcrJdzrGMckAYDqu2QauraaflofnfM/4ShoAmwfKniWz
-AN6ySUnZn+N9ljq0m2DS
-=iO6/
------END PGP SIGNATURE-----
-
---RYzpe8yYzYY7Vx+e--
+Tony
