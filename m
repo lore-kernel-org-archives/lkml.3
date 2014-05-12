@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758916AbaELPZH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 11:25:07 -0400
-Received: from ns3094689.ip-91-121-202.eu ([91.121.202.112]:51702 "EHLO
-	ns3094689.ip-91-121-202.eu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758427AbaELPZF (ORCPT
+	id S1758748AbaELP2Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 11:28:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35938 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026AbaELP2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 11:25:05 -0400
-From: Denis Pithon <denis.pithon@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: himangi774@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] staging/wlan-ng: replace printk() with pr_xxx()
-Date: Mon, 12 May 2014 17:22:47 +0200
-Message-Id: <1399908167-19271-4-git-send-email-denis.pithon@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1399908167-19271-1-git-send-email-denis.pithon@gmail.com>
-References: <1399908167-19271-1-git-send-email-denis.pithon@gmail.com>
+	Mon, 12 May 2014 11:28:23 -0400
+Date: Mon, 12 May 2014 17:28:18 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Dongsheng Yang <dongsheng081251@gmail.com>,
+        "yangds.fnst" <yangds.fnst@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, mingo@redhat.com, bsegall@google.com
+Subject: Re: [PATCH] sched: Distinguish sched_wakeup event when wake up a
+ task which did schedule out or not.
+Message-ID: <20140512152818.GS30445@twins.programming.kicks-ass.net>
+References: <1399341154-11785-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+ <20140510152902.GW11096@twins.programming.kicks-ass.net>
+ <536F90BE.2080806@gmail.com>
+ <CA+qeAOr_PrBuo+qfjNoaZyHF21p=8UgQy1oZOjAxahhYTyrvLQ@mail.gmail.com>
+ <20140511163531.GG30445@twins.programming.kicks-ass.net>
+ <20140511145224.00412e59@gandalf.local.home>
+ <20140512064730.GI30445@twins.programming.kicks-ass.net>
+ <20140512100908.07cc50bc@gandalf.local.home>
+ <20140512150950.GP30445@twins.programming.kicks-ass.net>
+ <20140512111748.1c2f6cd9@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EzakZlbiokRMC/se"
+Content-Disposition: inline
+In-Reply-To: <20140512111748.1c2f6cd9@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix some coding style issues concerning printk() usage.
 
-Signed-off-by: Denis Pithon <denis.pithon@gmail.com>
----
- drivers/staging/wlan-ng/p80211netdev.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+--EzakZlbiokRMC/se
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/staging/wlan-ng/p80211netdev.c b/drivers/staging/wlan-ng/p80211netdev.c
-index 61a3092..3577d20 100644
---- a/drivers/staging/wlan-ng/p80211netdev.c
-+++ b/drivers/staging/wlan-ng/p80211netdev.c
-@@ -384,8 +384,9 @@ static int p80211knetdev_hard_start_xmit(struct sk_buff *skb,
- 		 */
- 		if (skb->protocol != ETH_P_80211_RAW) {
- 			netif_start_queue(wlandev->netdev);
--			printk(KERN_NOTICE
--			       "Tx attempt prior to association, frame dropped.\n");
-+			pr_notice(
-+			   "Tx attempt prior to association, frame dropped\n"
-+			);
- 			wlandev->linux_stats.tx_dropped++;
- 			result = 0;
- 			goto failed;
-@@ -684,8 +685,9 @@ static int p80211knetdev_set_mac_address(netdevice_t *dev, void *addr)
- 	 * change the netdev address
- 	 */
- 	if (result != 0 || resultcode->data != P80211ENUM_resultcode_success) {
--		printk(KERN_ERR
--		       "Low-level driver failed dot11req_mibset(dot11MACAddress).\n");
-+		pr_err(
-+		  "Low-level driver failed dot11req_mibset(dot11MACAddress)\n"
-+		);
- 		result = -EADDRNOTAVAIL;
- 	} else {
- 		/* everything's ok, change the addr in netdev */
-@@ -764,7 +766,7 @@ int wlan_setup(wlandevice_t *wlandev, struct device *physdev)
- 	/* Allocate and initialize the wiphy struct */
- 	wiphy = wlan_create_wiphy(physdev, wlandev);
- 	if (wiphy == NULL) {
--		printk(KERN_ERR "Failed to alloc wiphy.\n");
-+		pr_err("Failed to alloc wiphy.\n");
- 		return 1;
- 	}
- 
-@@ -772,7 +774,7 @@ int wlan_setup(wlandevice_t *wlandev, struct device *physdev)
- 	netdev = alloc_netdev(sizeof(struct wireless_dev), "wlan%d",
- 				ether_setup);
- 	if (netdev == NULL) {
--		printk(KERN_ERR "Failed to alloc netdev.\n");
-+		pr_err("Failed to alloc netdev.\n");
- 		wlan_free_wiphy(wiphy);
- 		result = 1;
- 	} else {
-@@ -1104,8 +1106,7 @@ static void p80211knetdev_tx_timeout(netdevice_t *netdev)
- 	if (wlandev->tx_timeout) {
- 		wlandev->tx_timeout(wlandev);
- 	} else {
--		printk(KERN_WARNING "Implement tx_timeout for %s\n",
--		       wlandev->nsdname);
-+		pr_warn("Implement tx_timeout for %s\n", wlandev->nsdname);
- 		netif_wake_queue(wlandev->netdev);
- 	}
- }
--- 
-1.8.1.4
+On Mon, May 12, 2014 at 11:17:48AM -0400, Steven Rostedt wrote:
+> On Mon, 12 May 2014 17:09:50 +0200
+> Peter Zijlstra <peterz@infradead.org> wrote:
+>=20
+> > > Point being, this is useful information, why not pass it to userspace?
+> >=20
+> > Because it adds code to one of the hottest code paths in the kernel and
+> > so far nobody had a sane explanation of WTF they were doing.
+> >=20
+>=20
+> Is there a measurable difference with these extra tracepoints?
 
+Dunno, nobody tried and reported. I suppose its sitting there along with
+the coherent changelog.
+
+--EzakZlbiokRMC/se
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTcOiSAAoJEHZH4aRLwOS6Z30QALI+G1SQl0X+lHCZKsro2LWC
+gdEiWTVuWX+/VGfJotyIqFmu5JtgfBTd1hxPcRO2p/5980kGt6HsoyjWNERwZsRv
+Q6pOFkAxUZE33gbUCFGGgmQisPzuNG7EWIVZCB2kBZG31DHDvnWFPxQ2NA7+90yV
+/l1VYaofSDy7QymJxvyFzTD1GRgeYPJWJ6xlg9FN8fYFrieX2FBfayp8xfvsxE7e
+uQGSMSjTU86ue8Ljs9LTQVZnW6E78nvcLfbwFwZjW07lf5s+ebFVvfWjVJ+Jw8y7
+x1umWR79UytCbr8N28b2ACuIvISmMfwaGHaZMxkg4KI1lhSo0GooGtHTwHrBFTy2
+wU1vw5K2xIcMKb/PKBr9aj8srqgZuEPDBhQLlP42ynuRDIqGXJZDyNwffsZh6LW8
+NDONohaXTyhhJ8S5Rq4CFPtR6jtIACF8QNMFAlYmiMs0VWubooX0/Y7GTkJjSxTP
+CpdqPSW6vZzhqWbbAkq2AFkvEq9ARk+2wyFsRKcJZdApT1oEH0I1W9N1FbA94AeH
+SwW6614aXpTc5+7iWJ/OUAxwNX9fIsNfAhhEdysC/ltk/Uo2iQ1faU8IkvDwD7In
+LrqIxY48Q0hJab4HVUwmxUmwDYWRm6IMX6xiv2BRuh8/0wsv3wYBAC+6v8qV3DlD
+dQXXdXSy78xgprF411/X
+=stGF
+-----END PGP SIGNATURE-----
+
+--EzakZlbiokRMC/se--
