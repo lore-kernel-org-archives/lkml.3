@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758456AbaELNWy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 09:22:54 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:34969 "EHLO
+	id S1758484AbaELNXr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 09:23:47 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:38044 "EHLO
 	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756161AbaELNWw (ORCPT
+	with ESMTP id S1755544AbaELNXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 09:22:52 -0400
-X-Nat-Received: from [202.181.97.72]:50640 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1399900961.28617
+	Mon, 12 May 2014 09:23:46 -0400
+X-Nat-Received: from [202.181.97.72]:12962 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1399901016.5559
 To: miklos@szeredi.hu, jmorris@namei.org, john.johansen@canonical.com,
         selinux@tycho.nsa.gov
 Cc: linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: [PATCH (for 3.15) 1/5] LSM: Pass the rename flags to each LSM module.
+Subject: [PATCH (for 3.15) 2/5] SELinux: Handle the rename flags.
 From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 References: <201404242020.FJD18726.LOOJtOQMFVFFSH@I-love.SAKURA.ne.jp>
 	<201405012058.JEG30273.LJFHOOFMtOFQVS@I-love.SAKURA.ne.jp>
@@ -21,10 +21,10 @@ References: <201404242020.FJD18726.LOOJtOQMFVFFSH@I-love.SAKURA.ne.jp>
 	<201405120053.HJG95368.HFLQSFMOOtOVJF@I-love.SAKURA.ne.jp>
 	<201405122221.DBG43278.LOQtJSOFVFFOHM@I-love.SAKURA.ne.jp>
 In-Reply-To: <201405122221.DBG43278.LOQtJSOFVFFOHM@I-love.SAKURA.ne.jp>
-Message-Id: <201405122222.CFI35406.tMFFLJOVOSOHFQ@I-love.SAKURA.ne.jp>
+Message-Id: <201405122223.BDG04510.tVFSQJOMFOOHFL@I-love.SAKURA.ne.jp>
 X-Mailer: Winbiff [Version 2.51 PL2]
 X-Accept-Language: ja,en,zh
-Date: Mon, 12 May 2014 22:22:41 +0900
+Date: Mon, 12 May 2014 22:23:36 +0900
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 12052014 #7893288, status: clean
@@ -32,214 +32,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 579cfccf7ba49a53ff0f5fefe73f0b8dc618d878 Mon Sep 17 00:00:00 2001
+>From 39e4aea3b42b53d844c87f6c7e54f0a9837ebbfd Mon Sep 17 00:00:00 2001
 From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Mon, 12 May 2014 21:05:52 +0900
-Subject: [PATCH (for 3.15) 1/5] LSM: Pass the rename flags to each LSM module.
+Date: Mon, 12 May 2014 21:34:36 +0900
+Subject: [PATCH (for 3.15) 2/5] SELinux: Handle the rename flags.
 
-TOMOYO and AppArmor distinguish a directory's pathname and a non-directory's
-pathname by whether the pathname ends with / character or not. Upon rename(),
-they appended / character to the target dentry's pathname if the source
-dentry's inode refers a directory, for the target dentry's inode will refer
-a directory after successful rename(). This assumption was correct until
-commit da1ce067 "vfs: add cross-rename" is introduced.
-
-Commit da1ce067 changed security_{inode,path}_rename() to call LSM module
-with reversed arguments if the rename flags contains RENAME_EXCHANGE. But
-this is not sufficient for TOMOYO and AppArmor because RENAME_EXCHANGE
-allows exchange of a directory's inode and a non-directory's inode. Also,
-this is redundant for SMACK because there is no need to call
-security_inode_rename() with reversed arguments.
-
-To fix this regression, the rename flags needs to be passed to LSM module.
-This patch is for allowing TOMOYO and AppArmor to handle RENAME_EXCHANGE
-case differently, and for allowing SMACK to avoid needlessly checking
-the same permission twice.
+For SELinux, the RENAME_EXCHANGE flag means "check permissions with
+reversed arguments".
 
 Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Acked-by: Casey Schaufler <casey@schaufler-ca.com> [smack]
 ---
- include/linux/security.h   |    8 ++++++--
- security/apparmor/lsm.c    |    3 ++-
- security/capability.c      |    6 ++++--
- security/security.c        |   10 ++++++----
- security/selinux/hooks.c   |    3 ++-
- security/smack/smack_lsm.c |    4 +++-
- security/tomoyo/tomoyo.c   |    4 +++-
- 7 files changed, 26 insertions(+), 12 deletions(-)
+ security/selinux/hooks.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 6478ce3..5158611 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -446,6 +446,7 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	@old_dentry contains the dentry structure of the old link.
-  *	@new_dir contains the inode structure for parent of the new link.
-  *	@new_dentry contains the dentry structure of the new link.
-+ *	@flags contains rename flags.
-  *	Return 0 if permission is granted.
-  * @path_rename:
-  *	Check for permission to rename a file or directory.
-@@ -453,6 +454,7 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	@old_dentry contains the dentry structure of the old link.
-  *	@new_dir contains the path structure for parent of the new link.
-  *	@new_dentry contains the dentry structure of the new link.
-+ *	@flags contains rename flags.
-  *	Return 0 if permission is granted.
-  * @path_chmod:
-  *	Check for permission to change DAC's permission of a file or directory.
-@@ -1492,7 +1494,8 @@ struct security_operations {
- 	int (*path_link) (struct dentry *old_dentry, struct path *new_dir,
- 			  struct dentry *new_dentry);
- 	int (*path_rename) (struct path *old_dir, struct dentry *old_dentry,
--			    struct path *new_dir, struct dentry *new_dentry);
-+			    struct path *new_dir, struct dentry *new_dentry,
-+			    unsigned int flags);
- 	int (*path_chmod) (struct path *path, umode_t mode);
- 	int (*path_chown) (struct path *path, kuid_t uid, kgid_t gid);
- 	int (*path_chroot) (struct path *path);
-@@ -1515,7 +1518,8 @@ struct security_operations {
- 	int (*inode_mknod) (struct inode *dir, struct dentry *dentry,
- 			    umode_t mode, dev_t dev);
- 	int (*inode_rename) (struct inode *old_dir, struct dentry *old_dentry,
--			     struct inode *new_dir, struct dentry *new_dentry);
-+			     struct inode *new_dir, struct dentry *new_dentry,
-+			     unsigned int flags);
- 	int (*inode_readlink) (struct dentry *dentry);
- 	int (*inode_follow_link) (struct dentry *dentry, struct nameidata *nd);
- 	int (*inode_permission) (struct inode *inode, int mask);
-diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
-index 9981000..c0b4366 100644
---- a/security/apparmor/lsm.c
-+++ b/security/apparmor/lsm.c
-@@ -315,7 +315,8 @@ static int apparmor_path_link(struct dentry *old_dentry, struct path *new_dir,
- }
- 
- static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
--				struct path *new_dir, struct dentry *new_dentry)
-+				struct path *new_dir, struct dentry *new_dentry,
-+				unsigned int flags)
- {
- 	struct aa_profile *profile;
- 	int error = 0;
-diff --git a/security/capability.c b/security/capability.c
-index ad0d4de..620ba79 100644
---- a/security/capability.c
-+++ b/security/capability.c
-@@ -176,7 +176,8 @@ static int cap_inode_mknod(struct inode *inode, struct dentry *dentry,
- }
- 
- static int cap_inode_rename(struct inode *old_inode, struct dentry *old_dentry,
--			    struct inode *new_inode, struct dentry *new_dentry)
-+			    struct inode *new_inode, struct dentry *new_dentry,
-+			    unsigned int flags)
- {
- 	return 0;
- }
-@@ -280,7 +281,8 @@ static int cap_path_link(struct dentry *old_dentry, struct path *new_dir,
- }
- 
- static int cap_path_rename(struct path *old_path, struct dentry *old_dentry,
--			   struct path *new_path, struct dentry *new_dentry)
-+			   struct path *new_path, struct dentry *new_dentry,
-+			   unsigned int flags)
- {
- 	return 0;
- }
-diff --git a/security/security.c b/security/security.c
-index 8b774f3..81d7ffe 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -442,13 +442,14 @@ int security_path_rename(struct path *old_dir, struct dentry *old_dentry,
- 
- 	if (flags & RENAME_EXCHANGE) {
- 		int err = security_ops->path_rename(new_dir, new_dentry,
--						    old_dir, old_dentry);
-+						    old_dir, old_dentry,
-+						    flags);
- 		if (err)
- 			return err;
- 	}
- 
- 	return security_ops->path_rename(old_dir, old_dentry, new_dir,
--					 new_dentry);
-+					 new_dentry, flags);
- }
- EXPORT_SYMBOL(security_path_rename);
- 
-@@ -542,13 +543,14 @@ int security_inode_rename(struct inode *old_dir, struct dentry *old_dentry,
- 
- 	if (flags & RENAME_EXCHANGE) {
- 		int err = security_ops->inode_rename(new_dir, new_dentry,
--						     old_dir, old_dentry);
-+						     old_dir, old_dentry,
-+						     flags);
- 		if (err)
- 			return err;
- 	}
- 
- 	return security_ops->inode_rename(old_dir, old_dentry,
--					   new_dir, new_dentry);
-+					  new_dir, new_dentry, flags);
- }
- 
- int security_inode_readlink(struct dentry *dentry)
 diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 2c7341d..33f6f56 100644
+index 33f6f56..64d8497 100644
 --- a/security/selinux/hooks.c
 +++ b/security/selinux/hooks.c
-@@ -2749,7 +2749,8 @@ static int selinux_inode_mknod(struct inode *dir, struct dentry *dentry, umode_t
+@@ -2752,7 +2752,10 @@ static int selinux_inode_rename(struct inode *old_inode, struct dentry *old_dent
+ 				struct inode *new_inode, struct dentry *new_dentry,
+ 				unsigned int flags)
+ {
+-	return may_rename(old_inode, old_dentry, new_inode, new_dentry);
++	int err = may_rename(old_inode, old_dentry, new_inode, new_dentry);
++	if (!err && (flags & RENAME_EXCHANGE))
++		err = may_rename(new_inode, new_dentry, old_inode, old_dentry);
++	return err;
  }
  
- static int selinux_inode_rename(struct inode *old_inode, struct dentry *old_dentry,
--				struct inode *new_inode, struct dentry *new_dentry)
-+				struct inode *new_inode, struct dentry *new_dentry,
-+				unsigned int flags)
- {
- 	return may_rename(old_inode, old_dentry, new_inode, new_dentry);
- }
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 14f52be..4c1933f 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -697,6 +697,7 @@ static int smack_inode_rmdir(struct inode *dir, struct dentry *dentry)
-  * @old_dentry: unused
-  * @new_inode: the new directory
-  * @new_dentry: unused
-+ * @flags: unused
-  *
-  * Read and write access is required on both the old and
-  * new directories.
-@@ -706,7 +707,8 @@ static int smack_inode_rmdir(struct inode *dir, struct dentry *dentry)
- static int smack_inode_rename(struct inode *old_inode,
- 			      struct dentry *old_dentry,
- 			      struct inode *new_inode,
--			      struct dentry *new_dentry)
-+			      struct dentry *new_dentry,
-+			      unsigned int flags)
- {
- 	int rc;
- 	char *isp;
-diff --git a/security/tomoyo/tomoyo.c b/security/tomoyo/tomoyo.c
-index f0b756e..ac7dd97 100644
---- a/security/tomoyo/tomoyo.c
-+++ b/security/tomoyo/tomoyo.c
-@@ -287,13 +287,15 @@ static int tomoyo_path_link(struct dentry *old_dentry, struct path *new_dir,
-  * @old_dentry: Pointer to "struct dentry".
-  * @new_parent: Pointer to "struct path".
-  * @new_dentry: Pointer to "struct dentry".
-+ * @flags:      Rename flags.
-  *
-  * Returns 0 on success, negative value otherwise.
-  */
- static int tomoyo_path_rename(struct path *old_parent,
- 			      struct dentry *old_dentry,
- 			      struct path *new_parent,
--			      struct dentry *new_dentry)
-+			      struct dentry *new_dentry,
-+			      unsigned int flags)
- {
- 	struct path path1 = { old_parent->mnt, old_dentry };
- 	struct path path2 = { new_parent->mnt, new_dentry };
+ static int selinux_inode_readlink(struct dentry *dentry)
 -- 
 1.7.1
