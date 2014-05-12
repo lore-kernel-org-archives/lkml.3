@@ -1,129 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560AbaELJoS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 05:44:18 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:49597 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428AbaELJoR (ORCPT
+	id S1754646AbaELJrj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 05:47:39 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:63989 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719AbaELJrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 05:44:17 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <linux-kernel@vger.kernel.org>, Bo Shen <voice.shen@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v2 1/2] ARM: at91: add PWM pinctrl to SAMA5D3
-Date: Mon, 12 May 2014 11:44:14 +0200
-Message-ID: <1399887854-12612-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <a5a0a9b8090f80f40daf3a13849b3961d9d617d6.1399642907.git.nicolas.ferre@atmel.com>
-References: <a5a0a9b8090f80f40daf3a13849b3961d9d617d6.1399642907.git.nicolas.ferre@atmel.com>
+	Mon, 12 May 2014 05:47:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Olof Johansson <olof@lixom.net>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Pankaj Dubey <pankaj.dubey@samsung.com>, kgene.kim@samsung.com,
+        linux@arm.linux.org.uk, t.figa@samsung.com,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH 0/4] Introducing Exynos ChipId driver
+Date: Mon, 12 May 2014 11:47:04 +0200
+Message-ID: <4593340.mEX4CtCUDb@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140512014728.GA6054@quad.lixom.net>
+References: <1399097500-4052-1-git-send-email-pankaj.dubey@samsung.com> <4239261.HFHm7SU1iH@wuerfel> <20140512014728.GA6054@quad.lixom.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:RiAWLkQWnW9G5jZiDeo99XEDgUp6tMdSa7eIEZsrlq8
+ c5GKeEjcjGuTxet4zfQBg5wZKwV9lm4LBB280/ajYMC2SDRpoA
+ vRYT2N2VWtCwEUDzgRm9W2VZNrFz94bxsgKjttFW+m2J8OdC9d
+ uFP8UxWBl7ajz4DSkT5W9nB/VnaFbgDIIBlzpzDHJDY69Str4x
+ rH+c8Phr63iCmVR350xwi5bEP6obO3IHz8I58wsGAHAS2yvTfo
+ ymbCPy1BCAXTzhKgMQ0KUL+C+ASf0QqPmFyIAzqKv+FUfSrfRH
+ td9wQZvS707RzgGsQ/pL57hh99bVfVgrsIpqcX8GSJX1kH9vuh
+ KgWNAicXiqwuJOOnXYxQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
-v1 -> v2: - removed useless comment part, kept the "conflicts with..." part
-          - grouped "high" and "low" signal definitions together for each
-	    channel
+On Sunday 11 May 2014 18:47:28 Olof Johansson wrote:
+> > > Also for platsmp.c and pm.c I can think of following approaches
+> > > 1: Keep these macros till we get generic solution?
+> > > 2: Allow chipid driver to expose APIs to check SoC id and SoC revisions 
+> > > till we get
+> > > generic solution. So that at least we can remove #ifdef  based macros
+> > > as soc_is_exynosXYZ.
+> > > 3: Use of "of_flat_dt_is_compatible" or similar APIs in these machine files 
+> > > till we get
+> > > generic solution. For some cases where we want to know SoC revision let us
+> > > map chipid register and get revision there itself.
+> > > 
+> > > Please let me know what approach you think will be good?
+> > 
+> > I think 1 or 2 would be better than 3. Between those two, I'm undecided,
+> > but I think either way the SoC specific values would be better kept in the
+> > mach-samsung directory than in plat/cpu.h or linux/exynos-chipid.h.
+> 
+> The generic solution is already there: of_machine_is_compatible() is perfectly
+> sensible to use for _some_ of these inits. Cpufreq is one of the few that comes
+> to mind, and maybe some of the platsmp and pm stuff.
+> 
+> Note that none of them should be used in runtime, i.e. you should only use them
+> at probe/setup time and maybe have a local state in the driver if needed.
+> 
+> I'd rather get people used to that format than everybody needing to implement
+> a chipid driver now too, especially on platforms that might not even have a
+> suitable chipid block to base a driver around -- not to mention having to
+> fill the namespace with is_soc_*() stuff.
 
- arch/arm/boot/dts/sama5d3.dtsi | 78 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 78 insertions(+)
+I was coming from the other angle: exynos is already using soc_is_*() in too
+many places. I'd like to first see the ones cleaned up that really should be
+doing something else because they have a device-local ID to look at.
 
-diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
-index 9caa06b3641e..e08da17e1890 100644
---- a/arch/arm/boot/dts/sama5d3.dtsi
-+++ b/arch/arm/boot/dts/sama5d3.dtsi
-@@ -583,6 +583,84 @@
- 					};
- 				};
- 
-+				pwm0 {
-+					pinctrl_pwm0_pwmh0_0: pwm0_pwmh0-0 {
-+						atmel,pins =
-+							<AT91_PIOA 20 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* conflicts with ISI_D4 and LCDDAT20 */
-+					};
-+					pinctrl_pwm0_pwmh0_1: pwm0_pwmh0-1 {
-+						atmel,pins =
-+							<AT91_PIOB 0 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* conflicts with GTX0 */
-+					};
-+					pinctrl_pwm0_pwml0_0: pwm0_pwml0-0 {
-+						atmel,pins =
-+							<AT91_PIOA 21 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* conflicts with ISI_D5 and LCDDAT21 */
-+					};
-+					pinctrl_pwm0_pwml0_1: pwm0_pwml0-1 {
-+						atmel,pins =
-+							<AT91_PIOB 1 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* conflicts with GTX1 */
-+					};
-+
-+					pinctrl_pwm0_pwmh1_0: pwm0_pwmh1-0 {
-+						atmel,pins =
-+							<AT91_PIOA 22 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* conflicts with ISI_D6 and LCDDAT22 */
-+					};
-+					pinctrl_pwm0_pwmh1_1: pwm0_pwmh1-1 {
-+						atmel,pins =
-+							<AT91_PIOB 4 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* conflicts with GRX0 */
-+					};
-+					pinctrl_pwm0_pwmh1_2: pwm0_pwmh1-2 {
-+						atmel,pins =
-+							<AT91_PIOB 27 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* conflicts with G125CKO and RTS1 */
-+					};
-+					pinctrl_pwm0_pwml1_0: pwm0_pwml1-0 {
-+						atmel,pins =
-+							<AT91_PIOA 23 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* conflicts with ISI_D7 and LCDDAT23 */
-+					};
-+					pinctrl_pwm0_pwml1_1: pwm0_pwml1-1 {
-+						atmel,pins =
-+							<AT91_PIOB 5 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* conflicts with GRX1 */
-+					};
-+					pinctrl_pwm0_pwml1_2: pwm0_pwml1-2 {
-+						atmel,pins =
-+							<AT91_PIOE 31 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* conflicts with IRQ */
-+					};
-+
-+					pinctrl_pwm0_pwmh2_0: pwm0_pwmh2-0 {
-+						atmel,pins =
-+							<AT91_PIOB 8 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* conflicts with GTXCK */
-+					};
-+					pinctrl_pwm0_pwmh2_1: pwm0_pwmh2-1 {
-+						atmel,pins =
-+							<AT91_PIOD 5 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* conflicts with MCI0_DA4 and TIOA0 */
-+					};
-+					pinctrl_pwm0_pwml2_0: pwm0_pwml2-0 {
-+						atmel,pins =
-+							<AT91_PIOB 9 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* conflicts with GTXEN */
-+					};
-+					pinctrl_pwm0_pwml2_1: pwm0_pwml2-1 {
-+						atmel,pins =
-+							<AT91_PIOD 6 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* conflicts with MCI0_DA5 and TIOB0 */
-+					};
-+
-+					pinctrl_pwm0_pwmh3_0: pwm0_pwmh3-0 {
-+						atmel,pins =
-+							<AT91_PIOB 12 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* conflicts with GRXDV */
-+					};
-+					pinctrl_pwm0_pwmh3_1: pwm0_pwmh3-1 {
-+						atmel,pins =
-+							<AT91_PIOD 7 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* conflicts with MCI0_DA6 and TCLK0 */
-+					};
-+					pinctrl_pwm0_pwml3_0: pwm0_pwml3-0 {
-+						atmel,pins =
-+							<AT91_PIOB 13 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* conflicts with GRXER */
-+					};
-+					pinctrl_pwm0_pwml3_1: pwm0_pwml3-1 {
-+						atmel,pins =
-+							<AT91_PIOD 8 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* conflicts with MCI0_DA7 */
-+					};
-+				};
-+
- 				spi0 {
- 					pinctrl_spi0: spi0-0 {
- 						atmel,pins =
--- 
-1.8.2.2
+If we end up with a couple of instances that don't have a good alternative,
+we can use of_machine_is_compatible() for those, but I'd like to avoid doing
+a blind conversion because that would likely lead to more instances in the
+future, not fewer.
 
+I agree that we should have to introduce new chip ID drivers on other
+platforms for the purpose of finding out the SoC version, especially not
+with private APIs.
+
+	Arnd
