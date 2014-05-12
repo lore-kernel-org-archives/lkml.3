@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784AbaELB7g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:59:36 -0400
-Received: from 1wt.eu ([62.212.114.60]:34640 "EHLO 1wt.eu"
+	id S1756098AbaELB7x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:59:53 -0400
+Received: from 1wt.eu ([62.212.114.60]:34636 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753482AbaELBmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:42:51 -0400
-Message-Id: <20140512003202.045601156@1wt.eu>
+	id S1753428AbaELBmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:42:49 -0400
+Message-Id: <20140512003201.094335349@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:32:34 +0200
+Date: Mon, 12 May 2014 02:32:11 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 034/143] connector: use nlmsg_len() to check message length
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 011/143] drivers/cdrom/cdrom.c: use kzalloc() for failing hardware
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,49 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Jonathan Salwan <jonathan.salwan@gmail.com>
 
-[ Upstream commit 162b2bedc084d2d908a04c93383ba02348b648b0 ]
+commit 542db01579fbb7ea7d1f7bb9ddcef1559df660b2 upstream
 
-The current code tests the length of the whole netlink message to be
-at least as long to fit a cn_msg. This is wrong as nlmsg_len includes
-the length of the netlink message header. Use nlmsg_len() instead to
-fix this "off-by-NLMSG_HDRLEN" size check.
+In drivers/cdrom/cdrom.c mmc_ioctl_cdrom_read_data() allocates a memory
+area with kmalloc in line 2885.
 
-Cc: stable@vger.kernel.org  
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+  2885         cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
+  2886         if (cgc->buffer == NULL)
+  2887                 return -ENOMEM;
+
+In line 2908 we can find the copy_to_user function:
+
+  2908         if (!ret && copy_to_user(arg, cgc->buffer, blocksize))
+
+The cgc->buffer is never cleaned and initialized before this function.
+If ret = 0 with the previous basic block, it's possible to display some
+memory bytes in kernel space from userspace.
+
+When we read a block from the disk it normally fills the ->buffer but if
+the drive is malfunctioning there is a chance that it would only be
+partially filled.  The result is an leak information to userspace.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/connector/connector.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/cdrom/cdrom.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/connector/connector.c b/drivers/connector/connector.c
-index 537c29a..980412b 100644
---- a/drivers/connector/connector.c
-+++ b/drivers/connector/connector.c
-@@ -177,17 +177,18 @@ static int cn_call_callback(struct sk_buff *skb)
- static void cn_rx_skb(struct sk_buff *__skb)
- {
- 	struct nlmsghdr *nlh;
--	int err;
- 	struct sk_buff *skb;
-+	int len, err;
+diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
+index a4592ec..71a78dc 100644
+--- a/drivers/cdrom/cdrom.c
++++ b/drivers/cdrom/cdrom.c
+@@ -2822,7 +2822,7 @@ static noinline int mmc_ioctl_cdrom_read_data(struct cdrom_device_info *cdi,
+ 	if (lba < 0)
+ 		return -EINVAL;
  
- 	skb = skb_get(__skb);
+-	cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
++	cgc->buffer = kzalloc(blocksize, GFP_KERNEL);
+ 	if (cgc->buffer == NULL)
+ 		return -ENOMEM;
  
- 	if (skb->len >= NLMSG_SPACE(0)) {
- 		nlh = nlmsg_hdr(skb);
-+		len = nlmsg_len(nlh);
- 
--		if (nlh->nlmsg_len < sizeof(struct cn_msg) ||
-+		if (len < (int)sizeof(struct cn_msg) ||
- 		    skb->len < nlh->nlmsg_len ||
--		    nlh->nlmsg_len > CONNECTOR_MAX_MSG_SIZE) {
-+		    len > CONNECTOR_MAX_MSG_SIZE) {
- 			kfree_skb(skb);
- 			return;
- 		}
 -- 
 1.7.12.2.21.g234cd45.dirty
 
