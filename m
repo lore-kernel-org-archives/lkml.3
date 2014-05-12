@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758696AbaELOir (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 10:38:47 -0400
-Received: from s3.sipsolutions.net ([5.9.151.49]:34492 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758165AbaELOiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 10:38:46 -0400
-Message-ID: <1399905481.4337.16.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH] compiler.h: don't use temporary variable in
- __compiletime_assert()
-From: Johannes Berg <johannes@sipsolutions.net>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-metag <linux-metag@vger.kernel.org>
-Date: Mon, 12 May 2014 16:38:01 +0200
-In-Reply-To: <5370CFAC.40705@imgtec.com>
-References: <1399530685-7749-1-git-send-email-johannes@sipsolutions.net>
-	 <5370CFAC.40705@imgtec.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.1-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1758708AbaELOjm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 10:39:42 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:58599 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753557AbaELOjj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 10:39:39 -0400
+X-Google-Original-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Message-ID: <5370DD27.5030701@intel.com>
+Date: Mon, 12 May 2014 07:39:35 -0700
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Stratos Karafotis <stratosk@semaphore.gr>, dirk.brandewie@gmail.com
+CC: dirk.j.brandewie@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 4/5] intel_pstate: Remove C0 tracking
+References: <1399579047-5792-1-git-send-email-dirk.j.brandewie@intel.com> <CADmjqpOnzRrB8gJsmHWG=4bvhERLovnKyP0Pcki_uVJ3qpfD0g@mail.gmail.com> <5370318D.2010309@semaphore.gr> <5349714.j69a5Fx52S@vostro.rjw.lan>
+In-Reply-To: <5349714.j69a5Fx52S@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 05/12/2014 05:16 AM, Rafael J. Wysocki wrote:
+> On Monday, May 12, 2014 05:27:25 AM Stratos Karafotis wrote:
+>> Hi,
+>>
+>
+> [cut]
+>
+>>
+>> With this patch, my CPU (Core i7-3770 @ 3.90GHz) seems to never use lowest
+>> frequencies. Even on an idle system I get always ~2GHz. Normally,
+>> on an idle system it used to be 1.6GHz.
+>> On very small loads (mp3 decoding) the CPU goes up to 2.7G GHz (it used to
+>> be 1.6GHz)
+>>
+>> Reverting, this patch on my local build, the problem is resolved.
+>
+> Dirk, seriously, I can't regard this as a fix that can go into -rc6.
+>
 
-> Unfortunately this breaks the build of today's linux-next for the Meta
-> architecture (arch/metag), which happens to use a fairly old compiler
-> (based on gcc 4.2.4) which I presume is the reason why.
+Ok I will resubmit after more testing
 
-That's very odd.
+> Which of the other patch in the series are must-go for 3.15?  [1-2/5] I guess?
+> And do we need [2/5] it in -stable too?
 
-Unfortunately, I don't have most of arch/metag, it seems, where could I
-get it? In particular no gup.c exists for metag in Linus's current tree.
+1/5  is for stable it fixes a random MCE on baytrail.
+2/5  is for stable it should have went with the stop_cpu patch
+5/5  can go too since it is just adding CPU IDs
 
-> A bunch of compile time asserts fail, even in code which should be
-> optimised out. E.g. here's one which I analysed:
-> 
-> mm/gup.c: In function ‘follow_page_mask’:
-> mm/gup.c:208: error: size of array ‘type name’ is negative
-> 
-> Line 208 uses HPAGE_PMD_NR which expands to a HPAGE_PMD_SHIFT, which
-> expands to a BUILD_BUG(). However that line is inside an if block
-> conditioned on pmd_trans_huge(*pmd) which include/asm-generic/pgtable.h
-> defines inline to return 0, so the whole block should already be being
-> optimised out.
-> 
-> I don't understand why your patch should break things, I suspect it's
-> related to the sparse behaviour you're trying to work around, but can we
-> please drop this patch until a more portable workaround can be found?
-> I'm happy to test further patches with metag if it helps.
-
-I don't really understand that either - if the compiler could prove that
-the assignment to __cond was a constant, and remember that __cond is now
-constant, I don't really see why it can't follow that through and
-consider "!(condition)" a const??
-
-I suppose the other option for the original problem is to ignore
-_compiletime_assert() for sparse, like we do for BUG_ON(), but it'd
-probably be good to analyse more why this particular code is broken now.
-
-johannes
+>
+>
 
