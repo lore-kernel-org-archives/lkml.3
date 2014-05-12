@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158AbaELBsq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:48:46 -0400
-Received: from 1wt.eu ([62.212.114.60]:34784 "EHLO 1wt.eu"
+	id S1755256AbaELBtF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:49:05 -0400
+Received: from 1wt.eu ([62.212.114.60]:34782 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754563AbaELBoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:44:15 -0400
-Message-Id: <20140512003205.000845486@1wt.eu>
+	id S1751326AbaELBoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:44:12 -0400
+Message-Id: <20140512003205.785772389@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:33:45 +0200
+Date: Mon, 12 May 2014 02:34:03 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Daniel Borkmann <dborkman@redhat.com>, Vlad Yasevich <yasevich@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 105/143] net: sctp: fix sctp_sf_do_5_1D_ce to verify if we/peer is AUTH
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 123/143] powernow-k6: correctly initialize default parameters
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,142 +23,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- capable
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-[ Upstream commit ec0223ec48a90cb605244b45f7c62de856403729 ]
+commit d82b922a4acc1781d368aceac2f9da43b038cab2 upstream
 
-RFC4895 introduced AUTH chunks for SCTP; during the SCTP
-handshake RANDOM; CHUNKS; HMAC-ALGO are negotiated (CHUNKS
-being optional though):
+The powernow-k6 driver used to read the initial multiplier from the
+powernow register. However, there is a problem with this:
 
-  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
-  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
-  -------------------- COOKIE-ECHO -------------------->
-  <-------------------- COOKIE-ACK ---------------------
+* If there was a frequency transition before, the multiplier read from the
+  register corresponds to the current multiplier.
+* If there was no frequency transition since reset, the field in the
+  register always reads as zero, regardless of the current multiplier that
+  is set using switches on the mainboard and that the CPU is running at.
 
-A special case is when an endpoint requires COOKIE-ECHO
-chunks to be authenticated:
+The zero value corresponds to multiplier 4.5, so as a consequence, the
+powernow-k6 driver always assumes multiplier 4.5.
 
-  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
-  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
-  ------------------ AUTH; COOKIE-ECHO ---------------->
-  <-------------------- COOKIE-ACK ---------------------
+For example, if we have 550MHz CPU with bus frequency 100MHz and
+multiplier 5.5, the powernow-k6 driver thinks that the multiplier is 4.5
+and bus frequency is 122MHz. The powernow-k6 driver then sets the
+multiplier to 4.5, underclocking the CPU to 450MHz, but reports the
+current frequency as 550MHz.
 
-RFC4895, section 6.3. Receiving Authenticated Chunks says:
+There is no reliable way how to read the initial multiplier. I modified
+the driver so that it contains a table of known frequencies (based on
+parameters of existing CPUs and some common overclocking schemes) and sets
+the multiplier according to the frequency. If the frequency is unknown
+(because of unusual overclocking or underclocking), the user must supply
+the bus speed and maximum multiplier as module parameters.
 
-  The receiver MUST use the HMAC algorithm indicated in
-  the HMAC Identifier field. If this algorithm was not
-  specified by the receiver in the HMAC-ALGO parameter in
-  the INIT or INIT-ACK chunk during association setup, the
-  AUTH chunk and all the chunks after it MUST be discarded
-  and an ERROR chunk SHOULD be sent with the error cause
-  defined in Section 4.1. [...] If no endpoint pair shared
-  key has been configured for that Shared Key Identifier,
-  all authenticated chunks MUST be silently discarded. [...]
+This patch should be backported to all stable kernels. If it doesn't
+apply cleanly, change it, or ask me to change it.
 
-  When an endpoint requires COOKIE-ECHO chunks to be
-  authenticated, some special procedures have to be followed
-  because the reception of a COOKIE-ECHO chunk might result
-  in the creation of an SCTP association. If a packet arrives
-  containing an AUTH chunk as a first chunk, a COOKIE-ECHO
-  chunk as the second chunk, and possibly more chunks after
-  them, and the receiver does not have an STCB for that
-  packet, then authentication is based on the contents of
-  the COOKIE-ECHO chunk. In this situation, the receiver MUST
-  authenticate the chunks in the packet by using the RANDOM
-  parameters, CHUNKS parameters and HMAC_ALGO parameters
-  obtained from the COOKIE-ECHO chunk, and possibly a local
-  shared secret as inputs to the authentication procedure
-  specified in Section 6.3. If authentication fails, then
-  the packet is discarded. If the authentication is successful,
-  the COOKIE-ECHO and all the chunks after the COOKIE-ECHO
-  MUST be processed. If the receiver has an STCB, it MUST
-  process the AUTH chunk as described above using the STCB
-  from the existing association to authenticate the
-  COOKIE-ECHO chunk and all the chunks after it. [...]
-
-Commit bbd0d59809f9 introduced the possibility to receive
-and verification of AUTH chunk, including the edge case for
-authenticated COOKIE-ECHO. On reception of COOKIE-ECHO,
-the function sctp_sf_do_5_1D_ce() handles processing,
-unpacks and creates a new association if it passed sanity
-checks and also tests for authentication chunks being
-present. After a new association has been processed, it
-invokes sctp_process_init() on the new association and
-walks through the parameter list it received from the INIT
-chunk. It checks SCTP_PARAM_RANDOM, SCTP_PARAM_HMAC_ALGO
-and SCTP_PARAM_CHUNKS, and copies them into asoc->peer
-meta data (peer_random, peer_hmacs, peer_chunks) in case
-sysctl -w net.sctp.auth_enable=1 is set. If in INIT's
-SCTP_PARAM_SUPPORTED_EXT parameter SCTP_CID_AUTH is set,
-peer_random != NULL and peer_hmacs != NULL the peer is to be
-assumed asoc->peer.auth_capable=1, in any other case
-asoc->peer.auth_capable=0.
-
-Now, if in sctp_sf_do_5_1D_ce() chunk->auth_chunk is
-available, we set up a fake auth chunk and pass that on to
-sctp_sf_authenticate(), which at latest in
-sctp_auth_calculate_hmac() reliably dereferences a NULL pointer
-at position 0..0008 when setting up the crypto key in
-crypto_hash_setkey() by using asoc->asoc_shared_key that is
-NULL as condition key_id == asoc->active_key_id is true if
-the AUTH chunk was injected correctly from remote. This
-happens no matter what net.sctp.auth_enable sysctl says.
-
-The fix is to check for net->sctp.auth_enable and for
-asoc->peer.auth_capable before doing any operations like
-sctp_sf_authenticate() as no key is activated in
-sctp_auth_asoc_init_active_key() for each case.
-
-Now as RFC4895 section 6.3 states that if the used HMAC-ALGO
-passed from the INIT chunk was not used in the AUTH chunk, we
-SHOULD send an error; however in this case it would be better
-to just silently discard such a maliciously prepared handshake
-as we didn't even receive a parameter at all. Also, as our
-endpoint has no shared key configured, section 6.3 says that
-MUST silently discard, which we are doing from now onwards.
-
-Before calling sctp_sf_pdiscard(), we need not only to free
-the association, but also the chunk->auth_chunk skb, as
-commit bbd0d59809f9 created a skb clone in that case.
-
-I have tested this locally by using netfilter's nfqueue and
-re-injecting packets into the local stack after maliciously
-modifying the INIT chunk (removing RANDOM; HMAC-ALGO param)
-and the SCTP packet containing the COOKIE_ECHO (injecting
-AUTH chunk before COOKIE_ECHO). Fixed with this patch applied.
-
-Fixes: bbd0d59809f9 ("[SCTP]: Implement the receive and verification of AUTH chunk")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Vlad Yasevich <yasevich@gmail.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/sctp/sm_statefuns.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/x86/kernel/cpu/cpufreq/powernow-k6.c | 76 +++++++++++++++++++++++++++++--
+ 1 file changed, 72 insertions(+), 4 deletions(-)
 
-diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-index 486df56..d43002b 100644
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -745,6 +745,13 @@ sctp_disposition_t sctp_sf_do_5_1D_ce(const struct sctp_endpoint *ep,
- 		struct sctp_chunk auth;
- 		sctp_ierror_t ret;
+diff --git a/arch/x86/kernel/cpu/cpufreq/powernow-k6.c b/arch/x86/kernel/cpu/cpufreq/powernow-k6.c
+index 9f80a34..2d9161e 100644
+--- a/arch/x86/kernel/cpu/cpufreq/powernow-k6.c
++++ b/arch/x86/kernel/cpu/cpufreq/powernow-k6.c
+@@ -26,6 +26,14 @@
+ static unsigned int                     busfreq;   /* FSB, in 10 kHz */
+ static unsigned int                     max_multiplier;
  
-+		/* Make sure that we and the peer are AUTH capable */
-+		if (!sctp_auth_enable || !new_asoc->peer.auth_capable) {
-+			kfree_skb(chunk->auth_chunk);
-+			sctp_association_free(new_asoc);
-+			return sctp_sf_pdiscard(ep, asoc, type, arg, commands);
-+		}
++static unsigned int			param_busfreq = 0;
++static unsigned int			param_max_multiplier = 0;
 +
- 		/* set-up our fake chunk so that we can process it */
- 		auth.skb = chunk->auth_chunk;
- 		auth.asoc = chunk->asoc;
++module_param_named(max_multiplier, param_max_multiplier, uint, S_IRUGO);
++MODULE_PARM_DESC(max_multiplier, "Maximum multiplier (allowed values: 20 30 35 40 45 50 55 60)");
++
++module_param_named(bus_frequency, param_busfreq, uint, S_IRUGO);
++MODULE_PARM_DESC(bus_frequency, "Bus frequency in kHz");
+ 
+ /* Clock ratio multiplied by 10 - see table 27 in AMD#23446 */
+ static struct cpufreq_frequency_table clock_ratio[] = {
+@@ -40,6 +48,27 @@ static struct cpufreq_frequency_table clock_ratio[] = {
+ 	{0, CPUFREQ_TABLE_END}
+ };
+ 
++static const struct {
++	unsigned freq;
++	unsigned mult;
++} usual_frequency_table[] = {
++	{ 400000, 40 },	// 100   * 4
++	{ 450000, 45 }, // 100   * 4.5
++	{ 475000, 50 }, //  95   * 5
++	{ 500000, 50 }, // 100   * 5
++	{ 506250, 45 }, // 112.5 * 4.5
++	{ 533500, 55 }, //  97   * 5.5
++	{ 550000, 55 }, // 100   * 5.5
++	{ 562500, 50 }, // 112.5 * 5
++	{ 570000, 60 }, //  95   * 6
++	{ 600000, 60 }, // 100   * 6
++	{ 618750, 55 }, // 112.5 * 5.5
++	{ 660000, 55 }, // 120   * 5.5
++	{ 675000, 60 }, // 112.5 * 6
++	{ 720000, 60 }, // 120   * 6
++};
++
++#define FREQ_RANGE		3000
+ 
+ /**
+  * powernow_k6_get_cpu_multiplier - returns the current FSB multiplier
+@@ -163,18 +192,57 @@ static int powernow_k6_target(struct cpufreq_policy *policy,
+ 	return 0;
+ }
+ 
+-
+ static int powernow_k6_cpu_init(struct cpufreq_policy *policy)
+ {
+ 	unsigned int i, f;
+ 	int result;
++	unsigned khz;
+ 
+ 	if (policy->cpu != 0)
+ 		return -ENODEV;
+ 
+-	/* get frequencies */
+-	max_multiplier = powernow_k6_get_cpu_multiplier();
+-	busfreq = cpu_khz / max_multiplier;
++	max_multiplier = 0;
++	khz = cpu_khz;
++	for (i = 0; i < ARRAY_SIZE(usual_frequency_table); i++) {
++		if (khz >= usual_frequency_table[i].freq - FREQ_RANGE &&
++		    khz <= usual_frequency_table[i].freq + FREQ_RANGE) {
++			khz = usual_frequency_table[i].freq;
++			max_multiplier = usual_frequency_table[i].mult;
++			break;
++		}
++	}
++	if (param_max_multiplier) {
++		for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
++			if (clock_ratio[i].index == param_max_multiplier) {
++				max_multiplier = param_max_multiplier;
++				goto have_max_multiplier;
++			}
++		}
++		printk(KERN_ERR "powernow-k6: invalid max_multiplier parameter, valid parameters 20, 30, 35, 40, 45, 50, 55, 60\n");
++		return -EINVAL;
++	}
++
++	if (!max_multiplier) {
++		printk(KERN_WARNING "powernow-k6: unknown frequency %u, cannot determine current multiplier\n", khz);
++		printk(KERN_WARNING "powernow-k6: use module parameters max_multiplier and bus_frequency\n");
++		return -EOPNOTSUPP;
++	}
++
++have_max_multiplier:
++	param_max_multiplier = max_multiplier;
++
++	if (param_busfreq) {
++		if (param_busfreq >= 50000 && param_busfreq <= 150000) {
++			busfreq = param_busfreq / 10;
++			goto have_busfreq;
++		}
++		printk(KERN_ERR "powernow-k6: invalid bus_frequency parameter, allowed range 50000 - 150000 kHz\n");
++		return -EINVAL;
++	}
++
++	busfreq = khz / max_multiplier;
++have_busfreq:
++	param_busfreq = busfreq * 10;
+ 
+ 	/* table init */
+ 	for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
 -- 
 1.7.12.2.21.g234cd45.dirty
 
