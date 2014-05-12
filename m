@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932501AbaELBpZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:45:25 -0400
-Received: from 1wt.eu ([62.212.114.60]:34826 "EHLO 1wt.eu"
+	id S932428AbaELBpM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:45:12 -0400
+Received: from 1wt.eu ([62.212.114.60]:34821 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932299AbaELBpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:45:19 -0400
-Message-Id: <20140512003205.607397016@1wt.eu>
+	id S932299AbaELBpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:45:03 -0400
+Message-Id: <20140512003203.751949514@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:33:59 +0200
+Date: Mon, 12 May 2014 02:33:15 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Willy Tarreau <w@1wt.eu>
-Subject: [ 119/143] x86, fpu, amd: Clear exceptions in AMD FXSAVE workaround
+Cc: Stephen Hemminger <stephen@networkplumber.org>,
+        Florian Weimer <fweimer@redhat.com>, Theodore Tso <tytso@mit.edu>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 075/143] random32: fix off-by-one in seeding requirement
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,50 +26,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-Before we do an EMMS in the AMD FXSAVE information leak workaround we
-need to clear any pending exceptions, otherwise we trap with a
-floating-point exception inside this code.
+[ Upstream commit 51c37a70aaa3f95773af560e6db3073520513912 ]
 
-Reported-by: halfdog <me@halfdog.net>
-Tested-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/CA%2B55aFxQnY_PCG_n4=0w-VG=YLXL-yr7oMxyy0WU2gCBAf3ydg@mail.gmail.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-(cherry picked from commit 26bef1318adc1b3a530ecc807ef99346db2aa8b0)
-[wt: in 2.6.32, patch applies to arch/x86/include/asm/i387.h. There's
- no static_cpu_has() so we use boot_cpu_has() like other kernels do
- with gcc3.
-]
+For properly initialising the Tausworthe generator [1], we have
+a strict seeding requirement, that is, s1 > 1, s2 > 7, s3 > 15.
+
+Commit 697f8d0348 ("random32: seeding improvement") introduced
+a __seed() function that imposes boundary checks proposed by the
+errata paper [2] to properly ensure above conditions.
+
+However, we're off by one, as the function is implemented as:
+"return (x < m) ? x + m : x;", and called with __seed(X, 1),
+__seed(X, 7), __seed(X, 15). Thus, an unwanted seed of 1, 7, 15
+would be possible, whereas the lower boundary should actually
+be of at least 2, 8, 16, just as GSL does. Fix this, as otherwise
+an initialization with an unwanted seed could have the effect
+that Tausworthe's PRNG properties cannot not be ensured.
+
+Note that this PRNG is *not* used for cryptography in the kernel.
+
+ [1] http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps
+ [2] http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme2.ps
+
+Joint work with Hannes Frederic Sowa.
+
+Fixes: 697f8d0348a6 ("random32: seeding improvement")
+Cc: Stephen Hemminger <stephen@networkplumber.org>
+Cc: Florian Weimer <fweimer@redhat.com>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/include/asm/i387.h | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ lib/random32.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index 0b20bbb..cb42fad 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -242,12 +242,13 @@ clear_state:
- 	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
- 	   is pending.  Clear the x87 state here by setting it to fixed
- 	   values. safe_address is a random variable that should be in L1 */
--	alternative_input(
--		GENERIC_NOP8 GENERIC_NOP2,
--		"emms\n\t"	  	/* clear stack tags */
--		"fildl %[addr]", 	/* set F?P to defined value */
--		X86_FEATURE_FXSAVE_LEAK,
--		[addr] "m" (safe_address));
-+	if (unlikely(boot_cpu_has(X86_FEATURE_FXSAVE_LEAK))) {
-+		asm volatile(
-+			"fnclex\n\t"
-+			"emms\n\t"
-+			"fildl %[addr]"        /* set F?P to defined value */
-+			: : [addr] "m" (safe_address));
-+	}
- end:
- 	task_thread_info(tsk)->status &= ~TS_USEDFPU;
+diff --git a/lib/random32.c b/lib/random32.c
+index 217d5c4..b9275d2 100644
+--- a/lib/random32.c
++++ b/lib/random32.c
+@@ -96,7 +96,7 @@ void srandom32(u32 entropy)
+ 	 */
+ 	for_each_possible_cpu (i) {
+ 		struct rnd_state *state = &per_cpu(net_rand_state, i);
+-		state->s1 = __seed(state->s1 ^ entropy, 1);
++		state->s1 = __seed(state->s1 ^ entropy, 2);
+ 	}
  }
+ EXPORT_SYMBOL(srandom32);
+@@ -113,9 +113,9 @@ static int __init random32_init(void)
+ 		struct rnd_state *state = &per_cpu(net_rand_state,i);
+ 
+ #define LCG(x)	((x) * 69069)	/* super-duper LCG */
+-		state->s1 = __seed(LCG(i + jiffies), 1);
+-		state->s2 = __seed(LCG(state->s1), 7);
+-		state->s3 = __seed(LCG(state->s2), 15);
++		state->s1 = __seed(LCG(i + jiffies), 2);
++		state->s2 = __seed(LCG(state->s1), 8);
++		state->s3 = __seed(LCG(state->s2), 16);
+ 
+ 		/* "warm it up" */
+ 		__random32(state);
+@@ -142,9 +142,9 @@ static int __init random32_reseed(void)
+ 		u32 seeds[3];
+ 
+ 		get_random_bytes(&seeds, sizeof(seeds));
+-		state->s1 = __seed(seeds[0], 1);
+-		state->s2 = __seed(seeds[1], 7);
+-		state->s3 = __seed(seeds[2], 15);
++		state->s1 = __seed(seeds[0], 2);
++		state->s2 = __seed(seeds[1], 8);
++		state->s3 = __seed(seeds[2], 16);
+ 
+ 		/* mix it in */
+ 		__random32(state);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
