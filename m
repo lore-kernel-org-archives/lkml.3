@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060AbaELPfi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 11:35:38 -0400
-Received: from junin.gov.ar ([201.234.19.13]:52720 "EHLO mail.junin.gob.ar"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751692AbaELPfe convert rfc822-to-8bit (ORCPT
+	id S1752274AbaELPi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 11:38:59 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:64313 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297AbaELPi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 11:35:34 -0400
-X-Greylist: delayed 531 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 May 2014 11:35:33 EDT
-Date: Mon, 12 May 2014 12:22:58 -0300 (ART)
-From: United Nations <maj@junin.gob.ar>
-Reply-To: United Nations <unitednationsgrants@admin.in.th>
-Message-ID: <132381478.422760.1399908178095.JavaMail.zimbra@junin.gob.ar>
-Subject: =?utf-8?Q?Felicit=C4=83ri?=
+	Mon, 12 May 2014 11:38:57 -0400
+Date: Mon, 12 May 2014 08:38:48 -0700
+From: Larry Bassel <larry.bassel@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Larry Bassel <larry.bassel@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "khilman@linaro.org" <khilman@linaro.org>
+Subject: Re: [PATCH v2] arm64: Support arch_irq_work_raise() via self IPIs
+Message-ID: <20140512153848.GA13068@linaro6>
+References: <1399760621-10954-1-git-send-email-larry.bassel@linaro.org>
+ <20140512092956.GB914@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [172.20.0.182]
-X-Mailer: Zimbra 8.0.4_GA_5737 (ZimbraWebClient - GC34 (Win)/8.0.4_GA_5737)
-Thread-Topic: =?utf-8?Q?Felicit=C4=83ri?=
-Thread-Index: BjdnLdZgoV0LD7iI7W+B8st1o+C/dw==
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140512092956.GB914@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12 May 14 10:29, Will Deacon wrote:
+> On Sat, May 10, 2014 at 11:23:41PM +0100, Larry Bassel wrote:
+> > Support for arch_irq_work_raise() was missing from
+> > arm64 (a prerequisite for FULL_NOHZ).
+> 
+> [...]
+> 
+> > @@ -455,6 +457,14 @@ void arch_send_call_function_single_ipi(int cpu)
+> >  	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+> >  }
+> >  
+> > +#ifdef CONFIG_IRQ_WORK
+> > +void arch_irq_work_raise(void)
+> > +{
+> > +	if (is_smp())
+> > +		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
+> > +}
+> > +#endif
+> 
+> Does this even compile? We're probably better off just checking whether or
+> not smp_cross_call is NULL.
 
+No it doesn't (I incorrectly assumed that is_smp() was generic, not
+arm32 specific and so I didn't compile this before submitting).
 
-Felicitări 
+I've verified that your suggestion compiles and runs properly
+and will resubmit.
 
-Sunteți unul dintre beneficiarii de pe ordinea de zi a Națiunilor Unite 2014/2015 Grant Award. Informațiile dvs. au fost verificate și suma de șase milioane de euro (6.000.000,00) a fost acordat pentru a vă în programul de granturi al Națiunilor Unite ca Date tale au fost listate pe lista câștigătoare. 
+Thanks for catching this.
 
-Această sumă urmează a fi utilizate de dumneavoastră pentru orice scop, de care vor beneficia foloseste comunitatea ta. 
+> 
+> Will
 
-Informațiile de care avem nevoie pentru verificare sunt: 
-
-Numele complet: 
-adresa: 
-Următor de Kin: 
-
-Va oferi, de asemenea, un cont bancar care premiile de finanțare ar trebui să fie depus în. Veți avea nevoie, de asemenea, să plătească doar o taxă administrativă de 721 de euro (șapte sute douăzeci și unu de euro). 
-
-Ajunge înapoi la noi cât mai curând posibil, astfel încât să puteți trimite certificatul câștigătoare. 
-
-Biroul Organizației Națiunilor Unite. 
-2014/2015
-
+Larry
