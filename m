@@ -1,59 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758708AbaELOjm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 10:39:42 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:58599 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753557AbaELOjj (ORCPT
+	id S1758738AbaELOl0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 10:41:26 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58364 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758554AbaELOlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 10:39:39 -0400
-X-Google-Original-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Message-ID: <5370DD27.5030701@intel.com>
-Date: Mon, 12 May 2014 07:39:35 -0700
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Stratos Karafotis <stratosk@semaphore.gr>, dirk.brandewie@gmail.com
-CC: dirk.j.brandewie@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 4/5] intel_pstate: Remove C0 tracking
-References: <1399579047-5792-1-git-send-email-dirk.j.brandewie@intel.com> <CADmjqpOnzRrB8gJsmHWG=4bvhERLovnKyP0Pcki_uVJ3qpfD0g@mail.gmail.com> <5370318D.2010309@semaphore.gr> <5349714.j69a5Fx52S@vostro.rjw.lan>
-In-Reply-To: <5349714.j69a5Fx52S@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Mon, 12 May 2014 10:41:25 -0400
+Date: Mon, 12 May 2014 10:41:23 -0400 (EDT)
+Message-Id: <20140512.104123.348250032130742338.davem@davemloft.net>
+To: xufeng.zhang@windriver.com
+Cc: steffen.klassert@secunet.com, herbert@gondor.apana.org.au,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] af_key: return error when meet errors on
+ sendmsg() syscall
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <53706495.1050303@windriver.com>
+References: <1399614455-10551-1-git-send-email-xufeng.zhang@windriver.com>
+	<20140512.011141.74073195599318391.davem@davemloft.net>
+	<53706495.1050303@windriver.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 12 May 2014 07:41:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2014 05:16 AM, Rafael J. Wysocki wrote:
-> On Monday, May 12, 2014 05:27:25 AM Stratos Karafotis wrote:
->> Hi,
->>
->
-> [cut]
->
->>
->> With this patch, my CPU (Core i7-3770 @ 3.90GHz) seems to never use lowest
->> frequencies. Even on an idle system I get always ~2GHz. Normally,
->> on an idle system it used to be 1.6GHz.
->> On very small loads (mp3 decoding) the CPU goes up to 2.7G GHz (it used to
->> be 1.6GHz)
->>
->> Reverting, this patch on my local build, the problem is resolved.
->
-> Dirk, seriously, I can't regard this as a fix that can go into -rc6.
->
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
+Date: Mon, 12 May 2014 14:05:09 +0800
 
-Ok I will resubmit after more testing
+> I know what you mean, but isn't the kernel API aimed to facilitate the
+> implementation of user space?
 
-> Which of the other patch in the series are must-go for 3.15?  [1-2/5] I guess?
-> And do we need [2/5] it in -stable too?
-
-1/5  is for stable it fixes a random MCE on baytrail.
-2/5  is for stable it should have went with the stop_cpu patch
-5/5  can go too since it is just adding CPU IDs
-
->
->
-
+Yes, but as I stated the communication is message oriented and this
+includes the errors.
