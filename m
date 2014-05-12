@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932546AbaELCHH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 22:07:07 -0400
-Received: from 1wt.eu ([62.212.114.60]:34541 "EHLO 1wt.eu"
+	id S1753812AbaELCIW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 22:08:22 -0400
+Received: from 1wt.eu ([62.212.114.60]:34535 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752926AbaELBm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:42:26 -0400
-Message-Id: <20140512003206.181991224@1wt.eu>
+	id S1752895AbaELBmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:42:25 -0400
+Message-Id: <20140512003201.135463494@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:34:12 +0200
+Date: Mon, 12 May 2014 02:32:12 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Neil Horman <nhorman@tuxdriver.com>,
-        Stephan Mueller <stephan.mueller@atsec.com>,
-        Petr Matousek <pmatouse@redhat.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 132/143] crypto: ansi_cprng - Fix off by one error in non-block size request
+Cc: Max Matveev <makc@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 012/143] sctp: deal with multiple COOKIE_ECHO chunks
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,50 +23,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Max Matveev <makc@redhat.com>
 
-commit 714b33d15130cbb5ab426456d4e3de842d6c5b8a upstream
+commit d5ccd496601b8776a516d167a6485754575dc38f upstream
 
-Stephan Mueller reported to me recently a error in random number generation in
-the ansi cprng. If several small requests are made that are less than the
-instances block size, the remainder for loop code doesn't increment
-rand_data_valid in the last iteration, meaning that the last bytes in the
-rand_data buffer gets reused on the subsequent smaller-than-a-block request for
-random data.
+Attempt to reduce the number of IP packets emitted in response to single
+SCTP packet (2e3216cd) introduced a complication - if a packet contains
+two COOKIE_ECHO chunks and nothing else then SCTP state machine corks the
+socket while processing first COOKIE_ECHO and then loses the association
+and forgets to uncork the socket. To deal with the issue add new SCTP
+command which can be used to set association explictly. Use this new
+command when processing second COOKIE_ECHO chunk to restore the context
+for SCTP state machine.
 
-The fix is pretty easy, just re-code the for loop to make sure that
-rand_data_valid gets incremented appropriately
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Reported-by: Stephan Mueller <stephan.mueller@atsec.com>
-CC: Stephan Mueller <stephan.mueller@atsec.com>
-CC: Petr Matousek <pmatouse@redhat.com>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-CC: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Max Matveev <makc@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[dannf: backported to Debian's 2.6.32]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- crypto/ansi_cprng.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/net/sctp/command.h | 1 +
+ net/sctp/sm_sideeffect.c   | 5 +++++
+ net/sctp/sm_statefuns.c    | 6 ++++++
+ 3 files changed, 12 insertions(+)
 
-diff --git a/crypto/ansi_cprng.c b/crypto/ansi_cprng.c
-index 3aa6e38..0ffd5995 100644
---- a/crypto/ansi_cprng.c
-+++ b/crypto/ansi_cprng.c
-@@ -232,11 +232,11 @@ remainder:
- 	 */
- 	if (byte_count < DEFAULT_BLK_SZ) {
- empty_rbuf:
--		for (; ctx->rand_data_valid < DEFAULT_BLK_SZ;
--			ctx->rand_data_valid++) {
-+		while (ctx->rand_data_valid < DEFAULT_BLK_SZ) {
- 			*ptr = ctx->rand_data[ctx->rand_data_valid];
- 			ptr++;
- 			byte_count--;
-+			ctx->rand_data_valid++;
- 			if (byte_count == 0)
- 				goto done;
- 		}
+diff --git a/include/net/sctp/command.h b/include/net/sctp/command.h
+index 2c55a7e..0edc14d 100644
+--- a/include/net/sctp/command.h
++++ b/include/net/sctp/command.h
+@@ -108,6 +108,7 @@ typedef enum {
+ 	SCTP_CMD_UPDATE_INITTAG, /* Update peer inittag */
+ 	SCTP_CMD_SEND_MSG,	 /* Send the whole use message */
+ 	SCTP_CMD_SEND_NEXT_ASCONF, /* Send the next ASCONF after ACK */
++	SCTP_CMD_SET_ASOC,	 /* Restore association context */
+ 	SCTP_CMD_LAST
+ } sctp_verb_t;
+ 
+diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
+index ed742bf..9005d83 100644
+--- a/net/sctp/sm_sideeffect.c
++++ b/net/sctp/sm_sideeffect.c
+@@ -1676,6 +1676,11 @@ static int sctp_cmd_interpreter(sctp_event_t event_type,
+ 		case SCTP_CMD_SEND_NEXT_ASCONF:
+ 			sctp_cmd_send_asconf(asoc);
+ 			break;
++
++		case SCTP_CMD_SET_ASOC:
++			asoc = cmd->obj.asoc;
++			break;
++
+ 		default:
+ 			printk(KERN_WARNING "Impossible command: %u, %p\n",
+ 			       cmd->verb, cmd->obj.ptr);
+diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+index 2f8e1c8..9e4e846 100644
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -2048,6 +2048,12 @@ sctp_disposition_t sctp_sf_do_5_2_4_dupcook(const struct sctp_endpoint *ep,
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_ASOC, SCTP_ASOC(new_asoc));
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_DELETE_TCB, SCTP_NULL());
+ 
++	/* Restore association pointer to provide SCTP command interpeter
++	 * with a valid context in case it needs to manipulate
++	 * the queues */
++	sctp_add_cmd_sf(commands, SCTP_CMD_SET_ASOC,
++			 SCTP_ASOC((struct sctp_association *)asoc));
++
+ 	return retval;
+ 
+ nomem:
 -- 
 1.7.12.2.21.g234cd45.dirty
 
