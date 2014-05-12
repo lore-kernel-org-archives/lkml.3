@@ -1,111 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759299AbaELRlM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 13:41:12 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:42187 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755366AbaELRlJ (ORCPT
+	id S932497AbaELRlj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 13:41:39 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:57303 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291AbaELRlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 13:41:09 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: An8KADcHcVNbsHLF/2dsb2JhbABZgwasagkBBQGaG4EaF3SCUxMcIxiBAiQTiEUBz0WFVoh8hEcBA48liiIBiwSIA4M4Ow
-Date: Mon, 12 May 2014 19:41:06 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] net/wireless/sme.c: replace memcpy by ether_addr_copy
-Message-Id: <20140512194106.98f34913dded9af040f31d3d@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 12 May 2014 13:41:37 -0400
+Date: Mon, 12 May 2014 19:41:33 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 1/5] irq_work: Architecture support for remote irq work
+ raise
+Message-ID: <20140512174130.GA6127@localhost.localdomain>
+References: <1399851237-2226-1-git-send-email-fweisbec@gmail.com>
+ <1399851237-2226-2-git-send-email-fweisbec@gmail.com>
+ <20140512075650.GJ30445@twins.programming.kicks-ass.net>
+ <20140512162641.GA28033@localhost.localdomain>
+ <20140512171729.GD13467@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140512171729.GD13467@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 12, 2014 at 07:17:29PM +0200, Peter Zijlstra wrote:
+> On Mon, May 12, 2014 at 06:26:49PM +0200, Frederic Weisbecker wrote:
+> > On Mon, May 12, 2014 at 09:56:50AM +0200, Peter Zijlstra wrote:
+> > > On Mon, May 12, 2014 at 01:33:53AM +0200, Frederic Weisbecker wrote:
+> > > > We are going to extend irq work to support remote queuing.
+> > > > 
+> > > > So lets add a cpu argument to arch_irq_work_raise(). The architectures
+> > > > willing to support that must then provide the backend to raise irq work
+> > > > IPIs remotely.
+> > > > 
+> > > > Initial support is provided for x86 and ARM since they are easily
+> > > > extended. The other archs that overwrite arch_irq_work_raise() seem
+> > > > to use local clock interrupts and therefore need deeper rewrite of their
+> > > > irq work support to implement remote raising.
+> > > > 
+> > > 
+> > > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > > 
+> > > Why not borrow the smp_call_function IPI for the remote bits? We could
+> > > limit the 'safe from NMI' to the local works. And we validate this by
+> > > putting a WARN_ON(in_nmi()) in irq_work_queue_on().
+> > 
+> > Right, but although I don't need it to be safe from NMI, I need it
+> > to be callable concurrently and when irqs are disabled.
+> > 
+> > So we can't use smp_call_function_single() for that. But we can use the async
+> > version in which case we must keep the irq work claim. But that's
+> > about the same than smp_queue_function_single() we had previously
+> > and we are back with our csd_lock issue.
+> 
+> Who said anything about using smp_call_function_single()?
 
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- net/wireless/sme.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+Ah shortcutting, doesn't look bad indeed.
 
-diff --git a/net/wireless/sme.c b/net/wireless/sme.c
-index acdcb4a8..6f88abc 100644
---- a/net/wireless/sme.c
-+++ b/net/wireless/sme.c
-@@ -225,7 +225,7 @@ void cfg80211_conn_work(struct work_struct *work)
- 			continue;
- 		}
- 		if (wdev->conn->params.bssid) {
--			memcpy(bssid_buf, wdev->conn->params.bssid, ETH_ALEN);
-+			ether_addr_copy(bssid_buf, wdev->conn->params.bssid);
- 			bssid = bssid_buf;
- 		}
- 		if (cfg80211_conn_do_work(wdev)) {
-@@ -263,7 +263,7 @@ static struct cfg80211_bss *cfg80211_get_conn_bss(struct wireless_dev *wdev)
- 	if (!bss)
- 		return NULL;
- 
--	memcpy(wdev->conn->bssid, bss->bssid, ETH_ALEN);
-+	ether_addr_copy(wdev->conn->bssid, bss->bssid);
- 	wdev->conn->params.bssid = wdev->conn->bssid;
- 	wdev->conn->params.channel = bss->channel;
- 	wdev->conn->state = CFG80211_CONN_AUTHENTICATE_NEXT;
-@@ -444,7 +444,7 @@ static int cfg80211_sme_connect(struct wireless_dev *wdev,
- 	memcpy(&wdev->conn->params, connect, sizeof(*connect));
- 	if (connect->bssid) {
- 		wdev->conn->params.bssid = wdev->conn->bssid;
--		memcpy(wdev->conn->bssid, connect->bssid, ETH_ALEN);
-+		ether_addr_copy(wdev->conn->bssid, connect->bssid);
- 	}
- 
- 	if (connect->ie) {
-@@ -474,7 +474,7 @@ static int cfg80211_sme_connect(struct wireless_dev *wdev,
- 	bss = cfg80211_get_conn_bss(wdev);
- 
- 	if (prev_bssid) {
--		memcpy(wdev->conn->prev_bssid, prev_bssid, ETH_ALEN);
-+		ether_addr_copy(wdev->conn->prev_bssid, prev_bssid);
- 		wdev->conn->prev_bssid_valid = true;
- 	}
- 
-@@ -616,8 +616,8 @@ void __cfg80211_connect_result(struct net_device *dev, const u8 *bssid,
- 		memset(&wrqu, 0, sizeof(wrqu));
- 		wrqu.ap_addr.sa_family = ARPHRD_ETHER;
- 		if (bssid && status == WLAN_STATUS_SUCCESS) {
--			memcpy(wrqu.ap_addr.sa_data, bssid, ETH_ALEN);
--			memcpy(wdev->wext.prev_bssid, bssid, ETH_ALEN);
-+			ether_addr_copy(wrqu.ap_addr.sa_data, bssid);
-+			ether_addr_copy(wdev->wext.prev_bssid, bssid);
- 			wdev->wext.prev_bssid_valid = true;
- 		}
- 		wireless_send_event(dev, SIOCGIWAP, &wrqu, NULL);
-@@ -697,7 +697,7 @@ void cfg80211_connect_result(struct net_device *dev, const u8 *bssid,
- 
- 	ev->type = EVENT_CONNECT_RESULT;
- 	if (bssid)
--		memcpy(ev->cr.bssid, bssid, ETH_ALEN);
-+		ether_addr_copy(ev->cr.bssid, bssid);
- 	if (req_ie_len) {
- 		ev->cr.req_ie = ((u8 *)ev) + sizeof(*ev);
- 		ev->cr.req_ie_len = req_ie_len;
-@@ -763,8 +763,8 @@ void __cfg80211_roamed(struct wireless_dev *wdev,
- 
- 	memset(&wrqu, 0, sizeof(wrqu));
- 	wrqu.ap_addr.sa_family = ARPHRD_ETHER;
--	memcpy(wrqu.ap_addr.sa_data, bss->bssid, ETH_ALEN);
--	memcpy(wdev->wext.prev_bssid, bss->bssid, ETH_ALEN);
-+	ether_addr_copy(wrqu.ap_addr.sa_data, bss->bssid);
-+	ether_addr_copy(wdev->wext.prev_bssid, bss->bssid);
- 	wdev->wext.prev_bssid_valid = true;
- 	wireless_send_event(wdev->netdev, SIOCGIWAP, &wrqu, NULL);
- #endif
--- 
-1.9.1
+> 
+> 
+> ---
+> diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+> index a82170e2fa78..2fc9d8ece05a 100644
+> --- a/kernel/irq_work.c
+> +++ b/kernel/irq_work.c
+> @@ -61,7 +61,8 @@ void __weak arch_irq_work_raise(void)
+>   *
+>   * Can be re-enqueued while the callback is still in progress.
+>   */
+> -bool irq_work_queue(struct irq_work *work)
+> +static __always_inline bool
+> +__irq_work_queue_on(struct irq_work *work, int cpu)
+>  {
+>  	/* Only queue if not already pending */
+>  	if (!irq_work_claim(work))
+> @@ -78,16 +79,31 @@ bool irq_work_queue(struct irq_work *work)
+>  	 * for the next tick.
+>  	 */
+>  	if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
+> -		if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
+> -			arch_irq_work_raise();
+> +		if (cmpxchg(&__get_cpu_var(irq_work_raised, 0, 1) == 0)) {
+> +			if (cpu == smp_processor_id() || cpu == -1)
+> +				arch_irq_work_raise();
+> +			else
+> +				arch_send_call_function_single_ipi();
+> +		}
 
+Ok that needs some more tuning with the raised flag and the destination list
+to pick, but I get the idea.
+
+>  	}
+>  
+>  	preempt_enable();
+>  
+>  	return true;
+>  }
+> +
+> +bool irq_work_queue(struct irq_work *work)
+> +{
+> +	return __irq_work_queue_on(work, -1);
+> +}
+>  EXPORT_SYMBOL_GPL(irq_work_queue);
+>  
+> +bool irq_work_queue_on(struct irq_work *work, int cpu)
+> +{
+> +	WARN_ON_ONCE(in_nmi());
+> +	return __irq_work_queue_on(work, cpu);
+> +}
+> +
+>  bool irq_work_needs_cpu(void)
+>  {
+>  	struct llist_head *this_list;
+> diff --git a/kernel/smp.c b/kernel/smp.c
+> index 06d574e42c72..0fd53963c4fb 100644
+> --- a/kernel/smp.c
+> +++ b/kernel/smp.c
+> @@ -198,6 +198,12 @@ void generic_smp_call_function_single_interrupt(void)
+>  		csd->func(csd->info);
+>  		csd_unlock(csd);
+>  	}
+> +
+> +	/*
+> +	 * First run the synchronous callbacks, people are waiting on them;
+> +	 * then run the async ones.
+> +	 */
+> +	irq_work_run();
+>  }
+
+Alright, I'm reiterating with that.
+
+Thanks.
