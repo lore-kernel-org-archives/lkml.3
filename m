@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236AbaELP3X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 11:29:23 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:41168 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758512AbaELP3V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 11:29:21 -0400
-Date: Mon, 12 May 2014 11:28:58 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        xen-devel@lists.xenproject.org,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Re: [PATCH 0/2] dma,x86,xen: fix dma_get_required_mask() when dma !=
- phys address
-Message-ID: <20140512152858.GI2837@phenom.dumpdata.com>
-References: <1399889742-26165-1-git-send-email-david.vrabel@citrix.com>
+	id S1758646AbaELPcy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 11:32:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36048 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751297AbaELPcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 11:32:53 -0400
+Date: Mon, 12 May 2014 17:32:50 +0200
+From: Jan Kara <jack@suse.cz>
+To: NeilBrown <neilb@suse.de>
+Cc: Rik van Riel <riel@redhat.com>, Jan Kara <jack@suse.cz>,
+        Jeff Layton <jlayton@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Dave Chinner <david@fromorbit.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Mel Gorman <mgorman@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] nfsd: Only set PF_LESS_THROTTLE when really needed.
+Message-ID: <20140512153250.GB3685@quack.suse.cz>
+References: <20140423022441.4725.89693.stgit@notabene.brown>
+ <20140423024058.4725.38098.stgit@notabene.brown>
+ <53694E7D.6060706@redhat.com>
+ <20140512110437.296846ad@notabene.brown>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1399889742-26165-1-git-send-email-david.vrabel@citrix.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20140512110437.296846ad@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 11:15:40AM +0100, David Vrabel wrote:
-> x86 uses the generic dma_get_required_mask() which assumes that DMA
-> address == physical address.  For Xen PV guests this is not the case
-> and certain drivers will cause excessive use of the SWIOTLB.
+On Mon 12-05-14 11:04:37, NeilBrown wrote:
+> On Tue, 06 May 2014 17:05:01 -0400 Rik van Riel <riel@redhat.com> wrote:
 > 
-> Patch #1 is a straight forward refactoring of a common function.
+> > On 04/22/2014 10:40 PM, NeilBrown wrote:
+> > > PF_LESS_THROTTLE has a very specific use case: to avoid deadlocks
+> > > and live-locks while writing to the page cache in a loop-back
+> > > NFS mount situation.
+> > > 
+> > > It therefore makes sense to *only* set PF_LESS_THROTTLE in this
+> > > situation.
+> > > We now know when a request came from the local-host so it could be a
+> > > loop-back mount.  We already know when we are handling write requests,
+> > > and when we are doing anything else.
+> > > 
+> > > So combine those two to allow nfsd to still be throttled (like any
+> > > other process) in every situation except when it is known to be
+> > > problematic.
+> > 
+> > The FUSE code has something similar, but on the "client"
+> > side.
+> > 
+> > See BDI_CAP_STRICTLIMIT in mm/writeback.c
+> > 
+> > Would it make sense to use that flag on loopback-mounted
+> > NFS filesystems?
+> > 
 > 
-> Patch #2 addes the required arch-specific implementation of
-> dma_get_required_mask() to x86.
-
-David,
-
-Thank you for taking a look at that. If you would like, you can
-tack on Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-And with the *SWIOTLB maintainer hat on - you can add that tag
-as well.
-
-Thanks!
+> I don't think so.
 > 
-> David
-> 
+> I don't fully understand BDI_CAP_STRICTLIMIT, but it seems to be very
+> fuse-specific and relates to NR_WRITEBACK_TEMP, which only fuse uses.  NFS
+> doesn't need any 'strict' limits.
+> i.e. it looks like fuse-specific code inside core-vm code, which I would
+> rather steer clear of.
+  It doesn't really relate to NR_WRITEBACK_TEMP. We have two dirty limits
+in the VM - the global one and a per bdi one (which is a fraction of a
+global one computed based on how much device has been writing back in the
+past). Normally until we have more than (dirty_limit +
+dirty_background_limit) / 2 dirty pages globally, the per bdi limit is
+ignored. And BDI_CAP_STRICTLIMIT means that the per-bdi dirty limit is
+always observed. Together with max_ratio and min_ratio this is useful for
+limiting amount of dirty pages for specific bdis. And FUSE uses it so that
+userspace filesystems cannot easily lockup the system by creating lots of
+dirty pages which cannot be written back.
+
+So I actually don't think BDI_CAP_STRICTLIMIT is a particularly good fit
+for your problem although I agree with Rik that FUSE faces a similar
+problem.
+
+								Honza
+
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
