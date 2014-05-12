@@ -1,63 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758277AbaELThu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 15:37:50 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:32920 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753171AbaELTfF (ORCPT
+	id S1758331AbaELTic (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 15:38:32 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:53373 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755820AbaELTia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 15:35:05 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        kishon@ti.com, hdegoede@redhat.com
-Cc: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v3 2/8] ARM: sun6i: Add the USB clocks to the DTSI.
-Date: Mon, 12 May 2014 21:34:28 +0200
-Message-Id: <1399923274-6017-3-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1399923274-6017-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1399923274-6017-1-git-send-email-maxime.ripard@free-electrons.com>
+	Mon, 12 May 2014 15:38:30 -0400
+Date: Mon, 12 May 2014 21:38:25 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>, intel-gfx@lists.freedesktop.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        Ville =?iso-8859-1?Q?Syrj=E4l=E4?= 
+	<ville.syrjala@linux.intel.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: Re: [PATCH] i915: Add module option to support VGA arbiter on HD
+ devices
+Message-ID: <20140512193825.GI25056@phenom.ffwll.local>
+Mail-Followup-To: Alex Williamson <alex.williamson@redhat.com>,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
+	Dave Airlie <airlied@redhat.com>
+References: <20140509201655.2849.97478.stgit@bling.home>
+ <20140512190812.GH25056@phenom.ffwll.local>
+ <1399923039.6734.97.camel@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1399923039.6734.97.camel@bling.home>
+X-Operating-System: Linux phenom 3.14.0+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The USB clocks of the A31 seems to be parented to the 24MHz oscillator, and
-handle the clocks for the USB phys and OHCI devices.
+On Mon, May 12, 2014 at 01:30:39PM -0600, Alex Williamson wrote:
+> On Mon, 2014-05-12 at 21:08 +0200, Daniel Vetter wrote:
+> > On Fri, May 09, 2014 at 02:20:41PM -0600, Alex Williamson wrote:
+> > > Commit 81b5c7bc found that the current VGA arbiter support in i915
+> > > only works for ancient GMCH-based IGD devices and attempted to update
+> > > support for newer HD devices.  Unfortunately newer devices cannot
+> > > completely opt-out of VGA arbitration like the old devices could.
+> > > The VGA I/O space cannot be disabled internally.  The only way to
+> > > route VGA I/O elsewhere is by disabling I/O at the device PCI command
+> > > register.  This means that with commit 81b5c7bc and multiple VGA
+> > > adapters, the VGA arbiter will report that multiple VGA devices are
+> > > participating in arbitration, Xorg will notice this and disable DRI.
+> > > Therefore, 81b5c7bc was reverted because DRI is more important than
+> > > being correct.
+> > > 
+> > > There is however an actual need for i915 to correctly participate in
+> > > VGA arbitration; VGA device assignment.  If we want to use VFIO to
+> > > assign a VGA device to a virtual machine, we need to be able to
+> > > access the VGA resources of that device.  By adding an i915 module
+> > > option we can allow i915 to continue with its charade by default, but
+> > > also allow an easy path for users who require working VGA arbitration.
+> > > Hopefully Xorg can someday be taught to behave better with multiple
+> > > VGA devices.
+> > > 
+> > > This also rolls in reverted commit 6e1b4fda, which corrected an
+> > > ordering issue with 81b5c7bc by delaying the disabling of VGA memory
+> > > until after vgacon->fbcon handoff.
+> > > 
+> > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
+> > > Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+> > > Cc: Dave Airlie <airlied@redhat.com>
+> > > ---
+> > > 
+> > > This should be a nop with the default module setting, so if there's
+> > > any opportunity to get this into v3.15, it would be appreciated.
+> > 
+> > I really don't like module options to work around bugs elsewhere. It means
+> > the 5 users who know about a given bug are now happen, and the 3
+> > bazillion without enough clue/savy/time still suffer from problems.
+> > 
+> > My goal is to actually add a bit of support to the core kernel's module
+> > option parsing code so that most of the options we have can spit warnings
+> > into dmesg and taint the kernel.
+> > 
+> > Can't we fix this in any other way?
+> 
+> Do you have any suggestions?  I proposed creating a new VGA arbiter
+> interface that would allow Xorg to mmap the legacy VGA MMIO space
+> regardless of the number of VGA arbitration participants, but didn't get
+> any nibbles on supporting that through the rest of the stack.  Dave
+> suggested maybe he could rip out the VGA arbiter support from Xorg and
+> nobody would notice.  In either case, at what point do we get to flip
+> i915 to behave correctly with arbitration?  It seems like anything we do
+> has a compatibility period where we must leave i915 in it's current
+> broken state, which means that anyone wanting VGA arbitration needs to
+> patch their kernel.  In the best case, that compatibility window could
+> extend for years.  Since we don't seem to be making progress on any of
+> the other fronts, it seemed time to propose a module switch.  It's not a
+> good solution, but it's better than leaving it broken.  Thanks,
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
----
- arch/arm/boot/dts/sun6i-a31.dtsi | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+Ripping out the vga arbiter stuff from X (or at least disabling it if
+there's only kms drivers) seems like a good start - we want that in any
+case I think.
 
-diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
-index eec1afa257a5..13aa56ed5858 100644
---- a/arch/arm/boot/dts/sun6i-a31.dtsi
-+++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-@@ -269,6 +269,17 @@
- 			clocks = <&osc24M>, <&pll6>;
- 			clock-output-names = "spi3";
- 		};
-+
-+		usb_clk: clk@01c200cc {
-+			#clock-cells = <1>;
-+		        #reset-cells = <1>;
-+			compatible = "allwinner,sun6i-a31-usb-clk";
-+			reg = <0x01c200cc 0x4>;
-+			clocks = <&osc24M>;
-+			clock-output-names = "usb_phy0", "usb_phy1", "usb_phy2",
-+					     "usb_ohci0", "usb_ohci1",
-+					     "usb_ohci2";
-+		};
- 	};
- 
- 	soc@01c00000 {
+Then we could also look into disabling the userspace interface on the
+kernel side if we have modeset drivers for everything, and X is the
+requesting process. I.e. lie to Xorg. Ugly, but might work.
+
+Then once we've fixed userspace to no longer be stupid and have some way
+to work around old stupid userspace, we can fix i915.
+-Daniel
 -- 
-1.9.3
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
