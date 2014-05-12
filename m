@@ -1,112 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462AbaELBvb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:51:31 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:38145 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754218AbaELBv2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:51:28 -0400
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <53702956.6060607@samsung.com>
-References: <1399706287-13919-1-git-send-email-y@samsung.com>
-	<CAOesGMi9J=03NY+0FFTusMnMG_Xu--zLnX=QbiG=ym2n=tn8ow@mail.gmail.com>
-	<53702956.6060607@samsung.com>
-Date: Sun, 11 May 2014 18:51:26 -0700
-Message-ID: <CAOesGMgcZeWKsfCYKUqjDzUQTJeS6YkfDiKEpk6gSwQMQAsdJw@mail.gmail.com>
-Subject: Re: [PATCH v3 0/6] Introducing Exynos ChipId driver
-From: Olof Johansson <olof@lixom.net>
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-Cc: "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+	id S1755548AbaELBvx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:51:53 -0400
+Received: from 1wt.eu ([62.212.114.60]:34749 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754318AbaELBnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:43:53 -0400
+Message-Id: <20140512003202.877708998@1wt.eu>
+User-Agent: quilt/0.48-1
+Date: Mon, 12 May 2014 02:32:54 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Ding Tianhong <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 054/143] ifb: fix rcu_sched self-detected stalls
+In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
-On Sun, May 11, 2014 at 6:52 PM, Pankaj Dubey <pankaj.dubey@samsung.com> wrote:
-> On 05/11/2014 04:12 PM, Olof Johansson wrote:
->>
->> Hi,
->>
->> On Sat, May 10, 2014 at 12:18 AM,  <y@samsung.com> wrote:
->>>
->>> From: Pankaj Dubey <pankaj.dubey@samsung.com>
->>>
->>> This patch series attempts to get rid of soc_is_exynosXXXX macros
->>> and eventually with the help of this series we can probably get
->>> rid of CONFIG_SOC_EXYNOSXXXX in near future.
->>> Each Exynos SoC has ChipID block which can give information about
->>> SoC's product Id and revision number. Currently we have single
->>> DT binding information for this as "samsung,exynos4210-chipid".
->>> But Exynos4 and Exynos5 SoC series have one small difference in
->>> chip Id, with resepect to product id bit-masks. So it means we
->>> should have separate compatible string for these different series
->>> of SoCs. So I have added second compatible string for handling
->>> this difference.
->>> This patch series is based on Kukjin Kim's for-next (3.14_rc1 tag)
->>> and prepared on top of following patch series and it's dependent
->>> patch series.
->>>
->>> [1]: Map SYSRAM through generic SRAM bindings by Sachin Kamat.
->>>          http://www.spinics.net/lists/arm-kernel/msg327677.html
->>> [2]: Exynos PMU cleanup and refactoring.
->>>          https://lkml.org/lkml/2014/4/30/44
->>> [3]: Introduce drivers/soc and add QCOM GSBI driver.
->>>          https://lkml.org/lkml/2014/4/24/520
->>>
->>> Revision 2 and it's discussion can be found here
->>>   - https://lkml.org/lkml/2014/5/6/100
->>
->> As I just realized when I commented on the last patch in the patchset
->> (the cpufreq section): I think you can, and should, use
->> of_machine_is_compatible() for most of these cases, instead of using a
->> new API through a chipid driver. Since all boards based on an SoC
->> should have that in the string of compatibles, it's a shared and easy
->> way to handle this without adding custom drivers per manufacturer.
->
-> I am sorry, I could not see your comments in my last patch-set.
->
-> Anyway, thanks for review. During first version of this patch, I had
-> discussion with Arnd [1], and it looks like he do not like idea of using
-> "of_machine_is_compatible".
->
-> [1]: https://lkml.org/lkml/2014/5/5/126
->       and
-> https://lkml.org/lkml/2014/5/5/335
+------------------
 
-Ok, I've commented on that thread now.
+From: dingtianhong <dingtianhong@huawei.com>
 
-> So my proposal was till we get generic solution for all files
-> under mach-exynos let's use chip-id driver provided APIs.
+[ Upstream commit 440d57bc5ff55ec1efb3efc9cbe9420b4bbdfefa ]
 
-of_machine_is_compatible() is a quite sensible existing generic
-interface to do this. We don't need to add a driver for it.
+According to the commit 16b0dc29c1af9df341428f4c49ada4f626258082
+(dummy: fix rcu_sched self-detected stalls)
 
-> Also chip-id driver is not only for providing this API but also
-> to provide SoC specific information as a sysfs entry to userspace.
-> So even though we do not want to use chipid driver API's
-> for identifying SoCs we can keep this driver.
+Eric Dumazet fix the problem in dummy, but the ifb will occur the
+same problem like the dummy modules.
 
-For this you might want a chipid driver, yes. I'm mostly objecting to
-the addition of the new is_soc_.*() API, not the introduction of the
-driver for that purpose.
+Trying to "modprobe ifb numifbs=30000" triggers :
 
-> So let us discuss again and decide which will be best way
-> (at the same time less overhead) solution for removing usage
-> of soc_is_exynosXYZ and related CONFIG macros from exynos.
+INFO: rcu_sched self-detected stall on CPU
 
-> @Arnd and Tomasz, I would appreciate if you spent some time
-> to review this series as I have addressed many of your
-> review comments.
+After this splat, RTNL is locked and reboot is needed.
+
+We must call cond_resched() to avoid this, even holding RTNL.
+
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[wt: 2.6.32: cond_resched() needs linux/sched.h]
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+---
+ drivers/net/ifb.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ifb.c b/drivers/net/ifb.c
+index 030913f..cfd5510 100644
+--- a/drivers/net/ifb.c
++++ b/drivers/net/ifb.c
+@@ -33,6 +33,7 @@
+ #include <linux/etherdevice.h>
+ #include <linux/init.h>
+ #include <linux/moduleparam.h>
++#include <linux/sched.h>
+ #include <net/pkt_sched.h>
+ #include <net/net_namespace.h>
+ 
+@@ -269,8 +270,10 @@ static int __init ifb_init_module(void)
+ 	rtnl_lock();
+ 	err = __rtnl_link_register(&ifb_link_ops);
+ 
+-	for (i = 0; i < numifbs && !err; i++)
++	for (i = 0; i < numifbs && !err; i++) {
+ 		err = ifb_init_one(i);
++		cond_resched();
++	}
+ 	if (err)
+ 		__rtnl_link_unregister(&ifb_link_ops);
+ 	rtnl_unlock();
+-- 
+1.7.12.2.21.g234cd45.dirty
 
 
--Olof
+
