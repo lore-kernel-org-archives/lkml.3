@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612AbaELEMS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 00:12:18 -0400
-Received: from gate.crashing.org ([63.228.1.57]:35742 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751027AbaELEMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 00:12:17 -0400
-Message-ID: <1399867920.17624.73.camel@pasglop>
-Subject: Re: [PATCH] powerpc: Fix "attempt to move .org backwards" error
- (again)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>
-Date: Mon, 12 May 2014 14:12:00 +1000
-In-Reply-To: <1399680478-4970-1-git-send-email-linux@roeck-us.net>
-References: <1399680478-4970-1-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751944AbaELEWK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 00:22:10 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:45831 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721AbaELEWI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 00:22:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <536FB2B8.1060505@semaphore.gr>
+References: <536FB2B8.1060505@semaphore.gr>
+Date: Mon, 12 May 2014 09:52:06 +0530
+Message-ID: <CAKohponF4KKjq5JwTSjeHKPfyfvi=2Qpv8+6NNODPO1DxDVrvQ@mail.gmail.com>
+Subject: Re: [PATCH v2] cpufreq: powernow-k8: Suppress checkpatch warnings
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-09 at 17:07 -0700, Guenter Roeck wrote:
-> Commit 4e243b7 (powerpc: Fix "attempt to move .org backwards" error) fixes the
-> allyesconfig build by moving machine_check_common to a different location.
-> While this fixes most of the errors, both allmodconfig and allyesconfig still
-> fail as follows.
-> 
-> arch/powerpc/kernel/exceptions-64s.S:1315: Error: attempt to move .org backwards
-> 
-> Fix by moving machine_check_common after the offending address.
+On 11 May 2014 22:56, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+> Suppress the following checkpatch.pl warnings:
+>
+> - WARNING: Prefer pr_err(... to printk(KERN_ERR ...
+> - WARNING: Prefer pr_info(... to printk(KERN_INFO ...
+> - WARNING: Prefer pr_warn(... to printk(KERN_WARNING ...
+> - WARNING: quoted string split across lines
+> - WARNING: please, no spaces at the start of a line
+>
+> Also, define the pr_fmt macro instead of PFX for the module name.
+>
+> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+> ---
+>
+> Changes v1 -> v2
+>         - Use pr_err_once instead of printk_once
+>         - Change missing_pss_msg to macro (because pr_err_once
+>         doesn't compile otherwise)
+>         - Put one pr_err message in a single line instead of two
+>         - Ignore "line over 80 characters" warnings
+>         - Change the word "Fix" in the subject of the patch to
+>         "Suppress" as the patch doesn't really fix anything
+>
+>  drivers/cpufreq/powernow-k8.c | 180 +++++++++++++++++-------------------------
+>  drivers/cpufreq/powernow-k8.h |   2 +-
+>  2 files changed, 74 insertions(+), 108 deletions(-)
 
-This suffers from the same problem as previous attempts, on some of my
-test configs I get:
-
-arch/powerpc/kernel/head_64.o:(__ftr_alt_97+0xb0): relocation truncated to fit: R_PPC64_REL14 against `.text'+1c90
-make[1]: *** [vmlinux] Error 1
-make: *** [sub-make] Error 2
-
-IE, it breaks currently working configs.
-
-So we need to move more things around and I haven't had a chance to
-sort it out.
-
-Cheers,
-Ben.
-
-
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
