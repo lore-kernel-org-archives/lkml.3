@@ -1,120 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282AbaELAJd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 20:09:33 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54523 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751072AbaELAJc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 20:09:32 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: dirk.brandewie@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: Re: [PATCH 4/5] intel_pstate: Remove C0 tracking
-Date: Mon, 12 May 2014 02:26:16 +0200
-Message-ID: <8611014.ohD4mdM9gP@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1399579047-5792-5-git-send-email-dirk.j.brandewie@intel.com>
-References: <1399579047-5792-1-git-send-email-dirk.j.brandewie@intel.com> <1399579047-5792-5-git-send-email-dirk.j.brandewie@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1752565AbaELAKS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 20:10:18 -0400
+Received: from gate.crashing.org ([63.228.1.57]:34080 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750822AbaELAKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 20:10:16 -0400
+Message-ID: <1399853330.17624.52.camel@pasglop>
+Subject: Re: [PATCH 1/5] irq_work: Architecture support for remote irq work
+ raise
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Date: Mon, 12 May 2014 10:08:50 +1000
+In-Reply-To: <1399851237-2226-2-git-send-email-fweisbec@gmail.com>
+References: <1399851237-2226-1-git-send-email-fweisbec@gmail.com>
+	 <1399851237-2226-2-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 08, 2014 12:57:26 PM dirk.brandewie@gmail.com wrote:
-> From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+On Mon, 2014-05-12 at 01:33 +0200, Frederic Weisbecker wrote:
+> We are going to extend irq work to support remote queuing.
 > 
-> Commit fcb6a15c intel_pstate: Take core C0 time into account for core busy
-> introduced a regression referenced below.  The issue with "lockup"
-> after suspend that this commit was addressing is now dealt with in the
-> suspend path.
+> So lets add a cpu argument to arch_irq_work_raise(). The architectures
+> willing to support that must then provide the backend to raise irq work
+> IPIs remotely.
 > 
-> References:
->    https://bugzilla.kernel.org/show_bug.cgi?id=66581
->    https://bugzilla.kernel.org/show_bug.cgi?id=75121
-> 
-> Reported-by: Doug Smythies <dsmythies@telus.net>
-> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+> Initial support is provided for x86 and ARM since they are easily
+> extended. The other archs that overwrite arch_irq_work_raise() seem
+> to use local clock interrupts and therefore need deeper rewrite of their
+> irq work support to implement remote raising.
 
-Do we need this in -stable?
+Well, looks like it's time to turn it into an IPI... It gets a bit more
+tricky because whether whacking the interrupt controller is safe to
+do from an NMI is safe or not might depend on that irq controller
+implementation...
 
+It looks like XICS and MPIC should be safe though, so at least we
+should be able to cover ppc64, but I'll leave ppc32 alone.
+
+Cheers,
+Ben.
+
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Kevin Hilman <khilman@linaro.org>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 > ---
->  drivers/cpufreq/intel_pstate.c | 13 +------------
->  1 file changed, 1 insertion(+), 12 deletions(-)
+>  arch/Kconfig               | 12 ++++++++++++
+>  arch/alpha/kernel/time.c   |  3 ++-
+>  arch/arm/Kconfig           |  1 +
+>  arch/arm/kernel/smp.c      |  4 ++--
+>  arch/powerpc/kernel/time.c |  3 ++-
+>  arch/sparc/kernel/pcr.c    |  3 ++-
+>  arch/x86/Kconfig           |  1 +
+>  arch/x86/kernel/irq_work.c | 10 ++--------
+>  kernel/irq_work.c          |  4 ++--
+>  9 files changed, 26 insertions(+), 15 deletions(-)
 > 
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index bb20881..4c26faf 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -59,7 +59,6 @@ struct sample {
->  	int32_t core_pct_busy;
->  	u64 aperf;
->  	u64 mperf;
-> -	unsigned long long tsc;
->  	int freq;
->  };
+> diff --git a/arch/Kconfig b/arch/Kconfig
+> index 97ff872..3a38356 100644
+> --- a/arch/Kconfig
+> +++ b/arch/Kconfig
+> @@ -472,6 +472,18 @@ config HAVE_IRQ_EXIT_ON_IRQ_STACK
+>  	  This spares a stack switch and improves cache usage on softirq
+>  	  processing.
 >  
-> @@ -100,7 +99,6 @@ struct cpudata {
+> +config HAVE_IRQ_WORK_IPI
+> +	bool
+> +	help
+> +	  Architecture supports raising irq work interrupts both locally and
+> +	  remotely. Without this capability, we can only trigger local irq works
+> +	  loosely handled by the generic timer tick with the bad implications
+> +	  coming along: the irq work is subject to HZ latency and it runs under
+> +	  the tick random locking scenario (possibly holding hrtimer lock).
+> +
+> +	  This capability is required on configs running with a very minimized
+> +	  tick rate like full dynticks.
+> +
+>  #
+>  # ABI hall of shame
+>  #
+> diff --git a/arch/alpha/kernel/time.c b/arch/alpha/kernel/time.c
+> index ee39cee..2ff0c61 100644
+> --- a/arch/alpha/kernel/time.c
+> +++ b/arch/alpha/kernel/time.c
+> @@ -60,8 +60,9 @@ DEFINE_PER_CPU(u8, irq_work_pending);
+>  #define test_irq_work_pending()      __get_cpu_var(irq_work_pending)
+>  #define clear_irq_work_pending()     __get_cpu_var(irq_work_pending) = 0
 >  
->  	u64	prev_aperf;
->  	u64	prev_mperf;
-> -	unsigned long long prev_tsc;
->  	struct sample sample;
->  };
->  
-> @@ -561,46 +559,37 @@ static inline void intel_pstate_calc_busy(struct cpudata *cpu,
->  					struct sample *sample)
+> -void arch_irq_work_raise(void)
+> +void arch_irq_work_raise(int cpu)
 >  {
->  	int32_t core_pct;
-> -	int32_t c0_pct;
+> +	WARN_ON_ONCE(cpu != smp_processor_id());
+>  	set_irq_work_pending_flag();
+>  }
 >  
->  	core_pct = div_fp(int_tofp((sample->aperf)),
->  			int_tofp((sample->mperf)));
->  	core_pct = mul_fp(core_pct, int_tofp(100));
->  	FP_ROUNDUP(core_pct);
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index db3c541..7edce21 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -46,6 +46,7 @@ config ARM
+>  	select HAVE_HW_BREAKPOINT if (PERF_EVENTS && (CPU_V6 || CPU_V6K || CPU_V7))
+>  	select HAVE_IDE if PCI || ISA || PCMCIA
+>  	select HAVE_IRQ_TIME_ACCOUNTING
+> +	select HAVE_IRQ_WORK_IPI
+>  	select HAVE_KERNEL_GZIP
+>  	select HAVE_KERNEL_LZ4
+>  	select HAVE_KERNEL_LZMA
+> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+> index 7c4fada..042a800 100644
+> --- a/arch/arm/kernel/smp.c
+> +++ b/arch/arm/kernel/smp.c
+> @@ -454,10 +454,10 @@ void arch_send_call_function_single_ipi(int cpu)
+>  }
 >  
-> -	c0_pct = div_fp(int_tofp(sample->mperf), int_tofp(sample->tsc));
+>  #ifdef CONFIG_IRQ_WORK
+> -void arch_irq_work_raise(void)
+> +void arch_irq_work_raise(int cpu)
+>  {
+>  	if (is_smp())
+> -		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
+> +		smp_cross_call(cpumask_of(cpu), IPI_IRQ_WORK);
+>  }
+>  #endif
+>  
+> diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
+> index 122a580..4de25f4 100644
+> --- a/arch/powerpc/kernel/time.c
+> +++ b/arch/powerpc/kernel/time.c
+> @@ -464,9 +464,10 @@ DEFINE_PER_CPU(u8, irq_work_pending);
+>  
+>  #endif /* 32 vs 64 bit */
+>  
+> -void arch_irq_work_raise(void)
+> +void arch_irq_work_raise(int cpu)
+>  {
+>  	preempt_disable();
+> +	WARN_ON_ONCE(cpu != smp_processor_id());
+>  	set_irq_work_pending_flag();
+>  	set_dec(1);
+>  	preempt_enable();
+> diff --git a/arch/sparc/kernel/pcr.c b/arch/sparc/kernel/pcr.c
+> index 269af58..0e5bfd9 100644
+> --- a/arch/sparc/kernel/pcr.c
+> +++ b/arch/sparc/kernel/pcr.c
+> @@ -43,8 +43,9 @@ void __irq_entry deferred_pcr_work_irq(int irq, struct pt_regs *regs)
+>  	set_irq_regs(old_regs);
+>  }
+>  
+> -void arch_irq_work_raise(void)
+> +void arch_irq_work_raise(int cpu)
+>  {
+> +	WARN_ON_ONCE(cpu != smp_processor_id());
+>  	set_softint(1 << PIL_DEFERRED_PCR_WORK);
+>  }
+>  
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 25d2c6f..b06f3fd 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -130,6 +130,7 @@ config X86
+>  	select HAVE_CC_STACKPROTECTOR
+>  	select GENERIC_CPU_AUTOPROBE
+>  	select HAVE_ARCH_AUDITSYSCALL
+> +	select HAVE_IRQ_WORK_IPI
+>  
+>  config INSTRUCTION_DECODER
+>  	def_bool y
+> diff --git a/arch/x86/kernel/irq_work.c b/arch/x86/kernel/irq_work.c
+> index 1de84e3..500ec1f 100644
+> --- a/arch/x86/kernel/irq_work.c
+> +++ b/arch/x86/kernel/irq_work.c
+> @@ -38,13 +38,7 @@ __visible void smp_trace_irq_work_interrupt(struct pt_regs *regs)
+>  	exiting_irq();
+>  }
+>  
+> -void arch_irq_work_raise(void)
+> +void arch_irq_work_raise(int cpu)
+>  {
+> -#ifdef CONFIG_X86_LOCAL_APIC
+> -	if (!cpu_has_apic)
+> -		return;
 > -
->  	sample->freq = fp_toint(
->  		mul_fp(int_tofp(cpu->pstate.max_pstate * 1000), core_pct));
->  
-> -	sample->core_pct_busy = mul_fp(core_pct, c0_pct);
-> +	sample->core_pct_busy = core_pct;
+> -	apic->send_IPI_self(IRQ_WORK_VECTOR);
+> -	apic_wait_icr_idle();
+> -#endif
+> +	apic->send_IPI_mask(cpumask_of(cpu), IRQ_WORK_VECTOR);
+>  }
+> diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+> index a82170e..2559383 100644
+> --- a/kernel/irq_work.c
+> +++ b/kernel/irq_work.c
+> @@ -48,7 +48,7 @@ static bool irq_work_claim(struct irq_work *work)
+>  	return true;
 >  }
 >  
->  static inline void intel_pstate_sample(struct cpudata *cpu)
+> -void __weak arch_irq_work_raise(void)
+> +void __weak arch_irq_work_raise(int cpu)
 >  {
->  	u64 aperf, mperf;
-> -	unsigned long long tsc;
+>  	/*
+>  	 * Lame architectures will get the timer tick callback
+> @@ -79,7 +79,7 @@ bool irq_work_queue(struct irq_work *work)
+>  	 */
+>  	if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
+>  		if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
+> -			arch_irq_work_raise();
+> +			arch_irq_work_raise(smp_processor_id());
+>  	}
 >  
->  	rdmsrl(MSR_IA32_APERF, aperf);
->  	rdmsrl(MSR_IA32_MPERF, mperf);
-> -	tsc = native_read_tsc();
->  
->  	aperf = aperf >> FRAC_BITS;
->  	mperf = mperf >> FRAC_BITS;
-> -	tsc = tsc >> FRAC_BITS;
->  
->  	cpu->sample.aperf = aperf;
->  	cpu->sample.mperf = mperf;
-> -	cpu->sample.tsc = tsc;
->  	cpu->sample.aperf -= cpu->prev_aperf;
->  	cpu->sample.mperf -= cpu->prev_mperf;
-> -	cpu->sample.tsc -= cpu->prev_tsc;
->  
->  	intel_pstate_calc_busy(cpu, &cpu->sample);
->  
->  	cpu->prev_aperf = aperf;
->  	cpu->prev_mperf = mperf;
-> -	cpu->prev_tsc = tsc;
->  }
->  
->  static inline void intel_pstate_set_sample_time(struct cpudata *cpu)
-> 
+>  	preempt_enable();
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
