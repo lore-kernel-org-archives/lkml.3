@@ -1,88 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142AbaELSVd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 14:21:33 -0400
-Received: from smtprelay0181.hostedemail.com ([216.40.44.181]:39045 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753511AbaELSVc (ORCPT
+	id S1755658AbaELSVs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 14:21:48 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:59153 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753483AbaELSVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 14:21:32 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3872:4250:4321:4605:5007:6119:7652:7903:10004:10400:10848:11026:11232:11658:11914:12296:12438:12517:12519:12555:12740:13019:13069:13095:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: ship92_817cec1ab7b59
-X-Filterd-Recvd-Size: 2654
-Message-ID: <1399918888.9240.28.camel@joe-AO725>
-Subject: Re: [PATCH 1/1] kernel/workqueue.c: pr_warning/pr_warn &
- printk/pr_info
-From: Joe Perches <joe@perches.com>
-To: Fabian Frederick <fabf@skynet.be>, Tejun Heo <tj@kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        akpm <akpm@linux-foundation.org>
-Date: Mon, 12 May 2014 11:21:28 -0700
-In-Reply-To: <20140512195623.bedc6e41683596d8d3b486c7@skynet.be>
-References: <20140512195623.bedc6e41683596d8d3b486c7@skynet.be>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 12 May 2014 14:21:46 -0400
+Date: Mon, 12 May 2014 14:21:42 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [GIT PULL] workqueue fixes for v3.15-rc5
+Message-ID: <20140512182142.GH1421@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-12 at 19:56 +0200, Fabian Frederick wrote:
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  kernel/workqueue.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 0ee63af..6824afc 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -4098,8 +4098,8 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
->  	/* create a new pwq */
->  	pwq = alloc_unbound_pwq(wq, target_attrs);
->  	if (!pwq) {
-> -		pr_warning("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
-> -			   wq->name);
-> +		pr_warn("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
-> +			wq->name);
->  		goto out_unlock;
->  	}
->  
-> @@ -4548,7 +4548,7 @@ void print_worker_info(const char *log_lvl, struct task_struct *task)
->  		probe_kernel_read(desc, worker->desc, sizeof(desc) - 1);
->  
->  	if (fn || name[0] || desc[0]) {
-> -		printk("%sWorkqueue: %s %pf", log_lvl, name, fn);
-> +		pr_info("%sWorkqueue: %s %pf", log_lvl, name, fn);
+Hello, Linus.
 
-Not correct.
+Fixes for two bugs in workqueue.  One is existing with internal mutex
+held in a failure path of wq_update_unbound_numa().  The other is
+subtle and unlikely use-after-possible-last-put in the rescuer logic.
+Both have been around for quite some time now and are unlikely to have
+triggered noticeably often.  All patches are marked for -stable
+backport.
 
-log_lvl already emits the appropriate level
-and this overrides it with KERN_INFO.
+The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
 
-The output will now be incorrect emitting
-at KERN_INFO followed by an SOH and the
-desired log level.
+  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
 
->  		if (desc[0])
->  			pr_cont(" (%s)", desc);
->  		pr_cont("\n");
+are available in the git repository at:
 
-Trivially, it likely would be a bit better to avoid
-any possible output message interleaving by using:
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.15-fixes
 
-	if (fn || name[0] || desc[0]) {
-		if (desc[0])
-			printk("%sWorkqueue: %s %pf (%s)\n",
-			       log_lvl, name, fn, desc);
-		else
-			printk("%sWorkqueue: %s %pf\n",
-			       log_lvl, name, fn);
-	}
+for you to fetch changes up to 77668c8b559e4fe2acf2a0749c7c83cde49a5025:
 
+  workqueue: fix a possible race condition between rescuer and pwq-release (2014-04-18 12:33:29 -0400)
 
+Thanks.
 
+----------------------------------------------------------------
+Daeseok Youn (1):
+      workqueue: fix bugs in wq_update_unbound_numa() failure path
+
+Lai Jiangshan (2):
+      workqueue: make rescuer_thread() empty wq->maydays list before exiting
+      workqueue: fix a possible race condition between rescuer and pwq-release
+
+ kernel/workqueue.c | 36 ++++++++++++++++++++++++++++++------
+ 1 file changed, 30 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 0ee63af..8edc871 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1916,6 +1916,12 @@ static void send_mayday(struct work_struct *work)
+ 
+ 	/* mayday mayday mayday */
+ 	if (list_empty(&pwq->mayday_node)) {
++		/*
++		 * If @pwq is for an unbound wq, its base ref may be put at
++		 * any time due to an attribute change.  Pin @pwq until the
++		 * rescuer is done with it.
++		 */
++		get_pwq(pwq);
+ 		list_add_tail(&pwq->mayday_node, &wq->maydays);
+ 		wake_up_process(wq->rescuer->task);
+ 	}
+@@ -2398,6 +2404,7 @@ static int rescuer_thread(void *__rescuer)
+ 	struct worker *rescuer = __rescuer;
+ 	struct workqueue_struct *wq = rescuer->rescue_wq;
+ 	struct list_head *scheduled = &rescuer->scheduled;
++	bool should_stop;
+ 
+ 	set_user_nice(current, RESCUER_NICE_LEVEL);
+ 
+@@ -2409,11 +2416,15 @@ static int rescuer_thread(void *__rescuer)
+ repeat:
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 
+-	if (kthread_should_stop()) {
+-		__set_current_state(TASK_RUNNING);
+-		rescuer->task->flags &= ~PF_WQ_WORKER;
+-		return 0;
+-	}
++	/*
++	 * By the time the rescuer is requested to stop, the workqueue
++	 * shouldn't have any work pending, but @wq->maydays may still have
++	 * pwq(s) queued.  This can happen by non-rescuer workers consuming
++	 * all the work items before the rescuer got to them.  Go through
++	 * @wq->maydays processing before acting on should_stop so that the
++	 * list is always empty on exit.
++	 */
++	should_stop = kthread_should_stop();
+ 
+ 	/* see whether any pwq is asking for help */
+ 	spin_lock_irq(&wq_mayday_lock);
+@@ -2445,6 +2456,12 @@ repeat:
+ 		process_scheduled_works(rescuer);
+ 
+ 		/*
++		 * Put the reference grabbed by send_mayday().  @pool won't
++		 * go away while we're holding its lock.
++		 */
++		put_pwq(pwq);
++
++		/*
+ 		 * Leave this pool.  If keep_working() is %true, notify a
+ 		 * regular worker; otherwise, we end up with 0 concurrency
+ 		 * and stalling the execution.
+@@ -2459,6 +2476,12 @@ repeat:
+ 
+ 	spin_unlock_irq(&wq_mayday_lock);
+ 
++	if (should_stop) {
++		__set_current_state(TASK_RUNNING);
++		rescuer->task->flags &= ~PF_WQ_WORKER;
++		return 0;
++	}
++
+ 	/* rescuers should never participate in concurrency management */
+ 	WARN_ON_ONCE(!(rescuer->flags & WORKER_NOT_RUNNING));
+ 	schedule();
+@@ -4100,7 +4123,8 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
+ 	if (!pwq) {
+ 		pr_warning("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
+ 			   wq->name);
+-		goto out_unlock;
++		mutex_lock(&wq->mutex);
++		goto use_dfl_pwq;
+ 	}
+ 
+ 	/*
