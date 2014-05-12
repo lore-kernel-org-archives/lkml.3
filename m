@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121AbaELBmg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:42:36 -0400
-Received: from 1wt.eu ([62.212.114.60]:34551 "EHLO 1wt.eu"
+	id S1755290AbaELCDt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 22:03:49 -0400
+Received: from 1wt.eu ([62.212.114.60]:34580 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752976AbaELBm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:42:29 -0400
-Message-Id: <20140512003204.505452782@1wt.eu>
+	id S1753076AbaELBmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:42:35 -0400
+Message-Id: <20140512003201.217755511@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:33:33 +0200
+Date: Mon, 12 May 2014 02:32:14 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Wenliang Fan <fanwlexca@gmail.com>,
+Cc: Eric Dumazet <edumazet@google.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 093/143] drivers/net/hamradio: Integer overflow in hdlcdrv_ioctl()
+Subject: [ 014/143] ipv6: ip6_sk_dst_check() must not assume ipv6 dst
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,35 +24,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wenliang Fan <fanwlexca@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit e9db5c21d3646a6454fcd04938dd215ac3ab620a ]
+commit a963a37d384d71ad43b3e9e79d68d42fbe0901f3 upstream
 
-The local variable 'bi' comes from userspace. If userspace passed a
-large number to 'bi.data.calibrate', there would be an integer overflow
-in the following line:
-	s->hdlctx.calibrate = bi.data.calibrate * s->par.bitrate / 16;
+It's possible to use AF_INET6 sockets and to connect to an IPv4
+destination. After this, socket dst cache is a pointer to a rtable,
+not rt6_info.
 
-Signed-off-by: Wenliang Fan <fanwlexca@gmail.com>
+ip6_sk_dst_check() should check the socket dst cache is IPv6, or else
+various corruptions/crashes can happen.
+
+Dave Jones can reproduce immediate crash with
+trinity -q -l off -n -c sendmsg -c connect
+
+With help from Hannes Frederic Sowa
+
+Reported-by: Dave Jones <davej@redhat.com>
+Reported-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/net/hamradio/hdlcdrv.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv6/ip6_output.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/hamradio/hdlcdrv.c b/drivers/net/hamradio/hdlcdrv.c
-index 91c5790..c1b265d 100644
---- a/drivers/net/hamradio/hdlcdrv.c
-+++ b/drivers/net/hamradio/hdlcdrv.c
-@@ -572,6 +572,8 @@ static int hdlcdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 	case HDLCDRVCTL_CALIBRATE:
- 		if(!capable(CAP_SYS_RAWIO))
- 			return -EPERM;
-+		if (bi.data.calibrate > INT_MAX / s->par.bitrate)
-+			return -EINVAL;
- 		s->hdlctx.calibrate = bi.data.calibrate * s->par.bitrate / 16;
- 		return 0;
+diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+index 6ba0fe2..bba91a1 100644
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -920,11 +920,17 @@ static struct dst_entry *ip6_sk_dst_check(struct sock *sk,
+ 					  struct flowi *fl)
+ {
+ 	struct ipv6_pinfo *np = inet6_sk(sk);
+-	struct rt6_info *rt = (struct rt6_info *)dst;
++	struct rt6_info *rt;
  
+ 	if (!dst)
+ 		goto out;
+ 
++	if (dst->ops->family != AF_INET6) {
++		dst_release(dst);
++		return NULL;
++	}
++
++	rt = (struct rt6_info *)dst;
+ 	/* Yes, checking route validity in not connected
+ 	 * case is not very simple. Take into account,
+ 	 * that we do not support routing by source, TOS,
 -- 
 1.7.12.2.21.g234cd45.dirty
 
