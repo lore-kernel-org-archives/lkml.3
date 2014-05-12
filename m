@@ -1,62 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758873AbaELQwS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:52:18 -0400
-Received: from mga01.intel.com ([192.55.52.88]:13149 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752138AbaELQwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 12:52:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1036,1389772800"; 
-   d="scan'208";a="537751273"
-Message-ID: <5370FC3F.30609@linux.intel.com>
-Date: Mon, 12 May 2014 09:52:15 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Josh Boyer <jwboyer@fedoraproject.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Sven Joachim <svenjoac@gmx.de>, Alexandre Julliard <julliard@winehq.org>,
-        Brian Gerst <brgerst@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
-        info@kobaltwit.be
-Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on 64-bit
- kernels
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org>	<CAMzpN2jx4H4p8fQr-WHxVyCHhWi0iO3WZZKyxYD7Dfa7pWkEgg@mail.gmail.com>	<CA+55aFwzvSiAGYfFb2R3JeVvh8_PQuOKJDrYP5C_3VQz2zhnBw@mail.gmail.com>	<CAMzpN2jj3dwQG7qC__8zLPhkg_ER6n4CcNxa5eg7okRN+k_VUA@mail.gmail.com>	<CA+55aFxr_dz3vhko1FPXhZd0ZNeGveX0oSLqUo_wyiVbxatLQw@mail.gmail.com>	<87k3aspd1h.fsf@wine.dyndns.org>	<87zjiuymiu.fsf@turtle.gmx.de>	<CA+55aFw9BPoD10U1LfHbOMpHWZkvJTkMcfCs9s3urPr1YyWBxw@mail.gmail.com> <CA+5PVA4i1Qu_Hbz4npMCo10KdjUWTtvS4=GmYmdiMHSO8QZp2Q@mail.gmail.com>
-In-Reply-To: <CA+5PVA4i1Qu_Hbz4npMCo10KdjUWTtvS4=GmYmdiMHSO8QZp2Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1759032AbaELQw3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:52:29 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:58841 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752138AbaELQw0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 12:52:26 -0400
+From: Alexander Holler <holler@ahsoftware.de>
+To: linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Jon Loeliger <jdl@jdl.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: [RFC PATCH 0/9] dt: dependencies (for deterministic driver initialization order based on the DT)
+Date: Mon, 12 May 2014 18:47:51 +0200
+Message-Id: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2014 06:16 AM, Josh Boyer wrote:
-> On Wed, May 7, 2014 at 12:57 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> On Wed, May 7, 2014 at 2:18 AM, Sven Joachim <svenjoac@gmx.de> wrote:
->>>
->>> It seems that at least some 32-bit programs are also broken, since after
->>> upgrading the kernel to 3.14.3 I can no longer start my old chess
->>> database program:
-> 
-> Now that this has hit 3.14.y stable, we have another report of this
-> commit breaking something in Wine, this time MS Access 2000:
-> 
-> https://bugzilla.redhat.com/show_bug.cgi?id=1096725 (reporter now CC'd)
-> 
->> So for backporting (and for 3.15) maybe this (TOTALLY UNTESTED) patch
->> would be acceptable.
-> 
-> I don't think your patch went anywhere.  I have no idea if you want to
-> push that or revert or just tell people to run old apps in 32-bit
-> guests at this point.  Just forwarding on the information.
-> 
 
-Linus is off the net at the moment.  Someone needs to take his patch and
-test it/clean it up.
+Hello,
 
-	-hpa
+if I would have to describe the Linux kernels init system (before userspace
+starts), it would be like:
+Unknown functions with almost unknown functionality are called in an almost
+random order.
 
+That reminded me that a kernel-maintainer once said to me:
+"We should aim to make things synchronous, deterministic and
+stuff-happens-in-the-correct-order."
+
+Looks like either the target moved or no Wilhelm Tell was around. ;)
+
+This is an attempt to reach the target for the case of (platform-)drivers.
+It is a mere starting point to reach the final target but it works on two
+DT enabled ARM devices I have and it hasn't any implications on other
+architectures, platforms or whatever. If the new configuration option,
+which is only available if DT is enabled, isn't turned on, there is no
+increase of code size or similiar.
+
+So what are these patches I'm posting here?
+They offer an imho solid base to fix the 3. problem. they build a deterministic
+order in which (platform-)drivers should be initialized, based on datas
+(dependencies) found in the device tree. They also offer a starting point to fix
+the other 2 problems (unknown functions and unknown functionality) by showing a
+way how the long range target of known functions with known functionality could
+be reached.
+
+Unfortunately work still isn't done. As written above, this is just a starting
+point, neiter complete nor perfect. It is what I could do behind closed doors,
+by spending a limited amount of time and resources (I've started to look at
+that stuff 3-4 weeks ago, sometimes after 3.14 appeared), so it can be blamed
+quick & dirty. But it should be already enough to explain and test the concepts.
+
+Enough forewords.
+
+This is a small patch series to use a deterministic dependency based device
+and driver initialization order on machines which are using device tree.
+The dependency graph will not only be build based on the device tree itself,
+but will use dependencies based on phandle references in the .dts,
+automatically added by dtc through a new property.
+Manualy adding dependencies to the .dts is possible too.
+
+Advantages:
+
+- Correct order of initialization without any "dirty tricks" in drivers or the
+  machine init code. The order in which devices/drivers will be initialized
+  depends only on the DT and the topological sort algorithm used by the
+  kernel, not some code elsewhere. That means less code and more homogeneity
+  across different SOCs.
+- Might be(come) a little faster because the number of deferred probes should
+  be minimized (they might not even be necessary anymore at all).
+- Using a modified algorithm, it's possible to build a list of drivers which
+  can be initialized in parallel, e.g. using n threads, where n equals the
+  number of cores. I have not tested nor implemented it, because I don't have
+  any multicore DT based board with which I easily can use a (patched) mainline
+  kernel, just locked down multicore things I don't want to go through the
+  pain of unlocking them.
+- Funny dependency graphs when using Graphviz.
+
+Disadvantages:
+
+- To use this feature correctly, binary blobs must be regenerated by
+  recompiling them to include properties with dependencies. Without
+  recompiling them there will be no advantage.
+- Binary blobs will be slightly larger (some kb, see numbers below).
+- Many .dts might need manual work to add some dependencies. Also most
+  dependencies will be discovered automatically (based on phandle references
+  in the .dts, some devices might need additional dependencies.
+
+
+Some numbers (using kernel 3.14.3):
+
+Dockstar (Kirkwood):
+	Works out of the box.
+	Size of dtb without dependencies:	9166
+	Size of dtb with dependencies:		9579
+	Graph with 34 nodes, 56 edges
+	Boot to panic (no root) no deps run 1-4:
+	1.325474 1.325458 1.325449 1.325494
+	Boot to panic (no root) deps run 1-4:
+	4.509989 4.484608 4.316221 4.485310
+	The large difference in time isn't because of the depency based
+	init but because ehci detected the connected hd before the panic
+	occured when deps were enabled. Withoout deps, the panic
+	already happend without any discovered usb-storage. I haven't
+	checked why.
+	The actual times to boot from USB-HD are 3.417248 without
+	dependencies versus 5.618293 with. I still have to check where
+	the difference of more than a second does come from, a difference
+	like on the BBB (see below) should be more reasonable.
+
+BeagleBoneBlack A5C (AM3359):
+	Had to disable ethernet (driver crashes).
+	Size of dtb without dependencies:	31379
+	Size of dtb with dependencies:		33300
+	Graph with 145 nodes, 266 edges
+	Boot to panic (no root) no deps run 1-4:
+	1.229431 1.229516 1.229509 1.229557
+	Boot to panic (no root) deps run 1-4:
+	1.361780 1.361442 1.361532 1.361699
+
+BeagleBoard C4 (OMAP34xx):
+	Had to disable usb (driver crashes) and several other problems,
+	but an unpatched 3.14.y doesn't really work too (which was the
+	reason I looked at what happes and did these patches).
+	Size of dtb without dependencies:	57003
+	Size of dtb with dependencies:		62580
+	Graph with 390 nodes, 848 edges
+	Boot to panic (no root) no deps run 1-4:
+	3.386535 3.343566 3.381469 3.357208
+	Boot to panic (no root) deps run 1-4:
+	5.961425 5.907714 6.053680 5.957855
+
+The difference in boot time is mainly based on the function which
+matches drivers to devices based on the compatible string. This
+is currently not solved very elegant and walks through multiple
+list multiple times. The actual sorting is very fast (just some ms).
+
+For people which do like pictures, I've put the dependency graph for
+the Dockstar online: http://ahsoftware.de/dt-kirkwood-dockstar.svg
+And a far more complicated dependency graph for the BeagleBoard:
+http://ahsoftware.de/dt-omap3-beagle.svg
+
+These pictures makes it easy to see what this feature is about. All the cyan
+arrows are the new dependencies, the black ones are the dependecies as
+currently used (for device but not driver initialization). So you see, there
+is quiet a difference.
+If I'm right, those pictures also visualize which drivers could be initialized
+in parallel (I haven't checked it, I would have to read the Graphviz
+documentation or check the whole graph to be sure). But on a first look at it,
+it looks like dot (Graphviz) placed all the nodes which can be initialized in
+parallel on the same row. So there are quiet some drivers which could be
+initialized in parallel, taking advantage of multiple cores to reduce boot time.
+
+(Just in case you wonder what the first number in the nodes in the pictures
+might be, it is the phandle of the device tree node and is usually generated
+automatically by dtc and might change when the .dts changes. This number
+doesn't have any meaning in regard to the initialization order.)
+
+What follows are the patches I've done, ready to test this feature. These are
+
+- 3 patches for the in-kernel dtc (to add dependencies to the dtb),
+- 1 patch for the kernel to use these dependencies to build the initialization
+  order and create devices,
+- 1 patch to register drivers based on the built order,
+- 1 patch to show which changes are necessary for some drivers,
+- 2 patches to use this feature on kirkwood (very good as small example),
+- 1 patch to use this feature on omap2+ (and am33xx),
+
+These patches are based on 3.14.3 and unfortunately don't apply cleanly to
+3.15-rcN. But I'm currently too lazy to rebase them as I usually use a stable
+kernel to test things I change. And as this is just a RFC, please use 3.14.x
+to test these patches.
+
+All patches do explain further what and how they do. And if I get the OK
+that they will be merged (after any necessary clean up), I would write
+a document for Documentation too (if really wanted, I assume you already have
+noticed that I'm not a native english speaker/writer).
+
+My suggestion to continue:
+
+- Merge the first 5 patches (maybe after they got cleaned up). So they won't
+disappear and people will find a starting point in the kernel to continue
+work on. They don't do any harm and don't increase codesize if the new
+kernel option they introduce is disabled. It also might be a good idea to
+merge them in order to get the new dependencies into binary DT blobs
+as early as possible, even if it might still need some time until they
+really will be used.
+
+- Have a look at the other patches. Especially the one for the Kirkwood which
+changes the initializazion order by just adding one dependency (ehci vs.
+regulator) to the .dts. This shows how such could be done without any changes
+on the drivers source code.
+
+
+If you ask why I did those patches: For the same reason a mountain climber
+does climb a mountain. That also explains my limited motivation and
+resources. ;)
+
+
+Regards,
+
+Alexander Holler
+
+
+LKML-disclaimer (unfortunately necessary):
+Please keep away with comments about style, typos or spelling errors in
+comments and similiar silly stuff if you have nothing else to say.
+Feel free to comment functionality or real errors, but not style, form or
+other bureaucrazy things.
+And please keep in mind that I'm neiter your intern, your student, your pupil,
+nor your child.
 
