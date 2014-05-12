@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988AbaELB60 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:58:26 -0400
-Received: from 1wt.eu ([62.212.114.60]:34660 "EHLO 1wt.eu"
+	id S1753635AbaELBm5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:42:57 -0400
+Received: from 1wt.eu ([62.212.114.60]:34654 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753612AbaELBm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:42:58 -0400
-Message-Id: <20140512003200.886376213@1wt.eu>
+	id S1753565AbaELBm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:42:56 -0400
+Message-Id: <20140512003205.874319880@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:32:06 +0200
+Date: Mon, 12 May 2014 02:34:05 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jitendra Bhivare <jitendra.bhivare@gmail.com>, Willy Tarreau <w@1wt.eu>
-Subject: [ 006/143] intel-iommu: Flush unmaps at domain_exit
+Cc: Neal Cardwell <ncardwell@google.com>,
+        Nandita Dukkipati <nanditad@google.com>,
+        =?ISO-8859-15?q?Ilpo=20J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 125/143] tcp: fix tcp_trim_head() to adjust segment count with skb MSS
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,47 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jitendra Bhivare <jitendra.bhivare@gmail.com>
+From: Neal Cardwell <ncardwell@google.com>
 
-Backported Alex Williamson's commit to 2.6.32.y
-http://git.kernel.org/linus/7b668357810ecb5fdda4418689d50f5d95aea6a8
+This commit fixes tcp_trim_head() to recalculate the number of
+segments in the skb with the skb's existing MSS, so trimming the head
+causes the skb segment count to be monotonically non-increasing - it
+should stay the same or go down, but not increase.
 
-It resolves the following assert when module is immediately reloaded.
+Previously tcp_trim_head() used the current MSS of the connection. But
+if there was a decrease in MSS between original transmission and ACK
+(e.g. due to PMTUD), this could cause tcp_trim_head() to
+counter-intuitively increase the segment count when trimming bytes off
+the head of an skb. This violated assumptions in tcp_tso_acked() that
+tcp_trim_head() only decreases the packet count, so that packets_acked
+in tcp_tso_acked() could underflow, leading tcp_clean_rtx_queue() to
+pass u32 pkts_acked values as large as 0xffffffff to
+ca_ops->pkts_acked().
 
-kernel BUG at drivers/pci/iova.c:155!
-<snip>
-Call Trace:
-[<ffffffff812645c5>] intel_alloc_iova+0xb5/0xe0
-[<ffffffff8126725e>] __intel_map_single+0xbe/0x210
-[<ffffffff812674ae>] intel_alloc_coherent+0xae/0x120
-[<ffffffffa035f909>] be_queue_alloc+0xb9/0x140 [be2net]
-[<ffffffffa035fa5a>] be_rx_qs_create+0xca/0x370 [be2net]
-<snip>
+As an aside, if tcp_trim_head() had really wanted the skb to reflect
+the current MSS, it should have called tcp_set_skb_tso_segs()
+unconditionally, since a decrease in MSS would mean that a
+single-packet skb should now be sliced into multiple segments.
 
-The issue is reproducible in 2.6.32.60 and also gets resolved
-by passing intel-iommu=strict to kernel.
-
-Signed-off-by: Jitendra Bhivare <jitendra.bhivare@gmail.com>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Acked-by: Nandita Dukkipati <nanditad@google.com>
+Acked-by: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+(cherry picked from commit 5b35e1e6e9ca651e6b291c96d1106043c9af314a)
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/pci/intel-iommu.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ net/ipv4/tcp_output.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
-index 5b680df..c1a7b01 100644
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -1434,6 +1434,10 @@ static void domain_exit(struct dmar_domain *domain)
- 	if (!domain)
- 		return;
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 49da29e..0fc0a73 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -949,11 +949,9 @@ int tcp_trim_head(struct sock *sk, struct sk_buff *skb, u32 len)
+ 	sk_mem_uncharge(sk, len);
+ 	sock_set_flag(sk, SOCK_QUEUE_SHRUNK);
  
-+	/* Flush any lazy unmaps that may reference this domain */
-+	if (!intel_iommu_strict)
-+		flush_unmaps_timeout(0);
-+
- 	domain_remove_dev_info(domain);
- 	/* destroy iovas */
- 	put_iova_domain(&domain->iovad);
+-	/* Any change of skb->len requires recalculation of tso
+-	 * factor and mss.
+-	 */
++	/* Any change of skb->len requires recalculation of tso factor. */
+ 	if (tcp_skb_pcount(skb) > 1)
+-		tcp_set_skb_tso_segs(sk, skb, tcp_current_mss(sk));
++		tcp_set_skb_tso_segs(sk, skb, tcp_skb_mss(skb));
+ 
+ 	return 0;
+ }
 -- 
 1.7.12.2.21.g234cd45.dirty
 
