@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608AbaELJk6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 05:40:58 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:17967 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754218AbaELJkx (ORCPT
+	id S1755790AbaELJlP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 05:41:15 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:26449 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755155AbaELJk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 05:40:53 -0400
-X-AuditID: cbfee68d-b7f4e6d000004845-09-5370972350c3
+	Mon, 12 May 2014 05:40:57 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-cd-5370971fedfd
 From: Jungseok Lee <jays.lee@samsung.com>
 To: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
         Catalin.Marinas@arm.com, Marc Zyngier <Marc.Zyngier@arm.com>,
@@ -17,42 +17,43 @@ Cc: linux-kernel@vger.kernel.org,
         steve.capper@linaro.org, sungjinn.chung@samsung.com,
         Arnd Bergmann <arnd@arndb.de>, kgene.kim@samsung.com,
         ilho215.lee@samsung.com
-Subject: [PATCH v6 5/7] arm64: mm: Implement 4 levels of translation tables
-Date: Mon, 12 May 2014 18:40:51 +0900
-Message-id: <000401cf6dc6$42fcce10$c8f66a30$@samsung.com>
+Subject: [PATCH v6 4/7] arm64: Add 4 levels of page tables definition with 4KB
+ pages
+Date: Mon, 12 May 2014 18:40:47 +0900
+Message-id: <000301cf6dc6$40bec4f0$c23c4ed0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9tw3dCzSwkJMcGStaVi1IwRnafeg==
+Thread-index: Ac9tw0Dvsu2TL3m8REun/RFVIdJ16A==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsVy+t8zY13l6QXBBocfi1j8nXSM3eL9sh5G
-	ixev/zFaHP23kNGid8FVNouPp46zW2x6fI3V4vKuOWwWM87vY7L4e+cfm8WKecvYLD7MWMno
-	wOOxZt4aRo/fvyYxety5tofN4/ymNcwem5fUe/RtWcXo8XmTXAB7FJdNSmpOZllqkb5dAlfG
-	gi+zGQvOVlRc+fCGpYFxflIXIyeHhICJxON155khbDGJC/fWs3UxcnEICSxjlJjWvYkdpujL
-	lW5WiMQiRolXE+ZDOX8YJW5cfANWxSagKfHobg87SEJEYAejxOS1i8CqmAUeMkr8fLsfbImw
-	gLfErU17mUBsFgFViUU9H8FsXgFLiTcTOtghbEGJH5PvsYDYzAJaEut3HmeCsOUlNq95C3Ws
-	gsSOs68ZQWwRAT2JJUdnMEPUiEjse/GOEWSxhEAnh0Tv/G0sEMsEJL5NPgRkcwAlZCU2HYCa
-	IylxcMUNlgmMYrOQrJ6FZPUsJKtnIVmxgJFlFaNoakFyQXFSepGhXnFibnFpXrpecn7uJkZI
-	ZPfuYLx9wPoQYzLQ+onMUqLJ+cDEkFcSb2hsZmRhamJqbGRuaUaasJI4b9LDpCAhgfTEktTs
-	1NSC1KL4otKc1OJDjEwcnFINjDqF53j0C6KFVn7bVqOZKXfse1jiqQkL61bdyX/PfVFDbdq7
-	HvaWyee47EX1f9wM6cvhPOTVZ7B+UnTes/X3Zq1xnLfhdOyLjW61RmXsf+Uf9k3fLuP2qOl8
-	n7zo5hNsddk75sxfEPXdUvOJI/cd42J9nmtySlXxvRdXN73uOH1r077a9RIi15VYijMSDbWY
-	i4oTAYlH5cMCAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDKsWRmVeSWpSXmKPExsVy+t9jAV3l6QXBBpO/8Vr8nXSM3eL9sh5G
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsVy+t8zI1356QXBBg+6FCz+TjrGbvF+WQ+j
+	xYvX/xgtjv5byGjRu+Aqm8XHU8fZLTY9vsZqcXnXHDaLGef3MVn8vfOPzWLFvGVsFh9mrGR0
+	4PFYM28No8fvX5MYPe5c28PmcX7TGmaPzUvqPfq2rGL0+LxJLoA9issmJTUnsyy1SN8ugStj
+	85k5zAWz1Sr2NSxjbmC8Lt/FyMkhIWAisa7hLDOELSZx4d56NhBbSGAZo8Sx+/UwNW3Hl7B0
+	MXIBxRcxSuxaOYcNwvnDKNF/YQ8LSBWbgKbEo7s97CAJEYEdjBKT1y5iBXGYBR4ySvx8ux9o
+	BzuHsECYxI1wkHoWAVWJ07dXgW3jFbCUaFzXDGULSvyYfA9sJrOAlsT6nceZIGx5ic1r3kJd
+	qiCx4+xrRhBbREBP4snf84wQNSIS+168YwRZKyHQySHRv+MJG8QyAYlvkw8BDeUASshKbDoA
+	NUdS4uCKGywTGMVmIVk9C8nqWUhWz0KyYgEjyypG0dSC5ILipPQiU73ixNzi0rx0veT83E2M
+	kJieuIPx/gHrQ4zJQOsnMkuJJucDU0JeSbyhsZmRhamJqbGRuaUZacJK4rzpj5KChATSE0tS
+	s1NTC1KL4otKc1KLDzEycXBKNTDuX2LCrXrr9ZFWx2iDb7st1mzKk9m2pfNCgvOWi5Y8gsHK
+	6TNNb37V8zguleM481DIooX1vKLnr32+GH7ZwVu0tS/splt07VqzWXlP9349uTDt7LGmDLfP
+	1zzWx/3+V12ax39T71lWxcTTMoz33b3tZ/38n3f39ou3RwJeivW06CkbXA1cwbBTiaU4I9FQ
+	i7moOBEAO2JIdP8CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFKsWRmVeSWpSXmKPExsVy+t9jAV356QXBBquXSFv8nXSM3eL9sh5G
 	ixev/zFaHP23kNGid8FVNouPp46zW2x6fI3V4vKuOWwWM87vY7L4e+cfm8WKecvYLD7MWMno
 	wOOxZt4aRo/fvyYxety5tofN4/ymNcwem5fUe/RtWcXo8XmTXAB7VAOjTUZqYkpqkUJqXnJ+
 	SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QpUoKZYk5pUChgMTiYiV9O0wT
-	QkPcdC1gGiN0fUOC4HqMDNBAwjrGjAVfZjMWnK2ouPLhDUsD4/ykLkZODgkBE4kvV7pZIWwx
-	iQv31rN1MXJxCAksYpR4NWE+K4Tzh1HixsU37CBVbAKaEo/u9rCDJEQEdjBKTF67CKyKWeAh
-	o8TPt/uZQaqEBbwlbm3aywRiswioSizq+Qhm8wpYSryZ0MEOYQtK/Jh8jwXEZhbQkli/8zgT
-	hC0vsXnNW2aImxQkdpx9zQhiiwjoSSw5OoMZokZEYt+Ld4wTGAVmIRk1C8moWUhGzULSsoCR
-	ZRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcNp4Jr2DcVWDxSFGAQ5GJR7eDwwFwUKsiWXF
-	lbmHGCU4mJVEeE9OBArxpiRWVqUW5ccXleakFh9iTAb6dCKzlGhyPjCl5ZXEGxqbmBlZGplZ
-	GJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QDoyq/6G3L+DPGd1dd7tlr+F50LoPh
-	T1u+qe+N5Sv2L8+68FjWS6L+0dPThr8fnpzkkMxktuOmf+9TuYnMB/ew1f75eGzB9kkKWRbu
-	30+v2xO4n+v/J/eQ3+ICVf1NymXNC8p1P53P/Zbcdt202CNvpvOy/tRNKeHb7zXbvjsXYih4
-	luUIxzSOPiWW4oxEQy3mouJEAJgkODlfAwAA
+	QkPcdC1gGiN0fUOC4HqMDNBAwjrGjM1n5jAXzFar2NewjLmB8bp8FyMnh4SAiUTb8SUsELaY
+	xIV769m6GLk4hAQWMUrsWjkHyvnDKNF/YQ9YFZuApsSjuz3sIAkRgR2MEpPXLmIFcZgFHjJK
+	/Hy7n7mLkZ1DWCBM4kY4SD2LgKrE6dur2EBsXgFLicZ1zVC2oMSPyffAZjILaEms33mcCcKW
+	l9i85i0zxEUKEjvOvmYEsUUE9CSe/D3PCFEjIrHvxTvGCYwCs5CMmoVk1Cwko2YhaVnAyLKK
+	UTS1ILmgOCk911CvODG3uDQvXS85P3cTIzhlPJPawbiyweIQowAHoxIP7weGgmAh1sSy4src
+	Q4wSHMxKIrwinUAh3pTEyqrUovz4otKc1OJDjMlAn05klhJNzgems7ySeENjEzMjSyMzCyMT
+	c3PShJXEeQ+0WgcKCaQnlqRmp6YWpBbBbGHi4JRqYKyYtf7VLcfziRdU7ENm98TGfpx0warD
+	+oSrj9w6aeMPBed3XMn17vf8F35mQmtEhaHeWpWKCOafpTufvLApO8kiKv5X4kTh6W18Jz3s
+	9114mPaoXj595bIVBc56S/f+4Q/eE7K8g7nx3AubpiuRzNM9joe+zfKUC+hb/iH2ascrN56F
+	0/RedyqxFGckGmoxFxUnAgDSZrQjXQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,27 +61,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements 4 levels of translation tables since 3 levels
-of page tables with 4KB pages cannot support 40-bit physical address
-space described in [1] due to the following issue.
-
-It is a restriction that kernel logical memory map with 4KB + 3 levels
-(0xffffffc000000000-0xffffffffffffffff) cannot cover RAM region from
-544GB to 1024GB in [1]. Specifically, ARM64 kernel fails to create
-mapping for this region in map_mem function since __phys_to_virt for
-this region reaches to address overflow.
-
-If SoC design follows the document, [1], over 32GB RAM would be placed
-from 544GB. Even 64GB system is supposed to use the region from 544GB
-to 576GB for only 32GB RAM. Naturally, it would reach to enable 4 levels
-of page tables to avoid hacking __virt_to_phys and __phys_to_virt.
-
-However, it is recommended 4 levels of page table should be only enabled
-if memory map is too sparse or there is about 512GB RAM.
-
-References
-----------
-[1]: Principles of ARM Memory Maps, White Paper, Issue C
+This patch adds hardware definition and types for 4 levels of
+translation tables with 4KB pages.
 
 Cc: Catalin Marinas <catalin.marinas@arm.com>
 Cc: Steve Capper <steve.capper@linaro.org>
@@ -88,433 +70,146 @@ Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
 Reviewed-by: Sungjinn Chung <sungjinn.chung@samsung.com>
 Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 Reviewed-by: Christoffer Dall <christoffer.dall@linaro.org>
-Reviewed-by: Steve Capper <steve.capper@linaro.org>
 ---
- arch/arm64/Kconfig                     |    8 +++++
- arch/arm64/include/asm/memblock.h      |    6 ++++
- arch/arm64/include/asm/page.h          |    4 ++-
- arch/arm64/include/asm/pgalloc.h       |   20 ++++++++++++
- arch/arm64/include/asm/pgtable-hwdef.h |    6 ++--
- arch/arm64/include/asm/pgtable.h       |   45 ++++++++++++++++++++++++++
- arch/arm64/include/asm/tlb.h           |    9 ++++++
- arch/arm64/kernel/head.S               |   54 +++++++++++++++++++++++++-------
- arch/arm64/kernel/traps.c              |    5 +++
- arch/arm64/mm/fault.c                  |    1 +
- arch/arm64/mm/mmu.c                    |   16 +++++++---
- 11 files changed, 156 insertions(+), 18 deletions(-)
+ arch/arm64/include/asm/pgtable-4level-hwdef.h |   50 +++++++++++++++++
+ arch/arm64/include/asm/pgtable-4level-types.h |   71 +++++++++++++++++++++++++
+ 2 files changed, 121 insertions(+)
+ create mode 100644 arch/arm64/include/asm/pgtable-4level-hwdef.h
+ create mode 100644 arch/arm64/include/asm/pgtable-4level-types.h
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 9a28cbe..adbb8ea 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -182,12 +182,17 @@ config ARM64_VA_BITS_42
- 	bool "42-bit"
- 	depends on ARM64_64K_PAGES
- 
-+config ARM64_VA_BITS_48
-+	bool "48-bit"
-+	depends on ARM64_4K_PAGES
-+
- endchoice
- 
- config ARM64_VA_BITS
- 	int
- 	default 39 if ARM64_VA_BITS_39
- 	default 42 if ARM64_VA_BITS_42
-+	default 48 if ARM64_VA_BITS_48
- 
- config ARM64_2_LEVELS
- 	def_bool y if ARM64_64K_PAGES && ARM64_VA_BITS_42
-@@ -195,6 +200,9 @@ config ARM64_2_LEVELS
- config ARM64_3_LEVELS
- 	def_bool y if ARM64_4K_PAGES && ARM64_VA_BITS_39
- 
-+config ARM64_4_LEVELS
-+	def_bool y if ARM64_4K_PAGES && ARM64_VA_BITS_48
-+
- config CPU_BIG_ENDIAN
-        bool "Build big-endian kernel"
-        help
-diff --git a/arch/arm64/include/asm/memblock.h b/arch/arm64/include/asm/memblock.h
-index 6afeed2..e4ac8bf 100644
---- a/arch/arm64/include/asm/memblock.h
-+++ b/arch/arm64/include/asm/memblock.h
-@@ -16,6 +16,12 @@
- #ifndef __ASM_MEMBLOCK_H
- #define __ASM_MEMBLOCK_H
- 
-+#ifndef CONFIG_ARM64_4_LEVELS
-+#define MEMBLOCK_INITIAL_LIMIT	PGDIR_SIZE
-+#else
-+#define MEMBLOCK_INITIAL_LIMIT	PUD_SIZE
-+#endif
-+
- extern void arm64_memblock_init(void);
- 
- #endif
-diff --git a/arch/arm64/include/asm/page.h b/arch/arm64/include/asm/page.h
-index 268e53d..83b5289 100644
---- a/arch/arm64/include/asm/page.h
-+++ b/arch/arm64/include/asm/page.h
-@@ -35,8 +35,10 @@
- 
- #ifdef CONFIG_ARM64_2_LEVELS
- #include <asm/pgtable-2level-types.h>
--#else
-+#elif defined(CONFIG_ARM64_3_LEVELS)
- #include <asm/pgtable-3level-types.h>
-+#else
-+#include <asm/pgtable-4level-types.h>
- #endif
- 
- extern void __cpu_clear_user_page(void *p, unsigned long user);
-diff --git a/arch/arm64/include/asm/pgalloc.h b/arch/arm64/include/asm/pgalloc.h
-index 4829837..8d745fa 100644
---- a/arch/arm64/include/asm/pgalloc.h
-+++ b/arch/arm64/include/asm/pgalloc.h
-@@ -26,6 +26,26 @@
- 
- #define check_pgt_cache()		do { } while (0)
- 
-+#ifdef CONFIG_ARM64_4_LEVELS
-+
-+static inline pud_t *pud_alloc_one(struct mm_struct *mm, unsigned long addr)
-+{
-+	return (pud_t *)get_zeroed_page(GFP_KERNEL | __GFP_REPEAT);
-+}
-+
-+static inline void pud_free(struct mm_struct *mm, pud_t *pud)
-+{
-+	BUG_ON((unsigned long)pud & (PAGE_SIZE-1));
-+	free_page((unsigned long)pud);
-+}
-+
-+static inline void pgd_populate(struct mm_struct *mm, pgd_t *pgd, pud_t *pud)
-+{
-+	set_pgd(pgd, __pgd(__pa(pud) | PUD_TYPE_TABLE));
-+}
-+
-+#endif  /* CONFIG_ARM64_4_LEVELS */
-+
- #ifndef CONFIG_ARM64_2_LEVELS
- 
- static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long addr)
-diff --git a/arch/arm64/include/asm/pgtable-hwdef.h b/arch/arm64/include/asm/pgtable-hwdef.h
-index c7c603b..fddcc3e 100644
---- a/arch/arm64/include/asm/pgtable-hwdef.h
-+++ b/arch/arm64/include/asm/pgtable-hwdef.h
-@@ -18,8 +18,10 @@
- 
- #ifdef CONFIG_ARM64_2_LEVELS
- #include <asm/pgtable-2level-hwdef.h>
--#else
-+#elif defined(CONFIG_ARM64_3_LEVELS)
- #include <asm/pgtable-3level-hwdef.h>
-+#else
-+#include <asm/pgtable-4level-hwdef.h>
- #endif
- 
- /*
-@@ -27,7 +29,7 @@
-  *
-  * Level 1 descriptor (PUD).
-  */
--
-+#define PUD_TYPE_TABLE		(_AT(pudval_t, 3) << 0)
- #define PUD_TABLE_BIT		(_AT(pgdval_t, 1) << 1)
- #define PUD_TYPE_MASK		(_AT(pgdval_t, 3) << 0)
- #define PUD_TYPE_SECT		(_AT(pgdval_t, 1) << 0)
-diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
-index 4a350af..4dafa5c 100644
---- a/arch/arm64/include/asm/pgtable.h
-+++ b/arch/arm64/include/asm/pgtable.h
-@@ -35,7 +35,11 @@
-  * VMALLOC and SPARSEMEM_VMEMMAP ranges.
-  */
- #define VMALLOC_START		(UL(0xffffffffffffffff) << VA_BITS)
-+#ifndef CONFIG_ARM64_4_LEVELS
- #define VMALLOC_END		(PAGE_OFFSET - UL(0x400000000) - SZ_64K)
-+#else
-+#define VMALLOC_END		(PAGE_OFFSET - UL(0x40000000000) - SZ_64K)
-+#endif
- 
- #define vmemmap			((struct page *)(VMALLOC_END + SZ_64K))
- 
-@@ -44,12 +48,16 @@
- #ifndef __ASSEMBLY__
- extern void __pte_error(const char *file, int line, unsigned long val);
- extern void __pmd_error(const char *file, int line, unsigned long val);
-+extern void __pud_error(const char *file, int line, unsigned long val);
- extern void __pgd_error(const char *file, int line, unsigned long val);
- 
- #define pte_ERROR(pte)		__pte_error(__FILE__, __LINE__, pte_val(pte))
- #ifndef CONFIG_ARM64_2_LEVELS
- #define pmd_ERROR(pmd)		__pmd_error(__FILE__, __LINE__, pmd_val(pmd))
- #endif
-+#ifdef CONFIG_ARM64_4_LEVELS
-+#define pud_ERROR(pud)		__pud_error(__FILE__, __LINE__, pud_val(pud))
-+#endif
- #define pgd_ERROR(pgd)		__pgd_error(__FILE__, __LINE__, pgd_val(pgd))
- 
- #ifdef CONFIG_SMP
-@@ -348,6 +356,30 @@ static inline pmd_t *pud_page_vaddr(pud_t pud)
- 
- #endif	/* CONFIG_ARM64_2_LEVELS */
- 
-+#ifdef CONFIG_ARM64_4_LEVELS
-+
-+#define pgd_none(pgd)		(!pgd_val(pgd))
-+#define pgd_bad(pgd)		(!(pgd_val(pgd) & 2))
-+#define pgd_present(pgd)	(pgd_val(pgd))
-+
-+static inline void set_pgd(pgd_t *pgdp, pgd_t pgd)
-+{
-+	*pgdp = pgd;
-+	dsb(ishst);
-+}
-+
-+static inline void pgd_clear(pgd_t *pgdp)
-+{
-+	set_pgd(pgdp, __pgd(0));
-+}
-+
-+static inline pud_t *pgd_page_vaddr(pgd_t pgd)
-+{
-+	return __va(pgd_val(pgd) & PHYS_MASK & (s32)PAGE_MASK);
-+}
-+
-+#endif  /* CONFIG_ARM64_4_LEVELS */
-+
- /* to find an entry in a page-table-directory */
- #define pgd_index(addr)		(((addr) >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1))
- 
-@@ -356,6 +388,14 @@ static inline pmd_t *pud_page_vaddr(pud_t pud)
- /* to find an entry in a kernel page-table-directory */
- #define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
- 
-+#ifdef CONFIG_ARM64_4_LEVELS
-+#define pud_index(addr)		(((addr) >> PUD_SHIFT) & (PTRS_PER_PUD - 1))
-+static inline pud_t *pud_offset(pgd_t *pgd, unsigned long addr)
-+{
-+	return (pud_t *)pgd_page_vaddr(*pgd) + pud_index(addr);
-+}
-+#endif
-+
- /* Find an entry in the second-level page table.. */
- #ifndef CONFIG_ARM64_2_LEVELS
- #define pmd_index(addr)		(((addr) >> PMD_SHIFT) & (PTRS_PER_PMD - 1))
-@@ -384,8 +424,13 @@ static inline pmd_t pmd_modify(pmd_t pmd, pgprot_t newprot)
- extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
- extern pgd_t idmap_pg_dir[PTRS_PER_PGD];
- 
-+#ifdef CONFIG_ARM64_4_LEVELS
-+#define SWAPPER_DIR_SIZE	(4 * PAGE_SIZE)
-+#define IDMAP_DIR_SIZE		(3 * PAGE_SIZE)
-+#else
- #define SWAPPER_DIR_SIZE	(3 * PAGE_SIZE)
- #define IDMAP_DIR_SIZE		(2 * PAGE_SIZE)
-+#endif
- 
- /*
-  * Encode and decode a swap entry:
-diff --git a/arch/arm64/include/asm/tlb.h b/arch/arm64/include/asm/tlb.h
-index bc19101..49dc8f0 100644
---- a/arch/arm64/include/asm/tlb.h
-+++ b/arch/arm64/include/asm/tlb.h
-@@ -100,6 +100,15 @@ static inline void __pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmdp,
- }
- #endif
- 
-+#ifdef CONFIG_ARM64_4_LEVELS
-+static inline void __pud_free_tlb(struct mmu_gather *tlb, pud_t *pudp,
-+				  unsigned long addr)
-+{
-+	tlb_add_flush(tlb, addr);
-+	tlb_remove_page(tlb, virt_to_page(pudp));
-+}
-+#endif
-+
- static inline void __tlb_remove_pmd_tlb_entry(struct mmu_gather *tlb, pmd_t *pmdp,
- 						unsigned long address)
- {
-diff --git a/arch/arm64/kernel/head.S b/arch/arm64/kernel/head.S
-index b96a732..8464087 100644
---- a/arch/arm64/kernel/head.S
-+++ b/arch/arm64/kernel/head.S
-@@ -37,8 +37,9 @@
- 
- /*
-  * swapper_pg_dir is the virtual address of the initial page table. We place
-- * the page tables 3 * PAGE_SIZE below KERNEL_RAM_VADDR. The idmap_pg_dir has
-- * 2 pages and is placed below swapper_pg_dir.
-+ * the page tables 3 * PAGE_SIZE (2 or 3 levels) or 4 * PAGE_SIZE (4 levels)
-+ * below KERNEL_RAM_VADDR. The idmap_pg_dir has 2 pages (2 or 3 levels) or
-+ * 3 pages (4 levels) and is placed below swapper_pg_dir.
-  */
- #define KERNEL_RAM_VADDR	(PAGE_OFFSET + TEXT_OFFSET)
- 
-@@ -46,8 +47,13 @@
- #error KERNEL_RAM_VADDR must start at 0xXXX80000
- #endif
- 
-+#ifdef CONFIG_ARM64_4_LEVELS
-+#define SWAPPER_DIR_SIZE	(4 * PAGE_SIZE)
-+#define IDMAP_DIR_SIZE		(3 * PAGE_SIZE)
-+#else
- #define SWAPPER_DIR_SIZE	(3 * PAGE_SIZE)
- #define IDMAP_DIR_SIZE		(2 * PAGE_SIZE)
-+#endif
- 
- 	.globl	swapper_pg_dir
- 	.equ	swapper_pg_dir, KERNEL_RAM_VADDR - SWAPPER_DIR_SIZE
-@@ -368,16 +374,42 @@ ENDPROC(__calc_phys_offset)
- 	.quad	PAGE_OFFSET
- 
- /*
-- * Macro to populate the PGD for the corresponding block entry in the next
-- * level (tbl) for the given virtual address.
-+ * Macro to populate the PUD for the corresponding block entry in the next
-+ * level (tbl) for the given virtual address in case of 4 levels.
+diff --git a/arch/arm64/include/asm/pgtable-4level-hwdef.h b/arch/arm64/include/asm/pgtable-4level-hwdef.h
+new file mode 100644
+index 0000000..0ec84e2
+--- /dev/null
++++ b/arch/arm64/include/asm/pgtable-4level-hwdef.h
+@@ -0,0 +1,50 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + *
-+ * Preserves:	pgd, virt
-+ * Corrupts:	tbl, tmp1, tmp2
-+ * Returns:	pud
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+	.macro	create_pud_entry, pgd, tbl, virt, pud, tmp1, tmp2
-+#ifdef CONFIG_ARM64_4_LEVELS
-+	add	\tbl, \tbl, #PAGE_SIZE		// bump tbl 1 page up.
-+						// to make room for pud
-+	add	\pud, \pgd, #PAGE_SIZE		// pgd points to pud which
-+						// follows pgd
-+	lsr	\tmp1, \virt, #PUD_SHIFT
-+	and	\tmp1, \tmp1, #PTRS_PER_PUD - 1	// PUD index
-+	orr	\tmp2, \tbl, #3			// PUD entry table type
-+	str	\tmp2, [\pud, \tmp1, lsl #3]
-+#else
-+	mov	\pud, \tbl
-+#endif
-+	.endm
++#ifndef __ASM_PGTABLE_4LEVEL_HWDEF_H
++#define __ASM_PGTABLE_4LEVEL_HWDEF_H
++
++#define PTRS_PER_PTE		512
++#define PTRS_PER_PMD		512
++#define PTRS_PER_PUD		512
++#define PTRS_PER_PGD		512
 +
 +/*
-+ * Macro to populate the PGD (and possibily PUD) for the corresponding
-+ * block entry in the next level (tbl) for the given virtual address.
-  *
-- * Preserves:	pgd, tbl, virt
-- * Corrupts:	tmp1, tmp2
-+ * Preserves:	pgd, virt
-+ * Corrupts:	tmp1, tmp2, tmp3
-+ * Returns:	tbl -> page where block mappings can be placed
-+ *	(changed to make room for pud with 4 levels, preserved otherwise)
-  */
--	.macro	create_pgd_entry, pgd, tbl, virt, tmp1, tmp2
-+	.macro	create_pgd_entry, pgd, tbl, virt, tmp1, tmp2, tmp3
-+	create_pud_entry \pgd, \tbl, \virt, \tmp3, \tmp1, \tmp2
- 	lsr	\tmp1, \virt, #PGDIR_SHIFT
- 	and	\tmp1, \tmp1, #PTRS_PER_PGD - 1	// PGD index
--	orr	\tmp2, \tbl, #3			// PGD entry table type
-+	orr	\tmp2, \tmp3, #3		// PGD entry table type
- 	str	\tmp2, [\pgd, \tmp1, lsl #3]
- 	.endm
- 
-@@ -442,7 +474,7 @@ __create_page_tables:
- 	add	x0, x25, #PAGE_SIZE		// section table address
- 	ldr	x3, =KERNEL_START
- 	add	x3, x3, x28			// __pa(KERNEL_START)
--	create_pgd_entry x25, x0, x3, x5, x6
-+	create_pgd_entry x25, x0, x3, x1, x5, x6
- 	ldr	x6, =KERNEL_END
- 	mov	x5, x3				// __pa(KERNEL_START)
- 	add	x6, x6, x28			// __pa(KERNEL_END)
-@@ -453,7 +485,7 @@ __create_page_tables:
- 	 */
- 	add	x0, x26, #PAGE_SIZE		// section table address
- 	mov	x5, #PAGE_OFFSET
--	create_pgd_entry x26, x0, x5, x3, x6
-+	create_pgd_entry x26, x0, x5, x1, x3, x6
- 	ldr	x6, =KERNEL_END
- 	mov	x3, x24				// phys offset
- 	create_block_map x0, x7, x3, x5, x6
-@@ -479,7 +511,7 @@ __create_page_tables:
- 	 */
- 	ldr	x5, =FIXADDR_TOP		// Fixed mapping virtual address
- 	add	x0, x26, #2 * PAGE_SIZE		// section table address
--	create_pgd_entry x26, x0, x5, x6, x7
-+	create_pgd_entry x26, x0, x5, x1, x6, x7
- 
- 	/*
- 	 * Since the page tables have been populated with non-cacheable
-diff --git a/arch/arm64/kernel/traps.c b/arch/arm64/kernel/traps.c
-index 506f781..02cd3f0 100644
---- a/arch/arm64/kernel/traps.c
-+++ b/arch/arm64/kernel/traps.c
-@@ -339,6 +339,11 @@ void __pmd_error(const char *file, int line, unsigned long val)
- 	pr_crit("%s:%d: bad pmd %016lx.\n", file, line, val);
- }
- 
-+void __pud_error(const char *file, int line, unsigned long val)
-+{
-+	pr_crit("%s:%d: bad pud %016lx.\n", file, line, val);
-+}
++ * PGDIR_SHIFT determines the size a top-level page table entry can map.
++ */
++#define PGDIR_SHIFT		39
++#define PGDIR_SIZE		(_AC(1, UL) << PGDIR_SHIFT)
++#define PGDIR_MASK		(~(PGDIR_SIZE-1))
 +
- void __pgd_error(const char *file, int line, unsigned long val)
- {
- 	pr_crit("%s:%d: bad pgd %016lx.\n", file, line, val);
-diff --git a/arch/arm64/mm/fault.c b/arch/arm64/mm/fault.c
-index 89c6763..663397b 100644
---- a/arch/arm64/mm/fault.c
-+++ b/arch/arm64/mm/fault.c
-@@ -62,6 +62,7 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
- 			break;
- 
- 		pud = pud_offset(pgd, addr);
-+		printk(", *pud=%016llx", pud_val(*pud));
- 		if (pud_none(*pud) || pud_bad(*pud))
- 			break;
- 
-diff --git a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c
-index 3a729de..ce09ed3 100644
---- a/arch/arm64/mm/mmu.c
-+++ b/arch/arm64/mm/mmu.c
-@@ -32,6 +32,7 @@
- #include <asm/setup.h>
- #include <asm/sizes.h>
- #include <asm/tlb.h>
-+#include <asm/memblock.h>
- #include <asm/mmu_context.h>
- 
- #include "mm.h"
-@@ -190,9 +191,15 @@ static void __init alloc_init_pmd(pud_t *pud, unsigned long addr,
- static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
- 				  unsigned long end, unsigned long phys)
- {
--	pud_t *pud = pud_offset(pgd, addr);
-+	pud_t *pud;
- 	unsigned long next;
- 
-+	if (pgd_none(*pgd) || pgd_bad(*pgd)) {
-+		pud = early_alloc(PTRS_PER_PUD * sizeof(pud_t));
-+		pgd_populate(&init_mm, pgd, pud);
-+	}
++/*
++ * PUD_SHIFT determines the size the second level page table entry can map.
++ */
++#define PUD_SHIFT		30
++#define PUD_SIZE		(_AC(1, UL) << PUD_SHIFT)
++#define PUD_MASK		(~(PUD_SIZE-1))
 +
-+	pud = pud_offset(pgd, addr);
- 	do {
- 		next = pud_addr_end(addr, end);
- 
-@@ -262,10 +269,11 @@ static void __init map_mem(void)
- 	 * memory addressable from the initial direct kernel mapping.
- 	 *
- 	 * The initial direct kernel mapping, located at swapper_pg_dir,
--	 * gives us PGDIR_SIZE memory starting from PHYS_OFFSET (which must be
--	 * aligned to 2MB as per Documentation/arm64/booting.txt).
-+	 * gives us PGDIR_SIZE (2 and 3 levels) or PUD_SIZE (4 levels) memory
-+	 * starting from PHYS_OFFSET (which must be aligned to 2MB as per
-+	 * Documentation/arm64/booting.txt).
- 	 */
--	limit = PHYS_OFFSET + PGDIR_SIZE;
-+	limit = PHYS_OFFSET + MEMBLOCK_INITIAL_LIMIT;
- 	memblock_set_current_limit(limit);
- 
- 	/* map all the memory banks */
++/*
++ * PMD_SHIFT determines the size the third level page table entry can map.
++ */
++#define PMD_SHIFT		21
++#define PMD_SIZE		(_AC(1, UL) << PMD_SHIFT)
++#define PMD_MASK		(~(PMD_SIZE-1))
++
++/*
++ * section address mask and size definitions.
++ */
++#define SECTION_SHIFT		21
++#define SECTION_SIZE		(_AC(1, UL) << SECTION_SHIFT)
++#define SECTION_MASK		(~(SECTION_SIZE-1))
++
++#endif
+diff --git a/arch/arm64/include/asm/pgtable-4level-types.h b/arch/arm64/include/asm/pgtable-4level-types.h
+new file mode 100644
+index 0000000..7ad8dd2
+--- /dev/null
++++ b/arch/arm64/include/asm/pgtable-4level-types.h
+@@ -0,0 +1,71 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_PGTABLE_4LEVEL_TYPES_H
++#define __ASM_PGTABLE_4LEVEL_TYPES_H
++
++#include <asm/types.h>
++
++typedef u64 pteval_t;
++typedef u64 pmdval_t;
++typedef u64 pudval_t;
++typedef u64 pgdval_t;
++
++#undef STRICT_MM_TYPECHECKS
++
++#ifdef STRICT_MM_TYPECHECKS
++
++/*
++ * These are used to make use of C type-checking..
++ */
++typedef struct { pteval_t pte; } pte_t;
++typedef struct { pmdval_t pmd; } pmd_t;
++typedef struct { pudval_t pud; } pud_t;
++typedef struct { pgdval_t pgd; } pgd_t;
++typedef struct { pteval_t pgprot; } pgprot_t;
++
++#define pte_val(x)	((x).pte)
++#define pmd_val(x)	((x).pmd)
++#define pud_val(x)	((x).pud)
++#define pgd_val(x)	((x).pgd)
++#define pgprot_val(x)	((x).pgprot)
++
++#define __pte(x)	((pte_t) { (x) } )
++#define __pmd(x)	((pmd_t) { (x) } )
++#define __pud(x)	((pud_t) { (x) } )
++#define __pgd(x)	((pgd_t) { (x) } )
++#define __pgprot(x)	((pgprot_t) { (x) } )
++
++#else	/* !STRICT_MM_TYPECHECKS */
++
++typedef pteval_t pte_t;
++typedef pmdval_t pmd_t;
++typedef pudval_t pud_t;
++typedef pgdval_t pgd_t;
++typedef pteval_t pgprot_t;
++
++#define pte_val(x)	(x)
++#define pmd_val(x)	(x)
++#define pud_val(x)	(x)
++#define pgd_val(x)	(x)
++#define pgprot_val(x)	(x)
++
++#define __pte(x)	(x)
++#define __pmd(x)	(x)
++#define __pud(x)	(x)
++#define __pgd(x)	(x)
++#define __pgprot(x)	(x)
++
++#endif /* STRICT_MM_TYPECHECKS */
++
++#endif /* __ASM_PGTABLE_4LEVEL_TYPES_H */
 -- 
 1.7.10.4
 
