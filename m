@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757776AbaELUaj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 16:30:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38241 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756206AbaELUai (ORCPT
+	id S1756140AbaELUdw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 16:33:52 -0400
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:59316 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368AbaELUdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 16:30:38 -0400
-Date: Mon, 12 May 2014 22:30:37 +0200
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.14 00/83] 3.14.4-stable review
-Message-ID: <20140512203037.GA4562@kroah.com>
-References: <20140511191907.024339448@linuxfoundation.org>
- <536FFF16.1010505@roeck-us.net>
+	Mon, 12 May 2014 16:33:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <536FFF16.1010505@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140512201517.GC5668@atomide.com>
+References: <1399686184-1594-1-git-send-email-mranostay@gmail.com>
+	<20140512195050.GB5668@atomide.com>
+	<CAOCHtYiYwx_bEsyqkbUTTAbhBYESzvfBOOYeVuFXPS1dDy0ZKA@mail.gmail.com>
+	<20140512201517.GC5668@atomide.com>
+Date: Mon, 12 May 2014 15:27:13 -0500
+Message-ID: <CAOCHtYg6XpF0Gbo4iFqsFvP=QSivQQvCzov8UfxeLXMzrRYEWw@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: dts: am335x-bone-common: Add i2c2 definition
+From: Robert Nelson <robertcnelson@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Matt Ranostay <mranostay@gmail.com>, robh+dt@kernel.org,
+        mark.rutland@arm.com, Russell King <linux@arm.linux.org.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        pantelis.antoniou@gmail.com, matt.porter@linaro.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 11, 2014 at 03:52:06PM -0700, Guenter Roeck wrote:
-> On 05/11/2014 12:19 PM, Greg Kroah-Hartman wrote:
-> > This is the start of the stable review cycle for the 3.14.4 release.
-> > There are 83 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> >
-> > Responses should be made by Tue May 13 19:18:44 UTC 2014.
-> > Anything received after that time might be too late.
-> >
-> 
-> Build results:
->      total: 127 pass: 121 skipped: 4 fail: 2
-> 
-> Failing builds are powerpc:allmodconfig and unicore32:defconfig.
-> 
-> Qemu tests all passed.
-> 
-> Results are as expected.
-> 
-> Details are available at http://server.roeck-us.net:8010/builders.
-> 
+>> >
+>> > If these pins are not used for i2c2 on some capes, this device
+>> > should be set to status = "disabled" state by default. Then
+>> > u-boot could re-enable it on the boards that have i2c2 in use.
+>>
+>> To-date, this is the i2c bus that all capes have placed an at24 eeprom
+>> for cape identification.
+>
+> And how many capes actually implement the eeprom cape identification
+> out of the available capes? :)
 
-Thanks for testing all 3 of these and letting me know.
+Not including one off designs in someone's lab. We will never have an
+accurate number. ;)
 
-greg k-h
+So far; just the ones that want their "cape" detected in the default
+image currently being shipped by CircuitCo. Otherwise the few that
+I've seen without an eeprom, usually follow this default pinmux.
+
+http://elinux.org/CircuitCo:Basic_Proto_Cape
+
+Which includes that i2c bus enabled.
+
+Either case if fine with me.  As who knows when the dtc "overlay" will
+every truly make it mainline, as the capemgr was the only real kernel
+user of the i2c/at24 eeprom information.
+
+Regards,
+
+-- 
+Robert Nelson
+http://www.rcn-ee.com/
