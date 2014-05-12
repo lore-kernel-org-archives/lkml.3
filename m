@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678AbaELCMF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 22:12:05 -0400
-Received: from 1wt.eu ([62.212.114.60]:34477 "EHLO 1wt.eu"
+	id S1755589AbaELCMD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 22:12:03 -0400
+Received: from 1wt.eu ([62.212.114.60]:34481 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752550AbaELBmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752452AbaELBmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 11 May 2014 21:42:10 -0400
-Message-Id: <20140512003205.084686896@1wt.eu>
+Message-Id: <20140512003204.089772397@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:33:47 +0200
+Date: Mon, 12 May 2014 02:33:23 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Matthew Leach <matthew.leach@arm.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 107/143] net: socket: error on a negative msg_namelen
+Subject: [ 083/143] net: clamp ->msg_namelen instead of returning an error
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,38 +24,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Leach <matthew.leach@arm.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit dbb490b96584d4e958533fb637f08b557f505657 ]
+[ Upstream commit db31c55a6fb245fdbb752a2ca4aefec89afabb06 ]
 
-When copying in a struct msghdr from the user, if the user has set the
-msg_namelen parameter to a negative value it gets clamped to a valid
-size due to a comparison between signed and unsigned values.
+If kmsg->msg_namelen > sizeof(struct sockaddr_storage) then in the
+original code that would lead to memory corruption in the kernel if you
+had audit configured.  If you didn't have audit configured it was
+harmless.
 
-Ensure the syscall errors when the user passes in a negative value.
+There are some programs such as beta versions of Ruby which use too
+large of a buffer and returning an error code breaks them.  We should
+clamp the ->msg_namelen value instead.
 
-Signed-off-by: Matthew Leach <matthew.leach@arm.com>
+Fixes: 1661bf364ae9 ("net: heap overflow in __audit_sockaddr()")
+Reported-by: Eric Wong <normalperson@yhbt.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Tested-by: Eric Wong <normalperson@yhbt.net>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/socket.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ net/compat.c | 2 +-
+ net/socket.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/net/compat.c b/net/compat.c
+index d325d16..e9672c8 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -70,7 +70,7 @@ int get_compat_msghdr(struct msghdr *kmsg, struct compat_msghdr __user *umsg)
+ 	    __get_user(kmsg->msg_flags, &umsg->msg_flags))
+ 		return -EFAULT;
+ 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
+-		return -EINVAL;
++		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
+ 	kmsg->msg_name = compat_ptr(tmp1);
+ 	kmsg->msg_iov = compat_ptr(tmp2);
+ 	kmsg->msg_control = compat_ptr(tmp3);
 diff --git a/net/socket.c b/net/socket.c
-index 0823497..bc151b8 100644
+index 712f977..0823497 100644
 --- a/net/socket.c
 +++ b/net/socket.c
-@@ -1871,6 +1871,10 @@ static int copy_msghdr_from_user(struct msghdr *kmsg,
- {
+@@ -1872,7 +1872,7 @@ static int copy_msghdr_from_user(struct msghdr *kmsg,
  	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
  		return -EFAULT;
-+
-+	if (kmsg->msg_namelen < 0)
-+		return -EINVAL;
-+
  	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
- 		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
+-		return -EINVAL;
++		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
  	return 0;
+ }
+ 
 -- 
 1.7.12.2.21.g234cd45.dirty
 
