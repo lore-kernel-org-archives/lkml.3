@@ -1,66 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274AbaELPi7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 11:38:59 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:64313 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297AbaELPi5 (ORCPT
+	id S1752935AbaELPkv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 11:40:51 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:33277 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939AbaELPkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 11:38:57 -0400
-Date: Mon, 12 May 2014 08:38:48 -0700
-From: Larry Bassel <larry.bassel@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Larry Bassel <larry.bassel@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "khilman@linaro.org" <khilman@linaro.org>
-Subject: Re: [PATCH v2] arm64: Support arch_irq_work_raise() via self IPIs
-Message-ID: <20140512153848.GA13068@linaro6>
-References: <1399760621-10954-1-git-send-email-larry.bassel@linaro.org>
- <20140512092956.GB914@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140512092956.GB914@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 12 May 2014 11:40:49 -0400
+From: abdoulaye berthe <berthe.ab@gmail.com>
+To: berthe.ab@gmail.com, m@bues.ch, linus.walleij@linaro.org, gnurou@gmail.com,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] gpio: use devm function for memory allocation
+Date: Mon, 12 May 2014 17:40:42 +0200
+Message-Id: <1399909242-21264-1-git-send-email-berthe.ab@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 May 14 10:29, Will Deacon wrote:
-> On Sat, May 10, 2014 at 11:23:41PM +0100, Larry Bassel wrote:
-> > Support for arch_irq_work_raise() was missing from
-> > arm64 (a prerequisite for FULL_NOHZ).
-> 
-> [...]
-> 
-> > @@ -455,6 +457,14 @@ void arch_send_call_function_single_ipi(int cpu)
-> >  	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-> >  }
-> >  
-> > +#ifdef CONFIG_IRQ_WORK
-> > +void arch_irq_work_raise(void)
-> > +{
-> > +	if (is_smp())
-> > +		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
-> > +}
-> > +#endif
-> 
-> Does this even compile? We're probably better off just checking whether or
-> not smp_cross_call is NULL.
+Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
+---
+ drivers/gpio/gpio-bt8xx.c | 19 ++++++-------------
+ 1 file changed, 6 insertions(+), 13 deletions(-)
 
-No it doesn't (I incorrectly assumed that is_smp() was generic, not
-arm32 specific and so I didn't compile this before submitting).
+diff --git a/drivers/gpio/gpio-bt8xx.c b/drivers/gpio/gpio-bt8xx.c
+index ecb3ca2d..6557147 100644
+--- a/drivers/gpio/gpio-bt8xx.c
++++ b/drivers/gpio/gpio-bt8xx.c
+@@ -178,7 +178,7 @@ static int bt8xxgpio_probe(struct pci_dev *dev,
+ 	struct bt8xxgpio *bg;
+ 	int err;
+ 
+-	bg = kzalloc(sizeof(*bg), GFP_KERNEL);
++	bg = devm_kzalloc(&dev->dev, sizeof(struct bt8xxgpio), GFP_KERNEL);
+ 	if (!bg)
+ 		return -ENOMEM;
+ 
+@@ -188,9 +188,9 @@ static int bt8xxgpio_probe(struct pci_dev *dev,
+ 	err = pci_enable_device(dev);
+ 	if (err) {
+ 		printk(KERN_ERR "bt8xxgpio: Can't enable device.\n");
+-		goto err_freebg;
++		return err;
+ 	}
+-	if (!request_mem_region(pci_resource_start(dev, 0),
++	if (!devm_request_mem_region(&dev->dev, pci_resource_start(dev, 0),
+ 				pci_resource_len(dev, 0),
+ 				"bt8xxgpio")) {
+ 		printk(KERN_WARNING "bt8xxgpio: Can't request iomem (0x%llx).\n",
+@@ -201,11 +201,11 @@ static int bt8xxgpio_probe(struct pci_dev *dev,
+ 	pci_set_master(dev);
+ 	pci_set_drvdata(dev, bg);
+ 
+-	bg->mmio = ioremap(pci_resource_start(dev, 0), 0x1000);
++	bg->mmio = devm_ioremap(&dev->dev, pci_resource_start(dev, 0), 0x1000);
+ 	if (!bg->mmio) {
+ 		printk(KERN_ERR "bt8xxgpio: ioremap() failed\n");
+ 		err = -EIO;
+-		goto err_release_mem;
++		goto err_disable;
+ 	}
+ 
+ 	/* Disable interrupts */
+@@ -220,18 +220,13 @@ static int bt8xxgpio_probe(struct pci_dev *dev,
+ 	err = gpiochip_add(&bg->gpio);
+ 	if (err) {
+ 		printk(KERN_ERR "bt8xxgpio: Failed to register GPIOs\n");
+-		goto err_release_mem;
++		goto err_disable;
+ 	}
+ 
+ 	return 0;
+ 
+-err_release_mem:
+-	release_mem_region(pci_resource_start(dev, 0),
+-			   pci_resource_len(dev, 0));
+ err_disable:
+ 	pci_disable_device(dev);
+-err_freebg:
+-	kfree(bg);
+ 
+ 	return err;
+ }
+@@ -250,8 +245,6 @@ static void bt8xxgpio_remove(struct pci_dev *pdev)
+ 	release_mem_region(pci_resource_start(pdev, 0),
+ 			   pci_resource_len(pdev, 0));
+ 	pci_disable_device(pdev);
+-
+-	kfree(bg);
+ }
+ 
+ #ifdef CONFIG_PM
+-- 
+1.8.3.2
 
-I've verified that your suggestion compiles and runs properly
-and will resubmit.
-
-Thanks for catching this.
-
-> 
-> Will
-
-Larry
