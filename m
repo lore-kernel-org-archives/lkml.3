@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780AbaELHw1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 03:52:27 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:57117 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112AbaELHw0 (ORCPT
+	id S1753137AbaELHxY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 03:53:24 -0400
+Received: from mx10.pku.edu.cn ([162.105.129.173]:48444 "EHLO mail.pku.edu.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751385AbaELHxW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 03:52:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Richard Lee <superlibj8301@gmail.com>, linux@arm.linux.org.uk,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Richard Lee <superlibj@gmail.com>
-Subject: Re: [RFC][PATCH 2/2] ARM: ioremap: Add IO mapping space reused support.
-Date: Mon, 12 May 2014 09:51:41 +0200
-Message-ID: <5146762.jba3IJe7xt@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1399861195-21087-3-git-send-email-superlibj8301@gmail.com>
-References: <1399861195-21087-1-git-send-email-superlibj8301@gmail.com> <1399861195-21087-3-git-send-email-superlibj8301@gmail.com>
+	Mon, 12 May 2014 03:53:22 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -307.327
+Date: Mon, 12 May 2014 15:53:10 +0800 (CST)
+From: =?utf-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, a zummo <a.zummo@towertech.it>,
+        sangjung woo <sangjung.woo@samsung.com>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Message-ID: <782248460.17099.1399881190362.JavaMail.root@bj-mail03.pku.edu.cn>
+In-Reply-To: <536479AD.9040104@gmail.com>
+Subject: =?utf-8?Q?=E5=9B=9E=E5=A4=8D=EF=BC=9A_[PATCH_1/2]_driver?=
+ =?utf-8?Q?s/rtc/rtc-puv3.c:_use_d?=
+ =?utf-8?Q?ev=5Fdbg()_instead_of_dev=5Fdebug()_for_typo_issue?=
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:wflw0bXlYxVGEkyTMNcu5/3f+7TMSrx/HxY/T6ficzZ
- DKuiHttfUgVJcnWFxkfm7H11O7FyAZq5OwlMa2Ey0qpiXZZ7v6
- f8yHQ4a32m8ejwu6CjHrdtFrMYFlsjj7ry9p0FgmnWgB1IyRll
- T750VVoj4JVIbh6mT4ekCkXPCBHBHUCo1PRFBBt+Lfpvv+scRY
- yGdvHsl/8IsigeG7JZnzmGddkNjCVhEtjKNVIeXyFEhflaxX0d
- LDC8cB2WiRxpGJQ6jluGC5yp3ccMyTBjVSVJFncAz+Tg/NLHK4
- pLIx1blboeVhVU+FaaUUKzwc9jvmgcX8jiyEbD1pjbi7hAi/vf
- vZnW/qGZL1fdEwHNkMec=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [162.105.129.134]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 May 2014 10:19:55 Richard Lee wrote:
-> For the IO mapping, for the same physical address space maybe
-> mapped more than one time, for example, in some SoCs:
-> 0x20000000 ~ 0x20001000: are global control IO physical map,
-> and this range space will be used by many drivers.
-> And then if each driver will do the same ioremap operation, we
-> will waste to much malloc virtual spaces.
-> 
-> This patch add IO mapping space reused support.
-> 
-> Signed-off-by: Richard Lee <superlibj@gmail.com>
+Acked-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
 
-What happens if the first driver then unmaps the area?
+----- Chen Gang <gang.chen.5i5j@gmail.com> 写道：
+> It is only a typo issue, the related commit:
+> 
+>   "1fbc4c4 drivers/rtc/rtc-puv3.c: use dev_dbg() instead of pr_debug()"
+> 
+> The related error (unicore32 with allmodconfig):
+> 
+>     CC [M]  drivers/rtc/rtc-puv3.o
+>   drivers/rtc/rtc-puv3.c: In function ‘puv3_rtc_setpie’:
+>   drivers/rtc/rtc-puv3.c:74: error: implicit declaration of function ‘dev_debug’
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  drivers/rtc/rtc-puv3.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/rtc/rtc-puv3.c b/drivers/rtc/rtc-puv3.c
+> index 1ecfe3b..c56310e 100644
+> --- a/drivers/rtc/rtc-puv3.c
+> +++ b/drivers/rtc/rtc-puv3.c
+> @@ -71,7 +71,7 @@ static int puv3_rtc_setpie(struct device *dev, int enabled)
+>  {
+>  	unsigned int tmp;
+>  
+> -	dev_debug(dev, "%s: pie=%d\n", __func__, enabled);
+> +	dev_dbg(dev, "%s: pie=%d\n", __func__, enabled);
+>  
+>  	spin_lock_irq(&puv3_rtc_pie_lock);
+>  	tmp = readl(RTC_RTSR) & ~RTC_RTSR_HZE;
+> -- 
+> 1.9.2.459.g68773ac
 
-	Arnd
