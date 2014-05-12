@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047AbaELGU7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 02:20:59 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:35494 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752863AbaELGQo (ORCPT
+	id S1752833AbaELGQl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 02:16:41 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:17646 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752705AbaELGQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 02:16:44 -0400
-X-AuditID: cbfee68f-b7eff6d000002b70-8b-5370674a5b37
+	Mon, 12 May 2014 02:16:38 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-8e-5370673708d9
 From: Shaik Ameer Basha <shaik.ameer@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
@@ -19,40 +19,40 @@ Cc: joro@8bytes.org, arnd@arndb.de, t.figa@samsung.com, kgene.kim@samsung.com,
         supash.ramaswamy@linaro.org, varun.sethi@freescale.com,
         joshi@samsung.com, tomasz.figa@gmail.com,
         Shaik Ameer Basha <shaik.ameer@samsung.com>
-Subject: [PATCH v13 08/19] iommu/exynos: remove dbgname from drvdata of a
- System MMU
-Date: Mon, 12 May 2014 11:44:53 +0530
-Message-id: <1399875304-19948-9-git-send-email-shaik.ameer@samsung.com>
+Subject: [PATCH v13 02/19] iommu/exynos: change error handling when page table
+ update is failed
+Date: Mon, 12 May 2014 11:44:47 +0530
+Message-id: <1399875304-19948-3-git-send-email-shaik.ameer@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1399875304-19948-1-git-send-email-shaik.ameer@samsung.com>
 References: <1399875304-19948-1-git-send-email-shaik.ameer@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsWyRsSkStcrvSDY4MwJTYs7d8+xWvyddIzd
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsWyRsSkVtcivSDY4MtTRos7d8+xWvyddIzd
 	Yv4RIOvVkR9MFgv2W1t0zt7AbvF91xd2i94FV9ksNj2+xmpxedccNosZ5/cxWVxYsZHd4l/v
 	QUaLKYsOs1ocftPOanHyTy+jxZGHu9ktWq73Mlmsn/GaxWLVrj+MFjNvrWFxEPV4cnAek8fv
 	X5MYPWY3XGTx+He4n8lj56y77B53ru1h89i8pN5j8o3ljB59W1YxenzeJOdx5egZpgDuKC6b
-	lNSczLLUIn27BK6Mp08OMhdcka9o2zqdqYGxUaqLkYNDQsBEYtef+i5GTiBTTOLCvfVsXYxc
-	HEICSxklfvzbwAqRMJFYf+4yE0RiEaPEntdrGCGcCUwS21d3s4BUsQkYSmy/d4UVJCEisJpR
-	ou/iGXYQh1lgNrPEkUeLGUGqhAXCJJ50XwfrYBFQlfjX2ga2g1fAXWL1y7OsEDcpSMyZZAMS
-	5hTwkPi8egobiC0EVHLs1VWwBRICWzgk9qybxAQxR0Di2+RDLBC9shKbDjBDnC0pcXDFDZYJ
-	jMILGBlWMYqmFiQXFCelFxnrFSfmFpfmpesl5+duYgRG6+l/z/p3MN49YH2IMRlo3ERmKdHk
-	fGC055XEGxqbGVmYmpgaG5lbmpEmrCTOe/9hUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkG
-	Rs/nl9o6fj1OvsuvfLuM8Vze0zuSr94b1E8xXlPcI9tw9rRKX/k2Zvcyu3+nAl44lkxpcfpV
-	G7a8qXNng/3/F4cnuT+pz+qvCBG3yYp2dZM8tyL39qWD0pqnGfdc5jnM8W7b/5989dvPTF5l
-	7511NWD6vqW8WwrVGOx/hBdPSE3ZfPiKrdBcJyWW4oxEQy3mouJEAFY1xlXsAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOKsWRmVeSWpSXmKPExsVy+t9jAV2v9IJggxWr5S3u3D3HavF30jF2
+	lNSczLLUIn27BK6MqasdClaqVcy51s3YwLhMrouRk0NCwESid88fJghbTOLCvfVsXYxcHEIC
+	Sxkl9nd8Z4YpejrrLCNEYhGjxIVbs5ghnAlMEqv2vmIDqWITMJTYfu8KK0hCRGA1o0TfxTPs
+	IA6zwGxmiSOPFjOCVAkLJEo0T3vOCmKzCKhK/DnzBGw5r4C7xKJri4HGcgDtU5CYM8kGJMwp
+	4CHxefUUsAVCQCXHXl0FWyAhsIVDou3CK3aIOQIS3yYfYoHolZXYdADqbEmJgytusExgFF7A
+	yLCKUTS1ILmgOCm9yESvODG3uDQvXS85P3cTIzBaT/97NmEH470D1ocYk4HGTWSWEk3OB0Z7
+	Xkm8obGZkYWpiamxkbmlGWnCSuK8ao+SgoQE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwyv/N
+	2S/ztCfG+7uL0L9oN/XaJzNanG3tAhxu3Pu12qrkTq1pf4HQzLYOw6KHwmZxp7c2/Prib8x/
+	e1tcSs8+xYTNLH4dky+UqdSnTlosZuS98viEb6qqBkvsnaIjypcLW83JE166u11YzsPv+tW9
+	8+f//F76vMzh9a4LTH5341ecSBVQ3dSvxFKckWioxVxUnAgAiqfIBOwCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGKsWRmVeSWpSXmKPExsVy+t9jAV3z9IJggzPvjCzu3D3HavF30jF2
 	i/lHgKxXR34wWSzYb23ROXsDu8X3XV/YLXoXXGWz2PT4GqvF5V1z2CxmnN/HZHFhxUZ2i3+9
 	Bxktpiw6zGpx+E07q8XJP72MFkce7ma3aLney2SxfsZrFotVu/4wWsy8tYbFQdTjycF5TB6/
 	f01i9JjdcJHF49/hfiaPnbPusnvcubaHzWPzknqPyTeWM3r0bVnF6PF5k5zHlaNnmAK4oxoY
 	bTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOAPlVSKEvM
-	KQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYwZjx9cpC54Ip8RdvW6UwNjI1SXYyc
-	HBICJhLrz11mgrDFJC7cW8/WxcjFISSwiFFiz+s1jBDOBCaJ7au7WUCq2AQMJbbfu8IKkhAR
-	WM0o0XfxDDuIwywwm1niyKPFjCBVwgJhEk+6r4N1sAioSvxrbWMFsXkF3CVWvzwLZHMA7VOQ
-	mDPJBiTMKeAh8Xn1FDYQWwio5Nirq6wTGHkXMDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/d
-	xAhOBs+kdjCubLA4xCjAwajEw/uBoSBYiDWxrLgy9xCjBAezkgjvR3+gEG9KYmVValF+fFFp
-	TmrxIcZkoKMmMkuJJucDE1VeSbyhsYm5qbGppYmFiZklacJK4rwHWq0DhQTSE0tSs1NTC1KL
-	YLYwcXBKNTDyTVrY6KJgwfAmo3lWx5W5h/4ETOI9+JLz85PdT9ZadBnvqvq2SulL4+VPSzrv
-	3bm48JBtZYG9ZmnCfH7pylM2nE0yN3SyMnmmsOTxvey6ytMk97DE6nFQ96SNZc5/GyekqLx+
-	GLf//GabTafkC9SFJPd9an3Se401JmOC3/UXJY2H1cQOe3xXYinOSDTUYi4qTgQAgTylekoD	AAA=
+	KQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYwZkxd7VCwUq1izrVuxgbGZXJdjJwc
+	EgImEk9nnWWEsMUkLtxbz9bFyMUhJLCIUeLCrVnMEM4EJolVe1+xgVSxCRhKbL93hRUkISKw
+	mlGi7+IZdhCHWWA2s8SRR4vBZgkLJEo0T3vOCmKzCKhK/DnzhAnE5hVwl1h0bTHQWA6gfQoS
+	cybZgIQ5BTwkPq+eArZACKjk2KurrBMYeRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93E
+	CE4Fz6R2MK5ssDjEKMDBqMTD+4GhIFiINbGsuDL3EKMEB7OSCO9Hf6AQb0piZVVqUX58UWlO
+	avEhxmSgoyYyS4km5wPTVF5JvKGxibmpsamliYWJmSVpwkrivAdarQOFBNITS1KzU1MLUotg
+	tjBxcEo1ME6bH3bkXKv4rC3ut5t/2v66z3psYfHE/vNH/H7MZC5OfVfs5u8kIO1Ws+tF6vy7
+	Pal7/l2MrK2ZGRtgXRcUnBjUMnnm4s1XZqtLzLB8aK3Td0fKvD3SMm1uhfuTZga7aLOlt/8x
+	fT3kVXplmc3+wgk7d/h4WF80jPx541TU4YAalc+/XkbJ2iixFGckGmoxFxUnAgCaUBAhSQMA	AA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -62,122 +62,167 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cho KyongHo <pullip.cho@samsung.com>
 
-This patch removes dbgname member from sysmmu_drvdata structure.
-Kernel message for debugging already has the name of a single
-System MMU node. It also removes some compilation warnings.
+This patch changes not to panic on any error when updating page table.
+Instead prints error messages with callstack.
 
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
 Signed-off-by: Shaik Ameer Basha <shaik.ameer@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c |   32 +++++++++++++-------------------
- 1 file changed, 13 insertions(+), 19 deletions(-)
+ drivers/iommu/exynos-iommu.c |   58 ++++++++++++++++++++++++++++++++----------
+ 1 file changed, 44 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index ef771a2..be7a7b9 100644
+index 8d7c3f9..aec7fd7 100644
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -170,7 +170,6 @@ struct sysmmu_drvdata {
- 	struct list_head node; /* entry of exynos_iommu_domain.clients */
- 	struct device *sysmmu;	/* System MMU's device descriptor */
- 	struct device *dev;	/* Owner of system MMU */
--	char *dbgname;
- 	void __iomem *sfrbase;
- 	struct clk *clk;
- 	int activations;
-@@ -321,8 +320,8 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
- 	if (!ret && (itype != SYSMMU_FAULT_UNKNOWN))
- 		__raw_writel(1 << itype, data->sfrbase + REG_INT_CLEAR);
- 	else
--		dev_dbg(data->sysmmu, "(%s) %s is not handled.\n",
--				data->dbgname, sysmmu_fault_name[itype]);
-+		dev_dbg(data->sysmmu, "%s is not handled.\n",
-+				sysmmu_fault_name[itype]);
+@@ -728,13 +728,18 @@ finish:
+ static unsigned long *alloc_lv2entry(unsigned long *sent, unsigned long iova,
+ 					short *pgcounter)
+ {
++	if (lv1ent_section(sent)) {
++		WARN(1, "Trying mapping on %#08lx mapped with 1MiB page", iova);
++		return ERR_PTR(-EADDRINUSE);
++	}
++
+ 	if (lv1ent_fault(sent)) {
+ 		unsigned long *pent;
  
- 	if (itype != SYSMMU_FAULT_UNKNOWN)
- 		sysmmu_unblock(data->sfrbase);
-@@ -354,10 +353,10 @@ finish:
- 	write_unlock_irqrestore(&data->lock, flags);
+ 		pent = kzalloc(LV2TABLE_SIZE, GFP_ATOMIC);
+ 		BUG_ON((unsigned long)pent & (LV2TABLE_SIZE - 1));
+ 		if (!pent)
+-			return NULL;
++			return ERR_PTR(-ENOMEM);
  
- 	if (disabled)
--		dev_dbg(data->sysmmu, "(%s) Disabled\n", data->dbgname);
-+		dev_dbg(data->sysmmu, "Disabled\n");
- 	else
--		dev_dbg(data->sysmmu, "(%s) %d times left to be disabled\n",
--					data->dbgname, data->activations);
-+		dev_dbg(data->sysmmu, "%d times left to be disabled\n",
-+					data->activations);
- 
- 	return disabled;
+ 		*sent = mk_lv1ent_page(virt_to_phys(pent));
+ 		*pgcounter = NUM_LV2ENTRIES;
+@@ -745,14 +750,21 @@ static unsigned long *alloc_lv2entry(unsigned long *sent, unsigned long iova,
+ 	return page_entry(sent, iova);
  }
-@@ -384,7 +383,7 @@ static int __exynos_sysmmu_enable(struct sysmmu_drvdata *data,
- 			ret = 1;
- 		}
  
--		dev_dbg(data->sysmmu, "(%s) Already enabled\n", data->dbgname);
-+		dev_dbg(data->sysmmu, "Already enabled\n");
- 		goto finish;
- 	}
+-static int lv1set_section(unsigned long *sent, phys_addr_t paddr, short *pgcnt)
++static int lv1set_section(unsigned long *sent, unsigned long iova,
++			  phys_addr_t paddr, short *pgcnt)
+ {
+-	if (lv1ent_section(sent))
++	if (lv1ent_section(sent)) {
++		WARN(1, "Trying mapping on 1MiB@%#08lx that is mapped",
++			iova);
+ 		return -EADDRINUSE;
++	}
  
-@@ -399,7 +398,7 @@ static int __exynos_sysmmu_enable(struct sysmmu_drvdata *data,
+ 	if (lv1ent_page(sent)) {
+-		if (*pgcnt != NUM_LV2ENTRIES)
++		if (*pgcnt != NUM_LV2ENTRIES) {
++			WARN(1, "Trying mapping on 1MiB@%#08lx that is mapped",
++				iova);
+ 			return -EADDRINUSE;
++		}
  
- 	data->domain = domain;
+ 		kfree(page_entry(sent, 0));
  
--	dev_dbg(data->sysmmu, "(%s) Enabled\n", data->dbgname);
-+	dev_dbg(data->sysmmu, "Enabled\n");
- finish:
- 	write_unlock_irqrestore(&data->lock, flags);
+@@ -770,8 +782,10 @@ static int lv2set_page(unsigned long *pent, phys_addr_t paddr, size_t size,
+ 								short *pgcnt)
+ {
+ 	if (size == SPAGE_SIZE) {
+-		if (!lv2ent_fault(pent))
++		if (!lv2ent_fault(pent)) {
++			WARN(1, "Trying mapping on 4KiB where mapping exists");
+ 			return -EADDRINUSE;
++		}
  
-@@ -415,16 +414,15 @@ int exynos_sysmmu_enable(struct device *dev, unsigned long pgtable)
+ 		*pent = mk_lv2ent_spage(paddr);
+ 		pgtable_flush(pent, pent + 1);
+@@ -780,7 +794,10 @@ static int lv2set_page(unsigned long *pent, phys_addr_t paddr, size_t size,
+ 		int i;
+ 		for (i = 0; i < SPAGES_PER_LPAGE; i++, pent++) {
+ 			if (!lv2ent_fault(pent)) {
+-				memset(pent, 0, sizeof(*pent) * i);
++				WARN(1,
++				"Trying mapping on 64KiB where mapping exists");
++				if (i > 0)
++					memset(pent - i, 0, sizeof(*pent) * i);
+ 				return -EADDRINUSE;
+ 			}
  
- 	ret = pm_runtime_get_sync(data->sysmmu);
- 	if (ret < 0) {
--		dev_dbg(data->sysmmu, "(%s) Failed to enable\n", data->dbgname);
-+		dev_dbg(data->sysmmu, "Failed to enable\n");
- 		return ret;
- 	}
+@@ -808,7 +825,7 @@ static int exynos_iommu_map(struct iommu_domain *domain, unsigned long iova,
+ 	entry = section_entry(priv->pgtable, iova);
  
- 	ret = __exynos_sysmmu_enable(data, pgtable, NULL);
- 	if (WARN_ON(ret < 0)) {
- 		pm_runtime_put(data->sysmmu);
--		dev_err(data->sysmmu,
--			"(%s) Already enabled with page table %#x\n",
--			data->dbgname, data->pgtable);
-+		dev_err(data->sysmmu, "Already enabled with page table %#x\n",
-+			data->pgtable);
+ 	if (size == SECT_SIZE) {
+-		ret = lv1set_section(entry, paddr,
++		ret = lv1set_section(entry, iova, paddr,
+ 					&priv->lv2entcnt[lv1ent_offset(iova)]);
  	} else {
- 		data->dev = dev;
- 	}
-@@ -474,9 +472,7 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova,
- 			sysmmu_unblock(data->sfrbase);
- 		}
- 	} else {
--		dev_dbg(data->sysmmu,
--			"(%s) Disabled. Skipping invalidating TLB.\n",
--			data->dbgname);
-+		dev_dbg(data->sysmmu, "Disabled. Skipping invalidating TLB.\n");
- 	}
+ 		unsigned long *pent;
+@@ -816,17 +833,16 @@ static int exynos_iommu_map(struct iommu_domain *domain, unsigned long iova,
+ 		pent = alloc_lv2entry(entry, iova,
+ 					&priv->lv2entcnt[lv1ent_offset(iova)]);
  
- 	read_unlock_irqrestore(&data->lock, flags);
-@@ -495,9 +491,7 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
- 			sysmmu_unblock(data->sfrbase);
- 		}
- 	} else {
--		dev_dbg(data->sysmmu,
--			"(%s) Disabled. Skipping invalidating TLB.\n",
--			data->dbgname);
-+		dev_dbg(data->sysmmu, "Disabled. Skipping invalidating TLB.\n");
+-		if (!pent)
+-			ret = -ENOMEM;
++		if (IS_ERR(pent))
++			ret = PTR_ERR(pent);
+ 		else
+ 			ret = lv2set_page(pent, paddr, size,
+ 					&priv->lv2entcnt[lv1ent_offset(iova)]);
  	}
  
- 	read_unlock_irqrestore(&data->lock, flags);
-@@ -560,7 +554,7 @@ static int exynos_sysmmu_probe(struct platform_device *pdev)
+-	if (ret) {
++	if (ret)
+ 		pr_debug("%s: Failed to map iova 0x%lx/0x%x bytes\n",
+ 							__func__, iova, size);
+-	}
  
- 	pm_runtime_enable(dev);
+ 	spin_unlock_irqrestore(&priv->pgtablelock, flags);
  
--	dev_dbg(dev, "(%s) Initialized\n", data->dbgname);
-+	dev_dbg(dev, "Initialized\n");
- 	return 0;
- err_irq:
- 	free_irq(platform_get_irq(pdev, 0), data);
+@@ -840,6 +856,7 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
+ 	struct sysmmu_drvdata *data;
+ 	unsigned long flags;
+ 	unsigned long *ent;
++	size_t err_pgsize;
+ 
+ 	BUG_ON(priv->pgtable == NULL);
+ 
+@@ -848,7 +865,10 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
+ 	ent = section_entry(priv->pgtable, iova);
+ 
+ 	if (lv1ent_section(ent)) {
+-		BUG_ON(size < SECT_SIZE);
++		if (size < SECT_SIZE) {
++			err_pgsize = SECT_SIZE;
++			goto err;
++		}
+ 
+ 		*ent = 0;
+ 		pgtable_flush(ent, ent + 1);
+@@ -879,7 +899,10 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
+ 	}
+ 
+ 	/* lv1ent_large(ent) == true here */
+-	BUG_ON(size < LPAGE_SIZE);
++	if (size < LPAGE_SIZE) {
++		err_pgsize = LPAGE_SIZE;
++		goto err;
++	}
+ 
+ 	memset(ent, 0, sizeof(*ent) * SPAGES_PER_LPAGE);
+ 
+@@ -893,8 +916,15 @@ done:
+ 		sysmmu_tlb_invalidate_entry(data->dev, iova);
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 
+-
+ 	return size;
++err:
++	spin_unlock_irqrestore(&priv->pgtablelock, flags);
++
++	WARN(1,
++	"%s: Failed due to size(%#x) @ %#08lx is smaller than page size %#x\n",
++	__func__, size, iova, err_pgsize);
++
++	return 0;
+ }
+ 
+ static phys_addr_t exynos_iommu_iova_to_phys(struct iommu_domain *domain,
 -- 
 1.7.9.5
 
