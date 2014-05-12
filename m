@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633AbaELDWJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 23:22:09 -0400
-Received: from mail-bl2on0132.outbound.protection.outlook.com ([65.55.169.132]:46569
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751393AbaELDWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 23:22:07 -0400
-X-Greylist: delayed 938 seconds by postgrey-1.27 at vger.kernel.org; Sun, 11 May 2014 23:22:07 EDT
-From: Richard Lee <superlibj8301@gmail.com>
-To: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-CC: Richard Lee <superlibj8301@gmail.com>, Richard Lee <superlibj@gmail.com>
-Subject: [RFC][PATCH 2/2] ARM: ioremap: Add IO mapping space reused support.
-Date: Mon, 12 May 2014 10:19:55 +0800
-Message-ID: <1399861195-21087-3-git-send-email-superlibj8301@gmail.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1399861195-21087-1-git-send-email-superlibj8301@gmail.com>
-References: <1399861195-21087-1-git-send-email-superlibj8301@gmail.com>
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130443375756231189;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(189002)(199002)(4396001)(76176999)(50986999)(77096999)(81442001)(48376002)(2009001)(50466002)(68736004)(44976005)(19580405001)(19580395003)(79102001)(86362001)(21056001)(92566001)(47776003)(80022001)(93916002)(50226001)(92726001)(61266001)(2201001)(69596002)(64706001)(81342001)(99396002)(20776003)(81542001)(87572001)(97736001)(33646001)(88136002)(83072002)(85852003)(62966002)(74502001)(87936001)(74662001)(81156002)(77156001)(31966008)(6806004)(82202001)(77982001)(84676001)(73972005)(87286001)(55446002)(36756003)(46102001)(57042002)(46252002)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB411;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1751847AbaELDWa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 23:22:30 -0400
+Received: from mga11.intel.com ([192.55.52.93]:48295 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751727AbaELDW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 23:22:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1032,1389772800"; 
+   d="scan'208";a="537435939"
+Message-ID: <53703E74.9020700@linux.intel.com>
+Date: Sun, 11 May 2014 20:22:28 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Forefront-PRVS: 0209425D0A
-Authentication-Results: spf=softfail (sender IP is 192.88.158.2)
- smtp.mailfrom=superlibj8301@gmail.com; 
+To: Stephan Mueller <smueller@chronox.de>
+CC: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+Subject: Re: arch_random_refill
+References: <21542339.0lFnPSyGRS@myon.chronox.de>
+In-Reply-To: <21542339.0lFnPSyGRS@myon.chronox.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the IO mapping, for the same physical address space maybe
-mapped more than one time, for example, in some SoCs:
-0x20000000 ~ 0x20001000: are global control IO physical map,
-and this range space will be used by many drivers.
-And then if each driver will do the same ioremap operation, we
-will waste to much malloc virtual spaces.
+On 05/11/2014 04:01 PM, Stephan Mueller wrote:
+> Hi Peter,
+> 
+> some time back when the RDRAND instruction was debated, a patch was offered 
+> for driver/char/random.c that in essence turned /dev/random into a frontend 
+> for RDRAND in case that instruction was available. The patch kind of 
+> monopolized the noise sources such that if a user space "random number hog" 
+> pulled data from /dev/random endlessly, the (almost) only noise source was 
+> RDRAND. As that patch treated RDRAND to provide entropy, the blocking behavior 
+> went away for /dev/random.
+> 
 
-This patch add IO mapping space reused support.
+This is false in a number of ways.
 
-Signed-off-by: Richard Lee <superlibj@gmail.com>
----
- arch/arm/mm/ioremap.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+First of all... we NEVER pulled either /dev/random or /dev/urandom
+directly from RDRAND.  We used RDRAND directly for kernel internal
+randomness uses.  Users did object to this.
 
-diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
-index f9c32ba..26a3744 100644
---- a/arch/arm/mm/ioremap.c
-+++ b/arch/arm/mm/ioremap.c
-@@ -260,7 +260,7 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
- {
- 	const struct mem_type *type;
- 	int err;
--	unsigned long addr;
-+	unsigned long addr, off;
- 	struct vm_struct *area;
- 	phys_addr_t paddr = __pfn_to_phys(pfn);
- 
-@@ -301,6 +301,12 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
- 	if (WARN_ON(pfn_valid(pfn)))
- 		return NULL;
- 
-+	area = find_vm_area_paddr(paddr, size, &off, VM_IOREMAP);
-+	if (area) {
-+		addr = (unsigned long)area->addr;
-+		return (void __iomem *)(offset + off + addr);
-+	}
-+
- 	area = get_vm_area_caller(size, VM_IOREMAP, caller);
-  	if (!area)
-  		return NULL;
-@@ -410,6 +416,9 @@ void __iounmap(volatile void __iomem *io_addr)
- 	if (svm)
- 		return;
- 
-+	if (!vm_area_is_aready_to_free((unsigned long)addr))
-+		return;
-+
- #if !defined(CONFIG_SMP) && !defined(CONFIG_ARM_LPAE)
- 	{
- 		struct vm_struct *vm;
--- 
-1.8.4
+> That patch did not sit well with some developers and it got finally changed 
+> such that the output of RDRAND is now just XORed with the output of the 
+> "classic" /dev/random behavior -- /dev/random is still blocking. 
+
+Mixing in RDRAND into /dev/random and /dev/urandom is actually
+
+> With the current development cycle for 3.15, the function arch_random_refill 
+> is added as presented in [1]. It now uses RDSEED instead of RDRAND. Yet, the 
+> way this function is called in random_read seems (as I have no system with an 
+> RDSEED, I cannot test) to show the very same behavior as the aforementioned 
+> RDRAND patch: the blocking behavior of /dev/random will be gone and RDSEED 
+> will monopolize the noise sources in case of a user space hog.
+
+There is a huge difference between this and what people objected to
+earlier: we filter everything through the kernel random number pool
+system, which would require a herculean mathematical effort to reverse
+even if the output of RDSEED was 100% predictable.
+
+> Note, I do not see an issue with the patch that adds RDSEED as part of 
+> add_interrupt_randomness outlined in [2]. The reason is that this patch does 
+> not monopolizes the noise sources.
+> 
+> I do not want to imply that Intel (or any other chip manufacturer that will 
+> hook into arch_random_refill) intentionally provides bad entropy (and this 
+> email shall not start a discussion about entropy again), but I would like to 
+> be able to only use noise sources that I can fully audit. As it is with 
+> hardware, I am not able to see what it is doing.
+
+I have to point out the irony in this given your previous proposals,
+however...
+
+> Thus, may I ask that arch_random_refill is revised such that it will not 
+> monopolize the noise sources? If somebody wants that, he can easily use rngd.
+
+Feel free to build the kernel without CONFIG_ARCH_RANDOM, or use the
+"nordrand" option to the kernel.  These options are there for a reason.
+
+Now when you mention it, though, the nordrand option should turn off
+RDSEED as well as RDRAND.  It currently doesn't; that is a bug, plain
+and simple.
+
+	-hpa
 
