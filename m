@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155AbaELUGS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 16:06:18 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:43493 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751567AbaELUGR (ORCPT
+	id S1754344AbaELUHu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 16:07:50 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:48134 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753420AbaELUHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 16:06:17 -0400
-Date: Mon, 12 May 2014 16:06:16 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-cc: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, <kishon@ti.com>,
-        <hdegoede@redhat.com>, Boris Brezillon <boris@free-electrons.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <kevin.z.m.zh@gmail.com>,
-        <sunny@allwinnertech.com>, <shuge@allwinnertech.com>,
-        <zhuzhenhua@allwinnertech.com>, <linux-sunxi@googlegroups.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: Re: [PATCH v3 5/8] usb: ehci-platform: add optional reset controller
- retrieval
-In-Reply-To: <1399923274-6017-6-git-send-email-maxime.ripard@free-electrons.com>
-Message-ID: <Pine.LNX.4.44L0.1405121604140.1202-100000@iolanthe.rowland.org>
+	Mon, 12 May 2014 16:07:49 -0400
+Date: Mon, 12 May 2014 16:07:45 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH percpu/for-3.16 2/2] percpu-refcount: implement
+ percpu_ref_tryget()
+Message-ID: <20140512200745.GN1421@htj.dyndns.org>
+References: <20140507155511.GB26540@htj.dyndns.org>
+ <20140507155647.GC26540@htj.dyndns.org>
+ <20140507155810.GD26540@htj.dyndns.org>
+ <20140509194020.GB2276@kmo>
+ <20140509194140.GC4486@htj.dyndns.org>
+ <20140509195109.GC2276@kmo>
+ <20140509195522.GF4486@htj.dyndns.org>
+ <20140512000619.GC10617@kmo-pixel>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140512000619.GC10617@kmo-pixel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 May 2014, Maxime Ripard wrote:
+Hey,
 
-> From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+On Sun, May 11, 2014 at 05:06:19PM -0700, Kent Overstreet wrote:
+> On Fri, May 09, 2014 at 03:55:22PM -0400, Tejun Heo wrote:
+> > Hello,
+> > 
+> > On Fri, May 09, 2014 at 12:51:09PM -0700, Kent Overstreet wrote:
+> > > Well not so much deprecated as "bad, avoid" - IMO using tryget() almost always
+> > > (I haven't seen a convincing counterexample) means you screwed up your
+> > > refcounting somewhere, if you need to take a ref on something whatever made that
+> > > object visible to you should have its own ref.
+> > > 
+> > > (I think we had this debate, but that was awhile ago...)
+> > 
+> > Oh sure, tryget can definitely be misunderstood but RCU protected
+> > iteration is one valid use case.
+> > 
+> > 	rcu_read_lock();
+> > 	locate the object of interest;
+> > 	tryget[_live]() depending on the use case;
+> > 	rcu_read_unlock();
+> > 
+> > 	access the object.
 > 
-> On the Allwinner's A31 SoC the reset line connected to the EHCI IP has to
-> be deasserted for the EHCI block to be usable.
+> No, it's not needed with RCU... look at the aio code for an example (or don't,
+> save your eyes instead).
 > 
-> Add support for an optional reset controller that will be deasserted on
-> power off and asserted on power on.
-> 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+> Conceptually the RCU data structure should own a refcount on the things that are
+> accessible via it; that ref shouldn't be dropped until after it's removed and an
+> RCU barrier has happened.
 
-...
+You can do that if the object can disappear from iteration when its
+ref gets killed.  IOW, the list visiblity is not tied to the reference
+count.  cgroup_subsys_states can't do that.  They have to remain
+visible to iteration until the object's last ref is dropped because
+controllers need to be able to walk them while the object is being
+drained.
 
-> @@ -208,6 +210,18 @@ static int ehci_platform_probe(struct platform_device *dev)
->  		}
->  	}
->  
-> +	priv->rst = devm_reset_control_get_optional(&dev->dev, NULL);
-> +	if (IS_ERR(priv->rst)) {
-> +		err = PTR_ERR(priv->rst);
-> +		if (err == -EPROBE_DEFER)
-> +			goto err_put_clks;
-> +		priv->rst = NULL;
-> +	} else {
-> +		err = reset_control_deassert(priv->rst);
-> +		if (err)
-> +			goto err_put_clks;
-> +	}
-> +
->  	if (pdata->big_endian_desc)
->  		ehci->big_endian_desc = 1;
->  	if (pdata->big_endian_mmio)
+Thanks.
 
-You don't re-assert the reset control if an error happens later on 
-during probe.  Was that intentional?
-
-Alan Stern
-
+-- 
+tejun
