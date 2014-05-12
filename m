@@ -1,88 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469AbaELFsZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 01:48:25 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:45525 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340AbaELFsW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 01:48:22 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: bug: acpi ata_bay dock reminds undocked
-Date: Mon, 12 May 2014 07:48:16 +0200
-User-Agent: KMail/1.13.7 (Linux/3.15.0-031500rc5-generic; KDE/4.13.0; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <201404292216.41256@pali> <201405111749.18796@pali> <2639498.hrETOnLRn5@vostro.rjw.lan>
-In-Reply-To: <2639498.hrETOnLRn5@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2915149.nAujJYNdua";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	id S1752618AbaELFtE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 01:49:04 -0400
+Received: from gate.crashing.org ([63.228.1.57]:38782 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751937AbaELFtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 01:49:02 -0400
+Message-ID: <1399873724.17624.80.camel@pasglop>
+Subject: Re: [PATCH] powerpc: Fix "attempt to move .org backwards" error
+ (again)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>
+Date: Mon, 12 May 2014 15:48:44 +1000
+In-Reply-To: <5370537F.8020901@roeck-us.net>
+References: <1399680478-4970-1-git-send-email-linux@roeck-us.net>
+	 <1399867920.17624.73.camel@pasglop> <5370537F.8020901@roeck-us.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201405120748.16464@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2915149.nAujJYNdua
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Sun, 2014-05-11 at 21:52 -0700, Guenter Roeck wrote:
+> Oh well, it was worth a try. Can you give me an example for a failing
+> configuration ?
 
-On Monday 12 May 2014 02:00:29 Rafael J. Wysocki wrote:
-> On Sunday, May 11, 2014 05:49:17 PM Pali Roh=C3=A1r wrote:
-> > --nextPart2204083.pLeiedbUui
-> > Content-Type: Text/Plain;
-> >=20
-> >   charset=3D"utf-8"
-> >=20
-> > Content-Transfer-Encoding: quoted-printable
-> >=20
-> > On Wednesday 30 April 2014 11:24:50 Pali Roh=3DC3=3DA1r wrote:
-> > > On Tuesday 29 April 2014 23:35:42 Rafael J. Wysocki wrote:
-> > > > On Tuesday, April 29, 2014 11:00:01 PM Pali Roh=3DC3=3DA1r=20
-wrote:
-> > > > > On Tuesday 29 April 2014 22:55:07 Rafael J. Wysocki=20
-wrote:
-> > > > > > Which kernel version(s) have you tried?
-> > > > >
-> > > > >=3D20
-> > > > >
-> > > > > 3.15-rc3
-> > > >
-> > > >=3D20
-> > > >
-> > > > Does it work with 3.14(.x) by chance?
-> > >
-> > >=3D20
-> > >
-> > > Tested with 3.14 and 3.8. Same problem, not working.
-> >=20
-> > BUMP!
-> >=20
-> > Rafael, do you need some other information?
->=20
-> I'll take care of this when I have the time, OK?
+My g5 config which is close to g5_defconfig with PR KVM enabled.
 
-Ok, I will wait.
+In any case, see my other messages. I'm waiting for all my test builders
+to come back and if it's clear I'll post a new patch.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+Cheers,
+Ben.
 
---nextPart2915149.nAujJYNdua
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlNwYKAACgkQi/DJPQPkQ1KIvwCgx7nr/T+zDmRFaFmaACLuxLm/
-IdoAn1FHXVAjlojpbR54B1R5d4hUJFvw
-=acIq
------END PGP SIGNATURE-----
-
---nextPart2915149.nAujJYNdua--
