@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759345AbaELRuc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 13:50:32 -0400
-Received: from smtprelay0142.hostedemail.com ([216.40.44.142]:35574 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753529AbaELRub (ORCPT
+	id S1759361AbaELRuo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 13:50:44 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:41586 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758853AbaELRun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 13:50:31 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2915:3138:3139:3140:3141:3142:3622:3865:3867:3873:3874:4321:5007:7652:7901:10004:10400:10848:11026:11232:11658:11914:12517:12519:12740:13069:13071:13132:13231:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: swim62_4010a07dbf15
-X-Filterd-Recvd-Size: 1250
-Message-ID: <1399917025.9240.16.camel@joe-AO725>
-Subject: Re: [PATCH 1/1] net/wireless/ibss.c: replace memcpy by
- ether_addr_copy
-From: Joe Perches <joe@perches.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        akpm <akpm@linux-foundation.org>
-Date: Mon, 12 May 2014 10:50:25 -0700
-In-Reply-To: <20140512193050.1ba6a301b20af3f4e7e43870@skynet.be>
-References: <20140512193050.1ba6a301b20af3f4e7e43870@skynet.be>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Mon, 12 May 2014 13:50:43 -0400
+Message-ID: <537109EF.4010902@colorfullife.com>
+Date: Mon, 12 May 2014 19:50:39 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, 1vier1@web.de
+Subject: Re: [PATCH 1/6] ipc/sem.c: further whitespace cleanups
+References: <1399716199-26776-1-git-send-email-manfred@colorfullife.com> <1399716199-26776-2-git-send-email-manfred@colorfullife.com> <1399851275.11110.1.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1399851275.11110.1.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-12 at 19:30 +0200, Fabian Frederick wrote:
-> This patch also fixes some comment checkpatch warnings
+Hi Davidlohr,
 
-Hello Fabian.
+On 05/12/2014 01:34 AM, Davidlohr Bueso wrote:
+> On Sat, 2014-05-10 at 12:03 +0200, Manfred Spraul wrote:
+>> Somehow <TAB>$ was overlooked in the last round of whitespace
+>> cleanups.
+>> Do that now, before making further changes.
+> No big deal, but this patch could easily be included in the the second
+> patch instead on its own. Thanks.
+The patch series you see is the third approach to fix the issue:
+- do not store anything, call perform_atomic_semop() in count_semncnt()
+   Really cool, no impact at all for semop() - but nasty.
+   A sleeping operation could fail suddenly due to -ERANGE.
 
-For all the patches that replace memcpy(foo, bar, ETH_ALEN)
-with ether_addr_copy, did you use a tool to verify both
-arguments are __aligned(2) or did you do the verification
-visually?
+- store semncnt and semzcnt in struct sem:
+   Increase in perform_atomic_semop(), decrease in unlink_queue().
+
+- Now: store the pointer to the blocking op.
+
+That's why the series got so fine-grained...
+
+--
+     Manfred
 
 
