@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751805AbaELBlf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:41:35 -0400
-Received: from 1wt.eu ([62.212.114.60]:34336 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751585AbaELBla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:41:30 -0400
-Message-Id: <20140512003201.920618870@1wt.eu>
-User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:32:31 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 031/143] can: dev: fix nlmsg size calculation in can_get_size()
-In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
+	id S1758359AbaELCVN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 22:21:13 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:62506 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274AbaELCVH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 22:21:07 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <5370300A.8070102@roeck-us.net>
+Date: Sun, 11 May 2014 19:20:58 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Josef Gajdusek <atx@atx.name>, jdelvare@suse.de
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] [PATCH] drivers/hwmon/emc1403.c: add support for
+ emc1412
+References: <20140511130023.GA501@dashie> <536FFC55.2080009@roeck-us.net>
+In-Reply-To: <536FFC55.2080009@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+On 05/11/2014 03:40 PM, Guenter Roeck wrote:
+[ ... ]
 
-------------------
+>>
+>>       id = i2c_smbus_read_byte_data(client, THERMAL_REVISION_REG);
+>> -    if (id != 0x01)
+>> +    if (id != 0x01 && id != 0x04) {
+>>           return -ENODEV;
+>
+> This should be a separate patch, as it applies to emc1403/emc1404 as well,
+> so we can backport it into -stable.
+>
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+Also, the chip datasheet suggests that chip revision 3 exists as well.
+Given that, I would suggest to replace the revision number check with
+something like
+	if (id < 0x01 || id > 0x04)
+		return -ENODEV;
 
-[ Upstream commit fe119a05f8ca481623a8d02efcc984332e612528 ]
-
-This patch fixes the calculation of the nlmsg size, by adding the missing
-nla_total_size().
-
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
----
- drivers/net/can/dev.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/can/dev.c b/drivers/net/can/dev.c
-index 2868fe8..ea2749f9 100644
---- a/drivers/net/can/dev.c
-+++ b/drivers/net/can/dev.c
-@@ -595,12 +595,12 @@ static size_t can_get_size(const struct net_device *dev)
- 	size_t size;
- 
- 	size = nla_total_size(sizeof(u32));   /* IFLA_CAN_STATE */
--	size += sizeof(struct can_ctrlmode);  /* IFLA_CAN_CTRLMODE */
-+	size += nla_total_size(sizeof(struct can_ctrlmode));  /* IFLA_CAN_CTRLMODE */
- 	size += nla_total_size(sizeof(u32));  /* IFLA_CAN_RESTART_MS */
--	size += sizeof(struct can_bittiming); /* IFLA_CAN_BITTIMING */
--	size += sizeof(struct can_clock);     /* IFLA_CAN_CLOCK */
-+	size += nla_total_size(sizeof(struct can_bittiming)); /* IFLA_CAN_BITTIMING */
-+	size += nla_total_size(sizeof(struct can_clock));     /* IFLA_CAN_CLOCK */
- 	if (priv->bittiming_const)	      /* IFLA_CAN_BITTIMING_CONST */
--		size += sizeof(struct can_bittiming_const);
-+		size += nla_total_size(sizeof(struct can_bittiming_const));
- 
- 	return size;
- }
--- 
-1.7.12.2.21.g234cd45.dirty
-
-
+Guenter
 
