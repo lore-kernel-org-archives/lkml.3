@@ -1,43 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943AbaELDge (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 23:36:34 -0400
-Received: from mga02.intel.com ([134.134.136.20]:65243 "EHLO mga02.intel.com"
+	id S1752244AbaELDhJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 23:37:09 -0400
+Received: from mail.eperm.de ([89.247.134.16]:46355 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751320AbaELDgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 23:36:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1032,1389772800"; 
-   d="scan'208";a="538662724"
-From: Andi Kleen <andi@firstfloor.org>
-To: Armin Rigo <arigo@tunes.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
-        mingo@kernel.org
-Subject: Re: [PATCHv2 0/2] remap_file_pages() decommission
-References: <1399552888-11024-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<CAMSv6X0+3-uNeiyEPD3sA5dA6Af_M+BT0aeVpa3qMv1aga0q9g@mail.gmail.com>
-Date: Sun, 11 May 2014 20:36:32 -0700
-In-Reply-To: <CAMSv6X0+3-uNeiyEPD3sA5dA6Af_M+BT0aeVpa3qMv1aga0q9g@mail.gmail.com>
-	(Armin Rigo's message of "Thu, 8 May 2014 17:44:46 +0200")
-Message-ID: <87tx8v4qin.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752076AbaELDhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 23:37:07 -0400
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+Subject: Re: arch_random_refill
+Date: Mon, 12 May 2014 05:36:48 +0200
+Message-ID: <3260147.sUis3H5ONm@myon.chronox.de>
+User-Agent: KMail/4.12.5 (Linux/3.14.3-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <53703E74.9020700@linux.intel.com>
+References: <21542339.0lFnPSyGRS@myon.chronox.de> <53703E74.9020700@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Armin Rigo <arigo@tunes.org> writes:
+Am Sonntag, 11. Mai 2014, 20:22:28 schrieb H. Peter Anvin:
 
-> Here is a note from the PyPy project (mentioned earlier in this
-> thread, and at https://lwn.net/Articles/587923/ ).
+Hi Peter,
+> 
+> > Note, I do not see an issue with the patch that adds RDSEED as part of
+> > add_interrupt_randomness outlined in [2]. The reason is that this patch
+> > does not monopolizes the noise sources.
+> > 
+> > I do not want to imply that Intel (or any other chip manufacturer that
+> > will
+> > hook into arch_random_refill) intentionally provides bad entropy (and this
+> > email shall not start a discussion about entropy again), but I would like
+> > to be able to only use noise sources that I can fully audit. As it is
+> > with hardware, I am not able to see what it is doing.
+> 
+> I have to point out the irony in this given your previous proposals,
+> however...
 
-Your use is completely bogus. remap_file_pages() pins everything 
-and disables any swapping for the area.
+I guess that is the funny nature of entropy :-)
 
--Andi
+But in our current predicament, not everybody trusts a few potentially easily 
+manipulated gates that have no other purpose than produce white noise which 
+are developed by the biggest chip vendor in the US. Gates which have other 
+purposes may not be that easily manipulated.
+> 
+> > Thus, may I ask that arch_random_refill is revised such that it will not
+> > monopolize the noise sources? If somebody wants that, he can easily use
+> > rngd.
+> Feel free to build the kernel without CONFIG_ARCH_RANDOM, or use the
+> "nordrand" option to the kernel.  These options are there for a reason.
+> 
+> Now when you mention it, though, the nordrand option should turn off
+> RDSEED as well as RDRAND.  It currently doesn't; that is a bug, plain
+> and simple.
+
+Ohh, ok, thanks for fixing that. :-) 
+
+Though what makes me wonder is the following: why are some RNGs forced to use 
+the hw_random framework whereas some others are not? What is the driver for 
+that?
+
+The current state of random.c vs. drivers/char/hw_random and the strong in-
+kernel separation between both makes me wonder. Isn't that all kind of 
+inconsistent?
+
+Ciao
+Stephan
 -- 
-ak@linux.intel.com -- Speaking for myself only
+| Cui bono? |
