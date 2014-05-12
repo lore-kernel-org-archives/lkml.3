@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562AbaELKfP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 06:35:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54132 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751942AbaELKfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 06:35:12 -0400
-Date: Mon, 12 May 2014 11:35:05 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Weijie Yang <weijieut@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/4] plist: add helper functions
-Message-ID: <20140512103505.GL23991@suse.de>
-References: <1397336454-13855-1-git-send-email-ddstreet@ieee.org>
- <1399057350-16300-1-git-send-email-ddstreet@ieee.org>
- <1399057350-16300-3-git-send-email-ddstreet@ieee.org>
+	id S1755814AbaELKqT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 06:46:19 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:46738 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753582AbaELKqS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 06:46:18 -0400
+Message-ID: <5370A672.1050103@redhat.com>
+Date: Mon, 12 May 2014 12:46:10 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1399057350-16300-3-git-send-email-ddstreet@ieee.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jan Kiszka <jan.kiszka@web.de>, Marcelo Tosatti <mtosatti@redhat.com>
+CC: Nadav Amit <namit@cs.technion.ac.il>, gleb@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: Fix CR3 reserved bits check in long mode
+References: <1397777591-6147-1-git-send-email-namit@cs.technion.ac.il> <1397781312-6885-1-git-send-email-namit@cs.technion.ac.il> <1397781312-6885-2-git-send-email-namit@cs.technion.ac.il> <536DD1AC.9070605@web.de> <536DD432.30809@web.de>
+In-Reply-To: <536DD432.30809@web.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 02, 2014 at 03:02:28PM -0400, Dan Streetman wrote:
-> Add PLIST_HEAD() to plist.h, equivalent to LIST_HEAD() from list.h, to
-> define and initialize a struct plist_head.
-> 
-> Add plist_for_each_continue() and plist_for_each_entry_continue(),
-> equivalent to list_for_each_continue() and list_for_each_entry_continue(),
-> to iterate over a plist continuing after the current position.
-> 
-> Add plist_prev() and plist_next(), equivalent to (struct list_head*)->prev
-> and ->next, implemented by list_prev_entry() and list_next_entry(), to
-> access the prev/next struct plist_node entry.  These are needed because
-> unlike struct list_head, direct access of the prev/next struct plist_node
-> isn't possible; the list must be navigated via the contained struct list_head.
-> e.g. instead of accessing the prev by list_prev_entry(node, node_list)
-> it can be accessed by plist_prev(node).
-> 
-> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> 
+Il 10/05/2014 09:24, Jan Kiszka ha scritto:
+> From: Jan Kiszka <jan.kiszka@siemens.com>
+>
+> Regression of 346874c9: PAE is set in long mode, but that does not mean
+> we have valid PDPTRs.
+>
+> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+> ---
+>  arch/x86/kvm/x86.c | 9 +++++----
+>  1 file changed, 5 insertions(+), 4 deletions(-)
+>
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index c5582c3..198aac8 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -701,10 +701,11 @@ int kvm_set_cr3(struct kvm_vcpu *vcpu, unsigned long cr3)
+>  		return 0;
+>  	}
+>
+> -	if (is_long_mode(vcpu) && (cr3 & CR3_L_MODE_RESERVED_BITS))
+> -		return 1;
+> -	if (is_pae(vcpu) && is_paging(vcpu) &&
+> -	    !load_pdptrs(vcpu, vcpu->arch.walk_mmu, cr3))
+> +	if (is_long_mode(vcpu)) {
+> +		if (cr3 & CR3_L_MODE_RESERVED_BITS)
+> +			return 1;
+> +	} else if (is_pae(vcpu) && is_paging(vcpu) &&
+> +		   !load_pdptrs(vcpu, vcpu->arch.walk_mmu, cr3))
+>  		return 1;
+>
+>  	vcpu->arch.cr3 = cr3;
+>
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
 
--- 
-Mel Gorman
-SUSE Labs
+will apply tomorrow, thanks.
+
+Paolo
