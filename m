@@ -1,71 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958AbaELKTD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 06:19:03 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49842 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaELKTB (ORCPT
+	id S1755904AbaELKWr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 06:22:47 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:48930 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752039AbaELKWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 06:19:01 -0400
-Date: Mon, 12 May 2014 12:19:14 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-cc: linaro-kernel@lists.linaro.org, linaro-networking@linaro.org,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        arvind.chauhan@arm.com, daniel.lezcano@linaro.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: [RFC 1/2] clockevents: return 'int' from
- clockevents_set_mode()
-In-Reply-To: <df571ff25b510bd0263b194bfdcbaf1b476a2a03.1399886467.git.viresh.kumar@linaro.org>
-Message-ID: <alpine.DEB.2.02.1405121140210.6261@ionos.tec.linutronix.de>
-References: <cover.1399886467.git.viresh.kumar@linaro.org> <df571ff25b510bd0263b194bfdcbaf1b476a2a03.1399886467.git.viresh.kumar@linaro.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 12 May 2014 06:22:46 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: "'Sudeep Holla'" <sudeep.holla@arm.com>,
+        "'Will Deacon'" <Will.Deacon@arm.com>
+CC: "'linux@arm.linux.org.uk'" <linux@arm.linux.org.uk>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'devicetree@vger.kernel.org'" <devicetree@vger.kernel.org>,
+        Neil Zhang <zhangwm@marvell.com>
+Date: Mon, 12 May 2014 03:22:09 -0700
+Subject: RE: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
+Thread-Topic: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
+Thread-Index: Ac9keD1np1G9qntpQoC2LI657voXkgDliarQAW9ShSA=
+Message-ID: <9034CBD80F070943B59700D7F8149ED9A0875730@SC-VEXCH4.marvell.com>
+References: <1398133596-29170-1-git-send-email-zhangwm@marvell.com>
+ <20140422103642.GF7484@arm.com>
+ <175CCF5F49938B4D99B2E3EF7F558EBE5507A3B59B@SC-VEXCH4.marvell.com>
+ <20140423170821.GJ5649@arm.com>
+ <175CCF5F49938B4D99B2E3EF7F558EBE5507A3C1F1@SC-VEXCH4.marvell.com>
+ <5360FB07.5030407@arm.com>
+ <6106CAF835F351419ADA79E4836E6EC71B6A53C826@SC-VEXCH4.marvell.com>
+In-Reply-To: <6106CAF835F351419ADA79E4836E6EC71B6A53C826@SC-VEXCH4.marvell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-12_01:2014-05-12,2014-05-11,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1405120140
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4CAMqoH018895
 
-On Mon, 12 May 2014, Viresh Kumar wrote:
-> clockevents_set_mode() calls dev->set_mode() which has return type of 'void'
-> currently. Later patches would add another interface dev->set_dev_mode(), which
-> will return int and clockevents_set_mode() must propagate failures returned from
-> it.
+Will & Sudeep,
+
+> -----Original Message-----
+> From: Neil Zhang
+> Sent: 2014å¹´5æœˆ5æ—¥ 14:28
+> To: Sudeep Holla; Will Deacon
+> Cc: linux@arm.linux.org.uk; linux-arm-kernel@lists.infradead.org;
+> linux-kernel@vger.kernel.org; devicetree@vger.kernel.org
+> Subject: RE: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
 > 
-> This patch changes prototype of clockevents_set_mode() to return 'int' and fix
-> caller sites as well. As most of the call sites maynot work if
-> clockevents_set_mode() fails, do issue a WARN() on failures. All other are
-> updated to return error codes.
+> Sudeep,
+> 
+> > -----Original Message-----
+> > From: Sudeep Holla [mailto:sudeep.holla@arm.com]
+> > Sent: 2014å¹´4æœˆ30æ—¥ 21:31
+> > To: Neil Zhang; Will Deacon
+> > Cc: Sudeep Holla; linux@arm.linux.org.uk;
+> > linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org;
+> > devicetree@vger.kernel.org
+> > Subject: Re: [PATCH v4] ARM: perf: save/restore pmu registers in pm
+> > notifier
+> >
+> > Hi Neil,
+> >
+> > On 30/04/14 03:21, Neil Zhang wrote:
+> > >
+> > >> -----Original Message-----
+> > >> From: Will Deacon [mailto:will.deacon@arm.com]
+> >
+> > [...]
+> >
+> > >>
+> > >> I think we need some input from the device-tree guys to see whether
+> > >> they would object to us solving this locally (in the PMU node) or not.
+> > >> Personally, I'd much prefer a general way to describe the need for
+> > >> pm-notifiers, but if that's not being looked at then we can cook
+> > >> something specifically for our needs.
+> > >>
+> > >
+> > > No input from device-tree guys :(
+> >
+> > The device tree bindings for power domains is under discussion [1]
+> 
+> Thanks for the information.
+> But it currently for device only, core related stuff are not supported.
+> And is it really good to register power provider for core and let vfp / pmu etc
+> to get it?
+> 
 
-Is this a speed coding contest? And did you even think about what I
-suggested:
+What's your suggestion about it?
+Is it OK that I add it under the PMU node?
 
-if (dev->set_dev_mode) {
-   ret = dev->set_dev_mode(dev, mode);
-   handle_return_value(ret);
-   
-Does that handle_return_value() mean that you sprinkle WARN_ONs all
-over the place? Does it mean, that you change the return value
-semantics of functions which happen to call clock_events_set_mode()
-just because it now has a return value?
+> >
+> > Regards,
+> > Sudeep
+> >
+> > [1] https://lkml.org/lkml/2014/4/23/755
+> 
+> 
+> Best Regards,
+> Neil Zhang
 
-Hell no.
-
-handle_return_value() means handle the return value right there. We
-know what we want to set and we know what may fail and what not, so we
-can explicitely WARN right there. And for those things which might
-fail, we return the failure and handle it at the call site. 
-
-I've warned you and I'm seriosly grumpy by now. You are just wasting
-my time and I'm tired of that.
-
-Find someone competent who reviews your patches, deals with you and
-when they make sense sends them to me. Or just stay away from kernel/*
-and find something else to wreckage.
-
-Thanks,
-
-	tglx
+Best Regards,
+Neil Zhang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
