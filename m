@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759219AbaELQyS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:54:18 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:59245 "EHLO
+	id S1759241AbaELQzD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:55:03 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:59417 "EHLO
 	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756437AbaELQyP (ORCPT
+	with ESMTP id S1754643AbaELQzB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 12:54:15 -0400
+	Mon, 12 May 2014 12:55:01 -0400
 From: Alexander Holler <holler@ahsoftware.de>
 To: linux-kernel@vger.kernel.org
 Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -15,9 +15,9 @@ Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Grant Likely <grant.likely@linaro.org>,
         Rob Herring <robh+dt@kernel.org>,
         Alexander Holler <holler@ahsoftware.de>
-Subject: [RFC PATCH 2/9] dt: deps: dependency based device creation
-Date: Mon, 12 May 2014 18:47:53 +0200
-Message-Id: <1399913280-6915-3-git-send-email-holler@ahsoftware.de>
+Subject: [RFC PATCH 3/9] dt: deps: dtc: Add option to print initialization order
+Date: Mon, 12 May 2014 18:47:54 +0200
+Message-Id: <1399913280-6915-4-git-send-email-holler@ahsoftware.de>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
 References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
@@ -25,122 +25,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the properties named 'dependencies' in binary device tree blobs to build
-a dependency based initialization order for platform devices and drivers.
+Add option -t to print the default initialization order.
+No other output will be generated.
 
-This is done by building a directed acyclic graph using an adjacency list
-and doing a topological sort to retrieve the order in which devices/drivers
-should be created/initialized.
+To print the order, just use something like this:
+
+	CROSS_COMPILE=gcc-foo ARCH=arm make foo.dtb
+	scripts/dtc/dtc -I dtb -t arch/arm/boot/dts/foo.dtb
+
+Since it's now possible to check to for cycles in the dependency graph,
+this is now done too.
 
 Signed-off-by: Alexander Holler <holler@ahsoftware.de>
 ---
- arch/arm/kernel/setup.c         |  20 +-
- drivers/of/Kconfig              |  10 +
- drivers/of/Makefile             |   1 +
- drivers/of/of_dependencies.c    | 403 ++++++++++++++++++++++++++++++++++++++++
- drivers/of/platform.c           |  32 +++-
- include/linux/of.h              |  15 ++
- include/linux/of_dependencies.h |  61 ++++++
- include/linux/of_platform.h     |   5 +
- 8 files changed, 543 insertions(+), 4 deletions(-)
- create mode 100644 drivers/of/of_dependencies.c
- create mode 100644 include/linux/of_dependencies.h
+ scripts/dtc/dependencies.c | 346 +++++++++++++++++++++++++++++++++++++++++++++
+ scripts/dtc/dtc.c          |  24 +++-
+ scripts/dtc/dtc.h          |   2 +
+ 3 files changed, 371 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 1e8b030..f67387d 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -19,6 +19,7 @@
- #include <linux/seq_file.h>
- #include <linux/screen_info.h>
- #include <linux/of_platform.h>
-+#include <linux/of_dependencies.h>
- #include <linux/init.h>
- #include <linux/kexec.h>
- #include <linux/of_fdt.h>
-@@ -787,10 +788,19 @@ static int __init customize_machine(void)
- 	if (machine_desc->init_machine)
- 		machine_desc->init_machine();
- #ifdef CONFIG_OF
--	else
-+	else {
-+#ifdef CONFIG_OF_DEPENDENCIES
-+		if (!of_init_build_order(NULL, NULL))
-+			of_init_create_devices(NULL, NULL);
-+		else
-+			of_init_free_order();
-+#else
- 		of_platform_populate(NULL, of_default_bus_match_table,
- 					NULL, NULL);
- #endif
-+	}
-+#endif
-+
- 	return 0;
+diff --git a/scripts/dtc/dependencies.c b/scripts/dtc/dependencies.c
+index dd4658c..8fe1a8c 100644
+--- a/scripts/dtc/dependencies.c
++++ b/scripts/dtc/dependencies.c
+@@ -106,3 +106,349 @@ void add_dependencies(struct boot_info *bi)
+ {
+ 	process_nodes_props(bi->dt, bi->dt);
  }
- arch_initcall(customize_machine);
-@@ -914,7 +924,13 @@ void __init setup_arch(char **cmdline_p)
- 		arm_pm_restart = mdesc->restart;
- 
- 	unflatten_device_tree();
--
-+#ifdef CONFIG_OF_DEPENDENCIES
-+	/*
-+	 * No alloc used in of_init_build_order(), therefor it would work
-+	 * already here too.
-+	 */
-+	/* of_init_build_order(NULL, NULL); */
-+#endif
- 	arm_dt_init_cpu_maps();
- 	psci_init();
- #ifdef CONFIG_SMP
-diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-index c6973f1..a7e1614 100644
---- a/drivers/of/Kconfig
-+++ b/drivers/of/Kconfig
-@@ -75,4 +75,14 @@ config OF_MTD
- 	depends on MTD
- 	def_bool y
- 
-+config OF_DEPENDENCIES
-+	bool "Device Tree dependency based initialization order (EXPERIMENTAL)"
-+	help
-+	  Enables dependency based initialization order of platform drivers.
 +
-+	  For correct operation the binary DT blob should have been
-+	  populated with properties of type "dependencies".
-+
-+	  If unsure, say N here.
-+
- endmenu # OF
-diff --git a/drivers/of/Makefile b/drivers/of/Makefile
-index efd0510..3888d9c 100644
---- a/drivers/of/Makefile
-+++ b/drivers/of/Makefile
-@@ -9,3 +9,4 @@ obj-$(CONFIG_OF_MDIO)	+= of_mdio.o
- obj-$(CONFIG_OF_PCI)	+= of_pci.o
- obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
- obj-$(CONFIG_OF_MTD)	+= of_mtd.o
-+obj-$(CONFIG_OF_DEPENDENCIES)	+= of_dependencies.o
-diff --git a/drivers/of/of_dependencies.c b/drivers/of/of_dependencies.c
-new file mode 100644
-index 0000000..7905172
---- /dev/null
-+++ b/drivers/of/of_dependencies.c
-@@ -0,0 +1,403 @@
 +/*
-+ * Code for building a deterministic initialization order based on dependencies
-+ * defined in the device tree.
-+ *
-+ * Copyright (C) 2014 Alexander Holler <holler@ahsoftware.de>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
++ * The code below is in large parts a copy of drivers/of/of_dependencies.c
++ * in the Linux kernel. So both files do share the same bugs.
++ * The next few ugly defines do exist to keep the differences at a minimum.
 + */
++static struct node *tree;
++#define pr_cont(format, ...) printf(format, ##__VA_ARGS__)
++#define pr_info(format, ...) printf(format, ##__VA_ARGS__)
++#define pr_warn(format, ...) printf(format, ##__VA_ARGS__)
++#define pr_err(format, ...) fprintf(stderr, format, ##__VA_ARGS__)
++typedef cell_t __be32;
++#define device_node node
++#define full_name fullpath
++#define __initdata
++#define __init
++#define unlikely(a) (a)
++#define of_node_put(a)
++#define of_find_node_by_phandle(v) get_node_by_phandle(tree, v)
++#define __of_get_property(a, b, c) get_property(a, b)
++#define for_each_child_of_node(a, b) for_each_child(a, b)
 +
-+#include <linux/of_dependencies.h>
 +
 +#define MAX_DT_NODES 1000 /* maximum number of vertices */
 +#define MAX_EDGES (MAX_DT_NODES*2) /* maximum number of edges (dependencies) */
@@ -181,49 +113,20 @@ index 0000000..7905172
 +
 +
 +/* Copied from drivers/of/base.c (because it's lockless). */
-+static struct property * __init __of_find_property(const struct device_node *np,
-+					   const char *name, int *lenp)
++static int __init __of_device_is_available(struct device_node *device)
 +{
-+	struct property *pp;
-+
-+	if (!np)
-+		return NULL;
-+
-+	for (pp = np->properties; pp; pp = pp->next) {
-+		if (of_prop_cmp(pp->name, name) == 0) {
-+			if (lenp)
-+				*lenp = pp->length;
-+			break;
-+		}
-+	}
-+
-+	return pp;
-+}
-+
-+/* Copied from drivers/of/base.c (because it's lockless). */
-+static const void * __init __of_get_property(const struct device_node *np,
-+				     const char *name, int *lenp)
-+{
-+	struct property *pp = __of_find_property(np, name, lenp);
-+
-+	return pp ? pp->value : NULL;
-+}
-+
-+/* Copied from drivers/of/base.c (because it's lockless). */
-+static int __init __of_device_is_available(const struct device_node *device)
-+{
-+	const char *status;
-+	int statlen;
++	struct property *status;
 +
 +	if (!device)
 +		return 0;
 +
-+	status = __of_get_property(device, "status", &statlen);
++	status = get_property(device, "status");
 +	if (status == NULL)
 +		return 1;
 +
-+	if (statlen > 0) {
-+		if (!strcmp(status, "okay") || !strcmp(status, "ok"))
++	if (status->val.len > 0) {
++		if (!strcmp(status->val.val, "okay") ||
++				!strcmp(status->val.val, "ok"))
 +			return 1;
 +	}
 +
@@ -267,13 +170,13 @@ index 0000000..7905172
 +
 +	node = of_find_node_by_phandle(v);
 +	if (!node) {
-+		pr_cont("Node for phandle 0x%x not found", v);
++		pr_err("Node for phandle 0x%x not found", v);
 +		return;
 +	}
 +	if (node->name)
-+		pr_cont("%s", node->name);
++		pr_err("%s", node->name);
 +	if (node->full_name)
-+		pr_cont(" (%s)", node->full_name);
++		pr_err(" (%s)", node->full_name);
 +	of_node_put(node);
 +}
 +
@@ -340,21 +243,21 @@ index 0000000..7905172
 +			depth_first_search(i);
 +}
 +
-+static int __init add_dep_list(struct device_node *node,
-+				const struct of_device_id *matches)
++static int __init add_dep_list(struct device_node *node)
 +{
 +	const __be32 *list, *list_end;
 +	uint32_t ph;
-+	int size;
++	struct property *prop;
 +	int rc = 0;
 +	struct device_node *dep;
 +
-+	list = __of_get_property(node, "dependencies", &size);
-+	if (!list || !size || size%sizeof(*list))
++	prop = get_property(node, "dependencies");
++	if (!prop || !prop->val.len || prop->val.len%sizeof(*list))
 +		return 0;
-+	list_end = list + size / sizeof(*list);
++	list = (const __be32 *)prop->val.val;
++	list_end = list + prop->val.len / sizeof(*list);
 +	while (list < list_end) {
-+		ph = be32_to_cpup(list++);
++		ph = fdt32_to_cpu(*list++);
 +		if (unlikely(!ph)) {
 +			/* Should never happen */
 +			if (node->name)
@@ -367,8 +270,6 @@ index 0000000..7905172
 +				ph);
 +			continue;
 +		}
-+		if (unlikely(matches && !of_match_node(matches, dep)))
-+			continue;
 +		rc = insert_edge(node->phandle, ph);
 +		if (rc)
 +			break;
@@ -377,8 +278,26 @@ index 0000000..7905172
 +	return rc;
 +}
 +
-+static int __init add_deps(struct device_node *parent, struct device_node *node,
-+				const struct of_device_id *matches)
++/* Copied from drivers/of/base.c */
++static const char *of_prop_next_string(struct property *prop, const char *cur)
++{
++	const char *curv = cur;
++
++	if (!prop)
++		return NULL;
++
++	if (!cur)
++		return prop->val.val;
++
++	curv += strlen(cur) + 1;
++	if (curv >= prop->val.val + prop->val.len)
++		return NULL;
++
++	return curv;
++}
++
++static int __init add_deps_lnx(struct device_node *parent,
++				struct device_node *node)
 +{
 +	struct device_node *child;
 +	int rc = 0;
@@ -401,15 +320,13 @@ index 0000000..7905172
 +			return -EINVAL;
 +		}
 +		order.parent_by_phandle[node->phandle] = parent->phandle;
-+		rc = add_dep_list(node, matches);
++		rc = add_dep_list(node);
 +		if (unlikely(rc))
 +			return rc;
 +		parent = node; /* change the parent only if node is a driver */
 +	}
-+	if (unlikely(matches && !of_match_node(matches, node)))
-+		return rc;
 +	for_each_child_of_node(node, child) {
-+		rc = add_deps(parent, child, matches);
++		rc = add_deps_lnx(parent, child);
 +		if (unlikely(rc))
 +			break;
 +	}
@@ -417,42 +334,35 @@ index 0000000..7905172
 +	return rc;
 +}
 +
-+static void __init calc_max_phandle(void)
++static void calc_max_phandle(struct node *np)
 +{
-+	struct device_node *np;
-+	uint32_t t = 0;
++	struct node *child;
 +
-+	for (np = of_allnodes; np; np = np->allnext)
-+		if (np->phandle > t)
-+			t = np->phandle;
-+	order.max_phandle = t;
++	if (!np || np->deleted)
++		return;
++	if (np->phandle > order.max_phandle)
++		order.max_phandle = np->phandle;
++
++	for_each_child(np, child)
++		calc_max_phandle(child);
++
 +	return;
 +}
 +
-+/*
-+static void __init remove_new_phandles(void)
-+{
-+	struct device_node *np;
-+
-+	for (np = of_allnodes; np; np = np->allnext)
-+		if (np->phandle > order.old_max_phandle)
-+			np->phandle = 0;
-+}
-+
-+static void __init of_init_print_order(void)
++void __init of_init_print_order(const char *name)
 +{
 +	unsigned i;
 +	struct property *prop;
 +	const char *cp;
 +
-+	pr_info("Initialization order:\n");
++	pr_info("Default initialization order for %s:\n", name);
 +	for (i = 0; i < order.count; ++i) {
 +		pr_info("init %u 0x%x", i, order.order[i]->phandle);
 +		if (order.order[i]->name)
 +			pr_cont(" %s", order.order[i]->name);
 +		if (order.order[i]->full_name)
 +			pr_cont(" (%s)", order.order[i]->full_name);
-+		prop = __of_find_property(order.order[i], "compatible", NULL);
++		prop = get_property(order.order[i], "compatible");
 +		for (cp = of_prop_next_string(prop, NULL); cp;
 +		     cp = of_prop_next_string(prop, cp))
 +			pr_cont(" %s", cp);
@@ -460,23 +370,21 @@ index 0000000..7905172
 +			order.parent_by_phandle[order.order[i]->phandle]);
 +	}
 +}
-+*/
 +
-+int __init of_init_build_order(struct device_node *root,
-+			const struct of_device_id *matches)
++int __init of_init_build_order(struct device_node *root)
 +{
 +	struct device_node *child;
 +	int rc = 0;
 +
-+	root = root ? of_node_get(root) : of_find_node_by_path("/");
++	tree = root;
 +	if (unlikely(!root))
 +		return -EINVAL;
 +
-+	calc_max_phandle();
++	calc_max_phandle(root);
 +	order.old_max_phandle = order.max_phandle;
 +
 +	for_each_child_of_node(root, child) {
-+		rc = add_deps(root, child, matches);
++		rc = add_deps_lnx(root, child);
 +		if (unlikely(rc))
 +			break;
 +	}
@@ -487,213 +395,89 @@ index 0000000..7905172
 +	if (graph.finished)
 +		return -EINVAL; /* cycle found */
 +
-+	/* of_init_print_order(); */
-+
 +	return rc;
 +}
-+
-+void __init of_init_create_devices(const struct of_device_id *blacklist,
-+			const struct of_dev_auxdata *lookup)
-+{
-+	unsigned i;
-+	struct platform_device *dev;
-+
-+	for (i = 0; i < order.count; ++i) {
-+		struct device_node *node = order.order[i];
-+		uint32_t parent_ph = order.parent_by_phandle[node->phandle];
-+
-+		if (unlikely(blacklist &&
-+				of_match_node(blacklist, node))) {
-+			of_node_put(node);
-+			continue;
-+		}
-+		if (unlikely(parent_ph &&
-+			!order.device_by_phandle[parent_ph])) {
-+			/* init of parent failed */
-+			of_node_put(node);
-+			continue;
-+		}
-+		dev = of_dependencies_device_create(node, lookup,
-+			order.device_by_phandle[parent_ph]);
-+		if (dev)
-+			order.device_by_phandle[node->phandle] = &dev->dev;
-+		of_node_put(node);
-+	}
-+	/* remove_new_phandles(); */
-+}
-+
-+void __init of_init_free_order(void)
-+{
-+	unsigned i;
-+
-+	for (i = 0; i < order.count; ++i)
-+		of_node_put(order.order[i]);
-+	order.count = 0;
-+	/* remove_new_phandles(); */
-+}
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 404d1da..0fe03ad 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -204,9 +204,13 @@ static struct platform_device *of_platform_device_create_pdata(
- {
- 	struct platform_device *dev;
+diff --git a/scripts/dtc/dtc.c b/scripts/dtc/dtc.c
+index fbe49d9..ac9858c 100644
+--- a/scripts/dtc/dtc.c
++++ b/scripts/dtc/dtc.c
+@@ -88,6 +88,8 @@ static void  __attribute__ ((noreturn)) usage(void)
+ 	fprintf(stderr, "\t\tSort nodes and properties before outputting (only useful for\n\t\tcomparing trees)\n");
+ 	fprintf(stderr, "\t-D\n");
+ 	fprintf(stderr, "\t\tDo not automatically add dependencies for phandle references\n");
++	fprintf(stderr, "\t-t\n");
++	fprintf(stderr, "\t\tPrint (default) initialization order\n");
+ 	fprintf(stderr, "\t-v\n");
+ 	fprintf(stderr, "\t\tPrint DTC version and exit\n");
+ 	fprintf(stderr, "\t-H <phandle format>\n");
+@@ -110,6 +112,7 @@ int main(int argc, char *argv[])
+ 	const char *depname = NULL;
+ 	int force = 0, sort = 0;
+ 	int dependencies = 1;
++	int init_order = 0;
+ 	const char *arg;
+ 	int opt;
+ 	FILE *outf = NULL;
+@@ -121,7 +124,7 @@ int main(int argc, char *argv[])
+ 	minsize    = 0;
+ 	padsize    = 0;
  
-+#ifdef CONFIG_OF_DEPENDENCIES
-+	/* WARN_ON(np->dev_created); */
-+	if (np->dev_created)
-+		return np->dev_created;
-+#endif
- 	if (!of_device_is_available(np))
- 		return NULL;
--
- 	dev = of_device_alloc(np, bus_id, parent);
- 	if (!dev)
- 		return NULL;
-@@ -229,7 +233,9 @@ static struct platform_device *of_platform_device_create_pdata(
- 		platform_device_put(dev);
- 		return NULL;
+-	while ((opt = getopt(argc, argv, "hI:O:o:V:d:R:S:p:fqb:i:vH:sDW:E:"))
++	while ((opt = getopt(argc, argv, "hI:O:o:V:d:R:S:p:fqb:i:vH:sDtW:E:"))
+ 			!= EOF) {
+ 		switch (opt) {
+ 		case 'I':
+@@ -183,6 +186,10 @@ int main(int argc, char *argv[])
+ 			dependencies = false;
+ 			break;
+ 
++		case 't':
++			init_order = true;
++			break;
++
+ 		case 'W':
+ 			parse_checks_option(true, false, optarg);
+ 			break;
+@@ -245,6 +252,13 @@ int main(int argc, char *argv[])
+ 	if (dependencies)
+ 		add_dependencies(bi);
+ 
++	if (init_order) {
++		if (of_init_build_order(bi->dt))
++			exit(2);
++		of_init_print_order(arg);
++		exit(0);
++	}
++
+ 	if (streq(outname, "-")) {
+ 		outf = stdout;
+ 	} else {
+@@ -266,5 +280,13 @@ int main(int argc, char *argv[])
+ 		die("Unknown output format \"%s\"\n", outform);
  	}
--
-+#ifdef CONFIG_OF_DEPENDENCIES
-+	np->dev_created = dev;
-+#endif
- 	return dev;
- }
  
-@@ -486,3 +492,25 @@ int of_platform_populate(struct device_node *root,
- }
- EXPORT_SYMBOL_GPL(of_platform_populate);
- #endif /* CONFIG_OF_ADDRESS */
-+
-+#ifdef CONFIG_OF_DEPENDENCIES
-+struct platform_device * __init of_dependencies_device_create(
-+				struct device_node *bus,
-+				const struct of_dev_auxdata *lookup,
-+				struct device *parent)
-+{
-+	const struct of_dev_auxdata *auxdata;
-+	const char *bus_id = NULL;
-+	void *platform_data = NULL;
-+
-+	if (lookup) {
-+		auxdata = of_dev_lookup(lookup, bus);
-+		if (auxdata) {
-+			bus_id = auxdata->name;
-+			platform_data = auxdata->platform_data;
-+		}
-+	}
-+	return of_platform_device_create_pdata(bus, bus_id, platform_data,
-+						parent);
-+}
-+#endif
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 435cb99..0bf0341 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -65,6 +65,21 @@ struct device_node {
- 	unsigned int unique_id;
- 	struct of_irq_controller *irq_trans;
- #endif
-+#ifdef CONFIG_OF_DEPENDENCIES
 +	/*
-+	 * This is needed to keep track of already created devices.
-+	 * The reason is that some drivers call of_platform_populate()
-+	 * themself to populate e.g. their subtree. This would end up
-+	 * that some devices would be initialzed twice with a dependency
-+	 * based initialization. So instead of registering a device a second
-+	 * time, the second call to of_platform_device_create_pdata() just
-+	 * returns this pointer.
-+	 * If the feature of dependency based initialization will end up
-+	 * in mainline (and drivers will have fixed), this helper could
-+	 * be removed.
++	 * Check for cycles by building the initialzation order.
++	 * This is done after the output was saved because it
++	 * changes the tree slightly.
 +	 */
-+	struct platform_device *dev_created;
-+#endif
- };
- 
- #define MAX_PHANDLE_ARGS 8
-diff --git a/include/linux/of_dependencies.h b/include/linux/of_dependencies.h
-new file mode 100644
-index 0000000..e046ce2
---- /dev/null
-+++ b/include/linux/of_dependencies.h
-@@ -0,0 +1,61 @@
-+#ifndef _LINUX_OF_DEPENDENCIES_H
-+#define _LINUX_OF_DEPENDENCIES_H
-+/*
-+ * Definitions for building a deterministic initialization order based on
-+ * dependencies defined in the device tree.
-+ *
-+ * Copyright (C) 2014 Alexander Holler <holler@ahsoftware.de>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
++	if (of_init_build_order(bi->dt))
++		exit(2);
 +
-+#include <linux/of_platform.h>
-+
-+/*
-+ * Builds the initialization order.
-+ *
-+ * In favor of speed this function doesn't lock anything, so make sure nothing
-+ * modifies the device tree while this functions runs.
-+ *
-+ * Will raise the refcount of all device tree nodes which ended up in the final
-+ * initialization order by one.
-+ *
-+ * The phandle of some nodes will be modified (from 0 to a number) without
-+ * adding a phandle property. But as this should not disturb anything, this
-+ * change is not reversed after building the init order (for which the new
-+ * phandles are temporarily necessary).
-+ *
-+ * This function is meant to be called only once.
-+ */
-+extern int of_init_build_order(struct device_node *root,
-+			const struct of_device_id *matches);
-+
-+/*
-+ * Replacement for of_platform_populate(). Creates all devices.
-+ *
-+ * By default it should be called with matches = NULL in order to create
-+ * all devices. Reasoning is that every device contained in the DT which
-+ * isn't disabled actually does exist (regardless if a driver is available
-+ * or not).
-+ *
-+ * Decreases the node count of all nodes contained in the initialization order
-+ * by one.
-+ *
-+ * This function is meant to be called only once.
-+ */
-+extern void of_init_create_devices(const struct of_device_id *matches,
-+			const struct of_dev_auxdata *lookup);
-+
-+/*
-+ * Decreases the node count of all nodes contained in the initialization order
-+ * by one.
-+ *
-+ * This function is meant to be called only once instead of
-+ * of_init_create_devices().
-+ */
-+extern void of_init_free_order(void);
-+
-+#endif	/* _LINUX_OF_DEPENDENCIES_H */
-diff --git a/include/linux/of_platform.h b/include/linux/of_platform.h
-index 05cb4a9..04357ac 100644
---- a/include/linux/of_platform.h
-+++ b/include/linux/of_platform.h
-@@ -82,4 +82,9 @@ static inline int of_platform_populate(struct device_node *root,
+ 	exit(0);
  }
- #endif
+diff --git a/scripts/dtc/dtc.h b/scripts/dtc/dtc.h
+index c3dbeac..b89e08a 100644
+--- a/scripts/dtc/dtc.h
++++ b/scripts/dtc/dtc.h
+@@ -269,5 +269,7 @@ struct boot_info *dt_from_fs(const char *dirname);
  
-+extern struct platform_device *of_dependencies_device_create(
-+					struct device_node *bus,
-+					const struct of_dev_auxdata *lookup,
-+					struct device *parent);
-+
- #endif	/* _LINUX_OF_PLATFORM_H */
+ /* Dependencies */
+ void add_dependencies(struct boot_info *bi);
++void of_init_print_order(const char *name);
++int of_init_build_order(struct node *root);
+ 
+ #endif /* _DTC_H */
 -- 
 1.8.3.1
 
