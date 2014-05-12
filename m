@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662AbaELBy0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:54:26 -0400
-Received: from 1wt.eu ([62.212.114.60]:34709 "EHLO 1wt.eu"
+	id S1755696AbaELBym (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:54:42 -0400
+Received: from 1wt.eu ([62.212.114.60]:34706 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753884AbaELBnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753930AbaELBnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 11 May 2014 21:43:17 -0400
-Message-Id: <20140512003206.271246826@1wt.eu>
+Message-Id: <20140512003204.587133147@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:34:14 +0200
+Date: Mon, 12 May 2014 02:33:35 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 134/143] KVM: Improve create VCPU parameter (CVE-2013-4587)
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 095/143] rds: prevent dereference of a NULL device
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,40 +23,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Honig <ahonig@google.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit 338c7dbadd2671189cec7faf64c84d01071b3f96 upstream
+[ Upstream commit c2349758acf1874e4c2b93fe41d072336f1a31d0 ]
 
-In multiple functions the vcpu_id is used as an offset into a bitfield.  Ag
-malicious user could specify a vcpu_id greater than 255 in order to set or
-clear bits in kernel memory.  This could be used to elevate priveges in the
-kernel.  This patch verifies that the vcpu_id provided is less than 255.
-The api documentation already specifies that the vcpu_id must be less than
-max_vcpus, but this is currently not checked.
+Binding might result in a NULL device, which is dereferenced
+causing this BUG:
 
-Reported-by: Andrew Honig <ahonig@google.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[ 1317.260548] BUG: unable to handle kernel NULL pointer dereference at 000000000000097
+4
+[ 1317.261847] IP: [<ffffffff84225f52>] rds_ib_laddr_check+0x82/0x110
+[ 1317.263315] PGD 418bcb067 PUD 3ceb21067 PMD 0
+[ 1317.263502] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 1317.264179] Dumping ftrace buffer:
+[ 1317.264774]    (ftrace buffer empty)
+[ 1317.265220] Modules linked in:
+[ 1317.265824] CPU: 4 PID: 836 Comm: trinity-child46 Tainted: G        W    3.13.0-rc4-
+next-20131218-sasha-00013-g2cebb9b-dirty #4159
+[ 1317.267415] task: ffff8803ddf33000 ti: ffff8803cd31a000 task.ti: ffff8803cd31a000
+[ 1317.268399] RIP: 0010:[<ffffffff84225f52>]  [<ffffffff84225f52>] rds_ib_laddr_check+
+0x82/0x110
+[ 1317.269670] RSP: 0000:ffff8803cd31bdf8  EFLAGS: 00010246
+[ 1317.270230] RAX: 0000000000000000 RBX: ffff88020b0dd388 RCX: 0000000000000000
+[ 1317.270230] RDX: ffffffff8439822e RSI: 00000000000c000a RDI: 0000000000000286
+[ 1317.270230] RBP: ffff8803cd31be38 R08: 0000000000000000 R09: 0000000000000000
+[ 1317.270230] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
+[ 1317.270230] R13: 0000000054086700 R14: 0000000000a25de0 R15: 0000000000000031
+[ 1317.270230] FS:  00007ff40251d700(0000) GS:ffff88022e200000(0000) knlGS:000000000000
+0000
+[ 1317.270230] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 1317.270230] CR2: 0000000000000974 CR3: 00000003cd478000 CR4: 00000000000006e0
+[ 1317.270230] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 1317.270230] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000090602
+[ 1317.270230] Stack:
+[ 1317.270230]  0000000054086700 5408670000a25de0 5408670000000002 0000000000000000
+[ 1317.270230]  ffffffff84223542 00000000ea54c767 0000000000000000 ffffffff86d26160
+[ 1317.270230]  ffff8803cd31be68 ffffffff84223556 ffff8803cd31beb8 ffff8800c6765280
+[ 1317.270230] Call Trace:
+[ 1317.270230]  [<ffffffff84223542>] ? rds_trans_get_preferred+0x42/0xa0
+[ 1317.270230]  [<ffffffff84223556>] rds_trans_get_preferred+0x56/0xa0
+[ 1317.270230]  [<ffffffff8421c9c3>] rds_bind+0x73/0xf0
+[ 1317.270230]  [<ffffffff83e4ce62>] SYSC_bind+0x92/0xf0
+[ 1317.270230]  [<ffffffff812493f8>] ? context_tracking_user_exit+0xb8/0x1d0
+[ 1317.270230]  [<ffffffff8119313d>] ? trace_hardirqs_on+0xd/0x10
+[ 1317.270230]  [<ffffffff8107a852>] ? syscall_trace_enter+0x32/0x290
+[ 1317.270230]  [<ffffffff83e4cece>] SyS_bind+0xe/0x10
+[ 1317.270230]  [<ffffffff843a6ad0>] tracesys+0xdd/0xe2
+[ 1317.270230] Code: 00 8b 45 cc 48 8d 75 d0 48 c7 45 d8 00 00 00 00 66 c7 45 d0 02 00
+89 45 d4 48 89 df e8 78 49 76 ff 41 89 c4 85 c0 75 0c 48 8b 03 <80> b8 74 09 00 00 01 7
+4 06 41 bc 9d ff ff ff f6 05 2a b6 c2 02
+[ 1317.270230] RIP  [<ffffffff84225f52>] rds_ib_laddr_check+0x82/0x110
+[ 1317.270230]  RSP <ffff8803cd31bdf8>
+[ 1317.270230] CR2: 0000000000000974
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- virt/kvm/kvm_main.c | 3 +++
- 1 file changed, 3 insertions(+)
+ net/rds/ib.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 82b6fdc..3b9443b 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1846,6 +1846,9 @@ static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
- 	int r;
- 	struct kvm_vcpu *vcpu, *v;
+diff --git a/net/rds/ib.c b/net/rds/ib.c
+index 536ebe5..5018f3d 100644
+--- a/net/rds/ib.c
++++ b/net/rds/ib.c
+@@ -235,7 +235,8 @@ static int rds_ib_laddr_check(__be32 addr)
+ 	ret = rdma_bind_addr(cm_id, (struct sockaddr *)&sin);
+ 	/* due to this, we will claim to support iWARP devices unless we
+ 	   check node_type. */
+-	if (ret || cm_id->device->node_type != RDMA_NODE_IB_CA)
++	if (ret || !cm_id->device ||
++	    cm_id->device->node_type != RDMA_NODE_IB_CA)
+ 		ret = -EADDRNOTAVAIL;
  
-+	if (id >= KVM_MAX_VCPUS)
-+		return -EINVAL;
-+
- 	vcpu = kvm_arch_vcpu_create(kvm, id);
- 	if (IS_ERR(vcpu))
- 		return PTR_ERR(vcpu);
+ 	rdsdebug("addr %pI4 ret %d node type %d\n",
 -- 
 1.7.12.2.21.g234cd45.dirty
 
