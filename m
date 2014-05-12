@@ -1,247 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaELWvS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 18:51:18 -0400
-Received: from mga03.intel.com ([143.182.124.21]:53109 "EHLO mga03.intel.com"
+	id S1758151AbaELWwq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 18:52:46 -0400
+Received: from mga11.intel.com ([192.55.52.93]:56008 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750866AbaELWvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 18:51:17 -0400
+	id S1752444AbaELWvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 18:51:32 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1039,1389772800"; 
-   d="scan'208";a="431210497"
+X-IronPort-AV: E=Sophos;i="4.97,1038,1389772800"; 
+   d="scan'208";a="537928357"
 From: Andi Kleen <andi@firstfloor.org>
 To: acme@infradead.org
 Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, eranian@google.com,
         namhyung@kernel.org, jolsa@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/9] perf, tools: Add support for text descriptions of events and alias add
-Date: Mon, 12 May 2014 15:51:07 -0700
-Message-Id: <1399935074-25167-3-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 5/9] perf, tools: Add perf download to download event files v2
+Date: Mon, 12 May 2014 15:51:10 -0700
+Message-Id: <1399935074-25167-6-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1399935074-25167-1-git-send-email-andi@firstfloor.org>
 References: <1399935074-25167-1-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Change pmu.c to allow descriptions of events and add interfaces
-to add aliases. Used in the next patch.
+Add a downloader to automatically download the right
+files from a download site.
 
+This is implemented as a script calling wget, similar to
+perf archive. The perf driver automatically calls the right
+binary. The downloader is extensible, but currently only
+implements an Intel event download.  It would be straightforward
+to add other sites too for other vendors.
+
+The downloaded event files are put into ~/.cache/pmu-events, where the
+builtin event parser in util/* can find them automatically.
+
+Cc: Use ~/.cache
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/util/pmu.c | 127 ++++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 98 insertions(+), 29 deletions(-)
+ tools/perf/Documentation/perf-download.txt | 28 ++++++++++++++++
+ tools/perf/Documentation/perf-list.txt     | 12 ++++++-
+ tools/perf/Makefile.perf                   |  5 ++-
+ tools/perf/perf-download.sh                | 52 ++++++++++++++++++++++++++++++
+ 4 files changed, 95 insertions(+), 2 deletions(-)
+ create mode 100644 tools/perf/Documentation/perf-download.txt
+ create mode 100755 tools/perf/perf-download.sh
 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 7a811eb..baec090 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -14,6 +14,7 @@
- 
- struct perf_pmu_alias {
- 	char *name;
-+	char *desc;
- 	struct list_head terms;
- 	struct list_head list;
- 	char unit[UNIT_MAX_LEN+1];
-@@ -171,17 +172,12 @@ error:
- 	return -1;
- }
- 
--static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FILE *file)
-+static int __perf_pmu__new_alias(struct list_head *list, char *name,
-+				 char *dir, char *desc, char *val)
- {
- 	struct perf_pmu_alias *alias;
--	char buf[256];
- 	int ret;
- 
--	ret = fread(buf, 1, sizeof(buf), file);
--	if (ret == 0)
--		return -EINVAL;
--	buf[ret] = 0;
--
- 	alias = malloc(sizeof(*alias));
- 	if (!alias)
- 		return -ENOMEM;
-@@ -190,24 +186,45 @@ static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FI
- 	alias->scale = 1.0;
- 	alias->unit[0] = '\0';
- 
--	ret = parse_events_terms(&alias->terms, buf);
-+	ret = parse_events_terms(&alias->terms, val);
- 	if (ret) {
-+		pr_err("Cannot parse alias %s: %d\n", val, ret);
- 		free(alias);
- 		return ret;
- 	}
- 
- 	alias->name = strdup(name);
--	/*
--	 * load unit name and scale if available
--	 */
--	perf_pmu__parse_unit(alias, dir, name);
--	perf_pmu__parse_scale(alias, dir, name);
- 
-+	if (dir) {
-+		/*
-+		 * load unit name and scale if available
-+		 */
-+		perf_pmu__parse_unit(alias, dir, name);
-+		perf_pmu__parse_scale(alias, dir, name);
-+	}
+diff --git a/tools/perf/Documentation/perf-download.txt b/tools/perf/Documentation/perf-download.txt
+new file mode 100644
+index 0000000..84a1c14
+--- /dev/null
++++ b/tools/perf/Documentation/perf-download.txt
+@@ -0,0 +1,28 @@
++perf-download(1)
++===============
 +
-+	alias->desc = desc ? strdup(desc) : NULL;
- 	list_add_tail(&alias->list, list);
++NAME
++----
++perf-download - Download event files for current CPU.
++
++SYNOPSIS
++--------
++[verse]
++'perf download' [vendor-family-model]
++
++DESCRIPTION
++-----------
++This command automatically downloads event list for the current CPU and
++stores them in $XDG_CACHE_HOME/pmu-events (or $HOME/.cache/pmu-events).
++The other tools automatically look for them there. The CPU can be also
++specified at the command line.
++
++The downloading is done using http through wget, which needs
++to be installed.
++
++The user should regularly call this to download updated event lists
++for the current CPU.
++
++Note the downloaded files are stored per user, so if you use
++perf as normal user or with sudo you have to run perf download
++for both or specify --json-file for the users manually.
+diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+index d399e04..e8d5153 100644
+--- a/tools/perf/Documentation/perf-list.txt
++++ b/tools/perf/Documentation/perf-list.txt
+@@ -61,6 +61,16 @@ Sampling). Examples to use IBS:
+  perf record -a -e r076:p ...          # same as -e cpu-cycles:p
+  perf record -a -e r0C1:p ...          # use ibs op counting micro-ops
  
- 	return 0;
- }
++PER CPU EVENT LISTS
++-------------------
++
++For some CPUs (particularly modern Intel CPUs) "perf download" can
++download additional CPU specific event definitions, which then
++become visible in perf list and available in the other perf tools.
++
++This obsoletes the raw event description method described below
++for most cases.
++
+ RAW HARDWARE EVENT DESCRIPTOR
+ -----------------------------
+ Even when an event is not available in a symbolic form within perf right now,
+@@ -123,6 +133,6 @@ types specified.
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-top[1],
+-linkperf:perf-record[1],
++linkperf:perf-record[1], linkperf:perf-download[1],
+ http://www.intel.com/Assets/PDF/manual/253669.pdf[Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 3B: System Programming Guide],
+ http://support.amd.com/us/Processor_TechDocs/24593_APM_v2.pdf[AMD64 Architecture Programmer’s Manual Volume 2: System Programming]
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 8800838..4dc1682 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -126,6 +126,7 @@ PYRF_OBJS =
+ SCRIPT_SH =
  
-+static int perf_pmu__new_alias(struct list_head *list,
-+			       char *dir,
-+			       char *name,
-+			       FILE *file)
-+{
-+	char buf[256];
-+	int ret;
-+
-+	ret = fread(buf, 1, sizeof(buf), file);
-+	if (ret == 0)
-+		return -EINVAL;
-+	buf[ret] = 0;
-+
-+	return __perf_pmu__new_alias(list, name, dir, NULL, buf);
-+}
-+
- /*
-  * Process all the sysfs attributes located under the directory
-  * specified in 'dir' parameter.
-@@ -720,11 +737,51 @@ static char *format_alias_or(char *buf, int len, struct perf_pmu *pmu,
- 	return buf;
- }
+ SCRIPT_SH += perf-archive.sh
++SCRIPT_SH += perf-download.sh
  
--static int cmp_string(const void *a, const void *b)
-+struct pair {
-+	char *name;
-+	char *desc;
-+};
-+
-+static int cmp_pair(const void *a, const void *b)
-+{
-+	const struct pair *as = a;
-+	const struct pair *bs = b;
-+
-+	/* Put downloaded event list last */
-+	if (!!as->desc != !!bs->desc)
-+		return !!as->desc - !!bs->desc;
-+	return strcmp(as->name, bs->name);
-+}
-+
-+static void wordwrap(char *s, int start, int max, int corr)
- {
--	const char * const *as = a;
--	const char * const *bs = b;
--	return strcmp(*as, *bs);
-+	int column = start;
-+	int n;
-+
-+	while (*s) {
-+		int wlen = strcspn(s, " \t");
-+
-+		if (column + wlen >= max && column > start) {
-+			printf("\n%*s", start, "");
-+			column = start + corr;
-+		}
-+		n = printf("%s%.*s", column > start ? " " : "", wlen, s);
-+		if (n <= 0)
-+			break;
-+		s += wlen;
-+		column += n;
-+		while (isspace(*s))
-+			s++;
-+	}
-+}
-+
-+static int get_columns(void)
-+{
-+	/*
-+	 * Should ask the terminal with TIOCGWINSZ here, but we
-+	 * need the original fd before the pager.
-+	 */
-+	return 79;
- }
+ grep-libs = $(filter -l%,$(1))
+ strip-libs = $(filter-out -l%,$(1))
+@@ -872,6 +873,8 @@ install-bin: all install-gtk
+ 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+ 	$(call QUIET_INSTALL, perf-archive) \
+ 		$(INSTALL) $(OUTPUT)perf-archive -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
++	$(call QUIET_INSTALL, perf-download) \
++		$(INSTALL) $(OUTPUT)perf-download -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+ ifndef NO_LIBPERL
+ 	$(call QUIET_INSTALL, perl-scripts) \
+ 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'; \
+@@ -917,7 +920,7 @@ config-clean:
+ 	@$(MAKE) -C config/feature-checks clean >/dev/null
  
- void print_pmu_events(const char *event_glob, bool name_only)
-@@ -734,21 +791,24 @@ void print_pmu_events(const char *event_glob, bool name_only)
- 	char buf[1024];
- 	int printed = 0;
- 	int len, j;
--	char **aliases;
-+	struct pair *aliases;
-+	int numdesc = 0;
-+	int columns = get_columns();
- 
- 	pmu = NULL;
- 	len = 0;
- 	while ((pmu = perf_pmu__scan(pmu)) != NULL)
- 		list_for_each_entry(alias, &pmu->aliases, list)
- 			len++;
--	aliases = malloc(sizeof(char *) * len);
-+	aliases = malloc(sizeof(struct pair) * len);
- 	if (!aliases)
- 		return;
- 	pmu = NULL;
- 	j = 0;
- 	while ((pmu = perf_pmu__scan(pmu)) != NULL)
- 		list_for_each_entry(alias, &pmu->aliases, list) {
--			char *name = format_alias(buf, sizeof(buf), pmu, alias);
-+			char *name = alias->desc ? alias->name :
-+				format_alias(buf, sizeof(buf), pmu, alias);
- 			bool is_cpu = !strcmp(pmu->name, "cpu");
- 
- 			if (event_glob != NULL &&
-@@ -756,22 +816,31 @@ void print_pmu_events(const char *event_glob, bool name_only)
- 			      (!is_cpu && strglobmatch(alias->name,
- 						       event_glob))))
- 				continue;
--			aliases[j] = name;
--			if (is_cpu && !name_only)
--				aliases[j] = format_alias_or(buf, sizeof(buf),
--							      pmu, alias);
--			aliases[j] = strdup(aliases[j]);
-+			aliases[j].name = name;
-+			if (is_cpu && !name_only && !alias->desc)
-+				aliases[j].name = format_alias_or(buf,
-+								  sizeof(buf),
-+								  pmu, alias);
-+			aliases[j].name = strdup(aliases[j].name);
-+			aliases[j].desc = alias->desc;
- 			j++;
- 		}
- 	len = j;
--	qsort(aliases, len, sizeof(char *), cmp_string);
-+	qsort(aliases, len, sizeof(struct pair), cmp_pair);
- 	for (j = 0; j < len; j++) {
- 		if (name_only) {
--			printf("%s ", aliases[j]);
-+			printf("%s ", aliases[j].name);
- 			continue;
- 		}
--		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
--		zfree(&aliases[j]);
-+		if (aliases[j].desc) {
-+			if (numdesc++ == 0 && printed)
-+				printf("\n");
-+			printf("  %-50s [", aliases[j].name);
-+			wordwrap(aliases[j].desc, 53, columns, 1);
-+			printf("]\n");
-+		} else
-+			printf("  %-50s [Kernel PMU event]\n", aliases[j].name);
-+		zfree(&aliases[j].name);
- 		printed++;
- 	}
- 	if (printed)
+ clean: $(LIBTRACEEVENT)-clean $(LIBAPIKFS)-clean config-clean
+-	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
++	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)/perf-download $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
+ 	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf
+ 	$(call QUIET_CLEAN, core-gen)   $(RM)  *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope* $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS $(OUTPUT)PERF-FEATURES $(OUTPUT)util/*-bison* $(OUTPUT)util/*-flex*
+ 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
+diff --git a/tools/perf/perf-download.sh b/tools/perf/perf-download.sh
+new file mode 100755
+index 0000000..8f57a2a
+--- /dev/null
++++ b/tools/perf/perf-download.sh
+@@ -0,0 +1,52 @@
++#!/bin/bash
++# download event files for current cpu for perf
++
++WGETOPT=${WGETOPT:---no-verbose --timeout 5}
++
++set -e
++
++if [ "$1" == "" ] ; then
++	S=$(awk '
++/^vendor/     		{ V=$3 }
++/^model/ && $2 == ":" 	{ M=$3 }
++/^cpu family/ 		{ F = $4 }
++END	      { printf("%s-%s-%X", V, F, M) }' /proc/cpuinfo)
++else
++	S="$1"
++fi
++V=$(echo $S  | ( IFS=- read v f m ; echo $v) )
++
++CACHEDIR=${XDG_CACHE_HOME:-~/.cache}
++[ ! -d $CACHEDIR/pmu-events ] && mkdir -p $CACHEDIR/pmu-events
++cd $CACHEDIR/pmu-events
++
++case "$V" in
++GenuineIntel)
++	echo "Downloading models file"
++	URLBASE=${URLBASE:-https://download.01.org/perfmon}
++	MAPFILE=${MAPFILE:-mapfile.csv}
++	echo "Downloading readme.txt"
++	wget -N $WGETOPT $URLBASE/readme.txt
++	;;
++
++# Add more CPU vendors here
++
++*)
++	echo "Unsupported CPU vendor $V"
++	exit 1
++	;;
++esac
++
++wget -N $WGETOPT $URLBASE/$MAPFILE
++
++echo "Downloading events file"
++awk -v urlbase=$URLBASE -v cpu="$S" -F, \
++	'$1 == cpu && $4 == "core" { print urlbase $3; exit 0 }' \
++	$MAPFILE > url$$
++if [ -s url$$ ] ; then
++	wget $WGETOPT -q -i url$$ -O $S-core.json
++else
++	echo "CPU $S not found"
++fi
++rm -f url$$
++
 -- 
 1.9.0
 
