@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938AbaELJlw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 05:41:52 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:17967 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751442AbaELJkz (ORCPT
+	id S1756029AbaELJmm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 05:42:42 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:26803 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753474AbaELJmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 05:40:55 -0400
-X-AuditID: cbfee690-b7fcd6d0000026e0-ef-537097264191
-From: Jungseok Lee <jays.lee@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        Catalin.Marinas@arm.com, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        steve.capper@linaro.org, sungjinn.chung@samsung.com,
-        Arnd Bergmann <arnd@arndb.de>, kgene.kim@samsung.com,
-        ilho215.lee@samsung.com
-Subject: [PATCH v6 6/7] arm64: KVM: Set physical address size related factors
- in runtime
-Date: Mon, 12 May 2014 18:40:54 +0900
-Message-id: <000501cf6dc6$44fac0f0$cef042d0$@samsung.com>
+	Mon, 12 May 2014 05:42:39 -0400
+X-AuditID: cbfee68f-b7eff6d000002b70-5d-5370978dcb62
+From: Namjae Jeon <namjae.jeon@samsung.com>
+To: "'Brian Foster'" <bfoster@redhat.com>
+Cc: "'Dave Chinner'" <david@fromorbit.com>, "'Theodore Ts'o'" <tytso@mit.edu>,
+        linux-fsdevel@vger.kernel.org,
+        "'linux-ext4'" <linux-ext4@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        "'Ashish Sangwan'" <a.sangwan@samsung.com>, xfs@oss.sgi.com
+References: <003801cf6aa7$f1f87b70$d5e97250$@samsung.com>
+ <20140509152440.GA32489@laptop.bfoster>
+In-reply-to: <20140509152440.GA32489@laptop.bfoster>
+Subject: RE: [PATCH v2 2/10] xfs: Add support FALLOC_FL_INSERT_RANGE for
+ fallocate
+Date: Mon, 12 May 2014 18:42:37 +0900
+Message-id: <005601cf6dc6$82573820$8705a860$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9tw5X9AC92RLyCSeKYl8iVEd0pug==
+Thread-index: AQI8l/c+50jbPyrOUhhBFU208NvpTgGlw03dmlUskyA=
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLIsWRmVeSWpSXmKPExsVy+t8zI1216QXBBjPXGFn8nXSM3eL9sh5G
-	ixev/zFaHP23kNGid8FVNouPp46zW2x6fI3V4vKuOWwWM87vY7L4e+cfm8WKecvYLD7MWMno
-	wOOxZt4aRo/fvyYxety5tofN4/ymNcwem5fUe/RtWcXo8XmTXAB7FJdNSmpOZllqkb5dAlfG
-	vOlv2At221RMuvuaqYGxx6CLkZNDQsBEom3VLSYIW0ziwr31bF2MXBxCAssYJc5+X88KU7Tu
-	YzM7iC0ksIhR4thrY4iiP4wST19uZwNJsAloSjy628MOkhAR2MEoMXntIlYQh1ngIaPEz7f7
-	mUGqhAWiJF6tnQG2j0VAVaLr5lUgm4ODV8BSYsHtapAwr4CgxI/J91hAbGYBLYn1O48zQdjy
-	EpvXvGWGuEhBYsfZ14wgtoiAnsSFxT3sEDUiEvtevGME2Ssh0MshsWvGdWaIXQIS3yYfYgHZ
-	JSEgK7HpANQcSYmDK26wTGAUm4Vk9Swkq2chWT0LyYoFjCyrGEVTC5ILipPSi0z0ihNzi0vz
-	0vWS83M3MUKiesIOxnsHrA8xJgOtn8gsJZqcD0wKeSXxhsZmRhamJqbGRuaWZqQJK4nzqj1K
-	ChISSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAGMFiqKa+xmnjyf5V82ZaLO5dfM/k8ET7WXNU
-	j+T8VwrddCgmed4T8Ruhk8p1TLJ21/3YOvHq3C4L/iMfzT4cmHiOZ+cL/4SOqYsvnluYn/LI
-	JOXuEp0GO0Of19op99TXf3kza1lq8qIb6kqmbCofHx4+b1TycIeC7M37axZtUokV3vT8EFfV
-	5nAlluKMREMt5qLiRABwfFzFAAMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFKsWRmVeSWpSXmKPExsVy+t9jAV216QXBBpsadC3+TjrGbvF+WQ+j
-	xYvX/xgtjv5byGjRu+Aqm8XHU8fZLTY9vsZqcXnXHDaLGef3MVn8vfOPzWLFvGVsFh9mrGR0
-	4PFYM28No8fvX5MYPe5c28PmcX7TGmaPzUvqPfq2rGL0+LxJLoA9qoHRJiM1MSW1SCE1Lzk/
-	JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwfoUiWFssScUqBQQGJxsZK+HaYJ
-	oSFuuhYwjRG6viFBcD1GBmggYR1jxrzpb9gLdttUTLr7mqmBscegi5GTQ0LARGLdx2Z2CFtM
-	4sK99WwgtpDAIkaJY6+Nuxi5gOw/jBJPX24HS7AJaEo8utvDDpIQEdjBKDF57SJWEIdZ4CGj
-	xM+3+5lBqoQFoiRerZ3BBGKzCKhKdN28CmRzcPAKWEosuF0NEuYVEJT4MfkeC4jNLKAlsX7n
-	cSYIW15i85q3zBAXKUjsOPuaEcQWEdCTuLC4hx2iRkRi34t3jBMYBWYhGTULyahZSEbNQtKy
-	gJFlFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwyngmtYNxZYPFIUYBDkYlHt4PDAXBQqyJ
-	ZcWVuYcYJTiYlUR4RTqBQrwpiZVVqUX58UWlOanFhxiTgR6dyCwlmpwPTGd5JfGGxiZmRpZG
-	ZhZGJubmpAkrifMeaLUOFBJITyxJzU5NLUgtgtnCxMEp1cAYua80VusKz+pC828tj3t26rTK
-	Nl6xk/95c8F53jXBPPXzZ12Pelz9tzbt8b8dV7RPvr/JXnS5529WUhH3tlfs6ssify7qUnnM
-	lG7CdGdVnktr/pqKI7PjjKdf/BnuuzF59mqJWNFJBf5PZ/x589XyvMuxywJCds3SAv7JE9yP
-	O3JeUOIK/lujxFKckWioxVxUnAgAvkAc6l0DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsWyRsSkRLd3ekGwway/hhZLJ15itnj3ucpi
+	y7F7jBYz591hs9iz9ySLxeVdc9gsWnt+slss6rvF6MDhcWqRhEfTmaPMHqsvbGX0eL/vKptH
+	35ZVjB6fN8kFsEVx2aSk5mSWpRbp2yVwZRzY8py54Kdpxe8DB9gbGCdodDFycEgImEjsW5LY
+	xcgJZIpJXLi3nq2LkYtDSGApo0TXxg3sMDXPz0pAxKczSsx+9IEFwvnLKHH30042kCI2AW2J
+	P1tEQQaJCKhL3Jk3AayGWeATo8T6A5NYQGqEBJIltq/LBqnhBJr5deUcJhBbWCBEYs3D+2wg
+	NouAqsS9q+2MIDavgKVE87ObrBC2oMSPyfdYQGxmAS2J9TuPM0HY8hKb17xlhnhAQWLH2deM
+	EDdYSexbM4cZokZEYt+Ld4wg90gI/GWX2DT7MCPEMgGJb5MPsUA8KSux6QDUHEmJgytusExg
+	lJiFZPUsJKtnIVk9C8mKBYwsqxhFUwuSC4qT0ouM9YoTc4tL89L1kvNzNzECY/n0v2f9Oxjv
+	HrA+xJgMtH4is5Rocj4wFeSVxBsamxlZmJqYGhuZW5qRJqwkznv/YVKQkEB6YklqdmpqQWpR
+	fFFpTmrxIUYmDk6pBkafnewLeXOkXV149bIvZ0WLbFl0/Pl1G/2OxvqtXspTCuT/WX6f7J6m
+	IKZ40fgVo6Q2b+h9gR2eS+/sblwvtajs4sV9L0Qvd8Wd8zMs2Zf4/foU6WPnpp2c9H678+nf
+	03bJzElcfCmhZOplwTVhD7e9dji7Z4N0OuvHfd+0XnzcfOFD8CEm9wAxJZbijERDLeai4kQA
+	z/e8PvsCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGKsWRmVeSWpSXmKPExsVy+t9jQd3e6QXBBr3zNS2WTrzEbPHuc5XF
+	lmP3GC1mzrvDZrFn70kWi8u75rBZtPb8ZLdY1HeL0YHD49QiCY+mM0eZPVZf2Mro8X7fVTaP
+	vi2rGD0+b5ILYItqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy
+	8QnQdcvMAbpHSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5hxYMtz5oKf
+	phW/Dxxgb2CcoNHFyMEhIWAi8fysRBcjJ5ApJnHh3nq2LkYuDiGB6YwSsx99YIFw/jJK3P20
+	kw2kgU1AW+LPFlGQBhEBdYk78yaA1TALfGKUWH9gEgtIjZBAssT2ddkgNZxA87+unMMEYgsL
+	hEiseXifDcRmEVCVuHe1nRHE5hWwlGh+dpMVwhaU+DH5HguIzSygJbF+53EmCFteYvOat8wQ
+	hypI7Dj7mhHiBiuJfWvmMEPUiEjse/GOcQKj0Cwko2YhGTULyahZSFoWMLKsYhRNLUguKE5K
+	zzXSK07MLS7NS9dLzs/dxAhOFc+kdzCuarA4xCjAwajEw/uBoSBYiDWxrLgy9xCjBAezkgjv
+	yYlAId6UxMqq1KL8+KLSnNTiQ4zJQJ9OZJYSTc4HprG8knhDYxMzI0sjc0MLI2Nz0oSVxHkP
+	tloHCgmkJ5akZqemFqQWwWxh4uCUamDkzuWttVlf+33n9zXCC+brL74SqpTVGWtUvSsy47ZZ
+	vlygK9M0s8W1EnfEzKZsX9bk9PHyZOsde6ccPOM+uera9G9Fv5R/BvKEc5x2cZt2wO3Pz986
+	ui+SVxj3VXfmCH0t2XOZcfo1E7WvCp90OWJVcxmLOk7pOoSsLJ2nzlF7guVqkqrI8kglluKM
+	REMt5qLiRADkg6ChWQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,261 +62,206 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch sets TCR_EL2.PS, VTCR_EL2.T0SZ and vttbr_baddr_mask in runtime,
-not compile time.
 
-In ARMv8, EL2 physical address size (TCR_EL2.PS) and stage2 input address
-size (VTCR_EL2.T0SZE) cannot be determined in compile time since they
-depends on hardware capability.
+> > +xfs_bmap_split_extent(
+> > +	struct xfs_inode	*ip,
+> > +	xfs_fileoff_t		split_fsb,
+> > +	xfs_extnum_t		*split_ext)
+> > +{
+> > +	struct xfs_mount        *mp = ip->i_mount;
+> > +	struct xfs_trans	*tp;
+> > +	struct xfs_bmap_free	free_list;
+> > +	xfs_fsblock_t		firstfsb;
+> > +	int			committed;
+> > +	int			error;
+> > +
+> > +	tp = xfs_trans_alloc(mp, XFS_TRANS_DIOSTRAT);
+> > +	error = xfs_trans_reserve(tp, &M_RES(mp)->tr_write,
+> > +			XFS_DIOSTRAT_SPACE_RES(mp, 0), 0);
+> > +
+> > +	if (error) {
+> > +		/*
+> > +		 * Free the transaction structure.
+> > +		 */
+> > +		ASSERT(XFS_FORCED_SHUTDOWN(mp));
+> 
+Hi, Brian.
+> As in the other patch, we're attempting to reserve fs blocks for the
+> transaction, so ENOSPC is a possibility that I think the assert should
+> accommodate.
+How about removing the ASSERT completely as suggessted by Dave
+in other thread?
 
-According to Table D4-23 and Table D4-25 in ARM DDI 0487A.b document,
-vttbr_x is calculated using different hard-coded values with consideration
-of T0SZ, granule size and the level of translation tables. Therefore,
-vttbr_baddr_mask should be determined dynamically.
+> 
+> > +		xfs_trans_cancel(tp, 0);
+> > +		return error;
+> > +	}
+> > +
 
-Cc: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Christoffer Dall <christoffer.dall@linaro.org>
-Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
-Reviewed-by: Sungjinn Chung <sungjinn.chung@samsung.com>
----
- arch/arm/kvm/arm.c               |   82 +++++++++++++++++++++++++++++++++++++-
- arch/arm64/include/asm/kvm_arm.h |   17 ++------
- arch/arm64/kvm/hyp-init.S        |   20 +++++++---
- 3 files changed, 98 insertions(+), 21 deletions(-)
+> > +
+> > +		/*
+> > +		 * Before shifting extent into hole, make sure that the hole
+> > +		 * is large enough to accomodate the shift. This checking has
+> > +		 * to be performed for all except the last extent.
+> > +		 */
+> > +		last_extent = (ifp->if_bytes / sizeof(xfs_bmbt_rec_t)) - 1;
+> > +		if (last_extent != *current_ext) {
+> > +			xfs_bmbt_get_all(xfs_iext_get_ext(ifp,
+> > +						*current_ext + 1), &right);
+> > +			if (startoff + got.br_blockcount > right.br_startoff) {
+> > +				error = XFS_ERROR(EINVAL);
+> > +				if (error)
+> > +					goto del_cursor;
+> > +			}
+> > +		}
+> > +
+> > +		/* Check if we can merge 2 adjacent extents */
+> > +		if (last_extent != *current_ext &&
+> > +		    right.br_startoff == startoff + got.br_blockcount &&
+> > +		    right.br_startblock ==
+> > +				got.br_startblock + got.br_blockcount &&
+> > +		    right.br_state == got.br_state &&
+> > +		    right.br_blockcount + got.br_blockcount <= MAXEXTLEN) {
+> > +			blockcount = right.br_blockcount + got.br_blockcount;
+> > +
+> > +			/* Make cursor point to the extent we will update */
+> 
+> The comment could be more clear about what we're doing in this case. For
+> example:
+> 
+> /*
+>  * Merge the current extent with the extent to the right. Remove the right
+>  * extent, calculate a new block count for the current extent to cover the range
+>  * of both and decrement the number of extents in the fork.
+>  */
+> 
+> I'd also move the comment before the blockcount calculation.
+okay, I will add it as your suggestion.
+> 
+> > +			if (cur) {
+> > +				error = xfs_bmbt_lookup_eq(cur,
+> > +							   right.br_startoff,
+> > +							   right.br_startblock,
+> > +							   right.br_blockcount,
+> > +							   &i);
+> > +				if (error)
+> > +					goto del_cursor;
+> > +				XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
+> > +			}
+> > +
+> > +			xfs_iext_remove(ip, *current_ext + 1, 1, 0);
+> > +			if (cur) {
+> > +				error = xfs_btree_delete(cur, &i);
+> > +				if (error)
+> > +					goto del_cursor;
+> > +				XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
+> > +			}
+> > +			XFS_IFORK_NEXT_SET(ip, whichfork,
+> > +					XFS_IFORK_NEXTENTS(ip, whichfork) - 1);
+> > +
+> > +		}
+> > +
+> > +		if (cur) {
+> > +			error = xfs_bmbt_lookup_eq(cur, got.br_startoff,
+> > +						   got.br_startblock,
+> > +						   got.br_blockcount,
+> > +						   &i);
+> > +			if (error)
+> > +				goto del_cursor;
+> > +			XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
+> > +		}
+> > +
+> > +		if (got.br_blockcount < blockcount) {
+> > +			xfs_bmbt_set_blockcount(gotp, blockcount);
+> > +			got.br_blockcount = blockcount;
+> > +		}
+> 
+> How about just 'if (blockcount)' so the algorithm is clear?
+yes, more clear.
+> 
+> > +
+> > +
+> > diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+> > index 97855c5..392b029 100644
+> > --- a/fs/xfs/xfs_file.c
+> > +++ b/fs/xfs/xfs_file.c
+> > @@ -760,7 +760,8 @@ xfs_file_fallocate(
+> >  	if (!S_ISREG(inode->i_mode))
+> >  		return -EINVAL;
+> >  	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
+> > -		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE))
+> > +		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE |
+> > +		     FALLOC_FL_INSERT_RANGE))
+> >  		return -EOPNOTSUPP;
+> >
+> >  	xfs_ilock(ip, XFS_IOLOCK_EXCL);
+> > @@ -790,6 +791,40 @@ xfs_file_fallocate(
+> >  		error = xfs_collapse_file_space(ip, offset, len);
+> >  		if (error)
+> >  			goto out_unlock;
+> > +	} else if (mode & FALLOC_FL_INSERT_RANGE) {
+> > +		unsigned blksize_mask = (1 << inode->i_blkbits) - 1;
+> > +		struct iattr iattr;
+> > +
+> > +		if (offset & blksize_mask || len & blksize_mask) {
+> > +			error = -EINVAL;
+> > +			goto out_unlock;
+> > +		}
+> > +
+> > +		/* Check for wrap through zero */
+> > +		if (inode->i_size + len > inode->i_sb->s_maxbytes) {
+> > +			error = -EFBIG;
+> > +			goto out_unlock;
+> > +		}
+> > +
+> > +		/* Offset should be less than i_size */
+> > +		if (offset >= i_size_read(inode)) {
+> > +			error = -EINVAL;
+> > +			goto out_unlock;
+> > +		}
+> > +
+> > +		/*
+> > +		 * The first thing we do is to expand file to
+> > +		 * avoid data loss if there is error while shifting
+> > +		 */
+> > +		iattr.ia_valid = ATTR_SIZE;
+> > +		iattr.ia_size = i_size_read(inode) + len;
+> > +		error = xfs_setattr_size(ip, &iattr);
+> > +		if (error)
+> > +			goto out_unlock;
+> 
+> I don't necessarily know that it's problematic to do the setattr before
+> the bmap fixup. We'll have a chance for partial completion of this
+> operation either way. But I'm not a fan of the code duplication here.
+> This also still skips the time update in the event of insert space
+> failure, though perhaps that's not such a big deal if we're returning an
+> error.
+> 
+> I think it would be better to leave things organized as before and
+> introduce an error2 variable and a &nrshifts or some such parameter to
+> xfs_insert_file_space() that initializes to 0 and returns the number of
+> record shifts. The caller can then decide whether it's appropriate to
+> break out immediately or do the inode size update and return the error.
+> 
+> Perhaps not the cleanest thing in the world, but also not the first
+> place we would use 'error2' to manage error priorities (grep around for
+> it)...
+Yes, Right. I also thought such sequence at first. But we should consider
+sudden power off and unplug device case during shifting extent.
+While we are in the middle of shifitng extents and if there is sudden
+power failure user can still think that data is lost as we won't get any
+chance to update the file size in these cases.
+Updating file size before the shifitng operation can start will prevent this.
 
-diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
-index f0e50a0..9f19f2c 100644
---- a/arch/arm/kvm/arm.c
-+++ b/arch/arm/kvm/arm.c
-@@ -37,6 +37,7 @@
- #include <asm/mman.h>
- #include <asm/tlbflush.h>
- #include <asm/cacheflush.h>
-+#include <asm/cputype.h>
- #include <asm/virt.h>
- #include <asm/kvm_arm.h>
- #include <asm/kvm_asm.h>
-@@ -61,6 +62,9 @@ static atomic64_t kvm_vmid_gen = ATOMIC64_INIT(1);
- static u8 kvm_next_vmid;
- static DEFINE_SPINLOCK(kvm_vmid_lock);
- 
-+/* VTTBR mask cannot be determined in complie time under ARMv8 */
-+static u64 vttbr_baddr_mask;
-+
- static bool vgic_present;
- 
- static void kvm_arm_set_running_vcpu(struct kvm_vcpu *vcpu)
-@@ -412,6 +416,75 @@ static bool need_new_vmid_gen(struct kvm *kvm)
- }
- 
- /**
-+ * set_vttbr_baddr_mask - set mask value for vttbr base address
-+ *
-+ * In ARMv8, vttbr_baddr_mask cannot be determined in compile time since stage2
-+ * input address size depends on hardware capability. Thus, it is needed to read
-+ * ID_AA64MMFR0_EL1.PARange first and then set vttbr_baddr_mask with consideration
-+ * of both granule size and the level of translation tables.
-+ */
-+static int set_vttbr_baddr_mask(void)
-+{
-+#ifndef CONFIG_ARM64
-+	vttbr_baddr_mask = VTTBR_BADDR_MASK;
-+#else
-+	int pa_range, t0sz, vttbr_x;
-+
-+	pa_range = read_cpuid(ID_AA64MMFR0_EL1) & 0xf;
-+
-+	switch (pa_range) {
-+	case 0:
-+		t0sz = VTCR_EL2_T0SZ(32);
-+		break;
-+	case 1:
-+		t0sz = VTCR_EL2_T0SZ(36);
-+		break;
-+	case 2:
-+		t0sz = VTCR_EL2_T0SZ(40);
-+		break;
-+	case 3:
-+		t0sz = VTCR_EL2_T0SZ(42);
-+		break;
-+	case 4:
-+		t0sz = VTCR_EL2_T0SZ(44);
-+		break;
-+	default:
-+		t0sz = VTCR_EL2_T0SZ(48);
-+	}
-+
-+	/*
-+	 * See Table D4-23 and Table D4-25 in ARM DDI 0487A.b to figure out
-+	 * the origin of the hardcoded values, 38 and 37.
-+	 */
-+#ifdef CONFIG_ARM64_64K_PAGES
-+	/*
-+	 * 16 <= T0SZ <= 21 is valid under 3 level of translation tables
-+	 * 18 <= T0SZ <= 34 is valid under 2 level of translation tables
-+	 * 31 <= T0SZ <= 39 is valid under 1 level of transltaion tables
-+	 */
-+	if (t0sz <= 17) {
-+		kvm_err("Cannot support %d-bit address space\n", 64 - t0sz);
-+		return -EINVAL;
-+	}
-+	vttbr_x = 38 - t0sz;
-+#else
-+	/*
-+	 * 16 <= T0SZ <= 24 is valid under 4 level of translation tables
-+	 * 21 <= T0SZ <= 30 is valid under 3 level of translation tables
-+	 * 30 <= T0SZ <= 39 is valid under 2 level of translation tables
-+	 */
-+	if (t0sz <= 20) {
-+		kvm_err("Cannot support %d-bit address space\n", 64 - t0sz);
-+		return -EINVAL;
-+	}
-+	vttbr_x = 37 - t0sz;
-+#endif
-+	vttbr_baddr_mask = (((1LLU << (48 - vttbr_x)) - 1) << (vttbr_x - 1));
-+#endif
-+	return 0;
-+}
-+
-+/**
-  * update_vttbr - Update the VTTBR with a valid VMID before the guest runs
-  * @kvm	The guest that we are about to run
-  *
-@@ -465,7 +538,7 @@ static void update_vttbr(struct kvm *kvm)
- 	/* update vttbr to be used with the new vmid */
- 	pgd_phys = virt_to_phys(kvm->arch.pgd);
- 	vmid = ((u64)(kvm->arch.vmid) << VTTBR_VMID_SHIFT) & VTTBR_VMID_MASK;
--	kvm->arch.vttbr = pgd_phys & VTTBR_BADDR_MASK;
-+	kvm->arch.vttbr = pgd_phys & vttbr_baddr_mask;
- 	kvm->arch.vttbr |= vmid;
- 
- 	spin_unlock(&kvm_vmid_lock);
-@@ -1051,6 +1124,12 @@ int kvm_arch_init(void *opaque)
- 		}
- 	}
- 
-+	err = set_vttbr_baddr_mask();
-+	if (err) {
-+		kvm_err("Cannot set vttbr_baddr_mask\n");
-+		return -EINVAL;
-+	}
-+
- 	cpu_notifier_register_begin();
- 
- 	err = init_hyp_mode();
-@@ -1068,6 +1147,7 @@ int kvm_arch_init(void *opaque)
- 	hyp_cpu_pm_init();
- 
- 	kvm_coproc_table_init();
-+
- 	return 0;
- out_err:
- 	cpu_notifier_register_done();
-diff --git a/arch/arm64/include/asm/kvm_arm.h b/arch/arm64/include/asm/kvm_arm.h
-index 3d69030..8dbef70 100644
---- a/arch/arm64/include/asm/kvm_arm.h
-+++ b/arch/arm64/include/asm/kvm_arm.h
-@@ -94,7 +94,6 @@
- /* TCR_EL2 Registers bits */
- #define TCR_EL2_TBI	(1 << 20)
- #define TCR_EL2_PS	(7 << 16)
--#define TCR_EL2_PS_40B	(2 << 16)
- #define TCR_EL2_TG0	(1 << 14)
- #define TCR_EL2_SH0	(3 << 12)
- #define TCR_EL2_ORGN0	(3 << 10)
-@@ -103,8 +102,6 @@
- #define TCR_EL2_MASK	(TCR_EL2_TG0 | TCR_EL2_SH0 | \
- 			 TCR_EL2_ORGN0 | TCR_EL2_IRGN0 | TCR_EL2_T0SZ)
- 
--#define TCR_EL2_FLAGS	(TCR_EL2_PS_40B)
--
- /* VTCR_EL2 Registers bits */
- #define VTCR_EL2_PS_MASK	(7 << 16)
- #define VTCR_EL2_TG0_MASK	(1 << 14)
-@@ -119,36 +116,28 @@
- #define VTCR_EL2_SL0_MASK	(3 << 6)
- #define VTCR_EL2_SL0_LVL1	(1 << 6)
- #define VTCR_EL2_T0SZ_MASK	0x3f
--#define VTCR_EL2_T0SZ_40B	24
-+#define VTCR_EL2_T0SZ(bits)	(64 - (bits))
- 
- #ifdef CONFIG_ARM64_64K_PAGES
- /*
-  * Stage2 translation configuration:
-- * 40bits output (PS = 2)
-- * 40bits input  (T0SZ = 24)
-  * 64kB pages (TG0 = 1)
-  * 2 level page tables (SL = 1)
-  */
- #define VTCR_EL2_FLAGS		(VTCR_EL2_TG0_64K | VTCR_EL2_SH0_INNER | \
- 				 VTCR_EL2_ORGN0_WBWA | VTCR_EL2_IRGN0_WBWA | \
--				 VTCR_EL2_SL0_LVL1 | VTCR_EL2_T0SZ_40B)
--#define VTTBR_X		(38 - VTCR_EL2_T0SZ_40B)
-+				 VTCR_EL2_SL0_LVL1)
- #else
- /*
-  * Stage2 translation configuration:
-- * 40bits output (PS = 2)
-- * 40bits input  (T0SZ = 24)
-  * 4kB pages (TG0 = 0)
-  * 3 level page tables (SL = 1)
-  */
- #define VTCR_EL2_FLAGS		(VTCR_EL2_TG0_4K | VTCR_EL2_SH0_INNER | \
- 				 VTCR_EL2_ORGN0_WBWA | VTCR_EL2_IRGN0_WBWA | \
--				 VTCR_EL2_SL0_LVL1 | VTCR_EL2_T0SZ_40B)
--#define VTTBR_X		(37 - VTCR_EL2_T0SZ_40B)
-+				 VTCR_EL2_SL0_LVL1)
- #endif
- 
--#define VTTBR_BADDR_SHIFT (VTTBR_X - 1)
--#define VTTBR_BADDR_MASK  (((1LLU << (40 - VTTBR_X)) - 1) << VTTBR_BADDR_SHIFT)
- #define VTTBR_VMID_SHIFT  (48LLU)
- #define VTTBR_VMID_MASK	  (0xffLLU << VTTBR_VMID_SHIFT)
- 
-diff --git a/arch/arm64/kvm/hyp-init.S b/arch/arm64/kvm/hyp-init.S
-index d968796..c0f7634 100644
---- a/arch/arm64/kvm/hyp-init.S
-+++ b/arch/arm64/kvm/hyp-init.S
-@@ -63,17 +63,21 @@ __do_hyp_init:
- 	mrs	x4, tcr_el1
- 	ldr	x5, =TCR_EL2_MASK
- 	and	x4, x4, x5
--	ldr	x5, =TCR_EL2_FLAGS
--	orr	x4, x4, x5
--	msr	tcr_el2, x4
--
--	ldr	x4, =VTCR_EL2_FLAGS
- 	/*
- 	 * Read the PARange bits from ID_AA64MMFR0_EL1 and set the PS bits in
--	 * VTCR_EL2.
-+	 * TCR_EL2 and both PS bits and T0SZ bits in VTCR_EL2.
- 	 */
- 	mrs	x5, ID_AA64MMFR0_EL1
- 	bfi	x4, x5, #16, #3
-+	msr	tcr_el2, x4
-+
-+	ldr	x4, =VTCR_EL2_FLAGS
-+	bfi	x4, x5, #16, #3
-+	and	x5, x5, #0xf
-+	adr	x6, t0sz
-+	add	x6, x6, x5, lsl #2
-+	ldr	w5, [x6]
-+	orr	x4, x4, x5
- 	msr	vtcr_el2, x4
- 
- 	mrs	x4, mair_el1
-@@ -109,6 +113,10 @@ target: /* We're now in the trampoline code, switch page tables */
- 
- 	/* Hello, World! */
- 	eret
-+
-+t0sz:
-+	.word	VTCR_EL2_T0SZ(32), VTCR_EL2_T0SZ(36), VTCR_EL2_T0SZ(40)
-+	.word	VTCR_EL2_T0SZ(42), VTCR_EL2_T0SZ(44), VTCR_EL2_T0SZ(48)
- ENDPROC(__kvm_hyp_init)
- 
- 	.ltorg
--- 
-1.7.10.4
-
+Thanks.
+> 
+> Brian
+> 
+> > +
+> > +		error = xfs_insert_file_space(ip, offset, len);
+> > +		if (error)
+> > +			goto out_unlock;
+> >  	} else {
+> >  		if (!(mode & FALLOC_FL_KEEP_SIZE) &&
+> >  		    offset + len > i_size_read(inode)) {
 
