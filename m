@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833AbaELB4v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:56:51 -0400
-Received: from 1wt.eu ([62.212.114.60]:34681 "EHLO 1wt.eu"
+	id S1755894AbaELB5L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:57:11 -0400
+Received: from 1wt.eu ([62.212.114.60]:34671 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753744AbaELBnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:43:06 -0400
-Message-Id: <20140512003203.668707502@1wt.eu>
+	id S1753713AbaELBnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:43:03 -0400
+Message-Id: <20140512003201.054244438@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:33:13 +0200
+Date: Mon, 12 May 2014 02:32:10 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Andreas Henriksson <andreas@fatal.se>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 073/143] net: Fix "ip rule delete table 256"
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Mike Miller <mike.miller@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 010/143] cpqarray: fix info leak in ida_locked_ioctl()
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,44 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Henriksson <andreas@fatal.se>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 13eb2ab2d33c57ebddc57437a7d341995fc9138c ]
+commit 627aad1c01da6f881e7f98d71fd928ca0c316b1a upstream
 
-When trying to delete a table >= 256 using iproute2 the local table
-will be deleted.
-The table id is specified as a netlink attribute when it needs more then
-8 bits and iproute2 then sets the table field to RT_TABLE_UNSPEC (0).
-Preconditions to matching the table id in the rule delete code
-doesn't seem to take the "table id in netlink attribute" into condition
-so the frh_get_table helper function never gets to do its job when
-matching against current rule.
-Use the helper function twice instead of peaking at the table value directly.
+The pciinfo struct has a two byte hole after ->dev_fn so stack
+information could be leaked to the user.
 
-Originally reported at: http://bugs.debian.org/724783
+This was assigned CVE-2013-2147.
 
-Reported-by: Nicolas HICHER <nhicher@avencall.com>
-Signed-off-by: Andreas Henriksson <andreas@fatal.se>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/core/fib_rules.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/block/cpqarray.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/core/fib_rules.c b/net/core/fib_rules.c
-index bd30938..de9eac9 100644
---- a/net/core/fib_rules.c
-+++ b/net/core/fib_rules.c
-@@ -381,7 +381,8 @@ static int fib_nl_delrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
- 		if (frh->action && (frh->action != rule->action))
- 			continue;
+diff --git a/drivers/block/cpqarray.c b/drivers/block/cpqarray.c
+index 6422651..f9caa45 100644
+--- a/drivers/block/cpqarray.c
++++ b/drivers/block/cpqarray.c
+@@ -1181,6 +1181,7 @@ out_passthru:
+ 		ida_pci_info_struct pciinfo;
  
--		if (frh->table && (frh_get_table(frh, tb) != rule->table))
-+		if (frh_get_table(frh, tb) &&
-+		    (frh_get_table(frh, tb) != rule->table))
- 			continue;
- 
- 		if (tb[FRA_PRIORITY] &&
+ 		if (!arg) return -EINVAL;
++		memset(&pciinfo, 0, sizeof(pciinfo));
+ 		pciinfo.bus = host->pci_dev->bus->number;
+ 		pciinfo.dev_fn = host->pci_dev->devfn;
+ 		pciinfo.board_id = host->board_id;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
