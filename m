@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223AbaELBmj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:42:39 -0400
-Received: from 1wt.eu ([62.212.114.60]:34590 "EHLO 1wt.eu"
+	id S1751910AbaELBlh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:41:37 -0400
+Received: from 1wt.eu ([62.212.114.60]:34342 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753138AbaELBmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:42:38 -0400
-Message-Id: <20140512003203.293568576@1wt.eu>
+	id S1751601AbaELBla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:41:30 -0400
+Message-Id: <20140512003201.300860164@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:33:04 +0200
+Date: Mon, 12 May 2014 02:32:16 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Stephen Hemminger <stephen@networkplumber.org>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 064/143] htb: fix sign extension bug
+Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 016/143] af_key: initialize satype in key_notify_policy_flush()
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,42 +24,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: stephen hemminger <stephen@networkplumber.org>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-[ Upstream commit cbd375567f7e4811b1c721f75ec519828ac6583f ]
+commit 85dfb745ee40232876663ae206cba35f24ab2a40 upstream
 
-When userspace passes a large priority value
-the assignment of the unsigned value hopt->prio
-to  signed int cl->prio causes cl->prio to become negative and the
-comparison is with TC_HTB_NUMPRIO is always false.
+This field was left uninitialized. Some user daemons perform check against this
+field.
 
-The result is that HTB crashes by referencing outside
-the array when processing packets. With this patch the large value
-wraps around like other values outside the normal range.
-
-See: https://bugzilla.kernel.org/show_bug.cgi?id=60669
-
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/sched/sch_htb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/key/af_key.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/sched/sch_htb.c b/net/sched/sch_htb.c
-index 2f074d6..9ce5963 100644
---- a/net/sched/sch_htb.c
-+++ b/net/sched/sch_htb.c
-@@ -85,7 +85,7 @@ struct htb_class {
- 	unsigned int children;
- 	struct htb_class *parent;	/* parent class */
- 
--	int prio;		/* these two are used only by leaves... */
-+	u32 prio;		/* these two are used only by leaves... */
- 	int quantum;		/* but stored for parent-to-leaf return */
- 
- 	union {
+diff --git a/net/key/af_key.c b/net/key/af_key.c
+index 03d626f..9d22e46 100644
+--- a/net/key/af_key.c
++++ b/net/key/af_key.c
+@@ -2694,6 +2694,7 @@ static int key_notify_policy_flush(struct km_event *c)
+ 	hdr->sadb_msg_pid = c->pid;
+ 	hdr->sadb_msg_version = PF_KEY_V2;
+ 	hdr->sadb_msg_errno = (uint8_t) 0;
++	hdr->sadb_msg_satype = SADB_SATYPE_UNSPEC;
+ 	hdr->sadb_msg_len = (sizeof(struct sadb_msg) / sizeof(uint64_t));
+ 	hdr->sadb_msg_reserved = 0;
+ 	pfkey_broadcast(skb_out, GFP_ATOMIC, BROADCAST_ALL, NULL, c->net);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
