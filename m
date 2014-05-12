@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758603AbaELCZs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 22:25:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:53169 "EHLO mga01.intel.com"
+	id S1758632AbaELC0Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 22:26:16 -0400
+Received: from 1wt.eu ([62.212.114.60]:34354 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758404AbaELCWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 22:22:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1032,1389772800"; 
-   d="scan'208";a="530200549"
-From: Yuyang Du <yuyang.du@intel.com>
-To: mingo@redhat.com, peterz@infradead.org, rafael.j.wysocki@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
-        mark.gross@intel.com, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, rajeev.d.muralidhar@intel.com,
-        vishwesh.m.rudramuni@intel.com, nicole.chalhoub@intel.com,
-        ajaya.durg@intel.com, harinarayanan.seshadri@intel.com,
-        jacob.jun.pan@linux.intel.com, fengguang.wu@intel.com,
-        yuyang.du@intel.com
-Subject: [RFC PATCH 01/12 v2] CONFIG for CPU ConCurrency
-Date: Mon, 12 May 2014 02:16:50 +0800
-Message-Id: <1399832221-8314-2-git-send-email-yuyang.du@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1399832221-8314-1-git-send-email-yuyang.du@intel.com>
-References: <1399832221-8314-1-git-send-email-yuyang.du@intel.com>
+	id S1751640AbaELBlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:41:32 -0400
+Message-Id: <20140512003202.254959995@1wt.eu>
+User-Agent: quilt/0.48-1
+Date: Mon, 12 May 2014 02:32:39 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Mariusz Ceier <mceier+kernel@gmail.com>,
+        Mugunthan V N <mugunthanvnm@ti.com>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 039/143] davinci_emac.c: Fix IFF_ALLMULTI setup
+In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add CONFIG_CPU_CONCURRENCY in arch/x86/Kconfig. This CONFIG enables/disables
-CPU ConCurrency load metric tracking.
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Yuyang Du <yuyang.du@intel.com>
+------------------
+
+From: Mariusz Ceier <mceier+kernel@gmail.com>
+
+[ Upstream commit d69e0f7ea95fef8059251325a79c004bac01f018 ]
+
+When IFF_ALLMULTI flag is set on interface and IFF_PROMISC isn't,
+emac_dev_mcast_set should only enable RX of multicasts and reset
+MACHASH registers.
+
+It does this, but afterwards it either sets up multicast MACs
+filtering or disables RX of multicasts and resets MACHASH registers
+again, rendering IFF_ALLMULTI flag useless.
+
+This patch fixes emac_dev_mcast_set, so that multicast MACs filtering and
+disabling of RX of multicasts are skipped when IFF_ALLMULTI flag is set.
+
+Tested with kernel 2.6.37.
+
+Signed-off-by: Mariusz Ceier <mceier+kernel@gmail.com>
+Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/Kconfig |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/net/davinci_emac.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 25d2c6f..9bfac8d 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -797,6 +797,17 @@ config SCHED_MC
- 	  making when dealing with multi-core CPU chips at a cost of slightly
- 	  increased overhead in some places. If unsure say N here.
- 
-+config CPU_CONCURRENCY
-+	bool "CPU ConCurency (CC)"
-+	default n
-+	depends on SMP
-+	---help---
-+	  CPU ConCurrency (CC) is a new CPU load metric that measures the CPU
-+	  load by averaging the number of running tasks. Using CC, the scheduler
-+	  can evaluate the load of CPUs and may consolidate workloads on CPUs in
-+	  load balancing for power efficiency without sacrificing performance.
-+	  If unsure say N here.
-+
- source "kernel/Kconfig.preempt"
- 
- config X86_UP_APIC
+diff --git a/drivers/net/davinci_emac.c b/drivers/net/davinci_emac.c
+index e347831..eafd1e4 100644
+--- a/drivers/net/davinci_emac.c
++++ b/drivers/net/davinci_emac.c
+@@ -960,7 +960,7 @@ static void emac_dev_mcast_set(struct net_device *ndev)
+ 			mbp_enable = (mbp_enable | EMAC_MBP_RXMCAST);
+ 			emac_add_mcast(priv, EMAC_ALL_MULTI_SET, NULL);
+ 		}
+-		if (ndev->mc_count > 0) {
++		else if (ndev->mc_count > 0) {
+ 			struct dev_mc_list *mc_ptr;
+ 			mbp_enable = (mbp_enable | EMAC_MBP_RXMCAST);
+ 			emac_add_mcast(priv, EMAC_ALL_MULTI_CLR, NULL);
 -- 
-1.7.9.5
+1.7.12.2.21.g234cd45.dirty
+
+
 
