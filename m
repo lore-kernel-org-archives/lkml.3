@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717AbaELSkh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 14:40:37 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:8985 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754524AbaELSkf (ORCPT
+	id S1755299AbaELSrm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 14:47:42 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:46728 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754788AbaELSrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 14:40:35 -0400
-Message-ID: <1399920032.2648.33.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH V3] MM: make vmpressure_win dynamic
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, akpm <akpm@linux-foundation.org>,
-        Li Zefan <lizefan@huawei.com>, cgroups <cgroups@vger.kernel.org>
-Date: Mon, 12 May 2014 11:40:32 -0700
-In-Reply-To: <20140512202249.8f5b8475ba2c5018585e68b1@skynet.be>
-References: <20140510085217.24a34794f0e4a4881c8eec0b@skynet.be>
-	 <20140512075537.GA9564@dhcp22.suse.cz>
-	 <20140512202249.8f5b8475ba2c5018585e68b1@skynet.be>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 12 May 2014 14:47:37 -0400
+Date: Mon, 12 May 2014 11:47:27 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jean Delvare <jdelvare@suse.de>
+Cc: Josef Gajdusek <atx@atx.name>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/hwmon/emc1403.c: add support for emc14x2
+Message-ID: <20140512184727.GA9003@roeck-us.net>
+References: <20140512123409.GB16252@dashie>
+ <20140512161415.GA16770@roeck-us.net>
+ <20140512190327.4f65c90a@endymion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140512190327.4f65c90a@endymion.delvare>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-12 at 20:22 +0200, Fabian Frederick wrote:
-> On Mon, 12 May 2014 09:55:37 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > On Sat 10-05-14 08:52:17, Fabian Frederick wrote:
-> > > This patch addresses TODO featuring in original version :
+On Mon, May 12, 2014 at 07:03:27PM +0200, Jean Delvare wrote:
+> On Mon, 12 May 2014 09:14:15 -0700, Guenter Roeck wrote:
+> > On Mon, May 12, 2014 at 02:34:09PM +0200, Josef Gajdusek wrote:
+> > >  static const struct i2c_device_id emc1403_idtable[] = {
+> > > -	{ "emc1403", 0 },
+> > > -	{ "emc1404", 1 },
+> > > -	{ "emc1423", 0 },
+> > > -	{ "emc1424", 1 },
+> > > +	{ "emc1402", emc1402 },
+> > > +	{ "emc1403", emc1403 },
+> > > +	{ "emc1404", emc1404 },
+> > > +	{ "emc1422", emc1402 },
+> > > +	{ "emc1423", emc1403 },
+> > > +	{ "emc1424", emc1404 },
 > > 
-> > This is the 3rd version of the patch and I still fail to see the
-> > motivation other than addressing a TODO which doesn't sound like a
-> > sufficient justification to me. Why is the new scheme needed in the
-> > first place? Why is calculate_normal_threshold a proper scheme?
-> Nothing more than trying to have that value dynamic.
+> > Wonder if we should list the emc141x chips here. Jean, any thoughts ?
+> 
+> Yes we should, so that people can declare the right chip in platform
+> files, device tree etc. We can map the additional names to existing
+> types if the chips are fully compatible.
+> 
+The chips are not only compatible, the even have the same device IDs.
+Maybe I missed it, but I did not find a difference.
 
-No, that's not a valid justification. This is your reason, Fabian:
+I'll add another patch to my list.
 
-https://lkml.org/lkml/2013/1/8/45
-
+Guenter
