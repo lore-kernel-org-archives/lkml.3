@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657AbaELHJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 03:09:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41079 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751058AbaELHJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 03:09:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1033,1389772800"; 
-   d="scan'208";a="538733035"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Airlie <airlied@gmail.com>
-Cc: "intel-gfx\@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Meyer <thomas@m3y3r.de>
-Subject: Re: [Intel-gfx] 3.15-rc5: Regression in i915 driver?
-In-Reply-To: <CAKMK7uG4Gnn_sY44Ci8VbRhJQf8=5s_dod4tRX+PDYYs1EYFsQ@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <1399796911.2442.7.camel@localhost.localdomain> <CAPM=9tzwkwSTC2i=KWSxmHkG74fXyyh8JiTzEaDwNgg-J_G7cw@mail.gmail.com> <CAKMK7uG4Gnn_sY44Ci8VbRhJQf8=5s_dod4tRX+PDYYs1EYFsQ@mail.gmail.com>
-User-Agent: Notmuch/0.18+7~g8ecc7db (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Mon, 12 May 2014 10:09:54 +0300
-Message-ID: <87tx8v322l.fsf@intel.com>
+	id S1751599AbaELHUu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 03:20:50 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:34192 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777AbaELHUt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 03:20:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20140510123800.951b2f0883b148a91d0c5f8e@skynet.be>
+References: <20140510123800.951b2f0883b148a91d0c5f8e@skynet.be>
+Date: Mon, 12 May 2014 09:20:48 +0200
+X-Google-Sender-Auth: Hcmj78nz_bFzgkNr_j9l48Aceec
+Message-ID: <CAMuHMdVgOKuvu3W4oDRn71nwrY3DdQzLe5idPux4EFMNS7Syhg@mail.gmail.com>
+Subject: Re: [PATCH V2 RESEND] ARCH/M68K/AMIGA: convert printk(foo to pr_foo()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 11 May 2014, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> On Sun, May 11, 2014 at 11:02 AM, Dave Airlie <airlied@gmail.com> wrote:
->> On 11 May 2014 18:28, Thomas Meyer <thomas@m3y3r.de> wrote:
->>> Hi,
->>>
->>> 3.14.3 works as expected.
->>> 3.15-rc5 shows a strange behaviour: When resuming from ram the X server
->>> seems to be disfunctional.
->>>
->>> I see this WARNING in the kernel log before suspend to ram in the early
->>> boot process:
+On Sat, May 10, 2014 at 12:38 PM, Fabian Frederick <fabf@skynet.be> wrote:
+> -no level printk converted to pr_warn/pr_info
+> -fixed a small identation problem
 >
-> Doesn't ring a bell really.
-> - Is there anything in dmesg after resume?
-> - How exactly does X misbehave? Is fbcon still working? Does X
-> behaviour get restored if you restart X?
-> - Can you please try to bisect this issue? Note that the backlight
-> issue might be unrelated to the issues with X misbehaving after
-> resume. You might need to do a bisect for both if the symptoms don't
-> agree.
+> This is untested
+>
+> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 
-I agree the WARNING from i965_enable_backlight() is unrelated. Focus on
-the other symptoms first.
+Thanks, will queue for v3.16.
 
-BR,
-Jani.
+Gr{oetje,eeting}s,
 
--- 
-Jani Nikula, Intel Open Source Technology Center
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
