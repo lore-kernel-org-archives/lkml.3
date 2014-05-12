@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390AbaELCAv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 22:00:51 -0400
-Received: from 1wt.eu ([62.212.114.60]:34626 "EHLO 1wt.eu"
+	id S1756125AbaELCBP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 22:01:15 -0400
+Received: from 1wt.eu ([62.212.114.60]:34619 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753381AbaELBmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:42:47 -0400
-Message-Id: <20140512003202.504653342@1wt.eu>
+	id S1753330AbaELBmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:42:46 -0400
+Message-Id: <20140512003202.671353135@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:32:45 +0200
+Date: Mon, 12 May 2014 02:32:49 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+Cc: Daniel Borkmann <dborkman@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 045/143] ll_temac: Reset dma descriptors indexes on ndo_open
+Subject: [ 049/143] net: sctp: fix NULL pointer dereference in socket destruction
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,45 +24,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ricardo Ribalda <ricardo.ribalda@gmail.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 7167cf0e8cd10287b7912b9ffcccd9616f382922 ]
+[ Upstream commit 1abd165ed757db1afdefaac0a4bc8a70f97d258c ]
 
-The dma descriptors indexes are only initialized on the probe function.
+While stress testing sctp sockets, I hit the following panic:
 
-If a packet is on the buffer when temac_stop is called, the dma
-descriptors indexes can be left on a incorrect state where no other
-package can be sent.
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
+IP: [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
+PGD 7cead067 PUD 7ce76067 PMD 0
+Oops: 0000 [#1] SMP
+Modules linked in: sctp(F) libcrc32c(F) [...]
+CPU: 7 PID: 2950 Comm: acc Tainted: GF            3.10.0-rc2+ #1
+Hardware name: Dell Inc. PowerEdge T410/0H19HD, BIOS 1.6.3 02/01/2011
+task: ffff88007ce0e0c0 ti: ffff88007b568000 task.ti: ffff88007b568000
+RIP: 0010:[<ffffffffa0490c4e>]  [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
+RSP: 0018:ffff88007b569e08  EFLAGS: 00010292
+RAX: 0000000000000000 RBX: ffff88007db78a00 RCX: dead000000200200
+RDX: ffffffffa049fdb0 RSI: ffff8800379baf38 RDI: 0000000000000000
+RBP: ffff88007b569e18 R08: ffff88007c230da0 R09: 0000000000000001
+R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+R13: ffff880077990d00 R14: 0000000000000084 R15: ffff88007db78a00
+FS:  00007fc18ab61700(0000) GS:ffff88007fc60000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000020 CR3: 000000007cf9d000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Stack:
+ ffff88007b569e38 ffff88007db78a00 ffff88007b569e38 ffffffffa049fded
+ ffffffff81abf0c0 ffff88007db78a00 ffff88007b569e58 ffffffff8145b60e
+ 0000000000000000 0000000000000000 ffff88007b569eb8 ffffffff814df36e
+Call Trace:
+ [<ffffffffa049fded>] sctp_destroy_sock+0x3d/0x80 [sctp]
+ [<ffffffff8145b60e>] sk_common_release+0x1e/0xf0
+ [<ffffffff814df36e>] inet_create+0x2ae/0x350
+ [<ffffffff81455a6f>] __sock_create+0x11f/0x240
+ [<ffffffff81455bf0>] sock_create+0x30/0x40
+ [<ffffffff8145696c>] SyS_socket+0x4c/0xc0
+ [<ffffffff815403be>] ? do_page_fault+0xe/0x10
+ [<ffffffff8153cb32>] ? page_fault+0x22/0x30
+ [<ffffffff81544e02>] system_call_fastpath+0x16/0x1b
+Code: 0c c9 c3 66 2e 0f 1f 84 00 00 00 00 00 e8 fb fe ff ff c9 c3 66 0f
+      1f 84 00 00 00 00 00 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 <48>
+      8b 47 20 48 89 fb c6 47 1c 01 c6 40 12 07 e8 9e 68 01 00 48
+RIP  [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
+ RSP <ffff88007b569e08>
+CR2: 0000000000000020
+---[ end trace e0d71ec1108c1dd9 ]---
 
-So an interface could be left in an usable state after ifdow/ifup.
+I did not hit this with the lksctp-tools functional tests, but with a
+small, multi-threaded test program, that heavily allocates, binds,
+listens and waits in accept on sctp sockets, and then randomly kills
+some of them (no need for an actual client in this case to hit this).
+Then, again, allocating, binding, etc, and then killing child processes.
 
-This patch makes sure that the descriptors indexes are in a proper
-status when the device is open.
+This panic then only occurs when ``echo 1 > /proc/sys/net/sctp/auth_enable''
+is set. The cause for that is actually very simple: in sctp_endpoint_init()
+we enter the path of sctp_auth_init_hmacs(). There, we try to allocate
+our crypto transforms through crypto_alloc_hash(). In our scenario,
+it then can happen that crypto_alloc_hash() fails with -EINTR from
+crypto_larval_wait(), thus we bail out and release the socket via
+sk_common_release(), sctp_destroy_sock() and hit the NULL pointer
+dereference as soon as we try to access members in the endpoint during
+sctp_endpoint_free(), since endpoint at that time is still NULL. Now,
+if we have that case, we do not need to do any cleanup work and just
+leave the destruction handler.
 
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/net/ll_temac_main.c | 6 ++++++
+ net/sctp/socket.c | 6 ++++++
  1 file changed, 6 insertions(+)
 
-diff --git a/drivers/net/ll_temac_main.c b/drivers/net/ll_temac_main.c
-index f2a197f..d2516dd 100644
---- a/drivers/net/ll_temac_main.c
-+++ b/drivers/net/ll_temac_main.c
-@@ -190,6 +190,12 @@ static int temac_dma_bd_init(struct net_device *ndev)
- 		       lp->rx_bd_p + (sizeof(*lp->rx_bd_v) * (RX_BD_NUM - 1)));
- 	temac_dma_out32(lp, TX_CURDESC_PTR, lp->tx_bd_p);
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index 26ffae2..44d8eab 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -3743,6 +3743,12 @@ SCTP_STATIC void sctp_destroy_sock(struct sock *sk)
  
-+	/* Init descriptor indexes */
-+	lp->tx_bd_ci = 0;
-+	lp->tx_bd_next = 0;
-+	lp->tx_bd_tail = 0;
-+	lp->rx_bd_ci = 0;
+ 	/* Release our hold on the endpoint. */
+ 	ep = sctp_sk(sk)->ep;
++	/* This could happen during socket init, thus we bail out
++	 * early, since the rest of the below is not setup either.
++	 */
++	if (ep == NULL)
++		return;
 +
- 	return 0;
- }
- 
+ 	sctp_endpoint_free(ep);
+ 	percpu_counter_dec(&sctp_sockets_allocated);
+ 	local_bh_disable();
 -- 
 1.7.12.2.21.g234cd45.dirty
 
