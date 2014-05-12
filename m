@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329AbaELSc2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 14:32:28 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:62052 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253AbaELSc1 (ORCPT
+	id S1753765AbaELSfc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 14:35:32 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:41793 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459AbaELSfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 14:32:27 -0400
-Date: Mon, 12 May 2014 14:32:24 -0400
+	Mon, 12 May 2014 14:35:30 -0400
+Date: Mon, 12 May 2014 14:35:26 -0400
 From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>
-Subject: [GIT PULL] percpu fixes for v3.15-rc5
-Message-ID: <20140512183224.GJ1421@htj.dyndns.org>
+To: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: [GIT PULL] libata fixes for v3.15-rc5
+Message-ID: <20140512183526.GK1421@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -21,45 +20,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, again.
+Hey,
 
-Fix for a percpu allocator bug where it could try to kfree() a memory
-region allocated using vmalloc().  The bug has been there for years
-now and is unlikely to have ever triggered given the size of struct
-pcpu_chunk.  It's still theoretically possible and the fix is simple
-and safe enough, so the patch is marked with -stable.
+And the libata fixes.  Mostly device-specific fixes.  The only thing
+which isn't is the fix for zpodd oops-on-detach bug.
 
-The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
+The following changes since commit 8a4aeec8d2d6a3edeffbdfae451cdf05cbf0fefd:
 
-  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
+  libata/ahci: accommodate tag ordered controllers (2014-04-18 15:56:03 -0400)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.15-fixes
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git for-3.15-fixes
 
-for you to fetch changes up to 5a838c3b60e3a36ade764cf7751b8f17d7c9c2da:
+for you to fetch changes up to 2af89a3cde1beb88a2c65e0558d828c1a9e4677f:
 
-  percpu: make pcpu_alloc_chunk() use pcpu_mem_free() instead of kfree() (2014-04-14 16:18:06 -0400)
+  ata: pata_at91 only works on sam9 (2014-05-08 11:00:00 -0400)
 
 Thanks.
 
 ----------------------------------------------------------------
-Jianyu Zhan (1):
-      percpu: make pcpu_alloc_chunk() use pcpu_mem_free() instead of kfree()
+Arnd Bergmann (1):
+      ata: pata_at91 only works on sam9
 
- mm/percpu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Jacob Pan (1):
+      ahci: disable DEVSLP for Intel Valleyview
 
-diff --git a/mm/percpu.c b/mm/percpu.c
-index 63e24fb..2ddf9a9 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -610,7 +610,7 @@ static struct pcpu_chunk *pcpu_alloc_chunk(void)
- 	chunk->map = pcpu_mem_zalloc(PCPU_DFL_MAP_ALLOC *
- 						sizeof(chunk->map[0]));
- 	if (!chunk->map) {
--		kfree(chunk);
-+		pcpu_mem_free(chunk, pcpu_chunk_struct_size);
- 		return NULL;
- 	}
- 
+Levente Kurusa (1):
+      libata: clean up ZPODD when a port is detached
+
+Shawn Guo (2):
+      ahci: imx: add namespace for register enums
+      ahci: imx: software workaround for phy reset issue in resume
+
+ drivers/ata/Kconfig       |   2 +-
+ drivers/ata/ahci.c        |  15 ++++
+ drivers/ata/ahci.h        |   1 +
+ drivers/ata/ahci_imx.c    | 177 ++++++++++++++++++++++++++++++++++++++++++++--
+ drivers/ata/libahci.c     |   7 ++
+ drivers/ata/libata-core.c |   9 +++
+ 6 files changed, 203 insertions(+), 8 deletions(-)
+
+-- 
+tejun
