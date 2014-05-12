@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975AbaELGU3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 02:20:29 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:34126 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937AbaELGQr (ORCPT
+	id S1752915AbaELGQo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 02:16:44 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:35459 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115AbaELGQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 02:16:47 -0400
-X-AuditID: cbfee68f-b7eff6d000002b70-c9-5370674dedc8
+	Mon, 12 May 2014 02:16:37 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-3a-5370673eb3cb
 From: Shaik Ameer Basha <shaik.ameer@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
@@ -19,39 +19,39 @@ Cc: joro@8bytes.org, arnd@arndb.de, t.figa@samsung.com, kgene.kim@samsung.com,
         supash.ramaswamy@linaro.org, varun.sethi@freescale.com,
         joshi@samsung.com, tomasz.figa@gmail.com,
         Shaik Ameer Basha <shaik.ameer@samsung.com>
-Subject: [PATCH v13 09/19] iommu/exynos: use managed device helper functions
-Date: Mon, 12 May 2014 11:44:54 +0530
-Message-id: <1399875304-19948-10-git-send-email-shaik.ameer@samsung.com>
+Subject: [PATCH v13 04/19] iommu/exynos: fix L2TLB invalidation
+Date: Mon, 12 May 2014 11:44:49 +0530
+Message-id: <1399875304-19948-5-git-send-email-shaik.ameer@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1399875304-19948-1-git-send-email-shaik.ameer@samsung.com>
 References: <1399875304-19948-1-git-send-email-shaik.ameer@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsWyRsSkStc3vSDY4MBkA4s7d8+xWvyddIzd
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsWyRsSkStcuvSDYYPIbDYs7d8+xWvyddIzd
 	Yv4RIOvVkR9MFgv2W1t0zt7AbvF91xd2i94FV9ksNj2+xmpxedccNosZ5/cxWVxYsZHd4l/v
 	QUaLKYsOs1ocftPOanHyTy+jxZGHu9ktWq73Mlmsn/GaxWLVrj+MFjNvrWFxEPV4cnAek8fv
 	X5MYPWY3XGTx+He4n8lj56y77B53ru1h89i8pN5j8o3ljB59W1YxenzeJOdx5egZpgDuKC6b
-	lNSczLLUIn27BK6Mk7vOsBQ0SVfs3r6JsYHxg2gXIyeHhICJxIY9h9ghbDGJC/fWs3UxcnEI
-	CSxllFjecJEdpmh+01smiMQiRolf786wQDgTmCTON/4Cq2ITMJTYfu8KK0hCRGA1o0TfxTPs
-	IA6zwGxmiSOPFjOCVAkL+Egc+HsErINFQFXic8NDsDivgIfEmQf7gOIcQPsUJOZMsgEJcwKF
-	P6+ewgZiCwm4Sxx7dRVsgYTAWg6J2e9fMUPMEZD4NvkQC0SvrMSmA8wQZ0tKHFxxg2UCo/AC
-	RoZVjKKpBckFxUnpRcZ6xYm5xaV56XrJ+bmbGIHxevrfs/4djHcPWB9iTAYaN5FZSjQ5Hxjv
-	eSXxhsZmRhamJqbGRuaWZqQJK4nz3n+YFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBcfuk
-	yBOTbqcmCilqT5r88N1nzagnaW5bNi4rkF4vN32DapN0f+G3PcwL5/87dbfWd87G6rg1l7T+
-	7V5+dLmdiYylbP2eXUGtFyYVcsdWWa+Wb4t4aPA4wiz9cGWAWTNP3GTza/vqzpVt+nkrzoB5
-	bxMLp8ixmVHXrYQ4JxU/Vjsw5f92v8vb2pRYijMSDbWYi4oTAfx4nQrtAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOKsWRmVeSWpSXmKPExsVy+t9jAV3f9IJgg9bnKhZ37p5jtfg76Ri7
-	xfwjQNarIz+YLBbst7bonL2B3eL7ri/sFr0LrrJZbHp8jdXi8q45bBYzzu9jsriwYiO7xb/e
-	g4wWUxYdZrU4/Kad1eLkn15GiyMPd7NbtFzvZbJYP+M1i8WqXX8YLWbeWsPiIOrx5OA8Jo/f
-	vyYxesxuuMji8e9wP5PHzll32T3uXNvD5rF5Sb3H5BvLGT36tqxi9Pi8Sc7jytEzTAHcUQ2M
-	NhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAnyoplCXm
-	lAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM07uOsNS0CRdsXv7JsYGxg+iXYyc
-	HBICJhLzm94yQdhiEhfurWfrYuTiEBJYxCjx690ZFghnApPE+cZf7CBVbAKGEtvvXWEFSYgI
-	rGaU6Lt4hh3EYRaYzSxx5NFiRpAqYQEfiQN/j4B1sAioSnxueAgW5xXwkDjzYB9QnANon4LE
-	nEk2IGFOoPDn1VPYQGwhAXeJY6+usk5g5F3AyLCKUTS1ILmgOCk911CvODG3uDQvXS85P3cT
-	IzgZPJPawbiyweIQowAHoxIP7weGgmAh1sSy4srcQ4wSHMxKIrwf/YFCvCmJlVWpRfnxRaU5
-	qcWHGJOBjprILCWanA9MVHkl8YbGJuamxqaWJhYmZpakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C
-	2cLEwSnVwOgmGv/tiRlbQOW9r4YuLJ65X+vu/w+oYnXceijQJe74py9KNd8r/b/KTV49T3wy
-	v4HR+zPMdaYdc14IZjNJGvnXfzJ8x+n9xFnPoPSQ1YLoa1mTz7um2T+4XP347qVlL5fcW8Lh
-	2Jcn+C/MgjnzeJpTSXexlOykUL4vRbI3t99rNrx94tT9diWW4oxEQy3mouJEAHXM6ExKAwAA
+	lNSczLLUIn27BK6MF4v6WAv2SFYcnLuZrYHxjEgXIyeHhICJxI3Dp5kgbDGJC/fWs4HYQgJL
+	GSUm75CCqfm4p5MZIr6IUaLrkkMXIxeQPYFJ4tGl/WANbAKGEtvvXWEFSYgIrGaU6Lt4hh3E
+	YRaYzSxx5NFiRpAqYQF7iW975rOC2CwCqhJ/u4+AdfMKuEsc27QN6AwOoHUKEnMm2YCEOQU8
+	JD6vngJ1EVDJq6tgCyQEVnJIzPyxnRlijoDEt8mHWCB6ZSU2HWCGuFpS4uCKGywTGIUXMDKs
+	YhRNLUguKE5KLzLVK07MLS7NS9dLzs/dxAiM1dP/nk3cwXj/gPUhxmSgcROZpUST84GxnlcS
+	b2hsZmRhamJqbGRuaUaasJI4b/qjpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjJkn2d7Y
+	2/VPvCu47Idy89XQS/fMDm1hniMyZ8+L/Jjpe8K4GM89/mu8vpldpq/C+Ni0q+F8Bw9FMVRO
+	u2yZxc/7jvfnusypNhwnr85U+fUifWr73OoKRyXeah2Ts8nVj553zFtW2upjGFDs8fxiXEf5
+	2Uf7ZnIuNznYt/nLPeGX786VsV/mVlZiKc5INNRiLipOBABhRgSp6wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGKsWRmVeSWpSXmKPExsVy+t9jAV279IJggxlX5Szu3D3HavF30jF2
+	i/lHgKxXR34wWSzYb23ROXsDu8X3XV/YLXoXXGWz2PT4GqvF5V1z2CxmnN/HZHFhxUZ2i3+9
+	Bxktpiw6zGpx+E07q8XJP72MFkce7ma3aLney2SxfsZrFotVu/4wWsy8tYbFQdTjycF5TB6/
+	f01i9JjdcJHF49/hfiaPnbPusnvcubaHzWPzknqPyTeWM3r0bVnF6PF5k5zHlaNnmAK4oxoY
+	bTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOAPlVSKEvM
+	KQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYwZrxY1MdasEey4uDczWwNjGdEuhg5
+	OSQETCQ+7ulkhrDFJC7cW88GYgsJLGKU6Lrk0MXIBWRPYJJ4dGk/WIJNwFBi+70rrCAJEYHV
+	jBJ9F8+wgzjMArOZJY48WswIUiUsYC/xbc98VhCbRUBV4m/3EbBuXgF3iWObtjF1MXIArVOQ
+	mDPJBiTMKeAh8Xn1FKjNQCWvrrJOYORdwMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4
+	FTyT2sG4ssHiEKMAB6MSD+8HhoJgIdbEsuLK3EOMEhzMSiK8H/2BQrwpiZVVqUX58UWlOanF
+	hxiTgY6ayCwlmpwPTFN5JfGGxibmpsamliYWJmaWpAkrifMeaLUOFBJITyxJzU5NLUgtgtnC
+	xMEp1cBo8snVO8jspopGgUx/7Zyl9yWeH/gcvfqc57vD0izzHuff//t+U6CFq2mR6zsJlz1r
+	OxvtElb3e/Z6dVksbBF7aMG22dec+ZyLcUtNlFsBZ6SpRICB4o9Pzz6Gd77b71sXb5sb6MqY
+	aNI8tSq80WEHZ9eUSTpqDK0/9DZppbicYor6+fDUSyWW4oxEQy3mouJEAKuYxEFJAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,129 +61,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cho KyongHo <pullip.cho@samsung.com>
 
-This patch uses managed device helper functions in the probe().
+L2TLB is 8-way set-associative TLB with 512 entries. The number of
+sets is 64.
+A single 4KB(small page) translation information is cached
+only to a set whose index is the same with the lower 6 bits of the page
+frame number.
+A single 64KB(large page) translation information can be
+cached to any 16 sets whose top two bits of their indices are the same
+with the bit [5:4] of the page frame number.
+A single 1MB(section) or larger translation information can be cached to
+any set in the TLB.
+
+It is required to invalidate entire sets that may cache the target
+translation information to guarantee that the L2TLB has no stale data.
 
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
 Signed-off-by: Shaik Ameer Basha <shaik.ameer@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c |   68 ++++++++++++++++--------------------------
- 1 file changed, 25 insertions(+), 43 deletions(-)
+ drivers/iommu/exynos-iommu.c |   32 +++++++++++++++++++++++++++-----
+ 1 file changed, 27 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index be7a7b9..c86e374 100644
+index 4ff4b0b..06fc70e 100644
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -343,8 +343,7 @@ static bool __exynos_sysmmu_disable(struct sysmmu_drvdata *data)
- 
- 	__raw_writel(CTRL_DISABLE, data->sfrbase + REG_MMU_CTRL);
- 
--	if (!IS_ERR(data->clk))
--		clk_disable(data->clk);
-+	clk_disable(data->clk);
- 
- 	disabled = true;
- 	data->pgtable = 0;
-@@ -387,8 +386,7 @@ static int __exynos_sysmmu_enable(struct sysmmu_drvdata *data,
- 		goto finish;
- 	}
- 
--	if (!IS_ERR(data->clk))
--		clk_enable(data->clk);
-+	clk_enable(data->clk);
- 
- 	data->pgtable = pgtable;
- 
-@@ -499,49 +497,43 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
- 
- static int exynos_sysmmu_probe(struct platform_device *pdev)
- {
--	int ret;
-+	int irq, ret;
- 	struct device *dev = &pdev->dev;
- 	struct sysmmu_drvdata *data;
- 	struct resource *res;
- 
--	data = kzalloc(sizeof(*data), GFP_KERNEL);
--	if (!data) {
--		dev_dbg(dev, "Not enough memory\n");
--		ret = -ENOMEM;
--		goto err_alloc;
--	}
-+	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_dbg(dev, "Unable to find IOMEM region\n");
--		ret = -ENOENT;
--		goto err_init;
--	}
-+	data->sfrbase = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(data->sfrbase))
-+		return PTR_ERR(data->sfrbase);
- 
--	data->sfrbase = ioremap(res->start, resource_size(res));
--	if (!data->sfrbase) {
--		dev_dbg(dev, "Unable to map IOMEM @ PA:%#x\n", res->start);
--		ret = -ENOENT;
--		goto err_res;
--	}
--
--	ret = platform_get_irq(pdev, 0);
--	if (ret <= 0) {
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq <= 0) {
- 		dev_dbg(dev, "Unable to find IRQ resource\n");
--		goto err_irq;
-+		return irq;
- 	}
- 
--	ret = request_irq(ret, exynos_sysmmu_irq, 0,
-+	ret = devm_request_irq(dev, irq, exynos_sysmmu_irq, 0,
- 				dev_name(dev), data);
- 	if (ret) {
--		dev_dbg(dev, "Unabled to register interrupt handler\n");
--		goto err_irq;
-+		dev_err(dev, "Unabled to register handler of irq %d\n", irq);
-+		return ret;
- 	}
- 
--	if (dev_get_platdata(dev)) {
--		data->clk = clk_get(dev, "sysmmu");
--		if (IS_ERR(data->clk))
--			dev_dbg(dev, "No clock descriptor registered\n");
-+	data->clk = devm_clk_get(dev, "sysmmu");
-+	if (IS_ERR(data->clk)) {
-+		dev_err(dev, "Failed to get clock!\n");
-+		return PTR_ERR(data->clk);
-+	} else  {
-+		ret = clk_prepare(data->clk);
-+		if (ret) {
-+			dev_err(dev, "Failed to prepare clk\n");
-+			return ret;
-+		}
- 	}
- 
- 	data->sysmmu = dev;
-@@ -554,17 +546,7 @@ static int exynos_sysmmu_probe(struct platform_device *pdev)
- 
- 	pm_runtime_enable(dev);
- 
--	dev_dbg(dev, "Initialized\n");
- 	return 0;
--err_irq:
--	free_irq(platform_get_irq(pdev, 0), data);
--err_res:
--	iounmap(data->sfrbase);
--err_init:
--	kfree(data);
--err_alloc:
--	dev_err(dev, "Failed to initialize\n");
--	return ret;
+@@ -226,9 +226,14 @@ static void __sysmmu_tlb_invalidate(void __iomem *sfrbase)
  }
  
- static struct platform_driver exynos_sysmmu_driver = {
+ static void __sysmmu_tlb_invalidate_entry(void __iomem *sfrbase,
+-						unsigned long iova)
++				unsigned long iova, unsigned int num_inv)
+ {
+-	__raw_writel((iova & SPAGE_MASK) | 1, sfrbase + REG_MMU_FLUSH_ENTRY);
++	unsigned int i;
++	for (i = 0; i < num_inv; i++) {
++		__raw_writel((iova & SPAGE_MASK) | 1,
++				sfrbase + REG_MMU_FLUSH_ENTRY);
++		iova += SPAGE_SIZE;
++	}
+ }
+ 
+ static void __sysmmu_set_ptbase(void __iomem *sfrbase,
+@@ -452,7 +457,8 @@ static bool exynos_sysmmu_disable(struct device *dev)
+ 	return disabled;
+ }
+ 
+-static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova)
++static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova,
++					size_t size)
+ {
+ 	unsigned long flags;
+ 	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
+@@ -460,9 +466,25 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova)
+ 	read_lock_irqsave(&data->lock, flags);
+ 
+ 	if (is_sysmmu_active(data)) {
++		unsigned int maj;
++		unsigned int num_inv = 1;
++		maj = __raw_readl(data->sfrbase + REG_MMU_VERSION);
++		/*
++		 * L2TLB invalidation required
++		 * 4KB page: 1 invalidation
++		 * 64KB page: 16 invalidation
++		 * 1MB page: 64 invalidation
++		 * because it is set-associative TLB
++		 * with 8-way and 64 sets.
++		 * 1MB page can be cached in one of all sets.
++		 * 64KB page can be one of 16 consecutive sets.
++		 */
++		if ((maj >> 28) == 2) /* major version number */
++			num_inv = min_t(unsigned int, size / PAGE_SIZE, 64);
++
+ 		if (sysmmu_block(data->sfrbase)) {
+ 			__sysmmu_tlb_invalidate_entry(
+-					data->sfrbase, iova);
++				data->sfrbase, iova, num_inv);
+ 			sysmmu_unblock(data->sfrbase);
+ 		}
+ 	} else {
+@@ -915,7 +937,7 @@ done:
+ 
+ 	spin_lock_irqsave(&priv->lock, flags);
+ 	list_for_each_entry(data, &priv->clients, node)
+-		sysmmu_tlb_invalidate_entry(data->dev, iova);
++		sysmmu_tlb_invalidate_entry(data->dev, iova, size);
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 
+ 	return size;
 -- 
 1.7.9.5
 
