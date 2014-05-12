@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208AbaELFq2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 01:46:28 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44660 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721AbaELFq1 (ORCPT
+	id S1752469AbaELFsZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 01:48:25 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:45525 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340AbaELFsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 01:46:27 -0400
-Date: Mon, 12 May 2014 07:46:25 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>
-Subject: Re: [PATCH] pinctrl: Add i.MX1 pincontrol driver
-Message-ID: <20140512054625.GD5858@pengutronix.de>
-References: <1399652193-17827-1-git-send-email-shc_work@mail.ru>
- <20140512045113.GY5858@pengutronix.de>
- <1399871006.529846706@f188.i.mail.ru>
+	Mon, 12 May 2014 01:48:22 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: bug: acpi ata_bay dock reminds undocked
+Date: Mon, 12 May 2014 07:48:16 +0200
+User-Agent: KMail/1.13.7 (Linux/3.15.0-031500rc5-generic; KDE/4.13.0; x86_64; ; )
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <201404292216.41256@pali> <201405111749.18796@pali> <2639498.hrETOnLRn5@vostro.rjw.lan>
+In-Reply-To: <2639498.hrETOnLRn5@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1399871006.529846706@f188.i.mail.ru>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 07:46:12 up 18 days, 23:17, 33 users,  load average: 0.17, 0.08,
- 0.06
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: multipart/signed;
+  boundary="nextPart2915149.nAujJYNdua";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201405120748.16464@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 09:03:26AM +0400, Alexander Shiyan wrote:
-> Mon, 12 May 2014 06:51:13 +0200 от Sascha Hauer <s.hauer@pengutronix.de>:
-> > On Fri, May 09, 2014 at 08:16:33PM +0400, Alexander Shiyan wrote:
-> > > This patch adds pincontrol driver for Freescale i.MX1 SOCs.
-> > > 
-> > > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-> > > ---
-> > >  drivers/pinctrl/Kconfig        |   7 ++
-> > >  drivers/pinctrl/Makefile       |   1 +
-> > >  drivers/pinctrl/pinctrl-imx1.c | 279 +++++++++++++++++++++++++++++++++++++++++
-> > >  3 files changed, 287 insertions(+)
-> > >  create mode 100644 drivers/pinctrl/pinctrl-imx1.c
-> > 
-> > Nice. I thought about adding devicetree support for i.MX1 aswell.
-> > 
-> > Don't we need a imx1-pinfunc.h file to make use of this patch?
-> 
-> It will be added along with the DTS template for that CPU architecture.
+--nextPart2915149.nAujJYNdua
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Ok.
+On Monday 12 May 2014 02:00:29 Rafael J. Wysocki wrote:
+> On Sunday, May 11, 2014 05:49:17 PM Pali Roh=C3=A1r wrote:
+> > --nextPart2204083.pLeiedbUui
+> > Content-Type: Text/Plain;
+> >=20
+> >   charset=3D"utf-8"
+> >=20
+> > Content-Transfer-Encoding: quoted-printable
+> >=20
+> > On Wednesday 30 April 2014 11:24:50 Pali Roh=3DC3=3DA1r wrote:
+> > > On Tuesday 29 April 2014 23:35:42 Rafael J. Wysocki wrote:
+> > > > On Tuesday, April 29, 2014 11:00:01 PM Pali Roh=3DC3=3DA1r=20
+wrote:
+> > > > > On Tuesday 29 April 2014 22:55:07 Rafael J. Wysocki=20
+wrote:
+> > > > > > Which kernel version(s) have you tried?
+> > > > >
+> > > > >=3D20
+> > > > >
+> > > > > 3.15-rc3
+> > > >
+> > > >=3D20
+> > > >
+> > > > Does it work with 3.14(.x) by chance?
+> > >
+> > >=3D20
+> > >
+> > > Tested with 3.14 and 3.8. Same problem, not working.
+> >=20
+> > BUMP!
+> >=20
+> > Rafael, do you need some other information?
+>=20
+> I'll take care of this when I have the time, OK?
 
-Sascha
+Ok, I will wait.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2915149.nAujJYNdua
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlNwYKAACgkQi/DJPQPkQ1KIvwCgx7nr/T+zDmRFaFmaACLuxLm/
+IdoAn1FHXVAjlojpbR54B1R5d4hUJFvw
+=acIq
+-----END PGP SIGNATURE-----
+
+--nextPart2915149.nAujJYNdua--
