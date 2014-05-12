@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261AbaELBly (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:41:54 -0400
-Received: from 1wt.eu ([62.212.114.60]:34412 "EHLO 1wt.eu"
+	id S932386AbaELCRc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 22:17:32 -0400
+Received: from 1wt.eu ([62.212.114.60]:34416 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752104AbaELBlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:41:50 -0400
-Message-Id: <20140512003204.042698099@1wt.eu>
+	id S1751601AbaELBlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:41:52 -0400
+Message-Id: <20140512003205.047735389@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:33:22 +0200
+Date: Mon, 12 May 2014 02:33:46 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: mpb <mpb.mail@gmail.com>, "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 082/143] inet: fix addr_len/msg->msg_namelen assignment in recv_error and
+Cc: Daniel Borkmann <dborkman@redhat.com>, Vlad Yasevich <yasevich@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 106/143] net: sctp: fix skb leakage in COOKIE ECHO path of chunk->auth_chunk
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,164 +24,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- rxpmtu functions
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 85fbaa75037d0b6b786ff18658ddf0b4014ce2a4 ]
+[ Upstream commit c485658bae87faccd7aed540fd2ca3ab37992310 ]
 
-Commit bceaa90240b6019ed73b49965eac7d167610be69 ("inet: prevent leakage
-of uninitialized memory to user in recv syscalls") conditionally updated
-addr_len if the msg_name is written to. The recv_error and rxpmtu
-functions relied on the recvmsg functions to set up addr_len before.
+While working on ec0223ec48a9 ("net: sctp: fix sctp_sf_do_5_1D_ce to
+verify if we/peer is AUTH capable"), we noticed that there's a skb
+memory leakage in the error path.
 
-As this does not happen any more we have to pass addr_len to those
-functions as well and set it to the size of the corresponding sockaddr
-length.
+Running the same reproducer as in ec0223ec48a9 and by unconditionally
+jumping to the error label (to simulate an error condition) in
+sctp_sf_do_5_1D_ce() receive path lets kmemleak detector bark about
+the unfreed chunk->auth_chunk skb clone:
 
-This broke traceroute and such.
+Unreferenced object 0xffff8800b8f3a000 (size 256):
+  comm "softirq", pid 0, jiffies 4294769856 (age 110.757s)
+  hex dump (first 32 bytes):
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+    89 ab 75 5e d4 01 58 13 00 00 00 00 00 00 00 00  ..u^..X.........
+  backtrace:
+    [<ffffffff816660be>] kmemleak_alloc+0x4e/0xb0
+    [<ffffffff8119f328>] kmem_cache_alloc+0xc8/0x210
+    [<ffffffff81566929>] skb_clone+0x49/0xb0
+    [<ffffffffa0467459>] sctp_endpoint_bh_rcv+0x1d9/0x230 [sctp]
+    [<ffffffffa046fdbc>] sctp_inq_push+0x4c/0x70 [sctp]
+    [<ffffffffa047e8de>] sctp_rcv+0x82e/0x9a0 [sctp]
+    [<ffffffff815abd38>] ip_local_deliver_finish+0xa8/0x210
+    [<ffffffff815a64af>] nf_reinject+0xbf/0x180
+    [<ffffffffa04b4762>] nfqnl_recv_verdict+0x1d2/0x2b0 [nfnetlink_queue]
+    [<ffffffffa04aa40b>] nfnetlink_rcv_msg+0x14b/0x250 [nfnetlink]
+    [<ffffffff815a3269>] netlink_rcv_skb+0xa9/0xc0
+    [<ffffffffa04aa7cf>] nfnetlink_rcv+0x23f/0x408 [nfnetlink]
+    [<ffffffff815a2bd8>] netlink_unicast+0x168/0x250
+    [<ffffffff815a2fa1>] netlink_sendmsg+0x2e1/0x3f0
+    [<ffffffff8155cc6b>] sock_sendmsg+0x8b/0xc0
+    [<ffffffff8155d449>] ___sys_sendmsg+0x369/0x380
 
-Fixes: bceaa90240b6 ("inet: prevent leakage of uninitialized memory to user in recv syscalls")
-Reported-by: Brad Spengler <spender@grsecurity.net>
-Reported-by: Tom Labanowski
-Cc: mpb <mpb.mail@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+What happens is that commit bbd0d59809f9 clones the skb containing
+the AUTH chunk in sctp_endpoint_bh_rcv() when having the edge case
+that an endpoint requires COOKIE-ECHO chunks to be authenticated:
+
+  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
+  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
+  ------------------ AUTH; COOKIE-ECHO ---------------->
+  <-------------------- COOKIE-ACK ---------------------
+
+When we enter sctp_sf_do_5_1D_ce() and before we actually get to
+the point where we process (and subsequently free) a non-NULL
+chunk->auth_chunk, we could hit the "goto nomem_init" path from
+an error condition and thus leave the cloned skb around w/o
+freeing it.
+
+The fix is to centrally free such clones in sctp_chunk_destroy()
+handler that is invoked from sctp_chunk_free() after all refs have
+dropped; and also move both kfree_skb(chunk->auth_chunk) there,
+so that chunk->auth_chunk is either NULL (since sctp_chunkify()
+allocs new chunks through kmem_cache_zalloc()) or non-NULL with
+a valid skb pointer. chunk->skb and chunk->auth_chunk are the
+only skbs in the sctp_chunk structure that need to be handeled.
+
+While at it, we should use consume_skb() for both. It is the same
+as dev_kfree_skb() but more appropriately named as we are not
+a device but a protocol. Also, this effectively replaces the
+kfree_skb() from both invocations into consume_skb(). Functions
+are the same only that kfree_skb() assumes that the frame was
+being dropped after a failure (e.g. for tools like drop monitor),
+usage of consume_skb() seems more appropriate in function
+sctp_chunk_destroy() though.
+
+Fixes: bbd0d59809f9 ("[SCTP]: Implement the receive and verification of AUTH chunk")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Vlad Yasevich <yasevich@gmail.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- include/net/ip.h       | 2 +-
- include/net/ipv6.h     | 3 ++-
- net/ipv4/ip_sockglue.c | 3 ++-
- net/ipv4/raw.c         | 2 +-
- net/ipv4/udp.c         | 2 +-
- net/ipv6/datagram.c    | 3 ++-
- net/ipv6/raw.c         | 2 +-
- net/ipv6/udp.c         | 2 +-
- 8 files changed, 11 insertions(+), 8 deletions(-)
+ net/sctp/sm_make_chunk.c | 4 ++--
+ net/sctp/sm_statefuns.c  | 4 ----
+ 2 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/include/net/ip.h b/include/net/ip.h
-index a7d4675..e6860b1 100644
---- a/include/net/ip.h
-+++ b/include/net/ip.h
-@@ -391,7 +391,7 @@ extern int	compat_ip_getsockopt(struct sock *sk, int level,
- 			int optname, char __user *optval, int __user *optlen);
- extern int	ip_ra_control(struct sock *sk, unsigned char on, void (*destructor)(struct sock *));
+diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
+index feedee7..22d4ed8 100644
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -1356,8 +1356,8 @@ static void sctp_chunk_destroy(struct sctp_chunk *chunk)
+ 	BUG_ON(!list_empty(&chunk->list));
+ 	list_del_init(&chunk->transmitted_list);
  
--extern int 	ip_recv_error(struct sock *sk, struct msghdr *msg, int len);
-+extern int 	ip_recv_error(struct sock *sk, struct msghdr *msg, int len, int *addr_len);
- extern void	ip_icmp_error(struct sock *sk, struct sk_buff *skb, int err, 
- 			      __be16 port, u32 info, u8 *payload);
- extern void	ip_local_error(struct sock *sk, int err, __be32 daddr, __be16 dport,
-diff --git a/include/net/ipv6.h b/include/net/ipv6.h
-index 52d86da..cf928c4 100644
---- a/include/net/ipv6.h
-+++ b/include/net/ipv6.h
-@@ -567,7 +567,8 @@ extern int			compat_ipv6_getsockopt(struct sock *sk,
- extern int			ip6_datagram_connect(struct sock *sk, 
- 						     struct sockaddr *addr, int addr_len);
+-	/* Free the chunk skb data and the SCTP_chunk stub itself. */
+-	dev_kfree_skb(chunk->skb);
++	consume_skb(chunk->skb);
++	consume_skb(chunk->auth_chunk);
  
--extern int 			ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len);
-+extern int 			ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len,
-+						int *addr_len);
- extern void			ipv6_icmp_error(struct sock *sk, struct sk_buff *skb, int err, __be16 port,
- 						u32 info, u8 *payload);
- extern void			ipv6_local_error(struct sock *sk, int err, struct flowi *fl, u32 info);
-diff --git a/net/ipv4/ip_sockglue.c b/net/ipv4/ip_sockglue.c
-index 099e6c3..d5a179b 100644
---- a/net/ipv4/ip_sockglue.c
-+++ b/net/ipv4/ip_sockglue.c
-@@ -356,7 +356,7 @@ void ip_local_error(struct sock *sk, int err, __be32 daddr, __be16 port, u32 inf
- /*
-  *	Handle MSG_ERRQUEUE
-  */
--int ip_recv_error(struct sock *sk, struct msghdr *msg, int len)
-+int ip_recv_error(struct sock *sk, struct msghdr *msg, int len, int *addr_len)
- {
- 	struct sock_exterr_skb *serr;
- 	struct sk_buff *skb, *skb2;
-@@ -393,6 +393,7 @@ int ip_recv_error(struct sock *sk, struct msghdr *msg, int len)
- 						   serr->addr_offset);
- 		sin->sin_port = serr->port;
- 		memset(&sin->sin_zero, 0, sizeof(sin->sin_zero));
-+		*addr_len = sizeof(*sin);
- 	}
+ 	SCTP_DBG_OBJCNT_DEC(chunk);
+ 	kmem_cache_free(sctp_chunk_cachep, chunk);
+diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+index d43002b..6da0171 100644
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -762,10 +762,6 @@ sctp_disposition_t sctp_sf_do_5_1D_ce(const struct sctp_endpoint *ep,
+ 		auth.transport = chunk->transport;
  
- 	memcpy(&errhdr.ee, &serr->ee, sizeof(struct sock_extended_err));
-diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
-index c50344b..8065efa 100644
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -682,7 +682,7 @@ static int raw_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		goto out;
- 
- 	if (flags & MSG_ERRQUEUE) {
--		err = ip_recv_error(sk, msg, len);
-+		err = ip_recv_error(sk, msg, len, addr_len);
- 		goto out;
- 	}
- 
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index 80487ee..a9aed7e 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -942,7 +942,7 @@ int udp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 	int is_udplite = IS_UDPLITE(sk);
- 
- 	if (flags & MSG_ERRQUEUE)
--		return ip_recv_error(sk, msg, len);
-+		return ip_recv_error(sk, msg, len, addr_len);
- 
- try_again:
- 	skb = __skb_recv_datagram(sk, flags | (noblock ? MSG_DONTWAIT : 0),
-diff --git a/net/ipv6/datagram.c b/net/ipv6/datagram.c
-index e2bdc6d..ef6436d 100644
---- a/net/ipv6/datagram.c
-+++ b/net/ipv6/datagram.c
-@@ -281,7 +281,7 @@ void ipv6_local_error(struct sock *sk, int err, struct flowi *fl, u32 info)
- /*
-  *	Handle MSG_ERRQUEUE
-  */
--int ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len)
-+int ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len, int *addr_len)
- {
- 	struct ipv6_pinfo *np = inet6_sk(sk);
- 	struct sock_exterr_skb *serr;
-@@ -333,6 +333,7 @@ int ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len)
- 				      htonl(0xffff),
- 				      *(__be32 *)(nh + serr->addr_offset));
- 		}
-+		*addr_len = sizeof(*sin);
- 	}
- 
- 	memcpy(&errhdr.ee, &serr->ee, sizeof(struct sock_extended_err));
-diff --git a/net/ipv6/raw.c b/net/ipv6/raw.c
-index df75f94..d5b09c7 100644
---- a/net/ipv6/raw.c
-+++ b/net/ipv6/raw.c
-@@ -457,7 +457,7 @@ static int rawv6_recvmsg(struct kiocb *iocb, struct sock *sk,
- 		return -EOPNOTSUPP;
- 
- 	if (flags & MSG_ERRQUEUE)
--		return ipv6_recv_error(sk, msg, len);
-+		return ipv6_recv_error(sk, msg, len, addr_len);
- 
- 	skb = skb_recv_datagram(sk, flags, noblock, &err);
- 	if (!skb)
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index ce291af..3a91859 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -201,7 +201,7 @@ int udpv6_recvmsg(struct kiocb *iocb, struct sock *sk,
- 	int is_udp4;
- 
- 	if (flags & MSG_ERRQUEUE)
--		return ipv6_recv_error(sk, msg, len);
-+		return ipv6_recv_error(sk, msg, len, addr_len);
- 
- try_again:
- 	skb = __skb_recv_datagram(sk, flags | (noblock ? MSG_DONTWAIT : 0),
+ 		ret = sctp_sf_authenticate(ep, new_asoc, type, &auth);
+-
+-		/* We can now safely free the auth_chunk clone */
+-		kfree_skb(chunk->auth_chunk);
+-
+ 		if (ret != SCTP_IERROR_NO_ERROR) {
+ 			sctp_association_free(new_asoc);
+ 			return sctp_sf_pdiscard(ep, asoc, type, arg, commands);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
