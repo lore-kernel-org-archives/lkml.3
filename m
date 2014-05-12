@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758370AbaELQZv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:25:51 -0400
-Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:44002 "EHLO
-	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752039AbaELQZu (ORCPT
+	id S932325AbaELQ0f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:26:35 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60037 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752102AbaELQ0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 12:25:50 -0400
-Date: Mon, 12 May 2014 11:25:46 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
-        viresh.kumar@linaro.org
-Subject: Re: vmstat: On demand vmstat workers V4
-In-Reply-To: <20140508142903.c2ef166c95d2b8acd0d7ea7d@linux-foundation.org>
-Message-ID: <alpine.DEB.2.10.1405121120081.17673@gentwo.org>
-References: <alpine.DEB.2.10.1405081033090.23786@gentwo.org> <20140508142903.c2ef166c95d2b8acd0d7ea7d@linux-foundation.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 12 May 2014 12:26:33 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Bo Shen <voice.shen@atmel.com>, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 0/4] ARM: at91: move sam9n12 SoC and boards to the CCF
+Date: Mon, 12 May 2014 18:26:26 +0200
+Message-Id: <1399911990-5086-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 May 2014, Andrew Morton wrote:
+Hello,
 
-> Some explanation of the changes to kernel/time/tick-common.c would be
-> appropriate.
+This series moves the at91sam9n12 SoC and the at91sam9n12-ek board to
+the Common Clock Framework.
 
-I dropped those after the discussion related to housekeepig cpus.
+It depends on these series: [1], [2].
 
-> > +		cancel_delayed_work_sync(d);
-> > +		cpumask_set_cpu(smp_processor_id(), monitored_cpus);
-> > +		cpumask_clear_cpu(s, monitored_cpus);
-> > +		INIT_DELAYED_WORK(d, vmstat_shepherd);
->
-> INIT_DELAYED_WORK() seems inappropriate here.  It's generally used for
-> once-off initialisation of a freshly allocated work item.  Look at all
-> the stuff it does - do we really want to run debug_object_init()
-> against an active object?
+Best Regards,
 
-Well this function is the one off initialization. INIT_DEFERRABLE_WORK in
-vmstat_shepherd() is a case of repeatedly initializing the per cpu
-structure when the worker thread is started again. In order to remove
-that I would have to do a loop initializing the structures at startup
-time. In V4 there were different function depending on the processor
-and they could change. With the housekeeping processor fixed that is no
-longer the case. Should I loop over the whole structure and set the
-functions at init time?
+Boris
 
-> >  	case CPU_DOWN_PREPARE_FROZEN:
-> > -		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
-> > +		if (!cpumask_test_cpu(cpu, monitored_cpus))
->
-> This test is inverted isn't it?
+[1] http://lkml.iu.edu/hypermail/linux/kernel/1403.3/00074.html
+[2] http://comments.gmane.org/gmane.linux.kernel.samsung-soc/27632
 
-If the monitoring cpu bit is not set then the worker thread is active
-and needs to be cancelled. There is a race here so I used test_and_clear
-here in the new revision.
+Boris BREZILLON (4):
+  ARM: at91: prepare common clk transition for sam9n12 SoC
+  ARM: at91/dt: define sam9n12 clocks
+  ARM: at91/dt: define sam9n12ek crystal frequencies
+  ARM: at91: move sam9n12 SoC to the CCF
+
+ arch/arm/boot/dts/at91sam9n12.dtsi  | 348 +++++++++++++++++++++++++++++++++++-
+ arch/arm/boot/dts/at91sam9n12ek.dts |   8 +
+ arch/arm/mach-at91/Kconfig          |   1 -
+ arch/arm/mach-at91/at91sam9n12.c    |   6 +-
+ 4 files changed, 359 insertions(+), 4 deletions(-)
+
+-- 
+1.8.3.2
+
