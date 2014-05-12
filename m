@@ -1,113 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758620AbaELOf0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 10:35:26 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58857 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758509AbaELOfX (ORCPT
+	id S1758587AbaELOfZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 10:35:25 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:57827 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758453AbaELOfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 10:35:23 -0400
-Date: Mon, 12 May 2014 16:30:52 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, kishon@ti.com,
-        hdegoede@redhat.com, Boris Brezillon <boris@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: Re: [PATCH v2 4/7] usb: ehci-platform: add optional reset controller
- retrieval
-Message-ID: <20140512143052.GA17154@lukather>
-References: <1399726619-30150-5-git-send-email-maxime.ripard@free-electrons.com>
- <Pine.LNX.4.44L0.1405101023510.1268-100000@netrider.rowland.org>
+	Mon, 12 May 2014 10:35:20 -0400
+Date: Mon, 12 May 2014 11:34:51 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        =?utf-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>,
+        Caitlin Bestler <caitlin.bestler@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Elie De Brauwer <eliedebrauwer@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        Steven Whitehouse <steve@chygwyn.com>,
+        =?iso-8859-1?Q?R=E9mi?= Denis-Courmont 
+	<remi.denis-courmont@nokia.com>,
+        Paul Moore <paul@paul-moore.com>,
+        Chris Friesen <chris.friesen@windriver.com>
+Subject: Re: recvmmsg() timeout behavior strangeness [RESEND]
+Message-ID: <20140512143451.GB13801@kernel.org>
+References: <536101C9.9090601@gmail.com>
+ <CAKgNAkgA_xTfRZhpyVwuACpCY7xMK89e0bK4PuVMG9reNV6Skw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sm4nu43k4a2Rpi4c"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1405101023510.1268-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKgNAkgA_xTfRZhpyVwuACpCY7xMK89e0bK4PuVMG9reNV6Skw@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Mon, May 12, 2014 at 12:15:25PM +0200, Michael Kerrisk (man-pages) escreveu:
+> Hi Arnaldo,
+> 
+> Ping!
 
---sm4nu43k4a2Rpi4c
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I acknowledge the problem, the timeout has to be passed to the
+underlying ->recvmsg() implementations that should return the time spent
+waiting for each packet, so that we can accrue that at recvmmsg level.
 
-Hi Alan,
+We can do either passing an extra timeout parameter to the recvmsg
+implementations or using some struct sock member to specify that
+timeout.
 
-On Sat, May 10, 2014 at 10:35:49AM -0400, Alan Stern wrote:
-> > @@ -206,6 +208,19 @@ static int ehci_platform_probe(struct platform_dev=
-ice *dev)
-> >  				break;
-> >  			}
-> >  		}
-> > +
-> > +		priv->rst =3D devm_reset_control_get_optional(&dev->dev,
-> > +							    NULL);
->=20
-> I hate the style that matches arguments on a continuation line with the
-> opening paren of the function call, for a couple of reasons.  Instead I
-> simply indent continuation lines by two or more tab stops.  But some
-> people seem to be incurably attached to it.
+The first approach is intrusive, touches tons of files, so I'll try
+making it all mostly transparent by hooking into sock_rcvtimeo()
+somehow.
 
-Ok, I'll change it.
-
-> > +		if (IS_ERR(priv->rst)) {
-> > +			err =3D PTR_ERR(priv->rst);
-> > +			if (err =3D=3D -EPROBE_DEFER)
-> > +				goto err_put_clks;
-> > +			priv->rst =3D NULL;
-> > +		} else {
-> > +			err =3D reset_control_deassert(priv->rst);
-> > +			if (err)
-> > +				goto err_put_clks;
-> > +		}
-> >  	}
-> > =20
-> >  	if (pdata->big_endian_desc)
->=20
-> The new code was added inside an "if" statement, which will cause it to
-> apply only to OF devices.  Is there any reason not to put the new code
-> outside the "if" statement, so it applies to all devices?
-
-Hmmm, I did this because so far, the reset framework only handles the
-DT case. But that's right that it can be extended in the future, I'll
-update it.
-
-Thanks!
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---sm4nu43k4a2Rpi4c
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTcNsbAAoJEBx+YmzsjxAgdgwP/RS4zhOyZDTRfizcUu+r128K
-vzMapJtXT72V+Q7/yrBjJiCFX1OrWPGQHTk8r/ohcmJ22N2vsh33Y50Us2DQWFjr
-OkJl7FfMY+bpBlhLSH/gHsHmVdVoT+EyI2Oux0VADVIGLOVPHtevB9oQw7ulceDD
-BXE3XsvwBttYcTo5x4qf9abCb1VtiGGLKUtwl6EFMzvbe/HIzykGAfd1jfyxIaLe
-wBM6vPVMr3BuT1+uNhhXgrfeKFVSsVgb3auxAkPWjn+qJitQX9zI4DJhMaKEofLu
-OpubOQlRp+jRAhW2F9XlFH/t4kwlwl/UXI/DiZitONA49jpfX237M/pknRBOIhRH
-I54Q3fqM2fWYE6hFpTiRhdvlZGLjbQC0Lz/uBvcFhg9g+ANammoElIX2K9VcIKOU
-CQ5M4tFYBMP4Mt6ZWcvDRp8FmIc8+v4wwCdEmvH5Gl4MiuxBUB72F9WlAFT5b5zw
-6ok4uu40aJaWmZb9O8BnY3qatv3q3mmvMSUpN0SQCY4gy3s5McelkD3Kmi+6VLw3
-kJ9aNgNV4fI5KFQ2DZQ01VivohjQvKgs92ijSfCtAz1L1UiBxis9GfqVYaLc884b
-g3u7QA1TqTWImrdHBAx1R9Kd9VAsPsKuso4xbnS3enpNmqhiaUZ6eYUu345sE3On
-qWGWuIkSIZgfbdBAX7pR
-=FxkU
------END PGP SIGNATURE-----
-
---sm4nu43k4a2Rpi4c--
+- Arnaldo
+ 
+> Cheers,
+> 
+> Michael
+> 
+> 
+> On Wed, Apr 30, 2014 at 3:59 PM, Michael Kerrisk (man-pages)
+> <mtk.manpages@gmail.com> wrote:
+> > Arnaldo,
+> >
+> > I raised this issue somewhat more than a year ago, here:
+> > http://thread.gmane.org/gmane.linux.man/3477
+> > but got no reply from you. (Chris Friesen in that thread agreed
+> > that there is a problem though.)
+> >
+> > Here, a slightly revised version of that mail, since I've just bumper
+> > into a related problem in a different context...
+> >
+> > As part of his attempt to better document the recvmmsg() syscall that
+> > you added in commit a2e2725541fad72416326798c2d7fa4dafb7d337, Elie de
+> > Brauwer alerted to me to some strangeness in the timeout behavior of
+> > the syscall. I suspect there's a bug that needs fixing, as detailed
+> > below.
+> >
+> > AFAICT, the timeout argument was added to this syscall as a result of
+> > the discussion here:
+> > http://markmail.org/message/m5l2ap4hiiimut6k#query:+page:1+mid:m5l2ap4hiiimut6k+state:results
+> > (20-21 May 2009, "[RFC 1/2] net: Introduce recvmmsg...")
+> >
+> > If I understand correctly, the *intended* purpose of the timeout
+> > argument is to set a limit on how long to wait for additional
+> > datagrams after the arrival of an initial datagram. However, the
+> > syscall behaves in quite a different way. Instead, it potentially
+> > blocks forever, regardless of the timeout. The way the timeout seems
+> > to work is as follows:
+> >
+> > 1. The timeout, T, is armed on receipt of first diagram, starting at time X.
+> > 2. After each further datagram is received, a check is made if we have
+> > reached time X+T. If we have reached that time, then the syscall
+> > returns.
+> >
+> > Since the timeout is only checked after the arrival of each datagram,
+> > we can have scenarios like the following:
+> >
+> > 0. Assume a timeout of 10 seconds, and that vlen is 5.
+> > 1. First datagram arrives at time X.
+> > 2. Second datagram arrives at time X+2 secs
+> > 3. No more datagrams arrive.
+> >
+> > In this case, the call blocks forever. Is that intended behavior?
+> > (Basically, if up to vlen-1 datagrams arrive before X+T, but then no
+> > more datagrams arrive, the call will remain blocked forever.) If it's
+> > intended behavior, could you elaborate the use case, since it would be
+> > good to add that to the man page. If not, a fix seems to be needed,
+> > since otherwise, it's hard to see how the recvmmsg() timeout argument
+> > can sanely be used.
+> >
+> > Thanks,
+> >
+> > Michael
+> >
+> > --
+> > Michael Kerrisk
+> > Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+> > Linux/UNIX System Programming Training: http://man7.org/training/
+> 
+> 
+> 
+> -- 
+> Michael Kerrisk
+> Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+> Linux/UNIX System Programming Training: http://man7.org/training/
