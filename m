@@ -1,136 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932619AbaELR4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 13:56:33 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:37802 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932577AbaELR4a (ORCPT
+	id S932638AbaELR6O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 13:58:14 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:52896 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932622AbaELR6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 13:56:30 -0400
-Date: Mon, 12 May 2014 13:56:27 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Li Zefan <lizefan@huawei.com>, Andrey Wagin <avagin@gmail.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        cgroups@vger.kernel.org, libcg-devel@lists.sourceforge.net
-Subject: [PATCH driver-core-linus] kernfs, sysfs, cgroup: restrict extra perm
- check on open to sysfs
-Message-ID: <20140512175627.GE1421@htj.dyndns.org>
-References: <CANaxB-xUm3rJ-Cbp72q-rQJO5mZe1qK6qXsQM=vh0U8upJ44+A@mail.gmail.com>
- <20140512151908.GC1421@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140512151908.GC1421@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 12 May 2014 13:58:13 -0400
+From: Jianyu Zhan <nasa4836@gmail.com>
+To: akpm@linux-foundation.org, mgorman@suse.de, nasa4836@gmail.com,
+        sasha.levin@oracle.com, zhangyanfei@cn.fujitsu.com, oleg@redhat.com,
+        fabf@skynet.be, cldu@marvell.com, iamjoonsoo.kim@lge.com,
+        n-horiguchi@ah.jp.nec.com, kirill.shutemov@linux.intel.com,
+        schwidefsky@de.ibm.com, gorcunov@gmail.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] mm: use a light-weight __mod_zone_page_state in mlocked_vma_newpage() 
+Date: Tue, 13 May 2014 01:58:01 +0800
+Message-Id: <1399917481-28917-1-git-send-email-nasa4836@gmail.com>
+X-Mailer: git-send-email 2.0.0-rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernfs open method - kernfs_fop_open() - inherited extra
-permission checks from sysfs.  While the vfs layer allows ignoring the
-read/write permissions checks if the issuer has CAP_DAC_OVERRIDE,
-sysfs explicitly denied open regardless of the cap if the file doesn't
-have any of the UGO perms of the requested access or doesn't implement
-the requested operation.  It can be debated whether this was a good
-idea or not but the behavior is too subtle and dangerous to change at
-this point.
+Andrew, since the previous patch
 
-After cgroup got converted to kernfs, this extra perm check also got
-applied to cgroup breaking libcgroup which opens write-only files with
-O_RDWR as root.  This patch gates the extra open permission check with
-a new flag KERNFS_ROOT_EXTRA_OPEN_PERM_CHECK and enables it for sysfs.
-For sysfs, nothing changes.  For cgroup, root now can perform any
-operation regardless of the permissions as it was before kernfs
-conversion.  Note that kernfs still fails unimplemented operations
-with -EINVAL.
+ [PATCH 1/3] mm: add comment for __mod_zone_page_stat
 
-While at it, add comments explaining KERNFS_ROOT flags.
+is updated, update this one accordingly.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Andrey Wagin <avagin@gmail.com>
-Cc: Li Zefan <lizefan@huawei.com>
-References: http://lkml.kernel.org/g/CANaxB-xUm3rJ-Cbp72q-rQJO5mZe1qK6qXsQM=vh0U8upJ44+A@mail.gmail.com
-Fixes: 2bd59d48ebfb ("cgroup: convert to kernfs")
+-----<8-----
+>From 9701fbdb3f9e7730b89780a5bf22effd1580cf35 Mon Sep 17 00:00:00 2001
+From: Jianyu Zhan <nasa4836@gmail.com>
+Date: Tue, 13 May 2014 01:48:01 +0800
+Subject: [PATCH] mm: fold mlocked_vma_newpage() into its only call site
+
+In previous commit(mm: use the light version __mod_zone_page_state in
+mlocked_vma_newpage()) a irq-unsafe __mod_zone_page_state is used.
+And as suggested by Andrew, to reduce the risks that new call sites
+incorrectly using mlocked_vma_newpage() without knowing they are adding
+racing, this patch folds mlocked_vma_newpage() into its only call site,
+page_add_new_anon_rmap, to make it open-cocded for people to know what
+is going on.
+
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+Suggested-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
 ---
- fs/kernfs/file.c       |   19 +++++++++++--------
- fs/sysfs/mount.c       |    3 ++-
- include/linux/kernfs.h |   19 ++++++++++++++++++-
- 3 files changed, 31 insertions(+), 10 deletions(-)
+ mm/internal.h | 29 -----------------------------
+ mm/rmap.c     | 20 +++++++++++++++++---
+ 2 files changed, 17 insertions(+), 32 deletions(-)
 
---- a/fs/kernfs/file.c
-+++ b/fs/kernfs/file.c
-@@ -610,6 +610,7 @@ static void kernfs_put_open_node(struct
- static int kernfs_fop_open(struct inode *inode, struct file *file)
- {
- 	struct kernfs_node *kn = file->f_path.dentry->d_fsdata;
-+	struct kernfs_root *root = kernfs_root(kn);
- 	const struct kernfs_ops *ops;
- 	struct kernfs_open_file *of;
- 	bool has_read, has_write, has_mmap;
-@@ -624,14 +625,16 @@ static int kernfs_fop_open(struct inode
- 	has_write = ops->write || ops->mmap;
- 	has_mmap = ops->mmap;
+diff --git a/mm/internal.h b/mm/internal.h
+index d6a4868..29f3dc8 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -184,31 +184,6 @@ static inline void munlock_vma_pages_all(struct vm_area_struct *vma)
+ }
  
--	/* check perms and supported operations */
--	if ((file->f_mode & FMODE_WRITE) &&
--	    (!(inode->i_mode & S_IWUGO) || !has_write))
--		goto err_out;
+ /*
+- * Called only in fault path, to determine if a new page is being
+- * mapped into a LOCKED vma.  If it is, mark page as mlocked.
+- */
+-static inline int mlocked_vma_newpage(struct vm_area_struct *vma,
+-				    struct page *page)
+-{
+-	VM_BUG_ON_PAGE(PageLRU(page), page);
 -
--	if ((file->f_mode & FMODE_READ) &&
--	    (!(inode->i_mode & S_IRUGO) || !has_read))
--		goto err_out;
-+	/* see the flag definition for details */
-+	if (root->flags & KERNFS_ROOT_EXTRA_OPEN_PERM_CHECK) {
-+		if ((file->f_mode & FMODE_WRITE) &&
-+		    (!(inode->i_mode & S_IWUGO) || !has_write))
-+			goto err_out;
+-	if (likely((vma->vm_flags & (VM_LOCKED | VM_SPECIAL)) != VM_LOCKED))
+-		return 0;
+-
+-	if (!TestSetPageMlocked(page)) {
+-		/*
+-		 * We use the irq-unsafe __mod_zone_page_stat because
+-		 * this counter is not modified from interrupt context, and the
+-		 * pte lock is held(spinlock), which implies preemption disabled.
+-		 */
+-		__mod_zone_page_state(page_zone(page), NR_MLOCK,
+-				    hpage_nr_pages(page));
+-		count_vm_event(UNEVICTABLE_PGMLOCKED);
+-	}
+-	return 1;
+-}
+-
+-/*
+  * must be called with vma's mmap_sem held for read or write, and page locked.
+  */
+ extern void mlock_vma_page(struct page *page);
+@@ -250,10 +225,6 @@ extern unsigned long vma_address(struct page *page,
+ 				 struct vm_area_struct *vma);
+ #endif
+ #else /* !CONFIG_MMU */
+-static inline int mlocked_vma_newpage(struct vm_area_struct *v, struct page *p)
+-{
+-	return 0;
+-}
+ static inline void clear_page_mlock(struct page *page) { }
+ static inline void mlock_vma_page(struct page *page) { }
+ static inline void mlock_migrate_page(struct page *new, struct page *old) { }
+diff --git a/mm/rmap.c b/mm/rmap.c
+index fa73194..386b78f 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1029,11 +1029,25 @@ void page_add_new_anon_rmap(struct page *page,
+ 	__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
+ 			hpage_nr_pages(page));
+ 	__page_set_anon_rmap(page, vma, address, 1);
+-	if (!mlocked_vma_newpage(vma, page)) {
 +
-+		if ((file->f_mode & FMODE_READ) &&
-+		    (!(inode->i_mode & S_IRUGO) || !has_read))
-+			goto err_out;
++	VM_BUG_ON_PAGE(PageLRU(page), page);
++	if (likely((vma->vm_flags & (VM_LOCKED | VM_SPECIAL)) != VM_LOCKED)) {
+ 		SetPageActive(page);
+ 		lru_cache_add(page);
+-	} else
+-		add_page_to_unevictable_list(page);
++		return;
 +	}
- 
- 	/* allocate a kernfs_open_file for the file */
- 	error = -ENOMEM;
---- a/fs/sysfs/mount.c
-+++ b/fs/sysfs/mount.c
-@@ -63,7 +63,8 @@ int __init sysfs_init(void)
- {
- 	int err;
- 
--	sysfs_root = kernfs_create_root(NULL, 0, NULL);
-+	sysfs_root = kernfs_create_root(NULL, KERNFS_ROOT_EXTRA_OPEN_PERM_CHECK,
-+					NULL);
- 	if (IS_ERR(sysfs_root))
- 		return PTR_ERR(sysfs_root);
- 
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -50,7 +50,24 @@ enum kernfs_node_flag {
- 
- /* @flags for kernfs_create_root() */
- enum kernfs_root_flag {
--	KERNFS_ROOT_CREATE_DEACTIVATED = 0x0001,
-+	/*
-+	 * kernfs_nodes are created in the deactivated state and invisible.
-+	 * They require explicit kernfs_activate() to become visible.  This
-+	 * can be used to make related nodes become visible atomically
-+	 * after all nodes are created successfully.
-+	 */
-+	KERNFS_ROOT_CREATE_DEACTIVATED		= 0x0001,
 +
-+	/*
-+	 * For regular flies, if the opener has CAP_DAC_OVERRIDE, open(2)
-+	 * succeeds regardless of the RW permissions.  sysfs had an extra
-+	 * layer of enforcement where open(2) fails with -EACCES regardless
-+	 * of CAP_DAC_OVERRIDE if the permission doesn't have the
-+	 * respective read or write access at all (none of S_IRUGO or
-+	 * S_IWUGO) or the respective operation isn't implemented.  The
-+	 * following flag enables that behavior.
-+	 */
-+	KERNFS_ROOT_EXTRA_OPEN_PERM_CHECK	= 0x0002,
- };
++	if (!TestSetPageMlocked(page)) {
++		/*
++		 * We use the irq-unsafe __mod_zone_page_stat because
++		 * this counter is not modified from interrupt context, and the
++		 * pte lock is held(spinlock), which implies preemption disabled.
++		 */
++		__mod_zone_page_state(page_zone(page), NR_MLOCK,
++				    hpage_nr_pages(page));
++		count_vm_event(UNEVICTABLE_PGMLOCKED);
++	}
++	add_page_to_unevictable_list(page);
+ }
  
- /* type-specific structures for kernfs_node union members */
+ /**
+-- 
+2.0.0-rc1
+
