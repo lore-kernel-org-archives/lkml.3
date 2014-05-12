@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751689AbaELDNA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 23:13:00 -0400
-Received: from gate.crashing.org ([63.228.1.57]:48525 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983AbaELDM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 23:12:59 -0400
-Message-ID: <1399864310.17624.69.camel@pasglop>
-Subject: Re: [PATCH 1/5] irq_work: Architecture support for remote irq work
- raise
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Date: Mon, 12 May 2014 13:11:50 +1000
-In-Reply-To: <1399853330.17624.52.camel@pasglop>
-References: <1399851237-2226-1-git-send-email-fweisbec@gmail.com>
-	 <1399851237-2226-2-git-send-email-fweisbec@gmail.com>
-	 <1399853330.17624.52.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751463AbaELDTg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 23:19:36 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:63481 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944AbaELDTf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 23:19:35 -0400
+Message-ID: <53703DC0.2070204@gmail.com>
+Date: Mon, 12 May 2014 11:19:28 +0800
+From: zhuyj <zyjzyj2000@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: eric.dumazet@gmail.com, "David S. Miller" <davem@davemloft.net>
+CC: "Tao, Yue" <Yue.Tao@windriver.com>, zhuyj <zyjzyj2000@gmail.com>,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Subject: icmp: account for ICMP out errors because of socket limit
+Content-Type: multipart/mixed;
+ boundary="------------020500030407000703090906"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-12 at 10:08 +1000, Benjamin Herrenschmidt wrote:
-> On Mon, 2014-05-12 at 01:33 +0200, Frederic Weisbecker wrote:
-> > We are going to extend irq work to support remote queuing.
-> > 
-> > So lets add a cpu argument to arch_irq_work_raise(). The architectures
-> > willing to support that must then provide the backend to raise irq work
-> > IPIs remotely.
-> > 
-> > Initial support is provided for x86 and ARM since they are easily
-> > extended. The other archs that overwrite arch_irq_work_raise() seem
-> > to use local clock interrupts and therefore need deeper rewrite of their
-> > irq work support to implement remote raising.
-> 
-> Well, looks like it's time to turn it into an IPI... It gets a bit more
-> tricky because whether whacking the interrupt controller is safe to
-> do from an NMI is safe or not might depend on that irq controller
-> implementation...
-> 
-> It looks like XICS and MPIC should be safe though, so at least we
-> should be able to cover ppc64, but I'll leave ppc32 alone.
+This is a multi-part message in MIME format.
+--------------020500030407000703090906
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Correction... that's actually a bit more tricky. We might need an MMIO
-to trigger the IPI. That means potentially having to take a hash miss,
-and we certainly can't do that at NMI time at the moment.
+Hi, Eric && David
 
-We *could* hard disable interrupts (which blocks our NMIs since they
-arent't real NMIs, they are just a way to bypass our soft-disable state
-for perf interrupts) for hash_page, but that still makes me somewhat
-nervous.
+  ____           ______________
+|    |         |              |
+| PC |<------->| MIPS 32 core |
+|____|         |______________|
 
-Another option would be to add an ioremap flag of some description to
-be able to install bolted hash entries. (It already does so if called
-early enough during boot, so it might actually just work by accident but
-that's an undebuggable horror show waiting to happen if we ever change
-that).
+When ping from a PC to a board (MIPS 32 core), because of socket limit,
+ping echo will fail. But ICMP_MIB_OUTERRORS counter is not incremented.
+In this case, "netstat -s" can not report these errors.
 
-So needs a bit more thinking on our side.
+This patch will fix this problem. Now it is in the attachment. Please 
+check it.
 
-Cheers,
-Ben.
+Best Regards!
+Zhu Yanjun
+
+--------------020500030407000703090906
+Content-Type: text/x-patch;
+ name="0001-icmp-account-for-ICMP-out-errors-because-of-socket-l.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-icmp-account-for-ICMP-out-errors-because-of-socket-l.pa";
+ filename*1="tch"
+
+>From af800d0f123cf9c66a9ae167baa7dc1d25d0cd1f Mon Sep 17 00:00:00 2001
+From: Zhu Yanjun <Yanjun.Zhu@windriver.com>
+Date: Mon, 12 May 2014 11:07:20 +0800
+Subject: [PATCH 1/1] icmp: account for ICMP out errors because of socket
+ limit
+
+When icmp_xmit_lock fails because of socket limit or memory shortage,
+increment ICMP_MIB_OUTERRORS counter, so that "netstat -s" can report
+these errors.
+
+netstat -s | grep "ICMP messages failed"
+    0 ICMP messages failed
+
+Signed-off-by: Zhu Yanjun <Yanjun.Zhu@windriver.com>
+---
+ net/ipv4/icmp.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/net/ipv4/icmp.c b/net/ipv4/icmp.c
+index 0134663..9a0bd7c 100644
+--- a/net/ipv4/icmp.c
++++ b/net/ipv4/icmp.c
+@@ -342,8 +342,10 @@ static void icmp_reply(struct icmp_bxm *icmp_param, struct sk_buff *skb)
+ 		return;
+ 
+ 	sk = icmp_xmit_lock(net);
+-	if (sk == NULL)
++	if (sk == NULL){
++		ICMP_INC_STATS_BH(net, ICMP_MIB_OUTERRORS);
+ 		return;
++	}
+ 	inet = inet_sk(sk);
+ 
+ 	icmp_param->data.icmph.checksum = 0;
+-- 
+1.7.9.5
 
 
+--------------020500030407000703090906--
