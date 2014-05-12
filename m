@@ -1,102 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330AbaELHof (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 03:44:35 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:58508 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848AbaELHoe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 03:44:34 -0400
-MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <1399841186.8629.6.camel@buesod1.americas.hpqcorp.net>
-References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
- <CAKgNAkjuU68hgyMOVGBVoBTOhhGdBytQh6H0ExiLoXfujKyP_w@mail.gmail.com>
- <1399406800.13799.20.camel@buesod1.americas.hpqcorp.net> <CAKgNAkjOKP7P9veOpnokNkVXSszVZt5asFsNp7rm7AXJdjcLLA@mail.gmail.com>
- <1399414081.30629.2.camel@buesod1.americas.hpqcorp.net> <5369C43D.1000206@gmail.com>
- <1399486965.4567.9.camel@buesod1.americas.hpqcorp.net> <1399490251.4567.24.camel@buesod1.americas.hpqcorp.net>
- <CAKgNAkgZ+7=EB4jkCdvq5EK1ce03rq9j+rEss9N1XnUQytBcGg@mail.gmail.com> <1399841186.8629.6.camel@buesod1.americas.hpqcorp.net>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Mon, 12 May 2014 09:44:13 +0200
-Message-ID: <CAKgNAkhKubCUiTK36vT98vPbrfLd=xBBxeyPfUfzsqS-uHWAbA@mail.gmail.com>
-Subject: Re: [PATCH v2] ipc,shm: document new limits in the uapi header
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, aswin@hp.com,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753362AbaELHpv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 03:45:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:10223 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751385AbaELHpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 03:45:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1033,1389772800"; 
+   d="scan'208";a="510115690"
+From: Lv Zheng <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: [PATCH v3 0/4] ACPICA: Cleanups for <acpi/platform/acenv.h> and <acpi/platform/aclinux.h>.
+Date: Mon, 12 May 2014 15:44:37 +0800
+Message-Id: <cover.1399880022.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1396930406.git.lv.zheng@intel.com>
+References: <cover.1396930406.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Davidlohr,
+This patch series cleans up <acpi/platform/acenv.h> and
+<acpi/platform/aclinux.h>.  it also fixes some mis-ordered inclusions for
+Linux resident ACPICA.
 
-On Sun, May 11, 2014 at 10:46 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> On Fri, 2014-05-09 at 10:44 +0200, Michael Kerrisk (man-pages) wrote:
->> On Wed, May 7, 2014 at 9:17 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
->> > This is useful in the future and allows users to
->> > better understand the reasoning behind the changes.
->> >
->> > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
->> > ---
->> >  include/uapi/linux/shm.h | 15 +++++++++------
->> >  1 file changed, 9 insertions(+), 6 deletions(-)
->> >
->> > diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
->> > index 74e786d..3400b6e 100644
->> > --- a/include/uapi/linux/shm.h
->> > +++ b/include/uapi/linux/shm.h
->> > @@ -8,17 +8,20 @@
->> >  #endif
->> >
->> >  /*
->> > - * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
->> > - * be modified by sysctl.
->> > + * SHMMNI, SHMMAX and SHMALL are the default upper limits which can be
->> > + * modified by sysctl. Both SHMMAX and SHMALL have their default values
->> > + * to the maximum limit which is as large as it can be without helping
->> > + * userspace overflow the values. There is really nothing the kernel
->> > + * can do to avoid this any further. It is therefore not advised to
->> > + * make them any larger. These limits are suitable for both 32 and
->> > + * 64-bit systems.
->>
->> I somehow find that text still rather impenetrable. What about this:
->>
->> SHMMNI, SHMMAX and SHMALL are default upper limits which can be
->> modified by sysctl. The SHMMAX and SHMALL values have been chosen to
->> be as large possible without facilitating scenarios where userspace
->> causes overflows when adjusting the limits via operations of the form
->> "retrieve current limit; add X; update limit". It is therefore not
->> advised to make SHMMAX and SHMALL any larger. These limits are
->> suitable for both 32 and 64-bit systems.
->
-> I don't really have much preference, imho both read pretty much the
-> same, specially considering this is still code after all. If you guys
-> really prefer updating it, let me know and I'll send a v3. But perhaps
-> your text is a bit more suitable in the svipc manpage?
+There is no real issue in the Linux kernel, but this can help to cleanup
+the code so that (benefits):
+1. Redundant environment definitions can be removed from <asm/acpi.h> and
+   <acpi/platform/aclinux.h>.
+2. Lift a burden off the ACPICA release automation - copying default ACPICA
+   environment setting to all <asm/acpi.h> file each time a new environment
+   is introduced just in order to avoid build errors.
+3. The wrong <acpi/actypes.h> inclusion can be removed from
+   <acpi/platform/aclinux.h>.
+4. Using ACPICA defined types in <asm/acpi.h> is possible.
+5. Using "static inline" to define ACPICA OSL functions is still possible
+   and won't cause build errors any longer.
+6. All non back ported prototypes are collected in a single file.
 
-The problem is that part of your text is still broken grammatically In
-particular, the piece "Both SHMMAX and SHMALL have their default
-values to the maximum limit" at the very least lacks a word. That's
-what prompted me to propose the alternative, rather than just say
-"this is wrong"--and I thought that I might as well make a more
-thoroughgoing attempt at helping improve the text.
+The patch set has passed the following build/boot tests.
+Build tests are performed as follows:
+1. i386 + default + COFNIG_ACPI=y
+2. i386 + default + COFNIG_ACPI=n
+3. x86_64 + default + COFNIG_ACPI=y
+4. x86_64 + default + COFNIG_ACPI=n
+Boot tests are performed as follows:
+1. i386 + default + COFNIG_ACPI=y
+2. x86_64 + default + COFNIG_ACPI=y
+Where:
+1. i386: machine named as "Dell Inspiron Mini 1010"
+2. x86_64: machine named as "HP Compaq 8200 Elite SFF PC"
+3. default: kernel configuration with following items enabled:
+   All hardware drivers related to the machines of i386/x86_64
+   All drivers/acpi configurations
+   All platform drivers
+   All ACPI drivers
+   4 DRM drivers that implement ACPI opregion
+   All buses with ACPI bindings
+   All cpufreq configurations
+   All xen configurations
+   All ACPI table drivers
 
-I agree that text something like this should land in the man page at
-some point, but as long as we're going to the trouble to improve the
-comments in the code, let's make them as good and helpful as we can.
+Lv Zheng (4):
+  ACPICA: Linux headers: Remove ACPI_PREEMPTION_POINT() due to no
+    usages.
+  ACPICA: Linux headers: Add <acpi/platform/aclinuxex.h> to remove
+    mis-ordered inclusion of <acpi/actypes.h> from
+    <acpi/platform/aclinux.h>.
+  ACPICA: Linux headers: Add <asm/acenv.h> to remove mis-ordered
+    inclusion of <asm/acpi.h> from <acpi/platform/aclinux.h>.
+  ACPICA: Cleanup redudant definitions that already have defaults in
+    <acpi/platform/acenv.h>.
 
-Cheers,
-
-Michael
+ arch/ia64/include/asm/acenv.h     |   56 ++++++++++++
+ arch/ia64/include/asm/acpi.h      |   50 -----------
+ arch/x86/include/asm/acenv.h      |   49 +++++++++++
+ arch/x86/include/asm/acpi.h       |   45 ----------
+ include/acpi/acpi.h               |    4 +-
+ include/acpi/platform/acenvex.h   |   63 ++++++++++++++
+ include/acpi/platform/aclinux.h   |  171 ++++++++-----------------------------
+ include/acpi/platform/aclinuxex.h |  116 +++++++++++++++++++++++++
+ 8 files changed, 322 insertions(+), 232 deletions(-)
+ create mode 100644 arch/ia64/include/asm/acenv.h
+ create mode 100644 arch/x86/include/asm/acenv.h
+ create mode 100644 include/acpi/platform/acenvex.h
+ create mode 100644 include/acpi/platform/aclinuxex.h
 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+1.7.10
+
