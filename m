@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751244AbaELEJN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 00:09:13 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:46591 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaELEJL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 00:09:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <52A7D5C3.6010300@huawei.com>
-References: <52A7D5C3.6010300@huawei.com>
-From: Steve French <smfrench@gmail.com>
-Date: Sun, 11 May 2014 23:08:50 -0500
-Message-ID: <CAH2r5muO1YetatwEWW+e+z+jc7TUv9jLn8Dr1dsz0Sqg1ZU-VA@mail.gmail.com>
-Subject: Re: [PATCH] fs: cifs: new helper: file_inode(file)
-To: Libo Chen <clbchenlibo.chen@huawei.com>
-Cc: Steve French <sfrench@samba.org>,
-        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
-        samba-technical <samba-technical@lists.samba.org>,
-        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751612AbaELEMS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 00:12:18 -0400
+Received: from gate.crashing.org ([63.228.1.57]:35742 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751027AbaELEMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 00:12:17 -0400
+Message-ID: <1399867920.17624.73.camel@pasglop>
+Subject: Re: [PATCH] powerpc: Fix "attempt to move .org backwards" error
+ (again)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>
+Date: Mon, 12 May 2014 14:12:00 +1000
+In-Reply-To: <1399680478-4970-1-git-send-email-linux@roeck-us.net>
+References: <1399680478-4970-1-git-send-email-linux@roeck-us.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-merged into cifs-2.6.git for-next
+On Fri, 2014-05-09 at 17:07 -0700, Guenter Roeck wrote:
+> Commit 4e243b7 (powerpc: Fix "attempt to move .org backwards" error) fixes the
+> allyesconfig build by moving machine_check_common to a different location.
+> While this fixes most of the errors, both allmodconfig and allyesconfig still
+> fail as follows.
+> 
+> arch/powerpc/kernel/exceptions-64s.S:1315: Error: attempt to move .org backwards
+> 
+> Fix by moving machine_check_common after the offending address.
 
-On Tue, Dec 10, 2013 at 9:02 PM, Libo Chen <clbchenlibo.chen@huawei.com> wrote:
->
-> Signed-off-by: Libo Chen <clbchenlibo.chen@huawei.com>
-> ---
->  fs/cifs/ioctl.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/fs/cifs/ioctl.c b/fs/cifs/ioctl.c
-> index 7749230..45cb59b 100644
-> --- a/fs/cifs/ioctl.c
-> +++ b/fs/cifs/ioctl.c
-> @@ -85,7 +85,7 @@ static long cifs_ioctl_clone(unsigned int xid, struct file *dst_file,
->                 goto out_fput;
->         }
->
-> -       src_inode = src_file.file->f_dentry->d_inode;
-> +       src_inode = file_inode(src_file.file);
->
->         /*
->          * Note: cifs case is easier than btrfs since server responsible for
-> --
-> 1.8.2.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This suffers from the same problem as previous attempts, on some of my
+test configs I get:
+
+arch/powerpc/kernel/head_64.o:(__ftr_alt_97+0xb0): relocation truncated to fit: R_PPC64_REL14 against `.text'+1c90
+make[1]: *** [vmlinux] Error 1
+make: *** [sub-make] Error 2
+
+IE, it breaks currently working configs.
+
+So we need to move more things around and I haven't had a chance to
+sort it out.
+
+Cheers,
+Ben.
 
 
-
--- 
-Thanks,
-
-Steve
