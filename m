@@ -1,134 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757795AbaELMDb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 08:03:31 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:42581 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816AbaELMDa convert rfc822-to-8bit (ORCPT
+	id S1756005AbaELMI3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 08:08:29 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:60364 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381AbaELMI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 08:03:30 -0400
-Date: Mon, 12 May 2014 13:03:24 +0100
-From: Javi Merino <javi.merino@arm.com>
-To: Peter Feuerer <peter@piie.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Zhang Rui <rui.zhang@intel.com>, Andreas Mohr <andi@lisas.de>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH v3 4/6] acerhdf: Use bang-bang thermal governor
-Message-ID: <20140512120324.GA5163@e102654-lin.cambridge.arm.com>
-References: <1398561815-22033-1-git-send-email-peter@piie.net>
- <1399139966-10625-1-git-send-email-peter@piie.net>
- <1399139966-10625-5-git-send-email-peter@piie.net>
- <20140506105029.GC2858@e102654-lin.cambridge.arm.com>
- <cone.1399890428.265455.932.1000@mups>
+	Mon, 12 May 2014 08:08:28 -0400
+Message-ID: <5370B9B3.4050705@linux.vnet.ibm.com>
+Date: Mon, 12 May 2014 14:08:19 +0200
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <cone.1399890428.265455.932.1000@mups>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 12 May 2014 12:03:35.0160 (UTC) FILETIME=[3383AF80:01CF6DDA]
-X-MC-Unique: 114051213032709401
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+To: Yuan Pengfei <coolypf@qq.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>, yuanpf12@sei.pku.edu.cn
+Subject: Re: [PATCH] gcov: add support for GCC 4.9
+References: <tencent_339F323E15E730DF6D7AC23A@qq.com>
+In-Reply-To: <tencent_339F323E15E730DF6D7AC23A@qq.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051212-8372-0000-0000-000009A2CF0C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-
-On Mon, May 12, 2014 at 11:27:08AM +0100, Peter Feuerer wrote:
-> Javi Merino writes:
-> > On Sat, May 03, 2014 at 06:59:24PM +0100, Peter Feuerer wrote:
-> >> acerhdf has been doing an on-off fan control using hysteresis by
-> >> post-manipulating the outcome of thermal subsystem trip point handling.
-> >> This patch enables acerhdf to use the bang-bang governor, which is
-> >> intended for on-off controlled fans.
-> >> 
-> >> Cc: Andrew Morton <akpm@linux-foundation.org>
-> >> CC: Zhang Rui <rui.zhang@intel.com>
-> >> Cc: Andreas Mohr <andi@lisas.de>
-> >> Cc: Borislav Petkov <bp@suse.de>
-> >> Cc: Javi Merino <javi.merino@arm.com>
-> >> Signed-off-by: Peter Feuerer <peter@piie.net>
-> >> ---
-> >>  drivers/platform/x86/Kconfig   |  2 +-
-> >>  drivers/platform/x86/acerhdf.c | 34 +++++++++++++++++++++++++++++-----
-> >>  2 files changed, 30 insertions(+), 6 deletions(-)
-> >> 
-> >> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> >> index 27df2c5..0c15d89 100644
-> >> --- a/drivers/platform/x86/Kconfig
-> >> +++ b/drivers/platform/x86/Kconfig
-> >> @@ -38,7 +38,7 @@ config ACER_WMI
-> >>  
-> >>  config ACERHDF
-> >>  	tristate "Acer Aspire One temperature and fan driver"
-> >> -	depends on THERMAL && ACPI
-> >> +	depends on ACPI && THERMAL_GOV_BANG_BANG
-> >>  	---help---
-> >>  	  This is a driver for Acer Aspire One netbooks. It allows to access
-> >>  	  the temperature sensor and to control the fan.
-> >> diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
-> >> index 176edbd..afaa849 100644
-> >> --- a/drivers/platform/x86/acerhdf.c
-> >> +++ b/drivers/platform/x86/acerhdf.c
-> >> @@ -50,7 +50,7 @@
-> >>   */
-> >>  #undef START_IN_KERNEL_MODE
-> >>  
-> >> -#define DRV_VER "0.5.30"
-> >> +#define DRV_VER "0.5.31"
-> >>  
-> >>  /*
-> >>   * According to the Atom N270 datasheet,
-> >> @@ -259,6 +259,14 @@ static const struct bios_settings_t bios_tbl[] = {
-> >>  
-> >>  static const struct bios_settings_t *bios_cfg __read_mostly;
-> >>  
-> >> +/*
-> >> + * this struct is used to instruct thermal layer to use bang_bang instead of
-> >> + * default governor for acerhdf
-> >> + */
-> >> +static struct thermal_zone_params acerhdf_zone_params = {
-> >> +	.governor_name = "bang_bang",
-> >> +};
-> >> +
-> >>  static int acerhdf_get_temp(int *temp)
-> >>  {
-> >>  	u8 read_temp;
-> >> @@ -440,6 +448,15 @@ static int acerhdf_get_trip_type(struct thermal_zone_device *thermal, int trip,
-> >>  	return 0;
-> >>  }
-> >>  
-> >> +static int acerhdf_get_trip_hyst(struct thermal_zone_device *thermal, int trip,
-> >> +				 unsigned long *temp)
-> >> +{
-> >> +	if (trip == 0)
-> >> +		*temp = fanon - fanoff;
-> >> +
-> >> +	return 0;
-> >> +}
-> >> +
-> > 
-> > I think you should only return 0 if you've updated the temperature.
-> > Otherwise you're telling the calling function that everything went all
-> > right but you may be leaving garbage in *temp.  What about
-> > 
-> > 	if (trip != 0)
-> > 		return -EINVAL;
-> > 
-> > 	*temp = fanon - fanoff;
-> > 	return 0;
+On 11.05.2014 06:55, Yuan Pengfei wrote:
+> From: Yuan Pengfei <coolypf@qq.com>
 > 
-> Yes, sounds good.  What about trip == 1?  This is a valid trip point for 
-> acerhdf (critical) and one could argue, that it has a valid hysteresis of 
-> 0.  - Thus EINVAL would be wrong here.
+> This patch handles the gcov-related changes in GCC 4.9:
+>   A new counter (time profile) is added.
 
-Then for trip == 1 you should also write something in *temp if it's a
-valid trip point and you don't want to return -EINVAL.  I don't know
-what is the correct hysteresis for trip == 1. Maybe 0?  What I'm
-trying to say is that you should return 0 only if you've updated
-*temp.
+It appears that this patch contains two independent sets of changes:
+1. Updates to gcov-kernel required to work with GCC 4.9
+   (#counters + new merge function stub)
+2. A bug-fix required when using GCC option -fprofile-values
+   which is currently not supported by gcov-kernel
+   (see https://lkml.org/lkml/2014/2/19/74)
 
-Cheers,
-Javi
+Please split these changes into separate patches.
+
+Change 1) is definitely useful as without it .gcda file creation will
+fail when compiling the kernel with GCC 4.9.
+
+Regarding change 2) I still don't think this is necessary unless:
+a) there is a way to trigger the problem without -fprofile-values, or
+b) you intend to send an additional patch set that enables
+   -fprofile-values profiling for gcov-kernel in which case the fix
+   should be part of that patch set.
+
+> See http://gcc.gnu.org/gcc-4.9/changes.html
+> Signed-off-by: Yuan Pengfei <coolypf@qq.com>
+> ---
+>  kernel/gcov/base.c    | 6 ++++++
+>  kernel/gcov/gcc_3_4.c | 2 +-
+>  kernel/gcov/gcc_4_7.c | 7 ++++++-
+>  3 files changed, 13 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/gcov/base.c b/kernel/gcov/base.c
+> index f45b75b..b358a80 100644
+> --- a/kernel/gcov/base.c
+> +++ b/kernel/gcov/base.c
+> @@ -85,6 +85,12 @@ void __gcov_merge_ior(gcov_type *counters, unsigned int n_counters)
+>  }
+>  EXPORT_SYMBOL(__gcov_merge_ior);
+>  
+> +void __gcov_merge_time_profile(gcov_type *counters, unsigned int n_counters)
+> +{
+> +	/* Unused. */
+> +}
+> +EXPORT_SYMBOL(__gcov_merge_time_profile);
+> +
+>  /**
+>   * gcov_enable_events - enable event reporting through gcov_event()
+>   *
+> diff --git a/kernel/gcov/gcc_3_4.c b/kernel/gcov/gcc_3_4.c
+> index 27bc88a..1c1f425 100644
+> --- a/kernel/gcov/gcc_3_4.c
+> +++ b/kernel/gcov/gcc_3_4.c
+> @@ -269,7 +269,7 @@ struct gcov_info *gcov_info_dup(struct gcov_info *info)
+>  		dup->counts[i].num = ctr->num;
+>  		dup->counts[i].merge = ctr->merge;
+>  		dup->counts[i].values = vmalloc(size);
+> -		if (!dup->counts[i].values)
+> +		if (size && !dup->counts[i].values)
+>  			goto err_free;
+>  		memcpy(dup->counts[i].values, ctr->values, size);
+>  	}
+> diff --git a/kernel/gcov/gcc_4_7.c b/kernel/gcov/gcc_4_7.c
+> index 2c6e463..7f74b59 100644
+> --- a/kernel/gcov/gcc_4_7.c
+> +++ b/kernel/gcov/gcc_4_7.c
+> @@ -18,7 +18,12 @@
+>  #include <linux/vmalloc.h>
+>  #include "gcov.h"
+>  
+> +#if __GNUC__ == 4 && __GNUC_MINOR__ >= 9
+> +#define GCOV_COUNTERS			9
+> +#else
+>  #define GCOV_COUNTERS			8
+> +#endif
+> +
+>  #define GCOV_TAG_FUNCTION_LENGTH	3
+>  
+>  static struct gcov_info *gcov_info_head;
+> @@ -290,7 +295,7 @@ struct gcov_info *gcov_info_dup(struct gcov_info *info)
+>  
+>  			dci_ptr->values = vmalloc(cv_size);
+>  
+> -			if (!dci_ptr->values)
+> +			if (cv_size && !dci_ptr->values)
+>  				goto err_free;
+>  
+>  			dci_ptr->num = sci_ptr->num;
+> 
+
+-- 
+Peter Oberparleiter
+Linux on System z Development - IBM Germany
 
