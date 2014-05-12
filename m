@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634AbaELFyN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 01:54:13 -0400
-Received: from mail.windriver.com ([147.11.1.11]:59804 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309AbaELFyK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 01:54:10 -0400
-Message-ID: <53706495.1050303@windriver.com>
-Date: Mon, 12 May 2014 14:05:09 +0800
-From: Xufeng Zhang <xufeng.zhang@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5 ThunderBrowse/3.82
+	id S1752734AbaELF4N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 01:56:13 -0400
+Received: from ozlabs.org ([103.22.144.67]:56180 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752074AbaELF4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 01:56:11 -0400
+Date: Mon, 12 May 2014 15:55:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Scott Wood <scottwood@freescale.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stuart Yoder <stuart.yoder@freescale.com>
+Subject: linux-next: build failure after merge of the fsl tree
+Message-ID: <20140512155557.5b758614@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <steffen.klassert@secunet.com>, <herbert@gondor.apana.org.au>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] af_key: return error when meet errors on sendmsg()
- syscall
-References: <1399614455-10551-1-git-send-email-xufeng.zhang@windriver.com> <20140512.011141.74073195599318391.davem@davemloft.net>
-In-Reply-To: <20140512.011141.74073195599318391.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/elLLYofYkdxJx6jXv+M0eEG"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2014 01:11 PM, David Miller wrote:
->
->> So it makes sense to return errors for send() syscall.
->>
->> Signed-off-by: Xufeng Zhang<xufeng.zhang@windriver.com>
->>      
-> I disagree.
->
-> If pfkey_error() is successful, the error will be reported in the AF_KEY
-> message that is broadcast, there is no reason for sendmsg to return an
-> error.  The message was sucessfully sent, there was no problem with it's
-> passage into the AF_KEY layer.
->
-> Like netlink, operational responses come in packets, not error codes.
->
-> However, if pfkey_error() fails, we must do pass back the original
-> error code because it's a last ditch effort to prevent information
-> from being lost.
->
-> That's why 'err' must be preserved when pfkey_error() returns zero.
->    
+--Sig_/elLLYofYkdxJx6jXv+M0eEG
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I know what you mean, but isn't the kernel API aimed to facilitate the
-implementation of user space?
-Since send the message to the kernel and receive the error report message
-are asynchronous, I don't think it's easy to recover from the EINTR error
-by parsing the error report message.
+Hi Scott,
 
+After merging the fsl tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-Thanks,
-Xufeng
+arch/powerpc/kernel/epapr_paravirt.c: In function 'epapr_idle_init':
+arch/powerpc/kernel/epapr_paravirt.c:77:23: error: 'epapr_ev_idle' undeclar=
+ed (first use in this function)
+   ppc_md.power_save =3D epapr_ev_idle;
+                       ^
 
+Caused by commit 7762b1ed7aae ("powerpc: move epapr paravirt init of
+power_save to an initcall").
 
+I have reverted that commit for today.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Sig_/elLLYofYkdxJx6jXv+M0eEG
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTcGJ5AAoJEMDTa8Ir7ZwVACUP/22wVygigCWr729ZnUuAeO0L
+hkh7xpnHGTSslOs6kfwnXcq2c0Mh94nOZTqmI5L5WPq1+bInlsEBSwoZKrzqkHov
+m3H3H94iWPD83rw6iVzvenpNvQErxZMPUSKW+WQc09byDWmTt+gm2TGARAdzoWND
+CT6958dJ0Sh1H4UQls+LJ1Pqblhx5m/2BkvZxLveeogwBZHkmqZgaWb79BAnsqsL
+pvt3V8QDgyphR4Zo8NasUUBf01Pce+A3+0UsEM67+KqPbnl99VjnPU7W29X0/ceA
+UDQEvWIsKpCKCV+sMWsb57eqD97+KFSfMGwV3j2YCO1kKRtbrn5JYLtECFQfygld
+dgpvrLJMOakxnyKK+Xy1OeCGGvAorTzKMPnq4nUfOe0bk1+snvmVCpncGLCbcxgw
+rRpXJcGxTp1TqbTrv6XVpsmEWHcbuQGJnz2uRgNFxVKI8JWMRbFn6V6Kt7H580bc
+upbMil0joLzuWzl6iYusqwuXxZOMqW7dF2OtcxwNhQh3O+869HwhCPOU7vkMtfES
+wUJvWMbUaMkT3wFfpJiMN53awjP7nN3q66CHIzIVWkQXxWsW2gVs1ha8SOjERjQj
+RaVfxqylz5w+0uueGgraAe1NmljIajKbaMIebOeUPTWXzJUgOFd5vTXGy0WShcto
+mbk7nmxrzhbDkvdCUGnH
+=m/mk
+-----END PGP SIGNATURE-----
+
+--Sig_/elLLYofYkdxJx6jXv+M0eEG--
