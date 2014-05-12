@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758264AbaELOBq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 10:01:46 -0400
-Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:56641
-	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755928AbaELOBp (ORCPT
+	id S1758294AbaELOIQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 10:08:16 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42556 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756090AbaELOIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 10:01:45 -0400
-Date: Mon, 12 May 2014 09:01:41 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Jianyu Zhan <nasa4836@gmail.com>
-cc: akpm@linux-foundation.org, hughd@google.com, riel@redhat.com,
-        mgorman@suse.de, zhangyanfei@cn.fujitsu.com, aarcange@redhat.com,
-        fabf@skynet.be, sasha.levin@oracle.com, oleg@redhat.com,
-        n-horiguchi@ah.jp.nec.com, iamjoonsoo.kim@lge.com,
-        kirill.shutemov@linux.intel.com, gorcunov@gmail.com,
-        dave.hansen@linux.intel.com, toshi.kani@hp.com,
-        paul.gortmaker@windriver.com, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mm: add comment for __mod_zone_page_stat
-In-Reply-To: <1399811500-14472-1-git-send-email-nasa4836@gmail.com>
-Message-ID: <alpine.DEB.2.10.1405120858040.3090@gentwo.org>
-References: <1399811500-14472-1-git-send-email-nasa4836@gmail.com>
+	Mon, 12 May 2014 10:08:14 -0400
+Date: Mon, 12 May 2014 10:08:13 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Vivek Gautam <gautam.vivek@samsung.com>
+cc: linux-usb@vger.kernel.org, <linux-samsung-soc@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <gregkh@linuxfoundation.org>,
+        <swarren@wwwdotorg.org>, <kgene.kim@samsung.com>,
+        <thierry.reding@gmail.com>, <shc_work@mail.ru>
+Subject: Re: [PATCH v2 0/6] usb: host: Cleanup for ioremap'ing hcd memory
+In-Reply-To: <1399723210-21569-1-git-send-email-gautam.vivek@samsung.com>
+Message-ID: <Pine.LNX.4.44L0.1405121007410.1202-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 11 May 2014, Jianyu Zhan wrote:
+On Sat, 10 May 2014, Vivek Gautam wrote:
 
-> >
-> >/*
-> > * For use when we know that interrupts are disabled,
-> > * or when we know that preemption is disabled and that
-> > * particular counter cannot be updated from interrupt context.
-> > */
->
->  Seconded. Christoph, would you please write a comment? I've written
->  a new one based on Hugh's, would you please also take a look? Thanks.
+> Based on 'usb-next' branch of Greg's usb tree.
+> 
+> devm_ioremap_resource() API is advantageous over devm_ioremap()
+> and should therefore be preferred to request any ioremap'ed address
+> for hcd.
+> 
+> Changes from v1:
+>  - Changed the way returned pointer is checked for error value
+>    as pointed out in the review comment in the mailing list.
+> 
+> Vivek Gautam (6):
+>   usb: host: ehci-exynos: Use devm_ioremap_resource instead of
+>     devm_ioremap
+>   usb: host: ehci-msm: Use devm_ioremap_resource instead of
+>     devm_ioremap
+>   usb: host: ehci-mv: Use devm_ioremap_resource instead of devm_ioremap
+>   usb: host: ehci-spear: Use devm_ioremap_resource instead of
+>     devm_ioremap
+>   usb: host: ehci-tegra: Use devm_ioremap_resource instead of
+>     devm_ioremap
+>   usb: host: ohci-exynos: Use devm_ioremap_resource instead of
+>     devm_ioremap
+> 
+>  drivers/usb/host/ehci-exynos.c |    7 +++----
+>  drivers/usb/host/ehci-msm.c    |    7 +++----
+>  drivers/usb/host/ehci-mv.c     |   16 ++++++----------
+>  drivers/usb/host/ehci-spear.c  |   13 +++----------
+>  drivers/usb/host/ehci-tegra.c  |    7 +++----
+>  drivers/usb/host/ohci-exynos.c |    7 +++----
+>  6 files changed, 21 insertions(+), 36 deletions(-)
 
-The description above looks ok to me. The problem is that you are
-considering the page related data structures as an issue for races and not
-the data structures relevant for vm statistics.
+For all six patches,
 
-> It is essential to have such gurantees, because __mod_zone_page_stat()
-> is a two-step operation : read-percpu-couter-then-modify-it.
-> (Need comments. Christoph, do I misunderstand it?)
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-Yup.
-
-> mlocked_vma_newpage() is only called in fault path by
-> page_add_new_anon_rmap(), which is called on a *new* page.
-> And such page is initially only visible via the pagetables, and the
-> pte is locked while calling page_add_new_anon_rmap(), so we need not
-> use an irq-safe mod_zone_page_state() here, using a light-weight version
-> __mod_zone_page_state() would be OK.
-
-This is wrong.. What you could say is that preemption is off and that the
-counter is never incremented from an interrupt context that could race
-with it. If this is the case then it would be safe.
