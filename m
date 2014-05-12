@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759315AbaELRaB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 13:30:01 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36565 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758634AbaELR37 convert rfc822-to-8bit (ORCPT
+	id S932434AbaELRay (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 13:30:54 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:4865 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751843AbaELRax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 13:29:59 -0400
-Date: Mon, 12 May 2014 19:29:53 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
-Subject: Re: [PATCH v10 03/19] qspinlock: Add pending bit
-Message-ID: <20140512172953.GF13467@laptop.programming.kicks-ass.net>
-References: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com>
- <1399474907-22206-4-git-send-email-Waiman.Long@hp.com>
- <20140512152208.GA12309@potion.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20140512152208.GA12309@potion.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 12 May 2014 13:30:53 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: An8KAHEEcVNbsHLF/2dsb2JhbABZgwasagkBBQGaG4EaF3SCUxMcIxiBAiQTiEUBz0WFVoh8hEcBA48liiIBiwSIA4M4Ow
+Date: Mon, 12 May 2014 19:30:50 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] net/wireless/ibss.c: replace memcpy by ether_addr_copy
+Message-Id: <20140512193050.1ba6a301b20af3f4e7e43870@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 05:22:08PM +0200, Radim Krčmář wrote:
-> 2014-05-07 11:01-0400, Waiman Long:
-> > From: Peter Zijlstra <peterz@infradead.org>
-> > 
-> > Because the qspinlock needs to touch a second cacheline; add a pending
-> > bit and allow a single in-word spinner before we punt to the second
-> > cacheline.
-> 
-> I think there is an unwanted scenario on virtual machines:
-> 1) VCPU sets the pending bit and start spinning.
-> 2) Pending VCPU gets descheduled.
->     - we have PLE and lock holder isn't running [1]
->     - the hypervisor randomly preempts us
-> 3) Lock holder unlocks while pending VCPU is waiting in queue.
-> 4) Subsequent lockers will see free lock with set pending bit and will
->    loop in trylock's 'for (;;)'
->     - the worst-case is lock starving [2]
->     - PLE can save us from wasting whole timeslice
-> 
-> Retry threshold is the easiest solution, regardless of its ugliness [4].
-> 
-> Another minor design flaw is that formerly first VCPU gets appended to
-> the tail when it decides to queue;
-> is the performance gain worth it?
+This patch also fixes some comment checkpatch warnings
 
-This is all for real hardware, I've not yet stared at the (para)virt
-crap.
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ net/wireless/ibss.c | 22 ++++++++++------------
+ 1 file changed, 10 insertions(+), 12 deletions(-)
 
-My primary concern is that native hardware runs good and that the
-(para)virt support does rape the code -- so far its failing hard on the
-second.
-
-
+diff --git a/net/wireless/ibss.c b/net/wireless/ibss.c
+index a6b5bda..a0a1381 100644
+--- a/net/wireless/ibss.c
++++ b/net/wireless/ibss.c
+@@ -49,7 +49,7 @@ void __cfg80211_ibss_joined(struct net_device *dev, const u8 *bssid,
+ 				GFP_KERNEL);
+ #ifdef CONFIG_CFG80211_WEXT
+ 	memset(&wrqu, 0, sizeof(wrqu));
+-	memcpy(wrqu.ap_addr.sa_data, bssid, ETH_ALEN);
++	ether_addr_copy(wrqu.ap_addr.sa_data, bssid);
+ 	wireless_send_event(dev, SIOCGIWAP, &wrqu, NULL);
+ #endif
+ }
+@@ -72,7 +72,7 @@ void cfg80211_ibss_joined(struct net_device *dev, const u8 *bssid,
+ 		return;
+ 
+ 	ev->type = EVENT_IBSS_JOINED;
+-	memcpy(ev->ij.bssid, bssid, ETH_ALEN);
++	ether_addr_copy(ev->ij.bssid, bssid);
+ 	ev->ij.channel = channel;
+ 
+ 	spin_lock_irqsave(&wdev->event_lock, flags);
+@@ -98,11 +98,10 @@ static int __cfg80211_join_ibss(struct cfg80211_registered_device *rdev,
+ 		return -EALREADY;
+ 
+ 	if (!params->basic_rates) {
+-		/*
+-		* If no rates were explicitly configured,
+-		* use the mandatory rate set for 11b or
+-		* 11a for maximum compatibility.
+-		*/
++		/* If no rates were explicitly configured,
++		 * use the mandatory rate set for 11b or
++		 * 11a for maximum compatibility.
++		 */
+ 		struct ieee80211_supported_band *sband =
+ 			rdev->wiphy.bands[params->chandef.chan->band];
+ 		int j;
+@@ -190,8 +189,7 @@ static void __cfg80211_clear_ibss(struct net_device *dev, bool nowext)
+ 
+ 	rdev_set_qos_map(rdev, dev, NULL);
+ 
+-	/*
+-	 * Delete all the keys ... pairwise keys can't really
++	/* Delete all the keys ... pairwise keys can't really
+ 	 * exist any more anyway, but default keys might.
+ 	 */
+ 	if (rdev->ops->del_key)
+@@ -524,7 +522,7 @@ int cfg80211_ibss_wext_siwap(struct net_device *dev,
+ 		return err;
+ 
+ 	if (bssid) {
+-		memcpy(wdev->wext.bssid, bssid, ETH_ALEN);
++		ether_addr_copy(wdev->wext.bssid, bssid);
+ 		wdev->wext.ibss.bssid = wdev->wext.bssid;
+ 	} else
+ 		wdev->wext.ibss.bssid = NULL;
+@@ -550,9 +548,9 @@ int cfg80211_ibss_wext_giwap(struct net_device *dev,
+ 
+ 	wdev_lock(wdev);
+ 	if (wdev->current_bss)
+-		memcpy(ap_addr->sa_data, wdev->current_bss->pub.bssid, ETH_ALEN);
++		ether_addr_copy(ap_addr->sa_data, wdev->current_bss->pub.bssid);
+ 	else if (wdev->wext.ibss.bssid)
+-		memcpy(ap_addr->sa_data, wdev->wext.ibss.bssid, ETH_ALEN);
++		ether_addr_copy(ap_addr->sa_data, wdev->wext.ibss.bssid);
+ 	else
+ 		memset(ap_addr->sa_data, 0, ETH_ALEN);
+ 
+-- 
+1.9.1
