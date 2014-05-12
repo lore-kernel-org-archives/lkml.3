@@ -1,236 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758300AbaELXvJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 19:51:09 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:44970 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412AbaELXuI (ORCPT
+	id S1758529AbaELXvh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 19:51:37 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:41831 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756197AbaELXvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 19:50:08 -0400
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, linux@arm.linux.org.uk,
-        daniel.lezcano@linaro.org, tglx@linutronix.de, matthias.bgg@gmail.com,
-        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
-        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
-        heiko.stuebner@bq.com, olof@lixom.net, sebastian.hesselbarth@gmail.com,
-        sboyd@codeaurora.org, gregory.clement@free-electrons.com,
-        arnd@arndb.de, robherring2@gmail.com, marc.zyngier@arm.com,
-        maxime.ripard@free-electrons.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 4/6] arm: add basic support for Mediatek MT6589 boards
-Date: Tue, 13 May 2014 01:49:28 +0200
-Message-Id: <1399938570-11356-5-git-send-email-matthias.bgg@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1399938570-11356-1-git-send-email-matthias.bgg@gmail.com>
-References: <1399938570-11356-1-git-send-email-matthias.bgg@gmail.com>
+	Mon, 12 May 2014 19:51:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.11.1405091640090.980@knanqh.ubzr>
+References: <CAD=FV=UEGJGHrdcXgs3EZ_wFXT8GnNeCOMt7CgdiiUzBzZ5Y0A@mail.gmail.com>
+	<alpine.LFD.2.11.1405081149190.980@knanqh.ubzr>
+	<CAD=FV=VtcLOh51LCmafzRMdqtDrwKXCqK6gE6V7OOOUe4gjwbA@mail.gmail.com>
+	<alpine.LFD.2.11.1405081329010.980@knanqh.ubzr>
+	<20140508192209.GH3693@n2100.arm.linux.org.uk>
+	<alpine.LFD.2.11.1405081600260.980@knanqh.ubzr>
+	<20140508205223.GI3693@n2100.arm.linux.org.uk>
+	<alpine.LFD.2.11.1405082058130.980@knanqh.ubzr>
+	<20140509091824.GL3693@n2100.arm.linux.org.uk>
+	<alpine.LFD.2.11.1405091245070.980@knanqh.ubzr>
+	<20140509182245.GM3693@n2100.arm.linux.org.uk>
+	<alpine.LFD.2.11.1405091640090.980@knanqh.ubzr>
+Date: Mon, 12 May 2014 16:51:32 -0700
+X-Google-Sender-Auth: ZuJFxXexazASK-2d6CmXAh23kHI
+Message-ID: <CAD=FV=UJK1nSPjH-au-KtbnOZk2nC7usLD8L9neMedj6WHUp8g@mail.gmail.com>
+Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP systems#
+From: Doug Anderson <dianders@chromium.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Will Deacon <will.deacon@arm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        David Riley <davidriley@chromium.org>,
+        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a generic devicetree board file and a dtsi for boards
-based on MT6589 SoCs from Mediatek.
+Hi,
 
-Apart from the generic parts (gic, clocks) the only component
-currently supported are the timers.
+On Fri, May 9, 2014 at 2:05 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> On Fri, 9 May 2014, Russell King - ARM Linux wrote:
+>
+>> I'd much prefer just printing a warning at kernel boot time to report
+>> that the kernel is running with features which would make udelay() less
+>> than accurate.
+>
+> What if there is simply no timer to rely upon, as in those cases where
+> interrupts are needed for time keeping to make progress?  We should do
+> better than simply saying "sorry your kernel should irradicate every
+> udelay() usage to be reliable".
+>
+> And I mean "reliable" which is not exactly the same as "accurate".
+> Reliable means "never *significantly* shorter".
+>
+>> Remember, it should be usable for _short_ delays on slow machines as
+>> well as other stuff, and if we're going to start throwing stuff like
+>> the above at it, it's going to become very inefficient.
+>
+> You said that udelay can be much longer than expected due to various
+> reasons.
+>
+> You also said that the IRQ handler overhead during udelay calibration
+> makes actual delays slightli shorter than expected.
+>
+> I'm suggesting the addition of a slight overhead that is much smaller
+> than the IRQ handler here.  That shouldn't impact things masurably.
+> I'd certainly like Doug to run his udelay timing test with the following
+> patch to see if it solves the problem.
 
-Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
----
- arch/arm/Kconfig                  |  2 +
- arch/arm/Makefile                 |  1 +
- arch/arm/boot/dts/mt6589.dtsi     | 93 +++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-mediatek/Kconfig    |  6 +++
- arch/arm/mach-mediatek/Makefile   |  1 +
- arch/arm/mach-mediatek/mediatek.c | 32 ++++++++++++++
- 6 files changed, 135 insertions(+)
- create mode 100644 arch/arm/boot/dts/mt6589.dtsi
- create mode 100644 arch/arm/mach-mediatek/Kconfig
- create mode 100644 arch/arm/mach-mediatek/Makefile
- create mode 100644 arch/arm/mach-mediatek/mediatek.c
+...so I spent a whole chunk of time debugging this problem today.  I'm
+out of time today (more tomorrow), but it looks like the theory I
+proposed about why udelay() is giving bad results _might_ have more to
+do with bugs in the exynos cpufreq driver and less to do with the
+theoretical race we've been talking about.  It looks possible that the
+driver is not setting the "old" frequency properly, which would
+certainly cause problems.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index db3c541..0fc8acd 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -997,6 +997,8 @@ source "arch/arm/mach-mv78xx0/Kconfig"
- 
- source "arch/arm/mach-imx/Kconfig"
- 
-+source "arch/arm/mach-mediatek/Kconfig"
-+
- source "arch/arm/mach-mxs/Kconfig"
- 
- source "arch/arm/mach-netx/Kconfig"
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index 41c1931..8ce9774 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -170,6 +170,7 @@ machine-$(CONFIG_ARCH_MSM)		+= msm
- machine-$(CONFIG_ARCH_MV78XX0)		+= mv78xx0
- machine-$(CONFIG_ARCH_MVEBU)		+= mvebu
- machine-$(CONFIG_ARCH_MXC)		+= imx
-+machine-$(CONFIG_ARCH_MEDIATEK)		+= mediatek
- machine-$(CONFIG_ARCH_MXS)		+= mxs
- machine-$(CONFIG_ARCH_NETX)		+= netx
- machine-$(CONFIG_ARCH_NOMADIK)		+= nomadik
-diff --git a/arch/arm/boot/dts/mt6589.dtsi b/arch/arm/boot/dts/mt6589.dtsi
-new file mode 100644
-index 0000000..ab554e8
---- /dev/null
-+++ b/arch/arm/boot/dts/mt6589.dtsi
-@@ -0,0 +1,93 @@
-+/*
-+ * Copyright (c) 2014 MundoReader S.L.
-+ * Author: Matthias Brugger <matthias.bgg@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <dt-bindings/interrupt-controller/irq.h>
-+#include <dt-bindings/interrupt-controller/arm-gic.h>
-+#include "skeleton.dtsi"
-+
-+/ {
-+	compatible = "mediatek,mt6589";
-+	interrupt-parent = <&gic>;
-+
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		cpu@0 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x0>;
-+		};
-+		cpu@1 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x1>;
-+		};
-+		cpu@2 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x2>;
-+		};
-+		cpu@3 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x3>;
-+		};
-+
-+	};
-+
-+	clocks {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
-+		dummy13m: dummy13m {
-+			compatible = "fixed-clock";
-+			clock-frequency = <13000000>;
-+			#clock-cells = <0>;
-+		};
-+
-+		dummy32k: dummy32k {
-+			compatible = "fixed-clock";
-+			clock-frequency = <32000>;
-+			#clock-cells = <0>;
-+		};
-+	};
-+
-+	soc {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		compatible = "simple-bus";
-+		clock-ranges;
-+		ranges;
-+
-+		timer: timer@10008000 {
-+			compatible = "mediatek,mtk6589-timer";
-+			reg = <0x10008000 0x80>;
-+			interrupts = <GIC_SPI 113 IRQ_TYPE_EDGE_RISING>;
-+			clocks = <&dummy13m>, <&dummy32k>;
-+		};
-+
-+		gic: interrupt-controller@10212000 {
-+			compatible = "arm,cortex-a15-gic";
-+			interrupt-controller;
-+			#interrupt-cells = <3>;
-+			reg = <0x10211000 0x1000>,
-+			      <0x10212000 0x1000>,
-+			      <0x10214000 0x2000>,
-+			      <0x10216000 0x2000>;
-+		};
-+	};
-+};
-diff --git a/arch/arm/mach-mediatek/Kconfig b/arch/arm/mach-mediatek/Kconfig
-new file mode 100644
-index 0000000..2c043a2
---- /dev/null
-+++ b/arch/arm/mach-mediatek/Kconfig
-@@ -0,0 +1,6 @@
-+config ARCH_MEDIATEK
-+	bool "Mediatek MT6589 SoC" if ARCH_MULTI_V7
-+	select ARM_GIC
-+	select MTK_TIMER
-+	help
-+	  Support for Mediatek Cortex-A7 Quad-Core-SoC MT6589.
-diff --git a/arch/arm/mach-mediatek/Makefile b/arch/arm/mach-mediatek/Makefile
-new file mode 100644
-index 0000000..43e619f
---- /dev/null
-+++ b/arch/arm/mach-mediatek/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_ARCH_MEDIATEK) += mediatek.o
-diff --git a/arch/arm/mach-mediatek/mediatek.c b/arch/arm/mach-mediatek/mediatek.c
-new file mode 100644
-index 0000000..73dfb05
---- /dev/null
-+++ b/arch/arm/mach-mediatek/mediatek.c
-@@ -0,0 +1,32 @@
-+/*
-+ * Device Tree support for Mediatek SoCs
-+ *
-+ * Copyright (c) 2014 MundoReader S.L.
-+ * Author: Matthias Brugger <matthias.bgg@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/of_platform.h>
-+#include <linux/irqchip.h>
-+#include <asm/mach/arch.h>
-+#include <asm/mach/map.h>
-+
-+static const char * const mediatek_board_dt_compat[] = {
-+	"mediatek,mt6589",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(MEDIATEK_DT, "Mediatek Cortex-A7 (Device Tree)")
-+	.dt_compat	= mediatek_board_dt_compat,
-+MACHINE_END
--- 
-1.8.1.2
+I'll post more when I figure this out for sure.
 
+-Doug
