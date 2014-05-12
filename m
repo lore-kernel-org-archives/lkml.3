@@ -1,76 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752470AbaELHZX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 03:25:23 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:33119 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbaELHZW (ORCPT
+	id S1751977AbaELHdF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 03:33:05 -0400
+Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:46459
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751385AbaELHdD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 03:25:22 -0400
+	Mon, 12 May 2014 03:33:03 -0400
+X-WSS-ID: 0N5GAAX-07-E4K-02
+X-M-MSG: 
+Message-ID: <53707926.5090609@amd.com>
+Date: Mon, 12 May 2014 09:32:54 +0200
+From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140512070700.GA20505@verge.net.au>
-References: <1399411579-10681-1-git-send-email-geert+renesas@glider.be>
-	<CAMuHMdWwenyU1RS4c8spFcb7M0oCXP9z8zbGQ0VACKj7EbvvkA@mail.gmail.com>
-	<20140511004626.GW31760@verge.net.au>
-	<CANqRtoQzxdjwU+BLyccrSzfBx3UMKm6=MAw9dUHSEBWm5_Vspg@mail.gmail.com>
-	<20140512070700.GA20505@verge.net.au>
-Date: Mon, 12 May 2014 09:25:21 +0200
-X-Google-Sender-Auth: -LgyxBsiVoVSb0X72s8r6T1Ji5Q
-Message-ID: <CAMuHMdVMCcDK4Y403G26S27oATzLN74iCSM7U+K_ktE-c3uweQ@mail.gmail.com>
-Subject: Re: [PATCH v4] drivers: sh: compile drivers/sh/pm_runtime.c if ARCH_SHMOBILE_MULTI
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Simon Horman <horms@verge.net.au>
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Ken Moffat <zarniwhoop@ntlworld.com>
+CC: Alex Deucher <alexdeucher@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: More breakage on HD7480D [ Aruba ]
+References: <20140512003405.GA3386@milliways>
+ <20140512010310.GA4370@milliways>
+In-Reply-To: <20140512010310.GA4370@milliways>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+X-Originating-IP: [10.224.154.50]
+Content-Transfer-Encoding: 8BIT
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(51874003)(199002)(189002)(51704005)(24454002)(81542001)(87266999)(54356999)(21056001)(79102001)(64126003)(50466002)(65816999)(50986999)(81342001)(77096999)(59896001)(44976005)(77982001)(101416001)(36756003)(84676001)(92566001)(4396001)(99396002)(87936001)(23676002)(85202002)(85182001)(83072002)(85852003)(86362001)(19580395003)(92726001)(47776003)(83506001)(46102001)(64706001)(2009001)(99136001)(65806001)(76176999)(83322001)(65956001)(19580405001)(80022001)(74662001)(68736004)(76482001)(20776003)(31966008)(74502001)(62816006);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR02MB124;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-PRVS: 0209425D0A
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Christian.Koenig@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Simon,
+Hi Ken,
 
-On Mon, May 12, 2014 at 9:07 AM, Simon Horman <horms@verge.net.au> wrote:
-> On Mon, May 12, 2014 at 08:24:03AM +0900, Magnus Damm wrote:
->> On Sun, May 11, 2014 at 9:46 AM, Simon Horman <horms@verge.net.au> wrote:
->> > On Thu, May 08, 2014 at 12:12:29PM +0200, Geert Uytterhoeven wrote:
->> >> On Tue, May 6, 2014 at 11:26 PM, Geert Uytterhoeven
->> >> <geert+renesas@glider.be> wrote:
->> >> > Tested on Koelsch (legacy, reference, shmobile, and shmobile+bbb kernels)
->> >> > and BeagleBone Black (shmobile+bbb). Will test on more hardware tomorrow.
->> >>
->> >> Tested on genmai with Wolfram's CCF support.
->> >
->> > Thanks, shall I go ahead and queue this up?
+*sigh* did I already mentioned that I hate PLLs? As soon as you fix 
+something another use case immediately starts to break.
+
+Please provide dmesg output created with drm.debug=0xe with and without 
+the patch breaking it.
+
+Thanks in advance,
+Christian.
+
+Am 12.05.2014 03:03, schrieb Ken Moffat:
+> On Mon, May 12, 2014 at 01:34:06AM +0100, Ken Moffat wrote:
+>
+>   /me swears at myself for failing to copy to lkml.
+>
+>> Hi Christian, Alex -
 >>
->> Yes please, at least from my side everything looks perfect.
->
-> Thanks, will do.
->
-> I currently plan to send this on to Linus when the merge window
-> opens for v3.16.
+>>   my A4 Trinity (Radeon HD7480D) was working fine by -rc3.  But now
+>> that I've tested it in -rc5 it is again broken (the screen goes
+>> blank when KMS starts).  Bisection blames:
+>>
+>> 3b333c55485fef0089ae7398906599d000df195e is the first bad commit
+>> commit 3b333c55485fef0089ae7398906599d000df195e
+>> Author: Christian König <christian.koenig@amd.com>
+>> Date:   Thu Apr 24 18:39:59 2014 +0200
+>>
+>>      drm/radeon: avoid high jitter with small frac divs
+>>      
+>>      Signed-off-by: Christian König <christian.koenig@amd.com>
+>>
+>>   Reverting that from current HEAD [
+>>
+>> commit 7e338c9991ecee9c2ac7a4cee2c2e11ecb563d02
+>> Merge: 9cf22e80df77 aa07c713ecfc
+>> Author: Linus Torvalds <torvalds@linux-foundation.org>
+>> Date:   Sun May 11 18:06:13 2014 +0900
+>>
+>>      Merge branch 'for-3.15' of git://linux-nfs.org/~bfields/linux
+>>      
+>>      Pull nfsd fixes from Bruce Fields.
+>>
+>> ]
+>> makes it again boot.
+>>
+>>   Note to Alex - 3.15 has been an "interesting" cycle - you fixed my
+>> earlier problem, despite my non-response, and thanks again for that.
+>> After that, my other radeon broke after -rc2 (I retested it after
+>> rc4 and found that although rc4 was broken, HEAD was fixed, so
+>> thanks also for that.  Then I retested this one for -rc5.  It seems
+>> that my boxes always break when I don't have time to test new
+>> releases :-(
+>>
+>> ĸen
+>> -- 
+>> das eine Mal als Tragödie, dieses Mal als Farce
 
-Actually we had hoped this could land in v3.15, so we can fix the regression
-introduced in v3.14 by bf98c1eac1d4a6bcf00532e4fa41d8126cd6c187 as
-soon as possible.
-
-> This differs from other patches I have queued up (until now) which
-> I have or intend to send via the ARM SoC tree.
-
-Yep ;-)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
