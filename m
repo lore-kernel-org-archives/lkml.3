@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023AbaELX2p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 19:28:45 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64949 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751849AbaELX2e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 19:28:34 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: Stratos Karafotis <stratosk@semaphore.gr>, dirk.j.brandewie@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH 4/5] intel_pstate: Remove C0 tracking
-Date: Tue, 13 May 2014 01:45:19 +0200
-Message-ID: <5584056.gWB1BqsgiU@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5370DD27.5030701@intel.com>
-References: <1399579047-5792-1-git-send-email-dirk.j.brandewie@intel.com> <5349714.j69a5Fx52S@vostro.rjw.lan> <5370DD27.5030701@intel.com>
+	id S1754203AbaELXbU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 19:31:20 -0400
+Received: from mail-bn1bon0116.outbound.protection.outlook.com ([157.56.111.116]:42406
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751491AbaELXbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 19:31:18 -0400
+From: <tthayer@altera.com>
+To: <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <linux@arm.linux.org.uk>, <dinguyen@altera.com>,
+        <dougthompson@xmission.com>, <grant.likely@linaro.org>, <bp@alien8.de>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>,
+        <tthayer@altera.com>
+Subject: [PATCHv4 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM controller
+Date: Mon, 12 May 2014 18:36:55 -0500
+Message-ID: <1399937817-2202-2-git-send-email-tthayer@altera.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1399937817-2202-1-git-send-email-tthayer@altera.com>
+References: <1399937817-2202-1-git-send-email-tthayer@altera.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(199002)(189002)(77982001)(50986999)(83072002)(87936001)(76482001)(48376002)(89996001)(79102001)(36756003)(42186004)(47776003)(93916002)(33646001)(20776003)(86362001)(50466002)(99396002)(76176999)(87286001)(2009001)(85852003)(97736001)(2201001)(74502001)(88136002)(84676001)(44976005)(46102001)(6806004)(19580405001)(83322001)(31966008)(19580395003)(74662001)(50226001)(16796002)(62966002)(92566001)(92726001)(86152002)(81342001)(81542001)(77156001)(4396001)(80022001)(102836001)(1121002)(921003)(83996005)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB023;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-OriginatorOrg: altera.onmicrosoft.com
+X-Forefront-PRVS: 0209425D0A
+Authentication-Results: spf=softfail (sender IP is 66.35.236.232)
+ smtp.mailfrom=tthayer@altera.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 12, 2014 07:39:35 AM Dirk Brandewie wrote:
-> On 05/12/2014 05:16 AM, Rafael J. Wysocki wrote:
-> > On Monday, May 12, 2014 05:27:25 AM Stratos Karafotis wrote:
-> >> Hi,
-> >>
-> >
-> > [cut]
-> >
-> >>
-> >> With this patch, my CPU (Core i7-3770 @ 3.90GHz) seems to never use lowest
-> >> frequencies. Even on an idle system I get always ~2GHz. Normally,
-> >> on an idle system it used to be 1.6GHz.
-> >> On very small loads (mp3 decoding) the CPU goes up to 2.7G GHz (it used to
-> >> be 1.6GHz)
-> >>
-> >> Reverting, this patch on my local build, the problem is resolved.
-> >
-> > Dirk, seriously, I can't regard this as a fix that can go into -rc6.
-> >
-> 
-> Ok I will resubmit after more testing
-> 
-> > Which of the other patch in the series are must-go for 3.15?  [1-2/5] I guess?
-> > And do we need [2/5] it in -stable too?
-> 
-> 1/5  is for stable it fixes a random MCE on baytrail.
-> 2/5  is for stable it should have went with the stop_cpu patch
+From: Thor Thayer <tthayer@altera.com>
 
-Which -stable are these two for?  All of them?
+Addition of the Altera SDRAM controller bindings and device
+tree changes to the Altera SoC project.
 
-> 5/5  can go too since it is just adding CPU IDs
+v2: Changes to SoC SDRAM EDAC code.
 
-Well, I'm a bit reluctant to push that for -rc6.  There were cases where new
-IDs broke stuff that worked without them just fine.
+v3: Implement code suggestions for SDRAM EDAC code.
 
+v4: Remove syscon from SDRAM controller bindings.
 
+Signed-off-by: Thor Thayer <tthayer@altera.com>
+---
+ .../bindings/arm/altera/socfpga-sdram.txt          |   11 +++++++++++
+ arch/arm/boot/dts/socfpga.dtsi                     |    5 +++++
+ 2 files changed, 16 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+
+diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+new file mode 100644
+index 0000000..8f8746b
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+@@ -0,0 +1,11 @@
++Altera SOCFPGA SDRAM Controller
++
++Required properties:
++- compatible : "altr,sdr-ctl";
++- reg : Should contain 1 register ranges(address and length)
++
++Example:
++	sdrctl@ffc25000 {
++		compatible = "altr,sdr-ctl";
++		reg = <0xffc25000 0x1000>;
++	};
+diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+index df43702..6ce912e 100644
+--- a/arch/arm/boot/dts/socfpga.dtsi
++++ b/arch/arm/boot/dts/socfpga.dtsi
+@@ -676,6 +676,11 @@
+ 			clocks = <&l4_sp_clk>;
+ 		};
+ 
++		sdrctl@ffc25000 {
++			compatible = "altr,sdr-ctl", "syscon";
++			reg = <0xffc25000 0x1000>;
++		};
++
+ 		rstmgr@ffd05000 {
+ 			compatible = "altr,rst-mgr";
+ 			reg = <0xffd05000 0x1000>;
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.9.5
+
