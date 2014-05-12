@@ -1,93 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751463AbaELDTg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 23:19:36 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:63481 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944AbaELDTf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 23:19:35 -0400
-Message-ID: <53703DC0.2070204@gmail.com>
-Date: Mon, 12 May 2014 11:19:28 +0800
-From: zhuyj <zyjzyj2000@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751531AbaELDVa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 23:21:30 -0400
+Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:53399
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750822AbaELDV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 23:21:29 -0400
+From: Richard Lee <superlibj8301@gmail.com>
+To: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+CC: Richard Lee <superlibj8301@gmail.com>
+Subject: [RFC][PATCH 0/2] Add IO mapping space reused support
+Date: Mon, 12 May 2014 10:19:53 +0800
+Message-ID: <1399861195-21087-1-git-send-email-superlibj8301@gmail.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130443375711064779;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(199002)(189002)(77156001)(74502001)(55446002)(4396001)(50466002)(33646001)(79102001)(74662001)(61266001)(82202001)(50226001)(73972005)(47776003)(64706001)(36756003)(97736001)(20776003)(80022001)(92566001)(31966008)(62966002)(84676001)(92726001)(73392001)(85852003)(83072002)(87572001)(2201001)(99396002)(46102001)(93916002)(86362001)(2009001)(6806004)(44976005)(87792001)(21056001)(48376002)(68736004)(69596002)(88136002)(89996001)(81442001)(77982001)(81342001)(50986999)(87936001)(81156002)(77096999)(87286001)(81542001)(57042002)(46252002)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB409;H:az84smr01.freescale.net;FPR:;MLV:nov;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-To: eric.dumazet@gmail.com, "David S. Miller" <davem@davemloft.net>
-CC: "Tao, Yue" <Yue.Tao@windriver.com>, zhuyj <zyjzyj2000@gmail.com>,
-        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Subject: icmp: account for ICMP out errors because of socket limit
-Content-Type: multipart/mixed;
- boundary="------------020500030407000703090906"
+Content-Type: text/plain
+X-Forefront-PRVS: 0209425D0A
+Authentication-Results: spf=softfail (sender IP is 192.88.158.2)
+ smtp.mailfrom=superlibj8301@gmail.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020500030407000703090906
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 
-Hi, Eric && David
+Richard Lee (2):
+  mm/vmalloc: Add IO mapping space reused interface.
+  ARM: ioremap: Add IO mapping space reused support.
 
-  ____           ______________
-|    |         |              |
-| PC |<------->| MIPS 32 core |
-|____|         |______________|
+ arch/arm/mm/ioremap.c   | 11 ++++++++-
+ include/linux/vmalloc.h |  5 ++++
+ mm/vmalloc.c            | 63 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 78 insertions(+), 1 deletion(-)
 
-When ping from a PC to a board (MIPS 32 core), because of socket limit,
-ping echo will fail. But ICMP_MIB_OUTERRORS counter is not incremented.
-In this case, "netstat -s" can not report these errors.
-
-This patch will fix this problem. Now it is in the attachment. Please 
-check it.
-
-Best Regards!
-Zhu Yanjun
-
---------------020500030407000703090906
-Content-Type: text/x-patch;
- name="0001-icmp-account-for-ICMP-out-errors-because-of-socket-l.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-icmp-account-for-ICMP-out-errors-because-of-socket-l.pa";
- filename*1="tch"
-
->From af800d0f123cf9c66a9ae167baa7dc1d25d0cd1f Mon Sep 17 00:00:00 2001
-From: Zhu Yanjun <Yanjun.Zhu@windriver.com>
-Date: Mon, 12 May 2014 11:07:20 +0800
-Subject: [PATCH 1/1] icmp: account for ICMP out errors because of socket
- limit
-
-When icmp_xmit_lock fails because of socket limit or memory shortage,
-increment ICMP_MIB_OUTERRORS counter, so that "netstat -s" can report
-these errors.
-
-netstat -s | grep "ICMP messages failed"
-    0 ICMP messages failed
-
-Signed-off-by: Zhu Yanjun <Yanjun.Zhu@windriver.com>
----
- net/ipv4/icmp.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/net/ipv4/icmp.c b/net/ipv4/icmp.c
-index 0134663..9a0bd7c 100644
---- a/net/ipv4/icmp.c
-+++ b/net/ipv4/icmp.c
-@@ -342,8 +342,10 @@ static void icmp_reply(struct icmp_bxm *icmp_param, struct sk_buff *skb)
- 		return;
- 
- 	sk = icmp_xmit_lock(net);
--	if (sk == NULL)
-+	if (sk == NULL){
-+		ICMP_INC_STATS_BH(net, ICMP_MIB_OUTERRORS);
- 		return;
-+	}
- 	inet = inet_sk(sk);
- 
- 	icmp_param->data.icmph.checksum = 0;
 -- 
-1.7.9.5
+1.8.4
 
-
---------------020500030407000703090906--
