@@ -1,114 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904AbaELKWr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 06:22:47 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:48930 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752039AbaELKWq (ORCPT
+	id S1756189AbaELK0T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 06:26:19 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:14618 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756093AbaELK0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 06:22:46 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: "'Sudeep Holla'" <sudeep.holla@arm.com>,
-        "'Will Deacon'" <Will.Deacon@arm.com>
-CC: "'linux@arm.linux.org.uk'" <linux@arm.linux.org.uk>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'devicetree@vger.kernel.org'" <devicetree@vger.kernel.org>,
-        Neil Zhang <zhangwm@marvell.com>
-Date: Mon, 12 May 2014 03:22:09 -0700
-Subject: RE: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
-Thread-Topic: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
-Thread-Index: Ac9keD1np1G9qntpQoC2LI657voXkgDliarQAW9ShSA=
-Message-ID: <9034CBD80F070943B59700D7F8149ED9A0875730@SC-VEXCH4.marvell.com>
-References: <1398133596-29170-1-git-send-email-zhangwm@marvell.com>
- <20140422103642.GF7484@arm.com>
- <175CCF5F49938B4D99B2E3EF7F558EBE5507A3B59B@SC-VEXCH4.marvell.com>
- <20140423170821.GJ5649@arm.com>
- <175CCF5F49938B4D99B2E3EF7F558EBE5507A3C1F1@SC-VEXCH4.marvell.com>
- <5360FB07.5030407@arm.com>
- <6106CAF835F351419ADA79E4836E6EC71B6A53C826@SC-VEXCH4.marvell.com>
-In-Reply-To: <6106CAF835F351419ADA79E4836E6EC71B6A53C826@SC-VEXCH4.marvell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 12 May 2014 06:26:18 -0400
+X-IronPort-AV: E=Sophos;i="4.97,1034,1389744000"; 
+   d="scan'208";a="129292464"
+From: David Vrabel <david.vrabel@citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        Suresh Siddha <sbsiddha@gmail.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: [PATCHv2] x86, fpu: remove the logic of non-eager fpu mem allocation at the first usage
+Date: Mon, 12 May 2014 11:26:12 +0100
+Message-ID: <1399890372-26416-1-git-send-email-david.vrabel@citrix.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-12_01:2014-05-12,2014-05-11,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1405120140
+Content-Type: text/plain
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4CAMqoH018895
 
-Will & Sudeep,
+From: Suresh Siddha <sbsiddha@gmail.com>
 
-> -----Original Message-----
-> From: Neil Zhang
-> Sent: 2014å¹´5æœˆ5æ—¥ 14:28
-> To: Sudeep Holla; Will Deacon
-> Cc: linux@arm.linux.org.uk; linux-arm-kernel@lists.infradead.org;
-> linux-kernel@vger.kernel.org; devicetree@vger.kernel.org
-> Subject: RE: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
-> 
-> Sudeep,
-> 
-> > -----Original Message-----
-> > From: Sudeep Holla [mailto:sudeep.holla@arm.com]
-> > Sent: 2014å¹´4æœˆ30æ—¥ 21:31
-> > To: Neil Zhang; Will Deacon
-> > Cc: Sudeep Holla; linux@arm.linux.org.uk;
-> > linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org;
-> > devicetree@vger.kernel.org
-> > Subject: Re: [PATCH v4] ARM: perf: save/restore pmu registers in pm
-> > notifier
-> >
-> > Hi Neil,
-> >
-> > On 30/04/14 03:21, Neil Zhang wrote:
-> > >
-> > >> -----Original Message-----
-> > >> From: Will Deacon [mailto:will.deacon@arm.com]
-> >
-> > [...]
-> >
-> > >>
-> > >> I think we need some input from the device-tree guys to see whether
-> > >> they would object to us solving this locally (in the PMU node) or not.
-> > >> Personally, I'd much prefer a general way to describe the need for
-> > >> pm-notifiers, but if that's not being looked at then we can cook
-> > >> something specifically for our needs.
-> > >>
-> > >
-> > > No input from device-tree guys :(
-> >
-> > The device tree bindings for power domains is under discussion [1]
-> 
-> Thanks for the information.
-> But it currently for device only, core related stuff are not supported.
-> And is it really good to register power provider for core and let vfp / pmu etc
-> to get it?
-> 
+For non-eager fpu mode, thread's fpu state is allocated during the first
+fpu usage (in the context of device not available exception). This can be
+a blocking call and hence we enable interrupts (which were originally
+disabled when the exception happened), allocate memory and disable
+interrupts etc. While this saves 512 bytes or so per-thread, there
+are some issues in general.
 
-What's your suggestion about it?
-Is it OK that I add it under the PMU node?
+a.  Most of the future cases will be anyway using eager
+FPU (because of processor features like xsaveopt, LWP, MPX etc) and
+they do the allocation at the thread creation itself. Nice to have
+one common mechanism as all the state save/restore code is
+shared. Avoids the confusion and minimizes the subtle bugs
+in the core piece involved with context-switch.
 
-> >
-> > Regards,
-> > Sudeep
-> >
-> > [1] https://lkml.org/lkml/2014/4/23/755
-> 
-> 
-> Best Regards,
-> Neil Zhang
+b. If a parent thread uses FPU, during fork() we allocate
+the FPU state in the child and copy the state etc. Shortly after this,
+during exec() we free it up, so that we can later allocate during
+the first usage of FPU. So this free/allocate might be slower
+for some workloads.
 
-Best Regards,
-Neil Zhang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+c. math_state_restore() is called from multiple places
+and it is error pone if the caller expects interrupts to be disabled
+throughout the execution of math_state_restore(). Can lead to subtle
+bugs like Ubuntu bug #1265841.
+
+Memory savings will be small anyways and the code complexity
+introducing subtle bugs is not worth it. So remove
+the logic of non-eager fpu mem allocation at the first usage.
+
+Signed-off-by: Suresh Siddha <sbsiddha@gmail.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+---
+v2:
+- tweak condition for allocating the first thread's FPU state.
+---
+ arch/x86/kernel/i387.c    |   20 +++++++++++---------
+ arch/x86/kernel/process.c |    6 ------
+ arch/x86/kernel/traps.c   |   16 ++--------------
+ arch/x86/kernel/xsave.c   |    2 --
+ 4 files changed, 13 insertions(+), 31 deletions(-)
+
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index d5dd808..f3c1255 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -5,6 +5,7 @@
+  *  General FPU state handling cleanups
+  *	Gareth Hughes <gareth@valinux.com>, May 2000
+  */
++#include <linux/bootmem.h>
+ #include <linux/module.h>
+ #include <linux/regset.h>
+ #include <linux/sched.h>
+@@ -197,6 +198,16 @@ void fpu_init(void)
+ 
+ 	mxcsr_feature_mask_init();
+ 	xsave_init();
++
++	/*
++	 * Now we know the final size of the xsave data, allocate the
++	 * FPU state area for the first task. All other tasks have
++	 * this allocated in arch_dup_task_struct().
++	 */
++	if (!current->thread.fpu.state)
++		current->thread.fpu.state = alloc_bootmem_align(xstate_size,
++				__alignof__(struct xsave_struct));
++
+ 	eager_fpu_init();
+ }
+ 
+@@ -228,8 +239,6 @@ EXPORT_SYMBOL_GPL(fpu_finit);
+  */
+ int init_fpu(struct task_struct *tsk)
+ {
+-	int ret;
+-
+ 	if (tsk_used_math(tsk)) {
+ 		if (cpu_has_fpu && tsk == current)
+ 			unlazy_fpu(tsk);
+@@ -237,13 +246,6 @@ int init_fpu(struct task_struct *tsk)
+ 		return 0;
+ 	}
+ 
+-	/*
+-	 * Memory allocation at the first usage of the FPU and other state.
+-	 */
+-	ret = fpu_alloc(&tsk->thread.fpu);
+-	if (ret)
+-		return ret;
+-
+ 	fpu_finit(&tsk->thread.fpu);
+ 
+ 	set_stopped_child_used_math(tsk);
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 4505e2a..210d5d7 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -128,12 +128,6 @@ void flush_thread(void)
+ 	flush_ptrace_hw_breakpoint(tsk);
+ 	memset(tsk->thread.tls_array, 0, sizeof(tsk->thread.tls_array));
+ 	drop_init_fpu(tsk);
+-	/*
+-	 * Free the FPU state for non xsave platforms. They get reallocated
+-	 * lazily at the first use.
+-	 */
+-	if (!use_eager_fpu())
+-		free_thread_xstate(tsk);
+ }
+ 
+ static void hard_disable_TSC(void)
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 57409f6..3265429 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -623,20 +623,8 @@ void math_state_restore(void)
+ {
+ 	struct task_struct *tsk = current;
+ 
+-	if (!tsk_used_math(tsk)) {
+-		local_irq_enable();
+-		/*
+-		 * does a slab alloc which can sleep
+-		 */
+-		if (init_fpu(tsk)) {
+-			/*
+-			 * ran out of memory!
+-			 */
+-			do_group_exit(SIGKILL);
+-			return;
+-		}
+-		local_irq_disable();
+-	}
++	if (!tsk_used_math(tsk))
++		init_fpu(tsk);
+ 
+ 	__thread_fpu_begin(tsk);
+ 
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index a4b451c..46f6266 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -598,8 +598,6 @@ void xsave_init(void)
+ 
+ static inline void __init eager_fpu_init_bp(void)
+ {
+-	current->thread.fpu.state =
+-	    alloc_bootmem_align(xstate_size, __alignof__(struct xsave_struct));
+ 	if (!init_xstate_buf)
+ 		setup_init_fpu_buf();
+ }
+-- 
+1.7.10.4
+
