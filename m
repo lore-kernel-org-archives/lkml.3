@@ -1,130 +1,506 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758883AbaELPNI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 11:13:08 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:27486 "EHLO
+	id S1758867AbaELPNG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 11:13:06 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:21054 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758804AbaELPMI (ORCPT
+	by vger.kernel.org with ESMTP id S1758805AbaELPMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 May 2014 11:12:08 -0400
-Message-Id: <20140512151204.455283030@goodmis.org>
+Message-Id: <20140512151204.594174712@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Mon, 12 May 2014 11:11:42 -0400
+Date: Mon, 12 May 2014 11:11:43 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 12/13] ftrace: Remove FTRACE_UPDATE_MODIFY_CALL_REGS flag
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jiri Kosina <jkosina@suse.cz>
+Subject: [for-next][PATCH 13/13] ftrace/x86: Move the mcount/fentry code out of entry_64.S
 References: <20140512151130.345864843@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0012-ftrace-Remove-FTRACE_UPDATE_MODIFY_CALL_REGS-flag.patch
+Content-Disposition: inline; filename=0013-ftrace-x86-Move-the-mcount-fentry-code-out-of-entry_.patch
 X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-As the decision to what needs to be done (converting a call to the
-ftrace_caller to ftrace_caller_regs or to convert from ftrace_caller_regs
-to ftrace_caller) can easily be determined from the rec->flags of
-FTRACE_FL_REGS and FTRACE_FL_REGS_EN, there's no need to have the
-ftrace_check_record() return either a UPDATE_MODIFY_CALL_REGS or a
-UPDATE_MODIFY_CALL. Just he latter is enough. This added flag causes
-more complexity than is required. Remove it.
+As the mcount code gets more complex, it really does not belong
+in the entry.S file. By moving it into its own file "mcount.S"
+keeps things a bit cleaner.
 
+Link: http://lkml.kernel.org/p/20140508152152.2130e8cf@gandalf.local.home
+
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/kernel/ftrace.c |  3 ---
- include/linux/ftrace.h   |  2 --
- kernel/trace/ftrace.c    | 13 ++++---------
- 3 files changed, 4 insertions(+), 14 deletions(-)
+ arch/x86/kernel/Makefile    |   1 +
+ arch/x86/kernel/entry_64.S  | 204 -----------------------------------------
+ arch/x86/kernel/mcount_64.S | 217 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 218 insertions(+), 204 deletions(-)
+ create mode 100644 arch/x86/kernel/mcount_64.S
 
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index 5ef43ce..89de3ea 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -366,7 +366,6 @@ static int add_breakpoints(struct dyn_ftrace *rec, int enable)
- 		/* converting nop to call */
- 		return add_brk_on_nop(rec);
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index f4d9600..db7f41d 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -26,6 +26,7 @@ obj-$(CONFIG_IRQ_WORK)  += irq_work.o
+ obj-y			+= probe_roms.o
+ obj-$(CONFIG_X86_32)	+= i386_ksyms_32.o
+ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
++obj-$(CONFIG_X86_64)	+= mcount_64.o
+ obj-y			+= syscall_$(BITS).o vsyscall_gtod.o
+ obj-$(CONFIG_X86_64)	+= vsyscall_64.o
+ obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 1e96c36..3db806d 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -53,7 +53,6 @@
+ #include <asm/page_types.h>
+ #include <asm/irqflags.h>
+ #include <asm/paravirt.h>
+-#include <asm/ftrace.h>
+ #include <asm/percpu.h>
+ #include <asm/asm.h>
+ #include <asm/context_tracking.h>
+@@ -69,209 +68,6 @@
+ 	.code64
+ 	.section .entry.text, "ax"
  
--	case FTRACE_UPDATE_MODIFY_CALL_REGS:
- 	case FTRACE_UPDATE_MODIFY_CALL:
- 	case FTRACE_UPDATE_MAKE_NOP:
- 		/* converting a call to a nop */
-@@ -469,7 +468,6 @@ static int add_update(struct dyn_ftrace *rec, int enable)
- 	case FTRACE_UPDATE_IGNORE:
- 		return 0;
+-#ifdef CONFIG_FUNCTION_TRACER
+-
+-#ifdef CC_USING_FENTRY
+-# define function_hook	__fentry__
+-#else
+-# define function_hook	mcount
+-#endif
+-
+-#ifdef CONFIG_DYNAMIC_FTRACE
+-
+-ENTRY(function_hook)
+-	retq
+-END(function_hook)
+-
+-/* skip is set if stack has been adjusted */
+-.macro ftrace_caller_setup skip=0
+-	MCOUNT_SAVE_FRAME \skip
+-
+-	/* Load the ftrace_ops into the 3rd parameter */
+-	movq function_trace_op(%rip), %rdx
+-
+-	/* Load ip into the first parameter */
+-	movq RIP(%rsp), %rdi
+-	subq $MCOUNT_INSN_SIZE, %rdi
+-	/* Load the parent_ip into the second parameter */
+-#ifdef CC_USING_FENTRY
+-	movq SS+16(%rsp), %rsi
+-#else
+-	movq 8(%rbp), %rsi
+-#endif
+-.endm
+-
+-ENTRY(ftrace_caller)
+-	/* Check if tracing was disabled (quick check) */
+-	cmpl $0, function_trace_stop
+-	jne  ftrace_stub
+-
+-	ftrace_caller_setup
+-	/* regs go into 4th parameter (but make it NULL) */
+-	movq $0, %rcx
+-
+-GLOBAL(ftrace_call)
+-	call ftrace_stub
+-
+-	MCOUNT_RESTORE_FRAME
+-ftrace_return:
+-
+-#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+-GLOBAL(ftrace_graph_call)
+-	jmp ftrace_stub
+-#endif
+-
+-GLOBAL(ftrace_stub)
+-	retq
+-END(ftrace_caller)
+-
+-ENTRY(ftrace_regs_caller)
+-	/* Save the current flags before compare (in SS location)*/
+-	pushfq
+-
+-	/* Check if tracing was disabled (quick check) */
+-	cmpl $0, function_trace_stop
+-	jne  ftrace_restore_flags
+-
+-	/* skip=8 to skip flags saved in SS */
+-	ftrace_caller_setup 8
+-
+-	/* Save the rest of pt_regs */
+-	movq %r15, R15(%rsp)
+-	movq %r14, R14(%rsp)
+-	movq %r13, R13(%rsp)
+-	movq %r12, R12(%rsp)
+-	movq %r11, R11(%rsp)
+-	movq %r10, R10(%rsp)
+-	movq %rbp, RBP(%rsp)
+-	movq %rbx, RBX(%rsp)
+-	/* Copy saved flags */
+-	movq SS(%rsp), %rcx
+-	movq %rcx, EFLAGS(%rsp)
+-	/* Kernel segments */
+-	movq $__KERNEL_DS, %rcx
+-	movq %rcx, SS(%rsp)
+-	movq $__KERNEL_CS, %rcx
+-	movq %rcx, CS(%rsp)
+-	/* Stack - skipping return address */
+-	leaq SS+16(%rsp), %rcx
+-	movq %rcx, RSP(%rsp)
+-
+-	/* regs go into 4th parameter */
+-	leaq (%rsp), %rcx
+-
+-GLOBAL(ftrace_regs_call)
+-	call ftrace_stub
+-
+-	/* Copy flags back to SS, to restore them */
+-	movq EFLAGS(%rsp), %rax
+-	movq %rax, SS(%rsp)
+-
+-	/* Handlers can change the RIP */
+-	movq RIP(%rsp), %rax
+-	movq %rax, SS+8(%rsp)
+-
+-	/* restore the rest of pt_regs */
+-	movq R15(%rsp), %r15
+-	movq R14(%rsp), %r14
+-	movq R13(%rsp), %r13
+-	movq R12(%rsp), %r12
+-	movq R10(%rsp), %r10
+-	movq RBP(%rsp), %rbp
+-	movq RBX(%rsp), %rbx
+-
+-	/* skip=8 to skip flags saved in SS */
+-	MCOUNT_RESTORE_FRAME 8
+-
+-	/* Restore flags */
+-	popfq
+-
+-	jmp ftrace_return
+-ftrace_restore_flags:
+-	popfq
+-	jmp  ftrace_stub
+-
+-END(ftrace_regs_caller)
+-
+-
+-#else /* ! CONFIG_DYNAMIC_FTRACE */
+-
+-ENTRY(function_hook)
+-	cmpl $0, function_trace_stop
+-	jne  ftrace_stub
+-
+-	cmpq $ftrace_stub, ftrace_trace_function
+-	jnz trace
+-
+-#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+-	cmpq $ftrace_stub, ftrace_graph_return
+-	jnz ftrace_graph_caller
+-
+-	cmpq $ftrace_graph_entry_stub, ftrace_graph_entry
+-	jnz ftrace_graph_caller
+-#endif
+-
+-GLOBAL(ftrace_stub)
+-	retq
+-
+-trace:
+-	MCOUNT_SAVE_FRAME
+-
+-	movq RIP(%rsp), %rdi
+-#ifdef CC_USING_FENTRY
+-	movq SS+16(%rsp), %rsi
+-#else
+-	movq 8(%rbp), %rsi
+-#endif
+-	subq $MCOUNT_INSN_SIZE, %rdi
+-
+-	call   *ftrace_trace_function
+-
+-	MCOUNT_RESTORE_FRAME
+-
+-	jmp ftrace_stub
+-END(function_hook)
+-#endif /* CONFIG_DYNAMIC_FTRACE */
+-#endif /* CONFIG_FUNCTION_TRACER */
+-
+-#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+-ENTRY(ftrace_graph_caller)
+-	MCOUNT_SAVE_FRAME
+-
+-#ifdef CC_USING_FENTRY
+-	leaq SS+16(%rsp), %rdi
+-	movq $0, %rdx	/* No framepointers needed */
+-#else
+-	leaq 8(%rbp), %rdi
+-	movq (%rbp), %rdx
+-#endif
+-	movq RIP(%rsp), %rsi
+-	subq $MCOUNT_INSN_SIZE, %rsi
+-
+-	call	prepare_ftrace_return
+-
+-	MCOUNT_RESTORE_FRAME
+-
+-	retq
+-END(ftrace_graph_caller)
+-
+-GLOBAL(return_to_handler)
+-	subq  $24, %rsp
+-
+-	/* Save the return values */
+-	movq %rax, (%rsp)
+-	movq %rdx, 8(%rsp)
+-	movq %rbp, %rdi
+-
+-	call ftrace_return_to_handler
+-
+-	movq %rax, %rdi
+-	movq 8(%rsp), %rdx
+-	movq (%rsp), %rax
+-	addq $24, %rsp
+-	jmp *%rdi
+-#endif
+-
  
--	case FTRACE_UPDATE_MODIFY_CALL_REGS:
- 	case FTRACE_UPDATE_MODIFY_CALL:
- 	case FTRACE_UPDATE_MAKE_CALL:
- 		/* converting nop to call */
-@@ -516,7 +514,6 @@ static int finish_update(struct dyn_ftrace *rec, int enable)
- 	case FTRACE_UPDATE_IGNORE:
- 		return 0;
- 
--	case FTRACE_UPDATE_MODIFY_CALL_REGS:
- 	case FTRACE_UPDATE_MODIFY_CALL:
- 	case FTRACE_UPDATE_MAKE_CALL:
- 		/* converting nop to call */
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 2f8cbff..3e6dfb3 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -362,14 +362,12 @@ enum {
-  *  IGNORE           - The function is already what we want it to be
-  *  MAKE_CALL        - Start tracing the function
-  *  MODIFY_CALL      - Stop saving regs for the function
-- *  MODIFY_CALL_REGS - Start saving regs for the function
-  *  MAKE_NOP         - Stop tracing the function
-  */
- enum {
- 	FTRACE_UPDATE_IGNORE,
- 	FTRACE_UPDATE_MAKE_CALL,
- 	FTRACE_UPDATE_MODIFY_CALL,
--	FTRACE_UPDATE_MODIFY_CALL_REGS,
- 	FTRACE_UPDATE_MAKE_NOP,
- };
- 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 52c2b53..cc07b7f 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1701,19 +1701,15 @@ static int ftrace_check_record(struct dyn_ftrace *rec, int enable, int update)
- 		/*
- 		 * If this record is being updated from a nop, then
- 		 *   return UPDATE_MAKE_CALL.
--		 * Otherwise, if the EN flag is set, then return
--		 *   UPDATE_MODIFY_CALL_REGS to tell the caller to convert
--		 *   from the non-save regs, to a save regs function.
- 		 * Otherwise,
- 		 *   return UPDATE_MODIFY_CALL to tell the caller to convert
--		 *   from the save regs, to a non-save regs function.
-+		 *   from the save regs, to a non-save regs function or
-+		 *   vice versa.
- 		 */
- 		if (flag & FTRACE_FL_ENABLED)
- 			return FTRACE_UPDATE_MAKE_CALL;
--		else if (rec->flags & FTRACE_FL_REGS_EN)
--			return FTRACE_UPDATE_MODIFY_CALL_REGS;
--		else
--			return FTRACE_UPDATE_MODIFY_CALL;
+ #ifndef CONFIG_PREEMPT
+ #define retint_kernel retint_restore_args
+diff --git a/arch/x86/kernel/mcount_64.S b/arch/x86/kernel/mcount_64.S
+new file mode 100644
+index 0000000..c050a01
+--- /dev/null
++++ b/arch/x86/kernel/mcount_64.S
+@@ -0,0 +1,217 @@
++/*
++ *  linux/arch/x86_64/mcount_64.S
++ *
++ *  Copyright (C) 2014  Steven Rostedt, Red Hat Inc
++ */
 +
-+		return FTRACE_UPDATE_MODIFY_CALL;
- 	}
- 
- 	if (update) {
-@@ -1815,7 +1811,6 @@ __ftrace_replace_code(struct dyn_ftrace *rec, int enable)
- 	case FTRACE_UPDATE_MAKE_NOP:
- 		return ftrace_make_nop(NULL, rec, ftrace_addr);
- 
--	case FTRACE_UPDATE_MODIFY_CALL_REGS:
- 	case FTRACE_UPDATE_MODIFY_CALL:
- 		return ftrace_modify_call(rec, ftrace_old_addr, ftrace_addr);
- 	}
++#include <linux/linkage.h>
++#include <asm/ptrace.h>
++#include <asm/ftrace.h>
++
++
++	.code64
++	.section .entry.text, "ax"
++
++
++#ifdef CONFIG_FUNCTION_TRACER
++
++#ifdef CC_USING_FENTRY
++# define function_hook	__fentry__
++#else
++# define function_hook	mcount
++#endif
++
++#ifdef CONFIG_DYNAMIC_FTRACE
++
++ENTRY(function_hook)
++	retq
++END(function_hook)
++
++/* skip is set if stack has been adjusted */
++.macro ftrace_caller_setup skip=0
++	MCOUNT_SAVE_FRAME \skip
++
++	/* Load the ftrace_ops into the 3rd parameter */
++	movq function_trace_op(%rip), %rdx
++
++	/* Load ip into the first parameter */
++	movq RIP(%rsp), %rdi
++	subq $MCOUNT_INSN_SIZE, %rdi
++	/* Load the parent_ip into the second parameter */
++#ifdef CC_USING_FENTRY
++	movq SS+16(%rsp), %rsi
++#else
++	movq 8(%rbp), %rsi
++#endif
++.endm
++
++ENTRY(ftrace_caller)
++	/* Check if tracing was disabled (quick check) */
++	cmpl $0, function_trace_stop
++	jne  ftrace_stub
++
++	ftrace_caller_setup
++	/* regs go into 4th parameter (but make it NULL) */
++	movq $0, %rcx
++
++GLOBAL(ftrace_call)
++	call ftrace_stub
++
++	MCOUNT_RESTORE_FRAME
++ftrace_return:
++
++#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++GLOBAL(ftrace_graph_call)
++	jmp ftrace_stub
++#endif
++
++GLOBAL(ftrace_stub)
++	retq
++END(ftrace_caller)
++
++ENTRY(ftrace_regs_caller)
++	/* Save the current flags before compare (in SS location)*/
++	pushfq
++
++	/* Check if tracing was disabled (quick check) */
++	cmpl $0, function_trace_stop
++	jne  ftrace_restore_flags
++
++	/* skip=8 to skip flags saved in SS */
++	ftrace_caller_setup 8
++
++	/* Save the rest of pt_regs */
++	movq %r15, R15(%rsp)
++	movq %r14, R14(%rsp)
++	movq %r13, R13(%rsp)
++	movq %r12, R12(%rsp)
++	movq %r11, R11(%rsp)
++	movq %r10, R10(%rsp)
++	movq %rbp, RBP(%rsp)
++	movq %rbx, RBX(%rsp)
++	/* Copy saved flags */
++	movq SS(%rsp), %rcx
++	movq %rcx, EFLAGS(%rsp)
++	/* Kernel segments */
++	movq $__KERNEL_DS, %rcx
++	movq %rcx, SS(%rsp)
++	movq $__KERNEL_CS, %rcx
++	movq %rcx, CS(%rsp)
++	/* Stack - skipping return address */
++	leaq SS+16(%rsp), %rcx
++	movq %rcx, RSP(%rsp)
++
++	/* regs go into 4th parameter */
++	leaq (%rsp), %rcx
++
++GLOBAL(ftrace_regs_call)
++	call ftrace_stub
++
++	/* Copy flags back to SS, to restore them */
++	movq EFLAGS(%rsp), %rax
++	movq %rax, SS(%rsp)
++
++	/* Handlers can change the RIP */
++	movq RIP(%rsp), %rax
++	movq %rax, SS+8(%rsp)
++
++	/* restore the rest of pt_regs */
++	movq R15(%rsp), %r15
++	movq R14(%rsp), %r14
++	movq R13(%rsp), %r13
++	movq R12(%rsp), %r12
++	movq R10(%rsp), %r10
++	movq RBP(%rsp), %rbp
++	movq RBX(%rsp), %rbx
++
++	/* skip=8 to skip flags saved in SS */
++	MCOUNT_RESTORE_FRAME 8
++
++	/* Restore flags */
++	popfq
++
++	jmp ftrace_return
++ftrace_restore_flags:
++	popfq
++	jmp  ftrace_stub
++
++END(ftrace_regs_caller)
++
++
++#else /* ! CONFIG_DYNAMIC_FTRACE */
++
++ENTRY(function_hook)
++	cmpl $0, function_trace_stop
++	jne  ftrace_stub
++
++	cmpq $ftrace_stub, ftrace_trace_function
++	jnz trace
++
++#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++	cmpq $ftrace_stub, ftrace_graph_return
++	jnz ftrace_graph_caller
++
++	cmpq $ftrace_graph_entry_stub, ftrace_graph_entry
++	jnz ftrace_graph_caller
++#endif
++
++GLOBAL(ftrace_stub)
++	retq
++
++trace:
++	MCOUNT_SAVE_FRAME
++
++	movq RIP(%rsp), %rdi
++#ifdef CC_USING_FENTRY
++	movq SS+16(%rsp), %rsi
++#else
++	movq 8(%rbp), %rsi
++#endif
++	subq $MCOUNT_INSN_SIZE, %rdi
++
++	call   *ftrace_trace_function
++
++	MCOUNT_RESTORE_FRAME
++
++	jmp ftrace_stub
++END(function_hook)
++#endif /* CONFIG_DYNAMIC_FTRACE */
++#endif /* CONFIG_FUNCTION_TRACER */
++
++#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++ENTRY(ftrace_graph_caller)
++	MCOUNT_SAVE_FRAME
++
++#ifdef CC_USING_FENTRY
++	leaq SS+16(%rsp), %rdi
++	movq $0, %rdx	/* No framepointers needed */
++#else
++	leaq 8(%rbp), %rdi
++	movq (%rbp), %rdx
++#endif
++	movq RIP(%rsp), %rsi
++	subq $MCOUNT_INSN_SIZE, %rsi
++
++	call	prepare_ftrace_return
++
++	MCOUNT_RESTORE_FRAME
++
++	retq
++END(ftrace_graph_caller)
++
++GLOBAL(return_to_handler)
++	subq  $24, %rsp
++
++	/* Save the return values */
++	movq %rax, (%rsp)
++	movq %rdx, 8(%rsp)
++	movq %rbp, %rdi
++
++	call ftrace_return_to_handler
++
++	movq %rax, %rdi
++	movq 8(%rsp), %rdx
++	movq (%rsp), %rax
++	addq $24, %rsp
++	jmp *%rdi
++#endif
 -- 
 1.8.5.3
 
