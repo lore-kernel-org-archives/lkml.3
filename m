@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758805AbaELQnz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:43:55 -0400
-Received: from mail1.bemta7.messagelabs.com ([216.82.254.113]:32689 "EHLO
+	id S932289AbaELQpE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:45:04 -0400
+Received: from mail1.bemta7.messagelabs.com ([216.82.254.113]:54731 "EHLO
 	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752044AbaELQnw (ORCPT
+	by vger.kernel.org with ESMTP id S1755573AbaELQny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 12:43:52 -0400
+	Mon, 12 May 2014 12:43:54 -0400
 X-Env-Sender: Benjamin.Romer@unisys.com
-X-Msg-Ref: server-5.tower-200.messagelabs.com!1399913022!8210220!32
+X-Msg-Ref: server-5.tower-200.messagelabs.com!1399913022!8210220!41
 X-Originating-IP: [192.61.61.105]
 X-StarScan-Received: 
 X-StarScan-Version: 6.11.3; banners=-,-,-
@@ -17,21 +17,143 @@ From: Benjamin Romer <benjamin.romer@unisys.com>
 To: <gregkh@linuxfoundation.org>, <sparmaintainer@unisys.com>,
         <linux-kernel@vger.kernel.org>, <jkc@redhat.com>,
         <devel@driverdev.osuosl.org>
-Subject: [PATCH 0/7] staging: unisys: cleanup proc entries in uislib
-Date: Mon, 12 May 2014 12:38:28 -0400
-Message-ID: <1399912715-16142-1-git-send-email-benjamin.romer@unisys.com>
+CC: Benjamin Romer <benjamin.romer@unisys.com>
+Subject: [PATCH 3/7] staging: unisys: move uislib/cycles_before_wait proc entry to debugfs
+Date: Mon, 12 May 2014 12:38:31 -0400
+Message-ID: <1399912715-16142-4-git-send-email-benjamin.romer@unisys.com>
 X-Mailer: git-send-email 1.9.1
-X-OriginalArrivalTime: 12 May 2014 16:43:49.0257 (UTC) FILETIME=[597F4790:01CF6E01]
+In-Reply-To: <1399912715-16142-1-git-send-email-benjamin.romer@unisys.com>
+References: <1399912715-16142-1-git-send-email-benjamin.romer@unisys.com>
+X-OriginalArrivalTime: 12 May 2014 16:43:49.0624 (UTC) FILETIME=[59B74780:01CF6E01]
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series removes old and redundant proc entries from the uislib
-module, and moves the remaining entries to debugfs. The removed entries are
-from unit testing of the module and are no longer used. The information in the
-vbus directory was redundant, so the directory and entries are removed. The
-remaining entries are only interesting when debugging, and are not used by any
-user space program, so debugfs is the right place for them.
+Convert /proc/uislib/cycles_before_wait to an equivalent entry in debugfs.
+
+Signed-off-by: Benjamin Romer <benjamin.romer@unisys.com>
+---
+ drivers/staging/unisys/uislib/uislib.c | 57 +++++-----------------------------
+ 1 file changed, 8 insertions(+), 49 deletions(-)
+
+diff --git a/drivers/staging/unisys/uislib/uislib.c b/drivers/staging/unisys/uislib/uislib.c
+index b71f387..0f966b7 100644
+--- a/drivers/staging/unisys/uislib/uislib.c
++++ b/drivers/staging/unisys/uislib/uislib.c
+@@ -92,13 +92,11 @@ static int Go_Polling_Device_Channels;
+ static struct proc_dir_entry *uislib_proc_dir;
+ static struct proc_dir_entry *uislib_proc_vbus_dir;
+ static struct proc_dir_entry *info_proc_entry;
+-static struct proc_dir_entry *cycles_before_wait_proc_entry;
+ static struct proc_dir_entry *smart_wakeup_proc_entry;
+ 
+ #define DIR_PROC_ENTRY "uislib"
+ #define DIR_VBUS_PROC_ENTRY "vbus"
+ #define INFO_PROC_ENTRY_FN "info"
+-#define CYCLES_BEFORE_WAIT_PROC_ENTRY_FN "cycles_before_wait"
+ #define SMART_WAKEUP_PROC_ENTRY_FN "smart_wakeup"
+ #define CALLHOME_PROC_ENTRY_FN "callhome"
+ #define CALLHOME_THROTTLED_PROC_ENTRY_FN "callhome_throttled"
+@@ -109,6 +107,9 @@ static struct dentry *dir_debugfs;
+ #define PLATFORMNUMBER_DEBUGFS_ENTRY_FN "platform"
+ static struct dentry *platformnumber_debugfs_read;
+ 
++#define CYCLES_BEFORE_WAIT_DEBUGFS_ENTRY_FN "cycles_before_wait"
++static struct dentry *cycles_before_wait_debugfs_read;
++
+ static unsigned long long cycles_before_wait, wait_cycles;
+ 
+ /*****************************************************/
+@@ -142,14 +143,6 @@ static const struct file_operations proc_info_fops = {
+ 	.read = info_proc_read,
+ };
+ 
+-static ssize_t cycles_before_wait_proc_write(struct file *file,
+-					     const char __user *buffer,
+-					     size_t count, loff_t *ppos);
+-static const struct file_operations proc_cycles_before_wait_fops = {
+-	.read = uislib_proc_read_writeonly,
+-	.write = cycles_before_wait_proc_write,
+-};
+-
+ static ssize_t smart_wakeup_proc_write(struct file *file,
+ 				       const char __user *buffer,
+ 				       size_t count, loff_t *ppos);
+@@ -1431,37 +1424,6 @@ uislib_proc_read_writeonly(struct file *file, char __user *buffer,
+ }
+ 
+ static ssize_t
+-cycles_before_wait_proc_write(struct file *file, const char __user *buffer,
+-			      size_t count, loff_t *ppos)
+-{
+-	char buf[16];
+-
+-#define CYCLES_BEFORE_WAIT_USE_ERROR  { \
+-	LOGERR("Incorrect Call Home Input.\n"); \
+-	pr_info("Please pass Call Home Event Parameters in the form:\n"); \
+-	pr_info("EventID Category Type[parameter1][parameter2][parameter3][parameter4][parameter5][parameter6]\n"); \
+-	return -EFAULT; \
+-}
+-	if (count >= ARRAY_SIZE(buf))
+-		return -EINVAL;
+-
+-	if (count == 0)
+-		CYCLES_BEFORE_WAIT_USE_ERROR;
+-
+-	if (copy_from_user(buf, buffer, count)) {
+-		LOGERR("copy_from_user failed.\n");
+-		return -EFAULT;
+-	}
+-	buf[count - 1] = '\0';	/* Replace the LF at the end of the
+-				 * input with a NULL */
+-	/* Pull out the cycles_before_wait must be decimal integer */
+-	if (sscanf(buf, "%lld", &cycles_before_wait) != 1)
+-		CYCLES_BEFORE_WAIT_USE_ERROR;
+-
+-	return count;
+-}
+-
+-static ssize_t
+ smart_wakeup_proc_write(struct file *file, const char __user *buffer,
+ 			size_t count, loff_t *ppos)
+ {
+@@ -1796,12 +1758,11 @@ uislib_mod_init(void)
+ 		platformnumber_debugfs_read = debugfs_create_u32(
+ 			PLATFORMNUMBER_DEBUGFS_ENTRY_FN, 0444, dir_debugfs,
+ 			&PlatformNumber);
+-	}
+ 
+-	cycles_before_wait_proc_entry =
+-	    proc_create(CYCLES_BEFORE_WAIT_PROC_ENTRY_FN, 0, uislib_proc_dir,
+-			&proc_cycles_before_wait_fops);
+-	SET_PROC_OWNER(cycles_before_wait_proc_entry, THIS_MODULE);
++		cycles_before_wait_debugfs_read = debugfs_create_u64(
++			CYCLES_BEFORE_WAIT_DEBUGFS_ENTRY_FN, 0666, dir_debugfs,
++			&cycles_before_wait);
++	}
+ 
+ 	smart_wakeup_proc_entry =
+ 	    proc_create(SMART_WAKEUP_PROC_ENTRY_FN, 0, uislib_proc_dir,
+@@ -1815,9 +1776,6 @@ uislib_mod_init(void)
+ static void __exit
+ uislib_mod_exit(void)
+ {
+-	if (cycles_before_wait_proc_entry)
+-		remove_proc_entry(CYCLES_BEFORE_WAIT_PROC_ENTRY_FN,
+-				  uislib_proc_dir);
+ 	if (smart_wakeup_proc_entry)
+ 		remove_proc_entry(SMART_WAKEUP_PROC_ENTRY_FN, uislib_proc_dir);
+ 	if (info_proc_entry)
+@@ -1832,6 +1790,7 @@ uislib_mod_exit(void)
+ 		ProcReadBuffer = NULL;
+ 	}
+ 
++	debugfs_remove(cycles_before_wait_debugfs_read);
+ 	debugfs_remove(platformnumber_debugfs_read);
+ 	debugfs_remove(dir_debugfs);
+ 
+-- 
+1.9.1
 
