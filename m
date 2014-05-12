@@ -1,38 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900AbaELPVa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 11:21:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35865 "EHLO mx2.suse.de"
+	id S1758929AbaELPVw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 11:21:52 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54579 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758468AbaELPV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 11:21:28 -0400
-Date: Mon, 12 May 2014 17:21:27 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hannes@cmpxchg.org
-Subject: Re: [PATCH 02/14] cgroup: remove pointless has tasks/children test
- from mem_cgroup_force_empty()
-Message-ID: <20140512152127.GI9564@dhcp22.suse.cz>
-References: <1399671091-23867-1-git-send-email-tj@kernel.org>
- <1399671091-23867-3-git-send-email-tj@kernel.org>
- <20140512145324.GE9564@dhcp22.suse.cz>
- <20140512145927.GA1421@htj.dyndns.org>
+	id S1758468AbaELPVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 11:21:50 -0400
+Message-ID: <5370E6F3.3050705@ti.com>
+Date: Mon, 12 May 2014 11:21:23 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140512145927.GA1421@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+CC: <grygorii.strashko@ti.com>, Murali Karicheri <m-karicheri2@ti.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] nand: davinci: add support for 4K page size nand devices
+References: <1399588265-7130-1-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1399588265-7130-1-git-send-email-ivan.khoronzhuk@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 12-05-14 10:59:27, Tejun Heo wrote:
-[...]
-> Can I roll this into my series so that I can put this before changes
-> which depend on direct ->children usages being removed?
+On Thursday 08 May 2014 06:31 PM, Ivan Khoronzhuk wrote:
+> From: Sandeep Paulraj <s-paulraj@ti.com>
+> 
+> It is needed for k2l keystone2 EVM which uses NAND flash with 4K page
+> size, hence add support for 4K page size nand devices.
+> 
+> Signed-off-by: Sandeep Paulraj <s-paulraj@ti.com>
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> ---
+> 
+> Based on l2-mtd/master
+> 
+>  drivers/mtd/nand/davinci_nand.c | 41 ++++++++++++++++++++++++++++++-----------
+>  1 file changed, 30 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+> index b922c8e..24a5769 100644
+> --- a/drivers/mtd/nand/davinci_nand.c
+> +++ b/drivers/mtd/nand/davinci_nand.c
+> @@ -520,6 +520,31 @@ static struct nand_ecclayout hwecc4_2048 = {
+>  	},
+>  };
+>  
+> +/* An ECC layout for using 4-bit ECC with large-page (4096bytes) flash,
+> + * storing ten ECC bytes plus the manufacturer's bad block marker byte,
+> + * and not overlapping the default BBT markers.
+> + */
+Comment style ....
+/*
+ *
+ */
 
-Sure
--- 
-Michal Hocko
-SUSE Labs
+> +static struct nand_ecclayout hwecc4_4096 __initconst = {
+> +          .eccbytes = 80,
+> +          .eccpos = {
+> +                  /* at the end of spare sector */
+> +                  48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+> +                  58, 59, 60, 61, 62, 63, 64, 65, 66, 67,
+> +                  68, 69, 70, 71, 72, 73, 74, 75, 76, 77,
+> +                  78, 79, 80, 81, 82, 83, 84, 85, 86, 87,
+> +                  88, 89, 90, 91, 92, 93, 94, 95, 96, 97,
+> +                  98, 99, 100, 101, 102, 103, 104, 105, 106, 107,
+> +                  108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
+> +                  118, 119, 120, 121, 122, 123, 124, 125, 126, 127,
+> +                  },
+> +          .oobfree = {
+> +                  /* 2 bytes at offset 0 hold manufacturer badblock markers */
+> +                  {.offset = 2, .length = 46, },
+> +                  /* 5 bytes at offset 8 hold BBT markers */
+> +                  /* 8 bytes at offset 16 hold JFFS2 clean markers */
+> +         },
+> +};
+> +
+>  #if defined(CONFIG_OF)
+>  static const struct of_device_id davinci_nand_of_match[] = {
+>  	{.compatible = "ti,davinci-nand", },
+> @@ -796,18 +821,12 @@ static int nand_davinci_probe(struct platform_device *pdev)
+>  			info->chip.ecc.mode = NAND_ECC_HW_OOB_FIRST;
+>  			goto syndrome_done;
+>  		}
+> +		if (chunks == 8) {
+May be use some meaning macros instead of magic value '8'
+
+> +			info->ecclayout = hwecc4_4096;
+> +			info->chip.ecc.mode = NAND_ECC_HW_OOB_FIRST;
+> +			goto syndrome_done;
+> +		}
+>  
+> -		/* 4KiB page chips are not yet supported. The eccpos from
+> -		 * nand_ecclayout cannot hold 80 bytes and change to eccpos[]
+> -		 * breaks userspace ioctl interface with mtd-utils. Once we
+> -		 * resolve this issue, NAND_ECC_HW_OOB_FIRST mode can be used
+> -		 * for the 4KiB page chips.
+> -		 *
+> -		 * TODO: Note that nand_ecclayout has now been expanded and can
+> -		 *  hold plenty of OOB entries.
+> -		 */
+> -		dev_warn(&pdev->dev, "no 4-bit ECC support yet "
+> -				"for 4KiB-page NAND\n");
+>  		ret = -EIO;
+>  		goto err;
+>  
+> 
+
