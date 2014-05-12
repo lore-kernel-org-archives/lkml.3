@@ -1,90 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058AbaELJdV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 05:33:21 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:64382 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752556AbaELJdS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 05:33:18 -0400
+	id S1755598AbaELJds (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 05:33:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:23778 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755014AbaELJdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 05:33:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1033,1389772800"; 
+   d="scan'208";a="510166699"
+Date: Mon, 12 May 2014 09:28:57 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@redhat.com, rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, arjan.van.de.ven@intel.com,
+        len.brown@intel.com, alan.cox@intel.com, mark.gross@intel.com,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        rajeev.d.muralidhar@intel.com, vishwesh.m.rudramuni@intel.com,
+        nicole.chalhoub@intel.com, ajaya.durg@intel.com,
+        harinarayanan.seshadri@intel.com, jacob.jun.pan@linux.intel.com,
+        fengguang.wu@intel.com
+Subject: Re: [RFC PATCH 00/12 v2] A new CPU load metric for power-efficient
+ scheduler: CPU ConCurrency
+Message-ID: <20140512012856.GA9351@intel.com>
+References: <1399832221-8314-1-git-send-email-yuyang.du@intel.com>
+ <20140512064533.GH30445@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <20140510053734.AF4E9E0692@canberra.localdomain>
-References: <20140510053734.AF4E9E0692@canberra.localdomain>
-Date: Mon, 12 May 2014 11:33:17 +0200
-X-Google-Sender-Auth: cgYxywnOMkMIIk4DTwSFYlRwN0k
-Message-ID: <CAMuHMdXQaOewxwe4UoiWj4KoT2Lybug2Spg4TzXd5g_Mfi-1Dg@mail.gmail.com>
-Subject: Re: [PATCH] printk/of_serial: fix serial console cessation part way
- through boot.
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stephen Chivers <schivers@csc.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, Greg KH <gregkh@linuxfoundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        rob+dt@kernel.org, Grant Likely <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Proctor <cproctor@csc.com>, linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140512064533.GH30445@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Mon, May 12, 2014 at 08:45:33AM +0200, Peter Zijlstra wrote:
+> On Mon, May 12, 2014 at 02:16:49AM +0800, Yuyang Du wrote:
+> 
+> Yes, just what we need, more patches while we haven't had the time to
+> look at the old set yet :-(
 
-On Sat, May 10, 2014 at 7:37 AM, Stephen Chivers <schivers@csc.com> wrote:
-> Commit 5f5c9ae56c38942623f69c3e6dc6ec78e4da2076
-> "serial_core: Unregister console in uart_remove_one_port()"
-> fixed a crash where a serial port was removed but
-> not deregistered as a console.
->
-> There is a side effect of that commit for platforms having serial consoles
-> and of_serial configured (CONFIG_SERIAL_OF_PLATFORM). The serial console
-> is disabled midway through the boot process.
->
-> This cessation of the serial console affects PowerPC computers
-> such as the MVME5100 and SAM440EP.
->
-> The sequence is:
->
->         bootconsole [udbg0] enabled
->         ....
->         serial8250/16550 driver initialises and registers its UARTS,
->         one of these is the serial console.
->         console [ttyS0] enabled
->         ....
->         of_serial probes "platform" devices, registering them as it goes.
->         One of these is the serial console.
->         console [ttyS0] disabled.
->
-> The disabling of the serial console is due to:
->
->         a.  unregister_console in printk not clearing the
->             CONS_ENABLED bit in the console flags,
->             even though it has announced that the console is disabled; and
+No essential change, added commit messages (after smashing our heads to
+figure out what general code structure is). Can we get over immediate no go to
+maybe slow no go?
 
-This part re-attaches the serial console on unbind/bind with the sh-sci driver,
-too, which didn't work before. Cool, thanks!
-
->         b.  of_platform_serial_probe in of_serial not setting the port type
->             before it registers with serial8250_register_8250_port.
-
-This part I couldn't test.
-
-> This patch ensures that the serial console is re-enabled when of_serial
-> registers a serial port that corresponds to the designated console.
->
-> Signed-off-by: Stephen Chivers <schivers@csc.com>
-> Tested-by: Stephen Chivers <schivers@csc.com>
-
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org> [unregister_console]
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks,
+Yuyang
