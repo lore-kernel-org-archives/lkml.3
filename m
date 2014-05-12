@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185AbaELQBS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:01:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53572 "EHLO
+	id S1756808AbaELQCF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:02:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53606 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754248AbaELQBP (ORCPT
+	with ESMTP id S1756206AbaELQCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 12:01:15 -0400
-Date: Mon, 12 May 2014 09:00:53 -0700
-From: tip-bot for Dongsheng <tipbot@zytor.com>
-Message-ID: <tip-e936e8e459e14af7432a775f8139a79b71e41afc@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jolsa@kernel.org, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jolsa@kernel.org, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
-In-Reply-To: <6d2f55dc1e02c1e29a5d70bfeb9d6e8863caf2aa.1399273302.git.yangds.fnst@cn.fujitsu.com>
-References: <6d2f55dc1e02c1e29a5d70bfeb9d6e8863caf2aa.1399273302.git.yangds.fnst@cn.fujitsu.com>
+	Mon, 12 May 2014 12:02:02 -0400
+Date: Mon, 12 May 2014 09:01:45 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-13ce34df11833482cd698331fdbb3f8ced06340d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, jolsa@kernel.org, namhyung@kernel.org,
+        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, jolsa@kernel.org, namhyung@kernel.org,
+        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1399856202-26221-1-git-send-email-namhyung@kernel.org>
+References: <1399856202-26221-1-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Adapt the TASK_STATE_TO_CHAR_STR to new value in kernel space.
-Git-Commit-ID: e936e8e459e14af7432a775f8139a79b71e41afc
+Subject: [tip:perf/core] perf tools: Use tid for finding thread
+Git-Commit-ID: 13ce34df11833482cd698331fdbb3f8ced06340d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,37 +33,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e936e8e459e14af7432a775f8139a79b71e41afc
-Gitweb:     http://git.kernel.org/tip/e936e8e459e14af7432a775f8139a79b71e41afc
-Author:     Dongsheng <yangds.fnst@cn.fujitsu.com>
-AuthorDate: Mon, 5 May 2014 16:05:54 +0900
+Commit-ID:  13ce34df11833482cd698331fdbb3f8ced06340d
+Gitweb:     http://git.kernel.org/tip/13ce34df11833482cd698331fdbb3f8ced06340d
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Mon, 12 May 2014 09:56:42 +0900
 Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Mon, 12 May 2014 10:01:49 +0200
+CommitDate: Mon, 12 May 2014 11:09:50 +0200
 
-perf tools: Adapt the TASK_STATE_TO_CHAR_STR to new value in kernel space.
+perf tools: Use tid for finding thread
 
-Currently, TASK_STATE_TO_CHAR_STR in kernel space is already expanded to RSDTtZXxKWP,
-but it is still RSDTtZX in perf sched tool.
+I believe that passing pid (instead of tid) as the 3rd arg of the
+machine__find*_thread() was to find a main thread so that it can
+search proper map group for symbols.  However with the map sharing
+patch applied, it now can do it in any thread.
 
-This patch update TASK_STATE_TO_CHAR_STR to the new value in kernel space.
+It fixes a bug when each thread has different name, it only reports a
+main thread for samples in other threads.
 
-Signed-off-by: Dongsheng <yangds.fnst@cn.fujitsu.com>
-Link: http://lkml.kernel.org/r/6d2f55dc1e02c1e29a5d70bfeb9d6e8863caf2aa.1399273302.git.yangds.fnst@cn.fujitsu.com
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Acked-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1399856202-26221-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/builtin-sched.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/builtin-inject.c     | 2 +-
+ tools/perf/builtin-kmem.c       | 2 +-
+ tools/perf/tests/code-reading.c | 2 +-
+ tools/perf/tests/hists_filter.c | 1 +
+ tools/perf/tests/hists_link.c   | 2 ++
+ tools/perf/util/build-id.c      | 2 +-
+ tools/perf/util/event.c         | 2 +-
+ 7 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 7eae501..4f0dd21 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -66,7 +66,7 @@ struct sched_atom {
- 	struct task_desc	*wakee;
- };
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 3a73875..6a3af00 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -209,7 +209,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
  
--#define TASK_STATE_TO_CHAR_STR "RSDTtZX"
-+#define TASK_STATE_TO_CHAR_STR "RSDTtZXxKWP"
+ 	cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
  
- enum thread_state {
- 	THREAD_SLEEPING = 0,
+-	thread = machine__findnew_thread(machine, sample->pid, sample->pid);
++	thread = machine__findnew_thread(machine, sample->pid, sample->tid);
+ 	if (thread == NULL) {
+ 		pr_err("problem processing %d event, skipping it.\n",
+ 		       event->header.type);
+diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+index f91fa437..bef3376 100644
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -235,7 +235,7 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 				struct machine *machine)
+ {
+ 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
+-							sample->pid);
++							sample->tid);
+ 
+ 	if (thread == NULL) {
+ 		pr_debug("problem processing %d event, skipping it.\n",
+diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
+index adf3de3..67f2d63 100644
+--- a/tools/perf/tests/code-reading.c
++++ b/tools/perf/tests/code-reading.c
+@@ -256,7 +256,7 @@ static int process_sample_event(struct machine *machine,
+ 		return -1;
+ 	}
+ 
+-	thread = machine__findnew_thread(machine, sample.pid, sample.pid);
++	thread = machine__findnew_thread(machine, sample.pid, sample.tid);
+ 	if (!thread) {
+ 		pr_debug("machine__findnew_thread failed\n");
+ 		return -1;
+diff --git a/tools/perf/tests/hists_filter.c b/tools/perf/tests/hists_filter.c
+index 23dc2f4..4617a8b 100644
+--- a/tools/perf/tests/hists_filter.c
++++ b/tools/perf/tests/hists_filter.c
+@@ -69,6 +69,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 			evsel->hists.symbol_filter_str = NULL;
+ 
+ 			sample.pid = fake_samples[i].pid;
++			sample.tid = fake_samples[i].pid;
+ 			sample.ip = fake_samples[i].ip;
+ 
+ 			if (perf_event__preprocess_sample(&event, machine, &al,
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index e42d679..b009bbf 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -81,6 +81,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 			};
+ 
+ 			sample.pid = fake_common_samples[k].pid;
++			sample.tid = fake_common_samples[k].pid;
+ 			sample.ip = fake_common_samples[k].ip;
+ 			if (perf_event__preprocess_sample(&event, machine, &al,
+ 							  &sample) < 0)
+@@ -104,6 +105,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 			};
+ 
+ 			sample.pid = fake_samples[i][k].pid;
++			sample.tid = fake_samples[i][k].pid;
+ 			sample.ip = fake_samples[i][k].ip;
+ 			if (perf_event__preprocess_sample(&event, machine, &al,
+ 							  &sample) < 0)
+diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
+index 6baabe6..a904a4c 100644
+--- a/tools/perf/util/build-id.c
++++ b/tools/perf/util/build-id.c
+@@ -25,7 +25,7 @@ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
+ 	struct addr_location al;
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
+-							sample->pid);
++							sample->tid);
+ 
+ 	if (thread == NULL) {
+ 		pr_err("problem processing %d event, skipping it.\n",
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index dbcaea1..65795b8 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -788,7 +788,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ {
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 	struct thread *thread = machine__findnew_thread(machine, sample->pid,
+-							sample->pid);
++							sample->tid);
+ 
+ 	if (thread == NULL)
+ 		return -1;
