@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758759AbaELPHc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 11:07:32 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:37464 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881AbaELPHa (ORCPT
+	id S1758775AbaELPIT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 11:08:19 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:42866 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758432AbaELPIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 11:07:30 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f5-b7fae6d000004d6d-22-5370e3b04132
-Content-transfer-encoding: 8BIT
-Message-id: <5370E3AB.7090306@samsung.com>
-Date: Mon, 12 May 2014 17:07:23 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>
-Cc: kgene.kim@samsung.com, kishon@ti.com, sylvester.nawrocki@gmail.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] phy: exynos-mipi-video: fix check on array index
-References: <1399899388-13101-1-git-send-email-antoine.tenart@free-electrons.com>
-In-reply-to: <1399899388-13101-1-git-send-email-antoine.tenart@free-electrons.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t/xK7obHhcEG/w+zmGxY8V/VoveBVfZ
-	LC487WGz2PT4GqvF5V1z2CxmnN/HZDHv804mB3aPJ5suMnrsnHWX3WPzknqPvi2rGD2O39jO
-	5PF5k1wAWxSXTUpqTmZZapG+XQJXRvO9g0wFRzgqnl3cy9bAOIu9i5GTQ0LAROLHizNMELaY
-	xIV769m6GLk4hASWMkp8nXOTDSTBKyAo8WPyPZYuRg4OZgF5iSOXskHCzALqEpPmLWKGqP/E
-	KPGwcSkLRL2WxOoH+xhBbBYBVYkjXy6BLWATMJToPdrHCDJHVCBC4vEFIZCwiICHxJyuRSwg
-	c5gFNjJK7Hg8H+w4YQFXifuntrKC2EICwRITlpxmBrE5BUIkzh/oZJrAKDALyXmzEM6bheS8
-	BYzMqxhFU0uTC4qT0nON9IoTc4tL89L1kvNzNzFCQv3rDsalx6wOMQpwMCrx8HowFwQLsSaW
-	FVfmHmKU4GBWEuFVug0U4k1JrKxKLcqPLyrNSS0+xMjEwSnVwJhup/trkclZRqc9BSEsvnaT
-	JCft4uh3vu51bNfuHZefPFqYdM9L0cvOWf3+qaasnO4aRsV63aVbPsysC9O5cuvljaZNAhHx
-	YZ/WVD1r0Nmz8qtcut0VQcE7zwNrbz+9/P5o9MH+KeVflLVCdvkscP6zoH7NlCSFWkaugJ+v
-	5FpuGk1I9Eh9vFqJpTgj0VCLuag4EQARkKt2UwIAAA==
+	Mon, 12 May 2014 11:08:18 -0400
+Message-ID: <5370E3E0.4050109@fb.com>
+Date: Mon, 12 May 2014 09:08:16 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, <linux-mm@kvack.org>
+Subject: Re: [PATCH] Avoid always dirtying mapping->flags on O_DIRECT
+References: <20140509213907.GA20698@kernel.dk> <x49r43z837o.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49r43z837o.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-12_01:2014-05-12,2014-05-12,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.997696947966296 urlsuspect_oldscore=0.997696947966296
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.997696947966296 spamscore=0
+ recipient_to_sender_domain_totalscore=12 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1405120200
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/14 14:56, Antoine Ténart wrote:
-> The phys array is of size EXYNOS_MIPI_PHYS_NUM. Trying to access the
-> index EXYNOS_MIPI_PHYS_NUM should return an error.
+On 05/12/2014 08:46 AM, Jeff Moyer wrote:
+> Jens Axboe <axboe@fb.com> writes:
 > 
-> Fixes: 069d2e26e9d6 "phy: Add driver for Exynos MIPI CSIS/DSIM DPHYs"
+>> Hi,
+>>
+>> In some testing I ran today, we end up spending 40% of the time in
+>> filemap_check_errors(). That smells fishy. Looking further, this is
+>> basically what happens:
+>>
+>> blkdev_aio_read()
+>>     generic_file_aio_read()
+>>         filemap_write_and_wait_range()
+>>             if (!mapping->nr_pages)
+>>                 filemap_check_errors()
+>>
+>> and filemap_check_errors() always attempts two test_and_clear_bit() on
+>> the mapping flags, thus dirtying it for every single invocation. The
+>> patch below tests each of these bits before clearing them, avoiding this
+>> issue. In my test case (4-socket box), performance went from 1.7M IOPS
+>> to 4.0M IOPS.
 > 
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> It might help to use the word cacheline somewhere in here.  ;-) Out of
 
-Thanks for the fix,
+I thought that was self-evident, but yes, I could add that :-)
 
-Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> curiosity, what workload were you running?
 
-> ---
->  drivers/phy/phy-exynos-mipi-video.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/phy/phy-exynos-mipi-video.c b/drivers/phy/phy-exynos-mipi-video.c
-> index 7f139326a642..ff026689358c 100644
-> --- a/drivers/phy/phy-exynos-mipi-video.c
-> +++ b/drivers/phy/phy-exynos-mipi-video.c
-> @@ -101,7 +101,7 @@ static struct phy *exynos_mipi_video_phy_xlate(struct device *dev,
->  {
->  	struct exynos_mipi_video_phy *state = dev_get_drvdata(dev);
->  
-> -	if (WARN_ON(args->args[0] > EXYNOS_MIPI_PHYS_NUM))
-> +	if (WARN_ON(args->args[0] >= EXYNOS_MIPI_PHYS_NUM))
->  		return ERR_PTR(-ENODEV);
->  
->  	return state->phys[args->args[0]].phy;
+Nothing fancy, just some fio jobs that spread over two nodes.
+
+
