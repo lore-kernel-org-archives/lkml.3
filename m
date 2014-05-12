@@ -1,129 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191AbaELKQW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 06:16:22 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:13437 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756078AbaELKQT (ORCPT
+	id S1755958AbaELKTD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 06:19:03 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49842 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925AbaELKTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 06:16:19 -0400
-X-IronPort-AV: E=Sophos;i="4.97,1034,1389744000"; 
-   d="scan'208";a="129289081"
-From: David Vrabel <david.vrabel@citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <xen-devel@lists.xenproject.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: [PATCH 2/2] x86,xen: correct dma_get_required_mask() for Xen PV guests
-Date: Mon, 12 May 2014 11:15:42 +0100
-Message-ID: <1399889742-26165-3-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1399889742-26165-1-git-send-email-david.vrabel@citrix.com>
-References: <1399889742-26165-1-git-send-email-david.vrabel@citrix.com>
+	Mon, 12 May 2014 06:19:01 -0400
+Date: Mon, 12 May 2014 12:19:14 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+cc: linaro-kernel@lists.linaro.org, linaro-networking@linaro.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        arvind.chauhan@arm.com, daniel.lezcano@linaro.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: [RFC 1/2] clockevents: return 'int' from
+ clockevents_set_mode()
+In-Reply-To: <df571ff25b510bd0263b194bfdcbaf1b476a2a03.1399886467.git.viresh.kumar@linaro.org>
+Message-ID: <alpine.DEB.2.02.1405121140210.6261@ionos.tec.linutronix.de>
+References: <cover.1399886467.git.viresh.kumar@linaro.org> <df571ff25b510bd0263b194bfdcbaf1b476a2a03.1399886467.git.viresh.kumar@linaro.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On systems where DMA addresses and physical addresses are not 1:1
-(such as Xen PV guests), the generic dma_get_required_mask() will not
-return the correct mask (since it uses max_pfn).
+On Mon, 12 May 2014, Viresh Kumar wrote:
+> clockevents_set_mode() calls dev->set_mode() which has return type of 'void'
+> currently. Later patches would add another interface dev->set_dev_mode(), which
+> will return int and clockevents_set_mode() must propagate failures returned from
+> it.
+> 
+> This patch changes prototype of clockevents_set_mode() to return 'int' and fix
+> caller sites as well. As most of the call sites maynot work if
+> clockevents_set_mode() fails, do issue a WARN() on failures. All other are
+> updated to return error codes.
 
-Some device drivers (such as mptsas, mpt2sas) use
-dma_get_required_mask() to set device DMA masks to allow them to use
-only 32-bit DMA addresses in hardware structures.  This results in
-unnecessary use of the SWIOTLB if DMA addresses are more than 32-bits,
-impacting performance significantly.
+Is this a speed coding contest? And did you even think about what I
+suggested:
 
-Provide an arch-specific dma_get_required_mask() that defaults to the
-generic dma_get_required_mask_from_pfn().
+if (dev->set_dev_mode) {
+   ret = dev->set_dev_mode(dev, mode);
+   handle_return_value(ret);
+   
+Does that handle_return_value() mean that you sprinkle WARN_ONs all
+over the place? Does it mean, that you change the return value
+semantics of functions which happen to call clock_events_set_mode()
+just because it now has a return value?
 
-Under Xen, the required DMA mask can then be set to always 64-bits.
+Hell no.
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
----
- arch/x86/include/asm/device.h  |    2 ++
- arch/x86/kernel/pci-dma.c      |    7 +++++++
- arch/x86/xen/pci-swiotlb-xen.c |    1 +
- drivers/xen/swiotlb-xen.c      |    7 +++++++
- include/xen/swiotlb-xen.h      |    4 ++++
- 5 files changed, 21 insertions(+)
+handle_return_value() means handle the return value right there. We
+know what we want to set and we know what may fail and what not, so we
+can explicitely WARN right there. And for those things which might
+fail, we return the failure and handle it at the call site. 
 
-diff --git a/arch/x86/include/asm/device.h b/arch/x86/include/asm/device.h
-index 03dd729..10bc628 100644
---- a/arch/x86/include/asm/device.h
-+++ b/arch/x86/include/asm/device.h
-@@ -13,4 +13,6 @@ struct dev_archdata {
- struct pdev_archdata {
- };
- 
-+#define ARCH_HAS_DMA_GET_REQUIRED_MASK
-+
- #endif /* _ASM_X86_DEVICE_H */
-diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
-index f7d0672..ad2c3e2 100644
---- a/arch/x86/kernel/pci-dma.c
-+++ b/arch/x86/kernel/pci-dma.c
-@@ -135,6 +135,13 @@ void dma_generic_free_coherent(struct device *dev, size_t size, void *vaddr,
- 		free_pages((unsigned long)vaddr, get_order(size));
- }
- 
-+u64 dma_get_required_mask(struct device *dev)
-+{
-+	if (dma_ops->get_required_mask)
-+		return dma_ops->get_required_mask(dev);
-+	return dma_get_required_mask_from_max_pfn(dev);
-+}
-+
- /*
-  * See <Documentation/x86/x86_64/boot-options.txt> for the iommu kernel
-  * parameter documentation.
-diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
-index 0e98e5d..a5d180a 100644
---- a/arch/x86/xen/pci-swiotlb-xen.c
-+++ b/arch/x86/xen/pci-swiotlb-xen.c
-@@ -31,6 +31,7 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
- 	.map_page = xen_swiotlb_map_page,
- 	.unmap_page = xen_swiotlb_unmap_page,
- 	.dma_supported = xen_swiotlb_dma_supported,
-+	.get_required_mask = xen_swiotlb_get_required_mask,
- };
- 
- /*
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index ebd8f21..798f62b 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -683,3 +683,10 @@ xen_swiotlb_set_dma_mask(struct device *dev, u64 dma_mask)
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(xen_swiotlb_set_dma_mask);
-+
-+u64
-+xen_swiotlb_get_required_mask(struct device *dev)
-+{
-+	return DMA_BIT_MASK(64);
-+}
-+EXPORT_SYMBOL_GPL(xen_swiotlb_get_required_mask);
-diff --git a/include/xen/swiotlb-xen.h b/include/xen/swiotlb-xen.h
-index 8b2eb93..6408888 100644
---- a/include/xen/swiotlb-xen.h
-+++ b/include/xen/swiotlb-xen.h
-@@ -58,4 +58,8 @@ xen_swiotlb_dma_supported(struct device *hwdev, u64 mask);
- 
- extern int
- xen_swiotlb_set_dma_mask(struct device *dev, u64 dma_mask);
-+
-+extern u64
-+xen_swiotlb_get_required_mask(struct device *dev);
-+
- #endif /* __LINUX_SWIOTLB_XEN_H */
--- 
-1.7.10.4
+I've warned you and I'm seriosly grumpy by now. You are just wasting
+my time and I'm tired of that.
 
+Find someone competent who reviews your patches, deals with you and
+when they make sense sends them to me. Or just stay away from kernel/*
+and find something else to wreckage.
+
+Thanks,
+
+	tglx
