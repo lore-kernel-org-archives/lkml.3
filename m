@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413AbaELHHJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 03:07:09 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:35357 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567AbaELHHH (ORCPT
+	id S1753531AbaELHHa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 03:07:30 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:58981 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750778AbaELHH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 03:07:07 -0400
-Date: Mon, 12 May 2014 16:07:03 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] drivers: sh: compile drivers/sh/pm_runtime.c if
- ARCH_SHMOBILE_MULTI
-Message-ID: <20140512070700.GA20505@verge.net.au>
-References: <1399411579-10681-1-git-send-email-geert+renesas@glider.be>
- <CAMuHMdWwenyU1RS4c8spFcb7M0oCXP9z8zbGQ0VACKj7EbvvkA@mail.gmail.com>
- <20140511004626.GW31760@verge.net.au>
- <CANqRtoQzxdjwU+BLyccrSzfBx3UMKm6=MAw9dUHSEBWm5_Vspg@mail.gmail.com>
+	Mon, 12 May 2014 03:07:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANqRtoQzxdjwU+BLyccrSzfBx3UMKm6=MAw9dUHSEBWm5_Vspg@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.02.1405101256430.6261@ionos.tec.linutronix.de>
+References: <cover.1399623699.git.viresh.kumar@linaro.org>
+	<0fe81b08a8aa32912ce7b4a015fdc09b6e3830e3.1399623699.git.viresh.kumar@linaro.org>
+	<alpine.DEB.2.02.1405091728450.6261@ionos.tec.linutronix.de>
+	<alpine.DEB.2.02.1405101256430.6261@ionos.tec.linutronix.de>
+Date: Mon, 12 May 2014 12:37:27 +0530
+Message-ID: <CAKohpomDmCtrEuq2o8CYto7_bo+zAgyo99LntX8PY1tKhwcbig@mail.gmail.com>
+Subject: Re: [PATCH 2/2] tick: SHUTDOWN event-dev if no events are required
+ for KTIME_MAX
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Kevin Hilman <khilman@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 08:24:03AM +0900, Magnus Damm wrote:
-> On Sun, May 11, 2014 at 9:46 AM, Simon Horman <horms@verge.net.au> wrote:
-> > On Thu, May 08, 2014 at 12:12:29PM +0200, Geert Uytterhoeven wrote:
-> >> On Tue, May 6, 2014 at 11:26 PM, Geert Uytterhoeven
-> >> <geert+renesas@glider.be> wrote:
-> >> > Tested on Koelsch (legacy, reference, shmobile, and shmobile+bbb kernels)
-> >> > and BeagleBone Black (shmobile+bbb). Will test on more hardware tomorrow.
-> >>
-> >> Tested on genmai with Wolfram's CCF support.
-> >
-> > Thanks, shall I go ahead and queue this up?
-> 
-> Yes please, at least from my side everything looks perfect.
+On 10 May 2014 16:31, Thomas Gleixner <tglx@linutronix.de> wrote:
+> There is even a better way to do that:
+>
+> 1) Create a new callback set_state() which has an
+>    int return value.
+>
+> 2) Make the callsites do
+>
+>    if (dev->set_state) {
+>       ret = dev->set_state();
+>       handle_return_value();
+>    } else
+>       dev->set_mode();
 
-Thanks, will do.
+Do you want me to touch clock_event_mode as well?
+Otherwise we will pass mode into a function setting state..
 
-I currently plan to send this on to Linus when the merge window
-opens for v3.16.
+Or we can do s/mode/state after all the work suggested by you
+is done ..
 
-This differs from other patches I have queued up (until now) which
-I have or intend to send via the ARM SoC tree.
+Or leave as is..
+
+1 & 2, should be just 1-2 patches, I will try to send them as soon
+as possible. Once these get your nod, will start working on fixing
+all the clockevent drivers.
+
+--
+viresh
