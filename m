@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609AbaELEnM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 00:43:12 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:44023 "EHLO
+	id S1751810AbaELErJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 00:47:09 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:46723 "EHLO
 	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401AbaELEnG (ORCPT
+	with ESMTP id S1750765AbaELErH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 00:43:06 -0400
-Message-ID: <53705153.4020606@linaro.org>
-Date: Mon, 12 May 2014 10:12:59 +0530
+	Mon, 12 May 2014 00:47:07 -0400
+Message-ID: <53705243.1030704@linaro.org>
+Date: Mon, 12 May 2014 10:16:59 +0530
 From: Tushar Behera <tushar.behera@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
@@ -19,9 +19,10 @@ CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         t.figa@samsung.com, kgene.kim@samsung.com, galak@codeaurora.org,
         ijc+devicetree@hellion.org.uk, mark.rutland@arm.com,
         pawel.moll@arm.com, robh+dt@kernel.org
-Subject: Re: [PATCH 0/4] Add framework to support clkout
-References: <1399640410-30957-1-git-send-email-tushar.behera@linaro.org> <536D9F88.9000505@samsung.com>
-In-Reply-To: <536D9F88.9000505@samsung.com>
+Subject: Re: [PATCH 1/4] clk: samsung: out: Add infrastructure to register
+ CLKOUT
+References: <1399640410-30957-1-git-send-email-tushar.behera@linaro.org> <1399640410-30957-2-git-send-email-tushar.behera@linaro.org> <536DA243.6000600@samsung.com>
+In-Reply-To: <536DA243.6000600@samsung.com>
 X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -29,59 +30,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2014 09:09 AM, Pankaj Dubey wrote:
-> Hi Tushar,
-> 
-[ ... ]
->> Also we need to find a suitable place to call early_syscon_init(), after
->> the device tree has been unflattened and before clock initialization.
+On 05/10/2014 09:21 AM, Pankaj Dubey wrote:
+> On 05/09/2014 10:00 PM, Tushar Behera wrote:
+>> All SoC in Exynos-series have a clock with name XCLKOUT to provide
+>> debug information about various clocks available in the SoC. The register
+>> controlling the MUX and GATE of this clock is provided within PMU domain.
+>> Since PMU domain can't be dedicatedly mapped by every driver, the
+>> register
+>> needs to be handled through a regmap handle provided by PMU syscon
+>> controller. Right now, CCF doesn't allow regmap based MUX and GATE
+>> clocks,
+>> hence a dedicated clock provider for XCLKOUT is added here.
 >>
->> While testing, I called this before of_clk_init() in
->> arch/arm/kernel/time.c,
->> but that place is too generic. Calling anywhere from exynos.c is not
->> working ATM.
+>> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+>> CC: Tomasz Figa <t.figa@samsung.com>
+>> ---
+>>   drivers/clk/samsung/Makefile  |    2 +-
+>>   drivers/clk/samsung/clk-out.c |  181
+>> +++++++++++++++++++++++++++++++++++++++++
+>>   drivers/clk/samsung/clk.h     |   33 ++++++++
+>>   3 files changed, 215 insertions(+), 1 deletion(-)
+>>   create mode 100644 drivers/clk/samsung/clk-out.c
+>>
+
+[ ... ]
+
+>> +/**
+>> + * struct samsung_clkout_soc_data: SoC specific register details
+>> + * @reg: Offset of CLKOUT register from PMU base
 > 
-> IMO we do not need to, or if I am not wrong we should not change time.c.
+> how about naming this variable as "offset" instead of "reg".
 > 
 
-The above solution is definitely a hack and just to test my stuff. The
-below solution looks good.
+Okay, I will change that.
 
-> It's possible if we have exynos specific init_time with following changes.
-> FYI, In my patch series for Exynos PMU [1], currently I am handling this in
-> exynos_dt_machine_init. But definitely it can be handled as below and it
-> works
-> without any side effect and I have tested it. Only reason I do not
-> adopted this
-> as for Exynos PMU patch support I had other options. But if required and if
-> following change is acceptable I can include this in my next version of
-> Exynos
-> PMU patch series.
-> 
-> [1]: https://lkml.org/lkml/2014/4/30/18
-> 
-> 
-> +static void __init exynos_init_time(void)
-> +{
-> +    /* Nothing to do timer specific
-> +     * as early_syscon_init requires DT to be unflattened and
-> +     * system should be able to allocate memory we need to
-> +     * postpone until init_time, but it should be done before
-> +     * init_machine. Because before init_machine, secondary
-> +     * core boot starts and it uses PMU registers.
-> +     */
-> +
-> +    exynos_map_pmu();
-> +
+[ ... ]
 
-Instead of calling early_syscon_init() from within exynos_map_pmu(), it
-would be good to call it explicitly here before exynos_map_pmu().
+>> +u8 samsung_clkout_get_parent(struct clk_hw *hw)
+>> +{
+>> +    struct samsung_clkout *clkout = to_clk_out(hw);
+>> +    const struct samsung_clkout_soc_data *soc_data = clkout->soc_data;
+>> +    unsigned int parent_mask = BIT(soc_data->mux_width) - 1;
+>> +    unsigned int val;
+>> +    int ret;
+>> +
+>> +    ret = regmap_read(clkout->regmap, soc_data->reg, &val);
+> 
+> Do we really need to keep return value in "ret" as I can't see you are
+> using it anywhere?
+> 
 
-> +    of_clk_init(NULL);
-> +    clocksource_of_init();
-> +
-> +}
-> +
+Right, we are not using that and can be removed.
+
+>> +
+>> +    return (val >> soc_data->mux_shift) & parent_mask;
+>> +}
+>> +
+
+[ ... ]
+
+>> +/* All existing Exynos serial of SoCs have common values for this
+>> offsets. */
+> typo: serial/series/
+
+Sure. Thanks for your review.
 
 -- 
 Tushar Behera
