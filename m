@@ -1,137 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759036AbaELRRm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 13:17:42 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49454 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752383AbaELRRl convert rfc822-to-8bit (ORCPT
+	id S1759230AbaELRUL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 13:20:11 -0400
+Received: from usevmg21.ericsson.net ([198.24.6.65]:50575 "EHLO
+	usevmg21.ericsson.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756181AbaELRUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 13:17:41 -0400
-Date: Mon, 12 May 2014 19:17:29 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 1/5] irq_work: Architecture support for remote irq work
- raise
-Message-ID: <20140512171729.GD13467@laptop.programming.kicks-ass.net>
-References: <1399851237-2226-1-git-send-email-fweisbec@gmail.com>
- <1399851237-2226-2-git-send-email-fweisbec@gmail.com>
- <20140512075650.GJ30445@twins.programming.kicks-ass.net>
- <20140512162641.GA28033@localhost.localdomain>
+	Mon, 12 May 2014 13:20:07 -0400
+X-AuditID: c6180641-f799b6d000000b0f-42-5370b1114ce0
+Message-ID: <537102BA.7090108@ericsson.com>
+Date: Mon, 12 May 2014 13:19:54 -0400
+From: Jon Maloy <jon.maloy@ericsson.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20140512162641.GA28033@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Willy Tarreau <w@1wt.eu>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Ying Xue <ying.xue@windriver.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [ 072/143] tipc: fix lockdep warning during bearer initialization
+References: <20140512003203.627061916@1wt.eu> <5370F0F0.1020606@ericsson.com> <20140512161613.GD19173@1wt.eu> <A2BAEFC30C8FD34388F02C9B3121859D1C250675@eusaamb103.ericsson.se> <20140512171234.GA21366@1wt.eu>
+In-Reply-To: <20140512171234.GA21366@1wt.eu>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [147.117.188.8]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrELMWRmVeSWpSXmKPExsUyuXRPuK7gxoJgg59tmhZzzrewWFzeNYfN
+	4tre48wWCzY+YrQ4Pn8Oo8Xj69eZHdg8Tk/fz+yxZeVNJo/Pm+Q81m/ZyhTAEsVlk5Kak1mW
+	WqRvl8CVMa3JsuA8W8W5d6+YGxhnsnYxcnJICJhI7Nr7jA3CFpO4cG89kM3FISRwlFHiWtsX
+	dghnG6PEvvcnWECqeAW0Jf7P7AGzWQRUJc5fWAw2iU1AQ+LltA5GEFtUIEyi/cJMZoh6QYmT
+	M5+A1YsIyEg0TZ3OAjKUWeAro8SEN//AioQF/CRWXV7OArHtPKNEx9K7QA4HB6eAjsSMnbYg
+	NcwCehJTrrYwQtjyEtvfzgHrFRJQlpj7YRoTxAuKEi+O/2SawCg0C8nuWUjaZyFpX8DIvIqR
+	o7Q4tSw33chwEyMw0I9JsDnuYFzwyfIQowAHoxIP74LZBcFCrIllxZW5hxilOViUxHnTP8UG
+	CwmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamDkXb4gTVtv1pe1siYVx6+2irFbyq6TiX4u0uIi
+	yHIn0Dk1L2Dqptuyoanb22bXMxx5+HDFtyXrjl0+rrrLa3vbyz2vtuzazTZbX+EJU5lb1i3x
+	P1p6oXGPkzYKGcT5qfYuzC/6PVNYTTlqp/qlS4GsTjPv23QmdPVxzWqebPvbJfX9PTlGQ0El
+	luKMREMt5qLiRADmBBnrVQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 06:26:49PM +0200, Frederic Weisbecker wrote:
-> On Mon, May 12, 2014 at 09:56:50AM +0200, Peter Zijlstra wrote:
-> > On Mon, May 12, 2014 at 01:33:53AM +0200, Frederic Weisbecker wrote:
-> > > We are going to extend irq work to support remote queuing.
-> > > 
-> > > So lets add a cpu argument to arch_irq_work_raise(). The architectures
-> > > willing to support that must then provide the backend to raise irq work
-> > > IPIs remotely.
-> > > 
-> > > Initial support is provided for x86 and ARM since they are easily
-> > > extended. The other archs that overwrite arch_irq_work_raise() seem
-> > > to use local clock interrupts and therefore need deeper rewrite of their
-> > > irq work support to implement remote raising.
-> > > 
-> > 
-> > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > 
-> > Why not borrow the smp_call_function IPI for the remote bits? We could
-> > limit the 'safe from NMI' to the local works. And we validate this by
-> > putting a WARN_ON(in_nmi()) in irq_work_queue_on().
+On 05/12/2014 01:12 PM, Willy Tarreau wrote:
+> On Mon, May 12, 2014 at 04:41:00PM +0000, Jon Maloy wrote:
+>> Sorry, I should have mentioned that it is still only in net-next.
+>> It is pretty recent.
 > 
-> Right, but although I don't need it to be safe from NMI, I need it
-> to be callable concurrently and when irqs are disabled.
+> OK indeed, got it here for reference :
 > 
-> So we can't use smp_call_function_single() for that. But we can use the async
-> version in which case we must keep the irq work claim. But that's
-> about the same than smp_queue_function_single() we had previously
-> and we are back with our csd_lock issue.
+>   https://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=7216cd949c9bd56
+> 
+> But anyway, what is mentionned in this commit is a number of changes that
+> happened between 2.6.32 and 3.15, so I hardly see how the tipc_net_lock
+> is obsolete in 2.6.32 if it does not have all these changes. I have counted
+> 489 commits between 2.6.32 and 3.15-rc5 touching net/tipc, so surely we
+> cannot count on what we have to get rid of this lock.
+> 
+> Am I missing anything ?
 
-Who said anything about using smp_call_function_single()?
+Ok. I missed the 2.6.32 part. I withdraw my objection.
 
+///jon
 
----
-diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index a82170e2fa78..2fc9d8ece05a 100644
---- a/kernel/irq_work.c
-+++ b/kernel/irq_work.c
-@@ -61,7 +61,8 @@ void __weak arch_irq_work_raise(void)
-  *
-  * Can be re-enqueued while the callback is still in progress.
-  */
--bool irq_work_queue(struct irq_work *work)
-+static __always_inline bool
-+__irq_work_queue_on(struct irq_work *work, int cpu)
- {
- 	/* Only queue if not already pending */
- 	if (!irq_work_claim(work))
-@@ -78,16 +79,31 @@ bool irq_work_queue(struct irq_work *work)
- 	 * for the next tick.
- 	 */
- 	if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
--		if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
--			arch_irq_work_raise();
-+		if (cmpxchg(&__get_cpu_var(irq_work_raised, 0, 1) == 0)) {
-+			if (cpu == smp_processor_id() || cpu == -1)
-+				arch_irq_work_raise();
-+			else
-+				arch_send_call_function_single_ipi();
-+		}
- 	}
- 
- 	preempt_enable();
- 
- 	return true;
- }
-+
-+bool irq_work_queue(struct irq_work *work)
-+{
-+	return __irq_work_queue_on(work, -1);
-+}
- EXPORT_SYMBOL_GPL(irq_work_queue);
- 
-+bool irq_work_queue_on(struct irq_work *work, int cpu)
-+{
-+	WARN_ON_ONCE(in_nmi());
-+	return __irq_work_queue_on(work, cpu);
-+}
-+
- bool irq_work_needs_cpu(void)
- {
- 	struct llist_head *this_list;
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 06d574e42c72..0fd53963c4fb 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -198,6 +198,12 @@ void generic_smp_call_function_single_interrupt(void)
- 		csd->func(csd->info);
- 		csd_unlock(csd);
- 	}
-+
-+	/*
-+	 * First run the synchronous callbacks, people are waiting on them;
-+	 * then run the async ones.
-+	 */
-+	irq_work_run();
- }
- 
- /*
+> 
+> Thanks,
+> Willy
+> 
+
