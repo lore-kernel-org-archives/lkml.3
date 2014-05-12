@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758875AbaELQLh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:11:37 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:39423 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756003AbaELQIx (ORCPT
+	id S1758945AbaELQMM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:12:12 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:49454 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755921AbaELQIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 May 2014 12:08:53 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
@@ -14,11 +14,10 @@ To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
 Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Olivier Bideau <olivier.bideau@st.com>
-Subject: [PATCH 10/12] drivers: clk: st: STiH407: Support for clockgenA9
-Date: Mon, 12 May 2014 18:06:38 +0200
-Message-Id: <1399910800-12847-11-git-send-email-gabriel.fernandez@linaro.org>
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [PATCH 01/12] clk: st: Update ST clock binding documentation
+Date: Mon, 12 May 2014 18:06:29 +0200
+Message-Id: <1399910800-12847-2-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399910800-12847-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1399910800-12847-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -28,48 +27,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch added support for DT registration of ClockGenA9
-It includes c32 type PLL.
+This patch adds new compatibilities to support STiH407 SoC.
 
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Signed-off-by: Olivier Bideau <olivier.bideau@st.com>
 ---
- drivers/clk/st/clkgen-pll.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ .../devicetree/bindings/clock/st/st,clkgen-mux.txt   |  2 +-
+ .../devicetree/bindings/clock/st/st,clkgen-pll.txt   |  5 ++++-
+ .../devicetree/bindings/clock/st/st,clkgen.txt       | 20 ++++++++++++++++----
+ .../devicetree/bindings/clock/st/st,quadfs.txt       |  3 +++
+ 4 files changed, 24 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/clk/st/clkgen-pll.c b/drivers/clk/st/clkgen-pll.c
-index cb4e5b6..2c6bba7 100644
---- a/drivers/clk/st/clkgen-pll.c
-+++ b/drivers/clk/st/clkgen-pll.c
-@@ -216,6 +216,18 @@ static struct clkgen_pll_data st_pll3200c32_407_c0_1 = {
- 	.ops		= &stm_pll3200c32_ops,
- };
+diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
+index 943e080..2d92fc8 100644
+--- a/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
++++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
+@@ -17,7 +17,7 @@ Required properties:
+ 	"st,stih416-clkgenf-vcc-sd",	"st,clkgen-mux"
+ 	"st,stih415-clkgen-a9-mux",	"st,clkgen-mux"
+ 	"st,stih416-clkgen-a9-mux",	"st,clkgen-mux"
+-
++	"st,stih407-clkgen-a9-mux",	"st,clkgen-mux"
  
-+static struct clkgen_pll_data st_pll3200c32_407_a9 = {
-+	/* 407 A9 */
-+	.pdn_status	= CLKGEN_FIELD(0x1a8,	0x1,			0),
-+	.locked_status	= CLKGEN_FIELD(0x87c,	0x1,			0),
-+	.ndiv		= CLKGEN_FIELD(0x1b0,	C32_NDIV_MASK,		0),
-+	.idf		= CLKGEN_FIELD(0x1a8,	C32_IDF_MASK,		25),
-+	.num_odfs = 1,
-+	.odf		= { CLKGEN_FIELD(0x1b0, C32_ODF_MASK,		8) },
-+	.odf_gate	= { CLKGEN_FIELD(0x1ac, 0x1,			28) },
-+	.ops		= &stm_pll3200c32_ops,
-+};
+ - #clock-cells : from common clock binding; shall be set to 0.
+ 
+diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
+index 81eb385..b852925 100644
+--- a/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
++++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
+@@ -19,11 +19,14 @@ Required properties:
+ 	"st,stih415-plls-c32-ddr",	"st,clkgen-plls-c32"
+ 	"st,stih416-plls-c32-a9",	"st,clkgen-plls-c32"
+ 	"st,stih416-plls-c32-ddr",	"st,clkgen-plls-c32"
++	"st,stih407-plls-c32-a0",	"st,clkgen-plls-c32"
++	"st,stih407-plls-c32-a9",	"st,clkgen-plls-c32"
++	"st,stih407-plls-c32-c0_0",	"st,clkgen-plls-c32"
++	"st,stih407-plls-c32-c0_1",	"st,clkgen-plls-c32"
+ 
+ 	"st,stih415-gpu-pll-c32",	"st,clkgengpu-pll-c32"
+ 	"st,stih416-gpu-pll-c32",	"st,clkgengpu-pll-c32"
+ 
+-
+ - #clock-cells : From common clock binding; shall be set to 1.
+ 
+ - clocks : From common clock binding
+diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
+index 49ec5ae..55506c2 100644
+--- a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
++++ b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
+@@ -24,16 +24,28 @@ address is common of all subnode.
+ 		quadfs_node {
+ 			...
+ 		};
 +
- /**
-  * DOC: Clock Generated by PLL, rate set and enabled by bootloader
-  *
-@@ -618,6 +630,10 @@ static struct of_device_id c32_pll_of_match[] = {
- 		.compatible = "st,stih407-plls-c32-c0_1",
- 		.data = &st_pll3200c32_407_c0_1,
- 	},
-+	{
-+		.compatible = "st,stih407-plls-c32-a9",
-+		.data = &st_pll3200c32_407_a9,
-+	},
- 	{}
- };
++		mux_node {
++			...
++		};
++
++		vcc_node {
++			...
++		};
+ 		...
+ 	};
+ 
+ This binding uses the common clock binding[1].
+-Each subnode should use the binding discribe in [2]..[4]
++Each subnode should use the binding discribe in [2]..[7]
+ 
+ [1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+-[2] Documentation/devicetree/bindings/clock/st,quadfs.txt
+-[3] Documentation/devicetree/bindings/clock/st,quadfs.txt
+-[4] Documentation/devicetree/bindings/clock/st,quadfs.txt
++[2] Documentation/devicetree/bindings/clock/st,clkgen-divmux.txt
++[3] Documentation/devicetree/bindings/clock/st,clkgen-mux.txt
++[4] Documentation/devicetree/bindings/clock/st,clkgen-pll.txt
++[5] Documentation/devicetree/bindings/clock/st,clkgen-prediv.txt
++[6] Documentation/devicetree/bindings/clock/st,vcc.txt
++[7] Documentation/devicetree/bindings/clock/st,quadfs.txt
++
+ 
+ Required properties:
+ - reg : A Base address and length of the register set.
+diff --git a/Documentation/devicetree/bindings/clock/st/st,quadfs.txt b/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
+index ec86d62..c0a4045 100644
+--- a/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
++++ b/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
+@@ -15,6 +15,9 @@ Required properties:
+   "st,stih416-quadfs432",	"st,quadfs"
+   "st,stih416-quadfs660-E",	"st,quadfs"
+   "st,stih416-quadfs660-F",	"st,quadfs"
++  "st,stih407-quadfs660-C",	"st,quadfs"
++  "st,stih407-quadfs660-D",	"st,quadfs"
++
+ 
+ - #clock-cells : from common clock binding; shall be set to 1.
  
 -- 
 1.9.1
