@@ -1,164 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977AbaELC3S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 22:29:18 -0400
-Received: from 1wt.eu ([62.212.114.60]:34312 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751509AbaELBlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:41:24 -0400
-Message-Id: <20140512003201.879931356@1wt.eu>
-User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:32:30 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 030/143] proc connector: fix info leaks
-In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
+	id S1751825AbaELC4y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 22:56:54 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:8765 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986AbaELC4x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 22:56:53 -0400
+Message-ID: <1399863406.3183.10.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 0/6] ipc/sem.c: Fix semctl(,,{GETNCNT,GETZCNT})
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, 1vier1@web.de
+Date: Sun, 11 May 2014 19:56:46 -0700
+In-Reply-To: <1399716199-26776-1-git-send-email-manfred@colorfullife.com>
+References: <1399716199-26776-1-git-send-email-manfred@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+On Sat, 2014-05-10 at 12:03 +0200, Manfred Spraul wrote:
+> Hi all,
+> 
+> According to the man page of semop(), semzcnt or semncnt are increased
+> exactly for the operation that couldn't proceed.
+> 
+> The Linux implementation always tried to be clever and to increase the counters
+> for all operations that might be the reason why a task sleeps.
 
-------------------
+... and I hate the fact that we do so on demand, instead of modifying
+the values when semop is called. This makes the whole semctl calls less
+accurate, and in fact its mentioned in the code.
 
-From: Mathias Krause <minipli@googlemail.com>
+> The following patches fix that and make the code conform to the 
+> documentation.
+> 
+> The series got fairly long, because I also noticed that semzcnt was calculated
+> incorrectly.
+> 
+> What do you think?
 
-[ Upstream commit e727ca82e0e9616ab4844301e6bae60ca7327682 ]
+I'm still going through the changes, sems make my brain hurt. But
+conceptually they do make sense... and hey, if semctl(GETNCNT,GETZCNT)
+calls are currently incomplete, then yeah, we should fix it.
 
-Initialize event_data for all possible message types to prevent leaking
-kernel stack contents to userland (up to 20 bytes). Also set the flags
-member of the connector message to 0 to prevent leaking two more stack
-bytes this way.
+> I ran a few test cases, and the semncnt and semzcnt counts now match
+> the expectation.
+> 
+> Is anyone aware of an application that uses GETNCNT or GETZCNT?
 
-Cc: stable@vger.kernel.org  
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
----
- drivers/connector/cn_proc.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+Given how Oracle uses sysv semaphores I wouldn't be surprised if they
+make use of these, specially GETNCNT, for something like "get the amount
+of waiters" as opposed to "are there waiters"... but I'm just
+speculating here.
 
-diff --git a/drivers/connector/cn_proc.c b/drivers/connector/cn_proc.c
-index 6069790..3a2587a 100644
---- a/drivers/connector/cn_proc.c
-+++ b/drivers/connector/cn_proc.c
-@@ -59,6 +59,7 @@ void proc_fork_connector(struct task_struct *task)
- 
- 	msg = (struct cn_msg*)buffer;
- 	ev = (struct proc_event*)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -71,6 +72,7 @@ void proc_fork_connector(struct task_struct *task)
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	/*  If cn_netlink_send() failed, the data is not sent */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
-@@ -87,6 +89,7 @@ void proc_exec_connector(struct task_struct *task)
- 
- 	msg = (struct cn_msg*)buffer;
- 	ev = (struct proc_event*)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -97,6 +100,7 @@ void proc_exec_connector(struct task_struct *task)
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
-@@ -113,6 +117,7 @@ void proc_id_connector(struct task_struct *task, int which_id)
- 
- 	msg = (struct cn_msg*)buffer;
- 	ev = (struct proc_event*)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	ev->what = which_id;
- 	ev->event_data.id.process_pid = task->pid;
- 	ev->event_data.id.process_tgid = task->tgid;
-@@ -136,6 +141,7 @@ void proc_id_connector(struct task_struct *task, int which_id)
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
-@@ -151,6 +157,7 @@ void proc_sid_connector(struct task_struct *task)
- 
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -161,6 +168,7 @@ void proc_sid_connector(struct task_struct *task)
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
-@@ -176,8 +184,10 @@ void proc_exit_connector(struct task_struct *task)
- 
- 	msg = (struct cn_msg*)buffer;
- 	ev = (struct proc_event*)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
- 	ev->what = PROC_EVENT_EXIT;
- 	ev->event_data.exit.process_pid = task->pid;
-@@ -188,6 +198,7 @@ void proc_exit_connector(struct task_struct *task)
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
-@@ -211,6 +222,7 @@ static void cn_proc_ack(int err, int rcvd_seq, int rcvd_ack)
- 
- 	msg = (struct cn_msg*)buffer;
- 	ev = (struct proc_event*)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	msg->seq = rcvd_seq;
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -220,6 +232,7 @@ static void cn_proc_ack(int err, int rcvd_seq, int rcvd_ack)
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = rcvd_ack + 1;
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
-@@ -249,6 +262,7 @@ static void cn_proc_mcast_ctl(struct cn_msg *msg,
- 		break;
- 	}
- 	cn_proc_ack(err, msg->seq, msg->ack);
-+	msg->flags = 0; /* not used */
- }
- 
- /*
-@@ -269,3 +283,5 @@ static int __init cn_proc_init(void)
- }
- 
- module_init(cn_proc_init);
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
-+	msg->flags = 0; /* not used */
--- 
-1.7.12.2.21.g234cd45.dirty
+I did find that LTP does some calls to GETZNCT, GETNCNT, and these
+patches do not break those tests. However, they are pretty bogus since
+they always test for zero. That reminds me, it might be worthwhile
+adding some more tests in the selftests/ipc dir, we only have some
+trivial msgq program, for the rest I pretty much rely on LTP for
+correctness runs.
 
-
+Thanks,
+Davidlohr
 
