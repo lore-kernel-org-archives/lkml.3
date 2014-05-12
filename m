@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150AbaELDY2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 23:24:28 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:50123 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390AbaELDY1 (ORCPT
+	id S1751522AbaELDbW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 23:31:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45079 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004AbaELDbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 23:24:27 -0400
+	Sun, 11 May 2014 23:31:20 -0400
+Date: Sun, 11 May 2014 20:30:58 -0700
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-7a5091d58419b4e5222abce58a40c072786ea1d6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        smueller@chronox.de, tglx@linutronix.de, tytso@mit.edu,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        smueller@chronox.de, tglx@linutronix.de, hpa@linux.intel.com,
+        tytso@mit.edu
+In-Reply-To: <21542339.0lFnPSyGRS@myon.chronox.de>
+References: <21542339.0lFnPSyGRS@myon.chronox.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, rdrand: When nordrand is specified,
+  disable RDSEED as well
+Git-Commit-ID: 7a5091d58419b4e5222abce58a40c072786ea1d6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20140510190616.5b2f08be29de98e9cb065fd2@skynet.be>
-References: <20140510190616.5b2f08be29de98e9cb065fd2@skynet.be>
-Date: Mon, 12 May 2014 11:24:26 +0800
-Message-ID: <CACVXFVPsBaie2UXEgR53dOr8JJ=O-6o2Fk6V9us161h7UydkUg@mail.gmail.com>
-Subject: Re: [PATCH V4 2/2] fs/ext4/fsync.c: generic_file_fsync call based on
- barrier flag
-From: Ming Lei <tom.leiming@gmail.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, jack <jack@suse.cz>,
-        hch <hch@infradead.org>, Viro <viro@zeniv.linux.org.uk>,
-        tytso <tytso@mit.edu>, akpm <akpm@linux-foundation.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 11, 2014 at 1:06 AM, Fabian Frederick <fabf@skynet.be> wrote:
-> generic_file_fsync has been updated to issue a flush for
-> older filesystems.
->
-> This patch tests for barrier flag in ext4 mount flags
-> and calls the right function.
->
-> Suggested-by: Jan Kara <jack@suse.cz>
-> Suggested-by: Christoph Hellwig <hch@infradead.org>
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: Christoph Hellwig <hch@infradead.org>
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: "Theodore Ts'o" <tytso@mit.edu>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  fs/ext4/fsync.c | 4 ++++
->  1 file changed, 4 insertions(+)
->
-> diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
-> index a8bc47f..fa82c0a 100644
-> --- a/fs/ext4/fsync.c
-> +++ b/fs/ext4/fsync.c
-> @@ -108,6 +108,10 @@ int ext4_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
->
->         if (!journal) {
->                 ret = generic_file_fsync(file, start, end, datasync);
+Commit-ID:  7a5091d58419b4e5222abce58a40c072786ea1d6
+Gitweb:     http://git.kernel.org/tip/7a5091d58419b4e5222abce58a40c072786ea1d6
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Sun, 11 May 2014 20:25:20 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sun, 11 May 2014 20:25:20 -0700
 
-Forget to remove above line?
+x86, rdrand: When nordrand is specified, disable RDSEED as well
 
-> +               if (test_opt(inode->i_sb, BARRIER))
-> +                       ret = generic_file_fsync(file, start, end, datasync);
-> +               else
-> +                       ret = __generic_file_fsync(file, start, end, datasync);
->                 if (!ret && !hlist_empty(&inode->i_dentry))
->                         ret = ext4_sync_parent(inode);
->                 goto out;
+One can logically expect that when the user has specified "nordrand",
+the user doesn't want any use of the CPU random number generator,
+neither RDRAND nor RDSEED, so disable both.
 
+Reported-by: Stephan Mueller <smueller@chronox.de>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Link: http://lkml.kernel.org/r/21542339.0lFnPSyGRS@myon.chronox.de
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ Documentation/kernel-parameters.txt | 8 ++++----
+ arch/x86/kernel/cpu/rdrand.c        | 1 +
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
-
-Thanks,
--- 
-Ming Lei
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 4384217..30a8ad0d 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2218,10 +2218,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	noreplace-smp	[X86-32,SMP] Don't replace SMP instructions
+ 			with UP alternatives
+ 
+-	nordrand	[X86] Disable the direct use of the RDRAND
+-			instruction even if it is supported by the
+-			processor.  RDRAND is still available to user
+-			space applications.
++	nordrand	[X86] Disable kernel use of the RDRAND and
++			RDSEED instructions even if they are supported
++			by the processor.  RDRAND and RDSEED are still
++			available to user space applications.
+ 
+ 	noresume	[SWSUSP] Disables resume and restores original swap
+ 			space.
+diff --git a/arch/x86/kernel/cpu/rdrand.c b/arch/x86/kernel/cpu/rdrand.c
+index 384df51..136ac74 100644
+--- a/arch/x86/kernel/cpu/rdrand.c
++++ b/arch/x86/kernel/cpu/rdrand.c
+@@ -27,6 +27,7 @@
+ static int __init x86_rdrand_setup(char *s)
+ {
+ 	setup_clear_cpu_cap(X86_FEATURE_RDRAND);
++	setup_clear_cpu_cap(X86_FEATURE_RDSEED);
+ 	return 1;
+ }
+ __setup("nordrand", x86_rdrand_setup);
