@@ -1,83 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529AbaELSwI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 14:52:08 -0400
-Received: from s3.sipsolutions.net ([5.9.151.49]:35409 "EHLO sipsolutions.net"
+	id S1755652AbaELSxV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 14:53:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49340 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750924AbaELSwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 14:52:07 -0400
-Message-ID: <1399920710.4337.26.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH 1/1] net/wireless/ibss.c: replace memcpy by
- ether_addr_copy
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Joe Perches <joe@perches.com>
-Cc: Fabian Frederick <fabf@skynet.be>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        akpm <akpm@linux-foundation.org>
-Date: Mon, 12 May 2014 20:51:50 +0200
-In-Reply-To: <1399918029.9240.19.camel@joe-AO725>
-References: <20140512193050.1ba6a301b20af3f4e7e43870@skynet.be>
-	 <1399917025.9240.16.camel@joe-AO725>
-	 <20140512200033.87712053add71ca2cf35fe79@skynet.be>
-	 <1399918029.9240.19.camel@joe-AO725>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.1-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754713AbaELSxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 14:53:20 -0400
+From: Paul Moore <pmoore@redhat.com>
+To: Markos Chandras <markos.chandras@imgtec.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Cc: Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH 3.15] MIPS: Add new AUDIT_ARCH token for the N32 ABI on MIPS64
+Date: Mon, 12 May 2014 14:53:05 -0400
+Message-ID: <2398159.J868kTHAKn@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.13 (Linux/3.14.1-gentoo; KDE/4.13.0; x86_64; ; )
+In-Reply-To: <1398177636-10442-1-git-send-email-markos.chandras@imgtec.com>
+References: <1397550996-14805-1-git-send-email-markos.chandras@imgtec.com> <1398177636-10442-1-git-send-email-markos.chandras@imgtec.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-12 at 11:07 -0700, Joe Perches wrote:
-> On Mon, 2014-05-12 at 20:00 +0200, Fabian Frederick wrote:
-> > On Mon, 12 May 2014 10:50:25 -0700
-> > Joe Perches <joe@perches.com> wrote:
-> > 
-> > > On Mon, 2014-05-12 at 19:30 +0200, Fabian Frederick wrote:
-> > > > This patch also fixes some comment checkpatch warnings
-> > > 
-> > > Hello Fabian.
-> > > 
-> > > For all the patches that replace memcpy(foo, bar, ETH_ALEN)
-> > > with ether_addr_copy, did you use a tool to verify both
-> > > arguments are __aligned(2) or did you do the verification
-> > > visually?
-> > 
-> > Hello Joe,
-> > 
-> > I only replaced ETH_ALEN/memcpy .
-> > AFAICS ETH_ALEN is defined 6 ...
+On Tuesday, April 22, 2014 03:40:36 PM Markos Chandras wrote:
+> A MIPS64 kernel may support ELF files for all 3 MIPS ABIs
+> (O32, N32, N64). Furthermore, the AUDIT_ARCH_MIPS{,EL}64 token
+> does not provide enough information about the ABI for the 64-bit
+> process. As a result of which, userland needs to use complex
+> seccomp filters to decide whether a syscall belongs to the o32 or n32
+> or n64 ABI. Therefore, a new arch token for MIPS64/n32 is added so it
+> can be used by seccomp to explicitely set syscall filters for this ABI.
 > 
-> The difference here is that both arguments to
-> ether_addr_copy, like all the is_<foo>_ether_addr
-> helpers, must be __aligned(2).  memcpy has
-> no alignment requirement.
+> Link: http://sourceforge.net/p/libseccomp/mailman/message/32239040/
+> Cc: Andy Lutomirski <luto@amacapital.net>
+> Cc: Eric Paris <eparis@redhat.com>
+> Cc: Paul Moore <pmoore@redhat.com>
+> Cc: Ralf Baechle <ralf@linux-mips.org>
+> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+> ---
+> Ralf, can we please have this in 3.15 (Assuming it's ACK'd)?
 > 
-> Please verify that all these changes are to
-> __aligned(2) arguments.
+> Thanks a lot!
+> ---
+>  arch/mips/include/asm/syscall.h |  2 ++
+>  include/uapi/linux/audit.h      | 12 ++++++++++++
+>  2 files changed, 14 insertions(+)
 
-Seriously though, who cares. Only two of these patches really touch
-paths where performance matters - and one of those is the lib80211 one
-which is practically only used for certain ancient Intel devices, which
-probably don't run on anything but IA where I'd guess the whole thing
-doesn't really matter anyway.
+[NOTE: Adding lkml to the To line to hopefully spur discussion/acceptance as 
+this *really* should be in 3.15]
 
-I certainly don't see the benefit in changing all those other files,
-particularly since it's not just that we have to verify alignment *now*,
-we also have to add alignment attributes so that we don't break
-alignment in the future.
+I'm re-replying to this patch and adding lkml to the To line because I believe 
+it is very important we get this patch into 3.15.  For those who don't follow 
+the MIPS architecture very closely, the upcoming 3.15 is the first release to 
+include support for seccomp filters, the latest generation of syscall 
+filtering which used a BPF based filter language.  For reason that are easy to 
+understand, the syscall filters are ABI specific (e.g. syscall tables, word 
+length, endianness) and those generating syscall filters in userspace (e.g. 
+libseccomp) need to take great care to ensure that the generated filters take 
+the ABI into account and fail safely in the case where a different ABI is used 
+(e.g. x86, x86_64, x32).
 
-Additionally doesn't even really save much typing:
+The patch below corrects, what is IMHO, an omission in the original MIPS 
+seccomp filter patch, allowing userspace to easily separate MIPS and MIPS64.  
+Without this patch we will be forced to handle MIPS/MIPS64 like we handle 
+x86_64/x32 which is a royal pain and not something I want to have deal with 
+again.
 
-memcpy(x, y, ETH_ALEN);
-ether_addr_copy(x, y);
+Further, while I don't want to speak for the audit folks, it is my 
+understanding that they want this patch for similar reasons.
 
-Finally, some of these patches are doing comment reformatting, which
-clearly is out of scope for them.
+Please merge this patch for 3.15 or at least provide some feedback as to why 
+this isn't a viable solution for upstream.  Once 3.15 ships, fixing this will 
+require breaking the MIPS ABI which isn't something any of us want.
 
-As a consequence, I'm considering the net/wireless/util.c one, but none
-of the others.
+Thanks,
+-Paul
 
-johannes
+> diff --git a/arch/mips/include/asm/syscall.h
+> b/arch/mips/include/asm/syscall.h index c6e9cd2..17960fe 100644
+> --- a/arch/mips/include/asm/syscall.h
+> +++ b/arch/mips/include/asm/syscall.h
+> @@ -133,6 +133,8 @@ static inline int syscall_get_arch(void)
+>  #ifdef CONFIG_64BIT
+>  	if (!test_thread_flag(TIF_32BIT_REGS))
+>  		arch |= __AUDIT_ARCH_64BIT;
+> +	if (test_thread_flag(TIF_32BIT_ADDR))
+> +		arch |= __AUDIT_ARCH_CONVENTION_MIPS64_N32;
+>  #endif
+>  #if defined(__LITTLE_ENDIAN)
+>  	arch |=  __AUDIT_ARCH_LE;
+> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+> index 11917f7..1b1efdd 100644
+> --- a/include/uapi/linux/audit.h
+> +++ b/include/uapi/linux/audit.h
+> @@ -331,9 +331,17 @@ enum {
+>  #define AUDIT_FAIL_PRINTK	1
+>  #define AUDIT_FAIL_PANIC	2
+> 
+> +/*
+> + * These bits disambiguate different calling conventions that share an
+> + * ELF machine type, bitness, and endianness
+> + */
+> +#define __AUDIT_ARCH_CONVENTION_MASK 0x30000000
+> +#define __AUDIT_ARCH_CONVENTION_MIPS64_N32 0x20000000
+> +
+>  /* distinguish syscall tables */
+>  #define __AUDIT_ARCH_64BIT 0x80000000
+>  #define __AUDIT_ARCH_LE	   0x40000000
+> +
+>  #define AUDIT_ARCH_ALPHA	(EM_ALPHA|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
+>  #define AUDIT_ARCH_ARM		(EM_ARM|__AUDIT_ARCH_LE)
+>  #define AUDIT_ARCH_ARMEB	(EM_ARM)
+> @@ -346,7 +354,11 @@ enum {
+>  #define AUDIT_ARCH_MIPS		(EM_MIPS)
+>  #define AUDIT_ARCH_MIPSEL	(EM_MIPS|__AUDIT_ARCH_LE)
+>  #define AUDIT_ARCH_MIPS64	(EM_MIPS|__AUDIT_ARCH_64BIT)
+> +#define AUDIT_ARCH_MIPS64N32	(EM_MIPS|__AUDIT_ARCH_64BIT|\
+> +				 __AUDIT_ARCH_CONVENTION_MIPS64_N32)
+>  #define AUDIT_ARCH_MIPSEL64	(EM_MIPS|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
+> +#define AUDIT_ARCH_MIPSEL64N32	(EM_MIPS|__AUDIT_ARCH_64BIT|
+__AUDIT_ARCH_LE\
+> +				 __AUDIT_ARCH_CONVENTION_MIPS64_N32)
+>  #define AUDIT_ARCH_OPENRISC	(EM_OPENRISC)
+>  #define AUDIT_ARCH_PARISC	(EM_PARISC)
+>  #define AUDIT_ARCH_PARISC64	(EM_PARISC|__AUDIT_ARCH_64BIT)
+
+-- 
+paul moore
+security and virtualization @ redhat
 
