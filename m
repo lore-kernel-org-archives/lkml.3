@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234AbaELJa0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 05:30:26 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:53479 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813AbaELJaY (ORCPT
+	id S1755300AbaELJac (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 05:30:32 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61941 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754430AbaELJa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 05:30:24 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de
-Cc: linaro-kernel@lists.linaro.org, linaro-networking@linaro.org,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        arvind.chauhan@arm.com, daniel.lezcano@linaro.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [RFC 0/2] clockevents: add ->set_dev_mode() to struct clock_event_device
-Date: Mon, 12 May 2014 15:00:04 +0530
-Message-Id: <cover.1399886467.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
+	Mon, 12 May 2014 05:30:28 -0400
+Date: Mon, 12 May 2014 10:29:56 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Larry Bassel <larry.bassel@linaro.org>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "khilman@linaro.org" <khilman@linaro.org>
+Subject: Re: [PATCH v2] arm64: Support arch_irq_work_raise() via self IPIs
+Message-ID: <20140512092956.GB914@arm.com>
+References: <1399760621-10954-1-git-send-email-larry.bassel@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399760621-10954-1-git-send-email-larry.bassel@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On Sat, May 10, 2014 at 11:23:41PM +0100, Larry Bassel wrote:
+> Support for arch_irq_work_raise() was missing from
+> arm64 (a prerequisite for FULL_NOHZ).
 
-As suggested by you (https://lkml.org/lkml/2014/5/10/86), here is an attempt to
-implement first two steps for fixing the bigger problem.
+[...]
 
-This patchset is about adding ->set_dev_mode() to struct clock_event_device with
-return type 'int'. To achieve that return type of clockevents_set_mode() is also
-changed to propagate failures.
+> @@ -455,6 +457,14 @@ void arch_send_call_function_single_ipi(int cpu)
+>  	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+>  }
+>  
+> +#ifdef CONFIG_IRQ_WORK
+> +void arch_irq_work_raise(void)
+> +{
+> +	if (is_smp())
+> +		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
+> +}
+> +#endif
 
-Let me know if this is what you wanted to see or I screwed up again :(
+Does this even compile? We're probably better off just checking whether or
+not smp_cross_call is NULL.
 
-I will then start updating drivers one by one (100 drivers AFAICT). I will try to
-fix them in separate patches and will post them together in a single patchset.
-And because the number is going to be over 100, let me know how do you want me
-to send that..
-
-Viresh Kumar (2):
-  clockevents: return 'int' from clockevents_set_mode()
-  clockevents: add ->set_dev_mode() to struct clock_event_device
-
- arch/arm/common/bL_switcher.c |  5 +++--
- include/linux/clockchips.h    |  7 +++++--
- kernel/time/clockevents.c     | 34 +++++++++++++++++++++++++---------
- kernel/time/tick-broadcast.c  | 25 ++++++++++++++++---------
- kernel/time/tick-common.c     |  6 +++---
- kernel/time/tick-oneshot.c    |  6 +++---
- kernel/time/timer_list.c      |  9 +++++++--
- 7 files changed, 62 insertions(+), 30 deletions(-)
-
--- 
-2.0.0.rc2
-
+Will
