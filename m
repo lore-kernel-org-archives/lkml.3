@@ -1,78 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751467AbaELBMK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:12:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47540 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750986AbaELBMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:12:08 -0400
-Date: Mon, 12 May 2014 11:12:00 +1000
-From: NeilBrown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux RAID <linux-raid@vger.kernel.org>,
-        Chris Murphy <lists@colorremedies.com>
-Subject: [GIT PULL REQUEST] two bug fixes for md - both tagged  for -stable.
-Message-ID: <20140512111200.32a4b189@notabene.brown>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/VCMJLpP3E3/HKtFnqUCaFpq"; protocol="application/pgp-signature"
+	id S1751230AbaELBXq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:23:46 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:40583 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988AbaELBXp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:23:45 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Mon, 12 May 2014 10:25:56 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>
+Subject: Re: [PATCH v5] mm: support madvise(MADV_FREE)
+Message-ID: <20140512012556.GA32617@bbox>
+References: <1398045368-2586-1-git-send-email-minchan@kernel.org>
+ <536BE351.1050005@redhat.com>
+ <20140509061714.GF25951@bbox>
+ <20140509062803.GG25951@bbox>
+ <536CF041.5070007@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <536CF041.5070007@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/VCMJLpP3E3/HKtFnqUCaFpq
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, May 09, 2014 at 11:12:01AM -0400, Rik van Riel wrote:
+> On 05/09/2014 02:28 AM, Minchan Kim wrote:
+> >On Fri, May 09, 2014 at 03:17:14PM +0900, Minchan Kim wrote:
+> >>Hello Rik,
+> >>
+> >>On Thu, May 08, 2014 at 04:04:33PM -0400, Rik van Riel wrote:
+> >>>On 04/20/2014 09:56 PM, Minchan Kim wrote:
+> >>>
+> >>>>In summary, MADV_FREE is about 2 time faster than MADV_DONTNEED.
+> >>>
+> >>>This is awesome.
+> >>
+> >>Thanks!
+> >>
+> >>>
+> >>>I have a few nitpicks with the patch, though :)
+> >>>
+> >>>>+static long madvise_lazyfree(struct vm_area_struct *vma,
+> >>>>+			     struct vm_area_struct **prev,
+> >>>>+			     unsigned long start, unsigned long end)
+> >>>>+{
+> >>>>+	*prev = vma;
+> >>>>+	if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
+> >>>>+		return -EINVAL;
+> >>>>+
+> >>>>+	/* MADV_FREE works for only anon vma at the moment */
+> >>>>+	if (vma->vm_file)
+> >>>>+		return -EINVAL;
+> >>>>+
+> >>>>+	lazyfree_range(vma, start, end - start);
+> >>>>+	return 0;
+> >>>>+}
+> >>>
+> >>>This code checks whether lazyfree_range would work on
+> >>>the VMA...
+> >>>
+> >>>>diff --git a/mm/memory.c b/mm/memory.c
+> >>>>index c4b5bc250820..ca427f258204 100644
+> >>>>--- a/mm/memory.c
+> >>>>+++ b/mm/memory.c
+> >>>>@@ -1270,6 +1270,104 @@ static inline unsigned long zap_pud_range(struct mmu_gather *tlb,
+> >>>>  	return addr;
+> >>>>  }
+> >>>>
+> >>>>+static unsigned long lazyfree_pte_range(struct mmu_gather *tlb,
+> >>>>+				struct vm_area_struct *vma, pmd_t *pmd,
+> >>>>+				unsigned long addr, unsigned long end)
+> >>>>+{
+> >>>>+	struct mm_struct *mm = tlb->mm;
+> >>>>+	spinlock_t *ptl;
+> >>>>+	pte_t *start_pte;
+> >>>>+	pte_t *pte;
+> >>>>+
+> >>>>+	start_pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
+> >>>>+	pte = start_pte;
+> >>>>+	arch_enter_lazy_mmu_mode();
+> >>>>+	do {
+> >>>>+		pte_t ptent = *pte;
+> >>>>+
+> >>>>+		if (pte_none(ptent))
+> >>>>+			continue;
+> >>>>+
+> >>>>+		if (!pte_present(ptent))
+> >>>>+			continue;
+> >>>>+
+> >>>>+		ptent = pte_mkold(ptent);
+> >>>>+		ptent = pte_mkclean(ptent);
+> >>>>+		set_pte_at(mm, addr, pte, ptent);
+> >>>>+		tlb_remove_tlb_entry(tlb, pte, addr);
+> >>>
+> >>>This may not work on PPC, which has a weird hash table for
+> >>>its TLB. You will find that tlb_remove_tlb_entry does
+> >>>nothing for PPC64, and set_pte_at does not remove the hash
+> >>>table entry either.
+> >>
+> >>Hmm, I didn't notice that. Thanks Rik.
+> >>
+> >>Maybe I need this in asm-generic.
+> >>
+> >>static inline void ptep_set_lazyfree(struct mm_struct *mm, unsigned addr, pte_t *ptep)
+> >>{
+> >>         pte_t ptent = *ptep;
+> >>         ptent = pte_mkold(ptent);
+> >>         ptent = pte_mkclean(ptent);
+> >>         set_pte_at(mm, addr, ptep, ptent);
+> >>}
+> >>
+> >>For arch/powerpc/include/asm/pgtable.h
+> >>
+> >>static inline void ptep_set_lazyfree(struct mm_struct *mm, unsigned long addr,
+> >>                         pte_t *ptep)
+> >>{
+> >>         pte_update(mm, addr, ptep, _PAGE_DIRTY|_PAGE_ACCESSED, 0, 0);
+> >>}
+> >>
+> >>>
+> >>>>@@ -1370,6 +1485,31 @@ void unmap_vmas(struct mmu_gather *tlb,
+> >>>>  }
+> >>>>
+> >>>>  /**
+> >>>>+ * lazyfree_range - clear dirty bit of pte in a given range
+> >>>>+ * @vma: vm_area_struct holding the applicable pages
+> >>>>+ * @start: starting address of pages
+> >>>>+ * @size: number of bytes to do lazyfree
+> >>>>+ *
+> >>>>+ * Caller must protect the VMA list
+> >>>>+ */
+> >>>>+void lazyfree_range(struct vm_area_struct *vma, unsigned long start,
+> >>>>+		unsigned long size)
+> >>>>+{
+> >>>>+	struct mm_struct *mm = vma->vm_mm;
+> >>>>+	struct mmu_gather tlb;
+> >>>>+	unsigned long end = start + size;
+> >>>>+
+> >>>>+	lru_add_drain();
+> >>>>+	tlb_gather_mmu(&tlb, mm, start, end);
+> >>>>+	update_hiwater_rss(mm);
+> >>>>+	mmu_notifier_invalidate_range_start(mm, start, end);
+> >>>>+	for ( ; vma && vma->vm_start < end; vma = vma->vm_next)
+> >>>>+		lazyfree_single_vma(&tlb, vma, start, end);
+> >>>>+	mmu_notifier_invalidate_range_end(mm, start, end);
+> >>>>+	tlb_finish_mmu(&tlb, start, end);
+> >>>>+}
+> >>>
+> >>>This function, called by madvise_lazyfree, can iterate
+> >>>over multiple VMAs.
+> >>>
+> >>>However, madvise_lazyfree only checked one of them.
+> >>
+> >>Oops, the check should have been lazyfree_range.
+> >>Will fix.
+> >
+> >Now that I see the code, madvise_vma always pass *a* vma so madvise_lazyfree
+> >doesn't cover multiple vma all at once so the current sematic is same with
+> >dontneed. So, I don't see any problem. If I miss something, let me know it.
+> >
+> 
+> Does that mean lazyfree_range is unnecessary, and everything
+> can be done inside lazyfree_single_vma ?
 
-The following changes since commit d1db0eea852497762cab43b905b879dfcd3b8987:
+Yeb, Will resend.
+Thanks!
 
-  Linux 3.15-rc3 (2014-04-27 19:29:27 -0700)
-
-are available in the git repository at:
-
-  git://neil.brown.name/md/ tags/md/3.15-fixes
-
-for you to fetch changes up to 0f62fb220aa4ebabe8547d3a9ce4a16d3c045f21:
-
-  md: avoid possible spinning md thread at shutdown. (2014-05-06 09:49:31 +=
-1000)
-
-----------------------------------------------------------------
-Two bugfixes for md in 3.15
-
-Both tagged for -stable.
-
-----------------------------------------------------------------
-NeilBrown (2):
-      md/raid10: call wait_barrier() for each request submitted.
-      md: avoid possible spinning md thread at shutdown.
-
- drivers/md/md.c     |  3 ++-
- drivers/md/raid10.c | 13 +++++++------
- 2 files changed, 9 insertions(+), 7 deletions(-)
-
---Sig_/VCMJLpP3E3/HKtFnqUCaFpq
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU3Af4Dnsnt1WYoG5AQIS7A//Ub+Zm2xu+MZTbqBviyd5ZW7N5YDVJ1CA
-dLutVSX7o37CsMzVlV3spBsuDS3rmtVx9LjCsi+QYwQq9jgWs0Y1WQO778ndWmXI
-CXucKw3pS6zFDIwZusO0iIz+8CNoKY/9hDoav/oIY7+7p5TbrbNQTei8LmIlUf+K
-yXyHNFz/q8+oyGQDgAoBt+PRrGm+PE5hERjZChnxBrkQA4/Q10Nd7CpvsXXKmYnI
-pCox/TRw1ZnQeI2Vg9Gm5IDBfzaSHYrWrGEgFws9zz2KfoBhT5+SQmdJtWeQ0Gp8
-FFzv08O0/7tO/kc1CY2bDa2SI8iKN6fr+sT13q5gNxL4bYuBsBwQrHaIyb64VMZ5
-uYiYn3R2jM2Ms2Iqu4KSxwNTIOf421bH+F5tc1IYqrK9crJUUnq31bCqrBYtOzal
-OuhOuLc49P1e+MURqqqxKr3gDMmnqVE8qNbT6lCuq1CT2prQFj4wQRwme1n5k8M4
-kusocxs6LKbDeQowbtm1+f5BB87C9dbkOZxYg8XwxiZ0gMMJnsFKH2NP6wT8GCq4
-VWjWq6zufMkEZ8BeMVhCGys/YGLH/fuPVrfFtW0DmEdWhuUT3u+CetU5WU+HQc1W
-Ye9KF624gTLHMvxC5A2NHKWf9LN3gpkZR3wCKFFA9kf1BoIyRZCMoSSBbTY+7ZRn
-FMHD8TTJiYQ=
-=7Ke4
------END PGP SIGNATURE-----
-
---Sig_/VCMJLpP3E3/HKtFnqUCaFpq--
+-- 
+Kind regards,
+Minchan Kim
