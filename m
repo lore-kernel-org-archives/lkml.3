@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538AbaELBmH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 21:42:07 -0400
-Received: from 1wt.eu ([62.212.114.60]:34449 "EHLO 1wt.eu"
+	id S1758202AbaELCN5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 22:13:57 -0400
+Received: from 1wt.eu ([62.212.114.60]:34453 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752382AbaELBmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:42:01 -0400
-Message-Id: <20140512003206.139322055@1wt.eu>
+	id S1752472AbaELBmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:42:05 -0400
+Message-Id: <20140512003202.336864946@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:34:11 +0200
+Date: Mon, 12 May 2014 02:32:41 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Tim Gardner <tim.gardner@canonical.com>, Willy Tarreau <w@1wt.eu>
-Subject: [ 131/143] dm snapshot: fix data corruption
+Cc: Salam Noureddine <noureddine@aristanetworks.com>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 041/143] ipv6 mcast: use in6_dev_put in timer handlers instead of
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,98 +22,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
+ __in6_dev_put
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Salam Noureddine <noureddine@aristanetworks.com>
 
-CVE-2013-4299
+[ Upstream commit 9260d3e1013701aa814d10c8fc6a9f92bd17d643 ]
 
-BugLink: http://bugs.launchpad.net/bugs/1241769
+It is possible for the timer handlers to run after the call to
+ipv6_mc_down so use in6_dev_put instead of __in6_dev_put in the
+handler function in order to do proper cleanup when the refcnt
+reaches 0. Otherwise, the refcnt can reach zero without the
+inet6_dev being destroyed and we end up leaking a reference to
+the net_device and see messages like the following,
 
-This patch fixes a particular type of data corruption that has been
-encountered when loading a snapshot's metadata from disk.
+unregister_netdevice: waiting for eth0 to become free. Usage count = 1
 
-When we allocate a new chunk in persistent_prepare, we increment
-ps->next_free and we make sure that it doesn't point to a metadata area
-by further incrementing it if necessary.
+Tested on linux-3.4.43.
 
-When we load metadata from disk on device activation, ps->next_free is
-positioned after the last used data chunk. However, if this last used
-data chunk is followed by a metadata area, ps->next_free is positioned
-erroneously to the metadata area. A newly-allocated chunk is placed at
-the same location as the metadata area, resulting in data or metadata
-corruption.
-
-This patch changes the code so that ps->next_free skips the metadata
-area when metadata are loaded in function read_exceptions.
-
-The patch also moves a piece of code from persistent_prepare_exception
-to a separate function skip_metadata to avoid code duplication.
-
-CVE-2013-4299
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: stable@vger.kernel.org
-Cc: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-(back ported from commit e9c6a182649f4259db704ae15a91ac820e63b0ca)
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-Acked-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/md/dm-snap-persistent.c | 18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+ net/ipv6/mcast.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/dm-snap-persistent.c b/drivers/md/dm-snap-persistent.c
-index 0c74642..97c3f06 100644
---- a/drivers/md/dm-snap-persistent.c
-+++ b/drivers/md/dm-snap-persistent.c
-@@ -252,6 +252,14 @@ static chunk_t area_location(struct pstore *ps, chunk_t area)
- 	return 1 + ((ps->exceptions_per_area + 1) * area);
+diff --git a/net/ipv6/mcast.c b/net/ipv6/mcast.c
+index f9fcf69..99ae9e3 100644
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -2208,7 +2208,7 @@ static void mld_gq_timer_expire(unsigned long data)
+ 
+ 	idev->mc_gq_running = 0;
+ 	mld_send_report(idev, NULL);
+-	__in6_dev_put(idev);
++	in6_dev_put(idev);
  }
  
-+static void skip_metadata(struct pstore *ps)
-+{
-+	uint32_t stride = ps->exceptions_per_area + 1;
-+	chunk_t next_free = ps->next_free;
-+	if (sector_div(next_free, stride) == 1)
-+		ps->next_free++;
-+}
-+
- /*
-  * Read or write a metadata area.  Remembering to skip the first
-  * chunk which holds the header.
-@@ -481,6 +489,8 @@ static int read_exceptions(struct pstore *ps,
- 
- 	ps->current_area--;
- 
-+	skip_metadata(ps);
-+
- 	return 0;
+ static void mld_ifc_timer_expire(unsigned long data)
+@@ -2221,7 +2221,7 @@ static void mld_ifc_timer_expire(unsigned long data)
+ 		if (idev->mc_ifc_count)
+ 			mld_ifc_start_timer(idev, idev->mc_maxdelay);
+ 	}
+-	__in6_dev_put(idev);
++	in6_dev_put(idev);
  }
  
-@@ -587,8 +597,6 @@ static int persistent_prepare_exception(struct dm_exception_store *store,
- 					struct dm_snap_exception *e)
- {
- 	struct pstore *ps = get_info(store);
--	uint32_t stride;
--	chunk_t next_free;
- 	sector_t size = get_dev_size(store->cow->bdev);
- 
- 	/* Is there enough room ? */
-@@ -601,10 +609,8 @@ static int persistent_prepare_exception(struct dm_exception_store *store,
- 	 * Move onto the next free pending, making sure to take
- 	 * into account the location of the metadata chunks.
- 	 */
--	stride = (ps->exceptions_per_area + 1);
--	next_free = ++ps->next_free;
--	if (sector_div(next_free, stride) == 1)
--		ps->next_free++;
-+	ps->next_free++;
-+	skip_metadata(ps);
- 
- 	atomic_inc(&ps->pending_count);
- 	return 0;
+ static void mld_ifc_event(struct inet6_dev *idev)
 -- 
 1.7.12.2.21.g234cd45.dirty
 
