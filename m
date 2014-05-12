@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501AbaELCFf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 May 2014 22:05:35 -0400
-Received: from 1wt.eu ([62.212.114.60]:34565 "EHLO 1wt.eu"
+	id S1753051AbaELBmc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 May 2014 21:42:32 -0400
+Received: from 1wt.eu ([62.212.114.60]:34544 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753022AbaELBmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 May 2014 21:42:33 -0400
-Message-Id: <20140512003205.128677621@1wt.eu>
+	id S1752937AbaELBm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 May 2014 21:42:27 -0400
+Message-Id: <20140512003204.668886056@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 May 2014 02:33:48 +0200
+Date: Mon, 12 May 2014 02:33:37 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Florian Westphal <fw@strlen.de>, Thomas Graf <tgraf@suug.ch>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 108/143] netlink: dont compare the nul-termination in nla_strcmp
+Subject: [ 097/143] net: llc: fix use after free in llc_ui_recvmsg
 In-Reply-To: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,57 +25,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pablo Neira <pablo@netfilter.org>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 8b7b932434f5eee495b91a2804f5b64ebb2bc835 ]
+[ Upstream commit 4d231b76eef6c4a6bd9c96769e191517765942cb ]
 
-nla_strcmp compares the string length plus one, so it's implicitly
-including the nul-termination in the comparison.
+While commit 30a584d944fb fixes datagram interface in LLC, a use
+after free bug has been introduced for SOCK_STREAM sockets that do
+not make use of MSG_PEEK.
 
- int nla_strcmp(const struct nlattr *nla, const char *str)
- {
-        int len = strlen(str) + 1;
-        ...
-                d = memcmp(nla_data(nla), str, len);
+The flow is as follow ...
 
-However, if NLA_STRING is used, userspace can send us a string without
-the nul-termination. This is a problem since the string
-comparison will not match as the last byte may be not the
-nul-termination.
+  if (!(flags & MSG_PEEK)) {
+    ...
+    sk_eat_skb(sk, skb, false);
+    ...
+  }
+  ...
+  if (used + offset < skb->len)
+    continue;
 
-Fix this by skipping the comparison of the nul-termination if the
-attribute data is nul-terminated. Suggested by Thomas Graf.
+... where sk_eat_skb() calls __kfree_skb(). Therefore, cache
+original length and work on skb_len to check partial reads.
 
-Cc: Florian Westphal <fw@strlen.de>
-Cc: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Fixes: 30a584d944fb ("[LLX]: SOCK_DGRAM interface fixes")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Stephen Hemminger <stephen@networkplumber.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- lib/nlattr.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ net/llc/af_llc.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/lib/nlattr.c b/lib/nlattr.c
-index 109d4fe..51b84de 100644
---- a/lib/nlattr.c
-+++ b/lib/nlattr.c
-@@ -299,9 +299,15 @@ int nla_memcmp(const struct nlattr *nla, const void *data,
-  */
- int nla_strcmp(const struct nlattr *nla, const char *str)
- {
--	int len = strlen(str) + 1;
--	int d = nla_len(nla) - len;
-+	int len = strlen(str);
-+	char *buf = nla_data(nla);
-+	int attrlen = nla_len(nla);
-+	int d;
+diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
+index 606b6ad..f62b63e 100644
+--- a/net/llc/af_llc.c
++++ b/net/llc/af_llc.c
+@@ -669,7 +669,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 	struct llc_sock *llc = llc_sk(sk);
+ 	size_t copied = 0;
+ 	u32 peek_seq = 0;
+-	u32 *seq;
++	u32 *seq, skb_len;
+ 	unsigned long used;
+ 	int target;	/* Read at least this many bytes */
+ 	long timeo;
+@@ -767,6 +767,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		}
+ 		continue;
+ 	found_ok_skb:
++		skb_len = skb->len;
+ 		/* Ok so how much can we use? */
+ 		used = skb->len - offset;
+ 		if (len < used)
+@@ -797,7 +798,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 			goto copy_uaddr;
  
-+	if (attrlen > 0 && buf[attrlen - 1] == '\0')
-+		attrlen--;
-+
-+	d = attrlen - len;
- 	if (d == 0)
- 		d = memcmp(nla_data(nla), str, len);
+ 		/* Partial read */
+-		if (used + offset < skb->len)
++		if (used + offset < skb_len)
+ 			continue;
+ 	} while (len > 0);
  
 -- 
 1.7.12.2.21.g234cd45.dirty
