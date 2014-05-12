@@ -1,85 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220AbaELFQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 01:16:57 -0400
-Received: from ozlabs.org ([103.22.144.67]:52139 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864AbaELFQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 01:16:55 -0400
-Date: Mon, 12 May 2014 15:16:47 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <treding@nvidia.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: linux-next: manual merge of the gpio tree with the net-next tree
-Message-ID: <20140512151647.1ceae8f2@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/MVjs+d+Msi0bgSUrUcBA4U+"; protocol="application/pgp-signature"
+	id S1752058AbaELFUe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 01:20:34 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:21264 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750721AbaELFUd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 01:20:33 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqoXAORYcFNXQzuv/2dsb2JhbABZgwaDPakjBQEBAQIFAZoVAgKBFxd0glMTHCMYgQIkE4hFAc4YhVaIfIRHAQOPJYoiAZMHgzg7
+Date: Mon, 12 May 2014 07:20:27 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: jack <jack@suse.cz>, hch <hch@infradead.org>,
+        Viro <viro@zeniv.linux.org.uk>, tytso <tytso@mit.edu>,
+        akpm <akpm@linux-foundation.org>
+Subject: [PATCH V5 1/2] FS: Add generic data flush to fsync
+Message-Id: <20140512072027.e715c362ff587e46ea83fb0c@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/MVjs+d+Msi0bgSUrUcBA4U+
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+This patch issues a flush in generic_file_fsync.
+(Modern filesystems already do it)
 
-Hi Linus,
+Behaviour can be reversed using /sys/devices/.../cache_type
+or by calling __generic_file_fsync
 
-Today's linux-next merge of the gpio tree got a conflict in
-Documentation/driver-model/devres.txt between commit 6d48f44b7b2a
-("mdio_bus: implement devm_mdiobus_alloc/devm_mdiobus_free") from the
-net-next tree and commit f9748ef13b6a ("gpio: Add missing
-device-managed documentation") from the gpio tree.
+Suggested-by: Jan Kara <jack@suse.cz>
+Suggested-by: Christoph Hellwig <hch@infradead.org>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+v5: patch2/2 ext4 patch fix (Thanks to Ming Lei)
+V4: update description
+V3: __generic_file_fsync = no flush
+V2: No additional flag
+V1: First version with MS_BARRIER flag
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+ fs/libfs.c         | 36 +++++++++++++++++++++++++++++++++---
+ include/linux/fs.h |  1 +
+ 2 files changed, 34 insertions(+), 3 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/fs/libfs.c b/fs/libfs.c
+index a184424..4877906 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -3,6 +3,7 @@
+  *	Library for filesystems writers.
+  */
+ 
++#include <linux/blkdev.h>
+ #include <linux/export.h>
+ #include <linux/pagemap.h>
+ #include <linux/slab.h>
+@@ -923,16 +924,19 @@ struct dentry *generic_fh_to_parent(struct super_block *sb, struct fid *fid,
+ EXPORT_SYMBOL_GPL(generic_fh_to_parent);
+ 
+ /**
+- * generic_file_fsync - generic fsync implementation for simple filesystems
++ * __generic_file_fsync - generic fsync implementation for simple filesystems
++ *
+  * @file:	file to synchronize
++ * @start:	start offset in bytes
++ * @end:	end offset in bytes (inclusive)
+  * @datasync:	only synchronize essential metadata if true
+  *
+  * This is a generic implementation of the fsync method for simple
+  * filesystems which track all non-inode metadata in the buffers list
+  * hanging off the address_space structure.
+  */
+-int generic_file_fsync(struct file *file, loff_t start, loff_t end,
+-		       int datasync)
++int __generic_file_fsync(struct file *file, loff_t start, loff_t end,
++				 int datasync)
+ {
+ 	struct inode *inode = file->f_mapping->host;
+ 	int err;
+@@ -952,10 +956,36 @@ int generic_file_fsync(struct file *file, loff_t start, loff_t end,
+ 	err = sync_inode_metadata(inode, 1);
+ 	if (ret == 0)
+ 		ret = err;
++
+ out:
+ 	mutex_unlock(&inode->i_mutex);
+ 	return ret;
+ }
++EXPORT_SYMBOL(__generic_file_fsync);
++
++/**
++ * generic_file_fsync - generic fsync implementation for simple filesystems
++ *			with flush
++ * @file:	file to synchronize
++ * @start:	start offset in bytes
++ * @end:	end offset in bytes (inclusive)
++ * @datasync:	only synchronize essential metadata if true
++ *
++ */
++
++int generic_file_fsync(struct file *file, loff_t start, loff_t end,
++		       int datasync)
++{
++	struct inode *inode = file->f_mapping->host;
++	int err;
++
++	err = __generic_file_fsync(file, start, end, datasync);
++	if (err)
++		return err;
++
++	return blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
++
++}
+ EXPORT_SYMBOL(generic_file_fsync);
+ 
+ /**
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 8780312..c3f46e4 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2590,6 +2590,7 @@ extern ssize_t simple_read_from_buffer(void __user *to, size_t count,
+ extern ssize_t simple_write_to_buffer(void *to, size_t available, loff_t *ppos,
+ 		const void __user *from, size_t count);
+ 
++extern int __generic_file_fsync(struct file *, loff_t, loff_t, int);
+ extern int generic_file_fsync(struct file *, loff_t, loff_t, int);
+ 
+ extern int generic_check_addressable(unsigned, u64);
+-- 
+1.8.4.5
 
-diff --cc Documentation/driver-model/devres.txt
-index d483f2cf221b,8ff1167cfedf..000000000000
---- a/Documentation/driver-model/devres.txt
-+++ b/Documentation/driver-model/devres.txt
-@@@ -310,7 -309,7 +310,12 @@@ SLAVE DMA ENGIN
-  SPI
-    devm_spi_register_master()
- =20
- +MDIO
- +  devm_mdiobus_alloc()
- +  devm_mdiobus_alloc_size()
- +  devm_mdiobus_free()
-++
-+ GPIO
-+   devm_gpiod_get()
-+   devm_gpiod_get_index()
-+   devm_gpiod_put()
-
---Sig_/MVjs+d+Msi0bgSUrUcBA4U+
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTcFlEAAoJEMDTa8Ir7ZwVhxgQAI5sk/kqpjeNzZN8CUOO1h5w
-42mbASrCn1dgUO+dns6PmIfdnCnKqrMlZpt3Ri8eDWIGTJvn4YtQfsjx4hcXNen4
-bd3yycCeoduHkzY9BnarW8bTa0xHsu5wND4NOHVCJFO8sMeRKq+J1I2KX0Jvam5U
-i0M9p1MqBpt+n/6b4qgM2TTGh9cBPJep5vF1bZLHUBdK6TS94+9yOaYvow9lD0Yz
-7OevnKrpRw7jybG0i1HQDhKFY03Ec2UeiY0I74yG9IiFZ5ttKyk4MGXi+ZJrDbq8
-5MfPdLEuZYsGDtkZ/oUbCjlPz9vMiFWbwsUpqINnUN8osLfNXakgOMvgjcy1JjvZ
-drZQy4BHhI/NpJJ8W9s3jHXBT/tD9aCl4DglspWXnIewdKlS1Gcy62GI6+woSqAV
-JqOJxV4ldYv1SgTP+Pf4v893KPTJwT8+l0xKNnt5gh0NU3Vj/fOePgfuxI6ltTXa
-6sTJ94fPD5XQ764AuJ2qLzPtuMF9IllntoWi4zpARagWuCpODYvgzHCSc2BJH66i
-BF/PRZg/mqP7uEeqooif3ctbgifF10P5NgENudEKjmpoIltEeBkJBrxsMnWBOI4D
-53jN7IYH1LHyCzhMmP6F8AkB7vpBQZNTekvBhTqyUAvyitGnfHcE9iAFb7Pc/wC5
-v8YHRUZxOBI8sBVBC14l
-=VVtt
------END PGP SIGNATURE-----
-
---Sig_/MVjs+d+Msi0bgSUrUcBA4U+--
