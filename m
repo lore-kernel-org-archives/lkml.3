@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932571AbaELR4R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 13:56:17 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:59812 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044AbaELR4P (ORCPT
+	id S932600AbaELR41 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 13:56:27 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:33432 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932577AbaELR4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 13:56:15 -0400
-Date: Mon, 12 May 2014 19:56:12 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@kernel.org
-Subject: Re: [PATCH] sched,nohz: Change rq->nr_running always using wrappers
-Message-ID: <20140512175609.GC6127@localhost.localdomain>
-References: <20140508225830.2469.97461.stgit@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140508225830.2469.97461.stgit@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 12 May 2014 13:56:25 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: An8KABQKcVNbsHLF/2dsb2JhbABZgwasagkBBQGaG4EaF3SCUxMcIxiBAiQTiEUBz0qFVoh8hEcBA48liiIBiwSIA4M4Ow
+Date: Mon, 12 May 2014 19:56:23 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] kernel/workqueue.c: pr_warning/pr_warn & printk/pr_info
+Message-Id: <20140512195623.bedc6e41683596d8d3b486c7@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 03:00:14AM +0400, Kirill Tkhai wrote:
-> Sometimes nr_running may cross 2 but interrupt is not being
-> sent to rq's cpu. In this case we don't reenable timer.
-> Looks like, this may be a reason of rare unexpected effects,
-> if nohz is enabled.
-> 
-> Patch replaces all places of direct changing of nr_running
-> and makes add_nr_running() caring about crossing border.
-> 
-> Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: Ingo Molnar <mingo@kernel.org>
 
-Right I had that issue with throttling in my TODO list.
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ kernel/workqueue.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Thanks for fixing that:
-
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 0ee63af..6824afc 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -4098,8 +4098,8 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
+ 	/* create a new pwq */
+ 	pwq = alloc_unbound_pwq(wq, target_attrs);
+ 	if (!pwq) {
+-		pr_warning("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
+-			   wq->name);
++		pr_warn("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
++			wq->name);
+ 		goto out_unlock;
+ 	}
+ 
+@@ -4548,7 +4548,7 @@ void print_worker_info(const char *log_lvl, struct task_struct *task)
+ 		probe_kernel_read(desc, worker->desc, sizeof(desc) - 1);
+ 
+ 	if (fn || name[0] || desc[0]) {
+-		printk("%sWorkqueue: %s %pf", log_lvl, name, fn);
++		pr_info("%sWorkqueue: %s %pf", log_lvl, name, fn);
+ 		if (desc[0])
+ 			pr_cont(" (%s)", desc);
+ 		pr_cont("\n");
+-- 
+1.9.1
