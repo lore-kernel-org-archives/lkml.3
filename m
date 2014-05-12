@@ -1,562 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759047AbaELQ2D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:28:03 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60048 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755017AbaELQ0e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 12:26:34 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Bo Shen <voice.shen@atmel.com>, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v2 2/4] ARM: at91/dt: define sam9n12 clocks
-Date: Mon, 12 May 2014 18:26:28 +0200
-Message-Id: <1399911990-5086-3-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1399911990-5086-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1399911990-5086-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S1759072AbaELQ2R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:28:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37233 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756355AbaELQ2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 12:28:14 -0400
+Date: Mon, 12 May 2014 18:28:11 +0200
+From: Jan Kara <jack@suse.cz>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Jan Kara <jack@suse.cz>, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: mm,console: circular dependency between console_sem and zone lock
+Message-ID: <20140512162811.GD3685@quack.suse.cz>
+References: <536AE5DC.6070307@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <536AE5DC.6070307@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define sam9n12 clocks and make use of them in peripheral definitions.
+On Wed 07-05-14 22:03:08, Sasha Levin wrote:
+> Hi all,
+> 
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel I've stumbled on the following spew:
+  Thanks for report. So the problem seems to be maginally valid but I'm not
+100% sure whom to blame :). So printk() code calls up() which calls
+try_to_wake_up() under console_sem.lock spinlock. That function can take
+rq->lock which is all expected.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Tested-by: Bo Shen <voice.shen@atmel.com>
----
- arch/arm/boot/dts/at91sam9n12.dtsi | 348 ++++++++++++++++++++++++++++++++++++-
- 1 file changed, 346 insertions(+), 2 deletions(-)
+The next part of the chain is that during CPU initialization we call
+__sched_fork() with rq->lock which calls into hrtimer_init() which can
+allocate memory which creates a dependency rq->lock => zone.lock.rlock.
 
-diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
-index 9f04808..d1b82e6 100644
---- a/arch/arm/boot/dts/at91sam9n12.dtsi
-+++ b/arch/arm/boot/dts/at91sam9n12.dtsi
-@@ -12,6 +12,7 @@
- #include <dt-bindings/pinctrl/at91.h>
- #include <dt-bindings/interrupt-controller/irq.h>
- #include <dt-bindings/gpio/gpio.h>
-+#include <dt-bindings/clock/at91.h>
- 
- / {
- 	model = "Atmel AT91SAM9N12 SoC";
-@@ -49,6 +50,18 @@
- 		reg = <0x20000000 0x10000000>;
- 	};
- 
-+	slow_xtal: slow_xtal {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <0>;
-+	};
-+
-+	main_xtal: main_xtal {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <0>;
-+	};
-+
- 	ahb {
- 		compatible = "simple-bus";
- 		#address-cells = <1>;
-@@ -75,8 +88,280 @@
- 			};
- 
- 			pmc: pmc@fffffc00 {
--				compatible = "atmel,at91rm9200-pmc";
--				reg = <0xfffffc00 0x100>;
-+				compatible = "atmel,at91sam9n12-pmc";
-+				reg = <0xfffffc00 0x200>;
-+				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				interrupt-controller;
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				#interrupt-cells = <1>;
-+
-+				main_rc_osc: main_rc_osc {
-+					compatible = "atmel,at91sam9x5-clk-main-rc-osc";
-+					#clock-cells = <0>;
-+					interrupts-extended = <&pmc AT91_PMC_MOSCRCS>;
-+					clock-frequency = <12000000>;
-+					clock-accuracy = <50000000>;
-+				};
-+
-+				main_osc: main_osc {
-+					compatible = "atmel,at91rm9200-clk-main-osc";
-+					#clock-cells = <0>;
-+					interrupts-extended = <&pmc AT91_PMC_MOSCS>;
-+					clocks = <&main_xtal>;
-+				};
-+
-+				main: mainck {
-+					compatible = "atmel,at91sam9x5-clk-main";
-+					#clock-cells = <0>;
-+					interrupts-extended = <&pmc AT91_PMC_MOSCSELS>;
-+					clocks = <&main_rc_osc>, <&main_osc>;
-+				};
-+
-+				plla: pllack {
-+					compatible = "atmel,at91rm9200-clk-pll";
-+					#clock-cells = <0>;
-+					interrupts-extended = <&pmc AT91_PMC_LOCKA>;
-+					clocks = <&main>;
-+					reg = <0>;
-+					atmel,clk-input-range = <2000000 32000000>;
-+					#atmel,pll-clk-output-range-cells = <4>;
-+					atmel,pll-clk-output-ranges = <745000000 800000000 0 0>,
-+								      <695000000 750000000 1 0>,
-+								      <645000000 700000000 2 0>,
-+								      <595000000 650000000 3 0>,
-+								      <545000000 600000000 0 1>,
-+								      <495000000 555000000 1 1>,
-+								      <445000000 500000000 1 2>,
-+								      <400000000 450000000 1 3>;
-+				};
-+
-+				plladiv: plladivck {
-+					compatible = "atmel,at91sam9x5-clk-plldiv";
-+					#clock-cells = <0>;
-+					clocks = <&plla>;
-+				};
-+
-+				pllb: pllbck {
-+					compatible = "atmel,at91rm9200-clk-pll";
-+					#clock-cells = <0>;
-+					interrupts-extended = <&pmc AT91_PMC_LOCKB>;
-+					clocks = <&main>;
-+					reg = <1>;
-+					atmel,clk-input-range = <2000000 32000000>;
-+					#atmel,pll-clk-output-range-cells = <3>;
-+					atmel,pll-clk-output-ranges = <30000000 100000000 0>;
-+				};
-+
-+				mck: masterck {
-+					compatible = "atmel,at91sam9x5-clk-master";
-+					#clock-cells = <0>;
-+					interrupts-extended = <&pmc AT91_PMC_MCKRDY>;
-+					clocks = <&clk32k>, <&main>, <&plladiv>, <&pllb>;
-+					atmel,clk-output-range = <0 133333333>;
-+					atmel,clk-divisors = <1 2 4 3>;
-+					atmel,master-clk-have-div3-pres;
-+				};
-+
-+				usb: usbck {
-+					compatible = "atmel,at91sam9n12-clk-usb";
-+					#clock-cells = <0>;
-+					clocks = <&pllb>;
-+				};
-+
-+				prog: progck {
-+					compatible = "atmel,at91sam9x5-clk-programmable";
-+					#address-cells = <1>;
-+					#size-cells = <0>;
-+					interrupt-parent = <&pmc>;
-+					clocks = <&clk32k>, <&main>, <&plladiv>, <&pllb>, <&mck>;
-+
-+					prog0: prog0 {
-+						#clock-cells = <0>;
-+						reg = <0>;
-+						interrupts = <AT91_PMC_PCKRDY(0)>;
-+					};
-+
-+					prog1: prog1 {
-+						#clock-cells = <0>;
-+						reg = <1>;
-+						interrupts = <AT91_PMC_PCKRDY(1)>;
-+					};
-+				};
-+
-+				systemck {
-+					compatible = "atmel,at91rm9200-clk-system";
-+					#address-cells = <1>;
-+					#size-cells = <0>;
-+
-+					ddrck: ddrck {
-+						#clock-cells = <0>;
-+						reg = <2>;
-+						clocks = <&mck>;
-+					};
-+
-+					lcdck: lcdck {
-+						#clock-cells = <0>;
-+						reg = <3>;
-+						clocks = <&mck>;
-+					};
-+
-+					uhpck: uhpck {
-+						#clock-cells = <0>;
-+						reg = <6>;
-+						clocks = <&usb>;
-+					};
-+
-+					udpck: udpck {
-+						#clock-cells = <0>;
-+						reg = <7>;
-+						clocks = <&usb>;
-+					};
-+
-+					pck0: pck0 {
-+						#clock-cells = <0>;
-+						reg = <8>;
-+						clocks = <&prog0>;
-+					};
-+
-+					pck1: pck1 {
-+						#clock-cells = <0>;
-+						reg = <9>;
-+						clocks = <&prog1>;
-+					};
-+				};
-+
-+				periphck {
-+					compatible = "atmel,at91sam9x5-clk-peripheral";
-+					#address-cells = <1>;
-+					#size-cells = <0>;
-+					clocks = <&mck>;
-+
-+					pioAB_clk: pioAB_clk {
-+						#clock-cells = <0>;
-+						reg = <2>;
-+					};
-+
-+					pioCD_clk: pioCD_clk {
-+						#clock-cells = <0>;
-+						reg = <3>;
-+					};
-+
-+					fuse_clk: fuse_clk {
-+						#clock-cells = <0>;
-+						reg = <4>;
-+					};
-+
-+					usart0_clk: usart0_clk {
-+						#clock-cells = <0>;
-+						reg = <5>;
-+					};
-+
-+					usart1_clk: usart1_clk {
-+						#clock-cells = <0>;
-+						reg = <6>;
-+					};
-+
-+					usart2_clk: usart2_clk {
-+						#clock-cells = <0>;
-+						reg = <7>;
-+					};
-+
-+					usart3_clk: usart3_clk {
-+						#clock-cells = <0>;
-+						reg = <8>;
-+					};
-+
-+					twi0_clk: twi0_clk {
-+						reg = <9>;
-+						#clock-cells = <0>;
-+					};
-+
-+					twi1_clk: twi1_clk {
-+						#clock-cells = <0>;
-+						reg = <10>;
-+					};
-+
-+					mci0_clk: mci0_clk {
-+						#clock-cells = <0>;
-+						reg = <12>;
-+					};
-+
-+					spi0_clk: spi0_clk {
-+						#clock-cells = <0>;
-+						reg = <13>;
-+					};
-+
-+					spi1_clk: spi1_clk {
-+						#clock-cells = <0>;
-+						reg = <14>;
-+					};
-+
-+					uart0_clk: uart0_clk {
-+						#clock-cells = <0>;
-+						reg = <15>;
-+					};
-+
-+					uart1_clk: uart1_clk {
-+						#clock-cells = <0>;
-+						reg = <16>;
-+					};
-+
-+					tcb_clk: tcb_clk {
-+						#clock-cells = <0>;
-+						reg = <17>;
-+					};
-+
-+					pwm_clk: pwm_clk {
-+						#clock-cells = <0>;
-+						reg = <18>;
-+					};
-+
-+					adc_clk: adc_clk {
-+						#clock-cells = <0>;
-+						reg = <19>;
-+					};
-+
-+					dma0_clk: dma0_clk {
-+						#clock-cells = <0>;
-+						reg = <20>;
-+					};
-+
-+					uhphs_clk: uhphs_clk {
-+						#clock-cells = <0>;
-+						reg = <22>;
-+					};
-+
-+					udphs_clk: udphs_clk {
-+						#clock-cells = <0>;
-+						reg = <23>;
-+					};
-+
-+					lcdc_clk: lcdc_clk {
-+						#clock-cells = <0>;
-+						reg = <25>;
-+					};
-+
-+					sha_clk: sha_clk {
-+						#clock-cells = <0>;
-+						reg = <27>;
-+					};
-+
-+					ssc0_clk: ssc0_clk {
-+						#clock-cells = <0>;
-+						reg = <28>;
-+					};
-+
-+					aes_clk: aes_clk {
-+						#clock-cells = <0>;
-+						reg = <29>;
-+					};
-+
-+					trng_clk: trng_clk {
-+						#clock-cells = <0>;
-+						reg = <30>;
-+					};
-+				};
- 			};
- 
- 			rstc@fffffe00 {
-@@ -88,6 +373,7 @@
- 				compatible = "atmel,at91sam9260-pit";
- 				reg = <0xfffffe30 0xf>;
- 				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				clocks = <&mck>;
- 			};
- 
- 			shdwc@fffffe10 {
-@@ -95,12 +381,38 @@
- 				reg = <0xfffffe10 0x10>;
- 			};
- 
-+			sckc@fffffe50 {
-+				compatible = "atmel,at91sam9x5-sckc";
-+				reg = <0xfffffe50 0x4>;
-+
-+				slow_osc: slow_osc {
-+					compatible = "atmel,at91sam9x5-clk-slow-osc";
-+					#clock-cells = <0>;
-+					clocks = <&slow_xtal>;
-+				};
-+
-+				slow_rc_osc: slow_rc_osc {
-+					compatible = "atmel,at91sam9x5-clk-slow-rc-osc";
-+					#clock-cells = <0>;
-+					clock-frequency = <32768>;
-+					clock-accuracy = <50000000>;
-+				};
-+
-+				clk32k: slck {
-+					compatible = "atmel,at91sam9x5-clk-slow";
-+					#clock-cells = <0>;
-+					clocks = <&slow_rc_osc>, <&slow_osc>;
-+				};
-+			};
-+
- 			mmc0: mmc@f0008000 {
- 				compatible = "atmel,hsmci";
- 				reg = <0xf0008000 0x600>;
- 				interrupts = <12 IRQ_TYPE_LEVEL_HIGH 0>;
- 				dmas = <&dma 1 AT91_DMA_CFG_PER_ID(0)>;
- 				dma-names = "rxtx";
-+				clocks = <&mci0_clk>;
-+				clock-names = "mci_clk";
- 				#address-cells = <1>;
- 				#size-cells = <0>;
- 				status = "disabled";
-@@ -110,12 +422,16 @@
- 				compatible = "atmel,at91sam9x5-tcb";
- 				reg = <0xf8008000 0x100>;
- 				interrupts = <17 IRQ_TYPE_LEVEL_HIGH 0>;
-+				clocks = <&tcb_clk>;
-+				clock-names = "t0_clk";
- 			};
- 
- 			tcb1: timer@f800c000 {
- 				compatible = "atmel,at91sam9x5-tcb";
- 				reg = <0xf800c000 0x100>;
- 				interrupts = <17 IRQ_TYPE_LEVEL_HIGH 0>;
-+				clocks = <&tcb_clk>;
-+				clock-names = "t0_clk";
- 			};
- 
- 			dma: dma-controller@ffffec00 {
-@@ -123,6 +439,8 @@
- 				reg = <0xffffec00 0x200>;
- 				interrupts = <20 IRQ_TYPE_LEVEL_HIGH 0>;
- 				#dma-cells = <2>;
-+				clocks = <&dma0_clk>;
-+				clock-names = "dma_clk";
- 			};
- 
- 			pinctrl@fffff400 {
-@@ -392,6 +710,7 @@
- 					gpio-controller;
- 					interrupt-controller;
- 					#interrupt-cells = <2>;
-+					clocks = <&pioAB_clk>;
- 				};
- 
- 				pioB: gpio@fffff600 {
-@@ -402,6 +721,7 @@
- 					gpio-controller;
- 					interrupt-controller;
- 					#interrupt-cells = <2>;
-+					clocks = <&pioAB_clk>;
- 				};
- 
- 				pioC: gpio@fffff800 {
-@@ -412,6 +732,7 @@
- 					gpio-controller;
- 					interrupt-controller;
- 					#interrupt-cells = <2>;
-+					clocks = <&pioCD_clk>;
- 				};
- 
- 				pioD: gpio@fffffa00 {
-@@ -422,6 +743,7 @@
- 					gpio-controller;
- 					interrupt-controller;
- 					#interrupt-cells = <2>;
-+					clocks = <&pioCD_clk>;
- 				};
- 			};
- 
-@@ -431,6 +753,8 @@
- 				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_dbgu>;
-+				clocks = <&mck>;
-+				clock-names = "usart";
- 				status = "disabled";
- 			};
- 
-@@ -443,6 +767,8 @@
- 				dma-names = "tx", "rx";
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_ssc0_tx &pinctrl_ssc0_rx>;
-+				clocks = <&ssc0_clk>;
-+				clock-names = "pclk";
- 				status = "disabled";
- 			};
- 
-@@ -452,6 +778,8 @@
- 				interrupts = <5 IRQ_TYPE_LEVEL_HIGH 5>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_usart0>;
-+				clocks = <&usart0_clk>;
-+				clock-names = "usart";
- 				status = "disabled";
- 			};
- 
-@@ -461,6 +789,8 @@
- 				interrupts = <6 IRQ_TYPE_LEVEL_HIGH 5>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_usart1>;
-+				clocks = <&usart1_clk>;
-+				clock-names = "usart";
- 				status = "disabled";
- 			};
- 
-@@ -470,6 +800,8 @@
- 				interrupts = <7 IRQ_TYPE_LEVEL_HIGH 5>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_usart2>;
-+				clocks = <&usart2_clk>;
-+				clock-names = "usart";
- 				status = "disabled";
- 			};
- 
-@@ -479,6 +811,8 @@
- 				interrupts = <8 IRQ_TYPE_LEVEL_HIGH 5>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_usart3>;
-+				clocks = <&usart3_clk>;
-+				clock-names = "usart";
- 				status = "disabled";
- 			};
- 
-@@ -493,6 +827,7 @@
- 				#size-cells = <0>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_i2c0>;
-+				clocks = <&twi0_clk>;
- 				status = "disabled";
- 			};
- 
-@@ -507,6 +842,7 @@
- 				#size-cells = <0>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_i2c1>;
-+				clocks = <&twi1_clk>;
- 				status = "disabled";
- 			};
- 
-@@ -521,6 +857,8 @@
- 				dma-names = "tx", "rx";
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_spi0>;
-+				clocks = <&spi0_clk>;
-+				clock-names = "spi_clk";
- 				status = "disabled";
- 			};
- 
-@@ -535,6 +873,8 @@
- 				dma-names = "tx", "rx";
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_spi1>;
-+				clocks = <&spi1_clk>;
-+				clock-names = "spi_clk";
- 				status = "disabled";
- 			};
- 
-@@ -554,6 +894,7 @@
- 				reg = <0xf8034000 0x300>;
- 				interrupts = <18 IRQ_TYPE_LEVEL_HIGH 4>;
- 				#pwm-cells = <3>;
-+				clocks = <&pwm_clk>;
- 				status = "disabled";
- 			};
- 		};
-@@ -584,6 +925,9 @@
- 			compatible = "atmel,at91rm9200-ohci", "usb-ohci";
- 			reg = <0x00500000 0x00100000>;
- 			interrupts = <22 IRQ_TYPE_LEVEL_HIGH 2>;
-+			clocks = <&usb>, <&uhphs_clk>, <&udphs_clk>,
-+				 <&uhpck>;
-+			clock-names = "usb_clk", "ohci_clk", "hclk", "uhpck";
- 			status = "disabled";
- 		};
- 	};
+And memory management code calls printk() which zone.lock.rlock held which
+closes the loop. Now I suspect the second link in the chain can happen only
+while CPU is booting and might even happen only if some debug options are
+enabled. But I don't really know scheduler code well enough. Steven?
+
+								Honza
+
+> [  262.793172] ======================================================
+> [  262.794555] [ INFO: possible circular locking dependency detected ]
+> [  262.796110] 3.15.0-rc4-next-20140507-sasha-00004-g14be78b-dirty #448 Tainted: G        W
+> [  262.798430] -------------------------------------------------------
+> [  262.799804] runtrin.sh/9791 is trying to acquire lock:
+> [  262.801168] ((console_sem).lock){-.-...}, at: down_trylock (kernel/locking/semaphore.c:137)
+> [  262.801216]
+> [  262.801216] but task is already holding lock:
+> [  262.801216] (&(&zone->lock)->rlock){-.-...}, at: __offline_isolated_pages (mm/page_alloc.c:6427)
+> [  262.801216]
+> [  262.801216] which lock already depends on the new lock.
+> [  262.801216]
+> [  262.801216]
+> [  262.801216] the existing dependency chain (in reverse order) is:
+> [  262.801216]
+> -> #3 (&(&zone->lock)->rlock){-.-...}:
+> [  262.801216] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+> [  262.801216] _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:117 kernel/locking/spinlock.c:159)
+> [  262.801216] get_page_from_freelist (mm/page_alloc.c:1574 mm/page_alloc.c:2033)
+> [  262.801216] __alloc_pages_nodemask (mm/page_alloc.c:2728)
+> [  262.801216] alloc_page_interleave (mm/mempolicy.c:1944)
+> [  262.801216] alloc_pages_current (mm/mempolicy.c:2041)
+> [  262.801216] new_slab (include/linux/gfp.h:337 mm/slub.c:1327 mm/slub.c:1356 mm/slub.c:1418)
+> [  262.801216] __slab_alloc (mm/slub.c:2204 mm/slub.c:2364)
+> [  262.801216] kmem_cache_alloc (mm/slub.c:2470 mm/slub.c:2481 mm/slub.c:2486)
+> [  262.801216] __debug_object_init (lib/debugobjects.c:97 lib/debugobjects.c:311)
+> [  262.801216] debug_object_init (lib/debugobjects.c:364)
+> [  262.801216] hrtimer_init (kernel/hrtimer.c:437 include/linux/jump_label.h:105 include/trace/events/timer.h:130 kernel/hrtimer.c:482 kernel/hrtimer.c:1222)
+> [  262.801216] __sched_fork (kernel/sched/core.c:1745)
+> [  262.801216] init_idle (kernel/sched/core.c:4460)
+> [  262.801216] fork_idle (kernel/fork.c:1565)
+> [  262.801216] idle_threads_init (kernel/smpboot.c:54 kernel/smpboot.c:72)
+> [  262.801216] smp_init (kernel/smp.c:535)
+> [  262.801216] kernel_init_freeable (init/main.c:854 init/main.c:1007)
+> [  262.801216] kernel_init (init/main.c:939)
+> [  262.801216] ret_from_fork (arch/x86/kernel/entry_64.S:553)
+> [  262.801216]
+> -> #2 (&rq->lock){-.-.-.}:
+> [  262.801216] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+> [  262.801216] _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
+> [  262.801216] wake_up_new_task (include/linux/sched.h:2873 kernel/sched/core.c:329 kernel/sched/core.c:2027)
+> [  262.801216] do_fork (kernel/fork.c:1628)
+> [  262.801216] kernel_thread (kernel/fork.c:1650)
+> [  262.801216] rest_init (init/main.c:404)
+> [  262.801216] start_kernel (init/main.c:683)
+> [  262.801216] x86_64_start_reservations (arch/x86/kernel/head64.c:194)
+> [  262.801216] x86_64_start_kernel (arch/x86/kernel/head64.c:183)
+> [  262.801216]
+> -> #1 (&p->pi_lock){-.-.-.}:
+> [  262.801216] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+> [  262.801216] _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:117 kernel/locking/spinlock.c:159)
+> [  262.801216] try_to_wake_up (kernel/sched/core.c:1605)
+> [  262.801216] wake_up_process (kernel/sched/core.c:1701 (discriminator 2))
+> [  262.801216] __up.isra.0 (kernel/locking/semaphore.c:263)
+> [  262.801216] up (kernel/locking/semaphore.c:186)
+> [  262.801216] console_unlock (kernel/printk/printk.c:2230)
+> [  262.801216] vprintk_emit (kernel/printk/printk.c:1746)
+> [  262.801216] dev_vprintk_emit (drivers/base/core.c:2053 (discriminator 3))
+> [  262.801216] dev_printk_emit (drivers/base/core.c:2068)
+> [  262.801216] __dynamic_dev_dbg (lib/dynamic_debug.c:593)
+> [  262.801216] pps_event (drivers/pps/kapi.c:204 (discriminator 1))
+> [  262.801216] pps_ktimer_event (drivers/pps/clients/pps-ktimer.c:51)
+> [  262.801216] call_timer_fn (kernel/timer.c:1140 include/linux/jump_label.h:105 include/trace/events/timer.h:106 kernel/timer.c:1141)
+> [  262.801216] run_timer_softirq (include/linux/spinlock.h:328 kernel/timer.c:1213 kernel/timer.c:1403)
+> [  262.801216] __do_softirq (kernel/softirq.c:269 include/linux/jump_label.h:105 include/trace/events/irq.h:126 kernel/softirq.c:270)
+> [  262.801216] irq_exit (kernel/softirq.c:346 kernel/softirq.c:387)
+> [  262.801216] smp_apic_timer_interrupt (arch/x86/include/asm/irq_regs.h:26 arch/x86/kernel/apic/apic.c:947)
+> [  262.801216] apic_timer_interrupt (arch/x86/kernel/entry_64.S:1225)
+> [  262.801216] default_idle (arch/x86/include/asm/paravirt.h:111 arch/x86/kernel/process.c:310)
+> [  262.801216] arch_cpu_idle (arch/x86/kernel/process.c:302)
+> [  262.801216] cpu_idle_loop (kernel/sched/idle.c:173 kernel/sched/idle.c:220)
+> [  262.801216] cpu_startup_entry (??:?)
+> [  262.801216] start_secondary (arch/x86/kernel/smpboot.c:274)
+> [  262.801216]
+> -> #0 ((console_sem).lock){-.-...}:
+> [  262.801216] __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
+> [  262.801216] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+> [  262.801216] _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:117 kernel/locking/spinlock.c:159)
+> [  262.801216] down_trylock (kernel/locking/semaphore.c:137)
+> [  262.801216] __down_trylock_console_sem (kernel/printk/printk.c:108)
+> [  262.801216] console_trylock (kernel/printk/printk.c:2070)
+> [  262.801216] vprintk_emit (kernel/printk/printk.c:1445 kernel/printk/printk.c:1745)
+> [  262.801216] printk (kernel/printk/printk.c:1813)
+> [  262.801216] __offline_isolated_pages (mm/page_alloc.c:6450)
+> [  262.801216] offline_isolated_pages_cb (mm/memory_hotplug.c:1415)
+> [  262.801216] walk_system_ram_range (kernel/resource.c:389)
+> [  262.801216] __offline_pages.constprop.22 (mm/memory_hotplug.c:1710)
+> [  262.801216] offline_pages (mm/memory_hotplug.c:1756)
+> [  262.801216] memory_subsys_offline (drivers/base/memory.c:267 drivers/base/memory.c:304)
+> [  262.801216] device_offline (drivers/base/core.c:1429)
+> [  262.801216] online_store (drivers/base/core.c:451 (discriminator 2))
+> [  262.801216] dev_attr_store (drivers/base/core.c:138)
+> [  262.801216] sysfs_kf_write (fs/sysfs/file.c:114)
+> [  262.801216] kernfs_fop_write (fs/kernfs/file.c:295)
+> [  262.801216] vfs_write (fs/read_write.c:532)
+> [  262.801216] SyS_write (fs/read_write.c:584 fs/read_write.c:576)
+> [  262.801216] tracesys (arch/x86/kernel/entry_64.S:746)
+> [  262.801216]
+> [  262.801216] other info that might help us debug this:
+> [  262.801216]
+> [  262.801216] Chain exists of:
+> (console_sem).lock --> &rq->lock --> &(&zone->lock)->rlock
+> 
+> [  262.801216]  Possible unsafe locking scenario:
+> [  262.801216]
+> [  262.801216]        CPU0                    CPU1
+> [  262.801216]        ----                    ----
+> [  262.801216]   lock(&(&zone->lock)->rlock);
+> [  262.801216]                                lock(&rq->lock);
+> [  262.801216]                                lock(&(&zone->lock)->rlock);
+> [  262.801216]   lock((console_sem).lock);
+> [  262.801216]
+> [  262.801216]  *** DEADLOCK ***
+> [  262.801216]
+> [  262.801216] 8 locks held by runtrin.sh/9791:
+> [  262.801216] #0: (sb_writers#4){.+.+.+}, at: vfs_write (include/linux/fs.h:2252 fs/read_write.c:530)
+> [  262.801216] #1: (&of->mutex){+.+.+.}, at: kernfs_fop_write (fs/kernfs/file.c:283)
+> [  262.801216] #2: (s_active#28){.+.+.+}, at: kernfs_fop_write (fs/kernfs/file.c:283)
+> [  262.801216] #3: (device_hotplug_lock){+.+.+.}, at: lock_device_hotplug_sysfs (drivers/base/core.c:67)
+> [  262.801216] #4: (&dev->mutex){......}, at: device_offline (drivers/base/core.c:2128 drivers/base/core.c:1423)
+> [  262.801216] #5: (mem_hotplug.lock){++++++}, at: mem_hotplug_begin (mm/memory_hotplug.c:107)
+> [  262.801216] #6: (mem_hotplug.lock#2){+.+.+.}, at: mem_hotplug_begin (mm/memory_hotplug.c:113)
+> [  262.801216] #7: (&(&zone->lock)->rlock){-.-...}, at: __offline_isolated_pages (mm/page_alloc.c:6427)
+> [  262.801216]
+> [  262.801216] stack backtrace:
+> [  262.801216] CPU: 6 PID: 9791 Comm: runtrin.sh Tainted: G        W     3.15.0-rc4-next-20140507-sasha-00004-g14be78b-dirty #448
+> [  262.801216]  ffffffff90d73c70 ffff8802c6c158c8 ffffffff8d539450 0000000000000004
+> [  262.801216]  ffffffff90d6fe70 ffff8802c6c15918 ffffffff8d52bbe0 0000000000000008
+> [  262.801216]  ffff8802c6c159a8 ffff8802c6c15918 ffff8802c879be78 ffff8802c879beb0
+> [  262.801216] Call Trace:
+> [  262.801216] dump_stack (lib/dump_stack.c:52)
+> [  262.801216] print_circular_bug (kernel/locking/lockdep.c:1216)
+> [  262.801216] __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
+> [  262.801216] ? kvm_clock_read (arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
+> [  262.801216] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+> [  262.801216] ? down_trylock (kernel/locking/semaphore.c:137)
+> [  262.801216] ? _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:109 kernel/locking/spinlock.c:159)
+> [  262.801216] _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:117 kernel/locking/spinlock.c:159)
+> [  262.801216] ? down_trylock (kernel/locking/semaphore.c:137)
+> [  262.801216] down_trylock (kernel/locking/semaphore.c:137)
+> [  262.801216] ? vprintk_emit (kernel/printk/printk.c:1445 kernel/printk/printk.c:1745)
+> [  262.801216] __down_trylock_console_sem (kernel/printk/printk.c:108)
+> [  262.801216] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+> [  262.801216] console_trylock (kernel/printk/printk.c:2070)
+> [  262.801216] vprintk_emit (kernel/printk/printk.c:1445 kernel/printk/printk.c:1745)
+> [  262.801216] printk (kernel/printk/printk.c:1813)
+> [  262.801216] ? __offline_isolated_pages (mm/page_alloc.c:6427)
+> [  262.801216] __offline_isolated_pages (mm/page_alloc.c:6450)
+> [  262.801216] offline_isolated_pages_cb (mm/memory_hotplug.c:1415)
+> [  262.801216] walk_system_ram_range (kernel/resource.c:389)
+> [  262.801216] ? check_pages_isolated_cb (mm/memory_hotplug.c:1412)
+> [  262.801216] __offline_pages.constprop.22 (mm/memory_hotplug.c:1710)
+> [  262.801216] ? mutex_lock_nested (arch/x86/include/asm/paravirt.h:809 kernel/locking/mutex.c:569 kernel/locking/mutex.c:587)
+> [  262.801216] ? mutex_lock_nested (arch/x86/include/asm/preempt.h:98 kernel/locking/mutex.c:570 kernel/locking/mutex.c:587)
+> [  262.801216] ? device_offline (drivers/base/core.c:2128 drivers/base/core.c:1423)
+> [  262.801216] offline_pages (mm/memory_hotplug.c:1756)
+> [  262.801216] memory_subsys_offline (drivers/base/memory.c:267 drivers/base/memory.c:304)
+> [  262.801216] device_offline (drivers/base/core.c:1429)
+> [  262.801216] online_store (drivers/base/core.c:451 (discriminator 2))
+> [  262.801216] dev_attr_store (drivers/base/core.c:138)
+> [  262.801216] sysfs_kf_write (fs/sysfs/file.c:114)
+> [  262.801216] kernfs_fop_write (fs/kernfs/file.c:295)
+> [  262.801216] vfs_write (fs/read_write.c:532)
+> [  262.801216] SyS_write (fs/read_write.c:584 fs/read_write.c:576)
+> [  262.801216] tracesys (arch/x86/kernel/entry_64.S:746)
+> 
+> 
+> Thanks,
+> Sasha
 -- 
-1.8.3.2
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
