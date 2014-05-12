@@ -1,128 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759108AbaELQdd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 12:33:33 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:34027 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759088AbaELQda (ORCPT
+	id S1759133AbaELQd4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 12:33:56 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:62928 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758409AbaELQdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 12:33:30 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 1/3] PM / sleep: Flag to speed up suspend-resume of runtime-suspended devices
-References: <Pine.LNX.4.44L0.1405071126340.1325-100000@iolanthe.rowland.org>
-	<2703563.1xTcfTGG98@vostro.rjw.lan> <7hmweqmuve.fsf@paris.lan>
-	<2529433.Aygp7Yxy87@vostro.rjw.lan>
-Date: Mon, 12 May 2014 09:33:26 -0700
-In-Reply-To: <2529433.Aygp7Yxy87@vostro.rjw.lan> (Rafael J. Wysocki's message
-	of "Sat, 10 May 2014 03:38:27 +0200")
-Message-ID: <7hha4vkld5.fsf@paris.lan>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 12 May 2014 12:33:55 -0400
+From: Jianyu Zhan <nasa4836@gmail.com>
+To: cl@linux.com, akpm@linux-foundation.org, riel@redhat.com,
+        aarcange@redhat.com, oleg@redhat.com, cldu@marvell.com, fabf@skynet.be,
+        nasa4836@gmail.com, sasha.levin@oracle.com, zhangyanfei@cn.fujitsu.com,
+        iamjoonsoo.kim@lge.com, n-horiguchi@ah.jp.nec.com,
+        kirill.shutemov@linux.intel.com, liwanp@linux.vnet.ibm.com,
+        gorcunov@gmail.com, minchan@kernel.org, dave.hansen@linux.intel.com,
+        toshi.kani@hp.com, paul.gortmaker@windriver.com,
+        srivatsa.bhat@linux.vnet.ibm.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 1/3] mm: add comment for __mod_zone_page_stat
+Date: Tue, 13 May 2014 00:33:43 +0800
+Message-Id: <1399912423-25601-1-git-send-email-nasa4836@gmail.com>
+X-Mailer: git-send-email 2.0.0-rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@rjwysocki.net> writes:
+>> This means they guarantee that even they are preemted the vm
+>> counter won't be modified incorrectly.  Because the counter is page-related
+>> (e.g., a new anon page added), and they are exclusively hold the pte lock.
+>
+>But there are multiple pte locks for numerous page. Another process could
+>modify the counter because the pte lock for a different page was
+>available which would cause counter corruption.
+>
+>
+>> So, as you concludes in the other mail that __modd_zone_page_stat
+>> couldn't be used.
+>> in mlocked_vma_newpage, then what qualifies other call sites for using
+>> it, in the same situation?
 
-> On Friday, May 09, 2014 03:48:21 PM Kevin Hilman wrote:
->> "Rafael J. Wysocki" <rjw@rjwysocki.net> writes:
->> 
->> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> >
->> > Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
->> > resume all runtime-suspended devices during system suspend, mostly
->> > because those devices may need to be reprogrammed due to different
->> > wakeup settings for system sleep and for runtime PM.
->> >
->> > For some devices, though, it's OK to remain in runtime suspend 
->> > throughout a complete system suspend/resume cycle (if the device was in
->> > runtime suspend at the start of the cycle).  We would like to do this
->> > whenever possible, to avoid the overhead of extra power-up and power-down
->> > events.
->> >
->> > However, problems may arise because the device's descendants may require
->> > it to be at full power at various points during the cycle.  Therefore the
->> > most straightforward way to do this safely is if the device and all its
->> > descendants can remain runtime suspended until the resume stage of system
->> > resume.
->> >
->> > To this end, introduce dev->power.leave_runtime_suspended.
->> > If a subsystem or driver sets this flag during the ->prepare() callback,
->> > and if the flag is set in all of the device's descendants, and if the
->> > device is still in runtime suspend at the beginning of the ->suspend()
->> > callback, that callback is allowed to return 0 without clearing
->> > power.leave_runtime_suspended and without changing the state of the
->> > device, unless the current state of the device is not appropriate for
->> > the upcoming system sleep state (for example, the device is supposed to
->> > wake up the system from that state and its current wakeup settings are
->> > not suitable for that).  Then, the PM core will not invoke the device's
->> > ->suspend_late(), ->suspend_irq(), ->resume_irq(), ->resume_early(), or
->> > ->resume() callbacks.  
->> 
->> Up to here, this sounds great.
->> 
->> > Instead, it will invoke ->runtime_resume() during the device resume
->> > stage of system resume.
->> 
->> But this part I'm not fully following...
->
-> You're not looking at the most recent one. :-)
+Thanks, now everything is clear.
 
-Sorry about that, I haven't been able to keep up with the versions.
+I've renewed the patch, would you please review it? Thanks!
 
-> Please look here: https://patchwork.kernel.org/patch/4139181/
+---<8---
+mm: use the light version __mod_zone_page_state in mlocked_vma_newpage()
 
-OK.  
+mlocked_vma_newpage() is called with pte lock held(a spinlock), which
+implies preemtion disabled, and the vm stat counter is not modified from
+interrupt context, so we need not use an irq-safe mod_zone_page_state() here,
+using a light-weight version __mod_zone_page_state() would be OK.
 
->> > By leaving this flag set after ->suspend(), a driver or subsystem tells
->> > the PM core that the device is runtime suspended, it is in a suitable
->> > state for system suspend (for example, the wakeup setting does not
->> > need to be changed), and it does not need to return to full
->> > power until the resume stage.
->> 
->> But taking this "leave runtime suspended" idea the next logical step,
->> why would/should a device need to return to full power at the ->resume()
->> stage?  especially when it wasn't at full power when ->suspend()
->> happened?
->
-> Good question and I've been thinking about that for a while.
->
-> Generally, the main reason for resuming is that on some platforms devices are
-> automatically powered up by firmware and in those cases it's better to
-> resume them (to make the runtime PM status reflect the physical state) and
-> suspend again later.
->
-> Generally speaking, subsystems that need to do that know what they are and
-> that's what I was talking about in the most recent reply to Alan:
->
-> http://marc.info/?l=linux-pm&m=139967477806094&w=4
->
-> Currently, I think, there are two options on the table really.
->
->  1. Do more or less what https://patchwork.kernel.org/patch/4139181/ does
->     with a modification to check that ->suspend() doesn't "cheat" (by setting
->     the flag that had been unset before it was called).  The subsystem's
->     ->resume() would then decide what to do with the device (resume it or
->     leave it suspended).
->
->  2. Do what Alan was suggesting, that is set the flag in ->prepare() and
->     make the PM core skip *all* of the system suspend/resume callbacks
->     for devices with that flag set and let the ->complete() callback
->     decide what to do with the device.
->
-> I'm leaning a bit towards 2, but still considering 1 too.
+This patch also documents __mod_zone_page_state() and some of its
+callsites. The comment above __mod_zone_page_state() is from Hugh
+Dickins, and acked by Christoph.
 
-If it matters, I have a slight preference for 2 also, though as long as
-the subsytem/device gets to decide whether to resume, I think I'm OK
-with either approach.
+Most credits to Hugh and Christoph for the clarification on the usage of
+the __mod_zone_page_state().
 
-Kevin
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+---
+ mm/internal.h |  7 ++++++-
+ mm/rmap.c     | 10 ++++++++++
+ mm/vmstat.c   |  4 +++-
+ 3 files changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/mm/internal.h b/mm/internal.h
+index 07b6736..53d439e 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -196,7 +196,12 @@ static inline int mlocked_vma_newpage(struct vm_area_struct *vma,
+ 		return 0;
+ 
+ 	if (!TestSetPageMlocked(page)) {
+-		mod_zone_page_state(page_zone(page), NR_MLOCK,
++		/*
++		 * We use the irq-unsafe __mod_zone_page_stat because
++		 * this counter is not modified from interrupt context, and the
++		 * pte lock is held(spinlock), which implies preemtion disabled.
++		 */
++		__mod_zone_page_state(page_zone(page), NR_MLOCK,
+ 				    hpage_nr_pages(page));
+ 		count_vm_event(UNEVICTABLE_PGMLOCKED);
+ 	}
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 9c3e773..2fa4375 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -986,6 +986,11 @@ void do_page_add_anon_rmap(struct page *page,
+ {
+ 	int first = atomic_inc_and_test(&page->_mapcount);
+ 	if (first) {
++		/*
++		 * We use the irq-unsafe __{inc|mod}_zone_page_stat because
++		 * these counters are not modified in interrupt context, and
++		 * pte lock(a spinlock) is held, which implies preemtion disabled.
++		 */
+ 		if (PageTransHuge(page))
+ 			__inc_zone_page_state(page,
+ 					      NR_ANON_TRANSPARENT_HUGEPAGES);
+@@ -1077,6 +1082,11 @@ void page_remove_rmap(struct page *page)
+ 	/*
+ 	 * Hugepages are not counted in NR_ANON_PAGES nor NR_FILE_MAPPED
+ 	 * and not charged by memcg for now.
++	 *
++	 * We use the irq-unsafe __{inc|mod}_zone_page_stat because
++	 * these counters are not modified in interrupt context, and
++	 * these counters are not modified in interrupt context, and
++	 * pte lock(a spinlock) is held, which implies preemtion disabled.
+ 	 */
+ 	if (unlikely(PageHuge(page)))
+ 		goto out;
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 302dd07..704928e 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -207,7 +207,9 @@ void set_pgdat_percpu_threshold(pg_data_t *pgdat,
+ }
+ 
+ /*
+- * For use when we know that interrupts are disabled.
++ * For use when we know that interrupts are disabled,
++ * or when we know that preemption is disabled and that
++ * particular counter cannot be updated from interrupt context.
+  */
+ void __mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
+ 				int delta)
+-- 
+2.0.0-rc1
 
