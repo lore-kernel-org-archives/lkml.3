@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758239AbaELNL4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 09:11:56 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:50974 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327AbaELNLz (ORCPT
+	id S1758229AbaELNPK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 09:15:10 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:42754 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754515AbaELNPH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 09:11:55 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5370C891.3070502@roeck-us.net>
-Date: Mon, 12 May 2014 06:11:45 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 12 May 2014 09:15:07 -0400
 MIME-Version: 1.0
-To: Josef Gajdusek <atx@atx.name>, jdelvare@suse.de
-CC: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/hwmon/emc1403.c: add new revision numbers to
- emc1403_detect()
-References: <20140512114826.GA16252@dashie>
-In-Reply-To: <20140512114826.GA16252@dashie>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1399839324-21773-1-git-send-email-emilio@elopez.com.ar>
+References: <1399839324-21773-1-git-send-email-emilio@elopez.com.ar>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 12 May 2014 07:14:46 -0600
+Message-ID: <CAErSpo6uU4E-WLXBPp79q8fsu-YMytAaVGyEBOD7-1iZcJDgwQ@mail.gmail.com>
+Subject: Re: [PATCH] Documentation/DMA-API-HOWTO.txt: fix duplicated word
+To: =?UTF-8?Q?Emilio_L=C3=B3pez?= <emilio@elopez.com.ar>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2014 04:48 AM, Josef Gajdusek wrote:
-> Adds new chip revision numbers to emc1403.c. Altough the datasheet (for emc1412) does not say so directly, it seems to suggest, that chips with revision ID 0x03 exist.
+On Sun, May 11, 2014 at 2:15 PM, Emilio López <emilio@elopez.com.ar> wrote:
+> "coherent" is written twice when it should be just once
 >
+> Signed-off-by: Emilio López <emilio@elopez.com.ar>
+> ---
+>
+> The sentence still doesn't sound entirely correct in my head, maybe
+> someone can propose a better rewording.
 
-In Table 10.1:
+I added this patch to my series.  I agree the wording is awkward, but
+I don't have a better proposal right now.
 
-Rev. 1.37 (12-23-09) Section 7.17, "Revision Register"
-
-Changed default from 01h to 03h to match the actual value.
-
-Rev. 1.38 changed it to 0x04.
-
-> Signed-off-by: Josef Gajdusek <atx@atx.name>
-
-Thanks, will apply.
-
-Guenter
-
+>  Documentation/DMA-API-HOWTO.txt | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/Documentation/DMA-API-HOWTO.txt b/Documentation/DMA-API-HOWTO.txt
+> index 5e98303..4ede25a 100644
+> --- a/Documentation/DMA-API-HOWTO.txt
+> +++ b/Documentation/DMA-API-HOWTO.txt
+> @@ -192,7 +192,7 @@ the case would look like this:
+>                 goto ignore_this_device;
+>         }
+>
+> -The coherent coherent mask will always be able to set the same or a
+> +The coherent mask will always be able to set the same or a
+>  smaller mask as the streaming mask. However for the rare case that a
+>  device driver only uses consistent allocations, one would have to
+>  check the return value from dma_set_coherent_mask().
+> --
+> 1.9.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
