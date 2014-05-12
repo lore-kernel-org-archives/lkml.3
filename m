@@ -1,52 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758794AbaELPRx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 11:17:53 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:54209 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758430AbaELPRv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 11:17:51 -0400
-Date: Mon, 12 May 2014 11:17:48 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dongsheng Yang <dongsheng081251@gmail.com>,
-        "yangds.fnst" <yangds.fnst@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, bsegall@google.com
-Subject: Re: [PATCH] sched: Distinguish sched_wakeup event when wake up a
- task which did schedule out or not.
-Message-ID: <20140512111748.1c2f6cd9@gandalf.local.home>
-In-Reply-To: <20140512150950.GP30445@twins.programming.kicks-ass.net>
-References: <53683B14.3060702@cn.fujitsu.com>
-	<1399341154-11785-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-	<20140510152902.GW11096@twins.programming.kicks-ass.net>
-	<536F90BE.2080806@gmail.com>
-	<CA+qeAOr_PrBuo+qfjNoaZyHF21p=8UgQy1oZOjAxahhYTyrvLQ@mail.gmail.com>
-	<20140511163531.GG30445@twins.programming.kicks-ass.net>
-	<20140511145224.00412e59@gandalf.local.home>
-	<20140512064730.GI30445@twins.programming.kicks-ass.net>
-	<20140512100908.07cc50bc@gandalf.local.home>
-	<20140512150950.GP30445@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1758832AbaELPSJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 11:18:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35784 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756570AbaELPSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 11:18:08 -0400
+Date: Mon, 12 May 2014 17:18:06 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hannes@cmpxchg.org
+Subject: Re: [PATCH 03/14] memcg: update memcg_has_children() to use
+ css_next_child()
+Message-ID: <20140512151806.GG9564@dhcp22.suse.cz>
+References: <1399671091-23867-1-git-send-email-tj@kernel.org>
+ <1399671091-23867-4-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399671091-23867-4-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 May 2014 17:09:50 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-> > Point being, this is useful information, why not pass it to userspace?
+On Fri 09-05-14 17:31:20, Tejun Heo wrote:
+> Currently, memcg_has_children() and mem_cgroup_hierarchy_write()
+> directly test cgroup->children for list emptiness.  It's semantically
+> correct in traditional hierarchies as it actually wants to test for
+> any children dead or alive; however, cgroup->children is not a
+> published field and scheduled to go away.
 > 
-> Because it adds code to one of the hottest code paths in the kernel and
-> so far nobody had a sane explanation of WTF they were doing.
+> This patch moves out .use_hierarchy test out of memcg_has_children()
+> and updates it to use css_next_child() to test whether there exists
+> any children.  With .use_hierarchy test moved out, it can also be used
+> by mem_cgroup_hierarchy_write().
+
+I hope we will not grow more users of memcg_has_children but it would be
+good to at least add a comment that this has to be checked by the
+caller because we consider parent/children always when use_hierarchy is
+used.
+ 
+> A side note: As .use_hierarchy is going away, it doesn't really matter
+> but I'm not sure about how it's used in __memcg_activate_kmem().  The
+> condition tested by memcg_has_children() is mushy when seen from
+> userland as its result is affected by dead csses which aren't visible
+> from userland.  I think the rule would be a lot clearer if we have a
+> dedicated "freshly minted" flag which gets cleared when the first task
+> is migrated into it or the first child is created and then gate
+> activation with that.
+
+This would work. KMEM_ACCOUNTED_ALLOWED in kmem_account_flags would be a
+candidate.
+
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  mm/memcontrol.c | 26 ++++++++++++++++----------
+>  1 file changed, 16 insertions(+), 10 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 036453a..eb6e1b5 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4834,18 +4834,23 @@ static void mem_cgroup_reparent_charges(struct mem_cgroup *memcg)
+>  	} while (usage > 0);
+>  }
+>  
+> +/* test whether @memcg has children, dead or alive */
+>  static inline bool memcg_has_children(struct mem_cgroup *memcg)
+>  {
+> -	lockdep_assert_held(&memcg_create_mutex);
+> +	bool ret;
+> +
+>  	/*
+> -	 * The lock does not prevent addition or deletion to the list
+> -	 * of children, but it prevents a new child from being
+> -	 * initialized based on this parent in css_online(), so it's
+> -	 * enough to decide whether hierarchically inherited
+> -	 * attributes can still be changed or not.
+> +	 * The lock does not prevent addition or deletion of children, but
+> +	 * it prevents a new child from being initialized based on this
+> +	 * parent in css_online(), so it's enough to decide whether
+> +	 * hierarchically inherited attributes can still be changed or not.
+>  	 */
+> -	return memcg->use_hierarchy &&
+> -		!list_empty(&memcg->css.cgroup->children);
+> +	lockdep_assert_held(&memcg_create_mutex);
+> +
+> +	rcu_read_lock();
+> +	ret = css_next_child(NULL, &memcg->css);
+> +	rcu_read_unlock();
+> +	return ret;
+>  }
+>  
+>  /*
+> @@ -4921,7 +4926,7 @@ static int mem_cgroup_hierarchy_write(struct cgroup_subsys_state *css,
+>  	 */
+>  	if ((!parent_memcg || !parent_memcg->use_hierarchy) &&
+>  				(val == 1 || val == 0)) {
+> -		if (list_empty(&memcg->css.cgroup->children))
+> +		if (!memcg_has_children(memcg))
+>  			memcg->use_hierarchy = val;
+>  		else
+>  			retval = -EBUSY;
+> @@ -5038,7 +5043,8 @@ static int __memcg_activate_kmem(struct mem_cgroup *memcg,
+>  	 * of course permitted.
+>  	 */
+>  	mutex_lock(&memcg_create_mutex);
+> -	if (cgroup_has_tasks(memcg->css.cgroup) || memcg_has_children(memcg))
+> +	if (cgroup_has_tasks(memcg->css.cgroup) ||
+> +	    (memcg->use_hierarchy && memcg_has_children(memcg)))
+>  		err = -EBUSY;
+>  	mutex_unlock(&memcg_create_mutex);
+>  	if (err)
+> -- 
+> 1.9.0
 > 
 
-Is there a measurable difference with these extra tracepoints?
-
--- Steve
-
+-- 
+Michal Hocko
+SUSE Labs
