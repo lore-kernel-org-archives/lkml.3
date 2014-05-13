@@ -1,121 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761026AbaEMLTM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 07:19:12 -0400
-Received: from 1wt.eu ([62.212.114.60]:35030 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760733AbaEMLTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 07:19:09 -0400
-Date: Tue, 13 May 2014 13:18:56 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, Ben Myers <bpm@sgi.com>,
-        dannf@debian.org, jmm@inutil.org
-Subject: Re: [ 137/143] xfs: underflow bug in xfs_attrlist_by_handle()
-Message-ID: <20140513111856.GG30843@1wt.eu>
-References: <f07e5fe6d87f172fc73580b9c86ba9a2@local> <20140512003206.396224510@1wt.eu> <20140513110812.GA4006@hercules>
-Mime-Version: 1.0
-Content-Type: multipart/mixed; boundary="qMm9M+Fa2AknHoGS"
-Content-Disposition: inline
-In-Reply-To: <20140513110812.GA4006@hercules>
-User-Agent: Mutt/1.4.2.3i
+	id S1761056AbaEMLUg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 07:20:36 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:43984 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752829AbaEMLUe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 07:20:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <536A5258.3080104@samsung.com>
+References: <1396967856-27470-1-git-send-email-t.stanislaws@samsung.com>
+	<1396967856-27470-2-git-send-email-t.stanislaws@samsung.com>
+	<534506B1.4040908@samsung.com>
+	<CAPdUM4M109_kzY6cUMJQPSwgazvWmNDWL1JeXgiqnzvH8dhK2Q@mail.gmail.com>
+	<53451A60.4050803@samsung.com>
+	<53675D72.70103@ti.com>
+	<CAPdUM4N+2VXpiFSiWW9gKfbte1zkpDbCOSF+KvEo4T1KLqqwjw@mail.gmail.com>
+	<536A36F5.5080303@samsung.com>
+	<CAPdUM4M6uk2KN_L487_cRkOqbgJrhhMRx9zpczA6-3LzSM3FSg@mail.gmail.com>
+	<536A5258.3080104@samsung.com>
+Date: Tue, 13 May 2014 16:50:31 +0530
+X-Google-Sender-Auth: 1C9ExYfITG5sX02GtaVWxqEBv40
+Message-ID: <CAPdUM4MZS4jMNcEtjHkw1==zG3Z_rNYfsw9Q4Qt3kRpV5PuLJw@mail.gmail.com>
+Subject: Re: [PATCHv2 1/3] phy: Add exynos-simple-phy driver
+From: Rahul Sharma <rahul.sharma@samsung.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Andrzej Hajda <a.hajda@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, sunil joshi <joshi@samsung.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+<Gentle PING>
 
---qMm9M+Fa2AknHoGS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Hi Luis,
-
-On Tue, May 13, 2014 at 12:08:12PM +0100, Luis Henriques wrote:
-> > diff --git a/fs/xfs/linux-2.6/xfs_ioctl32.c b/fs/xfs/linux-2.6/xfs_ioctl32.c
-> > index bad485a..782d03d 100644
-> > --- a/fs/xfs/linux-2.6/xfs_ioctl32.c
-> > +++ b/fs/xfs/linux-2.6/xfs_ioctl32.c
-> > @@ -361,8 +361,8 @@ xfs_compat_attrlist_by_handle(
-> >  	if (copy_from_user(&al_hreq, arg,
-> >  			   sizeof(compat_xfs_fsop_attrlist_handlereq_t)))
-> >  		return -XFS_ERROR(EFAULT);
-> > -	if (al_hreq.buflen > XATTR_LIST_MAX)
-> > -		return -XFS_ERROR(EINVAL);
-> 
-> Am I missing something or was the above return statement deleted by
-> mistake?
+On 7 May 2014 21:03, Tomasz Figa <t.figa@samsung.com> wrote:
+> [CCing more DT-folks :)]
 >
-> > +	if (al_hreq.buflen < sizeof(struct attrlist) ||
-> > +	    al_hreq.buflen > XATTR_LIST_MAX)
-
-Ouch! You're absolutely right, thanks a lot for spotting this!
-
-Here's an updated patch. Dann, Moritz, you want to use this one
-as well instead!
-
-thanks,
-Willy
-
-
---qMm9M+Fa2AknHoGS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-xfs-underflow-bug-in-xfs_attrlist_by_handle.patch"
-
->From 2282cff50cb9c2205d92b31257d894a4eda4ed86 Mon Sep 17 00:00:00 2001
-From: Dan Carpenter <dan.carpenter@oracle.com>
-Date: Thu, 31 Oct 2013 21:00:10 +0300
-Subject: xfs: underflow bug in xfs_attrlist_by_handle()
-
-If we allocate less than sizeof(struct attrlist) then we end up
-corrupting memory or doing a ZERO_PTR_SIZE dereference.
-
-This can only be triggered with CAP_SYS_ADMIN.
-
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
-
-(cherry picked from commit 071c529eb672648ee8ca3f90944bcbcc730b4c06)
-[dannf: backported to Debian's 2.6.32]
-Signed-off-by: Willy Tarreau <w@1wt.eu>
----
- fs/xfs/linux-2.6/xfs_ioctl.c   | 3 ++-
- fs/xfs/linux-2.6/xfs_ioctl32.c | 3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/fs/xfs/linux-2.6/xfs_ioctl.c b/fs/xfs/linux-2.6/xfs_ioctl.c
-index 942362f..5663351 100644
---- a/fs/xfs/linux-2.6/xfs_ioctl.c
-+++ b/fs/xfs/linux-2.6/xfs_ioctl.c
-@@ -410,7 +410,8 @@ xfs_attrlist_by_handle(
- 		return -XFS_ERROR(EPERM);
- 	if (copy_from_user(&al_hreq, arg, sizeof(xfs_fsop_attrlist_handlereq_t)))
- 		return -XFS_ERROR(EFAULT);
--	if (al_hreq.buflen > XATTR_LIST_MAX)
-+	if (al_hreq.buflen < sizeof(struct attrlist) ||
-+	    al_hreq.buflen > XATTR_LIST_MAX)
- 		return -XFS_ERROR(EINVAL);
- 
- 	/*
-diff --git a/fs/xfs/linux-2.6/xfs_ioctl32.c b/fs/xfs/linux-2.6/xfs_ioctl32.c
-index bad485a..e671047 100644
---- a/fs/xfs/linux-2.6/xfs_ioctl32.c
-+++ b/fs/xfs/linux-2.6/xfs_ioctl32.c
-@@ -361,7 +361,8 @@ xfs_compat_attrlist_by_handle(
- 	if (copy_from_user(&al_hreq, arg,
- 			   sizeof(compat_xfs_fsop_attrlist_handlereq_t)))
- 		return -XFS_ERROR(EFAULT);
--	if (al_hreq.buflen > XATTR_LIST_MAX)
-+	if (al_hreq.buflen < sizeof(struct attrlist) ||
-+	    al_hreq.buflen > XATTR_LIST_MAX)
- 		return -XFS_ERROR(EINVAL);
- 
- 	/*
--- 
-1.7.12.2.21.g234cd45.dirty
-
-
---qMm9M+Fa2AknHoGS--
+> On 07.05.2014 16:19, Rahul Sharma wrote:
+>> On 7 May 2014 19:06, Tomasz Stanislawski <t.stanislaws@samsung.com> wrote:
+>>> On 05/07/2014 12:38 PM, Rahul Sharma wrote:
+>>>> On 5 May 2014 15:14, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>>>> Hi,
+>>>>>
+>>>>> On Wednesday 09 April 2014 03:31 PM, Sylwester Nawrocki wrote:
+>>>>>> Hi,
+>>>>>>
+>>>>>> On 09/04/14 11:12, Rahul Sharma wrote:
+>>>>>>> Idea looks good. How about keeping compatible which is independent
+>>>>>>> of SoC, something like "samsung,exynos-simple-phy" and provide Reg
+>>>>>>> and Bit through phy provider node. This way we can avoid SoC specific
+>>>>>>> hardcoding in phy driver and don't need to look into dt bindings for
+>>>>>>> each new SoC.
+>>>>>>
+>>>>>> I believe it is a not recommended approach.
+>>>>>
+>>>>> Why not? We should try to avoid hard coding in the driver code. Moreover by
+>>>>> avoiding hardcoding we can make it a generic driver for single bit PHYs.
+>>>>>
+>>>>
+>>>> +1.
+>>>>
+>>>> @Tomasz, any plans to consider this approach for simple phy driver?
+>>>>
+>>>> Regards,
+>>>> Rahul Sharma.
+>>>>
+>>>
+>>> Hi Rahul,
+>>> Initially, I wanted to make a very generic driver and to add bit and
+>>> register (or its offset) attribute to the PHY node.
+>>> However, there was a very strong opposition from DT maintainers
+>>> to adding any bit related configuration to DT.
+>>> The current solution was designed to be a trade-off between
+>>> being generic and being accepted :).
+>>>
+>>
+>> Thanks Tomasz,
+>> Ok got it. lets discuss it again and conclude it.
+>>
+>> @Kishon, DT-folks,
+>>
+>> The original RFC patch from Tomasz (at https://lkml.org/lkml/2013/10/21/313)
+>> added simple phy driver as "Generic-simple-phy" with these properties:
+>>
+>> + of_property_read_u32(dev->of_node, "mask", &sphy->mask);
+>> + of_property_read_u32(dev->of_node, "on-value", &sphy->on_value);
+>> + of_property_read_u32(dev->of_node, "off-value", &sphy->off_value);
+>>
+>> Shall we consider the same solution again for generic simple phy
+>> driver which just expose on/off control through register bit.
+>>
+>> Regards,
+>> Rahul Sharma
+>>
+>>> Regards,
+>>> Tomasz Stanislawski
+>>>
+>>>
+>>>
+>>>>> Cheers
+>>>>> Kishon
+>>>>
+>>>
+>>> _______________________________________________
+>>> dri-devel mailing list
+>>> dri-devel@lists.freedesktop.org
+>>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
+> Best regards,
+> Tomasz
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
