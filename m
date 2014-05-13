@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879AbaEMCSX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 22:18:23 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:42776 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873AbaEMCSW (ORCPT
+	id S1752869AbaEMCX6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 22:23:58 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52355 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752099AbaEMCX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 22:18:22 -0400
-Message-ID: <537180B9.6080407@oracle.com>
-Date: Mon, 12 May 2014 22:17:29 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 12 May 2014 22:23:57 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 13 May 2014 11:26:03 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        "'Tomasz Stanislawski'" <t.stanislaws@samsung.com>
+Subject: Re: [RFC PATCH 0/3] Aggressively allocate the pages on cma reserved
+ memory
+Message-ID: <20140513022603.GF23803@js1304-P5Q-DELUXE>
+References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <536CCC78.6050806@samsung.com>
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
-References: <537119EF.2060102@oracle.com> <20140512200135.GL1421@htj.dyndns.org> <53718119.1090000@cn.fujitsu.com>
-In-Reply-To: <53718119.1090000@cn.fujitsu.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <536CCC78.6050806@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2014 10:19 PM, Lai Jiangshan wrote:
-> On 05/13/2014 04:01 AM, Tejun Heo wrote:
->> > On Mon, May 12, 2014 at 02:58:55PM -0400, Sasha Levin wrote:
->>> >> Hi all,
->>> >>
->>> >> While fuzzing with trinity inside a KVM tools guest running the latest -next
->>> >> kernel I've stumbled on the following spew:
->>> >>
->>> >> [ 1297.886670] WARNING: CPU: 0 PID: 190 at kernel/workqueue.c:2176 process_one_work+0xb5/0x6f0()
->>> >> [ 1297.889216] Modules linked in:
->>> >> [ 1297.890306] CPU: 0 PID: 190 Comm: kworker/3:0 Not tainted 3.15.0-rc5-next-20140512-sasha-00019-ga20bc00-dirty #456
->>> >> [ 1297.893258]  0000000000000009 ffff88010c5d7ce8 ffffffffb153e1ec 0000000000000002
->>> >> [ 1297.893258]  0000000000000000 ffff88010c5d7d28 ffffffffae15fd6c ffff88010cdd6c98
->>> >> [ 1297.893258]  ffff8806285d4000 ffffffffb3cd09e0 ffff88010cdde000 0000000000000000
->>> >> [ 1297.893258] Call Trace:
->>> >> [ 1297.893258] dump_stack (lib/dump_stack.c:52)
->>> >> [ 1297.893258] warn_slowpath_common (kernel/panic.c:430)
->>> >> [ 1297.893258] warn_slowpath_null (kernel/panic.c:465)
->>> >> [ 1297.893258] process_one_work (kernel/workqueue.c:2174 (discriminator 38))
->>> >> [ 1297.893258] worker_thread (kernel/workqueue.c:2354)
->>> >> [ 1297.893258] kthread (kernel/kthread.c:210)
->>> >> [ 1297.893258] ret_from_fork (arch/x86/kernel/entry_64.S:553)
-> Hi,
+On Fri, May 09, 2014 at 02:39:20PM +0200, Marek Szyprowski wrote:
+> Hello,
 > 
-> I have been trying to address this bug.
-> Buy I can't reproduce this bug. Is your testing arch X86?
-> if yes, could you find out how to reproduce the bug?
+> On 2014-05-08 02:32, Joonsoo Kim wrote:
+> >This series tries to improve CMA.
+> >
+> >CMA is introduced to provide physically contiguous pages at runtime
+> >without reserving memory area. But, current implementation works like as
+> >reserving memory approach, because allocation on cma reserved region only
+> >occurs as fallback of migrate_movable allocation. We can allocate from it
+> >when there is no movable page. In that situation, kswapd would be invoked
+> >easily since unmovable and reclaimable allocation consider
+> >(free pages - free CMA pages) as free memory on the system and free memory
+> >may be lower than high watermark in that case. If kswapd start to reclaim
+> >memory, then fallback allocation doesn't occur much.
+> >
+> >In my experiment, I found that if system memory has 1024 MB memory and
+> >has 512 MB reserved memory for CMA, kswapd is mostly invoked around
+> >the 512MB free memory boundary. And invoked kswapd tries to make free
+> >memory until (free pages - free CMA pages) is higher than high watermark,
+> >so free memory on meminfo is moving around 512MB boundary consistently.
+> >
+> >To fix this problem, we should allocate the pages on cma reserved memory
+> >more aggressively and intelligenetly. Patch 2 implements the solution.
+> >Patch 1 is the simple optimization which remove useless re-trial and patch 3
+> >is for removing useless alloc flag, so these are not important.
+> >See patch 2 for more detailed description.
+> >
+> >This patchset is based on v3.15-rc4.
+> 
+> Thanks for posting those patches. It basically reminds me the
+> following discussion:
+> http://thread.gmane.org/gmane.linux.kernel/1391989/focus=1399524
+> 
+> Your approach is basically the same. I hope that your patches can be
+> improved
+> in such a way that they will be accepted by mm maintainers. I only
+> wonder if the
+> third patch is really necessary. Without it kswapd wakeup might be
+> still avoided
+> in some cases.
 
-Yup, it's a 64bit KVM guest.
+Hello,
 
-I don't have an easy way to reproduce it as I only saw the bug once, but
-it happened when I started pressuring CPU hotplug paths by adding and removing
-CPUs often. Maybe it has anything to do with that?
+Oh... I didn't know that patch and discussion, because I have no interest
+on CMA at that time. Your approach looks similar to #1
+approach of mine and could have same problem of #1 approach which I mentioned
+in patch 2/3. Please refer that patch description. :)
+And, there is different purpose between this and yours. This patch is
+intended to better use of CMA pages and so get maximum performance.
+Just to not trigger oom, it can be possible to put this logic on reclaim path.
+But that is sub-optimal to get higher performance, because it needs
+migration in some cases.
 
+If second patch works as intended, there are just a few of cma free pages
+when we are toward on the watermark. So benefit of third patch would
+be marginal and we can remove ALLOC_CMA.
 
-Thanks,
-Sasha
-
+Thanks.
