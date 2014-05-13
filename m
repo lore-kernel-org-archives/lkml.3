@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766AbaEMJHY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:07:24 -0400
-Received: from mail-by2on0140.outbound.protection.outlook.com ([207.46.100.140]:53480
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932714AbaEMJHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:07:20 -0400
-From: Ley Foon Tan <lftan@altera.com>
-To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
-        <cltang@codesourcery.com>, Chris Zankel <chris@zankel.net>,
-        Max Filippov <jcmvbkbc@gmail.com>, <linux-xtensa@linux-xtensa.org>
-Subject: [PATCH 25/25] xtense: Add 32 bit time_t and clock_t
-Date: Tue, 13 May 2014 17:06:50 +0800
-Message-ID: <1399972010-4890-1-git-send-email-lftan@altera.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1399971456-3941-1-git-send-email-lftan@altera.com>
-References: <1399971456-3941-1-git-send-email-lftan@altera.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(199002)(189002)(62966002)(74662001)(6806004)(46102001)(44976005)(19580395003)(81342001)(19580405001)(83322001)(31966008)(50226001)(4396001)(80022001)(74502001)(81542001)(102836001)(77156001)(92726001)(33646001)(20776003)(36756003)(47776003)(50466002)(86362001)(76482001)(87936001)(50986999)(79102001)(92566001)(83072002)(89996001)(2009001)(48376002)(87286001)(84676001)(77982001)(76176999)(85852003)(16796002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB022;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-OriginatorOrg: altera.onmicrosoft.com
-X-Forefront-PRVS: 0210479ED8
-Authentication-Results: spf=softfail (sender IP is 66.35.236.232)
- smtp.mailfrom=lftan@altera.com; 
+	id S932782AbaEMJIQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:08:16 -0400
+Received: from mga09.intel.com ([134.134.136.24]:6574 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932281AbaEMJIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 05:08:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1042,1389772800"; 
+   d="scan'208";a="539485386"
+Message-ID: <1399972089.1797.29.camel@sauron.fi.intel.com>
+Subject: Re: [RFC PATCH] UBI: fix rb_tree node comparison in add_map
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Richard Weinberger <richard@nod.at>, Mike Snitzer <snitzer@redhat.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Tue, 13 May 2014 12:08:09 +0300
+In-Reply-To: <20140510011913.GH28907@ld-irv-0074>
+References: <20140321195403.GA32529@redhat.com> <532CD1CB.4070707@nod.at>
+	 <20140510011913.GH28907@ld-irv-0074>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Override time_t and clock_t in include/uapi/asm-generic.
+On Fri, 2014-05-09 at 18:19 -0700, Brian Norris wrote:
+> Hi Artem,
+> 
+> On Sat, Mar 22, 2014 at 12:56:59AM +0100, Richard Weinberger wrote:
+> > Am 21.03.2014 20:54, schrieb Mike Snitzer:
+> > > The comparisons used in add_vol() shouldn't be identical.  Pretty sure
+> > > the following is correct but it is completely untested.
+> > > 
+> > > Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+> > > ---
+> > >  drivers/mtd/ubi/fastmap.c |    4 ++--
+> > >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > > 
+> > > NOTE: I stumbled upon this code while implementing some rb_tree code
+> > >       (and looking for some existing rb_tree code as a reference).
+> > 
+> > Thanks a lot for pointing this out!
+> > 
+> > Acked-by: Richard Weinberger <richard@nod.at>
+> 
+> Bump?
+> 
+> I'm passing through my queue, and I occasionally see some obvious,
+> reviewed fixes like this one. Typically, you get around to them
+> eventually, but you never know. Do you prefer the "bump"?
 
-Signed-off-by: Ley Foon Tan <lftan@altera.com>
----
- arch/xtensa/include/uapi/asm/posix_types.h | 6 ++++++
- 1 file changed, 6 insertions(+)
+I'll pick this now, thanks for pointing. And yes, a "bump" is helpful.
+E.g., I missed this ones.
 
-diff --git a/arch/xtensa/include/uapi/asm/posix_types.h b/arch/xtensa/include/uapi/asm/posix_types.h
-index 6e96be0..0001106 100644
---- a/arch/xtensa/include/uapi/asm/posix_types.h
-+++ b/arch/xtensa/include/uapi/asm/posix_types.h
-@@ -34,6 +34,12 @@ typedef unsigned short	__kernel_old_gid_t;
- typedef unsigned short	__kernel_old_dev_t;
- #define __kernel_old_dev_t __kernel_old_dev_t
- 
-+typedef long	__kernel_time_t;
-+#define __kernel_time_t __kernel_time_t
-+
-+typedef long	__kernel_clock_t;
-+#define __kernel_clock_t __kernel_clock_t
-+
- #include <asm-generic/posix_types.h>
- 
- #endif /* _XTENSA_POSIX_TYPES_H */
 -- 
-1.8.2.1
+Best Regards,
+Artem Bityutskiy
 
