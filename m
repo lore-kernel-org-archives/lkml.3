@@ -1,117 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628AbaEMSv4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 14:51:56 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:65487 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754475AbaEMSvm (ORCPT
+	id S1753571AbaEMSwM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 14:52:12 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:37053 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754519AbaEMSv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 14:51:42 -0400
-Date: Tue, 13 May 2014 14:51:35 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hannes@cmpxchg.org
-Subject: [PATCH UPDATED 02/14] memcg: remove tasks/children test from
- mem_cgroup_force_empty()
-Message-ID: <20140513185135.GB19514@htj.dyndns.org>
-References: <1399671091-23867-1-git-send-email-tj@kernel.org>
- <1399671091-23867-3-git-send-email-tj@kernel.org>
- <20140512145324.GE9564@dhcp22.suse.cz>
+	Tue, 13 May 2014 14:51:27 -0400
+Message-ID: <53725FDE.30006@gmail.com>
+Date: Tue, 13 May 2014 20:09:34 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140512145324.GE9564@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mtk.manpages@gmail.com, lkml <linux-kernel@vger.kernel.org>,
+        Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 0/3] sched: sched_setattr/sched_getattr fixes and improvements
+References: <536CEAEE.4010609@gmail.com> <20140509171640.GA30445@twins.programming.kicks-ass.net>
+In-Reply-To: <20140509171640.GA30445@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From ff584991bd7a6beea591aa10bce1712eb6cef3d6 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Mon, 12 May 2014 16:34:17 +0200
+On 05/09/2014 07:16 PM, Peter Zijlstra wrote:
+> On Fri, May 09, 2014 at 04:49:18PM +0200, Michael Kerrisk (man-pages) wrote:
+>> Peter,
+>>
+>> While looking at your sched_setattr()/sched_getatr() documentation, 
+>> I noticed a bug in the handling of -EFBIG, and a couple of places 
+>> in the code where the error handling logic could be streamlined.
+>> Patches follow.
+> 
+> Thanks!
 
-Tejun has correctly pointed out that tasks/children test in
-mem_cgroup_force_empty is not correct because there is no other locking
-which preserves this state throughout the rest of the function so both
-new tasks can join the group or new children groups can be added while
-somebody is writing to memory.force_empty. A new task would break
-mem_cgroup_reparent_charges expectation that all failures as described
-by mem_cgroup_force_empty_list are temporal and there is no way out.
+Hi Peter,
 
-The main use case for the knob as described by
-Documentation/cgroups/memory.txt is to:
-"
-  The typical use case for this interface is before calling rmdir().
-  Because rmdir() moves all pages to parent, some out-of-use page caches can be
-  moved to the parent. If you want to avoid that, force_empty will be useful.
-"
+I was a little unclear on what "Thanks" meant... Does it mean
+you plan to apply all 3 patches in your tree to go upstream?
 
-This means that reparenting is not really required as rmdir will
-reparent pages implicitly from the safe context. If we remove it from
-mem_cgroup_force_empty then we are safe even with existing tasks because
-the number of reclaim attempts is bounded. Moreover the knob still does
-what the documentation claims (modulo reparenting which doesn't make any
-difference) and users might expect. Longterm we want to deprecate the
-whole knob and put the reparented pages to the tail of parent LRU during
-cgroup removal.
+Thanks,
 
-tj: Removed unused variable @cgrp from mem_cgroup_force_empty()
+Michael
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- Documentation/cgroups/memory.txt | 6 +-----
- mm/memcontrol.c                  | 7 -------
- 2 files changed, 1 insertion(+), 12 deletions(-)
-
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index 2622115..8cb87e3 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -453,15 +453,11 @@ About use_hierarchy, see Section 6.
- 
- 5.1 force_empty
-   memory.force_empty interface is provided to make cgroup's memory usage empty.
--  You can use this interface only when the cgroup has no tasks.
-   When writing anything to this
- 
-   # echo 0 > memory.force_empty
- 
--  Almost all pages tracked by this memory cgroup will be unmapped and freed.
--  Some pages cannot be freed because they are locked or in-use. Such pages are
--  moved to parent (if use_hierarchy==1) or root (if use_hierarchy==0) and this
--  cgroup will be empty.
-+  the cgroup will be reclaimed and as many pages reclaimed as possible.
- 
-   The typical use case for this interface is before calling rmdir().
-   Because rmdir() moves all pages to parent, some out-of-use page caches can be
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index a5e0417..6144a8e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4857,11 +4857,6 @@ static inline bool memcg_has_children(struct mem_cgroup *memcg)
- static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
- {
- 	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
--	struct cgroup *cgrp = memcg->css.cgroup;
--
--	/* returns EBUSY if there is a task or if we come here twice. */
--	if (cgroup_has_tasks(cgrp) || !list_empty(&cgrp->children))
--		return -EBUSY;
- 
- 	/* we call try-to-free pages for make this cgroup empty */
- 	lru_add_drain_all();
-@@ -4881,8 +4876,6 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
- 		}
- 
- 	}
--	lru_add_drain();
--	mem_cgroup_reparent_charges(memcg);
- 
- 	return 0;
- }
 -- 
-1.9.0
-
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
