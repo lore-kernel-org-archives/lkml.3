@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978AbaEMTOE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 15:14:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43109 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719AbaEMTNy (ORCPT
+	id S1754166AbaEMTOP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 15:14:15 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37584 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753968AbaEMTOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 15:13:54 -0400
-Date: Tue, 13 May 2014 12:13:24 -0700
-From: tip-bot for Jason Cooper <tipbot@zytor.com>
-Message-ID: <tip-2ed9fd28c2884e9f41c133f86a7e377d7c0a96bf@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, jason@lakedaemon.net, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, jason@lakedaemon.net,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-In-Reply-To: <1400006821-32145-1-git-send-email-jason@lakedaemon.net>
-References: <1400006821-32145-1-git-send-email-jason@lakedaemon.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/urgent] MAINTAINERS: Add co-maintainer for drivers/
- irqchip
-Git-Commit-ID: 2ed9fd28c2884e9f41c133f86a7e377d7c0a96bf
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 13 May 2014 15:14:04 -0400
+Date: Tue, 13 May 2014 21:14:14 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Christoph Hellwig <hch@infradead.org>
+cc: Ley Foon Tan <lftan@altera.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lftan.linux@gmail.com,
+        cltang@codesourcery.com, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
+In-Reply-To: <20140513174640.GA20961@infradead.org>
+Message-ID: <alpine.DEB.2.02.1405132111120.6261@ionos.tec.linutronix.de>
+References: <1399971456-3941-1-git-send-email-lftan@altera.com> <20140513152429.GA15679@infradead.org> <alpine.DEB.2.02.1405131727480.6261@ionos.tec.linutronix.de> <20140513174640.GA20961@infradead.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2ed9fd28c2884e9f41c133f86a7e377d7c0a96bf
-Gitweb:     http://git.kernel.org/tip/2ed9fd28c2884e9f41c133f86a7e377d7c0a96bf
-Author:     Jason Cooper <jason@lakedaemon.net>
-AuthorDate: Tue, 13 May 2014 18:47:01 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 13 May 2014 21:10:55 +0200
+On Tue, 13 May 2014, Christoph Hellwig wrote:
 
-MAINTAINERS: Add co-maintainer for drivers/irqchip
+> On Tue, May 13, 2014 at 05:33:01PM +0200, Thomas Gleixner wrote:
+> > Err, we CANNOT do that. We cannot move ANY 32 bit architecture to
+> > 64bit time_t without breaking the world and some more.
+> 
+> Of course we can, we just need to still provide the existing 32-bit
+> time_t ABIs for backwards compatiblity.  That's how we handled
+> extensions of other types like off_t in the past.
 
-Thomas Gleixner has asked me to assist with the review and merging of
-patches for the irqchip subsystem.
+Sorry, misunderstood you there.
 
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
-Link: http://lkml.kernel.org/r/1400006821-32145-1-git-send-email-jason@lakedaemon.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- MAINTAINERS | 8 ++++++++
- 1 file changed, 8 insertions(+)
+Sure, I agree that we need to fix it anyway plus all timespec/timeval
+usage sites. It's on my and John Stultz radar as well. Just the sheer
+amount of syscalls, ioctls etc. makes one shudder.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 6bef70b..4195801 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4818,6 +4818,14 @@ L:	linux-kernel@vger.kernel.org
- S:	Maintained
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq/core
- F:	kernel/irq/
-+
-+IRQCHIP DRIVERS
-+M:	Thomas Gleixner <tglx@linutronix.de>
-+M:	Jason Cooper <jason@lakedaemon.net>
-+L:	linux-kernel@vger.kernel.org
-+S:	Maintained
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq/core
-+T:	git git://git.infradead.org/users/jcooper/linux.git irqchip/core
- F:	drivers/irqchip/
- 
- IRQ DOMAINS (IRQ NUMBER MAPPING LIBRARY)
+Thanks,
+
+	tglx
