@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759941AbaEMQSW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 12:18:22 -0400
-Received: from ns.horizon.com ([71.41.210.147]:47119 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750943AbaEMQSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 12:18:15 -0400
-Date: 13 May 2014 12:18:13 -0400
-Message-ID: <20140513161813.15106.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, mathieu.desnoyers@efficios.com
-Subject: Re: [PATCH 4/4] timekeeping: Use printk_deferred when holding timekeeping seqlock
-Cc: john.stultz@linaro.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
-        tglx@linutronix.de
-In-Reply-To: <822806193.15621.1399988364196.JavaMail.zimbra@efficios.com>
+	id S933221AbaEMQTB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:19:01 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:32883 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760488AbaEMQSw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 12:18:52 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>
+Subject: [PATCH] of/selftest: clean-up of_selftest_platform_populate pass/fail handling
+Date: Tue, 13 May 2014 11:18:28 -0500
+Message-Id: <1399997908-30916-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> I was trying to tackle the "hard problem" of making *all* time reads
->> non-blocking, with monotonicity guarantees.  There has to be *some* bound
->> on blocking times (in particular, time between reading hardware tiemrs
->> and translating them to real time), but they can be reasonably long.
+From: Rob Herring <robh@kernel.org>
 
-> What I gathered from my past discussion with John on this topic is that
-> virtualization blows away pretty much any assumption we can make on
-> "update should be reasonably short". A virtualized CPU can be preempted
-> for a rather long time (AFAIU not possible to bound).
+Move the pass/fail checks into selftest() calls instead of a separate if
+condition. Unconditionally calling pass was wrong.
 
-Well, there are two kinds of time reads:
+Signed-off-by: Rob Herring <robh@kernel.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+---
+ drivers/of/selftest.c | 14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
 
-1) "What is the current time now?"  This is easy, because if we stall
-   it's okay to return any time in the appropriate window.
-2) "Some time in the past I read the hardware clock with value c.
-   What is the time in seconds corresponding to that?"
+diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
+index fe70b86..c1d7d38 100644
+--- a/drivers/of/selftest.c
++++ b/drivers/of/selftest.c
+@@ -440,22 +440,18 @@ static void __init of_selftest_platform_populate(void)
+ 	/* Test that a missing irq domain returns -EPROBE_DEFER */
+ 	np = of_find_node_by_path("/testcase-data/testcase-device1");
+ 	pdev = of_find_device_by_node(np);
+-	if (!pdev)
+-		selftest(0, "device 1 creation failed\n");
++	selftest(pdev, "device 1 creation failed\n");
++
+ 	irq = platform_get_irq(pdev, 0);
+-	if (irq != -EPROBE_DEFER)
+-		selftest(0, "device deferred probe failed - %d\n", irq);
++	selftest(irq == -EPROBE_DEFER, "device deferred probe failed - %d\n", irq);
+ 
+ 	/* Test that a parsing failure does not return -EPROBE_DEFER */
+ 	np = of_find_node_by_path("/testcase-data/testcase-device2");
+ 	pdev = of_find_device_by_node(np);
+-	if (!pdev)
+-		selftest(0, "device 2 creation failed\n");
++	selftest(pdev, "device 2 creation failed\n");
+ 	irq = platform_get_irq(pdev, 0);
+-	if (irq >= 0 || irq == -EPROBE_DEFER)
+-		selftest(0, "device parsing error failed - %d\n", irq);
++	selftest(irq < 0 && irq != -EPROBE_DEFER, "device parsing error failed - %d\n", irq);
+ 
+-	selftest(1, "passed");
+ }
+ 
+ static int __init of_selftest(void)
+-- 
+1.9.1
 
-I'll call number 2 "time conversion".  This can be handled as long as the
-time between reading the clock and doing the conversion is reasonable.
-Otherwise, it'll fail, with "I don't remember that part of the piecewise
-clock/time conversion function."
-
-Now, obviously number 1 can be implemented by reading the hardware clock
-and converting it.  As you point out, virtualization makes it impossible
-to guarantee any reasonable bound on the time between the two steps.
-But in case 1, we can easily handle failure by retrying the read.  (Or,
-equivalently, returning the earliest time which we know how to convert.)
-
-All we can guarantee in case 1 is that we return the timestamp of some
-instant between call and return.  If that time is made very long by
-the hypervisor descheduling us, it reduces the required precision.
-
-
-So it's possible to allow arbirearily long delays in time writes, in
-current-time reads, but conversion has a risk of failure.
-
-I don't think it's possible to do better, so that's kind of the limit.
-
->> I think I have an idea that could work, but given the hairiness of
->> the timeeeping code, implementing it would be a major project.
->
-> Indeed, timekeeping is not for the faint of heart. ;-)
-
-But at least it's interesting, with problems other than undocumented bugs
-in hardware.
