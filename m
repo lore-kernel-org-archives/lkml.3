@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910AbaEMP3B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:29:01 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47391 "EHLO mga02.intel.com"
+	id S1753966AbaEMP3I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:29:08 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41088 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752544AbaEMP2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:28:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1044,1389772800"; 
-   d="scan'208";a="510952458"
-Date: Tue, 13 May 2014 23:28:54 -0400
-From: Zhuang Jin Can <jin.can.zhuang@intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, liping.zhou@intel.com,
-        david.a.cohen@linux.intel.com
-Subject: Re: [PATCH] usb: dwc3: ep0: fix delayed status is queued too early
-Message-ID: <20140514032854.GB16153@intel.com>
-Reply-To: jin.can.zhuang@intel.com
-References: <20140507215344.GH19925@intel.com>
- <20140514014551.GA16153@intel.com>
- <20140513150534.GF1151@saruman.home>
+	id S1753913AbaEMP3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 11:29:01 -0400
+Date: Tue, 13 May 2014 10:28:29 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Mathias Nyman <mathias.nyman@intel.com>
+Subject: Re: [PATCH 6/8] usb: xhci: avoid warning for !PM_SLEEP
+Message-ID: <20140513152829.GK1151@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1399557141-1346645-1-git-send-email-arnd@arndb.de>
+ <1399557141-1346645-7-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ogUXNSQj4OI1q3LQ"
 Content-Disposition: inline
-In-Reply-To: <20140513150534.GF1151@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1399557141-1346645-7-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 10:05:34AM -0500, Felipe Balbi wrote:
-> Hi,
-> 
-> On Tue, May 13, 2014 at 09:45:51PM -0400, Zhuang Jin Can wrote:
-> > Hi Balbi,
-> > 
-> > Do you have any comment for this patch?
-> 
-> do you have an easy test-case which I can use to validate on my end ?
-The issue was reproduced on a multi-core platform with f_mass_storage and
-adb (f_fs gadget) enabled. The enumeration will fail when it's connected
-to PC via USB2 cable.
+--ogUXNSQj4OI1q3LQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You may not be able to use adb (I think), but do replacing it with some other
-gadgets (e.g.f_rndis). And f_mass_storage gadget should be the first
-interface in the composite device (this is important to larger the
-chance to reproduce the issue, the delayed status request will be queued
-while irq is still enabling other endpoints of other gadgets).
+On Thu, May 08, 2014 at 03:52:19PM +0200, Arnd Bergmann wrote:
+> If we build a kernel with PM_SUSPEND set and no PM_SLEEP,
+> we get a build warning in the xhci-plat driver about unused
+> functions.
+>=20
+> To fix this, use "#ifdef CONFIG_PM_SLEEP", like we do in most
+> other drivers nowadays.
+>=20
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Mathias Nyman <mathias.nyman@intel.com>
+> ---
+>  drivers/usb/host/xhci-plat.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+> index 151901c..3473296 100644
+> --- a/drivers/usb/host/xhci-plat.c
+> +++ b/drivers/usb/host/xhci-plat.c
+> @@ -202,7 +202,7 @@ static int xhci_plat_remove(struct platform_device *d=
+ev)
+>  	return 0;
+>  }
+> =20
+> -#ifdef CONFIG_PM
+> +#ifdef CONFIG_PM_SLEEP
 
-Best Regards
-Jincan
+can we just drop the ifdeferry altogether, including from SET_*_OPS
+macros ? This is just ridiculous that every merge window we have tens of
+patches fixing the ifdef in several drivers.
 
+--=20
+balbi
 
+--ogUXNSQj4OI1q3LQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTcjodAAoJEIaOsuA1yqREdK8P/0kEvGrOvvzncs3kUdl9W3p4
+RqoBcpGTiqHS5qQneB+byNVekZehYzRZyzNaZMlt57+rOnpYXLJtbRs/tJlP/J2z
+JOprtQ2WxLk0Ts9AQ2hybsLqnQ/CWdIBJqKAZrHpqpDQG1bL3rjVH+qO4ZhcOOML
+DiZ8lmvl4VFfYhVfHdUAo6h18tfKZXMJYWKpuYU3Fb7cVCnIn/5x01dXjYoi6JAf
+aEuk5JwSfGaolS4oE/OSKSDWHrB2r/wXFKhwffsbw4BvCiCZsRNCmtocxvo1y96Q
+4JZZI2Kmua5sN3h2ppJrBy2bBnyhM/mUOD0LjkMGSRQb/bm1AfGH7Ksfm9zHcbC4
+jGOA2fFSAtMJOB/Bl15lLdWgk9QHP01wpH+Fk7giysK4j5Jkulkqf3+s3EeCcMWb
+BUEea/l7XgPAeFM0YPJJUfamag9aNCTTuAQEPq8cJ5YJTNfc0XGTe1b5JZLQwznf
+Qt1ohDy3e7pKC+ZcMOj6c79+oMLYNxdmDDLRhkr+cL1BBpWnTsPU5ZQ/SGKVeRpV
+gFxzln76msNSExFJuJpm5NaWd15NF+/X5HGP6hwMWMDAd9BD/+ZMPbWdmQjJmdib
+MeLsw9r9zkCoz1IJEn7tNspGMEZKdFlR83RNq9ZNQ2F6QYx0h0VQsRNKnWuC+GZi
+ebj7DhXTqlBJFbw7QQFJ
+=GkRr
+-----END PGP SIGNATURE-----
+
+--ogUXNSQj4OI1q3LQ--
