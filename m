@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903AbaEMWhJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 18:37:09 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:46209 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753672AbaEMWhE (ORCPT
+	id S1755048AbaEMWjT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 18:39:19 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:48525 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753870AbaEMWjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 18:37:04 -0400
-From: abdoulaye berthe <berthe.ab@gmail.com>
-To: linus.walleij@linaro.org, gnurou@gmail.com, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, berthe.ab@gmail.com
-Subject: [PATCH] gpio: gpioep93xx: use devm functions
-Date: Wed, 14 May 2014 00:36:54 +0200
-Message-Id: <1400020614-18907-1-git-send-email-berthe.ab@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Tue, 13 May 2014 18:39:09 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>, Eric Paris <eparis@redhat.com>,
+        Jan Kara <jack@suse.cz>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1 v2] fanotify: check file flags passed in fanotify_init
+In-Reply-To: Your message of "Tue, 13 May 2014 19:34:33 +0200."
+             <537257A9.3070504@gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1399921336-6433-1-git-send-email-xypron.glpk@gmx.de> <CAKgNAkjd=faKp8-QroLHXDOk00tKYxvAzm0xZV4PjYLNO+3_Ew@mail.gmail.com> <5372535B.5030503@gmx.de>
+            <537257A9.3070504@gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1400020724_2034P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 13 May 2014 18:38:44 -0400
+Message-ID: <77399.1400020724@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This uses devm functions for mem allocation
+--==_Exmh_1400020724_2034P
+Content-Type: text/plain; charset=us-ascii
 
-Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
----
- drivers/gpio/gpio-ep93xx.c | 34 +++++++---------------------------
- 1 file changed, 7 insertions(+), 27 deletions(-)
+On Tue, 13 May 2014 19:34:33 +0200, "Michael Kerrisk (man-pages)" said:
 
-diff --git a/drivers/gpio/gpio-ep93xx.c b/drivers/gpio/gpio-ep93xx.c
-index 80829f3..dd39f27 100644
---- a/drivers/gpio/gpio-ep93xx.c
-+++ b/drivers/gpio/gpio-ep93xx.c
-@@ -344,37 +344,24 @@ static int ep93xx_gpio_probe(struct platform_device *pdev)
- {
- 	struct ep93xx_gpio *ep93xx_gpio;
- 	struct resource *res;
--	void __iomem *mmio;
- 	int i;
--	int ret;
-+	struct device *dev = &pdev->dev;
- 
--	ep93xx_gpio = kzalloc(sizeof(*ep93xx_gpio), GFP_KERNEL);
-+	ep93xx_gpio = devm_kzalloc(dev, sizeof(struct ep93xx_gpio), GFP_KERNEL);
- 	if (!ep93xx_gpio)
- 		return -ENOMEM;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		ret = -ENXIO;
--		goto exit_free;
--	}
--
--	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
--		ret = -EBUSY;
--		goto exit_free;
--	}
--
--	mmio = ioremap(res->start, resource_size(res));
--	if (!mmio) {
--		ret = -ENXIO;
--		goto exit_release;
--	}
--	ep93xx_gpio->mmio_base = mmio;
-+	ep93xx_gpio->mmio_base = devm_request_and_ioremap(dev, res);
-+	if (IS_ERR(ep93xx_gpio->mmio_base))
-+		return PTR_ERR(ep93xx_gpio->mmio_base);
- 
- 	for (i = 0; i < ARRAY_SIZE(ep93xx_gpio_banks); i++) {
- 		struct bgpio_chip *bgc = &ep93xx_gpio->bgc[i];
- 		struct ep93xx_gpio_bank *bank = &ep93xx_gpio_banks[i];
- 
--		if (ep93xx_gpio_add_bank(bgc, &pdev->dev, mmio, bank))
-+		if (ep93xx_gpio_add_bank(bgc, &pdev->dev,
-+					 ep93xx_gpio->mmio_base, bank))
- 			dev_warn(&pdev->dev, "Unable to add gpio bank %s\n",
- 				bank->label);
- 	}
-@@ -382,13 +369,6 @@ static int ep93xx_gpio_probe(struct platform_device *pdev)
- 	ep93xx_gpio_init_irq();
- 
- 	return 0;
--
--exit_release:
--	release_mem_region(res->start, resource_size(res));
--exit_free:
--	kfree(ep93xx_gpio);
--	dev_info(&pdev->dev, "%s failed with errno %d\n", __func__, ret);
--	return ret;
- }
- 
- static struct platform_driver ep93xx_gpio_driver = {
--- 
-1.8.3.2
+> >> The 'switch' could just be replaced by:
+> >>
+> >> if ((event_f_flags & O_ACCMODE) == 3)
+> >>          return -EINVAL;
+> >>
+> >> (But I'm not sure if some might prefer the idiom you have used.)
+> >>
+> >> Cheers,
+> >>
+> >> Michael
+> >
+> > Using explicit numbers makes the code hard to read and analyze.
+> > I do not intend to participate in the Obfuscated C Code Contest.
+>
+> I agree that using explicit numbers is odd, but '3" in this
+> context does have a special meaning (see open(2)), and it struck
+> me as a more efficient way of doing the check. But, if others
+> are fine with what you've written, I have no real problem with it.
 
+I'd be OK with the '== 3' version if there was a comment about the
+reserved access mode like:
+
+	/* reserved ioctl-only mode, so no fanotify for you */
+	if ((event_f_flags & O_ACCMODE) == 3)
+		return -EINVAL;
+
+--==_Exmh_1400020724_2034P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBU3Ke9AdmEQWDXROgAQK9RxAAi/qkKv7kbyEGLqmOfFU1ylDaFnPm3wEE
+Dz54X4kWHUsOqNXmzP0mVww8bzIX5EPDGvIUvoS2mFtez8IIQLo1fd/qZXNYbIgo
+keTurRvGVjvdsPolvkEHZNbulYfKA/BcsJAFttpjlED/7dC6c7xJSTsQjumOpRH+
+WiBJqmMgtt0/h8W5f5Bt++D149Y2Imj4cHs9yJTqLtNHpcjwWQmdl5VQmT6Wx2Sa
+cGZ+6Pa+hpOmYeofX/yE92dXoRlKzxLIrxr/iET1PXCf7ebp30MEvn9iWjchdQ+v
+lBVag88NnMuW0hKP2igVP2LENJmfVl0BCypLnM+ShMugV+PthAiiyS0f/D24x51j
+/usRVXpfaNizxwS0wTAKTTUEaHqKfqONcb88BsEAdqpCj9u5rPD8By+LBPZIZtwp
+3/31v6ACxrpEAg+zumvuRDfA0v6vxhfrN4DbfrH+7tu+F0PQXUlPaJOGyaAPuf4G
+nY/5y9Yh2LHUf4tGMXyWJv1AHhc1MNNT4dFOgS+kmMTVj0p2l2eeTZVvdZ3m/B9p
+mAOuC6HGMJGMKJeCiQuUwYL59HKM3tQPDRaP1tAU+J6mUXnPCnBZkxQsNPO+kI6t
+jfo57qDvM3Q+OGickZwXRPLfDSrrBi06dPDgZ5x3+Sm1akGgEvRVs0DkLqDurty8
+g5LT4+c9rFU=
+=dpGx
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1400020724_2034P--
