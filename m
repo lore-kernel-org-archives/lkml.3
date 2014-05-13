@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760771AbaEMJ4a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:56:30 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60843 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760083AbaEMJ24 (ORCPT
+	id S1760786AbaEMJ4c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:56:32 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:63369 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760082AbaEMJ43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:28:56 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 080/182] usb: gadget: tcm_usb_gadget: stop format strings
-Date: Tue, 13 May 2014 11:27:12 +0200
-Message-Id: <37bac6ddf2c54d7ceeff9f36d90bd2524db26457.1399973152.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
-References: <cover.1399973152.git.jslaby@suse.cz>
+	Tue, 13 May 2014 05:56:29 -0400
+MIME-Version: 1.0
+Date: Tue, 13 May 2014 11:56:28 +0200
+Message-ID: <CACRpkdYM9eQxWdG8qNkzstPRuQJYc6RLVLjo5tTWcwHT43S7Cg@mail.gmail.com>
+Subject: [GIT PULL] gpio fixes for v3.15
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Welling <mwelling@ieee.org>,
+        Vincent Donnefort <vdonnefort@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kees Cook <keescook@chromium.org>
+Hi Linus,
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+let's hope these two patches are the last GPIO fixes for this
+merge window. (Famous last words.)
 
-===============
+Anyway, details in the tag, please pull it in.
 
-commit aba37fd975f0dd58e025c99c2a79b61b20190831 upstream.
+Yours,
+Linus Walleij
 
-This makes sure that the name coming out of configfs cannot be used
-accidentally as a format string.
+The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/usb/gadget/tcm_usb_gadget.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
 
-diff --git a/drivers/usb/gadget/tcm_usb_gadget.c b/drivers/usb/gadget/tcm_usb_gadget.c
-index 0ff33396eef3..d9e15e85258d 100644
---- a/drivers/usb/gadget/tcm_usb_gadget.c
-+++ b/drivers/usb/gadget/tcm_usb_gadget.c
-@@ -1613,7 +1613,7 @@ static struct se_wwn *usbg_make_tport(
- 		return ERR_PTR(-ENOMEM);
- 	}
- 	tport->tport_wwpn = wwpn;
--	snprintf(tport->tport_name, sizeof(tport->tport_name), wnn_name);
-+	snprintf(tport->tport_name, sizeof(tport->tport_name), "%s", wnn_name);
- 	return &tport->tport_wwn;
- }
- 
--- 
-1.9.3
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
+tags/gpio-v3.15-3
+
+for you to fetch changes up to 99e4b98dbe3ad1fe38a74d12c3b8d44a55930de4:
+
+  gpio: mcp23s08: Bug fix of SPI device tree registration. (2014-05-09
+10:28:16 +0200)
+
+----------------------------------------------------------------
+GPIO fixes for the v3.15 series:
+
+- Fix a null pointer bug in the ICH6 chipset driver
+
+- Fix device tree registration for the mcp23s08 driver
+
+----------------------------------------------------------------
+Michael Welling (1):
+      gpio: mcp23s08: Bug fix of SPI device tree registration.
+
+Vincent Donnefort (1):
+      gpio: ich: set regs and reglen for i3100 and ich6 chipset
+
+ drivers/gpio/gpio-ich.c      |  4 ++++
+ drivers/gpio/gpio-mcp23s08.c | 12 +++++++-----
+ 2 files changed, 11 insertions(+), 5 deletions(-)
