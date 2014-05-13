@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589AbaEMGmI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 02:42:08 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:14585 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750743AbaEMGmF (ORCPT
+	id S1755996AbaEMGng (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 02:43:36 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:57399 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023AbaEMGnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 02:42:05 -0400
-X-IronPort-AV: E=Sophos;i="4.97,1041,1389715200"; 
-   d="scan'208";a="30439252"
-Message-ID: <5371BFA6.3090704@cn.fujitsu.com>
-Date: Tue, 13 May 2014 14:45:58 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 08/10 V2] workqueue: rename manager_mutex to attach_mutex
-References: <20140505150514.GI11231@htj.dyndns.org> <1399877792-13046-1-git-send-email-laijs@cn.fujitsu.com> <1399877792-13046-9-git-send-email-laijs@cn.fujitsu.com> <20140512220102.GH18959@mtj.dyndns.org>
-In-Reply-To: <20140512220102.GH18959@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+	Tue, 13 May 2014 02:43:35 -0400
+From: Jianyu Zhan <nasa4836@gmail.com>
+To: mmarek@suse.cz, akpm@linux-foundation.org,
+        michael.opdenacker@free-electrons.com, prarit@redhat.com,
+        tkhai@yandex.ru, nasa4836@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND] scripts/tags.sh: add regular expression replacement pattern for memcg
+Date: Tue, 13 May 2014 14:43:20 +0800
+Message-Id: <1399963400-7982-1-git-send-email-nasa4836@gmail.com>
+X-Mailer: git-send-email 2.0.0-rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 06:01 AM, Tejun Heo wrote:
-> On Mon, May 12, 2014 at 02:56:20PM +0800, Lai Jiangshan wrote:
->> manager_mutex is only used to protect the attaching for the pool
->> and the pool->workers list. It protects the pool->workers and operations
->> based on this list, such as:
->> 	cpu-binding for the workers in the pool->workers
->> 	concurrency management for the workers in the pool->workers
-> 
-> Concurrency management?  What are you referring to?
+Hi, Marek.
 
-The operations to set/clear POOL_DISASSOCIATED and WORKER_UNBOUND
+Since previous one has got no replies. I resend it again.
+This patch purely add regex pattern only. And I've tested it, it works.
 
-Which words will be better if I don't use "Concurrency management"
+---<8---
+Currently, no regular expression replacement pattern for PageCgroug*
+defined, which causes quite a few pain while reading code. Just get
+rid of it.
 
-> 
-> thanks.
-> 
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+---
+ scripts/tags.sh | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+index f2c5b00..7d3ebfe 100755
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -187,6 +187,10 @@ exuberant()
+ 	--regex-c++='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
+ 	--regex-c++='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/' \
+ 	--regex-c++='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'		\
++	--regex-c++='/TESTPCGFLAG\(([^,)]*).*/PageCgroup\1/'		\
++	--regex-c++='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'		\
++	--regex-c++='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'	\
++	--regex-c++='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
+ 	--regex-c='/PCI_OP_READ\((\w*).*[1-4]\)/pci_bus_read_config_\1/' \
+ 	--regex-c='/PCI_OP_WRITE\((\w*).*[1-4]\)/pci_bus_write_config_\1/' \
+ 	--regex-c='/DEFINE_(MUTEX|SEMAPHORE|SPINLOCK)\((\w*)/\2/v/'	\
+@@ -244,6 +248,10 @@ emacs()
+ 	--regex='/__CLEARPAGEFLAG_NOOP(\([^,)]*\).*/__ClearPage\1/' \
+ 	--regex='/TESTCLEARFLAG_FALSE(\([^,)]*\).*/TestClearPage\1/' \
+ 	--regex='/__TESTCLEARFLAG_FALSE(\([^,)]*\).*/__TestClearPage\1/' \
++	--regex='/TESTPCGFLAG\(([^,)]*).*/PageCgroup\1/'	\
++	--regex='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'	\
++	--regex='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'	\
++	--regex='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
+ 	--regex='/_PE(\([^,)]*\).*/PEVENT_ERRNO__\1/'		\
+ 	--regex='/PCI_OP_READ(\([a-z]*[a-z]\).*[1-4])/pci_bus_read_config_\1/' \
+ 	--regex='/PCI_OP_WRITE(\([a-z]*[a-z]\).*[1-4])/pci_bus_write_config_\1/'
+-- 
+2.0.0-rc1
 
