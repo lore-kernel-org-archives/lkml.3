@@ -1,183 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964AbaEMGXv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 02:23:51 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:60463 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342AbaEMGXi (ORCPT
+	id S1751766AbaEMG2n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 02:28:43 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:42761 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750743AbaEMG2m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 02:23:38 -0400
-Message-ID: <5371BA64.8070203@hitachi.com>
-Date: Tue, 13 May 2014 15:23:32 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 13 May 2014 02:28:42 -0400
+X-IronPort-AV: E=Sophos;i="4.97,1040,1389715200"; 
+   d="scan'208";a="30438765"
+Message-ID: <5371BC94.5080507@cn.fujitsu.com>
+Date: Tue, 13 May 2014 14:32:52 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Denys Vlasenko <dvlasenk@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        David Long <dave.long@linaro.org>
-Subject: Re: [PATCH 1/1] uprobes/x86: Fix the wrong ->si_addr when xol triggers
- a trap
-References: <20140508191140.GA16892@redhat.com> <20140512170822.GA28335@redhat.com> <20140512170850.GB28335@redhat.com>
-In-Reply-To: <20140512170850.GB28335@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/10 V2] workqueue: async worker destruction
+References: <20140505150514.GI11231@htj.dyndns.org> <1399877792-13046-1-git-send-email-laijs@cn.fujitsu.com> <1399877792-13046-4-git-send-email-laijs@cn.fujitsu.com> <20140512212022.GC18959@mtj.dyndns.org>
+In-Reply-To: <20140512212022.GC18959@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/05/13 2:08), Oleg Nesterov wrote:
-> If the probed insn triggers a trap, ->si_addr = regs->ip is technically
-> correct, but this is not what the signal handler wants; we need to pass
-> the address of the probed insn, not the address of xol slot.
+On 05/13/2014 05:20 AM, Tejun Heo wrote:
+> On Mon, May 12, 2014 at 02:56:15PM +0800, Lai Jiangshan wrote:
+>>  /**
+>> + * worker_detach_from_pool() - detach the worker from the pool
+>> + * @worker: worker which is attached to its pool
+>> + * @pool: attached pool
+>> + *
+>> + * Undo the attaching which had been done in create_worker().
+>> + * The caller worker shouldn't access to the pool after detached
+>> + * except it has other reference to the pool.
+>> + */
+>> +static void worker_detach_from_pool(struct worker *worker,
+>> +				    struct worker_pool *pool)
+>> +{
+>> +	struct completion *detach_completion = NULL;
+>> +
+>> +	mutex_lock(&pool->manager_mutex);
+>> +	idr_remove(&pool->worker_idr, worker->id);
+>> +	if (idr_is_empty(&pool->worker_idr))
+>> +		detach_completion = pool->detach_completion;
+>> +	mutex_unlock(&pool->manager_mutex);
+>> +
+>> +	if (detach_completion)
+>> +		complete(detach_completion);
+>> +}
 > 
-> Add the new arch-agnostic helper, uprobe_get_trap_addr(), and change
-> fill_trap_info() and math_error() to use it. !CONFIG_UPROBES case in
-> uprobes.h uses a macro to avoid include hell and ensure that it can be
-> compiled even if an architecture doesn't define instruction_pointer().
-> 
-> Test-case:
-> 
-> 	#include <signal.h>
-> 	#include <stdio.h>
-> 	#include <unistd.h>
-> 
-> 	extern void probe_div(void);
-> 
-> 	void sigh(int sig, siginfo_t *info, void *c)
-> 	{
-> 		int passed = (info->si_addr == probe_div);
-> 		printf(passed ? "PASS\n" : "FAIL\n");
-> 		_exit(!passed);
-> 	}
-> 
-> 	int main(void)
-> 	{
-> 		struct sigaction sa = {
-> 			.sa_sigaction	= sigh,
-> 			.sa_flags	= SA_SIGINFO,
-> 		};
-> 
-> 		sigaction(SIGFPE, &sa, NULL);
-> 
-> 		asm (
-> 			"xor %ecx,%ecx\n"
-> 			".globl probe_div; probe_div:\n"
-> 			"idiv %ecx\n"
-> 		);
-> 
-> 		return 0;
-> 	}
-> 
-> it fails if probe_div() is probed.
-> 
-> Note: show_unhandled_signals users should probably use this helper too,
-> but we need to cleanup them first.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Are we gonna use this function from somewhere else too?
 
-Looks good to me :)
+it is called from worker_thread().
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+I don't want to unfold it into worker_thread(), it is better
+readability when it is wrapped and it will be called in patch10
+for rescuer.
 
-Thanks,
-
-> ---
->  arch/x86/kernel/traps.c |    7 ++++---
->  include/linux/uprobes.h |    4 ++++
->  kernel/events/uprobes.c |   10 ++++++++++
->  3 files changed, 18 insertions(+), 3 deletions(-)
 > 
-> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-> index 73b3ea3..3fdb205 100644
-> --- a/arch/x86/kernel/traps.c
-> +++ b/arch/x86/kernel/traps.c
-> @@ -23,6 +23,7 @@
->  #include <linux/kernel.h>
->  #include <linux/module.h>
->  #include <linux/ptrace.h>
-> +#include <linux/uprobes.h>
->  #include <linux/string.h>
->  #include <linux/delay.h>
->  #include <linux/errno.h>
-> @@ -148,11 +149,11 @@ static siginfo_t *fill_trap_info(struct pt_regs *regs, int signr, int trapnr,
->  
->  	case X86_TRAP_DE:
->  		sicode = FPE_INTDIV;
-> -		siaddr = regs->ip;
-> +		siaddr = uprobe_get_trap_addr(regs);
->  		break;
->  	case X86_TRAP_UD:
->  		sicode = ILL_ILLOPN;
-> -		siaddr = regs->ip;
-> +		siaddr = uprobe_get_trap_addr(regs);
->  		break;
->  	case X86_TRAP_AC:
->  		sicode = BUS_ADRALN;
-> @@ -531,7 +532,7 @@ static void math_error(struct pt_regs *regs, int error_code, int trapnr)
->  	task->thread.error_code = error_code;
->  	info.si_signo = SIGFPE;
->  	info.si_errno = 0;
-> -	info.si_addr = (void __user *)regs->ip;
-> +	info.si_addr = (void __user *)uprobe_get_trap_addr(regs);
->  	if (trapnr == X86_TRAP_MF) {
->  		unsigned short cwd, swd;
->  		/*
-> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-> index edff2b9..88c3b7e 100644
-> --- a/include/linux/uprobes.h
-> +++ b/include/linux/uprobes.h
-> @@ -102,6 +102,7 @@ extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm, u
->  extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
->  extern bool __weak is_trap_insn(uprobe_opcode_t *insn);
->  extern unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs);
-> +extern unsigned long uprobe_get_trap_addr(struct pt_regs *regs);
->  extern int uprobe_write_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_t);
->  extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
->  extern int uprobe_apply(struct inode *inode, loff_t offset, struct uprobe_consumer *uc, bool);
-> @@ -130,6 +131,9 @@ extern bool __weak arch_uprobe_ignore(struct arch_uprobe *aup, struct pt_regs *r
->  #else /* !CONFIG_UPROBES */
->  struct uprobes_state {
->  };
-> +
-> +#define uprobe_get_trap_addr(regs)	instruction_pointer(regs)
-> +
->  static inline int
->  uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
->  {
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index a13251e..3b02c72 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -1351,6 +1351,16 @@ unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs)
->  	return instruction_pointer(regs) - UPROBE_SWBP_INSN_SIZE;
->  }
->  
-> +unsigned long uprobe_get_trap_addr(struct pt_regs *regs)
-> +{
-> +	struct uprobe_task *utask = current->utask;
-> +
-> +	if (unlikely(utask && utask->active_uprobe))
-> +		return utask->vaddr;
-> +
-> +	return instruction_pointer(regs);
-> +}
-> +
->  /*
->   * Called with no locks held.
->   * Called in context of a exiting or a exec-ing thread.
+>> @@ -2289,6 +2298,10 @@ woke_up:
+>>  		spin_unlock_irq(&pool->lock);
+>>  		WARN_ON_ONCE(!list_empty(&worker->entry));
+>>  		worker->task->flags &= ~PF_WQ_WORKER;
+>> +
+>> +		set_task_comm(worker->task, "kworker_dying");
 > 
+> Given how other kworkers are named, maybe a better name is
+> "kworker/dying" or "kworker/detached"?
+> 
+>> +		worker_detach_from_pool(worker, pool);
+>> +		kfree(worker);
+>>  		return 0;
+>>  	}
+>>  
+>> @@ -3561,6 +3574,7 @@ static void rcu_free_pool(struct rcu_head *rcu)
+>>  static void put_unbound_pool(struct worker_pool *pool)
+>>  {
+>>  	struct worker *worker;
+>> +	DECLARE_COMPLETION_ONSTACK(detach_completion);
+> 
+> I think it's conventional to put initialized ones (especially the ones
+> require initializing macros) before uninitialized vars.
+> 
+>> @@ -3579,19 +3593,24 @@ static void put_unbound_pool(struct worker_pool *pool)
+>>  
+>>  	/*
+>>  	 * Become the manager and destroy all workers.  Grabbing
+>> -	 * manager_arb prevents @pool's workers from blocking on
+>> -	 * manager_mutex.
+>> +	 * manager_arb ensures manage_workers() finish and enter idle.
+> 
+> I don't follow what the above comment update is trying to say.
 
+If a pool is destroying, the worker will not call manage_workers().
+but the existing manage_workers() may be still running.
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+mutex_lock(&manager_arb) in put_unbound_pool() should wait this manage_workers()
+finished due to the manager-worker (non-idle-worker) can't be destroyed.
 
+> 
+> Thanks.
+> 
 
