@@ -1,131 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933080AbaEMK7q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:59:46 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:65427 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760589AbaEMK7o (ORCPT
+	id S933207AbaEMLAE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 07:00:04 -0400
+Received: from mail.fireflyinternet.com ([87.106.93.118]:63220 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933104AbaEMK77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:59:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <2578127.8G0jVZIWmC@vostro.rjw.lan>
-References: <4649019.is79p6EySp@vostro.rjw.lan>
-	<2675141.cAMB9masRU@vostro.rjw.lan>
-	<CAPDyKFrXaxwh9xGK7Zn2Be0ViQqZJeT3hLo12ptmrmZvjMSscQ@mail.gmail.com>
-	<2578127.8G0jVZIWmC@vostro.rjw.lan>
-Date: Tue, 13 May 2014 12:59:43 +0200
-Message-ID: <CAPDyKFrOwWzL5uFHQoYXWkATAUW6=u8Dxwm6y3Q3CWfD4Ru=Qw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 1/3] PM / sleep: Move runtime PM barrier invocation
- to device_prepare()
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
+	Tue, 13 May 2014 06:59:59 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
+Date: Tue, 13 May 2014 11:59:42 +0100
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: =?iso-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
+        David Airlie <airlied@linux.ie>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+        Dave Airlie <airlied@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: [Intel-gfx] [3.14.0-rc4] regression: drm FIFO underruns
+Message-ID: <20140513105942.GH7239@nuc-i3427.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	=?iso-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
+	David Airlie <airlied@linux.ie>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Dave Airlie <airlied@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	intel-gfx <intel-gfx@lists.freedesktop.org>
+References: <CAKMK7uG20sF403PJcmWTD=kPF9seV4sXZpp9_hEq3LvV3kK5Hg@mail.gmail.com>
+ <CADDKRnB1DCzgjX-q-cgFFW48uT5r5MUcuc5D6chekEET5dFxxA@mail.gmail.com>
+ <20140509161438.GH31479@strange.amr.corp.intel.com>
+ <20140509170335.GZ18465@intel.com>
+ <CADDKRnAiQawK6vi0XO2FDdfGDbcwWQzdeu-rfEU8viJzARO+yQ@mail.gmail.com>
+ <CAKMK7uHLSfW0wN-uXMejOcnvaYpZfVSfSh7+NpqAUBCOvbK2eg@mail.gmail.com>
+ <CADDKRnCzHQw7_Cr2jpZ7qC50hrdmr0XRaYyMxaOSaqihNGccDA@mail.gmail.com>
+ <20140512190300.GF25056@phenom.ffwll.local>
+ <CADDKRnAOkdaziCQ_NGkt01hiQqjiAiKza2+QbCuDBuY72LJK=A@mail.gmail.com>
+ <CAKMK7uGy3bKdj-B21rCpeF2EPEE4Wi8CxLbDWFBGpLWskoDj3w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKMK7uGy3bKdj-B21rCpeF2EPEE4Wi8CxLbDWFBGpLWskoDj3w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 May 2014 12:35, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Tuesday, May 13, 2014 11:16:34 AM Ulf Hansson wrote:
->> On 13 May 2014 03:03, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> >
->> > Move the invocation of the runtime PM barrier during system suspend
->> > (or hibernation) from __device_suspend() to device_prepare() to make
->> > all runtime PM transitions in progress complete before executing
->> > ->prepare() callbacks for devices.
->> >
->> > That will allow those callbacks to check if devices are runtime
->> > suspended in a non-racy way.
->> >
->> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> > ---
->> >  drivers/base/power/main.c |   31 +++++++++++++------------------
->> >  1 file changed, 13 insertions(+), 18 deletions(-)
->> >
->> > Index: linux-pm/drivers/base/power/main.c
->> > ===================================================================
->> > --- linux-pm.orig/drivers/base/power/main.c
->> > +++ linux-pm/drivers/base/power/main.c
->> > @@ -1312,24 +1312,7 @@ static int __device_suspend(struct devic
->> >
->> >         dpm_wait_for_children(dev, async);
->> >
->> > -       if (async_error)
->> > -               goto Complete;
->> > -
->> > -       /*
->> > -        * If a device configured to wake up the system from sleep states
->> > -        * has been suspended at run time and there's a resume request pending
->> > -        * for it, this is equivalent to the device signaling wakeup, so the
->> > -        * system suspend operation should be aborted.
->> > -        */
->> > -       if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
->> > -               pm_wakeup_event(dev, 0);
->> > -
->> > -       if (pm_wakeup_pending()) {
->> > -               async_error = -EBUSY;
->> > -               goto Complete;
->> > -       }
->>
->> I suppose you went a bit too far here!?
->>
->> We can still have wakeup pending at this point, and thus we should
->> bail out, right?
->
-> That pm_wakeup_pending() is part of the barrier handling, so ->
->
->> > -
->> > -       if (dev->power.syscore)
->> > +       if (async_error || dev->power.syscore)
->> >                 goto Complete;
->> >
->> >         dpm_watchdog_set(&wd, dev);
->> > @@ -1500,6 +1483,18 @@ static int device_prepare(struct device
->> >          */
->> >         pm_runtime_get_noresume(dev);
->> >
->> > +       /*
->> > +        * If a device configured to wake up the system from sleep states
->> > +        * has been suspended at run time and there's a resume request pending
->> > +        * for it, this is equivalent to the device signaling wakeup, so the
->> > +        * system suspend operation should be aborted.
->> > +        */
->> > +       if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
->> > +               pm_wakeup_event(dev, 0);
->> > +
->> > +       if (pm_wakeup_pending())
->> > +               return -EBUSY;
->> > +
->
-> -> it is done here now.
->
-> I don't see why it would be still necessary in __device_suspend().
+On Tue, May 13, 2014 at 12:38:41PM +0200, Daniel Vetter wrote:
+> On Tue, May 13, 2014 at 12:29 PM, Jörg Otte <jrg.otte@gmail.com> wrote:
+> >>> Branch drm-intel-nightly as of
+> >>> ed60c27 drm-intel-nightly: 2014y-05m-09d-21h-51m-45s integration manifest
+> >>> looks badly:
+> >>>    - KDE splash screen on boot-up is not visible
+> >>>    - x-windows don't have title and menu bars
+> >>>    - KDE system menu is not visible
+> >>>    - moving windows around destroys its content
+> >>
+> >> Ugh, that's ugly. Nothing else change like e.g. the version of
+> >> xfree-video-intel?
+> >
+> >  (II) Loading /usr/lib/xorg/modules/drivers/intel_drv.so
+> >  (II) Module intel: vendor="X.Org Foundation"
+> >  compiled for 1.11.3, module version = 2.17.0
+> >  Module class: X.Org Video Driver
+> >  ABI class: X.Org Video Driver, version 11.0
+> 
+> Chris, any ideas? It's an ivybridge apparently.
 
-Can't we have wakeup configured for !CONFIG_PM_RUNTIME case?
-pm_runtime_barrier() won't handle those scenarios, right?
+https://bugs.freedesktop.org/show_bug.cgi?id=78494
+-Chris
 
-Similar check for pm_wakeup_pending() is done at
-__device_suspend_noirq, __device_suspend_late - I assumed it was
-because of the same reasons.
-
-Kind regards
-Ulf Hansson
-
->
->> >         device_lock(dev);
->> >
->> >         dev->power.wakeup_path = device_may_wakeup(dev);
->> >
->
-> Thanks!
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+-- 
+Chris Wilson, Intel Open Source Technology Centre
