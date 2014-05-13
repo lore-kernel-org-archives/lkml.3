@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689AbaEMSw1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 14:52:27 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:43910 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495AbaEMSvZ (ORCPT
+	id S1754724AbaEMSwj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 14:52:39 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:47710 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753531AbaEMSwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 14:51:25 -0400
-Message-ID: <53725DC4.3090802@gmail.com>
-Date: Tue, 13 May 2014 20:00:36 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 13 May 2014 14:52:31 -0400
 MIME-Version: 1.0
-To: Juri Lelli <juri.lelli@gmail.com>
-CC: mtk.manpages@gmail.com, Peter Zijlstra <peterz@infradead.org>,
-        Dario Faggioli <raistlin@linux.it>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>
-Subject: Re: [SCHED_DEADLINE man pages 0/2] Summary
-References: <53723235.40101@gmail.com> <20140513175416.765abe5b536257ab72d827bc@gmail.com>
-In-Reply-To: <20140513175416.765abe5b536257ab72d827bc@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140513193033.39a92e627c49f4bdcbbf0a62@skynet.be>
+References: <20140513193033.39a92e627c49f4bdcbbf0a62@skynet.be>
+From: Steve French <smfrench@gmail.com>
+Date: Tue, 13 May 2014 20:52:10 +0200
+Message-ID: <CAH2r5mtW+d9D7WyGhj_SG-dhBXDo6C9rSub=J9F8KJM-aRyKXQ@mail.gmail.com>
+Subject: Re: [PATCH V2] fs/cifs/netmisc.c: convert printk to pr_foo()
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 05:54 PM, Juri Lelli wrote:
-> Hi,
-> 
-> On Tue, 13 May 2014 16:54:45 +0200
-> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
-> 
->> Peter, at al.
->>
->> The follow ups to this mail contain the changes to man-pages for
->> the new sched_setattr() and sched_getattr() system calls, as well
->> as the changes to the sched(7) man page to document the 
->> SCHED_DEADLINE policy, all new changes in kernel 3.14.
->>
->> I used the text you submitted, but _heavily_ edited it, and added
->> a _lot_ of further details. Therefore, could you (and Juri, and 
->> Dario?) please carefully review the text.
->>
->> The follow-up mails are:
->>
->> [1/2] The sched_setattr.2 page that documents sched_setattr(2) 
->>       and sched_getattr(2).
->>
->> [2/2] The revisions to the sched(7) page.
->>
-> 
-> Apart from nitpicks in 2/2, this looks great to me.
-> 
-> Thanks a lot!
+merged into cifs-2.6.git
 
-Thanks for checking the pages, Juri.
+On Tue, May 13, 2014 at 7:30 PM, Fabian Frederick <fabf@skynet.be> wrote:
+> Also fixes array checkpatch warning and converts it to static const
+> (suggested by Joe Perches).
+>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: Steve French <sfrench@samba.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+> v2: static const array (suggested by Joe Perches)
+>
+>  fs/cifs/netmisc.c | 9 +++++----
+>  1 file changed, 5 insertions(+), 4 deletions(-)
+>
+> diff --git a/fs/cifs/netmisc.c b/fs/cifs/netmisc.c
+> index 0498845..6834b9c 100644
+> --- a/fs/cifs/netmisc.c
+> +++ b/fs/cifs/netmisc.c
+> @@ -795,8 +795,8 @@ cifs_print_status(__u32 status_code)
+>         while (nt_errs[idx].nt_errstr != NULL) {
+>                 if (((nt_errs[idx].nt_errcode) & 0xFFFFFF) ==
+>                     (status_code & 0xFFFFFF)) {
+> -                       printk(KERN_NOTICE "Status code returned 0x%08x %s\n",
+> -                                  status_code, nt_errs[idx].nt_errstr);
+> +                       pr_notice("Status code returned 0x%08x %s\n",
+> +                                 status_code, nt_errs[idx].nt_errstr);
+>                 }
+>                 idx++;
+>         }
+> @@ -941,8 +941,9 @@ cifs_UnixTimeToNT(struct timespec t)
+>         return (u64) t.tv_sec * 10000000 + t.tv_nsec/100 + NTFS_TIME_OFFSET;
+>  }
+>
+> -static int total_days_of_prev_months[] =
+> -{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+> +static const int total_days_of_prev_months[] = {
+> +       0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
+> +};
+>
+>  struct timespec cnvrtDosUnixTm(__le16 le_date, __le16 le_time, int offset)
+>  {
+> --
+> 1.8.4.5
+>
 
-Cheers,
-
-Michael
 
 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Thanks,
+
+Steve
