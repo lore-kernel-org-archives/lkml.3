@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128AbaEMWy0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 18:54:26 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:64954 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687AbaEMWyR (ORCPT
+	id S1754454AbaEMXBM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 19:01:12 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:33375 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687AbaEMXBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 18:54:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <536CFC46.8010408@windriver.com>
-References: <1399506651-20031-1-git-send-email-dianders@chromium.org>
-	<536CFC46.8010408@windriver.com>
-Date: Tue, 13 May 2014 15:54:16 -0700
-X-Google-Sender-Auth: 9esKNFuGUrven3GBBzPg1W42n8o
-Message-ID: <CAD=FV=XbcAUgcSm-E4ktys+pDzL9+BKqdC4zjgKS4C-QhLA-9Q@mail.gmail.com>
-Subject: Re: [PATCH] init: Don't decrease loops_per_jiffy when a CPU comes up
-From: Doug Anderson <dianders@chromium.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        John Stultz <john.stultz@linaro.org>
-Cc: David Riley <davidriley@chromium.org>, Will Deacon <Will.Deacon@arm.com>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 13 May 2014 19:01:04 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] clocksource: qcom: Implement read_current_timer for udelay
+Date: Tue, 13 May 2014 16:01:00 -0700
+Message-Id: <1400022060-30118-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul,
+Setup the same timer used as the clocksource to be used as the
+read_current_timer implementation. This allows us to support a
+stable udelay implementation on MSMs where it's possible for the
+CPUs to scale speeds independently of one another.
 
-On Fri, May 9, 2014 at 9:03 AM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> On 14-05-07 07:50 PM, Doug Anderson wrote:
->> The loops_per_jiffy count continues to be updated as each CPU is
->> brought up.  This causes problems when we've got an HMP system and
->> different CPUs have different loops per jiffy.  On exynos 542x
->> systems, for instance, the A7s will have significantly lower loops per
->> jiffy than their big brothers.
->
-> Based on the other discussion for the ARM variant of this, I'm
-> assuming this also becomes a WFC issue.  And if not, then it
-> probably should go by John or similar ; getmaintainers is just
-> being dumb in spitting my name out, since I only made one
-> trivial change to this file a year ago or similar.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clocksource/qcom-timer.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-I think this change could still make sense.  The ARM discussion is
-about dealing with the scaling that the ARM code does, but it really
-is a separate concept.
+diff --git a/drivers/clocksource/qcom-timer.c b/drivers/clocksource/qcom-timer.c
+index e807acf4c665..8d115db1e651 100644
+--- a/drivers/clocksource/qcom-timer.c
++++ b/drivers/clocksource/qcom-timer.c
+@@ -26,6 +26,8 @@
+ #include <linux/of_irq.h>
+ #include <linux/sched_clock.h>
+ 
++#include <asm/delay.h>
++
+ #define TIMER_MATCH_VAL			0x0000
+ #define TIMER_COUNT_VAL			0x0004
+ #define TIMER_ENABLE			0x0008
+@@ -179,6 +181,15 @@ static u64 notrace msm_sched_clock_read(void)
+ 	return msm_clocksource.read(&msm_clocksource);
+ }
+ 
++static unsigned long msm_read_current_timer(void)
++{
++	return msm_clocksource.read(&msm_clocksource);
++}
++
++static struct delay_timer msm_delay_timer = {
++	.read_current_timer = msm_read_current_timer,
++};
++
+ static void __init msm_timer_init(u32 dgt_hz, int sched_bits, int irq,
+ 				  bool percpu)
+ {
+@@ -217,6 +228,8 @@ err:
+ 	if (res)
+ 		pr_err("clocksource_register failed\n");
+ 	sched_clock_register(msm_sched_clock_read, sched_bits, dgt_hz);
++	msm_delay_timer.freq = dgt_hz;
++	register_current_timer_delay(&msm_delay_timer);
+ }
+ 
+ #ifdef CONFIG_ARCH_QCOM
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-In general it seems like at least a warning is in order if
-loops_per_jiffy changes significantly from CPU to CPU.
