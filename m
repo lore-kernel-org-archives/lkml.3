@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933206AbaEMMxz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 08:53:55 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39215 "EHLO bear.ext.ti.com"
+	id S1760408AbaEMM4b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 08:56:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37185 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932401AbaEMMxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 08:53:53 -0400
-Message-ID: <537215D3.70306@ti.com>
-Date: Tue, 13 May 2014 08:53:39 -0400
-From: Tom Rini <trini@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753590AbaEMM42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 08:56:28 -0400
+Date: Tue, 13 May 2014 08:56:06 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hannes@cmpxchg.org, Serge Hallyn <serge.hallyn@ubuntu.com>
+Subject: Re: [PATCH 04/14] device_cgroup: remove direct access to
+ cgroup->children
+Message-ID: <20140513125605.GI29214@redhat.com>
+References: <1399671091-23867-1-git-send-email-tj@kernel.org>
+ <1399671091-23867-5-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Robert Nelson <robertcnelson@gmail.com>, Tony Lindgren <tony@atomide.com>
-CC: Matt Ranostay <mranostay@gmail.com>, <robh+dt@kernel.org>,
-        <mark.rutland@arm.com>, Russell King <linux@arm.linux.org.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        Pantelis Antoniou <pantelis.antoniou@gmail.com>,
-        Matt Porter <matt.porter@linaro.org>
-Subject: Re: [PATCH v2] ARM: dts: am335x-bone-common: Add i2c2 definition
-References: <1399686184-1594-1-git-send-email-mranostay@gmail.com>	<20140512195050.GB5668@atomide.com>	<CAOCHtYiYwx_bEsyqkbUTTAbhBYESzvfBOOYeVuFXPS1dDy0ZKA@mail.gmail.com>	<20140512201517.GC5668@atomide.com>	<CAOCHtYg6XpF0Gbo4iFqsFvP=QSivQQvCzov8UfxeLXMzrRYEWw@mail.gmail.com>	<20140512204213.GD5668@atomide.com> <CAOCHtYgg7jwxswH+mqF3RA7-0RP-nGuft+Ze-GRwu1fbA6+0Bw@mail.gmail.com>
-In-Reply-To: <CAOCHtYgg7jwxswH+mqF3RA7-0RP-nGuft+Ze-GRwu1fbA6+0Bw@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399671091-23867-5-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2014 04:57 PM, Robert Nelson wrote:
->>> Either case if fine with me.  As who knows when the dtc "overlay" will
->>> every truly make it mainline, as the capemgr was the only real kernel
->>> user of the i2c/at24 eeprom information.
->>
->> Sounds like we should keep it disabled though so u-boot can be used
->> to toggle it while waiting for the capemgr. That's because the board
->> has a header for pins, so it's not exactly limited to just the capes.
->>
->> Anybody working on enabling/disabling cape dtb configurations in u-boot?
+On Fri, May 09, 2014 at 05:31:21PM -0400, Tejun Heo wrote:
+> Currently, devcg::has_children() directly tests cgroup->children for
+> list emptiness.  The field is not a published field and scheduled to
+> go away.  In addition, the test isn't strictly correct as devcg should
+> only care about children which are visible to userland.
 > 
-> Well,
+> This patch converts has_children() to use css_next_child() instead.
+> The subtle incorrectness is noted and will be dealt with later.
 > 
-> Would Tom even approve of that in mainline u-boot? He didn't want my
-> "invert" the gpio to enable the usb hub on the older beagle xm A/B..
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Aristeu Rozanski <aris@redhat.com>
+> Cc: Serge Hallyn <serge.hallyn@ubuntu.com>
+> ---
+>  security/device_cgroup.c | 12 ++++++++++--
+>  1 file changed, 10 insertions(+), 2 deletions(-)
 > 
-> http://lists.denx.de/pipermail/u-boot/2014-January/172154.html
-> 
-> http://lists.denx.de/pipermail/u-boot/2014-January/172274.html
+> diff --git a/security/device_cgroup.c b/security/device_cgroup.c
+> index 3116015..75b4b18 100644
+> --- a/security/device_cgroup.c
+> +++ b/security/device_cgroup.c
+> @@ -477,9 +477,17 @@ static int propagate_exception(struct dev_cgroup *devcg_root,
+>  
+>  static inline bool has_children(struct dev_cgroup *devcgroup)
+>  {
+> -	struct cgroup *cgrp = devcgroup->css.cgroup;
+> +	bool ret;
+>  
+> -	return !list_empty(&cgrp->children);
+> +	/*
+> +	 * FIXME: There may be lingering offline csses and this function
+> +	 * may return %true when there isn't any userland-visible child
+> +	 * which is incorrect for our purposes.
+> +	 */
+> +	rcu_read_lock();
+> +	ret = css_next_child(NULL, &devcgroup->css);
+> +	rcu_read_unlock();
+> +	return ret;
+>  }
+>  
+>  /*
 
-I would think that using the 'fdt' command in U-Boot to add all
-properties of every cape found on a running system would drive someone
-to madness quite quickly.  Moving all of Pantelis' work for dynamic
-device trees from the kernel to N bootloaders (U-Boot, barebox, UEFI,
-etc) sounds like a step in the wrong direction.
+Acked-by: Aristeu Rozanski <aris@redhat.com>
 
 -- 
-Tom
+Aristeu
+
