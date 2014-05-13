@@ -1,233 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaEMF3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 01:29:18 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35264 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750776AbaEMF3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 01:29:17 -0400
-Message-ID: <5371AD84.4070600@ti.com>
-Date: Tue, 13 May 2014 10:58:36 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751541AbaEMFlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 01:41:37 -0400
+Received: from bay0-omc3-s22.bay0.hotmail.com ([65.54.190.160]:35649 "EHLO
+	bay0-omc3-s22.bay0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750743AbaEMFlg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 01:41:36 -0400
+X-TMN: [3M1fZCKLLyP8wiJc6YLz1IPD4iEeJNfd]
+X-Originating-Email: [pintu.k@outlook.com]
+Message-ID: <BAY169-W35163E34227B04E692E0A5EF340@phx.gbl>
+From: Pintu Kumar <pintu.k@outlook.com>
+To: Laura Abbott <lauraa@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>
+Subject: RE: Questions regarding DMA buffer sharing using IOMMU
+Date: Tue, 13 May 2014 11:11:36 +0530
+Importance: Normal
+In-Reply-To: <5370F66F.7060204@codeaurora.org>
+References: <BAY169-W12541AD089785F8BFBD4E26EF350@phx.gbl>,<5218408.5YRJXjS4BX@wuerfel>
+ <BAY169-W1156E6803829CAB545274BCEF350@phx.gbl>,<5370F66F.7060204@codeaurora.org>
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>,
-        <tj@kernel.org>
-CC: <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-ide@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/6] phy: add a driver for the Berlin SATA PHY
-References: <1399886217-20474-1-git-send-email-antoine.tenart@free-electrons.com> <1399886217-20474-2-git-send-email-antoine.tenart@free-electrons.com> <5370C2B6.8030908@ti.com> <5370D84A.9030405@gmail.com>
-In-Reply-To: <5370D84A.9030405@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 13 May 2014 05:41:36.0006 (UTC) FILETIME=[010C1260:01CF6E6E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Thanks Lauraa for your answers.
+I have few more queries below. 
 
-On Monday 12 May 2014 07:48 PM, Sebastian Hesselbarth wrote:
-> On 05/12/2014 02:46 PM, Kishon Vijay Abraham I wrote:
+----------------------------------------
+> Date: Mon, 12 May 2014 09:27:27 -0700
+> From: lauraa@codeaurora.org
+> To: pintu.k@outlook.com; arnd@arndb.de; linux-arm-kernel@lists.infradead.org
+> CC: linux-mm@kvack.org; linux-kernel@vger.kernel.org; linaro-mm-sig@lists.linaro.org
+> Subject: Re: Questions regarding DMA buffer sharing using IOMMU
+>
+> On 5/12/2014 7:37 AM, Pintu Kumar wrote:
 >> Hi,
+>> Thanks for the reply.
 >>
->> On Monday 12 May 2014 02:46 PM, Antoine TÃ©nart wrote:
->>> The Berlin SoC has a two SATA ports. Add a PHY driver to handle them.
+>> ----------------------------------------
+>>> From: arnd@arndb.de
+>>> To: linux-arm-kernel@lists.infradead.org
+>>> CC: pintu.k@outlook.com; linux-mm@kvack.org; linux-kernel@vger.kernel.org; linaro-mm-sig@lists.linaro.org
+>>> Subject: Re: Questions regarding DMA buffer sharing using IOMMU
+>>> Date: Mon, 12 May 2014 14:00:57 +0200
 >>>
->>> Signed-off-by: Antoine TÃ©nart <antoine.tenart@free-electrons.com>
->>> ---
->>>   drivers/phy/Kconfig           |   5 ++
->>>   drivers/phy/Makefile          |   1 +
->>>   drivers/phy/phy-berlin-sata.c | 179
->>> ++++++++++++++++++++++++++++++++++++++++++
->>>   3 files changed, 185 insertions(+)
->>>   create mode 100644 drivers/phy/phy-berlin-sata.c
+>>> On Monday 12 May 2014 15:12:41 Pintu Kumar wrote:
+>>>> Hi,
+>>>> I have some queries regarding IOMMU and CMA buffer sharing.
+>>>> We have an embedded linux device (kernel 3.10, RAM: 256Mb) in
+>>>> which camera and codec supports IOMMU but the display does not support IOMMU.
+>>>> Thus for camera capture we are using iommu buffers using
+>>>> ION/DMABUF. But for all display rendering we are using CMA buffers.
+>>>> So, the question is how to achieve buffer sharing (zero-copy)
+>>>> between Camera and Display using only IOMMU?
+>>>> Currently we are achieving zero-copy using CMA. And we are
+>>>> exploring options to use IOMMU.
+>>>> Now we wanted to know which option is better? To use IOMMU or CMA?
+>>>> If anybody have come across these design please share your thoughts and results.
 >>>
->>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
->>> index 4906c27fa3bd..b31b1986fda4 100644
->>> --- a/drivers/phy/Kconfig
->>> +++ b/drivers/phy/Kconfig
->>> @@ -15,6 +15,11 @@ config GENERIC_PHY
->>>         phy users can obtain reference to the PHY. All the users of this
->>>         framework should select this config.
->>>
->>> +config PHY_BERLIN_SATA
->>> +    bool
->>> +    depends on ARCH_BERLIN && OF
->>> +    select GENERIC_PHY
->>> +
->>>   config PHY_EXYNOS_MIPI_VIDEO
->>>       tristate "S5P/EXYNOS SoC series MIPI CSI-2/DSI PHY driver"
->>>       depends on HAS_IOMEM
->>> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
->>> index 7728518572a4..40278706ac1b 100644
->>> --- a/drivers/phy/Makefile
->>> +++ b/drivers/phy/Makefile
->>> @@ -3,6 +3,7 @@
->>>   #
->>>
->>>   obj-$(CONFIG_GENERIC_PHY)        += phy-core.o
->>> +obj-$(CONFIG_PHY_BERLIN_SATA)        += phy-berlin-sata.o
->>>   obj-$(CONFIG_BCM_KONA_USB2_PHY)        += phy-bcm-kona-usb2.o
->>>   obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)    += phy-exynos-dp-video.o
->>>   obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)    += phy-exynos-mipi-video.o
->>> diff --git a/drivers/phy/phy-berlin-sata.c b/drivers/phy/phy-berlin-sata.c
->>> new file mode 100644
->>> index 000000000000..f20f5ece1a7f
->>> --- /dev/null
->>> +++ b/drivers/phy/phy-berlin-sata.c
->>> @@ -0,0 +1,179 @@
->>> +/*
->>> + * Marvell Berlin SATA PHY driver
->>> + *
->>> + * Copyright (C) 2014 Marvell Technology Group Ltd.
->>> + *
->>> + * Antoine TÃ©nart <antoine.tenart@free-electrons.com>
->>> + *
->>> + * This file is licensed under the terms of the GNU General Public
->>> + * License version 2. This program is licensed "as is" without any
->>> + * warranty of any kind, whether express or implied.
->>> + */
->>> +
->>> +#include <linux/module.h>
->>> +#include <linux/phy/phy.h>
->>> +#include <linux/io.h>
->>> +#include <linux/platform_device.h>
->>> +
->>> +#define HOST_VSA_ADDR        0x0
->>> +#define HOST_VSA_DATA        0x4
->>> +
->>> +#define CONTROL_REGISTER    0x0
->>> +#define MBUS_SIZE_CONTROL    0x4
->>> +
->>> +#define POWER_DOWN_SATA0        BIT(6)
->>> +#define POWER_DOWN_SATA1        BIT(14)
->>> +#define MBUS_WRITE_REQUEST_SIZE_128    (BIT(2) << 16)
->>> +#define MBUS_READ_REQUEST_SIZE_128    (BIT(2) << 19)
->>> +
->>> +#define BERLIN_SATA_PHY_NB    2
->>> +
->>> +#define to_berlin_sata_phy_priv(desc)    \
->>> +    container_of((desc), struct priv, phys[(desc)->index])
->>> +
->>> +struct phy_desc {
+>>> There is a slight performance overhead in using the IOMMU in general,
+>>> because the IOMMU has to fetch the page table entries from memory
+>>> at least some of the time.
 >>
->> to be consistent, lets name it phy_berlin_desc.
->>> +    struct phy    *phy;
->>> +    u32        val;
->>> +    unsigned    index;
->>> +};
->>> +
->>> +struct priv {
-> 
-> And phy_berlin_priv then?
-> 
-> [...]
->>> +static int phy_berlin_sata_probe(struct platform_device *pdev)
->>> +{
->>> +    struct phy *phy;
->>> +    struct phy_provider *phy_provider;
->>> +    struct priv *priv;
->>> +    struct resource *res;
->>> +    int i;
->>> +
->>> +    priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
->>> +    if (!priv)
->>> +        return -ENOMEM;
->>> +
->>> +    res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>> +    priv->base = devm_ioremap(&pdev->dev, res->start, resource_size(res));
->>> +    if (IS_ERR(priv->base))
->>> +        return PTR_ERR(priv->base);
->>> +
->>> +    phy = devm_phy_create(&pdev->dev, &phy_berlin_sata_ops, NULL);
->>> +    if (IS_ERR(phy))
->>> +        return PTR_ERR(phy);
->>> +
->>> +    dev_set_drvdata(&pdev->dev, priv);
->>> +    spin_lock_init(&priv->lock);
->>> +
->>> +    for (i = 0; i < BERLIN_SATA_PHY_NB; i++) {
+>> Ok, we need to check performance later
 >>
->> huh.. this should come from dt data. For devices which have multiple PHYs, each
->> PHY should be modelled as the sub-node of the *PHY provider* device node.
-> 
-> Just to make sure we get it right:
-> 
-> You want the PHY (provider) node look like this:
-> 
-> sata_phy: phy@f7e900a0 {
->     compatible = "marvell,berlin-sata-phy";
->     reg = <0xf7e900a0 0x10>;
->     #address-cells = <1>;
->     #size-cells = <0>;
->     #phy-cells = <1>;
->     status = "okay";
-> 
->     sata_phy0: phy@0 { reg = <0>; };
-> 
->     sata_phy1: phy@1 { reg = <1>; };
-> };
-> 
-> and parse the number of individual PHYs with
-> for_each_child_of_node()?
+>>>
+>>> If that overhead is within the constraints you have for transfers between
+>>> camera and codec, you are always better off using IOMMU since that
+>>> means you don't have to do memory migration.
+>>
+>> Transfer between camera is codec is fine. But our major concern is single buffer
+>> sharing between camera & display. Here camera supports iommu but display does not support iommu.
+>> Is it possible to render camera preview (iommu buffers) on display (not iommu and required physical contiguous overlay memory)?
+>>
+>
+> I'm pretty sure the answer is no for zero copy IOMMU buffers if one of your
+> devices does not support IOMMU. If the data is coming in as individual pages
+> and the hardware does not support scattered pages there isn't much you can
+> do except copy to a contiguous buffer. At least with Ion, the heap types can
+> be set up in a particular way such that the client need never know about the
+> existence of an IOMMU or not.
 
-yeah.. make sure you cc devicetree list when you send the patch.
+So, the zero copy cannot be achieved between iommu and non-iommu devices?
+Do you have any references like in case of QC MSM8974/etc, how this is achieved?
 
-Cheers
-Kishon
-> 
-> Sebastian
-> 
->>> +        struct phy *phy = devm_phy_create(&pdev->dev,
->>> +                          &phy_berlin_sata_ops, NULL);
->>> +        if (IS_ERR(phy)) {
->>> +            dev_err(&pdev->dev, "failed to create PHY %d\n", i);
->>> +            return PTR_ERR(phy);
->>> +        }
->>> +
->>> +        priv->phys[i].phy = phy;
->>> +        priv->phys[i].val = desc[i].val;
->>> +        priv->phys[i].index = i;
->>> +        phy_set_drvdata(phy, &priv->phys[i]);
->>> +
->>> +        /* Make sure the PHY is off */
->>> +        phy_berlin_sata_power_off(phy);
->>> +    }
->>> +
->>> +    phy_provider = devm_of_phy_provider_register(&pdev->dev,
->>> +                             berlin_sata_phy_xlate);
->>> +    if (IS_ERR(phy_provider))
->>> +        return PTR_ERR(phy_provider);
->>> +
->>> +    return 0;
->>> +}
->>> +
->>> +static const struct of_device_id phy_berlin_sata_of_match[] = {
->>> +    { .compatible = "marvell,berlin-sata-phy" },
->>> +    { },
->>> +};
->>> +
->>> +static struct platform_driver phy_berlin_sata_driver = {
->>> +    .probe    = phy_berlin_sata_probe,
->>> +    .driver    = {
->>> +        .name        = "phy-berlin-sata",
->>> +        .owner        = THIS_MODULE,
->>> +        .of_match_table    = phy_berlin_sata_of_match,
->>> +    },
->>> +};
->>> +module_platform_driver(phy_berlin_sata_driver);
->>> +
->>> +MODULE_DESCRIPTION("Marvell Berlin SATA PHY driver");
->>> +MODULE_AUTHOR("Antoine TÃ©nart <antoine.tenart@free-electrons.com>");
->>> +MODULE_LICENSE("GPL");
+Yes, we are using ION, with SYSTEM_HEAP, for IOMMU, in case of camera, but still we could not 
+render the preview on display.
+You mean to say, with ION it is possible to do buffer sharing(a.k.a zero copy)  using the IOMMU heap?
+
+
+>
+>> Also is it possible to buffer sharing between 2 iommu supported devices?
 >>
->> GPL v2 as the file header states so?
+>
+> I don't see why not but there isn't a lot of information to go on here.
+
+Is this also possible with ION?
+Can you point out some use cases?
+Like in our cases camera, codec and GPU have IOMMU. Is it possible to do zero copy here?
+
+
+>
+> Thanks,
+> Laura
+
+----------------------------------------
+> Date: Mon, 12 May 2014 09:27:27 -0700
+> From: lauraa@codeaurora.org
+> To: pintu.k@outlook.com; arnd@arndb.de; linux-arm-kernel@lists.infradead.org
+> CC: linux-mm@kvack.org; linux-kernel@vger.kernel.org; linaro-mm-sig@lists.linaro.org
+> Subject: Re: Questions regarding DMA buffer sharing using IOMMU
+>
+> On 5/12/2014 7:37 AM, Pintu Kumar wrote:
+>> Hi,
+>> Thanks for the reply.
 >>
->> Thanks
->> Kishon
+>> ----------------------------------------
+>>> From: arnd@arndb.de
+>>> To: linux-arm-kernel@lists.infradead.org
+>>> CC: pintu.k@outlook.com; linux-mm@kvack.org; linux-kernel@vger.kernel.org; linaro-mm-sig@lists.linaro.org
+>>> Subject: Re: Questions regarding DMA buffer sharing using IOMMU
+>>> Date: Mon, 12 May 2014 14:00:57 +0200
+>>>
+>>> On Monday 12 May 2014 15:12:41 Pintu Kumar wrote:
+>>>> Hi,
+>>>> I have some queries regarding IOMMU and CMA buffer sharing.
+>>>> We have an embedded linux device (kernel 3.10, RAM: 256Mb) in
+>>>> which camera and codec supports IOMMU but the display does not support IOMMU.
+>>>> Thus for camera capture we are using iommu buffers using
+>>>> ION/DMABUF. But for all display rendering we are using CMA buffers.
+>>>> So, the question is how to achieve buffer sharing (zero-copy)
+>>>> between Camera and Display using only IOMMU?
+>>>> Currently we are achieving zero-copy using CMA. And we are
+>>>> exploring options to use IOMMU.
+>>>> Now we wanted to know which option is better? To use IOMMU or CMA?
+>>>> If anybody have come across these design please share your thoughts and results.
+>>>
+>>> There is a slight performance overhead in using the IOMMU in general,
+>>> because the IOMMU has to fetch the page table entries from memory
+>>> at least some of the time.
 >>
-> 
+>> Ok, we need to check performance later
+>>
+>>>
+>>> If that overhead is within the constraints you have for transfers between
+>>> camera and codec, you are always better off using IOMMU since that
+>>> means you don't have to do memory migration.
+>>
+>> Transfer between camera is codec is fine. But our major concern is single buffer
+>> sharing between camera & display. Here camera supports iommu but display does not support iommu.
+>> Is it possible to render camera preview (iommu buffers) on display (not iommu and required physical contiguous overlay memory)?
+>>
+>
+> I'm pretty sure the answer is no for zero copy IOMMU buffers if one of your
+> devices does not support IOMMU. If the data is coming in as individual pages
+> and the hardware does not support scattered pages there isn't much you can
+> do except copy to a contiguous buffer. At least with Ion, the heap types can
+> be set up in a particular way such that the client need never know about the
+> existence of an IOMMU or not.
+>
+>> Also is it possible to buffer sharing between 2 iommu supported devices?
+>>
+>
+> I don't see why not but there isn't a lot of information to go on here.
+>
+> Thanks,
+> Laura
+>
+> --
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
+ 		 	   		  
