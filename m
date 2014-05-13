@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933037AbaEMQJn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 12:09:43 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33348 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932564AbaEMQJ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 12:09:28 -0400
-Date: Tue, 13 May 2014 18:09:26 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux-pm mailing list <linux-pm@lists.osdl.org>,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: 3.15-rc: regression in suspend
-Message-ID: <20140513160926.GA3621@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933243AbaEMQJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:09:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57258 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750916AbaEMQJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 12:09:29 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20140501123738.3e64b2d2@notabene.brown>
+References: <20140501123738.3e64b2d2@notabene.brown>
+To: NeilBrown <neilb@suse.de>
+Cc: dhowells@redhat.com, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, dm-devel@redhat.com,
+        Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        Steve French <sfrench@samba.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] SCHED: remove proliferation of wait_on_bit action functions.
+Date: Tue, 13 May 2014 17:08:46 +0100
+Message-ID: <30874.1399997326@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+NeilBrown <neilb@suse.de> wrote:
 
-There seems to be regression in 3.15 w.r.t. suspend to ram and suspend
-to disk.
+> The current "wait_on_bit" interface requires an 'action' function
+> to be provided which does the actual waiting.
+> There are over 20 such functions, many of them identical.
+> Most cases can be satisfied by one of just two functions, one
+> which uses io_schedule() and one which just uses schedule().
+> 
+> So:
+>  Rename wait_on_bit and        wait_on_bit_lock to
+>         wait_on_bit_action and wait_on_bit_lock_action
+>  to make it explicit that they need an action function.
+> 
+>  Introduce new wait_on_bit{,_lock} and wait_on_bit{,_lock}_io
+>  which are *not* given an action function but implicitly use
+>  a standard one.
+>  The decision to error-out if a signal is pending is now made
+>  based on the 'mode' argument rather than being encoded in the action
+>  function.
 
-Resume sometiems works, but often, system is half-usable, with "what
-do you want to do suspend/hibernate" dialog staying on screen.
+Yay!  About time!  This is something I've wanted to do for ages, but never
+quite got around to.
 
-I did echo disk > /sys/power/state, and echo never returned to the
-shell prompt. (X was not really working, either.)
-
-It is still there on 3.15.0-rc3+. I'll update to rc5 now.
-
-Any ideas?
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Acked-by: David Howells <dhowells@redhat.com>
