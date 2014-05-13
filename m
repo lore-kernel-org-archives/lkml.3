@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436AbaEMP3r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:29:47 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:63362 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754096AbaEMP3j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754104AbaEMP3j (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 13 May 2014 11:29:39 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [RFC][PATCH 0/3] PM / sleep: Avoid resuming runtime-suspended devices during system suspend
-Date: Tue, 13 May 2014 17:46:25 +0200
-Message-ID: <4083601.DlzRABTDaL@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1405131115050.1098-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1405131115050.1098-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Received: from cantor2.suse.de ([195.135.220.15]:58958 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754053AbaEMP3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 11:29:32 -0400
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Greg Thelen <gthelen@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: [PATCH] memcg: deprecate memory.force_empty knob
+Date: Tue, 13 May 2014 17:29:16 +0200
+Message-Id: <1399994956-3907-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 2.0.0.rc0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 13, 2014 11:25:07 AM Alan Stern wrote:
-> Crossing emails again...
-> 
-> On Tue, 13 May 2014, Rafael J. Wysocki wrote:
-> 
-> > > There's nothing to prevent a runtime-suspended device from being 
-> > > resumed in between the ->prepare() and ->suspend() callbacks.
-> > 
-> > I'm moving the barrier from __device_suspend() to device_prepare(), so there
-> > shouldn't be surprise resumes in that time frame.
-> 
-> A wakeup request from the hardware can cause a runtime resume, even 
-> if most threads are in the freezer:
-> 
-> 	Not all kernel threads get frozen.  One of the unfrozen threads 
-> 	could respond to the wakeup request by calling 
-> 	pm_runtime_resume().
-> 
-> 	Some runtime PM callbacks are marked as IRQ-safe and can run
-> 	directly within an interrupt handler.
-> 
-> > > Therefore it makes little sense to check the device's runtime status in 
-> > > device_prepare().  The check should be done in __device_suspend().
-> > 
-> > If we do the barrier in device_prepare(), then I'm not sure what mechanism
-> > would cause the device to resume.
-> 
-> See above.  A wakeup request can arrive after the barrier has finished.
-> 
-> > If there is one, the whole approach is in danger, because ->prepare() has to
-> > check if devices are runtime-suspended and has to be sure that their status
-> > won't change after it has returned 1.
-> 
-> ->prepare() cannot guarantee in all cases that a device will remain in 
-> runtime suspend.  Fortunately, it doesn't need to.  In fact (as I 
-> mentioned sometime before), it doesn't even need to check whether the 
-> device currently is runtime suspended -- it suffices to know that _if_ 
-> the device is runtime suspended _then_ it has the proper settings for 
-> system suspend.
-> 
-> Regardless, status changes cannot cause a problem.  If the device does
-> get runtime-resumed after ->prepare(), it will remain that way when
-> __device_suspend() runs.  The device can't be runtime-suspended again,
-> because device_prepare() does pm_get_noresume().
-> 
-> Therefore, if the device is still runtime-suspended when
-> __device_suspend() runs, we can be sure that its status and state are
-> still the same as when ->prepare() ran.
+force_empty has been introduced primarily to drop memory before it gets
+reparented on the group removal. This alone doesn't sound fully
+justified because reparented pages which are not in use can be reclaimed
+also later when there is a memory pressure on the parent level.
 
-But if the device is runtime-suspended, we cannot know if it's going to
-resume a while later.  That's the problem.
+Mark the knob CFTYPE_INSANE which tells the cgroup core that it
+shouldn't create the knob with the experimental sane_behavior. Other
+users will get informed about the deprecation and asked to tell us more
+because I do not expect most users will use sane_behavior cgroups mode
+very soon.
+Anyway I expect that most users will be simply cgroup remove handlers
+which do that since ever without having any good reason for it.
 
-Rafael
+If somebody really cares because reparented pages, which would be
+dropped otherwise, push out more important ones then we should fix the
+reparenting code and put pages to the tail.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+
+Hi,
+This patch has been created based on http://marc.info/?l=linux-kernel&m=139967135405272
+
+ Documentation/cgroups/memory.txt | 3 +++
+ mm/memcontrol.c                  | 5 +++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index f0f67b44ea07..fc9fad984bfb 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -477,6 +477,9 @@ About use_hierarchy, see Section 6.
+   write will still return success. In this case, it is expected that
+   memory.kmem.usage_in_bytes == memory.usage_in_bytes.
+ 
++  Please note that this knob is considered deprecated and will be removed
++  in future.
++
+   About use_hierarchy, see Section 6.
+ 
+ 5.2 stat file
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index b030b15b626a..ee123f3d40d5 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4793,6 +4793,10 @@ static int mem_cgroup_force_empty_write(struct cgroup_subsys_state *css,
+ 
+ 	if (mem_cgroup_is_root(memcg))
+ 		return -EINVAL;
++	pr_info("%s (%d): memory.force_empty is deprecated and will be removed.",
++			current->comm, task_pid_nr(current));
++	pr_cont(" Let us know if you know if it needed in your usecase at");
++	pr_cont(" linux-mm@kvack.org\n");
+ 	return mem_cgroup_force_empty(memcg);
+ }
+ 
+@@ -6037,6 +6041,7 @@ static struct cftype mem_cgroup_files[] = {
+ 	},
+ 	{
+ 		.name = "force_empty",
++		.flags = CFTYPE_INSANE,
+ 		.trigger = mem_cgroup_force_empty_write,
+ 	},
+ 	{
+-- 
+2.0.0.rc0
 
