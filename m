@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521AbaEMDjj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 23:39:39 -0400
-Received: from mga02.intel.com ([134.134.136.20]:33257 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752747AbaEMDjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 23:39:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1040,1389772800"; 
-   d="scan'208";a="510664721"
-Date: Tue, 13 May 2014 03:34:53 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Doug Smythies <dsmythies@telus.net>
-Subject: Re: [RFC PATCH] cpufreq: intel_pstate: Change the calculation of
- next pstate
-Message-ID: <20140512193453.GB9351@intel.com>
-References: <5368255D.3090207@semaphore.gr>
- <536BEE89.3040602@gmail.com>
- <536CECB4.1090109@semaphore.gr>
- <53712F4B.7000101@semaphore.gr>
+	id S1752352AbaEMDqH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 23:46:07 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:59176 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799AbaEMDqE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 23:46:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53712F4B.7000101@semaphore.gr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5370F794.2020800@wwwdotorg.org>
+References: <1399883209-31169-1-git-send-email-acourbot@nvidia.com>
+ <1399883209-31169-2-git-send-email-acourbot@nvidia.com> <5370F794.2020800@wwwdotorg.org>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 13 May 2014 12:45:43 +0900
+Message-ID: <CAAVeFuLZ_wrxipYn2pfNzuyDiTvAPWH4aSWfonrG+YQsm4tM_g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ARM: tegra: joystick input in tegra_defconfig
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 11:30:03PM +0300, Stratos Karafotis wrote:
-> On 09/05/2014 05:56 μμ, Stratos Karafotis wrote:
+On Tue, May 13, 2014 at 1:32 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 05/12/2014 02:26 AM, Alexandre Courbot wrote:
+>> NVIDIA SHIELD embeds a USB controller. Compile the corresponding support
 >
-> Next performance state = min_perf + (max_perf - min_perf) * load / 100
-> 
-Hi,
+> USB controller or USB joystick?
 
-This formula is fundamentally broken. You need to associate the load with its
-frequency.
+I understand this sounds like "EHCI controller" here. Will reword.
+
+>
+>> as a module in tegra_defconfig.
+>
+> Why make this a module rather than built-in. Almost everything else in
+> tegra_defconfig is built-in, except brcmfmac since it doesn't handle
+> lack of firmware availability at probe time.
+
+Goal is to minimize the image size, especially since this is not a
+feature I expect to be used much outside of SHIELD. If you prefer it
+built-in, I'm fine with it too.
 
 Thanks,
-Yuyang
+Alex.
