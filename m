@@ -1,88 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746AbaEMAmy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 20:42:54 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:48379 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752170AbaEMAmw (ORCPT
+	id S1752124AbaEMAu6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 20:50:58 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:44586 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524AbaEMAu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 20:42:52 -0400
-Date: Tue, 13 May 2014 09:04:58 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] drivers: sh: compile drivers/sh/pm_runtime.c if
- ARCH_SHMOBILE_MULTI
-Message-ID: <20140513000455.GA18157@verge.net.au>
-References: <1399411579-10681-1-git-send-email-geert+renesas@glider.be>
- <CAMuHMdWwenyU1RS4c8spFcb7M0oCXP9z8zbGQ0VACKj7EbvvkA@mail.gmail.com>
- <20140511004626.GW31760@verge.net.au>
- <CANqRtoQzxdjwU+BLyccrSzfBx3UMKm6=MAw9dUHSEBWm5_Vspg@mail.gmail.com>
- <20140512070700.GA20505@verge.net.au>
- <CAMuHMdVMCcDK4Y403G26S27oATzLN74iCSM7U+K_ktE-c3uweQ@mail.gmail.com>
+	Mon, 12 May 2014 20:50:56 -0400
+Date: Mon, 12 May 2014 17:50:53 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: "Gupta, Pekon" <pekon@ti.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] mtd: Add sysfs attr to expose ECC stats
+Message-ID: <20140513005053.GZ28907@ld-irv-0074>
+References: <1395403064-28113-1-git-send-email-ezequiel.garcia@free-electrons.com>
+ <1395403064-28113-2-git-send-email-ezequiel.garcia@free-electrons.com>
+ <20980858CB6D3A4BAE95CA194937D5E73EAB91D7@DBDE04.ent.ti.com>
+ <20140401111359.GA3324@arch.cereza>
+ <20980858CB6D3A4BAE95CA194937D5E73EAC31AE@DBDE04.ent.ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdVMCcDK4Y403G26S27oATzLN74iCSM7U+K_ktE-c3uweQ@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
+In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73EAC31AE@DBDE04.ent.ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 09:25:21AM +0200, Geert Uytterhoeven wrote:
-> Hi Simon,
-> 
-> On Mon, May 12, 2014 at 9:07 AM, Simon Horman <horms@verge.net.au> wrote:
-> > On Mon, May 12, 2014 at 08:24:03AM +0900, Magnus Damm wrote:
-> >> On Sun, May 11, 2014 at 9:46 AM, Simon Horman <horms@verge.net.au> wrote:
-> >> > On Thu, May 08, 2014 at 12:12:29PM +0200, Geert Uytterhoeven wrote:
-> >> >> On Tue, May 6, 2014 at 11:26 PM, Geert Uytterhoeven
-> >> >> <geert+renesas@glider.be> wrote:
-> >> >> > Tested on Koelsch (legacy, reference, shmobile, and shmobile+bbb kernels)
-> >> >> > and BeagleBone Black (shmobile+bbb). Will test on more hardware tomorrow.
-> >> >>
-> >> >> Tested on genmai with Wolfram's CCF support.
++ Greg KH, LKML
+
+For context:
+
+http://thread.gmane.org/gmane.linux.drivers.mtd/52517/focus=52518
+
+On Tue, Apr 15, 2014 at 11:13:52AM +0000, Pekon Gupta wrote:
+> >From: Ezequiel Garcia
+> >>On Mar 27, Gupta, Pekon wrote:
 > >> >
-> >> > Thanks, shall I go ahead and queue this up?
-> >>
-> >> Yes please, at least from my side everything looks perfect.
+> >> >+static ssize_t mtd_ecc_stats_show(struct device *dev,
+> >> >+		struct device_attribute *attr, char *buf)
+> >> >+{
+> >> >+	struct mtd_info *mtd = dev_get_drvdata(dev);
+> >> >+	struct mtd_ecc_stats *ecc_stats = &mtd->ecc_stats;
+> >> >+
+> >> >+	return snprintf(buf, PAGE_SIZE, "%8u %8u %8u %8u\n", ecc_stats->corrected,
+> >> >+						ecc_stats->failed,
+> >> >+						ecc_stats->badblocks,
+> >> >+						ecc_stats->bbtblocks);
+> >> Though I would have liked to see each field of ecc_stats as a separate sysfs entry
 > >
-> > Thanks, will do.
+> >I tried to match the ecc_stats structure exactly in the sysfs entry. Keep
+> >in mind creating/keeping a sysfs file has its cost. Since it's trivial
+> >to get one of the fields with any text parsing tool I didn't think having
+> >a file per stat was worth it.
+
+I'm not sure what kind of cost this has these days. I thought there was
+some work to reduce the required kobject memory usage for each new sysfs
+file.
+
+> There are some guidelines about attributes in 'Documentation/filesystems/sysfs.txt'
+> Though it's acceptable to put array of values of the "same type" in single sysfs file,
+> But I'm still not confident on having all members of 'struct ecc_stats' being
+> represented by single sysfs file
+[...]
+
+I agree, it looks like the sysfs policy would recommend against putting
+distinct properties in the same file.
+
+I'm not sure if /sys/block/<disk>/stat is a good example, as it does
+violate this policy. It also seems to have some historical baggage.
+
+But there is potentially one good reason for putting this distinct
+information in a single file: if the information must be returned
+atomically. For disk stats, it might be important to get a consistent
+snapshot of the disk stats (or nearly so, with minimal locking
+overhead), which might change significantly between file accesses if
+we're doing half a dozen file queries instead.
+
+This same reason may not apply to these ECC stats, since none of these
+ECC stats are likely to be changing concurrently.
+
+So I personally might lean toward "one file per attribute" here.
+
+> >It won't impact as they are two completely different things. The ecc_stats
+> >output is only "vaguely inspired" in block stats; but these are two completely
+> >different stats. It's not about tool reusability, but about consistency.
 > >
-> > I currently plan to send this on to Linus when the merge window
-> > opens for v3.16.
-> 
-> Actually we had hoped this could land in v3.15, so we can fix the regression
-> introduced in v3.14 by bf98c1eac1d4a6bcf00532e4fa41d8126cd6c187 as
-> soon as possible.
+> >> Also, How about printing what these numbers mean ?
 
-Ok, so I should/can treat this as a fix?
+This sounds like an argument from the /proc days. Not sure if we want to
+repeat that in /sys.
 
-> > This differs from other patches I have queued up (until now) which
-> > I have or intend to send via the ARM SoC tree.
-> 
-> Yep ;-)
-> 
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> >> I hope this will still keep it machine readable.
+> >Well, this is not a debugfs entry, so I'm not sure we want to add such debug
+> >information. Anyone can take a look at the code and see what ecc_stats mean.
+
+The code or (as suggested by Pekon) the documentation
+(Documentation/ABI/). Either way -- with a single 'ecc_stats' table, or
+with 4 separate files -- they need to be documented.
+
+Brian
