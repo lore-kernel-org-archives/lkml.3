@@ -1,97 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760809AbaEMOBk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 10:01:40 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:45742 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759502AbaEMOBi (ORCPT
+	id S1760860AbaEMOEJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 10:04:09 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:61155 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754161AbaEMOEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 10:01:38 -0400
-Date: Tue, 13 May 2014 16:01:27 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 17/19] fs: buffer: Do not use unnecessary atomic
- operations when discarding buffers
-Message-ID: <20140513140127.GC2485@laptop.programming.kicks-ass.net>
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
- <1399974350-11089-18-git-send-email-mgorman@suse.de>
- <20140513110951.GB30445@twins.programming.kicks-ass.net>
- <20140513125007.GQ23991@suse.de>
+	Tue, 13 May 2014 10:04:07 -0400
+Date: Tue, 13 May 2014 16:04:02 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Steve French <smfrench@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH (Untested!)] cifs: support RENAME_NOREPLACE
+Message-ID: <20140513140402.GD17233@tucsk.piliscsaba.szeredi.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140513125007.GQ23991@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 01:50:07PM +0100, Mel Gorman wrote:
-> > Anyway, nothing wrong with this patch, however, you could, if you really
-> > wanted to push things, also include BH_Lock in that clear :-)
-> 
-> That's a bold strategy Cotton.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-:-)
+This flag gives CIFS the ability to support its native rename semantics.
 
-> Untested patch on top
-> 
-> ---8<---
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index e80012d..42fcb6d 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -1490,6 +1490,8 @@ static void discard_buffer(struct buffer_head * bh)
->  	lock_buffer(bh);
->  	clear_buffer_dirty(bh);
->  	bh->b_bdev = NULL;
-> +
-> +	smp_mb__before_clear_bit();
+Implementation is simple: just bail out before trying to hack around the
+noreplace semantics.
 
-Not needed.
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/cifs/cifsfs.c |    8 ++++++++
+ fs/cifs/cifsfs.h |    4 ++--
+ fs/cifs/inode.c  |   14 ++++++++++++--
+ 3 files changed, 22 insertions(+), 4 deletions(-)
 
->  	b_state = bh->b_state;
->  	for (;;) {
->  		b_state_old = cmpxchg(&bh->b_state, b_state, (b_state & ~BUFFER_FLAGS_DISCARD));
-> @@ -1497,7 +1499,13 @@ static void discard_buffer(struct buffer_head * bh)
->  			break;
->  		b_state = b_state_old;
->  	}
-> -	unlock_buffer(bh);
-> +
-> +	/*
-> +	 * BUFFER_FLAGS_DISCARD include BH_lock so it has been cleared so the
-> +	 * wake_up_bit is the last part of a unlock_buffer
-> +	 */
-> +	smp_mb__after_clear_bit();
-
-Similarly superfluous.
-
-> +	wake_up_bit(&bh->b_state, BH_Lock);
->  }
-
-The thing is that cmpxchg() guarantees full barrier semantics before and
-after the op, and since the loop guarantees at least one cmpxchg() call
-its all good.
-
-Now just to confuse everyone, you could have written the loop like:
-
-	b_state = bh->b_state;
-	for (;;) {
-		b_state_new = b_state & ~BUFFER_FLAGS_DISCARD;
-		if (b_state == b_state_new)
-			break;
-		b_state = cmpxchg(&bh->b_state, b_state, b_state_new);
-	}
-
-Which is 'similar' but doesn't guarantee that cmpxchg() gets called.
-If you expect the initial value to match the new state, the above form
-is slightly faster, but the lack of barrier guarantees can still spoil
-the fun.
+--- a/fs/cifs/cifsfs.c
++++ b/fs/cifs/cifsfs.c
+@@ -827,6 +827,13 @@ static int cifs_setlease(struct file *fi
+ 		return -EAGAIN;
+ }
+ 
++static int cifs_rename(struct inode *source_dir, struct dentry *source_dentry,
++		       struct inode *target_dir, struct dentry *target_dentry)
++{
++	return cifs_rename2(source_dir, source_dentry,
++			    target_dir, target_dentry, 0);
++}
++
+ struct file_system_type cifs_fs_type = {
+ 	.owner = THIS_MODULE,
+ 	.name = "cifs",
+@@ -845,6 +852,7 @@ const struct inode_operations cifs_dir_i
+ 	.mkdir = cifs_mkdir,
+ 	.rmdir = cifs_rmdir,
+ 	.rename = cifs_rename,
++	.rename2 = cifs_rename2,
+ 	.permission = cifs_permission,
+ /*	revalidate:cifs_revalidate,   */
+ 	.setattr = cifs_setattr,
+--- a/fs/cifs/cifsfs.h
++++ b/fs/cifs/cifsfs.h
+@@ -60,8 +60,8 @@ extern int cifs_hardlink(struct dentry *
+ extern int cifs_mknod(struct inode *, struct dentry *, umode_t, dev_t);
+ extern int cifs_mkdir(struct inode *, struct dentry *, umode_t);
+ extern int cifs_rmdir(struct inode *, struct dentry *);
+-extern int cifs_rename(struct inode *, struct dentry *, struct inode *,
+-		       struct dentry *);
++extern int cifs_rename2(struct inode *, struct dentry *, struct inode *,
++			struct dentry *, unsigned int);
+ extern int cifs_revalidate_file_attr(struct file *filp);
+ extern int cifs_revalidate_dentry_attr(struct dentry *);
+ extern int cifs_revalidate_file(struct file *filp);
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -1623,8 +1623,9 @@ cifs_do_rename(const unsigned int xid, s
+ }
+ 
+ int
+-cifs_rename(struct inode *source_dir, struct dentry *source_dentry,
+-	    struct inode *target_dir, struct dentry *target_dentry)
++cifs_rename2(struct inode *source_dir, struct dentry *source_dentry,
++	     struct inode *target_dir, struct dentry *target_dentry,
++	     unsigned int flags)
+ {
+ 	char *from_name = NULL;
+ 	char *to_name = NULL;
+@@ -1636,6 +1637,9 @@ cifs_rename(struct inode *source_dir, st
+ 	unsigned int xid;
+ 	int rc, tmprc;
+ 
++	if (flags & ~RENAME_NOREPLACE)
++		return -EINVAL;
++
+ 	cifs_sb = CIFS_SB(source_dir->i_sb);
+ 	tlink = cifs_sb_tlink(cifs_sb);
+ 	if (IS_ERR(tlink))
+@@ -1663,6 +1667,12 @@ cifs_rename(struct inode *source_dir, st
+ 	rc = cifs_do_rename(xid, source_dentry, from_name, target_dentry,
+ 			    to_name);
+ 
++	/*
++	 * No-replace is the natural behavior for CIFS, so skip unlink hacks.
++	 */
++	if (flags & RENAME_NOREPLACE)
++		goto cifs_rename_exit;
++
+ 	if (rc == -EEXIST && tcon->unix_ext) {
+ 		/*
+ 		 * Are src and dst hardlinks of same inode? We can only tell
