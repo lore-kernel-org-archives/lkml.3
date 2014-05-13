@@ -1,115 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933634AbaEMQNG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 12:13:06 -0400
-Received: from know-smtprelay-omc-8.server.virginmedia.net ([80.0.253.72]:41822
-	"EHLO know-smtprelay-omc-8.server.virginmedia.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933006AbaEMQMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 12:12:43 -0400
-X-Originating-IP: [81.106.150.188]
-X-Spam: 0
-X-Authority: v=2.1 cv=TM7LSjVa c=1 sm=1 tr=0 a=DGj713NdaxKrsjjgQne7PA==:117
- a=DGj713NdaxKrsjjgQne7PA==:17 a=J0QyKEt1u0cA:10 a=EBe6uRzgOt0A:10
- a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=NLZqzBF-AAAA:8 a=zd2uoN0lAAAA:8
- a=aZvJa8UOWy6xEbSzRG0A:9 a=QEXdDO2ut3YA:10 a=_dQi-Dcv4p4A:10 a=wu_e27o_rKQA:10
-Date: Tue, 13 May 2014 17:12:40 +0100
-From: Ken Moffat <zarniwhoop@ntlworld.com>
-To: Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>
-Cc: Alex Deucher <alexdeucher@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: More breakage on HD7480D [ Aruba ]
-Message-ID: <20140513161240.GA21635@milliways>
-References: <20140512003405.GA3386@milliways>
- <20140512010310.GA4370@milliways>
- <53707926.5090609@amd.com>
- <20140512163207.GA23680@milliways>
- <53720091.5020302@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53720091.5020302@amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S933448AbaEMQNa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:13:30 -0400
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:29937 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755036AbaEMQNY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 12:13:24 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgoXAGxDclNbtADP/2dsb2JhbABZgwasdgQBAQEBAQEFAZoXAgKBIhd0glMTHCMYgQIkE4hFAdB4hVaIfIRHAQOPJYoiAYsEiAODODs
+Date: Tue, 13 May 2014 18:13:20 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: tytso <tytso@mit.edu>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/devpts/inode.c: convert printk to pr_foo()
+Message-Id: <20140513181320.1fbf491f12fab39034ecd702@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 01:22:57PM +0200, Christian König wrote:
-> Please try the attached patch it should fix your problem.
-> 
-> Thanks allot for this bug report, that was just a stupid typo in the
-> original patch which would probably went unnoticed for years otherwise.
-> 
-> Christian.
-> 
+Also convert spaces to tabs (checkpatch warnings)
 
- Thanks, works like a charm.  If it adds any utility, feel free to
-add
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/devpts/inode.c | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
-Tested-by: Ken Moffat <zarniwhoop@ntlworld.com>
-
-ĸen
-
-> Am 12.05.2014 18:32, schrieb Ken Moffat:
-> >On Mon, May 12, 2014 at 09:32:54AM +0200, Christian König wrote:
-> >>Hi Ken,
-> >>
-> >>*sigh* did I already mentioned that I hate PLLs? As soon as you fix
-> >>something another use case immediately starts to break.
-> >>
-> >>Please provide dmesg output created with drm.debug=0xe with and without the
-> >>patch breaking it.
-> >>
-> >>Thanks in advance,
-> >>Christian.
-> >>
-> >  The reverted version is from linus's tree after -rc5 with the patch
-> >reverted, I assume the version -00010-gc9a25d0fc393 will NOT match
-> >any public tree because I used git revert in a local branch.  That
-> >one works fine.
-> >
-> >  The bad version is from a random kernel which showed the problem
-> >while I was bisecting, in this case rc2-00086.  I first tried
-> >booting vanilla rc5, but for some reason my blind attempt to login
-> >and run 'dmesg >dmesg.bad' failed.
-> >
-> >  Thanks.  Sorry you are having to deal with PLLs.
-> >
-> >ĸen
-> 
-
-> >From 8b5c70b48d73b533f0003639cdb68bcffe7c1293 Mon Sep 17 00:00:00 2001
-> From: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
-> Date: Tue, 13 May 2014 12:50:54 +0200
-> Subject: [PATCH] drm/radeon: fix typo in finding PLL params
-> MIME-Version: 1.0
-> Content-Type: text/plain; charset=UTF-8
-> Content-Transfer-Encoding: 8bit
-> 
-> Otherwise the limit is raised to high.
-> 
-> Signed-off-by: Christian K??nig <christian.koenig@amd.com>
-> ---
->  drivers/gpu/drm/radeon/radeon_display.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
-> index 408b6ac..f00dbbf 100644
-> --- a/drivers/gpu/drm/radeon/radeon_display.c
-> +++ b/drivers/gpu/drm/radeon/radeon_display.c
-> @@ -999,7 +999,7 @@ void radeon_compute_pll_avivo(struct radeon_pll *pll,
->  
->  	/* avoid high jitter with small fractional dividers */
->  	if (pll->flags & RADEON_PLL_USE_FRAC_FB_DIV && (fb_div % 10)) {
-> -		fb_div_min = max(fb_div_min, (9 - (fb_div % 10)) * 20 + 60);
-> +		fb_div_min = max(fb_div_min, (9 - (fb_div % 10)) * 20 + 50);
->  		if (fb_div < fb_div_min) {
->  			unsigned tmp = DIV_ROUND_UP(fb_div_min, fb_div);
->  			fb_div *= tmp;
-> -- 
-> 1.9.1
-> 
-
-
+diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
+index c710380..4eb41f7 100644
+--- a/fs/devpts/inode.c
++++ b/fs/devpts/inode.c
+@@ -148,10 +148,10 @@ static inline struct super_block *pts_sb_from_inode(struct inode *inode)
+ 
+ /*
+  * parse_mount_options():
+- * 	Set @opts to mount options specified in @data. If an option is not
+- * 	specified in @data, set it to its default value. The exception is
+- * 	'newinstance' option which can only be set/cleared on a mount (i.e.
+- * 	cannot be changed during remount).
++ *	Set @opts to mount options specified in @data. If an option is not
++ *	specified in @data, set it to its default value. The exception is
++ *	'newinstance' option which can only be set/cleared on a mount (i.e.
++ *	cannot be changed during remount).
+  *
+  * Note: @data may be NULL (in which case all options are set to default).
+  */
+@@ -225,7 +225,7 @@ static int parse_mount_options(char *data, int op, struct pts_mount_opts *opts)
+ 			break;
+ #endif
+ 		default:
+-			printk(KERN_ERR "devpts: called with bogus options\n");
++			pr_err("devpts: called with bogus options\n");
+ 			return -EINVAL;
+ 		}
+ 	}
+@@ -261,7 +261,7 @@ static int mknod_ptmx(struct super_block *sb)
+ 
+ 	dentry = d_alloc_name(root, "ptmx");
+ 	if (!dentry) {
+-		printk(KERN_NOTICE "Unable to alloc dentry for ptmx node\n");
++		pr_notice("Unable to alloc dentry for ptmx node\n");
+ 		goto out;
+ 	}
+ 
+@@ -270,7 +270,7 @@ static int mknod_ptmx(struct super_block *sb)
+ 	 */
+ 	inode = new_inode(sb);
+ 	if (!inode) {
+-		printk(KERN_ERR "Unable to alloc inode for ptmx node\n");
++		pr_err("Unable to alloc inode for ptmx node\n");
+ 		dput(dentry);
+ 		goto out;
+ 	}
+@@ -303,7 +303,7 @@ static void update_ptmx_mode(struct pts_fs_info *fsi)
+ #else
+ static inline void update_ptmx_mode(struct pts_fs_info *fsi)
+ {
+-       return;
++	return;
+ }
+ #endif
+ 
+@@ -333,9 +333,11 @@ static int devpts_show_options(struct seq_file *seq, struct dentry *root)
+ 	struct pts_mount_opts *opts = &fsi->mount_opts;
+ 
+ 	if (opts->setuid)
+-		seq_printf(seq, ",uid=%u", from_kuid_munged(&init_user_ns, opts->uid));
++		seq_printf(seq, ",uid=%u",
++			   from_kuid_munged(&init_user_ns, opts->uid));
+ 	if (opts->setgid)
+-		seq_printf(seq, ",gid=%u", from_kgid_munged(&init_user_ns, opts->gid));
++		seq_printf(seq, ",gid=%u",
++			   from_kgid_munged(&init_user_ns, opts->gid));
+ 	seq_printf(seq, ",mode=%03o", opts->mode);
+ #ifdef CONFIG_DEVPTS_MULTIPLE_INSTANCES
+ 	seq_printf(seq, ",ptmxmode=%03o", opts->ptmxmode);
+@@ -396,7 +398,7 @@ devpts_fill_super(struct super_block *s, void *data, int silent)
+ 	if (s->s_root)
+ 		return 0;
+ 
+-	printk(KERN_ERR "devpts: get root dentry failed\n");
++	pr_err("devpts: get root dentry failed\n");
+ 
+ fail:
+ 	return -ENOMEM;
 -- 
-das eine Mal als Tragödie, dieses Mal als Farce
+1.8.4.5
