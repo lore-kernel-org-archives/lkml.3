@@ -1,123 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaEMQir (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 12:38:47 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:35906 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633AbaEMQii (ORCPT
+	id S1751932AbaEMQlZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:41:25 -0400
+Received: from yotta.elopez.com.ar ([31.220.24.173]:58534 "EHLO
+	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768AbaEMQlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 12:38:38 -0400
-Date: Tue, 13 May 2014 18:38:32 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: =?iso-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>
-Cc: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= 
-	<ville.syrjala@linux.intel.com>,
-        Damien Lespiau <damien.lespiau@intel.com>,
-        David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [Intel-gfx] [3.14.0-rc4] regression: drm FIFO underruns
-Message-ID: <20140513163832.GM3908@phenom.ffwll.local>
-Mail-Followup-To: =?iso-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
-	Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
-	Damien Lespiau <damien.lespiau@intel.com>,
-	David Airlie <airlied@linux.ie>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Dave Airlie <airlied@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <20140509161438.GH31479@strange.amr.corp.intel.com>
- <20140509170335.GZ18465@intel.com>
- <CADDKRnAiQawK6vi0XO2FDdfGDbcwWQzdeu-rfEU8viJzARO+yQ@mail.gmail.com>
- <CAKMK7uHLSfW0wN-uXMejOcnvaYpZfVSfSh7+NpqAUBCOvbK2eg@mail.gmail.com>
- <CADDKRnCzHQw7_Cr2jpZ7qC50hrdmr0XRaYyMxaOSaqihNGccDA@mail.gmail.com>
- <20140512190300.GF25056@phenom.ffwll.local>
- <CADDKRnAOkdaziCQ_NGkt01hiQqjiAiKza2+QbCuDBuY72LJK=A@mail.gmail.com>
- <CAKMK7uGy3bKdj-B21rCpeF2EPEE4Wi8CxLbDWFBGpLWskoDj3w@mail.gmail.com>
- <20140513132200.GC3908@phenom.ffwll.local>
- <CADDKRnADucv7wMRgEDZ_DKRJqkPPZdgymL6VJhtG_JD9MkiJhA@mail.gmail.com>
+	Tue, 13 May 2014 12:41:17 -0400
+Message-ID: <53724B0E.1010307@elopez.com.ar>
+Date: Tue, 13 May 2014 13:40:46 -0300
+From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
+        kishon@ti.com, hdegoede@redhat.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Boris Brezillon <boris@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com
+Subject: Re: [PATCH RESEND v4 1/8] clk: sunxi: Implement A31 USB clock
+References: <1399995862-17788-1-git-send-email-maxime.ripard@free-electrons.com> <1399995862-17788-2-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1399995862-17788-2-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CADDKRnADucv7wMRgEDZ_DKRJqkPPZdgymL6VJhtG_JD9MkiJhA@mail.gmail.com>
-X-Operating-System: Linux phenom 3.14.0+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 05:21:49PM +0200, Jörg Otte wrote:
-> 2014-05-13 15:22 GMT+02:00 Daniel Vetter <daniel@ffwll.ch>:
-> > On Tue, May 13, 2014 at 12:38:41PM +0200, Daniel Vetter wrote:
-> >> On Tue, May 13, 2014 at 12:29 PM, Jörg Otte <jrg.otte@gmail.com> wrote:
-> >> >>> Branch drm-intel-nightly as of
-> >> >>> ed60c27 drm-intel-nightly: 2014y-05m-09d-21h-51m-45s integration manifest
-> >> >>> looks badly:
-> >> >>>    - KDE splash screen on boot-up is not visible
-> >> >>>    - x-windows don't have title and menu bars
-> >> >>>    - KDE system menu is not visible
-> >> >>>    - moving windows around destroys its content
-> >> >>
-> >> >> Ugh, that's ugly. Nothing else change like e.g. the version of
-> >> >> xfree-video-intel?
-> >> >
-> >> >  (II) Loading /usr/lib/xorg/modules/drivers/intel_drv.so
-> >> >  (II) Module intel: vendor="X.Org Foundation"
-> >> >  compiled for 1.11.3, module version = 2.17.0
-> >> >  Module class: X.Org Video Driver
-> >> >  ABI class: X.Org Video Driver, version 11.0
-> >>
-> >> Chris, any ideas? It's an ivybridge apparently.
-> >>
-> >> For the fifo underruns I think we've fully confirmed that they only
-> >> happen on boot-up. I'll try to come up with some ideas what could have
-> >> gone wrong there.
-> >
-> > Please test the below patch.
-> > -Daniel
-> >
-> > diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
-> > index b10fbde1d5ee..63ced2dee027 100644
-> > --- a/drivers/gpu/drm/i915/i915_irq.c
-> > +++ b/drivers/gpu/drm/i915/i915_irq.c
-> > @@ -427,9 +427,6 @@ bool __intel_set_cpu_fifo_underrun_reporting(struct drm_device *dev,
-> >
-> >         ret = !intel_crtc->cpu_fifo_underrun_disabled;
-> >
-> > -       if (enable == ret)
-> > -               goto done;
-> > -
-> >         intel_crtc->cpu_fifo_underrun_disabled = !enable;
-> >
-> >         if (enable && (INTEL_INFO(dev)->gen < 5 || IS_VALLEYVIEW(dev)))
-> > @@ -441,7 +438,6 @@ bool __intel_set_cpu_fifo_underrun_reporting(struct drm_device *dev,
-> >         else if (IS_GEN8(dev))
-> >                 broadwell_set_fifo_underrun_reporting(dev, pipe, enable);
-> >
-> > -done:
-> >         return ret;
-> >  }
-> >
-> > --
-> 
-> Doesn't work for me, I still have an underrun at boot-up.
+Hi Maxime,
 
-I'm at a loss tbh with ideas. We successfully disable both pipes, then
-enable pipe A and it all works.
+El 13/05/14 12:44, Maxime Ripard escribió:
+> The A31 USB clock slightly differ from its older counterparts, mostly because
+> it has a different gate for each PHY, while the older one had a single gate for
+> all the phy.
+>
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+> Acked-by: Mike Turquette <mturquette@linaro.org>
 
-Then we enable pipe B and _both_ pipes underrun immediately afterwards.
-Really strange. Can you please reproduce the issue again on
-drm-intel-nightly (latest -nightly should also have the display
-corruptions fixed, so good to retest anyway) and attach a new dmesg with
-drm.debug=0xe.
+I have queued this commit in sunxi-clk-for-mike for my 3.16 pull. I have 
+also queued the trivial patch below to keep the new compatible documented.
 
-Meanwhile I'll try to come up with new theories and ideas.
+Cheers,
 
-Thanks, Daniel
+Emilio
+
+--->8---
+
+clk: sunxi: document new A31 USB clock compatible
+
+Support for the USB gates and resets on A31 has been recently added
+using a new compatible, so let's document it here.
+
+Signed-off-by: Emilio López <emilio@elopez.com.ar>
+---
+  Documentation/devicetree/bindings/clock/sunxi.txt | 1 +
+  1 file changed, 1 insertion(+)
+
+diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt 
+b/Documentation/devicetree/bindings/clock/sunxi.txt
+index a5160d8..1f6d3f4 100644
+--- a/Documentation/devicetree/bindings/clock/sunxi.txt
++++ b/Documentation/devicetree/bindings/clock/sunxi.txt
+@@ -41,6 +41,7 @@ Required properties:
+  	"allwinner,sun7i-a20-gmac-clk" - for the GMAC clock module on A20/A31
+  	"allwinner,sun4i-a10-usb-clk" - for usb gates + resets on A10 / A20
+  	"allwinner,sun5i-a13-usb-clk" - for usb gates + resets on A13
++	"allwinner,sun6i-a31-usb-clk" - for usb gates + resets on A31
+
+  Required properties for all clocks:
+  - reg : shall be the control register address for the clock.
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.9.2
