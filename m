@@ -1,107 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759170AbaEMIki (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 04:40:38 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:44220 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752358AbaEMIkg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 04:40:36 -0400
-Message-ID: <5371DA80.2060603@gmail.com>
-Date: Tue, 13 May 2014 10:40:32 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Antoine Tenart <antoine.tenart@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] clk: berlin: add driver for BG2x complex divider
- cells
-References: <1399839881-29895-1-git-send-email-sebastian.hesselbarth@gmail.com> <1399839881-29895-6-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1399839881-29895-6-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+	id S1759319AbaEMImL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 04:42:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47177 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752801AbaEMImI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 04:42:08 -0400
+Date: Tue, 13 May 2014 11:40:49 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Michael Mueller <mimu@linux.vnet.ibm.com>
+Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        borntraeger@de.ibm.com, cornelia.huck@de.ibm.com, ddongch@cn.ibm.com
+Subject: Re: [PATCH v1] vhost: avoid large order allocations
+Message-ID: <20140513084049.GE29442@redhat.com>
+References: <1399970133-46783-1-git-send-email-mimu@linux.vnet.ibm.com>
+ <1399970133-46783-2-git-send-email-mimu@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399970133-46783-2-git-send-email-mimu@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2014 10:24 PM, Sebastian Hesselbarth wrote:
-> From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
->
-> This is a driver for the complex divider cells found on Marvell Berlin2
-> SoCs. The cells come in two flavors: single register cells and shared
-> register cells. The single register cells are registered by using a DT
-> node, while the shared ones will be taken care of in a SoC-specific
-> core clock driver.
->
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+On Tue, May 13, 2014 at 10:35:33AM +0200, Michael Mueller wrote:
+> From: Dong Dong Chen <ddongch@cn.ibm.com>
+> 
+> Under memory pressure we observe load issues with module vhost_net, as the
+> vhost setup code will try to do an order 4 allocation for the device.
+> The likeliness of this issue to occur can be reduced when the statically
+> allocated variable "iov" in "struct vhost_virtqueue" is dynamically allocated
+> with exactly the required size, reducing this to an order 2 allocation.
+> 
+> Signed-off-by: Dong Dong Chen <ddongch@cn.ibm.com>
+> Reviewed-by: Christian Borntraeger <borntraeger@de.ibm.com>
+> Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+> Reviewed-by: Michael Mueller <mimu@linux.vnet.ibm.com>
+
+Please dont' do this, extra indirection hurts performance.
+Instead, please change vhost_net_open and scsi to allocate the whole
+structure with vmalloc if kmalloc fails, along the lines of
+74d332c13b2148ae934ea94dac1745ae92efe8e5
+
 > ---
-[...]
-> diff --git a/drivers/clk/berlin/berlin2-div.c b/drivers/clk/berlin/berlin2-div.c
-> new file mode 100644
-> index 000000000000..96513a6e8ca7
-> --- /dev/null
-> +++ b/drivers/clk/berlin/berlin2-div.c
-> @@ -0,0 +1,326 @@
-[...]
-> +static void __init berlin2_div_of_setup(struct device_node *np)
-> +{
-> +	const char *parent_names[9] = {};
-> +	char *mux_name = "mux0";
-> +	int num_parents = 0;
-
-num_parents is always zero...
-
-> +	void __iomem *base;
-> +	struct clk *iclk;
-> +	struct clk *div;
-> +	char *div_name;
-> +	int n;
-> +
-> +	iclk = of_clk_get_by_name(np, "mux_bypass");
-> +	if (IS_ERR(iclk)) {
-> +		pr_err("%s: Missing mux bypass clock\n", np->full_name);
-> +		return;
-> +	}
-> +	parent_names[0] = __clk_get_name(iclk);
-
-.. and needs to be incremented here..
-
-> +	clk_put(iclk);
-> +
-> +	/* collect mux input clock names */
-> +	for (n = 0; n < 8; n++) {
-> +		sprintf(mux_name, "mux%d", n);
-> +		iclk = of_clk_get_by_name(np, mux_name);
-> +		if (IS_ERR(iclk))
-> +			continue;
-> +		parent_names[1 + n] = __clk_get_name(iclk);
-
-.. and here.
-
-I'll fix it up for v2.
-
-Sebastian
-
-> +		clk_put(iclk);
-> +	}
-> +
-> +	base = of_iomap(np, 0);
-> +	if (!base) {
-> +		pr_err("%s: Unable to map div register\n", np->full_name);
-> +		return;
-> +	}
-> +
-> +	div_name = of_clk_create_name(np);
-> +	div = berlin2_div_register(&berlin2_single_div_map, base, div_name,
-> +				   BERLIN2_DIV_HAS_GATE | BERLIN2_DIV_HAS_MUX,
-> +				   parent_names, num_parents, 0, NULL);
-> +	if (!IS_ERR(div))
-> +		of_clk_add_provider(np, of_clk_src_simple_get, div);
-> +
-> +	kfree(div_name);
-> +}
-> +CLK_OF_DECLARE(berlin2_div, "marvell,berlin2-div", berlin2_div_of_setup);
-
+>  drivers/vhost/net.c   | 4 ++--
+>  drivers/vhost/scsi.c  | 4 ++--
+>  drivers/vhost/test.c  | 2 +-
+>  drivers/vhost/vhost.c | 6 +++++-
+>  drivers/vhost/vhost.h | 2 +-
+>  5 files changed, 11 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index be414d2..e3a9a68 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -374,7 +374,7 @@ static void handle_tx(struct vhost_net *net)
+>  			break;
+>  
+>  		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
+> -					 ARRAY_SIZE(vq->iov),
+> +					 UIO_MAXIOV,
+>  					 &out, &in,
+>  					 NULL, NULL);
+>  		/* On error, stop handling until the next kick. */
+> @@ -506,7 +506,7 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
+>  			goto err;
+>  		}
+>  		r = vhost_get_vq_desc(vq->dev, vq, vq->iov + seg,
+> -				      ARRAY_SIZE(vq->iov) - seg, &out,
+> +				      UIO_MAXIOV - seg, &out,
+>  				      &in, log, log_num);
+>  		if (unlikely(r < 0))
+>  			goto err;
+> diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+> index cf50ce9..a70f1d9 100644
+> --- a/drivers/vhost/scsi.c
+> +++ b/drivers/vhost/scsi.c
+> @@ -607,7 +607,7 @@ tcm_vhost_do_evt_work(struct vhost_scsi *vs, struct tcm_vhost_evt *evt)
+>  again:
+>  	vhost_disable_notify(&vs->dev, vq);
+>  	head = vhost_get_vq_desc(&vs->dev, vq, vq->iov,
+> -			ARRAY_SIZE(vq->iov), &out, &in,
+> +			UIO_MAXIOV, &out, &in,
+>  			NULL, NULL);
+>  	if (head < 0) {
+>  		vs->vs_events_missed = true;
+> @@ -946,7 +946,7 @@ vhost_scsi_handle_vq(struct vhost_scsi *vs, struct vhost_virtqueue *vq)
+>  
+>  	for (;;) {
+>  		head = vhost_get_vq_desc(&vs->dev, vq, vq->iov,
+> -					ARRAY_SIZE(vq->iov), &out, &in,
+> +					UIO_MAXIOV, &out, &in,
+>  					NULL, NULL);
+>  		pr_debug("vhost_get_vq_desc: head: %d, out: %u in: %u\n",
+>  					head, out, in);
+> diff --git a/drivers/vhost/test.c b/drivers/vhost/test.c
+> index c2a54fb..2e01920 100644
+> --- a/drivers/vhost/test.c
+> +++ b/drivers/vhost/test.c
+> @@ -54,7 +54,7 @@ static void handle_vq(struct vhost_test *n)
+>  
+>  	for (;;) {
+>  		head = vhost_get_vq_desc(&n->dev, vq, vq->iov,
+> -					 ARRAY_SIZE(vq->iov),
+> +					 UIO_MAXIOV,
+>  					 &out, &in,
+>  					 NULL, NULL);
+>  		/* On error, stop handling until the next kick. */
+> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> index 78987e4..9017a55 100644
+> --- a/drivers/vhost/vhost.c
+> +++ b/drivers/vhost/vhost.c
+> @@ -251,6 +251,8 @@ static int vhost_worker(void *data)
+>  
+>  static void vhost_vq_free_iovecs(struct vhost_virtqueue *vq)
+>  {
+> +	kfree(vq->iov);
+> +	vq->iov = NULL;
+>  	kfree(vq->indirect);
+>  	vq->indirect = NULL;
+>  	kfree(vq->log);
+> @@ -267,11 +269,12 @@ static long vhost_dev_alloc_iovecs(struct vhost_dev *dev)
+>  
+>  	for (i = 0; i < dev->nvqs; ++i) {
+>  		vq = dev->vqs[i];
+> +		vq->iov = kmalloc(sizeof(*vq->iov) * UIO_MAXIOV, GFP_KERNEL);
+>  		vq->indirect = kmalloc(sizeof *vq->indirect * UIO_MAXIOV,
+>  				       GFP_KERNEL);
+>  		vq->log = kmalloc(sizeof *vq->log * UIO_MAXIOV, GFP_KERNEL);
+>  		vq->heads = kmalloc(sizeof *vq->heads * UIO_MAXIOV, GFP_KERNEL);
+> -		if (!vq->indirect || !vq->log || !vq->heads)
+> +		if (!vq->iov || !vq->indirect || !vq->log || !vq->heads)
+>  			goto err_nomem;
+>  	}
+>  	return 0;
+> @@ -310,6 +313,7 @@ void vhost_dev_init(struct vhost_dev *dev,
+>  	for (i = 0; i < dev->nvqs; ++i) {
+>  		vq = dev->vqs[i];
+>  		vq->log = NULL;
+> +		vq->iov = NULL;
+>  		vq->indirect = NULL;
+>  		vq->heads = NULL;
+>  		vq->dev = dev;
+> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+> index 35eeb2a..541f757 100644
+> --- a/drivers/vhost/vhost.h
+> +++ b/drivers/vhost/vhost.h
+> @@ -100,7 +100,7 @@ struct vhost_virtqueue {
+>  	bool log_used;
+>  	u64 log_addr;
+>  
+> -	struct iovec iov[UIO_MAXIOV];
+> +	struct iovec *iov;
+>  	struct iovec *indirect;
+>  	struct vring_used_elem *heads;
+>  	/* Protected by virtqueue mutex. */
+> -- 
+> 1.8.3.1
