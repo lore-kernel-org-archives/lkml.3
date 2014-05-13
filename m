@@ -1,142 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759435AbaEMIWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 04:22:22 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36157 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759334AbaEMIUJ (ORCPT
+	id S1759451AbaEMIWz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 04:22:55 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:38984 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692AbaEMIWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 04:20:09 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        kishon@ti.com, hdegoede@redhat.com
-Cc: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v4 6/8] usb: ohci-platform: Enable optional use of reset controller
-Date: Tue, 13 May 2014 10:19:03 +0200
-Message-Id: <1399969145-11642-7-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1399969145-11642-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1399969145-11642-1-git-send-email-maxime.ripard@free-electrons.com>
+	Tue, 13 May 2014 04:22:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <1399966890-22926-1-git-send-email-k.chander@samsung.com>
+References: <1399966890-22926-1-git-send-email-k.chander@samsung.com>
+Date: Tue, 13 May 2014 13:52:51 +0530
+Message-ID: <CAKohpo=6qXer+RRS-F6x=O1VLzbWq+_a-b29MaUzZBvt7XzDwQ@mail.gmail.com>
+Subject: Re: [PATCH] PM / OPP: discard duplicate OPP additions
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "[Chander Kashyap" <chander.kashyap@linaro.org>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        "Brown, Len" <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chander Kashyap <k.chander@samsung.com>,
+        Inderpal Singh <inderpal.s@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The OHCI controllers used in the Allwinner A31 are asserted in reset using a
-global reset controller.
+On 13 May 2014 13:11, [Chander Kashyap <chander.kashyap@linaro.org> wrote:
 
-Add optional support for such a controller in the OHCI platform driver.
+What happened to your name ? "["
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
----
- Documentation/devicetree/bindings/usb/usb-ohci.txt |  1 +
- drivers/usb/host/ohci-platform.c                   | 27 +++++++++++++++++++---
- 2 files changed, 25 insertions(+), 3 deletions(-)
+> From: Chander Kashyap <k.chander@samsung.com>
+>
+> It may be possible to unregister and re-register the cpufreq driver.
+> One such example is arm big-little IKS cpufreq driver. While
+> re-registering the driver, same OPPs may get added again.
+>
+> This patch detects the duplicacy and discards them.
+>
+> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+> Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
+> ---
+>  drivers/base/power/opp.c |   28 +++++++++++++++++++---------
+>  1 file changed, 19 insertions(+), 9 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/usb/usb-ohci.txt b/Documentation/devicetree/bindings/usb/usb-ohci.txt
-index 45f67d91e888..b968a1aea995 100644
---- a/Documentation/devicetree/bindings/usb/usb-ohci.txt
-+++ b/Documentation/devicetree/bindings/usb/usb-ohci.txt
-@@ -12,6 +12,7 @@ Optional properties:
- - clocks : a list of phandle + clock specifier pairs
- - phys : phandle + phy specifier pair
- - phy-names : "usb"
-+- resets : phandle + reset specifier pair
- 
- Example:
- 
-diff --git a/drivers/usb/host/ohci-platform.c b/drivers/usb/host/ohci-platform.c
-index b6002c951c5c..4369299064c7 100644
---- a/drivers/usb/host/ohci-platform.c
-+++ b/drivers/usb/host/ohci-platform.c
-@@ -24,6 +24,7 @@
- #include <linux/err.h>
- #include <linux/phy/phy.h>
- #include <linux/platform_device.h>
-+#include <linux/reset.h>
- #include <linux/usb/ohci_pdriver.h>
- #include <linux/usb.h>
- #include <linux/usb/hcd.h>
-@@ -36,6 +37,7 @@
- 
- struct ohci_platform_priv {
- 	struct clk *clks[OHCI_MAX_CLKS];
-+	struct reset_control *rst;
- 	struct phy *phy;
- };
- 
-@@ -191,6 +193,19 @@ static int ohci_platform_probe(struct platform_device *dev)
- 				break;
- 			}
- 		}
+I wouldn't say that this approach is particularly bad or wrong, but what
+about this instead?
+
+diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+index 2553867..7efdaf3 100644
+--- a/drivers/base/power/opp.c
++++ b/drivers/base/power/opp.c
+@@ -713,6 +713,11 @@ int of_init_opp_table(struct device *dev)
+        const __be32 *val;
+        int nr;
+
++       if (!IS_ERR(find_device_opp(dev))) {
++               dev_warn("%s: opp table already exists\n", __func__);
++               return -EEXIST;
++       }
 +
-+	}
-+
-+	priv->rst = devm_reset_control_get_optional(&dev->dev, NULL);
-+	if (IS_ERR(priv->rst)) {
-+		err = PTR_ERR(priv->rst);
-+		if (err == -EPROBE_DEFER)
-+			goto err_put_clks;
-+		priv->rst = NULL;
-+	} else {
-+		err = reset_control_deassert(priv->rst);
-+		if (err)
-+			goto err_put_clks;
- 	}
- 
- 	if (pdata->big_endian_desc)
-@@ -203,7 +218,7 @@ static int ohci_platform_probe(struct platform_device *dev)
- 		dev_err(&dev->dev,
- 			"Error: CONFIG_USB_OHCI_BIG_ENDIAN_MMIO not set\n");
- 		err = -EINVAL;
--		goto err_put_clks;
-+		goto err_reset;
- 	}
- #endif
- #ifndef CONFIG_USB_OHCI_BIG_ENDIAN_DESC
-@@ -211,14 +226,14 @@ static int ohci_platform_probe(struct platform_device *dev)
- 		dev_err(&dev->dev,
- 			"Error: CONFIG_USB_OHCI_BIG_ENDIAN_DESC not set\n");
- 		err = -EINVAL;
--		goto err_put_clks;
-+		goto err_reset;
- 	}
- #endif
- 
- 	if (pdata->power_on) {
- 		err = pdata->power_on(dev);
- 		if (err < 0)
--			goto err_put_clks;
-+			goto err_reset;
- 	}
- 
- 	hcd->rsrc_start = res_mem->start;
-@@ -242,6 +257,9 @@ static int ohci_platform_probe(struct platform_device *dev)
- err_power:
- 	if (pdata->power_off)
- 		pdata->power_off(dev);
-+err_reset:
-+	if (priv->rst)
-+		reset_control_assert(priv->rst);
- err_put_clks:
- 	while (--clk >= 0)
- 		clk_put(priv->clks[clk]);
-@@ -266,6 +284,9 @@ static int ohci_platform_remove(struct platform_device *dev)
- 	if (pdata->power_off)
- 		pdata->power_off(dev);
- 
-+	if (priv->rst)
-+		reset_control_assert(priv->rst);
-+
- 	for (clk = 0; clk < OHCI_MAX_CLKS && priv->clks[clk]; clk++)
- 		clk_put(priv->clks[clk]);
- 
--- 
-1.9.3
-
+        prop = of_find_property(dev->of_node, "operating-points", NULL);
+        if (!prop)
+                return -ENODEV;
