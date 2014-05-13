@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192AbaEMWKo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 18:10:44 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:46701 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755242AbaEMWFg (ORCPT
+	id S932582AbaEMWKz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 18:10:55 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:43140 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755241AbaEMWFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 18:05:36 -0400
+	Tue, 13 May 2014 18:05:35 -0400
 From: Alexis Berlemont <alexis.berlemont@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com,
         acme@ghostprotocols.net, dsahern@gmail.com, mingo@kernel.org
-Subject: [PATCH 18/34] perf kbuild: remove legacy on_exit-related build variable
-Date: Wed, 14 May 2014 00:03:13 +0200
-Message-Id: <1400018609-20486-19-git-send-email-alexis.berlemont@gmail.com>
+Subject: [PATCH 17/34] perf kbuild: remove legacy demangle-related build variables
+Date: Wed, 14 May 2014 00:03:12 +0200
+Message-Id: <1400018609-20486-18-git-send-email-alexis.berlemont@gmail.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
 References: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
@@ -21,69 +21,216 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove HAVE_ON_EXIT_SUPPORT (replaced by CONFIG_ON_EXIT)
+Remove NO_DEMANGLE (replaced by CONFIG_DEMANGLE)
+Remove HAVE_LIBBFD_SUPPORT (replaced by CONFIG_LIBBFD)
+Remove HAVE_CPLUS_DEMANGLE_SUPPORT (replaced by CONFIG_LIBIBERTY_ONLY)
 ---
- tools/perf/Kconfig          | 6 ++++++
- tools/perf/builtin-record.c | 4 +++-
- tools/perf/config/Makefile  | 6 +++---
- 3 files changed, 12 insertions(+), 4 deletions(-)
+ tools/perf/Kconfig         | 28 ++++++++++++++++++++++------
+ tools/perf/config/Makefile | 45 ++++++++++++++++++++++++---------------------
+ tools/perf/util/srcline.c  |  8 +++++---
+ tools/perf/util/symbol.h   | 25 +++++++++++++++++--------
+ 4 files changed, 68 insertions(+), 38 deletions(-)
 
 diff --git a/tools/perf/Kconfig b/tools/perf/Kconfig
-index ffc1d81..34a8b09 100644
+index 76d0763..ffc1d81 100644
 --- a/tools/perf/Kconfig
 +++ b/tools/perf/Kconfig
-@@ -190,6 +190,12 @@ config TIMERFD
+@@ -190,6 +190,28 @@ config TIMERFD
          ---help---
  	  Timer via file descriptor
  
-+config ON_EXIT
-+	bool "Support of on_exit() function"
++config DEMANGLE
++	bool "Demangle symbols"
 +	default n
 +        ---help---
-+	  On exit support
++	  demangle
 +
- config DEMANGLE
- 	bool "Demangle symbols"
++choice DEMANGLE_DEPS
++       prompt "Demangle dependency(ies)"
++       depends on DEMANGLE
++       default LIBBFD
++
++config LIBBFD
++	bool "BFD + libiberty libraries"
++        ---help---
++	  Binary File Descriptor and libiberty libraries
++
++config LIBIBERTY_ONLY
++	bool "Libiberty only"
++        ---help---
++	  Libiberty
++endchoice
++
+ choice
+ 	prompt "Elf library"
+ 	default LIBELF
+@@ -223,12 +245,6 @@ config NUMA
+         ---help---
+ 	  numa
+ 
+-config DEMANGLE
+-	bool "Demangle symbols"
+-	default n
+-        ---help---
+-	  demangle
+-
+ config BIONIC
+ 	bool "Bionic support"
  	default n
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 8ce62ef..372a812 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -5,6 +5,8 @@
-  * (or a CPU, or a PID) into the perf.data output file - for
-  * later analysis via perf report.
-  */
-+
-+#include "generated/autoconf.h"
- #include "builtin.h"
- 
- #include "perf.h"
-@@ -30,7 +32,7 @@
- #include <sched.h>
- #include <sys/mman.h>
- 
--#ifndef HAVE_ON_EXIT_SUPPORT
-+#ifndef CONFIG_ON_EXIT
- #ifndef ATEXIT_MAX
- #define ATEXIT_MAX 32
- #endif
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index ff7f01c..c128f30 100644
+index 33843b7..ff7f01c 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -566,9 +566,9 @@ ifdef CONFIG_LIBIBERTY_ONLY
+@@ -534,33 +534,36 @@ ifeq ($(feature-libbfd), 1)
    endif
  endif
  
--ifndef NO_ON_EXIT
--  ifeq ($(feature-on-exit), 1)
--    CFLAGS += -DHAVE_ON_EXIT_SUPPORT
-+ifdef CONFIG_ON_EXIT
-+  ifneq ($(feature-on-exit), 1)
-+    $(shell $(KCONFIG_SCRIPT) -d CONFIG_ON_EXIT)
+-ifdef NO_DEMANGLE
+-  CFLAGS += -DNO_DEMANGLE
+-else
+-  ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
+-    EXTLIBS += -liberty
+-    CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
+-  else
+-    ifneq ($(feature-libbfd), 1)
+-      ifneq ($(feature-liberty), 1)
+-        ifneq ($(feature-liberty-z), 1)
+-          # we dont have neither HAVE_CPLUS_DEMANGLE_SUPPORT
+-          # or any of 'bfd iberty z' trinity
+-          ifeq ($(feature-cplus-demangle), 1)
+-            EXTLIBS += -liberty
+-            CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
+-          else
+-            msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
+-            CFLAGS += -DNO_DEMANGLE
+-          endif
++ifdef CONFIG_LIBBFD
++  ifneq ($(feature-libbfd), 1)
++    # TODO: there might be an issue here: feature-liberty and
++    # feature-liberty-z cannot be set; they can be set only if
++    # feature-libbfd is set
++    ifneq ($(feature-liberty), 1)
++      ifneq ($(feature-liberty-z), 1)
++        # we dont have neither HAVE_CPLUS_DEMANGLE_SUPPORT
++        # or any of 'bfd iberty z' trinity
++        ifeq ($(feature-cplus-demangle), 1)
++          EXTLIBS += -liberty
++          $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBBFD)
++          $(shell $(KCONFIG_SCRIPT) -e CONFIG_LIBIBERTY_ONLY)
++        else
++          msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
++          $(shell $(KCONFIG_SCRIPT) -d CONFIG_DEMANGLE)
+         endif
+       endif
+     endif
    endif
  endif
  
+-ifneq ($(filter -lbfd,$(EXTLIBS)),)
+-  CFLAGS += -DHAVE_LIBBFD_SUPPORT
++ifdef CONFIG_LIBIBERTY_ONLY
++  $(call feature_check,cplus-demangle)
++  ifeq ($(feature-cplus-demangle), 1)
++    EXTLIBS += -liberty
++  else
++    msg := $(warning No libiberty found, install binutils-dev[el]/zlib-static to gain symbol demangling)
++    $(shell $(KCONFIG_SCRIPT) -d CONFIG_DEMANGLE)
++  endif
+ endif
+ 
+ ifndef NO_ON_EXIT
+diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+index f3e4bc5..38df8f4 100644
+--- a/tools/perf/util/srcline.c
++++ b/tools/perf/util/srcline.c
+@@ -4,11 +4,13 @@
+ 
+ #include <linux/kernel.h>
+ 
++#include "generated/autoconf.h"
++
+ #include "util/dso.h"
+ #include "util/util.h"
+ #include "util/debug.h"
+ 
+-#ifdef HAVE_LIBBFD_SUPPORT
++#ifdef CONFIG_LIBBFD
+ 
+ /*
+  * Implement addr2line using libbfd.
+@@ -189,7 +191,7 @@ void dso__free_a2l(struct dso *dso)
+ 	dso->a2l = NULL;
+ }
+ 
+-#else /* HAVE_LIBBFD_SUPPORT */
++#else /* !CONFIG_LIBBFD */
+ 
+ static int addr2line(const char *dso_name, unsigned long addr,
+ 		     char **file, unsigned int *line_nr,
+@@ -242,7 +244,7 @@ void dso__free_a2l(struct dso *dso __maybe_unused)
+ {
+ }
+ 
+-#endif /* HAVE_LIBBFD_SUPPORT */
++#endif /* CONFIG_LIBBFD */
+ 
+ /*
+  * Number of addr2line failures (without success) before disabling it for that
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 501e4e7..d8e886e 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -1,6 +1,8 @@
+ #ifndef __PERF_SYMBOL
+ #define __PERF_SYMBOL 1
+ 
++#include "generated/autoconf.h"
++
+ #include <linux/types.h>
+ #include <stdbool.h>
+ #include <stdint.h>
+@@ -21,26 +23,33 @@
+ 
+ #include "dso.h"
+ 
+-#ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
++#ifdef CONFIG_DEMANGLE
++
++#ifdef CONFIG_LIBBFD
++
++#define PACKAGE 'perf'
++#include <bfd.h>
++
++#elif defined(CONFIG_LIBIBERTY_ONLY)
+ extern char *cplus_demangle(const char *, int);
+ 
+ static inline char *bfd_demangle(void __maybe_unused *v, const char *c, int i)
+ {
+ 	return cplus_demangle(c, i);
+ }
+-#else
+-#ifdef NO_DEMANGLE
++
++#else /* Unknown dependency */
++#error "Inconsistent demangling configuration"
++#endif
++
++#else /* !CONFIG_DEMANGLE */
+ static inline char *bfd_demangle(void __maybe_unused *v,
+ 				 const char __maybe_unused *c,
+ 				 int __maybe_unused i)
+ {
+ 	return NULL;
+ }
+-#else
+-#define PACKAGE 'perf'
+-#include <bfd.h>
+-#endif
+-#endif
++#endif /* CONFIG_DEMANGLE */
+ 
+ /*
+  * libelf 0.8.x and earlier do not support ELF_C_READ_MMAP;
 -- 
 1.9.2
 
