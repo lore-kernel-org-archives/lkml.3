@@ -1,101 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250AbaEMXkA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 19:40:00 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:34030 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822AbaEMXj5 (ORCPT
+	id S1755289AbaEMXs4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 19:48:56 -0400
+Received: from smtprelay0041.hostedemail.com ([216.40.44.41]:52410 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751409AbaEMXsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 19:39:57 -0400
-Date: Tue, 13 May 2014 16:39:50 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 39/45] rcutorture: Note diffs from git
- commits
-Message-ID: <20140513233950.GA19525@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140429002455.GA15461@linux.vnet.ibm.com>
- <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1398731133-18925-39-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140507221742.GQ27924@cloud>
- <20140510005124.GI8754@linux.vnet.ibm.com>
- <20140510051938.GC8451@thin>
- <20140513231716.GZ18164@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140513231716.GZ18164@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051323-0928-0000-0000-000001DD7E70
+	Tue, 13 May 2014 19:48:53 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:2897:3138:3139:3140:3141:3142:3352:3653:3867:3868:3874:5007:7652:7903:8957:10004:10400:10848:11026:11473:11658:11914:12043:12049:12296:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: stone07_87816f9da5e26
+X-Filterd-Recvd-Size: 1925
+Message-ID: <1400024929.24350.76.camel@joe-AO725>
+Subject: [PATCH] checkpatch: Add --strict test for kmalloc/kzalloc with
+ multiply
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 13 May 2014 16:48:49 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 04:17:16PM -0700, Paul E. McKenney wrote:
-> On Fri, May 09, 2014 at 10:19:39PM -0700, Josh Triplett wrote:
-> > On Fri, May 09, 2014 at 05:51:24PM -0700, Paul E. McKenney wrote:
-> > > On Wed, May 07, 2014 at 03:17:42PM -0700, josh@joshtriplett.org wrote:
-> > > > On Mon, Apr 28, 2014 at 05:25:27PM -0700, Paul E. McKenney wrote:
-> > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > > 
-> > > > > The current scripting only keeps track of the git SHA-1 of the current
-> > > > > HEAD.  This can cause confusion in cases where testing ran in a git
-> > > > > tree where changes had not yet been checked in.  This commit therefore
-> > > > > also records the output of "git diff HEAD" to provide the information
-> > > > > needed to reconstruct the source tree that was tested.
-> > > > > 
-> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > > Nit below.
-> > > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> > > > 
-> > > > > ---
-> > > > >  tools/testing/selftests/rcutorture/bin/kvm.sh | 5 +++++
-> > > > >  1 file changed, 5 insertions(+)
-> > > > > 
-> > > > > diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> > > > > index 4eed2a4f42c7..91661845fdec 100644
-> > > > > --- a/tools/testing/selftests/rcutorture/bin/kvm.sh
-> > > > > +++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> > > > > @@ -277,6 +277,11 @@ if test -d .git
-> > > > >  then
-> > > > >  	git status >> $resdir/$ds/testid.txt
-> > > > >  	git rev-parse HEAD >> $resdir/$ds/testid.txt
-> > > > > +	git diff HEAD > $T/git-diff 2>&1
-> > > > > +	if test -s $T/git-diff
-> > > > 
-> > > > You don't need test here; you can use the return value of git diff.
-> > > 
-> > > Oddly enough, the "git diff" man page does not say anything about the
-> > > exit value.  At least not that I could find...
-> > 
-> > Look for the --exit-code option of git diff.
-> 
-> I guess I should have searched for "exit" rather than scrolling to the
-> bottom of the man page.  Thank you for the tip!  ;-)
-> 
-> So:
-> 
-> 	if ! git diff HEAD > $T/git-diff 2>&1
+Protect against sizeof overflows by preferring
+kmalloc_array and kcalloc to kmalloc/kzalloc
+with a sizeof multiply.
 
-Except with the --exit-code included...
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-							Thanx, Paul
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index e7ff52a..33eb71f 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -4378,6 +4378,20 @@ sub process {
+ 			    "Prefer $3(sizeof(*$1)...) over $3($4...)\n" . $herecurr);
+ 		}
+ 
++# check for k[mz]alloc with multiplies that could be kmalloc_array/kcalloc
++		if ($^V && $^V ge 5.10.0 &&
++		    $line =~ /\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*(k[mz]alloc)\s*\(\s*($FuncArg)\s*\*\s*($FuncArg)/) {
++			my $oldfunc = $3;
++			my $a1 = $4;
++			my $a2 = $10;
++			my $newfunc = "kmalloc_array";
++			$newfunc = "kcalloc" if ($oldfunc eq "kzalloc");
++			if ($a1 =~ /^sizeof\s*\S/ || $a2 =~ /^sizeof\s*\S/) {
++				CHK("ALLOC_WITH_MULTIPLY",
++				    "Prefer $newfunc over $oldfunc with multiply\n" . $herecurr);
++			}
++		}
++
+ # check for krealloc arg reuse
+ 		if ($^V && $^V ge 5.10.0 &&
+ 		    $line =~ /\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*krealloc\s*\(\s*\1\s*,/) {
 
-> 	then
-> 		cp $T/git-diff $resdir/$ds
-> 	fi
-> 
-> The reason for dropping into /tmp and then copying if there were
-> diffs is that I don't want there to be an empty file if no diffs.
-> 
-> 							Thanx, Paul
 
