@@ -1,104 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932340AbaEMIeb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 04:34:31 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:37038 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932150AbaEMIe1 (ORCPT
+	id S1759476AbaEMIeF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 04:34:05 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57802 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758830AbaEMId7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 04:34:27 -0400
+	Tue, 13 May 2014 04:33:59 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <zonque@gmail.com>,
+        George Cherian <george.cherian@ti.com>
+Subject: [PATCH v3 4/5] usb: musb: dsps: Add the sw_babble_control()
+Date: Tue, 13 May 2014 14:01:44 +0530
+Message-ID: <1399969905-3509-5-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1399969905-3509-1-git-send-email-george.cherian@ti.com>
+References: <1399969905-3509-1-git-send-email-george.cherian@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1398759674-13421-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1398759674-13421-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Tue, 13 May 2014 10:34:27 +0200
-Message-ID: <CACRpkdY_NzRaz5fiWJDF=rZY6WizmwbDZG6c_+FR+L9Aix8peQ@mail.gmail.com>
-Subject: Re: [PATCH v1 11/11] mmc: mmci: Add Qcom specific pio_read function.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        agross@quicinc.com,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 10:21 AM,  <srinivas.kandagatla@linaro.org> wrote:
+Add sw_babble_control() logic to differentiate between transient
+babble and real babble condition. Also add the SW babble control
+register definitions.
 
-> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->
-> MCIFIFOCNT register behaviour on Qcom chips is very different than the other
-> pl180 integrations. MCIFIFOCNT register contains the number of
-> words that are still waiting to be transferred through the FIFO. It keeps
-> decrementing once the host CPU reads the MCIFIFO. With the existing logic and
-> the MCIFIFOCNT behaviour, mmci_pio_read will loop forever, as the FIFOCNT
-> register will always return transfer size before reading the FIFO.
->
-> Also the data sheet states that "This register is only useful for debug
-> purposes and should not be used for normal operation since it does not reflect
-> data which may or may not be in the pipeline".
->
-> This patch implements qcom_pio_read function so as existing mmci_pio_read is
-> not suitable for Qcom SOCs.
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-(...)
+Babble control register logic is implemented in the latest
+revision of AM335x.
 
-> +static int mmci_qcom_pio_read(struct mmci_host *host, char *buffer,
-> +                        unsigned int remain)
-> +{
-> +       uint32_t        *ptr = (uint32_t *) buffer;
+Signed-off-by: George Cherian <george.cherian@ti.com>
+---
+ drivers/usb/musb/musb_dsps.c | 50 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/usb/musb/musb_regs.h |  7 +++++++
+ 2 files changed, 57 insertions(+)
 
-Just use u32 for this.
+diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
+index f6f3087..eb1985a 100644
+--- a/drivers/usb/musb/musb_dsps.c
++++ b/drivers/usb/musb/musb_dsps.c
+@@ -536,6 +536,56 @@ static int dsps_musb_set_mode(struct musb *musb, u8 mode)
+ 	return 0;
+ }
+ 
++static int sw_babble_control(struct musb *musb)
++{
++	int timeout = 10;
++	u8 babble_ctl, session_restart = 0;
++
++	babble_ctl = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
++	dev_dbg(musb->controller, "babble: MUSB_BABBLE_CTL value %x\n",
++		babble_ctl);
++	/*
++	 * check line monitor flag to check whether babble is
++	 * due to noise
++	 */
++	dev_dbg(musb->controller, "STUCK_J is %s\n",
++		babble_ctl & MUSB_BABBLE_STUCK_J ? "set" : "reset");
++
++	if (babble_ctl & MUSB_BABBLE_STUCK_J) {
++		/*
++		 * babble is due to noise, then set transmit idle (d7 bit)
++		 * to resume normal operation
++		 */
++		babble_ctl = musb_readb(musb->mregs, MUSB_BABBLE_CTL);
++		babble_ctl |= MUSB_BABBLE_FORCE_TXIDLE;
++		dsps_writeb(musb->mregs, MUSB_BABBLE_CTL, babble_ctl);
++
++		/* wait till line monitor flag cleared */
++		dev_dbg(musb->controller, "Set TXIDLE, wait J to clear\n");
++		do {
++			babble_ctl = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
++			udelay(1);
++		} while ((babble_ctl & MUSB_BABBLE_STUCK_J) && timeout--);
++
++		/* check whether stuck_at_j bit cleared */
++		if (babble_ctl & MUSB_BABBLE_STUCK_J) {
++			/*
++			 * real babble condition is occured
++			 * restart the controller to start the
++			 * session again
++			 */
++			dev_dbg(musb->controller, "J not cleared, misc (%x)\n",
++				babble_ctl);
++			session_restart = 1;
++		}
++
++	} else {
++		session_restart = 1;
++	}
++
++	return session_restart;
++}
++
+ static int dsps_musb_reset(struct musb *musb)
+ {
+ 	struct device *dev = musb->controller;
+diff --git a/drivers/usb/musb/musb_regs.h b/drivers/usb/musb/musb_regs.h
+index 03f2655..b9bcda5 100644
+--- a/drivers/usb/musb/musb_regs.h
++++ b/drivers/usb/musb/musb_regs.h
+@@ -72,6 +72,12 @@
+ #define MUSB_DEVCTL_HR		0x02
+ #define MUSB_DEVCTL_SESSION	0x01
+ 
++/* BABBLE_CTL */
++#define MUSB_BABBLE_FORCE_TXIDLE	0x80
++#define MUSB_BABBLE_SW_SESSION_CTRL	0x40
++#define MUSB_BABBLE_STUCK_J		0x20
++#define MUSB_BABBLE_RCV_DISABLE		0x04
++
+ /* MUSB ULPI VBUSCONTROL */
+ #define MUSB_ULPI_USE_EXTVBUS	0x01
+ #define MUSB_ULPI_USE_EXTVBUSIND 0x02
+@@ -246,6 +252,7 @@
+  */
+ 
+ #define MUSB_DEVCTL		0x60	/* 8 bit */
++#define MUSB_BABBLE_CTL		0x61	/* 8 bit */
+ 
+ /* These are always controlled through the INDEX register */
+ #define MUSB_TXFIFOSZ		0x62	/* 8-bit (see masks) */
+-- 
+1.8.3.1
 
-> +       int             count = 0;
-> +       struct variant_data *variant = host->variant;
-> +       int             fifo_size = variant->fifosize;
-> +
-> +       if (remain % 4)
-> +               remain = ((remain >> 2) + 1) << 2;
-
-Explain in a comment exactly what is happening here or noone will
-understand the code.
-
-> +       while (readl(host->base + MMCISTATUS) & MCI_RXDATAAVLBL) {
-> +               *ptr = readl(host->base + MMCIFIFO + (count % fifo_size));
-> +               ptr++;
-> +               count += sizeof(uint32_t);
-> +               remain -=  sizeof(uint32_t);
-
-
-sizeof(u32) or just 4 works for these...
-
-count += 4;
-remain -= 4;
-
-Is easier to parse and understand I think.
-
-> +               if (remain == 0)
-> +                       break;
-
-if (!remain)
-  break;
-
-> +       }
-> +       return count;
-> +}
-
-> -               if (status & MCI_RXACTIVE)
-> -                       len = mmci_pio_read(host, buffer, remain);
-> +               if (status & MCI_RXACTIVE) {
-> +                       if (host->hw_designer == AMBA_VENDOR_QCOM)
-> +                               len = mmci_qcom_pio_read(host, buffer, remain);
-> +                       else
-> +                               len = mmci_pio_read(host, buffer, remain);
-> +               }
-
-Use something like bool qcom_fifo; in vendor data instead.
-
-Yours,
-Linus Walleij
