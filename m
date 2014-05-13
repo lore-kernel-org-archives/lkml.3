@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457AbaEMXyG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 19:54:06 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:55247 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755423AbaEMXyD (ORCPT
+	id S1755492AbaEMXz0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 19:55:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57752 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769AbaEMXzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 19:54:03 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-From: "Gioh Kim" <gioh.kim@lge.com>
-To: "'Thierry Reding'" <thierry.reding@gmail.com>
-Cc: "'Sumit Semwal'" <sumit.semwal@linaro.org>,
-        "'Randy Dunlap'" <rdunlap@infradead.org>,
-        <linux-media@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gunho.lee@lge.com>
-References: <1399895292-29520-1-git-send-email-gioh.kim@lge.com> <20140513084440.GL6754@ulmo>
-In-Reply-To: <20140513084440.GL6754@ulmo>
-Subject: RE: [PATCH] Documentation/dma-buf-sharing.txt: update API descriptions
-Date: Wed, 14 May 2014 08:53:59 +0900
-Message-ID: <001501cf6f06$9c86f190$d594d4b0$@lge.com>
+	Tue, 13 May 2014 19:55:24 -0400
+Date: Tue, 13 May 2014 16:58:40 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: stable@vger.kernel.org, viro@zeniv.linux.org.uk, bcrl@kvack.org,
+        jmoyer@redhat.com, kosaki.motohiro@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        linux-kernel@vger.kernel.org, miaox@cn.fujitsu.com,
+        tangchen <tangchen@cn.fujitsu.com>
+Subject: Re: [RESEND v2 PATCH 0/2] Bug fix in aio ring page migration
+Message-ID: <20140513235840.GD29623@kroah.com>
+References: <1394439334-28523-1-git-send-email-tangchen@cn.fujitsu.com>
+ <53217E46.3060100@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQGsmzDXAkxZuFRyWtKFxD2OKL4+wQHhW/dam3XLa3A=
-Content-Language: ko
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53217E46.3060100@cn.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for advice.
-I will send a fixed patch soon.
+On Thu, Mar 13, 2014 at 05:45:42PM +0800, Gu Zheng wrote:
+> This patchset has been applied to linux-next, and these problems also exist
+> in 3.12.y and 3.13.y stable tree.
+> So please merge this patchset to 3.12.y and 3.13.y stable tree.
+> 
+> commit 692c9b8c5ee8d263bb8348171f0bebd3d84eb2c1
+> Author: Tang Chen <tangchen@cn.fujitsu.com>
+> Date:   Mon Mar 10 16:15:33 2014 +0800
+> 
+>     aio, memory-hotplug: Fix confliction when migrating and accessing ring pages.
+> 
+> commit e0f5e0add36d2e3c456cf2f4283673ed834b3c24
+> Author: Tang Chen <tangchen@cn.fujitsu.com>
+> Date:   Mon Mar 10 16:15:34 2014 +0800
+> 
+>     aio, mem-hotplug: Add memory barrier to aio ring page migration.
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/fs/aio.c?id=692c9b8c5ee8d263bb8348171f0bebd3d84eb2c1
+> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/fs/aio.c?id=e0f5e0add36d2e3c456cf2f4283673ed834b3c24
+> 
+> https://lkml.org/lkml/2014/3/10/56
+> https://lkml.org/lkml/2014/3/10/58
 
-> -----Original Message-----
-> From: Thierry Reding [mailto:thierry.reding@gmail.com]
-> Sent: Tuesday, May 13, 2014 5:45 PM
-> To: gioh.kim
-> Cc: Sumit Semwal; Randy Dunlap; linux-media@vger.kernel.org; dri-devel@lists.freedesktop.org; linux-
-> doc@vger.kernel.org; linux-kernel@vger.kernel.org; gunho.lee@lge.com
-> Subject: Re: [PATCH] Documentation/dma-buf-sharing.txt: update API descriptions
-> 
-> On Mon, May 12, 2014 at 08:48:12PM +0900, gioh.kim wrote:
-> > From: "gioh.kim" <gioh.kim@lge.com>
-> 
-> It might be good to fix your setup to make this be the same as the name
-> and email used in the Signed-off-by line below.
-> 
-> > update some descriptions for API arguments and descriptions.
-> 
-> Nit: "Update" since it's the beginning of a sentence.
-> 
-> > Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-> > ---
-> >  Documentation/dma-buf-sharing.txt |   10 ++++++----
-> >  1 file changed, 6 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
-> > index 505e711..1ea89b8 100644
-> > --- a/Documentation/dma-buf-sharing.txt
-> > +++ b/Documentation/dma-buf-sharing.txt
-> > @@ -56,7 +56,7 @@ The dma_buf buffer sharing API usage contains the following steps:
-> >  				     size_t size, int flags,
-> >  				     const char *exp_name)
-> >
-> > -   If this succeeds, dma_buf_export allocates a dma_buf structure, and returns a
-> > +   If this succeeds, dma_buf_export_named allocates a dma_buf structure, and returns a
-> 
-> Perhaps reformat this so that the lines don't exceed 80 characters?
-> 
-> >     pointer to the same. It also associates an anonymous file with this buffer,
-> >     so it can be exported. On failure to allocate the dma_buf object, it returns
-> >     NULL.
-> > @@ -66,7 +66,7 @@ The dma_buf buffer sharing API usage contains the following steps:
-> >
-> >     Exporting modules which do not wish to provide any specific name may use the
-> >     helper define 'dma_buf_export()', with the same arguments as above, but
-> > -   without the last argument; a __FILE__ pre-processor directive will be
-> > +   without the last argument; a KBUILD_MODNAME pre-processor directive will be
-> >     inserted in place of 'exp_name' instead.
-> 
-> This was already fixed in commit 2e33def0339c (dma-buf: update exp_name
-> when using dma_buf_export()). Perhaps you should rebase this patch on
-> top of the latest linux-next.
-> 
-> Otherwise looks good.
-> 
-> Thierry
+I don't see these in Linus's tree, what happened?
 
+thanks,
+
+greg k-h
