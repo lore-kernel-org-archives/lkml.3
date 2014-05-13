@@ -1,208 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758504AbaEMBM4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 21:12:56 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52640 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752088AbaEMBLy (ORCPT
+	id S1758637AbaEMBNu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 21:13:50 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53687 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374AbaEMBNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 21:11:54 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [RFC][PATCH 2/3] PM / sleep: Mechanism to avoid resuming runtime-suspended devices unnecessarily
-Date: Tue, 13 May 2014 03:10:19 +0200
-Message-ID: <1752814.FckPkBGaUc@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <4649019.is79p6EySp@vostro.rjw.lan>
-References: <4649019.is79p6EySp@vostro.rjw.lan>
+	Mon, 12 May 2014 21:13:49 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 13 May 2014 10:15:55 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v2 2/2] mm/compaction: avoid rescanning pageblocks in
+ isolate_freepages
+Message-ID: <20140513011555.GC23803@js1304-P5Q-DELUXE>
+References: <alpine.DEB.2.02.1405061922220.18635@chino.kir.corp.google.com>
+ <1399464550-26447-1-git-send-email-vbabka@suse.cz>
+ <1399464550-26447-2-git-send-email-vbabka@suse.cz>
+ <20140508052845.GB9161@js1304-P5Q-DELUXE>
+ <53708FC5.4000100@suse.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53708FC5.4000100@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Mon, May 12, 2014 at 11:09:25AM +0200, Vlastimil Babka wrote:
+> On 05/08/2014 07:28 AM, Joonsoo Kim wrote:
+> >On Wed, May 07, 2014 at 02:09:10PM +0200, Vlastimil Babka wrote:
+> >>The compaction free scanner in isolate_freepages() currently remembers PFN of
+> >>the highest pageblock where it successfully isolates, to be used as the
+> >>starting pageblock for the next invocation. The rationale behind this is that
+> >>page migration might return free pages to the allocator when migration fails
+> >>and we don't want to skip them if the compaction continues.
+> >>
+> >>Since migration now returns free pages back to compaction code where they can
+> >>be reused, this is no longer a concern. This patch changes isolate_freepages()
+> >>so that the PFN for restarting is updated with each pageblock where isolation
+> >>is attempted. Using stress-highalloc from mmtests, this resulted in 10%
+> >>reduction of the pages scanned by the free scanner.
+> >
+> >Hello,
+> >
+> >Although this patch could reduce page scanned, it is possible to skip
+> >scanning fresh pageblock. If there is zone lock contention and we are on
+> >asyn compaction, we stop scanning this pageblock immediately. And
+> >then, we will continue to scan next pageblock. With this patch,
+> >next_free_pfn is updated in this case, so we never come back again to this
+> >pageblock. Possibly this makes compaction success rate low, doesn't
+> >it?
+> 
+> Hm, you're right and thanks for catching that, but I think this is a
+> sign of a worse and older issue than skipping a pageblock?
+> When isolate_freepages_block() breaks loop due to lock contention,
+> then isolate_freepages() (which called it) should also immediately
+> quit its loop. Trying another pageblock in the same zone with the
+> same zone->lock makes no sense here? If this is fixed, then the
+> issue you're pointing out will also be fixed as next_free_pfn will
+> still point to the pageblock where the break occured.
+> 
 
-Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
-resume all runtime-suspended devices during system suspend, mostly
-because those devices may need to be reprogrammed due to different
-wakeup settings for system sleep and for runtime PM.
+Yes. It can be fixed by your approach. :)
 
-For some devices, though, it's OK to remain in runtime suspend 
-throughout a complete system suspend/resume cycle (if the device was in
-runtime suspend at the start of the cycle).  We would like to do this
-whenever possible, to avoid the overhead of extra power-up and power-down
-events.
-
-However, problems may arise because the device's descendants may require
-it to be at full power at various points during the cycle.  Therefore the
-most straightforward way to do this safely is if the device and all its
-descendants can remain runtime suspended until the complete stage of
-system resume.
-
-To this end, introduce a new device PM flag, power.direct_complete
-and modify the PM core to use that flag as follows.
-
-If the ->prepare() callback of a device returns a positive number,
-the PM core will regard that as an indication that it may leave the
-device runtime-suspended.  It will then check if the system power
-transition in progress is a suspend (and not hibernation in particular)
-and if the device is, indeed, runtime-suspended.  In that case, the PM
-core will set the device's power.direct_complete flag.  Otherwise it
-will clear power.direct_complete for the device and it also will later
-clear it for the device's parent (if there's one).
-
-Next, the PM core will not invoke the ->suspend() ->suspend_late(),
-->suspend_irq(), ->resume_irq(), ->resume_early(), or ->resume()
-callbacks for all devices having power.direct_complete set.  It
-will invoke their ->complete() callbacks, however, and those
-callbacks are then responsible for resuming the devices as
-appropriate, if necessary.
-
-Changelog partly based on an Alan Stern's description of the idea
-(http://marc.info/?l=linux-pm&m=139940466625569&w=2).
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/base/power/main.c |   45 ++++++++++++++++++++++++++++-----------------
- include/linux/pm.h        |    1 +
- 2 files changed, 29 insertions(+), 17 deletions(-)
-
-Index: linux-pm/include/linux/pm.h
-===================================================================
---- linux-pm.orig/include/linux/pm.h
-+++ linux-pm/include/linux/pm.h
-@@ -546,6 +546,7 @@ struct dev_pm_info {
- 	bool			is_late_suspended:1;
- 	bool			ignore_children:1;
- 	bool			early_init:1;	/* Owned by the PM core */
-+	bool			direct_complete:1;	/* Owned by the PM core */
- 	spinlock_t		lock;
- #ifdef CONFIG_PM_SLEEP
- 	struct list_head	entry;
-Index: linux-pm/drivers/base/power/main.c
-===================================================================
---- linux-pm.orig/drivers/base/power/main.c
-+++ linux-pm/drivers/base/power/main.c
-@@ -479,7 +479,7 @@ static int device_resume_noirq(struct de
- 	TRACE_DEVICE(dev);
- 	TRACE_RESUME(0);
- 
--	if (dev->power.syscore)
-+	if (dev->power.syscore || dev->power.direct_complete)
- 		goto Out;
- 
- 	if (!dev->power.is_noirq_suspended)
-@@ -605,7 +605,7 @@ static int device_resume_early(struct de
- 	TRACE_DEVICE(dev);
- 	TRACE_RESUME(0);
- 
--	if (dev->power.syscore)
-+	if (dev->power.syscore || dev->power.direct_complete)
- 		goto Out;
- 
- 	if (!dev->power.is_late_suspended)
-@@ -732,7 +732,7 @@ static int device_resume(struct device *
- 	TRACE_DEVICE(dev);
- 	TRACE_RESUME(0);
- 
--	if (dev->power.syscore)
-+	if (dev->power.syscore || dev->power.direct_complete)
- 		goto Complete;
- 
- 	dpm_wait(dev->parent, async);
-@@ -1007,7 +1007,7 @@ static int __device_suspend_noirq(struct
- 		goto Complete;
- 	}
- 
--	if (dev->power.syscore)
-+	if (dev->power.syscore || dev->power.direct_complete)
- 		goto Complete;
- 
- 	dpm_wait_for_children(dev, async);
-@@ -1146,7 +1146,7 @@ static int __device_suspend_late(struct
- 		goto Complete;
- 	}
- 
--	if (dev->power.syscore)
-+	if (dev->power.syscore || dev->power.direct_complete)
- 		goto Complete;
- 
- 	dpm_wait_for_children(dev, async);
-@@ -1312,7 +1312,7 @@ static int __device_suspend(struct devic
- 
- 	dpm_wait_for_children(dev, async);
- 
--	if (async_error || dev->power.syscore)
-+	if (async_error || dev->power.syscore || dev->power.direct_complete)
- 		goto Complete;
- 
- 	dpm_watchdog_set(&wd, dev);
-@@ -1365,10 +1365,19 @@ static int __device_suspend(struct devic
- 
-  End:
- 	if (!error) {
-+		struct device *parent = dev->parent;
-+
- 		dev->power.is_suspended = true;
--		if (dev->power.wakeup_path
--		    && dev->parent && !dev->parent->power.ignore_children)
--			dev->parent->power.wakeup_path = true;
-+		if (parent) {
-+			spin_lock_irq(&parent->power.lock);
-+
-+			dev->parent->power.direct_complete = false;
-+			if (dev->power.wakeup_path
-+			    && !dev->parent->power.ignore_children)
-+				dev->parent->power.wakeup_path = true;
-+
-+			spin_unlock_irq(&parent->power.lock);
-+		}
- 	}
- 
- 	device_unlock(dev);
-@@ -1470,7 +1479,7 @@ static int device_prepare(struct device
- {
- 	int (*callback)(struct device *) = NULL;
- 	char *info = NULL;
--	int error = 0;
-+	int ret = 0;
- 
- 	if (dev->power.syscore)
- 		return 0;
-@@ -1518,17 +1527,19 @@ static int device_prepare(struct device
- 		callback = dev->driver->pm->prepare;
- 	}
- 
--	if (callback) {
--		error = callback(dev);
--		suspend_report_result(callback, error);
--	}
-+	if (callback)
-+		ret = callback(dev);
- 
- 	device_unlock(dev);
- 
--	if (error)
-+	if (ret < 0) {
-+		suspend_report_result(callback, ret);
- 		pm_runtime_put(dev);
--
--	return error;
-+		return ret;
-+	}
-+	dev->power.direct_complete = ret > 0 && state.event == PM_EVENT_SUSPEND
-+					&& pm_runtime_suspended(dev);
-+	return 0;
- }
- 
- /**
-
+Thanks.
