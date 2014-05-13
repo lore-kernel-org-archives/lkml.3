@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932813AbaEMJor (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:44:47 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60873 "EHLO
+	id S932701AbaEMJoq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:44:46 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60875 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760098AbaEMJ24 (ORCPT
+	by vger.kernel.org with ESMTP id S1760097AbaEMJ24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 May 2014 05:28:56 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
+Cc: linux-kernel@vger.kernel.org, David Cohen <david.a.cohen@linux.intel.com>,
         Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 083/182] xhci: Prevent runtime pm from autosuspending during initialization
-Date: Tue, 13 May 2014 11:27:15 +0200
-Message-Id: <5b105ec53cbf68159c8f0f89821fffead3412537.1399973152.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 085/182] usb/xhci: fix compilation warning when !CONFIG_PCI && !CONFIG_PM
+Date: Tue, 13 May 2014 11:27:17 +0200
+Message-Id: <1ddcda84a8d014f37a14bd0170f5720238c1fb0f.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -28,75 +27,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: David Cohen <david.a.cohen@linux.intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit bcffae7708eb8352f44dc510b326541fe43a02a4 upstream.
+commit 01bb59ebffdec314da8da66266edf29529372f9b upstream.
 
-xHCI driver has its own pci probe function that will call usb_hcd_pci_probe
-to register its usb-2 bus, and then continue to manually register the
-usb-3 bus. usb_hcd_pci_probe does a pm_runtime_put_noidle at the end and
-might thus trigger a runtime suspend before the usb-3 bus is ready.
+When CONFIG_PCI and CONFIG_PM are not selected, xhci.c gets this
+warning:
+drivers/usb/host/xhci.c:409:13: warning: ‘xhci_msix_sync_irqs’ defined
+but not used [-Wunused-function]
 
-Prevent the runtime suspend by increasing the usage count in the
-beginning of xhci_pci_probe, and decrease it once the usb-3 bus is
-ready.
+Instead of creating nested #ifdefs, this patch fixes it by defining the
+xHCI PCI stubs as inline.
 
-xhci-platform driver is not using usb_hcd_pci_probe to set up
-busses and should not need to have it's usage count increased during probe.
+This warning has been in since 3.2 kernel and was
+caused by commit 421aa841a134f6a743111cf44d0c6d3b45e3cf8c
+"usb/xhci: hide MSI code behind PCI bars", but wasn't noticed
+until 3.13 when a configuration with these options was tried
 
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
 Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Acked-by: Dan Williams <dan.j.williams@intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/host/xhci-pci.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index 1af67a214d33..d06922469000 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -190,6 +190,10 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	struct usb_hcd *hcd;
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index f178f762b543..f07f32b5a526 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -400,16 +400,16 @@ static int xhci_try_enable_msi(struct usb_hcd *hcd)
  
- 	driver = (struct hc_driver *)id->driver_data;
-+
-+	/* Prevent runtime suspending between USB-2 and USB-3 initialization */
-+	pm_runtime_get_noresume(&dev->dev);
-+
- 	/* Register the USB 2.0 roothub.
- 	 * FIXME: USB core must know to register the USB 2.0 roothub first.
- 	 * This is sort of silly, because we could just set the HCD driver flags
-@@ -199,7 +203,7 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	retval = usb_hcd_pci_probe(dev, id);
+ #else
  
- 	if (retval)
--		return retval;
-+		goto put_runtime_pm;
- 
- 	/* USB 2.0 roothub is stored in the PCI device now. */
- 	hcd = dev_get_drvdata(&dev->dev);
-@@ -228,12 +232,17 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	if (xhci->quirks & XHCI_LPM_SUPPORT)
- 		hcd_to_bus(xhci->shared_hcd)->root_hub->lpm_capable = 1;
- 
-+	/* USB-2 and USB-3 roothubs initialized, allow runtime pm suspend */
-+	pm_runtime_put_noidle(&dev->dev);
-+
+-static int xhci_try_enable_msi(struct usb_hcd *hcd)
++static inline int xhci_try_enable_msi(struct usb_hcd *hcd)
+ {
  	return 0;
+ }
  
- put_usb3_hcd:
- 	usb_put_hcd(xhci->shared_hcd);
- dealloc_usb2_hcd:
- 	usb_hcd_pci_remove(dev);
-+put_runtime_pm:
-+	pm_runtime_put_noidle(&dev->dev);
- 	return retval;
+-static void xhci_cleanup_msix(struct xhci_hcd *xhci)
++static inline void xhci_cleanup_msix(struct xhci_hcd *xhci)
+ {
+ }
+ 
+-static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
++static inline void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
+ {
  }
  
 -- 
