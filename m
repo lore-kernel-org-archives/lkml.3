@@ -1,137 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959AbaEMTuJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 15:50:09 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:52666 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145AbaEMTuC (ORCPT
+	id S1754651AbaEMTw4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 15:52:56 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38154 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563AbaEMTwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 15:50:02 -0400
-Date: Tue, 13 May 2014 15:49:58 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH cgroup/for-3.16] cgroup: clean up MAINTAINERS entries
-Message-ID: <20140513194958.GD28815@htj.dyndns.org>
+	Tue, 13 May 2014 15:52:49 -0400
+Date: Tue, 13 May 2014 14:52:16 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 4/8] usb: phy: fix isp1301-omap dependency on tps65010
+Message-ID: <20140513195215.GB1151@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1399557141-1346645-1-git-send-email-arnd@arndb.de>
+ <1399557141-1346645-5-git-send-email-arnd@arndb.de>
+ <20140513152631.GI1151@saruman.home>
+ <7581425.j2FgrCi2P6@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mZSo2Zk6iB5ZAp9g"
 Content-Disposition: inline
+In-Reply-To: <7581425.j2FgrCi2P6@wuerfel>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are currently three cgroup related entries in MAINTAINERS.  Make
-the following updates.
+--mZSo2Zk6iB5ZAp9g
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-* Make the names - both cgroup and cpuset - singular.  We're mixing
-  singular and plural all over the place for no good reason.
+Hi,
 
-* Drop containers@lists.linux-foundation.org from CGROUP.  That list
-  doesn't have much to do with cgroup per-se.
+On Tue, May 13, 2014 at 09:48:27PM +0200, Arnd Bergmann wrote:
+> On Tuesday 13 May 2014 10:26:31 Felipe Balbi wrote:
+> > On Thu, May 08, 2014 at 03:52:17PM +0200, Arnd Bergmann wrote:
+> > > The isp1301-omap driver cannot be built-in if the tps65010 driver
+> > > is a module, otherwise we get a link error from the reference to
+> > > the tps65010_set_vbus_draw function.
+> > >=20
+> > > There is already a hack in the driver to work around the problem
+> > > of tps65010 being not available at all. This patch extends that
+> > > hack to ensure that the real tps65010_set_vbus_draw() function
+> > > is only called when it's avaiable.
+> > >=20
+> > > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > > Cc: linux-omap@vger.kernel.org
+> > > ---
+> > >  drivers/usb/phy/phy-isp1301-omap.c | 2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > >=20
+> > > diff --git a/drivers/usb/phy/phy-isp1301-omap.c b/drivers/usb/phy/phy=
+-isp1301-omap.c
+> > > index 6e146d7..35a0dd2 100644
+> > > --- a/drivers/usb/phy/phy-isp1301-omap.c
+> > > +++ b/drivers/usb/phy/phy-isp1301-omap.c
+> > > @@ -94,7 +94,7 @@ struct isp1301 {
+> > > =20
+> > >  #if defined(CONFIG_MACH_OMAP_H2) || defined(CONFIG_MACH_OMAP_H3)
+> > > =20
+> > > -#if  defined(CONFIG_TPS65010) || defined(CONFIG_TPS65010_MODULE)
+> > > +#if  defined(CONFIG_TPS65010) || (defined(CONFIG_TPS65010_MODULE) &&=
+ defined(MODULE))
+> >=20
+> > nack, I would rather see a real fix, possibly also fixing the original
+> > hack.
+>=20
+> Any suggestion how?
 
-* Add Documentation field to CGROUP.
+well, that driver shouldn't depend on a particular PMIC. It should use
+regulator framework to enable and disable vbus regulator, to start with.
 
-* Drop mm/*cgroup* from CGROUP.  memcg has separate maintainers.
+In fact, isp1301-omap.c shouldn't even exist. isp1301 is a generic
+device and not OMAP-specific.
 
-* Prefix the controller-specific ones with "CONTROL CGROUP -" and
-  collect cgroup related entries under the core one.
+cheers
 
-* Add (MEMCG) abbreviation to MEMCG entry.
+--=20
+balbi
 
-* Drop Balbir Singh and KAMEZAWA Hiroyuki from memcg maintainers.  It
-  has been quite a while since both actually worked on memcg.
+--mZSo2Zk6iB5ZAp9g
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
-Hello,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Summer house cleaning.  If there's any objection, please let me know.
+iQIcBAEBAgAGBQJTcnfvAAoJEIaOsuA1yqREq7YQAK+4606C+29sc+6U4Tf/at5v
+lIlWb3UmLi673HUzhtCR6Zku0eTE/GeYE6E7aWY29l6Q+kB0KAgTmxnKGLxqRIUe
+Jw7+mU8HvolTCWWrbSyMxOkdzpwl6wQEr4t7p5enl/VBMdMvsENjmzRUUgHVjewb
+pP0heIAG3i9ASvVHW6dzTWXWlMSNqKAjVK27bGVbvbOMshmoX87FaI9RyU9SJ0Ss
+zA6ux/YuWF/FwTuKYpK1UUs/gqLDgg0P91/WXCuTOg0xeLNQ1Mb89XqdMI/IjChf
+85C3Gg+jFatWqHtw4tfZawA5c3+GOVEdZNEjqgO7l74eTx5FKv1Nz3ubwOywlt0f
+PbCY8LPJ83GLI0twTEqQwC04r18iAGFtjLqz6cHJJ1bgYXVo3Pg+ouU6hHTR7h/d
+cEdifgALvzL+Gbe9rOVogjQ4OkrPjwkkU9IoXQw4WGo6shaOB9i73VDTIfnk8kog
+axmsUTUUIUkPmE0MyA8uT4SLbDyYwcr8hyGqdcq0l+AK0IZaAXdFTVlIu+IqhMTI
+bpyUzBY6Teaw140WN9AC3lECm9+bNDPeYyuQXfYFp88EkRorMtUyFg4QHKwnJCTz
+skQQoFIvnO2mQBEB/HF/h0NsanzGrKLw9HFHze7CbChbJXbUEmRxL0mRJFwUuHmy
+JzT0duO2Uopv37YP2xfH
+=qLJg
+-----END PGP SIGNATURE-----
 
-Thanks.
-
- MAINTAINERS |   47 ++++++++++++++++++++++-------------------------
- 1 file changed, 22 insertions(+), 25 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index e67ea24..7202bec 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2382,16 +2382,35 @@ L:	netdev@vger.kernel.org
- S:	Maintained
- F:	drivers/connector/
- 
--CONTROL GROUPS (CGROUPS)
-+CONTROL GROUP (CGROUP)
- M:	Tejun Heo <tj@kernel.org>
- M:	Li Zefan <lizefan@huawei.com>
--L:	containers@lists.linux-foundation.org
- L:	cgroups@vger.kernel.org
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git
- S:	Maintained
-+F:	Documentation/cgroups/
- F:	include/linux/cgroup*
- F:	kernel/cgroup*
--F:	mm/*cgroup*
-+
-+CONTROL GROUP - CPUSET
-+M:	Li Zefan <lizefan@huawei.com>
-+L:	cgroups@vger.kernel.org
-+W:	http://www.bullopensource.org/cpuset/
-+W:	http://oss.sgi.com/projects/cpusets/
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git
-+S:	Maintained
-+F:	Documentation/cgroups/cpusets.txt
-+F:	include/linux/cpuset.h
-+F:	kernel/cpuset.c
-+
-+CONTROL GROUP - MEMORY RESOURCE CONTROLLER (MEMCG)
-+M:	Johannes Weiner <hannes@cmpxchg.org>
-+M:	Michal Hocko <mhocko@suse.cz>
-+L:	cgroups@vger.kernel.org
-+L:	linux-mm@kvack.org
-+S:	Maintained
-+F:	mm/memcontrol.c
-+F:	mm/page_cgroup.c
- 
- CORETEMP HARDWARE MONITORING DRIVER
- M:	Fenghua Yu <fenghua.yu@intel.com>
-@@ -2464,17 +2483,6 @@ M:	Thomas Renninger <trenn@suse.de>
- S:	Maintained
- F:	tools/power/cpupower/
- 
--CPUSETS
--M:	Li Zefan <lizefan@huawei.com>
--L:	cgroups@vger.kernel.org
--W:	http://www.bullopensource.org/cpuset/
--W:	http://oss.sgi.com/projects/cpusets/
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git
--S:	Maintained
--F:	Documentation/cgroups/cpusets.txt
--F:	include/linux/cpuset.h
--F:	kernel/cpuset.c
--
- CRAMFS FILESYSTEM
- W:	http://sourceforge.net/projects/cramfs/
- S:	Orphan / Obsolete
-@@ -5731,17 +5739,6 @@ F:	include/linux/memory_hotplug.h
- F:	include/linux/vmalloc.h
- F:	mm/
- 
--MEMORY RESOURCE CONTROLLER
--M:	Johannes Weiner <hannes@cmpxchg.org>
--M:	Michal Hocko <mhocko@suse.cz>
--M:	Balbir Singh <bsingharora@gmail.com>
--M:	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
--L:	cgroups@vger.kernel.org
--L:	linux-mm@kvack.org
--S:	Maintained
--F:	mm/memcontrol.c
--F:	mm/page_cgroup.c
--
- MEMORY TECHNOLOGY DEVICES (MTD)
- M:	David Woodhouse <dwmw2@infradead.org>
- M:	Brian Norris <computersforpeace@gmail.com>
+--mZSo2Zk6iB5ZAp9g--
