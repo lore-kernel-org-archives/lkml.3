@@ -1,223 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050AbaEMSQI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 14:16:08 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:35225 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753657AbaEMSQB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 14:16:01 -0400
-Date: Tue, 13 May 2014 20:15:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: perf,tools: Remove usage of trace_sched_wakeup(.success)
-Message-ID: <20140513181549.GE5226@laptop.programming.kicks-ass.net>
-References: <20140512181946.GG13467@laptop.programming.kicks-ass.net>
- <20140513072208.GB7980@gmail.com>
- <5371BCF8.7030708@cn.fujitsu.com>
- <20140513100333.GW30445@twins.programming.kicks-ass.net>
- <20140513171436.GA8672@gmail.com>
- <20140513173032.GD5226@laptop.programming.kicks-ass.net>
+	id S1754047AbaEMST4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 14:19:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23352 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751810AbaEMSTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 14:19:49 -0400
+Date: Tue, 13 May 2014 20:18:52 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 19/19] mm: filemap: Avoid unnecessary barries and
+	waitqueue lookups in unlock_page fastpath
+Message-ID: <20140513181852.GB12123@redhat.com>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de> <1399974350-11089-20-git-send-email-mgorman@suse.de> <20140513125313.GR23991@suse.de> <20140513141748.GD2485@laptop.programming.kicks-ass.net> <20140513152719.GF18164@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20140513173032.GD5226@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140513152719.GF18164@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/13, Paul E. McKenney wrote:
+>
+> On Tue, May 13, 2014 at 04:17:48PM +0200, Peter Zijlstra wrote:
+> >
+> > diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+> > index 46412bded104..dae5158c2382 100644
+> > --- a/Documentation/memory-barriers.txt
+> > +++ b/Documentation/memory-barriers.txt
+> > @@ -1881,9 +1881,9 @@ The whole sequence above is available in various canned forms, all of which
+> >  	event_indicated = 1;
+> >  	wake_up_process(event_daemon);
+> >
+> > -A write memory barrier is implied by wake_up() and co. if and only if they wake
+> > -something up.  The barrier occurs before the task state is cleared, and so sits
+> > -between the STORE to indicate the event and the STORE to set TASK_RUNNING:
+> > +A full memory barrier is implied by wake_up() and co. The barrier occurs
+>
+> Last I checked, the memory barrier was guaranteed
+
+I have to admit, I am confused. I simply do not understand what "memory
+barrier" actually means in this discussion.
+
+To me, wake_up/ttwu should only guarantee one thing: all the preceding
+STORE's should be serialized with all the subsequent manipulations with
+task->state (even with LOAD(task->state)).
+
+> If there is a sleep-wakeup race, for example,
+> between wait_event_interruptible() and wake_up(), then it looks to me
+> that the following can happen:
+>
+> o	Task A invokes wait_event_interruptible(), waiting for
+> 	X==1.
+>
+> o	Before Task A gets anywhere, Task B sets Y=1, does
+> 	smp_mb(), then sets X=1.
+>
+> o	Task B invokes wake_up(), which invokes __wake_up(), which
+> 	acquires the wait_queue_head_t's lock and invokes
+> 	__wake_up_common(), which sees nothing to wake up.
+>
+> o	Task A tests the condition, finds X==1, and returns without
+> 	locks, memory barriers, atomic instructions, or anything else
+> 	that would guarantee ordering.
+>
+> o	Task A then loads from Y.  Because there have been no memory
+> 	barriers, it might well see Y==0.
+
+Sure, but I can't understand "Because there have been no memory barriers".
+
+IOW. Suppose we add mb() into wake_up(). The same can happen anyway?
+
+And "if a wakeup actually occurred" is not clear to me too in this context.
+For example, suppose that ttwu() clears task->state but that task was not
+deactivated and it is going to check the condition, do we count this as
+"wakeup actually occurred" ? In this case that task still can see Y==0.
 
 
-Anyway, ideally we'd do something like the below, except of course that
-it'll break userspace :-(
+> On the other hand, if a wake_up() really does happen, then
+> the fast-path out of wait_event_interruptible() is not taken,
+> and __wait_event_interruptible() is called instead.  This calls
+> ___wait_event(), which eventually calls prepare_to_wait_event(), which
+> in turn calls set_current_state(), which calls set_mb(), which does a
+> full memory barrier.
 
-And that is why I loathe tracepoints.
+Can't understand this part too... OK, and suppose that right after that
+the task B from the scenario above does
 
-Also, I've not looked at the code difference and or performance
-implications.
+	Y = 1;
+	mb();
+	X = 1;
+	wake_up();
 
----
-Subject: sched: Add enqueue information to trace_sched_wakeup()
+After that task A checks the condition, sees X==1, and returns from
+wait_event() without spin_lock(wait_queue_head_t->lock) (if it also
+sees list_empty_careful() == T). Then it can see Y==0 again?
 
-trace_sched_switch() shows task dequeues, trace_sched_wakeup() shows all
-wakeups, including those that do not enqueue (because the task is
-still enqueued).
+> 	A read and a write memory barrier (-not- a full memory barrier)
+> 	are implied by wake_up() and co. if and only if they wake
+> 	something up.
 
-In order to easy matching dequeue to enqueue, add enqueue information to
-trace_sched_wakeup().
+Now this looks as if you document that, say,
 
-Replace the trace_sched_wakeup() success argument which is the
-try_to_wake_up() return value and always true (since we removed
-tracing the false path).
+	X = 1;
+	wake_up();
+	Y = 1;
 
-Not-signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- include/trace/events/sched.h | 16 ++++++++--------
- kernel/sched/core.c          | 42 ++++++++++++++++++++++--------------------
- kernel/sched/sched.h         |  3 ++-
- 3 files changed, 32 insertions(+), 29 deletions(-)
+doesn't need wmb() before "Y = 1" if wake_up() wakes something up. Do we
+really want to document this? Is it fine to rely on this guarantee?
 
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 67e1bbf83695..5e5037f794f2 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -55,15 +55,15 @@ TRACE_EVENT(sched_kthread_stop_ret,
-  */
- DECLARE_EVENT_CLASS(sched_wakeup_template,
- 
--	TP_PROTO(struct task_struct *p, int success),
-+	TP_PROTO(struct task_struct *p, int enqueue),
- 
--	TP_ARGS(__perf_task(p), success),
-+	TP_ARGS(__perf_task(p), enqueue),
- 
- 	TP_STRUCT__entry(
- 		__array(	char,	comm,	TASK_COMM_LEN	)
- 		__field(	pid_t,	pid			)
- 		__field(	int,	prio			)
--		__field(	int,	success			)
-+		__field(	int,	enqueue			)
- 		__field(	int,	target_cpu		)
- 	),
- 
-@@ -71,24 +71,24 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
- 		memcpy(__entry->comm, p->comm, TASK_COMM_LEN);
- 		__entry->pid		= p->pid;
- 		__entry->prio		= p->prio;
--		__entry->success	= success;
-+		__entry->enqueue	= enqueue;
- 		__entry->target_cpu	= task_cpu(p);
- 	),
- 
--	TP_printk("comm=%s pid=%d prio=%d success=%d target_cpu=%03d",
-+	TP_printk("comm=%s pid=%d prio=%d enqueue=%d target_cpu=%03d",
- 		  __entry->comm, __entry->pid, __entry->prio,
--		  __entry->success, __entry->target_cpu)
-+		  __entry->enqueue, __entry->target_cpu)
- );
- 
- DEFINE_EVENT(sched_wakeup_template, sched_wakeup,
--	     TP_PROTO(struct task_struct *p, int success),
-+	     TP_PROTO(struct task_struct *p, int enqueue),
- 	     TP_ARGS(p, success));
- 
- /*
-  * Tracepoint for waking up a new task:
-  */
- DEFINE_EVENT(sched_wakeup_template, sched_wakeup_new,
--	     TP_PROTO(struct task_struct *p, int success),
-+	     TP_PROTO(struct task_struct *p, int enqueue),
- 	     TP_ARGS(p, success));
- 
- #ifdef CREATE_TRACE_POINTS
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 4ea7b3f1a087..e29b87748680 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1461,10 +1461,22 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
-  * Mark the task runnable and perform wakeup-preemption.
-  */
- static void
--ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
-+ttwu_do_wakeup(struct rq *rq, struct task_struct *p,
-+	       int wake_flags, en_flags)
- {
-+	bool enqueue = wake_flags & WF_ENQUEUE;
-+
-+	if (enqueue) {
-+#ifdef CONFIG_SMP
-+		if (p->sched_contributes_to_load)
-+			rq->nr_uninterruptible--;
-+#endif
-+
-+		ttwu_activate(rq, p, en_flags);
-+	}
-+
- 	check_preempt_curr(rq, p, wake_flags);
--	trace_sched_wakeup(p, true);
-+	trace_sched_wakeup(p, enqueue);
- 
- 	p->state = TASK_RUNNING;
- #ifdef CONFIG_SMP
-@@ -1485,18 +1497,6 @@ ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
- #endif
- }
- 
--static void
--ttwu_do_activate(struct rq *rq, struct task_struct *p, int wake_flags)
--{
--#ifdef CONFIG_SMP
--	if (p->sched_contributes_to_load)
--		rq->nr_uninterruptible--;
--#endif
--
--	ttwu_activate(rq, p, ENQUEUE_WAKEUP | ENQUEUE_WAKING);
--	ttwu_do_wakeup(rq, p, wake_flags);
--}
--
- /*
-  * Called in case the task @p isn't fully descheduled from its runqueue,
-  * in this case we must do a remote wakeup. Its a 'light' wakeup though,
-@@ -1512,7 +1512,7 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
- 	if (p->on_rq) {
- 		/* check_preempt_curr() may use rq clock */
- 		update_rq_clock(rq);
--		ttwu_do_wakeup(rq, p, wake_flags);
-+		ttwu_do_wakeup(rq, p, wake_flags, 0);
- 		ret = 1;
- 	}
- 	__task_rq_unlock(rq);
-@@ -1532,7 +1532,8 @@ static void sched_ttwu_pending(void)
- 	while (llist) {
- 		p = llist_entry(llist, struct task_struct, wake_entry);
- 		llist = llist_next(llist);
--		ttwu_do_activate(rq, p, 0);
-+		ttwu_do_wakeup(rq, p, WF_ENQUEUE, 
-+			       ENQUEUE_WAKEUP | ENQUEUE_WAKING);
- 	}
- 
- 	raw_spin_unlock(&rq->lock);
-@@ -1604,7 +1605,7 @@ static void ttwu_queue(struct task_struct *p, int cpu)
- #endif
- 
- 	raw_spin_lock(&rq->lock);
--	ttwu_do_activate(rq, p, 0);
-+	ttwu_do_wakeup(rq, p, WF_ENQUEUE, ENQUEUE_WAKEUP | ENQUEUE_WAKING);
- 	raw_spin_unlock(&rq->lock);
- }
- 
-@@ -1707,10 +1708,11 @@ static void try_to_wake_up_local(struct task_struct *p)
- 	if (!(p->state & TASK_NORMAL))
- 		goto out;
- 
--	if (!p->on_rq)
--		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
-+	if (p->on_rq)
-+		ttwu_do_wakeup(rq, p, 0, 0);
-+	else
-+		ttwu_do_wakeup(rq, p, WF_ENQUEUE, ENQUEUE_WAKEUP);
- 
--	ttwu_do_wakeup(rq, p, 0);
- 	ttwu_stat(p, smp_processor_id(), 0);
- out:
- 	raw_spin_unlock(&p->pi_lock);
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index b2cbe81308af..d865415ea1d2 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1026,7 +1026,8 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
-  */
- #define WF_SYNC		0x01		/* waker goes to sleep after wakeup */
- #define WF_FORK		0x02		/* child wakeup after fork */
--#define WF_MIGRATED	0x4		/* internal use, task got migrated */
-+#define WF_MIGRATED	0x04		/* internal use, task got migrated */
-+#define WF_ENQUEUE	0x08
- 
- /*
-  * To aid in avoiding the subversion of "niceness" due to uneven distribution
+> The write barrier occurs before the task state is
+> 	cleared, and so sits between the STORE to indicate the event and
+> 	the STORE to set TASK_RUNNING, and the read barrier after that:
+
+Plus: between the STORE to indicate the event and the LOAD which checks
+task->state, otherwise:
+
+> 	CPU 1				CPU 2
+> 	===============================	===============================
+> 	set_current_state();		STORE event_indicated
+> 	  set_mb();			wake_up();
+> 	    STORE current->state	  <write barrier>
+> 	    <general barrier>		  STORE current->state
+> 	LOAD event_indicated		  <read barrier>
+
+this code is still racy.
+
+In short: I am totally confused and most probably misunderstood you ;)
+
+Oleg.
+
