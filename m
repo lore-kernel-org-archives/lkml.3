@@ -1,120 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430AbaEMGGn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 02:06:43 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:36830 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754515AbaEMGGm (ORCPT
+	id S1757302AbaEMGHJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 02:07:09 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:35942 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752099AbaEMGHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 02:06:42 -0400
+	Tue, 13 May 2014 02:07:06 -0400
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <1399944913.2648.56.camel@buesod1.americas.hpqcorp.net>
-References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
- <CAKgNAkjuU68hgyMOVGBVoBTOhhGdBytQh6H0ExiLoXfujKyP_w@mail.gmail.com>
- <1399406800.13799.20.camel@buesod1.americas.hpqcorp.net> <CAKgNAkjOKP7P9veOpnokNkVXSszVZt5asFsNp7rm7AXJdjcLLA@mail.gmail.com>
- <1399414081.30629.2.camel@buesod1.americas.hpqcorp.net> <5369C43D.1000206@gmail.com>
- <1399486965.4567.9.camel@buesod1.americas.hpqcorp.net> <1399490251.4567.24.camel@buesod1.americas.hpqcorp.net>
- <CAKgNAkgZ+7=EB4jkCdvq5EK1ce03rq9j+rEss9N1XnUQytBcGg@mail.gmail.com>
- <1399841186.8629.6.camel@buesod1.americas.hpqcorp.net> <CAKgNAkhKubCUiTK36vT98vPbrfLd=xBBxeyPfUfzsqS-uHWAbA@mail.gmail.com>
- <1399944913.2648.56.camel@buesod1.americas.hpqcorp.net>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Tue, 13 May 2014 08:06:21 +0200
-Message-ID: <CAKgNAkjVt=D09Szki0BmMFzr=L_Q-u5qL-w241wkXaT22puPsA@mail.gmail.com>
-Subject: Re: [PATCH v2] ipc,shm: document new limits in the uapi header
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, aswin@hp.com,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
+In-Reply-To: <5370C689.2090402@ti.com>
+References: <1399643877-14528-1-git-send-email-gautam.vivek@samsung.com>
+	<5370C689.2090402@ti.com>
+Date: Tue, 13 May 2014 11:37:04 +0530
+X-Google-Sender-Auth: UOy5Wxcg2gy-tDKxwAyFTxurwOo
+Message-ID: <CAFp+6iH-bLd9WUYyK8d8i=UNUm4DHpEYz=Am_qzPyX6gDovyKA@mail.gmail.com>
+Subject: Re: [PATCH v8 1/2] phy: Add new Exynos5 USB 3.0 PHY driver
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Mark Rutland <mark.rutland@arm.com>, "robh+dt" <robh+dt@kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Kamil Debski <k.debski@samsung.com>, Jingoo Han <jg1.han@samsung.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 3:35 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> On Mon, 2014-05-12 at 09:44 +0200, Michael Kerrisk (man-pages) wrote:
-[...]
->> The problem is that part of your text is still broken grammatically In
->> particular, the piece "Both SHMMAX and SHMALL have their default
->> values to the maximum limit" at the very least lacks a word. That's
->> what prompted me to propose the alternative, rather than just say
->> "this is wrong"--and I thought that I might as well make a more
->> thoroughgoing attempt at helping improve the text.
+Hi Kishon,
+
+
+On Mon, May 12, 2014 at 6:33 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> Hi Gautam,
+>
+> On Friday 09 May 2014 07:27 PM, Vivek Gautam wrote:
+>> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
+>> The new driver uses the generic PHY framework and will interact
+>> with DWC3 controller present on Exynos5 series of SoCs.
 >>
->> I agree that text something like this should land in the man page at
->> some point, but as long as we're going to the trouble to improve the
->> comments in the code, let's make them as good and helpful as we can.
+>> Also, created a new header file in linux/mfd/syscon/ for
+>> Exynos5 SoCs and put the required PMU offset definitions
+>> for the basic available PHYs.
+>>
 >
-> Fair enough, and I trust your grammar corrections over mine ;) Thanks
-> for taking a closer look. I've added your text below.
+>
+> I get the following checkpatch warnings
+>
+> WARNING: please write a paragraph that describes the config symbol fully
+> #163: FILE: drivers/phy/Kconfig:163:
+> +config PHY_EXYNOS5_USBDRD
+>
+> WARNING: DT compatible string "samsung,exynos5250-usbdrd-phy" appears
+> un-documented -- check ./Documentation/devicetree/bindings/
+> #708: FILE: drivers/phy/phy-exynos5-usbdrd.c:516:
+> +               .compatible = "samsung,exynos5250-usbdrd-phy",
+>
+> WARNING: DT compatible string "samsung,exynos5420-usbdrd-phy" appears
+> un-documented -- check ./Documentation/devicetree/bindings/
+> #711: FILE: drivers/phy/phy-exynos5-usbdrd.c:519:
+> +               .compatible = "samsung,exynos5420-usbdrd-phy",.
+>
+>
+> I think you just need to separate the Documentation into a separate patch
+> before applying the driver patch.
+>
 
-Thanks.
+I somehow don't see the Documentation warning. Below is the checkpatch
+output which i ran on this v8 patch version.
+  linux-phy$ ./scripts/checkpatch.pl phy.patch
+  WARNING: please write a paragraph that describes the config symbol fully
+  #127: FILE: drivers/phy/Kconfig:163:
+  +config PHY_EXYNOS5_USBDRD
 
-Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
+  total: 0 errors, 1 warnings, 760 lines checked
 
-Cheers,'
+  phy.patch has style problems, please review.
 
-Michael
+  If any of these errors are false positives, please report
+  them to the maintainer, see CHECKPATCH in MAINTAINERS.
 
-> 8<------------------------------------------
-> From: Davidlohr Bueso <davidlohr@hp.com>
-> Subject: [PATCH v3] ipc,shm: document new limits in the uapi header
->
-> This is useful in the future and allows users to
-> better understand the reasoning behind the changes.
->
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> ---
->  include/uapi/linux/shm.h | 15 +++++++++------
->  1 file changed, 9 insertions(+), 6 deletions(-)
->
-> diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
-> index 74e786d..1fbf24e 100644
-> --- a/include/uapi/linux/shm.h
-> +++ b/include/uapi/linux/shm.h
-> @@ -8,17 +8,20 @@
->  #endif
->
->  /*
-> - * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
-> - * be modified by sysctl.
-> + * SHMMNI, SHMMAX and SHMALL are default upper limits which can be
-> + * modified by sysctl. The SHMMAX and SHMALL values have been chosen to
-> + * be as large possible without facilitating scenarios where userspace
-> + * causes overflows when adjusting the limits via operations of the form
-> + * "retrieve current limit; add X; update limit". It is therefore not
-> + * advised to make SHMMAX and SHMALL any larger. These limits are
-> + * suitable for both 32 and 64-bit systems.
->   */
-> -
->  #define SHMMIN 1                        /* min shared seg size (bytes) */
->  #define SHMMNI 4096                     /* max num of segs system wide */
-> -#define SHMMAX (ULONG_MAX - (1L<<24))   /* max shared seg size (bytes) */
-> -#define SHMALL (ULONG_MAX - (1L<<24))   /* max shm system wide (pages) */
-> +#define SHMMAX (ULONG_MAX - (1UL << 24)) /* max shared seg size (bytes) */
-> +#define SHMALL (ULONG_MAX - (1UL << 24)) /* max shm system wide (pages) */
->  #define SHMSEG SHMMNI                   /* max shared segs per process */
->
-> -
->  /* Obsolete, used only for backwards compatibility and libc5 compiles */
->  struct shmid_ds {
->         struct ipc_perm         shm_perm;       /* operation perms */
-> --
-> 1.8.1.4
->
->
->
->
+am i missing something ?
+
+[snip]
 
 
 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
