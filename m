@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760888AbaEMKE0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:04:26 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60808 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760066AbaEMJ24 (ORCPT
+	id S1760915AbaEMKEt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:04:49 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:49516 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760905AbaEMKEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:28:56 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 057/182] nfsd4: session needs room for following op to error out
-Date: Tue, 13 May 2014 11:26:49 +0200
-Message-Id: <94b31998bdc50a127b91ec5e71fb230e5fccfc2d.1399973152.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
-References: <cover.1399973152.git.jslaby@suse.cz>
+	Tue, 13 May 2014 06:04:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org>
+	<1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>
+Date: Tue, 13 May 2014 12:04:45 +0200
+Message-ID: <CAPDyKFodzdETbz3cj3mMT7a-ZJ9=Ants3WBstdEFLYiTOa-TnQ@mail.gmail.com>
+Subject: Re: [PATCH v1 00/11] Add Qualcomm SD Card Controller support.
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: srinivas.kandagatla@linaro.org
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        agross@quicinc.com, linux-arm-msm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+On 29 April 2014 10:18,  <srinivas.kandagatla@linaro.org> wrote:
+> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+>
+> Hi Russell,
+>
+> This patch series adds Qualcomm SD Card Controller support in pl180 mmci
+> driver. QCom SDCC is basically a pl180, but bit more customized, some of the
+> register layouts and offsets are different to the ones mentioned in pl180
+> datasheet. The plan is to totally remove the standalone SDCC driver
+> drivers/mmc/host/msm_sdcc.* and start using generic mmci driver for all
+> Qualcomm parts, as we get chance to test on other Qcom boards.
+>
+> To start using the existing mmci driver, a fake amba id for Qualcomm is added
+> in patches:
+>  ARM: amba: Add Qualcomm vendor ID.
+>  mmc: mmci: Add Qualcomm Id to amba id table.
+>
+> Second change is, adding a 3 clock cycle delay for register writes on QCOM
+> SDCC
+> registers, which is done in patches:
+>   mmc: mmci: Add register read/write wrappers.
+>   mmc: mmci: Qcomm: Add 3 clock cycle delay after each register write
+>
+> Third change was to accommodate DATCTRL and MMCICLK register layout changes in
+> Qcom SDCC. Which is done in patches:
+>   mmc: mmci: Add Qcom datactrl register variant
+>   mmc: mmci: Add Qcom variations to MCICommand register.
+>   mmc: mmci: Qcom fix MCICLK register settings.
+>   mmc: mmci: Add clock support for Qualcomm.
+>
+> Fourth major change was to add qcom specfic pio read function, the need for
+> this is because the way MCIFIFOCNT register behaved in QCOM SDCC is very
+>  different to the one in pl180. This change is done in patch:
+>   mmc: mmci: Add Qcom specific pio_read function.
+>
+> Last some Qcom unrelated changes to support Qcom are done in patches:
+>   mmc: mmci: use NSEC_PER_SEC macro
+>   mmc: mmci: move ST specific register extensions access under condition.
+>
+> This patches are tested  v3.15-rc3 in PIO mode on IFC6410 board with both eMMC
+> and external SD card. I would appreciate any feedback on the patches.
+> I would like to get this for v3.16.
+>
+> Thanks,
+> srini
+>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Hi Srinivas,
 
-===============
+Thanks for working on this patchset, much appreciated! I intend to
+review them as soon as I can.
 
-commit 4c69d5855a16f7378648c5733632628fa10431db upstream.
+For your information, currently there are one patch queued via Chris'
+mmc tree for mmci and recently I have added my quite extensive
+patchset, via mine mmc tree, all to be tested in Linux next.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- fs/nfsd/nfs4proc.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+I suppose the best approach to not hit conflicts would be if you base
+your patches upon my tree. Potentially we could merge them this way,
+unless of course Russell have other opinions.
 
-diff --git a/fs/nfsd/nfs4proc.c b/fs/nfsd/nfs4proc.c
-index 419572f33b72..622ede143585 100644
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -1349,6 +1349,12 @@ nfsd4_proc_compound(struct svc_rqst *rqstp,
- 		/* If op is non-idempotent */
- 		if (opdesc->op_flags & OP_MODIFIES_SOMETHING) {
- 			plen = opdesc->op_rsize_bop(rqstp, op);
-+			/*
-+			 * If there's still another operation, make sure
-+			 * we'll have space to at least encode an error:
-+			 */
-+			if (resp->opcnt < args->opcnt)
-+				plen += COMPOUND_ERR_SLACK_SPACE;
- 			op->status = nfsd4_check_resp_size(resp, plen);
- 		}
- 
--- 
-1.9.3
+git://git.linaro.org/people/ulf.hansson/mmc.git next
 
+Kind regards
+Ulf Hansson
