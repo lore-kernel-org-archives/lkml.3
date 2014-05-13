@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992AbaEMPSv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:18:51 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:55383 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980AbaEMPSh (ORCPT
+	id S1753361AbaEMPTO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:19:14 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:50667 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015AbaEMPTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:18:37 -0400
-Date: Tue, 13 May 2014 11:18:33 -0400
+	Tue, 13 May 2014 11:19:10 -0400
+Date: Tue, 13 May 2014 11:19:07 -0400
 From: Tejun Heo <tj@kernel.org>
 To: Li Zefan <lizefan@huawei.com>
 Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/7] cgroup: update and fix parsing of
- "cgroup.subtree_control"
-Message-ID: <20140513151833.GE23710@htj.dyndns.org>
+Subject: Re: [PATCH 5/7] cgroup: use restart_syscall() for retries after
+ offline waits in cgroup_subtree_control_write()
+Message-ID: <20140513151907.GF23710@htj.dyndns.org>
 References: <1399663975-315-1-git-send-email-tj@kernel.org>
- <1399663975-315-5-git-send-email-tj@kernel.org>
- <537196D7.3020302@huawei.com>
+ <1399663975-315-6-git-send-email-tj@kernel.org>
+ <5371A6DB.2050908@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <537196D7.3020302@huawei.com>
+In-Reply-To: <5371A6DB.2050908@huawei.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 11:51:51AM +0800, Li Zefan wrote:
-> > diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> > index 35daf89..b81e7c0 100644
-> > --- a/kernel/cgroup.c
-> > +++ b/kernel/cgroup.c
-> > @@ -2542,11 +2542,13 @@ static int cgroup_subtree_control_write(struct cgroup_subsys_state *dummy_css,
-> >  	int ssid, ret;
-> >  
-> >  	/*
-> > -	 * Parse input - white space separated list of subsystem names
-> > -	 * prefixed with either + or -.
-> > +	 * Parse input - space separated list of subsystem names prefixed
-> > +	 * with either + or -.
-> >  	 */
-> >  	p = buffer;
-> > -	while ((tok = strsep(&p, " \t\n"))) {
-> > +	while ((tok = strsep(&p, " "))) {
-> > +		if (tok[0] =='\0')
+On Tue, May 13, 2014 at 01:00:11PM +0800, Li Zefan wrote:
+> Hi Tejun,
 > 
-> if (tok[0] == '\0')
+> On 2014/5/10 3:32, Tejun Heo wrote:
+> > After waiting for a child to finish offline,
+> > cgroup_subtree_control_write() jumps up to retry from after the input
+> > parsing and active protection breaking.  This retry makes the
+> > scheduled locking update more difficult.
+> 
+> Could you explain this sentence more specific? I don't understand what
+> "scheduled locking update" means.
 
-Oops, updated.
+Updating it to "planned cgroup_tree_mutex removal".
 
 Thanks.
 
