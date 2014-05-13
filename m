@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760382AbaEMJvj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:51:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49942 "EHLO mx2.suse.de"
+	id S932664AbaEMJqB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:46:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49888 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932873AbaEMJqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:46:05 -0400
+	id S1759665AbaEMJpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 05:45:55 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
@@ -15,9 +15,9 @@ Cc: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
         Linux-MM <linux-mm@kvack.org>,
         Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH 08/19] mm: page_alloc: Take the ALLOC_NO_WATERMARK check out of the fast path
-Date: Tue, 13 May 2014 10:45:39 +0100
-Message-Id: <1399974350-11089-9-git-send-email-mgorman@suse.de>
+Subject: [PATCH 01/19] mm: page_alloc: Do not update zlc unless the zlc is active
+Date: Tue, 13 May 2014 10:45:32 +0100
+Message-Id: <1399974350-11089-2-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1399974350-11089-1-git-send-email-mgorman@suse.de>
 References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
@@ -25,47 +25,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ALLOC_NO_WATERMARK is set in a few cases. Always by kswapd, always for
-__GFP_MEMALLOC, sometimes for swap-over-nfs, tasks etc. Each of these cases
-are relatively rare events but the ALLOC_NO_WATERMARK check is an unlikely
-branch in the fast path.  This patch moves the check out of the fast path
-and after it has been determined that the watermarks have not been met. This
-helps the common fast path at the cost of making the slow path slower and
-hitting kswapd with a performance cost. It's a reasonable tradeoff.
+The zlc is used on NUMA machines to quickly skip over zones that are full.
+However it is always updated, even for the first zone scanned when the
+zlc might not even be active. As it's a write to a bitmap that potentially
+bounces cache line it's deceptively expensive and most machines will not
+care. Only update the zlc if it was active.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- mm/page_alloc.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ mm/page_alloc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 2e576fd..dc123ff 100644
+index 5dba293..f8b80c3 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1944,9 +1944,6 @@ zonelist_scan:
- 			(alloc_flags & ALLOC_CPUSET) &&
- 			!cpuset_zone_allowed_softwall(zone, gfp_mask))
- 				continue;
--		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
--		if (unlikely(alloc_flags & ALLOC_NO_WATERMARKS))
--			goto try_this_zone;
- 		/*
- 		 * Distribute pages in proportion to the individual
- 		 * zone size to ensure fair page aging.  The zone a
-@@ -1993,6 +1990,11 @@ zonelist_scan:
- 				       classzone_idx, alloc_flags)) {
- 			int ret;
+@@ -2044,7 +2044,7 @@ try_this_zone:
+ 		if (page)
+ 			break;
+ this_zone_full:
+-		if (IS_ENABLED(CONFIG_NUMA))
++		if (IS_ENABLED(CONFIG_NUMA) && zlc_active)
+ 			zlc_mark_zone_full(zonelist, z);
+ 	}
  
-+			/* Checked here to keep the fast path fast */
-+			BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
-+			if (alloc_flags & ALLOC_NO_WATERMARKS)
-+				goto try_this_zone;
-+
- 			if (IS_ENABLED(CONFIG_NUMA) &&
- 					!did_zlc_setup && nr_online_nodes > 1) {
- 				/*
 -- 
 1.8.4.5
 
