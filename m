@@ -1,109 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761327AbaEMKnY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:43:24 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:58828 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760194AbaEMKnW (ORCPT
+	id S1761272AbaEMKkR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:40:17 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60762 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760029AbaEMJ2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:43:22 -0400
-Date: Tue, 13 May 2014 12:43:07 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Dario Faggioli <raistlin@linux.it>, Ingo Molnar <mingo@elte.hu>,
-        lkml <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: [BUG] sched_setattr() SCHED_DEADLINE hangs system
-Message-ID: <20140513104307.GZ30445@twins.programming.kicks-ass.net>
-References: <536F8F0E.7020301@gmail.com>
- <53707007.3080003@gmail.com>
- <20140512084727.GN30445@twins.programming.kicks-ass.net>
- <CAKgNAkiGt6xV0JaddmC8pLeTe+fSEu79DNvzg8XbA-MPo_zXyg@mail.gmail.com>
- <20140512123032.GC13467@laptop.programming.kicks-ass.net>
- <20140513115749.ebf3eebc64e44aac6f183410@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2DMJGKatbWMtT1aQ"
-Content-Disposition: inline
-In-Reply-To: <20140513115749.ebf3eebc64e44aac6f183410@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 13 May 2014 05:28:55 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Tomas Winkler <tomas.winkler@intel.com>,
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 031/182] mei: fix memory leak of pending write cb objects
+Date: Tue, 13 May 2014 11:26:23 +0200
+Message-Id: <c62aa30f2631c4c32948b67eacc7a31d9c1867d7.1399973152.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
+References: <cover.1399973152.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Tomas Winkler <tomas.winkler@intel.com>
 
---2DMJGKatbWMtT1aQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-On Tue, May 13, 2014 at 11:57:49AM +0200, Juri Lelli wrote:
->  static bool
->  __checkparam_dl(const struct sched_attr *attr)
->  {
->  	return attr && attr->sched_deadline != 0 &&
->  		(attr->sched_period == 0 ||
-> -		(s64)(attr->sched_period   - attr->sched_deadline) >= 0) &&
-> -		(s64)(attr->sched_deadline - attr->sched_runtime ) >= 0  &&
-> -		attr->sched_runtime >= (2 << (DL_SCALE - 1));
-> +		(attr->sched_period >= attr->sched_deadline)) &&
-> +		(attr->sched_deadline >= attr->sched_runtime) &&
-> +		attr->sched_runtime >= (1ULL << DL_SCALE) &&
-> +		(attr->sched_deadline < (1ULL << 63) &&
-> +		attr->sched_period < (1ULL << 63));
->  }
+===============
 
-Could we maybe rewrite that function to look less like a ioccc.org
-submission?
+commit cc99ecfdac01215594c73907726b12f251c21e20 upstream.
 
-static bool
-__checkparam_dl(const struct sched_attr *attr)
-{
-	if (!attr) /* possible at all? */
-		return false;
+Write callbacks are released on the write completed path but
+when file handler is closed before the writes are
+completed those are left dangling on write and write_waiting queues.
 
-	/* runtime <= deadline <= period */
-	if (attr->sched_period   < attr->sched_deadline ||
-	    attr->sched_deadline < attr->sched_runtime)
-		return false;
+We add mei_io_list_free function to perform this task
 
-	/*
-	 * Since we truncate DL_SCALE bits make sure we're at least that big,
-	 * if runtime > (1 << DL_SCALE), so must the others be per the above
-	 */
-	if (attr->sched_runtime <= (1ULL << DL_SCALE))
-		return false;
+Also move static functions to client.c form client.h
 
-	/*
-	 * Since we use the MSB for wrap-around and sign issues, make
-	 * sure its not set, if period < 2^63, so must the others be.
-	 */
-	if (attr->sched_period & (1ULL << 63))
-		return false;
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/misc/mei/client.c | 76 ++++++++++++++++++++++++++++++++++-------------
+ drivers/misc/mei/client.h | 18 -----------
+ 2 files changed, 55 insertions(+), 39 deletions(-)
 
-	return true;
-}
+diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+index b66cec93ebb3..9abe5a4e3ef7 100644
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -74,23 +74,69 @@ int mei_me_cl_by_id(struct mei_device *dev, u8 client_id)
+ 
+ 
+ /**
+- * mei_io_list_flush - removes list entry belonging to cl.
++ * mei_cl_cmp_id - tells if the clients are the same
+  *
+- * @list:  An instance of our list structure
+- * @cl: host client
++ * @cl1: host client 1
++ * @cl2: host client 2
++ *
++ * returns true  - if the clients has same host and me ids
++ *         false - otherwise
++ */
++static inline bool mei_cl_cmp_id(const struct mei_cl *cl1,
++				const struct mei_cl *cl2)
++{
++	return cl1 && cl2 &&
++		(cl1->host_client_id == cl2->host_client_id) &&
++		(cl1->me_client_id == cl2->me_client_id);
++}
++
++/**
++ * mei_io_list_flush - removes cbs belonging to cl.
++ *
++ * @list:  an instance of our list structure
++ * @cl:    host client, can be NULL for flushing the whole list
++ * @free:  whether to free the cbs
+  */
+-void mei_io_list_flush(struct mei_cl_cb *list, struct mei_cl *cl)
++static void __mei_io_list_flush(struct mei_cl_cb *list,
++				struct mei_cl *cl, bool free)
+ {
+ 	struct mei_cl_cb *cb;
+ 	struct mei_cl_cb *next;
+ 
++	/* enable removing everything if no cl is specified */
+ 	list_for_each_entry_safe(cb, next, &list->list, list) {
+-		if (cb->cl && mei_cl_cmp_id(cl, cb->cl))
++		if (!cl || (cb->cl && mei_cl_cmp_id(cl, cb->cl))) {
+ 			list_del(&cb->list);
++			if (free)
++				mei_io_cb_free(cb);
++		}
+ 	}
+ }
+ 
+ /**
++ * mei_io_list_flush - removes list entry belonging to cl.
++ *
++ * @list:  An instance of our list structure
++ * @cl: host client
++ */
++static inline void mei_io_list_flush(struct mei_cl_cb *list, struct mei_cl *cl)
++{
++	__mei_io_list_flush(list, cl, false);
++}
++
++
++/**
++ * mei_io_list_free - removes cb belonging to cl and free them
++ *
++ * @list:  An instance of our list structure
++ * @cl: host client
++ */
++static inline void mei_io_list_free(struct mei_cl_cb *list, struct mei_cl *cl)
++{
++	__mei_io_list_flush(list, cl, true);
++}
++
++/**
+  * mei_io_cb_free - free mei_cb_private related memory
+  *
+  * @cb: mei callback struct
+@@ -192,8 +238,8 @@ int mei_cl_flush_queues(struct mei_cl *cl)
+ 
+ 	dev_dbg(&cl->dev->pdev->dev, "remove list entry belonging to cl\n");
+ 	mei_io_list_flush(&cl->dev->read_list, cl);
+-	mei_io_list_flush(&cl->dev->write_list, cl);
+-	mei_io_list_flush(&cl->dev->write_waiting_list, cl);
++	mei_io_list_free(&cl->dev->write_list, cl);
++	mei_io_list_free(&cl->dev->write_waiting_list, cl);
+ 	mei_io_list_flush(&cl->dev->ctrl_wr_list, cl);
+ 	mei_io_list_flush(&cl->dev->ctrl_rd_list, cl);
+ 	mei_io_list_flush(&cl->dev->amthif_cmd_list, cl);
+@@ -916,20 +962,8 @@ void mei_cl_all_wakeup(struct mei_device *dev)
+  */
+ void mei_cl_all_write_clear(struct mei_device *dev)
+ {
+-	struct mei_cl_cb *cb, *next;
+-	struct list_head *list;
+-
+-	list = &dev->write_list.list;
+-	list_for_each_entry_safe(cb, next, list, list) {
+-		list_del(&cb->list);
+-		mei_io_cb_free(cb);
+-	}
+-
+-	list = &dev->write_waiting_list.list;
+-	list_for_each_entry_safe(cb, next, list, list) {
+-		list_del(&cb->list);
+-		mei_io_cb_free(cb);
+-	}
++	mei_io_list_free(&dev->write_list, NULL);
++	mei_io_list_free(&dev->write_waiting_list, NULL);
+ }
+ 
+ 
+diff --git a/drivers/misc/mei/client.h b/drivers/misc/mei/client.h
+index 892cc4207fa2..5d75ab523490 100644
+--- a/drivers/misc/mei/client.h
++++ b/drivers/misc/mei/client.h
+@@ -45,8 +45,6 @@ static inline void mei_io_list_init(struct mei_cl_cb *list)
+ {
+ 	INIT_LIST_HEAD(&list->list);
+ }
+-void mei_io_list_flush(struct mei_cl_cb *list, struct mei_cl *cl);
+-
+ /*
+  * MEI Host Client Functions
+  */
+@@ -61,22 +59,6 @@ int mei_cl_unlink(struct mei_cl *cl);
+ int mei_cl_flush_queues(struct mei_cl *cl);
+ struct mei_cl_cb *mei_cl_find_read_cb(struct mei_cl *cl);
+ 
+-/**
+- * mei_cl_cmp_id - tells if file private data have same id
+- *
+- * @fe1: private data of 1. file object
+- * @fe2: private data of 2. file object
+- *
+- * returns true  - if ids are the same and not NULL
+- */
+-static inline bool mei_cl_cmp_id(const struct mei_cl *cl1,
+-				const struct mei_cl *cl2)
+-{
+-	return cl1 && cl2 &&
+-		(cl1->host_client_id == cl2->host_client_id) &&
+-		(cl1->me_client_id == cl2->me_client_id);
+-}
+-
+ 
+ int mei_cl_flow_ctrl_creds(struct mei_cl *cl);
+ 
+-- 
+1.9.3
 
-Did I miss anything?
-
---2DMJGKatbWMtT1aQ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTcfc7AAoJEHZH4aRLwOS60oEP/3D0V+yyXjcf26745KTpT6mn
-z3iOX2nXaLe2rwYhJAZvJRkgDdDAz0Rn0O5+4UXRpXsWbrWuweiYmjYFUeIfO7R9
-VKym05NFNKwKVCU5Zotcl9ndfRPUySaOqIgxJcGya1X7HPgGEk5WxilRY/zOSzNa
-NZtAN+ySRoFFIKaIV5cduw7B1+WJ5DQzHCer4X/pk1ja1XnRstuZ9OI35qVWLgPt
-AeeTnqOIl6e8Sb7W3k1bYPI0BYgrf0t7C0VkDWbQl9MoV+au6MDu9SnRPK80b57/
-mt8tJZswCVpZ4ufcpYVRsBc1Gsb98zH5NbSgBiDxQBg+OuPsqPirXOukgonUdtqR
-LVghp5R5gHJThrvIlfXoZzugIVxYHhGU0ZgiGC5DpatvqU2YFnLPP/NR2hxM0zV8
-AWhNBBivxNaY6+g64RyodIFMY6RfzM4QTlPVPEAaQh8D+mopvJRRPZZCxMyx/ql7
-C9EGB5Pcx+cnG6VF6tsJLoxVj6ISytemu70sIi+4GjyWraDT9k66HKv6fS1sOUGM
-Q8nmPc0LICUCnaE5B4x4XdPzeTEOdIhdPMJBZFhGisrdPbxZ/Ifm3lCASAPOjoj7
-EpCM8FHoM8NhjcDblnykuI62ZCzZwApp/vkwDsqq1EW5eojmriKnS/uyNmoZCkJI
-gtrwVZ+PsFM7ddNiukDf
-=Svim
------END PGP SIGNATURE-----
-
---2DMJGKatbWMtT1aQ--
