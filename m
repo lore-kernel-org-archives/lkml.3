@@ -1,144 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047AbaEMST4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 14:19:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23352 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751810AbaEMSTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 14:19:49 -0400
-Date: Tue, 13 May 2014 20:18:52 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 19/19] mm: filemap: Avoid unnecessary barries and
-	waitqueue lookups in unlock_page fastpath
-Message-ID: <20140513181852.GB12123@redhat.com>
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de> <1399974350-11089-20-git-send-email-mgorman@suse.de> <20140513125313.GR23991@suse.de> <20140513141748.GD2485@laptop.programming.kicks-ass.net> <20140513152719.GF18164@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140513152719.GF18164@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752859AbaEMSW1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 14:22:27 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:53675 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751511AbaEMSWT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 14:22:19 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqYVAOVhclNbtADP/2dsb2JhbABZgwaseAQBAQEBAQEFAZoZAgKBIxd0glMTHCMYgQIkE4hFAccphVSIeoRHBI8piiYBiwuIBYM4O4EzJA
+Date: Tue, 13 May 2014 20:22:14 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Joel Becker <jlbec@evilplan.org>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/2] FS/CONFIGFS: convert printk to pr_foo()
+Message-Id: <20140513202214.2143f9c062ad84891067aa11@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13, Paul E. McKenney wrote:
->
-> On Tue, May 13, 2014 at 04:17:48PM +0200, Peter Zijlstra wrote:
-> >
-> > diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-> > index 46412bded104..dae5158c2382 100644
-> > --- a/Documentation/memory-barriers.txt
-> > +++ b/Documentation/memory-barriers.txt
-> > @@ -1881,9 +1881,9 @@ The whole sequence above is available in various canned forms, all of which
-> >  	event_indicated = 1;
-> >  	wake_up_process(event_daemon);
-> >
-> > -A write memory barrier is implied by wake_up() and co. if and only if they wake
-> > -something up.  The barrier occurs before the task state is cleared, and so sits
-> > -between the STORE to indicate the event and the STORE to set TASK_RUNNING:
-> > +A full memory barrier is implied by wake_up() and co. The barrier occurs
->
-> Last I checked, the memory barrier was guaranteed
 
-I have to admit, I am confused. I simply do not understand what "memory
-barrier" actually means in this discussion.
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/configfs/dir.c   | 8 ++++----
+ fs/configfs/inode.c | 5 ++---
+ fs/configfs/mount.c | 2 +-
+ 3 files changed, 7 insertions(+), 8 deletions(-)
 
-To me, wake_up/ttwu should only guarantee one thing: all the preceding
-STORE's should be serialized with all the subsequent manipulations with
-task->state (even with LOAD(task->state)).
-
-> If there is a sleep-wakeup race, for example,
-> between wait_event_interruptible() and wake_up(), then it looks to me
-> that the following can happen:
->
-> o	Task A invokes wait_event_interruptible(), waiting for
-> 	X==1.
->
-> o	Before Task A gets anywhere, Task B sets Y=1, does
-> 	smp_mb(), then sets X=1.
->
-> o	Task B invokes wake_up(), which invokes __wake_up(), which
-> 	acquires the wait_queue_head_t's lock and invokes
-> 	__wake_up_common(), which sees nothing to wake up.
->
-> o	Task A tests the condition, finds X==1, and returns without
-> 	locks, memory barriers, atomic instructions, or anything else
-> 	that would guarantee ordering.
->
-> o	Task A then loads from Y.  Because there have been no memory
-> 	barriers, it might well see Y==0.
-
-Sure, but I can't understand "Because there have been no memory barriers".
-
-IOW. Suppose we add mb() into wake_up(). The same can happen anyway?
-
-And "if a wakeup actually occurred" is not clear to me too in this context.
-For example, suppose that ttwu() clears task->state but that task was not
-deactivated and it is going to check the condition, do we count this as
-"wakeup actually occurred" ? In this case that task still can see Y==0.
-
-
-> On the other hand, if a wake_up() really does happen, then
-> the fast-path out of wait_event_interruptible() is not taken,
-> and __wait_event_interruptible() is called instead.  This calls
-> ___wait_event(), which eventually calls prepare_to_wait_event(), which
-> in turn calls set_current_state(), which calls set_mb(), which does a
-> full memory barrier.
-
-Can't understand this part too... OK, and suppose that right after that
-the task B from the scenario above does
-
-	Y = 1;
-	mb();
-	X = 1;
-	wake_up();
-
-After that task A checks the condition, sees X==1, and returns from
-wait_event() without spin_lock(wait_queue_head_t->lock) (if it also
-sees list_empty_careful() == T). Then it can see Y==0 again?
-
-> 	A read and a write memory barrier (-not- a full memory barrier)
-> 	are implied by wake_up() and co. if and only if they wake
-> 	something up.
-
-Now this looks as if you document that, say,
-
-	X = 1;
-	wake_up();
-	Y = 1;
-
-doesn't need wmb() before "Y = 1" if wake_up() wakes something up. Do we
-really want to document this? Is it fine to rely on this guarantee?
-
-> The write barrier occurs before the task state is
-> 	cleared, and so sits between the STORE to indicate the event and
-> 	the STORE to set TASK_RUNNING, and the read barrier after that:
-
-Plus: between the STORE to indicate the event and the LOAD which checks
-task->state, otherwise:
-
-> 	CPU 1				CPU 2
-> 	===============================	===============================
-> 	set_current_state();		STORE event_indicated
-> 	  set_mb();			wake_up();
-> 	    STORE current->state	  <write barrier>
-> 	    <general barrier>		  STORE current->state
-> 	LOAD event_indicated		  <read barrier>
-
-this code is still racy.
-
-In short: I am totally confused and most probably misunderstood you ;)
-
-Oleg.
+diff --git a/fs/configfs/dir.c b/fs/configfs/dir.c
+index e081acb..727d06e 100644
+--- a/fs/configfs/dir.c
++++ b/fs/configfs/dir.c
+@@ -940,9 +940,9 @@ static void client_drop_item(struct config_item *parent_item,
+ #ifdef DEBUG
+ static void configfs_dump_one(struct configfs_dirent *sd, int level)
+ {
+-	printk(KERN_INFO "%*s\"%s\":\n", level, " ", configfs_get_name(sd));
++	pr_info("%*s\"%s\":\n", level, " ", configfs_get_name(sd));
+ 
+-#define type_print(_type) if (sd->s_type & _type) printk(KERN_INFO "%*s %s\n", level, " ", #_type);
++#define type_print(_type) if (sd->s_type & _type) pr_info("%*s %s\n", level, " ", #_type);
+ 	type_print(CONFIGFS_ROOT);
+ 	type_print(CONFIGFS_DIR);
+ 	type_print(CONFIGFS_ITEM_ATTR);
+@@ -1699,7 +1699,7 @@ void configfs_unregister_subsystem(struct configfs_subsystem *subsys)
+ 	struct dentry *root = dentry->d_sb->s_root;
+ 
+ 	if (dentry->d_parent != root) {
+-		printk(KERN_ERR "configfs: Tried to unregister non-subsystem!\n");
++		pr_err("configfs: Tried to unregister non-subsystem!\n");
+ 		return;
+ 	}
+ 
+@@ -1709,7 +1709,7 @@ void configfs_unregister_subsystem(struct configfs_subsystem *subsys)
+ 	mutex_lock(&configfs_symlink_mutex);
+ 	spin_lock(&configfs_dirent_lock);
+ 	if (configfs_detach_prep(dentry, NULL)) {
+-		printk(KERN_ERR "configfs: Tried to unregister non-empty subsystem!\n");
++		pr_err("configfs: Tried to unregister non-empty subsystem!\n");
+ 	}
+ 	spin_unlock(&configfs_dirent_lock);
+ 	mutex_unlock(&configfs_symlink_mutex);
+diff --git a/fs/configfs/inode.c b/fs/configfs/inode.c
+index a9d35b0..fbb30db 100644
+--- a/fs/configfs/inode.c
++++ b/fs/configfs/inode.c
+@@ -168,9 +168,8 @@ static void configfs_set_inode_lock_class(struct configfs_dirent *sd,
+ 			 * In practice the maximum level of locking depth is
+ 			 * already reached. Just inform about possible reasons.
+ 			 */
+-			printk(KERN_INFO "configfs: Too many levels of inodes"
+-			       " for the locking correctness validator.\n");
+-			printk(KERN_INFO "Spurious warnings may appear.\n");
++			pr_info("configfs: Too many levels of inodes for the locking correctness validator.\n");
++			pr_info("Spurious warnings may appear.\n");
+ 		}
+ 	}
+ }
+diff --git a/fs/configfs/mount.c b/fs/configfs/mount.c
+index 7f26c3c..af08de0 100644
+--- a/fs/configfs/mount.c
++++ b/fs/configfs/mount.c
+@@ -155,7 +155,7 @@ static int __init configfs_init(void)
+ 
+ 	return 0;
+ out4:
+-	printk(KERN_ERR "configfs: Unable to register filesystem!\n");
++	pr_err("configfs: Unable to register filesystem!\n");
+ 	configfs_inode_exit();
+ out3:
+ 	kobject_put(config_kobj);
+-- 
+1.8.4.5
 
