@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932582AbaEMWKz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 18:10:55 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:43140 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755241AbaEMWFf (ORCPT
+	id S932794AbaEMWLE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 18:11:04 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:40666 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755235AbaEMWFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 18:05:35 -0400
+	Tue, 13 May 2014 18:05:34 -0400
 From: Alexis Berlemont <alexis.berlemont@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com,
         acme@ghostprotocols.net, dsahern@gmail.com, mingo@kernel.org
-Subject: [PATCH 17/34] perf kbuild: remove legacy demangle-related build variables
-Date: Wed, 14 May 2014 00:03:12 +0200
-Message-Id: <1400018609-20486-18-git-send-email-alexis.berlemont@gmail.com>
+Subject: [PATCH 16/34] perf kbuild: remove legacy timerfd-related build variable
+Date: Wed, 14 May 2014 00:03:11 +0200
+Message-Id: <1400018609-20486-17-git-send-email-alexis.berlemont@gmail.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
 References: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
@@ -21,216 +21,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove NO_DEMANGLE (replaced by CONFIG_DEMANGLE)
-Remove HAVE_LIBBFD_SUPPORT (replaced by CONFIG_LIBBFD)
-Remove HAVE_CPLUS_DEMANGLE_SUPPORT (replaced by CONFIG_LIBIBERTY_ONLY)
+Remove HAVE_TIMERFD_SUPPORT (replaced by CONFIG_TIMERFD)
 ---
- tools/perf/Kconfig         | 28 ++++++++++++++++++++++------
- tools/perf/config/Makefile | 45 ++++++++++++++++++++++++---------------------
- tools/perf/util/srcline.c  |  8 +++++---
- tools/perf/util/symbol.h   | 25 +++++++++++++++++--------
- 4 files changed, 68 insertions(+), 38 deletions(-)
+ tools/perf/Kconfig         |  8 +++++++-
+ tools/perf/builtin-kvm.c   | 13 +++++++------
+ tools/perf/config/Makefile | 10 ++++++----
+ 3 files changed, 20 insertions(+), 11 deletions(-)
 
 diff --git a/tools/perf/Kconfig b/tools/perf/Kconfig
-index 76d0763..ffc1d81 100644
+index 56f0fe3..76d0763 100644
 --- a/tools/perf/Kconfig
 +++ b/tools/perf/Kconfig
-@@ -190,6 +190,28 @@ config TIMERFD
-         ---help---
- 	  Timer via file descriptor
+@@ -145,7 +145,7 @@ config BUILTIN_TEST
  
-+config DEMANGLE
-+	bool "Demangle symbols"
+ endmenu
+ 
+-menu "Libraries"
++menu "Libraries / Dependencies"
+ 
+ config LIBSLANG
+ 	bool "Slang (libslang)"
+@@ -184,6 +184,12 @@ config LIBPYTHON
+         ---help---
+ 	  Python
+ 
++config TIMERFD
++	bool "Timer via file descriptor"
 +	default n
 +        ---help---
-+	  demangle
-+
-+choice DEMANGLE_DEPS
-+       prompt "Demangle dependency(ies)"
-+       depends on DEMANGLE
-+       default LIBBFD
-+
-+config LIBBFD
-+	bool "BFD + libiberty libraries"
-+        ---help---
-+	  Binary File Descriptor and libiberty libraries
-+
-+config LIBIBERTY_ONLY
-+	bool "Libiberty only"
-+        ---help---
-+	  Libiberty
-+endchoice
++	  Timer via file descriptor
 +
  choice
  	prompt "Elf library"
  	default LIBELF
-@@ -223,12 +245,6 @@ config NUMA
-         ---help---
- 	  numa
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 0f1e5a2..d035253 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -1,3 +1,4 @@
++#include "generated/autoconf.h"
+ #include "builtin.h"
+ #include "perf.h"
  
--config DEMANGLE
--	bool "Demangle symbols"
--	default n
--        ---help---
--	  demangle
--
- config BIONIC
- 	bool "Bionic support"
- 	default n
+@@ -20,7 +21,7 @@
+ #include "util/data.h"
+ 
+ #include <sys/prctl.h>
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ #include <sys/timerfd.h>
+ #endif
+ 
+@@ -339,7 +340,7 @@ static void init_kvm_event_record(struct perf_kvm_stat *kvm)
+ 		INIT_LIST_HEAD(&kvm->kvm_events_cache[i]);
+ }
+ 
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ static void clear_events_cache_stats(struct list_head *kvm_events_cache)
+ {
+ 	struct list_head *head;
+@@ -788,7 +789,7 @@ static void print_result(struct perf_kvm_stat *kvm)
+ 		pr_info("\nLost events: %" PRIu64 "\n\n", kvm->lost_events);
+ }
+ 
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ static int process_lost_event(struct perf_tool *tool,
+ 			      union perf_event *event __maybe_unused,
+ 			      struct perf_sample *sample __maybe_unused,
+@@ -879,7 +880,7 @@ static bool verify_vcpu(int vcpu)
+ 	return true;
+ }
+ 
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ /* keeping the max events to a modest level to keep
+  * the processing of samples per mmap smooth.
+  */
+@@ -1386,7 +1387,7 @@ kvm_events_report(struct perf_kvm_stat *kvm, int argc, const char **argv)
+ 	return kvm_events_report_vcpu(kvm);
+ }
+ 
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ static struct perf_evlist *kvm_live_event_list(void)
+ {
+ 	struct perf_evlist *evlist;
+@@ -1601,7 +1602,7 @@ static int kvm_cmd_stat(const char *file_name, int argc, const char **argv)
+ 	if (!strncmp(argv[1], "rep", 3))
+ 		return kvm_events_report(&kvm, argc - 1 , argv + 1);
+ 
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ 	if (!strncmp(argv[1], "live", 4))
+ 		return kvm_events_live(&kvm, argc - 1 , argv + 1);
+ #endif
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 33843b7..ff7f01c 100644
+index 93c3321..33843b7 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -534,33 +534,36 @@ ifeq ($(feature-libbfd), 1)
+@@ -445,10 +445,12 @@ ifdef CONFIG_LIBPERL
    endif
  endif
  
--ifdef NO_DEMANGLE
--  CFLAGS += -DNO_DEMANGLE
+-ifeq ($(feature-timerfd), 1)
+-  CFLAGS += -DHAVE_TIMERFD_SUPPORT
 -else
--  ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
--    EXTLIBS += -liberty
--    CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
--  else
--    ifneq ($(feature-libbfd), 1)
--      ifneq ($(feature-liberty), 1)
--        ifneq ($(feature-liberty-z), 1)
--          # we dont have neither HAVE_CPLUS_DEMANGLE_SUPPORT
--          # or any of 'bfd iberty z' trinity
--          ifeq ($(feature-cplus-demangle), 1)
--            EXTLIBS += -liberty
--            CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
--          else
--            msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
--            CFLAGS += -DNO_DEMANGLE
--          endif
-+ifdef CONFIG_LIBBFD
-+  ifneq ($(feature-libbfd), 1)
-+    # TODO: there might be an issue here: feature-liberty and
-+    # feature-liberty-z cannot be set; they can be set only if
-+    # feature-libbfd is set
-+    ifneq ($(feature-liberty), 1)
-+      ifneq ($(feature-liberty-z), 1)
-+        # we dont have neither HAVE_CPLUS_DEMANGLE_SUPPORT
-+        # or any of 'bfd iberty z' trinity
-+        ifeq ($(feature-cplus-demangle), 1)
-+          EXTLIBS += -liberty
-+          $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBBFD)
-+          $(shell $(KCONFIG_SCRIPT) -e CONFIG_LIBIBERTY_ONLY)
-+        else
-+          msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
-+          $(shell $(KCONFIG_SCRIPT) -d CONFIG_DEMANGLE)
-         endif
-       endif
-     endif
-   endif
- endif
- 
--ifneq ($(filter -lbfd,$(EXTLIBS)),)
--  CFLAGS += -DHAVE_LIBBFD_SUPPORT
-+ifdef CONFIG_LIBIBERTY_ONLY
-+  $(call feature_check,cplus-demangle)
-+  ifeq ($(feature-cplus-demangle), 1)
-+    EXTLIBS += -liberty
+-  msg := $(warning No timerfd support. Disables 'perf kvm stat live');
++ifdef CONFIG_TIMERFD
++  ifneq ($(feature-timerfd), 1)
++    $(shell $(KCONFIG_SCRIPT) -d CONFIG_TIMERFD)
 +  else
-+    msg := $(warning No libiberty found, install binutils-dev[el]/zlib-static to gain symbol demangling)
-+    $(shell $(KCONFIG_SCRIPT) -d CONFIG_DEMANGLE)
++    msg := $(warning No timerfd support. Disables 'perf kvm stat live');
 +  endif
  endif
  
- ifndef NO_ON_EXIT
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index f3e4bc5..38df8f4 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -4,11 +4,13 @@
- 
- #include <linux/kernel.h>
- 
-+#include "generated/autoconf.h"
-+
- #include "util/dso.h"
- #include "util/util.h"
- #include "util/debug.h"
- 
--#ifdef HAVE_LIBBFD_SUPPORT
-+#ifdef CONFIG_LIBBFD
- 
- /*
-  * Implement addr2line using libbfd.
-@@ -189,7 +191,7 @@ void dso__free_a2l(struct dso *dso)
- 	dso->a2l = NULL;
- }
- 
--#else /* HAVE_LIBBFD_SUPPORT */
-+#else /* !CONFIG_LIBBFD */
- 
- static int addr2line(const char *dso_name, unsigned long addr,
- 		     char **file, unsigned int *line_nr,
-@@ -242,7 +244,7 @@ void dso__free_a2l(struct dso *dso __maybe_unused)
- {
- }
- 
--#endif /* HAVE_LIBBFD_SUPPORT */
-+#endif /* CONFIG_LIBBFD */
- 
- /*
-  * Number of addr2line failures (without success) before disabling it for that
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 501e4e7..d8e886e 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -1,6 +1,8 @@
- #ifndef __PERF_SYMBOL
- #define __PERF_SYMBOL 1
- 
-+#include "generated/autoconf.h"
-+
- #include <linux/types.h>
- #include <stdbool.h>
- #include <stdint.h>
-@@ -21,26 +23,33 @@
- 
- #include "dso.h"
- 
--#ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
-+#ifdef CONFIG_DEMANGLE
-+
-+#ifdef CONFIG_LIBBFD
-+
-+#define PACKAGE 'perf'
-+#include <bfd.h>
-+
-+#elif defined(CONFIG_LIBIBERTY_ONLY)
- extern char *cplus_demangle(const char *, int);
- 
- static inline char *bfd_demangle(void __maybe_unused *v, const char *c, int i)
- {
- 	return cplus_demangle(c, i);
- }
--#else
--#ifdef NO_DEMANGLE
-+
-+#else /* Unknown dependency */
-+#error "Inconsistent demangling configuration"
-+#endif
-+
-+#else /* !CONFIG_DEMANGLE */
- static inline char *bfd_demangle(void __maybe_unused *v,
- 				 const char __maybe_unused *c,
- 				 int __maybe_unused i)
- {
- 	return NULL;
- }
--#else
--#define PACKAGE 'perf'
--#include <bfd.h>
--#endif
--#endif
-+#endif /* CONFIG_DEMANGLE */
- 
- /*
-  * libelf 0.8.x and earlier do not support ELF_C_READ_MMAP;
+ disable-python = $(eval $(disable-python_code))
 -- 
 1.9.2
 
