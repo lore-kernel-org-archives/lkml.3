@@ -1,63 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522AbaEMQte (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 12:49:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14932 "EHLO mx1.redhat.com"
+	id S1752628AbaEMQtr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:49:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24367 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752373AbaEMQtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752389AbaEMQtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 May 2014 12:49:24 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: acme@ghostprotocols.net, peterz@infradead.org
 Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, namhyung@gmail.com,
         eranian@google.com, Andi Kleen <andi@firstfloor.org>,
         Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 5/6] perf: Add cpumode to struct hist_entry
-Date: Tue, 13 May 2014 12:48:16 -0400
-Message-Id: <1399999697-65875-6-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 3/6] perf: Update mmap2 interface with protection and flag bits
+Date: Tue, 13 May 2014 12:48:14 -0400
+Message-Id: <1399999697-65875-4-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
 References: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The next patch needs to sort on cpumode, so add it to hist_entry to be tracked.
+The kernel piece passes more info now.  Update the perf tool to reflect
+that and adjust the synthesized maps to play along.
 
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- tools/perf/util/hist.c | 7 ++++---
- tools/perf/util/sort.h | 1 +
- 2 files changed, 5 insertions(+), 3 deletions(-)
+ tools/perf/util/event.c   | 23 +++++++++++++++++++++--
+ tools/perf/util/event.h   |  2 ++
+ tools/perf/util/machine.c |  4 +++-
+ tools/perf/util/map.c     |  4 +++-
+ tools/perf/util/map.h     |  4 +++-
+ 5 files changed, 32 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 7f0236c..b7160b1c 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -410,9 +410,10 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- 			.map	= al->map,
- 			.sym	= al->sym,
- 		},
--		.cpu	= al->cpu,
--		.ip	= al->addr,
--		.level	= al->level,
-+		.cpu	 = al->cpu,
-+		.cpumode = al->cpumode,
-+		.ip	 = al->addr,
-+		.level	 = al->level,
- 		.stat = {
- 			.nr_events = 1,
- 			.period	= period,
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 43e5ff4..22cf912 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -87,6 +87,7 @@ struct hist_entry {
- 	u64			ip;
- 	u64			transaction;
- 	s32			cpu;
-+	u8			cpumode;
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 5e7c722..e91d28e 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -1,4 +1,5 @@
+ #include <linux/types.h>
++#include <sys/mman.h>
+ #include "event.h"
+ #include "debug.h"
+ #include "hist.h"
+@@ -214,6 +215,21 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 		else
+ 			event->header.misc = PERF_RECORD_MISC_GUEST_USER;
  
- 	struct hist_entry_diff	diff;
++		/* map protection and flags bits */
++		event->mmap2.prot = 0;
++		event->mmap2.flags = 0;
++		if (prot[0] == 'r')
++			event->mmap2.prot |= PROT_READ;
++		if (prot[1] == 'w')
++			event->mmap2.prot |= PROT_WRITE;
++		if (prot[2] == 'x')
++			event->mmap2.prot |= PROT_EXEC;
++
++		if (prot[3] == 's')
++			event->mmap2.flags |= MAP_SHARED;
++		else
++			event->mmap2.flags |= MAP_PRIVATE;
++
+ 		if (prot[2] != 'x') {
+ 			if (!mmap_data || prot[0] != 'r')
+ 				continue;
+@@ -614,12 +630,15 @@ size_t perf_event__fprintf_mmap(union perf_event *event, FILE *fp)
+ size_t perf_event__fprintf_mmap2(union perf_event *event, FILE *fp)
+ {
+ 	return fprintf(fp, " %d/%d: [%#" PRIx64 "(%#" PRIx64 ") @ %#" PRIx64
+-			   " %02x:%02x %"PRIu64" %"PRIu64"]: %c %s\n",
++			   " %02x:%02x %"PRIu64" %"PRIu64"]: %c%c%c%c %s\n",
+ 		       event->mmap2.pid, event->mmap2.tid, event->mmap2.start,
+ 		       event->mmap2.len, event->mmap2.pgoff, event->mmap2.maj,
+ 		       event->mmap2.min, event->mmap2.ino,
+ 		       event->mmap2.ino_generation,
+-		       (event->header.misc & PERF_RECORD_MISC_MMAP_DATA) ? 'r' : 'x',
++		       (event->mmap2.prot & PROT_READ) ? 'r' : '-',
++		       (event->mmap2.prot & PROT_WRITE) ? 'w' : '-',
++		       (event->mmap2.prot & PROT_EXEC) ? 'x' : '-',
++		       (event->mmap2.flags & MAP_SHARED) ? 's' : 'p',
+ 		       event->mmap2.filename);
+ }
  
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index d970232..9ba2eb3 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -27,6 +27,8 @@ struct mmap2_event {
+ 	u32 min;
+ 	u64 ino;
+ 	u64 ino_generation;
++	u32 prot;
++	u32 flags;
+ 	char filename[PATH_MAX];
+ };
+ 
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 7409ac8..0e5fea9 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1060,6 +1060,8 @@ int machine__process_mmap2_event(struct machine *machine,
+ 			event->mmap2.pid, event->mmap2.maj,
+ 			event->mmap2.min, event->mmap2.ino,
+ 			event->mmap2.ino_generation,
++			event->mmap2.prot,
++			event->mmap2.flags,
+ 			event->mmap2.filename, type);
+ 
+ 	if (map == NULL)
+@@ -1105,7 +1107,7 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
+ 
+ 	map = map__new(&machine->user_dsos, event->mmap.start,
+ 			event->mmap.len, event->mmap.pgoff,
+-			event->mmap.pid, 0, 0, 0, 0,
++			event->mmap.pid, 0, 0, 0, 0, 0, 0,
+ 			event->mmap.filename,
+ 			type);
+ 
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index ba5f5c0c..7ca1d7e 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -51,7 +51,7 @@ void map__init(struct map *map, enum map_type type,
+ 
+ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 		     u64 pgoff, u32 pid, u32 d_maj, u32 d_min, u64 ino,
+-		     u64 ino_gen, char *filename,
++		     u64 ino_gen, u32 prot, u32 flags, char *filename,
+ 		     enum map_type type)
+ {
+ 	struct map *map = malloc(sizeof(*map));
+@@ -69,6 +69,8 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 		map->min = d_min;
+ 		map->ino = ino;
+ 		map->ino_generation = ino_gen;
++		map->prot = prot;
++		map->flags = flags;
+ 
+ 		if ((anon || no_dso) && type == MAP__FUNCTION) {
+ 			snprintf(newfilename, sizeof(newfilename), "/tmp/perf-%d.map", pid);
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index ae2d451..7758c72 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -35,6 +35,8 @@ struct map {
+ 	bool			referenced;
+ 	bool			erange_warned;
+ 	u32			priv;
++	u32			prot;
++	u32			flags;
+ 	u64			pgoff;
+ 	u64			reloc;
+ 	u32			maj, min; /* only valid for MMAP2 record */
+@@ -118,7 +120,7 @@ void map__init(struct map *map, enum map_type type,
+ 	       u64 start, u64 end, u64 pgoff, struct dso *dso);
+ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 		     u64 pgoff, u32 pid, u32 d_maj, u32 d_min, u64 ino,
+-		     u64 ino_gen,
++		     u64 ino_gen, u32 prot, u32 flags,
+ 		     char *filename, enum map_type type);
+ struct map *map__new2(u64 start, struct dso *dso, enum map_type type);
+ void map__delete(struct map *map);
 -- 
 1.7.11.7
 
