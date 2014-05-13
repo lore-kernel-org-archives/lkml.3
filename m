@@ -1,211 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760584AbaEMJtR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:49:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49962 "EHLO mx2.suse.de"
+	id S1760588AbaEMJt3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:49:29 -0400
+Received: from mail.southpole.se ([37.247.8.11]:55793 "EHLO mail.southpole.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933035AbaEMJqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:46:09 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Dave Hansen <dave.hansen@intel.com>, Mel Gorman <mgorman@suse.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH 12/19] mm: page_alloc: Use unsigned int for order in more places
-Date: Tue, 13 May 2014 10:45:43 +0100
-Message-Id: <1399974350-11089-13-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1399974350-11089-1-git-send-email-mgorman@suse.de>
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+	id S1760100AbaEMJtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 05:49:16 -0400
+X-Greylist: delayed 1146 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 May 2014 05:49:16 EDT
+Message-ID: <5371E62F.9090203@southpole.se>
+Date: Tue, 13 May 2014 11:30:23 +0200
+From: Jonas Bonn <jonas@southpole.se>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Ley Foon Tan <lftan@altera.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: lftan.linux@gmail.com, cltang@codesourcery.com, linux@openrisc.net
+Subject: Re: [PATCH 16/25] openrisc: Add 32 bit time_t and clock_t
+References: <1399971456-3941-1-git-send-email-lftan@altera.com> <1399971958-4561-1-git-send-email-lftan@altera.com>
+In-Reply-To: <1399971958-4561-1-git-send-email-lftan@altera.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Assp-Version: 2.4.1(14097) on assp.southpole.se
+X-Assp-ID: assp.southpole.se 73406-00162
+X-Assp-Session: 7FF4E00483A8 (mail 1)
+X-Assp-Client-TLS: yes
+X-Assp-Server-TLS: yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-X86 prefers the use of unsigned types for iterators and there is a
-tendency to mix whether a signed or unsigned type if used for page
-order. This converts a number of sites in mm/page_alloc.c to use
-unsigned int for order where possible.
+On 05/13/2014 11:05 AM, Ley Foon Tan wrote:
+> Override time_t and clock_t in include/uapi/asm-generic.
+> 
+> diff --git a/arch/openrisc/include/uapi/asm/posix_types.h b/arch/openrisc/include/uapi/asm/posix_types.h
+> new file mode 100644
+> index 0000000..5ccf37d
+> --- /dev/null
+> +++ b/arch/openrisc/include/uapi/asm/posix_types.h
+> @@ -0,0 +1,17 @@
+> +#ifndef __ARCH_OPENRISC_POSIX_TYPES_H
+> +#define __ARCH_OPENRISC_POSIX_TYPES_H
+> +
+> +/*
+> + * This file is generally used by user-level software, so you need to
+> + * be a little careful about namespace pollution etc. Also, we cannot
+> + * assume GCC is being used.
+> + */
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
----
- include/linux/mmzone.h |  8 ++++----
- mm/page_alloc.c        | 43 +++++++++++++++++++++++--------------------
- 2 files changed, 27 insertions(+), 24 deletions(-)
+I don't think the above comment needs to be copied to this file... given
+that the file is in the uapi/ directory, we know the file is exported to
+userspace, and the GCC comment isn't relevant given the rest of the
+files contents.
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index bd6f504..974a4ef 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -817,10 +817,10 @@ static inline bool pgdat_is_empty(pg_data_t *pgdat)
- extern struct mutex zonelists_mutex;
- void build_all_zonelists(pg_data_t *pgdat, struct zone *zone);
- void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx);
--bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
--		int classzone_idx, int alloc_flags);
--bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
--		int classzone_idx, int alloc_flags);
-+bool zone_watermark_ok(struct zone *z, unsigned int order,
-+		unsigned long mark, int classzone_idx, int alloc_flags);
-+bool zone_watermark_ok_safe(struct zone *z, unsigned int order,
-+		unsigned long mark, int classzone_idx, int alloc_flags);
- enum memmap_context {
- 	MEMMAP_EARLY,
- 	MEMMAP_HOTPLUG,
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index fcbf637..a47f1c5 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -408,7 +408,8 @@ static int destroy_compound_page(struct page *page, unsigned long order)
- 	return bad;
- }
- 
--static inline void prep_zero_page(struct page *page, int order, gfp_t gfp_flags)
-+static inline void prep_zero_page(struct page *page, unsigned int order,
-+							gfp_t gfp_flags)
- {
- 	int i;
- 
-@@ -452,7 +453,7 @@ static inline void set_page_guard_flag(struct page *page) { }
- static inline void clear_page_guard_flag(struct page *page) { }
- #endif
- 
--static inline void set_page_order(struct page *page, int order)
-+static inline void set_page_order(struct page *page, unsigned int order)
- {
- 	set_page_private(page, order);
- 	__SetPageBuddy(page);
-@@ -503,7 +504,7 @@ __find_buddy_index(unsigned long page_idx, unsigned int order)
-  * For recording page's order, we use page_private(page).
-  */
- static inline int page_is_buddy(struct page *page, struct page *buddy,
--								int order)
-+							unsigned int order)
- {
- 	if (!pfn_valid_within(page_to_pfn(buddy)))
- 		return 0;
-@@ -725,7 +726,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- 
- static void free_one_page(struct zone *zone,
- 				struct page *page, unsigned long pfn,
--				int order,
-+				unsigned int order,
- 				int migratetype)
- {
- 	spin_lock(&zone->lock);
-@@ -896,7 +897,7 @@ static inline int check_new_page(struct page *page)
- 	return 0;
- }
- 
--static int prep_new_page(struct page *page, int order, gfp_t gfp_flags)
-+static int prep_new_page(struct page *page, unsigned int order, gfp_t gfp_flags)
- {
- 	int i;
- 
-@@ -1104,16 +1105,17 @@ static int try_to_steal_freepages(struct zone *zone, struct page *page,
- 
- /* Remove an element from the buddy allocator from the fallback list */
- static inline struct page *
--__rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
-+__rmqueue_fallback(struct zone *zone, unsigned int order, int start_migratetype)
- {
- 	struct free_area *area;
--	int current_order;
-+	unsigned int current_order;
- 	struct page *page;
- 	int migratetype, new_type, i;
- 
- 	/* Find the largest possible block of pages in the other list */
--	for (current_order = MAX_ORDER-1; current_order >= order;
--						--current_order) {
-+	for (current_order = MAX_ORDER-1;
-+				current_order >= order && current_order <= MAX_ORDER-1;
-+				--current_order) {
- 		for (i = 0;; i++) {
- 			migratetype = fallbacks[start_migratetype][i];
- 
-@@ -1341,7 +1343,7 @@ void mark_free_pages(struct zone *zone)
- {
- 	unsigned long pfn, max_zone_pfn;
- 	unsigned long flags;
--	int order, t;
-+	unsigned int order, t;
- 	struct list_head *curr;
- 
- 	if (zone_is_empty(zone))
-@@ -1537,8 +1539,8 @@ int split_free_page(struct page *page)
-  */
- static inline
- struct page *buffered_rmqueue(struct zone *preferred_zone,
--			struct zone *zone, int order, gfp_t gfp_flags,
--			int migratetype)
-+			struct zone *zone, unsigned int order,
-+			gfp_t gfp_flags, int migratetype)
- {
- 	unsigned long flags;
- 	struct page *page;
-@@ -1687,8 +1689,9 @@ static inline bool should_fail_alloc_page(gfp_t gfp_mask, unsigned int order)
-  * Return true if free pages are above 'mark'. This takes into account the order
-  * of the allocation.
-  */
--static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
--		      int classzone_idx, int alloc_flags, long free_pages)
-+static bool __zone_watermark_ok(struct zone *z, unsigned int order,
-+			unsigned long mark, int classzone_idx, int alloc_flags,
-+			long free_pages)
- {
- 	/* free_pages my go negative - that's OK */
- 	long min = mark;
-@@ -1722,15 +1725,15 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
- 	return true;
- }
- 
--bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
-+bool zone_watermark_ok(struct zone *z, unsigned int order, unsigned long mark,
- 		      int classzone_idx, int alloc_flags)
- {
- 	return __zone_watermark_ok(z, order, mark, classzone_idx, alloc_flags,
- 					zone_page_state(z, NR_FREE_PAGES));
- }
- 
--bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
--		      int classzone_idx, int alloc_flags)
-+bool zone_watermark_ok_safe(struct zone *z, unsigned int order,
-+			unsigned long mark, int classzone_idx, int alloc_flags)
- {
- 	long free_pages = zone_page_state(z, NR_FREE_PAGES);
- 
-@@ -4123,7 +4126,7 @@ void __meminit memmap_init_zone(unsigned long size, int nid, unsigned long zone,
- 
- static void __meminit zone_init_free_lists(struct zone *zone)
- {
--	int order, t;
-+	unsigned int order, t;
- 	for_each_migratetype_order(order, t) {
- 		INIT_LIST_HEAD(&zone->free_area[order].free_list[t]);
- 		zone->free_area[order].nr_free = 0;
-@@ -6448,7 +6451,7 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
- {
- 	struct page *page;
- 	struct zone *zone;
--	int order, i;
-+	unsigned int order, i;
- 	unsigned long pfn;
- 	unsigned long flags;
- 	/* find the first valid pfn */
-@@ -6500,7 +6503,7 @@ bool is_free_buddy_page(struct page *page)
- 	struct zone *zone = page_zone(page);
- 	unsigned long pfn = page_to_pfn(page);
- 	unsigned long flags;
--	int order;
-+	unsigned int order;
- 
- 	spin_lock_irqsave(&zone->lock, flags);
- 	for (order = 0; order < MAX_ORDER; order++) {
--- 
-1.8.4.5
+But that's really just a nit!  Nice work, otherwise.
 
+Acked-by: Jonas Bonn <jonas@southpole.se>
+
+> +typedef long	__kernel_time_t;
+> +#define __kernel_time_t __kernel_time_t
+> +
+> +typedef long	__kernel_clock_t;
+> +#define __kernel_clock_t __kernel_clock_t
+> +
+> +#include <asm-generic/posix_types.h>
+> +
+> +#endif
+> 
