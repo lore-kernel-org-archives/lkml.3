@@ -1,45 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149AbaEMCYl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 22:24:41 -0400
-Received: from mail-bn1bon0075.outbound.protection.outlook.com ([157.56.111.75]:52124
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750791AbaEMCYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 22:24:40 -0400
-X-Greylist: delayed 845 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 May 2014 22:24:40 EDT
-Date: Tue, 13 May 2014 10:10:26 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh@kernel.org>, Sascha Hauer <kernel@pengutronix.de>
-Subject: Re: [PATCH 1/7] ARM: imx: fix function type for CLK_OF_DECLARE
-Message-ID: <20140513021024.GJ8330@dragon>
-References: <1399940993-1773-1-git-send-email-robherring2@gmail.com>
- <1399940993-1773-2-git-send-email-robherring2@gmail.com>
+	id S1753420AbaEMC0u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 22:26:50 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:34747 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751420AbaEMC0t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 22:26:49 -0400
+Date: Mon, 12 May 2014 23:26:14 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: "Gupta, Pekon" <pekon@ti.com>, David Woodhouse <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] mtd: Add sysfs attr to expose ECC stats
+Message-ID: <20140513022614.GA1447@arch.cereza>
+References: <1395403064-28113-1-git-send-email-ezequiel.garcia@free-electrons.com>
+ <1395403064-28113-2-git-send-email-ezequiel.garcia@free-electrons.com>
+ <20980858CB6D3A4BAE95CA194937D5E73EAB91D7@DBDE04.ent.ti.com>
+ <20140401111359.GA3324@arch.cereza>
+ <20980858CB6D3A4BAE95CA194937D5E73EAC31AE@DBDE04.ent.ti.com>
+ <20140513005053.GZ28907@ld-irv-0074>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1399940993-1773-2-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(24454002)(189002)(199002)(51704005)(19580395003)(23726002)(87936001)(77982001)(54356999)(77096999)(97756001)(64706001)(76482001)(47776003)(81156002)(83322001)(79102001)(84676001)(21056001)(97736001)(6806004)(69596002)(50466002)(81542001)(20776003)(99396002)(50986999)(76176999)(4396001)(57986002)(86362001)(83072002)(74502001)(46102001)(74662001)(1411001)(85852003)(2009001)(31966008)(92566001)(46406003)(68736004)(19580405001)(44976005)(80022001)(33716001)(81342001)(33656001)(92726001)(102836001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB025;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 0210479ED8
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140513005053.GZ28907@ld-irv-0074>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 07:29:47PM -0500, Rob Herring wrote:
-> From: Rob Herring <robh@kernel.org>
+On 12 May 05:50 PM, Brian Norris wrote:
+> > There are some guidelines about attributes in 'Documentation/filesystems/sysfs.txt'
+> > Though it's acceptable to put array of values of the "same type" in single sysfs file,
+> > But I'm still not confident on having all members of 'struct ecc_stats' being
+> > represented by single sysfs file
+> [...]
 > 
-> Adding function type checking to CLK_OF_DECLARE found a type mismatch with
-> mx35_clocks_init_dt. The function should return void.
+> I agree, it looks like the sysfs policy would recommend against putting
+> distinct properties in the same file.
 > 
-> Signed-off-by: Rob Herring <robh@kernel.org>
-> Cc: Shawn Guo <shawn.guo@freescale.com>
-> Cc: Sascha Hauer <kernel@pengutronix.de>
 
-Acked-by: Shawn Guo <shawn.guo@freescale.com>
+OK...
+
+> I'm not sure if /sys/block/<disk>/stat is a good example, as it does
+> violate this policy. It also seems to have some historical baggage.
+> 
+> But there is potentially one good reason for putting this distinct
+> information in a single file: if the information must be returned
+> atomically. For disk stats, it might be important to get a consistent
+> snapshot of the disk stats (or nearly so, with minimal locking
+> overhead), which might change significantly between file accesses if
+> we're doing half a dozen file queries instead.
+> 
+> This same reason may not apply to these ECC stats, since none of these
+> ECC stats are likely to be changing concurrently.
+> 
+
+Right.
+
+> So I personally might lean toward "one file per attribute" here.
+> 
+
+Yup, no problem. Greg, if you can confirm this it'd be great.
+
+> > >> I hope this will still keep it machine readable.
+> > >Well, this is not a debugfs entry, so I'm not sure we want to add such debug
+> > >information. Anyone can take a look at the code and see what ecc_stats mean.
+> 
+> The code or (as suggested by Pekon) the documentation
+> (Documentation/ABI/). Either way -- with a single 'ecc_stats' table, or
+> with 4 separate files -- they need to be documented.
+> 
+
+Sure, will document in next round.
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
