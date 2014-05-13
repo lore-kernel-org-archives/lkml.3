@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759614AbaEMKUz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:20:55 -0400
+	id S933541AbaEMKLf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:11:35 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933538AbaEMKLf (ORCPT
+	by vger.kernel.org with ESMTP id S933488AbaEMKLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:11:35 -0400
+	Tue, 13 May 2014 06:11:31 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 144/182] mach64: use unaligned access
-Date: Tue, 13 May 2014 11:28:16 +0200
-Message-Id: <15d532062bb45a34ac1d5f27937663bc0d0c1305.1399973152.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
+        Dave Jiang <dave.jiang@intel.com>,
+        Ed Ciechanowski <ed.ciechanowski@intel.com>, Tejun Heo <tj@kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 149/182] libata/ahci: accommodate tag ordered controllers
+Date: Tue, 13 May 2014 11:28:21 +0200
+Message-Id: <913edce37b73a3f5939d902ac910e628aa2b4015.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -23,52 +25,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit c29dd8696dc5dbd50b3ac441b8a26751277ba520 upstream.
+commit 8a4aeec8d2d6a3edeffbdfae451cdf05cbf0fefd upstream.
 
-This patch fixes mach64 to use unaligned access to the font bitmap.
+The AHCI spec allows implementations to issue commands in tag order
+rather than FIFO order:
 
-This fixes unaligned access warning on sparc64 when 14x8 font is loaded.
+	5.3.2.12 P:SelectCmd
+	HBA sets pSlotLoc = (pSlotLoc + 1) mod (CAP.NCS + 1)
+	or HBA selects the command to issue that has had the
+	PxCI bit set to '1' longer than any other command
+	pending to be issued.
 
-On x86(64), unaligned access is handled in hardware, so both functions
-le32_to_cpup and get_unaligned_le32 perform the same operation.
+The result is that commands posted sequentially (time-wise) may play out
+of sequence when issued by hardware.
 
-On RISC machines, unaligned access is not handled in hardware, so we
-better use get_unaligned_le32 to avoid the unaligned trap and warning.
+This behavior has likely been hidden by drives that arrange for commands
+to complete in issue order.  However, it appears recent drives (two from
+different vendors that we have found so far) inflict out-of-order
+completions as a matter of course.  So, we need to take care to maintain
+ordered submission, otherwise we risk triggering a drive to fall out of
+sequential-io automation and back to random-io processing, which incurs
+large latency and degrades throughput.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+This issue was found in simple benchmarks where QD=2 seq-write
+performance was 30-50% *greater* than QD=32 seq-write performance.
+
+Tagging for -stable and making the change globally since it has a low
+risk-to-reward ratio.  Also, word is that recent versions of an unnamed
+OS also does it this way now.  So, drives in the field are already
+experienced with this tag ordering scheme.
+
+Cc: Dave Jiang <dave.jiang@intel.com>
+Cc: Ed Ciechanowski <ed.ciechanowski@intel.com>
+Reviewed-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/video/aty/mach64_accel.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/ata/libata-core.c | 21 +++++++++++++--------
+ include/linux/libata.h    |  1 +
+ 2 files changed, 14 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/video/aty/mach64_accel.c b/drivers/video/aty/mach64_accel.c
-index e45833ce975b..182bd680141f 100644
---- a/drivers/video/aty/mach64_accel.c
-+++ b/drivers/video/aty/mach64_accel.c
-@@ -4,6 +4,7 @@
-  */
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index c5d056e974f1..785b496c50bc 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4792,21 +4792,26 @@ void swap_buf_le16(u16 *buf, unsigned int buf_words)
+ static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
+ {
+ 	struct ata_queued_cmd *qc = NULL;
+-	unsigned int i;
++	unsigned int i, tag;
  
- #include <linux/delay.h>
-+#include <asm/unaligned.h>
- #include <linux/fb.h>
- #include <video/mach64.h>
- #include "atyfb.h"
-@@ -419,7 +420,7 @@ void atyfb_imageblit(struct fb_info *info, const struct fb_image *image)
- 		u32 *pbitmap, dwords = (src_bytes + 3) / 4;
- 		for (pbitmap = (u32*)(image->data); dwords; dwords--, pbitmap++) {
- 			wait_for_fifo(1, par);
--			aty_st_le32(HOST_DATA0, le32_to_cpup(pbitmap), par);
-+			aty_st_le32(HOST_DATA0, get_unaligned_le32(pbitmap), par);
+ 	/* no command while frozen */
+ 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
+ 		return NULL;
+ 
+-	/* the last tag is reserved for internal command. */
+-	for (i = 0; i < ATA_MAX_QUEUE - 1; i++)
+-		if (!test_and_set_bit(i, &ap->qc_allocated)) {
+-			qc = __ata_qc_from_tag(ap, i);
++	for (i = 0; i < ATA_MAX_QUEUE; i++) {
++		tag = (i + ap->last_tag + 1) % ATA_MAX_QUEUE;
++
++		/* the last tag is reserved for internal command. */
++		if (tag == ATA_TAG_INTERNAL)
++			continue;
++
++		if (!test_and_set_bit(tag, &ap->qc_allocated)) {
++			qc = __ata_qc_from_tag(ap, tag);
++			qc->tag = tag;
++			ap->last_tag = tag;
+ 			break;
  		}
- 	}
+-
+-	if (qc)
+-		qc->tag = i;
++	}
  
+ 	return qc;
+ }
+diff --git a/include/linux/libata.h b/include/linux/libata.h
+index bec6dbe939a0..3fee55e73e5e 100644
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -822,6 +822,7 @@ struct ata_port {
+ 	unsigned long		qc_allocated;
+ 	unsigned int		qc_active;
+ 	int			nr_active_links; /* #links with active qcs */
++	unsigned int		last_tag;	/* track next tag hw expects */
+ 
+ 	struct ata_link		link;		/* host default link */
+ 	struct ata_link		*slave_link;	/* see ata_slave_link_init() */
 -- 
 1.9.3
 
