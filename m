@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760786AbaEMJ4c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:56:32 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:63369 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760082AbaEMJ43 (ORCPT
+	id S1760755AbaEMJ42 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:56:28 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60841 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760082AbaEMJ24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:56:29 -0400
-MIME-Version: 1.0
-Date: Tue, 13 May 2014 11:56:28 +0200
-Message-ID: <CACRpkdYM9eQxWdG8qNkzstPRuQJYc6RLVLjo5tTWcwHT43S7Cg@mail.gmail.com>
-Subject: [GIT PULL] gpio fixes for v3.15
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Welling <mwelling@ieee.org>,
-        Vincent Donnefort <vdonnefort@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 13 May 2014 05:28:56 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 077/182] target/tcm_fc: Fix use-after-free of ft_tpg
+Date: Tue, 13 May 2014 11:27:09 +0200
+Message-Id: <1e55112842964dc089dbd4f698868a1757b7be25.1399973152.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
+References: <cover.1399973152.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Andy Grover <agrover@redhat.com>
 
-let's hope these two patches are the last GPIO fixes for this
-merge window. (Famous last words.)
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Anyway, details in the tag, please pull it in.
+===============
 
-Yours,
-Linus Walleij
+commit 2c42be2dd4f6586728dba5c4e197afd5cfaded78 upstream.
 
-The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
+ft_del_tpg checks tpg->tport is set before unlinking the tpg from the
+tport when the tpg is being removed. Set this pointer in ft_tport_create,
+or the unlinking won't happen in ft_del_tpg and tport->tpg will reference
+a deleted object.
 
-  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
+This patch sets tpg->tport in ft_tport_create, because that's what
+ft_del_tpg checks, and is the only way to get back to the tport to
+clear tport->tpg.
 
-are available in the git repository at:
+The bug was occuring when:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
-tags/gpio-v3.15-3
+- lport created, tport (our per-lport, per-provider context) is
+  allocated.
+  tport->tpg = NULL
+- tpg created
+- a PRLI is received. ft_tport_create is called, tpg is found and
+  tport->tpg is set
+- tpg removed. ft_tpg is freed in ft_del_tpg. Since tpg->tport was not
+  set, tport->tpg is not cleared and points at freed memory
+- Future calls to ft_tport_create return tport via first conditional,
+  instead of searching for new tpg by calling ft_lport_find_tpg.
+  tport->tpg is still invalid, and will access freed memory.
 
-for you to fetch changes up to 99e4b98dbe3ad1fe38a74d12c3b8d44a55930de4:
+see https://bugzilla.redhat.com/show_bug.cgi?id=1071340
 
-  gpio: mcp23s08: Bug fix of SPI device tree registration. (2014-05-09
-10:28:16 +0200)
+Signed-off-by: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/target/tcm_fc/tfc_sess.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-----------------------------------------------------------------
-GPIO fixes for the v3.15 series:
+diff --git a/drivers/target/tcm_fc/tfc_sess.c b/drivers/target/tcm_fc/tfc_sess.c
+index 4859505ae2ed..639fdb395fb7 100644
+--- a/drivers/target/tcm_fc/tfc_sess.c
++++ b/drivers/target/tcm_fc/tfc_sess.c
+@@ -68,6 +68,7 @@ static struct ft_tport *ft_tport_create(struct fc_lport *lport)
+ 
+ 	if (tport) {
+ 		tport->tpg = tpg;
++		tpg->tport = tport;
+ 		return tport;
+ 	}
+ 
+-- 
+1.9.3
 
-- Fix a null pointer bug in the ICH6 chipset driver
-
-- Fix device tree registration for the mcp23s08 driver
-
-----------------------------------------------------------------
-Michael Welling (1):
-      gpio: mcp23s08: Bug fix of SPI device tree registration.
-
-Vincent Donnefort (1):
-      gpio: ich: set regs and reglen for i3100 and ich6 chipset
-
- drivers/gpio/gpio-ich.c      |  4 ++++
- drivers/gpio/gpio-mcp23s08.c | 12 +++++++-----
- 2 files changed, 11 insertions(+), 5 deletions(-)
