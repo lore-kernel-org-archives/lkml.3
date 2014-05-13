@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760151AbaEMJ3A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:29:00 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60722 "EHLO
+	id S1760136AbaEMJ26 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:28:58 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60720 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759367AbaEMJ2z (ORCPT
+	by vger.kernel.org with ESMTP id S1753191AbaEMJ2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 May 2014 05:28:55 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Xiangyu Lu <luxiangyu@huawei.com>,
-        Alex Wu <wuquanming@huawei.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 019/182] ARM: 8027/1: fix do_div() bug in big-endian systems
-Date: Tue, 13 May 2014 11:26:11 +0200
-Message-Id: <71131cc9c942add602881c9990ad4380bd24fc54.1399973152.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Hui Wang <hui.wang@canonical.com>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 002/182] ALSA: hda - automute via amp instead of pinctl on some AIO models
+Date: Tue, 13 May 2014 11:25:54 +0200
+Message-Id: <5c9b463ca49ed99558585628a608b0914179eee9.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -25,51 +24,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiangyu Lu <luxiangyu@huawei.com>
+From: Hui Wang <hui.wang@canonical.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 80bb3ef109ff40a7593d9481c17de9bbc4d7c0e2 upstream.
+commit 493a52a9b6645f61954580c7d4bd52fa62110934 upstream.
 
-In big-endian systems, "%1" get the most significant part of the value, cause the instruction to get the wrong result.
+On some AIO (All In One) models with the codec alc668
+(Vendor ID: 0x10ec0668) on it, when we plug a headphone into the jack,
+the system will switch the output to headphone and set the speaker to
+automute as well as change the speaker Pin-ctls from 0x40 to 0x00,
+this will bring loud noise to the headphone.
 
-When viewing ftrace record in big-endian ARM systems, we found that
-the timestamp errors:
+I tried to disable the corresponding EAPD, but it did not help to
+eliminate the noise.
 
-swapper-0   [001] 1325.970000:   0:120:R ==> [001]    16:120:R events/1
-events/1-16 [001] 1325.970000:   16:120:S ==> [001]    0:120:R swapper
-swapper-0   [000] 1325.1000000:  0:120:R   + [000]    15:120:R events/0
-swapper-0   [000] 1325.1000000:  0:120:R ==> [000]    15:120:R events/0
-swapper-0   [000] 1326.030000:   0:120:R   + [000]  1150:120:R sshd
-swapper-0   [000] 1326.030000:   0:120:R ==> [000]  1150:120:R sshd
+According to Takashi's suggestion, we use amp operation to replace the
+pinctl modification for the automute, this really eliminate the noise.
 
-When viewed ftrace records, it will call the do_div(n, base) function, which achieved arch/arm/include/asm/div64.h in. When n = 10000000, base = 1000000, in do_div(n, base) will execute "umull %Q0, %R0, %1, %Q2".
-
-Reviewed-by: Dave Martin <Dave.Martin@arm.com>
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Alex Wu <wuquanming@huawei.com>
-Signed-off-by: Xiangyu Lu <luxiangyu@huawei.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+BugLink: https://bugs.launchpad.net/bugs/1268468
+Cc: David Henningsson <david.henningsson@canonical.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/arm/include/asm/div64.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/include/asm/div64.h b/arch/arm/include/asm/div64.h
-index 191ada6e4d2d..662c7bd06108 100644
---- a/arch/arm/include/asm/div64.h
-+++ b/arch/arm/include/asm/div64.h
-@@ -156,7 +156,7 @@
- 		/* Select the best insn combination to perform the   */	\
- 		/* actual __m * __n / (__p << 64) operation.         */	\
- 		if (!__c) {						\
--			asm (	"umull	%Q0, %R0, %1, %Q2\n\t"		\
-+			asm (	"umull	%Q0, %R0, %Q1, %Q2\n\t"		\
- 				"mov	%Q0, #0"			\
- 				: "=&r" (__res)				\
- 				: "r" (__m), "r" (__n)			\
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 6a32c857f704..855074950e6c 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3480,6 +3480,15 @@ static void alc_fixup_no_shutup(struct hda_codec *codec,
+ 	}
+ }
+ 
++static void alc_fixup_auto_mute_via_amp(struct hda_codec *codec,
++					const struct hda_fixup *fix, int action)
++{
++	if (action == HDA_FIXUP_ACT_PRE_PROBE) {
++		struct alc_spec *spec = codec->spec;
++		spec->gen.auto_mute_via_amp = 1;
++	}
++}
++
+ static void alc_fixup_headset_mode_alc668(struct hda_codec *codec,
+ 				const struct hda_fixup *fix, int action)
+ {
+@@ -4646,6 +4655,7 @@ enum {
+ 	ALC662_FIXUP_BASS_CHMAP,
+ 	ALC662_FIXUP_BASS_1A,
+ 	ALC662_FIXUP_BASS_1A_CHMAP,
++	ALC668_FIXUP_AUTO_MUTE,
+ };
+ 
+ static const struct hda_fixup alc662_fixups[] = {
+@@ -4806,6 +4816,12 @@ static const struct hda_fixup alc662_fixups[] = {
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = alc_fixup_inv_dmic_0x12,
+ 	},
++	[ALC668_FIXUP_AUTO_MUTE] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = alc_fixup_auto_mute_via_amp,
++		.chained = true,
++		.chain_id = ALC668_FIXUP_DELL_MIC_NO_PRESENCE
++	},
+ 	[ALC668_FIXUP_DELL_MIC_NO_PRESENCE] = {
+ 		.type = HDA_FIXUP_PINS,
+ 		.v.pins = (const struct hda_pintbl[]) {
+@@ -4851,11 +4867,11 @@ static const struct snd_pci_quirk alc662_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
+ 	SND_PCI_QUIRK(0x1028, 0x05d8, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x05db, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+-	SND_PCI_QUIRK(0x1028, 0x0623, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+-	SND_PCI_QUIRK(0x1028, 0x0624, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x0623, "Dell", ALC668_FIXUP_AUTO_MUTE),
++	SND_PCI_QUIRK(0x1028, 0x0624, "Dell", ALC668_FIXUP_AUTO_MUTE),
+ 	SND_PCI_QUIRK(0x1028, 0x0625, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0626, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+-	SND_PCI_QUIRK(0x1028, 0x0628, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x0628, "Dell", ALC668_FIXUP_AUTO_MUTE),
+ 	SND_PCI_QUIRK(0x103c, 0x1632, "HP RP5800", ALC662_FIXUP_HP_RP5800),
+ 	SND_PCI_QUIRK(0x1043, 0x11cd, "Asus N550", ALC662_FIXUP_BASS_1A_CHMAP),
+ 	SND_PCI_QUIRK(0x1043, 0x1477, "ASUS N56VZ", ALC662_FIXUP_BASS_CHMAP),
 -- 
 1.9.3
 
