@@ -1,99 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181AbaEMPu3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:50:29 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48805 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752211AbaEMPu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:50:26 -0400
-Date: Tue, 13 May 2014 10:50:19 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: George Cherian <george.cherian@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <balbi@ti.com>,
-        <gregkh@linuxfoundation.org>, <rogerq@ti.com>, <kishon@ti.com>
-Subject: Re: [PATCH 5/5] usb: dwc3: dwc3-omap: Disable/Enable core interrupts
- in Suspend/Resume
-Message-ID: <20140513155019.GN1151@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1399541587-14067-1-git-send-email-george.cherian@ti.com>
- <1399541587-14067-6-git-send-email-george.cherian@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8MZM6zh5Bb05FW+3"
-Content-Disposition: inline
-In-Reply-To: <1399541587-14067-6-git-send-email-george.cherian@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753458AbaEMPw0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:52:26 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:45636 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752211AbaEMPwP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 11:52:15 -0400
+Date: Tue, 13 May 2014 17:52:10 +0200
+From: Juri Lelli <juri.lelli@gmail.com>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Dario Faggioli <raistlin@linux.it>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: [SCHED_DEADLINE man pages 2/2] sched(7) SCHED_DEADLINE
+Message-Id: <20140513175210.49eed2e34ac06a3c109ce963@gmail.com>
+In-Reply-To: <537233A9.6040102@gmail.com>
+References: <53723235.40101@gmail.com>
+	<537233A9.6040102@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---8MZM6zh5Bb05FW+3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi,
+On Tue, 13 May 2014 17:00:57 +0200
+"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
 
-On Thu, May 08, 2014 at 03:03:07PM +0530, George Cherian wrote:
-> Enabling the core interrupts in complete is too late for XHCI, and stops
-> xhci from proper operation. So remove prepare and complete and disable/en=
-able
+> Hello Peter et al.
+> 
+> Here is the section of the sched(7) page that describes SCHED_DEADLINE,
+> as rendered text, with the (entire) raw page source attached. Please 
+> carefully review.
+> 
+> Cheers,
+> 
+> Michael
+> 
+>    SCHED_DEADLINE: Sporadic task model deadline scheduling
+>        Since version 3.14, Linux provides a deadline scheduling pol‐
+>        icy (SCHED_DEADLINE).  This policy is  currently  implemented
+>        using  GEDF  (Global  Earliest Deadline First) in conjunction
+>        with CBS (Constant Bandwidth Server).  To set and fetch  this
+>        policy and associated attributes, one must use the Linux-spe‐
+>        cific sched_setattr(2) and sched_getattr(2) system calls.
+> 
+>        A sporadic task is one that has a  sequence  of  jobs,  where
+>        each job is activated at most once per period.  Each job also
+>        has a relative deadline, before which it should finish execu‐
+>        tion, and a computation time, which is the CPU time necessary
+>        for executing the job.  The  moment  when  a  task  wakes  up
+>        because  a  new  job has to be executed is called the arrival
+>        time (also referred to as the request time or release  time).
+>        The  start time is the time at which a task starts its execu‐
+>        tion.  The absolute deadline is thus obtained by  adding  the
+>        relative deadline to the arrival time.
+> 
+>        The following diagram clarifies these terms:
+> 
+>            arrival/wakeup                   absolute deadline
+>                 |    start time                   |
+>                 |        |                        |
+>                 v        v                        v
+>            -----x--------xooooooooooooooooo-------x--------x---
+>                          |<- comp. time ->|
+>                 |<------- relative deadline ----->|
+>                 |<-------------- period ------------------>|
+> 
+>        When  setting  a  SCHED_DEADLINE  policy  for  a thread using
+>        sched_setattr(2), one can specify three parameters:  Runtime,
+>        Deadline,  and  Period.   These parameters do not necessarily
+>        correspond to the aforementioned terms: usual practice is  to
+>        set  Runtime to something bigger than the average computation
+>        time (or worst-case execution time for hard real-time tasks),
+>        Deadline  to  the relative deadline, and Period to the period
+>        of the task.  Thus, for SCHED_DEADLINE scheduling, we have:
+> 
+>            arrival/wakeup                   absolute deadline
+>                 |    start time                   |
+>                 |        |                        |
+>                 v        v                        v
+>            -----x--------xooooooooooooooooo-------x--------x---
+>                          |<-- Runtime --->|
 
-isn't this a bug in xhci ? I mean the driver should make no assumption
-as to when IRQs are enabled, why do we need to enable IRQs earlier when
-the device is only considered "ready for use" after ->complete()
-finishes executing ?
+                           |<-- Runtime   --->|
 
-=46rom documentation we have:
+I originally drew this slightly bigger than comp. time above because we
+usually don't want tasks to be throttled in the average case. It's just
+a rule of thumb.
 
-107  * @complete: Undo the changes made by @prepare().  This method is exec=
-uted for
-108  *      all kinds of resume transitions, following one of the resume ca=
-llbacks:
-109  *      @resume(), @thaw(), @restore().  Also called if the state trans=
-ition
-110  *      fails before the driver's suspend callback: @suspend(), @freeze=
-() or
-111  *      @poweroff(), can be executed (e.g. if the suspend callback fail=
-s for one
-112  *      of the other devices that the PM core has unsuccessfully attemp=
-ted to
-113  *      suspend earlier).
-114  *      The PM core executes subsystem-level @complete() after it has e=
-xecuted
-115  *      the appropriate resume callbacks for all devices.
+>                 |<----------- Deadline ---------->|
+>                 |<-------------- Period ------------------>|
+> 
+>        The three deadline-scheduling parameters  correspond  to  the
+>        sched_runtime, sched_deadline, and sched_period fields of the
+>        sched_attr structure;  see  sched_setattr(2).   These  fields
+>        express  value  in nanoseconds.  If sched_period is specified
+>        as 0, then it is made the same as sched_deadline.
+> 
+>        The kernel requires that:
+> 
+>            sched_runtime <= sched_deadline <= sched_period
+> 
+>        In addition, under the current  implementation,  all  of  the
+>        parameter  values  must be at least 1024 (i.e., just over one
+>        microsecond, which is the resolution of the  implementation).
 
-which tells me that using ->complete() to reenable IRQs is ok here.
-Specially when you consider that the role of ->prepare() is to prevent
-new children from being created and, for a USB host, that means we
-should prevent hub port changes.
+And below 2^63, as per the last bug fix we discussed.
 
-cheers
+>        If any of these checks fails, sched_setattr(2) fails with the
+>        error EINVAL.
+> 
+>        The CBS guarantees non-interference between tasks, by  throt‐
+>        tling  threads  that attempt to over-run their specified Run‐
+>        time.
+> 
+>        To ensure deadline scheduling  guarantees,  the  kernel  must
+>        prevent situations where the set of SCHED_DEADLINE threads is
+>        not feasible (schedulable) within the given constraints.  The
+>        kernel  thus  performs  an  admittance  test  when setting or
+>        changing SCHED_DEADLINE policy and attributes.   This  admis‐
+>        sion test calculates whether the change is feasible; if it is
+>        not sched_setattr(2) fails with the error EBUSY.
+> 
+>        For example, it is required (but not necessarily  sufficient)
+>        for  the  total  utilization  to be less than or equal to the
+>        total number of CPUs available, where, since each thread  can
+>        maximally  run for Runtime per Period, that thread's utiliza‐
+>        tion is its Runtime divided by its Period.
+> 
+>        In order to fulfil the guarantees that are made when a thread
+>        is  admitted  to  the  SCHED_DEADLINE  policy, SCHED_DEADLINE
+>        threads are the highest priority (user controllable)  threads
+>        in  the  system; if any SCHED_DEADLINE thread is runnable, it
+>        will preempt any thread scheduled  under  one  of  the  other
+>        policies.
+> 
+>        A call to fork(2) by a thread scheduled under the SCHED_DEAD‐
+>        LINE policy will fail  with  the  error  EAGAIN,  unless  the
+>        thread has its reset-on-fork flag set (see below).
+> 
+>        A  SCHED_DEADLINE thread that calls sched_yield(2) will yield
+>        the current job and wait for a new period to begin.
+> 
 
---=20
-balbi
+Thanks,
 
---8MZM6zh5Bb05FW+3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTcj87AAoJEIaOsuA1yqREV0EP/049eKeF0BbVfzgCrlrKIr1a
-4CASqPnBIRCgnjyYELg3vWYl8mIxyw4p6BvUzPrtJcyg0tWTDP72h0K2UGJYkonI
-jia/ilS4rP6hRHi032+bmUmmGzfMLsu0JYdKudZsfOprZTLztvDeQ88lcuqAtqRZ
-YA2OdPvCUhmRqNdAivV1IWX0BG79V4cpFJ6Z9lERw17K9zRPzRD1LokLH4qoyTrz
-L7bXe6XZ9+s4xBD6RaQTPlp/u+CHDnTaBaNAUIv1VR58HLqHwEVegTA0mT6mqP6F
-Rhb1LEBXpcc4pXHfi84BWGYbHGcI3RD6qN9lelFq+tNTX1/dlwJCsTwoPHAWaKP9
-BmwV3S8KGRnNC7RMY8yeiOAeuIqL1BXhJjTzR3mJxbUORKzUzIpw34ZGg7mVe2pp
-UAoN0C2MPivKd3p+o5z6ph1LYco4I5HiGjtFhKyhSOdb4uz6iJ4WhtEap4BMbaiu
-3OtC0IMew5zmYIc9FUbyqkRd6fvsfj4D7ZqUYXweTnPIsvt5cj8XMgkurqLWUNPM
-aTnNDT7C6FvkgtVHcLBIhK79Ewc7shQr2CS4s0g/yB1AXa0rqN+MxMasVMMS5iKK
-6qu+CvhMWZAgG4FQtxxZtBmGMcikrqhu44MCsxYiT1TMOuURyLOmYYhBSmE6dudN
-FOAD/iOn4qbOCT1RyxF9
-=BMaZ
------END PGP SIGNATURE-----
-
---8MZM6zh5Bb05FW+3--
+- Juri
