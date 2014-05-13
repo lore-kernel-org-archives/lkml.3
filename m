@@ -1,70 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758736AbaELXwh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 19:52:37 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:65275 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758705AbaELXwf (ORCPT
+	id S1751822AbaEMAAl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 20:00:41 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:36765 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970AbaEMAAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 19:52:35 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Oswald Buddenhagen <ossi@kde.org>
-Subject: Re: [PATCH] ACPICA: Revert "ACPICA: Add option to favor 32-bit FADT addresses."
-Date: Tue, 13 May 2014 02:09:20 +0200
-Message-ID: <2640573.uiu9DRCeSI@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E880255B72C@SHSMSX101.ccr.corp.intel.com>
-References: <38907770.bupFXhytsS@vostro.rjw.lan> <1AE640813FDE7649BE1B193DEA596E880255B3F0@SHSMSX101.ccr.corp.intel.com> <1AE640813FDE7649BE1B193DEA596E880255B72C@SHSMSX101.ccr.corp.intel.com>
+	Mon, 12 May 2014 20:00:40 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Tue, 13 May 2014 09:03:00 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Weijie Yang <weijie.yang@samsung.com>, "'Joonsoo Kim'" <js1304@gmail.com>,
+        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Seth Jennings'" <sjennings@variantweb.net>,
+        "'Nitin Gupta'" <ngupta@vflare.org>,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Bob Liu'" <bob.liu@oracle.com>,
+        "'Dan Streetman'" <ddstreet@ieee.org>,
+        "'Heesub Shin'" <heesub.shin@samsung.com>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'Linux-MM'" <linux-mm@kvack.org>
+Subject: Re: [PATCH] zram: remove global tb_lock by using lock-free CAS
+Message-ID: <20140513000300.GA32092@bbox>
+References: <20140505134615.04cb627bb2784cabcb844655@linux-foundation.org>
+ <1399328550.2646.5.camel@buesod1.americas.hpqcorp.net>
+ <000001cf69c9$5776f330$0664d990$%yang@samsung.com>
+ <20140507085743.GA31680@bbox>
+ <CAL1ERfOXNrfKqMVs-Yz8yJjKKU3L5fjUEOb0Aeyqc37py-BWEg@mail.gmail.com>
+ <CAAmzW4Pn2VUEnQ8FyOaBffqfUiHt6ocLEEvyaJrSKmTjaNp_wQ@mail.gmail.com>
+ <20140508062418.GF5282@bbox>
+ <000001cf6c16$afe73800$0fb5a800$%yang@samsung.com>
+ <20140512051505.GB32617@bbox>
+ <1399906158.2648.6.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399906158.2648.6.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 12, 2014 08:51:36 AM Zheng, Lv wrote:
-> Hi, Rafael
+Hello David,
+
+On Mon, May 12, 2014 at 07:49:18AM -0700, Davidlohr Bueso wrote:
+> On Mon, 2014-05-12 at 14:15 +0900, Minchan Kim wrote:
+> > On Sat, May 10, 2014 at 02:10:08PM +0800, Weijie Yang wrote:
+> > > On Thu, May 8, 2014 at 2:24 PM, Minchan Kim <minchan@kernel.org> wrote:
+> > > > On Wed, May 07, 2014 at 11:52:59PM +0900, Joonsoo Kim wrote:
+> > > >> >> Most popular use of zram is the in-memory swap for small embedded system
+> > > >> >> so I don't want to increase memory footprint without good reason although
+> > > >> >> it makes synthetic benchmark. Alhought it's 1M for 1G, it isn't small if we
+> > > >> >> consider compression ratio and real free memory after boot
+> > > >>
+> > > >> We can use bit spin lock and this would not increase memory footprint for 32 bit
+> > > >> platform.
+> > > >
+> > > > Sounds like a idea.
+> > > > Weijie, Do you mind testing with bit spin lock?
+> > > 
+> > > Yes, I re-test them.
+> > > This time, I test each case 10 times, and take the average(KS/s).
+> > > (the test machine and method are same like previous mail's)
+> > > 
+> > > Iozone test result:
+> > > 
+> > >       Test       BASE     CAS   spinlock   rwlock  bit_spinlock
+> > > --------------------------------------------------------------
+> > >  Initial write  1381094   1425435   1422860   1423075   1421521
+> > >        Rewrite  1529479   1641199   1668762   1672855   1654910
+> > >           Read  8468009  11324979  11305569  11117273  10997202
+> > >        Re-read  8467476  11260914  11248059  11145336  10906486
+> > >   Reverse Read  6821393   8106334   8282174   8279195   8109186
+> > >    Stride read  7191093   8994306   9153982   8961224   9004434
+> > >    Random read  7156353   8957932   9167098   8980465   8940476
+> > > Mixed workload  4172747   5680814   5927825   5489578   5972253
+> > >   Random write  1483044   1605588   1594329   1600453   1596010
+> > >         Pwrite  1276644   1303108   1311612   1314228   1300960
+> > >          Pread  4324337   4632869   4618386   4457870   4500166
+> > > 
+> > > Fio test result:
+> > > 
+> > >     Test     base     CAS    spinlock    rwlock  bit_spinlock
+> > > -------------------------------------------------------------
+> > > seq-write   933789   999357   1003298    995961   1001958
+> > >  seq-read  5634130  6577930   6380861   6243912   6230006
+> > >    seq-rw  1405687  1638117   1640256   1633903   1634459
+> > >   rand-rw  1386119  1614664   1617211   1609267   1612471
+> > > 
+> > > 
+> > > The base is v3.15.0-rc3, the others are per-meta entry lock.
+> > > Every optimization method shows higher performance than the base, however,
+> > > it is hard to say which method is the most appropriate.
+> > 
+> > It's not too big between CAS and bit_spinlock so I prefer general method.
 > 
-> I checked the bug.
+> Well, I imagine that's because the test system is small enough that the
+> lock is not stressed enough. Bit spinlocks are considerably slower than
+> other types. I'm not sure if we really care for the case of zram, but in
+> general I really dislike this lock. It suffers from just about
+> everything our regular spinlocks try to optimize, specially unfairness
+> in who gets the lock when contended (ticketing).
+
+But as you said, in general, you're right but it's not the case for zram.
+Most popular zram usecase is in-memory swap for small embedded system(at most,
+4 CPU, even, they don't turn on always) so I believe lock contention
+(concurrent swapout of same slot? concurrent swapread of same slot)
+is too much rare(ie, actually it wouldn't happen by upper layer's lock).
+
+Another usecase zram-blk, yeb, thesedays, some guys start to use zram as block
+device but it would be same with zram-swap because upper layer(ex, file system)
+would already have a lock to prevent concurrent access of the block so
+contention would be rare, too.
+
+I don't want to bloat zram's memory footprint for minor usecase, even, without
+real report with the number. We have reasonable rationale to use bit_spin_lock
+like above.
+
 > 
-> The dmesg of the kernel without the bisected commit:
-> [    0.000000] ACPI BIOS Warning (bug): Incorrect checksum in table [XSDT] - 0xA0, should be 0xC9 (20140214/tbprint-218)
-> [    0.000000] ACPI Warning: 32/64 FACS address mismatch in FADT - two FACS tables! (20140214/tbfadt-395)
-> [    0.000000] ACPI BIOS Warning (bug): 32/64X FACS address mismatch in FADT - 0xCF661F40/0x00000000CF667E40, using 32 (20140214/tbfadt-522)
+> Thanks,
+> Davidlohr
 > 
-> The dmesg of the kernel with the bisected commit:
-> [    0.000000] ACPI BIOS Warning (bug): Incorrect checksum in table [XSDT] - 0xA0, should be 0xC9 (20131218/tbprint-214)
-> [    0.000000] ACPI BIOS Warning (bug): 32/64X FACS address mismatch in FADT: 0xCF661F40/0x00000000CF667E40, using 64-bit address (20131218/tbfadt-271)
-> 
-> This is the purpose of the bisected commit.
-> According to the link below:
-> http://bugs.acpica.org/show_bug.cgi?id=885
-> And Windows documentation:
-> http://download.microsoft.com/download/5/b/9/5b97017b-e28a-4bae-ba48-174cf47d23cd/CPA002_WH06.ppt
-> We believe 64-bit addresses should be used by default so that new features can be enabled according to the public knowledge of Windows Vista+ behavior.
-> For old Windows, it's hard for us to guess, we should wait for the reports and add quirks for them.
-> 
-> Thus this commit is not wrong, it shouldn't be reverted.
-
-It is wrong, because it breaks a system that worked without it.
-
-It's *that* simple.
-
-And either you have a fix for that (which is not a quirk, because there may be
-more machines like that), or we have to revert it.
-
-> Though this platform is newer than vista, we still should offer a quirk mechanism
-> for it as a quick fix:
-
-We didn't need a quirk for it before, though.
-
-So really, I'm reverting it.
-
-Thanks!
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Kind regards,
+Minchan Kim
