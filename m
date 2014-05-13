@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932967AbaEMJlS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:41:18 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:38064 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932715AbaEMJlN (ORCPT
+	id S933005AbaEMJlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:41:44 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:40999 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932512AbaEMJll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:41:13 -0400
-Message-ID: <5371E8B7.8000103@linaro.org>
-Date: Tue, 13 May 2014 10:41:11 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 13 May 2014 05:41:41 -0400
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+In-Reply-To: <5371E62F.9090203@southpole.se>
+References: <1399971456-3941-1-git-send-email-lftan@altera.com>
+	<1399971958-4561-1-git-send-email-lftan@altera.com>
+	<5371E62F.9090203@southpole.se>
+Date: Tue, 13 May 2014 17:41:41 +0800
+X-Google-Sender-Auth: 4oxGM-sto3mPj9d4XfmUYXn65Yg
+Message-ID: <CAFiDJ58FJwTj5r0gEsbJgZL0HigpX0TEAxE_ARrsHV=BfWsnbw@mail.gmail.com>
+Subject: Re: [PATCH 16/25] openrisc: Add 32 bit time_t and clock_t
+From: Ley Foon Tan <lftan@altera.com>
+To: Jonas Bonn <jonas@southpole.se>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        agross@quicinc.com,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v1 01/11] ARM: amba: Add Qualcomm vendor ID.
-References: <1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>	<1398759542-13017-1-git-send-email-srinivas.kandagatla@linaro.org> <CACRpkdZyEAkJUGC5x6CY65-g97jfyg-TMDoe8JxDMexVx5usSA@mail.gmail.com>
-In-Reply-To: <CACRpkdZyEAkJUGC5x6CY65-g97jfyg-TMDoe8JxDMexVx5usSA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Chung-Lin Tang <cltang@codesourcery.com>, linux@openrisc.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Linus W,
-
-On 13/05/14 08:16, Linus Walleij wrote:
-> On Tue, Apr 29, 2014 at 10:19 AM,  <srinivas.kandagatla@linaro.org> wrote:
->
->> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+On Tue, May 13, 2014 at 5:30 PM, Jonas Bonn <jonas@southpole.se> wrote:
+> On 05/13/2014 11:05 AM, Ley Foon Tan wrote:
+>> Override time_t and clock_t in include/uapi/asm-generic.
 >>
->> This patch adds Qualcomm amba vendor Id to the list. This ID is used in mmci
->> driver.
->>
->> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-> (...)
->> +       AMBA_VENDOR_QCOM = 0x51,
+>> diff --git a/arch/openrisc/include/uapi/asm/posix_types.h b/arch/openrisc/include/uapi/asm/posix_types.h
+>> new file mode 100644
+>> index 0000000..5ccf37d
+>> --- /dev/null
+>> +++ b/arch/openrisc/include/uapi/asm/posix_types.h
+>> @@ -0,0 +1,17 @@
+>> +#ifndef __ARCH_OPENRISC_POSIX_TYPES_H
+>> +#define __ARCH_OPENRISC_POSIX_TYPES_H
+>> +
+>> +/*
+>> + * This file is generally used by user-level software, so you need to
+>> + * be a little careful about namespace pollution etc. Also, we cannot
+>> + * assume GCC is being used.
+>> + */
 >
-> Yeah it's a "Q", like 0x41 is "A" for ARM. You could as well mention
-> this in the commit message.
+> I don't think the above comment needs to be copied to this file... given
+> that the file is in the uapi/ directory, we know the file is exported to
+> userspace, and the GCC comment isn't relevant given the rest of the
+> files contents.
 >
-Sounds good, I will fix it in next version and send it to Russell's 
-patch tracker.
+> But that's really just a nit!  Nice work, otherwise.
+>
+> Acked-by: Jonas Bonn <jonas@southpole.se>
+I noticed most of the posix_types.h files in other archiectures have
+this comment.
+I can remove this comment if you think we don't need to add this.
+Thanks.
 
-
---srini
-> And you can probably just put this patch into Russell's patch tracker
-> already.
->
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->
-> Yours,
-> Linus Walleij
->
+Regards
+Ley Foon
