@@ -1,119 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933938AbaEMOi4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 10:38:56 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51605 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933908AbaEMOiw (ORCPT
+	id S933997AbaEMOjJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 10:39:09 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:43014 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933976AbaEMOjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 10:38:52 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 3/5] irq_work: Allow remote queueing
-Date: Tue, 13 May 2014 16:38:39 +0200
-Message-Id: <1399991921-17618-4-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1399991921-17618-1-git-send-email-fweisbec@gmail.com>
-References: <1399991921-17618-1-git-send-email-fweisbec@gmail.com>
+	Tue, 13 May 2014 10:39:04 -0400
+MIME-Version: 1.0
+X-Originating-IP: [95.23.101.217]
+In-Reply-To: <20140513142252.GG32082@beef>
+References: <1399686184-1594-1-git-send-email-mranostay@gmail.com>
+	<20140512195050.GB5668@atomide.com>
+	<CAOCHtYiYwx_bEsyqkbUTTAbhBYESzvfBOOYeVuFXPS1dDy0ZKA@mail.gmail.com>
+	<20140512201517.GC5668@atomide.com>
+	<CAOCHtYg6XpF0Gbo4iFqsFvP=QSivQQvCzov8UfxeLXMzrRYEWw@mail.gmail.com>
+	<20140512204213.GD5668@atomide.com>
+	<CAOCHtYgg7jwxswH+mqF3RA7-0RP-nGuft+Ze-GRwu1fbA6+0Bw@mail.gmail.com>
+	<537215D3.70306@ti.com>
+	<CABxcv=nq9XvyN0aPOBFDm0UyoaW-Htyy0tyP3YhYaDnDUo3a5w@mail.gmail.com>
+	<20140513142252.GG32082@beef>
+Date: Tue, 13 May 2014 16:39:02 +0200
+Message-ID: <CABxcv=mSs71pS1PAS-WdP0ru_Eb1XhXEm1qCCKW7=aL7EN4FgQ@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: dts: am335x-bone-common: Add i2c2 definition
+From: Javier Martinez Canillas <javier@dowhile0.org>
+To: Matt Porter <matt.porter@linaro.org>
+Cc: Tom Rini <trini@ti.com>, Robert Nelson <robertcnelson@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, Matt Ranostay <mranostay@gmail.com>,
+        robh+dt@kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Pantelis Antoniou <pantelis.antoniou@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-irq work currently only supports local callbacks. However its code
-is mostly ready to run remote callbacks and we have some potential user.
+On Tue, May 13, 2014 at 4:22 PM, Matt Porter <matt.porter@linaro.org> wrote:
+> On Tue, May 13, 2014 at 04:06:02PM +0200, Javier Martinez Canillas wrote:
+>> On Tue, May 13, 2014 at 2:53 PM, Tom Rini <trini@ti.com> wrote:
+>> > On 05/12/2014 04:57 PM, Robert Nelson wrote:
+>> >>>> Either case if fine with me.  As who knows when the dtc "overlay" will
+>> >>>> every truly make it mainline, as the capemgr was the only real kernel
+>> >>>> user of the i2c/at24 eeprom information.
+>> >>>
+>> >>> Sounds like we should keep it disabled though so u-boot can be used
+>> >>> to toggle it while waiting for the capemgr. That's because the board
+>> >>> has a header for pins, so it's not exactly limited to just the capes.
+>> >>>
+>> >>> Anybody working on enabling/disabling cape dtb configurations in u-boot?
+>> >>
+>> >> Well,
+>> >>
+>> >> Would Tom even approve of that in mainline u-boot? He didn't want my
+>> >> "invert" the gpio to enable the usb hub on the older beagle xm A/B..
+>> >>
+>> >> http://lists.denx.de/pipermail/u-boot/2014-January/172154.html
+>> >>
+>> >> http://lists.denx.de/pipermail/u-boot/2014-January/172274.html
+>>
+>> Using fdt set from the bootloader to use the same FDT for similar
+>> boards (like the example with Beagle xM variants) is kind of trying to
+>> replicate what we used to do from boards files where it was possible
+>> to manage a set of boards using the same platform code.
+>>
+>> But Device Trees are meant to describe hardware and thus should be
+>> static, if two board are almost identical but slightly different, then
+>> are two different hardware where each need its proper FDT that
+>> describes it.
+>>
+>> >
+>> > I would think that using the 'fdt' command in U-Boot to add all
+>> > properties of every cape found on a running system would drive someone
+>> > to madness quite quickly.  Moving all of Pantelis' work for dynamic
+>> > device trees from the kernel to N bootloaders (U-Boot, barebox, UEFI,
+>> > etc) sounds like a step in the wrong direction.
+>> >
+>>
+>> Agreed. I think that until the device tree overlay and the cape
+>> manager find their way into mainline we should treat capes as if they
+>> were expansion boards attached to a Computer-on-Module. That is, a
+>> static based board which its own DTS including the BB{B,W} as an dtsi
+>> and not something that can be added on runtime.
+>
+> It's far more complicated than a SOM plus carrier board. Consider that
+> you can have any 4 of these capes stacked on the BBB/BBW in any
+> combination (assuming no resource conflicts). Capturing all possible
+> combinations in static dtsis is not practical.
+>
 
-The full nohz subsystem currently open codes its own remote irq work
-on top of the scheduler ipi when it wants a CPU to revaluate its next
-tick. However this ad hoc solution bloats the scheduler IPI.
+Right, I forgot that the capes were stackable so is indeed not
+practical to model every single combination as DTS in mainline. Even
+if stacking was not possible there are just too many capes out there
+to have a DTS for every single cape.
 
-Lets just extend the irq work subsystem to support remote queuing on top
-of the generic SMP IPI to handle this kind of user. This shouldn't add
-noticeable overhead.
+My point was that someone who wants to use a BBB + a set of capes can
+today write a DTS for its own stacked setup.
 
-Suggested-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- include/linux/irq_work.h |  2 ++
- kernel/irq_work.c        | 17 +++++++++++++++++
- kernel/smp.c             |  3 +++
- 3 files changed, 22 insertions(+)
+Unfortunately I don't have a solution but what I'm pretty sure is that
+mangling the DTS from the bootloader is not the right one :-)
 
-diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
-index 429b1ba..511e7f7 100644
---- a/include/linux/irq_work.h
-+++ b/include/linux/irq_work.h
-@@ -33,6 +33,8 @@ void init_irq_work(struct irq_work *work, void (*func)(struct irq_work *))
- #define DEFINE_IRQ_WORK(name, _f) struct irq_work name = { .func = (_f), }
- 
- bool irq_work_queue(struct irq_work *work);
-+bool irq_work_queue_on(struct irq_work *work, int cpu);
-+
- void irq_work_run(void);
- void irq_work_run_tick(void);
- void irq_work_sync(struct irq_work *work);
-diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index 292a9ac..98dab29 100644
---- a/kernel/irq_work.c
-+++ b/kernel/irq_work.c
-@@ -66,6 +66,23 @@ bool __weak arch_irq_work_can_raise(void)
-  *
-  * Can be re-enqueued while the callback is still in progress.
-  */
-+bool irq_work_queue_on(struct irq_work *work, int cpu)
-+{
-+	/* Only queue if not already pending */
-+	if (!irq_work_claim(work))
-+		return false;
-+
-+	/* All work should have been flushed before going offline */
-+	WARN_ON_ONCE(cpu_is_offline(cpu));
-+	WARN_ON_ONCE(work->flags & IRQ_WORK_LAZY);
-+
-+	if (llist_add(&work->llnode, &per_cpu(raised_list, cpu)))
-+		native_send_call_func_single_ipi(cpu);
-+
-+	return true;
-+}
-+EXPORT_SYMBOL_GPL(irq_work_queue_on);
-+
- bool irq_work_queue(struct irq_work *work)
- {
- 	unsigned long flags;
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 06d574e..f5edb96 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -3,6 +3,7 @@
-  *
-  * (C) Jens Axboe <jens.axboe@oracle.com> 2008
-  */
-+#include <linux/irq_work.h>
- #include <linux/rcupdate.h>
- #include <linux/rculist.h>
- #include <linux/kernel.h>
-@@ -198,6 +199,8 @@ void generic_smp_call_function_single_interrupt(void)
- 		csd->func(csd->info);
- 		csd_unlock(csd);
- 	}
-+
-+	irq_work_run();
- }
- 
- /*
--- 
-1.8.3.1
+> -Matt
 
+Best regards,
+Javier
