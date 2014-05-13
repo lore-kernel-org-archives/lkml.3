@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760768AbaEMKMH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:12:07 -0400
+	id S933770AbaEMKME (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:12:04 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933699AbaEMKMA (ORCPT
+	by vger.kernel.org with ESMTP id S933755AbaEMKMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 May 2014 06:12:00 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Allan McRae <allan@archlinux.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 109/182] xattr: guard against simultaneous glibc header inclusion
-Date: Tue, 13 May 2014 11:27:41 +0200
-Message-Id: <3423bc0a5106477a4235d4df73752d1024c14d2f.1399973152.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Huacai Chen <chenhc@lemote.com>,
+        John Crispin <john@phrozen.org>,
+        "Steven J. Hill" <Steven.Hill@imgtec.com>,
+        Aurelien Jarno <aurelien@aurel32.net>, linux-mips@linux-mips.org,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 132/182] MIPS: Hibernate: Flush TLB entries in swsusp_arch_resume()
+Date: Tue, 13 May 2014 11:28:04 +0200
+Message-Id: <e49d49ffb18279d51214209c982b8e723f9c5e5a.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -26,86 +27,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
+From: Huacai Chen <chenhc@lemote.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit ea1a8217b06b41b31a2b60b0b83f75c77ef9c873 upstream.
+commit c14af233fbe279d0e561ecf84f1208b1bae087ef upstream.
 
-If the glibc xattr.h header is included after the uapi header,
-compilation fails due to an enum re-using a #define from the uapi
-header.
+The original MIPS hibernate code flushes cache and TLB entries in
+swsusp_arch_resume(). But they are removed in Commit 44eeab67416711
+(MIPS: Hibernation: Remove SMP TLB and cacheflushing code.). A cross-
+CPU flush is surely unnecessary because all but the local CPU have
+already been disabled. But a local flush (at least the TLB flush) is
+needed. When we do hibernation on Loongson-3 with an E1000E NIC, it is
+very easy to produce a kernel panic (kernel page fault, or unaligned
+access). The root cause is E1000E driver use vzalloc_node() to allocate
+pages, the stale TLB entries of the booting kernel will be misused by
+the resumed target kernel.
 
-Protect against this by guarding the define and enum inclusions against
-each other.
-
-(See https://lists.debian.org/debian-glibc/2014/03/msg00029.html
-and https://sourceware.org/glibc/wiki/Synchronizing_Headers
-for more information.)
-
-Signed-off-by: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Allan McRae <allan@archlinux.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Cc: John Crispin <john@phrozen.org>
+Cc: Steven J. Hill <Steven.Hill@imgtec.com>
+Cc: Aurelien Jarno <aurelien@aurel32.net>
+Cc: linux-mips@linux-mips.org
+Cc: Fuxin Zhang <zhangfx@lemote.com>
+Cc: Zhangjin Wu <wuzhangjin@gmail.com>
+Patchwork: https://patchwork.linux-mips.org/patch/6643/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- include/uapi/linux/libc-compat.h | 9 +++++++++
- include/uapi/linux/xattr.h       | 7 +++++++
- 2 files changed, 16 insertions(+)
+ arch/mips/power/hibernate.S | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/uapi/linux/libc-compat.h b/include/uapi/linux/libc-compat.h
-index 335e8a7cad39..c140620dad92 100644
---- a/include/uapi/linux/libc-compat.h
-+++ b/include/uapi/linux/libc-compat.h
-@@ -85,6 +85,12 @@
- 
- #endif /* _NETINET_IN_H */
- 
-+/* Definitions for xattr.h */
-+#if defined(_SYS_XATTR_H)
-+#define __UAPI_DEF_XATTR		0
-+#else
-+#define __UAPI_DEF_XATTR		1
-+#endif
- 
- /* If we did not see any headers from any supported C libraries,
-  * or we are being included in the kernel, then define everything
-@@ -98,6 +104,9 @@
- #define __UAPI_DEF_IPV6_MREQ		1
- #define __UAPI_DEF_IPPROTO_V6		1
- 
-+/* Definitions for xattr.h */
-+#define __UAPI_DEF_XATTR		1
-+
- #endif /* __GLIBC__ */
- 
- #endif /* _UAPI_LIBC_COMPAT_H */
-diff --git a/include/uapi/linux/xattr.h b/include/uapi/linux/xattr.h
-index e4629b93bdd6..a63c14607f86 100644
---- a/include/uapi/linux/xattr.h
-+++ b/include/uapi/linux/xattr.h
-@@ -7,11 +7,18 @@
-   Copyright (c) 2001-2002 Silicon Graphics, Inc.  All Rights Reserved.
-   Copyright (c) 2004 Red Hat, Inc., James Morris <jmorris@redhat.com>
- */
-+
-+#include <linux/libc-compat.h>
-+
- #ifndef _UAPI_LINUX_XATTR_H
- #define _UAPI_LINUX_XATTR_H
- 
-+#ifdef __UAPI_DEF_XATTR
-+#define __USE_KERNEL_XATTR_DEFS
-+
- #define XATTR_CREATE	0x1	/* set value, fail if attr already exists */
- #define XATTR_REPLACE	0x2	/* set value, fail if attr does not exist */
-+#endif
- 
- /* Namespaces */
- #define XATTR_OS2_PREFIX "os2."
+diff --git a/arch/mips/power/hibernate.S b/arch/mips/power/hibernate.S
+index 7e0277a1048f..32a7c828f073 100644
+--- a/arch/mips/power/hibernate.S
++++ b/arch/mips/power/hibernate.S
+@@ -43,6 +43,7 @@ LEAF(swsusp_arch_resume)
+ 	bne t1, t3, 1b
+ 	PTR_L t0, PBE_NEXT(t0)
+ 	bnez t0, 0b
++	jal local_flush_tlb_all /* Avoid TLB mismatch after kernel resume */
+ 	PTR_LA t0, saved_regs
+ 	PTR_L ra, PT_R31(t0)
+ 	PTR_L sp, PT_R29(t0)
 -- 
 1.9.3
 
