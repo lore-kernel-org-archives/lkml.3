@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759639AbaEMKUY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:20:24 -0400
+	id S1759614AbaEMKUz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:20:55 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933488AbaEMKLg (ORCPT
+	by vger.kernel.org with ESMTP id S933538AbaEMKLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:11:36 -0400
+	Tue, 13 May 2014 06:11:35 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, James Hogan <james.hogan@imgtec.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Sanjay Lal <sanjayl@kymasys.com>,
-        linux-mips@linux-mips.org, kvm@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 131/182] MIPS: KVM: Pass reserved instruction exceptions to guest
-Date: Tue, 13 May 2014 11:28:03 +0200
-Message-Id: <398d3ceacab6fe9c47e2ddb01979e2a74ed7c43b.1399973152.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 144/182] mach64: use unaligned access
+Date: Tue, 13 May 2014 11:28:16 +0200
+Message-Id: <15d532062bb45a34ac1d5f27937663bc0d0c1305.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -26,78 +23,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Hogan <james.hogan@imgtec.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 15505679362270d02c449626385cb74af8905514 upstream.
+commit c29dd8696dc5dbd50b3ac441b8a26751277ba520 upstream.
 
-Previously a reserved instruction exception while in guest code would
-cause a KVM internal error if kvm_mips_handle_ri() didn't recognise the
-instruction (including a RDHWR from an unrecognised hardware register).
+This patch fixes mach64 to use unaligned access to the font bitmap.
 
-However the guest OS should really have the opportunity to catch the
-exception so that it can take the appropriate actions such as sending a
-SIGILL to the guest user process or emulating the instruction itself.
+This fixes unaligned access warning on sparc64 when 14x8 font is loaded.
 
-Therefore in these cases emulate a guest RI exception and only return
-EMULATE_FAIL if that fails, being careful to revert the PC first in case
-the exception occurred in a branch delay slot in which case the PC will
-already point to the branch target.
+On x86(64), unaligned access is handled in hardware, so both functions
+le32_to_cpup and get_unaligned_le32 perform the same operation.
 
-Also turn the printk messages relating to these cases into kvm_debug
-messages so that they aren't usually visible.
+On RISC machines, unaligned access is not handled in hardware, so we
+better use get_unaligned_le32 to avoid the unaligned trap and warning.
 
-This allows crashme to run in the guest without killing the entire VM.
-
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Gleb Natapov <gleb@kernel.org>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Sanjay Lal <sanjayl@kymasys.com>
-Cc: linux-mips@linux-mips.org
-Cc: kvm@vger.kernel.org
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/mips/kvm/kvm_mips_emul.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/video/aty/mach64_accel.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/mips/kvm/kvm_mips_emul.c b/arch/mips/kvm/kvm_mips_emul.c
-index 4b6274b47f33..e75ef8219caf 100644
---- a/arch/mips/kvm/kvm_mips_emul.c
-+++ b/arch/mips/kvm/kvm_mips_emul.c
-@@ -1571,17 +1571,17 @@ kvm_mips_handle_ri(unsigned long cause, uint32_t *opc,
- 			arch->gprs[rt] = kvm_read_c0_guest_userlocal(cop0);
- #else
- 			/* UserLocal not implemented */
--			er = kvm_mips_emulate_ri_exc(cause, opc, run, vcpu);
-+			er = EMULATE_FAIL;
- #endif
- 			break;
+diff --git a/drivers/video/aty/mach64_accel.c b/drivers/video/aty/mach64_accel.c
+index e45833ce975b..182bd680141f 100644
+--- a/drivers/video/aty/mach64_accel.c
++++ b/drivers/video/aty/mach64_accel.c
+@@ -4,6 +4,7 @@
+  */
  
- 		default:
--			printk("RDHWR not supported\n");
-+			kvm_debug("RDHWR %#x not supported @ %p\n", rd, opc);
- 			er = EMULATE_FAIL;
- 			break;
+ #include <linux/delay.h>
++#include <asm/unaligned.h>
+ #include <linux/fb.h>
+ #include <video/mach64.h>
+ #include "atyfb.h"
+@@ -419,7 +420,7 @@ void atyfb_imageblit(struct fb_info *info, const struct fb_image *image)
+ 		u32 *pbitmap, dwords = (src_bytes + 3) / 4;
+ 		for (pbitmap = (u32*)(image->data); dwords; dwords--, pbitmap++) {
+ 			wait_for_fifo(1, par);
+-			aty_st_le32(HOST_DATA0, le32_to_cpup(pbitmap), par);
++			aty_st_le32(HOST_DATA0, get_unaligned_le32(pbitmap), par);
  		}
- 	} else {
--		printk("Emulate RI not supported @ %p: %#x\n", opc, inst);
-+		kvm_debug("Emulate RI not supported @ %p: %#x\n", opc, inst);
- 		er = EMULATE_FAIL;
  	}
  
-@@ -1590,6 +1590,7 @@ kvm_mips_handle_ri(unsigned long cause, uint32_t *opc,
- 	 */
- 	if (er == EMULATE_FAIL) {
- 		vcpu->arch.pc = curr_pc;
-+		er = kvm_mips_emulate_ri_exc(cause, opc, run, vcpu);
- 	}
- 	return er;
- }
 -- 
 1.9.3
 
