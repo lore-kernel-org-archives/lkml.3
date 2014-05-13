@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933572AbaEMOHO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 10:07:14 -0400
-Received: from mga02.intel.com ([134.134.136.20]:6757 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752947AbaEMOHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 10:07:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1044,1389772800"; 
-   d="scan'208";a="510911268"
-Message-ID: <53722700.6010001@intel.com>
-Date: Tue, 13 May 2014 22:06:56 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S933691AbaEMOHb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 10:07:31 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:6354 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933585AbaEMOH2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 10:07:28 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 13 May 2014 07:02:27 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: [RFC PATCH 0/3] Introduce shared and cbus clocks
+Date: Tue, 13 May 2014 17:06:53 +0300
+Message-ID: <1399990023-30318-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Rolf Eike Beer <eb@emlix.com>
-CC: wsa@the-dreams.de, rjw@rjwysocki.net, mika.westerberg@linux.intel.com,
-        awilliam@redhat.com, lenb@kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [Patch V2 0/9] I2C ACPI operation region handler support
-References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com> <1398695268-28645-1-git-send-email-tianyu.lan@intel.com> <3275231.ERSr3mUlis@devpool02>
-In-Reply-To: <3275231.ERSr3mUlis@devpool02>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 09:09 PM, Rolf Eike Beer wrote:
-> Am Montag, 28. April 2014, 22:27:39 schrieb Lan Tianyu:
->> ACPI 5.0 spec(5.5.2.4.5) defines GenericSerialBus(i2c, spi, uart) operation
->> region. It allows ACPI aml code able to access such kind of devices to
->> implement some ACPI standard method.
->>
->> On the Asus T100TA, Bios use GenericSerialBus operation region to access
->> i2c device to get battery info. So battery function depends on the I2C
->> operation region support. Here is the bug link.
->> https://bugzilla.kernel.org/show_bug.cgi?id=69011
->
-> Hi all,
->
-> I have tested this series and got some errors, but no additional functionality:
->
+Cbus clocks are virtual clocks which implement coordinated changes to
+clock rates. They are used to change PLL rates with active child clocks.
+On some SoCs (eg. Tegra) this requires the active child clocks to be moved
+to a different parent durint the rate change.
 
-Hi Rolf:
-	Thanks for test. Could you attach the output of dmesg and acpidump?
-Which machine you are testing on?
+Shared clocks are virtual clocks which implement clock policies such as
+minimum required rate or maximum allowed rate.
 
-> [    0.607442] ACPI Error: Error attaching device[f60238a0] data
-> [    0.607460]  (20140214/bus-143)
-> [    0.607708] ACPI Error: Error attaching device[f60238a0] data
-> [    0.607724]  (20140214/bus-143)
-> [    0.607987] ACPI Error: Error attaching device[f60238a0] data
-> [    0.608003]  (20140214/bus-143)
-> [    0.608251] ACPI Error: Error attaching device[f60238a0] data
-> [    0.608267]  (20140214/bus-143)
-> [    0.608515] ACPI Error: Error attaching device[f60238a0] data
-> [    0.608531]  (20140214/bus-143)
->
-> A bit more output, e.g. the error code if such is present or the device path,
-> could probably help when identifyint the device in question.
->
-> Also this still looks incomplete, as on other places one still gets those
-> warnings:
->
-> [    0.314944] pnp 00:08: Plug and Play ACPI device, IDs INT33fc (active)
-> [    0.316122] pnp 00:09: unknown resource type 19 in _CRS
-> [    0.316136] pnp 00:09: can't evaluate _CRS: 1
->
-> I don't know if looking on them at this place has any value, maybe something
-> like this is correct?
->
-> commit 52e2822c4c8b09180e5eb3dd94e4e9aea0d25eff
-> Author: Rolf Eike Beer <eb@emlix.com>
-> Date:   Tue Feb 18 11:11:10 2014 +0100
->
->      ACPI: ignore GPIO and SERIAL_BUS resources in PNP init code
->
-> diff --git a/drivers/pnp/pnpacpi/rsparser.c b/drivers/pnp/pnpacpi/rsparser.c
-> index 167f3d0..5b8459b 100644
-> --- a/drivers/pnp/pnpacpi/rsparser.c
-> +++ b/drivers/pnp/pnpacpi/rsparser.c
-> @@ -240,6 +240,8 @@ static acpi_status pnpacpi_allocated_resource(struct acpi_resource *res,
->                  break;
->
->          case ACPI_RESOURCE_TYPE_GENERIC_REGISTER:
-> +       case ACPI_RESOURCE_TYPE_GPIO:
-> +       case ACPI_RESOURCE_TYPE_SERIAL_BUS:
->                  break;
->
->          default:
->
-> Greetings,
->
-> Eike
->
+Peter De Schrijver (3):
+  clk: Implement cbus and shared clocks
+  clk: tegra: Implement common shared clks
+  clk: tegra: Implement Tegra124 shared/cbus clks
+
+ drivers/clk/Makefile                     |    1 +
+ drivers/clk/clk-shared-cbus.c            |  448 ++++++++++++++++++++++++++++++
+ drivers/clk/tegra/Makefile               |    1 +
+ drivers/clk/tegra/clk-id.h               |   58 ++++
+ drivers/clk/tegra/clk-tegra-shared.c     |  128 +++++++++
+ drivers/clk/tegra/clk-tegra124.c         |   50 ++++
+ drivers/clk/tegra/clk.h                  |    1 +
+ include/dt-bindings/clock/tegra124-car.h |   70 +++++-
+ include/linux/clk-provider.h             |   56 ++++
+ 9 files changed, 812 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/clk/clk-shared-cbus.c
+ create mode 100644 drivers/clk/tegra/clk-tegra-shared.c
+
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
 
