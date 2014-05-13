@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933391AbaEMLEN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 07:04:13 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:64298 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760275AbaEMK7B (ORCPT
+	id S1760274AbaEMLFF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 07:05:05 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:36384 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759384AbaEMLFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:59:01 -0400
-X-AuditID: cbfec7f5-b7fae6d000004d6d-5e-5371faf3c962
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Kevin Strasser <kevin.strasser@linux.intel.com>
-Subject: [PATCH 05/16] mfd: kempld-core: Make mfd_cell array const
-Date: Tue, 13 May 2014 12:58:42 +0200
-Message-id: <1399978733-13662-5-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1399978733-13662-1-git-send-email-k.kozlowski@samsung.com>
-References: <1399978733-13662-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCJMWRmVeSWpSXmKPExsVy+t/xy7qffxUGG/T8MrR4/cLQ4siK7SwW
-	978eZbS4vGsOm8XpblYHVo871/awecw7GejRt2UVo8fnTXIBLFFcNimpOZllqUX6dglcGT/b
-	HjMXzGateLT5CksD40qWLkZODgkBE4m9+34wQthiEhfurWfrYuTiEBJYyijxacMkKKePSeLG
-	gc9gVWwCxhKbly9hA7FFBLIkfkxbDTaJWSBFYvqE+8wgtrCAk8T1jbvB6lkEVCX2zN8IVs8r
-	4C6xtHcCO8Q2OYmTxyazgticAh4SL26fBbOFgGpurJrEMoGRdwEjwypG0dTS5ILipPRcI73i
-	xNzi0rx0veT83E2MkJD5uoNx6TGrQ4wCHIxKPLwezAXBQqyJZcWVuYcYJTiYlUR43T8VBgvx
-	piRWVqUW5ccXleakFh9iZOLglGpg3DT/wfb+2cvnV81bcOxNePHMe2s+SxRcT2icISz72M1u
-	F8+ztDtlL0zzXif8qzsdIGVRpvc939V2g/r6zvUsfIJLCuTtGXzePb1QPCWSZ9e0d0s54lVN
-	d4duClaLjtrz7r1jQtC9oj4/lvqvl6OenC/xkizz5Tj0Tdfv6x/zXR0HvD/4Lw7xUWIpzkg0
-	1GIuKk4EADvegov3AQAA
+	Tue, 13 May 2014 07:05:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPKp9uZbz3M1Xyu7SnSFEexzUPxPqFTSmd7zmU8jU5-Dwu4gvA@mail.gmail.com>
+References: <1399966890-22926-1-git-send-email-k.chander@samsung.com>
+	<CAKohpo=6qXer+RRS-F6x=O1VLzbWq+_a-b29MaUzZBvt7XzDwQ@mail.gmail.com>
+	<CAPKp9uZbz3M1Xyu7SnSFEexzUPxPqFTSmd7zmU8jU5-Dwu4gvA@mail.gmail.com>
+Date: Tue, 13 May 2014 16:35:02 +0530
+Message-ID: <CAKohpon9RLBPniYN+26Bk9GaMBAiTEFqp_YONzPBm7+3n17yiQ@mail.gmail.com>
+Subject: Re: [PATCH] PM / OPP: discard duplicate OPP additions
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Sudeep Holla <sudeep.holla@arm.com>, Nishanth Menon <nm@ti.com>
+Cc: "[Chander Kashyap" <chander.kashyap@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        "Brown, Len" <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chander Kashyap <k.chander@samsung.com>,
+        Inderpal Singh <inderpal.s@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kempld_devs (array of mfd_cells) can be safely made const.
+On 13 May 2014 16:00, Sudeep Holla <sudeep.holla@arm.com> wrote:
+> On Tue, May 13, 2014 at 9:22 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> On 13 May 2014 13:11, [Chander Kashyap <chander.kashyap@linaro.org> wrote:
+>>
+>> What happened to your name ? "["
+>>
+>>> From: Chander Kashyap <k.chander@samsung.com>
+>>>
+>>> It may be possible to unregister and re-register the cpufreq driver.
+>>> One such example is arm big-little IKS cpufreq driver. While
+>>> re-registering the driver, same OPPs may get added again.
+>>>
+>>> This patch detects the duplicacy and discards them.
+>>>
+>>> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+>>> Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
+>>> ---
+>>>  drivers/base/power/opp.c |   28 +++++++++++++++++++---------
+>>>  1 file changed, 19 insertions(+), 9 deletions(-)
+>>
+>> I wouldn't say that this approach is particularly bad or wrong, but what
+>> about this instead?
+>>
+>
+> Yes I prefer this and this exactly what I had[1] in my OPP DT series which
+> we could not conclude on the bindings. You also need patch[2] for DT version.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Kevin Strasser <kevin.strasser@linux.intel.com>
----
- drivers/mfd/kempld-core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Ahh, I have just reinvented the wheel. Though I can see now that I have
+Acked those patches as well :)
 
-diff --git a/drivers/mfd/kempld-core.c b/drivers/mfd/kempld-core.c
-index 25c5ca6797da..f7ff0188603d 100644
---- a/drivers/mfd/kempld-core.c
-+++ b/drivers/mfd/kempld-core.c
-@@ -86,7 +86,7 @@ enum kempld_cells {
- 	KEMPLD_UART,
- };
- 
--static struct mfd_cell kempld_devs[] = {
-+static const struct mfd_cell kempld_devs[] = {
- 	[KEMPLD_I2C] = {
- 		.name = "kempld-i2c",
- 	},
--- 
-1.9.1
+So, what are the plans for those patches then? As Chander also needs few
+of those.
 
+Probably split the series to get the non-blockers upstream Atleast ?
+
+Another thing that I thought later, though the problem can be fixed by
+your version of patches, the version from chander had something good as
+well. It would get rid of duplicate entries coming from dtb. Would it make
+sense to get that part in as well?
+
+--
+viresh
