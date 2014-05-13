@@ -1,108 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545AbaEMSv3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 14:51:29 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:47150 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754455AbaEMSvV (ORCPT
+	id S1754575AbaEMSvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 14:51:39 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:61508 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754475AbaEMSvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 14:51:21 -0400
-Message-ID: <53725C62.1060809@gmail.com>
-Date: Tue, 13 May 2014 19:54:42 +0200
+	Tue, 13 May 2014 14:51:23 -0400
+Message-ID: <53725CB9.4060903@gmail.com>
+Date: Tue, 13 May 2014 19:56:09 +0200
 From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Juri Lelli <juri.lelli@gmail.com>
-CC: mtk.manpages@gmail.com, Peter Zijlstra <peterz@infradead.org>,
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mtk.manpages@gmail.com, Juri Lelli <juri.lelli@gmail.com>,
         Dario Faggioli <raistlin@linux.it>,
         lkml <linux-kernel@vger.kernel.org>,
         "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
         Linux API <linux-api@vger.kernel.org>
-Subject: Re: [SCHED_DEADLINE man pages 2/2] sched(7) SCHED_DEADLINE
-References: <53723235.40101@gmail.com>	<537233A9.6040102@gmail.com> <20140513175210.49eed2e34ac06a3c109ce963@gmail.com>
-In-Reply-To: <20140513175210.49eed2e34ac06a3c109ce963@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [SCHED_DEADLINE man pages 0/2] Summary
+References: <53723235.40101@gmail.com> <20140513152719.GF2485@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140513152719.GF2485@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Juri,
-
-On 05/13/2014 05:52 PM, Juri Lelli wrote:
-> Hello,
+On 05/13/2014 05:27 PM, Peter Zijlstra wrote:
+> On Tue, May 13, 2014 at 04:54:45PM +0200, Michael Kerrisk (man-pages) wrote:
+>> Peter, at al.
+>>
+>> The follow ups to this mail contain the changes to man-pages for
+>> the new sched_setattr() and sched_getattr() system calls, as well
+>> as the changes to the sched(7) man page to document the 
+>> SCHED_DEADLINE policy, all new changes in kernel 3.14.
+>>
+>> I used the text you submitted, but _heavily_ edited it, and added
+>> a _lot_ of further details. Therefore, could you (and Juri, and 
+>> Dario?) please carefully review the text.
+>>
+>> The follow-up mails are:
+>>
+>> [1/2] The sched_setattr.2 page that documents sched_setattr(2) 
+>>       and sched_getattr(2).
+>>
+>> [2/2] The revisions to the sched(7) page.
+>>
+>> In each case, I've posted the formatted output for easy reading,
+>> and attached the page source to the message.
 > 
-> On Tue, 13 May 2014 17:00:57 +0200
-> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
-> 
->> Hello Peter et al.
->>
->> Here is the section of the sched(7) page that describes SCHED_DEADLINE,
->> as rendered text, with the (entire) raw page source attached. Please 
->> carefully review.
->>
->> Cheers,
->>
->> Michael
+> I've read (as careful as one still can after seeing too much of this)
+> both texts and they appear to be good.
 
-[...]
+Thanks for checking, Peter.
 
->>        The following diagram clarifies these terms:
->>
->>            arrival/wakeup                   absolute deadline
->>                 |    start time                   |
->>                 |        |                        |
->>                 v        v                        v
->>            -----x--------xooooooooooooooooo-------x--------x---
->>                          |<- comp. time ->|
->>                 |<------- relative deadline ----->|
->>                 |<-------------- period ------------------>|
->>
->>        When  setting  a  SCHED_DEADLINE  policy  for  a thread using
->>        sched_setattr(2), one can specify three parameters:  Runtime,
->>        Deadline,  and  Period.   These parameters do not necessarily
->>        correspond to the aforementioned terms: usual practice is  to
->>        set  Runtime to something bigger than the average computation
->>        time (or worst-case execution time for hard real-time tasks),
->>        Deadline  to  the relative deadline, and Period to the period
->>        of the task.  Thus, for SCHED_DEADLINE scheduling, we have:
->>
->>            arrival/wakeup                   absolute deadline
->>                 |    start time                   |
->>                 |        |                        |
->>                 v        v                        v
->>            -----x--------xooooooooooooooooo-------x--------x---
->>                          |<-- Runtime --->|
-> 
->                            |<-- Runtime   --->|
-> 
-> I originally drew this slightly bigger than comp. time above because we
-> usually don't want tasks to be throttled in the average case. It's just
-> a rule of thumb.
+> Thanks for polishing, they are indeed clearer than what I provided.
 
-Ahh -- yes, I see now that I messed this up when I tweaked the
-ASCII art. Thanks for catching that. Fixed now.
-
->>                 |<----------- Deadline ---------->|
->>                 |<-------------- Period ------------------>|
->>
->>        The three deadline-scheduling parameters  correspond  to  the
->>        sched_runtime, sched_deadline, and sched_period fields of the
->>        sched_attr structure;  see  sched_setattr(2).   These  fields
->>        express  value  in nanoseconds.  If sched_period is specified
->>        as 0, then it is made the same as sched_deadline.
->>
->>        The kernel requires that:
->>
->>            sched_runtime <= sched_deadline <= sched_period
->>
->>        In addition, under the current  implementation,  all  of  the
->>        parameter  values  must be at least 1024 (i.e., just over one
->>        microsecond, which is the resolution of the  implementation).
-> 
-> And below 2^63, as per the last bug fix we discussed.
-
-Fixed.
+Good!
 
 Cheers,
 
