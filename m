@@ -1,101 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541AbaEMU4C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 16:56:02 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:36960 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753121AbaEMUz4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 16:55:56 -0400
-Date: Tue, 13 May 2014 14:55:48 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Jingoo Han <jg1.han@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] mtd: orion-nand: fix build error with ARMv4
-Message-ID: <20140513205548.GC22907@obsidianresearch.com>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
- <1399560990-1402858-1-git-send-email-arnd@arndb.de>
- <1399560990-1402858-4-git-send-email-arnd@arndb.de>
- <20140509184505.GA30330@arch.cereza>
- <20140509212810.GF18257@obsidianresearch.com>
- <20140509220915.GA391@arch.cereza>
+	id S1753717AbaEMVMe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 17:12:34 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61805 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752935AbaEMVMW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 17:12:22 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [RFC][PATCH 2/3] PM / sleep: Mechanism to avoid resuming runtime-suspended devices unnecessarily
+Date: Tue, 13 May 2014 23:29:06 +0200
+Message-ID: <16671603.abrivY8Odm@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1405131211080.1098-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1405131211080.1098-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140509220915.GA391@arch.cereza>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 07:09:15PM -0300, Ezequiel Garcia wrote:
-> On 09 May 03:28 PM, Jason Gunthorpe wrote:
-> > 
-> > > I gave this a try in order to answer Arnd's performance
-> > > question. First of all, the patch seems wrong. I guess it's because
-> > > readsl reads 4-bytes pieces, instead of 8-bytes.
-> > > 
-> > > This patch below is tested (but not completely, see below) and works:
-> > 
-> > Compilers are better now, I think you can just ditch the weirdness:
-> > 
-> [..]
-> > 
-> > The below gives:
-> > 
-> >   c8:   ea000002        b       d8 <orion_nand_read_buf+0x84>
-> >   cc:   e5dc0000        ldrb    r0, [ip]
-> >   d0:   e7c30001        strb    r0, [r3, r1]
-> >   d4:   e2811001        add     r1, r1, #1
-> >   d8:   e1510002        cmp     r1, r2
-> > 
-> > Which looks the same as the asm version to me.
-> > 
+On Tuesday, May 13, 2014 12:19:14 PM Alan Stern wrote:
+> On Tue, 13 May 2014, Rafael J. Wysocki wrote:
 > 
-> Nice! It wasn't really needed but since I have the board here:
+> > > Maybe the call to __pm_runtime_disable() should be moved from
+> > > __device_suspend_late() to __device_suspend(), after the callback has
+> > > been invoked (or skipped, as the case may be).  Then after runtime PM
+> > > has been disabled, you can check the device's status has changed and go
+> > > back to invoke the callback if necessary.
+> > 
+> > We moved __pm_runtime_disable() to __device_suspend_late() to be able to
+> > use pm_runtime_resume() in __device_suspend() (and we actually do that in
+> > some places now).
+> > 
+> > But, in principle, we can do __pm_runtime_disable() temporarily in some place
+> > between ->prepare() and ->suspend(), it doesn't matter if that's in
+> > device_prepare() in __device_suspend() really.
 > 
-> # time nanddump /dev/mtd5 -f /dev/null -q
-> real	0m 5.82s
-> user	0m 0.20s
-> sys	0m 5.60s
+> It should be as late as possible, to allow for detecting wakeup 
+> requests.
+
+I came to the same conclusion.  It has to be done in __device_suspend(), because
+a child's ->suspend() may need to resume the parent, so runtime PM for the parent
+cannot be disabled when the child's ->suspend() may be running.
+
+> >  Then, we can check the device's
+> > runtime PM status (that'd need to be done carefully to take the disabling into
+> > account) and
+> > (1) if the device is runtime-suspended, set direct_complete for it without
+> >     enabling runtime PM, or
+> > (2) if the device is not runtime-suspended, clear direct_complete for it
+> >     and re-enable runtime PM.
+> > and in case of (1) we would re-enable runtime PM in device_complete().
+> > 
+> > That should work I suppose?
 > 
-> Jason: Care to submit a proper patch?
+> Yes; it's similar to what I proposed.  Note that this can be skipped if 
+> direct_complete is already clear.
 
-Sure, but did anyone (Arnd?) have thoughts on a better way to do this:
+Sure.
 
-+#ifdef CONFIG_64BIT
-+               buf64[i++] = readq_relaxed(io_base);
-+#else
-+               buf64[i++] = *(const volatile u64 __force *)io_base;
-+#endif
+> > Of course, question is what ->prepare() is supposed to do then if it needs
+> > to check the state of the device before deciding whether or not to return 1.
+> > I guess it would need to disable runtime PM around that check too.
+> 
+> It would be surprising if ->prepare() needed to make any difficult
+> checks.  This would imply that the device could have multiple
+> runtime-suspend states, some of which are appropriate for system
+> suspend while others aren't.  Not impossible, but I wouldn't expect it
+> to come up often.
 
-IMHO, readq should exist on any platform that can issue a 64 bit bus
-transaction, and I expect many ARM's qualify.
+That is the case for every device with ACPI power management in principle. :-)
 
-> On 08 May 04:56 PM, Arnd Bergmann wrote:
+Please see patch [3/3] for details.
 
-> Ok, so it takes 5.6 seconds in kernel mode to access 31MB, which
-> comes down to 5.60MB/s. That isn't very fast compared to the time
-> the CPU should take for those instructions, so I'm surprised it
-> actually makes any difference at all.
+> Besides, as I mentioned before, we never have to worry about status 
+> changes.  If one occurs while ->prepare() is running or afterward, it 
+> means the device is runtime-resumed and therefore the setting of 
+> direct_complete doesn't matter.
 
-Likely, what is happening is that the bus interface is holding off
-returning the read data until it complets the bus cycles, then the
-response travels to the CPU which turns around another.
+That's correct.
 
-This creates a dead time where the bus isn't do anything.
+OK, I've updated the $subject patch in the meantime and the result is appended
+Former patch [1/3] is not necessary any more now and patch [3/3] is still valid.
 
-The larger bus transfer the CPU can do the less percentage of time the
-turnaround takes as overhead.
+Rafael
 
-If the cpu could pipeline two reads then it could be highest-possible,
-but I guess the memory ordering for the mapping prevents that??
+---
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: PM / sleep: Mechanism to avoid resuming runtime-suspended devices unnecessarily
 
-Regarding DMA, who knows if the interface can handle a burst
-transfer..
+Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
+resume all runtime-suspended devices during system suspend, mostly
+because those devices may need to be reprogrammed due to different
+wakeup settings for system sleep and for runtime PM.
 
-Jason
+For some devices, though, it's OK to remain in runtime suspend 
+throughout a complete system suspend/resume cycle (if the device was in
+runtime suspend at the start of the cycle).  We would like to do this
+whenever possible, to avoid the overhead of extra power-up and power-down
+events.
+
+However, problems may arise because the device's descendants may require
+it to be at full power at various points during the cycle.  Therefore the
+most straightforward way to do this safely is if the device and all its
+descendants can remain runtime suspended until the complete stage of
+system resume.
+
+To this end, introduce a new device PM flag, power.direct_complete
+and modify the PM core to use that flag as follows.
+
+If the ->prepare() callback of a device returns a positive number,
+the PM core will regard that as an indication that it may leave the
+device runtime-suspended.  It will then check if the system power
+transition in progress is a suspend (and not hibernation in particular)
+and if the device is, indeed, runtime-suspended.  In that case, the PM
+core will set the device's power.direct_complete flag.  Otherwise it
+will clear power.direct_complete for the device and it also will later
+clear it for the device's parent (if there's one).
+
+Next, the PM core will not invoke the ->suspend() ->suspend_late(),
+->suspend_irq(), ->resume_irq(), ->resume_early(), or ->resume()
+callbacks for all devices having power.direct_complete set.  It
+will invoke their ->complete() callbacks, however, and those
+callbacks are then responsible for resuming the devices as
+appropriate, if necessary.  For example, in some cases they may
+need to queue up runtime resume requests for the devices with the
+help of pm_request_resume().
+
+Changelog partly based on an Alan Stern's description of the idea
+(http://marc.info/?l=linux-pm&m=139940466625569&w=2).
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/base/power/main.c |   65 +++++++++++++++++++++++++++++++++++-----------
+ include/linux/pm.h        |    1 
+ 2 files changed, 51 insertions(+), 15 deletions(-)
+
+Index: linux-pm/include/linux/pm.h
+===================================================================
+--- linux-pm.orig/include/linux/pm.h
++++ linux-pm/include/linux/pm.h
+@@ -546,6 +546,7 @@ struct dev_pm_info {
+ 	bool			is_late_suspended:1;
+ 	bool			ignore_children:1;
+ 	bool			early_init:1;	/* Owned by the PM core */
++	bool			direct_complete:1;	/* Owned by the PM core */
+ 	spinlock_t		lock;
+ #ifdef CONFIG_PM_SLEEP
+ 	struct list_head	entry;
+Index: linux-pm/drivers/base/power/main.c
+===================================================================
+--- linux-pm.orig/drivers/base/power/main.c
++++ linux-pm/drivers/base/power/main.c
+@@ -479,7 +479,7 @@ static int device_resume_noirq(struct de
+ 	TRACE_DEVICE(dev);
+ 	TRACE_RESUME(0);
+ 
+-	if (dev->power.syscore)
++	if (dev->power.syscore || dev->power.direct_complete)
+ 		goto Out;
+ 
+ 	if (!dev->power.is_noirq_suspended)
+@@ -605,7 +605,7 @@ static int device_resume_early(struct de
+ 	TRACE_DEVICE(dev);
+ 	TRACE_RESUME(0);
+ 
+-	if (dev->power.syscore)
++	if (dev->power.syscore || dev->power.direct_complete)
+ 		goto Out;
+ 
+ 	if (!dev->power.is_late_suspended)
+@@ -735,6 +735,12 @@ static int device_resume(struct device *
+ 	if (dev->power.syscore)
+ 		goto Complete;
+ 
++	if (dev->power.direct_complete) {
++		/* Match the pm_runtime_disable() in __device_suspend(). */
++		pm_runtime_enable(dev);
++		goto Complete;
++	}
++
+ 	dpm_wait(dev->parent, async);
+ 	dpm_watchdog_set(&wd, dev);
+ 	device_lock(dev);
+@@ -1007,7 +1013,7 @@ static int __device_suspend_noirq(struct
+ 		goto Complete;
+ 	}
+ 
+-	if (dev->power.syscore)
++	if (dev->power.syscore || dev->power.direct_complete)
+ 		goto Complete;
+ 
+ 	dpm_wait_for_children(dev, async);
+@@ -1146,7 +1152,7 @@ static int __device_suspend_late(struct
+ 		goto Complete;
+ 	}
+ 
+-	if (dev->power.syscore)
++	if (dev->power.syscore || dev->power.direct_complete)
+ 		goto Complete;
+ 
+ 	dpm_wait_for_children(dev, async);
+@@ -1332,6 +1338,16 @@ static int __device_suspend(struct devic
+ 	if (dev->power.syscore)
+ 		goto Complete;
+ 
++	if (dev->power.direct_complete) {
++		pm_runtime_disable(dev);
++		if (dev->power.disable_depth == 1
++		    && pm_runtime_status_suspended(dev))
++			goto Complete;
++
++		dev->power.direct_complete = false;
++		pm_runtime_enable(dev);
++	}
++
+ 	dpm_watchdog_set(&wd, dev);
+ 	device_lock(dev);
+ 
+@@ -1382,10 +1398,19 @@ static int __device_suspend(struct devic
+ 
+  End:
+ 	if (!error) {
++		struct device *parent = dev->parent;
++
+ 		dev->power.is_suspended = true;
+-		if (dev->power.wakeup_path
+-		    && dev->parent && !dev->parent->power.ignore_children)
+-			dev->parent->power.wakeup_path = true;
++		if (parent) {
++			spin_lock_irq(&parent->power.lock);
++
++			dev->parent->power.direct_complete = false;
++			if (dev->power.wakeup_path
++			    && !dev->parent->power.ignore_children)
++				dev->parent->power.wakeup_path = true;
++
++			spin_unlock_irq(&parent->power.lock);
++		}
+ 	}
+ 
+ 	device_unlock(dev);
+@@ -1487,7 +1512,7 @@ static int device_prepare(struct device
+ {
+ 	int (*callback)(struct device *) = NULL;
+ 	char *info = NULL;
+-	int error = 0;
++	int ret = 0;
+ 
+ 	if (dev->power.syscore)
+ 		return 0;
+@@ -1523,17 +1548,27 @@ static int device_prepare(struct device
+ 		callback = dev->driver->pm->prepare;
+ 	}
+ 
+-	if (callback) {
+-		error = callback(dev);
+-		suspend_report_result(callback, error);
+-	}
++	if (callback)
++		ret = callback(dev);
+ 
+ 	device_unlock(dev);
+ 
+-	if (error)
++	if (ret < 0) {
++		suspend_report_result(callback, ret);
+ 		pm_runtime_put(dev);
+-
+-	return error;
++		return ret;
++	}
++	/*
++	 * A positive return value from ->prepare() means "this device appears
++	 * to be runtime-suspended and its state is fine, so if it really is
++	 * runtime-suspended, you can leave it in that state provided that you
++	 * will do the same thing with all of its descendants".  This only
++	 * applies to suspend transitions, however.
++	 */
++	spin_lock_irq(&dev->power.lock);
++	dev->power.direct_complete = ret > 0 && state.event == PM_EVENT_SUSPEND;
++	spin_unlock_irq(&dev->power.lock);
++	return 0;
+ }
+ 
+ /**
+
