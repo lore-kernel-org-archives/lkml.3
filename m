@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761179AbaEMK3f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:29:35 -0400
+	id S1760714AbaEMKLK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:11:10 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760724AbaEMKLK (ORCPT
+	by vger.kernel.org with ESMTP id S933369AbaEMKLG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:11:10 -0400
+	Tue, 13 May 2014 06:11:06 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Marek Vasut <marex@denx.de>,
-        Linus Walleij <linus.walleij@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 165/182] gpio: mxs: Allow for recursive enable_irq_wake() call
-Date: Tue, 13 May 2014 11:28:37 +0200
-Message-Id: <5688c9145728300adc2417339db588a5b74aaec6.1399973152.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Junxiao Bi <junxiao.bi@oracle.com>,
+        Sunil Mushran <sunil.mushran@gmail.com>,
+        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 110/182] ocfs2: dlm: fix lock migration crash
+Date: Tue, 13 May 2014 11:27:42 +0200
+Message-Id: <4f4d93713acf4ab14455d6e07caa5c22058aea1b.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -23,99 +27,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marek Vasut <marex@denx.de>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit a585f87c863e4e1d496459d382b802bf5ebe3717 upstream.
+commit 34aa8dac482f1358d59110d5e3a12f4351f6acaa upstream.
 
-The scenario here is that someone calls enable_irq_wake() from somewhere
-in the code. This will result in the lockdep producing a backtrace as can
-be seen below. In my case, this problem is triggered when using the wl1271
-(TI WlCore) driver found in drivers/net/wireless/ti/ .
+This issue was introduced by commit 800deef3f6f8 ("ocfs2: use
+list_for_each_entry where benefical") in 2007 where it replaced
+list_for_each with list_for_each_entry.  The variable "lock" will point
+to invalid data if "tmpq" list is empty and a panic will be triggered
+due to this.  Sunil advised reverting it back, but the old version was
+also not right.  At the end of the outer for loop, that
+list_for_each_entry will also set "lock" to an invalid data, then in the
+next loop, if the "tmpq" list is empty, "lock" will be an stale invalid
+data and cause the panic.  So reverting the list_for_each back and reset
+"lock" to NULL to fix this issue.
 
-The problem cause is rather obvious from the backtrace, but let's outline
-the dependency. enable_irq_wake() grabs the IRQ buslock in irq_set_irq_wake(),
-which in turns calls mxs_gpio_set_wake_irq() . But mxs_gpio_set_wake_irq()
-calls enable_irq_wake() again on the one-level-higher IRQ , thus it tries to
-grab the IRQ buslock again in irq_set_irq_wake() . Because the spinlock in
-irq_set_irq_wake()->irq_get_desc_buslock()->__irq_get_desc_lock() is not
-marked as recursive, lockdep will spew the stuff below.
+Another concern is that this seemes can not happen because the "tmpq"
+list should not be empty.  Let me describe how.
 
-We know we can safely re-enter the lock, so use IRQ_GC_INIT_NESTED_LOCK to
-fix the spew.
+old lock resource owner(node 1):                                  migratation target(node 2):
+image there's lockres with a EX lock from node 2 in
+granted list, a NR lock from node x with convert_type
+EX in converting list.
+dlm_empty_lockres() {
+ dlm_pick_migration_target() {
+   pick node 2 as target as its lock is the first one
+   in granted list.
+ }
+ dlm_migrate_lockres() {
+   dlm_mark_lockres_migrating() {
+     res->state |= DLM_LOCK_RES_BLOCK_DIRTY;
+     wait_event(dlm->ast_wq, !dlm_lockres_is_dirty(dlm, res));
+	 //after the above code, we can not dirty lockres any more,
+     // so dlm_thread shuffle list will not run
+                                                                   downconvert lock from EX to NR
+                                                                   upconvert lock from NR to EX
+<<< migration may schedule out here, then
+<<< node 2 send down convert request to convert type from EX to
+<<< NR, then send up convert request to convert type from NR to
+<<< EX, at this time, lockres granted list is empty, and two locks
+<<< in the converting list, node x up convert lock followed by
+<<< node 2 up convert lock.
 
- =============================================
- [ INFO: possible recursive locking detected ]
- 3.10.33-00012-gf06b763-dirty #61 Not tainted
- ---------------------------------------------
- kworker/0:1/18 is trying to acquire lock:
-  (&irq_desc_lock_class){-.-...}, at: [<c00685f0>] __irq_get_desc_lock+0x48/0x88
+	 // will set lockres RES_MIGRATING flag, the following
+	 // lock/unlock can not run
+     dlm_lockres_release_ast(dlm, res);
+   }
 
- but task is already holding lock:
-  (&irq_desc_lock_class){-.-...}, at: [<c00685f0>] __irq_get_desc_lock+0x48/0x88
+   dlm_send_one_lockres()
+                                                                 dlm_process_recovery_data()
+                                                                   for (i=0; i<mres->num_locks; i++)
+                                                                     if (ml->node == dlm->node_num)
+                                                                       for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
+                                                                        list_for_each_entry(lock, tmpq, list)
+                                                                        if (lock) break; <<< lock is invalid as grant list is empty.
+                                                                       }
+                                                                       if (lock->ml.node != ml->node)
+                                                                         BUG() >>> crash here
+ }
 
- other info that might help us debug this:
-  Possible unsafe locking scenario:
+I see the above locks status from a vmcore of our internal bug.
 
-        CPU0
-        ----
-   lock(&irq_desc_lock_class);
-   lock(&irq_desc_lock_class);
-
-  *** DEADLOCK ***
-
-  May be due to missing lock nesting notation
-
- 3 locks held by kworker/0:1/18:
-  #0:  (events){.+.+.+}, at: [<c0036308>] process_one_work+0x134/0x4a4
-  #1:  ((&fw_work->work)){+.+.+.}, at: [<c0036308>] process_one_work+0x134/0x4a4
-  #2:  (&irq_desc_lock_class){-.-...}, at: [<c00685f0>] __irq_get_desc_lock+0x48/0x88
-
- stack backtrace:
- CPU: 0 PID: 18 Comm: kworker/0:1 Not tainted 3.10.33-00012-gf06b763-dirty #61
- Workqueue: events request_firmware_work_func
- [<c0013eb4>] (unwind_backtrace+0x0/0xf0) from [<c0011c74>] (show_stack+0x10/0x14)
- [<c0011c74>] (show_stack+0x10/0x14) from [<c005bb08>] (__lock_acquire+0x140c/0x1a64)
- [<c005bb08>] (__lock_acquire+0x140c/0x1a64) from [<c005c6a8>] (lock_acquire+0x9c/0x104)
- [<c005c6a8>] (lock_acquire+0x9c/0x104) from [<c051d5a4>] (_raw_spin_lock_irqsave+0x44/0x58)
- [<c051d5a4>] (_raw_spin_lock_irqsave+0x44/0x58) from [<c00685f0>] (__irq_get_desc_lock+0x48/0x88)
- [<c00685f0>] (__irq_get_desc_lock+0x48/0x88) from [<c0068e78>] (irq_set_irq_wake+0x20/0xf4)
- [<c0068e78>] (irq_set_irq_wake+0x20/0xf4) from [<c027260c>] (mxs_gpio_set_wake_irq+0x1c/0x24)
- [<c027260c>] (mxs_gpio_set_wake_irq+0x1c/0x24) from [<c0068cf4>] (set_irq_wake_real+0x30/0x44)
- [<c0068cf4>] (set_irq_wake_real+0x30/0x44) from [<c0068ee4>] (irq_set_irq_wake+0x8c/0xf4)
- [<c0068ee4>] (irq_set_irq_wake+0x8c/0xf4) from [<c0310748>] (wlcore_nvs_cb+0x10c/0x97c)
- [<c0310748>] (wlcore_nvs_cb+0x10c/0x97c) from [<c02be5e8>] (request_firmware_work_func+0x38/0x58)
- [<c02be5e8>] (request_firmware_work_func+0x38/0x58) from [<c0036394>] (process_one_work+0x1c0/0x4a4)
- [<c0036394>] (process_one_work+0x1c0/0x4a4) from [<c0036a4c>] (worker_thread+0x138/0x394)
- [<c0036a4c>] (worker_thread+0x138/0x394) from [<c003cb74>] (kthread+0xa4/0xb0)
- [<c003cb74>] (kthread+0xa4/0xb0) from [<c000ee00>] (ret_from_fork+0x14/0x34)
- wlcore: loaded
-
-Signed-off-by: Marek Vasut <marex@denx.de>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
+Cc: Sunil Mushran <sunil.mushran@gmail.com>
+Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpio/gpio-mxs.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/ocfs2/dlm/dlmrecovery.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/gpio/gpio-mxs.c b/drivers/gpio/gpio-mxs.c
-index f8e6af20dfbf..d599fc42ae8b 100644
---- a/drivers/gpio/gpio-mxs.c
-+++ b/drivers/gpio/gpio-mxs.c
-@@ -214,7 +214,8 @@ static void __init mxs_gpio_init_gc(struct mxs_gpio_port *port, int irq_base)
- 	ct->regs.ack = PINCTRL_IRQSTAT(port) + MXS_CLR;
- 	ct->regs.mask = PINCTRL_IRQEN(port);
+diff --git a/fs/ocfs2/dlm/dlmrecovery.c b/fs/ocfs2/dlm/dlmrecovery.c
+index 0b5adca1b178..723063bf0842 100644
+--- a/fs/ocfs2/dlm/dlmrecovery.c
++++ b/fs/ocfs2/dlm/dlmrecovery.c
+@@ -1750,13 +1750,13 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
+ 				     struct dlm_migratable_lockres *mres)
+ {
+ 	struct dlm_migratable_lock *ml;
+-	struct list_head *queue;
++	struct list_head *queue, *iter;
+ 	struct list_head *tmpq = NULL;
+ 	struct dlm_lock *newlock = NULL;
+ 	struct dlm_lockstatus *lksb = NULL;
+ 	int ret = 0;
+ 	int i, j, bad;
+-	struct dlm_lock *lock = NULL;
++	struct dlm_lock *lock;
+ 	u8 from = O2NM_MAX_NODES;
+ 	unsigned int added = 0;
+ 	__be64 c;
+@@ -1791,14 +1791,16 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
+ 			/* MIGRATION ONLY! */
+ 			BUG_ON(!(mres->flags & DLM_MRES_MIGRATION));
  
--	irq_setup_generic_chip(gc, IRQ_MSK(32), 0, IRQ_NOREQUEST, 0);
-+	irq_setup_generic_chip(gc, IRQ_MSK(32), IRQ_GC_INIT_NESTED_LOCK,
-+			       IRQ_NOREQUEST, 0);
- }
- 
- static int mxs_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
++			lock = NULL;
+ 			spin_lock(&res->spinlock);
+ 			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
+ 				tmpq = dlm_list_idx_to_ptr(res, j);
+-				list_for_each_entry(lock, tmpq, list) {
+-					if (lock->ml.cookie != ml->cookie)
+-						lock = NULL;
+-					else
++				list_for_each(iter, tmpq) {
++					lock = list_entry(iter,
++						  struct dlm_lock, list);
++					if (lock->ml.cookie == ml->cookie)
+ 						break;
++					lock = NULL;
+ 				}
+ 				if (lock)
+ 					break;
 -- 
 1.9.3
 
