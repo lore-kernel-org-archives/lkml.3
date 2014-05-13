@@ -1,146 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759389AbaEMIZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 04:25:26 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36147 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759319AbaEMIUI (ORCPT
+	id S1759519AbaEMIZl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 04:25:41 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:36624 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759367AbaEMIZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 04:20:08 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        kishon@ti.com, hdegoede@redhat.com
-Cc: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        linux-sunxi@googlegroups.com,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v4 5/8] usb: ehci-platform: add optional reset controller retrieval
-Date: Tue, 13 May 2014 10:19:02 +0200
-Message-Id: <1399969145-11642-6-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1399969145-11642-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1399969145-11642-1-git-send-email-maxime.ripard@free-electrons.com>
+	Tue, 13 May 2014 04:25:35 -0400
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <1399921336-6433-1-git-send-email-xypron.glpk@gmx.de>
+References: <1399921336-6433-1-git-send-email-xypron.glpk@gmx.de>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Tue, 13 May 2014 10:25:14 +0200
+Message-ID: <CAKgNAkjd=faKp8-QroLHXDOk00tKYxvAzm0xZV4PjYLNO+3_Ew@mail.gmail.com>
+Subject: Re: [PATCH 1/1 v2] fanotify: check file flags passed in fanotify_init
+To: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Cc: Eric Paris <eparis@redhat.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Hello Heinrich
 
-On the Allwinner's A31 SoC the reset line connected to the EHCI IP has to
-be deasserted for the EHCI block to be usable.
+On Mon, May 12, 2014 at 9:02 PM, Heinrich Schuchardt <xypron.glpk@gmx.de> wrote:
+> Without this patch fanotify_init does not validate the value passed in
+> event_f_flags.
+>
+> When a fanotify event is read from the fanotify file descriptor a new file
+> descriptor is created where file.f_flags = event_f_flags.
+>
+> Internal and external open flags are stored together in field f_flags of
+> struct file. Hence, an application might create file descriptors with
+> internal flags like FMODE_EXEC, FMODE_NOCMTIME set.
+>
+> Jan Kara and Eric Paris both aggreed that this is a bug and the value of
+> event_f_flags should be checked:
+> https://lkml.org/lkml/2014/4/29/522
+> https://lkml.org/lkml/2014/4/29/539
+>
+> This updated patch version considers the comments by Michael Kerrisk in
+> https://lkml.org/lkml/2014/5/4/10
+>
+> With the patch the value of event_f_flags is checked.
+> When specifying an invalid value error EINVAL is returned.
+>
+> Internal flags are disallowed.
+>
+> File creation flags are disallowed:
+> O_CREAT, O_DIRECTORY, O_EXCL, O_NOCTTY, O_NOFOLLOW, O_TRUNC, and O_TTY_INIT.
+>
+> Flags which do not make sense with fanotify are disallowed:
+> __O_TMPFILE, O_PATH, FASYNC, and O_DIRECT.
+>
+> This leaves us with the following allowed values:
+>
+> O_RDONLY, O_WRONLY, O_RDWR are basic functionality. The are stored in the
+> bits given by O_ACCMODE.
+>
+> O_APPEND is working as expected. The value might be useful in a logging
+> application which appends the current status each time the log is opened.
+>
+> O_LARGEFILE is needed for files exceeding 4GB on 32bit systems.
+>
+> O_NONBLOCK may be useful when monitoring slow devices like tapes.
+>
+> O_NDELAY is equal to O_NONBLOCK except for platform parisc.
+> To avoid code breaking on parisc either both flags should be
+> allowed or none. The patch allows both.
+>
+> __O_SYNC and O_DSYNC may be used to avoid data loss on power disruption.
+>
+> O_NOATIME may be useful to reduce disk activity.
+>
+> O_CLOEXEC may be useful, if separate processes shall be used to scan files.
+>
+> Once this patch is accepted, the fanotify_init.2 manpage has to be updated.
+>
+> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+> ---
+>  fs/notify/fanotify/fanotify_user.c | 25 +++++++++++++++++++++++++
+>  1 file changed, 25 insertions(+)
+>
+> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+> index d42220f..31b0de2 100644
+> --- a/fs/notify/fanotify/fanotify_user.c
+> +++ b/fs/notify/fanotify/fanotify_user.c
+> @@ -25,6 +25,19 @@
+>  #define FANOTIFY_DEFAULT_MAX_MARKS     8192
+>  #define FANOTIFY_DEFAULT_MAX_LISTENERS 128
+>
+> +/*
+> + * All flags that may be specified in parameter event_f_flags of fanotify_init.
+> + *
+> + * Internal and external open flags are stored together in field f_flags of
+> + * struct file. Only external open flags shall be allowed in event_f_flags.
+> + * Internal flags like FMODE_NONOTIFY, FMODE_EXEC, FMODE_NOCMTIME shall be
+> + * excluded.
+> + */
+> +#define        FANOTIFY_INIT_ALL_EVENT_F_BITS                          ( \
+> +               O_ACCMODE       | O_APPEND      | O_NONBLOCK    | \
+> +               __O_SYNC        | O_DSYNC       | O_CLOEXEC     | \
+> +               O_LARGEFILE     | O_NOATIME     )
+> +
+>  extern const struct fsnotify_ops fanotify_fsnotify_ops;
 
-Add support for an optional reset controller that will be deasserted on
-power off and asserted on power on.
+The above looks okay to me, but I'd be happier seeing an Ack from Jan or Eric.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
----
- Documentation/devicetree/bindings/usb/usb-ehci.txt |  1 +
- drivers/usb/host/ehci-platform.c                   | 26 +++++++++++++++++++---
- 2 files changed, 24 insertions(+), 3 deletions(-)
+>  static struct kmem_cache *fanotify_mark_cache __read_mostly;
+> @@ -669,6 +682,18 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, unsigned int, event_f_flags)
+>         if (flags & ~FAN_ALL_INIT_FLAGS)
+>                 return -EINVAL;
+>
+> +       if (event_f_flags & ~FANOTIFY_INIT_ALL_EVENT_F_BITS)
+> +               return -EINVAL;
+> +
+> +       switch (event_f_flags & O_ACCMODE) {
+> +       case O_RDONLY:
+> +       case O_RDWR:
+> +       case O_WRONLY:
+> +               break;
+> +       default:
+> +               return -EINVAL;
+> +       }
+> +
 
-diff --git a/Documentation/devicetree/bindings/usb/usb-ehci.txt b/Documentation/devicetree/bindings/usb/usb-ehci.txt
-index ff151ec084c4..43c1a4e06767 100644
---- a/Documentation/devicetree/bindings/usb/usb-ehci.txt
-+++ b/Documentation/devicetree/bindings/usb/usb-ehci.txt
-@@ -15,6 +15,7 @@ Optional properties:
-  - clocks : a list of phandle + clock specifier pairs
-  - phys : phandle + phy specifier pair
-  - phy-names : "usb"
-+ - resets : phandle + reset specifier pair
- 
- Example (Sequoia 440EPx):
-     ehci@e0000300 {
-diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-platform.c
-index c7dd93aad20c..2f5b9ce3e042 100644
---- a/drivers/usb/host/ehci-platform.c
-+++ b/drivers/usb/host/ehci-platform.c
-@@ -29,6 +29,7 @@
- #include <linux/of.h>
- #include <linux/phy/phy.h>
- #include <linux/platform_device.h>
-+#include <linux/reset.h>
- #include <linux/usb.h>
- #include <linux/usb/hcd.h>
- #include <linux/usb/ehci_pdriver.h>
-@@ -41,6 +42,7 @@
- 
- struct ehci_platform_priv {
- 	struct clk *clks[EHCI_MAX_CLKS];
-+	struct reset_control *rst;
- 	struct phy *phy;
- };
- 
-@@ -208,6 +210,18 @@ static int ehci_platform_probe(struct platform_device *dev)
- 		}
- 	}
- 
-+	priv->rst = devm_reset_control_get_optional(&dev->dev, NULL);
-+	if (IS_ERR(priv->rst)) {
-+		err = PTR_ERR(priv->rst);
-+		if (err == -EPROBE_DEFER)
-+			goto err_put_clks;
-+		priv->rst = NULL;
-+	} else {
-+		err = reset_control_deassert(priv->rst);
-+		if (err)
-+			goto err_put_clks;
-+	}
-+
- 	if (pdata->big_endian_desc)
- 		ehci->big_endian_desc = 1;
- 	if (pdata->big_endian_mmio)
-@@ -218,7 +232,7 @@ static int ehci_platform_probe(struct platform_device *dev)
- 		dev_err(&dev->dev,
- 			"Error: CONFIG_USB_EHCI_BIG_ENDIAN_MMIO not set\n");
- 		err = -EINVAL;
--		goto err_put_clks;
-+		goto err_reset;
- 	}
- #endif
- #ifndef CONFIG_USB_EHCI_BIG_ENDIAN_DESC
-@@ -226,14 +240,14 @@ static int ehci_platform_probe(struct platform_device *dev)
- 		dev_err(&dev->dev,
- 			"Error: CONFIG_USB_EHCI_BIG_ENDIAN_DESC not set\n");
- 		err = -EINVAL;
--		goto err_put_clks;
-+		goto err_reset;
- 	}
- #endif
- 
- 	if (pdata->power_on) {
- 		err = pdata->power_on(dev);
- 		if (err < 0)
--			goto err_put_clks;
-+			goto err_reset;
- 	}
- 
- 	hcd->rsrc_start = res_mem->start;
-@@ -256,6 +270,9 @@ static int ehci_platform_probe(struct platform_device *dev)
- err_power:
- 	if (pdata->power_off)
- 		pdata->power_off(dev);
-+err_reset:
-+	if (priv->rst)
-+		reset_control_assert(priv->rst);
- err_put_clks:
- 	while (--clk >= 0)
- 		clk_put(priv->clks[clk]);
-@@ -280,6 +297,9 @@ static int ehci_platform_remove(struct platform_device *dev)
- 	if (pdata->power_off)
- 		pdata->power_off(dev);
- 
-+	if (priv->rst)
-+		reset_control_assert(priv->rst);
-+
- 	for (clk = 0; clk < EHCI_MAX_CLKS && priv->clks[clk]; clk++)
- 		clk_put(priv->clks[clk]);
- 
+The 'switch' could just be replaced by:
+
+if ((event_f_flags & O_ACCMODE) == 3)
+        return -EINVAL;
+
+(But I'm not sure if some might prefer the idiom you have used.)
+
+Cheers,
+
+Michael
+
+
+
+
 -- 
-1.9.3
-
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
