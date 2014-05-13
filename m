@@ -1,153 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053AbaEMV0E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 17:26:04 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:38525 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752150AbaEMVZz (ORCPT
+	id S1754654AbaEMV1W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 17:27:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38122 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753289AbaEMV1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 17:25:55 -0400
-Message-ID: <53728DDE.60105@gmail.com>
-Date: Tue, 13 May 2014 23:25:50 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Antoine Tenart <antoine.tenart@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] clk: add helper for unique DT clock names
-References: <1399839881-29895-1-git-send-email-sebastian.hesselbarth@gmail.com> <1399839881-29895-2-git-send-email-sebastian.hesselbarth@gmail.com> <20140513194922.5943.40228@quantum> <53727E6E.6050503@gmail.com> <20140513205111.5943.12709@quantum>
-In-Reply-To: <20140513205111.5943.12709@quantum>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 13 May 2014 17:27:16 -0400
+Date: Tue, 13 May 2014 23:27:16 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Darren Hart <darren@dvhart.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: [patch 1/3] rtmutex: Add missing deadlock check
+In-Reply-To: <20140513203619.GV18164@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.02.1405132301530.6261@ionos.tec.linutronix.de>
+References: <20140512190438.314125476@linutronix.de> <20140512201700.999660035@linutronix.de> <5371B2D9.8060405@cn.fujitsu.com> <20140513084815.GB2485@laptop.programming.kicks-ass.net> <alpine.DEB.2.02.1405132117110.6261@ionos.tec.linutronix.de>
+ <20140513162041.3405b668@gandalf.local.home> <20140513203619.GV18164@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 10:51 PM, Mike Turquette wrote:
-> Quoting Sebastian Hesselbarth (2014-05-13 13:19:58)
->> On 05/13/2014 09:49 PM, Mike Turquette wrote:
->>> Quoting Sebastian Hesselbarth (2014-05-11 13:24:34)
->>>> Currently, most DT clock drivers pick a unique node name to allow unique
->>>> clock names. As ePAPR recommends node names to be generic, we therefore
->>>> provide a helper to generate a unique clock name from the DT node name
->>>> plus reg property or a magic number instead. This is basically the same
->>>> we already do for proper devices and may vanish as soon as there is some
->>>> (early) device support for clocks available.
->>>>
->>>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> [...]
->>>> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
->>>> index dff0373f53c1..b449a635dbfa 100644
->>>> --- a/drivers/clk/clk.c
->>>> +++ b/drivers/clk/clk.c
->>>> @@ -17,6 +17,7 @@
->>>>  #include <linux/list.h>
->>>>  #include <linux/slab.h>
->>>>  #include <linux/of.h>
->>>> +#include <linux/of_address.h>
->>>>  #include <linux/device.h>
->>>>  #include <linux/init.h>
->>>>  #include <linux/sched.h>
->>>> @@ -2543,6 +2544,34 @@ const char *of_clk_get_parent_name(struct device_node *np, int index)
->>>>  }
->>>>  EXPORT_SYMBOL_GPL(of_clk_get_parent_name);
->>>>  
->>>> +/**
->>>> + * of_clk_create_name() - Allocate and create a unique clock name
->>>> + * @np: Device node pointer of the clock node
->>>> + *
->>>> + * This will allocate and create a unique clock name based on the
->>>> + * reg property value. As a last resort, it will use the node name
->>>> + * followed by a unique number. The caller has to deallocate the
->>>> + * buffer.
->>>> + */
->>>> +char *of_clk_create_name(struct device_node *np)
->>>> +{
->>>> +       static atomic_t clk_no_reg_magic;
->>>> +       const __be32 *reg;
->>>> +       u64 addr;
->>>> +       int magic;
->>>> +
->>>> +       reg = of_get_property(np, "reg", NULL);
->>>> +       if (reg) {
->>>> +               addr = of_translate_address(np, reg);
->>>> +               return kasprintf(GFP_KERNEL, "%llx.%s",
->>>> +                                (unsigned long long)addr, np->name);
->>>> +       }
->>>> +
->>>> +       magic = atomic_add_return(1, &clk_no_reg_magic);
->>>> +       return kasprintf(GFP_KERNEL, "%s.%d", np->name, magic);
->>>
->>> For the case where we the reg property is present we use reg.name, but
->>> for the case were the reg property is missing we use name.magic. Is it
->>> intentional to switch the string and integer pairs?
->>>
->>> Doing so avoids the case where magic might collide with a simple bus
->>> clock (e.g. 'clk@1'), but I wanted to double check that it was
->>> intentional.
->>
->> Mike,
->>
->> yes it is intentional and copies what is done for platform_device names.
->>
->> Unfortunately, as much as I prefer this patch someday, it doesn't work
->> with the rest of the helpers as expected. While this can generate unique
->> and generic clock names, especially of_clk_get_parent_name() picks
->> either an clock-output-names named clock _or_ the node name ignoring the
->> above auto-generated name of course.
->>
->> If you agree with the general approach here, we should still postpone
->> this for the next cycle when I have more time to look at the details.
->> I prefer to rename the nodes and use clock-output-names where required
->> for the Berlin clock nodes now.
+On Tue, 13 May 2014, Paul E. McKenney wrote:
+> On Tue, May 13, 2014 at 04:20:41PM -0400, Steven Rostedt wrote:
+> > What about having a module that creates a bunch of threads and forces
+> > all the scenarios that we want to test? Wouldn't it be easier to do
+> > than to have a userspace interface to dictate commands to the kernel?
 > 
-> Yes, that sounds fine. I'd also like the DT maintainers to take a look
-> at this and weigh in.
+> I second this approach!  The kernel environment makes it -much- easier
+> to force races and other conditions, which turns into much simpler and
+> more effective tests.
 
-Ok, great! So, I drop the of_clk_create_name() for the Berlin clock
-drivers now and send a v2 with some bugs fixed. I also received the
-requested BG2Q dtsi changes and tests from Alexandre.
+The point of the rtmutex tester was NOT to force races and stuff, it
+was intended to be a formal test for certain static scenarios:
 
-Will pick up the DT clock naming issues next cycle then. Would be good
-to get some remarks from the DT maintainers in the meantime.
+   - verify boosting / debosting
+   - verify set_scheduler interaction
+   - verify deadlock detection 
 
-Sebastian
+The latter was incomplete and therefor missed the futex wreckage :(
 
->>>> +}
->>>> +EXPORT_SYMBOL_GPL(of_clk_create_name);
->>>> +
->>>>  struct clock_provider {
->>>>         of_clk_init_cb_t clk_init_cb;
->>>>         struct device_node *np;
->>>> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
->>>> index 511917416fb0..c6f3ca1cd81c 100644
->>>> --- a/include/linux/clk-provider.h
->>>> +++ b/include/linux/clk-provider.h
->>>> @@ -514,6 +514,7 @@ struct clk *of_clk_src_simple_get(struct of_phandle_args *clkspec,
->>>>  struct clk *of_clk_src_onecell_get(struct of_phandle_args *clkspec, void *data);
->>>>  int of_clk_get_parent_count(struct device_node *np);
->>>>  const char *of_clk_get_parent_name(struct device_node *np, int index);
->>>> +char *of_clk_create_name(struct device_node *np);
->>>>  
->>>>  void of_clk_init(const struct of_device_id *matches);
->>>>  
->>>> @@ -543,6 +544,10 @@ static inline const char *of_clk_get_parent_name(struct device_node *np,
->>>>  {
->>>>         return NULL;
->>>>  }
->>>> +static inline char *of_clk_create_name(struct device_node *np)
->>>> +{
->>>> +       return NULL;
->>>> +}
->>>>  #define of_clk_init(matches) \
->>>>         { while (0); }
->>>>  #endif /* CONFIG_OF */
->>>> -- 
->>>> 1.9.1
->>>>
->>
+Having a formal checker makes a lot of sense.
+
+Plastering the code with a gazillion of trace_printks, waiting several
+hours for each iteration and staring into several GB of traces just to
+figure out, that it is an algorithmic issue, is utter waste of time
+and nerves. And that stuff is definitely complex enough to justify a
+static checker.
+
+Back then when I wrote it, it unearthed quite some logic bugs. And I
+needed the schedule_rt_mutex() hack to verify the BKL interaction and
+the lock steal machinery, which made it impossible to be a module. It
+could have been done, but that'd have been even more ugly hackery.
+
+So I made it a user space interface to add/modify test cases without
+recompiling the kernel.  But now with BKL and the lock steal muck
+gone, we simply might kill it.
+
+Now that allows a module, but then I'm still not sure whether formal
+verification rules are fun to code in C. There are certainly better
+ways than the *.tst rules I defined back then. But yes, we could add a
+similar cryptic thing with static arrays of OP/Data pairs in C.
+
+Thanks,
+
+	tglx
+
 
