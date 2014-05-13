@@ -1,136 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085AbaEMGjv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 02:39:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24220 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751043AbaEMGjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 02:39:49 -0400
-Message-ID: <5371BE07.30409@redhat.com>
-Date: Tue, 13 May 2014 08:39:03 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1758493AbaEMGmJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 02:42:09 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:37903 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906AbaEMGmH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 02:42:07 -0400
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        kishon@ti.com
-CC: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH v3 3/8] phy: sunxi: Rework phy initialization
-References: <1399923274-6017-1-git-send-email-maxime.ripard@free-electrons.com> <1399923274-6017-4-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1399923274-6017-4-git-send-email-maxime.ripard@free-electrons.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140509095545.GO5767@lee--X1>
+References: <1399583799-23517-1-git-send-email-linus.walleij@linaro.org>
+	<20140509093111.GN5767@lee--X1>
+	<20140509095545.GO5767@lee--X1>
+Date: Tue, 13 May 2014 08:42:05 +0200
+Message-ID: <CACRpkdbrew30s8U43JVLLeK3z=oebjj9shhm98vaAZnrKwK0nQ@mail.gmail.com>
+Subject: Re: [GIT PULL v2] First pull-request for the IB between MFD and GPIO
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, May 9, 2014 at 11:55 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-On 05/12/2014 09:34 PM, Maxime Ripard wrote:
-> Move the phy initialization and variables declaration to the loop itself, since
-> it is where it really belongs. Also remove all the temporary variables, we can
-> use the structure members directly.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  drivers/phy/phy-sun4i-usb.c | 44 ++++++++++++++++++++------------------------
->  1 file changed, 20 insertions(+), 24 deletions(-)
-> 
-> diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
-> index e6e6c4ba7145..81896409c4bd 100644
-> --- a/drivers/phy/phy-sun4i-usb.c
-> +++ b/drivers/phy/phy-sun4i-usb.c
-> @@ -224,13 +224,8 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
->  	struct sun4i_usb_phy_data *data;
->  	struct device *dev = &pdev->dev;
->  	struct device_node *np = dev->of_node;
-> -	void __iomem *pmu = NULL;
->  	struct phy_provider *phy_provider;
-> -	struct reset_control *reset;
-> -	struct regulator *vbus;
->  	struct resource *res;
-> -	struct phy *phy;
-> -	char name[16];
->  	int i;
->  
->  	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
-> @@ -262,42 +257,43 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
->  
->  	/* Skip 0, 0 is the phy for otg which is not yet supported. */
->  	for (i = 1; i < data->num_phys; i++) {
-> +		struct sun4i_usb_phy *phy = data->phys + i;
-> +		char name[16];
-> +
->  		snprintf(name, sizeof(name), "usb%d_vbus", i);
-> -		vbus = devm_regulator_get_optional(dev, name);
-> -		if (IS_ERR(vbus)) {
-> -			if (PTR_ERR(vbus) == -EPROBE_DEFER)
-> +		phy->vbus = devm_regulator_get_optional(dev, name);
-> +		if (IS_ERR(phy->vbus)) {
-> +			if (PTR_ERR(phy->vbus) == -EPROBE_DEFER)
->  				return -EPROBE_DEFER;
-> -			vbus = NULL;
-> +			phy->vbus = NULL;
->  		}
->  
->  		snprintf(name, sizeof(name), "usb%d_reset", i);
-> -		reset = devm_reset_control_get(dev, name);
-> -		if (IS_ERR(reset)) {
-> +		phy->reset = devm_reset_control_get(dev, name);
-> +		if (IS_ERR(phy->reset)) {
->  			dev_err(dev, "failed to get reset %s\n", name);
-> -			return PTR_ERR(reset);
-> +			return PTR_ERR(phy->reset);
->  		}
->  
->  		if (i) { /* No pmu for usbc0 */
->  			snprintf(name, sizeof(name), "pmu%d", i);
->  			res = platform_get_resource_byname(pdev,
->  							IORESOURCE_MEM, name);
-> -			pmu = devm_ioremap_resource(dev, res);
-> -			if (IS_ERR(pmu))
-> -				return PTR_ERR(pmu);
-> +			phy->pmu = devm_ioremap_resource(dev, res);
-> +			if (IS_ERR(phy->pmu))
-> +				return PTR_ERR(phy->pmu);
-> +		} else {
-> +			phy->pmu = NULL;
->  		}
->  
+> Looks like it matters which order the patches are merged in - my bad!
+>
+> The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
+>
+>   Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
+>
+> are available in the git repository at:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-gpio-v3.16
+>
+> for you to fetch changes up to 3ba1d516d5feddba3e13d30d31a70da130a3ee0e:
+>
+>   mfd: stmpe: root out static GPIO and IRQ assignments (2014-05-09 10:51:14 +0100)
 
-data is kzalloced, so there is no need for this else branch. Other then that
-this patch is:
+OK I first merged in v3.15-rc4 to my devel branch and then pulled this
+on top and all
+seems to be working well :-)
 
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+Thanks a ton Lee!
 
-Regards,
-
-Hans
-
-> -		phy = devm_phy_create(dev, &sun4i_usb_phy_ops, NULL);
-> -		if (IS_ERR(phy)) {
-> +		phy->phy = devm_phy_create(dev, &sun4i_usb_phy_ops, NULL);
-> +		if (IS_ERR(phy->phy)) {
->  			dev_err(dev, "failed to create PHY %d\n", i);
-> -			return PTR_ERR(phy);
-> +			return PTR_ERR(phy->phy);
->  		}
->  
-> -		data->phys[i].phy = phy;
-> -		data->phys[i].pmu = pmu;
-> -		data->phys[i].vbus = vbus;
-> -		data->phys[i].reset = reset;
-> -		data->phys[i].index = i;
-> -		phy_set_drvdata(phy, &data->phys[i]);
-> +		phy->index = i;
-> +		phy_set_drvdata(phy->phy, &data->phys[i]);
->  	}
->  
->  	dev_set_drvdata(dev, data);
-> 
+Yours,
+Linus Walleij
