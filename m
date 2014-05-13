@@ -1,205 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760365AbaEMMqv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 08:46:51 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:41894 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759431AbaEMMqu (ORCPT
+	id S932776AbaEMMsO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 08:48:14 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:58208 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753925AbaEMMsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 08:46:50 -0400
-Message-ID: <5372142E.5030003@gmail.com>
-Date: Tue, 13 May 2014 14:46:38 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 13 May 2014 08:48:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Jingoo Han <jg1.han@samsung.com>,
+        "'Santosh Shilimkar'" <santosh.shilimkar@ti.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-pci@vger.kernel.org, rogerq@ti.com,
+        balajitk@ti.com, "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Marek Vasut'" <marex@denx.de>
+Subject: Re: [PATCH 06/17] pci: host: pcie-designware: Use *base-mask* for configuring the iATU
+Date: Tue, 13 May 2014 14:47:25 +0200
+Message-ID: <10531498.kYV5eO1J1m@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <537210BF.2050100@ti.com>
+References: <1399383244-14556-1-git-send-email-kishon@ti.com> <6882241.amuhzvbd8n@wuerfel> <537210BF.2050100@ti.com>
 MIME-Version: 1.0
-To: Juri Lelli <juri.lelli@gmail.com>, Peter Zijlstra <peterz@infradead.org>
-CC: mtk.manpages@gmail.com, Dario Faggioli <raistlin@linux.it>,
-        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [BUG] sched_setattr() SCHED_DEADLINE hangs system
-References: <536F8F0E.7020301@gmail.com>	<53707007.3080003@gmail.com>	<20140512084727.GN30445@twins.programming.kicks-ass.net>	<CAKgNAkiGt6xV0JaddmC8pLeTe+fSEu79DNvzg8XbA-MPo_zXyg@mail.gmail.com>	<20140512123032.GC13467@laptop.programming.kicks-ass.net>	<20140513115749.ebf3eebc64e44aac6f183410@gmail.com>	<20140513104307.GZ30445@twins.programming.kicks-ass.net> <20140513141131.20d944f81633ee937f256385@gmail.com>
-In-Reply-To: <20140513141131.20d944f81633ee937f256385@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:JeKbQNvphoVQcKdd6VkZUBdJhpGDQ8ONKk0rpe5yWWz
+ wa0PntVPGXfZgzfs16O235hx6n83+7Yz5f0SkOHQR9wUUBFfz3
+ 1xJvzp8r9pzZP1Na4AhM6I/N3QsSBgqhBNMSk/HgzI/baVY6Ih
+ E8xZCxFnbGrTuZs6BJLOw7h//qpHH3IeGoMro4iBHJNnZQCg4A
+ JiDmEpF0I0n/y5O4zOcyq8ys3uuxqrt0EbgyCx6QjVW9QMtPMd
+ Dhlfoc86sS0v3oiJBv3joSLXM5AMjx9bxMiedGbGODilRrjCBs
+ Pyc+dn+t6LFzDZRLoAWuFOR1fdu053wrTeHSH/5EulwBgoOXK+
+ o/MAyFsfKfSeHm8tFzkM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 02:11 PM, Juri Lelli wrote:
-> On Tue, 13 May 2014 12:43:07 +0200
-> Peter Zijlstra <peterz@infradead.org> wrote:
+On Tuesday 13 May 2014 18:01:59 Kishon Vijay Abraham I wrote:
+> On Thursday 08 May 2014 02:48 PM, Arnd Bergmann wrote:
+> > On Thursday 08 May 2014 18:05:11 Jingoo Han wrote:
+> >> On Tuesday, May 06, 2014 10:59 PM, Arnd Bergmann wrote:
+> >>> On Tuesday 06 May 2014 19:03:52 Kishon Vijay Abraham I wrote:
+> >>>> In DRA7, the cpu sees 32bit address, but the pcie controller can see only 28bit
+> >>>> address. So whenever the cpu issues a read/write request, the 4 most
+> >>>> significant bits are used by L3 to determine the target controller.
+> >>>> For example, the cpu reserves 0x2000_0000 - 0x2FFF_FFFF for PCIe controller but
+> >>>> the PCIe controller will see only (0x000_0000 - 0xFFF_FFF). So for programming
+> >>>> the outbound translation window the *base* should be programmed as 0x000_0000.
+> >>>> Whenever we try to write to say 0x2000_0000, it will be translated to whatever
+> >>>> we have programmed in the translation window with base as 0x000_0000.
+> >>>>
+> >>>> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> >>>> Cc: Marek Vasut <marex@denx.de>
+> >>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> >>>> Acked-by: Jingoo Han <jg1.han@samsung.com>
+> >>>> Acked-by: Mohit Kumar <mohit.kumar@st.com>
+> >>>
+> >>> Sorry, but NAK.
+> >>>
+> >>> We have a standard 'dma-ranges' property to handle this, so use it.
+> >>>
+> >>> See the x-gene PCIe driver patches for an example. Please also talk
+> >>> to Santosh about it, as he is implementing generic support for
+> >>> parsing dma-ranges in platform devices at the moment.
+> >>
+> >> Hi Arnd,
+> >>
+> >> Do you mean the following patch?
+> >> http://www.spinics.net/lists/kernel/msg1737725.html
+> >>
+> > 
+> > That is the patch Santosh did for platform devices, which is related but not
+> > what I meant here. For the PCI inbound window setup, please have a look
+> > at https://lkml.org/lkml/2014/3/19/607
 > 
->> On Tue, May 13, 2014 at 11:57:49AM +0200, Juri Lelli wrote:
->>>  static bool
->>>  __checkparam_dl(const struct sched_attr *attr)
->>>  {
->>>  	return attr && attr->sched_deadline != 0 &&
->>>  		(attr->sched_period == 0 ||
->>> -		(s64)(attr->sched_period   - attr->sched_deadline) >= 0) &&
->>> -		(s64)(attr->sched_deadline - attr->sched_runtime ) >= 0  &&
->>> -		attr->sched_runtime >= (2 << (DL_SCALE - 1));
->>> +		(attr->sched_period >= attr->sched_deadline)) &&
->>> +		(attr->sched_deadline >= attr->sched_runtime) &&
->>> +		attr->sched_runtime >= (1ULL << DL_SCALE) &&
->>> +		(attr->sched_deadline < (1ULL << 63) &&
->>> +		attr->sched_period < (1ULL << 63));
->>>  }
->>
->> Could we maybe rewrite that function to look less like a ioccc.org
->> submission?
->>
-> 
-> Right.
-> 
->> static bool
->> __checkparam_dl(const struct sched_attr *attr)
->> {
->> 	if (!attr) /* possible at all? */
->> 		return false;
->>
-> 
-> I'd say no, removed.
-> 
->> 	/* runtime <= deadline <= period */
->> 	if (attr->sched_period   < attr->sched_deadline ||
->> 	    attr->sched_deadline < attr->sched_runtime)
->> 		return false;
->>
->> 	/*
->> 	 * Since we truncate DL_SCALE bits make sure we're at least that big,
->> 	 * if runtime > (1 << DL_SCALE), so must the others be per the above
->> 	 */
->> 	if (attr->sched_runtime <= (1ULL << DL_SCALE))
->> 		return false;
->>
->> 	/*
->> 	 * Since we use the MSB for wrap-around and sign issues, make
->> 	 * sure its not set, if period < 2^63, so must the others be.
->> 	 */
->> 	if (attr->sched_period & (1ULL << 63))
->> 		return false;
->>
->> 	return true;
->> }
->>
->> Did I miss anything?
+> Do you think it can be used for *outbound* window setup too? The problem is the
+> *ranges* property defines both the pci address and cpu address which should
+> have been enough to program the ob translation window, but the hw is designed
+> so that the controller sees only the 28 bits. (The most significant 4 bits is
+> for the l3 to address the controller).
 
-Thanks so much for suggesting the rewrite. It was rather impenetrable before.
+I'm not following what the problem is. You should always be able to describe
+in the inbound window (that is from the CPU perspective) using dma-ranges
+and the outbound window using ranges.
 
-> period can be 0, so we have to check also sched_deadline for MSB set.
+If you have a case where the outbound translation is a 256MB (i.e. 28bit)
+section of the CPU address space, that could be represented as
 
-Yes, I spotted that too as I tested the patch.
+	ranges = <0x82000000 0 0  0xb0000000  0 0x10000000>;
 
-Anyway, I tested your version of the patch, Peter, and other than the 
-above problem, it works (and the error case I identified now fails with
-EINVAL).
+or 
 
-Cheers,
+	ranges = <0x82000000 0 0xb0000000  0xb0000000  0 0x10000000>;
 
-Michael
+depending on whether you want the BARs to be programmed using a low
+address 0x0-0x0fffffff or an address matching the window
+0xb0000000-0xbfffffff.
 
-
-> ---
->>From e0c44d7614127f8dfbafc08c30681cb8098271e8 Mon Sep 17 00:00:00 2001
-> From: Juri Lelli <juri.lelli@gmail.com>
-> Date: Tue, 13 May 2014 10:15:59 +0200
-> Subject: [PATCH] sched/deadline: restrict user params max value to 2^63 ns
-> 
-> Michael Kerrisk noticed that creating SCHED_DEADLINE reservations
-> with certain parameters (e.g, a runtime of something near 2^64 ns)
-> can cause a system freeze for some amount of time.
-> 
-> The problem is that in the interface we have
-> 
->  u64 sched_runtime;
-> 
-> while internally we need to have a signed runtime (to cope with
-> budget overruns)
-> 
->  s64 runtime;
-> 
-> At the time we setup a new dl_entity we copy the first value in
-> the second. The cast turns out with negative values when
-> sched_runtime is too big, and this causes the scheduler to go crazy
-> right from the start.
-> 
-> Moreover, considering how we deal with deadlines wraparound
-> 
->  (s64)(a - b) < 0
-> 
-> we also have to restrict acceptable values for sched_{deadline,period}.
-> 
-> This patch fixes the thing checking that user parameters are always
-> below 2^63 ns (still large enough for everyone).
-> 
-> It also rewrites other conditions that we check, since in
-> __checkparam_dl we don't have to deal with deadline wraparounds
-> and what we have now erroneously fails when the difference between
-> values is too big.
-> 
-> Reported-by: Michael Kerrisk <mtk.manpages@gmail.com>
-> Suggested-by: Peter Zijlstra <peterz@infradead.org>
-> Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
-> ---
->  kernel/sched/core.c |   37 ++++++++++++++++++++++++++++++-------
->  1 file changed, 30 insertions(+), 7 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index d9d8ece..682a986 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -3188,17 +3188,40 @@ __getparam_dl(struct task_struct *p, struct sched_attr *attr)
->   * We ask for the deadline not being zero, and greater or equal
->   * than the runtime, as well as the period of being zero or
->   * greater than deadline. Furthermore, we have to be sure that
-> - * user parameters are above the internal resolution (1us); we
-> - * check sched_runtime only since it is always the smaller one.
-> + * user parameters are above the internal resolution of 1us (we
-> + * check sched_runtime only since it is always the smaller one) and
-> + * below 2^63 ns (we have to check both sched_deadline and
-> + * sched_period, as the latter can be zero).
->   */
->  static bool
->  __checkparam_dl(const struct sched_attr *attr)
->  {
-> -	return attr && attr->sched_deadline != 0 &&
-> -		(attr->sched_period == 0 ||
-> -		(s64)(attr->sched_period   - attr->sched_deadline) >= 0) &&
-> -		(s64)(attr->sched_deadline - attr->sched_runtime ) >= 0  &&
-> -		attr->sched_runtime >= (2 << (DL_SCALE - 1));
-> +	/* deadline != 0 */
-> +	if (attr->sched_deadline == 0)
-> +		return false;
-> +
-> +	/*
-> +	 * Since we truncate DL_SCALE bits, make sure we're at least
-> +	 * that big.
-> +	 */
-> +	if (attr->sched_runtime < (1ULL << DL_SCALE))
-> +		return false;
-> +
-> +	/*
-> +	 * Since we use the MSB for wrap-around and sign issues, make
-> +	 * sure it's not set (mind that period can be equal to zero).
-> +	 */
-> +	if (attr->sched_deadline & (1ULL << 63) ||
-> +	    attr->sched_period & (1ULL << 63))
-> +		return false;
-> +
-> +	/* runtime <= deadline <= period (if period != 0) */
-> +	if ((attr->sched_period != 0 &&
-> +	     attr->sched_period < attr->sched_deadline) ||
-> +	    attr->sched_deadline < attr->sched_runtime)
-> +		return false;
-> +
-> +	return true;
->  }
->  
->  /*
-> 
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+	Arnd
