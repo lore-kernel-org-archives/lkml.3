@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550AbaEMPdF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:33:05 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:47377 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346AbaEMPcv (ORCPT
+	id S1754606AbaEMPdM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:33:12 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:57287 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753638AbaEMPcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:32:51 -0400
+	Tue, 13 May 2014 11:32:55 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Russell King <rmk+kernel@arm.linux.org.uk>,
@@ -16,109 +16,80 @@ Cc: Daniel Vetter <daniel@ffwll.ch>, Rob Clark <robdclark@gmail.com>,
         Philipp Zabel <p.zabel@pengutronix.de>,
         Sascha Hauer <s.hauer@pengutronix.de>, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/7] drm/tegra: Convert to master/component framework
-Date: Tue, 13 May 2014 17:30:43 +0200
-Message-Id: <1399995050-28435-1-git-send-email-thierry.reding@gmail.com>
+Subject: [PATCH v2 2/7] drivers/base: Allow driver-data to be attached to a master
+Date: Tue, 13 May 2014 17:30:45 +0200
+Message-Id: <1399995050-28435-3-git-send-email-thierry.reding@gmail.com>
 X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1399995050-28435-1-git-send-email-thierry.reding@gmail.com>
+References: <1399995050-28435-1-git-send-email-thierry.reding@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thierry Reding <treding@nvidia.com>
 
-Hi,
+Similarly to what can be done for device drivers, allow driver-specific
+data to be attached to a master. This is necessary for masters whose
+device is already bound to by a different driver and therefore cannot be
+used to store the driver-specific data.
 
-This series converts the Tegra DRM driver to the master/component
-framework. The length of the series and the list of people in Cc is
-mostly due to the fact that Tegra has some special requirements as
-opposed to other drivers and therefore requires some changes outside
-of DRM.
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+Note that I'd like to merge this patch through the Tegra DRM tree so
+that the Tegra DRM changes later in this patch can be merged at the same
+time to avoid them being delayed for another release cycle.
 
-Patch 1 introduces a helper function that can be used by new DRM drivers
-that don't rely on legacy userspace ABIs. It allows them to register DRM
-devices much more easily and without much of the midlayer that currently
-exists in the DRM subsystem.
+In particular I'm looking for an Acked-by from Greg and Russell.
 
-Patches 2 and 3 make some changes to the master/component framework
-which are necessary to convert Tegra DRM to use it. All current users of
-the API have been converted as part of this patch. Note that at the same
-time the drivers are converted to no longer use drm_platform_init() in
-favour of the drm_set_unique() from patch 1 in conjunction with
-drm_dev_alloc() and drm_dev_register(). I would've liked to avoid such
-invasive changes in a single patch, but unfortunately I couldn't think
-of a way how to do that. I'm open to suggestions.
+ drivers/base/component.c  | 13 +++++++++++++
+ include/linux/component.h |  3 +++
+ 2 files changed, 16 insertions(+)
 
-Patch 4 adds a new interface framework that supplements the master/
-component framework and can be used in situations where there is no
-struct device * that a driver can bind to.
-
-The Tegra DRM driver is converted to using the master/component
-framework in patch 5 using the above four patches.
-
-Finally patches 6 and 7 add some documentation about the new way of
-registering DRM devices that don't need legacy support.
-
-Each patch has a somewhat more elaborate description of why it is needed
-or what problem it solves. The patchset applies on top of linux-next.
-
-I welcome any questions or comments you might have.
-
-Thierry
-
-Thierry Reding (7):
-  drm: Introduce drm_set_unique()
-  drivers/base: Allow driver-data to be attached to a master
-  drivers/base: Allow multiple masters per device
-  drivers/base: Add interface framework
-  drm/tegra: Convert to master/component framework
-  drm: Add device registration documentation
-  drm: Document how to register devices without struct drm_bus
-
- Documentation/DocBook/drm.tmpl             |  38 ++
- drivers/base/Makefile                      |   2 +-
- drivers/base/component.c                   |  31 +-
- drivers/base/interface.c                   | 186 ++++++++++
- drivers/gpu/drm/drm_ioctl.c                |  23 +-
- drivers/gpu/drm/drm_pci.c                  |  80 ++---
- drivers/gpu/drm/drm_platform.c             |  15 +-
- drivers/gpu/drm/drm_stub.c                 |  43 ++-
- drivers/gpu/drm/drm_usb.c                  |  20 +-
- drivers/gpu/drm/msm/adreno/a3xx_gpu.c      |   8 +-
- drivers/gpu/drm/msm/hdmi/hdmi.c            |   8 +-
- drivers/gpu/drm/msm/msm_drv.c              |  75 ++--
- drivers/gpu/drm/msm/msm_drv.h              |   1 +
- drivers/gpu/drm/tegra/Makefile             |   1 -
- drivers/gpu/drm/tegra/bus.c                |  64 ----
- drivers/gpu/drm/tegra/dc.c                 |  58 ++-
- drivers/gpu/drm/tegra/drm.c                | 171 ++++++---
- drivers/gpu/drm/tegra/drm.h                |  27 +-
- drivers/gpu/drm/tegra/dsi.c                | 144 ++++----
- drivers/gpu/drm/tegra/gr2d.c               |  78 ++--
- drivers/gpu/drm/tegra/gr3d.c               |  77 ++--
- drivers/gpu/drm/tegra/hdmi.c               |  69 ++--
- drivers/gpu/drm/tegra/sor.c                |  71 ++--
- drivers/gpu/host1x/Makefile                |   1 -
- drivers/gpu/host1x/bus.c                   | 553 -----------------------------
- drivers/gpu/host1x/bus.h                   |  29 --
- drivers/gpu/host1x/dev.c                   |  21 +-
- drivers/gpu/host1x/dev.h                   |   7 +-
- drivers/staging/imx-drm/imx-drm-core.c     |  58 +--
- drivers/staging/imx-drm/imx-hdmi.c         |   4 +-
- drivers/staging/imx-drm/imx-ldb.c          |   4 +-
- drivers/staging/imx-drm/imx-tve.c          |   4 +-
- drivers/staging/imx-drm/ipuv3-crtc.c       |   4 +-
- drivers/staging/imx-drm/parallel-display.c |   4 +-
- include/drm/drmP.h                         |   3 +
- include/linux/component.h                  |  20 +-
- include/linux/host1x.h                     |  64 +---
- include/linux/interface.h                  |  40 +++
- 38 files changed, 849 insertions(+), 1257 deletions(-)
- create mode 100644 drivers/base/interface.c
- delete mode 100644 drivers/gpu/drm/tegra/bus.c
- delete mode 100644 drivers/gpu/host1x/bus.c
- delete mode 100644 drivers/gpu/host1x/bus.h
- create mode 100644 include/linux/interface.h
-
+diff --git a/drivers/base/component.c b/drivers/base/component.c
+index c4778995cd72..fb4510707281 100644
+--- a/drivers/base/component.c
++++ b/drivers/base/component.c
+@@ -25,6 +25,8 @@ struct master {
+ 
+ 	const struct component_master_ops *ops;
+ 	struct device *dev;
++
++	void *drvdata;
+ };
+ 
+ struct component {
+@@ -53,6 +55,17 @@ static struct master *__master_find(struct device *dev,
+ 	return NULL;
+ }
+ 
++void master_set_drvdata(struct master *master, void *data)
++{
++	if (master)
++		master->drvdata = data;
++}
++
++void *master_get_drvdata(struct master *master)
++{
++	return master ? master->drvdata : NULL;
++}
++
+ /* Attach an unattached component to a master. */
+ static void component_attach_master(struct master *master, struct component *c)
+ {
+diff --git a/include/linux/component.h b/include/linux/component.h
+index 68870182ca1e..f130b34b1575 100644
+--- a/include/linux/component.h
++++ b/include/linux/component.h
+@@ -26,6 +26,9 @@ int component_master_add(struct device *, const struct component_master_ops *);
+ void component_master_del(struct device *,
+ 	const struct component_master_ops *);
+ 
++void master_set_drvdata(struct master *, void *);
++void *master_get_drvdata(struct master *);
++
+ int component_master_add_child(struct master *master,
+ 	int (*compare)(struct device *, void *), void *compare_data);
+ 
 -- 
 1.9.2
 
