@@ -1,268 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933523AbaEMN1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 09:27:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55792 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932671AbaEMN1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 09:27:32 -0400
-Message-ID: <53721DC1.1040006@suse.cz>
-Date: Tue, 13 May 2014 15:27:29 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 10/19] mm: page_alloc: Reduce number of times page_to_pfn
- is called
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de> <1399974350-11089-11-git-send-email-mgorman@suse.de>
-In-Reply-To: <1399974350-11089-11-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933553AbaEMN1w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 09:27:52 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:56027 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932671AbaEMN1v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 09:27:51 -0400
+From: Jianyu Zhan <nasa4836@gmail.com>
+To: mmarek@suse.cz, akpm@linux-foundation.org, prarit@redhat.com,
+        michael.opdenacker@free-electrons.com, tkhai@yandex.ru,
+        nasa4836@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts/tags.sh: add regular expression replacement pattern for memcg
+Date: Tue, 13 May 2014 21:26:53 +0800
+Message-Id: <1399987613-18154-1-git-send-email-nasa4836@gmail.com>
+X-Mailer: git-send-email 2.0.0-rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 11:45 AM, Mel Gorman wrote:
-> In the free path we calculate page_to_pfn multiple times. Reduce that.
->
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Acked-by: Rik van Riel <riel@redhat.com>
+Hi, Prarit,
 
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
+>> Currently, no regular expression replacement pattern for PageCgroug*
+>
+>^^^ *Cgroup*
+ 
+  Sorry for the typo, fixed. Thanks.
 
-Just two comments.
-I just don't like #define but I can live with that.
-__free_one_page() is marked inline so presumably it would reuse 
-page_to_pfn() result in its caller already. But it seems to me it's 
-quite large so I wonder if it gets inlined anyway, and if the attribute 
-still makes sense...
+>> defined, which causes quite a few pain while reading code. Just get 
+>> rid of it. 
+>>
+>
+>IMO the patch looks fine but can you fixup your changelog a little bit?  I think
+>the new "standard" has become an explanation and example of the problem, an
+>explanation of what is wrong, and what you did to fix it (including an example
+>of output if possible).  That way we know what was changed and why :)
 
-> ---
->   include/linux/mmzone.h          |  9 +++++++--
->   include/linux/pageblock-flags.h | 33 +++++++++++++--------------------
->   mm/page_alloc.c                 | 34 +++++++++++++++++++---------------
->   3 files changed, 39 insertions(+), 37 deletions(-)
->
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 835aa3d..bd6f504 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -78,10 +78,15 @@ extern int page_group_by_mobility_disabled;
->   #define NR_MIGRATETYPE_BITS (PB_migrate_end - PB_migrate + 1)
->   #define MIGRATETYPE_MASK ((1UL << NR_MIGRATETYPE_BITS) - 1)
->
-> -static inline int get_pageblock_migratetype(struct page *page)
-> +#define get_pageblock_migratetype(page)					\
-> +	get_pfnblock_flags_mask(page, page_to_pfn(page),		\
-> +			PB_migrate_end, MIGRATETYPE_MASK)
-> +
-> +static inline int get_pfnblock_migratetype(struct page *page, unsigned long pfn)
->   {
->   	BUILD_BUG_ON(PB_migrate_end - PB_migrate != 2);
-> -	return get_pageblock_flags_mask(page, PB_migrate_end, MIGRATETYPE_MASK);
-> +	return get_pfnblock_flags_mask(page, pfn, PB_migrate_end,
-> +					MIGRATETYPE_MASK);
->   }
->
->   struct free_area {
-> diff --git a/include/linux/pageblock-flags.h b/include/linux/pageblock-flags.h
-> index c08730c..2baeee1 100644
-> --- a/include/linux/pageblock-flags.h
-> +++ b/include/linux/pageblock-flags.h
-> @@ -65,33 +65,26 @@ extern int pageblock_order;
->   /* Forward declaration */
->   struct page;
->
-> -unsigned long get_pageblock_flags_mask(struct page *page,
-> +unsigned long get_pfnblock_flags_mask(struct page *page,
-> +				unsigned long pfn,
->   				unsigned long end_bitidx,
->   				unsigned long mask);
-> -void set_pageblock_flags_mask(struct page *page,
-> +
-> +void set_pfnblock_flags_mask(struct page *page,
->   				unsigned long flags,
-> +				unsigned long pfn,
->   				unsigned long end_bitidx,
->   				unsigned long mask);
->
->   /* Declarations for getting and setting flags. See mm/page_alloc.c */
-> -static inline unsigned long get_pageblock_flags_group(struct page *page,
-> -					int start_bitidx, int end_bitidx)
-> -{
-> -	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
-> -	unsigned long mask = (1 << nr_flag_bits) - 1;
-> -
-> -	return get_pageblock_flags_mask(page, end_bitidx, mask);
-> -}
-> -
-> -static inline void set_pageblock_flags_group(struct page *page,
-> -					unsigned long flags,
-> -					int start_bitidx, int end_bitidx)
-> -{
-> -	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
-> -	unsigned long mask = (1 << nr_flag_bits) - 1;
-> -
-> -	set_pageblock_flags_mask(page, flags, end_bitidx, mask);
-> -}
-> +#define get_pageblock_flags_group(page, start_bitidx, end_bitidx) \
-> +	get_pfnblock_flags_mask(page, page_to_pfn(page),		\
-> +			end_bitidx,					\
-> +			(1 << (end_bitidx - start_bitidx + 1)) - 1)
-> +#define set_pageblock_flags_group(page, flags, start_bitidx, end_bitidx) \
-> +	set_pfnblock_flags_mask(page, flags, page_to_pfn(page),		\
-> +			end_bitidx,					\
-> +			(1 << (end_bitidx - start_bitidx + 1)) - 1)
->
->   #ifdef CONFIG_COMPACTION
->   #define get_pageblock_skip(page) \
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index b438eb7..3948f0a 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -559,6 +559,7 @@ static inline int page_is_buddy(struct page *page, struct page *buddy,
->    */
->
->   static inline void __free_one_page(struct page *page,
-> +		unsigned long pfn,
->   		struct zone *zone, unsigned int order,
->   		int migratetype)
->   {
-> @@ -575,7 +576,7 @@ static inline void __free_one_page(struct page *page,
->
->   	VM_BUG_ON(migratetype == -1);
->
-> -	page_idx = page_to_pfn(page) & ((1 << MAX_ORDER) - 1);
-> +	page_idx = pfn & ((1 << MAX_ORDER) - 1);
->
->   	VM_BUG_ON_PAGE(page_idx & ((1 << order) - 1), page);
->   	VM_BUG_ON_PAGE(bad_range(zone, page), page);
-> @@ -710,7 +711,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
->   			list_del(&page->lru);
->   			mt = get_freepage_migratetype(page);
->   			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
-> -			__free_one_page(page, zone, 0, mt);
-> +			__free_one_page(page, page_to_pfn(page), zone, 0, mt);
->   			trace_mm_page_pcpu_drain(page, 0, mt);
->   			if (likely(!is_migrate_isolate_page(page))) {
->   				__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
-> @@ -722,13 +723,15 @@ static void free_pcppages_bulk(struct zone *zone, int count,
->   	spin_unlock(&zone->lock);
->   }
->
-> -static void free_one_page(struct zone *zone, struct page *page, int order,
-> +static void free_one_page(struct zone *zone,
-> +				struct page *page, unsigned long pfn,
-> +				int order,
->   				int migratetype)
->   {
->   	spin_lock(&zone->lock);
->   	zone->pages_scanned = 0;
->
-> -	__free_one_page(page, zone, order, migratetype);
-> +	__free_one_page(page, pfn, zone, order, migratetype);
->   	if (unlikely(!is_migrate_isolate(migratetype)))
->   		__mod_zone_freepage_state(zone, 1 << order, migratetype);
->   	spin_unlock(&zone->lock);
-> @@ -765,15 +768,16 @@ static void __free_pages_ok(struct page *page, unsigned int order)
->   {
->   	unsigned long flags;
->   	int migratetype;
-> +	unsigned long pfn = page_to_pfn(page);
->
->   	if (!free_pages_prepare(page, order))
->   		return;
->
->   	local_irq_save(flags);
->   	__count_vm_events(PGFREE, 1 << order);
-> -	migratetype = get_pageblock_migratetype(page);
-> +	migratetype = get_pfnblock_migratetype(page, pfn);
->   	set_freepage_migratetype(page, migratetype);
-> -	free_one_page(page_zone(page), page, order, migratetype);
-> +	free_one_page(page_zone(page), page, pfn, order, migratetype);
->   	local_irq_restore(flags);
->   }
->
-> @@ -1376,12 +1380,13 @@ void free_hot_cold_page(struct page *page, int cold)
->   	struct zone *zone = page_zone(page);
->   	struct per_cpu_pages *pcp;
->   	unsigned long flags;
-> +	unsigned long pfn = page_to_pfn(page);
->   	int migratetype;
->
->   	if (!free_pages_prepare(page, 0))
->   		return;
->
-> -	migratetype = get_pageblock_migratetype(page);
-> +	migratetype = get_pfnblock_migratetype(page, pfn);
->   	set_freepage_migratetype(page, migratetype);
->   	local_irq_save(flags);
->   	__count_vm_event(PGFREE);
-> @@ -1395,7 +1400,7 @@ void free_hot_cold_page(struct page *page, int cold)
->   	 */
->   	if (migratetype >= MIGRATE_PCPTYPES) {
->   		if (unlikely(is_migrate_isolate(migratetype))) {
-> -			free_one_page(zone, page, 0, migratetype);
-> +			free_one_page(zone, page, pfn, 0, migratetype);
->   			goto out;
->   		}
->   		migratetype = MIGRATE_MOVABLE;
-> @@ -6032,17 +6037,16 @@ static inline int pfn_to_bitidx(struct zone *zone, unsigned long pfn)
->    * @end_bitidx: The last bit of interest
->    * returns pageblock_bits flags
->    */
-> -unsigned long get_pageblock_flags_mask(struct page *page,
-> +unsigned long get_pfnblock_flags_mask(struct page *page, unsigned long pfn,
->   					unsigned long end_bitidx,
->   					unsigned long mask)
->   {
->   	struct zone *zone;
->   	unsigned long *bitmap;
-> -	unsigned long pfn, bitidx, word_bitidx;
-> +	unsigned long bitidx, word_bitidx;
->   	unsigned long word;
->
->   	zone = page_zone(page);
-> -	pfn = page_to_pfn(page);
->   	bitmap = get_pageblock_bitmap(zone, pfn);
->   	bitidx = pfn_to_bitidx(zone, pfn);
->   	word_bitidx = bitidx / BITS_PER_LONG;
-> @@ -6054,25 +6058,25 @@ unsigned long get_pageblock_flags_mask(struct page *page,
->   }
->
->   /**
-> - * set_pageblock_flags_mask - Set the requested group of flags for a pageblock_nr_pages block of pages
-> + * set_pfnblock_flags_mask - Set the requested group of flags for a pageblock_nr_pages block of pages
->    * @page: The page within the block of interest
->    * @start_bitidx: The first bit of interest
->    * @end_bitidx: The last bit of interest
->    * @flags: The flags to set
->    */
-> -void set_pageblock_flags_mask(struct page *page, unsigned long flags,
-> +void set_pfnblock_flags_mask(struct page *page, unsigned long flags,
-> +					unsigned long pfn,
->   					unsigned long end_bitidx,
->   					unsigned long mask)
->   {
->   	struct zone *zone;
->   	unsigned long *bitmap;
-> -	unsigned long pfn, bitidx, word_bitidx;
-> +	unsigned long bitidx, word_bitidx;
->   	unsigned long old_word, word;
->
->   	BUILD_BUG_ON(NR_PAGEBLOCK_BITS != 4);
->
->   	zone = page_zone(page);
-> -	pfn = page_to_pfn(page);
->   	bitmap = get_pageblock_bitmap(zone, pfn);
->   	bitidx = pfn_to_bitidx(zone, pfn);
->   	word_bitidx = bitidx / BITS_PER_LONG;
->
+ Yep, you are right. Rewrote the wording.
+ Would you mind signing your Reviewed-by if it is Ok? Thanks.
+
+---<8---
+Currently, while using ctags to read code, we would get stumbled on
+PageCgroup* symbols: no definition found. And it is quite dull to
+manually dig it out.
+
+This patch adds regular expression replacement pattern for such symbols,
+like what have done for the PageXXX flag. It will teach ctags to find
+out the definition for us.
+
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+---
+ scripts/tags.sh | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+index f2c5b00..7d3ebfe 100755
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -187,6 +187,10 @@ exuberant()
+ 	--regex-c++='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
+ 	--regex-c++='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/' \
+ 	--regex-c++='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'		\
++	--regex-c++='/TESTPCGFLAG\(([^,)]*).*/PageCgroup\1/'		\
++	--regex-c++='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'		\
++	--regex-c++='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'	\
++	--regex-c++='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
+ 	--regex-c='/PCI_OP_READ\((\w*).*[1-4]\)/pci_bus_read_config_\1/' \
+ 	--regex-c='/PCI_OP_WRITE\((\w*).*[1-4]\)/pci_bus_write_config_\1/' \
+ 	--regex-c='/DEFINE_(MUTEX|SEMAPHORE|SPINLOCK)\((\w*)/\2/v/'	\
+@@ -244,6 +248,10 @@ emacs()
+ 	--regex='/__CLEARPAGEFLAG_NOOP(\([^,)]*\).*/__ClearPage\1/' \
+ 	--regex='/TESTCLEARFLAG_FALSE(\([^,)]*\).*/TestClearPage\1/' \
+ 	--regex='/__TESTCLEARFLAG_FALSE(\([^,)]*\).*/__TestClearPage\1/' \
++	--regex='/TESTPCGFLAG\(([^,)]*).*/PageCgroup\1/'	\
++	--regex='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'	\
++	--regex='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'	\
++	--regex='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
+ 	--regex='/_PE(\([^,)]*\).*/PEVENT_ERRNO__\1/'		\
+ 	--regex='/PCI_OP_READ(\([a-z]*[a-z]\).*[1-4])/pci_bus_read_config_\1/' \
+ 	--regex='/PCI_OP_WRITE(\([a-z]*[a-z]\).*[1-4])/pci_bus_write_config_\1/'
+-- 
+2.0.0-rc1
 
