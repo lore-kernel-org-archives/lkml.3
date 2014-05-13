@@ -1,136 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761056AbaEMLUg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 07:20:36 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:43984 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752829AbaEMLUe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 07:20:34 -0400
+	id S1760484AbaEMLXJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 07:23:09 -0400
+Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:26779
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753130AbaEMLXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 07:23:06 -0400
+X-WSS-ID: 0N5IFM8-08-P5P-02
+X-M-MSG: 
+Message-ID: <53720091.5020302@amd.com>
+Date: Tue, 13 May 2014 13:22:57 +0200
+From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <536A5258.3080104@samsung.com>
-References: <1396967856-27470-1-git-send-email-t.stanislaws@samsung.com>
-	<1396967856-27470-2-git-send-email-t.stanislaws@samsung.com>
-	<534506B1.4040908@samsung.com>
-	<CAPdUM4M109_kzY6cUMJQPSwgazvWmNDWL1JeXgiqnzvH8dhK2Q@mail.gmail.com>
-	<53451A60.4050803@samsung.com>
-	<53675D72.70103@ti.com>
-	<CAPdUM4N+2VXpiFSiWW9gKfbte1zkpDbCOSF+KvEo4T1KLqqwjw@mail.gmail.com>
-	<536A36F5.5080303@samsung.com>
-	<CAPdUM4M6uk2KN_L487_cRkOqbgJrhhMRx9zpczA6-3LzSM3FSg@mail.gmail.com>
-	<536A5258.3080104@samsung.com>
-Date: Tue, 13 May 2014 16:50:31 +0530
-X-Google-Sender-Auth: 1C9ExYfITG5sX02GtaVWxqEBv40
-Message-ID: <CAPdUM4MZS4jMNcEtjHkw1==zG3Z_rNYfsw9Q4Qt3kRpV5PuLJw@mail.gmail.com>
-Subject: Re: [PATCHv2 1/3] phy: Add exynos-simple-phy driver
-From: Rahul Sharma <rahul.sharma@samsung.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Andrzej Hajda <a.hajda@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, sunil joshi <joshi@samsung.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ken Moffat <zarniwhoop@ntlworld.com>
+CC: Alex Deucher <alexdeucher@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: More breakage on HD7480D [ Aruba ]
+References: <20140512003405.GA3386@milliways>
+ <20140512010310.GA4370@milliways> <53707926.5090609@amd.com>
+ <20140512163207.GA23680@milliways>
+In-Reply-To: <20140512163207.GA23680@milliways>
+Content-Type: multipart/mixed;
+	boundary="------------010005010800010502090905"
+X-Originating-IP: [10.224.154.99]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(51704005)(24454002)(51874003)(81542001)(68736004)(83322001)(99396002)(85182001)(76482001)(46102001)(77096999)(87936001)(77982001)(71186001)(59896001)(85202002)(87266999)(512874002)(83506001)(64706001)(65816999)(84326002)(36756003)(65806001)(64126003)(20776003)(2009001)(81342001)(86362001)(79102001)(84676001)(21056001)(19580395003)(76176999)(54356999)(74662001)(4396001)(44976005)(568964001)(101416001)(83072002)(65956001)(85852003)(80022001)(575784001)(50986999)(92726001)(102836001)(99136001)(74502001)(62816006);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR02MB119;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 0210479ED8
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Christian.Koenig@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<Gentle PING>
+--------------010005010800010502090905
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: quoted-printable
 
-On 7 May 2014 21:03, Tomasz Figa <t.figa@samsung.com> wrote:
-> [CCing more DT-folks :)]
+Please try the attached patch it should fix your problem.
+
+Thanks allot for this bug report, that was just a stupid typo in the=20
+original patch which would probably went unnoticed for years otherwise.
+
+Christian.
+
+Am 12.05.2014 18:32, schrieb Ken Moffat:
+> On Mon, May 12, 2014 at 09:32:54AM +0200, Christian K=C3=B6nig wrote:
+>> Hi Ken,
+>>
+>> *sigh* did I already mentioned that I hate PLLs? As soon as you fix
+>> something another use case immediately starts to break.
+>>
+>> Please provide dmesg output created with drm.debug=3D0xe with and with=
+out the
+>> patch breaking it.
+>>
+>> Thanks in advance,
+>> Christian.
+>>
+>   The reverted version is from linus's tree after -rc5 with the patch
+> reverted, I assume the version -00010-gc9a25d0fc393 will NOT match
+> any public tree because I used git revert in a local branch.  That
+> one works fine.
 >
-> On 07.05.2014 16:19, Rahul Sharma wrote:
->> On 7 May 2014 19:06, Tomasz Stanislawski <t.stanislaws@samsung.com> wrote:
->>> On 05/07/2014 12:38 PM, Rahul Sharma wrote:
->>>> On 5 May 2014 15:14, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->>>>> Hi,
->>>>>
->>>>> On Wednesday 09 April 2014 03:31 PM, Sylwester Nawrocki wrote:
->>>>>> Hi,
->>>>>>
->>>>>> On 09/04/14 11:12, Rahul Sharma wrote:
->>>>>>> Idea looks good. How about keeping compatible which is independent
->>>>>>> of SoC, something like "samsung,exynos-simple-phy" and provide Reg
->>>>>>> and Bit through phy provider node. This way we can avoid SoC specific
->>>>>>> hardcoding in phy driver and don't need to look into dt bindings for
->>>>>>> each new SoC.
->>>>>>
->>>>>> I believe it is a not recommended approach.
->>>>>
->>>>> Why not? We should try to avoid hard coding in the driver code. Moreover by
->>>>> avoiding hardcoding we can make it a generic driver for single bit PHYs.
->>>>>
->>>>
->>>> +1.
->>>>
->>>> @Tomasz, any plans to consider this approach for simple phy driver?
->>>>
->>>> Regards,
->>>> Rahul Sharma.
->>>>
->>>
->>> Hi Rahul,
->>> Initially, I wanted to make a very generic driver and to add bit and
->>> register (or its offset) attribute to the PHY node.
->>> However, there was a very strong opposition from DT maintainers
->>> to adding any bit related configuration to DT.
->>> The current solution was designed to be a trade-off between
->>> being generic and being accepted :).
->>>
->>
->> Thanks Tomasz,
->> Ok got it. lets discuss it again and conclude it.
->>
->> @Kishon, DT-folks,
->>
->> The original RFC patch from Tomasz (at https://lkml.org/lkml/2013/10/21/313)
->> added simple phy driver as "Generic-simple-phy" with these properties:
->>
->> + of_property_read_u32(dev->of_node, "mask", &sphy->mask);
->> + of_property_read_u32(dev->of_node, "on-value", &sphy->on_value);
->> + of_property_read_u32(dev->of_node, "off-value", &sphy->off_value);
->>
->> Shall we consider the same solution again for generic simple phy
->> driver which just expose on/off control through register bit.
->>
->> Regards,
->> Rahul Sharma
->>
->>> Regards,
->>> Tomasz Stanislawski
->>>
->>>
->>>
->>>>> Cheers
->>>>> Kishon
->>>>
->>>
->>> _______________________________________________
->>> dri-devel mailing list
->>> dri-devel@lists.freedesktop.org
->>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
+>   The bad version is from a random kernel which showed the problem
+> while I was bisecting, in this case rc2-00086.  I first tried
+> booting vanilla rc5, but for some reason my blind attempt to login
+> and run 'dmesg >dmesg.bad' failed.
 >
-> Best regards,
-> Tomasz
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>   Thanks.  Sorry you are having to deal with PLLs.
+>
+> =C4=B8en
+
+
+--------------010005010800010502090905
+Content-Type: text/x-diff;
+	name="0001-drm-radeon-fix-typo-in-finding-PLL-params.patch"
+Content-Disposition: attachment;
+	filename="0001-drm-radeon-fix-typo-in-finding-PLL-params.patch"
+Content-Transfer-Encoding: quoted-printable
+
+>From 8b5c70b48d73b533f0003639cdb68bcffe7c1293 Mon Sep 17 00:00:00 2001
+From: =3D?UTF-8?q?Christian=3D20K=3DC3=3DB6nig?=3D <christian.koenig@amd.=
+com>
+Date: Tue, 13 May 2014 12:50:54 +0200
+Subject: [PATCH] drm/radeon: fix typo in finding PLL params
+MIME-Version: 1.0
+Content-Type: text/plain; charset=3DUTF-8
+Content-Transfer-Encoding: 8bit
+
+Otherwise the limit is raised to high.
+
+Signed-off-by: Christian K=C3=B6nig <christian.koenig@amd.com>
+---
+ drivers/gpu/drm/radeon/radeon_display.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/ra=
+deon/radeon_display.c
+index 408b6ac..f00dbbf 100644
+--- a/drivers/gpu/drm/radeon/radeon_display.c
++++ b/drivers/gpu/drm/radeon/radeon_display.c
+@@ -999,7 +999,7 @@ void radeon_compute_pll_avivo(struct radeon_pll *pll,
+=20
+ 	/* avoid high jitter with small fractional dividers */
+ 	if (pll->flags & RADEON_PLL_USE_FRAC_FB_DIV && (fb_div % 10)) {
+-		fb_div_min =3D max(fb_div_min, (9 - (fb_div % 10)) * 20 + 60);
++		fb_div_min =3D max(fb_div_min, (9 - (fb_div % 10)) * 20 + 50);
+ 		if (fb_div < fb_div_min) {
+ 			unsigned tmp =3D DIV_ROUND_UP(fb_div_min, fb_div);
+ 			fb_div *=3D tmp;
+--=20
+1.9.1
+
+
+--------------010005010800010502090905--
