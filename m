@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758843AbaEMI3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 04:29:37 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:55955 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099AbaEMI3f (ORCPT
+	id S1759248AbaEMIcs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 04:32:48 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:43389 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692AbaEMIcq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 04:29:35 -0400
+	Tue, 13 May 2014 04:32:46 -0400
+Message-ID: <5371D8B5.3070701@arm.com>
+Date: Tue, 13 May 2014 09:32:53 +0100
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1398759662-13381-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1398759662-13381-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Tue, 13 May 2014 10:29:35 +0200
-Message-ID: <CACRpkdb--trcCguVGoh-uOvKju+1qbKdG2vE0eAOrwR+jZJ0rA@mail.gmail.com>
-Subject: Re: [PATCH v1 10/11] mmc: mmci: Add Qcom variations to MCICommand register.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        agross@quicinc.com,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: Do not zero sg->cpumask and sg->sgp->power in
+ build_sched_groups
+References: <1398865178-12577-1-git-send-email-dietmar.eggemann@arm.com>
+In-Reply-To: <1398865178-12577-1-git-send-email-dietmar.eggemann@arm.com>
+X-OriginalArrivalTime: 13 May 2014 08:32:52.0952 (UTC) FILETIME=[EE959580:01CF6E85]
+X-MC-Unique: 114051309324409101
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 10:21 AM,  <srinivas.kandagatla@linaro.org> wrote:
+Hi Peter,
 
-> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->
-> Some bits which control Command Path State Machine (CPSM) are new in Qcom
-> integration, so this patch adds support to those bits.
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-(...)
+On 30/04/14 14:39, Dietmar Eggemann wrote:
+> From: Dietmar Eggemann <Dietmar.Eggemann@arm.com>
+> 
+> There is no need to zero struct sched_group member cpumask and struct
+> sched_group_power member power since both structures are already allocated
+> as zeroed memory in __sdt_alloc().
+> 
+> This patch has been tested with
+> BUG_ON(!cpumask_empty(sched_group_cpus(sg))); and BUG_ON(sg->sgp->power);
+> in build_sched_groups() on ARM TC2 and INTEL i5 M520 platform including
+> CPU hotplug scenarios.
+> 
+> Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+> ---
+>  kernel/sched/core.c |    2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 9cae286824bb..6bc51aebbf1b 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -5807,8 +5807,6 @@ build_sched_groups(struct sched_domain *sd, int cpu)
+>  			continue;
+>  
+>  		group = get_group(i, sdd, &sg);
+> -		cpumask_clear(sched_group_cpus(sg));
+> -		sg->sgp->power = 0;
+>  		cpumask_setall(sched_group_mask(sg));
+>  
+>  		for_each_cpu(j, span) {
+> 
 
-> +       if (host->hw_designer == AMBA_VENDOR_QCOM &&
-> +           mmc_cmd_type(cmd) == MMC_CMD_ADTC)
-> +               c |= MCI_CSPM_QCOM_DATCMD;
-> +
+I think this one slipped through the cracks. Could you have a look?
 
-You know the drill. Use vendor data.
+Thanks,
 
-> +/* Modified on Qualcomm Integrations */
-> +#define MCI_CSPM_QCOM_DATCMD           (1 << 12)
-> +#define MCI_CSPM_QCOM_MCIABORT         (1 << 13)
-> +#define MCI_CSPM_QCOM_CCSENABLE                (1 << 14)
-> +#define MCI_CSPM_QCOM_CCSDISABLE       (1 << 15)
-> +#define MCI_CSPM_QCOM_AUTO_CMD19       (1 << 16)
-> +#define MCI_CSPM_QCOM_AUTO_CMD21       (1 << 21)
+-- Dietmar
 
-You know how to rename these defines too :-)
-
-Yours,
-Linus Walleij
