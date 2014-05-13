@@ -1,78 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759957AbaEMJi0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:38:26 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60913 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760113AbaEMJ25 (ORCPT
+	id S1760188AbaEMJjX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:39:23 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:60871 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759858AbaEMJjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:28:57 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Florian Vaussard <florian.vaussard@epfl.ch>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 095/182] media: omap3isp: preview: Fix the crop margins
-Date: Tue, 13 May 2014 11:27:27 +0200
-Message-Id: <b05f3e926b77779b107ac2bb954aa552cee5dda1.1399973152.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
-References: <cover.1399973152.git.jslaby@suse.cz>
+	Tue, 13 May 2014 05:39:18 -0400
+Message-ID: <5371E842.3030802@linaro.org>
+Date: Tue, 13 May 2014 10:39:14 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Russell King <linux@arm.linux.org.uk>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        agross@quicinc.com,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v1 09/11] mmc: mmci: Add clock support for Qualcomm.
+References: <1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>	<1398759651-13341-1-git-send-email-srinivas.kandagatla@linaro.org> <CACRpkdYtiTrnVSOz055KNs=DWM3ai5NhPBKXPm8bxFPxYov81Q@mail.gmail.com>
+In-Reply-To: <CACRpkdYtiTrnVSOz055KNs=DWM3ai5NhPBKXPm8bxFPxYov81Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Florian Vaussard <florian.vaussard@epfl.ch>
+Thanks Linus W,
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On 13/05/14 09:28, Linus Walleij wrote:
+>> code is conditioned on hw designer.
+>>
+>> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> (...)
+>> +               if (host->hw_designer == AMBA_VENDOR_QCOM) {
+>> +                       host->cclk = host->mclk;
+>> +               } else if (desired >= host->mclk) {
+>
+> Again refrain from hard-checking the vendor everywhere.
+>
+> struct variant_data {
+>          bool            qcom_cclk_is_mclk;
+> (...)
+>
+Got it.. Will fix it in next version.
+> As per example from st_clkdiv...
+>
+> Then
+>
+> if (host->vendor->qcom_cclk_is_mclk) {
+>    (...)
+> }
+>
+>> +       if (ios->clock != host->mclk &&
+>> +               host->hw_designer == AMBA_VENDOR_QCOM) {
+>> +               /* Qcom MCLKCLK register does not define bypass bits */
+>> +               int rc = clk_set_rate(host->clk, ios->clock);
+>> +               if (rc < 0) {
+>> +                       dev_err(mmc_dev(host->mmc),
+>> +                               "Error setting clock rate (%d)\n", rc);
+>> +               } else {
+>> +                       host->mclk = clk_get_rate(host->clk);
+>> +                       host->cclk = host->mclk;
+>> +               }
+>> +       }
+>
+> For this I would define a vendor data like:
+>
+> struct variant_data {
+>          bool            explicit_mclk_control;
+> (...)
+This looks good.
+>
+> Or something. It explains what is actually going on.
+>
+>>          if (plat->f_max)
+>> -               mmc->f_max = min(host->mclk, plat->f_max);
+>> +               mmc->f_max = (host->hw_designer == AMBA_VENDOR_QCOM) ?
+>> +                               plat->f_max : min(host->mclk, plat->f_max);
+>
+> So rewrite like that:
+>
+> if (host->vendor->explicit_mclk_control)
+>         mmc->f_max = plat->f_max;
+> else
+>        mmc->f_max = min(host->mclk, plat->f_max);
+>
 
-===============
+This looks much clean
 
-commit 8b57b9669aa884ac75b8d09c251d6b1755533c15 upstream.
 
-Commit 3fdfedaaa "[media] omap3isp: preview: Lower the crop margins"
-accidentally changed the previewer's cropping, causing the previewer
-to miss four pixels on each line, thus corrupting the final image.
-Restored the removed setting.
-
-Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/media/platform/omap3isp/isppreview.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/drivers/media/platform/omap3isp/isppreview.c b/drivers/media/platform/omap3isp/isppreview.c
-index cd8831aebdeb..e2e4610d5550 100644
---- a/drivers/media/platform/omap3isp/isppreview.c
-+++ b/drivers/media/platform/omap3isp/isppreview.c
-@@ -1079,6 +1079,7 @@ static void preview_config_input_format(struct isp_prev_device *prev,
-  */
- static void preview_config_input_size(struct isp_prev_device *prev, u32 active)
- {
-+	const struct v4l2_mbus_framefmt *format = &prev->formats[PREV_PAD_SINK];
- 	struct isp_device *isp = to_isp_device(prev);
- 	unsigned int sph = prev->crop.left;
- 	unsigned int eph = prev->crop.left + prev->crop.width - 1;
-@@ -1086,6 +1087,14 @@ static void preview_config_input_size(struct isp_prev_device *prev, u32 active)
- 	unsigned int elv = prev->crop.top + prev->crop.height - 1;
- 	u32 features;
- 
-+	if (format->code != V4L2_MBUS_FMT_Y8_1X8 &&
-+	    format->code != V4L2_MBUS_FMT_Y10_1X10) {
-+		sph -= 2;
-+		eph += 2;
-+		slv -= 2;
-+		elv += 2;
-+	}
-+
- 	features = (prev->params.params[0].features & active)
- 		 | (prev->params.params[1].features & ~active);
- 
--- 
-1.9.3
-
+> Yours,
+> Linus Walleij
+>
