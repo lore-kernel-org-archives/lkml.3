@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996AbaEMGng (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 02:43:36 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:57399 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023AbaEMGnf (ORCPT
+	id S1758709AbaEMGnw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 02:43:52 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:64930 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758635AbaEMGnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 02:43:35 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: mmarek@suse.cz, akpm@linux-foundation.org,
-        michael.opdenacker@free-electrons.com, prarit@redhat.com,
-        tkhai@yandex.ru, nasa4836@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND] scripts/tags.sh: add regular expression replacement pattern for memcg
-Date: Tue, 13 May 2014 14:43:20 +0800
-Message-Id: <1399963400-7982-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 2.0.0-rc1
+	Tue, 13 May 2014 02:43:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140513000455.GA18157@verge.net.au>
+References: <1399411579-10681-1-git-send-email-geert+renesas@glider.be>
+	<CAMuHMdWwenyU1RS4c8spFcb7M0oCXP9z8zbGQ0VACKj7EbvvkA@mail.gmail.com>
+	<20140511004626.GW31760@verge.net.au>
+	<CANqRtoQzxdjwU+BLyccrSzfBx3UMKm6=MAw9dUHSEBWm5_Vspg@mail.gmail.com>
+	<20140512070700.GA20505@verge.net.au>
+	<CAMuHMdVMCcDK4Y403G26S27oATzLN74iCSM7U+K_ktE-c3uweQ@mail.gmail.com>
+	<20140513000455.GA18157@verge.net.au>
+Date: Tue, 13 May 2014 08:43:49 +0200
+X-Google-Sender-Auth: tuDdOEhgis_GiKA2BhTSivO425M
+Message-ID: <CAMuHMdVFGOHqq0X6=3gK3wtJGQvHnecP5RKCyye09FbY1CUYgQ@mail.gmail.com>
+Subject: Re: [PATCH v4] drivers: sh: compile drivers/sh/pm_runtime.c if ARCH_SHMOBILE_MULTI
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Simon Horman <horms@verge.net.au>
+Cc: Magnus Damm <magnus.damm@gmail.com>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Marek.
+Hi Simon,
 
-Since previous one has got no replies. I resend it again.
-This patch purely add regex pattern only. And I've tested it, it works.
+On Tue, May 13, 2014 at 2:04 AM, Simon Horman <horms@verge.net.au> wrote:
+> On Mon, May 12, 2014 at 09:25:21AM +0200, Geert Uytterhoeven wrote:
+>> On Mon, May 12, 2014 at 9:07 AM, Simon Horman <horms@verge.net.au> wrote:
+>> > On Mon, May 12, 2014 at 08:24:03AM +0900, Magnus Damm wrote:
+>> >> On Sun, May 11, 2014 at 9:46 AM, Simon Horman <horms@verge.net.au> wrote:
+>> >> > On Thu, May 08, 2014 at 12:12:29PM +0200, Geert Uytterhoeven wrote:
+>> >> >> On Tue, May 6, 2014 at 11:26 PM, Geert Uytterhoeven
+>> >> >> <geert+renesas@glider.be> wrote:
+>> >> >> > Tested on Koelsch (legacy, reference, shmobile, and shmobile+bbb kernels)
+>> >> >> > and BeagleBone Black (shmobile+bbb). Will test on more hardware tomorrow.
+>> >> >>
+>> >> >> Tested on genmai with Wolfram's CCF support.
+>> >> >
+>> >> > Thanks, shall I go ahead and queue this up?
+>> >>
+>> >> Yes please, at least from my side everything looks perfect.
+>> >
+>> > Thanks, will do.
+>> >
+>> > I currently plan to send this on to Linus when the merge window
+>> > opens for v3.16.
+>>
+>> Actually we had hoped this could land in v3.15, so we can fix the regression
+>> introduced in v3.14 by bf98c1eac1d4a6bcf00532e4fa41d8126cd6c187 as
+>> soon as possible.
+>
+> Ok, so I should/can treat this as a fix?
 
----<8---
-Currently, no regular expression replacement pattern for PageCgroug*
-defined, which causes quite a few pain while reading code. Just get
-rid of it.
+Yes, definitely.
 
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- scripts/tags.sh | 8 ++++++++
- 1 file changed, 8 insertions(+)
+Thanks!
 
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index f2c5b00..7d3ebfe 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -187,6 +187,10 @@ exuberant()
- 	--regex-c++='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
- 	--regex-c++='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/' \
- 	--regex-c++='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'		\
-+	--regex-c++='/TESTPCGFLAG\(([^,)]*).*/PageCgroup\1/'		\
-+	--regex-c++='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'		\
-+	--regex-c++='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'	\
-+	--regex-c++='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
- 	--regex-c='/PCI_OP_READ\((\w*).*[1-4]\)/pci_bus_read_config_\1/' \
- 	--regex-c='/PCI_OP_WRITE\((\w*).*[1-4]\)/pci_bus_write_config_\1/' \
- 	--regex-c='/DEFINE_(MUTEX|SEMAPHORE|SPINLOCK)\((\w*)/\2/v/'	\
-@@ -244,6 +248,10 @@ emacs()
- 	--regex='/__CLEARPAGEFLAG_NOOP(\([^,)]*\).*/__ClearPage\1/' \
- 	--regex='/TESTCLEARFLAG_FALSE(\([^,)]*\).*/TestClearPage\1/' \
- 	--regex='/__TESTCLEARFLAG_FALSE(\([^,)]*\).*/__TestClearPage\1/' \
-+	--regex='/TESTPCGFLAG\(([^,)]*).*/PageCgroup\1/'	\
-+	--regex='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'	\
-+	--regex='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'	\
-+	--regex='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
- 	--regex='/_PE(\([^,)]*\).*/PEVENT_ERRNO__\1/'		\
- 	--regex='/PCI_OP_READ(\([a-z]*[a-z]\).*[1-4])/pci_bus_read_config_\1/' \
- 	--regex='/PCI_OP_WRITE(\([a-z]*[a-z]\).*[1-4])/pci_bus_write_config_\1/'
--- 
-2.0.0-rc1
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
