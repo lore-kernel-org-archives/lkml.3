@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291AbaEMSjq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 14:39:46 -0400
-Received: from smtprelay0012.hostedemail.com ([216.40.44.12]:57328 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750910AbaEMSjf (ORCPT
+	id S1754419AbaEMSkK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 14:40:10 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:49055 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320AbaEMSkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 14:39:35 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:965:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2196:2198:2199:2200:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3872:4321:4385:4390:4395:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12296:12517:12519:12663:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: price33_36516b40dd809
-X-Filterd-Recvd-Size: 1874
-Message-ID: <1400006371.24350.45.camel@joe-AO725>
-Subject: Re: [PATCH 2/2] fs: print a message when freezing/unfreezing
- filesystems
-From: Joe Perches <joe@perches.com>
-To: Mateusz Guzik <mguzik@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Josef Bacik <jbacik@fb.com>, Jan Kara <jack@suse.cz>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Eric Sandeen <esandeen@redhat.com>
-Date: Tue, 13 May 2014 11:39:31 -0700
-In-Reply-To: <1400005862-3751-2-git-send-email-mguzik@redhat.com>
-References: <1400005862-3751-1-git-send-email-mguzik@redhat.com>
-	 <1400005862-3751-2-git-send-email-mguzik@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 13 May 2014 14:40:05 -0400
+From: Alexander Bersenev <bay@hackerdom.ru>
+To: linux-sunxi@googlegroups.com, david@hardeman.nu,
+        devicetree@vger.kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, ijc+devicetree@hellion.org.uk,
+        james.hogan@imgtec.com, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, m.chehab@samsung.com, mark.rutland@arm.com,
+        maxime.ripard@free-electrons.com, pawel.moll@arm.com,
+        rdunlap@infradead.org, robh+dt@kernel.org, sean@mess.org,
+        srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Cc: Alexander Bersenev <bay@hackerdom.ru>
+Subject: [PATCH v6 0/3] ARM: sunxi: Add support for consumer infrared devices
+Date: Wed, 14 May 2014 00:38:59 +0600
+Message-Id: <1400006342-2968-1-git-send-email-bay@hackerdom.ru>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-13 at 20:31 +0200, Mateusz Guzik wrote:
-> This helps hang troubleshooting efforts when only dmesg is available.
-[]
-> diff --git a/fs/super.c b/fs/super.c
-[]
-> @@ -1289,12 +1289,9 @@ int freeze_super(struct super_block *sb)
->  		return 0;	/* sic - it's "nothing to do" */
->  	}
->  
-> -	if (sb->s_flags & MS_RDONLY) {
-> +	if (sb->s_flags & MS_RDONLY)
->  		/* Nothing to do really... */
-> -		sb->s_writers.frozen = SB_FREEZE_COMPLETE;
-> -		up_write(&sb->s_umount);
-> -		return 0;
-> -	}
-> +		goto out;
+This patch introduces Consumer IR(CIR) support for sunxi boards.
 
-Should this block really be part of this patch?
-If so, please add a small note to the commit log.
+This is based on Alexsey Shestacov's work based on the original driver 
+supplied by Allwinner.
 
-I'm not sure making the reader goto out for this
-bit of the code needs doing as there are multiple
-blocks with return above here.
+Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
+Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
 
-Trivially, when there is a comment in a single line
-like this, then braces are often used too.
- 
+---
+Changes since version 1: 
+ - Fix timer memory leaks 
+ - Fix race condition when driver unloads while interrupt handler is active
+ - Support Cubieboard 2(need testing)
 
+Changes since version 2:
+- More reliable keydown events
+- Documentation fixes
+- Rename registers accurding to A20 user manual
+- Remove some includes, order includes alphabetically
+- Use BIT macro
+- Typo fixes
+
+Changes since version 3:
+- Split the patch on smaller parts
+- More documentation fixes
+- Add clock-names in DT
+- Use devm_clk_get function to get the clocks
+- Removed gpios property from ir's DT
+- Changed compatible from allwinner,sunxi-ir to allwinner,sun7i-a20-ir in DT
+- Use spin_lock_irq instead spin_lock_irqsave in interrupt handler
+- Add myself in the copyright ;)
+- Coding style and indentation fixes
+
+Changes since version 4:
+- Try to fix indentation errors by sending patches with git send-mail
+
+Changes since version 5:
+- More indentation fixes
+- Make patches pass checkpatch with --strict option
+- Replaced magic numbers with defines(patch by Priit Laes)
+- Fixed oops on loading(patch by Hans de Goede)
+
+
+
+Alexander Bersenev (3):
+  ARM: sunxi: Add documentation for sunxi consumer infrared devices
+  ARM: sunxi: Add driver for sunxi IR controller
+  ARM: sunxi: Add IR controller support in DT on A20
+
+ .../devicetree/bindings/media/sunxi-ir.txt         |  23 ++
+ arch/arm/boot/dts/sun7i-a20-cubieboard2.dts        |   6 +
+ arch/arm/boot/dts/sun7i-a20-cubietruck.dts         |   6 +
+ arch/arm/boot/dts/sun7i-a20.dtsi                   |  31 +++
+ drivers/media/rc/Kconfig                           |  10 +
+ drivers/media/rc/Makefile                          |   1 +
+ drivers/media/rc/sunxi-ir.c                        | 309 +++++++++++++++++++++
+ 7 files changed, 386 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/media/sunxi-ir.txt
+ create mode 100644 drivers/media/rc/sunxi-ir.c
+
+-- 
+1.9.3
