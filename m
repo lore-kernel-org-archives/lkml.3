@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289AbaEMXs4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 19:48:56 -0400
-Received: from smtprelay0041.hostedemail.com ([216.40.44.41]:52410 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751409AbaEMXsx (ORCPT
+	id S1755408AbaEMXxs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 19:53:48 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39272 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755375AbaEMXxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 19:48:53 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:2897:3138:3139:3140:3141:3142:3352:3653:3867:3868:3874:5007:7652:7903:8957:10004:10400:10848:11026:11473:11658:11914:12043:12049:12296:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: stone07_87816f9da5e26
-X-Filterd-Recvd-Size: 1925
-Message-ID: <1400024929.24350.76.camel@joe-AO725>
-Subject: [PATCH] checkpatch: Add --strict test for kmalloc/kzalloc with
- multiply
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 13 May 2014 16:48:49 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 13 May 2014 19:53:45 -0400
+X-Sasl-enc: 9jI8QFsFDzzbZCvbZGRoHjqNLYmvvWB9rhJnc2QDW21E 1400025224
+Date: Tue, 13 May 2014 16:56:59 -0700
+From: Greg KH <greg@kroah.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+        Michele Ballabio <barra_cuda@katamail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH -stable] x86,preempt: Fix preemption for i386
+Message-ID: <20140513235659.GC29623@kroah.com>
+References: <20140407150705.GB13658@twins.programming.kicks-ass.net>
+ <5342EB78.3060002@gmx.de>
+ <20140407185658.GK11096@twins.programming.kicks-ass.net>
+ <20140408122128.GC13658@twins.programming.kicks-ass.net>
+ <53450F7E.7040904@canonical.com>
+ <20140409094515.GR11096@twins.programming.kicks-ass.net>
+ <20140409142447.GD13658@twins.programming.kicks-ass.net>
+ <CA+55aFzBw0i2nmOGOKzjS_b_7M1Gha2OFEe9rXOO4c+s-2HTkg@mail.gmail.com>
+ <20140409191931.GB10748@kroah.com>
+ <20140409193845.GB26782@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140409193845.GB26782@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Protect against sizeof overflows by preferring
-kmalloc_array and kcalloc to kmalloc/kzalloc
-with a sizeof multiply.
+On Wed, Apr 09, 2014 at 09:38:45PM +0200, Peter Zijlstra wrote:
+> On Wed, Apr 09, 2014 at 12:19:31PM -0700, Greg KH wrote:
+> > On Wed, Apr 09, 2014 at 07:36:23AM -0700, Linus Torvalds wrote:
+> > > On Wed, Apr 9, 2014 at 7:24 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > >
+> > > > I'm not entirely clear on how acceptable it is to propose a different
+> > > > patch for -stable than what we have upstream.
+> > > 
+> > > It's not all that common, but it certainly happens.
+> > > 
+> > > It's fine, as long as it mentions the commits that fix it upstream.
+> > > And as long as it's well tested, of course.
+> > 
+> > I agree, I can take this as long as you say it's correct and tested...
+> 
+> As far as I understand the issue the patch is indeed correct and I have
+> 3 independent people who confirm their previously reported issues are
+> now cured (as testified by the Tested-by tags).
+> 
+> There has also been confirmation that upstream does no longer suffer the
+> problem.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+Now applied, thanks.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index e7ff52a..33eb71f 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -4378,6 +4378,20 @@ sub process {
- 			    "Prefer $3(sizeof(*$1)...) over $3($4...)\n" . $herecurr);
- 		}
- 
-+# check for k[mz]alloc with multiplies that could be kmalloc_array/kcalloc
-+		if ($^V && $^V ge 5.10.0 &&
-+		    $line =~ /\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*(k[mz]alloc)\s*\(\s*($FuncArg)\s*\*\s*($FuncArg)/) {
-+			my $oldfunc = $3;
-+			my $a1 = $4;
-+			my $a2 = $10;
-+			my $newfunc = "kmalloc_array";
-+			$newfunc = "kcalloc" if ($oldfunc eq "kzalloc");
-+			if ($a1 =~ /^sizeof\s*\S/ || $a2 =~ /^sizeof\s*\S/) {
-+				CHK("ALLOC_WITH_MULTIPLY",
-+				    "Prefer $newfunc over $oldfunc with multiply\n" . $herecurr);
-+			}
-+		}
-+
- # check for krealloc arg reuse
- 		if ($^V && $^V ge 5.10.0 &&
- 		    $line =~ /\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*krealloc\s*\(\s*\1\s*,/) {
-
-
+greg k-h
