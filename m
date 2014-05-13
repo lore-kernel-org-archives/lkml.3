@@ -1,93 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762AbaEMMLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 08:11:21 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:38514 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759525AbaEMMLS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 08:11:18 -0400
-Date: Tue, 13 May 2014 14:11:15 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, tj@kernel.org,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/6] phy: add a driver for the Berlin SATA PHY
-Message-ID: <20140513121115.GB3213@kwain>
-References: <1399886217-20474-1-git-send-email-antoine.tenart@free-electrons.com>
- <1399886217-20474-2-git-send-email-antoine.tenart@free-electrons.com>
- <5370C2B6.8030908@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5370C2B6.8030908@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760227AbaEMMN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 08:13:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:55475 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759365AbaEMMN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 08:13:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1044,1389772800"; 
+   d="scan'208";a="539559773"
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Jin Yao <yao.jin@linux.intel.com>,
+        Li Aubrey <aubrey.li@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] ACPI / LPSS: Solution for two issues seen on Asus T100
+Date: Tue, 13 May 2014 15:13:49 +0300
+Message-Id: <1399983233-18037-1-git-send-email-heikki.krogerus@linux.intel.com>
+X-Mailer: git-send-email 2.0.0.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-On Mon, May 12, 2014 at 06:16:46PM +0530, Kishon Vijay Abraham I wrote:
-> On Monday 12 May 2014 02:46 PM, Antoine Ténart wrote:
+This combines two patch sets for LPSS that I had already send for
+review separately. They conflicted with each other.
 
-[…]
+The first two patches will fix a problem were the context of the
+private LPSS registers is lost when entering D3. The last two will add
+support for the M/N dividers on LPSS by adding a new basic clock type
+for fractional dividers. The UART driver needs support for it in order
+to get clock rates that suit the requested baud rates.
 
-> > +struct phy_desc {
-> 
-> to be consistent, lets name it phy_berlin_desc.
-> > +	struct phy	*phy;
-> > +	u32		val;
-> > +	unsigned	index;
-> > +};
+I've updated the patch for the fractional divider support according to
+Andy's suggestions.
 
-Sure.
 
-[…]
+Heikki Krogerus (4):
+  ACPI / PM: Export rest of the subsys functions
+  ACPI / LPSS: custom power domain for LPSS
+  clk: new basic clk type for fractional divider
+  ACPI / LPSS: support for fractional divider clock
 
-> > +static int phy_berlin_sata_probe(struct platform_device *pdev)
-> > +{
-> > +	struct phy *phy;
-> > +	struct phy_provider *phy_provider;
-> > +	struct priv *priv;
-> > +	struct resource *res;
-> > +	int i;
-> > +
-> > +	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
-> > +	if (!priv)
-> > +		return -ENOMEM;
-> > +
-> > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > +	priv->base = devm_ioremap(&pdev->dev, res->start, resource_size(res));
-> > +	if (IS_ERR(priv->base))
-> > +		return PTR_ERR(priv->base);
-> > +
-> > +	phy = devm_phy_create(&pdev->dev, &phy_berlin_sata_ops, NULL);
-> > +	if (IS_ERR(phy))
-> > +		return PTR_ERR(phy);
-> > +
-> > +	dev_set_drvdata(&pdev->dev, priv);
-> > +	spin_lock_init(&priv->lock);
-> > +
-> > +	for (i = 0; i < BERLIN_SATA_PHY_NB; i++) {
-> 
-> huh.. this should come from dt data. For devices which have multiple PHYs, each
-> PHY should be modelled as the sub-node of the *PHY provider* device node.
-
-I'll update, with the bindings suggested by Sebastian.
-
-Thanks for the review!
-
-Antoine
+ drivers/acpi/acpi_lpss.c             | 196 ++++++++++++++++++++++++++++++-----
+ drivers/acpi/device_pm.c             |   2 +
+ drivers/clk/Makefile                 |   1 +
+ drivers/clk/clk-fractional-divider.c | 132 +++++++++++++++++++++++
+ include/linux/acpi.h                 |   4 +
+ include/linux/clk-provider.h         |  31 ++++++
+ 6 files changed, 338 insertions(+), 28 deletions(-)
+ create mode 100644 drivers/clk/clk-fractional-divider.c
 
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+2.0.0.rc2
+
