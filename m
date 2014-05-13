@@ -1,78 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758899AbaEMHxx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 03:53:53 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:37698 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704AbaEMHxw (ORCPT
+	id S1758959AbaEMHzG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 03:55:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35760 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753108AbaEMHzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 03:53:52 -0400
-Date: Tue, 13 May 2014 09:51:50 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, David Airlie <airlied@linux.ie>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        dri-devel@lists.freedesktop.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/2] drm/panel: add simple-panel description using DT
-Message-ID: <20140513075148.GF6754@ulmo>
-References: <1399645002-18000-1-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 13 May 2014 03:55:04 -0400
+Date: Tue, 13 May 2014 09:51:33 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, kishon@ti.com,
+        hdegoede@redhat.com, Boris Brezillon <boris@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: Re: [PATCH v3 5/8] usb: ehci-platform: add optional reset controller
+ retrieval
+Message-ID: <20140513075133.GA16873@lukather>
+References: <1399923274-6017-6-git-send-email-maxime.ripard@free-electrons.com>
+ <Pine.LNX.4.44L0.1405121604140.1202-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="b8GWCKCLzrXbuNet"
+	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"
 Content-Disposition: inline
-In-Reply-To: <1399645002-18000-1-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <Pine.LNX.4.44L0.1405121604140.1202-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---b8GWCKCLzrXbuNet
+--vtzGhvizbBRQ85DL
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, May 09, 2014 at 04:16:40PM +0200, Boris BREZILLON wrote:
-> Hello Thierry,
+On Mon, May 12, 2014 at 04:06:16PM -0400, Alan Stern wrote:
+> On Mon, 12 May 2014, Maxime Ripard wrote:
 >=20
-> I noticed you're describing each new panel with a new entry in the
-> of_platform_match table and a new compatible string.
-> I guess you have a good reason to do it this way, because retrieving
-> panel description from DT would be pretty easy (see this series ;-)).
+> > From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> >=20
+> > On the Allwinner's A31 SoC the reset line connected to the EHCI IP has =
+to
+> > be deasserted for the EHCI block to be usable.
+> >=20
+> > Add support for an optional reset controller that will be deasserted on
+> > power off and asserted on power on.
+> >=20
+> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > Reviewed-by: Hans de Goede <hdegoede@redhat.com>
 >=20
-> Could tell me why you chose this approach ?
+> ...
+>=20
+> > @@ -208,6 +210,18 @@ static int ehci_platform_probe(struct platform_dev=
+ice *dev)
+> >  		}
+> >  	}
+> > =20
+> > +	priv->rst =3D devm_reset_control_get_optional(&dev->dev, NULL);
+> > +	if (IS_ERR(priv->rst)) {
+> > +		err =3D PTR_ERR(priv->rst);
+> > +		if (err =3D=3D -EPROBE_DEFER)
+> > +			goto err_put_clks;
+> > +		priv->rst =3D NULL;
+> > +	} else {
+> > +		err =3D reset_control_deassert(priv->rst);
+> > +		if (err)
+> > +			goto err_put_clks;
+> > +	}
+> > +
+> >  	if (pdata->big_endian_desc)
+> >  		ehci->big_endian_desc =3D 1;
+> >  	if (pdata->big_endian_mmio)
+>=20
+> You don't re-assert the reset control if an error happens later on=20
+> during probe.  Was that intentional?
 
-The reason is that devicetree mandates that a device be identified using
-a compatible value and that compatible value should be as specific as
-possible. That compatible value should give the device driver enough
-information to know everything it needs (resolution, timings, physical
-dimension).
+No, it wasn't. I'll resubmit another version.
 
-Having all of that data in the device tree is redundant.
+Thanks,
+Maxime
 
-Thierry
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
---b8GWCKCLzrXbuNet
-Content-Type: application/pgp-signature
+--vtzGhvizbBRQ85DL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTcc8UAAoJEN0jrNd/PrOhiZMQAIoGWc2IIgvBGMoZpjoIDsyv
-NOlEVgH6+ytY1HUJAffHcqhMGit44xD2xoxE09i/DQYmemJOXFUNDJhk9KBT8VpM
-9FrB3u0HNi5HeZZ55G/ZunS7dO3A00rzjsNZY0OD5dUPncVkmmE5VKpxncwTZH27
-57RjL7x6XtYf/EiGLdaOZdkdEUGyKLvPUPJBY3+/TREcbr0MmeMx0nkaXUOYGicU
-0uJNso/v0cuZAXRfMXMMusBuZEUmh5Xu83DnHg/qr3sK0GuDwn7qMIzE1ouHee89
-ZTVikewTA+TEpzkguhPjjyXuFhFHs+Vx4hD1idQ/baeIXXsmVs3yYVyiENU9gxyB
-usCkVNXyhBLsxKPhLcZlSU+VE518Jxx4K5ObVz+ZZAQyepVKVMzFHf0e70f6iUas
-0ulWXRJNhCBg1Ud/VAcnjk1zY4HyEmCmVmdNAAlkSmRoVlZrZHP6w7R0KuI8uFuz
-dbj7liOtbjzxvJwOriJHJZ60ZkLEUdpwNOsHuqmLNAdjHb+3QUhCGp2gZwlB8xOS
-rkP2J2MaxVHAY/uvuPEvkM0rgBMbUdxuVsEwKWw9ThtOlMoYIB0npTretwsq0GOX
-7575RB2t+1t50zLjH2pekFKVbqTW5PL5G03cJO0ZrEs+A/HTWaMOvE1/vgynPFOm
-y7qncQqVc3bUokSqA/l/
-=ggt9
+iQIcBAEBAgAGBQJTcc8FAAoJEBx+YmzsjxAg5wsP/1SHWvWp4GiO3FOXbiCIap9i
+df2BXwUQv0XhbGEYhTosdTIoxBGspsL4qYK/5JQMSkq/ikPwPWGt9GezW8sHOxB5
+GY/yioSSim/gU5Gkwc0ZddcYBc5PvHxLc8OBZTnZKWQIieWarJY7yCRAIUZPbKHd
+4oBknewwNgPbJeNA5SH6IAAKlCEZA74WHIgWxQGnpU1dSRctlNiw6fCIH15do0Rb
+/8ehA7kznDU9M8imtjJdv76ZbaBtjvuaqIByXRwNIdyEsY6+6kM25Bqzc6L2ngLd
+B1l1Zh8VHmr1XMJm29RhS0jLDVYKfewgrcGBK/s7J+bLmtuvqM+rCRPKU+urA0GX
+esd/2TiLWXLnvxiF0K6F6mj5h1BPGKBWH1+SMPUGW1OUgBL4sLu++/oPbdE5fWWO
+nR0FWAuYTpUHFC0TAFp4WbD1EcRQYT/IH8DxTaPHGBQDTIsMVzeoTnVtJLL/rd5F
+y8BFc/CRZ3iA0FI8yv6xFQgmGbS022vUhjyYQCNnF7mOrbFcq84KUu5lEX5GvE2g
+VtWZRI0RYqmJaHkSBCzBTjximSvRgYpKBpdR7Nv9BYSkF1n6F1xcRs8ZhV55VlFF
+giAcXTs7OtOgtPcHzVDASjGxDc0BKE8LWXAMAQPfRwDOuljvZpLFLaFuCk9MWwXa
+jkvFaJAhvTqlduEKy4oY
+=2AMz
 -----END PGP SIGNATURE-----
 
---b8GWCKCLzrXbuNet--
+--vtzGhvizbBRQ85DL--
