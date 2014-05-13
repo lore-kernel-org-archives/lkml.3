@@ -1,151 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760714AbaEMKLK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:11:10 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933369AbaEMKLG (ORCPT
+	id S933025AbaEMK3y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:29:54 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:41139 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760275AbaEMK3v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:11:06 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Junxiao Bi <junxiao.bi@oracle.com>,
-        Sunil Mushran <sunil.mushran@gmail.com>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 110/182] ocfs2: dlm: fix lock migration crash
-Date: Tue, 13 May 2014 11:27:42 +0200
-Message-Id: <4f4d93713acf4ab14455d6e07caa5c22058aea1b.1399973152.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
-References: <cover.1399973152.git.jslaby@suse.cz>
+	Tue, 13 May 2014 06:29:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140512190300.GF25056@phenom.ffwll.local>
+References: <CADDKRnCwxmJ8RonvZaizTT9R1jPU++tPPSQAH5OKD5=h9bQhMA@mail.gmail.com>
+	<CAKMK7uG20sF403PJcmWTD=kPF9seV4sXZpp9_hEq3LvV3kK5Hg@mail.gmail.com>
+	<CADDKRnB1DCzgjX-q-cgFFW48uT5r5MUcuc5D6chekEET5dFxxA@mail.gmail.com>
+	<20140509161438.GH31479@strange.amr.corp.intel.com>
+	<20140509170335.GZ18465@intel.com>
+	<CADDKRnAiQawK6vi0XO2FDdfGDbcwWQzdeu-rfEU8viJzARO+yQ@mail.gmail.com>
+	<CAKMK7uHLSfW0wN-uXMejOcnvaYpZfVSfSh7+NpqAUBCOvbK2eg@mail.gmail.com>
+	<CADDKRnCzHQw7_Cr2jpZ7qC50hrdmr0XRaYyMxaOSaqihNGccDA@mail.gmail.com>
+	<20140512190300.GF25056@phenom.ffwll.local>
+Date: Tue, 13 May 2014 12:29:50 +0200
+Message-ID: <CADDKRnAOkdaziCQ_NGkt01hiQqjiAiKza2+QbCuDBuY72LJK=A@mail.gmail.com>
+Subject: Re: [Intel-gfx] [3.14.0-rc4] regression: drm FIFO underruns
+From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
+To: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>,
+        =?UTF-8?B?VmlsbGUgU3lyasOkbMOk?= <ville.syrjala@linux.intel.com>,
+        Damien Lespiau <damien.lespiau@intel.com>,
+        David Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Airlie <airlied@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+2014-05-12 21:03 GMT+02:00 Daniel Vetter <daniel@ffwll.ch>:
+> On Mon, May 12, 2014 at 01:25:24PM +0200, Jörg Otte wrote:
+>> 2014-05-11 18:49 GMT+02:00 Daniel Vetter <daniel.vetter@ffwll.ch>:
+>> > On Sat, May 10, 2014 at 10:52 AM, Jörg Otte <jrg.otte@gmail.com> wrote:
+>> >>> On Fri, May 09, 2014 at 05:14:38PM +0100, Damien Lespiau wrote:
+>> >>>> On Fri, May 09, 2014 at 06:11:37PM +0200, Jörg Otte wrote:
+>> >>>> > > Jörg, can you please boot with drm.debug=0xe, reproduce the issue and
+>> >>>> > > then attach the complete dmesg? Please make sure that the dmesg
+>> >>>> > > contains the boot-up stuff too.
+>> >>>> > >
+>> >>>> > > Thanks, Daniel
+>> >>>> > Here it is. I should mention it only happens at boot-up.
+>> >>>>
+>> >>>> [    0.374095] [drm] Wrong MCH_SSKPD value: 0x20100406
+>> >>>> [    0.374096] [drm] This can cause pipe underruns and display issues.
+>> >>>> [    0.374097] [drm] Please upgrade your BIOS to fix this.
+>> >>>
+>> >>> That can be a factor, but I think we may have some more general issue
+>> >>> in the modeset sequence which causes these to get reported. I'm getting
+>> >>> some on my machine as well where SSKPD looks more sane. Maybe we turn on
+>> >>> the error reporting too early or something.
+>> >>>
+>> >>> But I'm not going to spend time worrying about these before my previous
+>> >>> watermark stuff gets merged. Also the underrun reporting code itself
+>> >>> would need some kind of rewrite to be really useful.
+>> >>>
+>> >>> If the display doesn't blank out during use everything is more or less
+>> >>> fine and you can ignore these errors. It's quite likely that the
+>> >>> errors were always present and you didn't know it. We just made them
+>> >>> more prominent recently.
+>> >>>
+>> >>> --
+>> >>> Ville Syrjälä
+>> >>> Intel OTC
+>> >>
+>> >> It comes out on the boot-up screen which is normally clean. So it becomes
+>> >> highly visible for anyone.
+>> >
+>> > To make sure that you're only seeing this at boot up and not elseplace
+>> > please check that it doesn't show up when you do anything of the
+>> > below:
+>> > a) suspend/resume
+>> > b) changing the output mode (e.g. with xrandr --mode)
+>> > c) changing the output pipe (e.g. with xrandr --crtc)
+>> > d) all of the above but with heavy system load, e.g. compile kernels
+>> > with make -j <num-cores*2>
+>> >
+>> > Also please test the latest drm-intel-nightly branch from
+>> > http://cgit.freedesktop.org/drm-intel to make sure we haven't yet
+>> > fixed this in our -next branch.
+>> >
+>>
+>> Ok, that was a lot of homework ;)
+>>
+>> I checked a,b,d):  All worked without FIFO underruns.
+>>
+>> For c): I must admit I don't know what --crtc is good for and
+>> the man page isn't very useful. I can't enter a meaningful command.
+>
+> $ xrandr --output <output> --auto --crtc 0
+>
+> and
+>
+> $ xrandr --output <output> --auto --crtc 1
+>
+> should do the trick, presuming you only have one output in total. Then
+> switch a bit between them.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Works without underruns, with standard and nightly kernel.
 
-===============
+>> Branch drm-intel-nightly as of
+>> ed60c27 drm-intel-nightly: 2014y-05m-09d-21h-51m-45s integration manifest
+>> looks badly:
+>>    - KDE splash screen on boot-up is not visible
+>>    - x-windows don't have title and menu bars
+>>    - KDE system menu is not visible
+>>    - moving windows around destroys its content
+>
+> Ugh, that's ugly. Nothing else change like e.g. the version of
+> xfree-video-intel?
 
-commit 34aa8dac482f1358d59110d5e3a12f4351f6acaa upstream.
+ (II) Loading /usr/lib/xorg/modules/drivers/intel_drv.so
+ (II) Module intel: vendor="X.Org Foundation"
+ compiled for 1.11.3, module version = 2.17.0
+ Module class: X.Org Video Driver
+ ABI class: X.Org Video Driver, version 11.0
 
-This issue was introduced by commit 800deef3f6f8 ("ocfs2: use
-list_for_each_entry where benefical") in 2007 where it replaced
-list_for_each with list_for_each_entry.  The variable "lock" will point
-to invalid data if "tmpq" list is empty and a panic will be triggered
-due to this.  Sunil advised reverting it back, but the old version was
-also not right.  At the end of the outer for loop, that
-list_for_each_entry will also set "lock" to an invalid data, then in the
-next loop, if the "tmpq" list is empty, "lock" will be an stale invalid
-data and cause the panic.  So reverting the list_for_each back and reset
-"lock" to NULL to fix this issue.
+>> apart from that: Via control key I can open a terminal and I checked
+>> a,b), both worked without FIFO underruns.
+>
+> And what about at boot? If -nightly regresses even on that that's pretty
+> awful.
+Sorry I forgot to mention this. It behaves like the standard kernel.
+The FIFO underrun comes at boot-up. And than never again.
 
-Another concern is that this seemes can not happen because the "tmpq"
-list should not be empty.  Let me describe how.
+>
+> Also please test
+>
+> http://patchwork.freedesktop.org/patch/25568/
 
-old lock resource owner(node 1):                                  migratation target(node 2):
-image there's lockres with a EX lock from node 2 in
-granted list, a NR lock from node x with convert_type
-EX in converting list.
-dlm_empty_lockres() {
- dlm_pick_migration_target() {
-   pick node 2 as target as its lock is the first one
-   in granted list.
- }
- dlm_migrate_lockres() {
-   dlm_mark_lockres_migrating() {
-     res->state |= DLM_LOCK_RES_BLOCK_DIRTY;
-     wait_event(dlm->ast_wq, !dlm_lockres_is_dirty(dlm, res));
-	 //after the above code, we can not dirty lockres any more,
-     // so dlm_thread shuffle list will not run
-                                                                   downconvert lock from EX to NR
-                                                                   upconvert lock from NR to EX
-<<< migration may schedule out here, then
-<<< node 2 send down convert request to convert type from EX to
-<<< NR, then send up convert request to convert type from NR to
-<<< EX, at this time, lockres granted list is empty, and two locks
-<<< in the converting list, node x up convert lock followed by
-<<< node 2 up convert lock.
+For me it doesn't make any difference.
 
-	 // will set lockres RES_MIGRATING flag, the following
-	 // lock/unlock can not run
-     dlm_lockres_release_ast(dlm, res);
-   }
+>it might help for your case. If it doesn't we need to look into what
+>exactly goes wrong on driver load
 
-   dlm_send_one_lockres()
-                                                                 dlm_process_recovery_data()
-                                                                   for (i=0; i<mres->num_locks; i++)
-                                                                     if (ml->node == dlm->node_num)
-                                                                       for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
-                                                                        list_for_each_entry(lock, tmpq, list)
-                                                                        if (lock) break; <<< lock is invalid as grant list is empty.
-                                                                       }
-                                                                       if (lock->ml.node != ml->node)
-                                                                         BUG() >>> crash here
- }
+Don't know if this matters: I always use kernels without loadable modules.
+Everything is built-in.
 
-I see the above locks status from a vmcore of our internal bug.
 
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
-Cc: Sunil Mushran <sunil.mushran@gmail.com>
-Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- fs/ocfs2/dlm/dlmrecovery.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
-
-diff --git a/fs/ocfs2/dlm/dlmrecovery.c b/fs/ocfs2/dlm/dlmrecovery.c
-index 0b5adca1b178..723063bf0842 100644
---- a/fs/ocfs2/dlm/dlmrecovery.c
-+++ b/fs/ocfs2/dlm/dlmrecovery.c
-@@ -1750,13 +1750,13 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
- 				     struct dlm_migratable_lockres *mres)
- {
- 	struct dlm_migratable_lock *ml;
--	struct list_head *queue;
-+	struct list_head *queue, *iter;
- 	struct list_head *tmpq = NULL;
- 	struct dlm_lock *newlock = NULL;
- 	struct dlm_lockstatus *lksb = NULL;
- 	int ret = 0;
- 	int i, j, bad;
--	struct dlm_lock *lock = NULL;
-+	struct dlm_lock *lock;
- 	u8 from = O2NM_MAX_NODES;
- 	unsigned int added = 0;
- 	__be64 c;
-@@ -1791,14 +1791,16 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
- 			/* MIGRATION ONLY! */
- 			BUG_ON(!(mres->flags & DLM_MRES_MIGRATION));
- 
-+			lock = NULL;
- 			spin_lock(&res->spinlock);
- 			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
- 				tmpq = dlm_list_idx_to_ptr(res, j);
--				list_for_each_entry(lock, tmpq, list) {
--					if (lock->ml.cookie != ml->cookie)
--						lock = NULL;
--					else
-+				list_for_each(iter, tmpq) {
-+					lock = list_entry(iter,
-+						  struct dlm_lock, list);
-+					if (lock->ml.cookie == ml->cookie)
- 						break;
-+					lock = NULL;
- 				}
- 				if (lock)
- 					break;
--- 
-1.9.3
-
+Thanks, Jörg
