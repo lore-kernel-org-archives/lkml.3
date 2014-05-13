@@ -1,103 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755061AbaEMUge (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 16:36:34 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:49105 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081AbaEMUgZ (ORCPT
+	id S932105AbaEMUh1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 16:37:27 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:46790 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932110AbaEMUhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 16:36:25 -0400
-Date: Tue, 13 May 2014 13:36:19 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Darren Hart <darren@dvhart.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [patch 1/3] rtmutex: Add missing deadlock check
-Message-ID: <20140513203619.GV18164@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140512190438.314125476@linutronix.de>
- <20140512201700.999660035@linutronix.de>
- <5371B2D9.8060405@cn.fujitsu.com>
- <20140513084815.GB2485@laptop.programming.kicks-ass.net>
- <alpine.DEB.2.02.1405132117110.6261@ionos.tec.linutronix.de>
- <20140513162041.3405b668@gandalf.local.home>
+	Tue, 13 May 2014 16:37:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140513162041.3405b668@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051320-1542-0000-0000-000001C71F60
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <53728173.7050508@gmail.com>
+References: <1399499298-8830-1-git-send-email-robherring2@gmail.com>
+	<1399499298-8830-3-git-send-email-robherring2@gmail.com>
+	<20140513175603.GA27173@quad.lixom.net>
+	<53728173.7050508@gmail.com>
+Date: Tue, 13 May 2014 13:37:17 -0700
+Message-ID: <CAOesGMjtur-yf1+Sgn-Gb1AufSZyo8cUAkb4x_6TNvtBXdnE=g@mail.gmail.com>
+Subject: Re: [PATCH 2/4] of/platform: return error on of_platform_device_create_pdata
+ failure
+From: Olof Johansson <olof@lixom.net>
+To: Frank Rowand <frowand.list@gmail.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn@kryo.se>, Rob Herring <robh@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 04:20:41PM -0400, Steven Rostedt wrote:
-> On Tue, 13 May 2014 21:42:54 +0200 (CEST)
-> Thomas Gleixner <tglx@linutronix.de> wrote:
-> 
-> > On Tue, 13 May 2014, Peter Zijlstra wrote:
-> > > 
-> > > Now, if you and Steve get this sorted, nothing really happened except
-> > > that Thomas got grumpy, which is entirely normal, what else would he be?
-> > > :-)
-> > 
-> > Who is that grumpy Thomas dude, should I know him?
+On Tue, May 13, 2014 at 1:32 PM, Frank Rowand <frowand.list@gmail.com> wrote:
+> On 5/13/2014 10:56 AM, Olof Johansson wrote:
+>> On Wed, May 07, 2014 at 04:48:16PM -0500, Rob Herring wrote:
+>>> From: Rob Herring <robh@kernel.org>
+>>>
+>>> of_platform_populate does not return an error if creating the platform
+>>> device fails. This means almost any error from driver core cannot be
+>>> detected by the caller. Fix this.
+>>>
+>>> Signed-off-by: Rob Herring <robh@kernel.org>
+>>> ---
+>>>  drivers/of/platform.c | 4 +++-
+>>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+>>> index 404d1da..622aeb3 100644
+>>> --- a/drivers/of/platform.c
+>>> +++ b/drivers/of/platform.c
+>>> @@ -391,7 +391,9 @@ static int of_platform_bus_create(struct device_node *bus,
+>>>      }
+>>>
+>>>      dev = of_platform_device_create_pdata(bus, bus_id, platform_data, parent);
+>>> -    if (!dev || !of_match_node(matches, bus))
+>>> +    if (!dev)
+>>> +            return -ENODEV;
+>>> +    if (!of_match_node(matches, bus))
+>>>              return 0;
+>>>
+>>>      for_each_child_of_node(bus, child) {
+>>
+>> This patch caused every single MMC driver to break on OF platforms, as far
+>> as I can tell.  Reverting it on last night's -next seems to resolve it.
+>>
+>> The problem seems to be that of_platform_populate() will bail on the
+>> first device that fails this.
+>>
+>> How did you test this code, Frank? On what platform? Practically all my
+>> targets here failed to mount rootfs from eMMC or SD card...
+>
+> I tested on a dragonboard, but without a working sdhci driver.  Thus I would not
+> have hit the error.
 
-;-) ;-) ;-)
+Yeah, or more generically: Without a device that would have been
+probed after the first status = "disabled" device that was found.
+Makes sense, especially since dragonboard support is still not quite
+there.
 
-> > Lai, Steven,
-> > 
-> > before you waste lots of time on the tester, I want to look at it
-> > whether we can simplify it or even rewrite it from scratch. I glanced
-> > at it today and I really can't remember what kind of substances were
-> > involved when I wrote this almost a decade ago.
-> 
-> Thank God. /me removes the ton of trace_printk()s in the code as well
-> as all the trace_marker.write("%s" %(line)) from the test to figure out
-> what was going on.
-> 
-> > 
-> > The whole schedule_rt_mutex mechanism was mostly done to create
-> > controlled lock stealing scenarios and deal with the BKL
-> > oddities.
-> > 
-> > With Lai's simplification and the demise of BKL I'm quite sure we do
-> > not need it anymore.
-> > 
-> > So we can just get rid of the complexity in schedule_rt_mutex() and
-> > replace it with a simple:
-> > 
-> >     while (!td->continue)
-> >     	  schedule();
-> > 
-> > That would also make the teardown and reset of the whole thing
-> > manageable. Right now it's easy to create a situation where unrolling
-> > stuff gets almost impossible except by pushing the reset button.
-> > 
-> > The state readouts can be done directly via the rtmutexes and the task
-> > structs.
-> > 
-> > Thoughts?
-> > 
-> 
-> What about having a module that creates a bunch of threads and forces
-> all the scenarios that we want to test? Wouldn't it be easier to do
-> than to have a userspace interface to dictate commands to the kernel?
+Ah well, it means the -next process is working, after all. :)
 
-I second this approach!  The kernel environment makes it -much- easier
-to force races and other conditions, which turns into much simpler and
-more effective tests.
 
-							Thanx, Paul
 
+-Olof
