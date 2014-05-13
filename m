@@ -1,168 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748AbaEMUck (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 16:32:40 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:47284 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100AbaEMUcd (ORCPT
+	id S1755069AbaEMUdF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 16:33:05 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:54007 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754784AbaEMUc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 16:32:33 -0400
-Date: Tue, 13 May 2014 13:32:25 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 19/19] mm: filemap: Avoid unnecessary barries and
- waitqueue lookups in unlock_page fastpath
-Message-ID: <20140513203225.GS18164@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
- <1399974350-11089-20-git-send-email-mgorman@suse.de>
- <20140513125313.GR23991@suse.de>
- <20140513141748.GD2485@laptop.programming.kicks-ass.net>
- <20140513152719.GF18164@linux.vnet.ibm.com>
- <20140513181852.GB12123@redhat.com>
- <20140513185250.GM18164@linux.vnet.ibm.com>
- <20140513193146.GA17051@redhat.com>
+	Tue, 13 May 2014 16:32:56 -0400
+Message-ID: <53728173.7050508@gmail.com>
+Date: Tue, 13 May 2014 13:32:51 -0700
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140513193146.GA17051@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051320-1542-0000-0000-000001C71950
+To: Olof Johansson <olof@lixom.net>
+CC: Rob Herring <robherring2@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn@kryo.se>, Rob Herring <robh@kernel.org>
+Subject: Re: [PATCH 2/4] of/platform: return error on of_platform_device_create_pdata
+ failure
+References: <1399499298-8830-1-git-send-email-robherring2@gmail.com> <1399499298-8830-3-git-send-email-robherring2@gmail.com> <20140513175603.GA27173@quad.lixom.net>
+In-Reply-To: <20140513175603.GA27173@quad.lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 09:31:46PM +0200, Oleg Nesterov wrote:
-> On 05/13, Paul E. McKenney wrote:
-> >
-> > On Tue, May 13, 2014 at 08:18:52PM +0200, Oleg Nesterov wrote:
-> > >
-> > > I have to admit, I am confused. I simply do not understand what "memory
-> > > barrier" actually means in this discussion.
-> > >
-> > > To me, wake_up/ttwu should only guarantee one thing: all the preceding
-> > > STORE's should be serialized with all the subsequent manipulations with
-> > > task->state (even with LOAD(task->state)).
-> >
-> > I was thinking in terms of "everything done before the wake_up() is
-> > visible after the wait_event*() returns" -- but only if the task doing
-> > the wait_event*() actually sleeps and is awakened by that particular
-> > wake_up().
+On 5/13/2014 10:56 AM, Olof Johansson wrote:
+> On Wed, May 07, 2014 at 04:48:16PM -0500, Rob Herring wrote:
+>> From: Rob Herring <robh@kernel.org>
+>>
+>> of_platform_populate does not return an error if creating the platform
+>> device fails. This means almost any error from driver core cannot be
+>> detected by the caller. Fix this.
+>>
+>> Signed-off-by: Rob Herring <robh@kernel.org>
+>> ---
+>>  drivers/of/platform.c | 4 +++-
+>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+>> index 404d1da..622aeb3 100644
+>> --- a/drivers/of/platform.c
+>> +++ b/drivers/of/platform.c
+>> @@ -391,7 +391,9 @@ static int of_platform_bus_create(struct device_node *bus,
+>>  	}
+>>  
+>>  	dev = of_platform_device_create_pdata(bus, bus_id, platform_data, parent);
+>> -	if (!dev || !of_match_node(matches, bus))
+>> +	if (!dev)
+>> +		return -ENODEV;
+>> +	if (!of_match_node(matches, bus))
+>>  		return 0;
+>>  
+>>  	for_each_child_of_node(bus, child) {
 > 
-> Hmm. The question is, visible to whom ;) To the woken task?
+> This patch caused every single MMC driver to break on OF platforms, as far
+> as I can tell.  Reverting it on last night's -next seems to resolve it.
 > 
-> Yes sure, and this is simply because both sleeper/waker take rq->lock.
-
-Yep, that was the thought.
-
-> > > > If there is a sleep-wakeup race, for example,
-> > > > between wait_event_interruptible() and wake_up(), then it looks to me
-> > > > that the following can happen:
-> > > >
-> > > > o	Task A invokes wait_event_interruptible(), waiting for
-> > > > 	X==1.
-> > > >
-> > > > o	Before Task A gets anywhere, Task B sets Y=1, does
-> > > > 	smp_mb(), then sets X=1.
-> > > >
-> > > > o	Task B invokes wake_up(), which invokes __wake_up(), which
-> > > > 	acquires the wait_queue_head_t's lock and invokes
-> > > > 	__wake_up_common(), which sees nothing to wake up.
-> > > >
-> > > > o	Task A tests the condition, finds X==1, and returns without
-> > > > 	locks, memory barriers, atomic instructions, or anything else
-> > > > 	that would guarantee ordering.
-> > > >
-> > > > o	Task A then loads from Y.  Because there have been no memory
-> > > > 	barriers, it might well see Y==0.
-> > >
-> > > Sure, but I can't understand "Because there have been no memory barriers".
-> > >
-> > > IOW. Suppose we add mb() into wake_up(). The same can happen anyway?
-> >
-> > If the mb() is placed just after the fastpath condition check, then the
-> > awakened task will be guaranteed to see Y=1.
+> The problem seems to be that of_platform_populate() will bail on the
+> first device that fails this.
 > 
-> Of course. My point was, this has nothing to do with the barriers provided
-> by wake_up(), that is why I was confused.
+> How did you test this code, Frank? On what platform? Practically all my
+> targets here failed to mount rootfs from eMMC or SD card...
+
+I tested on a dragonboard, but without a working sdhci driver.  Thus I would not
+have hit the error.
+
 > 
-> > > > On the other hand, if a wake_up() really does happen, then
-> > > > the fast-path out of wait_event_interruptible() is not taken,
-> > > > and __wait_event_interruptible() is called instead.  This calls
-> > > > ___wait_event(), which eventually calls prepare_to_wait_event(), which
-> > > > in turn calls set_current_state(), which calls set_mb(), which does a
-> > > > full memory barrier.
-> > >
-> > > Can't understand this part too... OK, and suppose that right after that
-> > > the task B from the scenario above does
-> > >
-> > > 	Y = 1;
-> > > 	mb();
-> > > 	X = 1;
-> > > 	wake_up();
-> > >
-> > > After that task A checks the condition, sees X==1, and returns from
-> > > wait_event() without spin_lock(wait_queue_head_t->lock) (if it also
-> > > sees list_empty_careful() == T). Then it can see Y==0 again?
-> >
-> > Yes.  You need the barriers to be paired, and in this case, Task A isn't
-> > executing a memory barrier.  Yes, the mb() has forced Task B's CPU to
-> > commit the writes in order (or at least pretend to), but Task A might
-> > have speculated the read to Y.
-> >
-> > Or am I missing your point?
+> Note that the below patch mostly undoes the original intent of letting an error
+> percolate up, since only the last rc value is actually returned. So I doubt
+> it's the right patch to pick up, but either this or a revert is needed right
+> now.
 > 
-> I only meant that this case doesn't really differ from the scenario you
-> described above.
-
-Indeed, I was taking a bit of an exploratory approach to this.
-
-> > > > 	A read and a write memory barrier (-not- a full memory barrier)
-> > > > 	are implied by wake_up() and co. if and only if they wake
-> > > > 	something up.
-> > >
-> > > Now this looks as if you document that, say,
-> > >
-> > > 	X = 1;
-> > > 	wake_up();
-> > > 	Y = 1;
-> > >
-> > > doesn't need wmb() before "Y = 1" if wake_up() wakes something up. Do we
-> > > really want to document this? Is it fine to rely on this guarantee?
-> >
-> > That is an excellent question.  It would not be hard to argue that we
-> > should either make the guarantee unconditional by adding smp_mb() to
-> > the wait_event*() paths or alternatively just saying that there isn't
-> > a guarantee to begin with.
 > 
-> I'd vote for "no guarantees".
-
-I would have no objections to that.  Other than the large number of those
-things in the kernel!
-
-The thing is that I am having a hard time imagining how you guarantee that
-a wakeup actually happened.  I am betting that there are a lot of bugs
-related to this weak guarantee...
-
-> > > In short: I am totally confused and most probably misunderstood you ;)
-> >
-> > Oleg, if it confuses you, it is in desperate need of help!  ;-)
+> -Olof
 > 
-> Thanks, this helped ;)
-
-Glad to help!  ;-)
-
-							Thanx, Paul
+> 
+>>From f4cdc90a500a339e5b96ca06d108e1be7a808d76 Mon Sep 17 00:00:00 2001
+> From: Olof Johansson <olof@lixom.net>
+> Date: Tue, 13 May 2014 10:51:30 -0700
+> Subject: [PATCH] of/platform: Don't abort of_platform_populate() early
+> 
+> 52c75b64a374 ('of/platform: return error on
+> of_platform_device_create_pdata failure') starts returning ENODEV on
+> some calls now, and that will make of_platform_populate terminate the
+> loop. Be tolerant of that particlar error return value instead.
+> 
+> Fixes: 52c75b64a374 ('of/platform: return error on of_platform_device_create_pdata failure')
+> Cc: Frank Rowand <frank.rowand@sonymobile.com>
+> Signed-off-by: Olof Johansson <olof@lixom.net>
+> ---
+>  drivers/of/platform.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> index 8a6de3c..310de38 100644
+> --- a/drivers/of/platform.c
+> +++ b/drivers/of/platform.c
+> @@ -524,7 +524,7 @@ int of_platform_populate(struct device_node *root,
+>  
+>  	for_each_child_of_node(root, child) {
+>  		rc = of_platform_bus_create(child, matches, lookup, parent, true);
+> -		if (rc)
+> +		if (rc && rc != -ENODEV)
+>  			break;
+>  	}
+>  
+> 
 
