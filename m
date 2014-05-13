@@ -1,113 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104AbaEMXEg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 19:04:36 -0400
-Received: from ozlabs.org ([103.22.144.67]:54109 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752150AbaEMXE2 convert rfc822-to-8bit (ORCPT
+	id S1754404AbaEMXPM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 19:15:12 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:51457 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752150AbaEMXPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 19:04:28 -0400
-Message-ID: <1400022263.2665.2.camel@ale.ozlabs.ibm.com>
-Subject: Re: [PATCH] powerpc/pseries: relocate "config DTL" so KConfig nests
- properly
-From: Michael Neuling <mikey@neuling.org>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Michael Ellerman <mpe@ellerman.id.au>, Paul Bolle <pebolle@tiscali.nl>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 14 May 2014 09:04:23 +1000
-In-Reply-To: <5371C5E5.6070701@linux.vnet.ibm.com>
-References: <1399950599-24826-1-git-send-email-cody@linux.vnet.ibm.com>
-	 <1399962216.7554.63.camel@ale.ozlabs.ibm.com>
-	 <5371C5E5.6070701@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Tue, 13 May 2014 19:15:09 -0400
+Date: Tue, 13 May 2014 19:15:05 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+cc: Doug Anderson <dianders@chromium.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Will Deacon <will.deacon@arm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        David Riley <davidriley@chromium.org>,
+        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP
+ systems#
+In-Reply-To: <5372998F.6020502@wwwdotorg.org>
+Message-ID: <alpine.LFD.2.11.1405131908260.980@knanqh.ubzr>
+References: <CAD=FV=UEGJGHrdcXgs3EZ_wFXT8GnNeCOMt7CgdiiUzBzZ5Y0A@mail.gmail.com> <alpine.LFD.2.11.1405081149190.980@knanqh.ubzr> <CAD=FV=VtcLOh51LCmafzRMdqtDrwKXCqK6gE6V7OOOUe4gjwbA@mail.gmail.com> <alpine.LFD.2.11.1405081329010.980@knanqh.ubzr>
+ <20140508192209.GH3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405081600260.980@knanqh.ubzr> <20140508205223.GI3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405082058130.980@knanqh.ubzr> <20140509091824.GL3693@n2100.arm.linux.org.uk>
+ <alpine.LFD.2.11.1405091245070.980@knanqh.ubzr> <20140509182245.GM3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405091640090.980@knanqh.ubzr> <CAD=FV=UJK1nSPjH-au-KtbnOZk2nC7usLD8L9neMedj6WHUp8g@mail.gmail.com> <CAD=FV=XM2URyJjV9gaE=mrp7LAEGtvi9wQGhGJi3_HYp_XzYWg@mail.gmail.com>
+ <5372998F.6020502@wwwdotorg.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-13 at 00:12 -0700, Cody P Schafer wrote:
-> On 05/12/2014 11:23 PM, Michael Neuling wrote:
-> >> powerpc/pseries: relocate "config DTL" so KConfig nests properly
-> >
-> > I don't know what that means.  Can you describe it in more detail?
-> >
-> 
-> So the "config DTL" refers to the configuration entry.
-> 
-> The "nests properly" refers to the indent that 'make menuconfig' shows 
-> when a config-option that depends on the config-option proceeding it.
-> 
-> In this case, moving config DTL up so it is below config PPC_SPLPAR 
-> means that menuconfig will show config DTL nicely indented right below 
-> config PPC_SPLPAR when PPC_SPLPAR is enabled.
-> 
-> To contrast that, right now if I enable PPC_SPLPAR in menuconfig, all I 
-> can immediately tell is that "something showed up further down the list 
-> where I wasn't looking", and I end up having to toggle the option a few 
-> times to figure out what showed up, or look at the KConfig to find out 
-> that config DTL depends on config PPC_SPLPAR.
-> 
-> Essentially, this enables menuconfig to provide a visual hint about the 
-> dependencies between options.
+On Tue, 13 May 2014, Stephen Warren wrote:
 
-Sounds like a good idea.  Can you repost the patch with that same info
-in the commit log.
+> On 05/13/2014 03:50 PM, Doug Anderson wrote:
+> ...
+> > ...but then I found the true problem shows up when we transition
+> > between very low frequencies on exynos, like between 200MHz and
+> > 300MHz.  While transitioning between frequencies the system
+> > temporarily bumps over to the "switcher" PLL running at 800MHz while
+> > waiting for the main PLL to stabilize.  No CPUFREQ notification is
+> > sent for that.  That means there's a period of time when we're running
+> > at 800MHz but loops_per_jiffy is calibrated at between 200MHz and
+> > 300MHz.
+> > 
+> > 
+> > I'm welcome to any suggestions for how to address this.  It sorta
+> > feels like it would be a common thing to have a temporary PLL during
+> > the transition, ...
+> 
+> We definitely do that on Tegra for some cpufreq transitions.
 
-Mikey
+Ouch...  If this is a common strategy to use a third frequency during a 
+transition phase, especially if that frequency is way off (800MHz vs 
+200-300MHz) then it is something the cpufreq layer must capture and 
+advertise.
 
 
-> > Mikey
-> >
-> >
-> > On Mon, 2014-05-12 at 20:09 -0700, Cody P Schafer wrote:
-> >> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-> >> ---
-> >>   arch/powerpc/platforms/pseries/Kconfig | 20 ++++++++++----------
-> >>   1 file changed, 10 insertions(+), 10 deletions(-)
-> >>
-> >> diff --git a/arch/powerpc/platforms/pseries/Kconfig b/arch/powerpc/platforms/pseries/Kconfig
-> >> index 2cb8b77..e00dd4d 100644
-> >> --- a/arch/powerpc/platforms/pseries/Kconfig
-> >> +++ b/arch/powerpc/platforms/pseries/Kconfig
-> >> @@ -33,6 +33,16 @@ config PPC_SPLPAR
-> >>   	  processors, that is, which share physical processors between
-> >>   	  two or more partitions.
-> >>
-> >> +config DTL
-> >> +	bool "Dispatch Trace Log"
-> >> +	depends on PPC_SPLPAR && DEBUG_FS
-> >> +	help
-> >> +	  SPLPAR machines can log hypervisor preempt & dispatch events to a
-> >> +	  kernel buffer. Saying Y here will enable logging these events,
-> >> +	  which are accessible through a debugfs file.
-> >> +
-> >> +	  Say N if you are unsure.
-> >> +
-> >>   config PSERIES_MSI
-> >>          bool
-> >>          depends on PCI_MSI && PPC_PSERIES && EEH
-> >> @@ -122,13 +132,3 @@ config HV_PERF_CTRS
-> >>   	  systems. 24x7 is available on Power 8 systems.
-> >>
-> >>             If unsure, select Y.
-> >> -
-> >> -config DTL
-> >> -	bool "Dispatch Trace Log"
-> >> -	depends on PPC_SPLPAR && DEBUG_FS
-> >> -	help
-> >> -	  SPLPAR machines can log hypervisor preempt & dispatch events to a
-> >> -	  kernel buffer. Saying Y here will enable logging these events,
-> >> -	  which are accessible through a debugfs file.
-> >> -
-> >> -	  Say N if you are unsure.
-> >
-> 
-
+Nicolas
