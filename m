@@ -1,112 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460AbaEMBGH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 21:06:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:15232 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751541AbaEMBGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 21:06:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1039,1389772800"; 
-   d="scan'208";a="537978130"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "RobertBMoore@compuserve.com" <RobertBMoore@compuserve.com>,
-        "Thomas Renninger (trenn@suse.de)" <trenn@suse.de>,
-        Oswald Buddenhagen <ossi@kde.org>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] ACPICA: Revert "ACPICA: Add option to favor 32-bit FADT
- addresses."
-Thread-Topic: [PATCH] ACPICA: Revert "ACPICA: Add option to favor 32-bit
- FADT addresses."
-Thread-Index: AQHPbXRxwkRy6JhDskiQoqlTZHFjU5s8H5gggACCWGCAAHw3AIAAj3sA
-Date: Tue, 13 May 2014 01:05:59 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E880255B8DD@SHSMSX101.ccr.corp.intel.com>
-References: <38907770.bupFXhytsS@vostro.rjw.lan>
- <1AE640813FDE7649BE1B193DEA596E880255B3F0@SHSMSX101.ccr.corp.intel.com>
- <1AE640813FDE7649BE1B193DEA596E880255B72C@SHSMSX101.ccr.corp.intel.com>
- <2640573.uiu9DRCeSI@vostro.rjw.lan>
-In-Reply-To: <2640573.uiu9DRCeSI@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1752407AbaEMBL5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 21:11:57 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53432 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752447AbaEMBLz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 May 2014 21:11:55 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [RFC][PATCH 1/3] PM / sleep: Move runtime PM barrier invocation to device_prepare()
+Date: Tue, 13 May 2014 03:03:08 +0200
+Message-ID: <2675141.cAMB9masRU@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <4649019.is79p6EySp@vostro.rjw.lan>
+References: <4649019.is79p6EySp@vostro.rjw.lan>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4D16H7i023428
 
-Hi,
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-> From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> Sent: Tuesday, May 13, 2014 8:09 AM
-> 
-> On Monday, May 12, 2014 08:51:36 AM Zheng, Lv wrote:
-> > Hi, Rafael
-> >
-> > I checked the bug.
-> >
-> > The dmesg of the kernel without the bisected commit:
-> > [    0.000000] ACPI BIOS Warning (bug): Incorrect checksum in table [XSDT] - 0xA0, should be 0xC9 (20140214/tbprint-218)
-> > [    0.000000] ACPI Warning: 32/64 FACS address mismatch in FADT - two FACS tables! (20140214/tbfadt-395)
-> > [    0.000000] ACPI BIOS Warning (bug): 32/64X FACS address mismatch in FADT - 0xCF661F40/0x00000000CF667E40, using 32
-> (20140214/tbfadt-522)
-> >
-> > The dmesg of the kernel with the bisected commit:
-> > [    0.000000] ACPI BIOS Warning (bug): Incorrect checksum in table [XSDT] - 0xA0, should be 0xC9 (20131218/tbprint-214)
-> > [    0.000000] ACPI BIOS Warning (bug): 32/64X FACS address mismatch in FADT: 0xCF661F40/0x00000000CF667E40, using 64-bit
-> address (20131218/tbfadt-271)
-> >
-> > This is the purpose of the bisected commit.
-> > According to the link below:
-> > http://bugs.acpica.org/show_bug.cgi?id=885
-> > And Windows documentation:
-> > http://download.microsoft.com/download/5/b/9/5b97017b-e28a-4bae-ba48-174cf47d23cd/CPA002_WH06.ppt
-> > We believe 64-bit addresses should be used by default so that new features can be enabled according to the public knowledge of
-> Windows Vista+ behavior.
-> > For old Windows, it's hard for us to guess, we should wait for the reports and add quirks for them.
-> >
-> > Thus this commit is not wrong, it shouldn't be reverted.
-> 
-> It is wrong, because it breaks a system that worked without it.
-> 
-> It's *that* simple.
+Move the invocation of the runtime PM barrier during system suspend
+(or hibernation) from __device_suspend() to device_prepare() to make
+all runtime PM transitions in progress complete before executing
+->prepare() callbacks for devices.
 
-For this commit, we knew there would be systems broken.
-And was prepared to add quirks for them.
-The quirks are not there just because we rely on end users to report.
+That will allow those callbacks to check if devices are runtime
+suspended in a non-racy way.
 
-> 
-> And either you have a fix for that (which is not a quirk, because there may be
-> more machines like that), or we have to revert it.
-> 
-> > Though this platform is newer than vista, we still should offer a quirk mechanism
-> > for it as a quick fix:
-> 
-> We didn't need a quirk for it before, though.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/base/power/main.c |   31 +++++++++++++------------------
+ 1 file changed, 13 insertions(+), 18 deletions(-)
 
-But according to BZ885, we need more quirks for other machines before.
-For example, ThinkPad 40e and ThinkPad 51e reported in the BZ885.
+Index: linux-pm/drivers/base/power/main.c
+===================================================================
+--- linux-pm.orig/drivers/base/power/main.c
++++ linux-pm/drivers/base/power/main.c
+@@ -1312,24 +1312,7 @@ static int __device_suspend(struct devic
+ 
+ 	dpm_wait_for_children(dev, async);
+ 
+-	if (async_error)
+-		goto Complete;
+-
+-	/*
+-	 * If a device configured to wake up the system from sleep states
+-	 * has been suspended at run time and there's a resume request pending
+-	 * for it, this is equivalent to the device signaling wakeup, so the
+-	 * system suspend operation should be aborted.
+-	 */
+-	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
+-		pm_wakeup_event(dev, 0);
+-
+-	if (pm_wakeup_pending()) {
+-		async_error = -EBUSY;
+-		goto Complete;
+-	}
+-
+-	if (dev->power.syscore)
++	if (async_error || dev->power.syscore)
+ 		goto Complete;
+ 
+ 	dpm_watchdog_set(&wd, dev);
+@@ -1500,6 +1483,18 @@ static int device_prepare(struct device
+ 	 */
+ 	pm_runtime_get_noresume(dev);
+ 
++	/*
++	 * If a device configured to wake up the system from sleep states
++	 * has been suspended at run time and there's a resume request pending
++	 * for it, this is equivalent to the device signaling wakeup, so the
++	 * system suspend operation should be aborted.
++	 */
++	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
++		pm_wakeup_event(dev, 0);
++
++	if (pm_wakeup_pending())
++		return -EBUSY;
++
+ 	device_lock(dev);
+ 
+ 	dev->power.wakeup_path = device_may_wakeup(dev);
 
-> 
-> So really, I'm reverting it.
-
-OK.
-I'll first try to figure out the cause of the issue that is happening to Intel DP45SG.
-And then try this approach again in a smarter way that is more tolerant torward the possible regressions.
-
-Thanks and best regards
--Lv
-
-> 
-> Thanks!
-> 
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
