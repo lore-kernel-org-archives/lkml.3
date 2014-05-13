@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933349AbaEMKaR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:30:17 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:62512 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933268AbaEMKaO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933269AbaEMKaO (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 13 May 2014 06:30:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKohpo=6qXer+RRS-F6x=O1VLzbWq+_a-b29MaUzZBvt7XzDwQ@mail.gmail.com>
-References: <1399966890-22926-1-git-send-email-k.chander@samsung.com>
-	<CAKohpo=6qXer+RRS-F6x=O1VLzbWq+_a-b29MaUzZBvt7XzDwQ@mail.gmail.com>
-Date: Tue, 13 May 2014 11:30:13 +0100
-X-Google-Sender-Auth: wt-t3o5uKIqoVOeUe99RJtpyNNg
-Message-ID: <CAPKp9uZbz3M1Xyu7SnSFEexzUPxPqFTSmd7zmU8jU5-Dwu4gvA@mail.gmail.com>
-Subject: Re: [PATCH] PM / OPP: discard duplicate OPP additions
-From: Sudeep Holla <sudeep.holla@arm.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "[Chander Kashyap" <chander.kashyap@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        "Brown, Len" <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chander Kashyap <k.chander@samsung.com>,
-        Inderpal Singh <inderpal.s@samsung.com>,
-        Sudeep Holla <sudeep.holla@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933388AbaEMKLJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 06:11:09 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Matthew Daley <mattd@bugfuzz.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 128/182] floppy: don't write kernel-only members to FDRAWCMD ioctl output
+Date: Tue, 13 May 2014 11:28:00 +0200
+Message-Id: <9639e07d050567803965bf015eac1997093efaad.1399973152.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
+References: <cover.1399973152.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 9:22 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 13 May 2014 13:11, [Chander Kashyap <chander.kashyap@linaro.org> wrote:
->
-> What happened to your name ? "["
->
->> From: Chander Kashyap <k.chander@samsung.com>
->>
->> It may be possible to unregister and re-register the cpufreq driver.
->> One such example is arm big-little IKS cpufreq driver. While
->> re-registering the driver, same OPPs may get added again.
->>
->> This patch detects the duplicacy and discards them.
->>
->> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
->> Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
->> ---
->>  drivers/base/power/opp.c |   28 +++++++++++++++++++---------
->>  1 file changed, 19 insertions(+), 9 deletions(-)
->
-> I wouldn't say that this approach is particularly bad or wrong, but what
-> about this instead?
->
+From: Matthew Daley <mattd@bugfuzz.com>
 
-Yes I prefer this and this exactly what I had[1] in my OPP DT series which
-we could not conclude on the bindings. You also need patch[2] for DT version.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Regards,
-Sudeep
+===============
 
-[1] http://www.spinics.net/lists/cpufreq/msg07914.html
-[2] http://www.spinics.net/lists/cpufreq/msg07916.html
+commit 2145e15e0557a01b9195d1c7199a1b92cb9be81f upstream.
+
+Do not leak kernel-only floppy_raw_cmd structure members to userspace.
+This includes the linked-list pointer and the pointer to the allocated
+DMA space.
+
+Signed-off-by: Matthew Daley <mattd@bugfuzz.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/block/floppy.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+index b836e1a9047f..cf3e5042193c 100644
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -3053,7 +3053,10 @@ static int raw_cmd_copyout(int cmd, void __user *param,
+ 	int ret;
+ 
+ 	while (ptr) {
+-		ret = copy_to_user(param, ptr, sizeof(*ptr));
++		struct floppy_raw_cmd cmd = *ptr;
++		cmd.next = NULL;
++		cmd.kernel_data = NULL;
++		ret = copy_to_user(param, &cmd, sizeof(cmd));
+ 		if (ret)
+ 			return -EFAULT;
+ 		param += sizeof(struct floppy_raw_cmd);
+-- 
+1.9.3
+
