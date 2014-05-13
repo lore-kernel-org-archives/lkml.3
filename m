@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760902AbaEMKE2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:04:28 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60807 "EHLO
+	id S1760888AbaEMKE0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:04:26 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60808 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760065AbaEMJ24 (ORCPT
+	by vger.kernel.org with ESMTP id S1760066AbaEMJ24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 May 2014 05:28:56 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Christopher Covington <cov@codeaurora.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@redhat.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 018/182] ARM: 8007/1: Remove extraneous kcmp syscall ignore
-Date: Tue, 13 May 2014 11:26:10 +0200
-Message-Id: <60700517a488a9ac79ca3bc47cf9050df4075b5d.1399973152.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 057/182] nfsd4: session needs room for following op to error out
+Date: Tue, 13 May 2014 11:26:49 +0200
+Message-Id: <94b31998bdc50a127b91ec5e71fb230e5fccfc2d.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -24,37 +23,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christopher Covington <cov@codeaurora.org>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 95c52fe063351192e0f4ffb70ef9bac1aa26f5a4 upstream.
+commit 4c69d5855a16f7378648c5733632628fa10431db upstream.
 
-The kcmp system call was ported to ARM in
-commit 3f7d1fe108dbaefd0c57a41753fc2c90b395f458
-"ARM: 7665/1: Wire up kcmp syscall".
-
-Fixes: 3f7d1fe108db ("ARM: 7665/1: Wire up kcmp syscall")
-Signed-off-by: Christopher Covington <cov@codeaurora.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/arm/include/asm/unistd.h | 1 -
- 1 file changed, 1 deletion(-)
+ fs/nfsd/nfs4proc.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
-index 141baa3f9a72..cbd61977c996 100644
---- a/arch/arm/include/asm/unistd.h
-+++ b/arch/arm/include/asm/unistd.h
-@@ -48,6 +48,5 @@
-  */
- #define __IGNORE_fadvise64_64
- #define __IGNORE_migrate_pages
--#define __IGNORE_kcmp
+diff --git a/fs/nfsd/nfs4proc.c b/fs/nfsd/nfs4proc.c
+index 419572f33b72..622ede143585 100644
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -1349,6 +1349,12 @@ nfsd4_proc_compound(struct svc_rqst *rqstp,
+ 		/* If op is non-idempotent */
+ 		if (opdesc->op_flags & OP_MODIFIES_SOMETHING) {
+ 			plen = opdesc->op_rsize_bop(rqstp, op);
++			/*
++			 * If there's still another operation, make sure
++			 * we'll have space to at least encode an error:
++			 */
++			if (resp->opcnt < args->opcnt)
++				plen += COMPOUND_ERR_SLACK_SPACE;
+ 			op->status = nfsd4_check_resp_size(resp, plen);
+ 		}
  
- #endif /* __ASM_ARM_UNISTD_H */
 -- 
 1.9.3
 
