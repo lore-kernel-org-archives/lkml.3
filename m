@@ -1,76 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760762AbaEMKdc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:33:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51215 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753353AbaEMKda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:33:30 -0400
-Date: Tue, 13 May 2014 11:33:23 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Weijie Yang <weijieut@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Bob Liu <bob.liu@oracle.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCHv2 3/4] plist: add plist_requeue
-Message-ID: <20140513103323.GN23991@suse.de>
-References: <1399057350-16300-1-git-send-email-ddstreet@ieee.org>
- <1399912700-30100-1-git-send-email-ddstreet@ieee.org>
- <1399912700-30100-4-git-send-email-ddstreet@ieee.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1399912700-30100-4-git-send-email-ddstreet@ieee.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933660AbaEMKeB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:34:01 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933370AbaEMKLH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 06:11:07 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 161/182] rtlwifi: rtl8188ee: Fix too long disable of IRQs
+Date: Tue, 13 May 2014 11:28:33 +0200
+Message-Id: <bca057d7c9623eca30e2fccb6c6c11251e475bd5.1399973152.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
+References: <cover.1399973152.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 12:38:19PM -0400, Dan Streetman wrote:
-> Add plist_requeue(), which moves the specified plist_node after
-> all other same-priority plist_nodes in the list.  This is
-> essentially an optimized plist_del() followed by plist_add().
-> 
-> This is needed by swap, which (with the next patch in this set)
-> uses a plist of available swap devices.  When a swap device
-> (either a swap partition or swap file) are added to the system
-> with swapon(), the device is added to a plist, ordered by
-> the swap device's priority.  When swap needs to allocate a page
-> from one of the swap devices, it takes the page from the first swap
-> device on the plist, which is the highest priority swap device.
-> The swap device is left in the plist until all its pages are
-> used, and then removed from the plist when it becomes full.
-> 
-> However, as described in man 2 swapon, swap must allocate pages
-> from swap devices with the same priority in round-robin order;
-> to do this, on each swap page allocation, swap uses a page from
-> the first swap device in the plist, and then calls plist_requeue()
-> to move that swap device entry to after any other same-priority
-> swap devices.  The next swap page allocation will again use a
-> page from the first swap device in the plist and requeue it,
-> and so on, resulting in round-robin usage of equal-priority
-> swap devices.
-> 
-> Also add plist_test_requeue() test function, for use by plist_test()
-> to test plist_requeue() function.
-> 
-> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> 
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
+===============
+
+commit 6b6392715856d563719991e9ce95e773491a8983 upstream.
+
+In commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 entitled "rtlwifi:
+rtl8192ce: Fix too long disable of IRQs", Olivier Langlois
+<olivier@trillion01.com> fixed a problem caused by an extra long disabling
+of interrupts. This patch makes the same fix for rtl8188ee.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/net/wireless/rtlwifi/rtl8188ee/hw.c | 20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
+index e06971be7df7..f923d8c9a296 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
+@@ -1025,9 +1025,20 @@ int rtl88ee_hw_init(struct ieee80211_hw *hw)
+ 	bool rtstatus = true;
+ 	int err = 0;
+ 	u8 tmp_u1b, u1byte;
++	unsigned long flags;
+ 
+ 	RT_TRACE(rtlpriv, COMP_INIT, DBG_LOUD, "Rtl8188EE hw init\n");
+ 	rtlpriv->rtlhal.being_init_adapter = true;
++	/* As this function can take a very long time (up to 350 ms)
++	 * and can be called with irqs disabled, reenable the irqs
++	 * to let the other devices continue being serviced.
++	 *
++	 * It is safe doing so since our own interrupts will only be enabled
++	 * in a subsequent step.
++	 */
++	local_save_flags(flags);
++	local_irq_enable();
++
+ 	rtlpriv->intf_ops->disable_aspm(hw);
+ 
+ 	tmp_u1b = rtl_read_byte(rtlpriv, REG_SYS_CLKR+1);
+@@ -1043,7 +1054,7 @@ int rtl88ee_hw_init(struct ieee80211_hw *hw)
+ 	if (rtstatus != true) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "Init MAC failed\n");
+ 		err = 1;
+-		return err;
++		goto exit;
+ 	}
+ 
+ 	err = rtl88e_download_fw(hw, false);
+@@ -1051,8 +1062,7 @@ int rtl88ee_hw_init(struct ieee80211_hw *hw)
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
+ 			 "Failed to download FW. Init HW without FW now..\n");
+ 		err = 1;
+-		rtlhal->fw_ready = false;
+-		return err;
++		goto exit;
+ 	} else {
+ 		rtlhal->fw_ready = true;
+ 	}
+@@ -1135,10 +1145,12 @@ int rtl88ee_hw_init(struct ieee80211_hw *hw)
+ 	}
+ 	rtl_write_byte(rtlpriv, REG_NAV_CTRL+2,  ((30000+127)/128));
+ 	rtl88e_dm_init(hw);
++exit:
++	local_irq_restore(flags);
+ 	rtlpriv->rtlhal.being_init_adapter = false;
+ 	RT_TRACE(rtlpriv, COMP_INIT, DBG_LOUD, "end of Rtl8188EE hw init %x\n",
+ 		 err);
+-	return 0;
++	return err;
+ }
+ 
+ static enum version_8188e _rtl88ee_read_chip_version(struct ieee80211_hw *hw)
 -- 
-Mel Gorman
-SUSE Labs
+1.9.3
+
