@@ -1,105 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964938AbaEMO4r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 10:56:47 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:42133 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964874AbaEMO4C (ORCPT
+	id S964947AbaEMO5G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 10:57:06 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:51752 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933006AbaEMO5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 10:56:02 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: jan.kiszka@siemens.com, kvm@vger.kernel.org, gleb@kernel.org,
-        avi.kivity@gmail.com
-Subject: [PATCH 5/5] KVM: x86: add capability to get/set CPL
-Date: Tue, 13 May 2014 16:55:41 +0200
-Message-Id: <1399992941-11600-6-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1399992941-11600-1-git-send-email-pbonzini@redhat.com>
-References: <1399992941-11600-1-git-send-email-pbonzini@redhat.com>
+	Tue, 13 May 2014 10:57:03 -0400
+Date: Tue, 13 May 2014 09:56:48 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Jim Davis <jim.epost@gmail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>
+Subject: Re: randconfig build error with next-20140513, in
+ drivers/usb/phy/phy-msm-usb.c
+Message-ID: <20140513145648.GD1151@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <CA+r1ZhhpZtMV6qt=E__UT+6jgbsAnhso58+wmrrwrU5FRNZp=Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fOHHtNG4YXGJ0yqR"
+Content-Disposition: inline
+In-Reply-To: <CA+r1ZhhpZtMV6qt=E__UT+6jgbsAnhso58+wmrrwrU5FRNZp=Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Until now, KVM used to assume that CS.RPL could always be used as the CPL
-value when KVM_SET_SREGS is called.  Unfortunately this is not the case.
-If userspace decides to call KVM_GET_SREGS/KVM_SET_SREGS exactly after
-CR0.PE has been set to 1, but before the long jump that reloads CS, the
-CPL will be reset to bits 0-1 of CS (aka CS.RPL).  This can work or not,
-depending on the placement of the code that transitions to protected
-mode.  If CS.RPL != 0 the emulator will see CS.RPL != CS.DPL (the DPL
-will always be zero) and fail to fetch the next instruction of the
-transition code.
+--fOHHtNG4YXGJ0yqR
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-To trigger this using QEMU, it is enough to send "info cpus" continuously
-while running iPXE (which places its code for real->protected mode in
-the EBDA).  iPXE does a lot of transitions, and the guest will crash
-very quickly.
+On Tue, May 13, 2014 at 06:46:05AM -0700, Jim Davis wrote:
+> Building with the attached random configuration file,
+>=20
+> drivers/usb/phy/phy-msm-usb.c: In function =E2=80=98msm_otg_read_dt=E2=80=
+=99:
+> drivers/usb/phy/phy-msm-usb.c:1461:2: error: implicit declaration of
+> function =E2=80=98devm_reset_control_get=E2=80=99
+> [-Werror=3Dimplicit-function-declaration]
+>   motg->link_rst =3D devm_reset_control_get(&pdev->dev, "link");
+>   ^
+> drivers/usb/phy/phy-msm-usb.c:1461:17: warning: assignment makes
+> pointer from integer without a cast [enabled by default]
+>   motg->link_rst =3D devm_reset_control_get(&pdev->dev, "link");
+>                  ^
+> drivers/usb/phy/phy-msm-usb.c:1465:16: warning: assignment makes
+> pointer from integer without a cast [enabled by default]
+>   motg->phy_rst =3D devm_reset_control_get(&pdev->dev, "phy");
+>                 ^
+> cc1: some warnings being treated as errors
+> make[3]: *** [drivers/usb/phy/phy-msm-usb.o] Error 1
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/x86/include/asm/kvm_host.h | 2 ++
- arch/x86/kvm/x86.c              | 7 ++++++-
- include/uapi/linux/kvm.h        | 1 +
- 3 files changed, 9 insertions(+), 1 deletion(-)
+Here's a patch:
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 0bc2d91c8a97..5a85423f4e65 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -574,6 +574,8 @@ struct kvm_arch {
- 	struct mutex apic_map_lock;
- 	struct kvm_apic_map *apic_map;
- 
-+	bool set_cpl;
-+
- 	unsigned int tss_addr;
- 	struct page *apic_access_page;
- 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index ca0a1d38fa51..94c6c77e7a9f 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2656,6 +2656,7 @@ int kvm_dev_ioctl_check_extension(long ext)
- 	case KVM_CAP_HYPERV_TIME:
- 	case KVM_CAP_IOAPIC_POLARITY_IGNORED:
- 	case KVM_CAP_ENABLE_CAP_VM:
-+	case KVM_CAP_X86_CPL:
- #ifdef CONFIG_KVM_DEVICE_ASSIGNMENT
- 	case KVM_CAP_ASSIGN_DEV_IRQ:
- 	case KVM_CAP_PCI_2_3:
-@@ -3682,6 +3683,10 @@ static int kvm_vm_ioctl_enable_cap(struct kvm *kvm, struct kvm_enable_cap *cap)
- 		return -EINVAL;
- 
- 	switch (cap->cap) {
-+	case KVM_CAP_X86_CPL:
-+		kvm->arch.set_cpl = 1;
-+		r = 0;
-+		break;
- 	default:
- 		r = -EINVAL;
- 		break;
-@@ -6678,7 +6683,7 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu,
- 		pr_debug("Set back pending irq %d\n", pending_vec);
- 	}
- 
--	kvm_set_segment(vcpu, &sregs->cs, VCPU_SREG_CS, false);
-+	kvm_set_segment(vcpu, &sregs->cs, VCPU_SREG_CS, vcpu->kvm->arch.set_cpl);
- 	kvm_set_segment(vcpu, &sregs->ds, VCPU_SREG_DS, false);
- 	kvm_set_segment(vcpu, &sregs->es, VCPU_SREG_ES, false);
- 	kvm_set_segment(vcpu, &sregs->fs, VCPU_SREG_FS, false);
-diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
-index 2b83cf35437a..4bcf34aa1b3b 100644
---- a/include/uapi/linux/kvm.h
-+++ b/include/uapi/linux/kvm.h
-@@ -748,6 +748,7 @@ struct kvm_ppc_smmu_info {
- #define KVM_CAP_S390_IRQCHIP 99
- #define KVM_CAP_IOEVENTFD_NO_LENGTH 100
- #define KVM_CAP_VM_ATTRIBUTES 101
-+#define KVM_CAP_X86_CPL 102
- 
- #ifdef KVM_CAP_IRQ_ROUTING
- 
--- 
-1.8.3.1
 
+diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+index fbbced8..ec531a4 100644
+--- a/drivers/usb/phy/Kconfig
++++ b/drivers/usb/phy/Kconfig
+@@ -173,6 +173,7 @@ config USB_ISP1301
+ config USB_MSM_OTG
+ 	tristate "Qualcomm on-chip USB OTG controller support"
+ 	depends on (USB || USB_GADGET) && (ARCH_MSM || ARCH_QCOM || COMPILE_TEST)
++	depends on RESET_CONTROLLER
+ 	select USB_PHY
+ 	help
+ 	  Enable this to support the USB OTG transceiver on Qualcomm chips. It
+
+will send it shortly
+
+--=20
+balbi
+
+--fOHHtNG4YXGJ0yqR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTcjKwAAoJEIaOsuA1yqREGS4P/A6LfcxhxUNWn6emvF2oD55o
+r3jy46gw4osD/6eiopJrnPMLjz7Izy+atHOmojPNZ9aBPPnVudRuRjIVLFNIwfWm
+t59+lrh0q8qFbZqZwZHwMVjpavt/ojexU3WVgUKCOGbrIQh8HGOhmsa15SaQiemU
+t72dOPecfGdPAoJQXh/JwFLgJyd37471HA7dhwFAObBXzEPPpuYCNmr8YpElPVpw
+J5KOI7gvIzCgJo7jpfm/5sT7I2ZSoX4CVDanvPvAuUumhf4uJNI5LzmnjBJdY+6p
+lXlvaJLKCRuBUobfMNONT73GMg9A2ojbhiCMq3ikG94oDN/Z+loNwf5JOMaAHMze
+Rs6nke7o2OTY/3E0jUWzvwBW0dmFihdLNQpgE/1j+l+N9/L5Tpbm3Z8Kmzfs0LKi
+43aq8EWFb9kYMu7w17ioJ0LIwUFqT++aSXHgenqgcTIbTULLZ1iDP1DnUMYTLQqA
+kcslQYU/qlEE+G1Py1ZLXTiKLTQDqeDk2IH6mf+zeGA36CkIluyrJ4hPub7/1vEm
+435zNsuWtIRmGvT65NsQJdjZbdqURHkxAWUXCWmdxEknC/Ne/7npoNrtQblNiavU
+CGOxuZq0EMqG4caRA7lOSsRo/M5EsNCrluXd6qMZgxKcRg4EzrArPvOxpeNbmN/E
+db8JjhIWqSaM5V2wzhTJ
+=K5TX
+-----END PGP SIGNATURE-----
+
+--fOHHtNG4YXGJ0yqR--
