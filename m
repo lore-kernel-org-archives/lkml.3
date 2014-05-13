@@ -1,226 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaEMRlS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 13:41:18 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:45969 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463AbaEMRlM (ORCPT
+	id S1753510AbaEMRoB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 13:44:01 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:33005 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279AbaEMRny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 13:41:12 -0400
+	Tue, 13 May 2014 13:43:54 -0400
+Message-ID: <537259D6.6020407@colorfullife.com>
+Date: Tue, 13 May 2014 19:43:50 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140513.131408.1239450870035635955.davem@davemloft.net>
-References: <20140509231825.22D005A4123@corp2gmr1-2.hot.corp.google.com>
-	<536E5EB9.5060101@infradead.org>
-	<20140513.131408.1239450870035635955.davem@davemloft.net>
-Date: Tue, 13 May 2014 10:41:10 -0700
-Message-ID: <CAADnVQL7LFZ0YzzfEEN=WEF_fys=9QhHgjvaYtzdQ_jGX+74Nw@mail.gmail.com>
-Subject: Re: mmotm 2014-05-09-16-17 uploaded (ptrace-ab.hi vs. net/core/filter.c)
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        richard@nod.at
-Content-Type: text/plain; charset=UTF-8
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, 1vier1@web.de
+Subject: Re: [PATCH 2/6] ipc/sem.c: Bugfix for semctl(,,GETZCNT)
+References: <1399716199-26776-1-git-send-email-manfred@colorfullife.com> <1399716199-26776-2-git-send-email-manfred@colorfullife.com> <1399716199-26776-3-git-send-email-manfred@colorfullife.com> <1399918300.2648.24.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1399918300.2648.24.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 10:14 AM, David Miller <davem@davemloft.net> wrote:
-> From: Randy Dunlap <rdunlap@infradead.org>
-> Date: Sat, 10 May 2014 10:15:37 -0700
->
->> On 05/09/2014 04:18 PM, akpm@linux-foundation.org wrote:
->>> The mm-of-the-moment snapshot 2014-05-09-16-17 has been uploaded to
->>>
->>>    http://www.ozlabs.org/~akpm/mmotm/
->>>
->>
->>
->> uml defconfig on x86_64: (also happens in linux-next)
->>
->> net/core/filter.c:57:0: warning: "R8" redefined [enabled by default]
->> arch/x86/include/uapi/asm/ptrace-abi.h:38:0: note: this is the location of the previous definition
->>
->> Same warnings for R9 and R10.
->
-> I'm going to commit the following to net-next to fix this,
-> thanks Randy.
->
-> ====================
-> [PATCH] net: filter: Fix redefinition warnings on x86-64.
->
-> Do not collide with the x86-64 PTRACE user API namespace.
->
-> net/core/filter.c:57:0: warning: "R8" redefined [enabled by default]
-> arch/x86/include/uapi/asm/ptrace-abi.h:38:0: note: this is the location of the previous definition
->
-> Fix by adding a BPF_ prefix to the register macros.
->
-> Reported-by: Randy Dunlap <rdunlap@infradead.org>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
+Hi Davidlohr,
 
-thank you for taking care of it.
-Next time will remember to do arch=um build...
+On 05/12/2014 08:11 PM, Davidlohr Bueso wrote:
+> On Sat, 2014-05-10 at 12:03 +0200, Manfred Spraul wrote:
+>> GETZCNT is supposed to return the number of threads that wait until
+>> a semaphore value becomes 0.
+>> The current implementation overlooks complex operations that contain
+>> both wait-for-zero operation and operations that alter at least one semaphore.
+> Indeed. the pending_alter list does represent blocked processes on the
+> sem. Good catch. Btw, how on earth did you run into this? reading the
+> code or a real case?
+Reading the code.
+Or more accurately:
+Rewriting it, i.e. I first starting coding the new semncnt/semzcnt code, 
+then I noticed that the current code is buggy.
 
-Acked-by: Alexei Starovoitov <ast@plumgrid.com>
+>> The patch fixes that.
+>> It's intentionally copy&paste, this will be cleaned up in the next patch.
+> Instead I would have expected this patch to actually come after the
+> count_* refactoring.
+>
+In this case:
+First the bugfix, as simple as possible, then the new features.
 
-> ---
->  net/core/filter.c | 71 +++++++++++++++++++++++++++++--------------------------
->  1 file changed, 37 insertions(+), 34 deletions(-)
->
-> diff --git a/net/core/filter.c b/net/core/filter.c
-> index 9aaa05a..c442a0d 100644
-> --- a/net/core/filter.c
-> +++ b/net/core/filter.c
-> @@ -46,17 +46,17 @@
->  #include <linux/if_vlan.h>
->
->  /* Registers */
-> -#define R0     regs[BPF_REG_0]
-> -#define R1     regs[BPF_REG_1]
-> -#define R2     regs[BPF_REG_2]
-> -#define R3     regs[BPF_REG_3]
-> -#define R4     regs[BPF_REG_4]
-> -#define R5     regs[BPF_REG_5]
-> -#define R6     regs[BPF_REG_6]
-> -#define R7     regs[BPF_REG_7]
-> -#define R8     regs[BPF_REG_8]
-> -#define R9     regs[BPF_REG_9]
-> -#define R10    regs[BPF_REG_10]
-> +#define BPF_R0 regs[BPF_REG_0]
-> +#define BPF_R1 regs[BPF_REG_1]
-> +#define BPF_R2 regs[BPF_REG_2]
-> +#define BPF_R3 regs[BPF_REG_3]
-> +#define BPF_R4 regs[BPF_REG_4]
-> +#define BPF_R5 regs[BPF_REG_5]
-> +#define BPF_R6 regs[BPF_REG_6]
-> +#define BPF_R7 regs[BPF_REG_7]
-> +#define BPF_R8 regs[BPF_REG_8]
-> +#define BPF_R9 regs[BPF_REG_9]
-> +#define BPF_R10        regs[BPF_REG_10]
->
->  /* Named registers */
->  #define A      regs[insn->a_reg]
-> @@ -383,10 +383,12 @@ select_insn:
->
->         /* CALL */
->         JMP_CALL_0:
-> -               /* Function call scratches R1-R5 registers, preserves R6-R9,
-> -                * and stores return value into R0.
-> +               /* Function call scratches BPF_R1-BPF_R5 registers,
-> +                * preserves BPF_R6-BPF_R9, and stores return value
-> +                * into BPF_R0.
->                  */
-> -               R0 = (__bpf_call_base + insn->imm)(R1, R2, R3, R4, R5);
-> +               BPF_R0 = (__bpf_call_base + insn->imm)(BPF_R1, BPF_R2, BPF_R3,
-> +                                                      BPF_R4, BPF_R5);
->                 CONT;
->
->         /* JMP */
-> @@ -478,7 +480,7 @@ select_insn:
->                 }
->                 CONT;
->         JMP_EXIT_0:
-> -               return R0;
-> +               return BPF_R0;
->
->         /* STX and ST and LDX*/
->  #define LDST(SIZEOP, SIZE)                                     \
-> @@ -505,18 +507,19 @@ select_insn:
->                 atomic64_add((u64) X, (atomic64_t *)(unsigned long)
->                              (A + insn->off));
->                 CONT;
-> -       LD_ABS_W: /* R0 = ntohl(*(u32 *) (skb->data + K)) */
-> +       LD_ABS_W: /* BPF_R0 = ntohl(*(u32 *) (skb->data + K)) */
->                 off = K;
->  load_word:
-> -               /* BPF_LD + BPD_ABS and BPF_LD + BPF_IND insns are only
-> -                * appearing in the programs where ctx == skb. All programs
-> -                * keep 'ctx' in regs[BPF_REG_CTX] == R6, sk_convert_filter()
-> -                * saves it in R6, internal BPF verifier will check that
-> -                * R6 == ctx.
-> +               /* BPF_LD + BPD_ABS and BPF_LD + BPF_IND insns are
-> +                * only appearing in the programs where ctx ==
-> +                * skb. All programs keep 'ctx' in regs[BPF_REG_CTX]
-> +                * == BPF_R6, sk_convert_filter() saves it in BPF_R6,
-> +                * internal BPF verifier will check that BPF_R6 ==
-> +                * ctx.
->                  *
-> -                * BPF_ABS and BPF_IND are wrappers of function calls, so
-> -                * they scratch R1-R5 registers, preserve R6-R9, and store
-> -                * return value into R0.
-> +                * BPF_ABS and BPF_IND are wrappers of function calls,
-> +                * so they scratch BPF_R1-BPF_R5 registers, preserve
-> +                * BPF_R6-BPF_R9, and store return value into BPF_R0.
->                  *
->                  * Implicit input:
->                  *   ctx
-> @@ -526,39 +529,39 @@ load_word:
->                  *   K == 32-bit immediate
->                  *
->                  * Output:
-> -                *   R0 - 8/16/32-bit skb data converted to cpu endianness
-> +                *   BPF_R0 - 8/16/32-bit skb data converted to cpu endianness
->                  */
->                 ptr = load_pointer((struct sk_buff *) ctx, off, 4, &tmp);
->                 if (likely(ptr != NULL)) {
-> -                       R0 = get_unaligned_be32(ptr);
-> +                       BPF_R0 = get_unaligned_be32(ptr);
->                         CONT;
->                 }
->                 return 0;
-> -       LD_ABS_H: /* R0 = ntohs(*(u16 *) (skb->data + K)) */
-> +       LD_ABS_H: /* BPF_R0 = ntohs(*(u16 *) (skb->data + K)) */
->                 off = K;
->  load_half:
->                 ptr = load_pointer((struct sk_buff *) ctx, off, 2, &tmp);
->                 if (likely(ptr != NULL)) {
-> -                       R0 = get_unaligned_be16(ptr);
-> +                       BPF_R0 = get_unaligned_be16(ptr);
->                         CONT;
->                 }
->                 return 0;
-> -       LD_ABS_B: /* R0 = *(u8 *) (ctx + K) */
-> +       LD_ABS_B: /* BPF_R0 = *(u8 *) (ctx + K) */
->                 off = K;
->  load_byte:
->                 ptr = load_pointer((struct sk_buff *) ctx, off, 1, &tmp);
->                 if (likely(ptr != NULL)) {
-> -                       R0 = *(u8 *)ptr;
-> +                       BPF_R0 = *(u8 *)ptr;
->                         CONT;
->                 }
->                 return 0;
-> -       LD_IND_W: /* R0 = ntohl(*(u32 *) (skb->data + X + K)) */
-> +       LD_IND_W: /* BPF_R0 = ntohl(*(u32 *) (skb->data + X + K)) */
->                 off = K + X;
->                 goto load_word;
-> -       LD_IND_H: /* R0 = ntohs(*(u16 *) (skb->data + X + K)) */
-> +       LD_IND_H: /* BPF_R0 = ntohs(*(u16 *) (skb->data + X + K)) */
->                 off = K + X;
->                 goto load_half;
-> -       LD_IND_B: /* R0 = *(u8 *) (skb->data + X + K) */
-> +       LD_IND_B: /* BPF_R0 = *(u8 *) (skb->data + X + K) */
->                 off = K + X;
->                 goto load_byte;
->
-> @@ -1001,7 +1004,7 @@ do_pass:
->                         *insn = BPF_ALU64_REG(BPF_MOV, BPF_REG_TMP, BPF_REG_A);
->                         insn++;
->
-> -                       /* A = R0 = *(u8 *) (skb->data + K) */
-> +                       /* A = BPF_R0 = *(u8 *) (skb->data + K) */
->                         *insn = BPF_LD_ABS(BPF_B, fp->k);
->                         insn++;
->
-> --
-> 1.9.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--
+     Manfred
