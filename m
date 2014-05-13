@@ -1,100 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053AbaEMPi6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:38:58 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:46292 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaEMPix (ORCPT
+	id S1753554AbaEMPjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:39:12 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57939 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290AbaEMPjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:38:53 -0400
-Date: Tue, 13 May 2014 17:38:48 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org, tj@kernel.org,
-        rusty@rustcorp.com.au, akpm@linux-foundation.org, hch@infradead.org,
-        mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
-        mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] smp: Print more useful debug info upon receiving
- IPI on an offline CPU
-Message-ID: <20140513153845.GD13828@localhost.localdomain>
-References: <20140511203617.17152.21133.stgit@srivatsabhat.in.ibm.com>
- <20140511203647.17152.45125.stgit@srivatsabhat.in.ibm.com>
+	Tue, 13 May 2014 11:39:06 -0400
+Message-ID: <53723C96.5020203@wwwdotorg.org>
+Date: Tue, 13 May 2014 09:39:02 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140511203647.17152.45125.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Courbot <gnurou@gmail.com>
+CC: Alexandre Courbot <acourbot@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ARM: tegra: joystick input in tegra_defconfig
+References: <1399883209-31169-1-git-send-email-acourbot@nvidia.com> <1399883209-31169-2-git-send-email-acourbot@nvidia.com> <5370F794.2020800@wwwdotorg.org> <CAAVeFuLZ_wrxipYn2pfNzuyDiTvAPWH4aSWfonrG+YQsm4tM_g@mail.gmail.com>
+In-Reply-To: <CAAVeFuLZ_wrxipYn2pfNzuyDiTvAPWH4aSWfonrG+YQsm4tM_g@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 02:06:49AM +0530, Srivatsa S. Bhat wrote:
-> Today the smp-call-function code just prints a warning if we get an IPI on
-> an offline CPU. This info is sufficient to let us know that something went
-> wrong, but often it is very hard to debug exactly who sent the IPI and why,
-> from this info alone.
+On 05/12/2014 09:45 PM, Alexandre Courbot wrote:
+> On Tue, May 13, 2014 at 1:32 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 05/12/2014 02:26 AM, Alexandre Courbot wrote:
+>>> NVIDIA SHIELD embeds a USB controller. Compile the corresponding support
+>>> as a module in tegra_defconfig.
+>>
+>> Why make this a module rather than built-in. Almost everything else in
+>> tegra_defconfig is built-in, except brcmfmac since it doesn't handle
+>> lack of firmware availability at probe time.
 > 
-> In most cases, we get the warning about the IPI to an offline CPU, immediately
-> after the CPU going offline comes out of the stop-machine phase and reenables
-> interrupts. Since all online CPUs participate in stop-machine, the information
-> regarding the sender of the IPI is already lost by the time we exit the
-> stop-machine loop. So even if we dump the stack on each CPU at this point,
-> we won't find anything useful since all of them will show the stack-trace of
-> the stopper thread. So we need a better way to figure out who sent the IPI and
-> why.
-> 
-> To achieve this, when we detect an IPI targeted to an offline CPU, loop through
-> the call-single-data linked list and print out the payload (i.e., the name
-> of the function which was supposed to be executed by the target CPU). This
-> would give us an insight as to who might have sent the IPI and help us debug
-> this further.
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
-> 
->  kernel/smp.c |   18 ++++++++++++++----
->  1 file changed, 14 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/smp.c b/kernel/smp.c
-> index 06d574e..f864921 100644
-> --- a/kernel/smp.c
-> +++ b/kernel/smp.c
-> @@ -185,14 +185,24 @@ void generic_smp_call_function_single_interrupt(void)
->  {
->  	struct llist_node *entry;
->  	struct call_single_data *csd, *csd_next;
-> +	static bool warned;
-> +
-> +	entry = llist_del_all(&__get_cpu_var(call_single_queue));
-> +	entry = llist_reverse_order(entry);
->  
->  	/*
->  	 * Shouldn't receive this interrupt on a cpu that is not yet online.
->  	 */
-> -	WARN_ON_ONCE(!cpu_online(smp_processor_id()));
-> -
-> -	entry = llist_del_all(&__get_cpu_var(call_single_queue));
-> -	entry = llist_reverse_order(entry);
-> +	if (unlikely(!cpu_online(smp_processor_id()) && !warned)) {
-> +		warned = true;
-> +		WARN_ON(1);
+> Goal is to minimize the image size, especially since this is not a
+> feature I expect to be used much outside of SHIELD. If you prefer it
+> built-in, I'm fine with it too.
 
-More details may be better:
+Yes, built-in for everything makes most sense to me, except for code
+that doesn't actually work unless it's a module.
 
-WARN_ONCE(1, "IPI on offline CPU");
-
-> +		/*
-> +		 * We don't have to use the _safe() variant here
-> +		 * because we are not invoking the IPI handlers yet.
-> +		 */
-> +		llist_for_each_entry(csd, entry, llist)
-> +			pr_warn("SMP IPI Payload: %pS \n", csd->func);
-
-Payload is kind of vague. How about "IPI func %pS sent on offline CPU".
-
-> +	}
->  
->  	llist_for_each_entry_safe(csd, csd_next, entry, llist) {
->  		csd->func(csd->info);
-> 
