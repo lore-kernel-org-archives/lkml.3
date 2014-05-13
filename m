@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760614AbaEMKF5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:05:57 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60788 "EHLO
+	id S1760451AbaEMKFz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:05:55 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60805 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760063AbaEMJ2z (ORCPT
+	by vger.kernel.org with ESMTP id S1760064AbaEMJ2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 May 2014 05:28:55 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 039/182] mfd: max77693: Fix possible NULL pointer dereference on i2c_new_dummy error
-Date: Tue, 13 May 2014 11:26:31 +0200
-Message-Id: <af8be7f09d086ffb075921614f5c2f2a8d968a22.1399973152.git.jslaby@suse.cz>
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 048/182] staging: comedi: usbdux: bug fix for accessing 'ao_chanlist' in private data
+Date: Tue, 13 May 2014 11:26:40 +0200
+Message-Id: <c4ec377c9b6d02448a771ba9b22b04a51413d03b.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -24,66 +24,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit ad09dd6a1f5d6244bd89314015af506ba7f9810a upstream.
+commit 2704f807f9498054b8153002bafa3e818079e9a5 upstream.
 
-During probe the driver allocates dummy I2C devices for MUIC and haptic
-with i2c_new_dummy() but it does not check the return value of this
-calls.
+In usbdux_ao_cmd(), the channels for the command are transfered from the
+cmd->chanlist and stored in the private data 'ao_chanlist'. The channel
+numbers are bit-shifted when stored so that they become the "command"
+that is transfered to the device. The channel to command conversion
+results in the 'ao_chanlist' having these values for the channels:
 
-In case of error (i2c_new_device(): memory allocation failure or I2C
-address cannot be used) this function returns NULL which is later used
-by devm_regmap_init_i2c() and i2c_unregister_device().
+  channel 0 -> ao_chanlist = 0x00
+  channel 1 -> ao_chanlist = 0x40
+  channel 2 -> ao_chanlist = 0x80
+  channel 3 -> ao_chanlist = 0xc0
 
-If i2c_new_dummy() fails for MUIC or haptic devices, fail also the probe
-for main MFD driver.
+The problem is, the usbduxsub_ao_isoc_irq() function uses the 'chan' value
+from 'ao_chanlist' to access the 'ao_readback' array in the private data.
+So instead of accessing the array as 0, 1, 2, 3, it accesses it as 0x00,
+0x40, 0x80, 0xc0.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Fix this by storing the raw channel number in 'ao_chanlist' and doing the
+bit-shift when creating the command.
+
+Fixes: a998a3db530bff80 "staging: comedi: usbdux: cleanup the private data 'outBuffer'"
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+Acked-by: Bernd Porr <mail@berndporr.me.uk>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/mfd/max77693.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/usbdux.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-index c04723efc707..8abfd3f0af5b 100644
---- a/drivers/mfd/max77693.c
-+++ b/drivers/mfd/max77693.c
-@@ -149,9 +149,18 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
- 		dev_info(max77693->dev, "device ID: 0x%x\n", reg_data);
+diff --git a/drivers/staging/comedi/drivers/usbdux.c b/drivers/staging/comedi/drivers/usbdux.c
+index 701ad1a69394..4fbe303e8186 100644
+--- a/drivers/staging/comedi/drivers/usbdux.c
++++ b/drivers/staging/comedi/drivers/usbdux.c
+@@ -494,7 +494,7 @@ static void usbduxsub_ao_isoc_irq(struct urb *urb)
+ 			/* pointer to the DA */
+ 			*datap++ = val & 0xff;
+ 			*datap++ = (val >> 8) & 0xff;
+-			*datap++ = chan;
++			*datap++ = chan << 6;
+ 			devpriv->ao_readback[chan] = val;
  
- 	max77693->muic = i2c_new_dummy(i2c->adapter, I2C_ADDR_MUIC);
-+	if (!max77693->muic) {
-+		dev_err(max77693->dev, "Failed to allocate I2C device for MUIC\n");
-+		return -ENODEV;
-+	}
- 	i2c_set_clientdata(max77693->muic, max77693);
+ 			s->async->events |= COMEDI_CB_BLOCK;
+@@ -1040,11 +1040,8 @@ static int usbdux_ao_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ 	/* set current channel of the running acquisition to zero */
+ 	s->async->cur_chan = 0;
  
- 	max77693->haptic = i2c_new_dummy(i2c->adapter, I2C_ADDR_HAPTIC);
-+	if (!max77693->haptic) {
-+		dev_err(max77693->dev, "Failed to allocate I2C device for Haptic\n");
-+		ret = -ENODEV;
-+		goto err_i2c_haptic;
-+	}
- 	i2c_set_clientdata(max77693->haptic, max77693);
+-	for (i = 0; i < cmd->chanlist_len; ++i) {
+-		unsigned int chan = CR_CHAN(cmd->chanlist[i]);
+-
+-		devpriv->ao_chanlist[i] = chan << 6;
+-	}
++	for (i = 0; i < cmd->chanlist_len; ++i)
++		devpriv->ao_chanlist[i] = CR_CHAN(cmd->chanlist[i]);
  
- 	/*
-@@ -187,8 +196,9 @@ err_mfd:
- 	max77693_irq_exit(max77693);
- err_irq:
- err_regmap_muic:
--	i2c_unregister_device(max77693->muic);
- 	i2c_unregister_device(max77693->haptic);
-+err_i2c_haptic:
-+	i2c_unregister_device(max77693->muic);
- 	return ret;
- }
- 
+ 	/* we count in steps of 1ms (125us) */
+ 	/* 125us mode not used yet */
 -- 
 1.9.3
 
