@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759364AbaEMIUL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 04:20:11 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36095 "EHLO
+	id S1759408AbaEMIV0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 04:21:26 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36165 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758901AbaEMIUD (ORCPT
+	with ESMTP id S1752692AbaEMIUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 04:20:03 -0400
+	Tue, 13 May 2014 04:20:10 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Emilio Lopez <emilio@elopez.com.ar>,
         Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
@@ -17,9 +17,9 @@ Cc: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
         shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
         linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v4 1/8] clk: sunxi: Implement A31 USB clock
-Date: Tue, 13 May 2014 10:18:58 +0200
-Message-Id: <1399969145-11642-2-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v4 7/8] ARM: sun6i: dt: Add support for the USB controllers
+Date: Tue, 13 May 2014 10:19:04 +0200
+Message-Id: <1399969145-11642-8-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1399969145-11642-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1399969145-11642-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -27,41 +27,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The A31 USB clock slightly differ from its older counterparts, mostly because
-it has a different gate for each PHY, while the older one had a single gate for
-all the phy.
+The A31 has two ECHI/OHCI controllers, and one OHCI-only phy-less controller.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 Reviewed-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Mike Turquette <mturquette@linaro.org>
 ---
- drivers/clk/sunxi/clk-sunxi.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/arm/boot/dts/sun6i-a31.dtsi | 77 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 77 insertions(+)
 
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index bd7dc733c1ca..d9bab75f128b 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -972,6 +972,11 @@ static const struct gates_data sun5i_a13_usb_gates_data __initconst = {
- 	.reset_mask = 0x03,
- };
+diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
+index 13aa56ed5858..5e9f01af6d99 100644
+--- a/arch/arm/boot/dts/sun6i-a31.dtsi
++++ b/arch/arm/boot/dts/sun6i-a31.dtsi
+@@ -341,6 +341,83 @@
+ 			status = "disabled";
+ 		};
  
-+static const struct gates_data sun6i_a31_usb_gates_data __initconst = {
-+	.mask = { BIT(18) | BIT(17) | BIT(16) | BIT(10) | BIT(9) | BIT(8) },
-+	.reset_mask = BIT(2) | BIT(1) | BIT(0),
-+};
++		usbphy: phy@01c19400 {
++			compatible = "allwinner,sun6i-a31-usb-phy";
++			reg = <0x01c19400 0x10>,
++			      <0x01c1a800 0x4>,
++			      <0x01c1b800 0x4>;
++			reg-names = "phy_ctrl",
++				    "pmu1",
++				    "pmu2";
++			clocks = <&usb_clk 8>,
++				 <&usb_clk 9>,
++				 <&usb_clk 10>;
++			clock-names = "usb0_phy",
++				      "usb1_phy",
++				      "usb2_phy";
++			resets = <&usb_clk 0>,
++				 <&usb_clk 1>,
++				 <&usb_clk 2>;
++			reset-names = "usb0_reset",
++				      "usb1_reset",
++				      "usb2_reset";
++			status = "disabled";
++			#phy-cells = <1>;
++		};
 +
- static void __init sunxi_gates_clk_setup(struct device_node *node,
- 					 struct gates_data *data)
- {
-@@ -1267,6 +1272,7 @@ static const struct of_device_id clk_gates_match[] __initconst = {
- 	{.compatible = "allwinner,sun6i-a31-apb2-gates-clk", .data = &sun6i_a31_apb2_gates_data,},
- 	{.compatible = "allwinner,sun4i-a10-usb-clk", .data = &sun4i_a10_usb_gates_data,},
- 	{.compatible = "allwinner,sun5i-a13-usb-clk", .data = &sun5i_a13_usb_gates_data,},
-+	{.compatible = "allwinner,sun6i-a31-usb-clk", .data = &sun6i_a31_usb_gates_data,},
- 	{}
- };
- 
++		ehci0: usb@01c1a000 {
++			compatible = "allwinner,sun6i-a31-ehci", "generic-ehci";
++			reg = <0x01c1a000 0x100>;
++			interrupts = <0 72 4>;
++			clocks = <&ahb1_gates 26>;
++			resets = <&ahb1_rst 26>;
++			phys = <&usbphy 1>;
++			phy-names = "usb";
++			status = "disabled";
++		};
++
++		ohci0: usb@01c1a400 {
++			compatible = "allwinner,sun6i-a31-ohci", "generic-ohci";
++			reg = <0x01c1a400 0x100>;
++			interrupts = <0 73 4>;
++			clocks = <&ahb1_gates 29>, <&usb_clk 16>;
++			resets = <&ahb1_rst 29>;
++			phys = <&usbphy 1>;
++			phy-names = "usb";
++			status = "disabled";
++		};
++
++		ehci1: usb@01c1b000 {
++			compatible = "allwinner,sun6i-a31-ehci", "generic-ehci";
++			reg = <0x01c1b000 0x100>;
++			interrupts = <0 74 4>;
++			clocks = <&ahb1_gates 27>;
++			resets = <&ahb1_rst 27>;
++			phys = <&usbphy 2>;
++			phy-names = "usb";
++			status = "disabled";
++		};
++
++		ohci1: usb@01c1b400 {
++			compatible = "allwinner,sun6i-a31-ohci", "generic-ohci";
++			reg = <0x01c1b400 0x100>;
++			interrupts = <0 75 4>;
++			clocks = <&ahb1_gates 30>, <&usb_clk 17>;
++			resets = <&ahb1_rst 30>;
++			phys = <&usbphy 2>;
++			phy-names = "usb";
++			status = "disabled";
++		};
++
++		ohci2: usb@01c1c000 {
++			compatible = "allwinner,sun6i-a31-ohci", "generic-ohci";
++			reg = <0x01c1c400 0x100>;
++			interrupts = <0 77 4>;
++			clocks = <&ahb1_gates 31>, <&usb_clk 18>;
++			resets = <&ahb1_rst 31>;
++			status = "disabled";
++		};
++
+ 		pio: pinctrl@01c20800 {
+ 			compatible = "allwinner,sun6i-a31-pinctrl";
+ 			reg = <0x01c20800 0x400>;
 -- 
 1.9.3
 
