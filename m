@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964835AbaEMKkf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:40:35 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60754 "EHLO
+	id S964813AbaEMKkd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:40:33 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60760 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760026AbaEMJ2z (ORCPT
+	by vger.kernel.org with ESMTP id S1760031AbaEMJ2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 May 2014 05:28:55 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tomas Winkler <tomas.winkler@intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 032/182] mei: me: do not load the driver if the FW doesn't support MEI interface
-Date: Tue, 13 May 2014 11:26:24 +0200
-Message-Id: <40f11b97a05389ed1039669b3be6c08d3bb21a2a.1399973152.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 033/182] mei: ignore client writing state during cb completion
+Date: Tue, 13 May 2014 11:26:25 +0200
+Message-Id: <4a81749eabe1e46434bc13720780b12715c7aba6.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -23,92 +24,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 5e6533a6f52f1a8283b2f818f5828be99a417dd6 upstream.
+commit 34ec43661fe8f1977dd0f05353302ae2ed10aabb upstream.
 
-NM and SPS  FW types that may run on ME device on server platforms
-do not have valid MEI/HECI interface and driver should not
-be bound to it as this might lead to system hung.
-In practice not all BIOSes effectively hide such devices from the
-OS and in some cases it is not possible.
+Ignore client writing state during cb completion to fix a memory
+leak.
 
-We determine FW type by examining Host FW status registers in order to
-unbind the driver.
-In this patch we are adding check for ME on Cougar Point, Lynx Point
-Devices
+When moving cbs to the completion list we should not look at
+writing_state as this state can be already overwritten by next
+write, the fact that a cb is on the write waiting list means
+that it was already written to the HW and we can safely complete it.
 
+Same pays for wait in poll handler, we do not have to check the state
+wake is done after completion list processing.
+
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Tested-by: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/misc/mei/hw-me-regs.h |  5 +++++
- drivers/misc/mei/pci-me.c     | 30 +++++++++++++++++++++++-------
- 2 files changed, 28 insertions(+), 7 deletions(-)
+ drivers/misc/mei/interrupt.c | 3 +--
+ drivers/misc/mei/main.c      | 3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/misc/mei/hw-me-regs.h b/drivers/misc/mei/hw-me-regs.h
-index 66f411a6e8ea..cabc04383685 100644
---- a/drivers/misc/mei/hw-me-regs.h
-+++ b/drivers/misc/mei/hw-me-regs.h
-@@ -115,6 +115,11 @@
- #define MEI_DEV_ID_LPT_HR     0x8CBA  /* Lynx Point H Refresh */
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index 1b922e971d3e..41b4b4818b04 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -420,8 +420,7 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
  
- #define MEI_DEV_ID_WPT_LP     0x9CBA  /* Wildcat Point LP */
-+
-+/* Host Firmware Status Registers in PCI Config Space */
-+#define PCI_CFG_HFS_1         0x40
-+#define PCI_CFG_HFS_2         0x48
-+
- /*
-  * MEI HW Section
-  */
-diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
-index e637318b79ba..20fb058f6ae8 100644
---- a/drivers/misc/mei/pci-me.c
-+++ b/drivers/misc/mei/pci-me.c
-@@ -100,15 +100,31 @@ static bool mei_me_quirk_probe(struct pci_dev *pdev,
- 				const struct pci_device_id *ent)
- {
- 	u32 reg;
--	if (ent->device == MEI_DEV_ID_PBG_1) {
--		pci_read_config_dword(pdev, 0x48, &reg);
--		/* make sure that bit 9 is up and bit 10 is down */
--		if ((reg & 0x600) == 0x200) {
--			dev_info(&pdev->dev, "Device doesn't have valid ME Interface\n");
--			return false;
--		}
-+	/* Cougar Point || Patsburg */
-+	if (ent->device == MEI_DEV_ID_CPT_1 ||
-+	    ent->device == MEI_DEV_ID_PBG_1) {
-+		pci_read_config_dword(pdev, PCI_CFG_HFS_2, &reg);
-+		/* make sure that bit 9 (NM) is up and bit 10 (DM) is down */
-+		if ((reg & 0x600) == 0x200)
-+			goto no_mei;
+ 		cl->status = 0;
+ 		list_del(&cb->list);
+-		if (MEI_WRITING == cl->writing_state &&
+-		    cb->fop_type == MEI_FOP_WRITE &&
++		if (cb->fop_type == MEI_FOP_WRITE &&
+ 		    cl != &dev->iamthif_cl) {
+ 			dev_dbg(&dev->pdev->dev, "MEI WRITE COMPLETE\n");
+ 			cl->writing_state = MEI_WRITE_COMPLETE;
+diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+index cabeddd66c1f..9558bef37eea 100644
+--- a/drivers/misc/mei/main.c
++++ b/drivers/misc/mei/main.c
+@@ -648,8 +648,7 @@ static unsigned int mei_poll(struct file *file, poll_table *wait)
+ 		goto out;
  	}
-+
-+	/* Lynx Point */
-+	if (ent->device == MEI_DEV_ID_LPT_H  ||
-+	    ent->device == MEI_DEV_ID_LPT_W  ||
-+	    ent->device == MEI_DEV_ID_LPT_HR) {
-+		/* Read ME FW Status check for SPS Firmware */
-+		pci_read_config_dword(pdev, PCI_CFG_HFS_1, &reg);
-+		/* if bits [19:16] = 15, running SPS Firmware */
-+		if ((reg & 0xf0000) == 0xf0000)
-+			goto no_mei;
-+	}
-+
- 	return true;
-+
-+no_mei:
-+	dev_info(&pdev->dev, "Device doesn't have valid ME Interface\n");
-+	return false;
- }
- /**
-  * mei_probe - Device Initialization Routine
+ 
+-	if (MEI_WRITE_COMPLETE == cl->writing_state)
+-		mask |= (POLLIN | POLLRDNORM);
++	mask |= (POLLIN | POLLRDNORM);
+ 
+ out:
+ 	mutex_unlock(&dev->device_lock);
 -- 
 1.9.3
 
