@@ -1,126 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212AbaEMGV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 02:21:26 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:34133 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284AbaEMGVZ (ORCPT
+	id S1752794AbaEMGXj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 02:23:39 -0400
+Received: from ozlabs.org ([103.22.144.67]:38280 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750767AbaEMGXi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 02:21:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAL_JsqK=BiZx31xUC=_8s7+QeAGjrWePOzeDLEt=YfpdLbS_KA@mail.gmail.com>
-References: <1399861195-21087-1-git-send-email-superlibj8301@gmail.com>
-	<1399861195-21087-2-git-send-email-superlibj8301@gmail.com>
-	<CAL_JsqK=BiZx31xUC=_8s7+QeAGjrWePOzeDLEt=YfpdLbS_KA@mail.gmail.com>
-Date: Tue, 13 May 2014 14:21:24 +0800
-Message-ID: <CAHPCO9G8nqVfBXw3ej_Ot8CUkKgVB5QiZtkd9y+JBOBAaeJ7GQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH 1/2] mm/vmalloc: Add IO mapping space reused interface.
-From: Richard Lee <superlibj8301@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Lee <superlibj@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 13 May 2014 02:23:38 -0400
+Message-ID: <1399962216.7554.63.camel@ale.ozlabs.ibm.com>
+Subject: Re: [PATCH] powerpc/pseries: relocate "config DTL" so KConfig nests
+ properly
+From: Michael Neuling <mikey@neuling.org>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Michael Ellerman <mpe@ellerman.id.au>, Paul Bolle <pebolle@tiscali.nl>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 13 May 2014 16:23:36 +1000
+In-Reply-To: <1399950599-24826-1-git-send-email-cody@linux.vnet.ibm.com>
+References: <1399950599-24826-1-git-send-email-cody@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 11:13 AM, Rob Herring <robherring2@gmail.com> wrote:
-> On Sun, May 11, 2014 at 9:19 PM, Richard Lee <superlibj8301@gmail.com> wrote:
->> For the IO mapping, for the same physical address space maybe
->> mapped more than one time, for example, in some SoCs:
->> 0x20000000 ~ 0x20001000: are global control IO physical map,
->> and this range space will be used by many drivers.
->
-> What address or who the user is isn't really relevant.
->
->> And then if each driver will do the same ioremap operation, we
->> will waste to much malloc virtual spaces.
->
-> s/malloc/vmalloc/
->
->>
->> This patch add the IO mapping space reusing interface:
->> - find_vm_area_paddr: used to find the exsit vmalloc area using
->
-> s/exsit/exist/
->
+> powerpc/pseries: relocate "config DTL" so KConfig nests properly
 
-Yes, see the next version.
+I don't know what that means.  Can you describe it in more detail?
 
-[...]
->> +{
->> +       struct vmap_area *va;
->> +
->> +       va = find_vmap_area((unsigned long)addr);
->> +       if (!va || !(va->flags & VM_VM_AREA) || !va->vm)
->> +               return 1;
->> +
->> +       if (va->vm->used <= 1)
->> +               return 1;
->> +
->> +       --va->vm->used;
->
-> What lock protects this? You should use atomic ops here.
->
-
-Yes, it is.
+Mikey
 
 
-[...]
->> +       if (!(flags & VM_IOREMAP))
->> +               return NULL;
->> +
->> +       rcu_read_lock();
->> +       list_for_each_entry_rcu(va, &vmap_area_list, list) {
->> +               phys_addr_t phys_addr;
->> +
->> +               if (!va || !(va->flags & VM_VM_AREA) || !va->vm)
->> +                       continue;
->> +
->> +               phys_addr = va->vm->phys_addr;
->> +
->> +               if (paddr < phys_addr || paddr + size > phys_addr + va->vm->size)
->> +                       continue;
->> +
->> +               *offset = paddr - phys_addr;
->> +
->> +               if (va->vm->flags & VM_IOREMAP && va->vm->size >= size) {
->> +                       va->vm->used++;
->
-> What lock protects this? It looks like you are modifying this with
-> only a rcu reader lock.
+On Mon, 2014-05-12 at 20:09 -0700, Cody P Schafer wrote:
+> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+> ---
+>  arch/powerpc/platforms/pseries/Kconfig | 20 ++++++++++----------
+>  1 file changed, 10 insertions(+), 10 deletions(-)
+> 
+> diff --git a/arch/powerpc/platforms/pseries/Kconfig b/arch/powerpc/platforms/pseries/Kconfig
+> index 2cb8b77..e00dd4d 100644
+> --- a/arch/powerpc/platforms/pseries/Kconfig
+> +++ b/arch/powerpc/platforms/pseries/Kconfig
+> @@ -33,6 +33,16 @@ config PPC_SPLPAR
+>  	  processors, that is, which share physical processors between
+>  	  two or more partitions.
+>  
+> +config DTL
+> +	bool "Dispatch Trace Log"
+> +	depends on PPC_SPLPAR && DEBUG_FS
+> +	help
+> +	  SPLPAR machines can log hypervisor preempt & dispatch events to a
+> +	  kernel buffer. Saying Y here will enable logging these events,
+> +	  which are accessible through a debugfs file.
+> +
+> +	  Say N if you are unsure.
+> +
+>  config PSERIES_MSI
+>         bool
+>         depends on PCI_MSI && PPC_PSERIES && EEH
+> @@ -122,13 +132,3 @@ config HV_PERF_CTRS
+>  	  systems. 24x7 is available on Power 8 systems.
+>  
+>            If unsure, select Y.
+> -
+> -config DTL
+> -	bool "Dispatch Trace Log"
+> -	depends on PPC_SPLPAR && DEBUG_FS
+> -	help
+> -	  SPLPAR machines can log hypervisor preempt & dispatch events to a
+> -	  kernel buffer. Saying Y here will enable logging these events,
+> -	  which are accessible through a debugfs file.
+> -
+> -	  Say N if you are unsure.
 
-I'll try to use the proper lock ops for this later.
-
-
-
-Thanks very much,
-
-Richard
-
-
->
->> +                       rcu_read_unlock();
->> +                       return va->vm;
->> +               }
->> +       }
->> +       rcu_read_unlock();
->> +
->> +       return NULL;
->> +}
->> +
->>  /**
->>   *     find_vm_area  -  find a continuous kernel virtual area
->>   *     @addr:          base address
->> --
->> 1.8.4
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
