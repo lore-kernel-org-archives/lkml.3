@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038AbaEMS3I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 14:29:08 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:63567 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbaEMS3E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 14:29:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <1399296830-13056-1-git-send-email-nm@ti.com>
-References: <1399296830-13056-1-git-send-email-nm@ti.com>
-Date: Tue, 13 May 2014 23:59:01 +0530
-Message-ID: <CAJuA9agOJyQ_2KOoyn=ohVOeO199aVqm_YXtpUVfETQiPk+ZTw@mail.gmail.com>
-Subject: Re: [PATCH 0/2] PM / OPP: move cpufreq specific helpers out of OPP layer
-From: Thomas Abraham <ta.omasab@gmail.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-omap@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1754125AbaEMSbO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 14:31:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36096 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752163AbaEMSbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 14:31:09 -0400
+From: Mateusz Guzik <mguzik@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
+        Jan Kara <jack@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Eric Sandeen <esandeen@redhat.com>
+Subject: [PATCH 1/2] fs: include device name in error messages about freezing
+Date: Tue, 13 May 2014 20:31:01 +0200
+Message-Id: <1400005862-3751-1-git-send-email-mguzik@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 5, 2014 at 7:03 PM, Nishanth Menon <nm@ti.com> wrote:
-> CPUFreq usage of OPP should be independent of the ordering of type of
-> data storage inside OPP layer. The current operations can equally be
-> performed by generic operations.
->
-> [RFC]: https://patchwork.kernel.org/patch/4100811/
->
-> Series based on: v3.15-rc1
->
-> Nishanth Menon (2):
->   PM / OPP: Remove cpufreq wrapper dependency on internal data
->     organization
->   PM / OPP: Move cpufreq specific OPP functions out of generic OPP
->     library
->
->  Documentation/cpu-freq/core.txt |   29 +++++++++++
->  Documentation/power/opp.txt     |   40 ++------------
->  drivers/base/power/opp.c        |   91 --------------------------------
->  drivers/cpufreq/Makefile        |    2 +
->  drivers/cpufreq/cpufreq_opp.c   |  110 +++++++++++++++++++++++++++++++++++++++
->  include/linux/cpufreq.h         |   21 ++++++++
->  include/linux/pm_opp.h          |   20 -------
->  7 files changed, 167 insertions(+), 146 deletions(-)
->  create mode 100644 drivers/cpufreq/cpufreq_opp.c
+While here use pr_err instead of printk(KERN_ERR...)
 
-Works fine on Exynos.
-Tested-by: Thomas Abraham <thomas.ab@samsung.com>
+Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org
+Cc: Josef Bacik <jbacik@fb.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Eric Sandeen <esandeen@redhat.com>
 
->
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+---
+ fs/super.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/fs/super.c b/fs/super.c
+index 48377f7..017e10a 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -1323,8 +1323,7 @@ int freeze_super(struct super_block *sb)
+ 	if (sb->s_op->freeze_fs) {
+ 		ret = sb->s_op->freeze_fs(sb);
+ 		if (ret) {
+-			printk(KERN_ERR
+-				"VFS:Filesystem freeze failed\n");
++			pr_err("VFS:Filesystem %s freeze failed\n", sb->s_id);
+ 			sb->s_writers.frozen = SB_UNFROZEN;
+ 			smp_wmb();
+ 			wake_up(&sb->s_writers.wait_unfrozen);
+@@ -1364,8 +1363,7 @@ int thaw_super(struct super_block *sb)
+ 	if (sb->s_op->unfreeze_fs) {
+ 		error = sb->s_op->unfreeze_fs(sb);
+ 		if (error) {
+-			printk(KERN_ERR
+-				"VFS:Filesystem thaw failed\n");
++			pr_err("VFS:Filesystem %s thaw failed\n", sb->s_id);
+ 			up_write(&sb->s_umount);
+ 			return error;
+ 		}
+-- 
+1.8.3.1
+
