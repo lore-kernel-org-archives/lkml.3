@@ -1,94 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933488AbaEMNY6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 09:24:58 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:45213 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760026AbaEMNY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 09:24:56 -0400
-Message-ID: <53721D24.4090704@ti.com>
-Date: Tue, 13 May 2014 18:54:52 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S933408AbaEMN1L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 09:27:11 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:46326 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754282AbaEMN1J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 09:27:09 -0400
+Message-ID: <53721D7F.9070200@ti.com>
+Date: Tue, 13 May 2014 18:56:23 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Daniel Mack <zonque@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v3 0/5] Add support for SW babble Control
-References: <1399969905-3509-1-git-send-email-george.cherian@ti.com> <5371EA01.3080307@gmail.com> <537208A9.4020507@ti.com> <53720E0F.3070008@gmail.com> <537216AC.4090401@ti.com> <53721ABF.8060705@gmail.com>
-In-Reply-To: <53721ABF.8060705@gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Jingoo Han <jg1.han@samsung.com>,
+        "'Santosh Shilimkar'" <santosh.shilimkar@ti.com>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <rogerq@ti.com>, <balajitk@ti.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Marek Vasut'" <marex@denx.de>
+Subject: Re: [PATCH 06/17] pci: host: pcie-designware: Use *base-mask* for
+ configuring the iATU
+References: <1399383244-14556-1-git-send-email-kishon@ti.com> <6882241.amuhzvbd8n@wuerfel> <537210BF.2050100@ti.com> <10531498.kYV5eO1J1m@wuerfel>
+In-Reply-To: <10531498.kYV5eO1J1m@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+Hi Arnd,
 
-On 5/13/2014 6:44 PM, Daniel Mack wrote:
-> Hi George,
->
-> On 05/13/2014 02:57 PM, George Cherian wrote:
->> I never enabled the MUSB_BABBLE_SW_SESSION_CTRL in the MUSB_BABBLE_CTL reg.
->> can you try with the following patch.
+On Tuesday 13 May 2014 06:17 PM, Arnd Bergmann wrote:
+> On Tuesday 13 May 2014 18:01:59 Kishon Vijay Abraham I wrote:
+>> On Thursday 08 May 2014 02:48 PM, Arnd Bergmann wrote:
+>>> On Thursday 08 May 2014 18:05:11 Jingoo Han wrote:
+>>>> On Tuesday, May 06, 2014 10:59 PM, Arnd Bergmann wrote:
+>>>>> On Tuesday 06 May 2014 19:03:52 Kishon Vijay Abraham I wrote:
+>>>>>> In DRA7, the cpu sees 32bit address, but the pcie controller can see only 28bit
+>>>>>> address. So whenever the cpu issues a read/write request, the 4 most
+>>>>>> significant bits are used by L3 to determine the target controller.
+>>>>>> For example, the cpu reserves 0x2000_0000 - 0x2FFF_FFFF for PCIe controller but
+>>>>>> the PCIe controller will see only (0x000_0000 - 0xFFF_FFF). So for programming
+>>>>>> the outbound translation window the *base* should be programmed as 0x000_0000.
+>>>>>> Whenever we try to write to say 0x2000_0000, it will be translated to whatever
+>>>>>> we have programmed in the translation window with base as 0x000_0000.
+>>>>>>
+>>>>>> Cc: Bjorn Helgaas <bhelgaas@google.com>
+>>>>>> Cc: Marek Vasut <marex@denx.de>
+>>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>>>>> Acked-by: Jingoo Han <jg1.han@samsung.com>
+>>>>>> Acked-by: Mohit Kumar <mohit.kumar@st.com>
+>>>>>
+>>>>> Sorry, but NAK.
+>>>>>
+>>>>> We have a standard 'dma-ranges' property to handle this, so use it.
+>>>>>
+>>>>> See the x-gene PCIe driver patches for an example. Please also talk
+>>>>> to Santosh about it, as he is implementing generic support for
+>>>>> parsing dma-ranges in platform devices at the moment.
+>>>>
+>>>> Hi Arnd,
+>>>>
+>>>> Do you mean the following patch?
+>>>> http://www.spinics.net/lists/kernel/msg1737725.html
+>>>>
+>>>
+>>> That is the patch Santosh did for platform devices, which is related but not
+>>> what I meant here. For the PCI inbound window setup, please have a look
+>>> at https://lkml.org/lkml/2014/3/19/607
 >>
->> diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
->> index 1ae6681..1160cd1 100644
->> --- a/drivers/usb/musb/musb_dsps.c
->> +++ b/drivers/usb/musb/musb_dsps.c
->> @@ -477,8 +477,11 @@ static int dsps_musb_init(struct musb *musb)
->>    	 * logic enabled.
->>    	 */
->>    	val = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
->> -	if (val == MUSB_BABBLE_RCV_DISABLE)
->> +	if (val == MUSB_BABBLE_RCV_DISABLE) {
->>    		glue->sw_babble_enabled = true;
->> +		val |= MUSB_BABBLE_SW_SESSION_CTRL;
->> +	        dsps_writeb(musb->mregs, MUSB_BABBLE_CTL, val);
->> +	}
->>    
->>    	ret = dsps_musb_dbg_init(musb, glue);
->>    	if (ret)
-> MUSB_BABBLE_STUCK_J still remains unset, so I get the same result as
-> without the patch: a full glue reset is conducted. Do I get you right
-> that you expect MUSB_BABBLE_STUCK_J to be set in babble conditions when
-> MUSB_BABBLE_SW_SESSION_CTRL is set?
->
-Basically, there are 2 types of babble conditions.
-1) Transient babble condition - which could be recovered from without an 
-IP reset .
-2) Babble condition - which could be recovered from only by doing an IP 
-reset.
+>> Do you think it can be used for *outbound* window setup too? The problem is the
+>> *ranges* property defines both the pci address and cpu address which should
+>> have been enough to program the ob translation window, but the hw is designed
+>> so that the controller sees only the 28 bits. (The most significant 4 bits is
+>> for the l3 to address the controller).
+> 
+> I'm not following what the problem is. You should always be able to describe
+> in the inbound window (that is from the CPU perspective) using dma-ranges
+> and the outbound window using ranges.
+> 
+> If you have a case where the outbound translation is a 256MB (i.e. 28bit)
+> section of the CPU address space, that could be represented as
+> 
+> 	ranges = <0x82000000 0 0  0xb0000000  0 0x10000000>;
+> 
+> or 
+> 
+> 	ranges = <0x82000000 0 0xb0000000  0xb0000000  0 0x10000000>;
+> 
+> depending on whether you want the BARs to be programmed using a low
+> address 0x0-0x0fffffff or an address matching the window
+> 0xb0000000-0xbfffffff.
 
-Looks like you are always hitting case 2 (Most times am also hitting the 
-same).
-Case 1 is really hard to reproduce. I don't have a reliable method as of 
-now to
-reproduce this case consistently.
-> [   19.672373] CAUTION: musb: Babble Interrupt Occurred
-> [   19.677776] musb_stage0_irq 789: unhandled DISCONNECT transition
-> (a_wait_bcon)
-> [   19.685815] usb 1-1: USB disconnect, device number 3
-> [   19.769720] musb-hdrc musb-hdrc.0.auto: babble: MUSB_BABBLE_CTL value 44
-> [   19.776765] musb-hdrc musb-hdrc.0.auto: STUCK_J is reset
->
->
-> I don't quite follow, especially as I lack documentation of the IP core.
-> How do you test babble errors, is there any way to force them to happen
-> reliably?
+The problem is, for configuring the window starting at 0xb0000000, the ATU
+should be programmed 0x0000000 (the cpu address for it will be 0xb0000000 though).
 
-There is no 100% reliable method to force it to happen. Following is
-my setup ,
-I have a HUB with 4 devices connected , which gives me a Babble interrupt
-on both connects and disconnects ( Not always though).
-> Anyway, the full glue layer solves this rare condition quite well for
-> me. Is there any downside of this?
->
->
-> Daniel
->
-
-
--- 
--George
-
+Thanks
+Kishon
