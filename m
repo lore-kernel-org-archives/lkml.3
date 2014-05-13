@@ -1,283 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760942AbaEMKGz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:06:55 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:36403 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760459AbaEMKGw (ORCPT
+	id S1760375AbaEMKGp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:06:45 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60796 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760062AbaEMJ2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:06:52 -0400
-Message-ID: <5371EEB7.4090604@imgtec.com>
-Date: Tue, 13 May 2014 11:06:47 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <mingo@kernel.org>, <will.deacon@arm.com>,
-        <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 12/20] arch,metag: Fold atomic_ops
-References: <20140508135840.956784204@infradead.org> <20140508135852.453864110@infradead.org>
-In-Reply-To: <20140508135852.453864110@infradead.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.101]
+	Tue, 13 May 2014 05:28:55 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 043/182] mfd: tps65910: Fix possible invalid pointer dereference on regmap_add_irq_chip fail
+Date: Tue, 13 May 2014 11:26:35 +0200
+Message-Id: <3ddfbfde82ad5c0447ad9064194d8c34a498f3eb.1399973152.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
+References: <cover.1399973152.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/14 14:58, Peter Zijlstra wrote:
-> Many of the atomic op implementations are the same except for one
-> instruction; fold the lot into a few CPP macros and reduce LoC.
-> 
-> This also prepares for easy addition of new ops.
-> 
-> Cc: James Hogan <james.hogan@imgtec.com>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-Looks good and disassembly is unchanged for both lnkget/lnkset and lock1.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: James Hogan <james.hogan@imgtec.com>
+===============
 
-Let me know if you want this patch taken separately through the metag tree.
+commit 483e2dfdbc94751430e41db9973985f5b054d322 upstream.
 
-Thanks
-James
+Fixes: 4aab3fadad32 ("mfd: tps65910: Move interrupt implementation code to mfd file")
 
-> ---
->  arch/metag/include/asm/atomic_lnkget.h |  121 ++++++++++++---------------------
->  arch/metag/include/asm/atomic_lock1.h  |   76 ++++++++------------
->  2 files changed, 77 insertions(+), 120 deletions(-)
-> 
-> Index: linux-2.6/arch/metag/include/asm/atomic_lnkget.h
-> ===================================================================
-> --- linux-2.6.orig/arch/metag/include/asm/atomic_lnkget.h
-> +++ linux-2.6/arch/metag/include/asm/atomic_lnkget.h
-> @@ -27,85 +27,56 @@ static inline int atomic_read(const atom
->  	return temp;
->  }
->  
-> -static inline void atomic_add(int i, atomic_t *v)
-> -{
-> -	int temp;
-> -
-> -	asm volatile (
-> -		"1:	LNKGETD %0, [%1]\n"
-> -		"	ADD	%0, %0, %2\n"
-> -		"	LNKSETD [%1], %0\n"
-> -		"	DEFR	%0, TXSTAT\n"
-> -		"	ANDT	%0, %0, #HI(0x3f000000)\n"
-> -		"	CMPT	%0, #HI(0x02000000)\n"
-> -		"	BNZ	1b\n"
-> -		: "=&d" (temp)
-> -		: "da" (&v->counter), "bd" (i)
-> -		: "cc");
-> +#define ATOMIC_OP(op)							\
-> +static inline void atomic_##op(int i, atomic_t *v)			\
-> +{									\
-> +	int temp;							\
-> +									\
-> +	asm volatile (							\
-> +		"1:	LNKGETD %0, [%1]\n"				\
-> +		"	" #op "	%0, %0, %2\n"				\
-> +		"	LNKSETD [%1], %0\n"				\
-> +		"	DEFR	%0, TXSTAT\n"				\
-> +		"	ANDT	%0, %0, #HI(0x3f000000)\n"		\
-> +		"	CMPT	%0, #HI(0x02000000)\n"			\
-> +		"	BNZ	1b\n"					\
-> +		: "=&d" (temp)						\
-> +		: "da" (&v->counter), "bd" (i)				\
-> +		: "cc");						\
-> +}									\
-> +
-> +#define ATOMIC_OP_RETURN(op)						\
-> +static inline int atomic_##op##_return(int i, atomic_t *v)		\
-> +{									\
-> +	int result, temp;						\
-> +									\
-> +	smp_mb();							\
-> +									\
-> +	asm volatile (							\
-> +		"1:	LNKGETD %1, [%2]\n"				\
-> +		"	" #op "	%1, %1, %3\n"				\
-> +		"	LNKSETD [%2], %1\n"				\
-> +		"	DEFR	%0, TXSTAT\n"				\
-> +		"	ANDT	%0, %0, #HI(0x3f000000)\n"		\
-> +		"	CMPT	%0, #HI(0x02000000)\n"			\
-> +		"	BNZ 1b\n"					\
-> +		: "=&d" (temp), "=&da" (result)				\
-> +		: "da" (&v->counter), "bd" (i)				\
-> +		: "cc");						\
-> +									\
-> +	smp_mb();							\
-> +									\
-> +	return result;							\
->  }
->  
-> -static inline void atomic_sub(int i, atomic_t *v)
-> -{
-> -	int temp;
-> -
-> -	asm volatile (
-> -		"1:	LNKGETD %0, [%1]\n"
-> -		"	SUB	%0, %0, %2\n"
-> -		"	LNKSETD [%1], %0\n"
-> -		"	DEFR	%0, TXSTAT\n"
-> -		"	ANDT	%0, %0, #HI(0x3f000000)\n"
-> -		"	CMPT	%0, #HI(0x02000000)\n"
-> -		"	BNZ 1b\n"
-> -		: "=&d" (temp)
-> -		: "da" (&v->counter), "bd" (i)
-> -		: "cc");
-> -}
-> -
-> -static inline int atomic_add_return(int i, atomic_t *v)
-> -{
-> -	int result, temp;
-> -
-> -	smp_mb();
-> -
-> -	asm volatile (
-> -		"1:	LNKGETD %1, [%2]\n"
-> -		"	ADD	%1, %1, %3\n"
-> -		"	LNKSETD [%2], %1\n"
-> -		"	DEFR	%0, TXSTAT\n"
-> -		"	ANDT	%0, %0, #HI(0x3f000000)\n"
-> -		"	CMPT	%0, #HI(0x02000000)\n"
-> -		"	BNZ 1b\n"
-> -		: "=&d" (temp), "=&da" (result)
-> -		: "da" (&v->counter), "bd" (i)
-> -		: "cc");
-> +#define ATOMIC_OPS(op) ATOMIC_OP(op) ATOMIC_OP_RETURN(op)
->  
-> -	smp_mb();
-> +ATOMIC_OPS(add)
-> +ATOMIC_OPS(sub)
->  
-> -	return result;
-> -}
-> -
-> -static inline int atomic_sub_return(int i, atomic_t *v)
-> -{
-> -	int result, temp;
-> -
-> -	smp_mb();
-> -
-> -	asm volatile (
-> -		"1:	LNKGETD %1, [%2]\n"
-> -		"	SUB	%1, %1, %3\n"
-> -		"	LNKSETD [%2], %1\n"
-> -		"	DEFR	%0, TXSTAT\n"
-> -		"	ANDT	%0, %0, #HI(0x3f000000)\n"
-> -		"	CMPT	%0, #HI(0x02000000)\n"
-> -		"	BNZ	1b\n"
-> -		: "=&d" (temp), "=&da" (result)
-> -		: "da" (&v->counter), "bd" (i)
-> -		: "cc");
-> -
-> -	smp_mb();
-> -
-> -	return result;
-> -}
-> +#undef ATOMIC_OPS
-> +#undef ATOMIC_OP_RETURN
-> +#undef ATOMIC_OP
->  
->  static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
->  {
-> Index: linux-2.6/arch/metag/include/asm/atomic_lock1.h
-> ===================================================================
-> --- linux-2.6.orig/arch/metag/include/asm/atomic_lock1.h
-> +++ linux-2.6/arch/metag/include/asm/atomic_lock1.h
-> @@ -37,55 +37,41 @@ static inline int atomic_set(atomic_t *v
->  	return i;
->  }
->  
-> -static inline void atomic_add(int i, atomic_t *v)
-> -{
-> -	unsigned long flags;
-> -
-> -	__global_lock1(flags);
-> -	fence();
-> -	v->counter += i;
-> -	__global_unlock1(flags);
-> +#define ATOMIC_OP(op, c_op)						\
-> +static inline void atomic_##op(int i, atomic_t *v)			\
-> +{									\
-> +	unsigned long flags;						\
-> +									\
-> +	__global_lock1(flags);						\
-> +	fence();							\
-> +	v->counter c_op i;						\
-> +	__global_unlock1(flags);					\
-> +}									\
-> +
-> +#define ATOMIC_OP_RETURN(op, c_op)					\
-> +static inline int atomic_##op##_return(int i, atomic_t *v)		\
-> +{									\
-> +	unsigned long result;						\
-> +	unsigned long flags;						\
-> +									\
-> +	__global_lock1(flags);						\
-> +	result = v->counter;						\
-> +	result c_op i;							\
-> +	fence();							\
-> +	v->counter = result;						\
-> +	__global_unlock1(flags);					\
-> +									\
-> +	return result;							\
->  }
->  
-> -static inline void atomic_sub(int i, atomic_t *v)
-> -{
-> -	unsigned long flags;
-> -
-> -	__global_lock1(flags);
-> -	fence();
-> -	v->counter -= i;
-> -	__global_unlock1(flags);
-> -}
-> -
-> -static inline int atomic_add_return(int i, atomic_t *v)
-> -{
-> -	unsigned long result;
-> -	unsigned long flags;
-> +#define ATOMIC_OPS(op, c_op) ATOMIC_OP(op, c_op) ATOMIC_OP_RETURN(op, c_op)
->  
-> -	__global_lock1(flags);
-> -	result = v->counter;
-> -	result += i;
-> -	fence();
-> -	v->counter = result;
-> -	__global_unlock1(flags);
-> +ATOMIC_OPS(add, +=)
-> +ATOMIC_OPS(sub, -=)
->  
-> -	return result;
-> -}
-> -
-> -static inline int atomic_sub_return(int i, atomic_t *v)
-> -{
-> -	unsigned long result;
-> -	unsigned long flags;
-> -
-> -	__global_lock1(flags);
-> -	result = v->counter;
-> -	result -= i;
-> -	fence();
-> -	v->counter = result;
-> -	__global_unlock1(flags);
-> -
-> -	return result;
-> -}
-> +#undef ATOMIC_OPS
-> +#undef ATOMIC_OP_RETURN
-> +#undef ATOMIC_OP
->  
->  static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
->  {
-> 
-> 
+tps65910_irq_init() sets 'tps65910->chip_irq' before calling
+regmap_add_irq_chip(). If the regmap_add_irq_chip() call fails in
+memory allocation of regmap_irq_chip_data members then:
+
+1. The 'tps65910->chip_irq' will still hold some value
+2. 'tps65910->irq_data' will be pointing to already freed memory
+   (because regmap_add_irq_chip() will free it on error)
+
+This results in invalid memory access during driver remove because the
+tps65910_irq_exit() tests whether 'tps65910->chip_irq' is not zero.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/mfd/tps65910.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+index d79277204835..de87eafbeb05 100644
+--- a/drivers/mfd/tps65910.c
++++ b/drivers/mfd/tps65910.c
+@@ -254,8 +254,10 @@ static int tps65910_irq_init(struct tps65910 *tps65910, int irq,
+ 	ret = regmap_add_irq_chip(tps65910->regmap, tps65910->chip_irq,
+ 		IRQF_ONESHOT, pdata->irq_base,
+ 		tps6591x_irqs_chip, &tps65910->irq_data);
+-	if (ret < 0)
++	if (ret < 0) {
+ 		dev_warn(tps65910->dev, "Failed to add irq_chip %d\n", ret);
++		tps65910->chip_irq = 0;
++	}
+ 	return ret;
+ }
+ 
+-- 
+1.9.3
+
