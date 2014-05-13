@@ -1,53 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934208AbaEMPNI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:13:08 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:64440 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964999AbaEMPNG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:13:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tony Lindgren <tony@atomide.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH] bus/omap_l3: avoid sync initcall for modules
-Date: Tue, 13 May 2014 17:12:31 +0200
-Message-ID: <177753046.dmVvfiu3Rn@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140512222006.GI5668@atomide.com>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <1399560990-1402858-6-git-send-email-arnd@arndb.de> <20140512222006.GI5668@atomide.com>
+	id S934235AbaEMPNZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:13:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7253 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934213AbaEMPNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 11:13:23 -0400
+Date: Tue, 13 May 2014 11:13:16 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, arozansk@redhat.com,
+        serge@hallyn.com, ebiederm@xmission.com, sgrubb@redhat.com
+Subject: Re: [PATCH V2 1/6] namespaces: assign each namespace instance a
+ serial number
+Message-ID: <20140513151316.GE27560@madcap2.tricolour.ca>
+References: <cover.1399681022.git.rgb@redhat.com>
+ <f34b584ffed2538176f9a366e25bb98c531fb70f.1399681022.git.rgb@redhat.com>
+ <1399734119.3558.16.camel@localhost>
+ <20140513143925.GD27560@madcap2.tricolour.ca>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:TLC206ZjIesaTANFAAu9Je0C3G16OJaYsOzynFgBbYU
- 9w4NFZdhwjR/9AXefcDOKJJ7MhDAG8xiTanTbR2bXkz1M6Xrr4
- VWkOrTncdikv5RI/sARons5v15hSxZYAjugVJBM0xhCXM/tgX1
- FZKRe6r+iy3hggUFfEgkaBq4eIJyx7pp7DjTVgw0KJuyKPAkE8
- a8Zf845nw4YNlz071zfDjEpGOWSXJJ73xQq/IaH0dQJNWXsTmx
- ITKyWCcsM7h961myTsTY+g0sQFl36n6EMqSd0pWyhonDTAmOZT
- WxePlMOyaLVi7nW0fdOFeZaufCkam/5Lc2BPf67GljQwHIZCFw
- wVgenkwCzcWuxaHJ5GYc=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140513143925.GD27560@madcap2.tricolour.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 May 2014 15:20:07 Tony Lindgren wrote:
+On 14/05/13, Richard Guy Briggs wrote:
+> On 14/05/10, Eric Paris wrote:
+> > On Fri, 2014-05-09 at 20:27 -0400, Richard Guy Briggs wrote:
+> > > Generate and assign a serial number per namespace instance since boot.
+> > > 
+> > > Use a serial number per namespace (unique across one boot of one kernel)
+> > > instead of the inode number (which is claimed to have had the right to change
+> > > reserved and is not necessarily unique if there is more than one proc fs) to
+> > > uniquely identify it per kernel boot.
+> > > 
+> > > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> > > ---
+> > 
+> > > +/**
+> > > + * ns_serial - compute a serial number for the namespace
+> > > + *
+> > > + * Compute a serial number for the namespace to uniquely identify it in
+> > > + * audit records.
+> > > + */
+> > > +unsigned long long ns_serial(void)
+> > > +{
+> > > +	static DEFINE_SPINLOCK(serial_lock);
+> > > +	static unsigned long long serial = 4; /* reserved for IPC, UTS, user, PID */
+> > > +	unsigned long flags;
+> > > +
+> > > +	spin_lock_irqsave(&serial_lock, flags);
+> > > +	++serial;
+> > > +	spin_unlock_irqrestore(&serial_lock, flags);
+> > > +	BUG_ON(!serial);
+> > > +
+> > > +	return serial;
+> > > +}
+> > > +
+> > >  static inline struct nsproxy *create_nsproxy(void)
+> > >  {
+> > >  	struct nsproxy *nsproxy;
+> > 
+> > atomic64_t instead of doing it yourself?
 > 
-> How about instead let's add this into include/linux/module.h
-> like we have for other initcalls:
+> I'm willing to switch to atomic64_*.  Thanks for pointing out its
+> existence.
+
+Same would then go for using atomic_t in audit_serial().
+
+> > and why _irqsave() ?  Can we seriously create new namespaces in irq
+> > context?  If you use the atomic though, you don't have to worry about
+> > it...
 > 
-> #define postcore_initcall(fn)           module_init(fn)
+> Agreed.  That is unlikely.
 > 
-> There may be others missing too from there. BTW, this driver
-> might be few of the drivers that actually might need to be
-> initialized early for debugging to catch bad access from
-> other drivers.
+> - RGB
+> 
+> --
+> Richard Guy Briggs <rbriggs@redhat.com>
+> Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+> Remote, Ottawa, Canada
+> Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
 
-There is a comment above those defines saying:
+- RGB
 
-/* Don't use these in loadable modules, but some people do... */
-
-so I'm not sure if adding more would be appreciated.
-
-	Arnd
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
