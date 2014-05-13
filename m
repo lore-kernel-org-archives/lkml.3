@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584AbaEML5y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 07:57:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11767 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760028AbaEML5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 07:57:52 -0400
-Date: Tue, 13 May 2014 13:56:58 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: peterz@infradead.org, acme@infradead.org, jolsa@kernel.org,
-        rostedt@goodmis.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH] perf_tools/sched: Remove nr_state_machine_bugs in perf
- latency.
-Message-ID: <20140513115658.GA1138@krava.brq.redhat.com>
-References: <20140512181946.GG13467@laptop.programming.kicks-ass.net>
- <1399945101-21736-1-git-send-email-yangds.fnst@cn.fujitsu.com>
- <53717874.2020200@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53717874.2020200@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932780AbaEML7a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 07:59:30 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:56911 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932401AbaEML72 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 07:59:28 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rdunlap@infradead.org
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [RFC] [PATCH 0/2] clock helper for determining flags properties
+Date: Tue, 13 May 2014 13:57:31 +0200
+Message-Id: <1399982253-21079-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-13_03:2014-05-13,2014-05-13,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 10:42:12AM +0900, Dongsheng Yang wrote:
-> Hi jiri or Arnaldo,
->     It seems Peter really do not like the usage of
-> sched_wakeup(.success), and
-> don't plan to support it in scheduler any more.  Please consider to
-> append this patch
-> too when you take the patch from Peter.  Thanx :)
+The first patch provides a helper to get flags properties of a clock node.
+This patch is limited to CLK_SET_RATE_PARENT flag for e.g.
 
-sure, any acks anyone? ;-)
+The second patch provides an example of use of this clock helper.
 
-thanks,
-jirka
+Gabriel Fernandez (2):
+  clk: of: helper for determining flags properties
+  drivers: clk: st: authorize propagate rate change for clockgenD0
+
+ arch/arm/boot/dts/stih407-clock.dtsi |  1 +
+ drivers/clk/clk.c                    | 11 +++++++++++
+ drivers/clk/st/clk-flexgen.c         |  2 ++
+ include/linux/clk-provider.h         |  6 ++++++
+ 4 files changed, 20 insertions(+)
+
+-- 
+1.9.1
+
