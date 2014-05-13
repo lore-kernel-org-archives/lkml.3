@@ -1,124 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933888AbaEMKZm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:25:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58240 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932564AbaEMKZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:25:41 -0400
-Date: Tue, 13 May 2014 12:25:23 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lczerner@localhost.localdomain
-To: Andrey Tsyvarev <tsyvarev@ispras.ru>
-cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>
-Subject: Re: [PATCH] ext4: Do not destroy ext4_groupinfo_caches if ext4_mb_init()
- fails
-In-Reply-To: <5371F135.7040409@ispras.ru>
-Message-ID: <alpine.LFD.2.00.1405131223410.2070@localhost.localdomain>
-References: <1399883039-2978-1-git-send-email-tsyvarev@ispras.ru> <alpine.LFD.2.00.1405121707120.8008@localhost.localdomain> <5371F135.7040409@ispras.ru>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1568388389-1399976726=:2070"
+	id S1760475AbaEMK0D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:26:03 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933406AbaEMKLV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 06:11:21 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 147/182] Revert "net: mvneta: fix usage as a module on RGMII configurations"
+Date: Tue, 13 May 2014 11:28:19 +0200
+Message-Id: <03dc13b2cb550a79c91c052e245007a9fccf6373.1399973152.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
+References: <cover.1399973152.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
---8323328-1568388389-1399976726=:2070
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-On Tue, 13 May 2014, Andrey Tsyvarev wrote:
+===============
 
-> Date: Tue, 13 May 2014 14:17:25 +0400
-> From: Andrey Tsyvarev <tsyvarev@ispras.ru>
-> To: Lukáš Czerner <lczerner@redhat.com>
-> Cc: Theodore Ts'o <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
->     linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
->     Alexey Khoroshilov <khoroshilov@ispras.ru>
-> Subject: Re: [PATCH] ext4: Do not destroy ext4_groupinfo_caches if
->     ext4_mb_init() fails
-> 
-> 
-> 12.05.2014 19:08, Lukáš Czerner пишет:
-> > On Mon, 12 May 2014, Andrey Tsyvarev wrote:
-> > 
-> > > Date: Mon, 12 May 2014 12:23:59 +0400
-> > > From: Andrey Tsyvarev<tsyvarev@ispras.ru>
-> > > To: Theodore Ts'o<tytso@mit.edu>
-> > > Cc: Andrey Tsyvarev<tsyvarev@ispras.ru>,
-> > >      Andreas Dilger<adilger.kernel@dilger.ca>,linux-ext4@vger.kernel.org,
-> > >      linux-kernel@vger.kernel.org, Alexey
-> > > Khoroshilov<khoroshilov@ispras.ru>
-> > > Subject: [PATCH] ext4: Do not destroy ext4_groupinfo_caches if
-> > > ext4_mb_init()
-> > >      fails
-> > > 
-> > > Caches from 'ext4_groupinfo_caches' may be in use by other mounts, which
-> > > have already existed.
-> > > So, it is incorrect to destroy them when newly requested mount fails.
-> > > 
-> > > Found by Linux File System Verification project (linuxtesting.org).
-> > Makes sense, thanks! Can you please share the test case which
-> > triggered this ? It might be worth including in xfstests.
-> 
-> Actually it was triggered by xfstests themselves but run with fault
-> simulation.
-> The method of fault simulation is under development/evaluation now, we expect
-> to publish a paper describing it in the near future.
-> 
-> BUG_ON() in get_groupinfo_cache() was firstly triggered by test generic/003,
-> but actually it could be any other test, which uses a scratch device: xftests
-> itself requires test device(TEST_DEV) mounted, so a fault simulated while
-> mount scratch device causes the problem described.
+commit cc6ca3023f2c2bbcd062e9d4cf6afc2ba2821ada upstream.
 
-It sounds interesting. I hope that you'll send the information out
-to the fsdevel list when your paper is finished, It looks like it
-might be quite useful.
+This reverts commit e3a8786c10e75903f1269474e21fe8cb49c3a670. While
+this commit allows to use the mvneta driver as a module on some
+configurations, it breaks other configurations even if mvneta is used
+built-in.
 
-Thanks!
--Lukas
+This breakage is due to the fact that on some RGMII platforms, the PCS
+bit has to be set, and on some other platforms, it has to be
+cleared. At the moment, we lack informations to know exactly the
+significance of this bit (the datasheet only says "enables PCS"), and
+so we can't produce a patch that will work on all platforms at this
+point. And since this change is breaking the network completely for
+many users, it's much better to revert it for now. We'll come back
+later with a proper fix that takes into account all platforms.
 
-> 
-> 
-> > Reviewed-by: Lukas Czerner<lczerner@redhat.com>
-> > 
-> > > Signed-off-by: Andrey Tsyvarev<tsyvarev@ispras.ru>
-> > > ---
-> > >   fs/ext4/mballoc.c | 4 +---
-> > >   1 file changed, 1 insertion(+), 3 deletions(-)
-> > > 
-> > > diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-> > > index 04a5c75..becea1d 100644
-> > > --- a/fs/ext4/mballoc.c
-> > > +++ b/fs/ext4/mballoc.c
-> > > @@ -2607,7 +2607,7 @@ int ext4_mb_init(struct super_block *sb)
-> > >   	sbi->s_locality_groups = alloc_percpu(struct ext4_locality_group);
-> > >   	if (sbi->s_locality_groups == NULL) {
-> > >   		ret = -ENOMEM;
-> > > -		goto out_free_groupinfo_slab;
-> > > +		goto out;
-> > >   	}
-> > >   	for_each_possible_cpu(i) {
-> > >   		struct ext4_locality_group *lg;
-> > > @@ -2632,8 +2632,6 @@ int ext4_mb_init(struct super_block *sb)
-> > >   out_free_locality_groups:
-> > >   	free_percpu(sbi->s_locality_groups);
-> > >   	sbi->s_locality_groups = NULL;
-> > > -out_free_groupinfo_slab:
-> > > -	ext4_groupinfo_destroy_slabs();
-> > >   out:
-> > >   	kfree(sbi->s_mb_offsets);
-> > >   	sbi->s_mb_offsets = NULL;
-> > > 
-> 
-> --
-> Andrey Tsyvarev
-> Linux Verification Center, ISPRAS
-> 
-> 
---8323328-1568388389-1399976726=:2070--
+Basically:
+
+ * Armada XP GP is configured as RGMII-ID, and needs the PCS bit to be
+   set.
+ * Armada 370 Mirabox is configured as RGMII-ID, and needs the PCS bit
+   to be cleared.
+
+And at the moment, we don't know how to make the distinction between
+those two cases. One hint is that the Armada XP GP appears in fact to
+be using a QSGMII connection with the PHY (Quad-SGMII), but
+configuring it as SGMII doesn't work, while RGMII-ID works. This needs
+more investigation, but in the mean time, let's unbreak the network
+for all those users.
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Reported-by: Arnaud Ebalard <arno@natisbad.org>
+Reported-by: Alexander Reuter <Alexander.Reuter@gmx.net>
+Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=73401
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/net/ethernet/marvell/mvneta.c | 41 ++++++++++++++++++++++++++++-------
+ 1 file changed, 33 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 71d9cad02704..5cdd2b2f18c5 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -88,9 +88,8 @@
+ #define      MVNETA_TX_IN_PRGRS                  BIT(1)
+ #define      MVNETA_TX_FIFO_EMPTY                BIT(8)
+ #define MVNETA_RX_MIN_FRAME_SIZE                 0x247c
+-#define MVNETA_SERDES_CFG			 0x24A0
++#define MVNETA_SGMII_SERDES_CFG			 0x24A0
+ #define      MVNETA_SGMII_SERDES_PROTO		 0x0cc7
+-#define      MVNETA_RGMII_SERDES_PROTO		 0x0667
+ #define MVNETA_TYPE_PRIO                         0x24bc
+ #define      MVNETA_FORCE_UNI                    BIT(21)
+ #define MVNETA_TXQ_CMD_1                         0x24e4
+@@ -666,6 +665,35 @@ static void mvneta_rxq_bm_disable(struct mvneta_port *pp,
+ 	mvreg_write(pp, MVNETA_RXQ_CONFIG_REG(rxq->id), val);
+ }
+ 
++
++
++/* Sets the RGMII Enable bit (RGMIIEn) in port MAC control register */
++static void mvneta_gmac_rgmii_set(struct mvneta_port *pp, int enable)
++{
++	u32  val;
++
++	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
++
++	if (enable)
++		val |= MVNETA_GMAC2_PORT_RGMII;
++	else
++		val &= ~MVNETA_GMAC2_PORT_RGMII;
++
++	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
++}
++
++/* Config SGMII port */
++static void mvneta_port_sgmii_config(struct mvneta_port *pp)
++{
++	u32 val;
++
++	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
++	val |= MVNETA_GMAC2_PCS_ENABLE;
++	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
++
++	mvreg_write(pp, MVNETA_SGMII_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
++}
++
+ /* Start the Ethernet port RX and TX activity */
+ static void mvneta_port_up(struct mvneta_port *pp)
+ {
+@@ -2695,15 +2723,12 @@ static void mvneta_port_power_up(struct mvneta_port *pp, int phy_mode)
+ 	mvreg_write(pp, MVNETA_UNIT_INTR_CAUSE, 0);
+ 
+ 	if (phy_mode == PHY_INTERFACE_MODE_SGMII)
+-		mvreg_write(pp, MVNETA_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
+-	else
+-		mvreg_write(pp, MVNETA_SERDES_CFG, MVNETA_RGMII_SERDES_PROTO);
++		mvneta_port_sgmii_config(pp);
+ 
+-	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
+-
+-	val |= MVNETA_GMAC2_PCS_ENABLE | MVNETA_GMAC2_PORT_RGMII;
++	mvneta_gmac_rgmii_set(pp, 1);
+ 
+ 	/* Cancel Port Reset */
++	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
+ 	val &= ~MVNETA_GMAC2_PORT_RESET;
+ 	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
+ 
+-- 
+1.9.3
+
