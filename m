@@ -1,96 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324AbaEMP7y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:59:54 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49277 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753667AbaEMP7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:59:22 -0400
-Date: Tue, 13 May 2014 10:58:58 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Felipe Balbi <balbi@ti.com>, <p.zabel@pengutronix.de>, <marex@denx.de>,
-        <wsa@the-dreams.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] reset: stub out devm_reset_control_get()
-Message-ID: <20140513155858.GP1151@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1399995245-15095-1-git-send-email-balbi@ti.com>
- <20140513155401.GD29258@lukather>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CKf/2jVYos1l2hij"
-Content-Disposition: inline
-In-Reply-To: <20140513155401.GD29258@lukather>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S932767AbaEMQAF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:00:05 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:31058 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753377AbaEMP7U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 11:59:20 -0400
+X-AuditID: cbfec7f4-b7fb36d000006ff7-c4-53724154e700
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+To: viro@zeniv.linux.org.uk, linux-security-module@vger.kernel.org,
+        eparis@redhat.com, zohar@linux.vnet.ibm.com,
+        linux-ima-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, hooanon05g@gmail.com, jmorris@namei.org,
+        dmitry.kasatkin@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>
+Subject: [PATCH 1/2] ima: re-introduce own integrity cache lock
+Date: Tue, 13 May 2014 18:59:39 +0300
+Message-id: <ea7c88c8831864280edc9c1892f8d5967571f815.1399996667.git.d.kasatkin@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <cover.1399996667.git.d.kasatkin@samsung.com>
+References: <cover.1399996667.git.d.kasatkin@samsung.com>
+In-reply-to: <cover.1399996667.git.d.kasatkin@samsung.com>
+References: <cover.1399996667.git.d.kasatkin@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNLMWRmVeSWpSXmKPExsVy+t/xy7ohjkXBBte32Vjc+ruX2eLL0jqL
+	idvbWCzO97WyWaxbv5jJ4uWMeewWl3fNYbP40POIzeL83+OsFp9WTGJ24PLYOesuu8eDQ5tZ
+	PHYv+Mzk0fM92eP9vqtsHn1bVjF6fN4k57HpyVumAI4oLpuU1JzMstQifbsEroyzT/YwFmxx
+	rOjo6GZpYFxm1sXIySEhYCJx5uJjFghbTOLCvfVsXYxcHEICSxklriw9zAzhdDJJHPn7CayK
+	TUBPYkPzD3aQhIjALEaJzm39TCAOs8AERokH2xuZQKqEBewlrrb+Zuxi5OBgEVCV6F6iDxLm
+	FYiT2LH+FhvEOjmJk8cms4LYnAJWEhufPAFrFRKwlNi79CsjLvEJjPwLGBlWMYqmliYXFCel
+	5xrqFSfmFpfmpesl5+duYoQE8JcdjIuPWR1iFOBgVOLhDeAqCBZiTSwrrsw9xCjBwawkwvtZ
+	ryhYiDclsbIqtSg/vqg0J7X4ECMTB6dUA6OazgRrrkeFV+Z2XmeKOZXcbrT0zUqzi9b3U1dN
+	PXyqJuWwxzKH353XZj6Uq9Lk7/lyJ7VUkMsnS2fWqSud2p1H14pcWPB2vv2uxOtyHepxzY+W
+	BR8oerx38/9fBntSOf6tS8tLPNZ+PTa/Tn3z3QvCWX3ml30/fJugpmqRtFyX1zr89nx1tm9K
+	LMUZiYZazEXFiQD9Xl/rPgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---CKf/2jVYos1l2hij
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Before IMA appraisal was introduced, IMA was using own integrity cache
+lock along with i_mutex. process_measurement and ima_file_free took
+the iint->mutex first and then the i_mutex, while setxattr, chmod and
+chown took the locks in reverse order. To resolve the potential deadlock,
+i_mutex was moved to protect entire IMA functionality and the redundant
+iint->mutex was eliminated.
 
-On Tue, May 13, 2014 at 05:54:01PM +0200, Maxime Ripard wrote:
-> On Tue, May 13, 2014 at 10:34:05AM -0500, Felipe Balbi wrote:
-> > without that stub, drivers will fail to build
-> > when CONFIG_RESET_CONTROLLER=3Dn.
-> >=20
-> > Signed-off-by: Felipe Balbi <balbi@ti.com>
-> > ---
-> >  include/linux/reset.h | 6 ++++++
-> >  1 file changed, 6 insertions(+)
-> >=20
-> > diff --git a/include/linux/reset.h b/include/linux/reset.h
-> > index c0eda50..aa94420 100644
-> > --- a/include/linux/reset.h
-> > +++ b/include/linux/reset.h
-> > @@ -75,6 +75,12 @@ static inline struct reset_control *devm_reset_contr=
-ol_get_optional(
-> >  	return ERR_PTR(-ENOSYS);
-> >  }
-> > =20
-> > +static inline struct reset_control *devm_reset_control_get(
-> > +					struct device *dev, const char *id)
-> > +{
-> > +	return ERR_PTR(-ENOSYS);
-> > +}
-> > +
->=20
-> reset_control_get should only be used in cases where the reset
-> controller is mandatory for the driver to work, and hence, this driver
-> should select or depend on CONFIG_RESET_CONTROLLER
->=20
-> If the reset controller is optional, reset_control_get_optional should
-> be preferred, that is stubed out.
+Solution was based on the assumption that filesystem code does not take
+i_mutex further. But when file is opened with O_DIRECT flag, direct-io
+implementation takes i_mutex and produces deadlock. Furthermore, certain
+other filesystem operations, such as llseek, also take i_mutex.
 
-fair enough, depends on it is
+To resolve O_DIRECT related deadlock problem, this patch re-introduces
+iint->mutex. But to eliminate the original chmod() related deadlock
+problem, this patch eliminates the requirement for chmod hooks to take
+the iint->mutex by introducing additional atomic iint->attr_flags to
+indicate calling of the hooks. The allowed locking order is to take
+the iint->mutex first and then the i_mutex.
 
---=20
-balbi
+Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+---
+ security/integrity/iint.c             | 10 ++++++++--
+ security/integrity/ima/ima_appraise.c | 22 ++++++++--------------
+ security/integrity/ima/ima_main.c     | 27 ++++++++++++++++-----------
+ security/integrity/integrity.h        |  5 +++++
+ 4 files changed, 37 insertions(+), 27 deletions(-)
 
---CKf/2jVYos1l2hij
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/security/integrity/iint.c b/security/integrity/iint.c
+index a521edf..4c202b7 100644
+--- a/security/integrity/iint.c
++++ b/security/integrity/iint.c
+@@ -95,13 +95,15 @@ struct integrity_iint_cache *integrity_inode_get(struct inode *inode)
+ 	struct rb_node *node, *parent = NULL;
+ 	struct integrity_iint_cache *iint, *test_iint;
+ 
++	mutex_lock(&inode->i_mutex);
++
+ 	iint = integrity_iint_find(inode);
+ 	if (iint)
+-		return iint;
++		goto out;
+ 
+ 	iint = kmem_cache_alloc(iint_cache, GFP_NOFS);
+ 	if (!iint)
+-		return NULL;
++		goto out;
+ 
+ 	write_lock(&integrity_iint_lock);
+ 
+@@ -123,6 +125,8 @@ struct integrity_iint_cache *integrity_inode_get(struct inode *inode)
+ 	rb_insert_color(node, &integrity_iint_tree);
+ 
+ 	write_unlock(&integrity_iint_lock);
++out:
++	mutex_unlock(&inode->i_mutex);
+ 	return iint;
+ }
+ 
+@@ -154,11 +158,13 @@ static void init_once(void *foo)
+ 	memset(iint, 0, sizeof(*iint));
+ 	iint->version = 0;
+ 	iint->flags = 0UL;
++	iint->attr_flags = 0;
+ 	iint->ima_file_status = INTEGRITY_UNKNOWN;
+ 	iint->ima_mmap_status = INTEGRITY_UNKNOWN;
+ 	iint->ima_bprm_status = INTEGRITY_UNKNOWN;
+ 	iint->ima_module_status = INTEGRITY_UNKNOWN;
+ 	iint->evm_status = INTEGRITY_UNKNOWN;
++	mutex_init(&iint->mutex);
+ }
+ 
+ static int __init integrity_iintcache_init(void)
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index d3113d4..0f8579e 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -57,10 +57,12 @@ static int ima_fix_xattr(struct dentry *dentry,
+ 		iint->ima_hash->xattr.ng.type = IMA_XATTR_DIGEST_NG;
+ 		iint->ima_hash->xattr.ng.algo = algo;
+ 	}
++	mutex_lock(&dentry->d_inode->i_mutex);
+ 	rc = __vfs_setxattr_noperm(dentry, XATTR_NAME_IMA,
+ 				   &iint->ima_hash->xattr.data[offset],
+ 				   (sizeof(iint->ima_hash->xattr) - offset) +
+ 				   iint->ima_hash->length, 0);
++	mutex_unlock(&dentry->d_inode->i_mutex);
+ 	return rc;
+ }
+ 
+@@ -199,7 +201,9 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+ 		goto out;
+ 	}
+ 
++	mutex_lock(&inode->i_mutex);
+ 	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_value, rc, iint);
++	mutex_unlock(&inode->i_mutex);
+ 	if ((status != INTEGRITY_PASS) && (status != INTEGRITY_UNKNOWN)) {
+ 		if ((status == INTEGRITY_NOLABEL)
+ 		    || (status == INTEGRITY_NOXATTRS))
+@@ -313,13 +317,8 @@ void ima_inode_post_setattr(struct dentry *dentry)
+ 
+ 	must_appraise = ima_must_appraise(inode, MAY_ACCESS, POST_SETATTR);
+ 	iint = integrity_iint_find(inode);
+-	if (iint) {
+-		iint->flags &= ~(IMA_APPRAISE | IMA_APPRAISED |
+-				 IMA_APPRAISE_SUBMASK | IMA_APPRAISED_SUBMASK |
+-				 IMA_ACTION_FLAGS);
+-		if (must_appraise)
+-			iint->flags |= IMA_APPRAISE;
+-	}
++	if (iint)
++		set_bit(IMA_CHANGE_ATTR, &iint->attr_flags);
+ 	if (!must_appraise)
+ 		rc = inode->i_op->removexattr(dentry, XATTR_NAME_IMA);
+ 	return;
+@@ -349,13 +348,8 @@ static void ima_reset_appraise_flags(struct inode *inode, int digsig)
+ 		return;
+ 
+ 	iint = integrity_iint_find(inode);
+-	if (!iint)
+-		return;
+-
+-	iint->flags &= ~IMA_DONE_MASK;
+-	if (digsig)
+-		iint->flags |= IMA_DIGSIG;
+-	return;
++	if (iint)
++		set_bit(IMA_CHANGE_XATTR, &iint->attr_flags);
+ }
+ 
+ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index bd7b4cb..1e63c91 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -88,8 +88,6 @@ static void ima_rdwr_violation_check(struct file *file)
+ 	if (!S_ISREG(inode->i_mode) || !ima_initialized)
+ 		return;
+ 
+-	mutex_lock(&inode->i_mutex);	/* file metadata: permissions, xattr */
+-
+ 	if (mode & FMODE_WRITE) {
+ 		if (atomic_read(&inode->i_readcount) && IS_IMA(inode)) {
+ 			struct integrity_iint_cache *iint;
+@@ -104,8 +102,6 @@ static void ima_rdwr_violation_check(struct file *file)
+ 			send_writers = true;
+ 	}
+ 
+-	mutex_unlock(&inode->i_mutex);
+-
+ 	if (!send_tomtou && !send_writers)
+ 		return;
+ 
+@@ -127,14 +123,14 @@ static void ima_check_last_writer(struct integrity_iint_cache *iint,
+ 	if (!(mode & FMODE_WRITE))
+ 		return;
+ 
+-	mutex_lock(&inode->i_mutex);
++	mutex_lock(&iint->mutex);
+ 	if (atomic_read(&inode->i_writecount) == 1 &&
+ 	    iint->version != inode->i_version) {
+ 		iint->flags &= ~IMA_DONE_MASK;
+ 		if (iint->flags & IMA_APPRAISE)
+ 			ima_update_xattr(iint, file);
+ 	}
+-	mutex_unlock(&inode->i_mutex);
++	mutex_unlock(&iint->mutex);
+ }
+ 
+ /**
+@@ -186,11 +182,20 @@ static int process_measurement(struct file *file, const char *filename,
+ 	/*  Is the appraise rule hook specific?  */
+ 	_func = (action & IMA_FILE_APPRAISE) ? FILE_CHECK : function;
+ 
+-	mutex_lock(&inode->i_mutex);
+-
+ 	iint = integrity_inode_get(inode);
+ 	if (!iint)
+-		goto out;
++		goto out_unlocked;
++
++	mutex_lock(&iint->mutex);
++
++	if (test_and_clear_bit(IMA_CHANGE_ATTR, &iint->attr_flags))
++		/* reset appraisal flags if ima_inode_post_setattr was called */
++		iint->flags &= ~(IMA_APPRAISE | IMA_APPRAISED |
++				 IMA_APPRAISE_SUBMASK | IMA_APPRAISED_SUBMASK);
++
++	if (test_and_clear_bit(IMA_CHANGE_XATTR, &iint->attr_flags))
++		/* reset all flags if ima_inode_setxattr was called */
++		iint->flags &= ~IMA_DONE_MASK;
+ 
+ 	/* Determine if already appraised/measured based on bitmask
+ 	 * (IMA_MEASURE, IMA_MEASURED, IMA_XXXX_APPRAISE, IMA_XXXX_APPRAISED,
+@@ -234,9 +239,9 @@ static int process_measurement(struct file *file, const char *filename,
+ out_digsig:
+ 	if ((mask & MAY_WRITE) && (iint->flags & IMA_DIGSIG))
+ 		rc = -EACCES;
+-out:
+-	mutex_unlock(&inode->i_mutex);
++	mutex_unlock(&iint->mutex);
+ 	kfree(xattr_value);
++out_unlocked:
+ 	if ((rc && must_appraise) && (ima_appraise & IMA_APPRAISE_ENFORCE))
+ 		return -EACCES;
+ 	return 0;
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 2fb5e53..f73cd06 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -50,6 +50,9 @@
+ #define IMA_APPRAISED_SUBMASK	(IMA_FILE_APPRAISED | IMA_MMAP_APPRAISED | \
+ 				 IMA_BPRM_APPRAISED | IMA_MODULE_APPRAISED)
+ 
++#define IMA_CHANGE_XATTR	0
++#define IMA_CHANGE_ATTR		1
++
+ enum evm_ima_xattr_type {
+ 	IMA_XATTR_DIGEST = 0x01,
+ 	EVM_XATTR_HMAC,
+@@ -96,9 +99,11 @@ struct signature_v2_hdr {
+ /* integrity data associated with an inode */
+ struct integrity_iint_cache {
+ 	struct rb_node rb_node;	/* rooted in integrity_iint_tree */
++	struct mutex mutex;	/* protects: version, flags, digest */
+ 	struct inode *inode;	/* back pointer to inode in question */
+ 	u64 version;		/* track inode changes */
+ 	unsigned long flags;
++	unsigned long attr_flags;
+ 	enum integrity_status ima_file_status:4;
+ 	enum integrity_status ima_mmap_status:4;
+ 	enum integrity_status ima_bprm_status:4;
+-- 
+1.9.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTckFCAAoJEIaOsuA1yqREeMUP/RYF57xLOjg/XsrV1zEqG4ws
-HhjsXk5Cgf1LmblQsG33DqqkQs/A14BILs+ssBQdRVF8krly6QJ+dYaQQEHt9NfV
-cX8+/GHwFVnQ5vvBD/Jnwf4g2IKMI2v6+JXL7ytooGKwYMiujrt1sULjzyK5ihYa
-phGXiLXVpufqzbo+ALb21vkzWn+pJqHhlKzipgnW75w30I5MJpbSn8RBDar9Of0M
-hk8L0gScfBrroy8p29I/CM8LjjWO8vM+FAXY+MtqygH9rIzYBe2Bt11gwjbIhG5T
-vjrnFfbIw07fu0ifdQrIDkRnjb7FPoTjrO/w4N5sY3iVYBQbjQK0IYDyQ3/rxMLP
-U8rV+fudAaR1MhEoCQtH8Mm0fAaZI17NYdfEsBa7IWfxxmFGxvYH53c4Vt4vBNz0
-dbvyUW16EUlLbrHEVlX+GpRic4YdCPJSvfXRb37p80xkMv+LcGRG3qbxZv9TBTOU
-L4ggTiZiRBBYvpEjr2pLZAvyoWwPeRi9uBz/gmAlMPrI3lsyN/Srbf2nG9FXbL+h
-EUS0CMRDNHixFa4DKYfmroIQMQFgXIWc5jc40BI3K0DuSOydeSNYuSSBhowCPxNJ
-sg4YLlhhywXNu13MNM8dPKDrJ8epH9Y7gp9wbFdDkh0V3B2z2KJ/8MUR1c4WBiac
-wvv7QoxHqaTwVdnI+fid
-=gY3a
------END PGP SIGNATURE-----
-
---CKf/2jVYos1l2hij--
