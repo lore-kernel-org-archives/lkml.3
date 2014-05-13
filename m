@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760749AbaEMNji (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 09:39:38 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:43140 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754282AbaEMNjg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 09:39:36 -0400
-Message-ID: <53722094.5070805@semaphore.gr>
-Date: Tue, 13 May 2014 16:39:32 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
+	id S1760791AbaEMNlr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 09:41:47 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40597 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752947AbaEMNlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 09:41:46 -0400
+Message-ID: <5372210E.4060305@ti.com>
+Date: Tue, 13 May 2014 08:41:34 -0500
+From: Nishanth Menon <nm@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Yuyang Du <yuyang.du@intel.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Doug Smythies <dsmythies@telus.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [RFC PATCH] cpufreq: intel_pstate: Change the calculation of
- next pstate
-References: <bf3034d0-5c89-4ddb-921a-a92a4aed39f8@fmsmsx105.amr.corp.intel.com> <20140512215956.GC10676@intel.com>
-In-Reply-To: <20140512215956.GC10676@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        Chander Kashyap <chander.kashyap@linaro.org>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        "Brown, Len" <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chander Kashyap <k.chander@samsung.com>,
+        Inderpal Singh <inderpal.s@samsung.com>
+Subject: Re: [PATCH] PM / OPP: discard duplicate OPP additions
+References: <1399966890-22926-1-git-send-email-k.chander@samsung.com> <CAKohpo=6qXer+RRS-F6x=O1VLzbWq+_a-b29MaUzZBvt7XzDwQ@mail.gmail.com>
+In-Reply-To: <CAKohpo=6qXer+RRS-F6x=O1VLzbWq+_a-b29MaUzZBvt7XzDwQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/05/2014 12:59 πμ, Yuyang Du wrote:
->>>> Maybe, in some cases yes. But not always. 
->>>> For example, please consider a CPU running a tight "for" loop in 100MHz 
->>>> for a couple of seconds. This produces a load of 100%. 
->>>> It will produce the same load (100%) in any other frequency. 
->>>
->>> Still fundamentally wrong, because you are not making a fair 
->>> comparison ("load" in 100MHz vs. any other freq). 
->>>
+On 05/13/2014 03:22 AM, Viresh Kumar wrote:
+> On 13 May 2014 13:11, [Chander Kashyap <chander.kashyap@linaro.org> wrote:
+> 
+> What happened to your name ? "["
+> 
+>> From: Chander Kashyap <k.chander@samsung.com>
 >>
->> I'm sorry, I didn't understand you. What do you mean it's not fair?
+>> It may be possible to unregister and re-register the cpufreq driver.
+>> One such example is arm big-little IKS cpufreq driver. While
+>> re-registering the driver, same OPPs may get added again.
 >>
->> In the above example (considering a CPU with min freq 100MHz and max freq 1000Mhz) a load of 100% should also be 100 in other next frequency.
+>> This patch detects the duplicacy and discards them.
 >>
->> If we scale the load we will calculate the load in 100Mhz to 10%. I believe that this is not true.
+>> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+>> Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
+>> ---
+>>  drivers/base/power/opp.c |   28 +++++++++++++++++++---------
+>>  1 file changed, 19 insertions(+), 9 deletions(-)
 > 
-> The amount of work @100MHz is the same as the amount of work @1000MHZ, in your
-> example? Put another way, your proposed method does not do any extra better,
-> but do worse in other cases (what if @1000MHz, the load drops to 10%).
+> I wouldn't say that this approach is particularly bad or wrong, but what
+> about this instead?
 > 
-> That said, your case cannot be used against associating freq with load. That also
-> said, by associating freq with load, we will finally get highest freq as well
-> (in your case).
+> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+> index 2553867..7efdaf3 100644
+> --- a/drivers/base/power/opp.c
+> +++ b/drivers/base/power/opp.c
+> @@ -713,6 +713,11 @@ int of_init_opp_table(struct device *dev)
+>         const __be32 *val;
+>         int nr;
 > 
-> Yuyang
-> 
+> +       if (!IS_ERR(find_device_opp(dev))) {
+> +               dev_warn("%s: opp table already exists\n", __func__);
+> +               return -EEXIST;
+> +       }
+> +
+>         prop = of_find_property(dev->of_node, "operating-points", NULL);
+>         if (!prop)
+>                 return -ENODEV;
 
-[I rewrite my last post, because I think something happened with my email server
-and the message haven't delivered properly]
+yes - this is good but should be an additional patch IMHO, since it
+solves a different issue:"prevent opp table re-creation attempt". the
+$subject patch addresses an issue where dev_pm_opp_add can be invoked
+independently as well -> So, we seem to have have three issues to solve:
+a) do we continue to ensure that OPP table is created one time?
+b) while creating OPP table, duplicate entries should be rejected
+($subject)
+c) prevent recreation of OPP table once created (if we decide not to
+have a cleanup logic as part of (a)) - this is what you propose.
 
-I mean that if a CPU was busy 100% at 100MHz it would be most probably (or we
-should consider that would be) busy 100% at 1000MHz.
+Now, considering that OPP table definition is an SoC behavior, that
+behavior is NOT going to change just because we are reinserting driver
+modules - so if cpufreq drivers are resulting in that behavior, then
+we should fix that. and consider OPP tables are created one time (at
+boot) and do the necessary changes for the same.
 
-We don't know the amount of load in next sampling period. We also
-don't know the type of load. A mathematical calculation that started in
-previous sampling period and kept the CPU 100% busy, will most probably
-keep the CPU also 100% busy in the next sampling period.
+just my 2 cents.
 
-Scaling the load will be wrong in this case.
-
-Of course, I don't say that the "amount" of load in these 2 periods are the same.
-
-If @1000Mhz the load drops to 10%, the proposed method will select as target freq
-190MHz.
-
-
-Stratos
+-- 
+Regards,
+Nishanth Menon
