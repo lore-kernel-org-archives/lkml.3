@@ -1,97 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933456AbaEMNl5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 09:41:57 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:39049 "EHLO
+	id S933574AbaEMNpP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 09:45:15 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:39063 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752947AbaEMNlz (ORCPT
+	with ESMTP id S1755878AbaEMNpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 09:41:55 -0400
-Date: Tue, 13 May 2014 10:41:10 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Brian Norris <computersforpeace@gmail.com>, "Gupta, Pekon" <pekon@ti.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] mtd: Add sysfs attr to expose ECC stats
-Message-ID: <20140513134109.GA1504@arch.cereza>
-References: <1395403064-28113-1-git-send-email-ezequiel.garcia@free-electrons.com>
- <1395403064-28113-2-git-send-email-ezequiel.garcia@free-electrons.com>
- <20980858CB6D3A4BAE95CA194937D5E73EAB91D7@DBDE04.ent.ti.com>
- <20140401111359.GA3324@arch.cereza>
- <20980858CB6D3A4BAE95CA194937D5E73EAC31AE@DBDE04.ent.ti.com>
- <20140513005053.GZ28907@ld-irv-0074>
- <20140513022614.GA1447@arch.cereza>
- <20140513111524.GA29552@kroah.com>
+	Tue, 13 May 2014 09:45:13 -0400
+Date: Tue, 13 May 2014 15:42:58 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v7] DMA: sun6i: Add driver for the Allwinner A31 DMA
+ controller
+Message-ID: <20140513134258.GA29258@lukather>
+References: <20140430070408.GR32284@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sm4nu43k4a2Rpi4c"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140513111524.GA29552@kroah.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140430070408.GR32284@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 May 01:15 PM, Greg Kroah-Hartman wrote:
-> On Mon, May 12, 2014 at 11:26:14PM -0300, Ezequiel Garcia wrote:
-> > On 12 May 05:50 PM, Brian Norris wrote:
-> > > > There are some guidelines about attributes in 'Documentation/filesystems/sysfs.txt'
-> > > > Though it's acceptable to put array of values of the "same type" in single sysfs file,
-> > > > But I'm still not confident on having all members of 'struct ecc_stats' being
-> > > > represented by single sysfs file
-> > > [...]
-> > > 
-> > > I agree, it looks like the sysfs policy would recommend against putting
-> > > distinct properties in the same file.
-> > > 
-> > 
-> > OK...
-> > 
-> > > I'm not sure if /sys/block/<disk>/stat is a good example, as it does
-> > > violate this policy. It also seems to have some historical baggage.
-> > > 
-> > > But there is potentially one good reason for putting this distinct
-> > > information in a single file: if the information must be returned
-> > > atomically. For disk stats, it might be important to get a consistent
-> > > snapshot of the disk stats (or nearly so, with minimal locking
-> > > overhead), which might change significantly between file accesses if
-> > > we're doing half a dozen file queries instead.
-> > > 
-> > > This same reason may not apply to these ECC stats, since none of these
-> > > ECC stats are likely to be changing concurrently.
-> > > 
-> > 
-> > Right.
-> > 
-> > > So I personally might lean toward "one file per attribute" here.
-> > > 
-> > 
-> > Yup, no problem. Greg, if you can confirm this it'd be great.
-> 
-> Yes, that is the rule for sysfs, please do not put multiple values in a
-> single sysfs file for a variety of good reasons.
-> 
 
-Will do!
+--sm4nu43k4a2Rpi4c
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > > > >> I hope this will still keep it machine readable.
-> > > > >Well, this is not a debugfs entry, so I'm not sure we want to add such debug
-> > > > >information. Anyone can take a look at the code and see what ecc_stats mean.
-> > > 
-> > > The code or (as suggested by Pekon) the documentation
-> > > (Documentation/ABI/). Either way -- with a single 'ecc_stats' table, or
-> > > with 4 separate files -- they need to be documented.
-> > > 
-> > 
-> > Sure, will document in next round.
-> 
-> This documentation is required, thanks.
-> 
+Hi Vinod,
 
-Sure, no problem.
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
+On Wed, Apr 30, 2014 at 12:34:08PM +0530, Vinod Koul wrote:
+> > +
+> > +static int sun6i_dma_terminate_all(struct sun6i_vchan *vchan)
+> > +{
+> > +	struct sun6i_dma_dev *sdev =3D to_sun6i_dma_dev(vchan->vc.chan.device=
+);
+> > +	struct sun6i_pchan *pchan =3D vchan->phy;
+> > +	unsigned long flags;
+> > +	LIST_HEAD(head);
+> > +
+> > +	spin_lock(&sdev->lock);
+> > +	list_del_init(&vchan->node);
+> > +	spin_unlock(&sdev->lock);
+> > +
+> > +	spin_lock_irqsave(&vchan->vc.lock, flags);
+> > +
+> > +	vchan_get_all_descriptors(&vchan->vc, &head);
+> > +
+> > +	if (pchan) {
+> > +		writel(DMA_CHAN_ENABLE_STOP, pchan->base + DMA_CHAN_ENABLE);
+> > +		writel(DMA_CHAN_PAUSE_RESUME, pchan->base + DMA_CHAN_PAUSE);
+> > +
+> > +		vchan->phy =3D NULL;
+> > +		pchan->vchan =3D NULL;
+> > +		pchan->desc =3D NULL;
+> > +		pchan->done =3D NULL;
+> > +	}
+> > +
+> > +	spin_unlock_irqrestore(&vchan->vc.lock, flags);
+> > +
+> > +	vchan_dma_desc_free_list(&vchan->vc, &head);
+>=20
+> shouldn't you kill the tasklet as well here?
+
+Just to be clear, which tasklet? vchan's or the driver's?
+
+Thanks,
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
 http://free-electrons.com
+
+--sm4nu43k4a2Rpi4c
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTciFiAAoJEBx+YmzsjxAgqzYP/imjB1PIl5O0NsHM7Hz8ZFVg
+IaveYGrL5rwsadTN1K02wtLpdbA0bMSDKqI5QW8gi+Y9qLxypPzf68UlbeSxtkuc
+05QaLgtikOgeGuHFsEVaA63mHcsgKS3KpyehRKir6VnH/fDN4MPJ89T30gKjFgru
+7AHpKpqKPyB11CTOCPvsYW3iCcr2wMMO+qDPPKRWK0rz+dC1JVBLkbNbM5s4RwVw
+IUv++F2EyUofq74Mvoi17Y7zgpfCD4H9Cq4krtOIse/I6ovjqwcmfKsPY9xspqgX
+4VF7JxSV8YwD8U7HexdaszgMacJF25OpgsaKDjP00hlauEdU90OgbfIQsDPnjNUd
+RiqQf4PVuyUzlpTLyRhAx5hTU8atZ9OWAO+MfgzmToMmvY+i8J6xzryyJxpGtY2s
+ciO70QKq5cB98899rg87MZOWmZNCyeCS1pEVv8Ezs18en6IE1njqs6YXBCRWOf+i
+Q4CvwEml6M+n2jbB9BqazmwlGRsc0harVMJ2sw/9gO8y1m7S8tXDxl6fsb8cZxL/
+aEgSyHh6Cvg32BNp+Ua+qLc4kYkLv+RdDExXfJaq3mZZrq4jJBIUrk1OskiOjlkv
+6/wFf/jBfs0ADTX9Coy8SGLZwMszKLJt+7qzlE5KZu9slSHRPcLdSW40H7U5ebK1
+6Ks6wDn9ftS3mI8tyz+j
+=kaUC
+-----END PGP SIGNATURE-----
+
+--sm4nu43k4a2Rpi4c--
