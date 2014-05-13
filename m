@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932804AbaEMQRo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 12:17:44 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:57076 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071AbaEMQRh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 12:17:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdb6wh9ah7ivNvU44j79LqFEVv-keAVxK8jO7h5LJsP5zg@mail.gmail.com>
-References: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de>
-	<1395505004-22650-7-git-send-email-bigeasy@linutronix.de>
-	<5331F6D5.7070809@gmail.com>
-	<53427718.30406@linutronix.de>
-	<CANk1AXSuBGj3vZ7knKmHTwDZLTkvVFT42Lt9ZTdk-E+sp=xQ+g@mail.gmail.com>
-	<20140430111308.GA11829@linutronix.de>
-	<CACRpkdb6wh9ah7ivNvU44j79LqFEVv-keAVxK8jO7h5LJsP5zg@mail.gmail.com>
-Date: Tue, 13 May 2014 11:17:35 -0500
-Message-ID: <CANk1AXQTy_qtOzXmp_NJ7aoRfAdmCDavDrYhp4KdPKkmJ8zCCg@mail.gmail.com>
-Subject: Re: [PATCH 6/7 v2] gpio: dwapb: use a second irq chip
-From: Alan Tull <delicious.quinoa@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Alan Tull <atull@altera.com>, Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@altera.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1759941AbaEMQSW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:18:22 -0400
+Received: from ns.horizon.com ([71.41.210.147]:47119 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750943AbaEMQSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 12:18:15 -0400
+Date: 13 May 2014 12:18:13 -0400
+Message-ID: <20140513161813.15106.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, mathieu.desnoyers@efficios.com
+Subject: Re: [PATCH 4/4] timekeeping: Use printk_deferred when holding timekeeping seqlock
+Cc: john.stultz@linaro.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
+        tglx@linutronix.de
+In-Reply-To: <822806193.15621.1399988364196.JavaMail.zimbra@efficios.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 9, 2014 at 6:46 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Wed, Apr 30, 2014 at 1:13 PM, Sebastian Andrzej Siewior
-> <bigeasy@linutronix.de> wrote:
->
->> Right new have one irq chip running always in level mode. It would nicer
->> to have two irq chips where one is handling level type interrupts and
->> the other one is doing edge interrupts. So we can have at runtime two users
->> where one is using edge and the other level.
->>
->> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
->> ---
->> I am very sorry for the delay. I assumed that I've already fixed the
->> patch sent it out. Just realized that it was not the case.
->>
->> v1…v2:
->>     - using the lopp again but breaking the assignment of type and
->>       handler out of the loop as suggested by delicious quinoa.
->
-> Can I have an ACK from Jamie &&|| Alan on this patch so I can apply
-> it?
->
-> Yours,
-> Linus Walleij
+>> I was trying to tackle the "hard problem" of making *all* time reads
+>> non-blocking, with monotonicity guarantees.  There has to be *some* bound
+>> on blocking times (in particular, time between reading hardware tiemrs
+>> and translating them to real time), but they can be reasonably long.
 
-Yes
+> What I gathered from my past discussion with John on this topic is that
+> virtualization blows away pretty much any assumption we can make on
+> "update should be reasonably short". A virtualized CPU can be preempted
+> for a rather long time (AFAIU not possible to bound).
 
-Acked-by: Alan Tull <delicious.quinoa@gmail.com>
+Well, there are two kinds of time reads:
 
-Alan
+1) "What is the current time now?"  This is easy, because if we stall
+   it's okay to return any time in the appropriate window.
+2) "Some time in the past I read the hardware clock with value c.
+   What is the time in seconds corresponding to that?"
+
+I'll call number 2 "time conversion".  This can be handled as long as the
+time between reading the clock and doing the conversion is reasonable.
+Otherwise, it'll fail, with "I don't remember that part of the piecewise
+clock/time conversion function."
+
+Now, obviously number 1 can be implemented by reading the hardware clock
+and converting it.  As you point out, virtualization makes it impossible
+to guarantee any reasonable bound on the time between the two steps.
+But in case 1, we can easily handle failure by retrying the read.  (Or,
+equivalently, returning the earliest time which we know how to convert.)
+
+All we can guarantee in case 1 is that we return the timestamp of some
+instant between call and return.  If that time is made very long by
+the hypervisor descheduling us, it reduces the required precision.
+
+
+So it's possible to allow arbirearily long delays in time writes, in
+current-time reads, but conversion has a risk of failure.
+
+I don't think it's possible to do better, so that's kind of the limit.
+
+>> I think I have an idea that could work, but given the hairiness of
+>> the timeeeping code, implementing it would be a major project.
+>
+> Indeed, timekeeping is not for the faint of heart. ;-)
+
+But at least it's interesting, with problems other than undocumented bugs
+in hardware.
