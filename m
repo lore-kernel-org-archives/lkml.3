@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083AbaEMT50 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 15:57:26 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43085 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751556AbaEMT5R (ORCPT
+	id S1754206AbaEMT6I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 15:58:08 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:65396 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751596AbaEMT56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 15:57:17 -0400
-Message-ID: <5372791A.4080909@wwwdotorg.org>
-Date: Tue, 13 May 2014 13:57:14 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 13 May 2014 15:57:58 -0400
+Date: Tue, 13 May 2014 12:57:56 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "David S. Miller" <davem@davemloft.net>
+cc: Alexei Starovoitov <ast@plumgrid.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch] net, filter: make new test_bpf depend on networking
+Message-ID: <alpine.DEB.2.02.1405131255380.3392@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: stefan@agner.ch, thierry.reding@gmail.com
-CC: linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, marcel@ziswiler.com
-Subject: Re: [PATCH 1/2] ARM: tegra: enable MCP251x CAN controller and DS1307
- RTC
-References: <cover.1400001937.git.stefan@agner.ch> <77cfca0a1769d867c8d2919f0040fbd785940fef.1400001937.git.stefan@agner.ch>
-In-Reply-To: <77cfca0a1769d867c8d2919f0040fbd785940fef.1400001937.git.stefan@agner.ch>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 11:27 AM, stefan@agner.ch wrote:
-> From: Stefan Agner <stefan@agner.ch>
-> 
-> Toradex Colibri Evaluation Board uses the DS1307 RTC and the
-> MCP251x CAN controller. The NVIDIA Tegra 3 based Colibri T30
-> module can be used on this carrier board, hence enable those
-> drivers in tegra_defonfig.
-> 
-> Furthermore the NVIDIA Tegra 3 based Apalis T30 module too
-> contains two MCP251x CAN controller.
+CONFIG_TEST_BPF depends on CONFIG_NET, otherwise the build fails:
 
-I have squashed this patch into Tegra's for-3.16/defconfig branch.
+ERROR: "sk_unattached_filter_destroy" [lib/test_bpf.ko] undefined!
+ERROR: "kfree_skb" [lib/test_bpf.ko] undefined!
+ERROR: "sk_unattached_filter_create" [lib/test_bpf.ko] undefined!
+ERROR: "sk_run_filter_int_skb" [lib/test_bpf.ko] undefined!
+ERROR: "__alloc_skb" [lib/test_bpf.ko] undefined!
 
-Can you please also send a patch to enable the same options in
-multi_v7_defconfig. Send that to arm@kernel.org (it's an alias for the
-armsoc tree maintainers). That will ensure that anyone using that config
-will also get these changes.
+Add the dependency.
 
-Thanks.
+Cc: Alexei Starovoitov <ast@plumgrid.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ lib/Kconfig.debug | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1639,6 +1639,7 @@ config TEST_USER_COPY
+ config TEST_BPF
+ 	tristate "Test BPF filter functionality"
+ 	default n
++	depends on NET
+ 	depends on m
+ 	help
+ 	  This builds the "test_bpf" module that runs various test vectors
