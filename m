@@ -1,87 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758612AbaEMHEr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 03:04:47 -0400
-Received: from mail-by2on0070.outbound.protection.outlook.com ([207.46.100.70]:26034
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751043AbaEMHEq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 03:04:46 -0400
-X-Greylist: delayed 1026 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 May 2014 03:04:46 EDT
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCHv2 0/4] FTM PWM adds regmap and endianness support.
-Thread-Topic: [PATCHv2 0/4] FTM PWM adds regmap and endianness support.
-Thread-Index: AQHPY2INKfPXqugmK0eUOUU2T0BKJps+I06A
-Date: Tue, 13 May 2014 06:32:25 +0000
-Message-ID: <6abc1298f24d45b1b126f48527299f52@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1398742429-10399-1-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1398742429-10399-1-git-send-email-Li.Xiubo@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 0210479ED8
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(13464003)(51704005)(377454003)(21056001)(80022001)(20776003)(86362001)(81342001)(85852003)(92566001)(101416001)(2201001)(79102001)(77982001)(83072002)(2656002)(64706001)(46102001)(87936001)(33646001)(76176999)(54356999)(77096999)(4396001)(50986999)(74502001)(31966008)(74662001)(76482001)(19580405001)(81542001)(99286001)(19580395003)(83322001)(74316001)(76576001)(24736002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB505;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752923AbaEMHMq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 03:12:46 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:35384 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359AbaEMHMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 03:12:45 -0400
+Message-ID: <5371C5E5.6070701@linux.vnet.ibm.com>
+Date: Tue, 13 May 2014 00:12:37 -0700
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Michael Neuling <mikey@neuling.org>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Michael Ellerman <mpe@ellerman.id.au>, Paul Bolle <pebolle@tiscali.nl>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc/pseries: relocate "config DTL" so KConfig nests
+ properly
+References: <1399950599-24826-1-git-send-email-cody@linux.vnet.ibm.com> <1399962216.7554.63.camel@ale.ozlabs.ibm.com>
+In-Reply-To: <1399962216.7554.63.camel@ale.ozlabs.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051307-0320-0000-0000-0000034000CC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thierry,
+On 05/12/2014 11:23 PM, Michael Neuling wrote:
+>> powerpc/pseries: relocate "config DTL" so KConfig nests properly
+>
+> I don't know what that means.  Can you describe it in more detail?
+>
 
-Ping:)
+So the "config DTL" refers to the configuration entry.
 
+The "nests properly" refers to the indent that 'make menuconfig' shows 
+when a config-option that depends on the config-option proceeding it.
 
+In this case, moving config DTL up so it is below config PPC_SPLPAR 
+means that menuconfig will show config DTL nicely indented right below 
+config PPC_SPLPAR when PPC_SPLPAR is enabled.
 
-> -----Original Message-----
-> From: Xiubo Li [mailto:Li.Xiubo@freescale.com]
-> Sent: Tuesday, April 29, 2014 11:34 AM
-> To: thierry.reding@gmail.com; linux-pwm@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org; Xiubo Li-B47053
-> Subject: [PATCHv2 0/4] FTM PWM adds regmap and endianness support.
-> 
-> Convert to direct regmap API usage. Since the regmap core has already
-> support rich endianness modes of device, this patch convert to direct
-> regmap API usage, preparing to support big endianness for LS1 SoC.
-> 
-> Using the regmag framework will be more easy to support the endiannesses
-> switching of one same device driver on different SoCs.
-> 
-> The endianness scenarios are:
-> SoC     |  CPU   | FTM-PWM | 'big-endian' property is needed?
-> --------|--------|---------|---------------------------------
-> Vybird  |  LE    |   LE    |     No
-> LS1     |  LE    |   BE    |     Yes
-> LS2     |  LE    |   LE    |     No
-> 
-> 
-> 
-> Changes in V2:
-> - Adds detail descriptions of these patches.
-> 
-> 
-> Xiubo Li (4):
->   Documentation: Add 'big-endian' property for FTM PWM.
->   pwm: ftm-pwm: Clean up the code.
->   pwm: ftm-pwm: Convert to direct regmap API usage.
->   pwm: ftm-pwm: Add big-endian support
-> 
->  .../devicetree/bindings/pwm/pwm-fsl-ftm.txt        | 12 ++-
->  drivers/pwm/pwm-fsl-ftm.c                          | 96 ++++++++++++---------
-> -
->  2 files changed, 64 insertions(+), 44 deletions(-)
-> 
-> --
-> 1.8.4
+To contrast that, right now if I enable PPC_SPLPAR in menuconfig, all I 
+can immediately tell is that "something showed up further down the list 
+where I wasn't looking", and I end up having to toggle the option a few 
+times to figure out what showed up, or look at the KConfig to find out 
+that config DTL depends on config PPC_SPLPAR.
+
+Essentially, this enables menuconfig to provide a visual hint about the 
+dependencies between options.
+
+> Mikey
+>
+>
+> On Mon, 2014-05-12 at 20:09 -0700, Cody P Schafer wrote:
+>> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+>> ---
+>>   arch/powerpc/platforms/pseries/Kconfig | 20 ++++++++++----------
+>>   1 file changed, 10 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/arch/powerpc/platforms/pseries/Kconfig b/arch/powerpc/platforms/pseries/Kconfig
+>> index 2cb8b77..e00dd4d 100644
+>> --- a/arch/powerpc/platforms/pseries/Kconfig
+>> +++ b/arch/powerpc/platforms/pseries/Kconfig
+>> @@ -33,6 +33,16 @@ config PPC_SPLPAR
+>>   	  processors, that is, which share physical processors between
+>>   	  two or more partitions.
+>>
+>> +config DTL
+>> +	bool "Dispatch Trace Log"
+>> +	depends on PPC_SPLPAR && DEBUG_FS
+>> +	help
+>> +	  SPLPAR machines can log hypervisor preempt & dispatch events to a
+>> +	  kernel buffer. Saying Y here will enable logging these events,
+>> +	  which are accessible through a debugfs file.
+>> +
+>> +	  Say N if you are unsure.
+>> +
+>>   config PSERIES_MSI
+>>          bool
+>>          depends on PCI_MSI && PPC_PSERIES && EEH
+>> @@ -122,13 +132,3 @@ config HV_PERF_CTRS
+>>   	  systems. 24x7 is available on Power 8 systems.
+>>
+>>             If unsure, select Y.
+>> -
+>> -config DTL
+>> -	bool "Dispatch Trace Log"
+>> -	depends on PPC_SPLPAR && DEBUG_FS
+>> -	help
+>> -	  SPLPAR machines can log hypervisor preempt & dispatch events to a
+>> -	  kernel buffer. Saying Y here will enable logging these events,
+>> -	  which are accessible through a debugfs file.
+>> -
+>> -	  Say N if you are unsure.
+>
 
