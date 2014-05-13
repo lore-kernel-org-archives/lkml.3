@@ -1,231 +1,366 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346AbaEMSsi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 14:48:38 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:62423 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753735AbaEMSsb (ORCPT
+	id S1754428AbaEMSvD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 14:51:03 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:45236 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766AbaEMSuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 14:48:31 -0400
+	Tue, 13 May 2014 14:50:54 -0400
+Date: Tue, 13 May 2014 14:50:46 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
+        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Michal Hocko <mhocko@suse.cz>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH v2 01/14] cgroup: remove css_parent()
+Message-ID: <20140513185046.GA19514@htj.dyndns.org>
+References: <1399671091-23867-1-git-send-email-tj@kernel.org>
+ <1399671091-23867-2-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20140513180417.74af95e95649ba975d53badb@skynet.be>
-References: <20140513180417.74af95e95649ba975d53badb@skynet.be>
-From: Steve French <smfrench@gmail.com>
-Date: Tue, 13 May 2014 20:48:09 +0200
-Message-ID: <CAH2r5msidCDwgBunwNKjrDEhL9-3f5ZkkxezPVsUfctvQEuADA@mail.gmail.com>
-Subject: Fwd: [PATCH 1/1] fs/cifs/cifs.c: replace seq_printf by seq_puts
-To: Joe Perches <joe@perches.com>, fabf@skynet.be
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399671091-23867-2-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-merged into cifs-2.6.git for-next
+>From 55d3077482c2b9d05deefa92cf28c4057538f83c Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Tue, 13 May 2014 14:47:01 -0400
 
-Is the goal here to replace seq_printf (everywhere it has fixed number
-of arguments) with seq_puts (it saves a few lines of code since in
-those cases seq_printf will turn around and simply call seq_puts)?
+cgroup in general is moving towards using cgroup_subsys_state as the
+fundamental structural component and css_parent() was introduced to
+convert from using cgroup->parent to css->parent.  It was quite some
+time ago and we're moving forward with making css more prominent.
 
-Presumably motivated by this patch from Joe https://lkml.org/lkml/2013/3/16/79 ?
+This patch drops the trivial wrapper css_parent() and let the users
+dereference css->parent.  While at it, explicitly mark fields of css
+which are public and immutable.
 
-On Tue, May 13, 2014 at 6:04 PM, Fabian Frederick <fabf@skynet.be> wrote:
-> Replace seq_printf where possible
->
-> Cc: Steve French <sfrench@samba.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  fs/cifs/cifsfs.c | 80 ++++++++++++++++++++++++++++----------------------------
->  1 file changed, 40 insertions(+), 40 deletions(-)
->
-> diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
-> index 5be1f99..5d0a4eb 100644
-> --- a/fs/cifs/cifsfs.c
-> +++ b/fs/cifs/cifsfs.c
-> @@ -302,7 +302,7 @@ cifs_show_address(struct seq_file *s, struct TCP_Server_Info *server)
->         struct sockaddr_in *sa = (struct sockaddr_in *) &server->dstaddr;
->         struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *) &server->dstaddr;
->
-> -       seq_printf(s, ",addr=");
-> +       seq_puts(s, ",addr=");
->
->         switch (server->dstaddr.ss_family) {
->         case AF_INET:
-> @@ -314,7 +314,7 @@ cifs_show_address(struct seq_file *s, struct TCP_Server_Info *server)
->                         seq_printf(s, "%%%u", sa6->sin6_scope_id);
->                 break;
->         default:
-> -               seq_printf(s, "(unknown)");
-> +               seq_puts(s, "(unknown)");
->         }
->  }
->
-> @@ -324,45 +324,45 @@ cifs_show_security(struct seq_file *s, struct cifs_ses *ses)
->         if (ses->sectype == Unspecified)
->                 return;
->
-> -       seq_printf(s, ",sec=");
-> +       seq_puts(s, ",sec=");
->
->         switch (ses->sectype) {
->         case LANMAN:
-> -               seq_printf(s, "lanman");
-> +               seq_puts(s, "lanman");
->                 break;
->         case NTLMv2:
-> -               seq_printf(s, "ntlmv2");
-> +               seq_puts(s, "ntlmv2");
->                 break;
->         case NTLM:
-> -               seq_printf(s, "ntlm");
-> +               seq_puts(s, "ntlm");
->                 break;
->         case Kerberos:
-> -               seq_printf(s, "krb5");
-> +               seq_puts(s, "krb5");
->                 break;
->         case RawNTLMSSP:
-> -               seq_printf(s, "ntlmssp");
-> +               seq_puts(s, "ntlmssp");
->                 break;
->         default:
->                 /* shouldn't ever happen */
-> -               seq_printf(s, "unknown");
-> +               seq_puts(s, "unknown");
->                 break;
->         }
->
->         if (ses->sign)
-> -               seq_printf(s, "i");
-> +               seq_puts(s, "i");
->  }
->
->  static void
->  cifs_show_cache_flavor(struct seq_file *s, struct cifs_sb_info *cifs_sb)
->  {
-> -       seq_printf(s, ",cache=");
-> +       seq_puts(s, ",cache=");
->
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_STRICT_IO)
-> -               seq_printf(s, "strict");
-> +               seq_puts(s, "strict");
->         else if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_DIRECT_IO)
-> -               seq_printf(s, "none");
-> +               seq_puts(s, "none");
->         else
-> -               seq_printf(s, "loose");
-> +               seq_puts(s, "loose");
->  }
->
->  static void
-> @@ -395,7 +395,7 @@ cifs_show_options(struct seq_file *s, struct dentry *root)
->         cifs_show_cache_flavor(s, cifs_sb);
->
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MULTIUSER)
-> -               seq_printf(s, ",multiuser");
-> +               seq_puts(s, ",multiuser");
->         else if (tcon->ses->user_name)
->                 seq_printf(s, ",username=%s", tcon->ses->user_name);
->
-> @@ -421,16 +421,16 @@ cifs_show_options(struct seq_file *s, struct dentry *root)
->         seq_printf(s, ",uid=%u",
->                    from_kuid_munged(&init_user_ns, cifs_sb->mnt_uid));
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_OVERR_UID)
-> -               seq_printf(s, ",forceuid");
-> +               seq_puts(s, ",forceuid");
->         else
-> -               seq_printf(s, ",noforceuid");
-> +               seq_puts(s, ",noforceuid");
->
->         seq_printf(s, ",gid=%u",
->                    from_kgid_munged(&init_user_ns, cifs_sb->mnt_gid));
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_OVERR_GID)
-> -               seq_printf(s, ",forcegid");
-> +               seq_puts(s, ",forcegid");
->         else
-> -               seq_printf(s, ",noforcegid");
-> +               seq_puts(s, ",noforcegid");
->
->         cifs_show_address(s, tcon->ses->server);
->
-> @@ -442,47 +442,47 @@ cifs_show_options(struct seq_file *s, struct dentry *root)
->         cifs_show_nls(s, cifs_sb->local_nls);
->
->         if (tcon->seal)
-> -               seq_printf(s, ",seal");
-> +               seq_puts(s, ",seal");
->         if (tcon->nocase)
-> -               seq_printf(s, ",nocase");
-> +               seq_puts(s, ",nocase");
->         if (tcon->retry)
-> -               seq_printf(s, ",hard");
-> +               seq_puts(s, ",hard");
->         if (tcon->unix_ext)
-> -               seq_printf(s, ",unix");
-> +               seq_puts(s, ",unix");
->         else
-> -               seq_printf(s, ",nounix");
-> +               seq_puts(s, ",nounix");
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_POSIX_PATHS)
-> -               seq_printf(s, ",posixpaths");
-> +               seq_puts(s, ",posixpaths");
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_SET_UID)
-> -               seq_printf(s, ",setuids");
-> +               seq_puts(s, ",setuids");
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_SERVER_INUM)
-> -               seq_printf(s, ",serverino");
-> +               seq_puts(s, ",serverino");
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_RWPIDFORWARD)
-> -               seq_printf(s, ",rwpidforward");
-> +               seq_puts(s, ",rwpidforward");
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL)
-> -               seq_printf(s, ",forcemand");
-> +               seq_puts(s, ",forcemand");
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
-> -               seq_printf(s, ",nouser_xattr");
-> +               seq_puts(s, ",nouser_xattr");
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR)
-> -               seq_printf(s, ",mapchars");
-> +               seq_puts(s, ",mapchars");
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_UNX_EMUL)
-> -               seq_printf(s, ",sfu");
-> +               seq_puts(s, ",sfu");
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_BRL)
-> -               seq_printf(s, ",nobrl");
-> +               seq_puts(s, ",nobrl");
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_CIFS_ACL)
-> -               seq_printf(s, ",cifsacl");
-> +               seq_puts(s, ",cifsacl");
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_DYNPERM)
-> -               seq_printf(s, ",dynperm");
-> +               seq_puts(s, ",dynperm");
->         if (root->d_sb->s_flags & MS_POSIXACL)
-> -               seq_printf(s, ",acl");
-> +               seq_puts(s, ",acl");
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MF_SYMLINKS)
-> -               seq_printf(s, ",mfsymlinks");
-> +               seq_puts(s, ",mfsymlinks");
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_FSCACHE)
-> -               seq_printf(s, ",fsc");
-> +               seq_puts(s, ",fsc");
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOSSYNC)
-> -               seq_printf(s, ",nostrictsync");
-> +               seq_puts(s, ",nostrictsync");
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_PERM)
-> -               seq_printf(s, ",noperm");
-> +               seq_puts(s, ",noperm");
->         if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_CIFS_BACKUPUID)
->                 seq_printf(s, ",backupuid=%u",
->                            from_kuid_munged(&init_user_ns,
-> --
-> 1.8.4.5
->
+v2: New usage from device_cgroup.c converted.
 
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: "David S. Miller" <davem@davemloft.net>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+---
+ block/blk-cgroup.h           |  2 +-
+ include/linux/cgroup.h       | 29 +++++++++++------------------
+ kernel/cgroup.c              |  8 ++++----
+ kernel/cgroup_freezer.c      |  2 +-
+ kernel/cpuset.c              |  2 +-
+ kernel/sched/core.c          |  2 +-
+ kernel/sched/cpuacct.c       |  2 +-
+ mm/hugetlb_cgroup.c          |  2 +-
+ mm/memcontrol.c              | 14 +++++++-------
+ net/core/netclassid_cgroup.c |  2 +-
+ net/core/netprio_cgroup.c    |  2 +-
+ security/device_cgroup.c     |  8 ++++----
+ 12 files changed, 34 insertions(+), 41 deletions(-)
 
-
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 371fe8e..d692b29 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -204,7 +204,7 @@ static inline struct blkcg *bio_blkcg(struct bio *bio)
+  */
+ static inline struct blkcg *blkcg_parent(struct blkcg *blkcg)
+ {
+-	return css_to_blkcg(css_parent(&blkcg->css));
++	return css_to_blkcg(blkcg->css.parent);
+ }
+ 
+ /**
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 76dadd77..88c4d03 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -48,22 +48,28 @@ enum cgroup_subsys_id {
+ };
+ #undef SUBSYS
+ 
+-/* Per-subsystem/per-cgroup state maintained by the system. */
++/*
++ * Per-subsystem/per-cgroup state maintained by the system.  This is the
++ * fundamental structural building block that controllers deal with.
++ *
++ * Fields marked with "PI:" are public and immutable and may be accessed
++ * directly without synchronization.
++ */
+ struct cgroup_subsys_state {
+-	/* the cgroup that this css is attached to */
++	/* PI: the cgroup that this css is attached to */
+ 	struct cgroup *cgroup;
+ 
+-	/* the cgroup subsystem that this css is attached to */
++	/* PI: the cgroup subsystem that this css is attached to */
+ 	struct cgroup_subsys *ss;
+ 
+ 	/* reference count - access via css_[try]get() and css_put() */
+ 	struct percpu_ref refcnt;
+ 
+-	/* the parent css */
++	/* PI: the parent css */
+ 	struct cgroup_subsys_state *parent;
+ 
+ 	/*
+-	 * Subsys-unique ID.  0 is unused and root is always 1.  The
++	 * PI: Subsys-unique ID.  0 is unused and root is always 1.  The
+ 	 * matching css can be looked up using css_from_id().
+ 	 */
+ 	int id;
+@@ -665,19 +671,6 @@ struct cgroup_subsys {
+ #undef SUBSYS
+ 
+ /**
+- * css_parent - find the parent css
+- * @css: the target cgroup_subsys_state
+- *
+- * Return the parent css of @css.  This function is guaranteed to return
+- * non-NULL parent as long as @css isn't the root.
+- */
+-static inline
+-struct cgroup_subsys_state *css_parent(struct cgroup_subsys_state *css)
+-{
+-	return css->parent;
+-}
+-
+-/**
+  * task_css_set_check - obtain a task's css_set with extra access conditions
+  * @task: the task to obtain css_set for
+  * @__c: extra condition expression to be passed to rcu_dereference_check()
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 365787f..321163a 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3175,10 +3175,10 @@ css_next_descendant_pre(struct cgroup_subsys_state *pos,
+ 
+ 	/* no child, visit my or the closest ancestor's next sibling */
+ 	while (pos != root) {
+-		next = css_next_child(pos, css_parent(pos));
++		next = css_next_child(pos, pos->parent);
+ 		if (next)
+ 			return next;
+-		pos = css_parent(pos);
++		pos = pos->parent;
+ 	}
+ 
+ 	return NULL;
+@@ -3260,12 +3260,12 @@ css_next_descendant_post(struct cgroup_subsys_state *pos,
+ 		return NULL;
+ 
+ 	/* if there's an unvisited sibling, visit its leftmost descendant */
+-	next = css_next_child(pos, css_parent(pos));
++	next = css_next_child(pos, pos->parent);
+ 	if (next)
+ 		return css_leftmost_descendant(next);
+ 
+ 	/* no sibling left, visit parent */
+-	return css_parent(pos);
++	return pos->parent;
+ }
+ 
+ static bool cgroup_has_live_children(struct cgroup *cgrp)
+diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+index 6b4e60e..a79e40f 100644
+--- a/kernel/cgroup_freezer.c
++++ b/kernel/cgroup_freezer.c
+@@ -59,7 +59,7 @@ static inline struct freezer *task_freezer(struct task_struct *task)
+ 
+ static struct freezer *parent_freezer(struct freezer *freezer)
+ {
+-	return css_freezer(css_parent(&freezer->css));
++	return css_freezer(freezer->css.parent);
+ }
+ 
+ bool cgroup_freezing(struct task_struct *task)
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 2f4b08b..5b2a310 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -124,7 +124,7 @@ static inline struct cpuset *task_cs(struct task_struct *task)
+ 
+ static inline struct cpuset *parent_cs(struct cpuset *cs)
+ {
+-	return css_cs(css_parent(&cs->css));
++	return css_cs(cs->css.parent);
+ }
+ 
+ #ifdef CONFIG_NUMA
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 268a45e..ac61ad1 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7586,7 +7586,7 @@ cpu_cgroup_css_alloc(struct cgroup_subsys_state *parent_css)
+ static int cpu_cgroup_css_online(struct cgroup_subsys_state *css)
+ {
+ 	struct task_group *tg = css_tg(css);
+-	struct task_group *parent = css_tg(css_parent(css));
++	struct task_group *parent = css_tg(css->parent);
+ 
+ 	if (parent)
+ 		sched_online_group(tg, parent);
+diff --git a/kernel/sched/cpuacct.c b/kernel/sched/cpuacct.c
+index c143ee3..9cf350c 100644
+--- a/kernel/sched/cpuacct.c
++++ b/kernel/sched/cpuacct.c
+@@ -46,7 +46,7 @@ static inline struct cpuacct *task_ca(struct task_struct *tsk)
+ 
+ static inline struct cpuacct *parent_ca(struct cpuacct *ca)
+ {
+-	return css_ca(css_parent(&ca->css));
++	return css_ca(ca->css.parent);
+ }
+ 
+ static DEFINE_PER_CPU(u64, root_cpuacct_cpuusage);
+diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+index a380681..493f758 100644
+--- a/mm/hugetlb_cgroup.c
++++ b/mm/hugetlb_cgroup.c
+@@ -52,7 +52,7 @@ static inline bool hugetlb_cgroup_is_root(struct hugetlb_cgroup *h_cg)
+ static inline struct hugetlb_cgroup *
+ parent_hugetlb_cgroup(struct hugetlb_cgroup *h_cg)
+ {
+-	return hugetlb_cgroup_from_css(css_parent(&h_cg->css));
++	return hugetlb_cgroup_from_css(h_cg->css.parent);
+ }
+ 
+ static inline bool hugetlb_cgroup_have_usage(struct hugetlb_cgroup *h_cg)
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index b638a79..a5e0417 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1540,7 +1540,7 @@ static unsigned long mem_cgroup_margin(struct mem_cgroup *memcg)
+ int mem_cgroup_swappiness(struct mem_cgroup *memcg)
+ {
+ 	/* root ? */
+-	if (!css_parent(&memcg->css))
++	if (!memcg->css.parent)
+ 		return vm_swappiness;
+ 
+ 	return memcg->swappiness;
+@@ -4909,7 +4909,7 @@ static int mem_cgroup_hierarchy_write(struct cgroup_subsys_state *css,
+ {
+ 	int retval = 0;
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+-	struct mem_cgroup *parent_memcg = mem_cgroup_from_css(css_parent(&memcg->css));
++	struct mem_cgroup *parent_memcg = mem_cgroup_from_css(memcg->css.parent);
+ 
+ 	mutex_lock(&memcg_create_mutex);
+ 
+@@ -5207,8 +5207,8 @@ static void memcg_get_hierarchical_limit(struct mem_cgroup *memcg,
+ 	if (!memcg->use_hierarchy)
+ 		goto out;
+ 
+-	while (css_parent(&memcg->css)) {
+-		memcg = mem_cgroup_from_css(css_parent(&memcg->css));
++	while (memcg->css.parent) {
++		memcg = mem_cgroup_from_css(memcg->css.parent);
+ 		if (!memcg->use_hierarchy)
+ 			break;
+ 		tmp = res_counter_read_u64(&memcg->res, RES_LIMIT);
+@@ -5443,7 +5443,7 @@ static int mem_cgroup_swappiness_write(struct cgroup_subsys_state *css,
+ 				       struct cftype *cft, u64 val)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+-	struct mem_cgroup *parent = mem_cgroup_from_css(css_parent(&memcg->css));
++	struct mem_cgroup *parent = mem_cgroup_from_css(memcg->css.parent);
+ 
+ 	if (val > 100 || !parent)
+ 		return -EINVAL;
+@@ -5790,7 +5790,7 @@ static int mem_cgroup_oom_control_write(struct cgroup_subsys_state *css,
+ 	struct cftype *cft, u64 val)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+-	struct mem_cgroup *parent = mem_cgroup_from_css(css_parent(&memcg->css));
++	struct mem_cgroup *parent = mem_cgroup_from_css(memcg->css.parent);
+ 
+ 	/* cannot set to root cgroup and only 0 and 1 are allowed */
+ 	if (!parent || !((val == 0) || (val == 1)))
+@@ -6407,7 +6407,7 @@ static int
+ mem_cgroup_css_online(struct cgroup_subsys_state *css)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+-	struct mem_cgroup *parent = mem_cgroup_from_css(css_parent(css));
++	struct mem_cgroup *parent = mem_cgroup_from_css(css->parent);
+ 
+ 	if (css->id > MEM_CGROUP_ID_MAX)
+ 		return -ENOSPC;
+diff --git a/net/core/netclassid_cgroup.c b/net/core/netclassid_cgroup.c
+index 22931e1..30d903b 100644
+--- a/net/core/netclassid_cgroup.c
++++ b/net/core/netclassid_cgroup.c
+@@ -42,7 +42,7 @@ cgrp_css_alloc(struct cgroup_subsys_state *parent_css)
+ static int cgrp_css_online(struct cgroup_subsys_state *css)
+ {
+ 	struct cgroup_cls_state *cs = css_cls_state(css);
+-	struct cgroup_cls_state *parent = css_cls_state(css_parent(css));
++	struct cgroup_cls_state *parent = css_cls_state(css->parent);
+ 
+ 	if (parent)
+ 		cs->classid = parent->classid;
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index b990cef..2f385b9 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -140,7 +140,7 @@ cgrp_css_alloc(struct cgroup_subsys_state *parent_css)
+ 
+ static int cgrp_css_online(struct cgroup_subsys_state *css)
+ {
+-	struct cgroup_subsys_state *parent_css = css_parent(css);
++	struct cgroup_subsys_state *parent_css = css->parent;
+ 	struct net_device *dev;
+ 	int ret = 0;
+ 
+diff --git a/security/device_cgroup.c b/security/device_cgroup.c
+index 7dbac40..ce14a31 100644
+--- a/security/device_cgroup.c
++++ b/security/device_cgroup.c
+@@ -182,7 +182,7 @@ static inline bool is_devcg_online(const struct dev_cgroup *devcg)
+ static int devcgroup_online(struct cgroup_subsys_state *css)
+ {
+ 	struct dev_cgroup *dev_cgroup = css_to_devcgroup(css);
+-	struct dev_cgroup *parent_dev_cgroup = css_to_devcgroup(css_parent(css));
++	struct dev_cgroup *parent_dev_cgroup = css_to_devcgroup(css->parent);
+ 	int ret = 0;
+ 
+ 	mutex_lock(&devcgroup_mutex);
+@@ -455,7 +455,7 @@ static bool verify_new_ex(struct dev_cgroup *dev_cgroup,
+ static int parent_has_perm(struct dev_cgroup *childcg,
+ 				  struct dev_exception_item *ex)
+ {
+-	struct dev_cgroup *parent = css_to_devcgroup(css_parent(&childcg->css));
++	struct dev_cgroup *parent = css_to_devcgroup(childcg->css.parent);
+ 
+ 	if (!parent)
+ 		return 1;
+@@ -476,7 +476,7 @@ static int parent_has_perm(struct dev_cgroup *childcg,
+ static bool parent_allows_removal(struct dev_cgroup *childcg,
+ 				  struct dev_exception_item *ex)
+ {
+-	struct dev_cgroup *parent = css_to_devcgroup(css_parent(&childcg->css));
++	struct dev_cgroup *parent = css_to_devcgroup(childcg->css.parent);
+ 
+ 	if (!parent)
+ 		return true;
+@@ -614,7 +614,7 @@ static int devcgroup_update_access(struct dev_cgroup *devcgroup,
+ 	char temp[12];		/* 11 + 1 characters needed for a u32 */
+ 	int count, rc = 0;
+ 	struct dev_exception_item ex;
+-	struct dev_cgroup *parent = css_to_devcgroup(css_parent(&devcgroup->css));
++	struct dev_cgroup *parent = css_to_devcgroup(devcgroup->css.parent);
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
 -- 
-Thanks,
+1.9.0
 
-Steve
