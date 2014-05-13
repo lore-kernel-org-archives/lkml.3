@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721AbaEMTrL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 15:47:11 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:49306 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364AbaEMTq7 (ORCPT
+	id S1754787AbaEMTrW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 15:47:22 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:56407 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245AbaEMTrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 15:46:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Felipe Balbi <balbi@ti.com>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2] usb: phy: msm: reset controller is mandatory now
-Date: Tue, 13 May 2014 21:46:52 +0200
-Message-ID: <4319810.IibMxJ0Qvk@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+	Tue, 13 May 2014 15:47:08 -0400
+Message-ID: <537276B4.10209@hp.com>
+Date: Tue, 13 May 2014 15:47:00 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:OciVEvsAhKLW7xNyk4X0KDM5kVaxmtrtHTTzonhM/jd
- HxV6khK0x6c4hg49aI31u1HrvTUQnJNkogDYMEl6HFvXKDbyS+
- xLvUJdMw4ZamldwQPx370vukZxfi2ZmU3G1rYM0mRkdIgGgtko
- l+wN+wCpWVp0q/Lf63koQ/IhYqbRq0frG1DsXI9ePZGCkRBwU6
- qlOWeJVjnDWrW8j9jPv6TVHCvsr91lMjRplJYELVif+CZNVEV8
- j8Y7D1C68Nnjo2Kib06Qbb6DhKWIhaR73SZQfID6KuUplzTGvz
- jHu6c9aoxZVZjsibhLYBkFCH7DId4Qb7O7Brx26kXFJKs41/+T
- vhoxIMOkLeVgxhol+TaQ=
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v10 03/19] qspinlock: Add pending bit
+References: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com> <1399474907-22206-4-git-send-email-Waiman.Long@hp.com> <20140512152208.GA12309@potion.brq.redhat.com>
+In-Reply-To: <20140512152208.GA12309@potion.brq.redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit a27345434134 "usb: phy: msm: Use reset framework for LINK
-and PHY resets" introduced a mandatory call to reset_control_get
-into the msm usb phy driver, which means we have to add a Kconfig
-dependency on the API to avoid this build error:
+On 05/12/2014 11:22 AM, Radim Krčmář wrote:
+> 2014-05-07 11:01-0400, Waiman Long:
+>> From: Peter Zijlstra<peterz@infradead.org>
+>>
+>> Because the qspinlock needs to touch a second cacheline; add a pending
+>> bit and allow a single in-word spinner before we punt to the second
+>> cacheline.
+> I think there is an unwanted scenario on virtual machines:
+> 1) VCPU sets the pending bit and start spinning.
+> 2) Pending VCPU gets descheduled.
+>      - we have PLE and lock holder isn't running [1]
+>      - the hypervisor randomly preempts us
+> 3) Lock holder unlocks while pending VCPU is waiting in queue.
+> 4) Subsequent lockers will see free lock with set pending bit and will
+>     loop in trylock's 'for (;;)'
+>      - the worst-case is lock starving [2]
+>      - PLE can save us from wasting whole timeslice
+>
+> Retry threshold is the easiest solution, regardless of its ugliness [4].
 
-phy/phy-msm-usb.c: In function 'msm_otg_read_dt':
-phy/phy-msm-usb.c:1461:2: error: implicit declaration of function 'devm_reset_control_get' [-Werror=implicit-function-declaration]
-  motg->link_rst = devm_reset_control_get(&pdev->dev, "link");
-  ^
+Yes, that can be a real issue. Some sort of retry threshold, as you 
+said, should be able to handle it.
 
-Since the usb-ehci-msm driver currently selects the OTG driver,
-we could still get a broken dependency here. To solve that,
-this patch also removes the 'select', which turns out to be
-unnecessary.
+BTW, the relevant patch should be 16/19 where the PV spinlock stuff 
+should be discussed. This patch is perfectly fine.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> Another minor design flaw is that formerly first VCPU gets appended to
+> the tail when it decides to queue;
+> is the performance gain worth it?
+>
+> Thanks.
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 3d9e540..7a39ae8 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -170,7 +170,6 @@ config USB_EHCI_MSM
- 	tristate "Support for Qualcomm QSD/MSM on-chip EHCI USB controller"
- 	depends on ARCH_MSM
- 	select USB_EHCI_ROOT_HUB_TT
--	select USB_MSM_OTG
- 	---help---
- 	  Enables support for the USB Host controller present on the
- 	  Qualcomm chipsets. Root Hub has inbuilt TT.
-diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-index 359a6c1..65bec8f 100644
---- a/drivers/usb/phy/Kconfig
-+++ b/drivers/usb/phy/Kconfig
-@@ -165,6 +165,7 @@ config USB_ISP1301
- config USB_MSM_OTG
- 	tristate "Qualcomm on-chip USB OTG controller support"
- 	depends on (USB || USB_GADGET) && (ARCH_MSM || ARCH_QCOM)
-+	depends on RESET_CONTROLLER
- 	select USB_PHY
- 	help
- 	  Enable this to support the USB OTG transceiver on Qualcomm chips. It
+Yes, the performance gain is worth it. The primary goal is to be not 
+worse than ticket spinlock in light load situation which is the most 
+common case. This feature is need to achieve that.
 
+-Longman
