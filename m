@@ -1,75 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814AbaEMSxb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 14:53:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47261 "EHLO mx1.redhat.com"
+	id S1753536AbaEMS6n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 14:58:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27951 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751357AbaEMSxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 14:53:23 -0400
-Date: Tue, 13 May 2014 20:53:13 +0200
-From: Mateusz Guzik <mguzik@redhat.com>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Josef Bacik <jbacik@fb.com>, Jan Kara <jack@suse.cz>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Eric Sandeen <esandeen@redhat.com>
-Subject: Re: [PATCH 2/2] fs: print a message when freezing/unfreezing
- filesystems
-Message-ID: <20140513185312.GB2738@mguzik.redhat.com>
-References: <1400005862-3751-1-git-send-email-mguzik@redhat.com>
- <1400005862-3751-2-git-send-email-mguzik@redhat.com>
- <1400006371.24350.45.camel@joe-AO725>
+	id S1751409AbaEMS6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 14:58:37 -0400
+Message-ID: <53725FF6.6060004@redhat.com>
+Date: Tue, 13 May 2014 19:09:58 +0100
+From: Pedro Alves <palves@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1400006371.24350.45.camel@joe-AO725>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, hpa@zytor.com, suresh.b.siddha@intel.com
+Subject: Re: [PATCH] ptrace: Fix PTRACE_GETREGSET/PTRACE_SETREGSET in code
+ documentation
+References: <1398682853-7541-1-git-send-email-khandual@linux.vnet.ibm.com> <53625681.8010905@redhat.com> <53670F35.6010502@linux.vnet.ibm.com>
+In-Reply-To: <53670F35.6010502@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 11:39:31AM -0700, Joe Perches wrote:
-> On Tue, 2014-05-13 at 20:31 +0200, Mateusz Guzik wrote:
-> > This helps hang troubleshooting efforts when only dmesg is available.
-> []
-> > diff --git a/fs/super.c b/fs/super.c
-> []
-> > @@ -1289,12 +1289,9 @@ int freeze_super(struct super_block *sb)
-> >  		return 0;	/* sic - it's "nothing to do" */
-> >  	}
-> >  
-> > -	if (sb->s_flags & MS_RDONLY) {
-> > +	if (sb->s_flags & MS_RDONLY)
-> >  		/* Nothing to do really... */
-> > -		sb->s_writers.frozen = SB_FREEZE_COMPLETE;
-> > -		up_write(&sb->s_umount);
-> > -		return 0;
-> > -	}
-> > +		goto out;
+On 05/05/14 05:10, Anshuman Khandual wrote:
+> On 05/01/2014 07:43 PM, Pedro Alves wrote:
+>> On 04/28/2014 12:00 PM, Anshuman Khandual wrote:
+>>> The current documentation is bit misleading and does not explicitly
+>>> specify that iov.len need to be initialized failing which kernel
+>>> may just ignore the ptrace request and never read from/write into
+>>> the user specified buffer. This patch fixes the documentation.
+>>
+>> Well, it kind of does, here:
+>>
+>> *      struct iovec iov = { buf, len};
 > 
-> Should this block really be part of this patch?
-> If so, please add a small note to the commit log.
+> :) Thats not explicit enough.
 > 
-
-This is the same code which you can find at the end of the function.
-I added the label so that I can write freeze printk only once.
-
-> I'm not sure making the reader goto out for this
-> bit of the code needs doing as there are multiple
-> blocks with return above here.
+>>
+>>> @@ -43,8 +43,12 @@
+>>>   *
+>>>   *	ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
+>>>   *
+>>> - * On the successful completion, iov.len will be updated by the kernel,
+>>> - * specifying how much the kernel has written/read to/from the user's iov.buf.
+>>> + * A non-zero value upto the max size of data expected to be written/read by the
+>>> + * kernel in response to any NT_XXX_TYPE request type must be assigned to iov.len
+>>> + * before initiating the ptrace call. If iov.len is 0, then kernel will neither
+>>> + * read from or write into the user buffer specified. On successful completion,
+>>> + * iov.len will be updated by the kernel, specifying how much the kernel has
+>>> + * written/read to/from the user's iov.buf.
+>>
+>> I really appreciate that you're trying to make this clearer, but I
+>> find the new sentence very hard to read/reason.  :-/
+>>
+>> I suggest:
+>>
+>>  * This interface usage is as follows:
+>> - *      struct iovec iov = { buf, len};
+>> + *      struct iovec iov = { buf, len };
+>>  *
+>>  *      ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
+>>  *
+>> - * On the successful completion, iov.len will be updated by the kernel,
+>> - * specifying how much the kernel has written/read to/from the user's iov.buf.
+>> + * On entry, iov describes the buffer's address and length.  The buffer's
+>> + * length must be equal to or shorter than the size of the NT_XXX_TYPE regset.
+>> + * On successful completion, iov.len is updated by the kernel, specifying how
+>> + * much the kernel has written/read to/from the user's iov.buf.
+>>
 > 
+> Yeah, sounds better. I may add "If the length is zero, the kernel will neither read
+> from or write into the buffer"
 
-There are 2. One just returns an error and second one does not change
-s_writers.frozen, so unreezing of something like this would fail.
+Well, I think that much should be obvious.  What's not obvious is
+whether that is considered success or error (what is the return code?)
+I suspect and expect success return if the regset type is known, and
+error otherwise.  So that could be used as a way to probe for support
+for a given regset without using stack or heap space, if it ever matters.
+The kernel never reads/writes beyond iov.len, so better say that, and
+then it automatically gets the 0 case handled too, right?
 
-However, the case which got modified results in unfreezable fs, so not
-printing the message for this case would result in unmatched entries in
-the log.
+>> I'm not sure I understood what you're saying correctly, though.  Specifically,
+>> I don't know whether the buffer's length must really be shorter than the
+>> size of the NT_XXX_TYPE regset.
+> 
+> No, it does not have to. From the code snippet below (ptrace_regset function)
+> the buffer length has to be multiple of regset->size for the given NT_XXX_TYPE
+> upto the max regset size for the user to see any valid data.
 
-> Trivially, when there is a comment in a single line
-> like this, then braces are often used too.
+Ah, I guess one could call it a bug.  If the passed in
+len is bigger than the whole register set size, then there seems
+to be no point in validating whether the length is multiple of
+a single register's size.  That unnecessarily prevents coming up
+with a register set in the future that has registers of
+different sizes...
+
+But given that that's how things are today, I suppose we should
+document it...
+
+ The problem what I
+> faced was when you use any iovec structure with the length parameter uninitialized,
+> the kernel simply ignores and does not return anything.
+
+Ah.  Well, saying "does not return anything" is quite confusing.  It does
+return something -- -EINVAL.
+
+> 
+>         if (!regset || (kiov->iov_len % regset->size) != 0)
+>                 return -EINVAL;
+
 >  
+>>
+>>> The current documentation is bit misleading and does not explicitly
+>>> specify that iov.len need to be initialized failing which kernel
+>>> may just ignore the ptrace request and never read from/write into
+>>> the user specified buffer.
+>>
+>> You're saying that if iov.len is larger than the NT_XXX_TYPE regset,
+>> then the kernel returns _success_, but actually doesn't fill the
+>> buffer?  That sounds like a bug to me.
+> 
+> No, I am not saying that. The kernel takes care of that situation by capping
+> the length to regset size of the NT_XXX_TYPE.
+> 
+>  kiov->iov_len = min(kiov->iov_len,
+>                             (__kernel_size_t) (regset->n * regset->size));
+> 
+> 
 
-Thanks, I'll send a modified patch later. Waiting for some other comments.
+OK, then this is what I suggest instead:
+
+   * This interface usage is as follows:
+ - *      struct iovec iov = { buf, len};
+ + *      struct iovec iov = { buf, len };
+   *
+   *      ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
+   *
+   * On the successful completion, iov.len will be updated by the kernel,
+ - * specifying how much the kernel has written/read to/from the user's iov.buf.
+ + * On entry, iov describes the buffer's address and length.  The buffer's
+ + * length must be a multiple of the size of a single register in the register set.
+ + * The kernel never reads or writes more than iov.len, and caps the buffer
+ + * length to the register set's size.  In other words, the kernel reads or
+ + * writes min(iov.len, regset size).
+ + * On successful completion, iov.len is updated by the kernel, specifying how
+ + * much the kernel has read from / written to the user's iov.buf.
+
+> Shall I resend the patch with the your proposed changes and your "Signed-off-by" and
+> moving myself as "Reported-by" ?
+
+No idea of the actual policy to follow.  Feel free to do that if that's the
+standard procedure.
 
 -- 
-Mateusz Guzik
+Pedro Alves
+
