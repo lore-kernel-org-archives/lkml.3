@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760487AbaEMKhp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:37:45 -0400
+	id S1760954AbaEMKiB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:38:01 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760678AbaEMKKu (ORCPT
+	by vger.kernel.org with ESMTP id S1760494AbaEMKKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:10:50 -0400
+	Tue, 13 May 2014 06:10:49 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 176/182] aio: v4 ensure access to ctx->ring_pages is correctly serialised for migration
-Date: Tue, 13 May 2014 11:28:48 +0200
-Message-Id: <57b8a44ac08ff821c4f83890765abfd4db2b63bb.1399973152.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Junxiao Bi <junxiao.bi@oracle.com>,
+        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 111/182] ocfs2: dlm: fix recovery hung
+Date: Tue, 13 May 2014 11:27:43 +0200
+Message-Id: <e2b81e8cbfabb32fcc4738c1eacac25d42d33cfb.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -24,308 +26,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin LaHaise <bcrl@kvack.org>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit fa8a53c39f3fdde98c9eace6a9b412143f0f6ed6 upstream.
+commit ded2cf71419b9353060e633b59e446c42a6a2a09 upstream.
 
-As reported by Tang Chen, Gu Zheng and Yasuaki Isimatsu, the following issues
-exist in the aio ring page migration support.
+There is a race window in dlm_do_recovery() between dlm_remaster_locks()
+and dlm_reset_recovery() when the recovery master nearly finish the
+recovery process for a dead node.  After the master sends FINALIZE_RECO
+message in dlm_remaster_locks(), another node may become the recovery
+master for another dead node, and then send the BEGIN_RECO message to
+all the nodes included the old master, in the handler of this message
+dlm_begin_reco_handler() of old master, dlm->reco.dead_node and
+dlm->reco.new_master will be set to the second dead node and the new
+master, then in dlm_reset_recovery(), these two variables will be reset
+to default value.  This will cause new recovery master can not finish
+the recovery process and hung, at last the whole cluster will hung for
+recovery.
 
-As a result, for example, we have the following problem:
+old recovery master:                                 new recovery master:
+dlm_remaster_locks()
+                                                  become recovery master for
+                                                  another dead node.
+                                                  dlm_send_begin_reco_message()
+dlm_begin_reco_handler()
+{
+ if (dlm->reco.state & DLM_RECO_STATE_FINALIZE) {
+  return -EAGAIN;
+ }
+ dlm_set_reco_master(dlm, br->node_idx);
+ dlm_set_reco_dead_node(dlm, br->dead_node);
+}
+dlm_reset_recovery()
+{
+ dlm_set_reco_dead_node(dlm, O2NM_INVALID_NODE_NUM);
+ dlm_set_reco_master(dlm, O2NM_INVALID_NODE_NUM);
+}
+                                                  will hang in dlm_remaster_locks() for
+                                                  request dlm locks info
 
-            thread 1                      |              thread 2
-                                          |
-aio_migratepage()                         |
- |-> take ctx->completion_lock            |
- |-> migrate_page_copy(new, old)          |
- |   *NOW*, ctx->ring_pages[idx] == old   |
-                                          |
-                                          |    *NOW*, ctx->ring_pages[idx] == old
-                                          |    aio_read_events_ring()
-                                          |     |-> ring = kmap_atomic(ctx->ring_pages[0])
-                                          |     |-> ring->head = head;          *HERE, write to the old ring page*
-                                          |     |-> kunmap_atomic(ring);
-                                          |
- |-> ctx->ring_pages[idx] = new           |
- |   *BUT NOW*, the content of            |
- |    ring_pages[idx] is old.             |
- |-> release ctx->completion_lock         |
+Before send FINALIZE_RECO message, recovery master should set
+DLM_RECO_STATE_FINALIZE for itself and clear it after the recovery done,
+this can break the race windows as the BEGIN_RECO messages will not be
+handled before DLM_RECO_STATE_FINALIZE flag is cleared.
 
-As above, the new ring page will not be updated.
+A similar race may happen between new recovery master and normal node
+which is in dlm_finalize_reco_handler(), also fix it.
 
-Fix this issue, as well as prevent races in aio_ring_setup() by holding
-the ring_lock mutex during kioctx setup and page migration.  This avoids
-the overhead of taking another spinlock in aio_read_events_ring() as Tang's
-and Gu's original fix did, pushing the overhead into the migration code.
-
-Note that to handle the nesting of ring_lock inside of mmap_sem, the
-migratepage operation uses mutex_trylock().  Page migration is not a 100%
-critical operation in this case, so the ocassional failure can be
-tolerated.  This issue was reported by Sasha Levin.
-
-Based on feedback from Linus, avoid the extra taking of ctx->completion_lock.
-Instead, make page migration fully serialised by mapping->private_lock, and
-have aio_free_ring() simply disconnect the kioctx from the mapping by calling
-put_aio_ring_file() before touching ctx->ring_pages[].  This simplifies the
-error handling logic in aio_migratepage(), and should improve robustness.
-
-v4: always do mutex_unlock() in cases when kioctx setup fails.
-
-Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
+Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/aio.c | 120 +++++++++++++++++++++++++++++++++++----------------------------
- 1 file changed, 67 insertions(+), 53 deletions(-)
+ fs/ocfs2/dlm/dlmrecovery.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 062a5f6a1448..12a3de0ee6da 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -52,7 +52,8 @@
- struct aio_ring {
- 	unsigned	id;	/* kernel internal index number */
- 	unsigned	nr;	/* number of io_events */
--	unsigned	head;
-+	unsigned	head;	/* Written to by userland or under ring_lock
-+				 * mutex by aio_read_events_ring(). */
- 	unsigned	tail;
- 
- 	unsigned	magic;
-@@ -243,6 +244,11 @@ static void aio_free_ring(struct kioctx *ctx)
- {
- 	int i;
- 
-+	/* Disconnect the kiotx from the ring file.  This prevents future
-+	 * accesses to the kioctx from page migration.
-+	 */
-+	put_aio_ring_file(ctx);
-+
- 	for (i = 0; i < ctx->nr_pages; i++) {
- 		struct page *page;
- 		pr_debug("pid(%d) [%d] page->count=%d\n", current->pid, i,
-@@ -254,8 +260,6 @@ static void aio_free_ring(struct kioctx *ctx)
- 		put_page(page);
+diff --git a/fs/ocfs2/dlm/dlmrecovery.c b/fs/ocfs2/dlm/dlmrecovery.c
+index 723063bf0842..7b4a3fa63fab 100644
+--- a/fs/ocfs2/dlm/dlmrecovery.c
++++ b/fs/ocfs2/dlm/dlmrecovery.c
+@@ -537,7 +537,10 @@ master_here:
+ 		/* success!  see if any other nodes need recovery */
+ 		mlog(0, "DONE mastering recovery of %s:%u here(this=%u)!\n",
+ 		     dlm->name, dlm->reco.dead_node, dlm->node_num);
+-		dlm_reset_recovery(dlm);
++		spin_lock(&dlm->spinlock);
++		__dlm_reset_recovery(dlm);
++		dlm->reco.state &= ~DLM_RECO_STATE_FINALIZE;
++		spin_unlock(&dlm->spinlock);
  	}
+ 	dlm_end_recovery(dlm);
  
--	put_aio_ring_file(ctx);
--
- 	if (ctx->ring_pages && ctx->ring_pages != ctx->internal_pages) {
- 		kfree(ctx->ring_pages);
- 		ctx->ring_pages = NULL;
-@@ -283,29 +287,38 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
- {
- 	struct kioctx *ctx;
- 	unsigned long flags;
-+	pgoff_t idx;
- 	int rc;
+@@ -695,6 +698,14 @@ static int dlm_remaster_locks(struct dlm_ctxt *dlm, u8 dead_node)
+ 		if (all_nodes_done) {
+ 			int ret;
  
- 	rc = 0;
- 
--	/* Make sure the old page hasn't already been changed */
-+	/* mapping->private_lock here protects against the kioctx teardown.  */
- 	spin_lock(&mapping->private_lock);
- 	ctx = mapping->private_data;
--	if (ctx) {
--		pgoff_t idx;
--		spin_lock_irqsave(&ctx->completion_lock, flags);
--		idx = old->index;
--		if (idx < (pgoff_t)ctx->nr_pages) {
--			if (ctx->ring_pages[idx] != old)
--				rc = -EAGAIN;
--		} else
--			rc = -EINVAL;
--		spin_unlock_irqrestore(&ctx->completion_lock, flags);
-+	if (!ctx) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
++			/* Set this flag on recovery master to avoid
++			 * a new recovery for another dead node start
++			 * before the recovery is not done. That may
++			 * cause recovery hung.*/
++			spin_lock(&dlm->spinlock);
++			dlm->reco.state |= DLM_RECO_STATE_FINALIZE;
++			spin_unlock(&dlm->spinlock);
 +
-+	/* The ring_lock mutex.  The prevents aio_read_events() from writing
-+	 * to the ring's head, and prevents page migration from mucking in
-+	 * a partially initialized kiotx.
-+	 */
-+	if (!mutex_trylock(&ctx->ring_lock)) {
-+		rc = -EAGAIN;
-+		goto out;
-+	}
-+
-+	idx = old->index;
-+	if (idx < (pgoff_t)ctx->nr_pages) {
-+		/* Make sure the old page hasn't already been changed */
-+		if (ctx->ring_pages[idx] != old)
-+			rc = -EAGAIN;
- 	} else
- 		rc = -EINVAL;
--	spin_unlock(&mapping->private_lock);
- 
- 	if (rc != 0)
--		return rc;
-+		goto out_unlock;
- 
- 	/* Writeback must be complete */
- 	BUG_ON(PageWriteback(old));
-@@ -314,38 +327,26 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
- 	rc = migrate_page_move_mapping(mapping, new, old, NULL, mode, 1);
- 	if (rc != MIGRATEPAGE_SUCCESS) {
- 		put_page(new);
--		return rc;
-+		goto out_unlock;
- 	}
- 
--	/* We can potentially race against kioctx teardown here.  Use the
--	 * address_space's private data lock to protect the mapping's
--	 * private_data.
-+	/* Take completion_lock to prevent other writes to the ring buffer
-+	 * while the old page is copied to the new.  This prevents new
-+	 * events from being lost.
- 	 */
--	spin_lock(&mapping->private_lock);
--	ctx = mapping->private_data;
--	if (ctx) {
--		pgoff_t idx;
--		spin_lock_irqsave(&ctx->completion_lock, flags);
--		migrate_page_copy(new, old);
--		idx = old->index;
--		if (idx < (pgoff_t)ctx->nr_pages) {
--			/* And only do the move if things haven't changed */
--			if (ctx->ring_pages[idx] == old)
--				ctx->ring_pages[idx] = new;
--			else
--				rc = -EAGAIN;
--		} else
--			rc = -EINVAL;
--		spin_unlock_irqrestore(&ctx->completion_lock, flags);
--	} else
--		rc = -EBUSY;
--	spin_unlock(&mapping->private_lock);
-+	spin_lock_irqsave(&ctx->completion_lock, flags);
-+	migrate_page_copy(new, old);
-+	BUG_ON(ctx->ring_pages[idx] != old);
-+	ctx->ring_pages[idx] = new;
-+	spin_unlock_irqrestore(&ctx->completion_lock, flags);
- 
--	if (rc == MIGRATEPAGE_SUCCESS)
--		put_page(old);
--	else
--		put_page(new);
-+	/* The old page is no longer accessible. */
-+	put_page(old);
- 
-+out_unlock:
-+	mutex_unlock(&ctx->ring_lock);
-+out:
-+	spin_unlock(&mapping->private_lock);
- 	return rc;
- }
- #endif
-@@ -380,7 +381,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	file = aio_private_file(ctx, nr_pages);
- 	if (IS_ERR(file)) {
- 		ctx->aio_ring_file = NULL;
--		return -EAGAIN;
-+		return -ENOMEM;
- 	}
- 
- 	ctx->aio_ring_file = file;
-@@ -415,7 +416,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 
- 	if (unlikely(i != nr_pages)) {
- 		aio_free_ring(ctx);
--		return -EAGAIN;
-+		return -ENOMEM;
- 	}
- 
- 	ctx->mmap_size = nr_pages * PAGE_SIZE;
-@@ -429,7 +430,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	if (IS_ERR((void *)ctx->mmap_base)) {
- 		ctx->mmap_size = 0;
- 		aio_free_ring(ctx);
--		return -EAGAIN;
-+		return -ENOMEM;
- 	}
- 
- 	pr_debug("mmap address: 0x%08lx\n", ctx->mmap_base);
-@@ -556,6 +557,10 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
- 					rcu_read_unlock();
- 					spin_unlock(&mm->ioctx_lock);
- 
-+					/* While kioctx setup is in progress,
-+					 * we are protected from page migration
-+					 * changes ring_pages by ->ring_lock.
-+					 */
- 					ring = kmap_atomic(ctx->ring_pages[0]);
- 					ring->id = ctx->id;
- 					kunmap_atomic(ring);
-@@ -640,24 +645,28 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 
- 	ctx->max_reqs = nr_events;
- 
--	if (percpu_ref_init(&ctx->users, free_ioctx_users))
--		goto err;
--
--	if (percpu_ref_init(&ctx->reqs, free_ioctx_reqs))
--		goto err;
--
- 	spin_lock_init(&ctx->ctx_lock);
- 	spin_lock_init(&ctx->completion_lock);
- 	mutex_init(&ctx->ring_lock);
-+	/* Protect against page migration throughout kiotx setup by keeping
-+	 * the ring_lock mutex held until setup is complete. */
-+	mutex_lock(&ctx->ring_lock);
- 	init_waitqueue_head(&ctx->wait);
- 
- 	INIT_LIST_HEAD(&ctx->active_reqs);
- 
-+	if (percpu_ref_init(&ctx->users, free_ioctx_users))
-+		goto err;
-+
-+	if (percpu_ref_init(&ctx->reqs, free_ioctx_reqs))
-+		goto err;
-+
- 	ctx->cpu = alloc_percpu(struct kioctx_cpu);
- 	if (!ctx->cpu)
- 		goto err;
- 
--	if (aio_setup_ring(ctx) < 0)
-+	err = aio_setup_ring(ctx);
-+	if (err < 0)
- 		goto err;
- 
- 	atomic_set(&ctx->reqs_available, ctx->nr_events - 1);
-@@ -683,6 +692,9 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 	if (err)
- 		goto err_cleanup;
- 
-+	/* Release the ring_lock mutex now that all setup is complete. */
-+	mutex_unlock(&ctx->ring_lock);
-+
- 	pr_debug("allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
- 		 ctx, ctx->user_id, mm, ctx->nr_events);
- 	return ctx;
-@@ -692,6 +704,7 @@ err_cleanup:
- err_ctx:
- 	aio_free_ring(ctx);
- err:
-+	mutex_unlock(&ctx->ring_lock);
- 	free_percpu(ctx->cpu);
- 	free_percpu(ctx->reqs.pcpu_count);
- 	free_percpu(ctx->users.pcpu_count);
-@@ -1024,6 +1037,7 @@ static long aio_read_events_ring(struct kioctx *ctx,
- 
- 	mutex_lock(&ctx->ring_lock);
- 
-+	/* Access to ->ring_pages here is protected by ctx->ring_lock. */
- 	ring = kmap_atomic(ctx->ring_pages[0]);
- 	head = ring->head;
- 	tail = ring->tail;
+ 			/* all nodes are now in DLM_RECO_NODE_DATA_DONE state
+ 	 		 * just send a finalize message to everyone and
+ 	 		 * clean up */
+@@ -2877,8 +2888,8 @@ int dlm_finalize_reco_handler(struct o2net_msg *msg, u32 len, void *data,
+ 				BUG();
+ 			}
+ 			dlm->reco.state &= ~DLM_RECO_STATE_FINALIZE;
++			__dlm_reset_recovery(dlm);
+ 			spin_unlock(&dlm->spinlock);
+-			dlm_reset_recovery(dlm);
+ 			dlm_kick_recovery_thread(dlm);
+ 			break;
+ 		default:
 -- 
 1.9.3
 
