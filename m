@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934235AbaEMPNZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:13:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7253 "EHLO mx1.redhat.com"
+	id S934260AbaEMPNb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:13:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46449 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934213AbaEMPNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:13:23 -0400
-Date: Tue, 13 May 2014 11:13:16 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, arozansk@redhat.com,
-        serge@hallyn.com, ebiederm@xmission.com, sgrubb@redhat.com
-Subject: Re: [PATCH V2 1/6] namespaces: assign each namespace instance a
- serial number
-Message-ID: <20140513151316.GE27560@madcap2.tricolour.ca>
-References: <cover.1399681022.git.rgb@redhat.com>
- <f34b584ffed2538176f9a366e25bb98c531fb70f.1399681022.git.rgb@redhat.com>
- <1399734119.3558.16.camel@localhost>
- <20140513143925.GD27560@madcap2.tricolour.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140513143925.GD27560@madcap2.tricolour.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934213AbaEMPN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 11:13:27 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Alexander Gordeev <agordeev@redhat.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        linux-pci@vger.kernel.org
+Subject: [PATCH v2 RESEND] rapidio/tsi721: Use pci_enable_msix_exact() instead of pci_enable_msix()
+Date: Tue, 13 May 2014 17:01:32 +0200
+Message-Id: <1399993292-31692-1-git-send-email-agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/05/13, Richard Guy Briggs wrote:
-> On 14/05/10, Eric Paris wrote:
-> > On Fri, 2014-05-09 at 20:27 -0400, Richard Guy Briggs wrote:
-> > > Generate and assign a serial number per namespace instance since boot.
-> > > 
-> > > Use a serial number per namespace (unique across one boot of one kernel)
-> > > instead of the inode number (which is claimed to have had the right to change
-> > > reserved and is not necessarily unique if there is more than one proc fs) to
-> > > uniquely identify it per kernel boot.
-> > > 
-> > > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> > > ---
-> > 
-> > > +/**
-> > > + * ns_serial - compute a serial number for the namespace
-> > > + *
-> > > + * Compute a serial number for the namespace to uniquely identify it in
-> > > + * audit records.
-> > > + */
-> > > +unsigned long long ns_serial(void)
-> > > +{
-> > > +	static DEFINE_SPINLOCK(serial_lock);
-> > > +	static unsigned long long serial = 4; /* reserved for IPC, UTS, user, PID */
-> > > +	unsigned long flags;
-> > > +
-> > > +	spin_lock_irqsave(&serial_lock, flags);
-> > > +	++serial;
-> > > +	spin_unlock_irqrestore(&serial_lock, flags);
-> > > +	BUG_ON(!serial);
-> > > +
-> > > +	return serial;
-> > > +}
-> > > +
-> > >  static inline struct nsproxy *create_nsproxy(void)
-> > >  {
-> > >  	struct nsproxy *nsproxy;
-> > 
-> > atomic64_t instead of doing it yourself?
-> 
-> I'm willing to switch to atomic64_*.  Thanks for pointing out its
-> existence.
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range()  or pci_enable_msi_exact()
+and pci_enable_msix_range() or pci_enable_msix_exact()
+interfaces.
 
-Same would then go for using atomic_t in audit_serial().
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: linux-pci@vger.kernel.org
+---
+ drivers/rapidio/devices/tsi721.c |   11 +++--------
+ 1 files changed, 3 insertions(+), 8 deletions(-)
 
-> > and why _irqsave() ?  Can we seriously create new namespaces in irq
-> > context?  If you use the atomic though, you don't have to worry about
-> > it...
-> 
-> Agreed.  That is unlikely.
-> 
-> - RGB
-> 
-> --
-> Richard Guy Briggs <rbriggs@redhat.com>
-> Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-> Remote, Ottawa, Canada
-> Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
+index 1753dc6..2ca1a0b 100644
+--- a/drivers/rapidio/devices/tsi721.c
++++ b/drivers/rapidio/devices/tsi721.c
+@@ -768,15 +768,10 @@ static int tsi721_enable_msix(struct tsi721_device *priv)
+ 	}
+ #endif /* CONFIG_RAPIDIO_DMA_ENGINE */
+ 
+-	err = pci_enable_msix(priv->pdev, entries, ARRAY_SIZE(entries));
++	err = pci_enable_msix_exact(priv->pdev, entries, ARRAY_SIZE(entries));
+ 	if (err) {
+-		if (err > 0)
+-			dev_info(&priv->pdev->dev,
+-				 "Only %d MSI-X vectors available, "
+-				 "not using MSI-X\n", err);
+-		else
+-			dev_err(&priv->pdev->dev,
+-				"Failed to enable MSI-X (err=%d)\n", err);
++		dev_err(&priv->pdev->dev,
++			"Failed to enable MSI-X (err=%d)\n", err);
+ 		return err;
+ 	}
+ 
+-- 
+1.7.7.6
 
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
