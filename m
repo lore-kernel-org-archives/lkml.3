@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760588AbaEMJt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:49:29 -0400
-Received: from mail.southpole.se ([37.247.8.11]:55793 "EHLO mail.southpole.se"
+	id S1760615AbaEMJuD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:50:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49960 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760100AbaEMJtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:49:16 -0400
-X-Greylist: delayed 1146 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 May 2014 05:49:16 EDT
-Message-ID: <5371E62F.9090203@southpole.se>
-Date: Tue, 13 May 2014 11:30:23 +0200
-From: Jonas Bonn <jonas@southpole.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Ley Foon Tan <lftan@altera.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: lftan.linux@gmail.com, cltang@codesourcery.com, linux@openrisc.net
-Subject: Re: [PATCH 16/25] openrisc: Add 32 bit time_t and clock_t
-References: <1399971456-3941-1-git-send-email-lftan@altera.com> <1399971958-4561-1-git-send-email-lftan@altera.com>
-In-Reply-To: <1399971958-4561-1-git-send-email-lftan@altera.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Assp-Version: 2.4.1(14097) on assp.southpole.se
-X-Assp-ID: assp.southpole.se 73406-00162
-X-Assp-Session: 7FF4E00483A8 (mail 1)
-X-Assp-Client-TLS: yes
-X-Assp-Server-TLS: yes
+	id S933024AbaEMJqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 05:46:07 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Dave Hansen <dave.hansen@intel.com>, Mel Gorman <mgorman@suse.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 11/19] mm: page_alloc: Lookup pageblock migratetype with IRQs enabled during free
+Date: Tue, 13 May 2014 10:45:42 +0100
+Message-Id: <1399974350-11089-12-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 11:05 AM, Ley Foon Tan wrote:
-> Override time_t and clock_t in include/uapi/asm-generic.
-> 
-> diff --git a/arch/openrisc/include/uapi/asm/posix_types.h b/arch/openrisc/include/uapi/asm/posix_types.h
-> new file mode 100644
-> index 0000000..5ccf37d
-> --- /dev/null
-> +++ b/arch/openrisc/include/uapi/asm/posix_types.h
-> @@ -0,0 +1,17 @@
-> +#ifndef __ARCH_OPENRISC_POSIX_TYPES_H
-> +#define __ARCH_OPENRISC_POSIX_TYPES_H
-> +
-> +/*
-> + * This file is generally used by user-level software, so you need to
-> + * be a little careful about namespace pollution etc. Also, we cannot
-> + * assume GCC is being used.
-> + */
+get_pageblock_migratetype() is called during free with IRQs disabled. This
+is unnecessary and disables IRQs for longer than necessary.
 
-I don't think the above comment needs to be copied to this file... given
-that the file is in the uapi/ directory, we know the file is exported to
-userspace, and the GCC comment isn't relevant given the rest of the
-files contents.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+---
+ mm/page_alloc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-But that's really just a nit!  Nice work, otherwise.
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 3948f0a..fcbf637 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -773,9 +773,9 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+ 	if (!free_pages_prepare(page, order))
+ 		return;
+ 
++	migratetype = get_pfnblock_migratetype(page, pfn);
+ 	local_irq_save(flags);
+ 	__count_vm_events(PGFREE, 1 << order);
+-	migratetype = get_pfnblock_migratetype(page, pfn);
+ 	set_freepage_migratetype(page, migratetype);
+ 	free_one_page(page_zone(page), page, pfn, order, migratetype);
+ 	local_irq_restore(flags);
+-- 
+1.8.4.5
 
-Acked-by: Jonas Bonn <jonas@southpole.se>
-
-> +typedef long	__kernel_time_t;
-> +#define __kernel_time_t __kernel_time_t
-> +
-> +typedef long	__kernel_clock_t;
-> +#define __kernel_clock_t __kernel_clock_t
-> +
-> +#include <asm-generic/posix_types.h>
-> +
-> +#endif
-> 
