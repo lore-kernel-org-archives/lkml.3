@@ -1,40 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933497AbaEMOaA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 10:30:00 -0400
-Received: from stringer.orebokech.com ([212.83.175.182]:34604 "EHLO
-	stringer.orebokech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754299AbaEMO37 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 10:29:59 -0400
-From: Romain Francoise <romain@orebokech.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Michael Mueller <mimu@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, borntraeger@de.ibm.com,
-        cornelia.huck@de.ibm.com, ddongch@cn.ibm.com
-Subject: Re: [PATCH v1] vhost: avoid large order allocations
-Organization: orebokech dot com
-References: <1399970133-46783-1-git-send-email-mimu@linux.vnet.ibm.com>
-	<1399970133-46783-2-git-send-email-mimu@linux.vnet.ibm.com>
-	<20140513084049.GE29442@redhat.com>
-Date: Tue, 13 May 2014 16:29:58 +0200
-In-Reply-To: <20140513084049.GE29442@redhat.com> (Michael S. Tsirkin's message
-	of "Tue, 13 May 2014 11:40:49 +0300")
-Message-ID: <87tx8tg3a1.fsf@kima.orebokech.com>
+	id S933089AbaEMOa4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 10:30:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57500 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760129AbaEMOay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 10:30:54 -0400
+Date: Tue, 13 May 2014 15:30:50 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Jan Kara <jack@suse.cz>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 17/19] fs: buffer: Do not use unnecessary atomic
+ operations when discarding buffers
+Message-ID: <20140513143050.GU23991@suse.de>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+ <1399974350-11089-18-git-send-email-mgorman@suse.de>
+ <20140513110951.GB30445@twins.programming.kicks-ass.net>
+ <20140513125007.GQ23991@suse.de>
+ <20140513134943.GD22070@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140513134943.GD22070@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael S. Tsirkin" <mst@redhat.com> writes:
+On Tue, May 13, 2014 at 03:49:43PM +0200, Jan Kara wrote:
+> > > operation which is available on a lot of architectures, we'll be stuck
+> > > with a cmpxchg loop instead :/
+> > > 
+> > > *sigh*
+> > > 
+> > > Anyway, nothing wrong with this patch, however, you could, if you really
+> > > wanted to push things, also include BH_Lock in that clear :-)
+> > 
+> > That's a bold strategy Cotton.
+> > 
+> > Untested patch on top
+>   Although this looks correct, I have to say I prefer the explicit
+> unlock_buffer() unless this has a measurable benefit.
+> 
 
-> Please dont' do this, extra indirection hurts performance.
-> Instead, please change vhost_net_open and scsi to allocate the whole
-> structure with vmalloc if kmalloc fails, along the lines of
-> 74d332c13b2148ae934ea94dac1745ae92efe8e5
+I will keep this as a separate patch, move it to the end of the series
+and check what the profiles look like. Thanks.
 
-Back in January 2013, you didn't seem to think it was a good idea:
-
-https://lkml.org/lkml/2013/1/23/492
+-- 
+Mel Gorman
+SUSE Labs
