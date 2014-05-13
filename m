@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758827AbaEMHTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 03:19:11 -0400
-Received: from mail04-md.ns.itscom.net ([175.177.155.114]:41615 "EHLO
-	mail04-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074AbaEMHTK (ORCPT
+	id S1758856AbaEMHTY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 03:19:24 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:43055 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758174AbaEMHTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 03:19:10 -0400
-From: "J. R. Okajima" <hooanon05g@gmail.com>
-Subject: Re: [RFC PATCH] ima: audit log files opened with O_DIRECT flag
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module <linux-security-module@vger.kernel.org>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1399937259.25932.1.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <1399926266.6471.25.camel@dhcp-9-2-203-236.watson.ibm.com> <1399937259.25932.1.camel@dhcp-9-2-203-236.watson.ibm.com>
-Date: Tue, 13 May 2014 16:19:07 +0900
-Message-ID: <30700.1399965547@jrobl>
+	Tue, 13 May 2014 03:19:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <1398759571-13095-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>
+	<1398759571-13095-1-git-send-email-srinivas.kandagatla@linaro.org>
+Date: Tue, 13 May 2014 09:19:19 +0200
+Message-ID: <CACRpkdY6QLpJQuNqC4qqsPWgVTxF8NiGd=eWUEWRkzdh68j9_A@mail.gmail.com>
+Subject: Re: [PATCH v1 03/11] mmc: mmci: Add Qcom datactrl register variant
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        agross@quicinc.com,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 29, 2014 at 10:19 AM,  <srinivas.kandagatla@linaro.org> wrote:
 
-Mimi Zohar:
-> As a temporary fix, do not measure, appraise, or audit files
-> opened with the O_DIRECT flag set.  Just audit log it.
+> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+>
+> Instance of this IP on Qualcomm's SOCs has bit different layout for datactrl
+> register. Bit postion datactrl[16:4] hold the true block size instead of power
+> of 2.
+>
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-I have no objection about the patch, but have a question.
-Are you intending to put it into mainline now (and stable too)? Or is
-this a local bandage for whoever have met the problem (like me)?
-In other words, should I wait for another lock free solution from Dmitry
-Kasatkin?
+This is probably something I got wrong when I attempted to use
+this driver on the Dragon board. Now I see what I missed...
 
-By the way, the mail is not delivered to stable-ML while there is
-"Cc: stable..." line in the commit log.
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 
-
-J. R. Okajima
+Yours,
+Linus Walleij
