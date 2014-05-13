@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919AbaEMUu6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 16:50:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54133 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752330AbaEMUuu (ORCPT
+	id S1755105AbaEMUvN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 16:51:13 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:40097 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754929AbaEMUu7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 16:50:50 -0400
-Date: Tue, 13 May 2014 13:50:49 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Joel Becker <jlbec@evilplan.org>
-Subject: Re: [PATCH 2/2] FS/CONFIGFS: Use pr_fmt
-Message-Id: <20140513135049.2d160a63d662b3aab6ba3c03@linux-foundation.org>
-In-Reply-To: <20140513202428.77c59d530a2c2154a9902cb3@skynet.be>
-References: <20140513202428.77c59d530a2c2154a9902cb3@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 13 May 2014 16:50:59 -0400
+Date: Tue, 13 May 2014 22:50:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        mingo@kernel.org, will.deacon@arm.com, paulmck@linux.vnet.ibm.com,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>
+Subject: Re: [PATCH 06/20] arch,avr32: Fold atomic_ops
+Message-ID: <20140513205045.GK2485@laptop.programming.kicks-ass.net>
+References: <20140508135840.956784204@infradead.org>
+ <20140508135852.049922584@infradead.org>
+ <20140509183241.GA4491@samfundet.no>
+ <20140509204309.GA13467@laptop.programming.kicks-ass.net>
+ <20140509205155.GH1429@laptop.programming.kicks-ass.net>
+ <20140509211728.GI1429@laptop.programming.kicks-ass.net>
+ <20140513204032.GB14023@samfundet.no>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140513204032.GB14023@samfundet.no>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 May 2014 20:24:28 +0200 Fabian Frederick <fabf@skynet.be> wrote:
+On Tue, May 13, 2014 at 10:40:32PM +0200, Hans-Christian Egtvedt wrote:
+> Probably found the reason why we want to use sub with the signed 21-bit
+> limit, it uses one less register than the add instruction that can add up to
+> 32-bit values.
+> 
+> Both instructions are 32-bit, to use a 16-bit instruction the immediate is
+> very small; 4 bit.
+> 
+> sub 32-bit, type IV, takes a register and subtracts a 21-bit immediate.
+> add 32-bit, type II, adds two register values together.
+> 
+> So by simplifying you loose this optimization.
 
-> -Adding pr_fmt based on module name.
->
-> ...
->
-> --- a/fs/configfs/configfs_internal.h
-> +++ b/fs/configfs/configfs_internal.h
-> @@ -24,6 +24,12 @@
->   * configfs Copyright (C) 2005 Oracle.  All rights reserved.
->   */
->  
-> +#ifdef pr_fmt
-> +#undef pr_fmt
-> +#endif
+OK, let me try if I can come up with anything sane for this.
 
-Why this?
-
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
->  #include <linux/slab.h>
->  #include <linux/list.h>
->  #include <linux/spinlock.h>
->
-> ...
->
+Re, adding atomic_{or,and,xor}() those should all use the same bits as
+add, right, except for the special case using sub.
