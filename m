@@ -1,37 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaEMQ7M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 12:59:12 -0400
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:46991 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751991AbaEMQ7D (ORCPT
+	id S1752900AbaEMQ7n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:59:43 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36641 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288AbaEMQ7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 12:59:03 -0400
-Date: Tue, 13 May 2014 12:59:01 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org
-Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: iterate cgroup_subsys_states
- directly
-Message-ID: <20140513165901.GF1866@htj.dyndns.org>
-References: <1399671091-23867-1-git-send-email-tj@kernel.org>
+	Tue, 13 May 2014 12:59:34 -0400
+Date: Tue, 13 May 2014 18:59:44 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Tony Lu <zlu@tilera.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Anvin <hpa@zytor.com>,
+        Tony Luck <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [patch 03/32] genirq: Provide generic hwirq allocation
+ facility
+In-Reply-To: <alpine.DEB.2.02.1405081140410.6261@ionos.tec.linutronix.de>
+Message-ID: <alpine.DEB.2.02.1405131858520.6261@ionos.tec.linutronix.de>
+References: <20140507153622.703412101@linutronix.de> <20140507154334.208629358@linutronix.de> <536A998A.4000307@tilera.com> <alpine.DEB.2.02.1405072259230.6261@ionos.tec.linutronix.de> <alpine.DEB.2.02.1405081140410.6261@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399671091-23867-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 05:31:17PM -0400, Tejun Heo wrote:
-> and available in the following git branch.
+Chris,
+
+On Thu, 8 May 2014, Thomas Gleixner wrote:
+> On Thu, 8 May 2014, Thomas Gleixner wrote:
+> > Now on top of that we need irq domain support for this kind of matrix
+> > mappings down to the vector level and everything else falls in
+> > place. I have not thought through the irq domain angle, but maybe
+> > Grant/Ben can give some input on that.
 > 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-direct-css-iteration
+> Just talked to Grant to get my irqdomain foo up to speed.
+> 
+> irq domains support parent irq domains already, which allow you to
+> request an irq from the parent.
+> 
+> What's missing is:
+> 
+> - a bitmap based matrix vector allocator, but that shouldn't be rocket
+>   science to write one.
+> 
+> - a mechanism to hand a cpumask down in the allocation chain
+> 
+> - a shortcut support to avoid multi level map lookups for the fast
+>   path.
+> 
+> Once we have that everything just falls in place and when tile and x86
+> are switched over we can rip out the LEGACY allocator again. That'll
+> leave itanic with its homebrewn create_irq machinery, but I'm happy to
+> ignore that as this is almost completely confined in ia64 code where
+> is can bitrot happily until it sinks.
 
-Refreshed on top of cgroup/for-3.16 with the updated patches.
+any comment on this ?
 
-Thanks.
+Thanks,
 
--- 
-tejun
+	tglx
