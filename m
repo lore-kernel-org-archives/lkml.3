@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760375AbaEMKGp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:06:45 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60796 "EHLO
+	id S932795AbaEMKIj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:08:39 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60797 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760062AbaEMJ2z (ORCPT
+	by vger.kernel.org with ESMTP id S1760056AbaEMJ2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 May 2014 05:28:55 -0400
 From: Jiri Slaby <jslaby@suse.cz>
@@ -12,9 +12,9 @@ To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>,
         Lee Jones <lee.jones@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 043/182] mfd: tps65910: Fix possible invalid pointer dereference on regmap_add_irq_chip fail
-Date: Tue, 13 May 2014 11:26:35 +0200
-Message-Id: <3ddfbfde82ad5c0447ad9064194d8c34a498f3eb.1399973152.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 036/182] mfd: 88pm860x: Fix I2C device resource leak on regmap init fail
+Date: Tue, 13 May 2014 11:26:28 +0200
+Message-Id: <3b1106ddcd858ca003b7da2216aeecd5a89f9b3f.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -30,44 +30,32 @@ From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
 ===============
 
-commit 483e2dfdbc94751430e41db9973985f5b054d322 upstream.
+commit a7ab1c8b261305af583ce26bb4a14f555fdaa73e upstream.
 
-Fixes: 4aab3fadad32 ("mfd: tps65910: Move interrupt implementation code to mfd file")
-
-tps65910_irq_init() sets 'tps65910->chip_irq' before calling
-regmap_add_irq_chip(). If the regmap_add_irq_chip() call fails in
-memory allocation of regmap_irq_chip_data members then:
-
-1. The 'tps65910->chip_irq' will still hold some value
-2. 'tps65910->irq_data' will be pointing to already freed memory
-   (because regmap_add_irq_chip() will free it on error)
-
-This results in invalid memory access during driver remove because the
-tps65910_irq_exit() tests whether 'tps65910->chip_irq' is not zero.
+During probe the driver allocates dummy I2C device for companion chip
+and then allocates a regmap for it. If regmap_init_i2c() fails then the
+I2C driver (allocated with i2c_new_dummy()) is not freed and this
+resource leaks.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/mfd/tps65910.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/mfd/88pm860x-core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index d79277204835..de87eafbeb05 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -254,8 +254,10 @@ static int tps65910_irq_init(struct tps65910 *tps65910, int irq,
- 	ret = regmap_add_irq_chip(tps65910->regmap, tps65910->chip_irq,
- 		IRQF_ONESHOT, pdata->irq_base,
- 		tps6591x_irqs_chip, &tps65910->irq_data);
--	if (ret < 0)
-+	if (ret < 0) {
- 		dev_warn(tps65910->dev, "Failed to add irq_chip %d\n", ret);
-+		tps65910->chip_irq = 0;
-+	}
- 	return ret;
- }
- 
+diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
+index 675f96b37643..a141b460697d 100644
+--- a/drivers/mfd/88pm860x-core.c
++++ b/drivers/mfd/88pm860x-core.c
+@@ -1190,6 +1190,7 @@ static int pm860x_probe(struct i2c_client *client,
+ 			ret = PTR_ERR(chip->regmap_companion);
+ 			dev_err(&chip->companion->dev,
+ 				"Failed to allocate register map: %d\n", ret);
++			i2c_unregister_device(chip->companion);
+ 			return ret;
+ 		}
+ 		i2c_set_clientdata(chip->companion, chip);
 -- 
 1.9.3
 
