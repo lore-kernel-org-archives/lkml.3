@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933775AbaEMKQC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:16:02 -0400
+	id S933629AbaEMKLp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:11:45 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933639AbaEMKLr (ORCPT
+	by vger.kernel.org with ESMTP id S933513AbaEMKLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:11:47 -0400
+	Tue, 13 May 2014 06:11:41 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Matthew Wilcox <willy@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Kazuya Mio <k-mio@sx.jp.nec.com>,
         "Theodore Ts'o" <tytso@mit.edu>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 116/182] ext4: note the error in ext4_end_bio()
-Date: Tue, 13 May 2014 11:27:48 +0200
-Message-Id: <2c8b455bfb89a84a0195b72fffe6166532749c02.1399973152.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 115/182] ext4: FIBMAP ioctl causes BUG_ON due to handle EXT_MAX_BLOCKS
+Date: Tue, 13 May 2014 11:27:47 +0200
+Message-Id: <ba6825df62da40b27bf5f28f9ef14051f3b0ff52.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -24,48 +23,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Wilcox <willy@linux.intel.com>
+From: Kazuya Mio <k-mio@sx.jp.nec.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 9503c67c93ed0b95ba62d12d1fd09da6245dbdd6 upstream.
+commit 4adb6ab3e0fa71363a5ef229544b2d17de6600d7 upstream.
 
-ext4_end_bio() currently throws away the error that it receives.  Chances
-are this is part of a spate of errors, one of which will end up getting
-the error returned to userspace somehow, but we shouldn't take that risk.
-Also print out the errno to aid in debug.
+When we try to get 2^32-1 block of the file which has the extent
+(ee_block=2^32-2, ee_len=1) with FIBMAP ioctl, it causes BUG_ON
+in ext4_ext_put_gap_in_cache().
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+To avoid the problem, ext4_map_blocks() needs to check the file logical block
+number. ext4_ext_put_gap_in_cache() called via ext4_map_blocks() cannot
+handle 2^32-1 because the maximum file logical block number is 2^32-2.
+
+Note that ext4_ind_map_blocks() returns -EIO when the block number is invalid.
+So ext4_map_blocks() should also return the same errno.
+
+Signed-off-by: Kazuya Mio <k-mio@sx.jp.nec.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/ext4/page-io.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/ext4/inode.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/fs/ext4/page-io.c b/fs/ext4/page-io.c
-index d7d0c7b46ed4..02e94ef1489b 100644
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -307,13 +307,14 @@ static void ext4_end_bio(struct bio *bio, int error)
- 	if (error) {
- 		struct inode *inode = io_end->inode;
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index f173ef12c97a..8fdf99bf18d6 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -515,6 +515,10 @@ int ext4_map_blocks(handle_t *handle, struct inode *inode,
+ 		  "logical block %lu\n", inode->i_ino, flags, map->m_len,
+ 		  (unsigned long) map->m_lblk);
  
--		ext4_warning(inode->i_sb, "I/O error writing to inode %lu "
-+		ext4_warning(inode->i_sb, "I/O error %d writing to inode %lu "
- 			     "(offset %llu size %ld starting block %llu)",
--			     inode->i_ino,
-+			     error, inode->i_ino,
- 			     (unsigned long long) io_end->offset,
- 			     (long) io_end->size,
- 			     (unsigned long long)
- 			     bi_sector >> (inode->i_blkbits - 9));
-+		mapping_set_error(inode->i_mapping, error);
- 	}
- 
- 	if (io_end->flag & EXT4_IO_END_UNWRITTEN) {
++	/* We can handle the block number less than EXT_MAX_BLOCKS */
++	if (unlikely(map->m_lblk >= EXT_MAX_BLOCKS))
++		return -EIO;
++
+ 	/* Lookup extent status tree firstly */
+ 	if (ext4_es_lookup_extent(inode, map->m_lblk, &es)) {
+ 		ext4_es_lru_add(inode);
 -- 
 1.9.3
 
