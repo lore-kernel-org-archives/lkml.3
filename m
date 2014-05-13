@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933243AbaEMQJz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 12:09:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57258 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750916AbaEMQJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 12:09:29 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20140501123738.3e64b2d2@notabene.brown>
-References: <20140501123738.3e64b2d2@notabene.brown>
-To: NeilBrown <neilb@suse.de>
-Cc: dhowells@redhat.com, Peter Zijlstra <peterz@infradead.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, dm-devel@redhat.com,
-        Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        Steve French <sfrench@samba.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] SCHED: remove proliferation of wait_on_bit action functions.
-Date: Tue, 13 May 2014 17:08:46 +0100
-Message-ID: <30874.1399997326@warthog.procyon.org.uk>
+	id S933305AbaEMQKv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:10:51 -0400
+Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:46816 "EHLO
+	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752120AbaEMQKo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 12:10:44 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgkXAL1CclNbtADP/2dsb2JhbABZgwasdgQBAQEBAQEFAZoXAgKBIhd0gmYcIxiBAiQTiEUB0HeFVoh8hEcBA48liiIBiwSIA4M4Ow
+Date: Tue, 13 May 2014 18:10:39 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Steve French <sfrench@samba.org>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/cifs/netmisc.c: convert printk to pr_foo()
+Message-Id: <20140513181039.9766ed456a097164a195d2fe@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NeilBrown <neilb@suse.de> wrote:
+Also fixes array checkpatch warning.
 
-> The current "wait_on_bit" interface requires an 'action' function
-> to be provided which does the actual waiting.
-> There are over 20 such functions, many of them identical.
-> Most cases can be satisfied by one of just two functions, one
-> which uses io_schedule() and one which just uses schedule().
-> 
-> So:
->  Rename wait_on_bit and        wait_on_bit_lock to
->         wait_on_bit_action and wait_on_bit_lock_action
->  to make it explicit that they need an action function.
-> 
->  Introduce new wait_on_bit{,_lock} and wait_on_bit{,_lock}_io
->  which are *not* given an action function but implicitly use
->  a standard one.
->  The decision to error-out if a signal is pending is now made
->  based on the 'mode' argument rather than being encoded in the action
->  function.
+Cc: Steve French <sfrench@samba.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/cifs/netmisc.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Yay!  About time!  This is something I've wanted to do for ages, but never
-quite got around to.
+diff --git a/fs/cifs/netmisc.c b/fs/cifs/netmisc.c
+index 0498845..4def0ae 100644
+--- a/fs/cifs/netmisc.c
++++ b/fs/cifs/netmisc.c
+@@ -795,8 +795,8 @@ cifs_print_status(__u32 status_code)
+ 	while (nt_errs[idx].nt_errstr != NULL) {
+ 		if (((nt_errs[idx].nt_errcode) & 0xFFFFFF) ==
+ 		    (status_code & 0xFFFFFF)) {
+-			printk(KERN_NOTICE "Status code returned 0x%08x %s\n",
+-				   status_code, nt_errs[idx].nt_errstr);
++			pr_notice("Status code returned 0x%08x %s\n",
++				  status_code, nt_errs[idx].nt_errstr);
+ 		}
+ 		idx++;
+ 	}
+@@ -941,8 +941,8 @@ cifs_UnixTimeToNT(struct timespec t)
+ 	return (u64) t.tv_sec * 10000000 + t.tv_nsec/100 + NTFS_TIME_OFFSET;
+ }
+ 
+-static int total_days_of_prev_months[] =
+-{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
++static int total_days_of_prev_months[] = {
++	0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+ 
+ struct timespec cnvrtDosUnixTm(__le16 le_date, __le16 le_time, int offset)
+ {
+-- 
+1.8.4.5
 
-Acked-by: David Howells <dhowells@redhat.com>
