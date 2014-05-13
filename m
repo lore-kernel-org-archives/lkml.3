@@ -1,101 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760421AbaEMKFi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:05:38 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:49112 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759631AbaEMKFh (ORCPT
+	id S1760931AbaEMKF6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:05:58 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60786 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760061AbaEMJ2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:05:37 -0400
-Date: Tue, 13 May 2014 12:03:35 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: abdoulaye berthe <berthe.ab@gmail.com>
-Cc: linus.walleij@linaro.org, gnurou@gmail.com, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio: using devm functions for timberdale gpio memory
- allocation This eases memory allocation and provides appropriate logging
-Message-ID: <20140513100334.GA27345@ulmo>
-References: <1399944102-9089-1-git-send-email-berthe.ab@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="W/nzBZO5zC0uMSeA"
-Content-Disposition: inline
-In-Reply-To: <1399944102-9089-1-git-send-email-berthe.ab@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 13 May 2014 05:28:55 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 041/182] mfd: max8998: Fix possible NULL pointer dereference on i2c_new_dummy error
+Date: Tue, 13 May 2014 11:26:33 +0200
+Message-Id: <6a435811f7836674fc15380ede736c490055e99b.1399973152.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
+References: <cover.1399973152.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
---W/nzBZO5zC0uMSeA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-On Tue, May 13, 2014 at 03:21:42AM +0200, abdoulaye berthe wrote:
-[...]
-> diff --git a/drivers/gpio/gpio-timberdale.c b/drivers/gpio/gpio-timberdal=
-e.c
-[...]
->  	iomem =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (!iomem) {
-> -		err =3D -EINVAL;
-> -		goto err_mem;
-> +		dev_err(dev, "Unable to get resource\n");
-> +		return -EINVAL;
->  	}
-[...]
-> -	if (!request_mem_region(iomem->start, resource_size(iomem),
-> -		DRIVER_NAME)) {
-> -		err =3D -EBUSY;
-> -		goto err_request;
-> +	if (!devm_request_mem_region(dev, iomem->start, resource_size(iomem),
-> +				     DRIVER_NAME)) {
-> +		dev_err(dev, "Region already claimed\n");
-> +		return -EBUSY;
->  	}
-> =20
-> -	tgpio->membase =3D ioremap(iomem->start, resource_size(iomem));
-> +	tgpio->membase =3D devm_ioremap(dev, iomem->start, resource_size(iomem)=
-);
->  	if (!tgpio->membase) {
-> -		err =3D -ENOMEM;
-> -		goto err_ioremap;
-> +		dev_err(dev, "Cannot ioremap\n");
-> +		return -ENOMEM;
->  	}
+===============
 
-The above could be further simplified to:
+commit ed26f87b9f71693a1d1ee85f5e6209601505080f upstream.
 
-	iomem =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	tgpio->membase =3D devm_ioremap_resource(&pdev->dev, iomem);
-	if (IS_ERR(tgpio->membase))
-		return PTR_ERR(tgpio->membase);
+During probe the driver allocates dummy I2C device for RTC with i2c_new_dummy() but it does not check the return value of this call.
 
-Where devm_ioremap_resource() already provides error messages as
-appropriate.
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by i2c_unregister_device().
 
-Thierry
+If i2c_new_dummy() fails for RTC device, fail also the probe for
+main MFD driver.
 
---W/nzBZO5zC0uMSeA
-Content-Type: application/pgp-signature
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/mfd/max8998.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
+index fe6332dcabee..25e131a0840a 100644
+--- a/drivers/mfd/max8998.c
++++ b/drivers/mfd/max8998.c
+@@ -215,6 +215,10 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
+ 	mutex_init(&max8998->iolock);
+ 
+ 	max8998->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
++	if (!max8998->rtc) {
++		dev_err(&i2c->dev, "Failed to allocate I2C device for RTC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(max8998->rtc, max8998);
+ 
+ 	max8998_irq_init(max8998);
+-- 
+1.9.3
 
-iQIcBAEBAgAGBQJTce32AAoJEN0jrNd/PrOhHcYQALXRFve6mBvV2XxhqjRlXW+t
-v75uejBBzLH/uo9O/g1WpVd0NBOo3Ll+3BLZ2rH7e2eLDgbBaW3vKrvQFCenAVY+
-UjO3mvXQUOvDhNPRBiCNrjCoYyI48aTQoPvwLlutaUNtx2JcA5jd96/V80OhSqPh
-C5he93sZP5+oMLb/aMLrGb4zGwxIRl7lpiYZESNw2AwyiQQhcAFApvWoJ0t2sJVF
-avz21DBfXd1ohfYP7HzS3lvLV7Ep+hZUBw6Z7E9f7R14d7ijI53d7KTvVUCISZHT
-7877AwMQaZ6K0YV86bnScJVlQh2rT/oQXgjFyV6F1FqJc35IEaNVUDi4FE5MKq4e
-GB7jNvucPNrfPPpMbGSYBCcJibcZh61ABYo5Jqu2PjxTA++w/GsY7nehywIRluAi
-hSxRySQcffmTBbh/U614wIgdOdJLZlGRdrAD3s0eHduCm7QnsbPfeVyAZfe68guI
-epPnyxC6sheXHKWBsNyKUT2eDYw42VgkOZ7Oj3X6SDB1KBDG+kHvVzFXZvNq6PCw
-54F60Vqjir6K8mr9QBlQD0xIPq5KUBetY0pt4BDiBty8DwZFErYf0VPyMe8HsmWB
-M1mJoTG4c3dk/e8XE6vRjswRMYdqLmViRl9xXoLEJhGXsJj7JuXZpR6qM4zj1CB0
-vPKjKizVe+uC6j+zFrnn
-=RGuE
------END PGP SIGNATURE-----
-
---W/nzBZO5zC0uMSeA--
