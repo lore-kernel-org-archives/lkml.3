@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255AbaEMQuG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 12:50:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49913 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752382AbaEMQtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 12:49:24 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: acme@ghostprotocols.net, peterz@infradead.org
-Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, namhyung@gmail.com,
-        eranian@google.com, Andi Kleen <andi@firstfloor.org>,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 4/6] perf report: Add mem-mode documentation to report command
-Date: Tue, 13 May 2014 12:48:15 -0400
-Message-Id: <1399999697-65875-5-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
-References: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
+	id S1753085AbaEMQuU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:50:20 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34453 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752809AbaEMQuH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 12:50:07 -0400
+Date: Tue, 13 May 2014 18:50:04 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux-pm mailing list <linux-pm@lists.osdl.org>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: 3.15-rc: regression in suspend
+Message-ID: <20140513165004.GA5662@amd.pavel.ucw.cz>
+References: <20140513160926.GA3621@amd.pavel.ucw.cz>
+ <87wqdpy7l9.fsf@nemi.mork.no>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87wqdpy7l9.fsf@nemi.mork.no>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add mem-mode sorting types and mem-mode itself to perf-report documentation.
+On Tue 2014-05-13 18:19:30, Bjørn Mork wrote:
+> Pavel Machek <pavel@ucw.cz> writes:
+> 
+> > There seems to be regression in 3.15 w.r.t. suspend to ram and suspend
+> > to disk.
+> >
+> > Resume sometiems works, but often, system is half-usable, with "what
+> > do you want to do suspend/hibernate" dialog staying on screen.
+> >
+> > I did echo disk > /sys/power/state, and echo never returned to the
+> > shell prompt. (X was not really working, either.)
+> >
+> > It is still there on 3.15.0-rc3+. I'll update to rc5 now.
+> >
+> > Any ideas?
+> 
+> This maybe? https://bugs.freedesktop.org/show_bug.cgi?id=76554
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- tools/perf/Documentation/perf-report.txt | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+I seen that one before. I debugged situation where only top 20% of
+screen was usable. But I believe that should be fixed.
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 09af662..bea1c83 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -98,6 +98,21 @@ OPTIONS
- 	And default sort keys are changed to comm, dso_from, symbol_from, dso_to
- 	and symbol_to, see '--branch-stack'.
- 
-+	If --mem-mode option is used, following sort keys are also available
-+	(incompatible with --branch-stack):
-+	symbol_daddr, dso_daddr, locked, tlb, mem, snoop.
-+
-+	- symbol_daddr: name of data symbol being executed on at the time of sample
-+	- dso_daddr: name of library or module containing the data being executed
-+	on at the time of sample
-+	- locked: whether the bus was locked at the time of sample
-+	- tlb: type of tlb access for the data at the time of sample
-+	- mem: type of memory access for the data at the time of sample
-+	- snoop: type of snoop (if any) for the data at the time of sample
-+
-+	And default sort keys are changed to local_weight, mem, sym, dso,
-+	symbol_daddr, dso_daddr, snoop, tlb, locked, see '--mem-mode'.
-+
- -p::
- --parent=<regex>::
-         A regex filter to identify parent. The parent is a caller of this
-@@ -236,6 +251,13 @@ OPTIONS
- 	Demangle symbol names to human readable form. It's enabled by default,
- 	disable with --no-demangle.
- 
-+--mem-mode::
-+	Use the data addresses of samples in addition to instruction addresses
-+	to build the histograms.  To generate meaningful output, the perf.data
-+	file must have been obtained using perf record -d -W and using a 
-+	special event -e cpu/mem-loads/ or -e cpu/mem-stores/. See
-+	'perf mem' for simpler access.
-+
- --percent-limit::
- 	Do not show entries which have an overhead under that percent.
- 	(Default: 0).
+Now... it seems that rc5 behaves ok... lets see if it happens again.
+
+Thanks,
+									Pavel
 -- 
-1.7.11.7
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
