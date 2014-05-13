@@ -1,81 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760429AbaEMJc4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:32:56 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:40468 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759394AbaEMJcx (ORCPT
+	id S1760236AbaEMJa0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:30:26 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33210 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759790AbaEMJ3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:32:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAAG0J9-ieBNfyRa6kf22TNd_3mg57GYuGHagQ-pPLY41iM3Zyg@mail.gmail.com>
-References: <1399971456-3941-1-git-send-email-lftan@altera.com>
-	<1399971749-4004-1-git-send-email-lftan@altera.com>
-	<CAAG0J9-ieBNfyRa6kf22TNd_3mg57GYuGHagQ-pPLY41iM3Zyg@mail.gmail.com>
-Date: Tue, 13 May 2014 17:32:52 +0800
-X-Google-Sender-Auth: ANISpoCU41T_p36pzbYiY99_XRM
-Message-ID: <CAFiDJ5-ez-Brqr8q3=XbODzLtFFU=e4qS12bCPo=5FE1JTNr+A@mail.gmail.com>
-Subject: Re: [PATCH 01/25] asm-generic: Change time_t and clock_t to 64 bit
-From: Ley Foon Tan <lftan@altera.com>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 13 May 2014 05:29:04 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Joe Thornber <ejt@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 172/182] dm transaction manager: fix corruption due to non-atomic transaction commit
+Date: Tue, 13 May 2014 11:28:44 +0200
+Message-Id: <fda9af7549105f16d1434d98e51abe832ea6eefa.1399973152.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
+References: <cover.1399973152.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 5:15 PM, James Hogan <james.hogan@imgtec.com> wrote:
-> Hi,
->
-> On 13 May 2014 10:02, Ley Foon Tan <lftan@altera.com> wrote:
->> Use 64 bit time_t and clock_t as default. 32 bit users can provide
->> an override to define these as "long" if needed.
->>
->> Signed-off-by: Ley Foon Tan <lftan@altera.com>
->> ---
->>  include/uapi/asm-generic/posix_types.h | 14 ++++++++++++--
->>  1 file changed, 12 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/uapi/asm-generic/posix_types.h b/include/uapi/asm-generic/posix_types.h
->> index fe74fcc..3f0e613 100644
->> --- a/include/uapi/asm-generic/posix_types.h
->> +++ b/include/uapi/asm-generic/posix_types.h
->> @@ -81,12 +81,22 @@ typedef struct {
->>  #endif
->>
->>  /*
->> + * Use 64 bit time_t and clock_t as default. 32 bit users can provide an override to
->> + * define these as "long" if needed.
->> + */
->> +#ifndef __kernel_time_t
->> +typedef long long      __kernel_time_t;
->> +#endif
->> +
->> +#ifndef __kernel_clock_t
->> +typedef long long      __kernel_clock_t;
->> +#endif
->
-> I think having this as the first patch in the series will break
-> bisection for existing 32-bit arches. This needs to be done in such a
-> way that at no intermediate commit are __kernel_time_t or
-> __kernel_clock_t the wrong size for existing arches, e.g. by having a
-> first patch which makes the typedefs conditional but leaves them as
-> __kernel_long_t, and a final patch that changes the default after all
-> the arches have got their overrides in place.
+From: Joe Thornber <ejt@redhat.com>
 
-Your suggestion is something as below?
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-First patch:
-#ifndef __kernel_time_t
-typedef __kernel_long_t      __kernel_time_t;
-#endif
+===============
 
-Last patch:
-#ifndef __kernel_time_t
-typedef long long      __kernel_time_t;
-#endif
+commit a9d45396f5956d0b615c7ae3b936afd888351a47 upstream.
 
-Ley Foon
+The persistent-data library used by dm-thin, dm-cache, etc is
+transactional.  If anything goes wrong, such as an io error when writing
+new metadata or a power failure, then we roll back to the last
+transaction.
+
+Atomicity when committing a transaction is achieved by:
+
+a) Never overwriting data from the previous transaction.
+b) Writing the superblock last, after all other metadata has hit the
+   disk.
+
+This commit and the following commit ("dm: take care to copy the space
+map roots before locking the superblock") fix a bug associated with (b).
+When committing it was possible for the superblock to still be written
+in spite of an io error occurring during the preceeding metadata flush.
+With these commits we're careful not to take the write lock out on the
+superblock until after the metadata flush has completed.
+
+Change the transaction manager's semantics for dm_tm_commit() to assume
+all data has been flushed _before_ the single superblock that is passed
+in.
+
+As a prerequisite, split the block manager's block unlocking and
+flushing by simplifying dm_bm_flush_and_unlock() to dm_bm_flush().  Now
+the unlocking must be done separately.
+
+This issue was discovered by forcing io errors at the crucial time
+using dm-flakey.
+
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/md/dm-cache-metadata.c                      |  3 ++-
+ drivers/md/persistent-data/dm-block-manager.c       | 15 ++-------------
+ drivers/md/persistent-data/dm-block-manager.h       |  3 +--
+ drivers/md/persistent-data/dm-transaction-manager.c |  5 +++--
+ drivers/md/persistent-data/dm-transaction-manager.h | 17 ++++++++---------
+ 5 files changed, 16 insertions(+), 27 deletions(-)
+
+diff --git a/drivers/md/dm-cache-metadata.c b/drivers/md/dm-cache-metadata.c
+index 1af7255bbffb..a33e07f4222e 100644
+--- a/drivers/md/dm-cache-metadata.c
++++ b/drivers/md/dm-cache-metadata.c
+@@ -511,8 +511,9 @@ static int __begin_transaction_flags(struct dm_cache_metadata *cmd,
+ 	disk_super = dm_block_data(sblock);
+ 	update_flags(disk_super, mutator);
+ 	read_superblock_fields(cmd, disk_super);
++	dm_bm_unlock(sblock);
+ 
+-	return dm_bm_flush_and_unlock(cmd->bm, sblock);
++	return dm_bm_flush(cmd->bm);
+ }
+ 
+ static int __begin_transaction(struct dm_cache_metadata *cmd)
+diff --git a/drivers/md/persistent-data/dm-block-manager.c b/drivers/md/persistent-data/dm-block-manager.c
+index 064a3c271baa..30597f389d39 100644
+--- a/drivers/md/persistent-data/dm-block-manager.c
++++ b/drivers/md/persistent-data/dm-block-manager.c
+@@ -595,25 +595,14 @@ int dm_bm_unlock(struct dm_block *b)
+ }
+ EXPORT_SYMBOL_GPL(dm_bm_unlock);
+ 
+-int dm_bm_flush_and_unlock(struct dm_block_manager *bm,
+-			   struct dm_block *superblock)
++int dm_bm_flush(struct dm_block_manager *bm)
+ {
+-	int r;
+-
+ 	if (bm->read_only)
+ 		return -EPERM;
+ 
+-	r = dm_bufio_write_dirty_buffers(bm->bufio);
+-	if (unlikely(r)) {
+-		dm_bm_unlock(superblock);
+-		return r;
+-	}
+-
+-	dm_bm_unlock(superblock);
+-
+ 	return dm_bufio_write_dirty_buffers(bm->bufio);
+ }
+-EXPORT_SYMBOL_GPL(dm_bm_flush_and_unlock);
++EXPORT_SYMBOL_GPL(dm_bm_flush);
+ 
+ void dm_bm_prefetch(struct dm_block_manager *bm, dm_block_t b)
+ {
+diff --git a/drivers/md/persistent-data/dm-block-manager.h b/drivers/md/persistent-data/dm-block-manager.h
+index 13cd58e1fe69..1b95dfc17786 100644
+--- a/drivers/md/persistent-data/dm-block-manager.h
++++ b/drivers/md/persistent-data/dm-block-manager.h
+@@ -105,8 +105,7 @@ int dm_bm_unlock(struct dm_block *b);
+  *
+  * This method always blocks.
+  */
+-int dm_bm_flush_and_unlock(struct dm_block_manager *bm,
+-			   struct dm_block *superblock);
++int dm_bm_flush(struct dm_block_manager *bm);
+ 
+ /*
+  * Request data is prefetched into the cache.
+diff --git a/drivers/md/persistent-data/dm-transaction-manager.c b/drivers/md/persistent-data/dm-transaction-manager.c
+index 81da1a26042e..3bc30a0ae3d6 100644
+--- a/drivers/md/persistent-data/dm-transaction-manager.c
++++ b/drivers/md/persistent-data/dm-transaction-manager.c
+@@ -154,7 +154,7 @@ int dm_tm_pre_commit(struct dm_transaction_manager *tm)
+ 	if (r < 0)
+ 		return r;
+ 
+-	return 0;
++	return dm_bm_flush(tm->bm);
+ }
+ EXPORT_SYMBOL_GPL(dm_tm_pre_commit);
+ 
+@@ -164,8 +164,9 @@ int dm_tm_commit(struct dm_transaction_manager *tm, struct dm_block *root)
+ 		return -EWOULDBLOCK;
+ 
+ 	wipe_shadow_table(tm);
++	dm_bm_unlock(root);
+ 
+-	return dm_bm_flush_and_unlock(tm->bm, root);
++	return dm_bm_flush(tm->bm);
+ }
+ EXPORT_SYMBOL_GPL(dm_tm_commit);
+ 
+diff --git a/drivers/md/persistent-data/dm-transaction-manager.h b/drivers/md/persistent-data/dm-transaction-manager.h
+index b5b139076ca5..2772ed2a781a 100644
+--- a/drivers/md/persistent-data/dm-transaction-manager.h
++++ b/drivers/md/persistent-data/dm-transaction-manager.h
+@@ -38,18 +38,17 @@ struct dm_transaction_manager *dm_tm_create_non_blocking_clone(struct dm_transac
+ /*
+  * We use a 2-phase commit here.
+  *
+- * i) In the first phase the block manager is told to start flushing, and
+- * the changes to the space map are written to disk.  You should interrogate
+- * your particular space map to get detail of its root node etc. to be
+- * included in your superblock.
++ * i) Make all changes for the transaction *except* for the superblock.
++ * Then call dm_tm_pre_commit() to flush them to disk.
+  *
+- * ii) @root will be committed last.  You shouldn't use more than the
+- * first 512 bytes of @root if you wish the transaction to survive a power
+- * failure.  You *must* have a write lock held on @root for both stage (i)
+- * and (ii).  The commit will drop the write lock.
++ * ii) Lock your superblock.  Update.  Then call dm_tm_commit() which will
++ * unlock the superblock and flush it.  No other blocks should be updated
++ * during this period.  Care should be taken to never unlock a partially
++ * updated superblock; perform any operations that could fail *before* you
++ * take the superblock lock.
+  */
+ int dm_tm_pre_commit(struct dm_transaction_manager *tm);
+-int dm_tm_commit(struct dm_transaction_manager *tm, struct dm_block *root);
++int dm_tm_commit(struct dm_transaction_manager *tm, struct dm_block *superblock);
+ 
+ /*
+  * These methods are the only way to get hold of a writeable block.
+-- 
+1.9.3
+
