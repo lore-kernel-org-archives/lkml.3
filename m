@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932639AbaEMLiq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 07:38:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52803 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752570AbaEMLio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 07:38:44 -0400
-Date: Tue, 13 May 2014 13:38:42 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Or Gerlitz <ogerlitz@mellanox.com>
-cc: roland@kernel.org, amirv@mellanox.com, linux-rdma@vger.kernel.org,
-        saeedm@mellanox.com, Mel Gorman <mgorman@suse.de>,
-        netdev@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1 for-next 0/3] IB: Use GFP_NOIO calls in IPoIB connected
- mode TX path 
-In-Reply-To: <1399810512-30774-1-git-send-email-ogerlitz@mellanox.com>
-Message-ID: <alpine.LNX.2.00.1405131338030.16459@pobox.suse.cz>
-References: <1399810512-30774-1-git-send-email-ogerlitz@mellanox.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932693AbaEMLjN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 07:39:13 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:48333 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759664AbaEMLjK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 07:39:10 -0400
+Message-ID: <53720445.9090506@huawei.com>
+Date: Tue, 13 May 2014 19:38:45 +0800
+From: xiakaixu <xiakaixu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Peter Zijlstra <peterz@infradead.org>, <fweisbec@gmail.com>
+CC: kaixu xia <xiakaixu1987@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-perf-users@vger.kernel.org>, <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        Namhyung Kim <namhyung@kernel.org>, Huxinwei <huxinwei@huawei.com>,
+        <peifeiyue@huawei.com>
+Subject: Re: Does perf support different length of user-space hw_breakpoint?
+References: <53707DD6.2000108@huawei.com> <20140512080503.GL30445@twins.programming.kicks-ass.net> <CAGjdHukwC3cu3YOSSteXsC4_52m-YTdAAYCfXV+q5A2pnW+CKQ@mail.gmail.com> <20140512084823.GO30445@twins.programming.kicks-ass.net> <53708DAE.6080903@huawei.com>
+In-Reply-To: <53708DAE.6080903@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.111.100.238]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 11 May 2014, Or Gerlitz wrote:
-
-> This series is a refactored form of the one posted by Jiri Kosina 
-> to LKML and netdev according to the discussion that followed
-> and the guidelines you provided here https://lkml.org/lkml/2014/3/5/250
+ping....
+于 2014/5/12 17:00, xiakaixu 写道:
+> 于 2014/5/12 16:48, Peter Zijlstra 写道:
+>> On Mon, May 12, 2014 at 04:20:44PM +0800, kaixu xia wrote:
+>>> 2014-05-12 16:05 GMT+08:00 Peter Zijlstra <peterz@infradead.org>:
+>>>
+>>>> On Mon, May 12, 2014 at 03:52:54PM +0800, xiakaixu wrote:
+>>>>> Hi guys,
+>>>>>
+>>>>> Does perf support different length of user-space hw_breakpoint,
+>>>>> such as  HW_BREAKPOINT_LEN_1/HW_BREAKPOINT_LEN_2/HW_BREAKPOINT_LEN_4/
+>>>>> HW_BREAKPOINT_LEN_8?
+>>>>>
+>>>>> Seems perf only support HW_BREAKPOINT_LEN_4/sizeof(long)
+>>>>> by default from the source code and simple test.
+>>>>>
+>>>>> May I have your opinions if I want to trace different bytes of
+>>>>> hw_breakpoint addr?
+>>>>
+>>>> Frederic?
+>>>>
+>>>
+>>> Sorry, can not fully understand it. Can you give more details on that?
+>>
+>> I asked Frederic to answer your question :-)
+>>
+> Thanks:-)
 > 
-> Basically, the functionality changes introduced by this series fully 
-> reside on the IB side of things, so I am only posting the actual patches 
-> to linux-rdma with CC on the cover-letter to the lists that were on V0.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-perf-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Thanks, I am fine with my Signoff on that.
 
-Roland, is this going to be merged by you, or should this go to DaveM 
-directly?
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
