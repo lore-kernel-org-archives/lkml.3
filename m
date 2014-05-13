@@ -1,103 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027AbaEMQm2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 12:42:28 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:62566 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916AbaEMQmV (ORCPT
+	id S1751770AbaEMQqH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:46:07 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:48635 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035AbaEMQqD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 12:42:21 -0400
-From: abdoulaye berthe <berthe.ab@gmail.com>
-To: berthe.ab@gmail.com, linus.walleij@linaro.org, gnurou@gmail.com,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] gpio: janzttl: use devm function
-Date: Tue, 13 May 2014 18:42:12 +0200
-Message-Id: <1399999332-23279-1-git-send-email-berthe.ab@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Tue, 13 May 2014 12:46:03 -0400
+Date: Tue, 13 May 2014 18:45:52 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: David Howells <dhowells@redhat.com>
+Cc: NeilBrown <neilb@suse.de>, Oleg Nesterov <oleg@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, dm-devel@redhat.com,
+        Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        Steve French <sfrench@samba.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] SCHED: remove proliferation of wait_on_bit action
+ functions.
+Message-ID: <20140513164552.GA5226@laptop.programming.kicks-ass.net>
+References: <20140501123738.3e64b2d2@notabene.brown>
+ <30769.1399997170@warthog.procyon.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <30769.1399997170@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This uses dem function for mem allocation
+On Tue, May 13, 2014 at 05:06:10PM +0100, David Howells wrote:
+> NeilBrown <neilb@suse.de> wrote:
+> 
+> > The wait_on_bit() call in __fscache_wait_on_invalidate() was ambiguous
+> > as it specified TASK_UNINTERRUPTIBLE but used
+> > fscache_wait_bit_interruptible as an action function.
+> > As any error return is never checked I assumed that 'uninterruptible'
+> > was correct.
+> 
+> Bug.  It should be uninterruptible in both places.
 
-Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
----
- drivers/gpio/gpio-janz-ttl.c | 34 +++++++---------------------------
- 1 file changed, 7 insertions(+), 27 deletions(-)
-
-diff --git a/drivers/gpio/gpio-janz-ttl.c b/drivers/gpio/gpio-janz-ttl.c
-index 2ecd3a0..daa79e1 100644
---- a/drivers/gpio/gpio-janz-ttl.c
-+++ b/drivers/gpio/gpio-janz-ttl.c
-@@ -152,15 +152,13 @@ static int ttl_probe(struct platform_device *pdev)
- 	pdata = dev_get_platdata(&pdev->dev);
- 	if (!pdata) {
- 		dev_err(dev, "no platform data\n");
--		ret = -ENXIO;
--		goto out_return;
-+		return -ENXIO;
- 	}
- 
--	mod = kzalloc(sizeof(*mod), GFP_KERNEL);
-+	mod = devm_kzalloc(dev, sizeof(struct ttl_module), GFP_KERNEL);
- 	if (!mod) {
- 		dev_err(dev, "unable to allocate private data\n");
--		ret = -ENOMEM;
--		goto out_return;
-+		return -ENOMEM;
- 	}
- 
- 	platform_set_drvdata(pdev, mod);
-@@ -168,18 +166,9 @@ static int ttl_probe(struct platform_device *pdev)
- 
- 	/* get access to the MODULbus registers for this module */
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(dev, "MODULbus registers not found\n");
--		ret = -ENODEV;
--		goto out_free_mod;
--	}
--
--	mod->regs = ioremap(res->start, resource_size(res));
--	if (!mod->regs) {
--		dev_err(dev, "MODULbus registers not ioremap\n");
--		ret = -ENOMEM;
--		goto out_free_mod;
--	}
-+	mod->regs = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(mod->regs))
-+		return PTR_ERR(mod->regs);
- 
- 	ttl_setup_device(mod);
- 
-@@ -198,17 +187,10 @@ static int ttl_probe(struct platform_device *pdev)
- 	ret = gpiochip_add(gpio);
- 	if (ret) {
- 		dev_err(dev, "unable to add GPIO chip\n");
--		goto out_iounmap_regs;
-+		return ret;
- 	}
- 
- 	return 0;
--
--out_iounmap_regs:
--	iounmap(mod->regs);
--out_free_mod:
--	kfree(mod);
--out_return:
--	return ret;
- }
- 
- static int ttl_remove(struct platform_device *pdev)
-@@ -223,8 +205,6 @@ static int ttl_remove(struct platform_device *pdev)
- 		return ret;
- 	}
- 
--	iounmap(mod->regs);
--	kfree(mod);
- 	return 0;
- }
- 
--- 
-1.8.3.2
-
+Thanks David, queued the patch!
