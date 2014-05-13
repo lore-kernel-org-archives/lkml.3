@@ -1,249 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758662AbaEMBfm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 21:35:42 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:37260 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755796AbaEMBfj (ORCPT
+	id S1758729AbaEMBgz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 21:36:55 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:59123 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541AbaEMBgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 21:35:39 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 13 May 2014 10:37:42 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Yong-Taek Lee <ytk.lee@samsung.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 2/2] mm/page_alloc: DEBUG_VM checks for free_list
- placement of CMA and RESERVE pages
-Message-ID: <20140513013742.GD23803@js1304-P5Q-DELUXE>
-References: <1396539618-31362-1-git-send-email-vbabka@suse.cz>
- <1396539618-31362-2-git-send-email-vbabka@suse.cz>
- <53616F39.2070001@oracle.com>
- <53638ADA.5040200@suse.cz>
- <5367A1E5.2020903@oracle.com>
- <5367B356.1030403@suse.cz>
- <20140507013333.GB26212@bbox>
- <536A4A3B.1090403@suse.cz>
- <20140508055421.GC9161@js1304-P5Q-DELUXE>
- <53708629.60604@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53708629.60604@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 12 May 2014 21:36:52 -0400
+X-AuditID: cbfee68f-b7eff6d000002b70-ea-53717732d300
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Lee Jones'" <lee.jones@linaro.org>
+Cc: "'Tony Lindgren'" <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-omap@vger.kernel.org,
+        "'Bryan Wu'" <cooloney@gmail.com>,
+        "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
+        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
+        "'Linus Walleij'" <linus.walleij@linaro.org>,
+        "'Alexandre Courbot'" <gnurou@gmail.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <20140509012454.GL2198@atomide.com>
+In-reply-to: <20140509012454.GL2198@atomide.com>
+Subject: Re: [PATCH] backlight: gpio-backlight: Fix warning when the GPIO is on
+ a I2C chip
+Date: Tue, 13 May 2014 10:36:49 +0900
+Message-id: <000001cf6e4b$cf668a00$6e339e00$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac9rKQIYYi6bhmLERjilPDCc5OfwiwDIkeiw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgleLIzCtJLcpLzFFi42I5/e+Zka5ReWGwwcM5zBZHd05ksjj36hGL
+	xeWFl1gt7n89ymgx5c9yJosTfR9YLS7vmsNmMXtJP4vF7cu8FusevmCyWD//FpvF/iteDjwe
+	Lc09bB7fvk5i8dg56y67x6sLd1g87lzbw+bRt2UVo8fxG9uZPD5vkgvgiOKySUnNySxLLdK3
+	S+DKOLvzL0vBG9GK/fMPsDcwfhPqYuTkkBAwkfgw5TwbhC0mceHeeiCbi0NIYBmjxJRf69lh
+	ip6sbGeHSCxilHixppsVwvnNKHGkdw9YO5uAmsSXL4fBOkSA7Jt7ZjGBFDELbGaWmPZuKxNI
+	QkhAX+LJuhZGEJtTwEDi5Zm/QHEODmGBGImXa91BwiwCqhIP7x5iBbF5BWwlfuydxQJhC0r8
+	mHwPzGYW0JJYv/M4E4QtL7F5zVtmkDESAuoSj/7qQpxgJLH0+gqochGJfS/eMYKcIyGwlEPi
+	3ZLVLBC7BCS+TT7EAtErK7HpADPEw5ISB1fcYJnAKDELyeZZSDbPQrJ5FpIVCxhZVjGKphYk
+	FxQnpRcZ6xUn5haX5qXrJefnbmKEpIL+HYx3D1gfYkwGWj+RWUo0OR+YSvJK4g2NzYwsTE1M
+	jY3MLc1IE1YS573/MClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6MfU4RwvPWeSnH2TW1T
+	Zu+qWX0q5S2j6A/XbPUbGt+E+a7Ve13cyJ8YZ8KhqMa+cpWNx+/Khx2XYsPa9rQKH1tfYRub
+	a6AROO3CsplyApYZAsfqFphMdd3XvkNITfk6d1q6+1YpubufGpT1lnktT3G20Jmz8bzAK8/8
+	c6+mbH2lOXnzqpsLzyixFGckGmoxFxUnAgAKey2RGwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKKsWRmVeSWpSXmKPExsVy+t9jAV3D8sJgg9O91hZHd05ksjj36hGL
+	xeWFl1gt7n89ymgx5c9yJosTfR9YLS7vmsNmMXtJP4vF7cu8FusevmCyWD//FpvF/iteDjwe
+	Lc09bB7fvk5i8dg56y67x6sLd1g87lzbw+bRt2UVo8fxG9uZPD5vkgvgiGpgtMlITUxJLVJI
+	zUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBulZJoSwxpxQoFJBYXKyk
+	b4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmHF251+WgjeiFfvnH2BvYPwm1MXIySEhYCLxZGU7
+	O4QtJnHh3nq2LkYuDiGBRYwSL9Z0s0I4vxkljvTuYQOpYhNQk/jy5TBYhwiQfXPPLCaQImaB
+	zcwS095tZQJJCAnoSzxZ18IIYnMKGEi8PPMXKM7BISwQI/FyrTtImEVAVeLh3UOsIDavgK3E
+	j72zWCBsQYkfk++B2cwCWhLrdx5ngrDlJTavecsMMkZCQF3i0V9diBOMJJZeXwFVLiKx78U7
+	xgmMQrOQTJqFZNIsJJNmIWlZwMiyilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM40TyT3sG4
+	qsHiEKMAB6MSD++CZwXBQqyJZcWVuYcYJTiYlUR4e4oLg4V4UxIrq1KL8uOLSnNSiw8xJgM9
+	OpFZSjQ5H5gE80riDY1NzIwsjcwsjEzMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qB
+	sfHFzhjOprZLHWFTlFUPKFx+wjOd7ea/1ct0ykKORrPo3wl3uTO/Rtd/3a9ZTzaKX3yXrP3b
+	96N+4NHfpT2/jmoszHL680zjUsLniWU8DYJzDFY/SG7mVGFO+fHyl2Nty2e5dpkG+3lPZ113
+	z5j0tmXPyht/Ql9HTnZ9Var0UnuiRnOT8AypDUosxRmJhlrMRcWJAPbbfSB4AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 10:28:25AM +0200, Vlastimil Babka wrote:
-> On 05/08/2014 07:54 AM, Joonsoo Kim wrote:
-> >On Wed, May 07, 2014 at 04:59:07PM +0200, Vlastimil Babka wrote:
-> >>On 05/07/2014 03:33 AM, Minchan Kim wrote:
-> >>>On Mon, May 05, 2014 at 05:50:46PM +0200, Vlastimil Babka wrote:
-> >>>>On 05/05/2014 04:36 PM, Sasha Levin wrote:
-> >>>>>On 05/02/2014 08:08 AM, Vlastimil Babka wrote:
-> >>>>>>On 04/30/2014 11:46 PM, Sasha Levin wrote:
-> >>>>>>>>On 04/03/2014 11:40 AM, Vlastimil Babka wrote:
-> >>>>>>>>>>For the MIGRATE_RESERVE pages, it is important they do not get misplaced
-> >>>>>>>>>>on free_list of other migratetype, otherwise the whole MIGRATE_RESERVE
-> >>>>>>>>>>pageblock might be changed to other migratetype in try_to_steal_freepages().
-> >>>>>>>>>>For MIGRATE_CMA, the pages also must not go to a different free_list, otherwise
-> >>>>>>>>>>they could get allocated as unmovable and result in CMA failure.
-> >>>>>>>>>>
-> >>>>>>>>>>This is ensured by setting the freepage_migratetype appropriately when placing
-> >>>>>>>>>>pages on pcp lists, and using the information when releasing them back to
-> >>>>>>>>>>free_list. It is also assumed that CMA and RESERVE pageblocks are created only
-> >>>>>>>>>>in the init phase. This patch adds DEBUG_VM checks to catch any regressions
-> >>>>>>>>>>introduced for this invariant.
-> >>>>>>>>>>
-> >>>>>>>>>>Cc: Yong-Taek Lee <ytk.lee@samsung.com>
-> >>>>>>>>>>Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> >>>>>>>>>>Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> >>>>>>>>>>Cc: Mel Gorman <mgorman@suse.de>
-> >>>>>>>>>>Cc: Minchan Kim <minchan@kernel.org>
-> >>>>>>>>>>Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> >>>>>>>>>>Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> >>>>>>>>>>Cc: Hugh Dickins <hughd@google.com>
-> >>>>>>>>>>Cc: Rik van Riel <riel@redhat.com>
-> >>>>>>>>>>Cc: Michal Nazarewicz <mina86@mina86.com>
-> >>>>>>>>>>Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> >>>>>>>>
-> >>>>>>>>Two issues with this patch.
-> >>>>>>>>
-> >>>>>>>>First:
-> >>>>>>>>
-> >>>>>>>>[ 3446.320082] kernel BUG at mm/page_alloc.c:1197!
-> >>>>>>>>[ 3446.320082] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> >>>>>>>>[ 3446.320082] Dumping ftrace buffer:
-> >>>>>>>>[ 3446.320082]    (ftrace buffer empty)
-> >>>>>>>>[ 3446.320082] Modules linked in:
-> >>>>>>>>[ 3446.320082] CPU: 1 PID: 8923 Comm: trinity-c42 Not tainted 3.15.0-rc3-next-20140429-sasha-00015-g7c7e0a7-dirty #427
-> >>>>>>>>[ 3446.320082] task: ffff88053e208000 ti: ffff88053e246000 task.ti: ffff88053e246000
-> >>>>>>>>[ 3446.320082] RIP: get_page_from_freelist (mm/page_alloc.c:1197 mm/page_alloc.c:1548 mm/page_alloc.c:2036)
-> >>>>>>>>[ 3446.320082] RSP: 0018:ffff88053e247778  EFLAGS: 00010002
-> >>>>>>>>[ 3446.320082] RAX: 0000000000000003 RBX: ffffea0000f40000 RCX: 0000000000000008
-> >>>>>>>>[ 3446.320082] RDX: 0000000000000002 RSI: 0000000000000003 RDI: 00000000000000a0
-> >>>>>>>>[ 3446.320082] RBP: ffff88053e247868 R08: 0000000000000007 R09: 0000000000000000
-> >>>>>>>>[ 3446.320082] R10: ffff88006ffcef00 R11: 0000000000000000 R12: 0000000000000014
-> >>>>>>>>[ 3446.335888] R13: ffffea000115ffe0 R14: ffffea000115ffe0 R15: 0000000000000000
-> >>>>>>>>[ 3446.335888] FS:  00007f8c9f059700(0000) GS:ffff88006ec00000(0000) knlGS:0000000000000000
-> >>>>>>>>[ 3446.335888] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> >>>>>>>>[ 3446.335888] CR2: 0000000002cbc048 CR3: 000000054cdb4000 CR4: 00000000000006a0
-> >>>>>>>>[ 3446.335888] DR0: 00000000006de000 DR1: 00000000006de000 DR2: 0000000000000000
-> >>>>>>>>[ 3446.335888] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000602
-> >>>>>>>>[ 3446.335888] Stack:
-> >>>>>>>>[ 3446.335888]  ffff88053e247798 ffff88006eddc0b8 0000000000000016 0000000000000000
-> >>>>>>>>[ 3446.335888]  ffff88006ffd2068 ffff88006ffdb008 0000000100000000 0000000000000000
-> >>>>>>>>[ 3446.335888]  ffff88006ffdb000 0000000000000000 0000000000000003 0000000000000001
-> >>>>>>>>[ 3446.335888] Call Trace:
-> >>>>>>>>[ 3446.335888] __alloc_pages_nodemask (mm/page_alloc.c:2731)
-> >>>>>>>>[ 3446.335888] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-> >>>>>>>>[ 3446.335888] alloc_pages_vma (include/linux/mempolicy.h:76 mm/mempolicy.c:1998)
-> >>>>>>>>[ 3446.335888] ? shmem_alloc_page (mm/shmem.c:881)
-> >>>>>>>>[ 3446.335888] ? kvm_clock_read (arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
-> >>>>>>>>[ 3446.335888] shmem_alloc_page (mm/shmem.c:881)
-> >>>>>>>>[ 3446.335888] ? __const_udelay (arch/x86/lib/delay.c:126)
-> >>>>>>>>[ 3446.335888] ? __rcu_read_unlock (kernel/rcu/update.c:97)
-> >>>>>>>>[ 3446.335888] ? find_get_entry (mm/filemap.c:979)
-> >>>>>>>>[ 3446.335888] ? find_get_entry (mm/filemap.c:940)
-> >>>>>>>>[ 3446.335888] ? find_lock_entry (mm/filemap.c:1024)
-> >>>>>>>>[ 3446.335888] shmem_getpage_gfp (mm/shmem.c:1130)
-> >>>>>>>>[ 3446.335888] ? sched_clock_local (kernel/sched/clock.c:214)
-> >>>>>>>>[ 3446.335888] ? do_read_fault.isra.42 (mm/memory.c:3523)
-> >>>>>>>>[ 3446.335888] shmem_fault (mm/shmem.c:1237)
-> >>>>>>>>[ 3446.335888] ? do_read_fault.isra.42 (mm/memory.c:3523)
-> >>>>>>>>[ 3446.335888] __do_fault (mm/memory.c:3344)
-> >>>>>>>>[ 3446.335888] ? _raw_spin_unlock (arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183)
-> >>>>>>>>[ 3446.335888] do_read_fault.isra.42 (mm/memory.c:3524)
-> >>>>>>>>[ 3446.335888] ? get_parent_ip (kernel/sched/core.c:2485)
-> >>>>>>>>[ 3446.335888] ? get_parent_ip (kernel/sched/core.c:2485)
-> >>>>>>>>[ 3446.335888] __handle_mm_fault (mm/memory.c:3662 mm/memory.c:3823 mm/memory.c:3950)
-> >>>>>>>>[ 3446.335888] ? __const_udelay (arch/x86/lib/delay.c:126)
-> >>>>>>>>[ 3446.335888] ? __rcu_read_unlock (kernel/rcu/update.c:97)
-> >>>>>>>>[ 3446.335888] handle_mm_fault (mm/memory.c:3973)
-> >>>>>>>>[ 3446.335888] __get_user_pages (mm/memory.c:1863)
-> >>>>>>>>[ 3446.335888] ? preempt_count_sub (kernel/sched/core.c:2541)
-> >>>>>>>>[ 3446.335888] __mlock_vma_pages_range (mm/mlock.c:255)
-> >>>>>>>>[ 3446.335888] __mm_populate (mm/mlock.c:711)
-> >>>>>>>>[ 3446.335888] vm_mmap_pgoff (include/linux/mm.h:1841 mm/util.c:402)
-> >>>>>>>>[ 3446.335888] SyS_mmap_pgoff (mm/mmap.c:1378)
-> >>>>>>>>[ 3446.335888] ? syscall_trace_enter (include/linux/context_tracking.h:27 arch/x86/kernel/ptrace.c:1461)
-> >>>>>>>>[ 3446.335888] ia32_do_call (arch/x86/ia32/ia32entry.S:430)
-> >>>>>>>>[ 3446.335888] Code: 00 66 0f 1f 44 00 00 ba 02 00 00 00 31 f6 48 89 c7 e8 c1 c3 ff ff 48 8b 53 10 83 f8 03 74 08 83 f8 04 75 13 0f 1f 00 39 d0 74 0c <0f> 0b 66 2e 0f 1f 84 00 00 00 00 00 45 85 ff 75 15 49 8b 55 00
-> >>>>>>>>[ 3446.335888] RIP get_page_from_freelist (mm/page_alloc.c:1197 mm/page_alloc.c:1548 mm/page_alloc.c:2036)
-> >>>>>>>>[ 3446.335888]  RSP <ffff88053e247778>
-> >>>>>>Hey, that's not an issue, that means the patch works as intended :) And
-> >>>>>>I believe it's not a bug introduced by PATCH 1/2.
-> >>>>>>
-> >>>>>>So, according to my decodecode reading, RAX is the results of
-> >>>>>>get_pageblock_migratetype() and it's MIGRATE_RESERVE. RDX is the result
-> >>>>>>of get_freepage_migratetype() and it's MIGRATE_UNMOVABLE. The
-> >>>>>>freepage_migratetype has just been set either by __rmqueue_smallest() or
-> >>>>>>__rmqueue_fallback(), according to the free_list the page has been taken
-> >>>>>>from. So this looks like a page from MIGRATE_RESERVE pageblock found on
-> >>>>>>the !MIGRATE_RESERVE free_list, which is exactly what the patch intends
-> >>>>>>to catch.
-> >>>>>>
-> >>>>>>I think there are two possible explanations.
-> >>>>>>
-> >>>>>>1) the pageblock is genuinely MIGRATE_RESERVE and it was misplaced by
-> >>>>>>mistake. I think it wasn't in free_pcppages_bulk() as there's the same
-> >>>>>>VM_BUG_ON which would supposedly trigger at the moment of displacing. In
-> >>>>>>theory it's possible that there's a race through __free_pages_ok() ->
-> >>>>>>free_one_page() where the get_pageblock_migratetype() in
-> >>>>>>__free_pages_ok() would race with set_pageblock_migratetype() and result
-> >>>>>>in bogus value. But nobody should be calling set_pageblock_migratetype()
-> >>>>>>on a MIGRATE_RESERVE pageblock.
-> >>>>>>
-> >>>>>>2) the pageblock was marked as MIGRATE_RESERVE due to a race between
-> >>>>>>set_pageblock_migratetype() and set_pageblock_skip(). The latter is
-> >>>>>>currently not serialized by zone->lock, nor it uses atomic bit set. So
-> >>>>>>it may result in lost updates in a racing set_pageblock_migratetype(). I
-> >>>>>>think a well-placed race when changing pageblock from MIGRATE_MOVABLE to
-> >>>>>>MIGRATE_RECLAIMABLE could result in MIGRATE_RESERVE value. Similar races
-> >>>>>>have been already observed to be a problem where frequent changing
-> >>>>>>to/from MIGRATE_ISOLATE is involved, and I did a patch series to address
-> >>>>>>this, but it was not complete and I postponed it after Mel's changes
-> >>>>>>that remove the racy for-cycles completely. So it might be that his
-> >>>>>>"[PATCH 08/17] mm: page_alloc: Use word-based accesses for get/set
-> >>>>>>pageblock bitmaps" already solves this bug (but maybe only on certain
-> >>>>>>architectures where you don't need atomic operations). You might try
-> >>>>>>that patch if you can reproduce this bug frequently enough?
-> >>>>>
-> >>>>>I've tried that patch, but still see the same BUG_ON.
-> >>>>
-> >>>>Oh damn, I've realized that my assumptions about MIGRATE_RESERVE
-> >>>>pageblocks being created only on zone init time were wrong.
-> >>>>setup_zone_migrate_reserve() is called also from the handler of
-> >>>>min_free_kbytes sysctl... does trinity try to change that while
-> >>>>running?
-> >>>>The function will change MOVABLE pageblocks to RESERVE and try to
-> >>>>move all free pages to the RESERVE free_list, but of course pages on
-> >>>>pcplists will remain MOVABLE and may trigger the VM_BUG_ON. You
-> >>>>triggered the bug with page on MOVABLE free_list (in the first reply
-> >>>>I said its UNMOVABLE by mistake) so this might be good explanation
-> >>>>if trinity changes min_free_kbytes.
-> >>>>
-> >>>>Furthermore, I think there's a problem that
-> >>>>setup_zone_migrate_reserve() operates on pageblocks, but as MAX_ODER
-> >>>>is higher than pageblock_order, RESERVE pages might be merged with
-> >>>>buddies of different migratetype and end up on their free_list. That
-> >>>>seems to me like a flaw in the design of reserves, but perhaps
-> >>>>others won't think it's serious enough to fix?
-> >
-> >I wanna know who want MIGRATE_RESERVE. On my previous testing, one
-> >pageblock for MIGRATE_RESERVE is merged with buddies of different
-> >migratetype during boot-up and never come back again. But my system works
-> >well. :)
-> >
-> >If it is really useful feature, we can fix the situation by aligning
-> >reserve size and pfn to MAX_ORDER_NR_PAGES.
+On Friday, May 09, 2014 10:25 AM, Tony Lindgren wrote:
 > 
-> Yes, I plan to do that.
+> If the GPIO for the backlight is on an I2C chip, we currently
+> get nasty warnings like this during the boot:
 > 
-> >And, IMHO, it isn't reasonable to increase, decrease and change
-> >MIGRATE_RESERVE pageblock by the handler of min_free_kbytes sysctl,
-> >because new pageblock may have no free pages to reserve. I think that
-> >it is better to prevent sysctl handler from changing MIGRATE_RESERVE
-> >pageblock, after initialization.
+> WARNING: CPU: 0 PID: 6 at drivers/gpio/gpiolib.c:2364 gpiod_set_raw_value+0x40/0x4c()
+> Modules linked in:
+> CPU: 0 PID: 6 Comm: kworker/u2:0 Not tainted 3.15.0-rc4-12393-gcde9f4e #400
+> Workqueue: deferwq deferred_probe_work_func
+> [<c0014cbc>] (unwind_backtrace) from [<c001191c>] (show_stack+0x10/0x14)
+> [<c001191c>] (show_stack) from [<c0566ae0>] (dump_stack+0x80/0x9c)
+> [<c0566ae0>] (dump_stack) from [<c003f61c>] (warn_slowpath_common+0x68/0x8c)
+> [<c003f61c>] (warn_slowpath_common) from [<c003f65c>] (warn_slowpath_null+0x1c/0x24)
+> [<c003f65c>] (warn_slowpath_null) from [<c02f7e10>] (gpiod_set_raw_value+0x40/0x4c)
+> [<c02f7e10>] (gpiod_set_raw_value) from [<c0308fbc>] (gpio_backlight_update_status+0x4c/0x74)
+> [<c0308fbc>] (gpio_backlight_update_status) from [<c030914c>] (gpio_backlight_probe+0x168/0x254)
+> [<c030914c>] (gpio_backlight_probe) from [<c0378fa8>] (platform_drv_probe+0x18/0x48)
+> [<c0378fa8>] (platform_drv_probe) from [<c0377c40>] (driver_probe_device+0x10c/0x238)
+> [<c0377c40>] (driver_probe_device) from [<c0376330>] (bus_for_each_drv+0x44/0x8c)
+> [<c0376330>] (bus_for_each_drv) from [<c0377afc>] (device_attach+0x74/0x8c)
+> [<c0377afc>] (device_attach) from [<c03771c4>] (bus_probe_device+0x88/0xb0)
+> [<c03771c4>] (bus_probe_device) from [<c03775c8>] (deferred_probe_work_func+0x64/0x94)
+> [<c03775c8>] (deferred_probe_work_func) from [<c00572e8>] (process_one_work+0x1b4/0x4bc)
+> [<c00572e8>] (process_one_work) from [<c00579d0>] (worker_thread+0x11c/0x398)
+> [<c00579d0>] (worker_thread) from [<c005dfd8>] (kthread+0xc8/0xe4)
+> [<c005dfd8>] (kthread) from [<c000e768>] (ret_from_fork+0x14/0x2c)
 > 
-> This dynamic allocation could be more aggressive by doing the same
-> stuff as memory isolation. In any case, I think that if it cannot
-> guarantee the pageblock to be free, there is little benefit from
-> trying to make sure no pages from the pageblock are strayed on
-> pcplists and later misplaced in the free_list. The only danger of
-> misplacement is page stealing code changing MIGRATE_RESERVE
-> pageblock to something else. This can be easily avoided directly in
-> the page stealing code by checking the pageblock migratetype before
-> trying to change it. This has very little extra overhead, in a path
-> that's not hot to begin with.
-
-I think that we first investigate why reserve pageblock is depend on
-min_free_kbytes changing. I guess that this is for maintainig reserve
-pageblock size below certain watermark so that reserve pageblock
-aren't used easily. But, now, we limit reserve pageblock to just 2,
-that is, really small value, so reserve pageblock don't need to change
-when min_free_kbytes is changed.
-
-> >In conclusion, if MIGRATE_RESERVE is useful enough to maintain, to fix
-> >above problem and keep this patch is preferable to me.
+> Fix this by using gpio_set_value_cansleep() as suggested in
+> drivers/gpio/gpiolib.c:2364. This is what the other backlight drivers
+> are also doing.
 > 
-> I think it's useful in general, but not so critical to make the
-> min_free_kbytes handler provide 100% guarantees. Presumably one uses
-> the handler only during early boot time when there's enough free
-> memory?
-> So that leaves the debug patch only for CMA which I won't push
-> anymore to mainline, but feel free to adapt it for mm only.
+> Signed-off-by: Tony Lindgren <tony@atomide.com>
 
-Okay. :)
+(+cc Linus Walleij, Alexandre Courbot, Russell King)
 
-Thanks.
+Hi Lee Jones,
+
+Would you apply this patch into backlight git tree?
+If you have other opinions, please let us know. :-)
+Thank you.
+
+Acked-by: Jingoo Han <jg1.han@samsung.com>
+
+Best regards,
+Jingoo Han
+
+> 
+> --- a/drivers/video/backlight/gpio_backlight.c
+> +++ b/drivers/video/backlight/gpio_backlight.c
+> @@ -38,7 +38,8 @@ static int gpio_backlight_update_status(struct backlight_device *bl)
+>  	    bl->props.state & (BL_CORE_SUSPENDED | BL_CORE_FBBLANK))
+>  		brightness = 0;
+> 
+> -	gpio_set_value(gbl->gpio, brightness ? gbl->active : !gbl->active);
+> +	gpio_set_value_cansleep(gbl->gpio,
+> +				brightness ? gbl->active : !gbl->active);
+> 
+>  	return 0;
+>  }
+
