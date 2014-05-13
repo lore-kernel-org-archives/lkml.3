@@ -1,89 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758293AbaEMCEX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 22:04:23 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:50375 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755976AbaEMCEW (ORCPT
+	id S1752930AbaEMCOx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 22:14:53 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:17339 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752564AbaEMCOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 22:04:22 -0400
-Date: Mon, 12 May 2014 19:04:10 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.15-rc6
-Message-ID: <20140513020410.GA27750@roeck-us.net>
+	Mon, 12 May 2014 22:14:51 -0400
+X-IronPort-AV: E=Sophos;i="4.97,1040,1389715200"; 
+   d="scan'208";a="30429720"
+Message-ID: <53718119.1090000@cn.fujitsu.com>
+Date: Tue, 13 May 2014 10:19:05 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sasha Levin <sasha.levin@oracle.com>
+CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
+References: <537119EF.2060102@oracle.com> <20140512200135.GL1421@htj.dyndns.org>
+In-Reply-To: <20140512200135.GL1421@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/13/2014 04:01 AM, Tejun Heo wrote:
+> On Mon, May 12, 2014 at 02:58:55PM -0400, Sasha Levin wrote:
+>> Hi all,
+>>
+>> While fuzzing with trinity inside a KVM tools guest running the latest -next
+>> kernel I've stumbled on the following spew:
+>>
+>> [ 1297.886670] WARNING: CPU: 0 PID: 190 at kernel/workqueue.c:2176 process_one_work+0xb5/0x6f0()
+>> [ 1297.889216] Modules linked in:
+>> [ 1297.890306] CPU: 0 PID: 190 Comm: kworker/3:0 Not tainted 3.15.0-rc5-next-20140512-sasha-00019-ga20bc00-dirty #456
+>> [ 1297.893258]  0000000000000009 ffff88010c5d7ce8 ffffffffb153e1ec 0000000000000002
+>> [ 1297.893258]  0000000000000000 ffff88010c5d7d28 ffffffffae15fd6c ffff88010cdd6c98
+>> [ 1297.893258]  ffff8806285d4000 ffffffffb3cd09e0 ffff88010cdde000 0000000000000000
+>> [ 1297.893258] Call Trace:
+>> [ 1297.893258] dump_stack (lib/dump_stack.c:52)
+>> [ 1297.893258] warn_slowpath_common (kernel/panic.c:430)
+>> [ 1297.893258] warn_slowpath_null (kernel/panic.c:465)
+>> [ 1297.893258] process_one_work (kernel/workqueue.c:2174 (discriminator 38))
+>> [ 1297.893258] worker_thread (kernel/workqueue.c:2354)
+>> [ 1297.893258] kthread (kernel/kthread.c:210)
+>> [ 1297.893258] ret_from_fork (arch/x86/kernel/entry_64.S:553)
 
---RnlQjJ0d97Da+TV1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi,
 
-Hi Linus,
-
-Please pull hwmon fixes for Linux 3.15-rc6 from signed tag:
-
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+I have been trying to address this bug.
+Buy I can't reproduce this bug. Is your testing arch X86?
+if yes, could you find out how to reproduce the bug?
 
 Thanks,
-Guenter
-------
+Lai
 
-The following changes since commit d6d211db37e75de2ddc3a4f979038c40df7cc79c:
+> 
+> Hmm, this is "percpu worker on the wrong CPU while the current
+> workqueue state indicates it should be on the CPU it's bound to"
+> warning.  We had a similar and more reproducible report a couple
+> months back.
+> 
+>   http://lkml.kernel.org/g/52F4F01C.1070800@linux.vnet.ibm.com
+> 
+> We added some debug code back then and it looked like the worker was
+> setting the right cpus_allowed mask and the cpu was up but still
+> ending up on the wrong CPU.  Peter was looking into it and, ooh, I
+> missed his last message and it fell through the crack.  We probably
+> should follow up on that thread.
+> 
+> Thanks.
+> 
 
-  Linux 3.15-rc5 (2014-05-09 13:10:52 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
-
-for you to fetch changes up to 3a18e1398fc2dc9c32bbdc50664da3a77959a8d1:
-
-  hwmon: (emc1403) Support full range of known chip revision numbers (2014-05-12 08:37:06 -0700)
-
-----------------------------------------------------------------
-Fix resource leak as well as broken store function in emc1403 driver,
-and add support for additional chip revisions.
-
-----------------------------------------------------------------
-Jean Delvare (1):
-      hwmon: (emc1403) Fix resource leak on module unload
-
-Josef Gajdusek (2):
-      hwmon: (emc1403) fix inverted store_hyst()
-      hwmon: (emc1403) Support full range of known chip revision numbers
-
- drivers/hwmon/emc1403.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
---RnlQjJ0d97Da+TV1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTcX2aAAoJEMsfJm/On5mBaz4P/iHHf4+kRWZxlsd2K4ASQJQD
-XXq9+twsgHnZVhhcupVFtsoQ2oi8McBcd9uOuIPuuzTdmS8TuQoYaxZWIDKF8XV1
-qIHnOne1MN9BGvv0zQ2D6wOMy7wYRPXN+LFY8ehd9E02qYThlwtR3XQBXPb52Q8Z
-c/3z2fT1/5HYfU47n3FCmv99ih/8liFnwXWrFb9W20ifymt7Yv+eG2Ns7+L7J+e0
-lABpirPZXXGLQia9TnraTkVOvPTA1y+aFlRIcqi5BY1zA+/IfbUingHR/7uMRnrf
-rySLKUIDT15Ky4eUH/3dalZf/ICB+XljRLZcFZRqcDCMnYDAJwJZDwoBgX2GncYB
-dAxYmktNDVDJpWo+Z71bGZjSrkLU3TSgp0MaR7XqxtpE5xOQ08T86Yu+Z4XFr7q1
-yAkB7dt+bqZRzgKN68mWEZ/3hcGBfcV5Zfbea42u/Bl9uT7cD2UClQ14XrGu9zck
-2OiJDwwjD+oo6iNsSFfD2DCve7VhlcRKB93t8K5ILHZ4OkDaPcs5FRr1pKGnYhb9
-GTJYFoMxht7dXAL7uZx1YCjRtKOvG7ZP7kvVY+XE57bf9u1hx4+xLGx/3ld1Mjm2
-fhL0A7UubOZHp2j5kxzMTGH5pF+hnNqjY4MpIqJSE2n7lLGJjy5baeCwzfrgSF7x
-r/g7ylcBZy+KA8oPsZQ/
-=q/QQ
------END PGP SIGNATURE-----
-
---RnlQjJ0d97Da+TV1--
