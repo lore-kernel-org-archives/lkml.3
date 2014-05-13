@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933160AbaEMKCr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:02:47 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60828 "EHLO
+	id S1760902AbaEMKE2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:04:28 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60807 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760075AbaEMJ24 (ORCPT
+	by vger.kernel.org with ESMTP id S1760065AbaEMJ24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 May 2014 05:28:56 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@redhat.com>,
-        Benny Halevy <bhalevy@primarydata.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 058/182] nfsd4: buffer-length check for SUPPATTR_EXCLCREAT
-Date: Tue, 13 May 2014 11:26:50 +0200
-Message-Id: <4730853e4fe2462d3aeea298409993468e1e3992.1399973152.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Christopher Covington <cov@codeaurora.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 018/182] ARM: 8007/1: Remove extraneous kcmp syscall ignore
+Date: Tue, 13 May 2014 11:26:10 +0200
+Message-Id: <60700517a488a9ac79ca3bc47cf9050df4075b5d.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -23,37 +24,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Christopher Covington <cov@codeaurora.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit de3997a7eeb9ea286b15879fdf8a95aae065b4f7 upstream.
+commit 95c52fe063351192e0f4ffb70ef9bac1aa26f5a4 upstream.
 
-This was an omission from 8c18f2052e756e7d5dea712fc6e7ed70c00e8a39
-"nfsd41: SUPPATTR_EXCLCREAT attribute".
+The kcmp system call was ported to ARM in
+commit 3f7d1fe108dbaefd0c57a41753fc2c90b395f458
+"ARM: 7665/1: Wire up kcmp syscall".
 
-Cc: Benny Halevy <bhalevy@primarydata.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Fixes: 3f7d1fe108db ("ARM: 7665/1: Wire up kcmp syscall")
+Signed-off-by: Christopher Covington <cov@codeaurora.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/nfsd/nfs4xdr.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/include/asm/unistd.h | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index ecc735e30bea..0407ba4990e0 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -2502,6 +2502,8 @@ out_acl:
- 			goto out;
- 	}
- 	if (bmval2 & FATTR4_WORD2_SUPPATTR_EXCLCREAT) {
-+		if ((buflen -= 16) < 0)
-+			goto out_resource;
- 		WRITE32(3);
- 		WRITE32(NFSD_SUPPATTR_EXCLCREAT_WORD0);
- 		WRITE32(NFSD_SUPPATTR_EXCLCREAT_WORD1);
+diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
+index 141baa3f9a72..cbd61977c996 100644
+--- a/arch/arm/include/asm/unistd.h
++++ b/arch/arm/include/asm/unistd.h
+@@ -48,6 +48,5 @@
+  */
+ #define __IGNORE_fadvise64_64
+ #define __IGNORE_migrate_pages
+-#define __IGNORE_kcmp
+ 
+ #endif /* __ASM_ARM_UNISTD_H */
 -- 
 1.9.3
 
