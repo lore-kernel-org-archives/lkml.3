@@ -1,159 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752353AbaEMAmR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 20:42:17 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:41045 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021AbaEMAmQ (ORCPT
+	id S1752746AbaEMAmy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 20:42:54 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:48379 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752170AbaEMAmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 20:42:16 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 13 May 2014 09:44:10 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm, compaction: properly signal and act upon lock and
- need_sched() contention
-Message-ID: <20140513004410.GA23803@js1304-P5Q-DELUXE>
-References: <20140508051747.GA9161@js1304-P5Q-DELUXE>
- <1399904111-23520-1-git-send-email-vbabka@suse.cz>
+	Mon, 12 May 2014 20:42:52 -0400
+Date: Tue, 13 May 2014 09:04:58 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] drivers: sh: compile drivers/sh/pm_runtime.c if
+ ARCH_SHMOBILE_MULTI
+Message-ID: <20140513000455.GA18157@verge.net.au>
+References: <1399411579-10681-1-git-send-email-geert+renesas@glider.be>
+ <CAMuHMdWwenyU1RS4c8spFcb7M0oCXP9z8zbGQ0VACKj7EbvvkA@mail.gmail.com>
+ <20140511004626.GW31760@verge.net.au>
+ <CANqRtoQzxdjwU+BLyccrSzfBx3UMKm6=MAw9dUHSEBWm5_Vspg@mail.gmail.com>
+ <20140512070700.GA20505@verge.net.au>
+ <CAMuHMdVMCcDK4Y403G26S27oATzLN74iCSM7U+K_ktE-c3uweQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1399904111-23520-1-git-send-email-vbabka@suse.cz>
+In-Reply-To: <CAMuHMdVMCcDK4Y403G26S27oATzLN74iCSM7U+K_ktE-c3uweQ@mail.gmail.com>
+Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 04:15:11PM +0200, Vlastimil Babka wrote:
-> Compaction uses compact_checklock_irqsave() function to periodically check for
-> lock contention and need_resched() to either abort async compaction, or to
-> free the lock, schedule and retake the lock. When aborting, cc->contended is
-> set to signal the contended state to the caller. Two problems have been
-> identified in this mechanism.
+On Mon, May 12, 2014 at 09:25:21AM +0200, Geert Uytterhoeven wrote:
+> Hi Simon,
 > 
-> First, compaction also calls directly cond_resched() in both scanners when no
-> lock is yet taken. This call either does not abort async compaction, or set
-> cc->contended appropriately. This patch introduces a new
-> compact_check_resched() function to achieve both.
+> On Mon, May 12, 2014 at 9:07 AM, Simon Horman <horms@verge.net.au> wrote:
+> > On Mon, May 12, 2014 at 08:24:03AM +0900, Magnus Damm wrote:
+> >> On Sun, May 11, 2014 at 9:46 AM, Simon Horman <horms@verge.net.au> wrote:
+> >> > On Thu, May 08, 2014 at 12:12:29PM +0200, Geert Uytterhoeven wrote:
+> >> >> On Tue, May 6, 2014 at 11:26 PM, Geert Uytterhoeven
+> >> >> <geert+renesas@glider.be> wrote:
+> >> >> > Tested on Koelsch (legacy, reference, shmobile, and shmobile+bbb kernels)
+> >> >> > and BeagleBone Black (shmobile+bbb). Will test on more hardware tomorrow.
+> >> >>
+> >> >> Tested on genmai with Wolfram's CCF support.
+> >> >
+> >> > Thanks, shall I go ahead and queue this up?
+> >>
+> >> Yes please, at least from my side everything looks perfect.
+> >
+> > Thanks, will do.
+> >
+> > I currently plan to send this on to Linus when the merge window
+> > opens for v3.16.
 > 
-> Second, isolate_freepages() does not check if isolate_freepages_block()
-> aborted due to contention, and advances to the next pageblock. This violates
-> the principle of aborting on contention, and might result in pageblocks not
-> being scanned completely, since the scanning cursor is advanced. This patch
-> makes isolate_freepages_block() check the cc->contended flag and abort.
+> Actually we had hoped this could land in v3.15, so we can fix the regression
+> introduced in v3.14 by bf98c1eac1d4a6bcf00532e4fa41d8126cd6c187 as
+> soon as possible.
+
+Ok, so I should/can treat this as a fix?
+
+> > This differs from other patches I have queued up (until now) which
+> > I have or intend to send via the ARM SoC tree.
 > 
-> Reported-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> ---
->  mm/compaction.c | 40 +++++++++++++++++++++++++++++++++-------
->  1 file changed, 33 insertions(+), 7 deletions(-)
+> Yep ;-)
 > 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 83ca6f9..b34ab7c 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -222,6 +222,27 @@ static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
->  	return true;
->  }
->  
-> +/*
-> + * Similar to compact_checklock_irqsave() (see its comment) for places where
-> + * a zone lock is not concerned.
-> + *
-> + * Returns false when compaction should abort.
-> + */
-> +static inline bool compact_check_resched(struct compact_control *cc)
-> +{
-> +	/* async compaction aborts if contended */
-> +	if (need_resched()) {
-> +		if (cc->mode == MIGRATE_ASYNC) {
-> +			cc->contended = true;
-> +			return false;
-> +		}
-> +
-> +		cond_resched();
-> +	}
-> +
-> +	return true;
-> +}
-> +
->  /* Returns true if the page is within a block suitable for migration to */
->  static bool suitable_migration_target(struct page *page)
->  {
-> @@ -491,11 +512,8 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  			return 0;
->  	}
->  
-> -	if (cond_resched()) {
-> -		/* Async terminates prematurely on need_resched() */
-> -		if (cc->mode == MIGRATE_ASYNC)
-> -			return 0;
-> -	}
-> +	if (!compact_check_resched(cc))
-> +		return 0;
->  
->  	/* Time to isolate some pages for migration */
->  	for (; low_pfn < end_pfn; low_pfn++) {
-> @@ -718,9 +736,10 @@ static void isolate_freepages(struct zone *zone,
->  		/*
->  		 * This can iterate a massively long zone without finding any
->  		 * suitable migration targets, so periodically check if we need
-> -		 * to schedule.
-> +		 * to schedule, or even abort async compaction.
->  		 */
-> -		cond_resched();
-> +		if (!compact_check_resched(cc))
-> +			break;
->  
->  		if (!pfn_valid(block_start_pfn))
->  			continue;
-> @@ -758,6 +777,13 @@ static void isolate_freepages(struct zone *zone,
->  		 */
->  		if (isolated)
->  			cc->finished_update_free = true;
-> +
-> +		/*
-> +		 * isolate_freepages_block() might have aborted due to async
-> +		 * compaction being contended
-> +		 */
-> +		if (cc->contended)
-> +			break;
->  	}
-
-Hello,
-
-I think that we can do further.
-
-The problem is that this cc->contended is checked only in
-isolate_migratepages() to break out the compaction. So if there are
-free pages we are already taken, compaction wouldn't stopped
-immediately and isolate_freepages() could be invoked again on next
-compaction_alloc(). If there is no contention at this time, we would try
-to get free pages from one pageblock because cc->contended checking is
-on bottom of the loop in isolate_migratepages() and will continue to
-run compaction. AFAIK, we want to stop the compaction in this case. 
-
-Moreover, if this isolate_freepages() don't stop the compaction,
-next isolate_migratepages() will be invoked and it would be stopped
-by checking cc->contended after isolating some pages for migration.
-This is useless overhead so should be removed.
-
-Thanks.
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
