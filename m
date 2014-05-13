@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759928AbaEMJO0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:14:26 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:39552 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759912AbaEMJOX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:14:23 -0400
-Message-ID: <5371E265.4020603@linaro.org>
-Date: Tue, 13 May 2014 10:14:13 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1759938AbaEMJO6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:14:58 -0400
+Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:23792
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759667AbaEMJDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 05:03:04 -0400
+From: Ley Foon Tan <lftan@altera.com>
+To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
+        <cltang@codesourcery.com>, Steven Miao <realmz6@gmail.com>,
+        <adi-buildroot-devel@lists.sourceforge.net>
+Subject: [PATCH 05/25] blackfin: Add 32 bit time_t and clock_t
+Date: Tue, 13 May 2014 17:02:55 +0800
+Message-ID: <1399971775-4153-1-git-send-email-lftan@altera.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1399971456-3941-1-git-send-email-lftan@altera.com>
+References: <1399971456-3941-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        agross@quicinc.com,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v1 06/11] mmc: mmci: Qcomm: Add 3 clock cycle delay after
- register write
-References: <1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>	<1398759614-13217-1-git-send-email-srinivas.kandagatla@linaro.org> <CACRpkdab4OT_Yzoijgdc7RFBapN8rrN56LYGLeO1vMjb=bu4Mg@mail.gmail.com>
-In-Reply-To: <CACRpkdab4OT_Yzoijgdc7RFBapN8rrN56LYGLeO1vMjb=bu4Mg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(199002)(189002)(16796002)(47776003)(92566001)(81542001)(87286001)(85852003)(83072002)(36756003)(89996001)(86362001)(74502001)(74662001)(92726001)(50466002)(79102001)(31966008)(102836001)(62966002)(77156001)(48376002)(20776003)(81342001)(44976005)(33646001)(80022001)(6806004)(19580395003)(19580405001)(50226001)(46102001)(83322001)(87936001)(2009001)(77982001)(84676001)(50986999)(4396001)(76176999)(76482001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB007;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-OriginatorOrg: altera.onmicrosoft.com
+X-Forefront-PRVS: 0210479ED8
+Authentication-Results: spf=softfail (sender IP is 66.35.236.232)
+ smtp.mailfrom=lftan@altera.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Linus W for reviewing the patches.
+Override time_t and clock_t in include/uapi/asm-generic.
 
-On 13/05/14 08:29, Linus Walleij wrote:
-> On Tue, Apr 29, 2014 at 10:20 AM,  <srinivas.kandagatla@linaro.org> wrote:
->
->> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->>
->> Most of the Qcomm SD card controller registers must be updated to the MCLK
->> domain so subsequent writes to registers will be ignored until 3 clock cycles
->> have passed.
->>
->> This patch adds a 3 clock cycle delay required after writing to controller
->> registers on Qualcomm SOCs. Without this delay all the register writes are not
->> successfull, resulting in not detecting cards.
->>
->> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->
-> Sounds like someone decided to clock the internal state machine
-> in the MMCI using MCLK instead of PCLK :-(
->
-> A bit nasty if this ends up in the fastpath (irq) though. Which it
-> invariably does, right?
-yes, Its going to for Qcom SOC.
->
->> +       /*
->> +        * On QCom SD card controller, registers must be updated to the
->> +        * MCLK domain so subsequent writes to this register will be ignored
->> +        * for 3 clk cycles.
->> +        */
->> +       if (host->hw_designer == AMBA_VENDOR_QCOM)
->> +               udelay(1 + ((3 * USEC_PER_SEC)/host->mclk));
->
-> Add a new field in vendor data instead, and use DIV_ROUND_UP():
->
-yes, that makes sense..
+Signed-off-by: Ley Foon Tan <lftan@altera.com>
+---
+ arch/blackfin/include/uapi/asm/posix_types.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-> static struct variant_data variant_qcom = {
->           .mclk_delayed_writes  = true,
-> (...)
->
-> if (host->vendor->mclk_delayed_writes)
->      udelay(DIV_ROUND_UP((3 * USEC_PER_SEC), host->mclk));
->
-> You get the idea.
->
-Got it.
+diff --git a/arch/blackfin/include/uapi/asm/posix_types.h b/arch/blackfin/include/uapi/asm/posix_types.h
+index 9608ef6..e005638 100644
+--- a/arch/blackfin/include/uapi/asm/posix_types.h
++++ b/arch/blackfin/include/uapi/asm/posix_types.h
+@@ -25,6 +25,12 @@ typedef unsigned short __kernel_old_gid_t;
+ typedef unsigned short __kernel_old_dev_t;
+ #define __kernel_old_dev_t __kernel_old_dev_t
+ 
++typedef long __kernel_time_t;
++#define __kernel_time_t __kernel_time_t
++
++typedef long __kernel_clock_t;
++#define __kernel_clock_t __kernel_clock_t
++
+ #include <asm-generic/posix_types.h>
+ 
+ #endif /* _UAPI__ARCH_BFIN_POSIX_TYPES_H */
+-- 
+1.8.2.1
 
-> Yours,
-> Linus Walleij
->
