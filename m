@@ -1,143 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932153AbaEMW1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 18:27:09 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:53143 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754290AbaEMW0I (ORCPT
+	id S1754684AbaEMW3J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 18:29:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56096 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409AbaEMW3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 18:26:08 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/3] nohz: Move full nohz kick to its own IPI
-Date: Wed, 14 May 2014 00:25:55 +0200
-Message-Id: <1400019956-25511-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1400019956-25511-1-git-send-email-fweisbec@gmail.com>
-References: <1400019956-25511-1-git-send-email-fweisbec@gmail.com>
+	Tue, 13 May 2014 18:29:02 -0400
+Date: Tue, 13 May 2014 15:29:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 17/19] fs: buffer: Do not use unnecessary atomic
+ operations when discarding buffers
+Message-Id: <20140513152900.ea0a58cf4a650fb0b4110e3e@linux-foundation.org>
+In-Reply-To: <1399974350-11089-18-git-send-email-mgorman@suse.de>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+	<1399974350-11089-18-git-send-email-mgorman@suse.de>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the irq work subsystem can queue remote callbacks, it's
-a perfect fit to safely queue IPIs when interrupts are disabled
-without worrying about concurrent callers.
+On Tue, 13 May 2014 10:45:48 +0100 Mel Gorman <mgorman@suse.de> wrote:
 
-Lets use it for the full dynticks kick to notify a CPU that it's
-exiting single task mode.
+> Discarding buffers uses a bunch of atomic operations when discarding buffers
+> because ...... I can't think of a reason. Use a cmpxchg loop to clear all the
+> necessary flags. In most (all?) cases this will be a single atomic operations.
+> 
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -1485,14 +1485,18 @@ EXPORT_SYMBOL(set_bh_page);
+>   */
+>  static void discard_buffer(struct buffer_head * bh)
+>  {
+> +	unsigned long b_state, b_state_old;
+> +
+>  	lock_buffer(bh);
+>  	clear_buffer_dirty(bh);
+>  	bh->b_bdev = NULL;
+> -	clear_buffer_mapped(bh);
+> -	clear_buffer_req(bh);
+> -	clear_buffer_new(bh);
+> -	clear_buffer_delay(bh);
+> -	clear_buffer_unwritten(bh);
+> +	b_state = bh->b_state;
+> +	for (;;) {
+> +		b_state_old = cmpxchg(&bh->b_state, b_state, (b_state & ~BUFFER_FLAGS_DISCARD));
+> +		if (b_state_old == b_state)
+> +			break;
+> +		b_state = b_state_old;
+> +	}
+>  	unlock_buffer(bh);
+>  }
+>  
+> --- a/include/linux/buffer_head.h
+> +++ b/include/linux/buffer_head.h
+> @@ -77,6 +77,11 @@ struct buffer_head {
+>  	atomic_t b_count;		/* users using this buffer_head */
+>  };
+>  
+> +/* Bits that are cleared during an invalidate */
+> +#define BUFFER_FLAGS_DISCARD \
+> +	(1 << BH_Mapped | 1 << BH_New | 1 << BH_Req | \
+> +	 1 << BH_Delay | 1 << BH_Unwritten)
+> +
 
-This unbloats a bit the scheduler IPI that the nohz code was abusing
-for its cool "callable anywhere/anytime" properties.
+There isn't much point in having this in the header file is there?
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- include/linux/tick.h     |  9 ++++++++-
- kernel/sched/core.c      |  5 +----
- kernel/sched/sched.h     |  2 +-
- kernel/time/tick-sched.c | 10 ++++++----
- 4 files changed, 16 insertions(+), 10 deletions(-)
-
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index b84773c..8a4987f 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -181,7 +181,13 @@ static inline bool tick_nohz_full_cpu(int cpu)
- 
- extern void tick_nohz_init(void);
- extern void __tick_nohz_full_check(void);
--extern void tick_nohz_full_kick(void);
-+extern void tick_nohz_full_kick_cpu(int cpu);
+--- a/fs/buffer.c~fs-buffer-do-not-use-unnecessary-atomic-operations-when-discarding-buffers-fix
++++ a/fs/buffer.c
+@@ -1483,6 +1483,12 @@ EXPORT_SYMBOL(set_bh_page);
+ /*
+  * Called when truncating a buffer on a page completely.
+  */
 +
-+static inline void tick_nohz_full_kick(void)
-+{
-+	tick_nohz_full_kick_cpu(smp_processor_id());
-+}
++/* Bits that are cleared during an invalidate */
++#define BUFFER_FLAGS_DISCARD \
++	(1 << BH_Mapped | 1 << BH_New | 1 << BH_Req | \
++	 1 << BH_Delay | 1 << BH_Unwritten)
 +
- extern void tick_nohz_full_kick_all(void);
- extern void __tick_nohz_task_switch(struct task_struct *tsk);
- #else
-@@ -189,6 +195,7 @@ static inline void tick_nohz_init(void) { }
- static inline bool tick_nohz_full_enabled(void) { return false; }
- static inline bool tick_nohz_full_cpu(int cpu) { return false; }
- static inline void __tick_nohz_full_check(void) { }
-+static inline void tick_nohz_full_kick_cpu(int cpu) { }
- static inline void tick_nohz_full_kick(void) { }
- static inline void tick_nohz_full_kick_all(void) { }
- static inline void __tick_nohz_task_switch(struct task_struct *tsk) { }
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index d9d8ece..fb6dfad 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1500,9 +1500,7 @@ void scheduler_ipi(void)
- 	 */
- 	preempt_fold_need_resched();
- 
--	if (llist_empty(&this_rq()->wake_list)
--			&& !tick_nohz_full_cpu(smp_processor_id())
--			&& !got_nohz_idle_kick())
-+	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick())
- 		return;
- 
- 	/*
-@@ -1519,7 +1517,6 @@ void scheduler_ipi(void)
- 	 * somewhat pessimize the simple resched case.
- 	 */
- 	irq_enter();
--	tick_nohz_full_check();
- 	sched_ttwu_pending();
- 
- 	/*
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 456e492..6089e00 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1225,7 +1225,7 @@ static inline void inc_nr_running(struct rq *rq)
- 		if (tick_nohz_full_cpu(rq->cpu)) {
- 			/* Order rq->nr_running write against the IPI */
- 			smp_wmb();
--			smp_send_reschedule(rq->cpu);
-+			tick_nohz_full_kick_cpu(rq->cpu);
- 		}
-        }
- #endif
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 6558b7a..3d63944 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -224,13 +224,15 @@ static DEFINE_PER_CPU(struct irq_work, nohz_full_kick_work) = {
+ static void discard_buffer(struct buffer_head * bh)
+ {
+ 	unsigned long b_state, b_state_old;
+@@ -1492,7 +1498,8 @@ static void discard_buffer(struct buffer
+ 	bh->b_bdev = NULL;
+ 	b_state = bh->b_state;
+ 	for (;;) {
+-		b_state_old = cmpxchg(&bh->b_state, b_state, (b_state & ~BUFFER_FLAGS_DISCARD));
++		b_state_old = cmpxchg(&bh->b_state, b_state,
++				      (b_state & ~BUFFER_FLAGS_DISCARD));
+ 		if (b_state_old == b_state)
+ 			break;
+ 		b_state = b_state_old;
+--- a/include/linux/buffer_head.h~fs-buffer-do-not-use-unnecessary-atomic-operations-when-discarding-buffers-fix
++++ a/include/linux/buffer_head.h
+@@ -77,11 +77,6 @@ struct buffer_head {
+ 	atomic_t b_count;		/* users using this buffer_head */
  };
  
+-/* Bits that are cleared during an invalidate */
+-#define BUFFER_FLAGS_DISCARD \
+-	(1 << BH_Mapped | 1 << BH_New | 1 << BH_Req | \
+-	 1 << BH_Delay | 1 << BH_Unwritten)
+-
  /*
-- * Kick the current CPU if it's full dynticks in order to force it to
-+ * Kick the CPU if it's full dynticks in order to force it to
-  * re-evaluate its dependency on the tick and restart it if necessary.
-  */
--void tick_nohz_full_kick(void)
-+void tick_nohz_full_kick_cpu(int cpu)
- {
--	if (tick_nohz_full_cpu(smp_processor_id()))
--		irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
-+	if (!tick_nohz_full_cpu(cpu))
-+		return;
-+
-+	irq_work_queue_on(&per_cpu(nohz_full_kick_work, cpu), cpu);
- }
- 
- static void nohz_full_kick_ipi(void *info)
--- 
-1.8.3.1
+  * macro tricks to expand the set_buffer_foo(), clear_buffer_foo()
+  * and buffer_foo() functions.
+_
 
