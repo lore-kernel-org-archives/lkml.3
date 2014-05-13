@@ -1,243 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557AbaEMBXI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 21:23:08 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:63135 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904AbaEMBXF (ORCPT
+	id S1754585AbaEMBad (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 21:30:33 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:53110 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752099AbaEMBab convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 21:23:05 -0400
-X-AuditID: cbfee690-b7fcd6d0000026e0-60-537173f50f51
-From: Namjae Jeon <namjae.jeon@samsung.com>
-To: "'Brian Foster'" <bfoster@redhat.com>
-Cc: "'Dave Chinner'" <david@fromorbit.com>, "'Theodore Ts'o'" <tytso@mit.edu>,
-        linux-fsdevel@vger.kernel.org,
-        "'linux-ext4'" <linux-ext4@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        "'Ashish Sangwan'" <a.sangwan@samsung.com>, xfs@oss.sgi.com
-References: <003801cf6aa7$f1f87b70$d5e97250$@samsung.com>
- <20140509152440.GA32489@laptop.bfoster>
- <005601cf6dc6$82573820$8705a860$@samsung.com>
- <20140512112541.GA62831@bfoster.bfoster>
-In-reply-to: <20140512112541.GA62831@bfoster.bfoster>
-Subject: RE: [PATCH v2 2/10] xfs: Add support FALLOC_FL_INSERT_RANGE for
- fallocate
-Date: Tue, 13 May 2014 10:23:00 +0900
-Message-id: <001a01cf6e49$e168e650$a43ab2f0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQI8l/c+50jbPyrOUhhBFU208NvpTgGlw03dAgzqMasB2HRhxZo3CUIg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsWyRsSkWPdrcWGwweEFwhZLJ15itnj3ucpi
-	y7F7jBYz591hs9iz9ySLxeVdc9gsWnt+slss6rvF6MDhcWqRhEfTmaPMHqsvbGX0eL/vKptH
-	35ZVjB6fN8kFsEVx2aSk5mSWpRbp2yVwZdyccIq94K1hRfORnSwNjH9Uuhg5OSQETCS+3j7B
-	CmGLSVy4t56ti5GLQ0hgKaPE7BW3WWCKzv7+xAZiCwlMZ5S4flEHougvo0Tn0olA3RwcbALa
-	En+2iILUiAioS9yZN4EFpIZZ4BOjxPoDk1ggmvcxSkx4LwticwqYSpzZfBxsqLBAiMSah/fB
-	bBYBVYlV1w8xgdi8ApYSa+5OYYewBSV+TL4HNodZQEti/c7jTBC2vMTmNW+ZIQ5VkNhx9jUj
-	xBFuEvd+3maFqBGR2PfiHSPIQRICP9klzt28ygyxTEDi2+RDLCAPSAjISmw6ADVHUuLgihss
-	ExglZiFZPQvJ6llIVs9CsmIBI8sqRtHUguSC4qT0IhO94sTc4tK8dL3k/NxNjMB4Pv3v2YQd
-	jPcOWB9iTAZaP5FZSjQ5H5gO8kriDY3NjCxMTUyNjcwtzUgTVhLnVXuUFCQkkJ5YkpqdmlqQ
-	WhRfVJqTWnyIkYmDU6qBsSr6es7yB5MvbkgQTfv67Uci+8uqmZl+XL4TGbQaf51iVpgluu7D
-	mVt7133KD99dZp2i/2JZScK8Y9uvXfJK0LixvvsYf62f54o1VXlmbdN7ToVKXOvbemDlc4EJ
-	f7hXCkyvD/jocHWhX+0kl7ozTjIfXjDknnEO/XqlwYGBb9/hgN5thzd4L1ZiKc5INNRiLipO
-	BAD4sfQ3/QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOKsWRmVeSWpSXmKPExsVy+t9jQd2vxYXBBq0PuC2WTrzEbPHuc5XF
-	lmP3GC1mzrvDZrFn70kWi8u75rBZtPb8ZLdY1HeL0YHD49QiCY+mM0eZPVZf2Mro8X7fVTaP
-	vi2rGD0+b5ILYItqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy
-	8QnQdcvMAbpHSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5hxc8Ip9oK3
-	hhXNR3ayNDD+Ueli5OSQEDCROPv7ExuELSZx4d56MFtIYDqjxPWLOl2MXED2X0aJzqUTWbsY
-	OTjYBLQl/mwRBakREVCXuDNvAgtIDbPAJ0aJ9QcmsUA072OUmPBeFsTmFDCVOLP5ONhQYYEQ
-	iTUP74PZLAKqEquuH2ICsXkFLCXW3J3CDmELSvyYfA9sDrOAlsT6nceZIGx5ic1r3jJDHKog
-	sePsa0aII9wk7v28zQpRIyKx78U7xgmMQrOQjJqFZNQsJKNmIWlZwMiyilE0tSC5oDgpPddQ
-	rzgxt7g0L10vOT93EyM4WTyT2sG4ssHiEKMAB6MSD+9P48JgIdbEsuLK3EOMEhzMSiK8XUFA
-	Id6UxMqq1KL8+KLSnNTiQ4zJQJ9OZJYSTc4HJrK8knhDYxMzI0sjc0MLI2Nz0oSVxHkPtFoH
-	CgmkJ5akZqemFqQWwWxh4uCUamBcHmTVsipWRPEe4zH+2dHHTz4LNg97xNxV6fR0WkT+vkMR
-	Nl+m3TB89UJqZ4gUn4nvJV3vsyvvFdfXCgss/DIp8sji4/9bL4R/jvVQsji2aGvFvC3KAT+2
-	f6h7O9Um/UtG2EaBKZF2uS1FWwTsL6ZelLHfn8q8tVXcO8AsW9yM4eGTMw+duw8psRRnJBpq
-	MRcVJwIAKoAjWloDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 12 May 2014 21:30:31 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <4987444.Zp0Prbn0Y8@wuerfel>
+Cc: "Maxime Ripard" <maxime.ripard@free-electrons.com>,
+        devicetree@vger.kernel.org, andriy.shevchenko@intel.com,
+        "Emilio Lopez" <emilio@elopez.com.ar>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, zhuzhenhua@allwinnertech.com,
+        "Vinod Koul" <vinod.koul@intel.com>, linux-sunxi@googlegroups.com,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, "Dan Williams" <dan.j.williams@intel.com>
+References: <1397724379-15398-1-git-send-email-maxime.ripard@free-electrons.com>
+ <201404231439.02913.arnd@arndb.de> <20140423131720.GS24905@lukather>
+ <4987444.Zp0Prbn0Y8@wuerfel>
+Message-ID: <20140513013024.5943.89772@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v6 3/8] ARM: sunxi: Move the clock protection to machine hooks
+Date: Mon, 12 May 2014 18:30:24 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> On Mon, May 12, 2014 at 06:42:37PM +0900, Namjae Jeon wrote:
-> >
-> > > > +xfs_bmap_split_extent(
-> > > > +	struct xfs_inode	*ip,
-> > > > +	xfs_fileoff_t		split_fsb,
-> > > > +	xfs_extnum_t		*split_ext)
-> > > > +{
-> > > > +	struct xfs_mount        *mp = ip->i_mount;
-> > > > +	struct xfs_trans	*tp;
-> > > > +	struct xfs_bmap_free	free_list;
-> > > > +	xfs_fsblock_t		firstfsb;
-> > > > +	int			committed;
-> > > > +	int			error;
+Quoting Arnd Bergmann (2014-04-23 06:31:06)
+> On Wednesday 23 April 2014 15:17:20 Maxime Ripard wrote:
+> > > > +#include <linux/clk.h>
+> > > >  #include <linux/init.h>
+> > > >  #include <linux/of_platform.h>
+> > > >  
+> > > > @@ -19,9 +20,17 @@
+> > > >  
+> > > >  static void __init sun4i_dt_init(void)
+> > > >  {
+> > > > +       struct clk *clk;
 > > > > +
-> > > > +	tp = xfs_trans_alloc(mp, XFS_TRANS_DIOSTRAT);
-> > > > +	error = xfs_trans_reserve(tp, &M_RES(mp)->tr_write,
-> > > > +			XFS_DIOSTRAT_SPACE_RES(mp, 0), 0);
+> > > >         sunxi_setup_restart();
+> > > >  
+> > > >         of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
 > > > > +
-> > > > +	if (error) {
-> > > > +		/*
-> > > > +		 * Free the transaction structure.
-> > > > +		 */
-> > > > +		ASSERT(XFS_FORCED_SHUTDOWN(mp));
-> > >
-> > Hi, Brian.
-> > > As in the other patch, we're attempting to reserve fs blocks for the
-> > > transaction, so ENOSPC is a possibility that I think the assert should
-> > > accommodate.
-> > How about removing the ASSERT completely as suggessted by Dave
-> > in other thread?
-> >
+> > > > +       /* Make sure the clocks we absolutely need are enabled */
+> > > > +       /* DDR clock */
+> > > > +       clk = clk_get(NULL, "pll5_ddr");
+> > > > +       if (!IS_ERR(clk))
+> > > > +               clk_prepare_enable(clk);
+> > > >  }
+> > > 
+> > > Isn't there already DT syntax to do the same? If not, should there be?
+> > 
+> > I don't think there is, and I gave some thought about it too. But
+> > something a la regulator-always-on wouldn't work with clocks with
+> > multiple outputs (like pll5), because you might need to leave only one
+> > of the output enabled, but not the others, and I couldn't think of a
+> > nice way to do so.
+> > 
+> > If you have one, I'd be happy to implement it.
 > 
-> Yeah, that works too. If Dave prefers to just remove these asserts
-> that's fine with me. I just wanted to make sure we aren't adding
-> spurious asserts for valid failures.
-Okay.
+> We had a discussion a while ago about encoding default settings for clock
+> providers in the clock provider nodes. I don't remember the details
+> unfortunately.
 > 
-> > >
-> ...
-> > > > diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
-> > > > index 97855c5..392b029 100644
-> > > > --- a/fs/xfs/xfs_file.c
-> > > > +++ b/fs/xfs/xfs_file.c
-> > > > @@ -760,7 +760,8 @@ xfs_file_fallocate(
-> > > >  	if (!S_ISREG(inode->i_mode))
-> > > >  		return -EINVAL;
-> > > >  	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
-> > > > -		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE))
-> > > > +		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE |
-> > > > +		     FALLOC_FL_INSERT_RANGE))
-> > > >  		return -EOPNOTSUPP;
-> > > >
-> > > >  	xfs_ilock(ip, XFS_IOLOCK_EXCL);
-> > > > @@ -790,6 +791,40 @@ xfs_file_fallocate(
-> > > >  		error = xfs_collapse_file_space(ip, offset, len);
-> > > >  		if (error)
-> > > >  			goto out_unlock;
-> > > > +	} else if (mode & FALLOC_FL_INSERT_RANGE) {
-> > > > +		unsigned blksize_mask = (1 << inode->i_blkbits) - 1;
-> > > > +		struct iattr iattr;
-> > > > +
-> > > > +		if (offset & blksize_mask || len & blksize_mask) {
-> > > > +			error = -EINVAL;
-> > > > +			goto out_unlock;
-> > > > +		}
-> > > > +
-> > > > +		/* Check for wrap through zero */
-> > > > +		if (inode->i_size + len > inode->i_sb->s_maxbytes) {
-> > > > +			error = -EFBIG;
-> > > > +			goto out_unlock;
-> > > > +		}
-> > > > +
-> > > > +		/* Offset should be less than i_size */
-> > > > +		if (offset >= i_size_read(inode)) {
-> > > > +			error = -EINVAL;
-> > > > +			goto out_unlock;
-> > > > +		}
-> > > > +
-> > > > +		/*
-> > > > +		 * The first thing we do is to expand file to
-> > > > +		 * avoid data loss if there is error while shifting
-> > > > +		 */
-> > > > +		iattr.ia_valid = ATTR_SIZE;
-> > > > +		iattr.ia_size = i_size_read(inode) + len;
-> > > > +		error = xfs_setattr_size(ip, &iattr);
-> > > > +		if (error)
-> > > > +			goto out_unlock;
-> > >
-> > > I don't necessarily know that it's problematic to do the setattr before
-> > > the bmap fixup. We'll have a chance for partial completion of this
-> > > operation either way. But I'm not a fan of the code duplication here.
-> > > This also still skips the time update in the event of insert space
-> > > failure, though perhaps that's not such a big deal if we're returning an
-> > > error.
-> > >
-> > > I think it would be better to leave things organized as before and
-> > > introduce an error2 variable and a &nrshifts or some such parameter to
-> > > xfs_insert_file_space() that initializes to 0 and returns the number of
-> > > record shifts. The caller can then decide whether it's appropriate to
-> > > break out immediately or do the inode size update and return the error.
-> > >
-> > > Perhaps not the cleanest thing in the world, but also not the first
-> > > place we would use 'error2' to manage error priorities (grep around for
-> > > it)...
-> > Yes, Right. I also thought such sequence at first. But we should consider
-> > sudden power off and unplug device case during shifting extent.
-> > While we are in the middle of shifitng extents and if there is sudden
-> > power failure user can still think that data is lost as we won't get any
-> > chance to update the file size in these cases.
-> > Updating file size before the shifitng operation can start will prevent this.
-> >
-> > Thanks.
-> 
-> Hmm, fair point. That seems less critical to me than the general error
-> sequence, but if we want to handle that case I think we could still fix
-> the duplication in xfs_file_fallocate(). We could possibly factor out
-> the common bits (update time and set size) into a helper, or what seems
-> a bit cleaner on first thought, move the bulk of the (mode &
-> FALLOC_FL_INSERT_RANGE) block to after the common part. Then the
-> function looks something like this:
-> 
-> 	...
-> 	xfs_ilock();
-> 
-> 	/* pre-inode fixup ops */
-> 	if (mode & ...) {
-> 		...
-> 	} else if (mode & FALLOC_FL_INSERT_RANGE) {
-> 		/* comment as to what's going on here :) */
-> 
-> 		/* error checks */
-> 
-> 		new_size = ...;
-> 		do_file_insert = 1;
-> 	}
-> 	...
-> 	xfs_trans_ichgtime();
-> 	xfs_setattr_size();
-> 	...
-> 
-> 	/*
-> 	 * Some operations are performed after the inode size is updated. For
-> 	 * example, insert range expands the address space of the file, shifts
-> 	 * all subsequent extents over and allocates space into the hole.
-> 	 * Updating the size first ensures that shifted extents aren't left
-> 	 * hanging past EOF in the event of a crash or failure.
-> 	 */
-> 	if (do_file_insert) {
-> 		/* alloc space */
-> 		...
-> 	}
-> 	...
-> 
-> That seems a bit cleaner to me, but I'm not wedded to it. Thoughts? It
-> might be worth soliciting some other thoughts/ideas before reworking it.
-> Thanks.
-Okay, I agree about your opinion.
-And I would like to get some feedback from Dave before reworking.
+> Mike, can you explain how this should be done?
 
-Thanks for your valuable review!
+The default clock settings are still in discussion. My perspective is
+that the default settings are best used by the consuming device. E.g. an
+MMC controller that consumes a clock signal should specify in DT the
+clock that it consumes (already does this) and the preferred rate that
+it wants that clock, as well as the preferred parent if that clock is a
+mux.
+
+Of course clock providers themselves are devices and could specify such
+defaults for the clocks that they create. This approach is a minor
+bastardization of the default clock settings since the clock provider
+device isn't really consuming the clock, but it is helpful when no such
+driver or DT node exists to do the same.
+
+It is worth pointing out that the above approach amounts to the exact
+same hard coding of clk_enable requirements as is done in Maxime's
+patch, but with the added problem that the default are hidden away in DT
+somewhere which is a debugging nightmare for someone trying to figure
+out why a clock is set at a certain rate.
+
+Finally, to answer the question more directly, I completely oppose
+having something analogous to a regulator-always-on for a clock that can
+gate. Please always use the clk.h API for this in Linux kernel driver C
+code:
+
+clk_get()
+clk_prepare()
+clk_enable()
+
+In Maxime's case he is doing the right thing (using the clk.h API) but
+he has no memory driver to do it, so he is putting that stuff in the clk
+provider driver. I'm fine with that solution, until the day that he does
+have a memory driver and then it needs to migrate out to that code.
+
+Regards,
+Mike
 
 > 
-> Brian
-> 
-> > >
-> > > Brian
-> > >
-> > > > +
-> > > > +		error = xfs_insert_file_space(ip, offset, len);
-> > > > +		if (error)
-> > > > +			goto out_unlock;
-> > > >  	} else {
-> > > >  		if (!(mode & FALLOC_FL_KEEP_SIZE) &&
-> > > >  		    offset + len > i_size_read(inode)) {
-> >
-
+>         Arnd
