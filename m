@@ -1,131 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129AbaEMShG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 14:37:06 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:48306 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751943AbaEMShA (ORCPT
+	id S1754202AbaEMSin (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 14:38:43 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:38267 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750910AbaEMSih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 14:37:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <53721D24.4090704@ti.com>
-References: <1399969905-3509-1-git-send-email-george.cherian@ti.com>
-	<5371EA01.3080307@gmail.com>
-	<537208A9.4020507@ti.com>
-	<53720E0F.3070008@gmail.com>
-	<537216AC.4090401@ti.com>
-	<53721ABF.8060705@gmail.com>
-	<53721D24.4090704@ti.com>
-Date: Tue, 13 May 2014 13:37:00 -0500
-Message-ID: <CADYTM3bvQPHLJSR=ytTR3bupo=Nk6nQtw=4UgbXurbjkEFSQoA@mail.gmail.com>
-Subject: Re: [PATCH v3 0/5] Add support for SW babble Control
-From: Bin Liu <binmlist@gmail.com>
-To: George Cherian <george.cherian@ti.com>
-Cc: Daniel Mack <zonque@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org, balbi@ti.com,
-        gregkh@linuxfoundation.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 13 May 2014 14:38:37 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqYVAGxlclNbtADP/2dsb2JhbABZgwaseAQBAQEBAQEFAZoZAgKBIxd0glMTHCMYgQIkE4hFAccohVSIeoRHAQOPKYomAZMQgzg7
+Date: Tue, 13 May 2014 20:38:32 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Joel Becker <jlbec@evilplan.org>, Joe Perches <joe@perches.com>,
+        akpm <akpm@linux-foundation.org>
+Subject: [RFC 1/1] fs/configfs/dir.c: remove unused debugging functions
+Message-Id: <20140513203832.cb793ce47b8af993f561e5c2@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Joe Perches noticed it was not used anywhere.
+If there's no plan to use it in the future,
+we could simply remove both functions ...
 
-On Tue, May 13, 2014 at 8:24 AM, George Cherian <george.cherian@ti.com> wrote:
-> Hi Daniel,
->
->
-> On 5/13/2014 6:44 PM, Daniel Mack wrote:
->>
->> Hi George,
->>
->> On 05/13/2014 02:57 PM, George Cherian wrote:
->>>
->>> I never enabled the MUSB_BABBLE_SW_SESSION_CTRL in the MUSB_BABBLE_CTL
->>> reg.
->>> can you try with the following patch.
->>>
->>> diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
->>> index 1ae6681..1160cd1 100644
->>> --- a/drivers/usb/musb/musb_dsps.c
->>> +++ b/drivers/usb/musb/musb_dsps.c
->>> @@ -477,8 +477,11 @@ static int dsps_musb_init(struct musb *musb)
->>>          * logic enabled.
->>>          */
->>>         val = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
->>> -       if (val == MUSB_BABBLE_RCV_DISABLE)
->>> +       if (val == MUSB_BABBLE_RCV_DISABLE) {
->>>                 glue->sw_babble_enabled = true;
->>> +               val |= MUSB_BABBLE_SW_SESSION_CTRL;
->>> +               dsps_writeb(musb->mregs, MUSB_BABBLE_CTL, val);
->>> +       }
->>>         ret = dsps_musb_dbg_init(musb, glue);
->>>         if (ret)
->>
->> MUSB_BABBLE_STUCK_J still remains unset, so I get the same result as
->> without the patch: a full glue reset is conducted. Do I get you right
->> that you expect MUSB_BABBLE_STUCK_J to be set in babble conditions when
->> MUSB_BABBLE_SW_SESSION_CTRL is set?
->>
-> Basically, there are 2 types of babble conditions.
-> 1) Transient babble condition - which could be recovered from without an IP
-> reset .
-> 2) Babble condition - which could be recovered from only by doing an IP
-> reset.
->
-> Looks like you are always hitting case 2 (Most times am also hitting the
-> same).
-> Case 1 is really hard to reproduce. I don't have a reliable method as of now
-> to
-> reproduce this case consistently.
->
->> [   19.672373] CAUTION: musb: Babble Interrupt Occurred
->> [   19.677776] musb_stage0_irq 789: unhandled DISCONNECT transition
->> (a_wait_bcon)
->> [   19.685815] usb 1-1: USB disconnect, device number 3
->> [   19.769720] musb-hdrc musb-hdrc.0.auto: babble: MUSB_BABBLE_CTL value
->> 44
->> [   19.776765] musb-hdrc musb-hdrc.0.auto: STUCK_J is reset
->>
->>
->> I don't quite follow, especially as I lack documentation of the IP core.
->> How do you test babble errors, is there any way to force them to happen
->> reliably?
->
->
-> There is no 100% reliable method to force it to happen. Following is
+Cc: Joe Perches <joe@perches.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/configfs/dir.c | 37 -------------------------------------
+ 1 file changed, 37 deletions(-)
 
-I have a way to force babble happen reliably - shorting DP or DM to
-VBUS. I opened the far-end plug of the USB cable, so I can easily
-short DP or DM to VBUS.
+diff --git a/fs/configfs/dir.c b/fs/configfs/dir.c
+index e081acb..1b12d0a 100644
+--- a/fs/configfs/dir.c
++++ b/fs/configfs/dir.c
+@@ -937,43 +937,6 @@ static void client_drop_item(struct config_item *parent_item,
+ 		config_item_put(item);
+ }
+ 
+-#ifdef DEBUG
+-static void configfs_dump_one(struct configfs_dirent *sd, int level)
+-{
+-	printk(KERN_INFO "%*s\"%s\":\n", level, " ", configfs_get_name(sd));
+-
+-#define type_print(_type) if (sd->s_type & _type) printk(KERN_INFO "%*s %s\n", level, " ", #_type);
+-	type_print(CONFIGFS_ROOT);
+-	type_print(CONFIGFS_DIR);
+-	type_print(CONFIGFS_ITEM_ATTR);
+-	type_print(CONFIGFS_ITEM_LINK);
+-	type_print(CONFIGFS_USET_DIR);
+-	type_print(CONFIGFS_USET_DEFAULT);
+-	type_print(CONFIGFS_USET_DROPPING);
+-#undef type_print
+-}
+-
+-static int configfs_dump(struct configfs_dirent *sd, int level)
+-{
+-	struct configfs_dirent *child_sd;
+-	int ret = 0;
+-
+-	configfs_dump_one(sd, level);
+-
+-	if (!(sd->s_type & (CONFIGFS_DIR|CONFIGFS_ROOT)))
+-		return 0;
+-
+-	list_for_each_entry(child_sd, &sd->s_children, s_sibling) {
+-		ret = configfs_dump(child_sd, level + 2);
+-		if (ret)
+-			break;
+-	}
+-
+-	return ret;
+-}
+-#endif
+-
+-
+ /*
+  * configfs_depend_item() and configfs_undepend_item()
+  *
+-- 
+1.8.4.5
 
-But the interesting thing is that with TI 3.2 kernel, shorting DP or
-DM to VBUS causes MISC register to be 0x4, but the result is
-completely opposite in TI 3.12.10 kernel, which cause MISC to be 0x64.
-
-So in the 3.2 kernel, the babble handing resets the controller, but
-the 3.12.10 does not.
-
-Regards,
--Bin.
-
-> my setup ,
-> I have a HUB with 4 devices connected , which gives me a Babble interrupt
-> on both connects and disconnects ( Not always though).
->
->> Anyway, the full glue layer solves this rare condition quite well for
->> me. Is there any downside of this?
->>
->>
->> Daniel
->>
->
->
-> --
-> -George
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
->
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
