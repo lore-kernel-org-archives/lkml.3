@@ -1,66 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932915AbaEMJkh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:40:37 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60899 "EHLO
+	id S1760210AbaEMJkg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:40:36 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60908 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760109AbaEMJ25 (ORCPT
+	by vger.kernel.org with ESMTP id S1760110AbaEMJ25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 May 2014 05:28:57 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 093/182] media: em28xx: fix PCTV 290e LNA oops
-Date: Tue, 13 May 2014 11:27:25 +0200
-Message-Id: <fc238de4a00357b52b221386b519a343686b1a06.1399973152.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 098/182] usb: dwc3: fix randconfig build errors
+Date: Tue, 13 May 2014 11:27:30 +0200
+Message-Id: <29abe2df695157059a83ac3c67c1a0c7b03d9703.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
 References: <cover.1399973152.git.jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Antti Palosaari <crope@iki.fi>
+From: Felipe Balbi <balbi@ti.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 3ec40dcfb413214b2874aec858870502b61c2202 upstream.
+commit 610183051d8f9421f138c4203ca894387f9f8839 upstream.
 
-Pointer to device state has been moved to different location during
-some change. PCTV 290e LNA function still uses old pointer, carried
-over FE priv, and it crash.
+commit 388e5c5 (usb: dwc3: remove dwc3 dependency
+on host AND gadget.) created the possibility for
+host-only and peripheral-only dwc3 builds but
+left a possible randconfig build error when host-only
+builds are selected.
 
-Reported-by: Janne Kujanpää <jikuja@iki.fi>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reported-by: Jim Davis <jim.epost@gmail.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/media/usb/em28xx/em28xx-dvb.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/dwc3/core.h   | 33 +++++++++++++++++++++++++++++++++
+ drivers/usb/dwc3/gadget.h | 12 ------------
+ 2 files changed, 33 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/media/usb/em28xx/em28xx-dvb.c b/drivers/media/usb/em28xx/em28xx-dvb.c
-index bb1e8dca80cd..069b7f0dfb36 100644
---- a/drivers/media/usb/em28xx/em28xx-dvb.c
-+++ b/drivers/media/usb/em28xx/em28xx-dvb.c
-@@ -673,7 +673,8 @@ static void pctv_520e_init(struct em28xx *dev)
- static int em28xx_pctv_290e_set_lna(struct dvb_frontend *fe)
- {
- 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
--	struct em28xx *dev = fe->dvb->priv;
-+	struct em28xx_i2c_bus *i2c_bus = fe->dvb->priv;
-+	struct em28xx *dev = i2c_bus->dev;
- #ifdef CONFIG_GPIOLIB
- 	struct em28xx_dvb *dvb = dev->dvb;
- 	int ret;
+diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
+index 69c4583933d1..546e67a2e4cd 100644
+--- a/drivers/usb/dwc3/core.h
++++ b/drivers/usb/dwc3/core.h
+@@ -856,6 +856,19 @@ union dwc3_event {
+ 	struct dwc3_event_gevt		gevt;
+ };
+ 
++/**
++ * struct dwc3_gadget_ep_cmd_params - representation of endpoint command
++ * parameters
++ * @param2: third parameter
++ * @param1: second parameter
++ * @param0: first parameter
++ */
++struct dwc3_gadget_ep_cmd_params {
++	u32	param2;
++	u32	param1;
++	u32	param0;
++};
++
+ /*
+  * DWC3 Features to be used as Driver Data
+  */
+@@ -881,11 +894,31 @@ static inline void dwc3_host_exit(struct dwc3 *dwc)
+ #if IS_ENABLED(CONFIG_USB_DWC3_GADGET) || IS_ENABLED(CONFIG_USB_DWC3_DUAL_ROLE)
+ int dwc3_gadget_init(struct dwc3 *dwc);
+ void dwc3_gadget_exit(struct dwc3 *dwc);
++int dwc3_gadget_set_test_mode(struct dwc3 *dwc, int mode);
++int dwc3_gadget_get_link_state(struct dwc3 *dwc);
++int dwc3_gadget_set_link_state(struct dwc3 *dwc, enum dwc3_link_state state);
++int dwc3_send_gadget_ep_cmd(struct dwc3 *dwc, unsigned ep,
++		unsigned cmd, struct dwc3_gadget_ep_cmd_params *params);
++int dwc3_send_gadget_generic_command(struct dwc3 *dwc, int cmd, u32 param);
+ #else
+ static inline int dwc3_gadget_init(struct dwc3 *dwc)
+ { return 0; }
+ static inline void dwc3_gadget_exit(struct dwc3 *dwc)
+ { }
++static inline int dwc3_gadget_set_test_mode(struct dwc3 *dwc, int mode)
++{ return 0; }
++static inline int dwc3_gadget_get_link_state(struct dwc3 *dwc)
++{ return 0; }
++static inline int dwc3_gadget_set_link_state(struct dwc3 *dwc,
++		enum dwc3_link_state state)
++{ return 0; }
++
++static inline int dwc3_send_gadget_ep_cmd(struct dwc3 *dwc, unsigned ep,
++		unsigned cmd, struct dwc3_gadget_ep_cmd_params *params)
++{ return 0; }
++static inline int dwc3_send_gadget_generic_command(struct dwc3 *dwc,
++		int cmd, u32 param)
++{ return 0; }
+ #endif
+ 
+ /* power management interface */
+diff --git a/drivers/usb/dwc3/gadget.h b/drivers/usb/dwc3/gadget.h
+index febe1aa7b714..a0ee75b68a80 100644
+--- a/drivers/usb/dwc3/gadget.h
++++ b/drivers/usb/dwc3/gadget.h
+@@ -56,12 +56,6 @@ struct dwc3;
+ /* DEPXFERCFG parameter 0 */
+ #define DWC3_DEPXFERCFG_NUM_XFER_RES(n)	((n) & 0xffff)
+ 
+-struct dwc3_gadget_ep_cmd_params {
+-	u32	param2;
+-	u32	param1;
+-	u32	param0;
+-};
+-
+ /* -------------------------------------------------------------------------- */
+ 
+ #define to_dwc3_request(r)	(container_of(r, struct dwc3_request, request))
+@@ -85,9 +79,6 @@ static inline void dwc3_gadget_move_request_queued(struct dwc3_request *req)
+ void dwc3_gadget_giveback(struct dwc3_ep *dep, struct dwc3_request *req,
+ 		int status);
+ 
+-int dwc3_gadget_set_test_mode(struct dwc3 *dwc, int mode);
+-int dwc3_gadget_set_link_state(struct dwc3 *dwc, enum dwc3_link_state state);
+-
+ void dwc3_ep0_interrupt(struct dwc3 *dwc,
+ 		const struct dwc3_event_depevt *event);
+ void dwc3_ep0_out_start(struct dwc3 *dwc);
+@@ -95,9 +86,6 @@ int dwc3_gadget_ep0_set_halt(struct usb_ep *ep, int value);
+ int dwc3_gadget_ep0_queue(struct usb_ep *ep, struct usb_request *request,
+ 		gfp_t gfp_flags);
+ int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value);
+-int dwc3_send_gadget_ep_cmd(struct dwc3 *dwc, unsigned ep,
+-		unsigned cmd, struct dwc3_gadget_ep_cmd_params *params);
+-int dwc3_send_gadget_generic_command(struct dwc3 *dwc, int cmd, u32 param);
+ 
+ /**
+  * dwc3_gadget_ep_get_transfer_index - Gets transfer index from HW
 -- 
 1.9.3
 
