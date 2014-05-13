@@ -1,93 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447AbaEMP1P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:27:15 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:47482 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752613AbaEMP1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:27:04 -0400
-Date: Tue, 13 May 2014 10:26:31 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 4/8] usb: phy: fix isp1301-omap dependency on tps65010
-Message-ID: <20140513152631.GI1151@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1399557141-1346645-1-git-send-email-arnd@arndb.de>
- <1399557141-1346645-5-git-send-email-arnd@arndb.de>
+	id S1753655AbaEMP1Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:27:25 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57951 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753286AbaEMP1J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 11:27:09 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [RFC][PATCH 2/3] PM / sleep: Mechanism to avoid resuming runtime-suspended devices unnecessarily
+Date: Tue, 13 May 2014 17:43:55 +0200
+Message-ID: <1652919.R3bbdKUH5p@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1405131110480.1098-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1405131110480.1098-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ev7mvGV+3JQuI2Eo"
-Content-Disposition: inline
-In-Reply-To: <1399557141-1346645-5-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ev7mvGV+3JQuI2Eo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tuesday, May 13, 2014 11:12:28 AM Alan Stern wrote:
+> On Tue, 13 May 2014, Rafael J. Wysocki wrote:
+> 
+> > > > +	dev->power.direct_complete = ret > 0 && state.event == PM_EVENT_SUSPEND
+> > > > +					&& pm_runtime_suspended(dev);
+> > > 
+> > > Shouldn't the flag be set under the spinlock?
+> > 
+> > I guess you're worried about runtime PM flags being modified in parallel to
+> > this?  But we've just done the barrier a while ago, so is that still a concern
+> > here?
+> 
+> A wakeup request from the hardware could cause a runtime resume to 
+> occur at this time.  The barrier wouldn't prevent that.
+> 
+> It's unlikely, I agree, but not impossible.
 
-On Thu, May 08, 2014 at 03:52:17PM +0200, Arnd Bergmann wrote:
-> The isp1301-omap driver cannot be built-in if the tps65010 driver
-> is a module, otherwise we get a link error from the reference to
-> the tps65010_set_vbus_draw function.
->=20
-> There is already a hack in the driver to work around the problem
-> of tps65010 being not available at all. This patch extends that
-> hack to ensure that the real tps65010_set_vbus_draw() function
-> is only called when it's avaiable.
->=20
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: linux-omap@vger.kernel.org
-> ---
->  drivers/usb/phy/phy-isp1301-omap.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/usb/phy/phy-isp1301-omap.c b/drivers/usb/phy/phy-isp=
-1301-omap.c
-> index 6e146d7..35a0dd2 100644
-> --- a/drivers/usb/phy/phy-isp1301-omap.c
-> +++ b/drivers/usb/phy/phy-isp1301-omap.c
-> @@ -94,7 +94,7 @@ struct isp1301 {
-> =20
->  #if defined(CONFIG_MACH_OMAP_H2) || defined(CONFIG_MACH_OMAP_H3)
-> =20
-> -#if	defined(CONFIG_TPS65010) || defined(CONFIG_TPS65010_MODULE)
-> +#if	defined(CONFIG_TPS65010) || (defined(CONFIG_TPS65010_MODULE) && defi=
-ned(MODULE))
+Yeah, I didn't think about that.
 
-nack, I would rather see a real fix, possibly also fixing the original
-hack.
+But that also can occur in __device_suspend(), after we've checked the flag
+and decided not to invoke the ->suspend() callback, right?  So moving the
+check in there doesn't help much I'd say.  It closes the race window, but
+that's it.
 
---=20
-balbi
+That means that the whole approach based on ->prepare() is problematic
+unless we somehow mix it with disabling runtime PM.
 
---ev7mvGV+3JQuI2Eo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Rafael
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTcjmnAAoJEIaOsuA1yqREsHIP/i6A23/UcJeYz4s+Ed8y60/I
-2zX8hlGWQf/6B6gnIWCZenNk7duVuHlsmImcA+Ja7weGzK1l+rxuUZWNUXjp/4iT
-logymzThsMFamxnddMIgVBZNCQDuA5wBngfvfwzde04vwhz1Tdt5RGkr4JksgJ8A
-3prhzr8MYA5+Fj5nnoH8wuMyXtzvDsNfaCU4RtbOoqGvQtrRiVyTVxcL9k82LYlS
-fWUFJaozJ6CIGz+M6d2YTs3ccpNAdPeVywJb/CDzLcEwcTnoda9Y1wDcryCR6xwe
-cxItuqYvOUzrJnhS90uEKCom3zAOM/hFL1yzkr3Eh0hUzU6SP9Ree02J3d/+Ev6V
-C/86u0GBjUxtoFNIZOFb9/alFw4oGVbzBRg3sNsbyZRyssrnobd4gQBvnGhMWdf2
-qnuJ6zm+jQVSFOV+IWeaOtI9aoeQJJZ+QN+ZHjqerEEiEMsbWF0uxBNd9aatBky8
-c1W5EX0MNEqdw2B0n12PB1G388lNthc7/qxTxUqmrUjwXzg357POrAmKnMX5fD3o
-OipDyL3zTM/ax0DTGhs6u+5vb+4R8dWHBeyMAovLUEcV9fu06FxKRdZG7h0ZP493
-j0CmhBDQQTW2XNWNMSFCJBA+4Z7tOe93/usidxLZHokrJjXxBHMD+rTnShViZ3RK
-FT0NB9V5TdFPiLYxDCZe
-=9REK
------END PGP SIGNATURE-----
-
---ev7mvGV+3JQuI2Eo--
