@@ -1,36 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933315AbaEMKKw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:10:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50664 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933231AbaEMKJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:09:34 -0400
-From: Takashi Iwai <tiwai@suse.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] minor console cleanup patches
-Date: Tue, 13 May 2014 12:09:26 +0200
-Message-Id: <1399975769-30526-1-git-send-email-tiwai@suse.de>
-X-Mailer: git-send-email 1.9.2
+	id S1760487AbaEMKhp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:37:45 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760678AbaEMKKu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 06:10:50 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 176/182] aio: v4 ensure access to ctx->ring_pages is correctly serialised for migration
+Date: Tue, 13 May 2014 11:28:48 +0200
+Message-Id: <57b8a44ac08ff821c4f83890765abfd4db2b63bb.1399973152.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
+References: <cover.1399973152.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Benjamin LaHaise <bcrl@kvack.org>
 
-here is a small series of cleanup patches for some annoyance I
-stumbled during debugging the framebuffer issues:
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
- [PATCH 1/3] vgacon: Fix & cleanup refcounting
- [PATCH 2/3] console: Use explicit pointer type for vc_uni_pagedir*
- [PATCH 3/3] console: Remove superfluous readonly check
+===============
 
-There should be no functional changes by this.
+commit fa8a53c39f3fdde98c9eace6a9b412143f0f6ed6 upstream.
 
+As reported by Tang Chen, Gu Zheng and Yasuaki Isimatsu, the following issues
+exist in the aio ring page migration support.
 
-Takashi
+As a result, for example, we have the following problem:
+
+            thread 1                      |              thread 2
+                                          |
+aio_migratepage()                         |
+ |-> take ctx->completion_lock            |
+ |-> migrate_page_copy(new, old)          |
+ |   *NOW*, ctx->ring_pages[idx] == old   |
+                                          |
+                                          |    *NOW*, ctx->ring_pages[idx] == old
+                                          |    aio_read_events_ring()
+                                          |     |-> ring = kmap_atomic(ctx->ring_pages[0])
+                                          |     |-> ring->head = head;          *HERE, write to the old ring page*
+                                          |     |-> kunmap_atomic(ring);
+                                          |
+ |-> ctx->ring_pages[idx] = new           |
+ |   *BUT NOW*, the content of            |
+ |    ring_pages[idx] is old.             |
+ |-> release ctx->completion_lock         |
+
+As above, the new ring page will not be updated.
+
+Fix this issue, as well as prevent races in aio_ring_setup() by holding
+the ring_lock mutex during kioctx setup and page migration.  This avoids
+the overhead of taking another spinlock in aio_read_events_ring() as Tang's
+and Gu's original fix did, pushing the overhead into the migration code.
+
+Note that to handle the nesting of ring_lock inside of mmap_sem, the
+migratepage operation uses mutex_trylock().  Page migration is not a 100%
+critical operation in this case, so the ocassional failure can be
+tolerated.  This issue was reported by Sasha Levin.
+
+Based on feedback from Linus, avoid the extra taking of ctx->completion_lock.
+Instead, make page migration fully serialised by mapping->private_lock, and
+have aio_free_ring() simply disconnect the kioctx from the mapping by calling
+put_aio_ring_file() before touching ctx->ring_pages[].  This simplifies the
+error handling logic in aio_migratepage(), and should improve robustness.
+
+v4: always do mutex_unlock() in cases when kioctx setup fails.
+
+Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ fs/aio.c | 120 +++++++++++++++++++++++++++++++++++----------------------------
+ 1 file changed, 67 insertions(+), 53 deletions(-)
+
+diff --git a/fs/aio.c b/fs/aio.c
+index 062a5f6a1448..12a3de0ee6da 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -52,7 +52,8 @@
+ struct aio_ring {
+ 	unsigned	id;	/* kernel internal index number */
+ 	unsigned	nr;	/* number of io_events */
+-	unsigned	head;
++	unsigned	head;	/* Written to by userland or under ring_lock
++				 * mutex by aio_read_events_ring(). */
+ 	unsigned	tail;
+ 
+ 	unsigned	magic;
+@@ -243,6 +244,11 @@ static void aio_free_ring(struct kioctx *ctx)
+ {
+ 	int i;
+ 
++	/* Disconnect the kiotx from the ring file.  This prevents future
++	 * accesses to the kioctx from page migration.
++	 */
++	put_aio_ring_file(ctx);
++
+ 	for (i = 0; i < ctx->nr_pages; i++) {
+ 		struct page *page;
+ 		pr_debug("pid(%d) [%d] page->count=%d\n", current->pid, i,
+@@ -254,8 +260,6 @@ static void aio_free_ring(struct kioctx *ctx)
+ 		put_page(page);
+ 	}
+ 
+-	put_aio_ring_file(ctx);
+-
+ 	if (ctx->ring_pages && ctx->ring_pages != ctx->internal_pages) {
+ 		kfree(ctx->ring_pages);
+ 		ctx->ring_pages = NULL;
+@@ -283,29 +287,38 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
+ {
+ 	struct kioctx *ctx;
+ 	unsigned long flags;
++	pgoff_t idx;
+ 	int rc;
+ 
+ 	rc = 0;
+ 
+-	/* Make sure the old page hasn't already been changed */
++	/* mapping->private_lock here protects against the kioctx teardown.  */
+ 	spin_lock(&mapping->private_lock);
+ 	ctx = mapping->private_data;
+-	if (ctx) {
+-		pgoff_t idx;
+-		spin_lock_irqsave(&ctx->completion_lock, flags);
+-		idx = old->index;
+-		if (idx < (pgoff_t)ctx->nr_pages) {
+-			if (ctx->ring_pages[idx] != old)
+-				rc = -EAGAIN;
+-		} else
+-			rc = -EINVAL;
+-		spin_unlock_irqrestore(&ctx->completion_lock, flags);
++	if (!ctx) {
++		rc = -EINVAL;
++		goto out;
++	}
++
++	/* The ring_lock mutex.  The prevents aio_read_events() from writing
++	 * to the ring's head, and prevents page migration from mucking in
++	 * a partially initialized kiotx.
++	 */
++	if (!mutex_trylock(&ctx->ring_lock)) {
++		rc = -EAGAIN;
++		goto out;
++	}
++
++	idx = old->index;
++	if (idx < (pgoff_t)ctx->nr_pages) {
++		/* Make sure the old page hasn't already been changed */
++		if (ctx->ring_pages[idx] != old)
++			rc = -EAGAIN;
+ 	} else
+ 		rc = -EINVAL;
+-	spin_unlock(&mapping->private_lock);
+ 
+ 	if (rc != 0)
+-		return rc;
++		goto out_unlock;
+ 
+ 	/* Writeback must be complete */
+ 	BUG_ON(PageWriteback(old));
+@@ -314,38 +327,26 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
+ 	rc = migrate_page_move_mapping(mapping, new, old, NULL, mode, 1);
+ 	if (rc != MIGRATEPAGE_SUCCESS) {
+ 		put_page(new);
+-		return rc;
++		goto out_unlock;
+ 	}
+ 
+-	/* We can potentially race against kioctx teardown here.  Use the
+-	 * address_space's private data lock to protect the mapping's
+-	 * private_data.
++	/* Take completion_lock to prevent other writes to the ring buffer
++	 * while the old page is copied to the new.  This prevents new
++	 * events from being lost.
+ 	 */
+-	spin_lock(&mapping->private_lock);
+-	ctx = mapping->private_data;
+-	if (ctx) {
+-		pgoff_t idx;
+-		spin_lock_irqsave(&ctx->completion_lock, flags);
+-		migrate_page_copy(new, old);
+-		idx = old->index;
+-		if (idx < (pgoff_t)ctx->nr_pages) {
+-			/* And only do the move if things haven't changed */
+-			if (ctx->ring_pages[idx] == old)
+-				ctx->ring_pages[idx] = new;
+-			else
+-				rc = -EAGAIN;
+-		} else
+-			rc = -EINVAL;
+-		spin_unlock_irqrestore(&ctx->completion_lock, flags);
+-	} else
+-		rc = -EBUSY;
+-	spin_unlock(&mapping->private_lock);
++	spin_lock_irqsave(&ctx->completion_lock, flags);
++	migrate_page_copy(new, old);
++	BUG_ON(ctx->ring_pages[idx] != old);
++	ctx->ring_pages[idx] = new;
++	spin_unlock_irqrestore(&ctx->completion_lock, flags);
+ 
+-	if (rc == MIGRATEPAGE_SUCCESS)
+-		put_page(old);
+-	else
+-		put_page(new);
++	/* The old page is no longer accessible. */
++	put_page(old);
+ 
++out_unlock:
++	mutex_unlock(&ctx->ring_lock);
++out:
++	spin_unlock(&mapping->private_lock);
+ 	return rc;
+ }
+ #endif
+@@ -380,7 +381,7 @@ static int aio_setup_ring(struct kioctx *ctx)
+ 	file = aio_private_file(ctx, nr_pages);
+ 	if (IS_ERR(file)) {
+ 		ctx->aio_ring_file = NULL;
+-		return -EAGAIN;
++		return -ENOMEM;
+ 	}
+ 
+ 	ctx->aio_ring_file = file;
+@@ -415,7 +416,7 @@ static int aio_setup_ring(struct kioctx *ctx)
+ 
+ 	if (unlikely(i != nr_pages)) {
+ 		aio_free_ring(ctx);
+-		return -EAGAIN;
++		return -ENOMEM;
+ 	}
+ 
+ 	ctx->mmap_size = nr_pages * PAGE_SIZE;
+@@ -429,7 +430,7 @@ static int aio_setup_ring(struct kioctx *ctx)
+ 	if (IS_ERR((void *)ctx->mmap_base)) {
+ 		ctx->mmap_size = 0;
+ 		aio_free_ring(ctx);
+-		return -EAGAIN;
++		return -ENOMEM;
+ 	}
+ 
+ 	pr_debug("mmap address: 0x%08lx\n", ctx->mmap_base);
+@@ -556,6 +557,10 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+ 					rcu_read_unlock();
+ 					spin_unlock(&mm->ioctx_lock);
+ 
++					/* While kioctx setup is in progress,
++					 * we are protected from page migration
++					 * changes ring_pages by ->ring_lock.
++					 */
+ 					ring = kmap_atomic(ctx->ring_pages[0]);
+ 					ring->id = ctx->id;
+ 					kunmap_atomic(ring);
+@@ -640,24 +645,28 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
+ 
+ 	ctx->max_reqs = nr_events;
+ 
+-	if (percpu_ref_init(&ctx->users, free_ioctx_users))
+-		goto err;
+-
+-	if (percpu_ref_init(&ctx->reqs, free_ioctx_reqs))
+-		goto err;
+-
+ 	spin_lock_init(&ctx->ctx_lock);
+ 	spin_lock_init(&ctx->completion_lock);
+ 	mutex_init(&ctx->ring_lock);
++	/* Protect against page migration throughout kiotx setup by keeping
++	 * the ring_lock mutex held until setup is complete. */
++	mutex_lock(&ctx->ring_lock);
+ 	init_waitqueue_head(&ctx->wait);
+ 
+ 	INIT_LIST_HEAD(&ctx->active_reqs);
+ 
++	if (percpu_ref_init(&ctx->users, free_ioctx_users))
++		goto err;
++
++	if (percpu_ref_init(&ctx->reqs, free_ioctx_reqs))
++		goto err;
++
+ 	ctx->cpu = alloc_percpu(struct kioctx_cpu);
+ 	if (!ctx->cpu)
+ 		goto err;
+ 
+-	if (aio_setup_ring(ctx) < 0)
++	err = aio_setup_ring(ctx);
++	if (err < 0)
+ 		goto err;
+ 
+ 	atomic_set(&ctx->reqs_available, ctx->nr_events - 1);
+@@ -683,6 +692,9 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
+ 	if (err)
+ 		goto err_cleanup;
+ 
++	/* Release the ring_lock mutex now that all setup is complete. */
++	mutex_unlock(&ctx->ring_lock);
++
+ 	pr_debug("allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
+ 		 ctx, ctx->user_id, mm, ctx->nr_events);
+ 	return ctx;
+@@ -692,6 +704,7 @@ err_cleanup:
+ err_ctx:
+ 	aio_free_ring(ctx);
+ err:
++	mutex_unlock(&ctx->ring_lock);
+ 	free_percpu(ctx->cpu);
+ 	free_percpu(ctx->reqs.pcpu_count);
+ 	free_percpu(ctx->users.pcpu_count);
+@@ -1024,6 +1037,7 @@ static long aio_read_events_ring(struct kioctx *ctx,
+ 
+ 	mutex_lock(&ctx->ring_lock);
+ 
++	/* Access to ->ring_pages here is protected by ctx->ring_lock. */
+ 	ring = kmap_atomic(ctx->ring_pages[0]);
+ 	head = ring->head;
+ 	tail = ring->tail;
+-- 
+1.9.3
 
