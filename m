@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933578AbaEMNhD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 09:37:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63924 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933399AbaEMNhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 09:37:00 -0400
-Message-ID: <53721FD4.6060300@redhat.com>
-Date: Tue, 13 May 2014 09:36:20 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1760625AbaEMNj1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 09:39:27 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:59174 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753943AbaEMNjZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 09:39:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Subject: Re: [PATCH 01/25] asm-generic: Change time_t and clock_t to 64 bit
+Date: Tue, 13 May 2014 15:38:51 +0200
+Message-ID: <6047893.vbvIgNOHCV@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAMuHMdV2NPwacZwP=QRP+d+eFT85jDq9V0F+Q+Hdch3xukpbkw@mail.gmail.com>
+References: <1399971456-3941-1-git-send-email-lftan@altera.com> <alpine.DEB.2.02.1405131405590.6261@ionos.tec.linutronix.de> <CAMuHMdV2NPwacZwP=QRP+d+eFT85jDq9V0F+Q+Hdch3xukpbkw@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Michael wang <wangyun@linux.vnet.ibm.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Alex Shi <alex.shi@linaro.org>,
-        Paul Turner <pjt@google.com>, Mel Gorman <mgorman@suse.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [ISSUE] sched/cgroup: Does cpu-cgroup still works fine nowadays?
-References: <537192D3.5030907@linux.vnet.ibm.com> <20140513094737.GU30445@twins.programming.kicks-ass.net>
-In-Reply-To: <20140513094737.GU30445@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:BV/NILKSXT/TaGH7jZl3V4TRy6F3UJtzZ+uDaDkA698
+ 5DzEzrAzCUmTyTMo5zyzmRRiMehL+VJrWnQVulDFC6ZjIMo9h2
+ 75NDoXVLnuJ3w3fJMMJoOM45ao6koJXh8PTvduGFyU+oPRzuca
+ X6mjYiFruh5jOQMJxEYpjFoONL1bpXJXDZNneUk9oawT9f1MBL
+ ZDcHu0YpM38HQL/o9ZmBoPqh8Urt10g7ezXXqF4z9t+BF3ZN0+
+ h3yWX4Cx7Euw0c4VwIKlE1OKT8ywcVcoZv13Vdgx4F6AK1aBe+
+ awYlqHaWOIeBDRr36fk2Wy7Ue8VJjCUGmTbIl2RAGfAsz2jv/Q
+ 484sDFaqHeIDKOS9KI8Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 05:47 AM, Peter Zijlstra wrote:
-> On Tue, May 13, 2014 at 11:34:43AM +0800, Michael wang wrote:
->> During our testing, we found that the cpu.shares doesn't work as
->> expected, the testing is:
->>
+On Tuesday 13 May 2014 15:11:33 Geert Uytterhoeven wrote:
+> On Tue, May 13, 2014 at 2:07 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Tue, 13 May 2014, Arnd Bergmann wrote:
+> >> On Tuesday 13 May 2014 18:17:40 Ley Foon Tan wrote:
+> >> > When we export this posix_types.h file for user software, they need to
+> >> > define this config, eg: CONFIG_32BIT_TIME to use 32 bit time. Is this
+> >> > what we want to do?
+> >>
+> >> No, this doesn't really work: You can't use CONFIG_* symbols in
+> >> user-visible header files.
+> >
+> > Then make the config symbol generate the header from a template.
 > 
-> /me zaps all the kvm nonsense as that's non reproducable and only serves
-> to annoy.
+> Indeed. I think it's worthwhile to add CONFIG_* expansion for such "hard"
+> CONFIG symbols to make headers_install, cfr. the existing unifdef support.
 > 
-> Pro-tip: never use kvm to report cpu-cgroup issues.
-> 
->> So is this results expected (I really do not think so...)?
->>
->> Or that imply the cpu-cgroup got some issue to be fixed?
-> 
-> So what I did (WSM-EP 2x6x2):
-> 
-> mount none /cgroup -t cgroup -o cpu
-> mkdir -p /cgroup/a
-> mkdir -p /cgroup/b
-> mkdir -p /cgroup/c
-> 
-> echo $$ > /cgroup/a/tasks ; for ((i=0; i<12; i++)) ; do A.sh & done
-> echo $$ > /cgroup/b/tasks ; for ((i=0; i<12; i++)) ; do B.sh & done
-> echo $$ > /cgroup/c/tasks ; for ((i=0; i<12; i++)) ; do C.sh & done
-> 
-> echo 2048 > /cgroup/c/cpu.shares
-> 
-> Where [ABC].sh are spinners:
+> We do such a hard work to improve asm-generic, so new architectures can
+> just use that, only to see early adaptors now having to migrate away from it
+> (e.g. OpenRISC suddenly gaining uapi/asm/posix_types.h).
 
-I suspect the "are spinners" is key.
+This was always the idea: New architectures should use the default ABI
+as it is defined at the time when they get added. When we later change
+the ABI, everything that is already there is no longer using the default,
+so they now have to change.
+ 
+> Or is there another solution?
 
-Infinite loops can run all the time, while dbench spends a lot of
-its time waiting for locks. That waiting may interfere with getting
-as much CPU as it wants.
+We could in theory have a versioned ABI, and define for instance that
+openrisc uses the 3.1 version while nios2 uses the 3.16 version.
 
--- 
-All rights reversed
+Doing that would introduce other problems I guess, but it would
+avoid the use of changing lots of architectures when the default
+ABI changes.
+
+	Arnd
