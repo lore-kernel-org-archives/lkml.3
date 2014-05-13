@@ -1,252 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676AbaEMTp1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 15:45:27 -0400
-Received: from mout.gmx.net ([212.227.17.22]:52595 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752759AbaEMTpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 15:45:19 -0400
-Message-ID: <5372764A.2060906@gmx.de>
-Date: Tue, 13 May 2014 21:45:14 +0200
-From: Helge Deller <deller@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754721AbaEMTrL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 15:47:11 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:49306 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364AbaEMTq7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 15:46:59 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Felipe Balbi <balbi@ti.com>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2] usb: phy: msm: reset controller is mandatory now
+Date: Tue, 13 May 2014 21:46:52 +0200
+Message-ID: <4319810.IibMxJ0Qvk@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>, linux-metag@vger.kernel.org
-Subject: Re: [PATCH] parisc,metag: Do not hardcode maximum userspace stack
- size
-References: <20140430212602.GA20601@p100.fritz.box>		 <53622DBA.807@imgtec.com> <1398966636.2174.21.camel@dabdike>	 <5363876A.2030709@imgtec.com> <1399042116.2202.1.camel@dabdike> <5365EC05.5080900@gmx.de> <5371FF97.7030205@imgtec.com>
-In-Reply-To: <5371FF97.7030205@imgtec.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:/zYX4oQ7jDUGhnsCGpMzXZiJgB6EXjhri7DVK94paqj60bgvBNO
- dnniWnaqlYqstrGO+F3gKG3otY0hbU9Rh9Py8kC8TWq++3Z2utWJ+sMsF6+ILAt0go/MPAY
- zCvi5X+CAJVeg0TDrEgOGD2xkEfz1oUYeGYtew4SQGZViGgXyPf2LSc8H3CrAiEubjIIhTT
- 2Eae0DRolTrdiwthfdwqw==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:OciVEvsAhKLW7xNyk4X0KDM5kVaxmtrtHTTzonhM/jd
+ HxV6khK0x6c4hg49aI31u1HrvTUQnJNkogDYMEl6HFvXKDbyS+
+ xLvUJdMw4ZamldwQPx370vukZxfi2ZmU3G1rYM0mRkdIgGgtko
+ l+wN+wCpWVp0q/Lf63koQ/IhYqbRq0frG1DsXI9ePZGCkRBwU6
+ qlOWeJVjnDWrW8j9jPv6TVHCvsr91lMjRplJYELVif+CZNVEV8
+ j8Y7D1C68Nnjo2Kib06Qbb6DhKWIhaR73SZQfID6KuUplzTGvz
+ jHu6c9aoxZVZjsibhLYBkFCH7DId4Qb7O7Brx26kXFJKs41/+T
+ vhoxIMOkLeVgxhol+TaQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+Commit a27345434134 "usb: phy: msm: Use reset framework for LINK
+and PHY resets" introduced a mandatory call to reset_control_get
+into the msm usb phy driver, which means we have to add a Kconfig
+dependency on the API to avoid this build error:
 
-On 05/13/2014 01:18 PM, James Hogan wrote:
-> On 04/05/14 08:28, Helge Deller wrote:
->> On 05/02/2014 04:48 PM, James Bottomley wrote:
->>> On Fri, 2014-05-02 at 12:54 +0100, James Hogan wrote:
->>>> On 01/05/14 18:50, James Bottomley wrote:
->>>>>
->>>>>> +config MAX_STACK_SIZE_MB
->>>>>> +	int "Maximum user stack size (MB)"
->>>>>> +	default 80
->>>>>> +	range 8 256 if METAG
->>>>>> +	range 8 2048
->>>>>> +	depends on STACK_GROWSUP
->>>>>> +	help
->>>>>> +	  This is the maximum stack size in Megabytes in the VM layout of user
->>>>>> +	  processes when the stack grows upwards (currently only on parisc and
->>>>>> +	  metag arch). The stack will be located at the highest memory address
->>>>>> +	  minus the given value, unless the RLIMIT_STACK hard limit is changed
->>>>>> +	  to a smaller value in which case that is used.
->>>>>> +
->>>>>> +	  A sane initial value is 80 MB.
->>>>>
->>>>> There's one final issue with this: placement of the stack only really
->>>>> matters on 32 bits.  We have three expanding memory areas: stack, heap
->>>>> and maps.  On 64 bits these are placed well separated from each other on
->>>>> 64 bits, so an artificial limit like this doesn't matter.
->>>>
->>>> Does the following fixup diff look reasonable? It forces
->>>> MAX_STACK_SIZE_MB to 1024 and hides the Kconfig option for 64BIT,
->>>> effectively leaving the behaviour unchanged in that case.
->>>>
->>>> diff --git a/mm/Kconfig b/mm/Kconfig
->>>> index e80075979530..b0307f737bd7 100644
->>>> --- a/mm/Kconfig
->>>> +++ b/mm/Kconfig
->>>> @@ -583,7 +583,8 @@ config GENERIC_EARLY_IOREMAP
->>>>  	bool
->>>>
->>>>  config MAX_STACK_SIZE_MB
->>>> -	int "Maximum user stack size (MB)"
->>>> +	int "Maximum user stack size (MB)" if !64BIT
->>>> +	default 1024 if 64BIT
->>>>  	default 80
->>>>  	range 8 256 if METAG
->>>>  	range 8 2048
->>>
->>> Yes, I think that's probably correct ... 
->>
->> No, it's not correct.
->> It will then choose then a 1GB stack for compat tasks on 64bit kernel.
-> 
-> Sorry for the delay (I had most of last week off sick and still catching
-> up).
+phy/phy-msm-usb.c: In function 'msm_otg_read_dt':
+phy/phy-msm-usb.c:1461:2: error: implicit declaration of function 'devm_reset_control_get' [-Werror=implicit-function-declaration]
+  motg->link_rst = devm_reset_control_get(&pdev->dev, "link");
+  ^
 
-No problem.
- 
-> That's a good point. It makes me think the best way to handle it is in a
-> new definition in asm/processor.h, maybe STACK_SIZE_MAX. Does something
-> like this look better? This patch isn't getting any cleaner
-> unfortunately.
+Since the usb-ehci-msm driver currently selects the OTG driver,
+we could still get a broken dependency here. To solve that,
+this patch also removes the 'select', which turns out to be
+unnecessary.
 
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Yes, it's correct now.
-Just tested it. Thanks!
-
-Another problem:
-I think you wanted to get it backported into older kernels?
-It seems the changes to mm/Kconfig will not apply cleanly to 3.14 or lower,
-and the changes to arch/parisc/kernel/sys_parisc.c will not apply to 3.13 or lower...
-
-Maybe cleaning up the patch to apply cleanly to 3.14 would make sense
-and ignore older kernels?
-
-Helge
-
-
-> From 6ecb0392a3b670c4bf1641a6ec56f22427ca8b57 Mon Sep 17 00:00:00 2001
-> From: Helge Deller <deller@gmx.de>
-> Date: Wed, 30 Apr 2014 23:26:02 +0200
-> Subject: [PATCH 1/1] parisc,metag: Do not hardcode maximum userspace stack
->  size
-> 
-> This patch affects only architectures where the stack grows upwards
-> (currently parisc and metag only). On those do not hardcode the maximum
-> initial stack size to 1GB for 32-bit processes, but make it configurable
-> via a config option.
-> 
-> The main problem with the hardcoded stack size is, that we have two
-> memory regions which grow upwards: stack and heap. To keep most of the
-> memory available for heap in a flexmap memoy layout, it makes no sense
-> to hard allocate up to 1GB of the memory for stack which can't be used
-> as heap then.
-> 
-> This patch makes the stack size configurable and uses 80MB as default
-> value which has been in use during the last few years on parisc and
-> which didn't showed any problems yet.
-> 
-> This also fixes a BUG on metag if the RLIMIT_STACK hard limit is
-> increased beyond a safe value by root. E.g. when starting a process
-> after running "ulimit -H -s unlimited" it will then attempt to use a
-> stack size of the maximum 1GB which is far too big for metag's limited
-> user virtual address space (stack_top is usually 0x3ffff000):
-> BUG: failure at fs/exec.c:589/shift_arg_pages()!
-> 
-> Signed-off-by: Helge Deller <deller@gmx.de>
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: linux-parisc@vger.kernel.org
-> Cc: linux-metag@vger.kernel.org
-> Cc: John David Anglin <dave.anglin@bell.net>
-> Cc: stable@vger.kernel.org # only needed for >= v3.9 (arch/metag)
-> ---
-> v3 (James Hogan):
->  - fix so that 64-bit parisc processes still use the 1GB limit.
->    CONFIG_STACK_GROWSUP arches should provide a STACK_SIZE_MAX in their
->    asm/processor.h, and for parisc it depends on USER_WIDE_MODE (whether
->    the current process is 64-bit).
-> v2 (James Hogan):
->  - updated description to mention BUG on metag.
->  - added custom range limit for METAG.
->  - moved Kconfig symbol to mm/Kconfig and reworded.
->  - fixed "matag" typo.
-> ---
->  arch/metag/include/asm/processor.h  |  2 ++
->  arch/parisc/include/asm/processor.h |  5 +++++
->  arch/parisc/kernel/sys_parisc.c     |  6 +++---
->  fs/exec.c                           |  6 +++---
->  mm/Kconfig                          | 15 +++++++++++++++
->  5 files changed, 28 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/metag/include/asm/processor.h b/arch/metag/include/asm/processor.h
-> index f16477d1f571..a8a37477c66e 100644
-> --- a/arch/metag/include/asm/processor.h
-> +++ b/arch/metag/include/asm/processor.h
-> @@ -22,6 +22,8 @@
->  /* Add an extra page of padding at the top of the stack for the guard page. */
->  #define STACK_TOP	(TASK_SIZE - PAGE_SIZE)
->  #define STACK_TOP_MAX	STACK_TOP
-> +/* Maximum virtual space for stack */
-> +#define STACK_SIZE_MAX	(CONFIG_MAX_STACK_SIZE_MB*1024*1024)
-> 
->  /* This decides where the kernel will search for a free chunk of vm
->   * space during mmap's.
-> diff --git a/arch/parisc/include/asm/processor.h b/arch/parisc/include/asm/processor.h
-> index 198a86feb574..d951c9681ab3 100644
-> --- a/arch/parisc/include/asm/processor.h
-> +++ b/arch/parisc/include/asm/processor.h
-> @@ -55,6 +55,11 @@
->  #define STACK_TOP	TASK_SIZE
->  #define STACK_TOP_MAX	DEFAULT_TASK_SIZE
-> 
-> +/* Allow bigger stacks for 64-bit processes */
-> +#define STACK_SIZE_MAX	(USER_WIDE_MODE					\
-> +			 ? (1 << 30)	/* 1 GB */			\
-> +			 : (CONFIG_MAX_STACK_SIZE_MB*1024*1024))
-> +
->  #endif
-> 
->  #ifndef __ASSEMBLY__
-> diff --git a/arch/parisc/kernel/sys_parisc.c b/arch/parisc/kernel/sys_parisc.c
-> index 31ffa9b55322..e1ffea2f9a0b 100644
-> --- a/arch/parisc/kernel/sys_parisc.c
-> +++ b/arch/parisc/kernel/sys_parisc.c
-> @@ -72,10 +72,10 @@ static unsigned long mmap_upper_limit(void)
->  {
->  	unsigned long stack_base;
-> 
-> -	/* Limit stack size to 1GB - see setup_arg_pages() in fs/exec.c */
-> +	/* Limit stack size - see setup_arg_pages() in fs/exec.c */
->  	stack_base = rlimit_max(RLIMIT_STACK);
-> -	if (stack_base > (1 << 30))
-> -		stack_base = 1 << 30;
-> +	if (stack_base > STACK_SIZE_MAX)
-> +		stack_base = STACK_SIZE_MAX;
-> 
->  	return PAGE_ALIGN(STACK_TOP - stack_base);
->  }
-> diff --git a/fs/exec.c b/fs/exec.c
-> index 476f3ebf437e..238b7aa26f68 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -657,10 +657,10 @@ int setup_arg_pages(struct linux_binprm *bprm,
->  	unsigned long rlim_stack;
-> 
->  #ifdef CONFIG_STACK_GROWSUP
-> -	/* Limit stack size to 1GB */
-> +	/* Limit stack size */
->  	stack_base = rlimit_max(RLIMIT_STACK);
-> -	if (stack_base > (1 << 30))
-> -		stack_base = 1 << 30;
-> +	if (stack_base > STACK_SIZE_MAX)
-> +		stack_base = STACK_SIZE_MAX;
-> 
->  	/* Make sure we didn't let the argument array grow too large. */
->  	if (vma->vm_end - vma->vm_start > stack_base)
-> diff --git a/mm/Kconfig b/mm/Kconfig
-> index ebe5880c29d6..1b5a95f0fa01 100644
-> --- a/mm/Kconfig
-> +++ b/mm/Kconfig
-> @@ -581,3 +581,18 @@ config PGTABLE_MAPPING
-> 
->  config GENERIC_EARLY_IOREMAP
->  	bool
-> +
-> +config MAX_STACK_SIZE_MB
-> +	int "Maximum user stack size for 32-bit processes (MB)"
-> +	default 80
-> +	range 8 256 if METAG
-> +	range 8 2048
-> +	depends on STACK_GROWSUP && (!64BIT || COMPAT)
-> +	help
-> +	  This is the maximum stack size in Megabytes in the VM layout of 32-bit
-> +	  user processes when the stack grows upwards (currently only on parisc
-> +	  and metag arch). The stack will be located at the highest memory
-> +	  address minus the given value, unless the RLIMIT_STACK hard limit is
-> +	  changed to a smaller value in which case that is used.
-> +
-> +	  A sane initial value is 80 MB.
-> 
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 3d9e540..7a39ae8 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -170,7 +170,6 @@ config USB_EHCI_MSM
+ 	tristate "Support for Qualcomm QSD/MSM on-chip EHCI USB controller"
+ 	depends on ARCH_MSM
+ 	select USB_EHCI_ROOT_HUB_TT
+-	select USB_MSM_OTG
+ 	---help---
+ 	  Enables support for the USB Host controller present on the
+ 	  Qualcomm chipsets. Root Hub has inbuilt TT.
+diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+index 359a6c1..65bec8f 100644
+--- a/drivers/usb/phy/Kconfig
++++ b/drivers/usb/phy/Kconfig
+@@ -165,6 +165,7 @@ config USB_ISP1301
+ config USB_MSM_OTG
+ 	tristate "Qualcomm on-chip USB OTG controller support"
+ 	depends on (USB || USB_GADGET) && (ARCH_MSM || ARCH_QCOM)
++	depends on RESET_CONTROLLER
+ 	select USB_PHY
+ 	help
+ 	  Enable this to support the USB OTG transceiver on Qualcomm chips. It
 
