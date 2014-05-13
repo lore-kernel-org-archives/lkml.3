@@ -1,91 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760791AbaEMNlr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 09:41:47 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40597 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752947AbaEMNlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 09:41:46 -0400
-Message-ID: <5372210E.4060305@ti.com>
-Date: Tue, 13 May 2014 08:41:34 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S933456AbaEMNl5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 09:41:57 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:39049 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752947AbaEMNlz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 09:41:55 -0400
+Date: Tue, 13 May 2014 10:41:10 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Brian Norris <computersforpeace@gmail.com>, "Gupta, Pekon" <pekon@ti.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] mtd: Add sysfs attr to expose ECC stats
+Message-ID: <20140513134109.GA1504@arch.cereza>
+References: <1395403064-28113-1-git-send-email-ezequiel.garcia@free-electrons.com>
+ <1395403064-28113-2-git-send-email-ezequiel.garcia@free-electrons.com>
+ <20980858CB6D3A4BAE95CA194937D5E73EAB91D7@DBDE04.ent.ti.com>
+ <20140401111359.GA3324@arch.cereza>
+ <20980858CB6D3A4BAE95CA194937D5E73EAC31AE@DBDE04.ent.ti.com>
+ <20140513005053.GZ28907@ld-irv-0074>
+ <20140513022614.GA1447@arch.cereza>
+ <20140513111524.GA29552@kroah.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        Chander Kashyap <chander.kashyap@linaro.org>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        "Brown, Len" <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chander Kashyap <k.chander@samsung.com>,
-        Inderpal Singh <inderpal.s@samsung.com>
-Subject: Re: [PATCH] PM / OPP: discard duplicate OPP additions
-References: <1399966890-22926-1-git-send-email-k.chander@samsung.com> <CAKohpo=6qXer+RRS-F6x=O1VLzbWq+_a-b29MaUzZBvt7XzDwQ@mail.gmail.com>
-In-Reply-To: <CAKohpo=6qXer+RRS-F6x=O1VLzbWq+_a-b29MaUzZBvt7XzDwQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140513111524.GA29552@kroah.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 03:22 AM, Viresh Kumar wrote:
-> On 13 May 2014 13:11, [Chander Kashyap <chander.kashyap@linaro.org> wrote:
+On 13 May 01:15 PM, Greg Kroah-Hartman wrote:
+> On Mon, May 12, 2014 at 11:26:14PM -0300, Ezequiel Garcia wrote:
+> > On 12 May 05:50 PM, Brian Norris wrote:
+> > > > There are some guidelines about attributes in 'Documentation/filesystems/sysfs.txt'
+> > > > Though it's acceptable to put array of values of the "same type" in single sysfs file,
+> > > > But I'm still not confident on having all members of 'struct ecc_stats' being
+> > > > represented by single sysfs file
+> > > [...]
+> > > 
+> > > I agree, it looks like the sysfs policy would recommend against putting
+> > > distinct properties in the same file.
+> > > 
+> > 
+> > OK...
+> > 
+> > > I'm not sure if /sys/block/<disk>/stat is a good example, as it does
+> > > violate this policy. It also seems to have some historical baggage.
+> > > 
+> > > But there is potentially one good reason for putting this distinct
+> > > information in a single file: if the information must be returned
+> > > atomically. For disk stats, it might be important to get a consistent
+> > > snapshot of the disk stats (or nearly so, with minimal locking
+> > > overhead), which might change significantly between file accesses if
+> > > we're doing half a dozen file queries instead.
+> > > 
+> > > This same reason may not apply to these ECC stats, since none of these
+> > > ECC stats are likely to be changing concurrently.
+> > > 
+> > 
+> > Right.
+> > 
+> > > So I personally might lean toward "one file per attribute" here.
+> > > 
+> > 
+> > Yup, no problem. Greg, if you can confirm this it'd be great.
 > 
-> What happened to your name ? "["
+> Yes, that is the rule for sysfs, please do not put multiple values in a
+> single sysfs file for a variety of good reasons.
 > 
->> From: Chander Kashyap <k.chander@samsung.com>
->>
->> It may be possible to unregister and re-register the cpufreq driver.
->> One such example is arm big-little IKS cpufreq driver. While
->> re-registering the driver, same OPPs may get added again.
->>
->> This patch detects the duplicacy and discards them.
->>
->> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
->> Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
->> ---
->>  drivers/base/power/opp.c |   28 +++++++++++++++++++---------
->>  1 file changed, 19 insertions(+), 9 deletions(-)
-> 
-> I wouldn't say that this approach is particularly bad or wrong, but what
-> about this instead?
-> 
-> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-> index 2553867..7efdaf3 100644
-> --- a/drivers/base/power/opp.c
-> +++ b/drivers/base/power/opp.c
-> @@ -713,6 +713,11 @@ int of_init_opp_table(struct device *dev)
->         const __be32 *val;
->         int nr;
-> 
-> +       if (!IS_ERR(find_device_opp(dev))) {
-> +               dev_warn("%s: opp table already exists\n", __func__);
-> +               return -EEXIST;
-> +       }
-> +
->         prop = of_find_property(dev->of_node, "operating-points", NULL);
->         if (!prop)
->                 return -ENODEV;
 
-yes - this is good but should be an additional patch IMHO, since it
-solves a different issue:"prevent opp table re-creation attempt". the
-$subject patch addresses an issue where dev_pm_opp_add can be invoked
-independently as well -> So, we seem to have have three issues to solve:
-a) do we continue to ensure that OPP table is created one time?
-b) while creating OPP table, duplicate entries should be rejected
-($subject)
-c) prevent recreation of OPP table once created (if we decide not to
-have a cleanup logic as part of (a)) - this is what you propose.
+Will do!
 
-Now, considering that OPP table definition is an SoC behavior, that
-behavior is NOT going to change just because we are reinserting driver
-modules - so if cpufreq drivers are resulting in that behavior, then
-we should fix that. and consider OPP tables are created one time (at
-boot) and do the necessary changes for the same.
+> > > > >> I hope this will still keep it machine readable.
+> > > > >Well, this is not a debugfs entry, so I'm not sure we want to add such debug
+> > > > >information. Anyone can take a look at the code and see what ecc_stats mean.
+> > > 
+> > > The code or (as suggested by Pekon) the documentation
+> > > (Documentation/ABI/). Either way -- with a single 'ecc_stats' table, or
+> > > with 4 separate files -- they need to be documented.
+> > > 
+> > 
+> > Sure, will document in next round.
+> 
+> This documentation is required, thanks.
+> 
 
-just my 2 cents.
-
+Sure, no problem.
 -- 
-Regards,
-Nishanth Menon
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
