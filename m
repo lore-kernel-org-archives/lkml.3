@@ -1,253 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249AbaEMUYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 16:24:20 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:54088 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145AbaEMUYL convert rfc822-to-8bit (ORCPT
+	id S1754957AbaEMUZC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 16:25:02 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:46196 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752733AbaEMUYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 16:24:11 -0400
-User-Agent: Microsoft-MacOutlook/14.4.1.140326
-Date: Tue, 13 May 2014 13:24:03 -0700
-Subject: Re: [PATCH v2] ARM: dts: am335x-bone-common: Add i2c2 definition
-From: John Syn <john3909@gmail.com>
-To: Javier Martinez Canillas <javier@dowhile0.org>,
-        Pantelis Antoniou <pantelis.antoniou@gmail.com>
-CC: Matt Porter <matt.porter@linaro.org>, Tom Rini <trini@ti.com>,
-        Robert Nelson <robertcnelson@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Matt Ranostay <mranostay@gmail.com>,
-        <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Message-ID: <CF97C6D2.246DE%john3909@gmail.com>
-Thread-Topic: [PATCH v2] ARM: dts: am335x-bone-common: Add i2c2 definition
-References: <1399686184-1594-1-git-send-email-mranostay@gmail.com>
- <20140512195050.GB5668@atomide.com>
- <CAOCHtYiYwx_bEsyqkbUTTAbhBYESzvfBOOYeVuFXPS1dDy0ZKA@mail.gmail.com>
- <20140512201517.GC5668@atomide.com>
- <CAOCHtYg6XpF0Gbo4iFqsFvP=QSivQQvCzov8UfxeLXMzrRYEWw@mail.gmail.com>
- <20140512204213.GD5668@atomide.com>
- <CAOCHtYgg7jwxswH+mqF3RA7-0RP-nGuft+Ze-GRwu1fbA6+0Bw@mail.gmail.com>
- <537215D3.70306@ti.com>
- <CABxcv=nq9XvyN0aPOBFDm0UyoaW-Htyy0tyP3YhYaDnDUo3a5w@mail.gmail.com>
- <20140513142252.GG32082@beef>
- <CABxcv=mSs71pS1PAS-WdP0ru_Eb1XhXEm1qCCKW7=aL7EN4FgQ@mail.gmail.com>
- <4BCFCB24-9732-4B96-B814-5290CA2D0EE4@gmail.com>
- <CABxcv=mWqENSzODJYAJRgDYNy46X6WkQ+0e4NSDt8qE-ob1KuQ@mail.gmail.com>
-In-Reply-To: <CABxcv=mWqENSzODJYAJRgDYNy46X6WkQ+0e4NSDt8qE-ob1KuQ@mail.gmail.com>
-Mime-version: 1.0
-Content-type: text/plain;
-	charset="ISO-8859-1"
-Content-transfer-encoding: 8BIT
+	Tue, 13 May 2014 16:24:53 -0400
+Date: Tue, 13 May 2014 13:24:48 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 19/19] mm: filemap: Avoid unnecessary barries and
+ waitqueue lookups in unlock_page fastpath
+Message-ID: <20140513202448.GR18164@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+ <1399974350-11089-20-git-send-email-mgorman@suse.de>
+ <20140513125313.GR23991@suse.de>
+ <20140513141748.GD2485@laptop.programming.kicks-ass.net>
+ <20140513152719.GF18164@linux.vnet.ibm.com>
+ <20140513154435.GG2485@laptop.programming.kicks-ass.net>
+ <20140513161418.GH18164@linux.vnet.ibm.com>
+ <20140513185742.GD12123@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140513185742.GD12123@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051320-6688-0000-0000-000001C9DD08
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 13, 2014 at 08:57:42PM +0200, Oleg Nesterov wrote:
+> On 05/13, Paul E. McKenney wrote:
+> >
+> > On Tue, May 13, 2014 at 05:44:35PM +0200, Peter Zijlstra wrote:
+> > >
+> > > Ah, yes, so I'll defer to Oleg and Linus to explain that one. As per the
+> > > name: smp_mb__before_spinlock() should of course imply a full barrier.
+> >
+> > How about if I queue a name change to smp_wmb__before_spinlock()?
+> 
+> I agree, this is more accurate, simply because it describes what it
+> actually does.
+> 
+> But just in case, as for try_to_wake_up() it does not actually need
+> wmb() between "CONDITION = T" and "task->state = RUNNING". It would
+> be fine if these 2 STORE's are re-ordered, we can rely on rq->lock.
+> 
+> What it actually needs is a barrier between "CONDITION = T" and
+> "task->state & state" check. But since we do not have a store-load
+> barrier, wmb() was added to ensure that "CONDITION = T" can't leak
+> into the critical section.
+> 
+> But it seems that set_tlb_flush_pending() already assumes that it
+> acts as wmb(), so probably smp_wmb__before_spinlock() is fine.
 
-On 5/13/14, 10:51 AM, "Javier Martinez Canillas" <javier@dowhile0.org>
-wrote:
+Except that when I go to make the change, I find the following in
+the documentation:
 
->Hello Pantelis,
->
->On Tue, May 13, 2014 at 7:07 PM, Pantelis Antoniou
-><pantelis.antoniou@gmail.com> wrote:
->> Hi Javier,
->>
->> On May 13, 2014, at 7:39 AM, Javier Martinez Canillas wrote:
->>
->>> On Tue, May 13, 2014 at 4:22 PM, Matt Porter <matt.porter@linaro.org>
->>>wrote:
->>>> On Tue, May 13, 2014 at 04:06:02PM +0200, Javier Martinez Canillas
->>>>wrote:
->>>>> On Tue, May 13, 2014 at 2:53 PM, Tom Rini <trini@ti.com> wrote:
->>>>>> On 05/12/2014 04:57 PM, Robert Nelson wrote:
->>>>>>>>> Either case if fine with me.  As who knows when the dtc
->>>>>>>>>"overlay" will
->>>>>>>>> every truly make it mainline, as the capemgr was the only real
->>>>>>>>>kernel
->>>>>>>>> user of the i2c/at24 eeprom information.
->>>>>>>>
->>>>>>>> Sounds like we should keep it disabled though so u-boot can be
->>>>>>>>used
->>>>>>>> to toggle it while waiting for the capemgr. That's because the
->>>>>>>>board
->>>>>>>> has a header for pins, so it's not exactly limited to just the
->>>>>>>>capes.
->>>>>>>>
->>>>>>>> Anybody working on enabling/disabling cape dtb configurations in
->>>>>>>>u-boot?
->>>>>>>
->>>>>>> Well,
->>>>>>>
->>>>>>> Would Tom even approve of that in mainline u-boot? He didn't want
->>>>>>>my
->>>>>>> "invert" the gpio to enable the usb hub on the older beagle xm
->>>>>>>A/B..
->>>>>>>
->>>>>>> http://lists.denx.de/pipermail/u-boot/2014-January/172154.html
->>>>>>>
->>>>>>> http://lists.denx.de/pipermail/u-boot/2014-January/172274.html
->>>>>
->>>>> Using fdt set from the bootloader to use the same FDT for similar
->>>>> boards (like the example with Beagle xM variants) is kind of trying
->>>>>to
->>>>> replicate what we used to do from boards files where it was possible
->>>>> to manage a set of boards using the same platform code.
->>>>>
->>>>> But Device Trees are meant to describe hardware and thus should be
->>>>> static, if two board are almost identical but slightly different,
->>>>>then
->>>>> are two different hardware where each need its proper FDT that
->>>>> describes it.
->>>>>
->>>>>>
->>>>>> I would think that using the 'fdt' command in U-Boot to add all
->>>>>> properties of every cape found on a running system would drive
->>>>>>someone
->>>>>> to madness quite quickly.  Moving all of Pantelis' work for dynamic
->>>>>> device trees from the kernel to N bootloaders (U-Boot, barebox,
->>>>>>UEFI,
->>>>>> etc) sounds like a step in the wrong direction.
->>>>>>
->>>>>
->>>>> Agreed. I think that until the device tree overlay and the cape
->>>>> manager find their way into mainline we should treat capes as if they
->>>>> were expansion boards attached to a Computer-on-Module. That is, a
->>>>> static based board which its own DTS including the BB{B,W} as an dtsi
->>>>> and not something that can be added on runtime.
->>>>
->>>> It's far more complicated than a SOM plus carrier board. Consider that
->>>> you can have any 4 of these capes stacked on the BBB/BBW in any
->>>> combination (assuming no resource conflicts). Capturing all possible
->>>> combinations in static dtsis is not practical.
->>>>
->>>
->>
->> Since this appears to be all coming back to DT overlays, let me try to
->> address some points.
->>
->
->It seems that you misunderstood my comments. I do think that DT
->overlays and the cape manager are a great solution for any hardware
->that could be expanded on runtime and I really hope that they can
->eventually land into mainline.
->
->In fact if you look on my previous mail you will see that I said:
->"until device tree overlay and the cape manager find their way into
->mainline..."
->
->>> Right, I forgot that the capes were stackable so is indeed not
->>> practical to model every single combination as DTS in mainline. Even
->>> if stacking was not possible there are just too many capes out there
->>> to have a DTS for every single cape.
->>>
->>
->> Each cape does have a DTS as dynamically loaded fragment; it works
->>absolutely fine.
->>
->> Trying to come up with a base DTS for all the capes you've stacked up
->> is an exponential problem.
->>
->>> My point was that someone who wants to use a BBB + a set of capes can
->>> today write a DTS for its own stacked setup.
->>>
->>
->> No, the guy that designs a cape (or learns how to) can not write a DTS
->>for
->> the base board and the cape in question. Doing that he essentially cuts
->> himself off from the community.
->>
->> Let me explain, the point is for people to easily design capes,
->>open-source their
->> design as well as their software, and share them to the community.
->>
->> This requires that things are easily shareable.
->>
->> Requiring a relative newbie in kernel development not only generate his
->>own
->> base DT, but also to merge all of the other capes DT into his own is a
->> nightmare.
->>
->> BTW, on another tangent, it's not just the BB people that care about
->>dynamic
->> hardware configuration. There are a number of FPGA people that seem
->>interested
->> as well.
->>
->> The notion of hardware as something static that never changes is
->>obsolete IMHO.
->>
->>> Unfortunately I don't have a solution but what I'm pretty sure is that
->>> mangling the DTS from the bootloader is not the right one :-)
->>>
->>
->> No, it is not. And this is what we're trying to solve here.
->>
->
->What I said that I'm against is modifying a FDT using U-Boot scripts
->commands that is something that mentioned in this thread. That is not
->a robust way to do it and also is not something that a newbie could do
->it neither.
->
->Also, doing these FDT changes in the bootloader has several
->disadvantages, besides having to implement on each bootloaders like
->Tom said, you need to upgrade your bootloader which is something that
->just can't be done on many boards and also is still a static
->configuration since you need to reboot in order to use a different
->FDT. So the hardware can't really be expanded on runtime unlike with
->DT overlays where the overlays are loaded from regular files.
->
->But I guess you agree with me on all those points and you just
->misunderstood my comments. So DT overlays is definitely the way to go
->(or something similar) but my point is that until we have that
->solution merged, you can use a static DT in mainline for your stacked
->cape or use a vendor kernel that already has DT overlays support.
+     Memory operations issued before the ACQUIRE may be completed after
+     the ACQUIRE operation has completed.  An smp_mb__before_spinlock(),
+     combined with a following ACQUIRE, orders prior loads against
+     subsequent loads and stores and also orders prior stores against
+     subsequent stores.  Note that this is weaker than smp_mb()!  The
+     smp_mb__before_spinlock() primitive is free on many architectures.
 
-Given that we are not hot plugging capes, why do we need to modify the DT
-at runtime? Even FPGA developers are not modifying their I/O at runtime.
-For example, using the BBB as a reference, why not add an am335x-cape-dtsi
-to the am335x-boneblack.dts as follows:
+Which means that either the documentation is wrong or the implementation
+is.  Yes, smp_wmb() has the semantics called out above on many platforms,
+but not on Alpha or ARM.
 
-/dts-v1/;
+So, as you say, set_tlb_flush_pending() only relies on smp_wmb().
+The comment in try_to_wake_up() seems to be assuming a full memory
+barrier.  The comment in __schedule() also seems to be relying on
+a full memory barrier (prior write against subsequent read).  Yow!
 
-/include/ "am33xx.dtsi"
+So maybe barrier() on TSO systems like x86 and mainframe and stronger
+barriers on other systems, depending on what their lock acquisition
+looks like?
 
-/include/ "am335x-bone-common.dtsi²
+Or am I misinterpreting try_to_wake_up() and __schedule()?
 
-/include/ ³am335x-cape.dtsi"
-
-&am33xx_pinmux {
-xxx
-
-and ³am335x-cape.dtsi² would look like this:
-
-/include/ ³BB-BONE-AUDI-00A0.dtsi²
-/include/ ³BB-BONE-UART1-00A0.dtsi²
-xxx
-
-So, cape developers create their own DTSI and users only update the
-am335x-cape.dtsi to include the cape DT required.
-
-What am I missing? 
-
-BTW, DTC should be updated to detect I/O conflicts. Waiting for the kernel
-to boot before detecting DT conflicts isn¹t OK.
-
-Regards,
-John
-
-
-
->
->I hope I explained myself better this time ;-)
->
->Best regards,
->Javier
->--
->To unsubscribe from this list: send the line "unsubscribe linux-omap" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+							Thanx, Paul
 
