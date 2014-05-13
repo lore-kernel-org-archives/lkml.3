@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761391AbaEMKoE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:44:04 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60751 "EHLO
+	id S932764AbaEMKoH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:44:07 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60743 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760017AbaEMJ2z (ORCPT
+	by vger.kernel.org with ESMTP id S1759887AbaEMJ2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 May 2014 05:28:55 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "K. Y. Srinivasan" <kys@microsoft.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 005/182] Drivers: hv: vmbus: Negotiate version 3.0 when running on ws2012r2 hosts
-Date: Tue, 13 May 2014 11:25:57 +0200
-Message-Id: <f3e8f7ea9fb40f351db80d5fde83a318f084a365.1399973152.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Brian Austin <brian.austin@cirrus.com>,
+        Mark Brown <broonie@linaro.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 009/182] ASoC: cs42l52: Fix mask bits for SOC_VALUE_ENUM_SINGLE
+Date: Tue, 13 May 2014 11:26:01 +0200
+Message-Id: <89baaf8965cd70ae0ad60ab00f167577e64950ec.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -23,85 +23,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Brian Austin <brian.austin@cirrus.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 03367ef5ea811475187a0732aada068919e14d61 upstream.
+commit d31a33dd7792c7d6c11fda226a3b9e4fb7f86f95 upstream.
 
-Only ws2012r2 hosts support the ability to reconnect to the host on VMBUS.
-This functionality is needed by kexec in Linux. To use this functionality
-we need to negotiate version 3.0 of the VMBUS protocol.
+The mask bits values were wrong for the SOC_VALUE_ENUM_SINGLE for the PCM/ADC Swap controls
 
-This patch has been backported to apply against the 3.12 stable tree.
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Cc: <stable@vger.kernel.org>        [3.9+]
+Reported-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Brian Austin <brian.austin@cirrus.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/hv/connection.c | 6 ++++++
- include/linux/hyperv.h  | 7 +++++--
- 2 files changed, 11 insertions(+), 2 deletions(-)
+ sound/soc/codecs/cs42l52.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
-index 13c23a4789de..b2ee81e19b59 100644
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -55,6 +55,9 @@ static __u32 vmbus_get_next_version(__u32 current_version)
- 	case (VERSION_WIN8):
- 		return VERSION_WIN7;
+diff --git a/sound/soc/codecs/cs42l52.c b/sound/soc/codecs/cs42l52.c
+index be2ba1b6fe4a..ab3ac7b1fce2 100644
+--- a/sound/soc/codecs/cs42l52.c
++++ b/sound/soc/codecs/cs42l52.c
+@@ -352,7 +352,7 @@ static const char * const right_swap_text[] = {
+ static const unsigned int swap_values[] = { 0, 1, 3 };
  
-+	case (VERSION_WIN8_1):
-+		return VERSION_WIN8;
-+
- 	case (VERSION_WS2008):
- 	default:
- 		return VERSION_INVAL;
-@@ -80,6 +83,9 @@ static int vmbus_negotiate_version(struct vmbus_channel_msginfo *msginfo,
- 			(void *)((unsigned long)vmbus_connection.monitor_pages +
- 				 PAGE_SIZE));
+ static const struct soc_enum adca_swap_enum =
+-	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 2, 1,
++	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 2, 3,
+ 			      ARRAY_SIZE(left_swap_text),
+ 			      left_swap_text,
+ 			      swap_values);
+@@ -361,7 +361,7 @@ static const struct snd_kcontrol_new adca_mixer =
+ 	SOC_DAPM_ENUM("Route", adca_swap_enum);
  
-+	if (version == VERSION_WIN8_1)
-+		msg->target_vcpu = hv_context.vp_index[smp_processor_id()];
-+
- 	/*
- 	 * Add to list before we send the request since we may
- 	 * receive the response before returning from this routine
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index d98503bde7e9..b6043a0c629f 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -473,15 +473,18 @@ hv_get_ringbuffer_availbytes(struct hv_ring_buffer_info *rbi,
-  * 0 . 13 (Windows Server 2008)
-  * 1 . 1  (Windows 7)
-  * 2 . 4  (Windows 8)
-+ * 3 . 0  (Windows 8 R2)
-  */
+ static const struct soc_enum pcma_swap_enum =
+-	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 6, 1,
++	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 6, 3,
+ 			      ARRAY_SIZE(left_swap_text),
+ 			      left_swap_text,
+ 			      swap_values);
+@@ -370,7 +370,7 @@ static const struct snd_kcontrol_new pcma_mixer =
+ 	SOC_DAPM_ENUM("Route", pcma_swap_enum);
  
- #define VERSION_WS2008  ((0 << 16) | (13))
- #define VERSION_WIN7    ((1 << 16) | (1))
- #define VERSION_WIN8    ((2 << 16) | (4))
-+#define VERSION_WIN8_1    ((3 << 16) | (0))
-+
+ static const struct soc_enum adcb_swap_enum =
+-	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 0, 1,
++	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 0, 3,
+ 			      ARRAY_SIZE(right_swap_text),
+ 			      right_swap_text,
+ 			      swap_values);
+@@ -379,7 +379,7 @@ static const struct snd_kcontrol_new adcb_mixer =
+ 	SOC_DAPM_ENUM("Route", adcb_swap_enum);
  
- #define VERSION_INVAL -1
- 
--#define VERSION_CURRENT VERSION_WIN8
-+#define VERSION_CURRENT VERSION_WIN8_1
- 
- /* Make maximum size of pipe payload of 16K */
- #define MAX_PIPE_DATA_PAYLOAD		(sizeof(u8) * 16384)
-@@ -884,7 +887,7 @@ struct vmbus_channel_relid_released {
- struct vmbus_channel_initiate_contact {
- 	struct vmbus_channel_message_header header;
- 	u32 vmbus_version_requested;
--	u32 padding2;
-+	u32 target_vcpu; /* The VCPU the host should respond to */
- 	u64 interrupt_page;
- 	u64 monitor_page1;
- 	u64 monitor_page2;
+ static const struct soc_enum pcmb_swap_enum =
+-	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 4, 1,
++	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 4, 3,
+ 			      ARRAY_SIZE(right_swap_text),
+ 			      right_swap_text,
+ 			      swap_values);
 -- 
 1.9.3
 
