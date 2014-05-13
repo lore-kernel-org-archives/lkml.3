@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933525AbaEMKYf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:24:35 -0400
+	id S933466AbaEMKLX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:11:23 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933470AbaEMKLZ (ORCPT
+	by vger.kernel.org with ESMTP id S933445AbaEMKLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:11:25 -0400
+	Tue, 13 May 2014 06:11:21 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hans Verkuil <hverkuil@xs4all.nl>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 087/182] media: videodev2.h: add parenthesis around macro arguments
-Date: Tue, 13 May 2014 11:27:19 +0200
-Message-Id: <144b497ead9e2555d7071c426cccfe63fdf74f20.1399973152.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 152/182] iwlwifi: dvm: take mutex when sending SYNC BT config command
+Date: Tue, 13 May 2014 11:28:24 +0200
+Message-Id: <52b4d8aa6be6766b88187b92b18aced0d9c27619.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -25,47 +24,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans Verkuil <hverkuil@xs4all.nl>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit aee786acfc0a12bcd37a1c60f3198fb25cf7181a upstream.
+commit 82e5a649453a3cf23516277abb84273768a1592b upstream.
 
-bt->width should be (bt)->width, and same for the other fields.
+There is a flow in which we send the host command in SYNC
+mode, but we don't take priv->mutex.
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=1046495
+
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- include/uapi/linux/videodev2.h | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/main.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
-index 437f1b0f8937..c5e2c7df1b0f 100644
---- a/include/uapi/linux/videodev2.h
-+++ b/include/uapi/linux/videodev2.h
-@@ -1059,14 +1059,14 @@ struct v4l2_bt_timings {
+diff --git a/drivers/net/wireless/iwlwifi/dvm/main.c b/drivers/net/wireless/iwlwifi/dvm/main.c
+index 7aad766865cf..ca9c4f1f9b0a 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/main.c
++++ b/drivers/net/wireless/iwlwifi/dvm/main.c
+@@ -252,13 +252,17 @@ static void iwl_bg_bt_runtime_config(struct work_struct *work)
+ 	struct iwl_priv *priv =
+ 		container_of(work, struct iwl_priv, bt_runtime_config);
  
- /* A few useful defines to calculate the total blanking and frame sizes */
- #define V4L2_DV_BT_BLANKING_WIDTH(bt) \
--	(bt->hfrontporch + bt->hsync + bt->hbackporch)
-+	((bt)->hfrontporch + (bt)->hsync + (bt)->hbackporch)
- #define V4L2_DV_BT_FRAME_WIDTH(bt) \
--	(bt->width + V4L2_DV_BT_BLANKING_WIDTH(bt))
-+	((bt)->width + V4L2_DV_BT_BLANKING_WIDTH(bt))
- #define V4L2_DV_BT_BLANKING_HEIGHT(bt) \
--	(bt->vfrontporch + bt->vsync + bt->vbackporch + \
--	 bt->il_vfrontporch + bt->il_vsync + bt->il_vbackporch)
-+	((bt)->vfrontporch + (bt)->vsync + (bt)->vbackporch + \
-+	 (bt)->il_vfrontporch + (bt)->il_vsync + (bt)->il_vbackporch)
- #define V4L2_DV_BT_FRAME_HEIGHT(bt) \
--	(bt->height + V4L2_DV_BT_BLANKING_HEIGHT(bt))
-+	((bt)->height + V4L2_DV_BT_BLANKING_HEIGHT(bt))
++	mutex_lock(&priv->mutex);
+ 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
+-		return;
++		goto out;
  
- /** struct v4l2_dv_timings - DV timings
-  * @type:	the type of the timings
+ 	/* dont send host command if rf-kill is on */
+ 	if (!iwl_is_ready_rf(priv))
+-		return;
++		goto out;
++
+ 	iwlagn_send_advance_bt_config(priv);
++out:
++	mutex_unlock(&priv->mutex);
+ }
+ 
+ static void iwl_bg_bt_full_concurrency(struct work_struct *work)
 -- 
 1.9.3
 
