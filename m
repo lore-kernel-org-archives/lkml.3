@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510AbaEMRoB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 13:44:01 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:33005 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279AbaEMRny (ORCPT
+	id S1753812AbaEMRo1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 13:44:27 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:42434 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279AbaEMRoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 13:43:54 -0400
-Message-ID: <537259D6.6020407@colorfullife.com>
-Date: Tue, 13 May 2014 19:43:50 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 13 May 2014 13:44:20 -0400
+Date: Tue, 13 May 2014 10:44:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: josh@joshtriplett.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 41/45] torture: Put qemu into the background
+Message-ID: <20140513174413.GK18164@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140429002455.GA15461@linux.vnet.ibm.com>
+ <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1398731133-18925-41-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140507221858.GR27924@cloud>
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>
-CC: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, 1vier1@web.de
-Subject: Re: [PATCH 2/6] ipc/sem.c: Bugfix for semctl(,,GETZCNT)
-References: <1399716199-26776-1-git-send-email-manfred@colorfullife.com> <1399716199-26776-2-git-send-email-manfred@colorfullife.com> <1399716199-26776-3-git-send-email-manfred@colorfullife.com> <1399918300.2648.24.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1399918300.2648.24.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140507221858.GR27924@cloud>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051317-0928-0000-0000-000001DB7890
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Davidlohr,
+On Wed, May 07, 2014 at 03:18:58PM -0700, josh@joshtriplett.org wrote:
+> On Mon, Apr 28, 2014 at 05:25:29PM -0700, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > Currently, qemu runs in the foreground, which prevents the script from
+> > killing it in case the kernel locks up.  This commit therefore places
+> > qemu into the background, allowing the script to recover from lockups.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> qemu originally did run in the background before this patch series;
+> please merge this into the patch that introduces the echo and thus
+> breaks that.
 
-On 05/12/2014 08:11 PM, Davidlohr Bueso wrote:
-> On Sat, 2014-05-10 at 12:03 +0200, Manfred Spraul wrote:
->> GETZCNT is supposed to return the number of threads that wait until
->> a semaphore value becomes 0.
->> The current implementation overlooks complex operations that contain
->> both wait-for-zero operation and operations that alter at least one semaphore.
-> Indeed. the pending_alter list does represent blocked processes on the
-> sem. Good catch. Btw, how on earth did you run into this? reading the
-> code or a real case?
-Reading the code.
-Or more accurately:
-Rewriting it, i.e. I first starting coding the new semncnt/semzcnt code, 
-then I noticed that the current code is buggy.
+Turned out that the conflicts weren't as bad as I had feared, so done!
 
->> The patch fixes that.
->> It's intentionally copy&paste, this will be cleaned up in the next patch.
-> Instead I would have expected this patch to actually come after the
-> count_* refactoring.
->
-In this case:
-First the bugfix, as simple as possible, then the new features.
+							Thanx, Paul
 
---
-     Manfred
+> >  tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> > index b1e85b049075..67e89f06e77f 100755
+> > --- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> > +++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+> > @@ -157,7 +157,7 @@ then
+> >  	echo Build-only run specified, boot/test omitted.
+> >  	exit 0
+> >  fi
+> > -$QEMU $qemu_args -m 512 -kernel $builddir/$BOOT_IMAGE -append "$qemu_append $boot_args"; echo $? > $resdir/qemu-retval &
+> > +( $QEMU $qemu_args -m 512 -kernel $builddir/$BOOT_IMAGE -append "$qemu_append $boot_args"; echo $? > $resdir/qemu-retval ) &
+> >  qemu_pid=$!
+> >  commandcompleted=0
+> >  echo Monitoring qemu job at pid $qemu_pid
+> > -- 
+> > 1.8.1.5
+> > 
+> 
+
