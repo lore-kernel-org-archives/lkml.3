@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199AbaEMWFm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 18:05:42 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:40691 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932086AbaEMWFR (ORCPT
+	id S1755253AbaEMWF4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 18:05:56 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:62982 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932180AbaEMWFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 18:05:17 -0400
+	Tue, 13 May 2014 18:05:39 -0400
 From: Alexis Berlemont <alexis.berlemont@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, acme@ghostprotocols.net, dsahern@gmail.com,
-        mingo@kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 04/34] perf tools: Kbuild source related fixies
-Date: Wed, 14 May 2014 00:02:59 +0200
-Message-Id: <1400018609-20486-5-git-send-email-alexis.berlemont@gmail.com>
+Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com,
+        acme@ghostprotocols.net, dsahern@gmail.com, mingo@kernel.org
+Subject: [PATCH 20/34] perf kbuild: remove legacy numa-related build variable
+Date: Wed, 14 May 2014 00:03:15 +0200
+Message-Id: <1400018609-20486-21-git-send-email-alexis.berlemont@gmail.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
 References: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
@@ -27,177 +21,166 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
-
-Fixing several sources config dependencies to allow
-separate config builds.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org
-Cc: Stephane Eranian <eranian@google.com>
+Remove HAVE_LIBNUMA_SUPPORT (replaced by CONFIG_LIBNUMA)
 ---
- tools/perf/builtin-lock.c        |  4 +++-
- tools/perf/builtin-sched.c       |  2 ++
- tools/perf/perf.c                |  6 ++++++
- tools/perf/perf.h                |  2 ++
- tools/perf/ui/browsers/scripts.c |  4 ++++
- tools/perf/ui/setup.c            | 10 +++++++++-
- 6 files changed, 26 insertions(+), 2 deletions(-)
+ tools/perf/Kconfig                    |  6 +++---
+ tools/perf/bench/Kbuild               |  2 +-
+ tools/perf/builtin-bench.c            |  5 +++--
+ tools/perf/config/Makefile            |  8 ++------
+ tools/perf/config/Makefile.fix-config | 16 ----------------
+ tools/perf/config/Makefile.fix-legacy | 12 ------------
+ 6 files changed, 9 insertions(+), 40 deletions(-)
 
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index c852c7a..b255c20 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -992,9 +992,11 @@ int cmd_lock(int argc, const char **argv, const char *prefix __maybe_unused)
- 				usage_with_options(report_usage, report_options);
- 		}
- 		rc = __cmd_report(false);
-+#ifdef CONFIG_BULTIN_SCRIPT
- 	} else if (!strcmp(argv[0], "script")) {
- 		/* Aliased to 'perf script' */
--		return cmd_script(argc, argv, prefix);
-+		rc = cmd_script(argc, argv, prefix);
-+#endif
- 	} else if (!strcmp(argv[0], "info")) {
- 		if (argc) {
- 			argc = parse_options(argc, argv,
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 9ac0a49..cb77a4e 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1741,11 +1741,13 @@ int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (!argc)
- 		usage_with_options(sched_usage, sched_options);
+diff --git a/tools/perf/Kconfig b/tools/perf/Kconfig
+index fad1c48..2e285e5 100644
+--- a/tools/perf/Kconfig
++++ b/tools/perf/Kconfig
+@@ -244,11 +244,11 @@ config LIBUNWIND_DIR
+         ---help---
+ 	  libunwind directory
  
-+#ifdef CONFIG_BULTIN_SCRIPT
- 	/*
- 	 * Aliased to 'perf script' for now:
- 	 */
- 	if (!strcmp(argv[0], "script"))
- 		return cmd_script(argc, argv, prefix);
-+#endif
+-config NUMA
+-	bool "Numa support (bench)"
++config LIBNUMA
++	bool "Libnuma support"
+ 	default n
+         ---help---
+-	  numa
++	  Libnuma
  
- 	symbol__init();
- 	if (!strncmp(argv[0], "rec", 3)) {
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index c39470b..74a1269 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -92,7 +92,9 @@ static struct cmd_struct commands[] = {
- #ifdef CONFIG_BUILTIN_KVM
- 	{ "kvm",	cmd_kvm,	0 },
+ config BIONIC
+ 	bool "Bionic support"
+diff --git a/tools/perf/bench/Kbuild b/tools/perf/bench/Kbuild
+index 8883de9..57f87e8 100644
+--- a/tools/perf/bench/Kbuild
++++ b/tools/perf/bench/Kbuild
+@@ -3,7 +3,7 @@ obj-y += mem-memset.o
+ obj-y += sched-messaging.o
+ obj-y += sched-pipe.o
+ 
+-obj-$(CONFIG_NUMA) += numa.o
++obj-$(CONFIG_LIBNUMA) += numa.o
+ 
+ obj-$(CONFIG_X86_64) += mem-memcpy-x86-64-asm.o
+ obj-$(CONFIG_X86_64) += mem-memset-x86-64-asm.o
+diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
+index 1e6e777..162b9f5 100644
+--- a/tools/perf/builtin-bench.c
++++ b/tools/perf/builtin-bench.c
+@@ -14,6 +14,7 @@
+  *  numa  ... NUMA scheduling and MM performance
+  *  futex ... Futex performance
+  */
++#include "generated/autoconf.h"
+ #include "perf.h"
+ #include "util/util.h"
+ #include "util/parse-options.h"
+@@ -33,7 +34,7 @@ struct bench {
+ 	bench_fn_t	fn;
+ };
+ 
+-#ifdef HAVE_LIBNUMA_SUPPORT
++#ifdef CONFIG_LIBNUMA
+ static struct bench numa_benchmarks[] = {
+ 	{ "mem",	"Benchmark for NUMA workloads",			bench_numa		},
+ 	{ "all",	"Test all NUMA benchmarks",			NULL			},
+@@ -72,7 +73,7 @@ struct collection {
+ static struct collection collections[] = {
+ 	{ "sched",	"Scheduler and IPC benchmarks",			sched_benchmarks	},
+ 	{ "mem",	"Memory access benchmarks",			mem_benchmarks		},
+-#ifdef HAVE_LIBNUMA_SUPPORT
++#ifdef CONFIG_LIBNUMA
+ 	{ "numa",	"NUMA scheduling and MM benchmarks",		numa_benchmarks		},
  #endif
-+#ifdef CONFIG_BUILTIN_TEST
- 	{ "test",	cmd_test,	0 },
-+#endif
- #if defined HAVE_LIBAUDIT_SUPPORT && defined CONFIG_BUILTIN_TRACE
- 	{ "trace",	cmd_trace,	0 },
- #endif
-@@ -543,13 +545,17 @@ int main(int argc, const char **argv)
- 	} else {
- 		/* The user didn't specify a command; give them help */
- 		printf("\n usage: %s\n\n", perf_usage_string);
-+#ifdef CONFIG_BUILTIN_HELP
- 		list_common_cmds_help();
- 		printf("\n %s\n\n", perf_more_info_string);
-+#endif
- 		goto out;
- 	}
- 	cmd = argv[0];
+ 	{"futex",       "Futex stressing benchmarks",                   futex_benchmarks        },
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 4a21452..770675f 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -578,12 +578,11 @@ ifdef CONFIG_BACKTRACE
+   endif
+ endif
  
-+#ifdef CONFIG_BUILTIN_TEST
- 	test_attr__init();
-+#endif
+-ifndef NO_LIBNUMA
++ifdef CONFIG_LIBNUMA
+   ifeq ($(feature-libnuma), 0)
+     msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numactl-devel/libnuma-devel/libnuma-dev);
+-    NO_LIBNUMA := 1
++    $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBNUMA)
+   else
+-    CFLAGS += -DHAVE_LIBNUMA_SUPPORT
+     EXTLIBS += -lnuma
+   endif
+ endif
+@@ -756,11 +755,8 @@ all:
+ 	$(call store,CONFIG_X86_64)
+ 	$(call store,NO_LIBUNWIND)
+ 	$(call store,NO_LIBPYTHON)
+-	$(call store,NO_DEMANGLE)
+ 	$(call store,NO_LIBELF)
+ 	$(call store,NO_LIBUNWIND)
+-	$(call store,NO_BACKTRACE)
+-	$(call store,NO_LIBNUMA)
+ 	$(call store,NO_LIBBIONIC)
+ 	$(call store,ETC_PERFCONFIG_SQ)
+ 	$(call store,DESTDIR_SQ)
+diff --git a/tools/perf/config/Makefile.fix-config b/tools/perf/config/Makefile.fix-config
+index 6402a47..46842f9 100644
+--- a/tools/perf/config/Makefile.fix-config
++++ b/tools/perf/config/Makefile.fix-config
+@@ -37,22 +37,6 @@ dummy := $(shell $(CONFIG) -d CONFIG_LIBUNWIND)
+ endif
+ endif
  
- 	/*
- 	 * We use PATH to find perf commands, but we prepend some higher
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 5c11eca..8487a30 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -221,8 +221,10 @@ sys_perf_event_open(struct perf_event_attr *attr,
- 	fd = syscall(__NR_perf_event_open, attr, pid, cpu,
- 		     group_fd, flags);
+-# NO_BACKTRACE
+-ifdef CONFIG_BACKTRACE
+-ifdef NO_BACKTRACE
+-dummy := $(info Disabling CONFIG_BACKTRACE)
+-dummy := $(shell $(CONFIG) -d CONFIG_BACKTRACE)
+-endif
+-endif
+-
+-# NO_LIBNUMA
+-ifdef CONFIG_NUMA
+-ifdef NO_LIBNUMA
+-dummy := $(info Disabling CONFIG_NUMA)
+-dummy := $(shell $(CONFIG) -d CONFIG_NUMA)
+-endif
+-endif
+-
+ # NO_LIBBIONIC
+ ifdef CONFIG_BIONIC
+ ifdef NO_LIBBIONIC
+diff --git a/tools/perf/config/Makefile.fix-legacy b/tools/perf/config/Makefile.fix-legacy
+index 2e93006..15a328e 100644
+--- a/tools/perf/config/Makefile.fix-legacy
++++ b/tools/perf/config/Makefile.fix-legacy
+@@ -5,10 +5,6 @@ ifndef CONFIG_LIBPYTHON
+ NO_LIBPYTHON := 1
+ endif
  
-+#ifdef CONFIG_BUILTIN_TEST
- 	if (unlikely(test_attr__enabled))
- 		test_attr__open(attr, pid, cpu, fd, group_fd, flags);
-+#endif
+-ifndef CONFIG_DEMANGLE
+-NO_DEMANGLE := 1
+-endif
+-
+ ifndef CONFIG_LIBELF
+ NO_LIBELF := 1
+ endif
+@@ -17,14 +13,6 @@ ifndef CONFIG_LIBUNWIND
+ NO_LIBUNWIND := 1
+ endif
  
- 	return fd;
- }
-diff --git a/tools/perf/ui/browsers/scripts.c b/tools/perf/ui/browsers/scripts.c
-index 402d2bd..128988d 100644
---- a/tools/perf/ui/browsers/scripts.c
-+++ b/tools/perf/ui/browsers/scripts.c
-@@ -59,7 +59,11 @@ static int list_scripts(char *script_name)
- 		paths[i] = names[i] + SCRIPT_NAMELEN;
- 	}
- 
-+#ifdef CONFIG_BUILTIN_SCRIPT
- 	num = find_scripts(names, paths);
-+#else
-+	num = 0;
-+#endif
- 	if (num > 0) {
- 		choice = ui__popup_menu(num, names);
- 		if (choice < num && choice >= 0) {
-diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
-index 5df5140..66ecd08 100644
---- a/tools/perf/ui/setup.c
-+++ b/tools/perf/ui/setup.c
-@@ -71,16 +71,20 @@ void setup_browser(bool fallback_to_pager)
- 
- 	switch (use_browser) {
- 	case 2:
-+#if defined(CONFIG_GUI) || !defined(CONFIG_KBUILD)
- 		if (setup_gtk_browser() == 0)
- 			break;
- 		printf("GTK browser requested but could not find %s\n",
- 		       PERF_GTK_DSO);
- 		sleep(1);
-+#endif
- 		/* fall through */
-+#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
- 	case 1:
- 		use_browser = 1;
- 		if (ui__init() == 0)
- 			break;
-+#endif
- 		/* fall through */
- 	default:
- 		use_browser = 0;
-@@ -92,16 +96,20 @@ void setup_browser(bool fallback_to_pager)
- 	}
- }
- 
--void exit_browser(bool wait_for_ok)
-+void exit_browser(bool wait_for_ok __maybe_unused)
- {
- 	switch (use_browser) {
- 	case 2:
-+#if defined(CONFIG_GUI) || !defined(CONFIG_KBUILD)
- 		exit_gtk_browser(wait_for_ok);
- 		break;
-+#endif
- 
-+#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
- 	case 1:
- 		ui__exit(wait_for_ok);
- 		break;
-+#endif
- 
- 	default:
- 		break;
+-ifndef CONFIG_BACKTRACE
+-NO_BACKTRACE := 1
+-endif
+-
+-ifndef CONFIG_NUMA
+-export NO_LIBNUMA := 1
+-endif
+-
+ ifdef CONFIG_BIONIC
+ NO_LIBBIONIC := 1
+ endif
 -- 
 1.9.2
 
