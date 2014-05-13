@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965AbaEMPSg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:18:36 -0400
-Received: from yotta.elopez.com.ar ([31.220.24.173]:58315 "EHLO
-	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaEMPSa (ORCPT
+	id S1752992AbaEMPSv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:18:51 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:55383 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980AbaEMPSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:18:30 -0400
-Message-ID: <53723796.10308@elopez.com.ar>
-Date: Tue, 13 May 2014 12:17:42 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 13 May 2014 11:18:37 -0400
+Date: Tue, 13 May 2014 11:18:33 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/7] cgroup: update and fix parsing of
+ "cgroup.subtree_control"
+Message-ID: <20140513151833.GE23710@htj.dyndns.org>
+References: <1399663975-315-1-git-send-email-tj@kernel.org>
+ <1399663975-315-5-git-send-email-tj@kernel.org>
+ <537196D7.3020302@huawei.com>
 MIME-Version: 1.0
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Chen-Yu Tsai <wens@csie.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Hans de Goede <hdegoede@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [PATCH v3 7/7] ARM: sunxi: dt: add PRCM clk and reset controller
- subdevices
-References: <1399633911-7094-1-git-send-email-boris.brezillon@free-electrons.com> <1399633911-7094-8-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1399633911-7094-8-git-send-email-boris.brezillon@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <537196D7.3020302@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+On Tue, May 13, 2014 at 11:51:51AM +0800, Li Zefan wrote:
+> > diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> > index 35daf89..b81e7c0 100644
+> > --- a/kernel/cgroup.c
+> > +++ b/kernel/cgroup.c
+> > @@ -2542,11 +2542,13 @@ static int cgroup_subtree_control_write(struct cgroup_subsys_state *dummy_css,
+> >  	int ssid, ret;
+> >  
+> >  	/*
+> > -	 * Parse input - white space separated list of subsystem names
+> > -	 * prefixed with either + or -.
+> > +	 * Parse input - space separated list of subsystem names prefixed
+> > +	 * with either + or -.
+> >  	 */
+> >  	p = buffer;
+> > -	while ((tok = strsep(&p, " \t\n"))) {
+> > +	while ((tok = strsep(&p, " "))) {
+> > +		if (tok[0] =='\0')
+> 
+> if (tok[0] == '\0')
 
-El 09/05/14 08:11, Boris BREZILLON escribió:
-> Add DT definitions for PRCM (Power/Reset/Clock Management) clock and reset
-> controller subdevices.
->
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
->   arch/arm/boot/dts/sun6i-a31.dtsi | 37 +++++++++++++++++++++++++++++++++++++
->   1 file changed, 37 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
-> index 9feb3f4..03d5258 100644
-> --- a/arch/arm/boot/dts/sun6i-a31.dtsi
-> +++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-> @@ -496,6 +496,43 @@
->   		prcm@01f01400 {
->   			compatible = "allwinner,sun6i-a31-prcm";
->   			reg = <0x01f01400 0x200>;
-> +
-> +			ar100: ar100_clk {
-> +				compatible = "allwinner,sun6i-a31-ar100-clk";
-> +				#clock-cells = <0>;
-> +				clocks = <&osc32k>, <&osc24M>, <&pll6>, <&pll6>;
+Oops, updated.
 
-You could add
-				clock-output-names = "ar100";
-here, so you don't depend on the node name. Your code already checks for 
-it and uses it when available.
+Thanks.
 
-> +			};
-
-Cheers,
-
-Emilio
-
+-- 
+tejun
