@@ -1,79 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759068AbaEMQBz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 12:01:55 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:58595 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753742AbaEMQBr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 12:01:47 -0400
-From: Plamen Petrov <plamen.sisi@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH RESEND] do_mounts: try all available filesystems before panicking
-Date: Tue, 13 May 2014 19:01:37 +0300
-Message-Id: <1399996897-7842-1-git-send-email-plamen.sisi@gmail.com>
-X-Mailer: git-send-email 1.9.0
+	id S1760007AbaEMQCr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:02:47 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42959 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753624AbaEMQCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 12:02:35 -0400
+Date: Tue, 13 May 2014 11:02:28 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: George Cherian <george.cherian@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <balbi@ti.com>,
+        <gregkh@linuxfoundation.org>, <rogerq@ti.com>, <kishon@ti.com>
+Subject: Re: [PATCH 1/5] usb: dwc3: dwc3-omap: Add dwc3_omap_map_offset
+ function
+Message-ID: <20140513160227.GQ1151@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1399541587-14067-1-git-send-email-george.cherian@ti.com>
+ <1399541587-14067-2-git-send-email-george.cherian@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="90KBcPA0h13nTGdQ"
+Content-Disposition: inline
+In-Reply-To: <1399541587-14067-2-git-send-email-george.cherian@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While debugging a kernel panic with 3.14.1 it became clear that some
-filesystems' mount routines give back return codes other than zero, EACCES
-or EINVAL. Such return codes can result in panic during boot before the kernel
-tries to mount root with all of the available filesystems, as can be seen in
-bugzilla entries 74901 and 74261.
+--90KBcPA0h13nTGdQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Make mount_block_root continue trying other available filesystems by default,
-not only when the last tried returned EACCES or EINVAL.
+Hi,
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Plamen Petrov <plamen.sisi@gmail.com>
----
-The story short: on systems with btrfs root I have a kernel .config with ext4,
-xfs and btrfs built-in which works fine with 3.13.x, but 3.14.x panics. After
-inserting some debug printks, I got this info from mount_block_root:
+On Thu, May 08, 2014 at 03:03:03PM +0530, George Cherian wrote:
+> Calculate the wrapper register offsets in a seperate function.
+> Improve code readability, decrease the dwc3_probe() size.
+>=20
+> Signed-off-by: George Cherian <george.cherian@ti.com>
+> ---
+>  drivers/usb/dwc3/dwc3-omap.c | 80 ++++++++++++++++++++++++--------------=
+------
+>  1 file changed, 44 insertions(+), 36 deletions(-)
+>=20
+> diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
+> index 1160ff4..872f065 100644
+> --- a/drivers/usb/dwc3/dwc3-omap.c
+> +++ b/drivers/usb/dwc3/dwc3-omap.c
+> @@ -383,6 +383,49 @@ static int dwc3_omap_vbus_notifier(struct notifier_b=
+lock *nb,
+>  	return NOTIFY_DONE;
+>  }
+> =20
+> +static void dwc3_omap_map_offset(struct dwc3_omap *omap)
+> +{
+> +	u32			reg;
+> +	struct device_node	*node =3D omap->dev->of_node;
+> +	int			x_major;
+> +
+> +	reg =3D dwc3_omap_readl(omap->base, USBOTGSS_REVISION);
+> +	omap->revision =3D reg;
+> +	x_major =3D USBOTGSS_REVISION_XMAJOR(reg);
+> +
+> +	/* Differentiate between OMAP5 and AM437x */
+> +	switch (x_major) {
+> +	case USBOTGSS_REVISION_XMAJOR1:
+> +	case USBOTGSS_REVISION_XMAJOR2:
+> +		omap->irq_eoi_offset =3D 0;
+> +		omap->irq0_offset =3D 0;
+> +		omap->irqmisc_offset =3D 0;
+> +		omap->utmi_otg_offset =3D 0;
+> +		omap->debug_offset =3D 0;
+> +		break;
+> +	default:
+> +		/* Default to the latest revision */
+> +		omap->irq_eoi_offset =3D USBOTGSS_EOI_OFFSET;
+> +		omap->irq0_offset =3D USBOTGSS_IRQ0_OFFSET;
+> +		omap->irqmisc_offset =3D USBOTGSS_IRQMISC_OFFSET;
+> +		omap->utmi_otg_offset =3D USBOTGSS_UTMI_OTG_OFFSET;
+> +		omap->debug_offset =3D USBOTGSS_DEBUG_OFFSET;
+> +		break;
+> +	}
+> +
+> +	/* For OMAP5(ES2.0) and AM437x x_major is 2 even though there are
+> +	 * changes in wrapper registers, Using dt compatible for aegis
+> +	 */
+> +
+> +	if (of_device_is_compatible(node, "ti,am437x-dwc3")) {
+> +		omap->irq_eoi_offset =3D USBOTGSS_EOI_OFFSET;
+> +		omap->irq0_offset =3D USBOTGSS_IRQ0_OFFSET;
+> +		omap->irqmisc_offset =3D USBOTGSS_IRQMISC_OFFSET;
+> +		omap->utmi_otg_offset =3D USBOTGSS_UTMI_OTG_OFFSET;
+> +		omap->debug_offset =3D USBOTGSS_DEBUG_OFFSET;
+> +	}
 
----> EACCESS=13, EINVAL=22, Available filesystems: ext3 ext2 ext4 fuseblk xfs btrfs
------> Tried ext3, error code is -22.
------> Tried ext2, error code is -22.
------> Tried ext4, error code is -22.
------> Tried fuseblk, error code is -22.
------> Tried xfs, error code is -38.
-VFS: Cannot open root device "sda2" or unknown-block(8,2): error -38
-Please append a correct "root=" boot option; here are the available partitions:
+can you add a patch before $subject which gets rid of the switch
+statement above since it's pretty much useless now that we use
+compatible strings to differentiate omap5 and am437x ?
 
-Last one tried is xfs, the needed btrfs in this case never gets a chance.
-Looking at the code in init/do_mounts.c we can see that it "continue"s only if
-the return code it got is EINVAL, yet xfs clearly does not fit - so the kernel
-panics. Maybe there are other filesystems like xfs - I did not check. This
-patch fixes mount_block_root to try all available filesystems first, and then
-panic. The patched 3.14.x works for me.
+--=20
+balbi
 
-This patch was sent to LKML, see
-  http://article.gmane.org/gmane.linux.kernel/1691881
-Maybe the first time around it got damaged by my mail client, lost in all of
-the LKML traffic, or nobody picked it up, because scripts/get_maintainer.pl
-said "Send it to LKML" only, and I did just that.
-Either way - resending and CC-ing Linus, with stable- added as CC to the patch
-as well. Maybe third time is the charm.
+--90KBcPA0h13nTGdQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
- init/do_mounts.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index 82f2288..979bd71 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -396,7 +396,7 @@ retry:
- 			case -EACCES:
- 				flags |= MS_RDONLY;
- 				goto retry;
--			case -EINVAL:
-+			default:
- 				continue;
- 		}
- 	        /*
--- 
-1.9.0
+iQIcBAEBAgAGBQJTckITAAoJEIaOsuA1yqREFxgP/jIGcH1bLZV8SbgOVrWBLQJ/
+jsUej0H4qIUiQVVVdH6j3QkuG3WtygNpbWloSc/gXko2+7hFOTcl7jtRnjEKqhO6
+P8/BCg/2z0I/8wGkzdAiM95oSmpaqVbbkF6nxRRlQJLe12cuOr/rQn3S1vzilDey
+bLAm8t40DFZxMDl6KAUgxNGHGWPnUFSnFuk8yRDoo6Zc3T0wWpU9SmDl/1BF3FX8
+aN7fUAStOzhtWoX3FArd8iReKUASqz73nRJS3Mv91nhzrOHa6gPg8dM78Uv8GrBQ
+2Xwm8Vgx0MuFS/Jb+Wm0W7Iylq3b3+W9zcrnMQtHq8ShDOWgzvWab8Vy0aTVcsLt
+NBXWMilEJdlg+0jjIq1/0srwjvaQtMncPwI4WqBGqlhewooSZcGi7MC7ASNeuWsf
+c9RUMD6lFAWKyWdg2nuu75TgsOampo8APacWIEryqs6Ca9kuOeVB3CntB3rjuT1l
+vrHvCMPAr2sksPKn7wNPWFqSluJ9j+1ygB6qgUdKTFI6GSWOt7Pymj+6syKc0/+d
+GyBHGxuWwDJk+k9TnmTUmY/QrfMdoZMoxRza8yUwOubYoVRt0Re07589s7yhCbct
+5Wd12T6H3bq7L3UZ0BnbEjmzUftvt3T30o9f8tkn4fUV02uLNga2cZBZBx/dm+p1
+WZz605l5nhEEenHswVNx
+=gxBj
+-----END PGP SIGNATURE-----
 
+--90KBcPA0h13nTGdQ--
