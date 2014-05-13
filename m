@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759856AbaEMJZo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:25:44 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:50399 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759397AbaEMJZm (ORCPT
+	id S1759688AbaEMJ0l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:26:41 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:42981 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759223AbaEMJ0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:25:42 -0400
+	Tue, 13 May 2014 05:26:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <7225229.HqAtN0I8Si@wuerfel>
-References: <7225229.HqAtN0I8Si@wuerfel>
-Date: Tue, 13 May 2014 11:25:42 +0200
-Message-ID: <CACRpkdZakDfcsCPAw0JbffyfSXVjHzyVoCTkVx_3hy19QXpXDQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio: include linux/bug.h in interface header
+In-Reply-To: <1399618669-6830-2-git-send-email-prabhakar.csengg@gmail.com>
+References: <1399618669-6830-1-git-send-email-prabhakar.csengg@gmail.com>
+	<1399618669-6830-2-git-send-email-prabhakar.csengg@gmail.com>
+Date: Tue, 13 May 2014 11:26:38 +0200
+Message-ID: <CACRpkdbpWY+J0o43k_nmxJeX8pZ_hk8=vz0FxxcyHGsEcPdW0w@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] ARM: integrator: drop CONFIG_COMMON_CLK_DEBUG
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 8, 2014 at 3:42 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+On Fri, May 9, 2014 at 8:57 AM, Lad, Prabhakar
+<prabhakar.csengg@gmail.com> wrote:
 
-> Today's linux-next kernel started showing build errors for the
-> use of WARN_ON in linux/gpio/consumer.h:
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 >
-> In file included from drivers/video/backlight/pwm_bl.c:13:0:
-> include/linux/gpio/consumer.h: In function 'gpiod_put':
-> include/linux/gpio/consumer.h:81:2: error: implicit declaration of function 'WARN_ON' [-Werror=implicit-function-declaration]
+> this patch drops CONFIG_COMMON_CLK_DEBUG option
+> as this config option is now obsolete.
 >
-> It's not clear why this never happened before, but this patch
-> fixes it by including the header that contains the defintion
-> of this macro.
->
-> Signed-off-by: Arnd Bergmann <arnd@arnd.de>
+> CC: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-Patch applied!
+Oh is it obsolete? Oh well then, I'll queue it.
 
 Yours,
 Linus Walleij
