@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933188AbaEMMOK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 08:14:10 -0400
+	id S933109AbaEMMOH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 08:14:07 -0400
 Received: from mga09.intel.com ([134.134.136.24]:55475 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933101AbaEMMOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 08:14:07 -0400
+	id S932975AbaEMMOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 08:14:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1044,1389772800"; 
-   d="scan'208";a="539559835"
+   d="scan'208";a="539559801"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 Cc: Mike Turquette <mturquette@linaro.org>,
@@ -17,9 +17,9 @@ Cc: Mike Turquette <mturquette@linaro.org>,
         Li Aubrey <aubrey.li@linux.intel.com>,
         Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
         linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] clk: new basic clk type for fractional divider
-Date: Tue, 13 May 2014 15:13:52 +0300
-Message-Id: <1399983233-18037-4-git-send-email-heikki.krogerus@linux.intel.com>
+Subject: [PATCH 2/4] ACPI / LPSS: custom power domain for LPSS
+Date: Tue, 13 May 2014 15:13:51 +0300
+Message-Id: <1399983233-18037-3-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1399983233-18037-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1399983233-18037-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -27,209 +27,246 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fractional divider clocks are fairly common. This adds basic
-type for them.
+A Power domain where we save the context of the additional
+LPSS registers. We need to do this or all LPSS devices are
+left in reset state when resuming from D3 on some Baytrails.
+The devices with the fractional clock divider also have
+zeros for N and M values after resuming unless they are
+reset.
 
+Li Aubrey found the root cause for the issue. The idea of
+using power domain for LPSS came from Mika Westerberg.
+
+Reported-by: Jin Yao <yao.jin@linux.intel.com>
+Suggested-by: Li Aubrey <aubrey.li@linux.intel.com>
+Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 ---
- drivers/clk/Makefile                 |   1 +
- drivers/clk/clk-fractional-divider.c | 132 +++++++++++++++++++++++++++++++++++
- include/linux/clk-provider.h         |  31 ++++++++
- 3 files changed, 164 insertions(+)
- create mode 100644 drivers/clk/clk-fractional-divider.c
+ drivers/acpi/acpi_lpss.c | 133 ++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 126 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index f651b2a..33bc79e 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -8,6 +8,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-rate.o
- obj-$(CONFIG_COMMON_CLK)	+= clk-gate.o
- obj-$(CONFIG_COMMON_CLK)	+= clk-mux.o
- obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
-+obj-$(CONFIG_COMMON_CLK)	+= clk-fractional-divider.o
+diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+index 69e29f4..24e49a5 100644
+--- a/drivers/acpi/acpi_lpss.c
++++ b/drivers/acpi/acpi_lpss.c
+@@ -19,6 +19,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/platform_data/clk-lpss.h>
+ #include <linux/pm_runtime.h>
++#include <linux/delay.h>
  
- # hardware specific clock types
- # please keep this section sorted lexicographically by file/directory path name
-diff --git a/drivers/clk/clk-fractional-divider.c b/drivers/clk/clk-fractional-divider.c
-new file mode 100644
-index 0000000..26f0f57
---- /dev/null
-+++ b/drivers/clk/clk-fractional-divider.c
-@@ -0,0 +1,132 @@
-+/*
-+ * Copyright (C) 2014 Intel Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Adjustable fractional divider clock implementation.
-+ * Output rate = (m / n) * parent_rate.
-+ */
+ #include "internal.h"
+ 
+@@ -43,6 +44,8 @@ ACPI_MODULE_NAME("acpi_lpss");
+ #define LPSS_TX_INT			0x20
+ #define LPSS_TX_INT_MASK		BIT(1)
+ 
++#define LPSS_PRV_REG_COUNT		9
 +
-+#include <linux/clk-provider.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/gcd.h>
-+
-+#define to_clk_fd(_hw) container_of(_hw, struct clk_fractional_divider, hw)
-+
-+static unsigned long clk_fd_recalc_rate(struct clk_hw *hw,
-+					unsigned long parent_rate)
+ struct lpss_shared_clock {
+ 	const char *name;
+ 	unsigned long rate;
+@@ -58,6 +61,7 @@ struct lpss_device_desc {
+ 	unsigned int prv_offset;
+ 	size_t prv_size_override;
+ 	bool clk_gate;
++	bool save_ctx;
+ 	struct lpss_shared_clock *shared_clock;
+ 	void (*setup)(struct lpss_private_data *pdata);
+ };
+@@ -72,6 +76,7 @@ struct lpss_private_data {
+ 	resource_size_t mmio_size;
+ 	struct clk *clk;
+ 	const struct lpss_device_desc *dev_desc;
++	u32 prv_reg_ctx[LPSS_PRV_REG_COUNT];
+ };
+ 
+ static void lpss_uart_setup(struct lpss_private_data *pdata)
+@@ -116,6 +121,7 @@ static struct lpss_shared_clock pwm_clock = {
+ 
+ static struct lpss_device_desc byt_pwm_dev_desc = {
+ 	.clk_required = true,
++	.save_ctx = true,
+ 	.shared_clock = &pwm_clock,
+ };
+ 
+@@ -128,6 +134,7 @@ static struct lpss_device_desc byt_uart_dev_desc = {
+ 	.clk_required = true,
+ 	.prv_offset = 0x800,
+ 	.clk_gate = true,
++	.save_ctx = true,
+ 	.shared_clock = &uart_clock,
+ 	.setup = lpss_uart_setup,
+ };
+@@ -141,6 +148,7 @@ static struct lpss_device_desc byt_spi_dev_desc = {
+ 	.clk_required = true,
+ 	.prv_offset = 0x400,
+ 	.clk_gate = true,
++	.save_ctx = true,
+ 	.shared_clock = &spi_clock,
+ };
+ 
+@@ -156,6 +164,7 @@ static struct lpss_shared_clock i2c_clock = {
+ static struct lpss_device_desc byt_i2c_dev_desc = {
+ 	.clk_required = true,
+ 	.prv_offset = 0x800,
++	.save_ctx = true,
+ 	.shared_clock = &i2c_clock,
+ };
+ 
+@@ -449,6 +458,102 @@ static void acpi_lpss_set_ltr(struct device *dev, s32 val)
+ 	}
+ }
+ 
++#ifdef CONFIG_PM
++static void acpi_lpss_save_ctx(struct device *dev)
 +{
-+	struct clk_fractional_divider *fd = to_clk_fd(hw);
-+	unsigned long flags = 0;
-+	u64 n, m;
-+	u32 val;
++	struct lpss_private_data *pdata = acpi_driver_data(ACPI_COMPANION(dev));
++	int i;
 +
-+	if (fd->lock)
-+		spin_lock_irqsave(fd->lock, flags);
-+
-+	val = clk_readl(fd->reg);
-+
-+	if (fd->lock)
-+		spin_unlock_irqrestore(fd->lock, flags);
-+
-+	m = (val & fd->mmask) >> fd->mshift;
-+	n = (val & fd->nmask) >> fd->nshift;
-+
-+	return parent_rate * m / n;
-+}
-+
-+static long clk_fd_round_rate(struct clk_hw *hw, unsigned long rate,
-+			      unsigned long *prate)
-+{
-+	struct clk_fractional_divider *fd = to_clk_fd(hw);
-+	unsigned maxn = (fd->nmask >> fd->nshift) + 1;
-+	unsigned div;
-+
-+	if (!rate || rate > *prate)
-+		return *prate;
-+
-+	div = gcd(*prate, rate);
-+
-+	while ((*prate / div) > maxn) {
-+		div <<= 1;
-+		rate <<= 1;
++	for (i = 0; i < LPSS_PRV_REG_COUNT; i++) {
++		pdata->prv_reg_ctx[i] = __lpss_reg_read(pdata, i * sizeof(u32));
++		dev_dbg(dev, "saving 0x%08x from LPSS reg at offset 0x%02x\n",
++			pdata->prv_reg_ctx[i], (unsigned int)(i * sizeof(u32)));
 +	}
-+
-+	return rate;
 +}
 +
-+static int clk_fd_set_rate(struct clk_hw *hw, unsigned long rate,
-+			   unsigned long parent_rate)
++static void acpi_lpss_restore_ctx(struct device *dev)
 +{
-+	struct clk_fractional_divider *fd = to_clk_fd(hw);
-+	unsigned long flags = 0;
-+	unsigned long div;
-+	unsigned n, m;
-+	u32 val;
++	struct lpss_private_data *pdata = acpi_driver_data(ACPI_COMPANION(dev));
++	int i;
 +
-+	div = gcd(parent_rate, rate);
-+	m = rate / div;
-+	n = parent_rate / div;
++	/* PCI spec expects 10ms delay when resuming from D3 to D0 */
++	msleep(10);
 +
-+	if (fd->lock)
-+		spin_lock_irqsave(fd->lock, flags);
++	for (i = 0; i < LPSS_PRV_REG_COUNT; i++) {
++		__lpss_reg_write(pdata->prv_reg_ctx[i], pdata, i * sizeof(u32));
++		dev_dbg(dev, "restoring 0x%08x to LPSS reg at offset 0x%02x\n",
++			pdata->prv_reg_ctx[i], (unsigned int)(i * sizeof(u32)));
++	}
++}
 +
-+	val = clk_readl(fd->reg);
-+	val &= ~(fd->mmask | fd->nmask);
-+	val |= (m << fd->mshift) | (n << fd->nshift);
-+	clk_writel(val, fd->reg);
++#ifdef CONFIG_PM_SLEEP
++static int acpi_lpss_suspend_late(struct device *dev)
++{
++	int ret = pm_generic_suspend_late(dev);
 +
-+	if (fd->lock)
-+		spin_unlock_irqrestore(fd->lock, flags);
++	if (ret)
++		return ret;
 +
++	acpi_lpss_save_ctx(dev);
++	return acpi_dev_suspend_late(dev);
++}
++
++static int acpi_lpss_restore_early(struct device *dev)
++{
++	int ret = acpi_dev_resume_early(dev);
++
++	if (ret)
++		return ret;
++
++	acpi_lpss_restore_ctx(dev);
++	return pm_generic_resume_early(dev);
++}
++#endif /* CONFIG_PM_SLEEP */
++
++#ifdef CONFIG_PM_RUNTIME
++static int acpi_lpss_runtime_suspend(struct device *dev)
++{
++	int ret = pm_generic_runtime_suspend(dev);
++
++	if (ret)
++		return ret;
++
++	acpi_lpss_save_ctx(dev);
++	return acpi_dev_runtime_suspend(dev);
++}
++
++static int acpi_lpss_runtime_resume(struct device *dev)
++{
++	int ret = acpi_dev_runtime_resume(dev);
++
++	if (ret)
++		return ret;
++
++	acpi_lpss_restore_ctx(dev);
++	return pm_generic_runtime_resume(dev);
++}
++#endif /* CONFIG_PM_RUNTIME */
++#endif /* CONFIG_PM */
++
++static struct dev_pm_domain acpi_lpss_pm_domain = {
++	.ops = {
++#ifdef CONFIG_PM_SLEEP
++		.suspend_late = acpi_lpss_suspend_late,
++		.restore_early = acpi_lpss_restore_early,
++		.prepare = acpi_subsys_prepare,
++		.suspend = acpi_subsys_suspend,
++		.resume_early = acpi_subsys_resume_early,
++		.freeze = acpi_subsys_freeze,
++		.poweroff = acpi_subsys_suspend,
++		.poweroff_late = acpi_subsys_suspend_late,
++#endif
++#ifdef CONFIG_PM_RUNTIME
++		.runtime_suspend = acpi_lpss_runtime_suspend,
++		.runtime_resume = acpi_lpss_runtime_resume,
++#endif
++	},
++};
++
+ static int acpi_lpss_platform_notify(struct notifier_block *nb,
+ 				     unsigned long action, void *data)
+ {
+@@ -456,7 +561,6 @@ static int acpi_lpss_platform_notify(struct notifier_block *nb,
+ 	struct lpss_private_data *pdata;
+ 	struct acpi_device *adev;
+ 	const struct acpi_device_id *id;
+-	int ret = 0;
+ 
+ 	id = acpi_match_device(acpi_lpss_device_ids, &pdev->dev);
+ 	if (!id || !id->driver_data)
+@@ -466,7 +570,7 @@ static int acpi_lpss_platform_notify(struct notifier_block *nb,
+ 		return 0;
+ 
+ 	pdata = acpi_driver_data(adev);
+-	if (!pdata || !pdata->mmio_base || !pdata->dev_desc->ltr_required)
++	if (!pdata || !pdata->mmio_base)
+ 		return 0;
+ 
+ 	if (pdata->mmio_size < pdata->dev_desc->prv_offset + LPSS_LTR_SIZE) {
+@@ -474,12 +578,27 @@ static int acpi_lpss_platform_notify(struct notifier_block *nb,
+ 		return 0;
+ 	}
+ 
+-	if (action == BUS_NOTIFY_ADD_DEVICE)
+-		ret = sysfs_create_group(&pdev->dev.kobj, &lpss_attr_group);
+-	else if (action == BUS_NOTIFY_DEL_DEVICE)
+-		sysfs_remove_group(&pdev->dev.kobj, &lpss_attr_group);
++	switch (action) {
++	case BUS_NOTIFY_BOUND_DRIVER:
++		if (pdata->dev_desc->save_ctx)
++			pdev->dev.pm_domain = &acpi_lpss_pm_domain;
++		break;
++	case BUS_NOTIFY_UNBOUND_DRIVER:
++		if (pdata->dev_desc->save_ctx)
++			pdev->dev.pm_domain = NULL;
++		break;
++	case BUS_NOTIFY_ADD_DEVICE:
++		if (pdata->dev_desc->ltr_required)
++			return sysfs_create_group(&pdev->dev.kobj,
++						  &lpss_attr_group);
++	case BUS_NOTIFY_DEL_DEVICE:
++		if (pdata->dev_desc->ltr_required)
++			sysfs_remove_group(&pdev->dev.kobj, &lpss_attr_group);
++	default:
++		break;
++	}
+ 
+-	return ret;
 +	return 0;
-+}
-+
-+const struct clk_ops clk_fractional_divider_ops = {
-+	.recalc_rate = clk_fd_recalc_rate,
-+	.round_rate = clk_fd_round_rate,
-+	.set_rate = clk_fd_set_rate,
-+};
-+EXPORT_SYMBOL_GPL(clk_fractional_divider_ops);
-+
-+struct clk *clk_register_fractional_divider(struct device *dev,
-+		const char *name, const char *parent_name, unsigned long flags,
-+		void __iomem *reg, u8 mshift, u8 mwidth, u8 nshift, u8 nwidth,
-+		u8 clk_divider_flags, spinlock_t *lock)
-+{
-+	struct clk_fractional_divider *fd;
-+	struct clk_init_data init;
-+	struct clk *clk;
-+
-+	fd = kzalloc(sizeof(*fd), GFP_KERNEL);
-+	if (!fd) {
-+		pr_err("%s: could not allocate fractional divider clk\n",
-+		       __func__);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	init.name = name;
-+	init.ops = &clk_fractional_divider_ops;
-+	init.flags = flags | CLK_IS_BASIC;
-+	init.parent_names = (parent_name ? &parent_name : NULL);
-+	init.num_parents = (parent_name ? 1 : 0);
-+
-+	fd->reg = reg;
-+	fd->mshift = mshift;
-+	fd->mmask = (BIT(mwidth) - 1) << mshift;
-+	fd->nshift = nshift;
-+	fd->nmask = (BIT(nwidth) - 1) << nshift;
-+	fd->flags = clk_divider_flags;
-+	fd->lock = lock;
-+	fd->hw.init = &init;
-+
-+	clk = clk_register(dev, &fd->hw);
-+	if (IS_ERR(clk))
-+		kfree(fd);
-+
-+	return clk;
-+}
-+EXPORT_SYMBOL_GPL(clk_register_fractional_divider);
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 47e353d..30d1e02 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -416,6 +416,37 @@ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
- 		unsigned int mult, unsigned int div);
+ }
  
-+/**
-+ * struct clk_fractional_divider - adjustable fractional divider clock
-+ *
-+ * @hw:		handle between common and hardware-specific interfaces
-+ * @reg:	register containing the divider
-+ * @mshift:	shift to the numerator bit field
-+ * @mwidth:	width of the numerator bit field
-+ * @nshift:	shift to the denominator bit field
-+ * @nwidth:	width of the denominator bit field
-+ * @lock:	register lock
-+ *
-+ * Clock with adjustable fractional divider affecting its output frequency.
-+ */
-+
-+struct clk_fractional_divider {
-+	struct clk_hw	hw;
-+	void __iomem	*reg;
-+	u8		mshift;
-+	u32		mmask;
-+	u8		nshift;
-+	u32		nmask;
-+	u8		flags;
-+	spinlock_t	*lock;
-+};
-+
-+extern const struct clk_ops clk_fractional_divider_ops;
-+struct clk *clk_register_fractional_divider(struct device *dev,
-+		const char *name, const char *parent_name, unsigned long flags,
-+		void __iomem *reg, u8 mshift, u8 mwidth, u8 nshift, u8 nwidth,
-+		u8 clk_divider_flags, spinlock_t *lock);
-+
- /***
-  * struct clk_composite - aggregate clock of mux, divider and gate clocks
-  *
+ static struct notifier_block acpi_lpss_nb = {
 -- 
 2.0.0.rc2
 
