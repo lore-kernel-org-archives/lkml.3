@@ -1,106 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291AbaEMHBj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 03:01:39 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:46119 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916AbaEMHBi (ORCPT
+	id S1758418AbaEMHEL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 03:04:11 -0400
+Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:37223 "EHLO
+	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470AbaEMHEJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 03:01:38 -0400
-Date: Tue, 13 May 2014 08:59:36 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Chew Chiau Ee <chiau.ee.chew@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pwm_lpss: Add support for PCI devices
-Message-ID: <20140513065935.GA6754@ulmo>
-References: <1397311131-13371-1-git-send-email-chiau.ee.chew@intel.com>
- <20140512231816.GA65896@dvhart-mac01.jf.intel.com>
+	Tue, 13 May 2014 03:04:09 -0400
+X-Greylist: delayed 2321 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 May 2014 03:04:09 EDT
+From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+To: "sdu.liu@huawei.com" <sdu.liu@huawei.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+CC: "will.deacon@arm.com" <will.deacon@arm.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "wangnan0@huawei.com" <wangnan0@huawei.com>,
+        "peifeiyue@huawei.com" <peifeiyue@huawei.com>,
+        "liusdu@126.com" <liusdu@126.com>
+Subject: RE: [RFC PATCH 2/2] makedumpfile: get additional information from
+ vmcore
+Thread-Topic: [RFC PATCH 2/2] makedumpfile: get additional information from
+ vmcore
+Thread-Index: AQHPafj9zWy25+zH3Ei/KNRE53umlZs+B23w
+Date: Tue, 13 May 2014 06:21:12 +0000
+Message-ID: <0910DD04CBD6DE4193FCF86B9C00BE97210369@BPXM01GP.gisp.nec.co.jp>
+References: <1399469234-54925-1-git-send-email-sdu.liu@huawei.com>
+ <1399469234-54925-3-git-send-email-sdu.liu@huawei.com>
+In-Reply-To: <1399469234-54925-3-git-send-email-sdu.liu@huawei.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.21.40.240]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="82I3+IH0IqGh5yIs"
-Content-Disposition: inline
-In-Reply-To: <20140512231816.GA65896@dvhart-mac01.jf.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Liu,
 
---82I3+IH0IqGh5yIs
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>Now we define MAX_PHYSMEM_BITS and SECTION_SIZE_BITS as
+>macros. So if we deal with vmcores with different values
+>of these two macros. We have to recompile makedumpfile.
 
-On Mon, May 12, 2014 at 04:18:16PM -0700, Darren Hart wrote:
-> On Sat, Apr 12, 2014 at 09:58:51PM +0800, Chew Chiau Ee wrote:
-> > From: Alan Cox <alan@linux.intel.com>
-> >=20
-> > Not all systems enumerate the PWM devices via ACPI. They can also be ex=
-posed
-> > via the PCI interface.
-> >=20
-> > Signed-off-by: Alan Cox <alan@linux.intel.com>
-> > Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> > ---
-> >  drivers/pwm/pwm-lpss.c |  160 ++++++++++++++++++++++++++++++++++++++--=
--------
-> >  1 files changed, 129 insertions(+), 31 deletions(-)
-[...]
-> Has this landed anywhere? I didn't see it in mainline or next, am I looki=
-ng in
-> the wrong place?
+There are other macros which have architecture-specific values
+(e.g. __PAGE_OFFSET), and some functions are specific to each
+architecture (e.g. vaddr_to_paddr()), so we need recompilation
+eventually.
 
-This was applied to the pwm/for-next tree and has been in linux-next
-since next-20140429.
+OTOH, we already don't need recompilation for the same architecture
+since the values of such macros are defined for each kernel version
+like below:
 
-> If it's just still pending, I ran into one issue integrating it
-> with 3.14.2:
->=20
->   CC [M]  drivers/pwm/pwm-lpss.o
->   drivers/pwm/pwm-lpss.c: In function =E2=80=98pwm_lpss_probe_pci=E2=80=
-=99:
->   drivers/pwm/pwm-lpss.c:192:2: warning: passing argument 3 of =E2=80=98p=
-wm_lpss_probe=E2=80=99
->   discards =E2=80=98const=E2=80=99 qualifier from pointer target type [en=
-abled by default]
->   drivers/pwm/pwm-lpss.c:130:30: note: expected =E2=80=98struct pwm_lpss_=
-boardinfo *=E2=80=99
->   but argument is of type =E2=80=98const struct pwm_lpss_boardinfo *=E2=
-=80=99
->=20
-> Can we make the third argument to pwm_lpss_probe a const? The following is
-> working for me:
->=20
->  static struct pwm_lpss_chip *pwm_lpss_probe(struct device *dev,
->                                              struct resource *r,
->                                              const struct pwm_lpss_boardi=
-nfo *info)
+#ifdef __x86_64__
+...
+#define _MAX_PHYSMEM_BITS_ORIG          (40)
+#define _MAX_PHYSMEM_BITS_2_6_26        (44)
+#define _MAX_PHYSMEM_BITS_2_6_31        (46)
 
-A fix like that was applied last week and is in next-20140512.
+So I don't think this patch is valuable.
 
-Thierry
 
---82I3+IH0IqGh5yIs
-Content-Type: application/pgp-signature
+Thanks
+Atsushi Kumagai
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTccLXAAoJEN0jrNd/PrOhNBwP/1s/0nurgaPdeXtNgukQsPMg
-jJcbjG5/nzSAD/rxfSyyrDf+2mjTkmEui0a8RmTfsRDObPMhGLNiEtfQ7yiNGfkw
-5JXbift58fv2jpmCsYXpIOihEgBUZD5jUzgMxJPnJyg6zS05beHbM799a76fyXVn
-ulruyGqcFlwP6PgCl1Ltf36BbMryz2ftzPn9Z5oTGTGBQI7IHxktFCr86sBSrjeP
-8bwVL2sCOvGcrzCWeFlAGDFiwv32yhT5UtjcphXDI7VEnMAZTMwiRVgUE/Qs7oKi
-jDli+CkTGuWyxJjQhKEIDHS9EPs8dIePmOinO8w3xUnyoDzL36bzJeTDEAZOsL0P
-q7kd9dc0Y+UD6996PC7ECFZOXYoTdfQhLp4kORYhLuKIo7TfJhd4HW9NOU5O/QcK
-90us8YYqkszXW1dWOh0pDzVh29LomF7ScwhsxGPfPTrmwQi36XjX3ZE3NeCBCHWm
-AllwvQPosA/A/w/VxQY/c77Ex3jW4w6TaGhyHTdBKwcg3kDqP6PPZlfdwgfdmWOS
-w9eOxnZMNsv8XL9KkIBvLa/dy5lQVsbVHwPTOrZTU2u2QD3fdIyR5ja6SpjTyaO6
-DcK1MJ9HoTHKIms48olaKJf22LIqHbmGk88pBCER35/UZqyQSAGGqfrXkIDR5okz
-8YXKzgdI3sW3up0a3012
-=uCRe
------END PGP SIGNATURE-----
-
---82I3+IH0IqGh5yIs--
+>This patch makes makedumpfile get these two values from
+>vmcore info, if existing. It makes the makedumpfile more
+>compatible to vmcores with different section size.
+>
+>Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+>---
+> makedumpfile.c | 17 +++++++++++++++++
+> makedumpfile.h |  2 ++
+> 2 files changed, 19 insertions(+)
+>
+>diff --git a/makedumpfile.c b/makedumpfile.c
+>index 6cf6e24..3cdf323 100644
+>--- a/makedumpfile.c
+>+++ b/makedumpfile.c
+>@@ -2111,6 +2111,8 @@ read_vmcoreinfo(void)
+> 	READ_NUMBER("PG_slab", PG_slab);
+> 	READ_NUMBER("PG_buddy", PG_buddy);
+> 	READ_NUMBER("PG_hwpoison", PG_hwpoison);
+>+	READ_NUMBER("SECTION_SIZE_BITS", SECTION_SIZE_BITS);
+>+	READ_NUMBER("MAX_PHYSMEM_BITS", MAX_PHYSMEM_BITS);
+>
+> 	READ_SRCFILE("pud_t", pud_t);
+>
+>@@ -2998,6 +3000,18 @@ initialize_bitmap_memory(void)
+> }
+>
+> int
+>+calibrate_machdep_info(void)
+>+{
+>+	if (NUMBER(MAX_PHYSMEM_BITS) > 0)
+>+		info->max_physmem_bits = NUMBER(MAX_PHYSMEM_BITS);
+>+
+>+	if (NUMBER(SECTION_SIZE_BITS) > 0)
+>+		info->section_size_bits = NUMBER(SECTION_SIZE_BITS);
+>+
+>+	return TRUE;
+>+}
+>+
+>+int
+> initial(void)
+> {
+> 	off_t offset;
+>@@ -3214,6 +3228,9 @@ out:
+> 	if (debug_info && !get_machdep_info())
+> 		return FALSE;
+>
+>+	if (debug_info && !calibrate_machdep_info())
+>+		return FALSE;
+>+
+> 	if (is_xen_memory() && !get_dom0_mapnr())
+> 		return FALSE;
+>
+>diff --git a/makedumpfile.h b/makedumpfile.h
+>index eb03688..7acb23a 100644
+>--- a/makedumpfile.h
+>+++ b/makedumpfile.h
+>@@ -1434,6 +1434,8 @@ struct number_table {
+> 	long    PG_hwpoison;
+>
+> 	long	PAGE_BUDDY_MAPCOUNT_VALUE;
+>+	long	SECTION_SIZE_BITS;
+>+	long	MAX_PHYSMEM_BITS;
+> };
+>
+> struct srcfile_table {
+>--
+>1.9.0
