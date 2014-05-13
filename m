@@ -1,50 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759523AbaEMI0V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 04:26:21 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:40471 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753019AbaEMI0R (ORCPT
+	id S1759327AbaEMIUH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 04:20:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36118 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759301AbaEMIUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 04:26:17 -0400
-Date: Tue, 13 May 2014 10:26:09 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: mingo@kernel.org, jet.chen@intel.com, fengguang.wu@intel.com,
-        linux-ia64@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: sched: fix: initialization of sched_domain_topology for NUMA
-Message-ID: <20140513082609.GA2485@laptop.programming.kicks-ass.net>
-References: <1399929376-4597-1-git-send-email-vincent.guittot@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399929376-4597-1-git-send-email-vincent.guittot@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 13 May 2014 04:20:05 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
+        kishon@ti.com, hdegoede@redhat.com
+Cc: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
+        linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v4 3/8] phy: sunxi: Rework phy initialization
+Date: Tue, 13 May 2014 10:19:00 +0200
+Message-Id: <1399969145-11642-4-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1399969145-11642-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1399969145-11642-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 11:16:16PM +0200, Vincent Guittot wrote:
-> sched_domain_topology table is a null terminated array. 
-> Add 1 row in the allocation size that will be used as the last row of the
-> table.
-> 
-> Reported-by: Jet Chen <jet.chen@intel.com>
-> Tested-by: Jet Chen <jet.chen@intel.com>
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> link: https://lkml.org/lkml/2014/5/12/130
-> 
-> ---
-> 
-> Hi Ingo and Peter,
-> 
-> This patch fixes the problem that has been reported by Jet Chen 
-> 
+Move the phy initialization and variables declaration to the loop itself, since
+it is where it really belongs. Also remove all the temporary variables, we can
+use the structure members directly.
 
-I have no mail from Jet Chen on any recent issues.
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+---
+ drivers/phy/phy-sun4i-usb.c | 42 ++++++++++++++++++------------------------
+ 1 file changed, 18 insertions(+), 24 deletions(-)
 
-Also, please describe both the problem and the fix in the Changelog
-without need to refer to secondary sources.
+diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
+index e6e6c4ba7145..66a87d50512b 100644
+--- a/drivers/phy/phy-sun4i-usb.c
++++ b/drivers/phy/phy-sun4i-usb.c
+@@ -224,13 +224,8 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
+ 	struct sun4i_usb_phy_data *data;
+ 	struct device *dev = &pdev->dev;
+ 	struct device_node *np = dev->of_node;
+-	void __iomem *pmu = NULL;
+ 	struct phy_provider *phy_provider;
+-	struct reset_control *reset;
+-	struct regulator *vbus;
+ 	struct resource *res;
+-	struct phy *phy;
+-	char name[16];
+ 	int i;
+ 
+ 	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
+@@ -262,42 +257,41 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
+ 
+ 	/* Skip 0, 0 is the phy for otg which is not yet supported. */
+ 	for (i = 1; i < data->num_phys; i++) {
++		struct sun4i_usb_phy *phy = data->phys + i;
++		char name[16];
++
+ 		snprintf(name, sizeof(name), "usb%d_vbus", i);
+-		vbus = devm_regulator_get_optional(dev, name);
+-		if (IS_ERR(vbus)) {
+-			if (PTR_ERR(vbus) == -EPROBE_DEFER)
++		phy->vbus = devm_regulator_get_optional(dev, name);
++		if (IS_ERR(phy->vbus)) {
++			if (PTR_ERR(phy->vbus) == -EPROBE_DEFER)
+ 				return -EPROBE_DEFER;
+-			vbus = NULL;
++			phy->vbus = NULL;
+ 		}
+ 
+ 		snprintf(name, sizeof(name), "usb%d_reset", i);
+-		reset = devm_reset_control_get(dev, name);
+-		if (IS_ERR(reset)) {
++		phy->reset = devm_reset_control_get(dev, name);
++		if (IS_ERR(phy->reset)) {
+ 			dev_err(dev, "failed to get reset %s\n", name);
+-			return PTR_ERR(reset);
++			return PTR_ERR(phy->reset);
+ 		}
+ 
+ 		if (i) { /* No pmu for usbc0 */
+ 			snprintf(name, sizeof(name), "pmu%d", i);
+ 			res = platform_get_resource_byname(pdev,
+ 							IORESOURCE_MEM, name);
+-			pmu = devm_ioremap_resource(dev, res);
+-			if (IS_ERR(pmu))
+-				return PTR_ERR(pmu);
++			phy->pmu = devm_ioremap_resource(dev, res);
++			if (IS_ERR(phy->pmu))
++				return PTR_ERR(phy->pmu);
+ 		}
+ 
+-		phy = devm_phy_create(dev, &sun4i_usb_phy_ops, NULL);
+-		if (IS_ERR(phy)) {
++		phy->phy = devm_phy_create(dev, &sun4i_usb_phy_ops, NULL);
++		if (IS_ERR(phy->phy)) {
+ 			dev_err(dev, "failed to create PHY %d\n", i);
+-			return PTR_ERR(phy);
++			return PTR_ERR(phy->phy);
+ 		}
+ 
+-		data->phys[i].phy = phy;
+-		data->phys[i].pmu = pmu;
+-		data->phys[i].vbus = vbus;
+-		data->phys[i].reset = reset;
+-		data->phys[i].index = i;
+-		phy_set_drvdata(phy, &data->phys[i]);
++		phy->index = i;
++		phy_set_drvdata(phy->phy, &data->phys[i]);
+ 	}
+ 
+ 	dev_set_drvdata(dev, data);
+-- 
+1.9.3
 
-As it stands I've no clue wth this is about.
