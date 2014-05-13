@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932764AbaEMKoH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:44:07 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60743 "EHLO
+	id S1761405AbaEMKoF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:44:05 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60739 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759887AbaEMJ2z (ORCPT
+	by vger.kernel.org with ESMTP id S1759883AbaEMJ2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 May 2014 05:28:55 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Brian Austin <brian.austin@cirrus.com>,
-        Mark Brown <broonie@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 009/182] ASoC: cs42l52: Fix mask bits for SOC_VALUE_ENUM_SINGLE
-Date: Tue, 13 May 2014 11:26:01 +0200
-Message-Id: <89baaf8965cd70ae0ad60ab00f167577e64950ec.1399973152.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Nishanth Menon <nm@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 012/182] ARM: OMAP4: Fix definition of IS_PM44XX_ERRATUM
+Date: Tue, 13 May 2014 11:26:04 +0200
+Message-Id: <18f72bc83cb1776f5fc482873ce027c56a814d97.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -23,64 +23,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Brian Austin <brian.austin@cirrus.com>
+From: Nishanth Menon <nm@ti.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit d31a33dd7792c7d6c11fda226a3b9e4fb7f86f95 upstream.
+commit 07484ca33ef83900f5cfbde075c1a19e5a237aa1 upstream.
 
-The mask bits values were wrong for the SOC_VALUE_ENUM_SINGLE for the PCM/ADC Swap controls
+Just like IS_PM34XX_ERRATUM, IS_PM44XX_ERRATUM is valid only if
+CONFIG_PM is enabled, else, disabling CONFIG_PM results in build
+failure complaining about the following:
+arch/arm/mach-omap2/built-in.o: In function `omap4_boot_secondary':
+:(.text+0x8a70): undefined reference to `pm44xx_errata'
 
-Reported-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Brian Austin <brian.austin@cirrus.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Fixes: c962184 (ARM: OMAP4: PM: add errata support)
+Reported-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.ocm>
+Acked-by: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/soc/codecs/cs42l52.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/mach-omap2/pm.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/soc/codecs/cs42l52.c b/sound/soc/codecs/cs42l52.c
-index be2ba1b6fe4a..ab3ac7b1fce2 100644
---- a/sound/soc/codecs/cs42l52.c
-+++ b/sound/soc/codecs/cs42l52.c
-@@ -352,7 +352,7 @@ static const char * const right_swap_text[] = {
- static const unsigned int swap_values[] = { 0, 1, 3 };
+diff --git a/arch/arm/mach-omap2/pm.h b/arch/arm/mach-omap2/pm.h
+index 7bdd22afce69..d4d0fce325c7 100644
+--- a/arch/arm/mach-omap2/pm.h
++++ b/arch/arm/mach-omap2/pm.h
+@@ -103,7 +103,7 @@ static inline void enable_omap3630_toggle_l2_on_restore(void) { }
  
- static const struct soc_enum adca_swap_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 2, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 2, 3,
- 			      ARRAY_SIZE(left_swap_text),
- 			      left_swap_text,
- 			      swap_values);
-@@ -361,7 +361,7 @@ static const struct snd_kcontrol_new adca_mixer =
- 	SOC_DAPM_ENUM("Route", adca_swap_enum);
+ #define PM_OMAP4_ROM_SMP_BOOT_ERRATUM_GICD	(1 << 0)
  
- static const struct soc_enum pcma_swap_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 6, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 6, 3,
- 			      ARRAY_SIZE(left_swap_text),
- 			      left_swap_text,
- 			      swap_values);
-@@ -370,7 +370,7 @@ static const struct snd_kcontrol_new pcma_mixer =
- 	SOC_DAPM_ENUM("Route", pcma_swap_enum);
- 
- static const struct soc_enum adcb_swap_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 0, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 0, 3,
- 			      ARRAY_SIZE(right_swap_text),
- 			      right_swap_text,
- 			      swap_values);
-@@ -379,7 +379,7 @@ static const struct snd_kcontrol_new adcb_mixer =
- 	SOC_DAPM_ENUM("Route", adcb_swap_enum);
- 
- static const struct soc_enum pcmb_swap_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 4, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 4, 3,
- 			      ARRAY_SIZE(right_swap_text),
- 			      right_swap_text,
- 			      swap_values);
+-#if defined(CONFIG_ARCH_OMAP4)
++#if defined(CONFIG_PM) && defined(CONFIG_ARCH_OMAP4)
+ extern u16 pm44xx_errata;
+ #define IS_PM44XX_ERRATUM(id)		(pm44xx_errata & (id))
+ #else
 -- 
 1.9.3
 
