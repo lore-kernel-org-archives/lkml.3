@@ -1,225 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433AbaEMWIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 18:08:09 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:62221 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932206AbaEMWFn (ORCPT
+	id S932550AbaEMWIX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 18:08:23 -0400
+Received: from mail87.messagelabs.com ([216.82.250.19]:45403 "EHLO
+	mail87.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964789AbaEMWHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 18:05:43 -0400
-From: Alexis Berlemont <alexis.berlemont@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com,
-        acme@ghostprotocols.net, dsahern@gmail.com, mingo@kernel.org
-Subject: [PATCH 23/34] perf kbuild: remove legacy libelf-related build variables (2nd part)
-Date: Wed, 14 May 2014 00:03:18 +0200
-Message-Id: <1400018609-20486-24-git-send-email-alexis.berlemont@gmail.com>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
-References: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
+	Tue, 13 May 2014 18:07:00 -0400
+X-Env-Sender: schivers@csc.com
+X-Msg-Ref: server-10.tower-87.messagelabs.com!1400018817!15662045!1
+X-Originating-IP: [20.137.2.87]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+Date: Wed, 14 May 2014 08:04:39 +1000
+To: geert@linux-m68k.org, jslaby@suse.cz, gregkh@linuxfoundation.org
+Subject: Re: [PATCH] printk/of_serial: fix serial console cessation part way
+ through boot.
+Cc: linuxppc-dev@lists.ozlabs.org, benh@kernel.crashing.org,
+        devicetree@vger.kernel.org, rob+dt@kernel.org, grant.likely@linaro.org,
+        linux-kernel@vger.kernel.org, cproctor@csc.com,
+        linux-serial@vger.kernel.org, schivers@csc.com
+User-Agent: Heirloom mailx 12.4 7/29/08
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20140513220439.5A063E0692@canberra.localdomain>
+From: schivers@csc.com (Stephen Chivers)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove HAVE_LIBELF_SUPPORT (replaced by CONFIG_LIBELF)
-Remove HAVE_LIBELF_MMAP_SUPPORT (replaced by CONFIG_LIBELF_MMAP)
-Remove HAVE_LIBELF_GETPHDRNUM__SUPPORT (replaced by
-CONFIG_LIBELF_GETPHDRNUM_)
+Commit 5f5c9ae56c38942623f69c3e6dc6ec78e4da2076
+"serial_core: Unregister console in uart_remove_one_port()"
+fixed a crash where a serial port was removed but
+not deregistered as a console.
+
+There is a side effect of that commit for platforms having serial consoles
+and of_serial configured (CONFIG_SERIAL_OF_PLATFORM). The serial console
+is disabled midway through the boot process.
+
+This cessation of the serial console affects PowerPC computers
+such as the MVME5100 and SAM440EP.
+
+The sequence is:
+
+	bootconsole [udbg0] enabled
+	....
+	serial8250/16550 driver initialises and registers its UARTS,
+	one of these is the serial console.
+	console [ttyS0] enabled
+	....
+	of_serial probes "platform" devices, registering them as it goes.
+	One of these is the serial console.
+	console [ttyS0] disabled.
+
+The disabling of the serial console is due to:
+
+	a.  unregister_console in printk not clearing the
+	    CONS_ENABLED bit in the console flags,
+	    even though it has announced that the console is disabled; and
+
+	b.  of_platform_serial_probe in of_serial not setting the port type
+	    before it registers with serial8250_register_8250_port.
+
+This patch ensures that the serial console is re-enabled when of_serial
+registers a serial port that corresponds to the designated console.
+
+Signed-off-by: Stephen Chivers <schivers@csc.com>
+Tested-by: Stephen Chivers <schivers@csc.com>
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org> [unregister_console]
+
+===
+The above failure was identified in Linux-3.15-rc2.
+
+Tested using MVME5100 and SAM440EP PowerPC computers with
+kernels built from Linux-3.15-rc5 and tty-next.
+
+The continued operation of the serial console is vital for computers
+such as the MVME5100 as that Single Board Computer does not
+have any grapical/display hardware.
+
 ---
- tools/perf/Kconfig                  | 16 ++++++++++++++++
- tools/perf/builtin-inject.c         |  2 +-
- tools/perf/config/Makefile          | 13 ++++++++-----
- tools/perf/perf.c                   |  2 +-
- tools/perf/util/generate-cmdlist.sh |  4 ++--
- tools/perf/util/map.c               |  3 ++-
- tools/perf/util/symbol-elf.c        |  3 ++-
- tools/perf/util/symbol.h            |  8 ++++----
- 8 files changed, 36 insertions(+), 15 deletions(-)
+ drivers/tty/serial/of_serial.c |    1 +
+ kernel/printk/printk.c         |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/Kconfig b/tools/perf/Kconfig
-index 909a737..e228e26 100644
---- a/tools/perf/Kconfig
-+++ b/tools/perf/Kconfig
-@@ -234,8 +234,23 @@ choice
- 	  builtin elf support
- endchoice
+diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+index 9924660..27981e2 100644
+--- a/drivers/tty/serial/of_serial.c
++++ b/drivers/tty/serial/of_serial.c
+@@ -173,6 +173,7 @@ static int of_platform_serial_probe(struct platform_device *ofdev)
+ 	{
+ 		struct uart_8250_port port8250;
+ 		memset(&port8250, 0, sizeof(port8250));
++		port.type = port_type;
+ 		port8250.port = port;
  
-+config LIBELF_MMAP
-+        depends on LIBELF
-+	bool "Libelf mmap support"
-+	default y
-+        ---help---
-+	  libdelf mmap
-+
-+config LIBELF_GETPHDRNUM
-+        depends on LIBELF
-+	default y
-+	bool "Libelf getphdrnum support"
-+        ---help---
-+	  libdelf mmap
-+
- config LIBDWARF
-         depends on LIBELF
-+	default n
- 	bool "Dwarf (libdwarf)"
-         ---help---
- 	  libdwarf
-@@ -243,6 +258,7 @@ config LIBDWARF
- config LIBUNWIND
-         depends on LIBELF
- 	bool "User space libunwind callchains"
-+	default n
-         ---help---
- 	  libunwind
+ 		if (port.fifosize)
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 7228258..221229c 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -2413,6 +2413,7 @@ int unregister_console(struct console *console)
+ 	if (console_drivers != NULL && console->flags & CON_CONSDEV)
+ 		console_drivers->flags |= CON_CONSDEV;
  
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 3a73875..6e7883b 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -229,7 +229,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
- 				 * account this as unresolved.
- 				 */
- 			} else {
--#ifdef HAVE_LIBELF_SUPPORT
-+#ifdef CONFIG_LIBELF
- 				pr_warning("no symbols found in %s, maybe "
- 					   "install a debug package?\n",
- 					   al.map->dso->long_name);
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index f280b80..c102e91 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -312,14 +312,17 @@ ifdef CONFIG_LIBELF
- endif # CONFIG_LIBELF
- 
- ifeq ($(LIBELF), 1)
--  CFLAGS += -DHAVE_LIBELF_SUPPORT
- 
--  ifeq ($(feature-libelf-mmap), 1)
--    CFLAGS += -DHAVE_LIBELF_MMAP_SUPPORT
-+  ifdef CONFIG_LIBELF_MMAP
-+    ifneq ($(feature-libelf-mmap), 1)
-+      $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBELF_MMAP)
-+    endif
-   endif
- 
--  ifeq ($(feature-libelf-getphdrnum), 1)
--    CFLAGS += -DHAVE_ELF_GETPHDRNUM_SUPPORT
-+  ifdef CONFIG_LIBELF_MMAP
-+    ifneq ($(feature-libelf-getphdrnum), 1)
-+      $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBELF_MMAP)
-+    endif
-   endif
- 
-   # include ARCH specific config
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 588221c..f9b919f 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -80,7 +80,7 @@ static struct cmd_struct commands[] = {
- #ifdef CONFIG_BUILTIN_SCHED
- 	{ "sched",	cmd_sched,	0 },
- #endif
--#if defined HAVE_LIBELF_SUPPORT && defined CONFIG_BUILTIN_PROBE
-+#if defined CONFIG_LIBELF && defined CONFIG_BUILTIN_PROBE
- 	{ "probe",	cmd_probe,	0 },
- #endif
- #ifdef CONFIG_BUILTIN_KMEM
-diff --git a/tools/perf/util/generate-cmdlist.sh b/tools/perf/util/generate-cmdlist.sh
-index 5d84ffc..a8dbdc2 100755
---- a/tools/perf/util/generate-cmdlist.sh
-+++ b/tools/perf/util/generate-cmdlist.sh
-@@ -30,7 +30,7 @@ do
-      echo "#endif"
- done
- 
--echo "#ifdef HAVE_LIBELF_SUPPORT"
-+echo "#ifdef CONFIG_LIBELF"
- sed -n -e 's/^perf-\([^ 	]*\)[ 	].* full.*/\1/p' $1/command-list.txt |
- sort |
- while read cmd
-@@ -45,5 +45,5 @@ do
-      }' "$1/Documentation/perf-$cmd.txt"
-      echo "#endif"
- done
--echo "#endif /* HAVE_LIBELF_SUPPORT */"
-+echo "#endif /* CONFIG_LIBELF */"
- echo "};"
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 39cd2d0..82261f5 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -1,3 +1,4 @@
-+#include "generated/autoconf.h"
- #include "symbol.h"
- #include <errno.h>
- #include <inttypes.h>
-@@ -174,7 +175,7 @@ int map__load(struct map *map, symbol_filter_t filter)
- 		pr_warning(", continuing without symbols\n");
- 		return -1;
- 	} else if (nr == 0) {
--#ifdef HAVE_LIBELF_SUPPORT
-+#ifdef CONFIG_LIBELF
- 		const size_t len = strlen(name);
- 		const size_t real_len = len - sizeof(DSO__DELETED);
- 
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 6864661..1256595 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -5,12 +5,13 @@
- #include <unistd.h>
- #include <inttypes.h>
- 
-+#include "generated/autoconf.h"
- #include "symbol.h"
- #include "vdso.h"
- #include <symbol/kallsyms.h>
- #include "debug.h"
- 
--#ifndef HAVE_ELF_GETPHDRNUM_SUPPORT
-+#ifndef CONFIG_LIBELF_GETPHDRNUM
- static int elf_getphdrnum(Elf *elf, size_t *dst)
- {
- 	GElf_Ehdr gehdr;
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index d8e886e..933cfd1 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -15,7 +15,7 @@
- #include <libgen.h>
- #include "build-id.h"
- 
--#ifdef HAVE_LIBELF_SUPPORT
-+#ifdef CONFIG_LIBELF
- #include <libelf.h>
- #include <gelf.h>
- #endif
-@@ -55,13 +55,13 @@ static inline char *bfd_demangle(void __maybe_unused *v,
-  * libelf 0.8.x and earlier do not support ELF_C_READ_MMAP;
-  * for newer versions we can use mmap to reduce memory usage:
-  */
--#ifdef HAVE_LIBELF_MMAP_SUPPORT
-+#ifdef CONFIG_LIBELF_MMAP
- # define PERF_ELF_C_READ_MMAP ELF_C_READ_MMAP
- #else
- # define PERF_ELF_C_READ_MMAP ELF_C_READ
- #endif
- 
--#ifdef HAVE_LIBELF_SUPPORT
-+#ifdef CONFIG_LIBELF
- extern Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
- 				GElf_Shdr *shp, const char *name, size_t *idx);
- #endif
-@@ -205,7 +205,7 @@ struct symsrc {
- 	int fd;
- 	enum dso_binary_type type;
- 
--#ifdef HAVE_LIBELF_SUPPORT
-+#ifdef CONFIG_LIBELF
- 	Elf *elf;
- 	GElf_Ehdr ehdr;
- 
--- 
-1.9.2
-
++	console->flags &= ~CON_ENABLED;
+ 	console_unlock();
+ 	console_sysfs_notify();
+ 	return res;
