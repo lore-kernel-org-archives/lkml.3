@@ -1,58 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761290AbaEMKkT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:40:19 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60776 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760049AbaEMJ2z (ORCPT
+	id S1761327AbaEMKnY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:43:24 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:58828 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760194AbaEMKnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:28:55 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Himangi Saraogi <himangi774@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 046/182] staging:serqt_usb2: Fix sparse warning restricted __le16 degrades to integer
-Date: Tue, 13 May 2014 11:26:38 +0200
-Message-Id: <9a7ae830ba468149107979d2065ffda0ea3591ce.1399973152.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
-References: <cover.1399973152.git.jslaby@suse.cz>
+	Tue, 13 May 2014 06:43:22 -0400
+Date: Tue, 13 May 2014 12:43:07 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Dario Faggioli <raistlin@linux.it>, Ingo Molnar <mingo@elte.hu>,
+        lkml <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: [BUG] sched_setattr() SCHED_DEADLINE hangs system
+Message-ID: <20140513104307.GZ30445@twins.programming.kicks-ass.net>
+References: <536F8F0E.7020301@gmail.com>
+ <53707007.3080003@gmail.com>
+ <20140512084727.GN30445@twins.programming.kicks-ass.net>
+ <CAKgNAkiGt6xV0JaddmC8pLeTe+fSEu79DNvzg8XbA-MPo_zXyg@mail.gmail.com>
+ <20140512123032.GC13467@laptop.programming.kicks-ass.net>
+ <20140513115749.ebf3eebc64e44aac6f183410@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2DMJGKatbWMtT1aQ"
+Content-Disposition: inline
+In-Reply-To: <20140513115749.ebf3eebc64e44aac6f183410@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Himangi Saraogi <himangi774@gmail.com>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+--2DMJGKatbWMtT1aQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-===============
+On Tue, May 13, 2014 at 11:57:49AM +0200, Juri Lelli wrote:
+>  static bool
+>  __checkparam_dl(const struct sched_attr *attr)
+>  {
+>  	return attr && attr->sched_deadline != 0 &&
+>  		(attr->sched_period == 0 ||
+> -		(s64)(attr->sched_period   - attr->sched_deadline) >= 0) &&
+> -		(s64)(attr->sched_deadline - attr->sched_runtime ) >= 0  &&
+> -		attr->sched_runtime >= (2 << (DL_SCALE - 1));
+> +		(attr->sched_period >= attr->sched_deadline)) &&
+> +		(attr->sched_deadline >= attr->sched_runtime) &&
+> +		attr->sched_runtime >= (1ULL << DL_SCALE) &&
+> +		(attr->sched_deadline < (1ULL << 63) &&
+> +		attr->sched_period < (1ULL << 63));
+>  }
 
-commit abe5d64d1a74195a44cd14624f8178b9f48b7cc7 upstream.
+Could we maybe rewrite that function to look less like a ioccc.org
+submission?
 
-This patch fixes the following sparse warning :
-drivers/staging/serqt_usb2/serqt_usb2.c:727:40: warning: restricted __le16 degrades to integer
+static bool
+__checkparam_dl(const struct sched_attr *attr)
+{
+	if (!attr) /* possible at all? */
+		return false;
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/staging/serqt_usb2/serqt_usb2.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+	/* runtime <= deadline <= period */
+	if (attr->sched_period   < attr->sched_deadline ||
+	    attr->sched_deadline < attr->sched_runtime)
+		return false;
 
-diff --git a/drivers/staging/serqt_usb2/serqt_usb2.c b/drivers/staging/serqt_usb2/serqt_usb2.c
-index 73fc3cc19e33..18d4856c092f 100644
---- a/drivers/staging/serqt_usb2/serqt_usb2.c
-+++ b/drivers/staging/serqt_usb2/serqt_usb2.c
-@@ -725,7 +725,7 @@ static int qt_startup(struct usb_serial *serial)
- 		goto startup_error;
- 	}
- 
--	switch (serial->dev->descriptor.idProduct) {
-+	switch (le16_to_cpu(serial->dev->descriptor.idProduct)) {
- 	case QUATECH_DSU100:
- 	case QUATECH_QSU100:
- 	case QUATECH_ESU100A:
--- 
-1.9.3
+	/*
+	 * Since we truncate DL_SCALE bits make sure we're at least that big,
+	 * if runtime > (1 << DL_SCALE), so must the others be per the above
+	 */
+	if (attr->sched_runtime <= (1ULL << DL_SCALE))
+		return false;
 
+	/*
+	 * Since we use the MSB for wrap-around and sign issues, make
+	 * sure its not set, if period < 2^63, so must the others be.
+	 */
+	if (attr->sched_period & (1ULL << 63))
+		return false;
+
+	return true;
+}
+
+Did I miss anything?
+
+--2DMJGKatbWMtT1aQ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTcfc7AAoJEHZH4aRLwOS60oEP/3D0V+yyXjcf26745KTpT6mn
+z3iOX2nXaLe2rwYhJAZvJRkgDdDAz0Rn0O5+4UXRpXsWbrWuweiYmjYFUeIfO7R9
+VKym05NFNKwKVCU5Zotcl9ndfRPUySaOqIgxJcGya1X7HPgGEk5WxilRY/zOSzNa
+NZtAN+ySRoFFIKaIV5cduw7B1+WJ5DQzHCer4X/pk1ja1XnRstuZ9OI35qVWLgPt
+AeeTnqOIl6e8Sb7W3k1bYPI0BYgrf0t7C0VkDWbQl9MoV+au6MDu9SnRPK80b57/
+mt8tJZswCVpZ4ufcpYVRsBc1Gsb98zH5NbSgBiDxQBg+OuPsqPirXOukgonUdtqR
+LVghp5R5gHJThrvIlfXoZzugIVxYHhGU0ZgiGC5DpatvqU2YFnLPP/NR2hxM0zV8
+AWhNBBivxNaY6+g64RyodIFMY6RfzM4QTlPVPEAaQh8D+mopvJRRPZZCxMyx/ql7
+C9EGB5Pcx+cnG6VF6tsJLoxVj6ISytemu70sIi+4GjyWraDT9k66HKv6fS1sOUGM
+Q8nmPc0LICUCnaE5B4x4XdPzeTEOdIhdPMJBZFhGisrdPbxZ/Ifm3lCASAPOjoj7
+EpCM8FHoM8NhjcDblnykuI62ZCzZwApp/vkwDsqq1EW5eojmriKnS/uyNmoZCkJI
+gtrwVZ+PsFM7ddNiukDf
+=Svim
+-----END PGP SIGNATURE-----
+
+--2DMJGKatbWMtT1aQ--
