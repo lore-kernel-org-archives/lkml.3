@@ -1,50 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086AbaEMD7r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 23:59:47 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:41943 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751850AbaEMD7q (ORCPT
+	id S1750997AbaEMEEZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 00:04:25 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:40019 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703AbaEMEEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 23:59:46 -0400
-Message-ID: <537198AE.3050100@semaphore.gr>
-Date: Tue, 13 May 2014 06:59:42 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Yuyang Du <yuyang.du@intel.com>
-CC: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Doug Smythies <dsmythies@telus.net>
-Subject: Re: [RFC PATCH] cpufreq: intel_pstate: Change the calculation of
- next pstate
-References: <5368255D.3090207@semaphore.gr> <536BEE89.3040602@gmail.com> <536CECB4.1090109@semaphore.gr> <53712F4B.7000101@semaphore.gr> <20140512193453.GB9351@intel.com>
-In-Reply-To: <20140512193453.GB9351@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 13 May 2014 00:04:24 -0400
+Message-ID: <1399953861.7973.42.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] e1000: To filter the negative skb->len
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: xuyongjiande@gmail.com
+Cc: linux.nics@intel.com, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 12 May 2014 21:04:21 -0700
+In-Reply-To: <1399951987-10434-1-git-send-email-xuyongjiande@gmail.com>
+References: <1399951987-10434-1-git-send-email-xuyongjiande@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 12/05/2014 10:34 μμ, Yuyang Du wrote:
-> On Mon, May 12, 2014 at 11:30:03PM +0300, Stratos Karafotis wrote:
->> On 09/05/2014 05:56 μμ, Stratos Karafotis wrote:
->>
->> Next performance state = min_perf + (max_perf - min_perf) * load / 100
->>
-> Hi,
+On Tue, 2014-05-13 at 11:33 +0800, xuyongjiande@gmail.com wrote:
+> From: Yongjian Xu <xuyongjiande@gmail.com>
 > 
-> This formula is fundamentally broken. You need to associate the load with its
-> frequency.
+> skb->len is unsigned int, "skb->len <= 0" should be "(int)(skb->len) <= 0".
 
-Could you please explain why is it broken? I think the load should be
-independent from the current frequency.
+Why ?
 
-Thanks,
-Stratos
+Did you hit a case skb->len would be 0 or 'negative' ?
+
+This test makes no sense, just remove it.
+
+
+
