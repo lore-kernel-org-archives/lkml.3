@@ -1,100 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758913AbaEMHmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 03:42:19 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:54941 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016AbaEMHmS (ORCPT
+	id S1758987AbaEMHoa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 03:44:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52350 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074AbaEMHo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 03:42:18 -0400
-From: Simon Horman <horms+renesas@verge.net.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <paul.mundt@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Simon Horman <horms+renesas@verge.net.au>
-Subject: [GIT PULL] SH Driver Updates for v3.15
-Date: Tue, 13 May 2014 16:42:04 +0900
-Message-Id: <cover.1399966519.git.horms+renesas@verge.net.au>
-X-Mailer: git-send-email 1.8.5.2
+	Tue, 13 May 2014 03:44:28 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: <nsekhar@ti.com>, <joelf@ti.com>
+CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
+        <bcousson@baylibre.com>
+Subject: [PATCH 0/4] ARM/DT: edma: Get IP configuration from hardware
+Date: Tue, 13 May 2014 10:43:44 +0300
+Message-ID: <1399967028-24757-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.9.3
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi,
 
-Please consider this SH Driver Update for v3.15.
+We are requesting redundant information via DT for the driver since the very same
+data is available in the HW: by reading and decoding the content of CCCFG
+register we can get:
+Number of channels: NUM_DMACH
+Number of regions: NUM_REGN
+Number of slots (PaRAM sets): NUM_PAENTRY
+Number of TC/EQ: NUM_EVQUE
 
-It consists of a single fix for a regression
-introduced in v3.14 by bf98c1eac1d4a6bcf00532e4fa41d8126cd6c187.
+So these does not need to be provided by the DT binding.
 
+The driver will no longer look for these properties from DT and they can be
+removed from the binding documentation and from the dtsi files as well.
+The change will not introduce regression when new kernel is booted using older
+DTB (since we just ignore the mentioned properties).
 
-This is my first pull-request to you for these drivers.
+Regards,
+Peter
+---
+Peter Ujfalusi (4):
+  ARM: edma: Get IP information from HW when booting with DT
+  dt/bindings: ti,edma: Remove redundant properties from documentation
+  ARM: dts: am33xx: Remove obsolete properties from edma node
+  ARM: dts: am4372: Remove obsolete properties from edma node
 
-It is my understanding that previously the SH Drivers were maintained by
-Paul Mundt as part of his maintenance of the SH architecture and Renesas
-ARM Based SoCs. These days the SH architecture is orphaned and the Renesas
-ARM Based SoCs are maintained by Magnus Damm and I.
+ Documentation/devicetree/bindings/dma/ti-edma.txt |   6 -
+ arch/arm/boot/dts/am33xx.dtsi                     |   3 -
+ arch/arm/boot/dts/am4372.dtsi                     |   3 -
+ arch/arm/common/edma.c                            | 128 +++++++++++++---------
+ 4 files changed, 79 insertions(+), 61 deletions(-)
 
-Over the past year or so there have been very few updates to these drivers.
-And the few that have been made have generally been taken by other
-subsystem maintainers as part of larger patchsets. As this patch
-does not fall into that category I would like you to consider pulling it.
+-- 
+1.9.3
 
-
-The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
-
-  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas.git tags/renesas-sh-drivers-for-v3.15
-
-for you to fetch changes up to 3c90c55dcde745bed81f6447f24ba96bda43d984:
-
-  drivers: sh: compile drivers/sh/pm_runtime.c if ARCH_SHMOBILE_MULTI (2014-05-12 16:05:01 +0900)
-
-----------------------------------------------------------------
-SH Driver Updates for v3.15
-
-* Compile drivers/sh/pm_runtime.c if ARCH_SHMOBILE_MULTI
-
-----------------------------------------------------------------
-Geert Uytterhoeven (1):
-      drivers: sh: compile drivers/sh/pm_runtime.c if ARCH_SHMOBILE_MULTI
-
- drivers/Makefile        |  2 +-
- drivers/sh/Makefile     | 14 ++++++++------
- drivers/sh/pm_runtime.c | 20 +++++++++++++++++++-
- 3 files changed, 28 insertions(+), 8 deletions(-)
-
-
-The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
-
-  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas.git tags/renesas-sh-drivers-for-v3.15
-
-for you to fetch changes up to 3c90c55dcde745bed81f6447f24ba96bda43d984:
-
-  drivers: sh: compile drivers/sh/pm_runtime.c if ARCH_SHMOBILE_MULTI (2014-05-12 16:05:01 +0900)
-
-----------------------------------------------------------------
-SH Driver Update for v3.15
-
-* Compile drivers/sh/pm_runtime.c if ARCH_SHMOBILE_MULTI
-
-  This resolves a regression introduced in v3.14 by
-  bf98c1eac1d4a6 ("ARM: Rename ARCH_SHMOBILE to ARCH_SHMOBILE_LEGACY").
-
-----------------------------------------------------------------
-Geert Uytterhoeven (1):
-      drivers: sh: compile drivers/sh/pm_runtime.c if ARCH_SHMOBILE_MULTI
-
- drivers/Makefile        |  2 +-
- drivers/sh/Makefile     | 14 ++++++++------
- drivers/sh/pm_runtime.c | 20 +++++++++++++++++++-
- 3 files changed, 28 insertions(+), 8 deletions(-)
