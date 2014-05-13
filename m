@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933968AbaEMOi7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 10:38:59 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:36603 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933908AbaEMOi4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933938AbaEMOi4 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 13 May 2014 10:38:56 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51605 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933908AbaEMOiw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 10:38:52 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 5/5] nohz: Use IPI implicit full barrier against rq->nr_running r/w
-Date: Tue, 13 May 2014 16:38:41 +0200
-Message-Id: <1399991921-17618-6-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 3/5] irq_work: Allow remote queueing
+Date: Tue, 13 May 2014 16:38:39 +0200
+Message-Id: <1399991921-17618-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1399991921-17618-1-git-send-email-fweisbec@gmail.com>
 References: <1399991921-17618-1-git-send-email-fweisbec@gmail.com>
@@ -26,26 +26,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A full dynticks CPU is allowed to stop its tick when a single task runs.
-Meanwhile when a new task gets enqueued, the CPU must be notified so that
-it restart its tick to maintain local fairness and other accounting details.
+irq work currently only supports local callbacks. However its code
+is mostly ready to run remote callbacks and we have some potential user.
 
-This notification is performed by way of an IPI. Then when the target
-receives the IPI, we expect it to see the new value of rq->nr_running.
+The full nohz subsystem currently open codes its own remote irq work
+on top of the scheduler ipi when it wants a CPU to revaluate its next
+tick. However this ad hoc solution bloats the scheduler IPI.
 
-Hence the following ordering scenario:
+Lets just extend the irq work subsystem to support remote queuing on top
+of the generic SMP IPI to handle this kind of user. This shouldn't add
+noticeable overhead.
 
-   CPU 0                   CPU 1
-
-   write rq->running       get IPI
-   smp_wmb()               smp_rmb()
-   send IPI                read rq->nr_running
-
-But Paul Mckenney says that nowadays IPIs imply a full barrier on
-all architectures. So we can safely remove this pair and rely on the
-implicit barriers that come along IPI send/receive. Lets
-just comment on this new assumption.
-
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Kevin Hilman <khilman@linaro.org>
@@ -55,51 +47,73 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/sched/core.c  |  9 +++++----
- kernel/sched/sched.h | 10 ++++++++--
- 2 files changed, 13 insertions(+), 6 deletions(-)
+ include/linux/irq_work.h |  2 ++
+ kernel/irq_work.c        | 17 +++++++++++++++++
+ kernel/smp.c             |  3 +++
+ 3 files changed, 22 insertions(+)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index fb6dfad..a06cac1 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -670,10 +670,11 @@ bool sched_can_stop_tick(void)
+diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
+index 429b1ba..511e7f7 100644
+--- a/include/linux/irq_work.h
++++ b/include/linux/irq_work.h
+@@ -33,6 +33,8 @@ void init_irq_work(struct irq_work *work, void (*func)(struct irq_work *))
+ #define DEFINE_IRQ_WORK(name, _f) struct irq_work name = { .func = (_f), }
  
-        rq = this_rq();
+ bool irq_work_queue(struct irq_work *work);
++bool irq_work_queue_on(struct irq_work *work, int cpu);
++
+ void irq_work_run(void);
+ void irq_work_run_tick(void);
+ void irq_work_sync(struct irq_work *work);
+diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+index 292a9ac..98dab29 100644
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -66,6 +66,23 @@ bool __weak arch_irq_work_can_raise(void)
+  *
+  * Can be re-enqueued while the callback is still in progress.
+  */
++bool irq_work_queue_on(struct irq_work *work, int cpu)
++{
++	/* Only queue if not already pending */
++	if (!irq_work_claim(work))
++		return false;
++
++	/* All work should have been flushed before going offline */
++	WARN_ON_ONCE(cpu_is_offline(cpu));
++	WARN_ON_ONCE(work->flags & IRQ_WORK_LAZY);
++
++	if (llist_add(&work->llnode, &per_cpu(raised_list, cpu)))
++		native_send_call_func_single_ipi(cpu);
++
++	return true;
++}
++EXPORT_SYMBOL_GPL(irq_work_queue_on);
++
+ bool irq_work_queue(struct irq_work *work)
+ {
+ 	unsigned long flags;
+diff --git a/kernel/smp.c b/kernel/smp.c
+index 06d574e..f5edb96 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -3,6 +3,7 @@
+  *
+  * (C) Jens Axboe <jens.axboe@oracle.com> 2008
+  */
++#include <linux/irq_work.h>
+ #include <linux/rcupdate.h>
+ #include <linux/rculist.h>
+ #include <linux/kernel.h>
+@@ -198,6 +199,8 @@ void generic_smp_call_function_single_interrupt(void)
+ 		csd->func(csd->info);
+ 		csd_unlock(csd);
+ 	}
++
++	irq_work_run();
+ }
  
--       /* Make sure rq->nr_running update is visible after the IPI */
--       smp_rmb();
--
--       /* More than one running task need preemption */
-+       /*
-+	* More than one running task need preemption.
-+	* nr_running update is assumed to be visible
-+	* after IPI is sent from wakers.
-+	*/
-        if (rq->nr_running > 1)
-                return false;
- 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 6089e00..219bfbd 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1223,8 +1223,14 @@ static inline void inc_nr_running(struct rq *rq)
- #ifdef CONFIG_NO_HZ_FULL
- 	if (rq->nr_running == 2) {
- 		if (tick_nohz_full_cpu(rq->cpu)) {
--			/* Order rq->nr_running write against the IPI */
--			smp_wmb();
-+			/*
-+			 * Tick is needed if more than one task runs on a CPU.
-+			 * Send the target an IPI to kick it out of nohz mode.
-+			 *
-+			 * We assume that IPI implies full memory barrier and the
-+			 * new value of rq->nr_running is visible on reception
-+			 * from the target.
-+			 */
- 			tick_nohz_full_kick_cpu(rq->cpu);
- 		}
-        }
+ /*
 -- 
 1.8.3.1
 
