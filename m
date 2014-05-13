@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974AbaEMAad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 20:30:33 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:34701 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680AbaEMAaT (ORCPT
+	id S1752630AbaEMAaQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 20:30:16 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:34770 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871AbaEMAaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 20:30:19 -0400
+	Mon, 12 May 2014 20:30:13 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Rob Herring <robh@kernel.org>, Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 7/7] clk: ti: add missing semi-colon on CLK_OF_DECLARE
-Date: Mon, 12 May 2014 19:29:53 -0500
-Message-Id: <1399940993-1773-8-git-send-email-robherring2@gmail.com>
+Cc: Rob Herring <robh@kernel.org>, Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>
+Subject: [PATCH 1/7] ARM: imx: fix function type for CLK_OF_DECLARE
+Date: Mon, 12 May 2014 19:29:47 -0500
+Message-Id: <1399940993-1773-2-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399940993-1773-1-git-send-email-robherring2@gmail.com>
 References: <1399940993-1773-1-git-send-email-robherring2@gmail.com>
@@ -22,28 +23,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <robh@kernel.org>
 
-With common OF_DECLARE macros, a semi-colon will be required for
-CLK_OF_DECLARE. Add the missing semi-colon to ti,gate-clock.
+Adding function type checking to CLK_OF_DECLARE found a type mismatch with
+mx35_clocks_init_dt. The function should return void.
 
 Signed-off-by: Rob Herring <robh@kernel.org>
-Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Shawn Guo <shawn.guo@freescale.com>
+Cc: Sascha Hauer <kernel@pengutronix.de>
 ---
- drivers/clk/ti/gate.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-imx/clk-imx35.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/clk/ti/gate.c b/drivers/clk/ti/gate.c
-index 3e2999d..5873481 100644
---- a/drivers/clk/ti/gate.c
-+++ b/drivers/clk/ti/gate.c
-@@ -221,7 +221,7 @@ static void __init of_ti_gate_clk_setup(struct device_node *node)
- {
- 	_of_ti_gate_clk_setup(node, &omap_gate_clk_ops, NULL);
+diff --git a/arch/arm/mach-imx/clk-imx35.c b/arch/arm/mach-imx/clk-imx35.c
+index a4d5e42..71c86a2 100644
+--- a/arch/arm/mach-imx/clk-imx35.c
++++ b/arch/arm/mach-imx/clk-imx35.c
+@@ -289,14 +289,12 @@ int __init mx35_clocks_init(void)
+ 	return 0;
  }
--CLK_OF_DECLARE(ti_gate_clk, "ti,gate-clock", of_ti_gate_clk_setup)
-+CLK_OF_DECLARE(ti_gate_clk, "ti,gate-clock", of_ti_gate_clk_setup);
  
- static void __init of_ti_wait_gate_clk_setup(struct device_node *node)
+-static int __init mx35_clocks_init_dt(struct device_node *ccm_node)
++static void __init mx35_clocks_init_dt(struct device_node *ccm_node)
  {
+ 	clk_data.clks = clk;
+ 	clk_data.clk_num = ARRAY_SIZE(clk);
+ 	of_clk_add_provider(ccm_node, of_clk_src_onecell_get, &clk_data);
+ 
+ 	mx35_clocks_init();
+-
+-	return 0;
+ }
+ CLK_OF_DECLARE(imx35, "fsl,imx35-ccm", mx35_clocks_init_dt);
 -- 
 1.9.1
 
