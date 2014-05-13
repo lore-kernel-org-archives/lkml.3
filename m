@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933638AbaEMNdE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 09:33:04 -0400
-Received: from mail-yk0-f180.google.com ([209.85.160.180]:33080 "EHLO
-	mail-yk0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933504AbaEMNdA (ORCPT
+	id S1760797AbaEMNfJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 09:35:09 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:59976 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754299AbaEMNfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 09:33:00 -0400
+	Tue, 13 May 2014 09:35:07 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Jingoo Han <jg1.han@samsung.com>,
+        "'Santosh Shilimkar'" <santosh.shilimkar@ti.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-pci@vger.kernel.org, rogerq@ti.com,
+        balajitk@ti.com, "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Marek Vasut'" <marex@denx.de>
+Subject: Re: [PATCH 06/17] pci: host: pcie-designware: Use *base-mask* for configuring the iATU
+Date: Tue, 13 May 2014 15:34:53 +0200
+Message-ID: <4528185.oZbgyuuFKX@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <202752041.rgamje4etj@wuerfel>
+References: <1399383244-14556-1-git-send-email-kishon@ti.com> <53721D7F.9070200@ti.com> <202752041.rgamje4etj@wuerfel>
 MIME-Version: 1.0
-In-Reply-To: <5576160.rCaFbvon4G@wuerfel>
-References: <1399875304-19948-1-git-send-email-shaik.ameer@samsung.com> <5576160.rCaFbvon4G@wuerfel>
-From: Shaik Ameer Basha <shaik.samsung@gmail.com>
-Date: Tue, 13 May 2014 19:02:39 +0530
-Message-ID: <CAOD6ATou_4aNce-0NVFWOXO66W0dsEva0MQddAqQCqhCGRWxMQ@mail.gmail.com>
-Subject: Re: [PATCH v13 00/19] iommu/exynos: Fixes and Enhancements of System
- MMU driver with DT
-To: Arnd Bergmann <arnd@arndb.de>, Joerg Roedel <joro@8bytes.org>
-Cc: Shaik Ameer Basha <shaik.ameer@samsung.com>,
-        Linux DeviceTree <devicetree@vger.kernel.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        Prathyush <prathyush.k@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        "supash.ramaswamy" <supash.ramaswamy@linaro.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        sunil joshi <joshi@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Varun Sethi <varun.sethi@freescale.com>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Tomasz Figa <t.figa@samsung.com>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Rahul Sharma <rahul.sharma@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:dQgW64Ip2QapqtBEsok7gO7kGATJ18xCxz9l0/Zk/SD
+ jCDbCF0sqW8whmzfbPGb7wG1ZZ4nwzzBhZKC+8jVx5Ap9nrC/O
+ fhYKWnbygWs5ei1/KOwc6ryH1LXzV/hA1MVuUEqjs8a4g7OpWf
+ pOfdKxSCo5Yat+v/F2BpNOAwltyXzO0en9QshR81CAS1ZvJpcw
+ OnhZqCFQkiwAgMuOaoP3fQakzw+KJhOAB8UEdYJAwj7f+kNAaN
+ SzeuK6eojhM6Q+4s/Iz6Pj21/y//53Vk5+gLQ4oNCMh9tu/7eG
+ t6sJ8cBkWzAC9IbX+asxnS1j6EuNv1ri8Yv0lwVT3QfuUvSHHT
+ aJ8O5JKgZSBRsp6Icr20=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 3:37 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 12 May 2014 11:44:45 Shaik Ameer Basha wrote:
->> This is the subset of previous v12 series and includes only the fixes and
->> enhancements, leaving out the private DT bindings as discussed in the below thread.
->>     -- http://www.gossamer-threads.com/lists/linux/kernel/1918178
->>
->> This patch series includes,
->> 1] fixes for exynos-iommu driver build break
->> 2] includes several bug fixes and enhancements for the exynos-iommu driver
->> 3] code to handle multiple exynos sysmmu versions
->> 4] adding support for device tree
->>         Documentation/devicetree/bindings/iommu/samsung,sysmmu.txt
->
-> The patches look good to me, but please add a note into the samsung,sysmmu.txt
-> file explaining that the binding is incomplete and that it's possible to
-> change in incompatible ways when we add support for attaching devices to
-> the IOMMU through the generic IOMMU binding.
+On Tuesday 13 May 2014 15:27:46 Arnd Bergmann wrote:
+> On Tuesday 13 May 2014 18:56:23 Kishon Vijay Abraham I wrote:
+> > > If you have a case where the outbound translation is a 256MB (i.e. 28bit)
+> > > section of the CPU address space, that could be represented as
+> > > 
+> > >       ranges = <0x82000000 0 0  0xb0000000  0 0x10000000>;
+> > > 
+> > > or 
+> > > 
+> > >       ranges = <0x82000000 0 0xb0000000  0xb0000000  0 0x10000000>;
+> > > 
+> > > depending on whether you want the BARs to be programmed using a low
+> > > address 0x0-0x0fffffff or an address matching the window
+> > > 0xb0000000-0xbfffffff.
+> > 
+> > The problem is, for configuring the window starting at 0xb0000000, the ATU
+> > should be programmed 0x0000000 (the cpu address for it will be 0xb0000000 though).
+> > 
+> 
+> Then use the first of the two?
+> 
 
-Hi Arnd,
+To clarify: using <0x82000000 0 0  0xb0000000  0 0x10000000> will give you 
+a mem_offset of 0xb0000000, which should work just fine for this case.
 
-Thank you.
-If there are no more comments on this series, I can send one more
-incremental patch
-with the note mentioned in your review comment.
+What I don't understand is why the ATU cares about whether the outbound
+address is 0x0000000 or 0xb0000000 if it just decodes the lower 28 bit
+anyway. Did you mean that we have to program the BARs using low addresses
+regardless of what is programmed in the ATU? That would make more sense,
+and it also matches what I suggested.
 
-Hi Joerg Roedel,
-Can you please add this series to your tree.
-
-Regards,
-Shaik Ameer Basha
-
->
->         Arnd
-> _______________________________________________
-> iommu mailing list
-> iommu@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+	Arnd
