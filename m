@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419AbaEMSkK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 14:40:10 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:49055 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754320AbaEMSkF (ORCPT
+	id S1754536AbaEMSkY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 14:40:24 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:33760 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754431AbaEMSkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 14:40:05 -0400
+	Tue, 13 May 2014 14:40:14 -0400
 From: Alexander Bersenev <bay@hackerdom.ru>
 To: linux-sunxi@googlegroups.com, david@hardeman.nu,
         devicetree@vger.kernel.org, galak@codeaurora.org,
@@ -19,73 +19,55 @@ To: linux-sunxi@googlegroups.com, david@hardeman.nu,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-media@vger.kernel.org
 Cc: Alexander Bersenev <bay@hackerdom.ru>
-Subject: [PATCH v6 0/3] ARM: sunxi: Add support for consumer infrared devices
-Date: Wed, 14 May 2014 00:38:59 +0600
-Message-Id: <1400006342-2968-1-git-send-email-bay@hackerdom.ru>
+Subject: [PATCH v6 1/3] ARM: sunxi: Add documentation for sunxi consumer infrared devices
+Date: Wed, 14 May 2014 00:39:00 +0600
+Message-Id: <1400006342-2968-2-git-send-email-bay@hackerdom.ru>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1400006342-2968-1-git-send-email-bay@hackerdom.ru>
+References: <1400006342-2968-1-git-send-email-bay@hackerdom.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces Consumer IR(CIR) support for sunxi boards.
-
-This is based on Alexsey Shestacov's work based on the original driver 
-supplied by Allwinner.
+This patch adds documentation for Device-Tree bindings for sunxi IR
+controller.
 
 Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
 Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
-
 ---
-Changes since version 1: 
- - Fix timer memory leaks 
- - Fix race condition when driver unloads while interrupt handler is active
- - Support Cubieboard 2(need testing)
-
-Changes since version 2:
-- More reliable keydown events
-- Documentation fixes
-- Rename registers accurding to A20 user manual
-- Remove some includes, order includes alphabetically
-- Use BIT macro
-- Typo fixes
-
-Changes since version 3:
-- Split the patch on smaller parts
-- More documentation fixes
-- Add clock-names in DT
-- Use devm_clk_get function to get the clocks
-- Removed gpios property from ir's DT
-- Changed compatible from allwinner,sunxi-ir to allwinner,sun7i-a20-ir in DT
-- Use spin_lock_irq instead spin_lock_irqsave in interrupt handler
-- Add myself in the copyright ;)
-- Coding style and indentation fixes
-
-Changes since version 4:
-- Try to fix indentation errors by sending patches with git send-mail
-
-Changes since version 5:
-- More indentation fixes
-- Make patches pass checkpatch with --strict option
-- Replaced magic numbers with defines(patch by Priit Laes)
-- Fixed oops on loading(patch by Hans de Goede)
-
-
-
-Alexander Bersenev (3):
-  ARM: sunxi: Add documentation for sunxi consumer infrared devices
-  ARM: sunxi: Add driver for sunxi IR controller
-  ARM: sunxi: Add IR controller support in DT on A20
-
- .../devicetree/bindings/media/sunxi-ir.txt         |  23 ++
- arch/arm/boot/dts/sun7i-a20-cubieboard2.dts        |   6 +
- arch/arm/boot/dts/sun7i-a20-cubietruck.dts         |   6 +
- arch/arm/boot/dts/sun7i-a20.dtsi                   |  31 +++
- drivers/media/rc/Kconfig                           |  10 +
- drivers/media/rc/Makefile                          |   1 +
- drivers/media/rc/sunxi-ir.c                        | 309 +++++++++++++++++++++
- 7 files changed, 386 insertions(+)
+ .../devicetree/bindings/media/sunxi-ir.txt         | 23 ++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/media/sunxi-ir.txt
- create mode 100644 drivers/media/rc/sunxi-ir.c
 
+diff --git a/Documentation/devicetree/bindings/media/sunxi-ir.txt b/Documentation/devicetree/bindings/media/sunxi-ir.txt
+new file mode 100644
+index 0000000..014dd8b
+--- /dev/null
++++ b/Documentation/devicetree/bindings/media/sunxi-ir.txt
+@@ -0,0 +1,23 @@
++Device-Tree bindings for SUNXI IR controller found in sunXi SoC family
++
++Required properties:
++- compatible	    : should be "allwinner,sun7i-a20-ir";
++- clocks	    : list of clock specifiers, corresponding to
++		      entries in clock-names property;
++- clock-names	    : should contain "apb" and "ir" entries;
++- interrupts	    : should contain IR IRQ number;
++- reg		    : should contain IO map address for IR.
++
++Optional properties:
++- linux,rc-map-name : Remote control map name.
++
++Example:
++
++ir0: ir@01c21800 {
++	compatible = "allwinner,sun7i-a20-ir";
++	clocks = <&apb0_gates 6>, <&ir0_clk>;
++	clock-names = "apb", "ir";
++	interrupts = <0 5 1>;
++	reg = <0x01C21800 0x40>;
++	linux,rc-map-name = "rc-rc6-mce";
++};
 -- 
 1.9.3
+
