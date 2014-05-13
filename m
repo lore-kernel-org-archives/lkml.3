@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760820AbaEMJ6W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:58:22 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60836 "EHLO
+	id S1760806AbaEMJ6U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:58:20 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60822 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760080AbaEMJ24 (ORCPT
+	by vger.kernel.org with ESMTP id S1760073AbaEMJ24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 May 2014 05:28:56 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Nicholas Bellinger <nab@linux-iscsi.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 075/182] iscsi-target: Fix ERL=2 ASYNC_EVENT connection pointer bug
-Date: Tue, 13 May 2014 11:27:07 +0200
-Message-Id: <45a659d832cacddb605a0c82758cebc96840b820.1399973152.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Kinglong Mee <kinglongmee@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 064/182] NFSD: Traverse unconfirmed client through hash-table
+Date: Tue, 13 May 2014 11:26:56 +0200
+Message-Id: <5ef2ce5b50b01fe216c49f2d7cb8df2f2f503bd8.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -23,56 +23,191 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Kinglong Mee <kinglongmee@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit d444edc679e7713412f243b792b1f964e5cff1e1 upstream.
+commit 2b9056359889c78ea5decb5b654a512c2e8a945c upstream.
 
-This patch fixes a long-standing bug in iscsit_build_conn_drop_async_message()
-where during ERL=2 connection recovery, a bogus conn_p pointer could
-end up being used to send the ISCSI_OP_ASYNC_EVENT + DROPPING_CONNECTION
-notifying the initiator that cmd->logout_cid has failed.
+When stopping nfsd, I got BUG messages, and soft lockup messages,
+The problem is cuased by double rb_erase() in nfs4_state_destroy_net()
+and destroy_client().
 
-The bug was manifesting itself as an OOPs in iscsit_allocate_cmd() with
-a bogus conn_p pointer in iscsit_build_conn_drop_async_message().
+This patch just let nfsd traversing unconfirmed client through
+hash-table instead of rbtree.
 
-Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
-Reported-by: santosh kulkarni <santosh.kulkarni@calsoftinc.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[ 2325.021995] BUG: unable to handle kernel NULL pointer dereference at
+          (null)
+[ 2325.022809] IP: [<ffffffff8133c18c>] rb_erase+0x14c/0x390
+[ 2325.022982] PGD 7a91b067 PUD 7a33d067 PMD 0
+[ 2325.022982] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+[ 2325.022982] Modules linked in: nfsd(OF) cfg80211 rfkill bridge stp
+llc snd_intel8x0 snd_ac97_codec ac97_bus auth_rpcgss nfs_acl serio_raw
+e1000 i2c_piix4 ppdev snd_pcm snd_timer lockd pcspkr joydev parport_pc
+snd parport i2c_core soundcore microcode sunrpc ata_generic pata_acpi
+[last unloaded: nfsd]
+[ 2325.022982] CPU: 1 PID: 2123 Comm: nfsd Tainted: GF          O
+3.14.0-rc8+ #2
+[ 2325.022982] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS
+VirtualBox 12/01/2006
+[ 2325.022982] task: ffff88007b384800 ti: ffff8800797f6000 task.ti:
+ffff8800797f6000
+[ 2325.022982] RIP: 0010:[<ffffffff8133c18c>]  [<ffffffff8133c18c>]
+rb_erase+0x14c/0x390
+[ 2325.022982] RSP: 0018:ffff8800797f7d98  EFLAGS: 00010246
+[ 2325.022982] RAX: ffff880079c1f010 RBX: ffff880079f4c828 RCX:
+0000000000000000
+[ 2325.022982] RDX: 0000000000000000 RSI: ffff880079bcb070 RDI:
+ffff880079f4c810
+[ 2325.022982] RBP: ffff8800797f7d98 R08: 0000000000000000 R09:
+ffff88007964fc70
+[ 2325.022982] R10: 0000000000000000 R11: 0000000000000400 R12:
+ffff880079f4c800
+[ 2325.022982] R13: ffff880079bcb000 R14: ffff8800797f7da8 R15:
+ffff880079f4c860
+[ 2325.022982] FS:  0000000000000000(0000) GS:ffff88007f900000(0000)
+knlGS:0000000000000000
+[ 2325.022982] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 2325.022982] CR2: 0000000000000000 CR3: 000000007a3ef000 CR4:
+00000000000006e0
+[ 2325.022982] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[ 2325.022982] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7:
+0000000000000400
+[ 2325.022982] Stack:
+[ 2325.022982]  ffff8800797f7de0 ffffffffa0191c6e ffff8800797f7da8
+ffff8800797f7da8
+[ 2325.022982]  ffff880079f4c810 ffff880079bcb000 ffffffff81cc26c0
+ffff880079c1f010
+[ 2325.022982]  ffff880079bcb070 ffff8800797f7e28 ffffffffa01977f2
+ffff8800797f7df0
+[ 2325.022982] Call Trace:
+[ 2325.022982]  [<ffffffffa0191c6e>] destroy_client+0x32e/0x3b0 [nfsd]
+[ 2325.022982]  [<ffffffffa01977f2>] nfs4_state_shutdown_net+0x1a2/0x220
+[nfsd]
+[ 2325.022982]  [<ffffffffa01700b8>] nfsd_shutdown_net+0x38/0x70 [nfsd]
+[ 2325.022982]  [<ffffffffa017013e>] nfsd_last_thread+0x4e/0x80 [nfsd]
+[ 2325.022982]  [<ffffffffa001f1eb>] svc_shutdown_net+0x2b/0x30 [sunrpc]
+[ 2325.022982]  [<ffffffffa017064b>] nfsd_destroy+0x5b/0x80 [nfsd]
+[ 2325.022982]  [<ffffffffa0170773>] nfsd+0x103/0x130 [nfsd]
+[ 2325.022982]  [<ffffffffa0170670>] ? nfsd_destroy+0x80/0x80 [nfsd]
+[ 2325.022982]  [<ffffffff810a8232>] kthread+0xd2/0xf0
+[ 2325.022982]  [<ffffffff810a8160>] ? insert_kthread_work+0x40/0x40
+[ 2325.022982]  [<ffffffff816c493c>] ret_from_fork+0x7c/0xb0
+[ 2325.022982]  [<ffffffff810a8160>] ? insert_kthread_work+0x40/0x40
+[ 2325.022982] Code: 48 83 e1 fc 48 89 10 0f 84 02 01 00 00 48 3b 41 10
+0f 84 08 01 00 00 48 89 51 08 48 89 fa e9 74 ff ff ff 0f 1f 40 00 48 8b
+50 10 <f6> 02 01 0f 84 93 00 00 00 48 8b 7a 10 48 85 ff 74 05 f6 07 01
+[ 2325.022982] RIP  [<ffffffff8133c18c>] rb_erase+0x14c/0x390
+[ 2325.022982]  RSP <ffff8800797f7d98>
+[ 2325.022982] CR2: 0000000000000000
+[ 2325.022982] ---[ end trace 28c27ed011655e57 ]---
+
+[  228.064071] BUG: soft lockup - CPU#0 stuck for 22s! [nfsd:558]
+[  228.064428] Modules linked in: ip6t_rpfilter ip6t_REJECT cfg80211
+xt_conntrack rfkill ebtable_nat ebtable_broute bridge stp llc
+ebtable_filter ebtables ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6
+nf_nat_ipv6 ip6table_mangle ip6table_security ip6table_raw
+ip6table_filter ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4
+nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security
+iptable_raw nfsd(OF) auth_rpcgss nfs_acl lockd snd_intel8x0
+snd_ac97_codec ac97_bus joydev snd_pcm snd_timer e1000 sunrpc snd ppdev
+parport_pc serio_raw pcspkr i2c_piix4 microcode parport soundcore
+i2c_core ata_generic pata_acpi
+[  228.064539] CPU: 0 PID: 558 Comm: nfsd Tainted: GF          O
+3.14.0-rc8+ #2
+[  228.064539] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS
+VirtualBox 12/01/2006
+[  228.064539] task: ffff880076adec00 ti: ffff880074616000 task.ti:
+ffff880074616000
+[  228.064539] RIP: 0010:[<ffffffff8133ba17>]  [<ffffffff8133ba17>]
+rb_next+0x27/0x50
+[  228.064539] RSP: 0018:ffff880074617de0  EFLAGS: 00000282
+[  228.064539] RAX: ffff880074478010 RBX: ffff88007446f860 RCX:
+0000000000000014
+[  228.064539] RDX: ffff880074478010 RSI: 0000000000000000 RDI:
+ffff880074478010
+[  228.064539] RBP: ffff880074617de0 R08: 0000000000000000 R09:
+0000000000000012
+[  228.064539] R10: 0000000000000001 R11: ffffffffffffffec R12:
+ffffea0001d11a00
+[  228.064539] R13: ffff88007f401400 R14: ffff88007446f800 R15:
+ffff880074617d50
+[  228.064539] FS:  0000000000000000(0000) GS:ffff88007f800000(0000)
+knlGS:0000000000000000
+[  228.064539] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  228.064539] CR2: 00007fe9ac6ec000 CR3: 000000007a5d6000 CR4:
+00000000000006f0
+[  228.064539] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[  228.064539] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7:
+0000000000000400
+[  228.064539] Stack:
+[  228.064539]  ffff880074617e28 ffffffffa01ab7db ffff880074617df0
+ffff880074617df0
+[  228.064539]  ffff880079273000 ffffffff81cc26c0 ffffffff81cc26c0
+0000000000000000
+[  228.064539]  0000000000000000 ffff880074617e48 ffffffffa01840b8
+ffffffff81cc26c0
+[  228.064539] Call Trace:
+[  228.064539]  [<ffffffffa01ab7db>] nfs4_state_shutdown_net+0x18b/0x220
+[nfsd]
+[  228.064539]  [<ffffffffa01840b8>] nfsd_shutdown_net+0x38/0x70 [nfsd]
+[  228.064539]  [<ffffffffa018413e>] nfsd_last_thread+0x4e/0x80 [nfsd]
+[  228.064539]  [<ffffffffa00aa1eb>] svc_shutdown_net+0x2b/0x30 [sunrpc]
+[  228.064539]  [<ffffffffa018464b>] nfsd_destroy+0x5b/0x80 [nfsd]
+[  228.064539]  [<ffffffffa0184773>] nfsd+0x103/0x130 [nfsd]
+[  228.064539]  [<ffffffffa0184670>] ? nfsd_destroy+0x80/0x80 [nfsd]
+[  228.064539]  [<ffffffff810a8232>] kthread+0xd2/0xf0
+[  228.064539]  [<ffffffff810a8160>] ? insert_kthread_work+0x40/0x40
+[  228.064539]  [<ffffffff816c493c>] ret_from_fork+0x7c/0xb0
+[  228.064539]  [<ffffffff810a8160>] ? insert_kthread_work+0x40/0x40
+[  228.064539] Code: 1f 44 00 00 55 48 8b 17 48 89 e5 48 39 d7 74 3b 48
+8b 47 08 48 85 c0 75 0e eb 25 66 0f 1f 84 00 00 00 00 00 48 89 d0 48 8b
+50 10 <48> 85 d2 75 f4 5d c3 66 90 48 3b 78 08 75 f6 48 8b 10 48 89 c7
+
+Fixes: ac55fdc408039 (nfsd: move the confirmed and unconfirmed hlists...)
+Signed-off-by: Kinglong Mee <kinglongmee@gmail.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/target/iscsi/iscsi_target.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/nfsd/nfs4state.c | 13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-index b5e574659785..b47c2be1c427 100644
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -2476,6 +2476,7 @@ static void iscsit_build_conn_drop_async_message(struct iscsi_conn *conn)
- {
- 	struct iscsi_cmd *cmd;
- 	struct iscsi_conn *conn_p;
-+	bool found = false;
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 0874998a49cd..5cbdf38ffc66 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -5048,7 +5048,6 @@ nfs4_state_destroy_net(struct net *net)
+ 	int i;
+ 	struct nfs4_client *clp = NULL;
+ 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+-	struct rb_node *node, *tmp;
  
- 	/*
- 	 * Only send a Asynchronous Message on connections whos network
-@@ -2484,11 +2485,12 @@ static void iscsit_build_conn_drop_async_message(struct iscsi_conn *conn)
- 	list_for_each_entry(conn_p, &conn->sess->sess_conn_list, conn_list) {
- 		if (conn_p->conn_state == TARG_CONN_STATE_LOGGED_IN) {
- 			iscsit_inc_conn_usage_count(conn_p);
-+			found = true;
- 			break;
+ 	for (i = 0; i < CLIENT_HASH_SIZE; i++) {
+ 		while (!list_empty(&nn->conf_id_hashtbl[i])) {
+@@ -5057,13 +5056,11 @@ nfs4_state_destroy_net(struct net *net)
  		}
  	}
  
--	if (!conn_p)
-+	if (!found)
- 		return;
+-	node = rb_first(&nn->unconf_name_tree);
+-	while (node != NULL) {
+-		tmp = node;
+-		node = rb_next(tmp);
+-		clp = rb_entry(tmp, struct nfs4_client, cl_namenode);
+-		rb_erase(tmp, &nn->unconf_name_tree);
+-		destroy_client(clp);
++	for (i = 0; i < CLIENT_HASH_SIZE; i++) {
++		while (!list_empty(&nn->unconf_id_hashtbl[i])) {
++			clp = list_entry(nn->unconf_id_hashtbl[i].next, struct nfs4_client, cl_idhash);
++			destroy_client(clp);
++		}
+ 	}
  
- 	cmd = iscsit_allocate_cmd(conn_p, GFP_ATOMIC);
+ 	kfree(nn->sessionid_hashtbl);
 -- 
 1.9.3
 
