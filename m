@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932794AbaEMWLE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 18:11:04 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:40666 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755235AbaEMWFe (ORCPT
+	id S1755110AbaEMWLS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 18:11:18 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:52464 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755218AbaEMWFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 18:05:34 -0400
+	Tue, 13 May 2014 18:05:33 -0400
 From: Alexis Berlemont <alexis.berlemont@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com,
         acme@ghostprotocols.net, dsahern@gmail.com, mingo@kernel.org
-Subject: [PATCH 16/34] perf kbuild: remove legacy timerfd-related build variable
-Date: Wed, 14 May 2014 00:03:11 +0200
-Message-Id: <1400018609-20486-17-git-send-email-alexis.berlemont@gmail.com>
+Subject: [PATCH 15/34] perf kbuild: remove legacy libperl-related build variables
+Date: Wed, 14 May 2014 00:03:10 +0200
+Message-Id: <1400018609-20486-16-git-send-email-alexis.berlemont@gmail.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
 References: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
@@ -21,123 +21,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove HAVE_TIMERFD_SUPPORT (replaced by CONFIG_TIMERFD)
+Remove NO_LIBPERL (replaced by CONFIG_LIBPERL)
 ---
- tools/perf/Kconfig         |  8 +++++++-
- tools/perf/builtin-kvm.c   | 13 +++++++------
- tools/perf/config/Makefile | 10 ++++++----
- 3 files changed, 20 insertions(+), 11 deletions(-)
+ tools/perf/builtin-script.c             |  4 +++-
+ tools/perf/config/Makefile              |  8 ++------
+ tools/perf/config/Makefile.fix-config   |  8 --------
+ tools/perf/config/Makefile.fix-legacy   |  4 ----
+ tools/perf/util/trace-event-scripting.c | 10 +++++-----
+ 5 files changed, 10 insertions(+), 24 deletions(-)
 
-diff --git a/tools/perf/Kconfig b/tools/perf/Kconfig
-index 56f0fe3..76d0763 100644
---- a/tools/perf/Kconfig
-+++ b/tools/perf/Kconfig
-@@ -145,7 +145,7 @@ config BUILTIN_TEST
- 
- endmenu
- 
--menu "Libraries"
-+menu "Libraries / Dependencies"
- 
- config LIBSLANG
- 	bool "Slang (libslang)"
-@@ -184,6 +184,12 @@ config LIBPYTHON
-         ---help---
- 	  Python
- 
-+config TIMERFD
-+	bool "Timer via file descriptor"
-+	default n
-+        ---help---
-+	  Timer via file descriptor
-+
- choice
- 	prompt "Elf library"
- 	default LIBELF
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 0f1e5a2..d035253 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -1,3 +1,4 @@
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 9e9c91f..ff67f0d 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -1,3 +1,5 @@
 +#include "generated/autoconf.h"
++
  #include "builtin.h"
+ 
  #include "perf.h"
- 
-@@ -20,7 +21,7 @@
- #include "util/data.h"
- 
- #include <sys/prctl.h>
--#ifdef HAVE_TIMERFD_SUPPORT
-+#ifdef CONFIG_TIMERFD
- #include <sys/timerfd.h>
- #endif
- 
-@@ -339,7 +340,7 @@ static void init_kvm_event_record(struct perf_kvm_stat *kvm)
- 		INIT_LIST_HEAD(&kvm->kvm_events_cache[i]);
- }
- 
--#ifdef HAVE_TIMERFD_SUPPORT
-+#ifdef CONFIG_TIMERFD
- static void clear_events_cache_stats(struct list_head *kvm_events_cache)
- {
- 	struct list_head *head;
-@@ -788,7 +789,7 @@ static void print_result(struct perf_kvm_stat *kvm)
- 		pr_info("\nLost events: %" PRIu64 "\n\n", kvm->lost_events);
- }
- 
--#ifdef HAVE_TIMERFD_SUPPORT
-+#ifdef CONFIG_TIMERFD
- static int process_lost_event(struct perf_tool *tool,
- 			      union perf_event *event __maybe_unused,
- 			      struct perf_sample *sample __maybe_unused,
-@@ -879,7 +880,7 @@ static bool verify_vcpu(int vcpu)
- 	return true;
- }
- 
--#ifdef HAVE_TIMERFD_SUPPORT
-+#ifdef CONFIG_TIMERFD
- /* keeping the max events to a modest level to keep
-  * the processing of samples per mmap smooth.
-  */
-@@ -1386,7 +1387,7 @@ kvm_events_report(struct perf_kvm_stat *kvm, int argc, const char **argv)
- 	return kvm_events_report_vcpu(kvm);
- }
- 
--#ifdef HAVE_TIMERFD_SUPPORT
-+#ifdef CONFIG_TIMERFD
- static struct perf_evlist *kvm_live_event_list(void)
- {
- 	struct perf_evlist *evlist;
-@@ -1601,7 +1602,7 @@ static int kvm_cmd_stat(const char *file_name, int argc, const char **argv)
- 	if (!strncmp(argv[1], "rep", 3))
- 		return kvm_events_report(&kvm, argc - 1 , argv + 1);
- 
--#ifdef HAVE_TIMERFD_SUPPORT
-+#ifdef CONFIG_TIMERFD
- 	if (!strncmp(argv[1], "live", 4))
- 		return kvm_events_live(&kvm, argc - 1 , argv + 1);
+@@ -1362,7 +1364,7 @@ int find_scripts(char **scripts_array, char **scripts_path_array)
+ 	for_each_lang(scripts_path, scripts_dir, lang_dirent, lang_next) {
+ 		snprintf(lang_path, MAXPATHLEN, "%s/%s", scripts_path,
+ 			 lang_dirent.d_name);
+-#ifdef NO_LIBPERL
++#ifndef CONFIG_LIBPERL
+ 		if (strstr(lang_path, "perl"))
+ 			continue;
  #endif
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 93c3321..33843b7 100644
+index 040cdcc..93c3321 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -445,10 +445,12 @@ ifdef CONFIG_LIBPERL
-   endif
- endif
+@@ -430,9 +430,7 @@ endif
+ grep-libs  = $(filter -l%,$(1))
+ strip-libs = $(filter-out -l%,$(1))
  
--ifeq ($(feature-timerfd), 1)
--  CFLAGS += -DHAVE_TIMERFD_SUPPORT
+-ifdef NO_LIBPERL
+-  CFLAGS += -DNO_LIBPERL
 -else
--  msg := $(warning No timerfd support. Disables 'perf kvm stat live');
-+ifdef CONFIG_TIMERFD
-+  ifneq ($(feature-timerfd), 1)
-+    $(shell $(KCONFIG_SCRIPT) -d CONFIG_TIMERFD)
-+  else
-+    msg := $(warning No timerfd support. Disables 'perf kvm stat live');
-+  endif
- endif
++ifdef CONFIG_LIBPERL
+   PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
+   PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
+   PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
+@@ -440,8 +438,7 @@ else
+   FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
  
- disable-python = $(eval $(disable-python_code))
+   ifneq ($(feature-libperl), 1)
+-    CFLAGS += -DNO_LIBPERL
+-    NO_LIBPERL := 1
++    $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBPERL)
+   else
+     LDFLAGS += $(PERL_EMBED_LDFLAGS)
+     EXTLIBS += $(PERL_EMBED_LIBADD)
+@@ -753,7 +750,6 @@ all:
+ 	$(call store,PERL_EMBED_CCOPTS)
+ 	$(call store,CONFIG_X86_64)
+ 	$(call store,NO_LIBUNWIND)
+-	$(call store,NO_LIBPERL)
+ 	$(call store,NO_LIBPYTHON)
+ 	$(call store,NO_DEMANGLE)
+ 	$(call store,NO_LIBELF)
+diff --git a/tools/perf/config/Makefile.fix-config b/tools/perf/config/Makefile.fix-config
+index efe2ee7..6402a47 100644
+--- a/tools/perf/config/Makefile.fix-config
++++ b/tools/perf/config/Makefile.fix-config
+@@ -3,14 +3,6 @@ include $(KCONFIG_CONFIG)
+ 
+ CONFIG := $(srctree)/scripts/config --file $(KCONFIG_CONFIG)
+ 
+-# NO_LIBPERL
+-ifdef CONFIG_LIBPERL
+-ifdef NO_LIBPERL
+-dummy := $(info Disabling CONFIG_LIBPERL)
+-dummy := $(shell $(CONFIG) -d CONFIG_LIBPERL)
+-endif
+-endif
+-
+ # NO_LIBPYTHON
+ ifdef CONFIG_LIBPYTHON
+ ifdef NO_LIBPYTHON
+diff --git a/tools/perf/config/Makefile.fix-legacy b/tools/perf/config/Makefile.fix-legacy
+index ae69a1b..2e93006 100644
+--- a/tools/perf/config/Makefile.fix-legacy
++++ b/tools/perf/config/Makefile.fix-legacy
+@@ -1,10 +1,6 @@
+ 
+ include $(KCONFIG_CONFIG)
+ 
+-ifndef CONFIG_LIBPERL
+-NO_LIBPERL := 1
+-endif
+-
+ ifndef CONFIG_LIBPYTHON
+ NO_LIBPYTHON := 1
+ endif
+diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
+index 57aaccc..51d8019 100644
+--- a/tools/perf/util/trace-event-scripting.c
++++ b/tools/perf/util/trace-event-scripting.c
+@@ -156,16 +156,16 @@ static void register_perl_scripting(struct scripting_ops *scripting_ops)
+ 	scripting_context = malloc(sizeof(struct scripting_context));
+ }
+ 
+-#ifdef NO_LIBPERL
++#ifdef CONFIG_LIBPERL
++extern struct scripting_ops perl_scripting_ops;
++
+ void setup_perl_scripting(void)
+ {
+-	register_perl_scripting(&perl_scripting_unsupported_ops);
++	register_perl_scripting(&perl_scripting_ops);
+ }
+ #else
+-extern struct scripting_ops perl_scripting_ops;
+-
+ void setup_perl_scripting(void)
+ {
+-	register_perl_scripting(&perl_scripting_ops);
++	register_perl_scripting(&perl_scripting_unsupported_ops);
+ }
+ #endif
 -- 
 1.9.2
 
