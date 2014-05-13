@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933553AbaEMN1w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 09:27:52 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:56027 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932671AbaEMN1v (ORCPT
+	id S933566AbaEMN22 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 09:28:28 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:53777 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753360AbaEMN20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 09:27:51 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: mmarek@suse.cz, akpm@linux-foundation.org, prarit@redhat.com,
-        michael.opdenacker@free-electrons.com, tkhai@yandex.ru,
-        nasa4836@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/tags.sh: add regular expression replacement pattern for memcg
-Date: Tue, 13 May 2014 21:26:53 +0800
-Message-Id: <1399987613-18154-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 2.0.0-rc1
+	Tue, 13 May 2014 09:28:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Jingoo Han <jg1.han@samsung.com>,
+        "'Santosh Shilimkar'" <santosh.shilimkar@ti.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-pci@vger.kernel.org, rogerq@ti.com,
+        balajitk@ti.com, "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Marek Vasut'" <marex@denx.de>
+Subject: Re: [PATCH 06/17] pci: host: pcie-designware: Use *base-mask* for configuring the iATU
+Date: Tue, 13 May 2014 15:27:46 +0200
+Message-ID: <202752041.rgamje4etj@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53721D7F.9070200@ti.com>
+References: <1399383244-14556-1-git-send-email-kishon@ti.com> <10531498.kYV5eO1J1m@wuerfel> <53721D7F.9070200@ti.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:5HW5PGUCJcL3Zn5+soFbdhGwi0o6V8UYeEB5hL7FfdM
+ 7fAIZRyFSJnevw91v20xt0l9uqWiiIls411RM/8ec1DVt8v3xC
+ Q4apWI8nFOYwKTSyt2hPtDwvWAhyUW55iavzWnDptmOKraWSSE
+ cqsI5f54CG9WLRROhL4CS0szNILzaoh0BQBA84yJfA/nhJsMCu
+ hlN9gceDUHKkD2yJTRXdkZ1hcfSaeyMBqlvZKnSaECcC6NjBWL
+ Kn3eOe/w8tST+hg9/JT96U8mTumRn+zMo5pWQNoPezzQAMa0es
+ aJHdrPQwAWodr+hCGLJ7MJ0Uzm1qjKYZaWMrxhiEbgZokzQB8z
+ T/BjpP3Vw0saeJYAceYk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Prarit,
+On Tuesday 13 May 2014 18:56:23 Kishon Vijay Abraham I wrote:
+> > If you have a case where the outbound translation is a 256MB (i.e. 28bit)
+> > section of the CPU address space, that could be represented as
+> > 
+> >       ranges = <0x82000000 0 0  0xb0000000  0 0x10000000>;
+> > 
+> > or 
+> > 
+> >       ranges = <0x82000000 0 0xb0000000  0xb0000000  0 0x10000000>;
+> > 
+> > depending on whether you want the BARs to be programmed using a low
+> > address 0x0-0x0fffffff or an address matching the window
+> > 0xb0000000-0xbfffffff.
+> 
+> The problem is, for configuring the window starting at 0xb0000000, the ATU
+> should be programmed 0x0000000 (the cpu address for it will be 0xb0000000 though).
+> 
 
->> Currently, no regular expression replacement pattern for PageCgroug*
->
->^^^ *Cgroup*
- 
-  Sorry for the typo, fixed. Thanks.
+Then use the first of the two?
 
->> defined, which causes quite a few pain while reading code. Just get 
->> rid of it. 
->>
->
->IMO the patch looks fine but can you fixup your changelog a little bit?  I think
->the new "standard" has become an explanation and example of the problem, an
->explanation of what is wrong, and what you did to fix it (including an example
->of output if possible).  That way we know what was changed and why :)
-
- Yep, you are right. Rewrote the wording.
- Would you mind signing your Reviewed-by if it is Ok? Thanks.
-
----<8---
-Currently, while using ctags to read code, we would get stumbled on
-PageCgroup* symbols: no definition found. And it is quite dull to
-manually dig it out.
-
-This patch adds regular expression replacement pattern for such symbols,
-like what have done for the PageXXX flag. It will teach ctags to find
-out the definition for us.
-
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- scripts/tags.sh | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index f2c5b00..7d3ebfe 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -187,6 +187,10 @@ exuberant()
- 	--regex-c++='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
- 	--regex-c++='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/' \
- 	--regex-c++='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'		\
-+	--regex-c++='/TESTPCGFLAG\(([^,)]*).*/PageCgroup\1/'		\
-+	--regex-c++='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'		\
-+	--regex-c++='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'	\
-+	--regex-c++='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
- 	--regex-c='/PCI_OP_READ\((\w*).*[1-4]\)/pci_bus_read_config_\1/' \
- 	--regex-c='/PCI_OP_WRITE\((\w*).*[1-4]\)/pci_bus_write_config_\1/' \
- 	--regex-c='/DEFINE_(MUTEX|SEMAPHORE|SPINLOCK)\((\w*)/\2/v/'	\
-@@ -244,6 +248,10 @@ emacs()
- 	--regex='/__CLEARPAGEFLAG_NOOP(\([^,)]*\).*/__ClearPage\1/' \
- 	--regex='/TESTCLEARFLAG_FALSE(\([^,)]*\).*/TestClearPage\1/' \
- 	--regex='/__TESTCLEARFLAG_FALSE(\([^,)]*\).*/__TestClearPage\1/' \
-+	--regex='/TESTPCGFLAG\(([^,)]*).*/PageCgroup\1/'	\
-+	--regex='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'	\
-+	--regex='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'	\
-+	--regex='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
- 	--regex='/_PE(\([^,)]*\).*/PEVENT_ERRNO__\1/'		\
- 	--regex='/PCI_OP_READ(\([a-z]*[a-z]\).*[1-4])/pci_bus_read_config_\1/' \
- 	--regex='/PCI_OP_WRITE(\([a-z]*[a-z]\).*[1-4])/pci_bus_write_config_\1/'
--- 
-2.0.0-rc1
-
+	Arnd
