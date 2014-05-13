@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933738AbaEMKbJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:31:09 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50136 "EHLO arroyo.ext.ti.com"
+	id S1760762AbaEMKdc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:33:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51215 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933502AbaEMKbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:31:04 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: <nsekhar@ti.com>, <joelf@ti.com>
-CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
-        <bcousson@baylibre.com>
-Subject: [PATCH v2 0/5] ARM/DT: edma: Get IP configuration from hardware
-Date: Tue, 13 May 2014 13:30:27 +0300
-Message-ID: <1399977032-26469-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.9.3
+	id S1753353AbaEMKda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 06:33:30 -0400
+Date: Tue, 13 May 2014 11:33:23 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Weijie Yang <weijieut@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Bob Liu <bob.liu@oracle.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv2 3/4] plist: add plist_requeue
+Message-ID: <20140513103323.GN23991@suse.de>
+References: <1399057350-16300-1-git-send-email-ddstreet@ieee.org>
+ <1399912700-30100-1-git-send-email-ddstreet@ieee.org>
+ <1399912700-30100-4-git-send-email-ddstreet@ieee.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1399912700-30100-4-git-send-email-ddstreet@ieee.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, May 12, 2014 at 12:38:19PM -0400, Dan Streetman wrote:
+> Add plist_requeue(), which moves the specified plist_node after
+> all other same-priority plist_nodes in the list.  This is
+> essentially an optimized plist_del() followed by plist_add().
+> 
+> This is needed by swap, which (with the next patch in this set)
+> uses a plist of available swap devices.  When a swap device
+> (either a swap partition or swap file) are added to the system
+> with swapon(), the device is added to a plist, ordered by
+> the swap device's priority.  When swap needs to allocate a page
+> from one of the swap devices, it takes the page from the first swap
+> device on the plist, which is the highest priority swap device.
+> The swap device is left in the plist until all its pages are
+> used, and then removed from the plist when it becomes full.
+> 
+> However, as described in man 2 swapon, swap must allocate pages
+> from swap devices with the same priority in round-robin order;
+> to do this, on each swap page allocation, swap uses a page from
+> the first swap device in the plist, and then calls plist_requeue()
+> to move that swap device entry to after any other same-priority
+> swap devices.  The next swap page allocation will again use a
+> page from the first swap device in the plist and requeue it,
+> and so on, resulting in round-robin usage of equal-priority
+> swap devices.
+> 
+> Also add plist_test_requeue() test function, for use by plist_test()
+> to test plist_requeue() function.
+> 
+> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> 
 
-Changes sicne v1:
-- added missing patch to remove the memset from edma_of_parse_dt()
-
-We are requesting redundant information via DT for the driver since the very same
-data is available in the HW: by reading and decoding the content of CCCFG
-register we can get:
-Number of channels: NUM_DMACH
-Number of regions: NUM_REGN
-Number of slots (PaRAM sets): NUM_PAENTRY
-Number of TC/EQ: NUM_EVQUE
-
-So these does not need to be provided by the DT binding.
-
-The driver will no longer look for these properties from DT and they can be
-removed from the binding documentation and from the dtsi files as well.
-The change will not introduce regression when new kernel is booted using older
-DTB (since we just ignore the mentioned properties).
-
-Regards,
-Peter
----
-Peter Ujfalusi (5):
-  ARM: edma: No need to clean the pdata in edma_of_parse_dt()
-  ARM: edma: Get IP information from HW when booting with DT
-  dt/bindings: ti,edma: Remove redundant properties from documentation
-  ARM: dts: am33xx: Remove obsolete properties from edma node
-  ARM: dts: am4372: Remove obsolete properties from edma node
-
- Documentation/devicetree/bindings/dma/ti-edma.txt |   6 -
- arch/arm/boot/dts/am33xx.dtsi                     |   3 -
- arch/arm/boot/dts/am4372.dtsi                     |   3 -
- arch/arm/common/edma.c                            | 130 +++++++++++++---------
- 4 files changed, 79 insertions(+), 63 deletions(-)
+Acked-by: Mel Gorman <mgorman@suse.de>
 
 -- 
-1.9.3
-
+Mel Gorman
+SUSE Labs
