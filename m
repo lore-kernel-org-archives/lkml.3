@@ -1,117 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452AbaEMQxZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 12:53:25 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:57438 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242AbaEMQxP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 12:53:15 -0400
-Date: Tue, 13 May 2014 12:53:06 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
-        Michal Hocko <mhocko@suse.cz>
-Subject: [PATCH v2 03/14] memcg: update memcg_has_children() to use
- css_next_child()
-Message-ID: <20140513165306.GE1866@htj.dyndns.org>
-References: <1399671091-23867-1-git-send-email-tj@kernel.org>
- <1399671091-23867-4-git-send-email-tj@kernel.org>
+	id S1752205AbaEMQ4v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:56:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7695 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751059AbaEMQ4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 12:56:44 -0400
+From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Jones <drjones@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        xen-devel@lists.xenproject.org
+Subject: [PATCH] xen/x86: set panic notifier priority to minimum
+Date: Tue, 13 May 2014 18:56:25 +0200
+Message-Id: <1400000185-15148-1-git-send-email-rkrcmar@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399671091-23867-4-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, memcg_has_children() and mem_cgroup_hierarchy_write()
-directly test cgroup->children for list emptiness.  It's semantically
-correct in traditional hierarchies as it actually wants to test for
-any children dead or alive; however, cgroup->children is not a
-published field and scheduled to go away.
+Execution is not going to continue after telling Xen about the crash.
+Let other panic notifiers run by postponing the final hypercall as much
+as possible.
 
-This patch moves out .use_hierarchy test out of memcg_has_children()
-and updates it to use css_next_child() to test whether there exists
-any children.  With .use_hierarchy test moved out, it can also be used
-by mem_cgroup_hierarchy_write().
-
-A side note: As .use_hierarchy is going away, it doesn't really matter
-but I'm not sure about how it's used in __memcg_activate_kmem().  The
-condition tested by memcg_has_children() is mushy when seen from
-userland as its result is affected by dead csses which aren't visible
-from userland.  I think the rule would be a lot clearer if we have a
-dedicated "freshly minted" flag which gets cleared when the first task
-is migrated into it or the first child is created and then gate
-activation with that.
-
-v2: Added comment noting that testing use_hierarchy is the
-    responsibility of the callers of memcg_has_children() as suggested
-    by Michal Hocko.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Jones <drjones@redhat.com>
+Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
 ---
- mm/memcontrol.c |   31 +++++++++++++++++++++----------
- 1 file changed, 21 insertions(+), 10 deletions(-)
+ arch/x86/xen/enlighten.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4834,18 +4834,28 @@ static void mem_cgroup_reparent_charges(
- 	} while (usage > 0);
- }
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index c34bfc4..f17b292 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1339,6 +1339,7 @@ xen_panic_event(struct notifier_block *this, unsigned long event, void *ptr)
  
-+/*
-+ * Test whether @memcg has children, dead or alive.  Note that this
-+ * function doesn't care whether @memcg has use_hierarchy enabled and
-+ * returns %true if there are child csses according to the cgroup
-+ * hierarchy.  Testing use_hierarchy is the caller's responsiblity.
-+ */
- static inline bool memcg_has_children(struct mem_cgroup *memcg)
- {
--	lockdep_assert_held(&memcg_create_mutex);
-+	bool ret;
-+
- 	/*
--	 * The lock does not prevent addition or deletion to the list
--	 * of children, but it prevents a new child from being
--	 * initialized based on this parent in css_online(), so it's
--	 * enough to decide whether hierarchically inherited
--	 * attributes can still be changed or not.
-+	 * The lock does not prevent addition or deletion of children, but
-+	 * it prevents a new child from being initialized based on this
-+	 * parent in css_online(), so it's enough to decide whether
-+	 * hierarchically inherited attributes can still be changed or not.
- 	 */
--	return memcg->use_hierarchy &&
--		!list_empty(&memcg->css.cgroup->children);
-+	lockdep_assert_held(&memcg_create_mutex);
-+
-+	rcu_read_lock();
-+	ret = css_next_child(NULL, &memcg->css);
-+	rcu_read_unlock();
-+	return ret;
- }
+ static struct notifier_block xen_panic_block = {
+ 	.notifier_call= xen_panic_event,
++	.priority = INT_MIN
+ };
  
- /*
-@@ -4920,7 +4930,7 @@ static int mem_cgroup_hierarchy_write(st
- 	 */
- 	if ((!parent_memcg || !parent_memcg->use_hierarchy) &&
- 				(val == 1 || val == 0)) {
--		if (list_empty(&memcg->css.cgroup->children))
-+		if (!memcg_has_children(memcg))
- 			memcg->use_hierarchy = val;
- 		else
- 			retval = -EBUSY;
-@@ -5037,7 +5047,8 @@ static int __memcg_activate_kmem(struct
- 	 * of course permitted.
- 	 */
- 	mutex_lock(&memcg_create_mutex);
--	if (cgroup_has_tasks(memcg->css.cgroup) || memcg_has_children(memcg))
-+	if (cgroup_has_tasks(memcg->css.cgroup) ||
-+	    (memcg->use_hierarchy && memcg_has_children(memcg)))
- 		err = -EBUSY;
- 	mutex_unlock(&memcg_create_mutex);
- 	if (err)
+ int xen_panic_handler_init(void)
+-- 
+1.9.0
+
