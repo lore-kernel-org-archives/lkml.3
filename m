@@ -1,70 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391AbaEMTTZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 15:19:25 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:58894 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751943AbaEMTTS (ORCPT
+	id S1753822AbaEMTVw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 15:21:52 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:57415 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708AbaEMTVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 15:19:18 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/3zZEPtphQLAlyTh+6NSpSdUkpxM0BzZE=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 8B59657445B
-Date: Tue, 13 May 2014 15:19:06 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 5/7] irqchip: s3c24xx: fix function type for
- IRQCHIP_OF_DECLARE
-Message-ID: <20140513191906.GI27822@titan.lakedaemon.net>
-References: <1399940993-1773-1-git-send-email-robherring2@gmail.com>
- <1399940993-1773-6-git-send-email-robherring2@gmail.com>
- <20140513152233.GB27822@titan.lakedaemon.net>
- <CAL_JsqJuYwkyy0UO75D1XmAKZa3ui3zYYBi55xFOWUFVgFw5=g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL_JsqJuYwkyy0UO75D1XmAKZa3ui3zYYBi55xFOWUFVgFw5=g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 13 May 2014 15:21:45 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: Rob Herring <robh@kernel.org>, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn@kryo.se>, Frank Rowand <frowand.list@gmail.com>
+Subject: [PATCH v2] of/selftest: add testcase for nodes with same name and address
+Date: Tue, 13 May 2014 14:21:25 -0500
+Message-Id: <1400008885-25370-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 12:02:06PM -0500, Rob Herring wrote:
-> On Tue, May 13, 2014 at 10:22 AM, Jason Cooper <jason@lakedaemon.net> wrote:
-> > Rob,
-> >
-> > On Mon, May 12, 2014 at 07:29:51PM -0500, Rob Herring wrote:
-> >> From: Rob Herring <robh@kernel.org>
-> >>
-> >> Adding function type checking to IRQCHIP_OF_DECLARE found a type mismatch
-> >> with s3c2410_init_intc_of and s3c2416_init_intc_of. The function only takes
-> >> the 1st 2 parameters.
-> >>
-> >> Signed-off-by: Rob Herring <robh@kernel.org>
-> >> Cc: Thomas Gleixner <tglx@linutronix.de>
-> >> ---
-> >>  drivers/irqchip/irq-s3c24xx.c | 6 ++----
-> >>  1 file changed, 2 insertions(+), 4 deletions(-)
-> >
-> > Thomas has asked me to give him a hand with the patches for
-> > drivers/irqchip.  When you add these two to your tree, could you amend
-> > the subject line to conform with the other patches in that directory?
-> 
-> Excellent! We've needed some help there for a long time. Is there a
-> patch in flight to add this to MAINTAINERS.
+From: Rob Herring <robh@kernel.org>
 
-See:
+Add a test case for nodes which have the same name and same
+non-translatable unit address.
 
-  https://lkml.kernel.org/r/1400006821-32145-1-git-send-email-jason@lakedaemon.net
+Signed-off-by: Rob Herring <robh@kernel.org>
+Reviewed-by: Grant Likely <grant.likely@linaro.org>
+Reviewed-by: Frank Rowand <frank.rowand@sonymobile.com>
+---
+v2:
+- Rebase to v3.15-rc5 and deferred probe irq test
+- Rework self checking since adding error return to of_platform_populate 
+doesn't work.
 
-and it's now in irq/urgent in the tip tree.
+ drivers/of/selftest.c                        | 20 +++++++++++++++-
+ drivers/of/testcase-data/testcases.dtsi      |  1 +
+ drivers/of/testcase-data/tests-platform.dtsi | 35 ++++++++++++++++++++++++++++
+ 3 files changed, 55 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/of/testcase-data/tests-platform.dtsi
 
-thx,
+diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
+index c1d7d38..2588faa 100644
+--- a/drivers/of/selftest.c
++++ b/drivers/of/selftest.c
+@@ -431,8 +431,12 @@ static void __init of_selftest_match_node(void)
+ static void __init of_selftest_platform_populate(void)
+ {
+ 	int irq;
+-	struct device_node *np;
++	struct device_node *np, *child;
+ 	struct platform_device *pdev;
++	struct of_device_id match[] = {
++		{ .compatible = "test-device", },
++		{}
++	};
+ 
+ 	np = of_find_node_by_path("/testcase-data");
+ 	of_platform_populate(np, of_default_bus_match_table, NULL, NULL);
+@@ -452,6 +456,20 @@ static void __init of_selftest_platform_populate(void)
+ 	irq = platform_get_irq(pdev, 0);
+ 	selftest(irq < 0 && irq != -EPROBE_DEFER, "device parsing error failed - %d\n", irq);
+ 
++	np = of_find_node_by_path("/testcase-data/platform-tests");
++	if (!np) {
++		pr_err("No testcase data in device tree\n");
++		return;
++	}
++
++	for_each_child_of_node(np, child) {
++		struct device_node *grandchild;
++		of_platform_populate(child, match, NULL, NULL);
++		for_each_child_of_node(child, grandchild)
++			selftest(of_find_device_by_node(grandchild),
++				 "Could not create device for node '%s'\n",
++				 grandchild->name);
++	}
+ }
+ 
+ static int __init of_selftest(void)
+diff --git a/drivers/of/testcase-data/testcases.dtsi b/drivers/of/testcase-data/testcases.dtsi
+index 3a5b75a..6d8d980a 100644
+--- a/drivers/of/testcase-data/testcases.dtsi
++++ b/drivers/of/testcase-data/testcases.dtsi
+@@ -1,3 +1,4 @@
+ #include "tests-phandle.dtsi"
+ #include "tests-interrupts.dtsi"
+ #include "tests-match.dtsi"
++#include "tests-platform.dtsi"
+diff --git a/drivers/of/testcase-data/tests-platform.dtsi b/drivers/of/testcase-data/tests-platform.dtsi
+new file mode 100644
+index 0000000..eb20eeb
+--- /dev/null
++++ b/drivers/of/testcase-data/tests-platform.dtsi
+@@ -0,0 +1,35 @@
++
++/ {
++	testcase-data {
++		platform-tests {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			test-device@0 {
++				compatible = "test-device";
++				reg = <0x0>;
++
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				dev@100 {
++					compatible = "test-sub-device";
++					reg = <0x100>;
++				};
++			};
++
++			test-device@1 {
++				compatible = "test-device";
++				reg = <0x1>;
++
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				dev@100 {
++					compatible = "test-sub-device";
++					reg = <0x100>;
++				};
++			};
++		};
++	};
++};
+-- 
+1.9.1
 
-Jason.
