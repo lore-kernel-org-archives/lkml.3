@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760875AbaEMO3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 10:29:37 -0400
-Received: from imap.thunk.org ([74.207.234.97]:37226 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754299AbaEMO3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 10:29:35 -0400
-Date: Tue, 13 May 2014 10:29:24 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 18/19] mm: Non-atomically mark page accessed during page
- cache allocation where possible
-Message-ID: <20140513142924.GA5097@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Mel Gorman <mgorman@suse.de>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Johannes Weiner <hannes@cmpxchg.org>,
-	Vlastimil Babka <vbabka@suse.cz>, Jan Kara <jack@suse.cz>,
-	Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Dave Hansen <dave.hansen@intel.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linux-MM <linux-mm@kvack.org>,
-	Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
- <1399974350-11089-19-git-send-email-mgorman@suse.de>
+	id S933497AbaEMOaA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 10:30:00 -0400
+Received: from stringer.orebokech.com ([212.83.175.182]:34604 "EHLO
+	stringer.orebokech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754299AbaEMO37 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 10:29:59 -0400
+From: Romain Francoise <romain@orebokech.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Michael Mueller <mimu@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, borntraeger@de.ibm.com,
+        cornelia.huck@de.ibm.com, ddongch@cn.ibm.com
+Subject: Re: [PATCH v1] vhost: avoid large order allocations
+Organization: orebokech dot com
+References: <1399970133-46783-1-git-send-email-mimu@linux.vnet.ibm.com>
+	<1399970133-46783-2-git-send-email-mimu@linux.vnet.ibm.com>
+	<20140513084049.GE29442@redhat.com>
+Date: Tue, 13 May 2014 16:29:58 +0200
+In-Reply-To: <20140513084049.GE29442@redhat.com> (Michael S. Tsirkin's message
+	of "Tue, 13 May 2014 11:40:49 +0300")
+Message-ID: <87tx8tg3a1.fsf@kima.orebokech.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399974350-11089-19-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: "Theodore Ts'o" <tytso@mit.edu>
+"Michael S. Tsirkin" <mst@redhat.com> writes:
 
-Thanks!!
+> Please dont' do this, extra indirection hurts performance.
+> Instead, please change vhost_net_open and scsi to allocate the whole
+> structure with vmalloc if kmalloc fails, along the lines of
+> 74d332c13b2148ae934ea94dac1745ae92efe8e5
 
-				- Ted
+Back in January 2013, you didn't seem to think it was a good idea:
+
+https://lkml.org/lkml/2013/1/23/492
