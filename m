@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909AbaEMXhK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 19:37:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48055 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752928AbaEMXhG (ORCPT
+	id S1755134AbaEMXiS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 19:38:18 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47410 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752032AbaEMXiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 19:37:06 -0400
-Date: Tue, 13 May 2014 16:36:39 -0700
-From: tip-bot for Anthony Iliopoulos <tipbot@zytor.com>
-Message-ID: <tip-9844f5462392b53824e8b86726e7c33b5ecbb676@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        dave.hansen@intel.com, shay.goikhman@huawei.com, tglx@linutronix.de,
-        anthony.iliopoulos@huawei.com, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dave.hansen@intel.com, shay.goikhman@huawei.com, tglx@linutronix.de,
-        anthony.iliopoulos@huawei.com, hpa@linux.intel.com
-In-Reply-To: <20140514092948.GA17391@server-36.huawei.corp>
-References: <20140514092948.GA17391@server-36.huawei.corp>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, mm, hugetlb:
-  Add missing TLB page invalidation for hugetlb_cow()
-Git-Commit-ID: 9844f5462392b53824e8b86726e7c33b5ecbb676
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 13 May 2014 19:38:16 -0400
+Date: Wed, 14 May 2014 00:36:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Will Deacon <will.deacon@arm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        David Riley <davidriley@chromium.org>,
+        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP
+	systems#
+Message-ID: <20140513233645.GN3693@n2100.arm.linux.org.uk>
+References: <alpine.LFD.2.11.1405082058130.980@knanqh.ubzr> <20140509091824.GL3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405091245070.980@knanqh.ubzr> <20140509182245.GM3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405091640090.980@knanqh.ubzr> <CAD=FV=UJK1nSPjH-au-KtbnOZk2nC7usLD8L9neMedj6WHUp8g@mail.gmail.com> <CAD=FV=XM2URyJjV9gaE=mrp7LAEGtvi9wQGhGJi3_HYp_XzYWg@mail.gmail.com> <5372998F.6020502@wwwdotorg.org> <alpine.LFD.2.11.1405131908260.980@knanqh.ubzr> <alpine.LFD.2.11.1405131922580.980@knanqh.ubzr>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.11.1405131922580.980@knanqh.ubzr>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9844f5462392b53824e8b86726e7c33b5ecbb676
-Gitweb:     http://git.kernel.org/tip/9844f5462392b53824e8b86726e7c33b5ecbb676
-Author:     Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
-AuthorDate: Wed, 14 May 2014 11:29:48 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 13 May 2014 16:34:09 -0700
+On Tue, May 13, 2014 at 07:29:52PM -0400, Nicolas Pitre wrote:
+> On Tue, 13 May 2014, Nicolas Pitre wrote:
+> 
+> > On Tue, 13 May 2014, Stephen Warren wrote:
+> > 
+> > > On 05/13/2014 03:50 PM, Doug Anderson wrote:
+> > > ...
+> > > > ...but then I found the true problem shows up when we transition
+> > > > between very low frequencies on exynos, like between 200MHz and
+> > > > 300MHz.  While transitioning between frequencies the system
+> > > > temporarily bumps over to the "switcher" PLL running at 800MHz while
+> > > > waiting for the main PLL to stabilize.  No CPUFREQ notification is
+> > > > sent for that.  That means there's a period of time when we're running
+> > > > at 800MHz but loops_per_jiffy is calibrated at between 200MHz and
+> > > > 300MHz.
+> > > > 
+> > > > 
+> > > > I'm welcome to any suggestions for how to address this.  It sorta
+> > > > feels like it would be a common thing to have a temporary PLL during
+> > > > the transition, ...
+> > > 
+> > > We definitely do that on Tegra for some cpufreq transitions.
+> > 
+> > Ouch...  If this is a common strategy to use a third frequency during a 
+> > transition phase, especially if that frequency is way off (800MHz vs 
+> > 200-300MHz) then it is something the cpufreq layer must capture and 
+> > advertise.
+> 
+> Of course if only the loops_per_jiffy scaling does care about frequency 
+> changes these days, and if in those cases udelay() can instead be moved 
+> to a timer source on those hick-up prone platforms, then all this is 
+> fairly theoretical and may not be worth pursuing.
 
-x86, mm, hugetlb: Add missing TLB page invalidation for hugetlb_cow()
+As I've been saying... use a bloody timer. :)
 
-The invalidation is required in order to maintain proper semantics
-under CoW conditions. In scenarios where a process clones several
-threads, a thread operating on a core whose DTLB entry for a
-particular hugepage has not been invalidated, will be reading from
-the hugepage that belongs to the forked child process, even after
-hugetlb_cow().
-
-The thread will not see the updated page as long as the stale DTLB
-entry remains cached, the thread attempts to write into the page,
-the child process exits, or the thread gets migrated to a different
-processor.
-
-Signed-off-by: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
-Link: http://lkml.kernel.org/r/20140514092948.GA17391@server-36.huawei.corp
-Suggested-by: Shay Goikhman <shay.goikhman@huawei.com>
-Acked-by: Dave Hansen <dave.hansen@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@vger.kernel.org> # v2.6.16+ (!)
----
- arch/x86/include/asm/hugetlb.h | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/x86/include/asm/hugetlb.h b/arch/x86/include/asm/hugetlb.h
-index a809121..68c0539 100644
---- a/arch/x86/include/asm/hugetlb.h
-+++ b/arch/x86/include/asm/hugetlb.h
-@@ -52,6 +52,7 @@ static inline pte_t huge_ptep_get_and_clear(struct mm_struct *mm,
- static inline void huge_ptep_clear_flush(struct vm_area_struct *vma,
- 					 unsigned long addr, pte_t *ptep)
- {
-+	ptep_clear_flush(vma, addr, ptep);
- }
- 
- static inline int huge_pte_none(pte_t pte)
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
