@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758938AbaEMHc4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 03:32:56 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:47177 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851AbaEMHcy convert rfc822-to-8bit (ORCPT
+	id S1758824AbaEMHe3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 03:34:29 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:15573 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753097AbaEMHe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 03:32:54 -0400
+	Tue, 13 May 2014 03:34:27 -0400
+X-IronPort-AV: E=Sophos;i="4.97,1042,1389715200"; 
+   d="scan'208";a="30442306"
+Message-ID: <5371BCF8.7030708@cn.fujitsu.com>
+Date: Tue, 13 May 2014 15:34:32 +0900
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <5370E4B4.1060802@oracle.com>
-References: <1399552888-11024-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1399552888-11024-3-git-send-email-kirill.shutemov@linux.intel.com>
- <20140508145729.3d82d2c989cfc483c94eb324@linux-foundation.org> <5370E4B4.1060802@oracle.com>
-From: Armin Rigo <arigo@tunes.org>
-Date: Tue, 13 May 2014 09:32:13 +0200
-X-Google-Sender-Auth: Q0GhWn4uwckW03D_dzQR5p0L4Kg
-Message-ID: <CAMSv6X0yg4haVtUifFrdkCCZjJV-TLXJ-KsiCPiBue0Y0qNTcQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mm: replace remap_file_pages() syscall with emulation
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
-        mingo@kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: perf,tools: Remove usage of trace_sched_wakeup(.success)
+References: <20140512181946.GG13467@laptop.programming.kicks-ass.net> <20140513072208.GB7980@gmail.com>
+In-Reply-To: <20140513072208.GB7980@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.49]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sasha,
+On 05/13/2014 04:22 PM, Ingo Molnar wrote:
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>> trace_sched_wakeup(.success) is a dead argument and has been for ages,
+> Always 0, or random value?
 
-On 12 May 2014 17:11, Sasha Levin <sasha.levin@oracle.com> wrote:
-> Since we can't find any actual users,
+Hi Ingo,
 
-The PyPy project doesn't count as an "actual user"?  It's not just an
-idea in the air.  It's beta code that is already released (and open
-source):
+It is always 1 currently.
 
-http://morepypy.blogspot.ch/2014/04/stm-results-and-second-call-for.html
+Peter believe that .success is not useful and I pointed that perf sched 
+latency
+is using it now. Then he post this patch to remove the usage here.
 
-The core library is available from there (see the test suite in c7/test/):
+Please go to the following link for more about this issue.
 
-https://bitbucket.org/pypy/stmgc
+https://lkml.org/lkml/2014/5/12/77
 
-I already reacted to the discussion here by making remap_file_pages()
-optional (#undef USE_REMAP_FILE_PAGES) but didn't measure the
-performance impact of this, if any (I expect it to be reasonable).
-Still, if you're looking for a real piece of code using
-remap_file_pages(), it's one.
+Thanx :)
+>
+> Thanks,
+>
+> 	Ingo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-
-A bientôt,
-
-Armin.
