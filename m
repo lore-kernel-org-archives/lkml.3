@@ -1,36 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933858AbaEMOql (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 10:46:41 -0400
-Received: from mail-qa0-f66.google.com ([209.85.216.66]:64897 "EHLO
-	mail-qa0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752916AbaEMOqk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 10:46:40 -0400
+	id S1761012AbaEMOqu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 10:46:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57792 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760155AbaEMOqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 10:46:48 -0400
+Date: Tue, 13 May 2014 15:46:42 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 17/19] fs: buffer: Do not use unnecessary atomic
+ operations when discarding buffers
+Message-ID: <20140513144642.GV23991@suse.de>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+ <1399974350-11089-18-git-send-email-mgorman@suse.de>
+ <20140513110951.GB30445@twins.programming.kicks-ass.net>
+ <20140513125007.GQ23991@suse.de>
+ <20140513140127.GC2485@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Reply-To: manfredeggert00125@gmail.com
-Date: Tue, 13 May 2014 16:46:39 +0200
-Message-ID: <CAK3LWRFMB_badg4Qmtv+BgoaSq001R4Q7vrJOj2kXPbDpRNBNg@mail.gmail.com>
-Subject: Re: Re: Donate my property to a serious and honest person
-From: EGGERT MANFRED <prouvsotmariebrigitte@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140513140127.GC2485@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-Excuse me for this way to contact you, I just saw your profile and I
-said you're the one I need. In short my name is Manfred EGGERT French
-origin and I live in Germany. I suffer from a serious illness which
-condemns me to certain death is throat cancer, and I have a large sum
-of 22.7 million euros, of which I wish to make a donation to someone
-you trust and honest so that it makes good use. I own a red oil France
-import business, and I lost my wife there for it 6 years, which
-affected me a lot and I could not remarry until to date, we do not
-have children. I would like to make a donation of that amount before
-my death my days can be counted its because of my illness auquelle I
-did not have a cure but a calming Germany. I would later find out if
-you can benefit from this gift. here is my email address:
-manfrede14@hotmail.com
-I took you to answer me
+On Tue, May 13, 2014 at 04:01:27PM +0200, Peter Zijlstra wrote:
+> On Tue, May 13, 2014 at 01:50:07PM +0100, Mel Gorman wrote:
+> > > Anyway, nothing wrong with this patch, however, you could, if you really
+> > > wanted to push things, also include BH_Lock in that clear :-)
+> > 
+> > That's a bold strategy Cotton.
+> 
+> :-)
+> 
+> > Untested patch on top
+> > 
+> > ---8<---
+> > diff --git a/fs/buffer.c b/fs/buffer.c
+> > index e80012d..42fcb6d 100644
+> > --- a/fs/buffer.c
+> > +++ b/fs/buffer.c
+> > @@ -1490,6 +1490,8 @@ static void discard_buffer(struct buffer_head * bh)
+> >  	lock_buffer(bh);
+> >  	clear_buffer_dirty(bh);
+> >  	bh->b_bdev = NULL;
+> > +
+> > +	smp_mb__before_clear_bit();
+> 
+> Not needed.
+> 
+> >  	b_state = bh->b_state;
+> >  	for (;;) {
+> >  		b_state_old = cmpxchg(&bh->b_state, b_state, (b_state & ~BUFFER_FLAGS_DISCARD));
+> > @@ -1497,7 +1499,13 @@ static void discard_buffer(struct buffer_head * bh)
+> >  			break;
+> >  		b_state = b_state_old;
+> >  	}
+> > -	unlock_buffer(bh);
+> > +
+> > +	/*
+> > +	 * BUFFER_FLAGS_DISCARD include BH_lock so it has been cleared so the
+> > +	 * wake_up_bit is the last part of a unlock_buffer
+> > +	 */
+> > +	smp_mb__after_clear_bit();
+> 
+> Similarly superfluous.
+> 
+> > +	wake_up_bit(&bh->b_state, BH_Lock);
+> >  }
+> 
+> The thing is that cmpxchg() guarantees full barrier semantics before and
+> after the op, and since the loop guarantees at least one cmpxchg() call
+> its all good.
+> 
+
+Of course, thanks for pointing that out. I was only thinking of it in
+terms of it being a clear_bit operation which was dumb.
+
+> Now just to confuse everyone, you could have written the loop like:
+> 
+> 	b_state = bh->b_state;
+> 	for (;;) {
+> 		b_state_new = b_state & ~BUFFER_FLAGS_DISCARD;
+> 		if (b_state == b_state_new)
+> 			break;
+> 		b_state = cmpxchg(&bh->b_state, b_state, b_state_new);
+> 	}
+> 
+> Which is 'similar' but doesn't guarantee that cmpxchg() gets called.
+> If you expect the initial value to match the new state, the above form
+> is slightly faster, but the lack of barrier guarantees can still spoil
+> the fun.
+
+I do not really expect the initial value to match the new state. At the
+very least I would expect BH_mapped to be routinely cleared during this
+operation so I doubt it's worth the effort trying to deal with
+conditional buffers.
+
+-- 
+Mel Gorman
+SUSE Labs
