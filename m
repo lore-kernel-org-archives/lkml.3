@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758927AbaEMHsd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 03:48:33 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:40670 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753079AbaEMHsb (ORCPT
+	id S1758899AbaEMHxx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 03:53:53 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:37698 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704AbaEMHxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 03:48:31 -0400
-Date: Tue, 13 May 2014 09:46:30 +0200
+	Tue, 13 May 2014 03:53:52 -0400
+Date: Tue, 13 May 2014 09:51:50 +0200
 From: Thierry Reding <thierry.reding@gmail.com>
-To: sonika.jindal@intel.com
-Cc: David Airlie <airlied@linux.ie>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Dave Airlie <airlied@redhat.com>, Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Archit Taneja <archit@ti.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Ville =?utf-8?B?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>
-Subject: Re: [PATCH 01/12] drm: Move DRM_ROTATE bits out of omapdrm into
- drm_crtc.h
-Message-ID: <20140513074628.GE6754@ulmo>
-References: <1399622493-31701-1-git-send-email-sonika.jindal@intel.com>
- <1399622493-31701-2-git-send-email-sonika.jindal@intel.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, David Airlie <airlied@linux.ie>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        dri-devel@lists.freedesktop.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/2] drm/panel: add simple-panel description using DT
+Message-ID: <20140513075148.GF6754@ulmo>
+References: <1399645002-18000-1-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YkJPYEFdoxh/AXLE"
+	protocol="application/pgp-signature"; boundary="b8GWCKCLzrXbuNet"
 Content-Disposition: inline
-In-Reply-To: <1399622493-31701-2-git-send-email-sonika.jindal@intel.com>
+In-Reply-To: <1399645002-18000-1-git-send-email-boris.brezillon@free-electrons.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---YkJPYEFdoxh/AXLE
-Content-Type: text/plain; charset=utf-8
+--b8GWCKCLzrXbuNet
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, May 09, 2014 at 01:31:22PM +0530, sonika.jindal@intel.com wrote:
-> From: Ville Syrj=C3=A4l=C3=A4 <ville.syrjala at linux.intel.com>
+On Fri, May 09, 2014 at 04:16:40PM +0200, Boris BREZILLON wrote:
+> Hello Thierry,
 >=20
-> The rotation property stuff should be standardized among all drivers.
-> Move the bits to drm_crtc.h from omap_drv.h.
+> I noticed you're describing each new panel with a new entry in the
+> of_platform_match table and a new compatible string.
+> I guess you have a good reason to do it this way, because retrieving
+> panel description from DT would be pretty easy (see this series ;-)).
 >=20
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> Cc: Dave Airlie <airlied@redhat.com>
-> Cc: Rob Clark <robdclark@gmail.com>
-> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Cc: Archit Taneja <archit@ti.com>
-> Cc: dri-devel@lists.freedesktop.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Ville Syrj=C3=A4l=C3=A4 <ville.syrjala@linux.intel.com>
-> Reviewed-by: Sagar Kamble <sagar.a.kamble@intel.com>
-> Tested-by: Sagar Kamble <sagar.a.kamble@intel.com>
+> Could tell me why you chose this approach ?
 
-This is missing your Signed-off-by line. Also the patch subject says
-01/12, where are the other eleven patches?
+The reason is that devicetree mandates that a device be identified using
+a compatible value and that compatible value should be as specific as
+possible. That compatible value should give the device driver enough
+information to know everything it needs (resolution, timings, physical
+dimension).
+
+Having all of that data in the device tree is redundant.
 
 Thierry
 
---YkJPYEFdoxh/AXLE
+--b8GWCKCLzrXbuNet
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTcc3UAAoJEN0jrNd/PrOhaKUQAJncbPFxTr5tYcP4P31QGLC1
-cH+woF8i25ULjG0gNs6dSOipIj20pL36hc3tGXHTYN9nDMMKdcZAlCgZvhA+h32c
-IjvThZR+km98vlxNIzyk9bH5XwPo7a4mJ+P+n2VGYsQ92EzJPXHWRDXvFMQW80bS
-U3u07VUqVzovnwPVpo2igdltdLXapSWbKd68M3J8sGUtTmYg/Jfk8gxUBGHtFPvK
-e4wE3GvZkwonTNonzZ+EQuvZu9MnAbcPEOLCGFCwTXpIj63AMHV7fCHFBXZ+BH9C
-F4ZnFHgomdLgn88tNeceP8yES99H7U3z2QTHmGmiKRBkDRkwbKAeDpUIvAVWVi6Z
-1aDHOIu5MqNNHss21lXK2EqklYLyucK+UPKQKImUuFHYOlhPKJhq95Ebaqyb7UDG
-JKk0I3HZKB080uF/iUzWiLKNUh4O483zujmqRR25heIUXjGI+VRZFlMgxBhQq4eF
-VOay2p6j0JQdqQEquUupCXgvQIHTG2qghp/MQoeTNRmonR3BgHh7LNE7Iazx9Hhy
-l5YkU+dm++wEV6qolDrvh6fIJhVlmVGYxMyEW7JnRi+po5sHl8aRmRgtKU6sQhIl
-hp6BTKP+H10hiyJ/3msLwMccc/1+nDYckGtbdpZjEiDntw4P3x073RWA3QUeL8En
-K/EKC5+7/h4+pRMeBeiW
-=QoUH
+iQIcBAEBAgAGBQJTcc8UAAoJEN0jrNd/PrOhiZMQAIoGWc2IIgvBGMoZpjoIDsyv
+NOlEVgH6+ytY1HUJAffHcqhMGit44xD2xoxE09i/DQYmemJOXFUNDJhk9KBT8VpM
+9FrB3u0HNi5HeZZ55G/ZunS7dO3A00rzjsNZY0OD5dUPncVkmmE5VKpxncwTZH27
+57RjL7x6XtYf/EiGLdaOZdkdEUGyKLvPUPJBY3+/TREcbr0MmeMx0nkaXUOYGicU
+0uJNso/v0cuZAXRfMXMMusBuZEUmh5Xu83DnHg/qr3sK0GuDwn7qMIzE1ouHee89
+ZTVikewTA+TEpzkguhPjjyXuFhFHs+Vx4hD1idQ/baeIXXsmVs3yYVyiENU9gxyB
+usCkVNXyhBLsxKPhLcZlSU+VE518Jxx4K5ObVz+ZZAQyepVKVMzFHf0e70f6iUas
+0ulWXRJNhCBg1Ud/VAcnjk1zY4HyEmCmVmdNAAlkSmRoVlZrZHP6w7R0KuI8uFuz
+dbj7liOtbjzxvJwOriJHJZ60ZkLEUdpwNOsHuqmLNAdjHb+3QUhCGp2gZwlB8xOS
+rkP2J2MaxVHAY/uvuPEvkM0rgBMbUdxuVsEwKWw9ThtOlMoYIB0npTretwsq0GOX
+7575RB2t+1t50zLjH2pekFKVbqTW5PL5G03cJO0ZrEs+A/HTWaMOvE1/vgynPFOm
+y7qncQqVc3bUokSqA/l/
+=ggt9
 -----END PGP SIGNATURE-----
 
---YkJPYEFdoxh/AXLE--
+--b8GWCKCLzrXbuNet--
