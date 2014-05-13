@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933134AbaEMJqt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:46:49 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:46650 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932849AbaEMJqp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:46:45 -0400
-Message-ID: <5371EA01.3080307@gmail.com>
-Date: Tue, 13 May 2014 11:46:41 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org
-CC: balbi@ti.com, gregkh@linuxfoundation.org
-Subject: Re: [PATCH v3 0/5] Add support for SW babble Control
-References: <1399969905-3509-1-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1399969905-3509-1-git-send-email-george.cherian@ti.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S933087AbaEMJqR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:46:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49985 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932769AbaEMJqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 05:46:13 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Dave Hansen <dave.hansen@intel.com>, Mel Gorman <mgorman@suse.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 16/19] mm: Do not use unnecessary atomic operations when adding pages to the LRU
+Date: Tue, 13 May 2014 10:45:47 +0100
+Message-Id: <1399974350-11089-17-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi George,
+When adding pages to the LRU we clear the active bit unconditionally. As the
+page could be reachable from other paths we cannot use unlocked operations
+without risk of corruption such as a parallel mark_page_accessed. This
+patch tests if is necessary to clear the active flag before using an atomic
+operation. This potentially opens a tiny race when PageActive is checked
+as mark_page_accessed could be called after PageActive was checked. The
+race already exists but this patch changes it slightly. The consequence
+is that that the page may be promoted to the active list that might have
+been left on the inactive list before the patch. It's too tiny a race and
+too marginal a consequence to always use atomic operations for.
 
-On 05/13/2014 10:31 AM, George Cherian wrote:
-> Series add support for SW babble control logic found in 
-> new silicon versions of AM335x. Runtime differentiation of
-> silicon version is done by checking the BABBLE_CTL register.
-> For newer silicon the register default value read is 0x4 and
-> for older versions its 0x0.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ include/linux/swap.h | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-I tested this on a AM33xx platform and don't see any regression at
-least. This hardware has MUSB_BABBLE_CTL == MUSB_BABBLE_RCV_DISABLE.
-Anything particular you want me to test as well?
-
-
-Thanks,
-Daniel
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index da8a250..395dcab 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -329,13 +329,15 @@ extern void add_page_to_unevictable_list(struct page *page);
+  */
+ static inline void lru_cache_add_anon(struct page *page)
+ {
+-	ClearPageActive(page);
++	if (PageActive(page))
++		ClearPageActive(page);
+ 	__lru_cache_add(page);
+ }
+ 
+ static inline void lru_cache_add_file(struct page *page)
+ {
+-	ClearPageActive(page);
++	if (PageActive(page))
++		ClearPageActive(page);
+ 	__lru_cache_add(page);
+ }
+ 
+-- 
+1.8.4.5
 
