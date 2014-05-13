@@ -1,272 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933109AbaEMMOH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 08:14:07 -0400
-Received: from mga09.intel.com ([134.134.136.24]:55475 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932975AbaEMMOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 08:14:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1044,1389772800"; 
-   d="scan'208";a="539559801"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Jin Yao <yao.jin@linux.intel.com>,
-        Li Aubrey <aubrey.li@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] ACPI / LPSS: custom power domain for LPSS
-Date: Tue, 13 May 2014 15:13:51 +0300
-Message-Id: <1399983233-18037-3-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1399983233-18037-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1399983233-18037-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S933264AbaEMMOz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 08:14:55 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38556 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932671AbaEMMOx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 08:14:53 -0400
+Date: Tue, 13 May 2014 14:14:50 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/6] phy: add a driver for the Berlin SATA PHY
+Message-ID: <20140513121450.GC3213@kwain>
+References: <1399886217-20474-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1399886217-20474-2-git-send-email-antoine.tenart@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1399886217-20474-2-git-send-email-antoine.tenart@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A Power domain where we save the context of the additional
-LPSS registers. We need to do this or all LPSS devices are
-left in reset state when resuming from D3 on some Baytrails.
-The devices with the fractional clock divider also have
-zeros for N and M values after resuming unless they are
-reset.
+On Mon, May 12, 2014 at 11:16:52AM +0200, Antoine Ténart wrote:
 
-Li Aubrey found the root cause for the issue. The idea of
-using power domain for LPSS came from Mika Westerberg.
+[…]
 
-Reported-by: Jin Yao <yao.jin@linux.intel.com>
-Suggested-by: Li Aubrey <aubrey.li@linux.intel.com>
-Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
----
- drivers/acpi/acpi_lpss.c | 133 ++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 126 insertions(+), 7 deletions(-)
+> +static int phy_berlin_sata_probe(struct platform_device *pdev)
+> +{
+> +	struct phy *phy;
+> +	struct phy_provider *phy_provider;
+> +	struct priv *priv;
+> +	struct resource *res;
+> +	int i;
+> +
+> +	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+> +	if (!priv)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	priv->base = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+> +	if (IS_ERR(priv->base))
+> +		return PTR_ERR(priv->base);
+> +
+> +	phy = devm_phy_create(&pdev->dev, &phy_berlin_sata_ops, NULL);
+> +	if (IS_ERR(phy))
+> +		return PTR_ERR(phy);
 
-diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-index 69e29f4..24e49a5 100644
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -19,6 +19,7 @@
- #include <linux/platform_device.h>
- #include <linux/platform_data/clk-lpss.h>
- #include <linux/pm_runtime.h>
-+#include <linux/delay.h>
- 
- #include "internal.h"
- 
-@@ -43,6 +44,8 @@ ACPI_MODULE_NAME("acpi_lpss");
- #define LPSS_TX_INT			0x20
- #define LPSS_TX_INT_MASK		BIT(1)
- 
-+#define LPSS_PRV_REG_COUNT		9
-+
- struct lpss_shared_clock {
- 	const char *name;
- 	unsigned long rate;
-@@ -58,6 +61,7 @@ struct lpss_device_desc {
- 	unsigned int prv_offset;
- 	size_t prv_size_override;
- 	bool clk_gate;
-+	bool save_ctx;
- 	struct lpss_shared_clock *shared_clock;
- 	void (*setup)(struct lpss_private_data *pdata);
- };
-@@ -72,6 +76,7 @@ struct lpss_private_data {
- 	resource_size_t mmio_size;
- 	struct clk *clk;
- 	const struct lpss_device_desc *dev_desc;
-+	u32 prv_reg_ctx[LPSS_PRV_REG_COUNT];
- };
- 
- static void lpss_uart_setup(struct lpss_private_data *pdata)
-@@ -116,6 +121,7 @@ static struct lpss_shared_clock pwm_clock = {
- 
- static struct lpss_device_desc byt_pwm_dev_desc = {
- 	.clk_required = true,
-+	.save_ctx = true,
- 	.shared_clock = &pwm_clock,
- };
- 
-@@ -128,6 +134,7 @@ static struct lpss_device_desc byt_uart_dev_desc = {
- 	.clk_required = true,
- 	.prv_offset = 0x800,
- 	.clk_gate = true,
-+	.save_ctx = true,
- 	.shared_clock = &uart_clock,
- 	.setup = lpss_uart_setup,
- };
-@@ -141,6 +148,7 @@ static struct lpss_device_desc byt_spi_dev_desc = {
- 	.clk_required = true,
- 	.prv_offset = 0x400,
- 	.clk_gate = true,
-+	.save_ctx = true,
- 	.shared_clock = &spi_clock,
- };
- 
-@@ -156,6 +164,7 @@ static struct lpss_shared_clock i2c_clock = {
- static struct lpss_device_desc byt_i2c_dev_desc = {
- 	.clk_required = true,
- 	.prv_offset = 0x800,
-+	.save_ctx = true,
- 	.shared_clock = &i2c_clock,
- };
- 
-@@ -449,6 +458,102 @@ static void acpi_lpss_set_ltr(struct device *dev, s32 val)
- 	}
- }
- 
-+#ifdef CONFIG_PM
-+static void acpi_lpss_save_ctx(struct device *dev)
-+{
-+	struct lpss_private_data *pdata = acpi_driver_data(ACPI_COMPANION(dev));
-+	int i;
-+
-+	for (i = 0; i < LPSS_PRV_REG_COUNT; i++) {
-+		pdata->prv_reg_ctx[i] = __lpss_reg_read(pdata, i * sizeof(u32));
-+		dev_dbg(dev, "saving 0x%08x from LPSS reg at offset 0x%02x\n",
-+			pdata->prv_reg_ctx[i], (unsigned int)(i * sizeof(u32)));
-+	}
-+}
-+
-+static void acpi_lpss_restore_ctx(struct device *dev)
-+{
-+	struct lpss_private_data *pdata = acpi_driver_data(ACPI_COMPANION(dev));
-+	int i;
-+
-+	/* PCI spec expects 10ms delay when resuming from D3 to D0 */
-+	msleep(10);
-+
-+	for (i = 0; i < LPSS_PRV_REG_COUNT; i++) {
-+		__lpss_reg_write(pdata->prv_reg_ctx[i], pdata, i * sizeof(u32));
-+		dev_dbg(dev, "restoring 0x%08x to LPSS reg at offset 0x%02x\n",
-+			pdata->prv_reg_ctx[i], (unsigned int)(i * sizeof(u32)));
-+	}
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int acpi_lpss_suspend_late(struct device *dev)
-+{
-+	int ret = pm_generic_suspend_late(dev);
-+
-+	if (ret)
-+		return ret;
-+
-+	acpi_lpss_save_ctx(dev);
-+	return acpi_dev_suspend_late(dev);
-+}
-+
-+static int acpi_lpss_restore_early(struct device *dev)
-+{
-+	int ret = acpi_dev_resume_early(dev);
-+
-+	if (ret)
-+		return ret;
-+
-+	acpi_lpss_restore_ctx(dev);
-+	return pm_generic_resume_early(dev);
-+}
-+#endif /* CONFIG_PM_SLEEP */
-+
-+#ifdef CONFIG_PM_RUNTIME
-+static int acpi_lpss_runtime_suspend(struct device *dev)
-+{
-+	int ret = pm_generic_runtime_suspend(dev);
-+
-+	if (ret)
-+		return ret;
-+
-+	acpi_lpss_save_ctx(dev);
-+	return acpi_dev_runtime_suspend(dev);
-+}
-+
-+static int acpi_lpss_runtime_resume(struct device *dev)
-+{
-+	int ret = acpi_dev_runtime_resume(dev);
-+
-+	if (ret)
-+		return ret;
-+
-+	acpi_lpss_restore_ctx(dev);
-+	return pm_generic_runtime_resume(dev);
-+}
-+#endif /* CONFIG_PM_RUNTIME */
-+#endif /* CONFIG_PM */
-+
-+static struct dev_pm_domain acpi_lpss_pm_domain = {
-+	.ops = {
-+#ifdef CONFIG_PM_SLEEP
-+		.suspend_late = acpi_lpss_suspend_late,
-+		.restore_early = acpi_lpss_restore_early,
-+		.prepare = acpi_subsys_prepare,
-+		.suspend = acpi_subsys_suspend,
-+		.resume_early = acpi_subsys_resume_early,
-+		.freeze = acpi_subsys_freeze,
-+		.poweroff = acpi_subsys_suspend,
-+		.poweroff_late = acpi_subsys_suspend_late,
-+#endif
-+#ifdef CONFIG_PM_RUNTIME
-+		.runtime_suspend = acpi_lpss_runtime_suspend,
-+		.runtime_resume = acpi_lpss_runtime_resume,
-+#endif
-+	},
-+};
-+
- static int acpi_lpss_platform_notify(struct notifier_block *nb,
- 				     unsigned long action, void *data)
- {
-@@ -456,7 +561,6 @@ static int acpi_lpss_platform_notify(struct notifier_block *nb,
- 	struct lpss_private_data *pdata;
- 	struct acpi_device *adev;
- 	const struct acpi_device_id *id;
--	int ret = 0;
- 
- 	id = acpi_match_device(acpi_lpss_device_ids, &pdev->dev);
- 	if (!id || !id->driver_data)
-@@ -466,7 +570,7 @@ static int acpi_lpss_platform_notify(struct notifier_block *nb,
- 		return 0;
- 
- 	pdata = acpi_driver_data(adev);
--	if (!pdata || !pdata->mmio_base || !pdata->dev_desc->ltr_required)
-+	if (!pdata || !pdata->mmio_base)
- 		return 0;
- 
- 	if (pdata->mmio_size < pdata->dev_desc->prv_offset + LPSS_LTR_SIZE) {
-@@ -474,12 +578,27 @@ static int acpi_lpss_platform_notify(struct notifier_block *nb,
- 		return 0;
- 	}
- 
--	if (action == BUS_NOTIFY_ADD_DEVICE)
--		ret = sysfs_create_group(&pdev->dev.kobj, &lpss_attr_group);
--	else if (action == BUS_NOTIFY_DEL_DEVICE)
--		sysfs_remove_group(&pdev->dev.kobj, &lpss_attr_group);
-+	switch (action) {
-+	case BUS_NOTIFY_BOUND_DRIVER:
-+		if (pdata->dev_desc->save_ctx)
-+			pdev->dev.pm_domain = &acpi_lpss_pm_domain;
-+		break;
-+	case BUS_NOTIFY_UNBOUND_DRIVER:
-+		if (pdata->dev_desc->save_ctx)
-+			pdev->dev.pm_domain = NULL;
-+		break;
-+	case BUS_NOTIFY_ADD_DEVICE:
-+		if (pdata->dev_desc->ltr_required)
-+			return sysfs_create_group(&pdev->dev.kobj,
-+						  &lpss_attr_group);
-+	case BUS_NOTIFY_DEL_DEVICE:
-+		if (pdata->dev_desc->ltr_required)
-+			sysfs_remove_group(&pdev->dev.kobj, &lpss_attr_group);
-+	default:
-+		break;
-+	}
- 
--	return ret;
-+	return 0;
- }
- 
- static struct notifier_block acpi_lpss_nb = {
+Not needed.
+
+Antoine
+
+> +
+> +	dev_set_drvdata(&pdev->dev, priv);
+> +	spin_lock_init(&priv->lock);
+> +
+> +	for (i = 0; i < BERLIN_SATA_PHY_NB; i++) {
+> +		struct phy *phy = devm_phy_create(&pdev->dev,
+> +						  &phy_berlin_sata_ops, NULL);
+> +		if (IS_ERR(phy)) {
+> +			dev_err(&pdev->dev, "failed to create PHY %d\n", i);
+> +			return PTR_ERR(phy);
+> +		}
+> +
+> +		priv->phys[i].phy = phy;
+> +		priv->phys[i].val = desc[i].val;
+> +		priv->phys[i].index = i;
+> +		phy_set_drvdata(phy, &priv->phys[i]);
+> +
+> +		/* Make sure the PHY is off */
+> +		phy_berlin_sata_power_off(phy);
+> +	}
+> +
+> +	phy_provider = devm_of_phy_provider_register(&pdev->dev,
+> +						     berlin_sata_phy_xlate);
+> +	if (IS_ERR(phy_provider))
+> +		return PTR_ERR(phy_provider);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id phy_berlin_sata_of_match[] = {
+> +	{ .compatible = "marvell,berlin-sata-phy" },
+> +	{ },
+> +};
+> +
+> +static struct platform_driver phy_berlin_sata_driver = {
+> +	.probe	= phy_berlin_sata_probe,
+> +	.driver	= {
+> +		.name		= "phy-berlin-sata",
+> +		.owner		= THIS_MODULE,
+> +		.of_match_table	= phy_berlin_sata_of_match,
+> +	},
+> +};
+> +module_platform_driver(phy_berlin_sata_driver);
+> +
+> +MODULE_DESCRIPTION("Marvell Berlin SATA PHY driver");
+> +MODULE_AUTHOR("Antoine Ténart <antoine.tenart@free-electrons.com>");
+> +MODULE_LICENSE("GPL");
+> -- 
+> 1.9.1
+> 
+
 -- 
-2.0.0.rc2
-
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
