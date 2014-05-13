@@ -1,116 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268AbaEMP4C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:56:02 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:55022 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247AbaEMPzz (ORCPT
+	id S1754604AbaEMP5f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:57:35 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:55633 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753758AbaEMP5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:55:55 -0400
+	Tue, 13 May 2014 11:57:25 -0400
+Date: Tue, 13 May 2014 17:57:20 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>, peterz@infradead.org, tglx@linutronix.de,
+        mingo@kernel.org, rusty@rustcorp.com.au, akpm@linux-foundation.org,
+        hch@infradead.org, mgorman@suse.de, riel@redhat.com, bp@suse.de,
+        rostedt@goodmis.org, mgalbraith@suse.de, ego@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, oleg@redhat.com, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 2/2] CPU hotplug, stop-machine: Plug race-window that
+ leads to "IPI-to-offline-CPU"
+Message-ID: <20140513155717.GE13828@localhost.localdomain>
+References: <20140511203617.17152.21133.stgit@srivatsabhat.in.ibm.com>
+ <20140511203657.17152.79234.stgit@srivatsabhat.in.ibm.com>
+ <20140512205757.GA18959@mtj.dyndns.org>
+ <5371DF88.7020409@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1399995050-28435-8-git-send-email-thierry.reding@gmail.com>
-References: <1399995050-28435-1-git-send-email-thierry.reding@gmail.com>
-	<1399995050-28435-8-git-send-email-thierry.reding@gmail.com>
-Date: Tue, 13 May 2014 17:55:54 +0200
-Message-ID: <CANq1E4TnVLORZyqsrtgXk04rR_s+9xFwdzdDS3cMk6hVf07-0Q@mail.gmail.com>
-Subject: Re: [PATCH v2 7/7] drm: Document how to register devices without
- struct drm_bus
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Daniel Vetter <daniel@ffwll.ch>, Rob Clark <robdclark@gmail.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-tegra@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5371DF88.7020409@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, May 13, 2014 at 02:32:00PM +0530, Srivatsa S. Bhat wrote:
+> 
+>  kernel/stop_machine.c |   39 ++++++++++++++++++++++++++++++++++-----
+>  1 file changed, 34 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+> index 01fbae5..288f7fe 100644
+> --- a/kernel/stop_machine.c
+> +++ b/kernel/stop_machine.c
+> @@ -130,8 +130,10 @@ enum multi_stop_state {
+>  	MULTI_STOP_NONE,
+>  	/* Awaiting everyone to be scheduled. */
+>  	MULTI_STOP_PREPARE,
+> -	/* Disable interrupts. */
+> -	MULTI_STOP_DISABLE_IRQ,
+> +	/* Disable interrupts on CPUs not in ->active_cpus mask. */
+> +	MULTI_STOP_DISABLE_IRQ_INACTIVE,
+> +	/* Disable interrupts on CPUs in ->active_cpus mask. */
+> +	MULTI_STOP_DISABLE_IRQ_ACTIVE,
+>  	/* Run the function */
+>  	MULTI_STOP_RUN,
+>  	/* Exit */
+> @@ -189,12 +191,39 @@ static int multi_cpu_stop(void *data)
+>  	do {
+>  		/* Chill out and ensure we re-read multi_stop_state. */
+>  		cpu_relax();
+> +
+> +		/*
+> +		 * We use 2 separate stages to disable interrupts, namely
+> +		 * _INACTIVE and _ACTIVE, to ensure that the inactive CPUs
+> +		 * disable their interrupts first, followed by the active CPUs.
+> +		 *
+> +		 * This is done to avoid a race in the CPU offline path, which
+> +		 * can lead to receiving IPIs on the outgoing CPU *after* it
+> +		 * has gone offline.
+> +		 *
+> +		 * During CPU offline, we don't want the other CPUs to send
+> +		 * IPIs to the active_cpu (the outgoing CPU) *after* it has
+> +		 * disabled interrupts (because, then it will notice the IPIs
+> +		 * only after it has gone offline). We can prevent this by
+> +		 * making the other CPUs disable their interrupts first - that
+> +		 * way, they will run the stop-machine code with interrupts
+> +		 * disabled, and hence won't send IPIs after that point.
+> +		 */
+> +
+>  		if (msdata->state != curstate) {
+>  			curstate = msdata->state;
+>  			switch (curstate) {
+> -			case MULTI_STOP_DISABLE_IRQ:
+> -				local_irq_disable();
+> -				hard_irq_disable();
+> +			case MULTI_STOP_DISABLE_IRQ_INACTIVE:
+> +				if (!is_active) {
+> +					local_irq_disable();
+> +					hard_irq_disable();
+> +				}
+> +				break;
+> +			case MULTI_STOP_DISABLE_IRQ_ACTIVE:
+> +				if (is_active) {
+> +					local_irq_disable();
+> +					hard_irq_disable();
 
-On Tue, May 13, 2014 at 5:30 PM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> From: Thierry Reding <treding@nvidia.com>
->
-> With the recent addition of the drm_set_unique() function, devices can
-> now be registered without requiring a drm_bus. Add a brief description
-> to the DRM docbook to show how that can be achieved.
->
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
->  Documentation/DocBook/drm.tmpl | 29 +++++++++++++++++++++++++++++
->  1 file changed, 29 insertions(+)
->
-> diff --git a/Documentation/DocBook/drm.tmpl b/Documentation/DocBook/drm.tmpl
-> index f26a8e4fbe47..f48227caf41a 100644
-> --- a/Documentation/DocBook/drm.tmpl
-> +++ b/Documentation/DocBook/drm.tmpl
-> @@ -142,6 +142,12 @@
->        to register it with the DRM subsystem.
->      </para>
->      <para>
-> +      Newer drivers that no longer require a <structname>drm_bus</structname>
-> +      structure can alternatively use the low-level device initialization and
-> +      registration functions such as <function>drm_dev_alloc()</function> and
-> +      <function>drm_dev_register()</function> directly.
-> +    </para>
-> +    <para>
->        The <structname>drm_driver</structname> structure contains static
->        information that describes the driver and features it supports, and
->        pointers to methods that the DRM core will call to implement the DRM API.
-> @@ -290,6 +296,29 @@ char *date;</synopsis>
->  !Fdrivers/gpu/drm/drm_pci.c drm_pci_init drm_pci_exit
->  !Fdrivers/gpu/drm/drm_usb.c drm_usb_init drm_usb_exit
->  !Fdrivers/gpu/drm/drm_platform.c drm_platform_init
-> +      <para>
-> +        New drivers that no longer rely on the services provided by the
-> +        <structname>drm_bus</structname> structure can call the low-level
-> +        device registration functions directly. The
-> +        <function>drm_dev_alloc()</function> function can be used to allocate
-> +        and initialize a new <structname>drm_device</structname> structure.
-> +        Drivers will typically want to perform some additional setup on this
-> +        structure, such as allocating driver-specific data and storing a
-> +        pointer to it in the DRM device's <structfield>dev_private</structfield>
-> +        field. Drivers should also set the device's unique name using the
-> +        <function>drm_set_unique()</function> function. After it has been set up
-> +        a device can be registered with the DRM subsystem by calling
-> +        <function>drm_dev_register()</function>. This will cause the device to
-> +        be exposed to userspace and will call the driver's
-> +        <structfield>.load()</structfield> implementation. When a device is
-> +        removed, the DRM device can safely be unregistered and freed using a
-
-That's not true. drm_put_dev() is anything but safe.. but that's an
-implementation bug and I'm working on it. Not that easy, though.
-Furthermore, please use drm_dev_unregister() and drm_dev_unref()
-directly. No reason to use drm_put_dev() in new drivers. Once I fixed
-the runtime issues, a call to drm_dev_unregister() will _immediately_
-remove a device and detach all active user-space connections.
-
-> +        call to <function>drm_put_dev()</function>.
-> +      </para>
-> +!Fdrivers/gpu/drm/drm_stub.c drm_dev_alloc
-
-Please change this to:
-
-+!Fdrivers/gpu/drm/drm_stub.c drm_dev_alloc
-+!Fdrivers/gpu/drm/drm_stub.c drm_dev_ref
-+!Fdrivers/gpu/drm/drm_stub.c drm_dev_unref
-+!Fdrivers/gpu/drm/drm_stub.c drm_dev_register
-+!Fdrivers/gpu/drm/drm_stub.c drm_dev_unregister
-+!Fdrivers/gpu/drm/drm_stub.c drm_dev_set_unique
-
-All these helpers are needed and exported to drivers.
-
-Otherwise, looks all good! Thanks!
-David
-
-> +    </sect2>
->      <sect2>
->        <title>Driver Load</title>
->        <para>
-> --
-> 1.9.2
->
+I have no idea about possible IPI latencies due to hardware. But are we sure that a stop
+machine transition state is enough to make sure we get a pending IPI? Shouldn't we have
+some sort of IPI flush in between, like polling on call_single_queue?
