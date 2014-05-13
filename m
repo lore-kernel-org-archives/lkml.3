@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761247AbaEMKgZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:36:25 -0400
+	id S933338AbaEMKK4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:10:56 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933335AbaEMKK4 (ORCPT
+	by vger.kernel.org with ESMTP id S933312AbaEMKKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:10:56 -0400
+	Tue, 13 May 2014 06:10:52 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: linux-kernel@vger.kernel.org, Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 113/182] ocfs2: fix panic on kfree(xattr->name)
-Date: Tue, 13 May 2014 11:27:45 +0200
-Message-Id: <9886b1dc55e89ee26cce927700bb49cf395429ef.1399973152.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 162/182] rtlwifi: rtl8192cu: Fix too long disable of IRQs
+Date: Tue, 13 May 2014 11:28:34 +0200
+Message-Id: <f9993c6d5b70ab5908b6d8ce55db2725d06f6359.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -27,53 +24,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f81c20158f8d5f7938d5eb86ecc42ecc09273ce6 upstream.
+commit a53268be0cb9763f11da4f6fe3fb924cbe3a7d4a upstream.
 
-Commit 9548906b2bb7 ('xattr: Constify ->name member of "struct xattr"')
-missed that ocfs2 is calling kfree(xattr->name).  As a result, kernel
-panic occurs upon calling kfree(xattr->name) because xattr->name refers
-static constant names.  This patch removes kfree(xattr->name) from
-ocfs2_mknod() and ocfs2_symlink().
+In commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 entitled "rtlwifi:
+rtl8192ce: Fix too long disable of IRQs", Olivier Langlois
+<olivier@trillion01.com> fixed a problem caused by an extra long disabling
+of interrupts. This patch makes the same fix for rtl8192cu.
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Reported-by: Tariq Saeed <tariq.x.saeed@oracle.com>
-Tested-by: Tariq Saeed <tariq.x.saeed@oracle.com>
-Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/ocfs2/namei.c | 2 --
- 1 file changed, 2 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/hw.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ocfs2/namei.c b/fs/ocfs2/namei.c
-index be3f8676a438..c19c2c57650b 100644
---- a/fs/ocfs2/namei.c
-+++ b/fs/ocfs2/namei.c
-@@ -430,7 +430,6 @@ leave:
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+index 189ba124a8c6..324aa581938e 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+@@ -985,6 +985,17 @@ int rtl92cu_hw_init(struct ieee80211_hw *hw)
+ 	struct rtl_ps_ctl *ppsc = rtl_psc(rtl_priv(hw));
+ 	int err = 0;
+ 	static bool iqk_initialized;
++	unsigned long flags;
++
++	/* As this function can take a very long time (up to 350 ms)
++	 * and can be called with irqs disabled, reenable the irqs
++	 * to let the other devices continue being serviced.
++	 *
++	 * It is safe doing so since our own interrupts will only be enabled
++	 * in a subsequent step.
++	 */
++	local_save_flags(flags);
++	local_irq_enable();
  
- 	brelse(new_fe_bh);
- 	brelse(parent_fe_bh);
--	kfree(si.name);
- 	kfree(si.value);
+ 	rtlhal->hw_type = HARDWARE_TYPE_RTL8192CU;
+ 	err = _rtl92cu_init_mac(hw);
+@@ -997,7 +1008,7 @@ int rtl92cu_hw_init(struct ieee80211_hw *hw)
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
+ 			 "Failed to download FW. Init HW without FW now..\n");
+ 		err = 1;
+-		return err;
++		goto exit;
+ 	}
+ 	rtlhal->last_hmeboxnum = 0; /* h2c */
+ 	_rtl92cu_phy_param_tab_init(hw);
+@@ -1034,6 +1045,8 @@ int rtl92cu_hw_init(struct ieee80211_hw *hw)
+ 	_InitPABias(hw);
+ 	_update_mac_setting(hw);
+ 	rtl92c_dm_init(hw);
++exit:
++	local_irq_restore(flags);
+ 	return err;
+ }
  
- 	ocfs2_free_dir_lookup_result(&lookup);
-@@ -1818,7 +1817,6 @@ bail:
- 
- 	brelse(new_fe_bh);
- 	brelse(parent_fe_bh);
--	kfree(si.name);
- 	kfree(si.value);
- 	ocfs2_free_dir_lookup_result(&lookup);
- 	if (inode_ac)
 -- 
 1.9.3
 
